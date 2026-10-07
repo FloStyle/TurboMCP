@@ -129,7 +129,10 @@ FSlateColor STurboMCPPanel::GetServerDotColor() const
 {
 	// The dot reports the live server, so it is green only when a caller could
 	// actually connect (06_ACCEPTANCE.md T-PANEL-1).
-	const IModelContextProtocolModule* Module = IModelContextProtocolModule::Get();
+	//
+	// Not const: IModelContextProtocolModule::GetServer() is a non-const virtual,
+	// so a const pointer cannot call it. This runs on the game thread only.
+	IModelContextProtocolModule* Module = IModelContextProtocolModule::Get();
 	const bool bRunning = (Module != nullptr) && (Module->GetServer() != nullptr);
 
 	return bRunning

@@ -10,7 +10,6 @@
 #include "Logging.h"
 #include "Panel/STurboMCPPanel.h"
 #include "Tools/TurboMCPToolsets.h"
-
 #define LOCTEXT_NAMESPACE "FTurboMCPModule"
 
 void FTurboMCPModule::StartupModule()
