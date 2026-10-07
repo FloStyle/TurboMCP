@@ -1,0 +1,26 @@
+{
+	"FileVersion": 3,
+	"Category": "",
+	"Description": "Project used to build and test the TurboMCP plugin against a source build of Unreal Engine.",
+	"Modules": [
+		{
+			"Name": "TurboMCPTest",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "TurboMCP",
+			"Enabled": true
+		},
+		{
+			"Name": "ModelContextProtocol",
+			"Enabled": true
+		},
+		{
+			"Name": "ToolsetRegistry",
+			"Enabled": true
+		}
+	]
+}

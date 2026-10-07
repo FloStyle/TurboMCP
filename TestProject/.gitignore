@@ -1,0 +1,12 @@
+# Unreal Engine project output. Nothing here is source.
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+*.VC.db
+*.opensdf
+*.sdf
+*.sln
+*.suo

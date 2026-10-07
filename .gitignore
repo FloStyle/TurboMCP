@@ -1,0 +1,34 @@
+# TurboMCP plugin: ignore build output, keep source.
+#
+# The plugin is source-only. A project that wants it compiles it, so compiler
+# output and IDE files are never committed.
+
+# Unreal build output
+Binaries/
+Intermediate/
+Build/
+DerivedDataCache/
+
+# Visual Studio
+.vs/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+
+# JetBrains
+.idea/
+
+# The agent's working notes and engine reference copies are local scratch,
+# not part of the plugin.
+.agent/
+
+# OS noise
+Thumbs.db
+desktop.ini
+
+# Python bytecode from the Tools scripts
+__pycache__/
+*.pyc

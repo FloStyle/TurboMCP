@@ -1,0 +1,44 @@
+# Line endings and binary handling.
+#
+# Why this file exists: the machine's global git config sets core.autocrlf=true.
+# On a Windows checkout that rewrites every text file to CRLF. The engine and its
+# plugins use LF throughout, so a CRLF working copy makes every diff noisy and
+# can break includes that were checked in with LF. Pinning the policy in the repo
+# means the checkout is the same for everyone, whatever their global config says.
+
+# Source and docs: always LF in the repository.
+*.h        text eol=lf
+*.hpp      text eol=lf
+*.c        text eol=lf
+*.cc       text eol=lf
+*.cpp      text eol=lf
+*.cs       text eol=lf
+*.inl      text eol=lf
+*.uplugin  text eol=lf
+*.uproject text eol=lf
+*.ini      text eol=lf
+*.md       text eol=lf
+*.py       text eol=lf
+*.ps1      text eol=lf
+*.js       text eol=lf
+*.json     text eol=lf
+.gitignore text eol=lf
+
+# Build scripts the engine ships from elsewhere may need CRLF on Windows.
+*.bat      text eol=crlf
+
+# Unreal content is binary. Without this, git may try to normalise it.
+*.uasset   binary
+*.umap     binary
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.ico      binary
+*.dll      binary
+*.exe      binary
+*.lib      binary
+*.pdb      binary
+
+# Diffs for content files are not readable, so do not try.
+*.uasset   -diff
+*.umap     -diff
