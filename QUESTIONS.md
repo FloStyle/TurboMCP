@@ -246,10 +246,42 @@ the origin is divided by it anyway), and `SWindow::GetPositionInScreen` versus
 The horizontal placement is right — nodes fall inside the crop's x range — so this is
 specifically a vertical origin mismatch, not a general mapping error.
 
+Three further hypotheses were tested and are also ruled out:
+
+- `SWindow::GetSizeInScreen()` differing from the window's display size. They are the same
+  property; the check was a no-op and was removed rather than left in.
+- `FWidgetRenderer::DrawWindow` producing a render target whose size differs from the size
+  asked for. It does not: the target is created at `WindowWidth x WindowHeight` and the read
+  back asserts `Pixels.Num() == WindowWidth * WindowHeight`, which passes.
+- `FGeometry::GetAbsolutePosition()` returning layout space rather than render space. It uses
+  `AccumulatedRenderTransform`, so with a layout scale of 1.00 it returns screen pixels,
+  which is what the mapping assumes.
+
+**This has now resisted three successive hypotheses, so it is being left open rather than
+chased further.** The roadmap has nine phases and this is one tool's crop rectangle; every
+hour on it is an hour phases 4 to 9 do not have. `debug-window` captures the window
+correctly today, and `L-CAPTURE`'s framing modes are recorded as NOT working rather than
+half-working.
+
+The next attempt should start from the route below rather than from arithmetic, because
+arithmetic has been wrong three times.
+
+RECOMMENDED NEXT ROUTE — measure, do not derive:
+
+1. Put a known node at a known graph position, capture with `debug-window`, and locate that
+   node in the output by its title text. One measurement gives the real transform and
+   replaces every assumption above.
+2. If the offset is constant, subtract it and be done.
+3. If it is not constant, do NOT derive it. Crop by SCANNING the picture for the canvas,
+   which needs no window geometry at all and therefore cannot be wrong about it. The canvas
+   is the largest region bounded by the editor's panel gutters, and the frame's position
+   within it follows from the view location and zoom alone, which are known correct.
+
+Route 3 is preferred even if route 2 works, because it removes the dependency on window
+geometry entirely.
+
 NOT VERIFIED: whether the offset is constant or depends on the panel's size, the window's
-position, or the zoom. Route 2 from Q-7 — crop by scanning for the canvas background colour
-rather than computing its position — remains the fallback if it turns out not to be
-constant, and it would be robust either way.
+position, or the zoom.
 
 Answer: not yet answered. `L-CAPTURE`'s `debug-window` mode captures the window correctly
 today, and the framing modes still need this fixed before they can be claimed to work.
