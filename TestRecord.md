@@ -2838,3 +2838,67 @@ said membership comes from `UEdGraphNode::GetNodesUnderComment`; the `.cpp` says
 right, because that cache is filled from **rendered** widgets and is **empty headlessly**.
 `ComputeMembers` is now the public `FTurboMCPComment::MembersOf` so the layout passes **share one copy**
 of the rule rather than agreeing until one of them is changed.
+
+---
+
+## 6f. A static coverage audit, and the five tools nothing had ever called
+
+The requirement is that **every MCP feature is testable**. This section turns that into a **check**
+rather than an intention.
+
+### The audit
+
+`Tools/audit-tool-coverage.py` reads the tool declarations out of the header and the calls out of every
+suite and reports **every tool no suite calls**, every **parameter with no sample anywhere**, and the
+toolsets each tool lives in. It is **STATIC** — no editor, no build — so it runs while a build is in
+flight. That matters: the checks that need the editor are slow and serial, and the ones that can be
+static should be.
+
+**A tool that REGISTERS and answers nothing when called looks finished** in `R-TOOL-INDEX` and in a
+panel's tool list, and nothing contradicts it. That is the failure the audit makes impossible, and it is
+the half **a panel does not cover**: a panel lets a human try a tool, and notices nothing about a tool
+**nobody tried**.
+
+### Its first run found FIVE tools no suite calls
+
+```
+EditTurboMCPCompile, LookTurboMCPToolset, PreviewTurboMCPToolset,
+ReadTurboMCPEditQueue, ReadTurboMCPNodeResolve
+```
+
+`Tools/test-uncovered-tools.py` now drives all five, and the audit reports **`uncalled: (none)`**.
+
+### The audit's own first version was wrong three times
+
+Each mistake is recorded **in the file**, because **a false positive is worse than no audit** — it makes
+a real finding look like noise:
+
+| Mistake | Consequence |
+|---|---|
+| it counted the string `AICallable` in the header, which appears once in a **prose comment** | compared 45 declarations against 46 hits and **blamed the header** |
+| it matched any `*TurboMCP*` string | counted two **toolset class names** as uncalled tools |
+| it then filtered those two out | **they are in fact REAL tools that were genuinely uncalled**, so the filter **hid two real findings** |
+
+### And the suite asserted the wrong thing about two of the five
+
+It assumed a tool named `<Toolset>Toolset` **describes its toolset**. Measured, **neither does**:
+
+| Tool | What it actually does |
+|---|---|
+| `LookTurboMCPToolset` | lists the **live Slate windows** a capture could frame |
+| `PreviewTurboMCPToolset` | measures this plugin's **help output** against the 2000 character budget `R-TOOL-SCHEMA` sets |
+
+It then went further wrong by asserting a sentence from the **header comment** — *"it does not capture
+an image yet"* — which `L-CAPTURE` made **stale in phase 3**. **A check written from a doc comment
+tests the comment.** The check now asserts the output.
+
+### Three larger batches running in parallel
+
+On **strictly disjoint files**, so nothing collides:
+
+- **tool schema and the node type family** (`R-TOOL-SCHEMA`, `P-NODE-TYPE`, `P-NODE-PINS`);
+- **the whole material reader family** (`R-MAT-LABELS`, `R-MAT-LOAD`, `R-MAT-TRACE`, `R-MAT-BLOCKS`);
+- **the panel**, so every MCP feature can be called by hand from it.
+
+Each reports the exact `UFUNCTION` declarations for the orchestrator to paste, because **two writers on
+one header is how a merge loses a tool silently**.
