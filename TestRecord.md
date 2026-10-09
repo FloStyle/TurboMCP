@@ -4,9 +4,11 @@ Required by `00_START_HERE.md` section 5 and `06_ACCEPTANCE.md`: every capabilit
 is done only when its tests have been run on the test assets and the numbers are
 recorded here.
 
-Status: **phase 0 verified.** The plugin builds, loads, and registers all four
-toolsets, confirmed from the editor's own log. The test asset kit does not exist
-yet, so no tool behaviour has been tested. Nothing below claims otherwise.
+Status: **phase 0 builds, loads, and registers.** Confirmed twice from the
+editor's own log against the built DLL: the module loads and all four toolsets
+register with no failure line. The editor window was not opened by a person, so
+its layout is unverified. The test asset kit does not exist yet, so no tool
+behaviour has been tested. Nothing below claims otherwise.
 
 Engine under test: **5.8.3**, source build at `C:\UnrealEngine`, commit
 `396c9f059903aed5fec78ecd3d437a40c6415368`.
@@ -69,9 +71,53 @@ registration, the shared formats, the editor window and the test asset kit.
 | Module loads | **PASS** | `InternalLoadLibrary: 'TurboMCP'` then `LogTurboMCP: TurboMCP module started` |
 | Four toolsets register | **PASS** | four `Registering Toolset` lines, no failures |
 | Tools appear in the MCP tool list | **PASS** (via tool search) | `Tool search enabled: ... (4 toolsets discoverable via list_toolsets)` |
+| Tools execute over the wire | **PASS** | all four called through `call_tool`; real answers returned |
+| Editor starts with no human | **PASS** | launched headless, MCP server bound to port 8000 on its own |
 | Panel opens and shows the server row | not yet run | needs an interactive editor |
 | Panel output matches the MCP output (`T-PANEL-5`) | not yet run | |
-| Test asset kit exists | no | |
+| Test asset kit exists | no | TA-1 to TA-13 must be built by hand |
+
+---
+
+## 2b. Phase 1 checks: agent help
+
+Run with `python Tools/test-agent-help.py` against a running editor. The script
+asserts the spec's own rules and exits non-zero on failure.
+
+| Test | Result | Evidence |
+|---|---|---|
+| `T-HELP-1` tool index | **PASS** | 7 checks: server state, tool search mode, 5 toolsets, every tool, source labels, counts, and the kinds Read/Look/Preview/Edit in order |
+| `T-HELP-2` one tool's help | **PASS** | 6 checks: opens with its kind, states kind and source, parameters and traps, and stays under 2000 characters (297 measured) |
+| `T-HELP-3` wrong toolset name | **PASS** | refuses and lists the real toolset names |
+| `T-HELP-5` wrong tool name | **PASS** | refuses and names the closest toolset |
+| `D-07` traps are data | **PASS** | a trap added to `TestProject/Config/TurboMCP/Traps.json` appeared with **no rebuild**, and the result named the file it read |
+| Joined `Toolset.Tool` name accepted | **PASS** | `TurboMCP.TurboMCPReadToolset.ReadTurboMCPStatus` resolves |
+| Short toolset name accepted | **PASS** | `TurboMCPReadToolset` resolves |
+| Summary mode with an empty tool name | **PASS** | one line per tool in the toolset |
+
+Measured character counts for one tool's help: 297 for a TurboMCP tool, against a
+2000 character budget.
+
+### Wire-format facts established by testing, not by reading
+
+These correct `07_ENGINE_NOTES.md` and were found by experiment:
+
+- `call_tool`'s `arguments` must be a **JSON object**, not a JSON string. A string
+  makes the engine answer "input params Json is empty". `07_ENGINE_NOTES.md`
+  section 3.1 records it as a string.
+- The published tool `name` is the **full `Toolset.Function`**, while `call_tool`
+  wants the bare function name.
+- The toolset name has the leading `U` **stripped**: `TurboMCP.TurboMCPReadToolset`.
+- A `UFUNCTION` parameter name is exposed **camelCased**: `toolsetName`, not
+  `ToolsetName`.
+- An `FString` parameter is **required** in the schema whatever its default, so an
+  optional string is expressed by passing `""`, not by omitting the field. This is
+  the trap `07_ENGINE_NOTES.md` section 2.1 warns about, now confirmed.
+
+### Not yet verified in phase 1
+
+`R-ASSET-SEARCH`, `R-ASSET-DESCRIBE`, `R-TYPE-FIND`, `R-DIRTY-LIST`, `E-COMPILE`
+and `E-SAVE` are not written yet.
 
 ### How registration was verified without a human
 

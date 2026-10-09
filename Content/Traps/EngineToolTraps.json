@@ -1,0 +1,159 @@
+{
+  "_comment": "Original TurboMCP usage guidance for stock Unreal editor workflows.",
+  "toolsets_note": "Source checks used the Unreal 5.8.4 commit in engine.lock.json. An advisory is not tool registration. Discover each exact provider, tool name and schema in the connected editor. Names left for compatibility do not promise stock availability or 5.9 support.",
+  "source": "https://dev.epicgames.com/documentation/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8",
+  "tools": {
+    "list_toolsets": {
+      "traps": [
+        "With Tool Search enabled, start from the toolsets returned by the connected editor. Use the returned identifiers for the next discovery step.",
+        "An enabled plugin and a runtime registration are separate checks. If you expect a provider and it is missing, check the editor session before guessing its tool names."
+      ]
+    },
+    "describe_toolset": {
+      "traps": [
+        "Use the exact toolset identifier returned by list_toolsets in toolset_name.",
+        "Read the tool name, required fields and argument types from the description before invoking a tool. Fetch it again when the provider changes."
+      ],
+      "parameters": {
+        "name": "toolset_name"
+      }
+    },
+    "call_tool": {
+      "traps": [
+        "For a registered toolset call, put its identifier in toolset_name and the member name in tool_name. Put the member arguments in the arguments object.",
+        "Omit toolset_name only for a top-level tool exposed by the server. Supply the arguments required by the chosen tool even when the wrapper accepts an empty object.",
+        "For writes, confirm the target and inspect the returned operation result and editor state before deciding whether to save."
+      ],
+      "parameters": {
+        "toolset": "toolset_name",
+        "tool": "tool_name",
+        "args": "arguments"
+      }
+    },
+    "write_graph_dsl": {
+      "traps": [
+        "Use a graph text writer only when the connected provider advertises its grammar and edit mode. Get the exact asset and graph from a fresh read.",
+        "Find out whether the operation adds to or replaces the graph before executing. Stop if scope, reference handling or preservation of existing graph content is unclear.",
+        "Check the resulting nodes, links and defaults before using compile or save as separate verification steps."
+      ]
+    },
+    "find_nodes": {
+      "traps": [
+        "If this search is advertised, constrain it to the intended asset and graph. Treat labels as search hints and resolve multiple matches before choosing a node.",
+        "Keep the node reference returned by the live reader. Reacquire it after a graph-changing action if the provider can replace nodes."
+      ]
+    },
+    "find_node_types": {
+      "traps": [
+        "If a node-type query is advertised, supply the target graph or pin context in the form its schema supports. A node usable in one graph may be unavailable in another.",
+        "Choose from the returned compatible actions. A display title alone does not identify a particular action or overload."
+      ]
+    },
+    "create_node": {
+      "traps": [
+        "Select an action compatible with the target graph from live discovery. Use the action reference and position shape that the provider exposes.",
+        "If the action accepts an existing pin, check whether it also creates a link before requesting a separate link.",
+        "Read the new node back before using its pins. Stop if its type, position or introduced links differ from the intended change.",
+        "Some Blueprint nodes infer pin types from connections. Read the pin types again before wiring a second input."
+      ]
+    },
+    "connect_pins": {
+      "traps": [
+        "Resolve both endpoints from the same live graph. Check their directions and types before asking the graph schema to connect them.",
+        "A schema can reject a link or require an extra conversion or a change to existing links. Inspect the final link set before calling another mutation."
+      ]
+    },
+    "break_pins": {
+      "traps": [
+        "Check whether the advertised operation removes one link or all links on a pin. Use the narrowest supported operation for the requested edit.",
+        "Read both endpoints afterward and confirm that unrelated links survived.",
+        "A reroute owns its own input and output. When the intended wire passes through one, resolve the directly linked endpoints."
+      ]
+    },
+    "set_pin_value": {
+      "traps": [
+        "Confirm you are editing the default on the intended input. A connected input can get its value from the link instead of the stored default.",
+        "Use the value type required by the live schema. Read back the default and verify that the expected links remain."
+      ]
+    },
+    "find_assets": {
+      "traps": [
+        "If asset search is exposed, distinguish the folder filter from the returned package or object identity. Use the returned identity for the next operation.",
+        "Scope the search by folder or class where supported. If multiple assets match, verify the exact package and class before an edit."
+      ]
+    },
+    "save_assets": {
+      "traps": [
+        "If a save tool is exposed, select only the intended assets. Stock editor saving works at package scope, so check what else the target packages contain.",
+        "Check dirty state and source control before saving, then confirm the result per package. Do not treat a successful transport response as proof of a disk write."
+      ]
+    },
+    "get_properties": {
+      "traps": [
+        "If property reads are available, locate the exact object and distinguish current instance values from class or asset defaults.",
+        "Take field names and supported types from reflection or the live schema. Read only the fields needed for the next decision."
+      ]
+    },
+    "set_properties": {
+      "traps": [
+        "Identify the exact editable object and field before writing. An instance change and a change to defaults can have different effects.",
+        "Submit a value in the advertised type, then read the field back. Check side effects and package state separately before saving."
+      ]
+    },
+    "is_dirty": {
+      "traps": [
+        "A dirty flag describes the loaded package's editor state. It does not establish that a particular change was written to disk or checked in.",
+        "Check the exact package before and after the edit or save you are verifying."
+      ]
+    },
+    "compile_blueprint": {
+      "traps": [
+        "Compile the intended Blueprint only after verifying the requested graph edit. Inspect compiler status and diagnostics for that asset.",
+        "Check the generated result, dirty state and disk state separately. Follow the connected editor's save policy rather than assuming one."
+      ]
+    },
+    "add_function_graph": {
+      "traps": [
+        "Confirm the target Blueprint, the intended name and whether this is a new function or an override before choosing the advertised operation.",
+        "Read back the function graph and its signature rather than relying on a success message alone."
+      ]
+    },
+    "add_function_param": {
+      "traps": [
+        "Confirm the function graph and whether the parameter is an input or output in the function signature. Use the provider's schema for direction and type.",
+        "Choose a container only if the advertised schema supports it, then inspect the new signature before editing call sites."
+      ]
+    },
+    "add_object_function_param": {
+      "traps": [
+        "Use a class resolved in the connected editor. Distinguish an object reference parameter from a parameter whose value is a class.",
+        "Confirm input or output direction and read the exact type back from the function signature."
+      ]
+    },
+    "add_variable": {
+      "traps": [
+        "Choose member or function-local scope first and check existing declarations before applying a name.",
+        "Check the type and the advertised default-value format. Verify the declaration and its default independently of later compile or save.",
+        "Confirm whether the result changes a class default or an instance override. Inspect an existing instance separately when that distinction matters."
+      ]
+    },
+    "arrange": {
+      "traps": [
+        "Confirm the graph and node selection before layout. Use a layout-only operation if you intend to preserve graph behavior.",
+        "Check positions and ensure links remain as intended before saving."
+      ]
+    },
+    "capture_asset_image": {
+      "traps": [
+        "Check whether the advertised tool produces an asset thumbnail or a viewport image. Select and verify the asset identity for a thumbnail.",
+        "For a stock level image, use the viewport capture route if the connected editor exposes it."
+      ]
+    },
+    "CaptureAssetImage": {
+      "traps": [
+        "Pass the asset path from the connected editor's discovery. This tool renders an asset thumbnail and can return an error for an invalid path.",
+        "Use the advertised CaptureViewport tool for the current level. CaptureAssetImage rejects level assets."
+      ]
+    }
+  }
+}

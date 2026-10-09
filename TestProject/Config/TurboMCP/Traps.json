@@ -1,0 +1,22 @@
+{
+	"_comment": "Project-level traps. This file WINS over the shipped file, and it exists to prove the D-07 premise: traps are data, so a project can add or correct them with NO rebuild. A later file replaces a tool's whole entry.",
+
+	"tools": {
+		"ListSkills": {
+			"parameters": {
+				"filter": "optional name filter. Pass an empty string for all."
+			},
+			"traps": [
+				"Project-level trap: this entry came from TestProject/Config/TurboMCP/Traps.json, not from the plugin, and it took effect without recompiling the plugin.",
+				"A trap can be corrected or removed by editing this file alone, which is why D-07 requires traps to be data."
+			]
+		},
+
+		"GetSkills": {
+			"parameters": {},
+			"traps": [
+				"Project-level trap: the reply can be very large, so ask for a few skills at a time."
+			]
+		}
+	}
+}

@@ -38,7 +38,22 @@ namespace TurboMCPToolsets
 		return Classes;
 	}
 
-	/** The `<Module>.<ClassName>` name the engine will register this class under. */
+	/**
+	 * The `<Module>.<ClassName>` name the engine registers this class under.
+	 *
+	 * The leading `U` is stripped. This was verified against the live server
+	 * rather than assumed: `list_toolsets` returns
+	 * `TurboMCP.TurboMCPReadToolset`, not `TurboMCP.UTurboMCPReadToolset`.
+	 *
+	 * The reason is that the name actually comes from the `ScriptName` metadata
+	 * that UnrealHeaderTool writes for the class, which drops the `U` prefix
+	 * (`ToolsetRegistry.cpp`). `FFunctionLibraryToolset::GetToolsetClassName`
+	 * builds a name from the raw C++ class name and keeps the `U`, so copying
+	 * that function gives a name no toolset answers to.
+	 *
+	 * A name that no tool accepts is worse than no name: it costs the caller a
+	 * failed call, which is what `P7` exists to prevent.
+	 */
 	FString GetToolsetName(const UClass* InClass)
 	{
 		if (InClass == nullptr)
@@ -46,7 +61,12 @@ namespace TurboMCPToolsets
 			return FString();
 		}
 
-		const FString ClassName = InClass->GetName();
+		FString ClassName = InClass->GetName();
+		if (ClassName.StartsWith(TEXT("U")))
+		{
+			ClassName.RightChopInline(1);
+		}
+
 		const UObject* Outer = InClass->GetOuter();
 		if (Outer == nullptr)
 		{

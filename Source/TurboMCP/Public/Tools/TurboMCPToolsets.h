@@ -64,6 +64,46 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPStatus();
+
+	/**
+	 * Read every tool the server serves, one line each.
+	 *
+	 * Lists the MCP server state first, including whether tool search is on,
+	 * because that decides what a client can reach. Then one line per tool in
+	 * every registered toolset, engine and TurboMCP alike: kind, tool name,
+	 * source and the first sentence of its description.
+	 *
+	 * Use this once at the start of a session instead of guessing tool names.
+	 * Pass a tool name to R-TOOL-SCHEMA for its parameters and known traps.
+	 *
+	 * Returns the counts even when zero, and says why the list is empty when the
+	 * toolset registry is unavailable.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPToolIndex();
+
+	/**
+	 * Read the parameters and known traps of one tool.
+	 *
+	 * Pass a toolset name and a tool name, or one joined name as tools/list
+	 * prints it. Leave the tool name empty to get one line per tool in that
+	 * toolset. Name the tool alone to find it in whatever toolset holds it.
+	 *
+	 * Works for the engine's own tools as well as TurboMCP's, because engine tool
+	 * help runs to tens of thousands of characters and the traps are where agents
+	 * actually lose time.
+	 *
+	 * The reply stays under 2000 characters for one tool. A name that fits
+	 * nothing lists the real toolset names and the closest matches.
+	 *
+	 * Both arguments are strings and both appear required in the schema, because
+	 * the engine's tool registry marks an FString parameter required whatever its
+	 * default. There is no way to express an optional string here, so an empty
+	 * string is the documented way to say "not given" (see `07_ENGINE_NOTES.md`
+	 * section 2.1). Pass "" rather than omitting the field.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPToolHelp(const FString& ToolsetName, const FString& ToolName);
 };
 
 /**
