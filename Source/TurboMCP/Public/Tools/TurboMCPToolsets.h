@@ -416,6 +416,36 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPToolset();
+
+	/**
+	 * Look at the layout of one graph: measure it and report, without moving anything.
+	 *
+	 * Pass a Blueprint and a graph name. Every node in the graph is included,
+	 * connected or not, and no node is listed twice.
+	 *
+	 * Reports the extent, the node count, the comment boxes and how many are nested,
+	 * and the total wire length with the longest single wire. Wire length is the
+	 * straight distance between linked pins and is the main layout measure: a tidy
+	 * graph of a given size scores lower than a tangled one. Pin positions are
+	 * computed from each node's rectangle and pin order, because the engine exposes
+	 * no pin position to a tool call, so the number is consistent and comparable
+	 * rather than pixel exact, and the result says so.
+	 *
+	 * Then reports what is wrong, each finding with node IDs so a caller can act on
+	 * it: backward wires with exec and data separated, where backward means the
+	 * target node starts to the left of where the source node ends, so a node stacked
+	 * under its predecessor counts; overlapping node pairs; a getter placed to the
+	 * right of or under its consumer; a node parked at the origin whose nearest link
+	 * is far away; and disconnected groups, each node marked with whether its logic
+	 * already exists in the connected graph.
+	 *
+	 * A graph with no wires says so in words rather than reporting a zero. A graph
+	 * name that does not exist lists the real ones.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString LookTurboMCPLayoutReport(
+		const FString& Asset,
+		const FString& GraphName);
 };
 
 /**

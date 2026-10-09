@@ -656,6 +656,78 @@ assets were deleted rather than left in the project, because a half-built asset 
 
 ---
 
+## 3a. Phase 3: L-LAYOUT-REPORT
+
+Built: `FTurboMCPLayoutReport` and `LookTurboMCPLayoutReport`, the first Look tool.
+22 tools. Run its checks with `python Tools/test-layout.py`.
+
+A Look tool, so it measures and never moves anything (`P3`).
+
+### The check that matters: a clean graph and a messy one must differ
+
+A layout checker that finds problems in everything is useless, and one that finds
+nothing is worse. So the same tool was run over two of Epic's own macros: one laid out
+cleanly, one with real wiring problems.
+
+| Graph | Result |
+|---|---|
+| `StandardMacros / DoOnce` | 13 nodes, 18 wires, **`findings: none.`** |
+| `StandardMacros / ForEachLoop` | 14 nodes, 24 wires, total wire length 18550, **1 backward data wire and 1 backward exec wire** |
+
+That pair is the evidence. A tool reporting findings in both would be crying wolf; one
+reporting none in either would be measuring nothing.
+
+| Test | Result | Evidence |
+|---|---|---|
+| Node count, wire count, extent | **PASS** | `13 node(s), 18 wire(s)`, `extent: x ...` |
+| Total wire length is the main measure | **PASS** | `total wire length: 6550  (longest single wire: 792)` |
+| It says pin positions are computed, not read | **PASS** | in the result, not only in the source |
+| A clean graph reports no findings | **PASS** | `findings: none. No backward wire, no overlap...` |
+| Backward wires are found | **PASS** | `backward-data:` and `backward-exec:` separately |
+| A backward wire is not condemned | **PASS** | says a loop and a cast-failed path are legitimately backward |
+| Findings name node IDs | **PASS** | `...:5ee026 -> ...:abf042 : the target starts at x 1120 and the source ends at x 1400` |
+| A graph with no wires says so in words | **PASS** | `this graph has no wires at all, so there is no flow to measure` |
+| A bad graph name lists the real ones | **PASS** | names the Blueprint's graphs |
+| A missing graph name is refused | **PASS** | `no graph given. Pass a graph name; the tool refuses rather than guessing` |
+| A non-Blueprint is refused | **PASS** | `is not a Blueprint, so it has no graphs to measure` |
+
+### Pin positions are computed, and the result says so
+
+`03_TOOLS.md` calls total wire length "the main layout measure", and a wire's length is
+the distance between its two pins. The engine has **no pin-position API** on
+`UEdGraphNode`: the only one is `SGraphPanel::GetBoundsForNode`, which needs a live
+graph widget and so cannot be reached from a tool call.
+
+So pin positions are computed from each node's rectangle and its pin order. The measure
+is therefore **consistent and comparable rather than pixel exact**, which is what a
+layout measure is for: a tidy graph of a given size scores lower than a tangled one.
+The tool prints that caveat in its own result, because a number whose meaning lives
+only in the source is a number a caller will misread.
+
+### A backward wire is reported, not condemned
+
+`ForEachLoop` genuinely contains a loop that returns upward and a completed path that
+rejoins behind it. Both are correct code and both are backward wires. Reporting them is
+what the spec asks; calling them defects would be wrong, and "tidying" them would break
+the macro.
+
+The tool says so in words rather than only in this record, so a caller does not repair
+something that was never broken.
+
+### How the findings were checked before being believed
+
+The first result flagged a `Make Literal Float` feeding a `float > float` comparison
+whose target started to the left of where the source ended. That looked like it could
+be a false positive, so the three flagged node IDs were resolved through
+`R-NODE-RESOLVE` to confirm they were the nodes the finding named. They were.
+
+The raw `NodePosX` could not be read back through the engine's `get_properties`, because
+`NodePosX` is not a `UPROPERTY` and so is invisible to reflection. That is why the check
+is a **pair of graphs that must differ** rather than a spot check of coordinates: two
+graphs that must differ is evidence, one coordinate that happens to match is not.
+
+---
+
 ## 2d. Phase 1: type find and dirty list
 
 | Test | Result | Evidence |
