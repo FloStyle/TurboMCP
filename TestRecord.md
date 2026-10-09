@@ -3218,3 +3218,48 @@ backward exec wire, R3 moved a node at the origin, and it reported the one backw
 touch with both ends named. The skip reasons name shapes that `TA-4` DOES carry, so what remains is to point
 the suite at it and to build the one shape it lacks: a getter sitting to the right of the node that reads
 it, which is R2's positive case.
+
+---
+
+## 6n. FIX-BACKWARD's positive cases run for the first time, and the suite was not re-runnable
+
+`TA-4` exists as the `Stacked` graph inside `/Game/Tests/Kit/TA01_HandLaid`, and ten skipped checks became
+fourteen that run. **This is the first time anyone has seen this capability REPAIR anything** - previously the
+suite could only show that the pass does no harm.
+
+MEASURED, on the fixture the acceptance row names:
+
+```
+preview: repair Stacked in TA01_HandLaid : wire length 4701 -> 1416
+R1 backward exec wires: 1 found, 1 node(s) moved
+R3 lone nodes at the origin: 1 found, 1 would move
+  R1  a9722a  (400,300) -> (680,0)     fed by an exec wire from fd7d63 that runs backward
+  R3  496328  (0,0)     -> (2720,1200) sits at the origin, nearest link 3038 units away
+L-LAYOUT-REPORT backward-exec  2 -> 0
+L-LAYOUT-REPORT stray          2 -> 0
+```
+
+TWO THINGS ABOUT HOW THE CHECKS ARE WRITTEN, both of which this record argues for repeatedly:
+
+- **checks 7 and 17 read through a DIFFERENT TOOL.** They ask `L-LAYOUT-REPORT` whether the repair happened
+  rather than asking the pass, because a pass reporting its own success is not evidence;
+- **the moves are PARSED out of the preview every time** - rule, node key and both coordinates - never
+  pinned. So check 5, "the target is to the RIGHT of the source", asserts on the PLANNED POSITION rather than
+  on a sentence about it, and would go red if the rule moved a node backwards.
+
+**AND THE SUITE WAS NOT RE-RUNNABLE, WHICH ITS OWN SECOND RUN CAUGHT.** `R1` and `R3` REMOVE the very shapes
+the checks assert on, so the first version passed once and then reported **EIGHT FAILURES** on every later
+run, on a tool that had worked perfectly the first time. This is the defect the override suite was recorded
+with in section 6j, and the general rule is now stated twice because it was broken twice:
+
+> **A suite that owns a shared resource must restore it ON THE WAY IN, not only on the way out.**
+> Removing the damage at the end is not enough either, because a run killed part-way leaves the same mess
+> behind. Rebuilding FIRST makes the suite re-runnable from ANY state, which is the property that matters.
+
+PROVEN RE-RUNNABLE, not assumed: two consecutive runs both report
+`RESULT: PASS (25 check(s) run including 14 against TA-4, 6 SKIPPED ...)`.
+
+SIX CHECKS REMAIN SKIPPED, each naming the shape no fixture carries: a getter under its consumer, so **R2
+still has no positive evidence**; a graph whose repair would measure LONGER, so the roll-back branch is never
+reached; a comment box around a node the pass would move outside it; and a pure chain to carry. Those four
+shapes are the fixture work that remains.
