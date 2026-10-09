@@ -35,4 +35,3 @@ __pycache__/
 
 # Commit-message files are a workflow artefact, not part of the plugin.
 .commit-msg*.txt
-.agent/
