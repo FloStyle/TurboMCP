@@ -147,16 +147,54 @@ Run it after every change to this phase so a regression is caught at once.
 
 #### The fast loop, in full
 
+Measured end to end: **24 seconds**.
+
+| Step | Time |
+|---|---|
+| stop the editor | 5.0s |
+| rebuild just the plugin module | 8.8s |
+| start the editor and wait for the MCP server | 9.9s |
+
 ```powershell
 # 1. stop the editor, or the plugin DLL is locked
 Get-Process UnrealEditor -EA SilentlyContinue | Stop-Process -Force
-# 2. build just the module (about 30 seconds once the engine exists)
+# 2. build just the module (5 to 30 seconds once the engine exists)
 & cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"<REPO>\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
 # 3. start it headless, which also starts the MCP server on 8000
 Start-Process 'C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor.exe' -ArgumentList @('<REPO>\TestProject\TurboMCPTest.uproject','-nullrhi','-unattended','-nosplash','-nosound') -WindowStyle Hidden
 # 4. verify on the wire
 python Tools\test-agent-help.py
 ```
+
+A 24 second loop is fast enough to iterate on a tool interactively, so there is
+no need for Live Coding. See below for why it does not work here anyway.
+
+#### Live Coding was tried, and does not work in this setup
+
+`-LiveCoding` on the UBT command line **does compile** against a running editor:
+a one line change to `TurboMCPToolsets.cpp` produced `[1/1] Compile
+TurboMCPToolsets.cpp` in 12.7 seconds, with no link step. But the change never
+reached the running editor:
+
+| Check | Result |
+|---|---|
+| plugin DLL hash before and after | **unchanged** (`D55243F5...`) |
+| a probe marker added to the output of a tool | **absent** from the reply |
+| editor log lines about a patch | none: the only Live Coding line is the module loading at startup |
+| ports the editor listens on | 8000 (MCP) and 1985 only, no Live Coding port |
+
+The reason is that `-LiveCoding` makes UBT compile a patch, but delivering it
+needs the Live Coding Console connected to the editor's Live Coding server. A
+headless editor started with `-nullrhi -unattended` does not provide one.
+
+Even if it did, `07_ENGINE_NOTES.md` section 1.1 already rules it out for this
+work: Live Coding patches function bodies only and cannot apply changes to
+reflection data. Almost every change in this plugin is reflection bearing — a
+tool is a `UFUNCTION`, and its doc comment becomes the tool description — so most
+changes would need a full rebuild regardless.
+
+**Conclusion: use the 24 second rebuild loop.** It works for every kind of
+change, reflection or not.
 
 #### Findings that correct the spec or the engine notes
 
