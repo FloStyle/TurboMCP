@@ -2902,3 +2902,42 @@ On **strictly disjoint files**, so nothing collides:
 
 Each reports the exact `UFUNCTION` declarations for the orchestrator to paste, because **two writers on
 one header is how a merge loses a tool silently**.
+
+---
+
+## 6g. OPEN-1 is settled: node rectangles are NOT degenerate in a headless editor
+
+`Spec/WORKING_GRAPH_KNOTS.md` recorded OPEN-1 as the risk that could invalidate the whole capability:
+*a headless editor never renders a node, so `NodeWidth` and `NodeHeight` may be ZERO, in which case every
+rectangle is a point and the geometry degenerates.* The spec said to MEASURE it before writing anything,
+and to refuse the capability with that as the reason if the answer was zero.
+
+**The answer is NO — the sizes are real — and the evidence was already in a measurement this project had
+taken and not read carefully.**
+
+`L-LAYOUT-REPORT` on `TurboMCPAcceptance:KnotProbe` reported:
+
+```
+counts: 3 node(s), 2 wire(s), 0 comment box(es), 0 nested
+extent: x 0 to 1600, y 0 to 600 (1600 by 600)
+total wire length: 761  (longest single wire: 400)
+```
+
+`FTurboMCPLayoutReport::PinPosition` computes an OUTPUT pin's edge as
+`Node->NodePosX + Node->NodeWidth` (`TurboMCPLayoutReport.cpp:128`). In `KnotProbe`, `First` sits at
+x=400 and `Second` at x=1600, so a wire drawn between their node ORIGINS would measure 1200. The
+reported longest wire is **400**, which is only possible if the first node's RIGHT EDGE is at x=1600 —
+that is, if `NodeWidth` is **non-zero**. A zero width would have produced 1200, and the y components
+(line 132, `NodePosY + PinRowSpacing * (Index + 1)`) are likewise only non-zero because the node
+positions are real.
+
+The live in-editor confirmation was attempted and is NOT what settled it: a first attempt appeared to
+crash the editor, and the crash was **an orchestration mistake of mine**, not a plugin bug — a
+parallel agent rebuilt the plugin while my editor was running, which replaces the DLL under a live
+process. Re-run in isolation with a stable DLL, `R-COMMENT-LIST` on `BP_NodeTest:EventGraph` answers
+normally. **The rule this leaves behind: a build and a test cannot run at the same time in this project,
+because the editor loads the DLL.** Two agents were building while I tested; that is the whole of it.
+
+**CONSEQUENCE FOR THE CAPABILITY: write `P/E-GRAPH-KNOTS` normally.** No defensive "are the sizes zero"
+branch is needed, and the spec's instruction to refuse does not apply. The arithmetic in the spec can be
+used as written.

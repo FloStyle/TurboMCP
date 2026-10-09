@@ -972,6 +972,37 @@ void FTurboMCPMaterial::MarkReached(const UMaterialExpression* InExpression,
 				Stack.Add(ResolveThroughReroutes(It.Input->Expression));
 			}
 		}
+
+		// A LABEL USAGE IS A LINK TOO, AND NOT FOLLOWING IT MADE THE UNREACHED REPORT WRONG.
+		//
+		// MEASURED, ON THE MATERIAL FIXTURE, which is why the fixture exists. `VerticalMix` is
+		// declared, read by two usages, and its declaration is reached from the BaseColor output
+		// through one of them. The report still listed EIGHT expressions as reaching no output,
+		// including `InnerProduct` - the shared value the fixture exists to have read twice:
+		//
+		//     8 expression(s) reach no output, so they do not affect what the material looks like:
+		//       afb219 MaterialExpressionScalarParameter Param (0.75) 'LazyScalar'
+		//       f8907d MaterialExpressionConstant3Vector 0.2,0.4,0.6
+		//       ecaedc MaterialExpressionMultiply Multiply
+		//       ...
+		//
+		// A named reroute's LINK IS ITS DECLARATION POINTER, not an `FExpressionInput`, so the input
+		// iterator above can never see it. The declaration is what carries the value, so marking it -
+		// and then its own inputs, which the loop then does - is what makes the reach set match the
+		// printed tree.
+		//
+		// A finding that fires on every labelled value is worth no more than one that never fires: a
+		// reader who sees eight unreached expressions learns nothing about which one is a mistake.
+		// `Declaration` is preferred over `DeclarationGuid` for the same reason `LabelOfUsage`
+		// prefers it - it is what the editor maintains, and the GUID is the reload fallback.
+		if (const UMaterialExpressionNamedRerouteUsage* Usage =
+				Cast<UMaterialExpressionNamedRerouteUsage>(Current))
+		{
+			if (Usage->Declaration != nullptr)
+			{
+				Stack.Add(Usage->Declaration);
+			}
+		}
 	}
 }
 

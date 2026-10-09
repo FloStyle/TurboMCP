@@ -837,3 +837,53 @@ commandlet must be named `-run=TurboMCP.TurboMCPAcceptanceAssetCommandlet`. The 
 static-initialiser workaround was unnecessary and crashed.
 
 ---
+
+---
+
+## Q-11 PARTLY CLOSED (round 34): the runner is testable, the Slate LAYOUT is not
+
+`Q-11` recorded that the panel's checkbox had never been SEEN, because this plugin has no Slate
+inspection tool and the panel's widget tree cannot be read. The requirement that every MCP feature be
+testable in the panel turned that into two separate questions, and **only one of them is now answered**.
+
+### The runner half IS closed
+
+`Source/TurboMCP/TurboMCPPanelProbeCommandlet.cpp` is a COMMANDLET rather than a tool, because a panel
+feature does not belong in the MCP API. Invoked with the module prefix the engine needs -
+`-run=TurboMCP.TurboMCPPanelProbeCommandlet`, because `LoadEngineLoop.cpp` calls `LoadModule` only when
+the token contains a period - it drives `FTurboMCPPanelToolRunner`, which is plain C++ with no Slate.
+
+Measured on a clean run:
+
+```
+panel-registry: available
+panel-toolsets: 27 published
+panel-toolset: present  TurboMCP.TurboMCPReadToolset / LookToolset / PreviewToolset / EditToolset
+panel-toolset-tools: Read 21, Look 4, Preview 10, Edit 17 - 0 partial, 0 with no sample
+panel-tools: 52 total, 0 with a partial sample
+panel-summary: registry=available toolsets=27 missing=0 tools=52 partial=0 failedtoolsets=0
+```
+
+`Tools/test-panel.py` asserts each count against **what the header declares**, not a literal, so adding
+a tool cannot make it wrong.
+
+### TWO THINGS THIS MEASURED THAT WERE ONLY FEARED BEFORE
+
+**The deadlock does not happen.** `CallAndWait` sleeps on the calling thread while the future is
+completed, and a `-run=` commandlet has no editor tick to do that, so a hang was expected. Measured:
+**it returns an ANSWER in 0.00 s**, because `ExecuteTool` completes the future SYNCHRONOUSLY for a
+synchronous C++ tool. The runner's live path is verifiable without an editor, and the TIMEOUT branch is
+now the only unrun path in the runner.
+
+**The panel would have shown a JSON blob.** `UToolCallAsyncResultString::Value` is declared
+`FString Value` and reads like the tool's text; measured, it is the text SERIALISED as
+`{"returnValue":"..."}` with ESCAPED newlines. Reading the field directly compiles and leaves the
+wrapper on, which is **one wrong decoding replaced by another**. The field is now parsed and
+`returnValue` extracted. Proven by the character count: the live call reported **192 characters before
+and 173 after**, exactly the wrapper removed.
+
+### The Slate half is STILL OPEN and cannot be closed by this
+
+The probe proves nothing about the panel's **layout**, whether the combo boxes show their selection,
+whether a SAMPLE press visibly refills the arguments box, or whether the result pane repaints. `/`Q-11`
+stays open for those, and they need a human eye or a Slate inspection tool.

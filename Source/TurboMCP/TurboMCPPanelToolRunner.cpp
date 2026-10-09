@@ -399,24 +399,41 @@ void FTurboMCPPanelToolRunner::ReadResultIfComplete()
 	}
 	else
 	{
-		// THE VALUE IS READ FROM THE RESULT'S OWN FIELD, NOT DECODED FROM JSON.
+		// THE VALUE IS A JSON OBJECT WRAPPING THE TOOL'S TEXT, AND READING THE FIELD IS NOT ENOUGH.
 		//
-		// `UToolCallAsyncResultString` carries `Value` as a plain `FString` that IS the tool's text -
-		// read from `ToolCallAsyncResultString.h:27`, `UPROPERTY(BlueprintReadOnly) FString Value;`.
-		// The first version called `GetValueAsJsonString()` and then tried to deserialise it, which
-		// failed to compile AND was the long way round: that call serialises the result into a JSON
-		// document, so a tool returning `read: 3 nodes` arrives as a QUOTED, ESCAPED JSON string that
-		// then has to be unescaped. The field is already what a human wants to read.
+		// MEASURED, and this comment replaces two wrong ones. `UToolCallAsyncResultString::Value` is
+		// declared `UPROPERTY(BlueprintReadOnly) FString Value;` (`ToolCallAsyncResultString.h:27`),
+		// which reads like the tool's text. IT IS NOT. Measured through the panel probe commandlet:
 		//
-		// The cast is checked rather than assumed: a tool whose result is not a string is a different
-		// subclass, and its JSON is the honest rendering of it.
-		if (UToolCallAsyncResultString* AsString = Cast<UToolCallAsyncResultString>(AsyncResult.Get()))
+		//     {"returnValue":"look: editing windows, 0 visible, showing at most 6\nNo live Slate
+		//      application, so there is nothing to capture. ..."}
+		//
+		// So the field holds the tool's text JSON-SERIALISED into an object whose `returnValue` key
+		// carries it WITH ESCAPED NEWLINES. A human in the panel would have read a JSON blob instead
+		// of the answer, which is the whole thing the pane exists to show.
+		//
+		// The first version called `GetValueAsJsonString()`, which does not compile. The second read
+		// `Value` directly, which compiles and leaves the wrapper on - one wrong decoding replaced by
+		// another. THIS is the correct one: parse the field and take `returnValue` out of it.
+		//
+		// The fallback matters as much as the fix. A result that is not an object, or an object with
+		// no `returnValue`, is shown RAW rather than as an empty pane: a caller must be able to see
+		// that something came back even when it is not a shape this code anticipated.
+		const FString RawValue = Cast<UToolCallAsyncResultString>(AsyncResult.Get()) != nullptr
+			? CastChecked<UToolCallAsyncResultString>(AsyncResult.Get())->Value
+			: AsyncResult->GetValueAsJsonString();
+
+		FString Extracted;
+		TSharedPtr<FJsonObject> Wrapper;
+		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(RawValue);
+		if (FJsonSerializer::Deserialize(Reader, Wrapper) && Wrapper.IsValid()
+			&& Wrapper->TryGetStringField(TEXT("returnValue"), Extracted))
 		{
-			Result.Value = AsString->Value;
+			Result.Value = Extracted;
 		}
 		else
 		{
-			Result.Value = AsyncResult->GetValueAsJsonString();
+			Result.Value = RawValue;
 		}
 	}
 
