@@ -73,3 +73,25 @@ the four kinds? The four kinds are described as Read, Look, Preview and Edit, an
 "an Edit is one transaction" (`P4`) does not obviously describe a save.
 
 Answer: not yet answered.
+
+---
+
+## Q-5 2026-10-09 Spec/03_TOOLS.md R-COMMENT-LIST, nesting and overlap
+
+`R-COMMENT-LIST` must report a box's "parent box if nested", and a node can fall
+inside two overlapping boxes. Both are computed from the rectangles, because the
+engine stores neither.
+
+**Neither path has been exercised against real content.** Every engine asset
+reachable from this project reports `0 nested` and `0 node(s) inside more than one
+box`. The arithmetic is checked against a model in `Tools/test-comments.py`, which
+proves the geometry and does not prove the rendering. `TestRecord.md` section 2k
+records this as unverified.
+
+Question: is there a piece of content the owner knows of that has nested or
+overlapping comment boxes, so the two paths can be verified against something real
+rather than a model? Failing that, is a hand-made nested box acceptable as part of
+the test kit, given `06_ACCEPTANCE.md` requires the kit's structure to be built by
+hand anyway?
+
+Answer: not yet answered.
