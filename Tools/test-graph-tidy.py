@@ -85,10 +85,24 @@ def rebuild_fixture(attempts=3):
     return False
 
 
-def start_editor():
-    return subprocess.call(
-        ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1")],
-        cwd=REPO) == 0
+def start_editor(attempts=3):
+    """
+    Makes sure an editor with the MCP server is up, TOLERATING one that is already running.
+
+    `start-editor.ps1` refuses when an editor already holds port 8000, which is right for a launcher and
+    wrong for a caller that only needs a server. The first version of this suite reported that refusal as a
+    failure and then went on to drive the running editor successfully for every later check - so it failed a
+    check while proving the opposite. The only question that matters is whether the server ANSWERS.
+    """
+    for attempt in range(attempts):
+        subprocess.call(
+            ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1")],
+            cwd=REPO)
+        if connect(timeout_s=90) is not None:
+            return True
+        print("    no editor answered; attempt %d of %d" % (attempt + 1, attempts))
+        time.sleep(10)
+    return False
 
 
 def connect(timeout_s=180):

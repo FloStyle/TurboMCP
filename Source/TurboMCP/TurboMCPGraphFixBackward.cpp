@@ -352,27 +352,29 @@ namespace
 	 * measures as the one wire it is. An output pin is only counted once its links resolve, so a wire is
 	 * measured from the pin that owns it rather than twice from both ends.
 	 *
-	 * `bUseFallbackExtent` DECIDES WHICH GEOMETRY IS BEING DESCRIBED, AND GETTING IT WRONG MADE THIS
-	 * PASS'S BEFORE-NUMBER DISAGREE WITH THE PROJECT'S REFERENCE MEASURE. Measured, and caught by the
-	 * suite's own cross-check:
+	 * IT READS `MeasuredWidth`, SO IT TAKES NO GEOMETRY FLAG, AND BOTH SIMPLIFICATIONS ARE THE FIX.
+	 *
+	 * The before-number used to disagree with the project's reference measure, and the suite's own
+	 * cross-check caught it:
 	 *
 	 *     L-LAYOUT-REPORT total: 450   my before: 402.0
 	 *
-	 * The cause was that the 48-unit fallback was applied to the CURRENT state as well as the planned
-	 * one, while `L-LAYOUT-REPORT` reads `NodeWidth` RAW. So the two numbers described different
-	 * geometries and were not comparable, which is the whole point of a cross-check.
+	 * The cause was that the 48-unit fallback extent was applied while measuring the graph AS IT EXISTED,
+	 * while `L-LAYOUT-REPORT` reads `NodeWidth` RAW. Two different geometries, two numbers that cannot
+	 * agree - which defeats the whole point of a cross-check.
 	 *
-	 * THE RULE, and it is the same one `Spec/DECISIONS_LAYOUT_SHARED.md` `D-LAY-5` states: a pass may not
-	 * SILENTLY substitute a size. Here that means the substitution belongs ONLY where the pass is
-	 * describing a layout it intends to write:
+	 * Trying to fix that with a per-call flag was WORSE, and the suite said so at once: with the
+	 * before-number on raw width and the after-number on the fallback, the pass reported `changed:` on
+	 * `SaneProbe`, a graph where NOTHING needed repairing, and WOULD HAVE REWRITTEN A GOOD GRAPH. Its own
+	 * sentence contradicted itself - "wire length 450 -> 450" under a verdict of "changed:".
 	 *
-	 *   BEFORE, and the re-measure that confirms a rollback - the graph as it EXISTS -> RAW, exactly what
-	 *   the report reads, so the two numbers are the same quantity;
-	 *   AFTER - the layout as PLANNED, whose nodes have no measured size until they are written -> the
-	 *   fallback, because a planned node genuinely has no measured geometry.
+	 * THE RULE: a pass may compare only LIKE WITH LIKE. There is now one geometry for the measure -
+	 * whatever the ENGINE measured - and the fallback lives only in the layout guards, where a node has
+	 * to have AREA to be spaced or collision-tested. So this number depends on the engine's rectangles and
+	 * on WHERE the nodes are, and on nothing else.
 	 */
 	double PlannedWireLength(const UEdGraph* InGraph, const TArray<FTurboMCPGraphFixBackward::FNode>& InNodes,
-		const FIndex& InIndex, bool bUseFallbackExtent)
+		const FIndex& InIndex)
 	{
 		double Total = 0.0;
 
@@ -398,13 +400,17 @@ namespace
 					continue;
 				}
 
-				// THE WIDTH IS CHOSEN BY WHICH GEOMETRY IS BEING DESCRIBED, not by a stored flag. In the
-				// BEFORE measurement the raw width is used, so this number and the layout report's are
-				// the SAME quantity; in the AFTER measurement the fallback is used, because a planned
-				// node has no measured size until it is written.
-				const double SelfWidth = bUseFallbackExtent ? PlannedExtent(SelfNode.Width) : SelfNode.Width;
+				// THE MEASURE READS THE MEASURED SIZE ALWAYS, WHICH IS WHY IT NO LONGER NEEDS A FLAG.
+				//
+				// The before and after numbers describe the SAME graph - the same rectangles, the same
+				// pin rows - and differ only in where the nodes ARE. That is what makes the comparison
+				// meaningful. `MeasuredWidth` is what the engine said; `Width` is the planned extent the
+				// LAYOUT GUARDS use, and the measure deliberately does not read it.
+				//
+				// It also means this number IS `L-LAYOUT-REPORT`'s number on any graph, measured or not,
+				// because the report reads `NodeWidth` raw and so does this.
 				const FVector2D From = PlannedPinPosition(Node, Pin, SelfNode.PlannedX,
-					SelfNode.PlannedY, SelfWidth);
+					SelfNode.PlannedY, SelfNode.MeasuredWidth);
 
 				for (UEdGraphPin* Link : Pin->LinkedTo)
 				{
@@ -427,9 +433,8 @@ namespace
 					}
 
 					const FTurboMCPGraphFixBackward::FNode& FarNode = InNodes[FarIndex];
-					const double FarWidth = bUseFallbackExtent ? PlannedExtent(FarNode.Width) : FarNode.Width;
 					const FVector2D To = PlannedPinPosition(FarOwner, Far, FarNode.PlannedX,
-						FarNode.PlannedY, FarWidth);
+						FarNode.PlannedY, FarNode.MeasuredWidth);
 
 					Total += FVector2D::Distance(From, To);
 				}
@@ -677,8 +682,13 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 		Read.ClassName = Node->GetClass()->GetName();
 		Read.X = static_cast<double>(Node->NodePosX);
 		Read.Y = static_cast<double>(Node->NodePosY);
-		Read.Width = static_cast<double>(Node->NodeWidth);
-		Read.Height = static_cast<double>(Node->NodeHeight);
+		// MEASURED IS WHAT THE ENGINE SAID; WIDTH IS WHAT THIS PASS WILL USE. The pair is kept separate
+		// because the before-measurement must agree with `L-LAYOUT-REPORT`, which reads `NodeWidth` raw,
+		// while the layout guards need a node to have AREA. See `FNode::MeasuredWidth`.
+		Read.MeasuredWidth = static_cast<double>(Node->NodeWidth);
+		Read.MeasuredHeight = static_cast<double>(Node->NodeHeight);
+		Read.Width = PlannedExtent(Read.MeasuredWidth);
+		Read.Height = PlannedExtent(Read.MeasuredHeight);
 		Read.bIsComment = IsComment(Node);
 		Read.bIsKnot = IsKnot(Node);
 
@@ -868,7 +878,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 	// Both now use the fallback extent, so both describe the SAME graph and the only thing that differs
 	// is where the nodes are. `RenderPreview` states which geometry it used: when the engine has measured
 	// every node the fallback is never applied and the number is exactly `L-LAYOUT-REPORT`'s.
-	OutPlan.WireLengthBefore = PlannedWireLength(Graph, Nodes, Index, /*bUseFallbackExtent=*/true);
+	OutPlan.WireLengthBefore = PlannedWireLength(Graph, Nodes, Index);
 
 	// ---- 4. R1: AN EXEC WIRE THAT RUNS BACKWARD -----------------------------------------------
 	//
@@ -1490,7 +1500,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 
 	// ---- 8. THE MEASURE ON THE PLANNED POSITIONS, AND THE ROLL-BACK DECISION ------------------
 	// AFTER is the layout AS PLANNED, whose nodes have no measured size until they are written, so the documented fallback applies.
-		OutPlan.WireLengthAfter = PlannedWireLength(Graph, Nodes, Index, /*bUseFallbackExtent=*/true);
+		OutPlan.WireLengthAfter = PlannedWireLength(Graph, Nodes, Index);
 
 	// ALREADY CORRECT: the plan matches the graph as read, so there is nothing to write. Without this,
 	// a pass on a good graph would write identical numbers and honestly report `changed:`, which reads
@@ -1712,10 +1722,12 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 		Read.Y = static_cast<double>(Node->NodePosY);
 		// RAW, for the same reason as the plan-building pass: these nodes are read back to RE-MEASURE the
 		// graph as it exists after the rollback, so the number must be the quantity the report reports.
-		// The fallback is applied at the point of use by `PlannedExtent`, never stored.
-		Read.Width = static_cast<double>(Node->NodeWidth);
-		Read.Height = static_cast<double>(Node->NodeHeight);
-		Read.bSizeFallback = Read.Width <= 0.0 || Read.Height <= 0.0;
+		// The measured pair is kept for the measure and `Width`/`Height` carry the planned extent.
+		Read.MeasuredWidth = static_cast<double>(Node->NodeWidth);
+		Read.MeasuredHeight = static_cast<double>(Node->NodeHeight);
+		Read.Width = PlannedExtent(Read.MeasuredWidth);
+		Read.Height = PlannedExtent(Read.MeasuredHeight);
+		Read.bSizeFallback = Read.MeasuredWidth <= 0.0 || Read.MeasuredHeight <= 0.0;
 		Read.PlannedX = Read.X;
 		Read.PlannedY = Read.Y;
 		LiveNodes.Add(MoveTemp(Read));
@@ -1724,7 +1736,7 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 	// THE ROLLBACK CHECK RE-MEASURES THE GRAPH AFTER THE UNDO, so it must use the SAME geometry as
 	// BEFORE - the fallback extent - or it would compare a number with a differently-measured number and
 	// report a rollback that failed when it worked, or one that worked when it failed.
-	const double ReMeasured = PlannedWireLength(Graph, LiveNodes, LiveIndex, /*bUseFallbackExtent=*/true);
+	const double ReMeasured = PlannedWireLength(Graph, LiveNodes, LiveIndex);
 
 	FString Out = FString::Printf(
 		TEXT("changed: repaired %s in %s : wire length %.0f -> %.0f"),

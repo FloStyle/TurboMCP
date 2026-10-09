@@ -65,8 +65,36 @@ public:
 		/** The position and size AS READ, which the report's measure would use. */
 		double X = 0.0;
 		double Y = 0.0;
+
+		/**
+		 * The size this pass USES, which is the measured rectangle or the documented fallback.
+		 *
+		 * THIS IS THE PLANNED EXTENT. The spacer, the overlap guard and the collision checks read it, and
+		 * it is deliberately NOT what the before-measurement reads: see `MeasuredWidth`.
+		 */
 		double Width = 0.0;
 		double Height = 0.0;
+
+		/**
+		 * WHAT THE ENGINE MEASURED, AND NOTHING ELSE. Zero when Slate has never drawn the node.
+		 *
+		 * KEPT SEPARATE FROM `Width`/`Height`, AND THAT SEPARATION IS A MEASURED FIX - the same one
+		 * `FTurboMCPGraphTidy` made independently, which is a good sign it is the right one.
+		 *
+		 * `L-LAYOUT-REPORT` reads `NodeWidth` RAW. This pass substitutes a documented 48-unit fallback
+		 * for a node the engine never measured, because `NodeWidth` is written only when Slate DRAWS a
+		 * node and a commandlet draws nothing. So if the fallback is stored in the field the MEASURE
+		 * reads, the two tools describe DIFFERENT RECTANGLES and their numbers cannot agree.
+		 *
+		 * The same fault made THIS pass compare a fallback-measured before against a raw-measured after,
+		 * so on a graph where nothing needed repairing it believed it had improved things, answered
+		 * `changed:`, and would have REWRITTEN A GOOD GRAPH.
+		 *
+		 * THE RULE: a pass may compare only LIKE WITH LIKE. These two fields are what the graph IS;
+		 * `Width` and `Height` are what this pass will MAKE OF IT.
+		 */
+		double MeasuredWidth = 0.0;
+		double MeasuredHeight = 0.0;
 
 		/** The position this pass would WRITE. Equal to `X`/`Y` when the node is not moved. */
 		double PlannedX = 0.0;
