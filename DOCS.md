@@ -350,6 +350,43 @@ answer.** It has to be rebuilt from whichever branch holds the state the tests w
 written against. For this kit that is `Tools/build-test-graph.py`, which is why the
 graph is written by a script rather than by hand-editing an asset.
 
+### M-12 The editor locks an asset and git cannot check out
+
+A merge finished but the checkout back to `main` failed:
+
+```
+error: unable to unlink old 'TestProject/Content/Tests/BP_NodeTest.uasset': Invalid argument
+fatal: read-tree failed
+```
+
+The editor holds an open handle on every `.uasset` it has loaded, and on Windows an
+open handle blocks the unlink git needs. Nothing in the message mentions the editor,
+so it reads like a git or filesystem fault.
+
+**Stop the editor before a merge, not only before a build.**
+`Tools/start-editor.ps1 -Stop` does it. This is the plugin-DLL lock arriving from a
+different direction.
+
+### M-13 A merge that silently did not happen, and a push that said it had
+
+Related to M-12, and worth its own entry because of the shape of the failure.
+
+The sequence was: push the branch, check out `main`, merge, push `main`. The branch
+push succeeded. The checkout failed on the locked asset, so the merge **never ran** —
+and `git push origin main` then reported:
+
+```
+Everything up-to-date
+```
+
+That is true and deeply misleading, because `main` had never been updated. The branch
+was safe on the remote and `main` was a commit behind, while the output looked like a
+clean run.
+
+The lesson: `Everything up-to-date` after a merge is **not** confirmation that the
+merge happened. Read the merge's own exit code, and confirm `main` moved with
+`git rev-parse main` before trusting the push.
+
 ---
 
 ## Part 4: wire format, established by testing

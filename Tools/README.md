@@ -113,6 +113,14 @@ broken plugin.
 and started one anyway, which left two servers racing for port 8000. Exit code 6
 means "something is already running".
 
+**Stop the editor before a merge, not only before a build.** The editor holds an open
+handle on every `.uasset` it has loaded, and on Windows that blocks the unlink git
+needs, so a checkout fails with `unable to unlink old '...uasset': Invalid argument`
+and the merge never runs. Worse, the following `git push origin main` then reports
+`Everything up-to-date`, which is true and misleading because `main` was never
+updated. Run `start-editor.ps1 -Stop` first, and read the merge's own exit code rather
+than the push's output.
+
 ## tmcp.py
 
 The quickest way to ask the plugin something.
