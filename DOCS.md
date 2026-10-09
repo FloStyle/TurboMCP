@@ -369,3 +369,20 @@ Two of them contradict `07_ENGINE_NOTES.md`.
 | `bIsSimulatingInEditor` is not public | The real checks are `UEditorEngine::IsPlaySessionInProgress()` and `IsSimulateInEditorInProgress()` |
 | `UBT -LiveCoding` against a headless editor compiles but delivers nothing | |
 | A rendering editor needs `ShaderCompileWorker.exe`; a `-nullrhi` one does not | |
+
+---
+
+## Part 5: making a push unattended
+
+### W-1 One named credential, so nothing is ever chosen
+
+Windows holds several `github.com` credentials and Git Credential Manager opens a
+**"Select an account"** dialog whenever more than one matches, which made every
+push interactive. The credentials were never the problem: all three `git:` entries
+were checked against the GitHub API and all three authenticate as `FloStyle`. The
+*choosing* was.
+
+`Tools/credential/` reads one named entry straight out of the Windows Credential
+Manager and hands it to git, so there is nothing to choose. It adds no new secret
+and leaves the machine-wide setup untouched, so every other repository keeps using
+GCM. See `Tools/credential/README.md`.
