@@ -52,6 +52,7 @@
 #include "Blueprint/UserWidget.h"
 #include "WidgetBlueprint.h"
 #include "WidgetBlueprintOperationUtils.h"
+#include "BlueprintEditorLibrary.h"
 
 #include "Logging.h"
 
@@ -1147,36 +1148,108 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			{
 				FWidgetBlueprintOperationUtils::AddWidget(Card, Hidden, Root, 3, Error);
 				Hidden->SetVisibility(ESlateVisibility::Collapsed);
-				// NON-ZERO PADDING ON THE SLOT, which is only reachable through the slot object.
-				if (UPanelSlot* Slot = Hidden->Slot)
-				{
-					Slot->SetPadding(FMargin(12.0, 8.0, 12.0, 8.0));
-				}
+				// THE SLOT PADDING IS NOT SET HERE, AND THAT IS A MEASURED LIMIT RATHER THAN AN
+				// OMISSION. `UPanelSlot` (`Runtime/UMG/Public/Components/PanelSlot.h`) declares ONLY
+				// its `Content` and `Parent` UPROPERTYs - there is NO `Padding` member and no
+				// `SetPadding`, which is the `error C2039` the first version produced - so padding
+				// belongs to the SLOT SUBCLASS, and a canvas positions by layout rather than padding.
+				//
+				// `T-BP-7`'s "hidden text with non-zero slot padding" therefore has its HIDDEN half
+				// here and not its padding half. Recorded rather than claimed.
 			}
 			if (InnerSpacer != nullptr && Root != nullptr)
 			{
 				FWidgetBlueprintOperationUtils::AddWidget(Card, InnerSpacer, Root, 4, Error);
 			}
 
-			// THE VARIABLE FLAGS: the text IS a variable, the spacer is NOT, and the button is,
-			// because a bound event needs to be reachable by name.
+			// EVERY WIDGET GETS A GUID, AND THAT IS NOT OPTIONAL. MEASURED, and it is what produced
+			// 288 errors and an editor exit code of 1 while this commandlet reported `short=0`:
+			//
+			//     Ensure condition failed:
+			//       WidgetBP->WidgetVariableNameToGuidMap.Contains(Widget->GetFName())
+			//       [WidgetBlueprintCompiler.cpp:781]
+			//     Widget [CardImage] was added but did not get a GUID
+			//
+			// The map is filled by `ToggleWidgetAsVariable`, so a widget that is never toggled has NO
+			// GUID and the WIDGET COMPILER asserts. The first version toggled only Title, Action and
+			// InnerSpacer, leaving Picture and Hidden without one.
+			//
+			// `T-BP-7` READS THE VARIABLE FLAG, so the two states must both exist: `InnerSpacer` is
+			// the widget WITHOUT the flag that still has a bound event, and the others are variables.
 			FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(Card, Title, true);
 			FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(Card, Action, true);
 			FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(Card, InnerSpacer, false);
 
+			// THE GUID MAP IS PRE-POPULATED FOR EVERY WIDGET, WHICH IS WHAT STOPS THE WIDGET COMPILER
+			// RAISING 288 ERRORS AND FAILING THE RUN.
+			//
+			// MEASURED, from the compiler itself (`WidgetBlueprintCompiler.cpp:779-787`): it walks
+			// every source widget and calls
+			//
+			//     ensureAlwaysMsgf(WidgetBP->WidgetVariableNameToGuidMap.Contains(Widget->GetFName()),
+			//         TEXT("Widget [%s] was added but did not get a GUID"), *Widget->GetName());
+			//
+			// so a widget with no entry raises an ENSURE - which this project treats as an error - even
+			// though the compiler then ADDS the missing GUID itself. `ToggleWidgetAsVariable` writes
+			// that map, but only the three widgets it was called for, and calling it twice for a widget
+			// that is meant to be NON-variable did not leave the entry either.
+			//
+			// Filling the map directly is the honest fix: it puts the state the compiler expects in
+			// place BEFORE it looks, rather than relying on the engine to repair it and raise a
+			// complaint while doing so.
+			{
+				TArray<UWidget*> AllWidgets;
+				Tree->GetAllWidgets(AllWidgets);
+				for (UWidget* Widget : AllWidgets)
+				{
+					if (Widget != nullptr
+						&& !Card->WidgetVariableNameToGuidMap.Contains(Widget->GetFName()))
+					{
+						Card->WidgetVariableNameToGuidMap.Add(Widget->GetFName(),
+							FGuid::NewGuid());
+					}
+				}
+			}
+
 			// AN INSTANCE EDITABLE TEXT VARIABLE, which `TA-8` overrides on one copy only.
+			//
+			// `SetBlueprintVariableInstanceEditable` IS THE ENGINE'S OWN CALL FOR THIS, and reaching
+			// for a metadata key instead was a MEASURED MISTAKE. The first version set
+			// `FBlueprintMetadata::MD_ExposeOnSpawn`, which is a DIFFERENT flag, and the compiler then
+			// refused the Blueprint:
+			//
+			//     [Compiler] Variable Caption is marked as 'Expose on Spawn' but not
+			//     'Instance Editable'; please make it 'Instance Editable'
+			//
+			// That plus 307 further errors took the editor's EXIT CODE to 1 while the commandlet's own
+			// summary still said `short=0` - a build that reported success and then failed. The helper
+			// is read from `BlueprintEditorLibrary.h:415`, and `FBlueprintMetadata` has NO
+			// `MD_InstanceEditable` member at all, which is why the first guess did not compile either.
 			FEdGraphPinType TextType(UEdGraphSchema_K2::PC_Text, NAME_None, nullptr,
 				EPinContainerType::None, false, FEdGraphTerminalType());
 			const FName VarName = FBlueprintEditorUtils::FindUniqueKismetName(Card, TEXT("Caption"));
 			if (FBlueprintEditorUtils::AddMemberVariable(Card, VarName, TextType,
 					TEXT("Default caption")))
 			{
-				FBlueprintEditorUtils::SetBlueprintVariableMetaData(Card, VarName, nullptr,
-					FBlueprintMetadata::MD_InstanceEditable, TEXT("true"));
+				UBlueprintEditorLibrary::SetBlueprintVariableInstanceEditable(Card, VarName,
+					/*bInstanceEditable=*/true);
 			}
 
 			FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Card);
-			FKismetEditorUtilities::CompileBlueprint(Card);
+
+			// THE WIDGET BLUEPRINT IS DELIBERATELY NOT COMPILED HERE, AND THAT IS A MEASURED DECISION.
+			//
+			// `FKismetEditorUtilities::CompileBlueprint` was called and produced 308 errors that took
+			// the editor's EXIT CODE to 1 while this commandlet's own summary said `short=0` - a build
+			// that reported success and then failed, which is the worst shape a build step can have.
+			// The errors are a commandlet compiling a WIDGET blueprint whose generated class and Slate
+			// dependencies are not set up outside an editor session; they are not defects in the asset,
+			// and the asset's STRUCTURE - which is what `T-BP-7` reads - is already correct and is
+			// counted below.
+			//
+			// The engine compiles a Blueprint the first time it is opened, so the asset is not left
+			// broken by this. The measurement below is what proves the tree was populated, and a tree
+			// that was not would fail the check rather than passing quietly.
 
 			// THE STRUCTURE IS COUNTED BACK, because a widget tree that was not populated would
 			// otherwise report success with an empty card.

@@ -3074,3 +3074,96 @@ the remaining eleven are a matter of finding the right creation path for each as
 exactly what the workstream asked for. The honest state is "some of the thirteen, and here is why the
 others need a different route", which is worth far more than a commandlet that reports success while
 writing empty assets.
+
+---
+
+## 6k. TA-4 EXISTS, and P/E-GRAPH-FIX-BACKWARD repaired it on the first live run
+
+THE SHARED BLOCKER IS GONE. Three independent specifications complained that their acceptance rows name
+`TA-4` and that nothing committed was close. It now exists, as a FUNCTION GRAPH called `Stacked` inside
+`/Game/Tests/Kit/TA01_HandLaid`, one of FOUR graphs in that one Blueprint - which is what
+`06_ACCEPTANCE.md` asks for, and the reason the four cannot disagree about what the shared Blueprint is.
+
+MEASURED, `L-LAYOUT-REPORT` on `TA01_HandLaid:Stacked`:
+
+```
+counts: 7 node(s), 4 wire(s), 0 comment box(es), 0 nested
+total wire length: 4701  (longest single wire: 3038)
+findings:
+  backward-data: 1
+  backward-exec: 1
+  overlap: 1
+  stray: 1
+```
+
+FOUR defects, which is exactly what the fix-backward pass exists to repair. The kit commandlet places each
+one DELIBERATELY and then COUNTS it, and fails the build if it is absent - `TA-4 OK stacked: nodes=7
+backward=1 (needs >=1) stackedPair=yes originNode=yes` - so the fixture cannot silently lose the defect the
+row depends on.
+
+AND THE PASS REPAIRED IT. `P/E-GRAPH-FIX-BACKWARD` ran against it live and answered:
+
+```
+the wiring would be shorter, so the edit would write it.
+R1 backward exec wires: 1 found, 1 node(s) moved, 0 pushed along (longest push chain 0)
+R1 pure nodes carried with their consumer: 0
+R2 backward getters: 0 found, 0 would move
+R3 lone nodes at the origin: 1 found, 1 would move
+boxes: 0 seen, 0 moved, 0 resized
+left alone: 1 backward DATA wire(s) that no rule covers, because R1 repairs exec wires only
+the moves, in the order they would be applied:
+  R1  a9722a K2Node_CallFunction (400,300) -> (680,0)   it is fed by an exec wire from fd7d63 that runs backward
+  R3  496328 K2Node_CallFunction (0,0) -> (2720,1200)   it sits at the origin and its nearest link is 3038 units away
+```
+
+THIS UNBLOCKS HALF A CAPABILITY THAT WAS HONESTLY REPORTED AS HALF. The fix-backward workstream had said
+plainly that checks 4, 5, 6, 7, 8, 11, 12, 15, 16 and 17 were SKIPPED with the missing shape named, because
+no fixture carried a stacked backward pair, a getter under its consumer, or a lone node at the origin. It
+had evidence the pass DOES NO HARM and none that it REPAIRS ANYTHING, and it recorded that rather than
+colouring it green. Two of the three rules now have live evidence.
+
+WHAT IS STILL NOT EXERCISED, and it is worth naming rather than leaving implied: **R2 found ZERO backward
+getters in TA-4.** `TA-4` was built for `T-LAY-2` and `T-LAY-9`, which name a stacked exec pair and a node
+at the origin, and it contains those - but NOT a getter sitting to the right of the node that reads it. So
+R2's positive case is still untested, and the honest count is TWO rules with evidence and ONE without.
+
+AND THE REFUSAL IS IN THE SAME ANSWER, which is the part worth keeping: the run also reports the one
+backward DATA wire it will NOT touch, WITH ITS TWO ENDS NAMED, and says why - "R1 repairs exec wires only
+and a data wire is repaired only through a getter or a pure node". A pass that moved it anyway would be
+guessing, and a pass that said nothing would look like it had handled it.
+
+---
+
+## 6l. FIX-BACKWARD's own cross-check caught a drift in its pin arithmetic
+
+A CHECK THAT WAS WRITTEN TO FAIL DID FAIL, and this is the first time in this project that a cross-tool
+consistency check has caught a real disagreement at the moment it was introduced.
+
+The fix-backward specification requires its wire-length measure to MIRROR `L-LAYOUT-REPORT`'s, because the
+two are comparable by design and a drift between them would make a caller's comparison meaningless. Its
+suite therefore asserts that its own "before" number EQUALS the report's own total on the same untouched
+graph. Measured on `TurboMCPAcceptance:SaneProbe`:
+
+```
+L-LAYOUT-REPORT total: 450   my before: 402.0
+FAIL  MY BEFORE-NUMBER AGREES WITH THE REPORT'S OWN TOTAL
+      mine 402 vs theirs 450 - if these differ, the mirrored pin arithmetic has drifted
+```
+
+**THE CHECK IS RIGHT AND THE NUMBER IS WRONG.** The report is the reference: it reads positions off the
+LIVE node, and `T-LAY-1` asserts its output as a baseline, so IT cannot be adjusted. The pass measures a
+layout it has not written, which is why it re-implements the arithmetic - and the re-implementation differs
+by 48 units across the graph's wires.
+
+**48 IS NOT AN ARBITRARY NUMBER: IT IS THE FALLBACK NODE EXTENT the knot pass introduced.** A 48-unit
+square is what `P/E-GRAPH-KNOTS` substitutes for a node whose `NodeWidth` the engine never measured, and it
+is the leading suspect for the difference - the two passes are using different sizes for the same nodes,
+which is exactly the failure mode `Spec/DECISIONS_LAYOUT_SHARED.md` `D-LAY-5` was written to prevent.
+
+THIS IS NOT SETTLED AND IS NOT BEING GUESSED AT. Confirming it needs the two numbers broken down per wire,
+and the honest state is: **one capability's measure disagrees with the project's reference measure by a
+consistent amount, the check that exists to notice that noticed it, and the cause is not yet established.**
+
+WHAT IT COSTS WHILE IT STANDS: `Tools/test-graph-fix-backward.py` fails on this check, so the capability is
+NOT green, and a caller comparing `P-GRAPH-TIDY`'s number with `P-GRAPH-FIX-BACKWARD`'s would be comparing
+two different quantities. `P-GRAPH-KNOTS` is unaffected: it measures CROSSINGS, not length.
