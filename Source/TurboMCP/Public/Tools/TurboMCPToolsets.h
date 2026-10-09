@@ -580,6 +580,26 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
+
+	/**
+	 * Work out what creating an override would do, without creating it.
+	 *
+	 * Pass a Blueprint and a function or event name from `R-OVERRIDES`. The preview prints the
+	 * exact SIGNATURE, resolved from the real reflected `UFunction` rather than rebuilt from
+	 * pins, and says whether the name is an event or a function.
+	 *
+	 * A name this Blueprint cannot override is refused with BOTH lists of what is still
+	 * available, so a caller corrects itself in one step. A name that is ALREADY overridden is
+	 * reported in the preview, because a caller that previews and then edits should not be
+	 * surprised by the edit.
+	 *
+	 * The overridable set is the editor's own `ListEvents` and `ListFunctions`, so a name
+	 * accepted here is one the editor accepts, including interfaces implemented natively in C++.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPOverrideAdd(
+		const FString& Asset,
+		const FString& FunctionOrEvent);
 };
 
 /**
@@ -711,6 +731,49 @@ public:
 		const FString& Asset,
 		const FString& Widgets,
 		bool bIsVariable);
+
+	/**
+	 * Create an override on purpose.
+	 *
+	 * The same inputs, resolved and validated the same way, as `P-OVERRIDE-ADD`, because the two
+	 * share one code path up to the write (`D-02`).
+	 *
+	 * REFUSES a name that is already overridden and says WHERE, opening with `unchanged:`. The
+	 * engine's own `AddFunctionOverride` does not check: it would quietly add a second graph,
+	 * which leaves a Blueprint with two implementations of one function and no way to tell them
+	 * apart afterwards.
+	 *
+	 * The override is created through the editor's own `UBlueprintEditorLibrary`, so it is the
+	 * same thing the editor's Override dropdown makes. The result names the graph or node it
+	 * created, prints the signature, and READS BACK whether the editor now lists the function as
+	 * implemented — because a call that returns a graph is not evidence that the Blueprint
+	 * agrees.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPOverrideAdd(
+		const FString& Asset,
+		const FString& FunctionOrEvent);
+
+	/**
+	 * Remove an override this Blueprint has.
+	 *
+	 * Pass a Blueprint and a name from `R-OVERRIDES` with `include=overridden`. An event override
+	 * is a node in the ubergraph and a function override is a graph of its own, so both are looked
+	 * for; a caller does not know which one they made.
+	 *
+	 * An Edit that can only CREATE is an Edit that cannot be undone, and `P8` says never leave the
+	 * user worse off. It also keeps a test suite from consuming the asset: the override suite used
+	 * to override one event per run, ran the test Blueprint out of free events, and broke two
+	 * unrelated suites whose assertions counted things on the same asset.
+	 *
+	 * The result reads back whether the editor now reports the function as unoverridden, rather
+	 * than trusting the removal, and lists the Blueprint's overrides when the name does not match
+	 * one.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPOverrideRemove(
+		const FString& Asset,
+		const FString& FunctionOrEvent);
 };
 
 /**

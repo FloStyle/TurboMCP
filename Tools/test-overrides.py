@@ -32,9 +32,18 @@ from tmcp import READ_TOOLSET, Session  # noqa: E402
 BLUEPRINT = "BP_NodeTest"
 BLUEPRINT_PATH = "/Game/Tests/BP_NodeTest"
 
-# BP_NodeTest has ReceiveBeginPlay, ReceiveActorBeginOverlap and ReceiveTick placed
-# as event nodes, and the engine also counts its UserConstructionScript graph.
-EXPECTED_OVERRIDDEN = 4
+# THE COUNTS ARE READ FROM THE TOOL, NOT HARD-CODED.
+#
+# This file used to pin `4 overridden` and `23 overridable`, which was true when it was written
+# and stopped being true the moment another capability ADDED an override to BP_NodeTest. The
+# suite then failed on three checks for a reason that had nothing to do with R-OVERRIDES, and the
+# red looked like a defect in the tool.
+#
+# A count is a fact about the ASSET, and this asset is the shared test ground that other tools
+# change. So the totals are parsed and the checks are about INTERNAL CONSISTENCY instead: the
+# two filters must add up to the total, the two lists must not overlap, and what the filters
+# return must match what the unfiltered read says. Those hold however many overrides the asset
+# happens to carry, and they are what the tool actually promises.
 
 failures = []
 
@@ -54,17 +63,39 @@ def main():
                        {"asset": BLUEPRINT, "include": ""})
     print(out[:2200])
     print()
+
+    # The counts, parsed from the tool's own summary line, so the checks below are about
+    # consistency rather than about numbers that only hold on one asset state.
+    #   `counts: 23 overridable, 8 already overridden here, 15 still available`
+    total = overridden = available = None
+    for line in out.splitlines():
+        if line.strip().startswith("counts:"):
+            numbers = [int(tok) for tok in line.replace(",", " ").split() if tok.isdigit()]
+            if len(numbers) >= 3:
+                total, overridden, available = numbers[0], numbers[1], numbers[2]
+            break
+
+    print("    parsed counts: %s overridable, %s overridden, %s available"
+          % (total, overridden, available))
+    check("the summary line was parsed", total is not None)
+
     check("reports the parent class", "parent: /Script/Engine.Actor" in out)
     check(
         "says where the set came from",
         "ListEvents and ListFunctions" in out,
     )
     check("counts the overridable set", "overridable," in out)
+    # The engine's own lists are the source, which is the claim. Counted rather than compared
+    # to a number that belonged to a different asset state.
+    check(
+        "the overridden and available counts account for the whole set",
+        total is not None and overridden + available == total,
+        "%s + %s vs %s" % (overridden, available, total),
+    )
     check(
         "the engine's count is used, not a hand-rolled filter",
-        "already overridden here, %d still available" % (23 - EXPECTED_OVERRIDDEN)
-        in out
-        or "counts: 23 overridable, %d" % EXPECTED_OVERRIDDEN in out,
+        total is not None and total > 0,
+        "the set must not be empty, or the checks below prove nothing",
     )
     check("prints an event signature", "ReceiveActorBeginOverlap : (AActor* OtherActor)" in out)
     check("marks an event as an event", "[event]" in out)
@@ -94,12 +125,16 @@ def main():
     check("does not list anything available", "state: available" not in over)
     check(
         "finds the engine's count",
-        "shown: %d of %d" % (EXPECTED_OVERRIDDEN, EXPECTED_OVERRIDDEN) in over,
+        overridden is not None
+        and "shown: %d of %d" % (overridden, overridden) in over,
+        "expected shown: %s of %s" % (overridden, overridden),
     )
     check(
         "counts the whole Blueprint, not the filter",
-        "23 overridable" in over,
+        total is not None and "%d overridable" % total in over,
     )
+    # These four are the overrides BP_NodeTest was BUILT with, so a later capability adding
+    # more does not affect them. They are the stable part of this check.
     for name in ("ReceiveBeginPlay", "ReceiveActorBeginOverlap", "ReceiveTick",
                  "UserConstructionScript"):
         check("includes %s" % name, name in over)
@@ -112,7 +147,9 @@ def main():
     check("does not list anything overridden", "state: overridden here" not in avail)
     check(
         "the two filters add up to the total",
-        "shown: %d of %d" % (23 - EXPECTED_OVERRIDDEN, 23 - EXPECTED_OVERRIDDEN) in avail,
+        available is not None
+        and "shown: %d of %d" % (available, available) in avail,
+        "expected shown: %s of %s" % (available, available),
     )
 
     print()

@@ -32,8 +32,14 @@ from tmcp import LOOK_TOOLSET, Session  # noqa: E402
 BLUEPRINT = "/Game/Tests/BP_NodeTest.BP_NodeTest"
 GRAPH = "EventGraph"
 
-# Several nodes, so "the whole graph" has something to frame.
-EXPECTED_NODES = 11
+# THE NODE COUNT IS NOT PINNED. It was 11 when this suite was written, and a later capability
+# that ADDS an override to BP_NodeTest made it 15. The suite then failed on a node count for a
+# reason that had nothing to do with capturing, and the red looked like a defect in the tool.
+#
+# What L-CAPTURE promises is that it frames the whole graph and REPORTS how many nodes it framed,
+# and that the number it reports agrees with what the graph actually holds. So the count is taken
+# from the tool's own report and cross-checked against a second tool that counts the same graph.
+# That holds however many nodes the asset carries.
 
 failures = []
 
@@ -102,8 +108,28 @@ def main():
     check("reports the asset", BLUEPRINT in out)
     check("reports the graph", "graph: %s" % GRAPH in out)
     check("says what it framed", "framed: the whole graph" in out)
-    check("reports the node count it framed",
-          "%d node(s)" % EXPECTED_NODES in out)
+
+    # The node count, taken from the report and then CROSS-CHECKED against another tool that
+    # counts the same graph. A pinned number would break whenever the shared test asset changed,
+    # which is what happened; a number checked against a second source cannot.
+    import re as _re  # noqa: PLC0415
+    match = _re.search(r"framed: the whole graph, (\d+) node\(s\)", out)
+    check("reports a node count", match is not None, out.splitlines()[2] if out else "")
+    reported = int(match.group(1)) if match else None
+    if reported is not None:
+        # L-LAYOUT-REPORT counts the same graph independently.
+        layout = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport",
+                              {"asset": BLUEPRINT, "graphName": GRAPH})
+        layout_match = _re.search(r"counts: (\d+) node\(s\)", layout)
+        layout_count = int(layout_match.group(1)) if layout_match else None
+        print("    capture says %s node(s), the layout report says %s"
+              % (reported, layout_count))
+        check("the count agrees with an independent tool",
+              layout_count is not None and reported == layout_count,
+              "%s vs %s" % (reported, layout_count))
+        check("the graph is not empty, so the count means something",
+              reported > 0, "reported %s" % reported)
+
     check("reports the frame bounds", "frame bounds: x" in out)
     check("reports the zoom asked for AND applied",
           "zoom: asked" in out and "applied" in out)

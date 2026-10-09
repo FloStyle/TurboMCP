@@ -1942,3 +1942,73 @@ widget tree: 3 widget(s), depth-first from the root
 ### Still to come in phase 4
 
 `P/E-OVERRIDE-ADD`, `E-FUNCTION-ADD` and `E-FUNCTION-REMOVE`, and `P/E-WIDGET-RETARGET`.
+
+---
+
+## 4d. P/E-OVERRIDE-ADD, E-OVERRIDE-REMOVE, and a data-loss bug I caused
+
+32 tools. 15 acceptance suites, all green. `T-STRUCT-4` is exercised by
+`python Tools/test-override-add.py`.
+
+### Why this is a wrapper and not a new mechanism
+
+The engine **already has the operation**. `UBlueprintEditorLibrary` carries `AddFunctionOverride`,
+`AddEventOverride`, `RemoveFunctionGraph`, `ListFunctions` and `ListEvents`. What it does not have
+is the three things `03_TOOLS.md` asks for, and those are the whole reason this capability is in
+the roadmap:
+
+| Requirement | What the engine does instead |
+|---|---|
+| the Preview prints the exact **signature** | resolved here from the real reflected `UFunction` |
+| it **refuses** when already overridden, and says **where** | the engine would quietly add a **second graph** |
+| the Edit reports what it made, and reads back | not done |
+
+**The "already overridden" check lives in `Plan`, not `Apply`,** so the **Preview** refuses too. A
+preview that shows a plan the edit will not carry out is the disagreement `D-02` exists to prevent.
+This is the **second time** in phase 4 that putting a check in the wrong half was caught by the
+suite rather than by reasoning.
+
+### I destroyed the test Blueprint's event graph
+
+`E-OVERRIDE-REMOVE`'s first version called `RemoveGraph` on the graph holding the event node. **For
+an event override that graph IS the event graph**, so removing one override took `ReceiveBeginPlay`,
+`ReceiveActorBeginOverlap` and `ReceiveTick` with it and left the Blueprint with **one graph instead
+of three**. The overridden count went from **4 to 1**.
+
+It was caught **only** because the count *after* the removal was read back and compared with the
+count *before*. That is the read-back rule this project keeps relearning, and this time it caught a
+real loss rather than a cosmetic one.
+
+**The asset was restored from git**, which is why committing the test asset matters: the broken
+state had never been committed, so `git checkout -- BP_NodeTest.uasset` brought back the graph and
+the four overrides. Verified afterwards: **3 graphs, 4 overridden**.
+
+The fix removes the **node** rather than the graph, through `Modify`, `DestroyNode` and
+`MarkPackageDirty`, which is what the editor's own node deletion does.
+
+### Two other suites were broken by my own work, and both had pinned counts
+
+- `test-overrides` asserted `4 overridden, 23 overridable`.
+- `test-capture` asserted `11 nodes`.
+
+The override capability added overrides and the node count grew, so **three checks in one suite and
+one in the other** failed for a reason that had nothing to do with the tools they test. Both are
+fixed by making the checks **relative** rather than absolute:
+
+- the overrides suite **parses the summary line** and checks internal consistency — the two filters
+  add up to the total, the count matches the list;
+- the capture suite takes the node count from the tool's report and **cross-checks it against
+  `L-LAYOUT-REPORT`** counting the same graph.
+
+Those hold however much the shared asset changes, and they are what the tools actually promise.
+
+### The suite now owns its event and gives it back
+
+An earlier version overrode any event that happened to be free, which **consumed the asset**: each
+run consumed one event, and after four runs there was nothing left. It now overrides one event it
+owns, checks the behaviour, **removes its own override**, and asserts the count is back where it
+started. A test that consumes a finite shared resource is not re-runnable, and this one now is.
+
+### Still to come in phase 4
+
+`E-FUNCTION-ADD` and `E-FUNCTION-REMOVE`, and `P/E-WIDGET-RETARGET`.
