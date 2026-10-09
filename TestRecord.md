@@ -2752,3 +2752,89 @@ half cannot be checked either.**
 
 `KnotProbe` contains three knots and both readers handle the graph. The knot **placement** capability
 is not written yet, so Q-9 stays open on that point.
+
+---
+
+## 6e. The dead-node removal runs, and an audit finds two severe defects in the promotion path
+
+**Q-12 is closed end to end.** Two parallel specification agents delivered, and a source audit of the
+never-run promotion path found defects that a run would have turned into a corrupted fixture.
+
+### The acceptance asset is now REGENERABLE, which is what makes a destructive test possible
+
+`Tools/make-acceptance-asset.ps1` runs the commandlet and reproduces the asset with the **same node
+counts** every time. The asset is a **build artifact**, not a hand-made file. Duplicating it was the
+alternative and was rejected: **a duplicate can drift from the original in ways nothing checks**, and
+the whole value of this asset is that its structure is known precisely.
+
+Three measured failures on the way, each recorded:
+
+| Failure | What actually works |
+|---|---|
+| `SavePackage` answered *"could not save"* while every graph built | **delete the old FILE first**; neither `MarkAsGarbage` nor moving the object to the transient package settled it |
+| `LongPackageNameToFilename` goes **relative to the engine directory** in a commandlet | compose the absolute path from `FPaths::ProjectContentDir()` |
+| `FString` does not convert implicitly to `const TCHAR*` | pass `*PackagePath` at each site |
+
+### Q-12's removal path, measured
+
+`test-graph-dead.py` regenerates the asset, restarts the editor, runs `E-GRAPH-DEAD` against
+`DeadProbe`, and reads the result back with the **preview**:
+
+```
+nodes 4 -> 2, groups 2 -> 0
+keys the preview would remove: f11922, 6d3711
+```
+
+and a second call is refused with `unchanged:`. The asset is regenerated again at the end.
+
+### AN AUDIT FOUND TWO SEVERE DEFECTS IN THE PROMOTION PATH THAT HAD NEVER RUN
+
+It was read **line by line against the engine** before its first execution. Both are **ordering and
+state**, not signature — which is exactly why five rounds of `Plan`-side testing could not see either.
+**No signature mismatch was found**: all 12 engine call sites were arity- and type-correct, unlike the
+five guessed names that failed earlier in this project.
+
+**D-2 — the getter's pins were NEVER ALLOCATED.** `AllocateDefaultPins` is guarded on a variable name
+and is what creates the value pin; `GetValuePin` is `FindPin(GetVarName())`, so it returned **null**.
+The rewire **checked for null and skipped itself**, the original node was **destroyed anyway**, and the
+tool reported:
+
+> `changed: promoted 1 value(s) ... 0 consumer(s) re-pointed`
+
+**The graph would have been severed with a success message.** This project already **measured** the
+same trap in the asset commandlet, where `UK2Node_Knot::GetOutputPin` crashed on `Pins[1]` of an empty
+array — there it crashed; here the null guard turned it into **silence**. `AllocateDefaultPins` is now
+called, and a missing value pin **refuses** the value, removing the getter and leaving the original
+**completely alone**.
+
+**D-1 — the node and its pins were used ACROSS A SYNCHRONOUS COMPILE.** `AddLocalVariable` ends with
+`MarkBlueprintAsStructurallyModified`, which calls `CompileSynchronously` and `BroadcastChanged`, and a
+compile **can reconstruct nodes**. The engine's own promote guards against exactly this:
+
+> `BlueprintEditor.cpp:4982` — *"the owning node may have been reconstructed as a result of adding a new
+> variable above"*
+
+The node is now **re-resolved by key** after the call, the pins re-derived from it, and the position
+taken from a value captured before.
+
+Also fixed: `bIsWeakPointer` was not cleared, where the engine clears it with const and reference.
+
+### Two specs written in parallel, and both say the fixture cannot exercise their main case
+
+| Spec | Finding |
+|---|---|
+| `Spec/WORKING_GRAPH_KNOTS.md` | `KnotProbe`'s straight route **crosses no node**, so the crossing predicate finds nothing. `L-LAYOUT-REPORT` has **six** finding kinds and crossing is **not** one, so the crossing test is new code and must live in the knots module — adding it to the report would **break the baseline T-LAY-1 asserts**. |
+| `Spec/WORKING_GRAPH_TIDY.md` | The asset has **NO COMMENT BOXES** (`0 box(es), 0 nested`), so tidy's nesting and box checks rest on code review. The fixture `T-LAY-5/7/8` name (`TA-1`, `TA-2`, `TA-3`) **does not exist**. |
+
+Both recommend a **fifth probe graph**. And the knot spec flags **OPEN-1**, which must be measured
+before writing anything: **a headless editor never renders a node, so `NodeWidth`/`NodeHeight` may be
+ZERO** — in which case every rectangle is a point and the whole geometry of the capability degenerates.
+The honest move then is to **refuse with that as the reason** rather than place knots from points.
+
+### The comment header was corrected
+
+It **contradicted its own implementation** and is the first thing a reader of the layout code sees. It
+said membership comes from `UEdGraphNode::GetNodesUnderComment`; the `.cpp` says the opposite and is
+right, because that cache is filled from **rendered** widgets and is **empty headlessly**.
+`ComputeMembers` is now the public `FTurboMCPComment::MembersOf` so the layout passes **share one copy**
+of the rule rather than agreeing until one of them is changed.
