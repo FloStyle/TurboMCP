@@ -43,6 +43,9 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-uncovered-tools.py` | a running editor | drives the tools no other suite calls |
 | `audit-tool-coverage.py` | nothing, static | reports every tool no suite calls, and every parameter with no sample |
 | `test-batch-tools.py` | a running editor | R-TOOL-SCHEMA, P-NODE-TYPE, P-NODE-PINS and the four material readers |
+| `test-material.py` | a running editor | the four material readers against their fixture |
+| `make-material-asset.ps1` | nothing else running | rebuilds the material fixture from its commandlet |
+| `test-panel.py` | nothing else running | the panel runner, via its commandlet |
 | `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 

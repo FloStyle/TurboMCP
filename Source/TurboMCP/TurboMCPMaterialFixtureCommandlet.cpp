@@ -11,6 +11,7 @@
 #include "Materials/MaterialExpressionComment.h"
 #include "Materials/MaterialExpressionConstant.h"
 #include "Materials/MaterialExpressionConstant3Vector.h"
+#include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionMultiply.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
@@ -78,6 +79,13 @@ namespace
 	{
 		if (From == nullptr || To == nullptr)
 		{
+			// REPORTED RATHER THAN SWALLOWED. A null end means the expression was never created, and
+			// a silently skipped wire would leave a reader printing "unset" for a link the fixture
+			// intended - which is exactly the confusion this fixture exists to remove.
+			UE_LOG(LogTurboMCP, Error,
+				TEXT("wire %s.%s -> %s.%s SKIPPED: a null expression"),
+				From != nullptr ? *From->GetName() : TEXT("(null)"), FromOutput,
+				To != nullptr ? *To->GetName() : TEXT("(null)"), ToInput);
 			return false;
 		}
 		const bool bOk = UMaterialEditingLibrary::ConnectMaterialExpressions(
@@ -85,6 +93,15 @@ namespace
 		if (bOk)
 		{
 			++InOutCounts.Connections;
+		}
+		else
+		{
+			// A FAILED WIRE IS LOUD. `ConnectMaterialExpressions` answers false when either the named
+			// input does not exist on the target or the named output does not exist on the source, and
+			// silently continuing would produce a fixture that looks built and is missing its links.
+			UE_LOG(LogTurboMCP, Error,
+				TEXT("wire %s.%s -> %s(%s).%s FAILED: the input or the output name was not found"),
+				*From->GetName(), FromOutput, *To->GetName(), *To->GetClass()->GetName(), ToInput);
 		}
 		return bOk;
 	}
@@ -381,7 +398,44 @@ namespace
 			++OutCounts.LabelUsages;
 		}
 
-		return Base != nullptr;
+		// A FUNCTION OUTPUT, SO THE LABEL IS ACTUALLY REACHED.
+		//
+		// MEASURED: without one, `R-MAT-LOAD` on this function answered "connected outputs: 0 of 0"
+		// and then listed ALL THREE expressions as reaching no output - the constant, the declaration
+		// AND the usage. The function branch was still exercised, but every finding it produced was an
+		// artefact of the fixture having no output rather than anything about the function. A fixture
+		// whose findings are all its own fault teaches nothing.
+		//
+		// A material function's output is `UMaterialExpressionFunctionOutput`, whose `A` input is the
+		// value returned and whose `OutputName` is what a caller of the function sees.
+		UMaterialExpressionFunctionOutput* FunctionOutput =
+			Add<UMaterialExpressionFunctionOutput>(nullptr, InFunction, 900, 0);
+		if (FunctionOutput != nullptr)
+		{
+			FunctionOutput->OutputName = TEXT("Result");
+			++OutCounts.Expressions;
+
+			// THE INPUT NAME IS LEFT EMPTY, AND THAT IS THE ONLY THING THAT WORKS.
+			//
+			// MEASURED, with the failure made loud rather than swallowed:
+			//
+			//     wire MaterialExpressionNamedRerouteUsage_0. ->
+			//          MaterialExpressionFunctionOutput_0(MaterialExpressionFunctionOutput).A FAILED
+			//
+			// `UMaterialExpressionFunctionOutput` OVERRIDES `GetInputName` to `return NAME_None;`
+			// unconditionally - read from `MaterialExpressionFunctionOutput.h`, where the whole
+			// override is those two lines. `ConnectMaterialExpressions` resolves an input by NAME, so
+			// NO name can ever match on this class, including the field name `A` that the header
+			// declares.
+			//
+			// The documented way out is the empty name: `GetExpressionInputByName` opens with
+			// "Return first input if no name specified" and answers `Expression->GetInput(0)`, which
+			// for this node IS the `A` input. So the empty string is not a shortcut here, it is the
+			// only addressable route to that pin.
+			Wire(OutCounts, FunctionUse, TEXT(""), FunctionOutput, TEXT(""));
+		}
+
+		return Base != nullptr && FunctionOutput != nullptr;
 	}
 }
 
