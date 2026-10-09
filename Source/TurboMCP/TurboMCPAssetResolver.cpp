@@ -96,7 +96,24 @@ FString FTurboMCPAssetResolver::Resolve(const FString& InInput, FResolved& OutRe
 	}
 	else
 	{
-		Error += TEXT("Nothing with a similar name is loaded or on disk in this project.");
+		// The short-name search covers /Game only, so an asset that ships inside a
+		// mounted plugin cannot be found by its own name. Saying so is the
+		// difference between "you typed it wrong" and "this search cannot see it":
+		// `/AudioWidgets/AudioFader/AudioFader` is real and `AudioFader` alone
+		// cannot reach it.
+		//
+		// Built by concatenation rather than FString::Printf. UE's compile-time
+		// format checker refuses a TCHAR* passed for %s unless it can see it is a
+		// literal, and GameRootPath is a member, so two attempts at Printf both
+		// failed to compile. Concatenation has no checker to satisfy.
+		Error += TEXT("Nothing with a similar name is loaded or on disk in this "
+			"project. A short name is searched for in ");
+		Error += GameRootPath;
+		Error += TEXT(" only, so an asset that ships inside a mounted plugin or an "
+			"engine folder is not found by its own name. Pass its full path, for "
+			"example ");
+		Error += GameRootPath;
+		Error += TEXT("/YourAsset.");
 	}
 
 	return Error;

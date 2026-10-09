@@ -291,6 +291,30 @@ public:
 		const FString& GraphFilter,
 		const FString& Format,
 		const FString& TokenBudget);
+
+	/**
+	 * Read what an asset references, and what references it.
+	 *
+	 * Pass one asset in any path form, and optionally a direction: `out` for the
+	 * content assets it uses, `in` for the assets that use it, or `both`. Empty
+	 * means both.
+	 *
+	 * Every reference is printed as a full object path with its class. Engine and
+	 * script packages are counted but not listed, because `/Script/...` is not
+	 * content and listing it would bury the few project assets that matter.
+	 *
+	 * The edges come from the asset registry, which records them when packages are
+	 * saved. An asset that has never been saved therefore has no outgoing edges, and
+	 * a user that has never been saved will not appear as an incoming one; the
+	 * result says so rather than letting a zero look like a fact about the project.
+	 *
+	 * A direction that is not one of the three is refused by name, and an asset that
+	 * cannot be resolved is refused by the shared resolver.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPRefs(
+		const FString& Asset,
+		const FString& Direction);
 };
 
 /**

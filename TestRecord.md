@@ -392,6 +392,78 @@ is not dead — otherwise a caller could delete something that runs.
 
 ---
 
+## 2i. Phase 2: R-REFS
+
+Built: `ReadTurboMCPRefs`. 18 tools. Run its checks with
+`python Tools/test-refs.py`.
+
+| Test | Result | Evidence |
+|---|---|---|
+| Outgoing references are found | **PASS** | `/AudioWidgets/AudioFader/AudioFader` reports **7** |
+| Incoming references are found | **PASS** | `/Engine/EditorBlueprintResources/StandardMacros` reports **81** |
+| Every reference prints a full object path | **PASS** | `/AudioWidgets/AudioFader/AudioFader_Inner.AudioFader_Inner` |
+| Every reference prints its class | **PASS** | `[CurveFloat]`, `[Texture2D]`, `[WidgetBlueprint]` |
+| Engine and script packages are counted, not listed | **PASS** | `(4 engine or script package(s) were not listed: they are not content)` |
+| A zero explains itself | **PASS** | `none. try detail signatures in ReadTurboMCPBlueprintLoad ...` |
+| A bad direction is refused by name | **PASS** | `Accepted: out, in, both.` |
+| Every project path form agrees | **PASS** | short, package and object forms give one identical body |
+| A short name outside `/Game` explains itself | **PASS** | says the search covers `/Game` only and to pass a full path |
+| One direction at a time works | **PASS** | `direction: out` prints no `used by (in)` section |
+
+### The most important entry in this record
+
+About an hour went into nearly "fixing" a bug that did not exist, and the lesson is
+worth more than the tool.
+
+`R-REFS` reported **zero references in both directions** for every asset in the
+project, which looks exactly like a broken dependency walk. Two investigations both
+pointed at our code: reading the registry from a commandlet showed
+`get_dependencies -> None`, and the engine's **own**
+`editor_toolset.toolsets.asset.AssetTools.get_dependencies` returned `[]` for
+`/Engine/EditorBlueprintResources/StandardMacros`, an engine asset that must depend
+on something.
+
+The tool was right the whole time:
+
+- **The project assets genuinely have no content dependencies.** Everything
+  `/Game/Tests/BP_NodeTest` references is `/Script`, which this tool counts and does
+  not list. Zero was the honest answer.
+- **The engine's own tool also returns an empty list for that engine asset**, so an
+  empty answer there is Epic's behaviour and not ours.
+- **The data is populated for other assets.** `/AudioFader` reports 7 outgoing
+  references and `StandardMacros` reports 81 incoming. The machinery works.
+
+The mistake was choosing test assets that could not tell "broken" apart from
+"empty". A test that cannot fail the way reality fails proves nothing — the same
+lesson as the two editors, arriving from a different direction. `Tools/test-refs.py`
+now tests **both** an asset with references and one with none, so a zero and a
+failure can be distinguished.
+
+### Three real defects found along the way
+
+**1. Paths ending in `.None`.** The registry gives the object name `None` for a
+dependency recorded at package level, and that was treated as a real object name,
+producing `/AudioWidgets/AudioFader/AudioFader_Inner.None`. It looked like an object
+path and was not one. `None` is now treated as absent, so the package's own asset
+path is printed instead.
+
+**2. A short name outside `/Game` failed without explaining why.** The short-name
+search deliberately covers `/Game` only, so `AudioFader`, which lives in a mounted
+plugin, cannot be found by its own name. The refusal now says so and says to pass a
+full path. This limitation stays, stated rather than hidden.
+
+**3. A leftover `LiveCodingConsole.exe` blocked a build an hour later.** It is a
+separate process the editor starts, it can outlive the editor, and while it runs
+UnrealBuildTool refuses every build with `Unable to build while Live Coding is
+active`. `Tools/start-editor.ps1 -Stop` now stops it too, so the trap cannot recur.
+
+Building that error message also cost two compile failures: UE's compile-time format
+checker refuses a `TCHAR*` passed for `%s` unless it can see the argument is a
+literal, and a member variable is not one. The message is built by concatenation
+instead.
+
+---
+
 ## 2d. Phase 1: type find and dirty list
 
 | Test | Result | Evidence |

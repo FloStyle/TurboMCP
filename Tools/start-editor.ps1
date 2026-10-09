@@ -108,6 +108,22 @@ $Problems = @()
 if ($Stop) {
     Step 'Stopping the editor'
     $Editors = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
+
+    # LiveCodingConsole is stopped too, and this is not tidiness.
+    #
+    # It is a separate process that the editor starts, and it can outlive the
+    # editor. While it runs, UnrealBuildTool refuses every build with
+    # "Unable to build while Live Coding is active", which is a confusing failure
+    # an hour later and has nothing to do with the change being built. A leftover
+    # console from a Live Coding experiment once blocked a build exactly that way.
+    $LiveCoding = Get-Process -Name LiveCodingConsole -ErrorAction SilentlyContinue
+    if ($LiveCoding) {
+        Write-Host "  stopping $($LiveCoding.Count) leftover LiveCodingConsole process(es)"
+        $LiveCoding | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        Ok 'LiveCodingConsole stopped, so builds will not be blocked'
+    }
+
     if (-not $Editors) {
         Ok 'no editor was running'
         exit 0
