@@ -10,6 +10,7 @@
 #include "BaseWidgetBlueprint.h"
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
+#include "TurboMCPBlueprintJson.h"
 #include "TurboMCPBlueprintRead.h"
 #include "TurboMCPWidgetTree.h"
 
@@ -71,20 +72,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 			*Detail, *FTurboMCPBlueprintRead::DetailNames());
 	}
 
-	// JSON output is asked for by the spec but not implemented. It is refused by
-	// name rather than quietly returning graph text, because a caller that asked
-	// for JSON and got text would parse it as JSON and get nonsense.
-	if (!Format.TrimStartAndEnd().IsEmpty() && WantsJson(Format))
-	{
-		return TEXT("error: format 'json' is not implemented yet. The graph text format ")
-			TEXT("is what every section currently prints. Omit the format, or pass ")
-			TEXT("'read'.");
-	}
-	if (!Format.TrimStartAndEnd().IsEmpty()
+	// JSON output. The accepted format names are validated before anything is loaded, so a
+	// typo costs nothing.
+	//
+	// `json` is implemented for `manifest` only, and every other level is REFUSED BY NAME
+	// with a machine-readable error object rather than answered with a partial document. A
+	// caller that asked for signatures and got a manifest-shaped document would read
+	// fields that are not there and conclude the Blueprint has no functions.
+	const bool bJson = WantsJson(Format);
+	if (!Format.TrimStartAndEnd().IsEmpty() && !bJson
 		&& Format.TrimStartAndEnd().ToLower() != TEXT("read"))
 	{
 		return FString::Printf(
-			TEXT("error: '%s' is not a format. Accepted: read."), *Format);
+			TEXT("error: '%s' is not a format. Accepted: read, json."), *Format);
 	}
 
 	// The budget. Zero, empty or a non-number means the default, and the default
@@ -150,6 +150,29 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 				*Resolved.ObjectPath,
 				Loaded != nullptr ? *Loaded->GetClass()->GetName() : TEXT("missing object"));
 			++RefusedCount;
+			continue;
+		}
+
+		if (bJson)
+		{
+			// The JSON rendering, from the same accessors as the text above, so the two
+			// cannot disagree about what the Blueprint contains.
+			FString JsonError;
+			const FString Json = FTurboMCPBlueprintJson::Write(
+				Blueprint, static_cast<int32>(DetailLevel), JsonError);
+
+			if (!JsonError.IsEmpty())
+			{
+				// A refusal is still a parseable document, so a caller reading JSON never
+				// has to guess whether a syntax error means "no" or "broken".
+				Result += TEXT("\n") + FTurboMCPBlueprintJson::WriteError(JsonError);
+				++RefusedCount;
+				continue;
+			}
+
+			Result += FString::Printf(TEXT("\n\n===== %s ====="), *Resolved.ObjectPath);
+			Result += TEXT("\n") + Json;
+			++ReadCount;
 			continue;
 		}
 

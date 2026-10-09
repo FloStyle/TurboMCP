@@ -1315,3 +1315,82 @@ the manifest was not updated with it. The plugin now declares it, and the warnin
 
 The **JSON output format** for `R-BP-LOAD`. It is refused by name, which is honest, and it
 stays on the list rather than being quietly dropped. It is the last item of the phase.
+
+---
+
+## 3e. Phase 2 closed: R-BP-LOAD's JSON output
+
+The last item of phase 2 is done, for the `manifest` level. 11 acceptance suites now. Run
+its checks with `python Tools/test-json.py`.
+
+### The decision that shapes it
+
+`04_FORMATS.md` warns that most bugs in this project came from two tools disagreeing about
+one format, and its rule is **one collection pass with two renderings**, never two
+collections. So the JSON is a second *writer* over the same accessors the text writer uses,
+and `Tools/test-json.py` reads the same asset both ways and requires the facts to agree.
+The check is what keeps them from drifting.
+
+Three further decisions, each recorded where it is implemented:
+
+- **Graph bodies stay strings.** `04_FORMATS.md` section 2 defines the graph text format as
+  S-expressions. Reshaping that into JSON objects would create a second node model for the
+  same nodes, which is exactly the disagreement the format rules exist to prevent.
+- **Indented by default, not compact.** The audience is an agent reading the document into a
+  context window, where a compact one-line document costs the same tokens and is far harder
+  to read when part of it is quoted back.
+- **`signatures`, `bodies` and `full` are REFUSED by name, not answered partially.** A
+  caller that asked for signatures and got a manifest-shaped document would read fields that
+  are not there and conclude the Blueprint has no functions.
+
+### A refusal is a parseable document
+
+A machine-readable error is `{"ok": false, "error": "..."}`. A caller tests `ok` and never
+has to parse the message, and a JSON parser handed the refusal does not fail with a syntax
+error that says nothing about what went wrong. Verified:
+
+```
+read: 0 of 1 asset(s), detail signatures, 264 character(s)
+{
+	"ok": false,
+	"error": "format 'json' is implemented for detail 'manifest' only, and 'signatures' was asked for..."
+}
+; 1 asset(s) were refused
+```
+
+### The equivalence checks, and why they cannot pass vacuously
+
+Checking that the JSON parses proves almost nothing, because `{}` parses. The suite instead
+compares the two renderings of the same asset:
+
+| Check | Result |
+|---|---|
+| The asset has graphs, variables and components | **PASS** | 3, 2, 1 — asserted first, so the comparisons below cannot pass on an empty asset |
+| Each count matches the list it summarises | **PASS** | 3 vs 3, 2 vs 2, 1 vs 1 |
+| Nothing in the text is missing from the JSON | **PASS** | `missing []` for graphs, variables and components |
+| Nothing in the JSON is absent from the text | **PASS** | `extra []` for all three |
+| An empty list is an empty array, not a missing key | **PASS** | `interfaces: []` while the text says `interfaces: none` |
+| A refusal is parseable JSON reporting `ok: false` | **PASS** | and it carries no partial document |
+| The text rendering still works | **PASS** | JSON did not replace it |
+
+The comparison was then shown to detect a divergence rather than merely passing: given a
+text naming a graph the JSON does not have, it reports exactly that graph as missing.
+
+### A defect in my own test, found by the refusal path
+
+The first run failed `the refusal still parses`. The refusal was **valid JSON the whole
+time**. The test used `json.loads` on everything from the first brace to the end of the
+output, and the tool appends its own footer after the document — a count of refused assets
+and the next step — which is not JSON. A strict parse of the whole tail therefore failed on
+a well-formed document.
+
+`json.JSONDecoder().raw_decode` reads one document and reports where it ended, which is the
+right tool when the surrounding text belongs to the wrapper. Worth recording because the
+failure looked like a defect in the tool and was a defect in the check, and the check was
+the only reason it surfaced at all.
+
+### What phase 2 now stands at
+
+Every capability of phase 2 is implemented. The JSON format covers `manifest`; the three
+larger levels are refused by name and the refusal is honest about what to use instead. That
+is the state: **not complete, and not claimed to be.**
