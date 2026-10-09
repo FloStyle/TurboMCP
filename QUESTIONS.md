@@ -647,3 +647,69 @@ own UI, or by a C++ commandlet that wires a group and then breaks the one link t
 give the tool something real to find. Until then this capability's write half rests on code review.
 
 ---
+
+---
+
+## Q-13. The local-variable PROMOTION path has never run
+
+**Status: open, deliberately recorded rather than worked around.**
+
+`P/E-LOCAL-VARS` finds pure values read more than once and promotes the SAFE ones. **The finding half
+is verified. The promotion half is not, and cannot be with the writers available.**
+
+### Why it cannot be tested here
+
+A candidate needs a **pure node whose value is read more than once**. This plugin's tools do not create
+graph nodes, and the engine's `write_graph_dsl` **cannot express one**: a DSL expression is a **tree**,
+and a tree has no way to name an intermediate value, so every sub-expression it writes is consumed by
+exactly one parent. Measured against the DSL's own examples:
+
+```
+(fn DoubleIt (Value)
+  (return (* Value 2)))
+
+(fn ClampedScale (Value Multiplier)
+  (return (* (select (< Value 0.0) 0.0
+               (select (> Value 100.0) 100.0 Value))
+             Multiplier)))
+```
+
+Every value in these is used exactly once. There is no form for "compute this once, read it twice".
+
+**So the test graphs contain no candidate, and none can be made.** The same wall `Q-9` hit with reroute
+knots and `Q-12` hit with disconnected groups — three capabilities now blocked by the same gap.
+
+### What IS verified
+
+| Claim | Evidence |
+|---|---|
+| a graph that cannot hold locals is refused **with that reason** | `'EventGraph' is not a function graph … An event graph has no local variables.` |
+| the refusal **lists the functions that do exist** | `Its functions are: UserConstructionScript.` |
+| a **function** graph is accepted | the same tool answers a function graph without an error |
+| a function with no candidate says **why** | `0 value(s) used more than once … no pure node's value is read more than once` |
+| the preview changes nothing | the asset manifest is compared before and after |
+| the edit says `unchanged:`, not `changed: promoted 0` | `unchanged: no value in … was promoted` |
+| the **event graph is refused by the EDIT too**, with the same reason | `D-02`: a preview and its edit twin must refuse the same input |
+
+**The refusal checks are the valuable half.** The difference between *"this graph cannot hold a local"*
+and *"nothing found"* is a reason a caller acts on, and getting it wrong would send an agent to the
+wrong function.
+
+### What is NOT verified
+
+- that a candidate IS found when one exists;
+- that the **transitive safety rule** classifies anything — neither a safe chain nor an unsafe one has
+  ever been walked;
+- that an unsafe value is actually REFUSED by the edit;
+- that promotion works at all: `AddLocalVariable`, the getter node, the pin-by-pin rewire, and the
+  removal of the original last.
+
+### The route that would close it
+
+An asset that **ships with a candidate** — a function graph containing a pure node read twice, with one
+safe feed and one unsafe feed — built once in the editor's own UI and committed. That is the same
+approach `Q-12` needs and the same one `TA-1` to `TA-13` in `06_ACCEPTANCE.md` take for the hand-made
+kit. **One committed asset would close Q-12 and Q-13 together**, and would unblock `P/E-GRAPH-KNOTS`
+(Q-9) if it also carried a knot.
+
+---

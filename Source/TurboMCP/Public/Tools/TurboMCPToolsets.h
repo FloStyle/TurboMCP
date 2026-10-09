@@ -704,6 +704,26 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
+
+	/**
+	 * Work out which values could become local variables, without promoting any.
+	 *
+	 * The candidates are values computed by PURE nodes and read MORE THAN ONCE in a function. Each is
+	 * marked SAFE or UNSAFE with the reason, which is what the spec asks for.
+	 *
+	 * SAFE MEANS everything feeding the value is a FUNCTION INPUT or a LITERAL, applied
+	 * TRANSITIVELY. Both halves of that are the point rather than pedantry:
+	 *  - capturing a value once and reading it twice is only the same as computing it twice when the
+	 *    value cannot change between the two reads. A value derived from a member variable can change
+	 *    if the exec chain writes it; one derived from an impure node can differ each time.
+	 *  - the rule is TRANSITIVE because a one-level check would call `A(input) -> B(A) -> read twice`
+	 *    safe for B without ever looking at A.
+	 *
+	 * ONLY FUNCTION GRAPHS can hold a local, and that is asked of the engine rather than assumed. A
+	 * graph that cannot is reported with that as the reason rather than skipped silently.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
 };
 
 /**
@@ -1005,6 +1025,26 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
+
+	/**
+	 * Promote the SAFE values to local variables.
+	 *
+	 * The same safety decision as `P-LOCAL-VARS`, made in the same place, because the two share one
+	 * code path up to the write. **The edit promotes only what the preview called safe**, and it
+	 * re-checks that on the node about to change rather than trusting a plan made in an earlier call.
+	 *
+	 * AN UNSAFE VALUE IS NEVER PROMOTED, however many times it is read: capturing it once is not the
+	 * same as computing it twice.
+	 *
+	 * A local variable is added through the editor's own `AddLocalVariable`, a getter is placed where
+	 * the value was computed, each consumer is re-pointed pin by pin, and **the original is removed
+	 * last**, once nothing points at it — removing it first would break the links the rewire needs.
+	 *
+	 * The result names each value it promoted, how many consumers it re-pointed, and how many
+	 * candidates it refused.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
 
 	/**
 	 * Turn the call log on or off.
