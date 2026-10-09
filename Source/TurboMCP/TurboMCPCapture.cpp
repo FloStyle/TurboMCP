@@ -109,7 +109,13 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	const bool bOneBox = WantedMode == TEXT("box");
 	const bool bOneNode = WantedMode == TEXT("node");
 
-	if (!bWholeGraph && !bOneBox && !bOneNode)
+	// `debug-window` renders the whole editor window at the requested size, with NO
+	// cropping. It exists to answer one question that arithmetic kept getting wrong:
+	// where does a given widget actually land in the rendered picture? The panel's
+	// computed position and its real position can then be compared instead of assumed.
+	const bool bDebugWindow = WantedMode == TEXT("debug-window");
+
+	if (!bWholeGraph && !bOneBox && !bOneNode && !bDebugWindow)
 	{
 		return FString::Printf(
 			TEXT("error: '%s' is not a capture mode. Accepted: graph, box, node. ")
@@ -201,7 +207,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	TArray<UEdGraphNode*> Targets;
 	FString FrameLabel;
 
-	if (bWholeGraph)
+	if (bWholeGraph || bDebugWindow)
 	{
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
@@ -210,7 +216,10 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 				Targets.Add(Node);
 			}
 		}
-		FrameLabel = FString::Printf(TEXT("the whole graph, %d node(s)"), Targets.Num());
+		FrameLabel = bDebugWindow
+			? FString::Printf(TEXT("the whole window, uncropped (debug), %d node(s) in the graph"),
+				Targets.Num())
+			: FString::Printf(TEXT("the whole graph, %d node(s)"), Targets.Num());
 	}
 	else if (bOneBox)
 	{
@@ -607,6 +616,48 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			RenderError = FString::Printf(
 				TEXT("the window render read back %d pixel(s) for a %dx%d window"),
 				WindowPixels.Num(), WindowWidth, WindowHeight);
+		}
+		else if (bDebugWindow)
+		{
+			// No cropping at all: the whole window, scaled to the size asked for. Every
+			// widget keeps its true relative position, so this picture is the reference
+			// the crop is measured against.
+			TArray<FColor> Pixels;
+			Pixels.Reserve(Width * Height);
+			for (int32 Y = 0; Y < Height; ++Y)
+			{
+				const int32 SourceY = (Y * WindowHeight) / Height;
+				for (int32 X = 0; X < Width; ++X)
+				{
+					const int32 SourceX = (X * WindowWidth) / Width;
+					FColor Pixel = WindowPixels[SourceY * WindowWidth + SourceX];
+					Pixel.A = 255;
+					Pixels.Add(Pixel);
+				}
+			}
+
+			TArray64<uint8> PngData;
+			FImageUtils::PNGCompressImageArray(Width, Height, Pixels, PngData);
+
+			if (PngData.Num() == 0)
+			{
+				RenderError = TEXT("could not compress the image to PNG");
+			}
+			else
+			{
+				const FString Folder = FPaths::Combine(
+					FPaths::ProjectSavedDir(), TEXT("TurboMCP"), TEXT("Captures"));
+				IFileManager::Get().MakeDirectory(*Folder, /*Tree=*/true);
+				ImagePath = FPaths::Combine(Folder,
+					FString::Printf(TEXT("%s_%s_debug-window_%dx%d.png"),
+						*Blueprint->GetName(), *Graph->GetName(), Width, Height));
+
+				if (!FFileHelper::SaveArrayToFile(PngData, *ImagePath))
+				{
+					RenderError = FString::Printf(TEXT("could not write %s"), *ImagePath);
+					ImagePath.Empty();
+				}
+			}
 		}
 		else
 		{

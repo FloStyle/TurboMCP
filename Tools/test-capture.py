@@ -61,8 +61,13 @@ def resolve_printed_path(printed):
         r"C:\ExampleUnrealengine\Engine\Binaries\Win64", printed))
 
 
-def distinct_colours(path, limit=8):
-    """How many different colours the image holds, capped.
+def distinct_colours(path, limit=None):
+    """How many different colours the image holds.
+
+    Uncapped by default, so two pictures can be compared. A cap makes a MEASURE that
+    saturates: with a cap of 64 both the framed crop and the whole window reported 64,
+    and the comparison between them was meaningless. Pass a limit only to stop early
+    when all that matters is whether the count reaches some threshold.
 
     Returns None when the image cannot be read, which is reported as a separate
     failure rather than being treated as "no colours found".
@@ -79,7 +84,7 @@ def distinct_colours(path, limit=8):
     seen = set()
     for pixel in pixels:
         seen.add(pixel)
-        if len(seen) >= limit:
+        if limit is not None and len(seen) >= limit:
             break
     return len(seen)
 
@@ -145,8 +150,8 @@ def main():
                 # more than it should.
                 print("        note: %d distinct colours in the framed image."
                       % colours)
-                print("        note: the framed canvas is EMPTY, see TestRecord 3c"
-                      " and QUESTIONS Q-7.")
+                print("        note: the framed crop lands on the LEFT SIDEBAR, not the"
+                      " graph canvas. The nodes DO render; see QUESTIONS Q-7b.")
 
     print()
     print("=== the window fallback says what it framed ===")
@@ -291,6 +296,49 @@ def main():
     print()
     check("refuses", not_bp.startswith("error:"))
     check("says it is not a Blueprint", "not a Blueprint" in not_bp)
+
+    print()
+    print("=== debug-window renders the real canvas, with the real nodes in it ===")
+    # This is the reference picture: no cropping at all, so every widget is where it
+    # really is. It is what proved the render pipeline works and located the defect as a
+    # vertical origin mismatch rather than a failure to draw. See QUESTIONS Q-7b.
+    debug = session.call(LOOK_TOOLSET, "LookTurboMCPCapture",
+                         {"asset": BLUEPRINT, "graphName": GRAPH,
+                          "mode": "debug-window", "target": "", "size": "1600x900"})
+    print(debug)
+    print()
+    check("says it is uncropped", "uncropped" in debug and "debug" in debug)
+    check("writes an image", "image:" in debug)
+
+    debug_path = None
+    for line in debug.splitlines():
+        if line.startswith("image:"):
+            debug_path = line.split(":", 1)[1].strip()
+
+    if debug_path:
+        debug_absolute = resolve_printed_path(debug_path)
+        if os.path.isfile(debug_absolute):
+            debug_colours = distinct_colours(debug_absolute)
+            framed_colours = None
+            if image_path:
+                framed_colours = distinct_colours(resolve_printed_path(image_path))
+
+            if debug_colours is None or framed_colours is None:
+                check("both images could be read back", False, "Pillow is missing")
+            else:
+                # The window picture holds the graph canvas AND every editor panel, so it
+                # is far richer than a flat fill. That is the evidence the nodes are really
+                # drawn, and it is why a colour count is the right measure here: existence
+                # and size were both already true of an empty capture.
+                #
+                # NO CAP on the count. With a cap of 64 both pictures reported 64 and the
+                # comparison was meaningless, which is its own small lesson: a measure that
+                # saturates cannot compare.
+                check("the uncropped window picture is rich in content",
+                      debug_colours >= 500, "%d distinct colours" % debug_colours)
+                check("the uncropped picture has more content than the framed crop",
+                      debug_colours > framed_colours * 2,
+                      "%d vs %d" % (debug_colours, framed_colours))
 
     print()
     if failures:
