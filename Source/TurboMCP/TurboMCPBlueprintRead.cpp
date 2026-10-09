@@ -1,6 +1,7 @@
 // Copyright FloStyle. All Rights Reserved.
 
 #include "TurboMCPBlueprintRead.h"
+#include "TurboMCPDescribe.h"
 
 #include "Components/ActorComponent.h"
 #include "EdGraph/EdGraph.h"
@@ -35,82 +36,16 @@ namespace
 	/** How many variables are printed before the list caps. */
 	constexpr int32 MaxVariables = 120;
 
-	/** How many signature parameters are printed per function. */
-	constexpr int32 MaxSignatureParams = 24;
-
 	/** How many jobs one section may take before the section says it stopped. */
 	constexpr int32 MaxSectionWork = 400;
 
-	/** The variable's flags, as short words an agent can act on. */
-	FString DescribeVariableFlags(const FBPVariableDescription& InVariable)
-	{
-		TArray<FString> Flags;
-		const uint64 F = InVariable.PropertyFlags;
-
-		if (F & CPF_BlueprintVisible) { Flags.Add(TEXT("BlueprintReadWrite")); }
-		if (F & CPF_BlueprintReadOnly) { Flags.Add(TEXT("BlueprintReadOnly")); }
-
-		// `CPF_Edit` means "user-settable in the editor", and EVERY Blueprint
-		// variable carries it, so it is not evidence of anything and printing it as
-		// "InstanceEditable" made the list say `InstanceEditable,
-		// NotInstanceEditable` at the same time. The per-instance question is
-		// answered by CPF_DisableEditOnInstance alone.
-		Flags.Add((F & CPF_DisableEditOnInstance)
-			? TEXT("NotInstanceEditable") : TEXT("InstanceEditable"));
-
-		if (F & CPF_Config)    { Flags.Add(TEXT("Config")); }
-		if (F & CPF_Transient) { Flags.Add(TEXT("Transient")); }
-		if (F & CPF_RepNotify) { Flags.Add(TEXT("RepNotify")); }
-		if (F & CPF_Net)       { Flags.Add(TEXT("Replicated")); }
-
-		return FString::Join(Flags, TEXT(", "));
-	}
-
-	/** A function's parameters, with direction marked, which `R-OVERRIDES` also needs. */
-	FString DescribeFunctionParameters(const UFunction* InFunction)
-	{
-		if (InFunction == nullptr)
-		{
-			return FString();
-		}
-
-		TArray<FString> Ins;
-		TArray<FString> Outs;
-
-		int32 Shown = 0;
-		for (TFieldIterator<FProperty> It(InFunction); It && It->HasAnyPropertyFlags(CPF_Parm); ++It)
-		{
-			if (Shown >= MaxSignatureParams)
-			{
-				break;
-			}
-			++Shown;
-
-			const FProperty* Property = *It;
-			if (Property->HasAnyPropertyFlags(CPF_ReturnParm))
-			{
-				Outs.Add(FString::Printf(TEXT("%s %s"),
-					*Property->GetCPPType(), *Property->GetName()));
-			}
-			else if (Property->HasAnyPropertyFlags(CPF_OutParm))
-			{
-				Outs.Add(FString::Printf(TEXT("%s %s"),
-					*Property->GetCPPType(), *Property->GetName()));
-			}
-			else
-			{
-				Ins.Add(FString::Printf(TEXT("%s %s"),
-					*Property->GetCPPType(), *Property->GetName()));
-			}
-		}
-
-		FString Out = FString::Printf(TEXT("(%s)"), *FString::Join(Ins, TEXT(", ")));
-		if (Outs.Num() > 0)
-		{
-			Out += FString::Printf(TEXT(" -> (%s)"), *FString::Join(Outs, TEXT(", ")));
-		}
-		return Out;
-	}
+	// `DescribeVariableFlags` and `DescribeFunctionParameters` USED TO LIVE HERE, in this
+	// anonymous namespace. They moved to `TurboMCPDescribe` when the JSON writer became a
+	// second rendering of the same facts: a flag list and a parameter list are exactly
+	// what would drift, and two spellings of one fact is the disagreement
+	// `04_FORMATS.md` warns about even when both are right.
+	using TurboMCPDescribe::VariableFlags;
+	using TurboMCPDescribe::FunctionParameters;
 
 	/** The asset path of a Blueprint, so every section can name it the same way. */
 	FString BlueprintPath(const UBlueprint* InBlueprint)
@@ -357,7 +292,7 @@ FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint)
 		Out += FString::Printf(TEXT("\n      default: %s"),
 			Variable.DefaultValue.IsEmpty() ? TEXT("(type default)") : *Variable.DefaultValue);
 
-		Out += FString::Printf(TEXT("\n      flags: %s"), *DescribeVariableFlags(Variable));
+		Out += FString::Printf(TEXT("\n      flags: %s"), *VariableFlags(Variable));
 
 		if (!Variable.RepNotifyFunc.IsNone())
 		{
@@ -368,42 +303,37 @@ FString FTurboMCPBlueprintRead::RenderVariables(const UBlueprint* InBlueprint)
 	return Out;
 }
 
-FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
+void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBlueprint,
+	TArray<FString>& OutEvents, TArray<FString>& OutFunctions)
 {
+	OutEvents.Reset();
+	OutFunctions.Reset();
+
 	if (InBlueprint == nullptr)
 	{
-		return FString();
+		return;
 	}
 
 	TArray<UEdGraph*> Graphs;
 	CollectGraphs(InBlueprint, Graphs);
 
-	FString Out;
-
-	// Events, from the event graphs. The name printed is the function name rather
-	// than the node title, because the title is localised and carries words like
-	// `Event` that are not part of what a caller writes back.
-	TArray<FString> Events;
-	TArray<FString> Functions;
-
 	// Signatures are read from the real `UFunction`, not from the node.
 	//
-	// `GetSignatureFunction` does not exist on `UK2Node_CustomEvent`,
-	// `UK2Node_Event` or `UK2Node_FunctionEntry`; the first version of this file
-	// assumed it did. The function a node stands for lives on a class: an event or
-	// a custom event on the Blueprint's skeleton class (or the parent's for an
-	// inherited event), and a function-entry graph on the Blueprint too. Reading
-	// the reflected `UFunction` also means the signature is the real one rather
-	// than something rebuilt from pins.
+	// `GetSignatureFunction` does not exist on `UK2Node_CustomEvent`, `UK2Node_Event` or
+	// `UK2Node_FunctionEntry`; the first version of this file assumed it did. The function
+	// a node stands for lives on a class: an event or a custom event on the Blueprint's
+	// skeleton class, or the parent's for an inherited event, and a function-entry graph
+	// on the Blueprint too. Reading the reflected `UFunction` also means the signature is
+	// the real one rather than something rebuilt from pins.
 	const UClass* SkeletonClass = InBlueprint->SkeletonGeneratedClass != nullptr
 		? InBlueprint->SkeletonGeneratedClass : InBlueprint->GeneratedClass;
 
-	// A real function graph is one the Blueprint holds in `FunctionGraphs`. It is
-	// NOT enough to look for a `UK2Node_FunctionEntry` node: the event graph has one
-	// too, for the ubergraph function the engine generates, and `ReceiveBeginPlay`
-	// is also the name of a function graph. The first version of this used the node
-	// alone, so every event was listed as both an event and a function, and then
-	// reported as a function nothing calls.
+	// A real function graph is one the Blueprint holds in `FunctionGraphs`. It is NOT
+	// enough to look for a `UK2Node_FunctionEntry` node: the event graph has one too, for
+	// the ubergraph function the engine generates, and `ReceiveBeginPlay` is also the name
+	// of a function graph. The first version of this used the node alone, so every event
+	// was listed as both an event and a function, and then reported as a function nothing
+	// calls.
 	TSet<const UEdGraph*> RealFunctionGraphs;
 	for (const TObjectPtr<UEdGraph>& Graph : InBlueprint->FunctionGraphs)
 	{
@@ -424,8 +354,8 @@ FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
 				const UFunction* Function = SkeletonClass != nullptr
 					? SkeletonClass->FindFunctionByName(Name) : nullptr;
 				const FString Label = Name.ToString();
-				Events.Add(FString::Printf(TEXT("%s%s"),
-					*Label, *DescribeFunctionParameters(Function)));
+				OutEvents.Add(FString::Printf(TEXT("%s%s"),
+					*Label, *FunctionParameters(Function)));
 			}
 			else if (const UK2Node_Event* Event = Cast<UK2Node_Event>(Node))
 			{
@@ -442,25 +372,37 @@ FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
 					Function = SkeletonClass->FindFunctionByName(Name);
 				}
 				const FString Label = Name.ToString();
-				Events.Add(FString::Printf(TEXT("%s%s"),
-					*Label, *DescribeFunctionParameters(Function)));
+				OutEvents.Add(FString::Printf(TEXT("%s%s"),
+					*Label, *FunctionParameters(Function)));
 			}
 			else if (Cast<UK2Node_FunctionEntry>(Node) != nullptr && RealFunctionGraphs.Contains(Graph))
 			{
-				// The graph is named for its function, so the graph name is the
-				// function name. FindFunctionByName wants an FName, not a string.
+				// The graph is named for its function, so the graph name is the function
+				// name. FindFunctionByName wants an FName, not a string.
 				const FName FunctionName(*Graph->GetName());
 				const UFunction* Function = SkeletonClass != nullptr
-					? SkeletonClass->FindFunctionByName(FunctionName)
-					: nullptr;
-				// The name a caller writes back is the function's, which is the
-				// graph's.
+					? SkeletonClass->FindFunctionByName(FunctionName) : nullptr;
+				// The name a caller writes back is the function's, which is the graph's.
 				const FString Label = Graph->GetName();
-				Functions.Add(FString::Printf(TEXT("%s%s"),
-					*Label, *DescribeFunctionParameters(Function)));
+				OutFunctions.Add(FString::Printf(TEXT("%s%s"),
+					*Label, *FunctionParameters(Function)));
 			}
 		}
 	}
+}
+
+FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
+{
+	if (InBlueprint == nullptr)
+	{
+		return FString();
+	}
+
+	TArray<FString> Events;
+	TArray<FString> Functions;
+	CollectEventsAndFunctions(InBlueprint, Events, Functions);
+
+	FString Out;
 
 	auto PrintList = [&Out](const TCHAR* InLabel, const TArray<FString>& InItems)
 	{

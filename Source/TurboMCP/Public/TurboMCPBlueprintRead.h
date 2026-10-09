@@ -113,6 +113,17 @@ public:
 	static bool GraphMatchesFilter(const FString& InGraphName,
 		const TArray<FString>& InFilter);
 
+	/**
+	 * The events and functions a Blueprint carries, as name-plus-signature lines.
+	 *
+	 * Public because the JSON writer is a second rendering of the same facts and must not
+	 * collect them its own way: a signature spelled two different ways in two renderings is
+	 * the drift `04_FORMATS.md` warns about, even when both spellings are right. The text
+	 * writer calls this too, so there is one collection and two renderings.
+	 */
+	static void CollectEventsAndFunctions(const UBlueprint* InBlueprint,
+		TArray<FString>& OutEvents, TArray<FString>& OutFunctions);
+
 private:
 	/** The asset path, class, parent, interfaces and counts. */
 	static FString RenderManifest(const UBlueprint* InBlueprint);
@@ -140,7 +151,14 @@ private:
 		const TArray<UEdGraph*>& InGraphs, EDetail InDetail,
 		TArray<FString>& OutNotes);
 
-	/** A variable's type as the text an agent can write back. */
+public:
+	/**
+	 * A variable's type as the text an agent can write back.
+	 *
+	 * Public for the same reason `CollectEventsAndFunctions` is: the JSON writer renders
+	 * the same type and must spell it the same way. Two spellings of one type is the drift
+	 * `04_FORMATS.md` warns about.
+	 */
 	static FString DescribeVariableType(const struct FEdGraphPinType& InType);
 
 	/** A function or event's inputs and outputs, with direction marked. */
