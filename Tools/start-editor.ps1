@@ -34,6 +34,19 @@
     Start with -nullrhi, which skips rendering and therefore needs no shader
     worker. Faster, but no window to look at.
 
+.PARAMETER Culture
+    The editor's language, for example `en` or `fr`. Defaults to `en`.
+
+    This matters more than it looks. A node type ID is
+    `<menu category>|<node title>` and the title half is built at run time from
+    localised fragments, so on a French editor the ID for BeginPlay reads
+    `AddEvent|evnementBeginPlay` while every example in the engine's own
+    documentation reads `AddEvent|EventBeginPlay`. A type ID also only feeds back
+    into the engine's graph writer on an editor in the same language.
+
+    Pinning the language to `en` makes this plugin's output match the engine's
+    documented form and makes results comparable between machines.
+
 .PARAMETER StopFirst
     Stop any running editor before starting. Needed before a rebuild, because the
     plugin DLL is locked while the editor runs.
@@ -63,6 +76,7 @@ param(
     [string] $Project = "$PSScriptRoot\..\TestProject\TurboMCPTest.uproject",
     [string] $Engine   = 'C:\UnrealEngine',
     [int]    $TimeoutSeconds = 420,
+    [string] $Culture = 'en',
     [switch] $NullRHI,
     [switch] $StopFirst,
     [switch] $Stop,
@@ -198,6 +212,7 @@ Step 'Starting the editor'
 # ---------------------------------------------------------------------------
 $Args = @($Project)
 if ($NullRHI) { $Args += @('-nullrhi','-unattended') }
+if (-not [string]::IsNullOrWhiteSpace($Culture)) { $Args += @("-culture=$Culture") }
 $Args += @('-nosplash','-nosound')
 
 $StartTime = Get-Date

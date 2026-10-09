@@ -7,6 +7,10 @@
 #include "Engine/Blueprint.h"
 #include "K2Node.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_Variable.h"
+#include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/Char.h"
 #include "Misc/Guid.h"
 #include "UObject/Package.h"
@@ -328,6 +332,54 @@ namespace TurboMCPNodeId
 		return InText.ToString();
 	}
 
+	FString GetVariableNodeTypeId(const UK2Node_Variable* InNode)
+	{
+		if (InNode == nullptr)
+		{
+			return FString();
+		}
+
+		const FName VarName = InNode->GetVarName();
+		if (VarName.IsNone())
+		{
+			return FString();
+		}
+
+		// The variable's category lives on the Blueprint, not on the node, so the
+		// owning Blueprint is found through the graph. A node with no Blueprint
+		// behind it cannot be given a canonical ID.
+		UBlueprint* Blueprint = nullptr;
+		if (const UEdGraph* Graph = InNode->GetGraph())
+		{
+			Blueprint = FBlueprintEditorUtils::FindBlueprintForGraph(Graph);
+		}
+		if (Blueprint == nullptr)
+		{
+			return FString();
+		}
+
+		// The engine's writer calls an uncategorised variable's category
+		// `Default`, which is what makes `Variables|Default|SetHealth` the
+		// canonical form. A variable with a real category uses that instead.
+		FString Category = TEXT("Default");
+		for (const FBPVariableDescription& Variable : Blueprint->NewVariables)
+		{
+			if (Variable.VarName == VarName)
+			{
+				const FString Declared = Unlocalised(Variable.Category);
+				if (!Declared.IsEmpty())
+				{
+					Category = Declared;
+				}
+				break;
+			}
+		}
+
+		const bool bIsSet = InNode->IsA<UK2Node_VariableSet>();
+		return FString::Printf(TEXT("Variables|%s|%s%s"),
+			*Category, bIsSet ? TEXT("Set") : TEXT("Get"), *VarName.ToString());
+	}
+
 	FString GetNodeTitle(const UEdGraphNode* InNode)
 	{
 		if (InNode == nullptr)
@@ -373,6 +425,15 @@ namespace TurboMCPNodeId
 		if (InNode->IsA<UK2Node_CustomEvent>())
 		{
 			return FString::Printf(TEXT("AddEvent|Custom|%s"), *Title);
+		}
+
+		// Variable get and set nodes are the other special case: they are not
+		// palette nodes, so they have no menu category at all, and the generic rule
+		// below would refuse them. That made every variable access in a graph
+		// unprintable until this was added.
+		if (const UK2Node_Variable* VariableNode = Cast<UK2Node_Variable>(InNode))
+		{
+			return GetVariableNodeTypeId(VariableNode);
 		}
 
 		// The category comes from the node's menu category, which is what the
