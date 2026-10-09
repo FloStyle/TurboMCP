@@ -85,11 +85,87 @@ choice costs nothing either way - but it is written down so that neither pass in
 
 ---
 
+## D-LAY-4: the two passes measure DIFFERENT things, and that is not a conflict
+
+**DECISION: `P/E-GRAPH-KNOTS` is judged on WIRES CROSSING NODES. `P/E-GRAPH-TIDY` is judged on TOTAL WIRE
+LENGTH. Neither is judged on the other's metric.**
+
+This is written down because the tidy workstream flagged it as its RISKIEST rule: *"whether added reroute
+knots count toward the measured wire length. A knot has its own rectangle and `PinPosition` gives it pins,
+so a wire through a knot measures as two straight segments and can be LONGER than the single segment it
+replaced - while crossing fewer nodes, which is the actual goal."*
+
+THE TWO SPECIFICATIONS ALREADY SETTLE IT, IN THEIR OWN WORDS, AND THEY AGREE:
+
+- `Spec/03_TOOLS.md`, `P/E-GRAPH-KNOTS`: **"Counts wires crossing nodes before and after. Rolls back if not
+  better."** The metric is CROSSINGS;
+- `Spec/03_TOOLS.md`, `P/E-GRAPH-TIDY`: **"Compares total wire length from before to after. Rolls back if
+  worse."** The metric is LENGTH.
+
+SO THERE IS NO CONFLICT TO RESOLVE. The fear that tidy could roll back a visually better layout only holds
+if one pass were judged on the other's number, and it is not. **A knot that lengthens a wire while removing
+a crossing is a SUCCESS by knots' own metric**, which is why the capability exists: the spec's opening
+clause is "only where a knot makes a wire one straight run plus one bend, OR KEEPS IT FROM PASSING OVER A
+NODE", and the second of those is worth a longer wire.
+
+**THE ONE REAL CONSEQUENCE IS ABOUT LABELS, NOT CODE.** A wire routed through a knot IS two segments, so
+its length really is longer - pretending otherwise would describe a graph that does not exist. Both passes
+must therefore print their number AS THE THING THEY MEASURED: `crossings before/after` for knots, `total
+wire length before/after` for tidy. **A caller comparing the two across tools would be comparing two
+different quantities**, and the labels are what prevent that.
+
+WHAT REMAINS GENUINELY OPEN: **the ORDER to run the two passes in.** The specs do not mandate one, and the
+engine's own editor places knots on demand rather than as a pass, so there is nothing to copy. Running
+knots then tidy lets tidy shorten the wires a knot lengthened; running tidy then knots lets the knot pass
+work on a settled layout. **Neither is wrong.** The honest answer for a caller is to run one, LOOK at its
+number, and decide - which is what `P7` asks for.
+
+---
+
+## D-LAY-5: a node's rectangle CAN be zero, and every geometric pass must REFUSE rather than compute
+
+**DECISION: a pass doing arithmetic on node rectangles refuses when a rectangle it needs has zero width or
+zero height, and NAMES the node.**
+
+THIS CORRECTS A CLAIM IN `TestRecord.md` SECTION 6g, WHICH WAS WRONG. It states that node rectangles are
+real in a headless editor, "proven by `L-LAYOUT-REPORT` reporting longest single wire 400". **The reasoning
+was wrong and another workstream proved it by measuring.** Dumped from the commandlet for every node it
+built:
+
+```
+node K2Node_CallFunction_3 at (1050,90) size (0,0) rect x 1050..1050 y 90..90
+```
+
+EVERY node: `size (0,0)`. `NodeWidth` and `NodeHeight` are int32 fields SLATE fills when a node is DRAWN,
+and a commandlet draws nothing.
+
+THE EARLIER EVIDENCE WAS NOT WRONG, IT WAS TAKEN IN A DIFFERENT STATE. `L-LAYOUT-REPORT` was run with the
+asset OPEN IN A RENDERED EDITOR, where Slate had already filled the sizes in. **Both states are real:**
+
+| State | `NodeWidth` / `NodeHeight` |
+|---|---|
+| a node in an asset OPENED IN THE EDITOR | real, filled by Slate when it is drawn |
+| a node freshly built by a COMMANDLET, never drawn | ZERO |
+
+**CONSEQUENCE FOR EVERY LAYOUT CAPABILITY, and it is why this is a shared decision rather than a note.**
+A layout pass runs in the editor and will NORMALLY see real sizes. But "normally" is not a guarantee, and
+`P/E-GRAPH-KNOTS`' arithmetic - "a wire is one straight run plus one bend" - operates ON rectangles. With
+none, the arithmetic has no input. So `OPEN-1` in `Spec/WORKING_GRAPH_KNOTS.md` **WAS RIGHT TO INSIST ON A
+REFUSAL**; what it could not settle from source was WHICH case the code would meet, and the answer is
+**both**. The refusal is what makes it safe in either state.
+
+**WHERE IT IS ENFORCED: in `Plan`, by refusing with the node named.** Not a silent skip, and not a
+defensive branch that computes a point-rectangle answer nobody should trust.
+
+THE FIXTURE PROBLEM IS SOLVED SEPARATELY, and this is the part that makes the probe asset usable at all:
+`TurboMCPAcceptanceAssetCommandlet.cpp` now sets explicit FALLBACK sizes on the nodes it builds, so the
+asset it writes carries geometry a test can measure WITHOUT opening a graph editor. The fallback is
+documented as a fallback, not as what the editor would draw.
+
+---
+
 ## WHAT IS STILL OPEN IN EACH SPEC, and is genuinely open
 
-- tidy OPEN 1: do added knots count toward the measured wire length. **Bears on `P/E-GRAPH-KNOTS` as well**,
-  because a knot adds length while removing a crossing, and the two passes could fight: knots make a wire
-  longer, then a measure that counts length rolls the knots back. **THIS ONE STILL NEEDS AN ANSWER AND IS
-  THE SHARED RISK WORTH SETTLING NEXT.**
 - tidy OPEN 2: implement getter merging or refuse it by name this phase.
 - fix-backward's five: see its own section.
+- the ORDER of the two layout passes: see `D-LAY-4`.

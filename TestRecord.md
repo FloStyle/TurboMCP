@@ -2976,3 +2976,51 @@ the capability could be trusted, and in every case the fixture found something t
 safe, and the material fixture found that `ConstantForInput` missed the constant MOST expression classes
 keep, that `MarkReached` did not follow a label to its declaration, and that its own comments went into the
 wrong array. **The fixture is not overhead. It is where the defects are.**
+
+---
+
+## 6i. CORRECTION to section 6g: node rectangles ARE zero in a commandlet
+
+**Section 6g reached the wrong conclusion and the reasoning is worth recording, because the mistake was in
+the INFERENCE and not in the measurement.**
+
+6g said: node rectangles are real in a headless editor, "proven by `L-LAYOUT-REPORT` reporting longest
+single wire 400 for a wire between nodes at x=400 and x=1600, and `PinPosition` uses `NodePosX + NodeWidth`,
+so a zero width would have measured 1200".
+
+THE MEASUREMENT WAS REAL. THE GENERALISATION WAS NOT. Another workstream measured the other state directly,
+by dumping every node the acceptance commandlet builds:
+
+```
+node K2Node_CallFunction_3 at (1050,90) size (0,0) rect x 1050..1050 y 90..90
+```
+
+**EVERY node: `size (0,0)`.** `NodeWidth` and `NodeHeight` are int32 fields that SLATE fills when a node is
+DRAWN, and a commandlet draws nothing.
+
+THE TWO STATEMENTS ARE BOTH TRUE, ABOUT DIFFERENT STATES:
+
+| State | sizes |
+|---|---|
+| a node in an asset OPENED IN A RENDERED EDITOR | real - Slate filled them when it drew |
+| a node freshly built by a COMMANDLET, never drawn | ZERO |
+
+`L-LAYOUT-REPORT` was run with the asset OPEN in the editor. So 6g measured the editor state and drew a
+conclusion about every state. **A CONCLUSION DRAWN FROM ONE STATE AND APPLIED TO ALL OF THEM IS THE SAME
+MISTAKE AS A CHECK THAT CANNOT FAIL:** it is confident, it is well evidenced, and the evidence does not
+reach the claim.
+
+WHAT IT COST: a board entry asserting OPEN-1 was settled, and an instruction to a workstream that no
+defensive branch was needed. Had that workstream followed it, the knot pass would have computed geometry
+from point-rectangles - in the commandlet case, silently, producing numbers from nothing.
+
+WHAT REPLACES IT, and this is the useful part: **the refusal the knots spec asked for was right, and it is
+right in BOTH states.** A pass that refuses when a rectangle it needs has zero size is correct whether it
+runs against a drawn graph or a freshly built one. `Spec/DECISIONS_LAYOUT_SHARED.md` `D-LAY-5` records it,
+and `TurboMCPAcceptanceAssetCommandlet.cpp` now sets explicit FALLBACK sizes on the nodes it builds so a
+fixture carries geometry a test can measure without opening a graph editor.
+
+THE SELF-CHECKING PART WORKED, and it is the reason this was caught: the commandlet's crossing probe
+reported `10 wire(s) cross 0 distinct node(s)` and REFUSED to save the graph rather than reporting success.
+The geometry dump printed on failure is what produced this correction. **A FAILURE THAT PRINTS ITS
+GEOMETRY IS WORTH FAR MORE THAN ONE THAT SAYS "it did not work".**
