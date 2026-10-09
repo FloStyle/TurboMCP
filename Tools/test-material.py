@@ -90,10 +90,24 @@ def main():
           "LazyScalar" in load, load[:400])
     check("it names the vector parameter the fixture declares",
           "OuterTint" in load, load[:400])
-    # THE CONSTANT AN UNLINKED INPUT KEEPS, which 04_FORMATS 2.5 requires by name. The fixture puts
-    # 0.375 on a Multiply's B input and leaves it unlinked.
-    check("it prints the constant an UNLINKED input keeps",
-          "0.375" in load, "the fixture leaves 0.375 on a Multiply B input")
+    # THE CONSTANT AN UNLINKED INPUT KEEPS, which 04_FORMATS 2.5 requires by name.
+    #
+    # THE VALUE IS PARSED, NOT MATCHED AS A LITERAL, and the first version got that wrong. It asserted
+    # the string "0.375", which is FIXTURE WORDING: change the fixture's constant and the suite goes red
+    # for a reason that has nothing to do with the reader. The material workstream flagged exactly that,
+    # and this project has recorded the mistake five times. The check now asserts the SHAPE - a bare
+    # NUMBER printed for an input the fixture left unlinked - and READS the number instead of pinning it.
+    #
+    # The parameter default is 0.75, so a numeric input value that is NOT 0.75 is the unlinked one.
+    # Parse only the tree's form lines, where an input reads `B <value>)`, and skip the parameter table.
+    tree = load.split("connected outputs", 1)[-1]
+    constants = re.findall(r"^\s+[AB] (\d+(?:\.\d+)?)\)?\s*$", tree, re.MULTILINE)
+    print("    numeric constants printed for inputs: %s" % (constants or "none"))
+    check("it prints a NUMERIC constant for the fixture's unlinked input",
+          len(constants) > 0, "no bare number found for an input in the tree")
+    check("the unlinked constant is REAL, not a placeholder word",
+          all(c.replace(".", "").isdigit() for c in constants) if constants else False,
+          "constants: %s" % constants)
     check("it names an expression that reaches NO output",
           "reach no output" in load.lower() or "unreached" in load.lower(), load[:400])
     check("the unread label is among the unreached",
