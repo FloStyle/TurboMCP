@@ -38,6 +38,9 @@
     Stop any running editor before starting. Needed before a rebuild, because the
     plugin DLL is locked while the editor runs.
 
+.PARAMETER Stop
+    Stop the running editor and exit without starting one. Nothing else runs.
+
 .PARAMETER KeepOpen
     Leave the editor running when the script finishes. Without it the script
     still leaves it running; the switch exists for symmetry with -StopFirst.
@@ -49,6 +52,10 @@
 .EXAMPLE
     .\start-editor.ps1 -StopFirst
     Stop any running editor first, then start and verify.
+
+.EXAMPLE
+    .\start-editor.ps1 -Stop
+    Just stop the editor, for example before a rebuild.
 #>
 
 [CmdletBinding()]
@@ -58,6 +65,7 @@ param(
     [int]    $TimeoutSeconds = 420,
     [switch] $NullRHI,
     [switch] $StopFirst,
+    [switch] $Stop,
     [switch] $KeepOpen
 )
 
@@ -78,6 +86,40 @@ function Warn  { param([string]$T) Write-Host "  warn  $T" -ForegroundColor Yell
 function Fail  { param([string]$T) Write-Host "  FAIL  $T" -ForegroundColor Red }
 
 $Problems = @()
+
+# ---------------------------------------------------------------------------
+# -Stop: stop the editor and exit. No file checks, because stopping must work
+# even when something is missing or half built.
+# ---------------------------------------------------------------------------
+if ($Stop) {
+    Step 'Stopping the editor'
+    $Editors = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
+    if (-not $Editors) {
+        Ok 'no editor was running'
+        exit 0
+    }
+    Write-Host "  stopping $($Editors.Count) process(es)"
+    $Editors | Stop-Process -Force -ErrorAction SilentlyContinue
+
+    # Wait for the DLL lock to actually clear before claiming success, because a
+    # rebuild started too early fails with a locked binary.
+    $Deadline = (Get-Date).AddSeconds(30)
+    while ((Get-Date) -lt $Deadline) {
+        if (-not (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue)) { break }
+        Start-Sleep -Seconds 1
+    }
+
+    if (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue) {
+        Fail 'an editor process is still alive after 30s'
+        exit 6
+    }
+    if (Get-NetTCPConnection -LocalPort $McpPort -State Listen -ErrorAction SilentlyContinue) {
+        Warn "port $McpPort is still held by another process"
+    }
+    Ok 'stopped and the plugin DLL is unlocked'
+    Write-Host "`nRESULT: PASS" -ForegroundColor Green
+    exit 0
+}
 
 # ---------------------------------------------------------------------------
 Step 'Files'
@@ -117,20 +159,38 @@ if ($Problems.Count -gt 0) {
 # ---------------------------------------------------------------------------
 Step 'Existing editor'
 # ---------------------------------------------------------------------------
+# Refuse rather than warn. A warning here once let a second editor start while a
+# first was still running, which means two servers racing for the MCP port and a
+# confusing picture for whoever is watching. Starting a second editor is never
+# what the caller meant.
 $Running = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
-if ($Running) {
-    if ($StopFirst) {
-        Write-Host "  stopping $($Running.Count) running editor process(es)"
-        $Running | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 6
-        Ok 'stopped'
-    } else {
-        Warn "an editor is already running (PID $($Running[0].Id)). Use -StopFirst to replace it."
-    }
-}
+$PortBusy = Get-NetTCPConnection -LocalPort $McpPort -State Listen -ErrorAction SilentlyContinue
 
-if (Get-NetTCPConnection -LocalPort $McpPort -State Listen -ErrorAction SilentlyContinue) {
-    Warn "port $McpPort is already in use; the new server may fail to bind"
+if ($Running -or $PortBusy) {
+    if ($StopFirst) {
+        if ($Running) {
+            Write-Host "  stopping $($Running.Count) running editor process(es)"
+            $Running | Stop-Process -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 6
+            Ok 'stopped'
+        } else {
+            # Something else owns the port. Stopping UnrealEditor processes is not
+            # guaranteed to free it, so say what is holding it rather than guess.
+            Warn "port $McpPort is held by a process that is not UnrealEditor; the new server may fail to bind"
+        }
+    } else {
+        if ($Running) {
+            Fail "an editor is already running (PID $($Running[0].Id))"
+            Write-Host "        Re-run with -StopFirst to replace it, or use -Stop to stop it." -ForegroundColor Yellow
+        }
+        if ($PortBusy) {
+            Fail "port $McpPort is already in use, so a second MCP server would fail to bind"
+            Write-Host "        Re-run with -StopFirst, or use -Stop to stop the editor holding it." -ForegroundColor Yellow
+        }
+        exit 6
+    }
+} else {
+    Ok 'no editor running'
 }
 
 # ---------------------------------------------------------------------------
@@ -140,10 +200,16 @@ $Args = @($Project)
 if ($NullRHI) { $Args += @('-nullrhi','-unattended') }
 $Args += @('-nosplash','-nosound')
 
-$Started = Get-Date
+$StartTime = Get-Date
 Write-Host "  $EditorExe $($Args -join ' ')"
-if ($NullRHI) { Start-Process -FilePath $EditorExe -ArgumentList $Args -WindowStyle Hidden }
-else          { Start-Process -FilePath $EditorExe -ArgumentList $Args }
+# PassThru, so the loop below watches THE editor this script started rather than
+# any UnrealEditor process that happens to exist. Watching by name could report
+# success based on a stale process and hide the new one dying.
+if ($NullRHI) { $Started = Start-Process -FilePath $EditorExe -ArgumentList $Args -WindowStyle Hidden -PassThru }
+else          { $Started = Start-Process -FilePath $EditorExe -ArgumentList $Args -PassThru }
+
+$EditorPid = $Started.Id
+Write-Host "  PID $EditorPid"
 
 $Deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 $SawWindow = $false
@@ -153,9 +219,9 @@ $LastNote = Get-Date
 while ((Get-Date) -lt $Deadline) {
     Start-Sleep -Seconds 5
 
-    $Proc = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue | Select-Object -First 1
+    $Proc = Get-Process -Id $EditorPid -ErrorAction SilentlyContinue
     if (-not $Proc) {
-        Fail "the editor process exited after $([int]((Get-Date) - $Started).TotalSeconds)s"
+        Fail "the editor process (PID $EditorPid) exited after $([int]((Get-Date) - $StartTime).TotalSeconds)s"
         $LogPath = Join-Path $ProjectDir 'Saved\Logs\TurboMCPTest.log'
         if (Test-Path $LogPath) {
             Write-Host '  last log lines:' -ForegroundColor Yellow
@@ -166,7 +232,7 @@ while ((Get-Date) -lt $Deadline) {
 
     if (-not $NullRHI -and -not $SawWindow -and $Proc.MainWindowHandle -ne 0) {
         $SawWindow = $true
-        Ok "window up after $([int]((Get-Date) - $Started).TotalSeconds)s: $($Proc.MainWindowTitle)"
+        Ok "window up after $([int]((Get-Date) - $StartTime).TotalSeconds)s: $($Proc.MainWindowTitle)"
     }
 
     if (Get-NetTCPConnection -LocalPort $McpPort -State Listen -ErrorAction SilentlyContinue) {
@@ -176,7 +242,7 @@ while ((Get-Date) -lt $Deadline) {
 
     # A progress note every 30s, so a long shader compile is not mistaken for a hang.
     if (((Get-Date) - $LastNote).TotalSeconds -ge 30) {
-        Write-Host ("  waiting... {0}s, memory {1} MB" -f [int]((Get-Date) - $Started).TotalSeconds, [math]::Round($Proc.WorkingSet64/1MB,0))
+        Write-Host ("  waiting... {0}s, memory {1} MB" -f [int]((Get-Date) - $StartTime).TotalSeconds, [math]::Round($Proc.WorkingSet64/1MB,0))
         $LastNote = Get-Date
     }
 }
@@ -207,13 +273,13 @@ if (Test-Path $ProbeScript) {
 # ---------------------------------------------------------------------------
 Step 'Working state reached'
 # ---------------------------------------------------------------------------
-$Proc = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue | Select-Object -First 1
+$Proc = Get-Process -Id $EditorPid -ErrorAction SilentlyContinue
 Write-Host ("  PID:      {0}" -f $Proc.Id)
 Write-Host ("  title:    {0}" -f $Proc.MainWindowTitle)
 Write-Host ("  window:   {0}" -f ($Proc.MainWindowHandle -ne 0))
 Write-Host ("  memory:   {0} MB" -f [math]::Round($Proc.WorkingSet64/1MB,0))
 Write-Host ("  MCP:      {0}" -f $McpUrl)
-Write-Host ("  startup:  {0}s" -f [int]((Get-Date) - $Started).TotalSeconds)
+Write-Host ("  startup:  {0}s" -f [int]((Get-Date) - $StartTime).TotalSeconds)
 if (-not $NullRHI) {
     Write-Host ''
     Write-Host '  Look for the TurboMCP panel under: Window > TurboMCP'
