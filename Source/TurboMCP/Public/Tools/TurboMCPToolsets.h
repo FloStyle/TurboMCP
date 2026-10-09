@@ -774,6 +774,44 @@ public:
 	static FString EditTurboMCPOverrideRemove(
 		const FString& Asset,
 		const FString& FunctionOrEvent);
+
+	/**
+	 * Add a function to a Blueprint.
+	 *
+	 * Pass a Blueprint and a name. The name is checked BEFORE anything is created, so a refusal
+	 * changes nothing.
+	 *
+	 * THREE REFUSALS, and the separation between them is the point of the spec:
+	 *  - a name already used ON THIS BLUEPRINT, whether by a function graph, an event or a custom
+	 *    event, is refused and the result NAMES what holds it;
+	 *  - a name that matches a PARENT function is refused differently and points at
+	 *    `P/E-OVERRIDE-ADD`, because a caller who wants to implement a parent function wants an
+	 *    override, not a new function that would leave the parent's version untouched;
+	 *  - a name that is not a usable identifier is refused with the character that is wrong.
+	 *
+	 * Call nodes and widget bindings that already name it are REPORTED rather than treated as
+	 * fatal, because the caller may be about to build exactly that function.
+	 *
+	 * NO PREVIEW TWIN, per `03_TOOLS.md`. The graph comes from the editor's own
+	 * `UBlueprintEditorLibrary::AddFunctionGraph`, and the result reads back whether the editor now
+	 * lists the function as implemented rather than trusting the call's return value.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPFunctionAdd(const FString& Asset, const FString& Name);
+
+	/**
+	 * Remove a function from a Blueprint, so its name is free at once.
+	 *
+	 * Pass a Blueprint and the name of a function it has. The graph is removed through the editor's
+	 * own `RemoveFunctionGraph`, which is what the editor's delete does.
+	 *
+	 * The result says whether the name is FREE AGAIN, checked with the same name test the add uses.
+	 * When something else still holds it, that is named rather than left as a surprise on the next
+	 * add. A name matching no function is refused with `unchanged:` and lists the functions the
+	 * Blueprint does have.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPFunctionRemove(const FString& Asset, const FString& Name);
 };
 
 /**

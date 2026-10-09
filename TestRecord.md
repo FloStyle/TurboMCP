@@ -2012,3 +2012,81 @@ started. A test that consumes a finite shared resource is not re-runnable, and t
 ### Still to come in phase 4
 
 `E-FUNCTION-ADD` and `E-FUNCTION-REMOVE`, and `P/E-WIDGET-RETARGET`.
+
+---
+
+## 4e. E-FUNCTION-ADD and E-FUNCTION-REMOVE: a silent rename caught in the act
+
+34 tools. 16 acceptance suites, all green. `T-STRUCT-5` is exercised by
+`python Tools/test-function.py`.
+
+### The engine does not use the name it is given
+
+`UBlueprintEditorLibrary::AddFunctionGraph` **uniques the name against the objects still in the
+package**. Asking for `ComputeScore` when something still held that name created a graph called
+`ComputeScore_0` — and the call **returned a valid graph**, so the first version of this tool
+reported
+
+```
+changed: added function 'ComputeScore' to /Game/.../BP_NodeTest
+```
+
+and was **WRONG**. The caller would then call `ComputeScore`, find nothing, and have no way to know
+why.
+
+**Nothing in the tool's own report showed it.** It was found by removing a function, re-adding the
+same name, and **reading the functions back**: the list said `ComputeScore_0`. That is the **third
+time** in phase 4 that reading the result back through a different view caught a defect the
+writer's own report hid.
+
+### The fix, and the proof that it fires
+
+After creating, the graph's name is compared with the name asked for. When they differ the graph is
+**removed again** and the call is **refused** — removed rather than reported, because leaving a
+`ComputeScore_0` behind is worse than not creating it.
+
+**The guard was shown to fail before it was believed.** The pre-check that should have caught the
+clash was temporarily disabled, the code rebuilt, and the same name added twice:
+
+```
+unchanged: the engine would not create a function named 'ProveGuard' and made 'ProveGuard_0'
+instead, because something in the package still holds that name. The graph was removed again,
+so nothing was added.
+```
+
+and reading the graphs back showed **only `ProveGuard`** — no `ProveGuard_0` left behind. The check
+was then restored and the tree verified free of the temporary change. **A guard that has never been
+seen to fire is not a guard.**
+
+### The three refusals are told apart, as the spec requires
+
+| Refused | Message ends with |
+|---|---|
+| `ComputeScore`, already a function here | `'ComputeScore' is already a function on this Blueprint` |
+| `ReceiveBeginPlay`, already an event here | `'ReceiveBeginPlay' is already an event in 'EventGraph'` |
+| `ReceiveDestroyed`, declared by the parent | `declared by the parent class Actor … **Use P/E-OVERRIDE-ADD instead.**` |
+| `Has Space` | `' ' is not a letter, a digit or an underscore` |
+| `1Bad` | `it does not start with a letter or underscore` |
+
+The parent case is refused **differently** from a plain clash, because a caller who wants to
+implement a parent function wants an **override**, not a new function that would leave the parent's
+version untouched and never called.
+
+### Remove now claims only what it can check
+
+It said `the name is free again: yes` on a check that only looks at the Blueprint's graphs, and the
+**package** can still hold the name. It now says:
+
+```
+no function graph holds that name now: yes
+; this does NOT guarantee the package has released the name. The engine uniques a new function's
+  name against the objects still in the package, so adding the same name back immediately may
+  still be renamed; E-FUNCTION-ADD detects that and refuses rather than creating a numbered graph.
+```
+
+**Add and Remove are one capability** because REMOVE is what frees a name an ADD took by mistake.
+Without it, a mistyped function name could only be cleared in the editor by hand.
+
+### Still to come in phase 4
+
+`P/E-WIDGET-RETARGET`. `E-COMPILE` is already done.
