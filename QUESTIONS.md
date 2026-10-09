@@ -591,3 +591,59 @@ one is a candidate for phase 6, where the layout tools live.
 Until then, a human opening the Window menu and looking at the TurboMCP tab is the only proof.
 
 ---
+
+---
+
+## Q-12. The dead-node REMOVAL path has never run
+
+**Status: open, deliberately recorded rather than worked around.**
+
+`P/E-GRAPH-DEAD` finds disconnected groups that nothing reaches and whose writes are never read, and
+`E-GRAPH-DEAD` removes them. **The finding half is verified. The removal half is not, and cannot be
+with the writers available.**
+
+### Why it cannot be tested here
+
+This plugin's tools read, preview and edit; they do **not** create graph nodes. The engine's
+`write_graph_dsl` does, and it **refuses to build a disconnected group**: it needs a top-level `event`
+or `fn` form, and every node it makes is wired into that form's exec chain by construction. Measured
+attempts:
+
+- `(Development|PrintString "orphan probe")` alone →
+  `Top-level form must start with "event" or "fn"`.
+- `(fn OrphanProbe (Development|PrintString "orphan probe"))` →
+  `The node could not be created / AddEvent|OrphanProbe does not exist`.
+
+So the test graph contains **no dead node**, and no dead node could be made. The same wall `Q-9` hit
+with reroute knots.
+
+### What IS verified
+
+| Claim | Evidence |
+|---|---|
+| a live graph is reported as having **nothing** dead | `11 node(s) in the graph, 0 unreachable group(s)` |
+| the walk follows **data** wires, not exec alone | the graph's pure operator nodes have no exec chain of their own and none is called dead |
+| the preview **changes nothing** | the node set is compared by identity before and after |
+| a no-op edit says `unchanged:` | `unchanged: EventGraph has 0 unreachable group(s) and none is safe to remove` |
+| the request is validated | no asset, a non-Blueprint, and a graph that does not exist are each refused by name |
+
+The **generous reachability rule is the point of the verified half**: a walk that over-reports would
+call **live** code dead, and that is the failure that destroys a user's work. A live graph answering
+"nothing" is the single most important result to get right, and it is got right.
+
+### What is NOT verified
+
+- that a group IS found when one exists;
+- that the three KEEP rules fire in practice — a group holding an entry, a group whose write is read
+  by live code, and a group that repeats live logic;
+- that removal takes only the intended nodes, and that the node counts before and after agree;
+- that the entry re-check on the node about to go actually protects anything.
+
+### The route that would close it
+
+An asset that SHIPS with a dead group, committed once and never rebuilt — the same approach
+`TA-1` to `TA-13` in `06_ACCEPTANCE.md` take for the hand-made kit. A graph written by the editor's
+own UI, or by a C++ commandlet that wires a group and then breaks the one link that reaches it, would
+give the tool something real to find. Until then this capability's write half rests on code review.
+
+---
