@@ -3,7 +3,9 @@
 #include "TurboMCPAnalyticsProvider.h"
 
 #include "AnalyticsET.h"
-#include "Hash/Blake3.h"
+#include "Logging.h"
+#include "ModelContextProtocolAnalytics.h"
+#include "IModelContextProtocolTool.h"
 #include "IModelContextProtocolModule.h"
 #include "AnalyticsEventAttribute.h"
 #include "HAL/CriticalSection.h"
@@ -25,55 +27,119 @@ TMap<FString, FString>& FTurboMCPAnalyticsProvider::Registry()
 
 FString FTurboMCPAnalyticsProvider::HashToolIdentifier(const FString& InIdentifier)
 {
-	// THE ENGINE'S OWN HASH, REPRODUCED FROM ITS SOURCE.
+	// THE ENGINE'S OWN, CALLED RATHER THAN REPRODUCED.
 	//
-	// `ModelContextProtocolAnalytics.cpp` is:
+	// `UE::ModelContextProtocol::Analytics::HashToolIdentifier` is exported `UE_API` from
+	// `ModelContextProtocolAnalytics.h`, so there was never a reason to reimplement it. The first
+	// version did — UTF-8 bytes through `FBlake3::HashBuffer`, then `LexToString` — and that was a
+	// liability rather than a virtue: a reimplementation is only correct while it matches, and
+	// NOTHING WOULD HAVE SAID SO when it stopped matching.
 	//
-	//     FTCHARToUTF8 Utf8(*Identifier);
-	//     const FBlake3Hash Hash = FBlake3::HashBuffer(Utf8.Get(), Utf8.Length());
-	//     return LexToString(Hash);
-	//
-	// The UTF-8 step matters: hashing the TCHAR buffer instead would give a different value for
-	// every name that is not pure ASCII. Reproducing it exactly is what lets a hash in the event
-	// be turned back into the name that produced it.
-	FTCHARToUTF8 Utf8(*InIdentifier);
-	const FBlake3Hash Hash = FBlake3::HashBuffer(Utf8.Get(), Utf8.Length());
-	return LexToString(Hash);
+	// The same function generated the hashes in the log, so calling it makes the lookup exact by
+	// construction rather than by agreement.
+	return UE::ModelContextProtocol::Analytics::HashToolIdentifier(InIdentifier);
 }
 
 void FTurboMCPAnalyticsProvider::RegisterKnownName(const FString& InName)
 {
-	if (InName.IsEmpty())
-	{
-		return;
-	}
+	// AN EMPTY NAME IS A REAL KEY, not a mistake to skip. `ParseToolsetName` returns the empty
+	// string for a tool with no dot in its name, and the engine's own mapping commandlet registers
+	// that empty entry so rows for top-level tools decode. The first version returned early on an
+	// empty name, which would have left every top-level tool unresolved.
 	FScopeLock Lock(&RegistryMutex);
-	// The NAME is stored, so a lookup gives back what was registered rather than the hash again.
 	Registry().Add(HashToolIdentifier(InName), InName);
 }
 
 void FTurboMCPAnalyticsProvider::RegisterServedToolsetsAndTools()
 {
-	// THIS PLUGIN'S OWN TOOLSETS, registered by name.
+	// THE ENGINE'S OWN LIST, WHICH REMOVES THE LIMITATION THE FIRST VERSION HAD AND CLOSES Q-10.
 	//
-	// THE ENGINE'S TOOLSETS CANNOT BE ENUMERATED, AND THAT IS A MEASURED LIMITATION RATHER THAN AN
-	// OVERSIGHT. `UToolsetRegistry` exposes `IsToolsetRegistered(name)`, `GetToolsetJsonSchema` and
-	// `GetAllToolsetJsonSchemas` — no list of names and no list of tools. So there is nothing to
-	// iterate, and an engine tool's hash cannot be turned back into its name from here.
-	//
-	// Rather than leave the reader with an opaque 64-character string, the log writes the hash with
-	// the word `engine` and the FIRST 12 CHARACTERS, which is enough to tell two engine tools
-	// apart in a session and is honestly labelled. `QUESTIONS.md` records the limitation and the
-	// one route that would lift it: matching a hash against the toolset schemas' declared names,
-	// which needs the schema JSON parsed and is not done here.
-	RegisterKnownName(TEXT("TurboMCP.TurboMCPReadToolset"));
-	RegisterKnownName(TEXT("TurboMCP.TurboMCPLookToolset"));
-	RegisterKnownName(TEXT("TurboMCP.TurboMCPPreviewToolset"));
-	RegisterKnownName(TEXT("TurboMCP.TurboMCPEditToolset"));
+	// The first version listed this plugin's tool names BY HAND and could not name an engine tool
+	// at all, because `UToolsetRegistry` exposes no list of served toolsets or tools. That is still
+	// true of `UToolsetRegistry` — but it was the wrong place to look. `IModelContextProtocolModule
+	// ::GetTools()` returns every registered tool with its identifier, and it is exactly what the
+	// engine's own `ModelContextProtocolToolHashMappingCommandlet` uses to build the very mapping
+	// this provider needs. Reading it is strictly better than a hand-kept table: a tool added
+	// anywhere resolves without this file being touched.
+	IModelContextProtocolModule* Module = IModelContextProtocolModule::Get();
+	if (Module == nullptr)
+	{
+		return;
+	}
 
-	// The BARE names too, because `call_tool` takes the bare function name and a future engine
-	// version might hash that instead of the qualified one.
-	static const TCHAR* const BareToolNames[] = {
+	TSet<FString> Names;
+	for (const TSharedRef<IModelContextProtocolTool>& Tool : Module->GetTools())
+	{
+		Names.Add(Tool->GetName());
+	}
+
+	// THE META-TOOLS ARE NOT IN `GetTools()`, AND THAT WAS THE OTHER HALF OF Q-10.
+	//
+	// In tool-search mode `call_tool` receives the call and then emits a SECOND event for the
+	// inner tool it dispatched — measured at `ModelContextProtocolServer.cpp:887` and `:907`,
+	// where the comment says the second emission exists so per-toolset analytics for the real
+	// target stay visible. So each of this plugin's calls produced TWO lines: one for `call_tool`,
+	// whose hashes did not resolve, and one for the inner tool, whose did.
+	//
+	// `call_tool`, `list_toolsets` and `describe_toolset` never appear in `GetTools()` because the
+	// tool-search adapter registers them, which is precisely why the engine's own commandlet adds
+	// the same three by hand (`ModelContextProtocolToolHashMappingCommandlet.cpp` lines 54-56).
+	Names.Add(TEXT("list_toolsets"));
+	Names.Add(TEXT("describe_toolset"));
+	Names.Add(TEXT("call_tool"));
+
+	for (const FString& Name : Names)
+	{
+		RegisterKnownName(Name);
+
+		// The TOOLSET PREFIX, through the engine's own parser, which splits at the LAST dot. A
+		// top-level tool has no dot, so its prefix is the empty string — and that empty entry is
+		// what makes `call_tool`'s own toolset resolve.
+		RegisterKnownName(UE::ModelContextProtocol::Analytics::ParseToolsetName(Name));
+	}
+
+	// THE TOOLSETS THE SERVER ACTUALLY SERVES, UNDER BOTH NAMES THEY GO BY.
+	//
+	// `GetTools()` DID NOT HELP WITH THESE, and that is measured rather than assumed: in
+	// tool-search mode it returns exactly THREE identifiers — `call_tool`, `describe_toolset` and
+	// `list_toolsets`, all with an empty toolset prefix — because in that mode the toolset's own
+	// tools are DISPATCHED THROUGH `call_tool` rather than registered. The engine says so itself in
+	// `ModelContextProtocolToolsetRegistryAdapter.h`: "In tool-search mode ... toolset tools are
+	// dispatched through call_tool without being registered."
+	//
+	// So the inner event's toolset hash is over the string the CALLER passed as `toolset_name`, and
+	// that is the bare toolset name. Measured: with `TurboMCP.TurboMCPReadToolset` registered, the
+	// event's toolset hash `025927b6f59b` did not resolve, and with the bare `TurboMCPReadToolset`
+	// it does. Both forms are registered, because a caller may pass either and the qualified form
+	// is what `describe_toolset` reports.
+	//
+	// `UToolsetRegistry` still exposes no list of served toolsets, so these four are named — but
+	// they are the plugin's own, and `check-mcp-server.py` fails if a fifth toolset is registered
+	// without a line here, so the list cannot silently drift.
+	static const TCHAR* const OwnToolsets[] = {
+		TEXT("TurboMCPReadToolset"),
+		TEXT("TurboMCPLookToolset"),
+		TEXT("TurboMCPPreviewToolset"),
+		TEXT("TurboMCPEditToolset"),
+	};
+	for (const TCHAR* Toolset : OwnToolsets)
+	{
+		RegisterKnownName(Toolset);
+		RegisterKnownName(FString::Printf(TEXT("TurboMCP.%s"), Toolset));
+	}
+
+	// THE INNER TOOL IS HASHED OVER ITS FULL NAME, NOT ITS BARE ONE.
+	//
+	// `ModelContextProtocolServer.cpp:904` builds `ResolvedFullName` as
+	// `toolset_name + "." + tool_name` and passes THAT to `RecordToolCallEvent`, so the tool slot
+	// of an inner event holds the hash of the whole qualified string. Registering the bare tool
+	// name is not enough, and measured it was not: the slot stayed unresolved with the bare names
+	// registered and the toolsets resolved.
+	//
+	// Every combination is registered, because the `toolset_name` a caller passes may be either
+	// form and the pairing between a tool and its toolset is not discoverable here for the same
+	// reason the toolset list is not. The combinations are cheap: one hash each, once at startup.
+	static const TCHAR* const OwnToolNames[] = {
 		TEXT("ReadTurboMCPStatus"), TEXT("ReadTurboMCPToolIndex"), TEXT("ReadTurboMCPToolHelp"),
 		TEXT("ReadTurboMCPAssetSearch"), TEXT("ReadTurboMCPAssetDescribe"),
 		TEXT("ReadTurboMCPTypeFind"), TEXT("ReadTurboMCPDirtyList"),
@@ -94,9 +160,36 @@ void FTurboMCPAnalyticsProvider::RegisterServedToolsetsAndTools()
 		TEXT("EditTurboMCPWidgetBindAdd"), TEXT("EditTurboMCPCallLog"),
 		TEXT("EditTurboMCPCallLogClear"),
 	};
-	for (const TCHAR* Bare : BareToolNames)
+	for (const TCHAR* Tool : OwnToolNames)
 	{
-		RegisterKnownName(Bare);
+		RegisterKnownName(Tool);
+		for (const TCHAR* Toolset : OwnToolsets)
+		{
+			// The qualified form FIRST, because that is the one the server builds.
+			RegisterKnownName(FString::Printf(TEXT("TurboMCP.%s.%s"), Toolset, Tool));
+			// The bare-toolset form, which is what a caller passes as `toolset_name`.
+			RegisterKnownName(FString::Printf(TEXT("%s.%s"), Toolset, Tool));
+		}
+	}
+
+	// Registered explicitly so the entry exists even if the set above came out empty.
+	RegisterKnownName(FString());
+
+	UE_LOG(LogTurboMCP, Log,
+		TEXT("TurboMCP call log: registered %d tool identifier(s) and their toolsets for hash resolution"),
+		Names.Num());
+
+	// The identifiers are logged, bounded, because the SHAPE of an identifier is the thing that had
+	// to be discovered here. A reader of the next puzzle wants it without rebuilding.
+	{
+		TArray<FString> Sorted = Names.Array();
+		Sorted.Sort();
+		for (int32 Index = 0; Index < Sorted.Num() && Index < 12; ++Index)
+		{
+			UE_LOG(LogTurboMCP, Log, TEXT("  identifier[%d]: '%s' -> toolset '%s'"),
+				Index, *Sorted[Index],
+				*UE::ModelContextProtocol::Analytics::ParseToolsetName(Sorted[Index]));
+		}
 	}
 }
 
@@ -195,28 +288,50 @@ void FTurboMCPAnalyticsProvider::RecordEvent(FString&& EventName,
 		const FString Duration = AttributeValue(Attributes, TEXT("Duration"));
 		const FString Status = AttributeValue(Attributes, TEXT("ResultStatus"));
 
-		// RESOLVED AGAINST THE REGISTRY, so the log says `blueprint.write_graph_dsl` rather than a
-		// 64-character hash. An unresolved hash is written AS the hash with a marker, never
-		// invented and never dropped: an opaque identifier is still evidence a call happened.
+		// RESOLVED AGAINST THE REGISTRY, so the log says a real name rather than a 64-character
+		// hash. An unresolved hash is written AS the hash with a marker, never invented and never
+		// dropped: an opaque identifier is still evidence a call happened.
+		//
+		// RESOLVED AND EMPTY ARE DIFFERENT ANSWERS, and conflating them was a real bug. A top-level
+		// tool has an EMPTY toolset prefix — the empty string is a legitimate key in the registry,
+		// which is why the engine's own mapping commandlet registers it — so `call_tool` resolved
+		// to the empty string and the `IsEmpty()` test below then reported it as UNRESOLVED:
+		//
+		//     (engine tool ending af1349b9f5f9)  .  call_tool
+		//
+		// a line saying it could not name a toolset it had just named. So RESOLUTION is tracked by
+		// whether the key was FOUND, not by whether the value is empty.
 		FString ToolsetName;
 		FString ToolName;
+		bool bToolsetResolved = false;
+		bool bToolResolved = false;
 		{
 			FScopeLock Lock(&RegistryMutex);
 			if (const FString* Found = Registry().Find(ToolsetHash))
 			{
 				ToolsetName = *Found;
+				bToolsetResolved = true;
 			}
 			if (const FString* Found = Registry().Find(ToolHash))
 			{
 				ToolName = *Found;
+				bToolResolved = true;
 			}
 		}
 
-		if (ToolsetName.IsEmpty())
+		if (!bToolsetResolved)
 		{
 			ToolsetName = FString::Printf(TEXT("(engine tool ending %s)"), *ToolsetHash.Left(12));
 		}
-		if (ToolName.IsEmpty())
+		else if (ToolsetName.IsEmpty())
+		{
+			// THE EMPTY PREFIX IS A REAL ANSWER AND IT IS WRITTEN AS ONE. A top-level tool — the
+			// tool-search meta-tools and anything else registered without a toolset — hashes
+			// against the empty prefix. Written as `(top-level)` so a reader sees a name rather
+			// than an empty column, and so it cannot be mistaken for a failed lookup.
+			ToolsetName = TEXT("(top-level)");
+		}
+		if (!bToolResolved)
 		{
 			ToolName = FString::Printf(TEXT("(engine tool ending %s)"), *ToolHash.Left(12));
 		}

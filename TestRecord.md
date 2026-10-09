@@ -2267,3 +2267,81 @@ The log **starts OFF**, per the spec, and the choice persists in the editor sett
 `FString::ToBool`, which answers false for anything it does not recognise — so a caller who typed
 `on` would have silently turned the log **OFF**. `E-CALL-LOG-CLEAR` drops only the in-memory entries
 and says so: the **file** is the record of what happened.
+
+---
+
+## 5b. Q-10 closed: every name in the call log resolves
+
+18 acceptance suites, all green. `Q-10` is **RESOLVED** rather than worked around.
+
+### The engine already solves this for itself, and the answer was in its own commandlet
+
+The previous round concluded engine tool names could not be resolved because `UToolsetRegistry`
+exposes no list of served toolsets or tools. **That was the wrong place to look.** The engine ships
+`ModelContextProtocolToolHashMappingCommandlet`, which builds **exactly** the hash-to-name mapping
+this provider needs. Reading it gave the whole answer.
+
+### Three facts closed it
+
+| Fact | Consequence |
+|---|---|
+| `IModelContextProtocolModule::GetTools()` returns every registered tool with its identifier | the hand-written table is **gone**; a tool added anywhere now resolves |
+| `HashToolIdentifier` and `ParseToolsetName` are exported `UE_API` | the **reimplementation of the hash is gone** |
+| In tool-search mode `GetTools()` returns exactly **three** identifiers, all with an **empty** toolset prefix | the inner event's toolset hash is over the string the caller passed, and its **tool** slot holds the hash of the **whole qualified name** |
+
+**The reimplementation was a liability, not a virtue.** It was correct only while it matched, and
+**nothing would have said so when it stopped.** The engine's own function is now called, which makes
+the lookup exact by construction.
+
+The third fact is measured, and the engine says so itself in
+`ModelContextProtocolToolsetRegistryAdapter.h`: *"In tool-search mode ... toolset tools are
+dispatched through `call_tool` without being registered."* `ModelContextProtocolServer.cpp:904`
+builds `ResolvedFullName = toolset_name + "." + tool_name` and passes **that**, which is why
+registering the bare tool name was not enough.
+
+### The two events per call are the engine's own design, and the earlier note is withdrawn
+
+`ModelContextProtocolServer.cpp:887` emits one event for `call_tool` and `:907` emits a **second**
+for the inner tool, with the comment:
+
+> *Tool-search mode routes every actual toolset invocation through `call_tool`; without a second
+> emission every routed call collapses onto the empty-prefix toolset hash and per-toolset analytics
+> for the real targets stay invisible.*
+
+**Two lines per call is correct.** The note in this file calling it an unexplained duplication is
+withdrawn.
+
+### A bug the fix exposed: resolved-and-empty is not unresolved
+
+The empty prefix is a **legitimate key** — the engine's own commandlet registers it — so `call_tool`
+resolves to the empty string. The lookup then tested `IsEmpty()` to decide whether resolution had
+happened and printed:
+
+```
+(engine tool ending af1349b9f5f9)  .  call_tool
+```
+
+— **a line saying it could not name a toolset it had just named.** Resolution is now tracked by
+whether the key was **found**, and an empty prefix is written as `(top-level)` so a reader sees a
+name rather than a blank column.
+
+### Measured, after the fix
+
+```
+(top-level)                   .  call_tool
+TurboMCP.TurboMCPEditToolset  .  TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog
+(top-level)                   .  call_tool
+TurboMCP.TurboMCPReadToolset  .  TurboMCP.TurboMCPReadToolset.ReadTurboMCPBlueprintLoad
+```
+
+### The check that would have caught the earlier half-state
+
+The suite previously **tolerated** a line with a real name in one slot and a hash in the other, and
+that half-resolved state **looks finished**. It now refuses any line containing a hash placeholder.
+
+### The fifth order-dependent check
+
+The log accumulates and is never rotated, so it carried lines from builds whose resolution was
+incomplete, and the new strict check went red on work that was **already fixed**. The suite now
+starts from an empty log file — **truncated rather than deleted**, because it is the record of what
+happened and the suite merely starts its own.
