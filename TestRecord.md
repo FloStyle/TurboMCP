@@ -332,6 +332,66 @@ disambiguates two nodes whose titles collide.
 
 ---
 
+## 2h. Phase 2: R-BP-LOAD
+
+Built: `FTurboMCPBlueprintRead` and `ReadTurboMCPBlueprintLoad`, the main Read
+tool. 17 tools. The four detail levels are strictly nested and the graph bodies
+come from the same `FTurboMCPGraphText` that `R-GRAPH-LOAD` uses, so the two
+cannot print a graph differently.
+
+Tested on `BP_NodeTest`, whose EventGraph the engine's own writer populated with an
+event, a variable write, a print, a branch reading that variable, and a print on
+each arm.
+
+| Test | Result | Evidence |
+|---|---|---|
+| The manifest names everything | **PASS** | `counts: 3 graph(s), 2 variable(s), 1 component(s)`, then each name |
+| The status line is first, with real counts | **PASS** | `read: 1 of 1 asset(s), detail manifest, 402 character(s)` |
+| Variables print type, category, default and flags | **PASS** | `Health : Float (double-precision)`, `category: Default`, `flags: BlueprintReadWrite, NotInstanceEditable` |
+| Events carry real signatures | **PASS** | `ReceiveActorBeginOverlap(AActor* OtherActor)`, `ReceiveTick(float DeltaSeconds)` |
+| Components carry their class | **PASS** | `DefaultSceneRoot : SceneComponent` |
+| The call graph names what each graph calls | **PASS** | `EventGraph -> Greater_DoubleDouble, MakeLiteralDouble, PrintString` |
+| The variable map names readers and writers | **PASS** | `Health`: `read by: EventGraph`, `written by: EventGraph` |
+| A variable nothing touches is called out | **PASS** | `TargetName`: `never read and never written in any graph` |
+| The graph filter narrows the read | **PASS** | `graphFilter: EventGraph` gives `bodies: 1 graph(s)` |
+| A filter is declared in the relations | **PASS** | `NOTE: a graph filter is active, so these relations cover the 1 matching graph(s) out of 3` |
+| A filter matching nothing is refused | **PASS** | names the real graphs rather than returning an empty read |
+| `bodies` prints the graph | **PASS** | 2986 characters, with `:then` and `:else` arms |
+| A bad detail level is refused with the list | **PASS** | `Accepted: manifest, signatures, bodies, full.` |
+| `format json` is refused, not faked | **PASS** | says it is not implemented rather than returning text a caller would parse as JSON |
+| A non-numeric budget is refused | **PASS** | says what to pass instead |
+
+### Four defects found by reading the real output
+
+**1. The conclusion was printed before the evidence.** The first version built the
+opening line with the counts already in it, before the loop had run, so it read
+`read: 1 asset(s): 1 read, 0 refused` followed by the body. The counts are now
+computed first and the status line is **prepended** to the body, not assigned over
+it — an intermediate attempt assigned over it and threw the whole body away.
+
+**2. Contradictory variable flags.** `Health` printed
+`flags: BlueprintReadWrite, InstanceEditable, NotInstanceEditable`, which is
+self-refuting. `CPF_Edit` means "user-settable in the editor" and **every**
+Blueprint variable carries it, so it is not evidence of anything. The per-instance
+question is answered by `CPF_DisableEditOnInstance` alone.
+
+**3. Every event was listed as a function nobody calls.** A `UK2Node_FunctionEntry`
+exists in the **event graph** too, for the ubergraph function the engine generates,
+so testing for that node alone made `ReceiveBeginPlay` appear as an event, as a
+function, and then as a function nothing calls. A real function graph is one the
+Blueprint holds in `FunctionGraphs`, and that is now the test.
+
+**4. A filtered read silently dropped relations.** Filtering to `EventGraph` made
+`Health` vanish from the variable map, which reads as "this Blueprint never uses
+it" rather than "it is used in a graph you filtered out". The relations section now
+states which graphs it covers when a filter is active.
+
+The dead-code list also now says that it lists functions no **node** calls, and
+that an engine-invoked function such as `UserConstructionScript` appears there and
+is not dead — otherwise a caller could delete something that runs.
+
+---
+
 ## 2d. Phase 1: type find and dirty list
 
 | Test | Result | Evidence |
