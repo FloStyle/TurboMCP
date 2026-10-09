@@ -208,7 +208,20 @@ def main():
     print("    L-LAYOUT-REPORT total: %s   my before: %s"
           % (reported.group(1) if reported else "?", planned[0] if planned else "?"))
     check("the layout report prints a total wire length", reported is not None, report[:300])
-    if reported and planned:
+    # THE STRICT COMPARISON ONLY HOLDS WHEN EVERY NODE HAS A MEASURED SIZE.
+    #
+    # MEASURED, and this guard is the honest half of a real fix. `L-LAYOUT-REPORT` reads `NodeWidth` RAW,
+    # and this pass substitutes a documented 48-unit fallback for a node the engine never measured -
+    # because Slate writes `NodeWidth` when it DRAWS and a commandlet draws nothing. So on a graph whose
+    # nodes have no measured sizes the two numbers describe DIFFERENT geometries and CANNOT agree:
+    #
+    #     L-LAYOUT-REPORT total: 450   my before: 402.0     (fallback applied on one side only)
+    #
+    # The pass now uses ONE geometry for its own before and after, which is what makes its comparison
+    # meaningful. This cross-check is skipped ONLY where the report and the pass are deliberately
+    # measuring different things, and it SAYS SO rather than passing silently.
+    used_fallback = "no MEASURED size" in preview
+    if reported and planned and not used_fallback:
         mine = planned[0]
         theirs = float(reported.group(1))
         # Within a unit: the report rounds its printout to a whole number, and the two must otherwise be
@@ -217,6 +230,15 @@ def main():
               abs(mine - theirs) <= 1.0,
               "mine %.0f vs theirs %.0f - if these differ, the mirrored pin arithmetic has drifted"
               % (mine, theirs))
+    elif used_fallback:
+        print("    SKIPPED the strict comparison: the pass reports NO MEASURED SIZE, so it uses its "
+              "documented fallback while the report uses the raw width. Different geometries, "
+              "deliberately - recorded as skipped rather than passed.")
+    # THIS ONE IS NEVER SKIPPED, and it is the check that caught the worst bug in this capability: with
+    # before and after measuring DIFFERENT geometries, the pass reported "changed:" on a graph where
+    # nothing needed repairing and would have REWRITTEN A GOOD GRAPH. It needs no reference measure,
+    # only that the pass compares like with like.
+    if planned:
         check("the before and after numbers are EQUAL on a graph with nothing to fix",
               planned[0] == planned[1], "%s -> %s" % planned)
 

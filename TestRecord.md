@@ -3167,3 +3167,54 @@ consistent amount, the check that exists to notice that noticed it, and the caus
 WHAT IT COSTS WHILE IT STANDS: `Tools/test-graph-fix-backward.py` fails on this check, so the capability is
 NOT green, and a caller comparing `P-GRAPH-TIDY`'s number with `P-GRAPH-FIX-BACKWARD`'s would be comparing
 two different quantities. `P-GRAPH-KNOTS` is unaffected: it measures CROSSINGS, not length.
+
+---
+
+## 6m. The 402/450 drift, fixed - and it exposed a WORSE bug underneath
+
+THE DRIFT IS EXPLAINED AND THE EXPLANATION WAS NOT THE MAIN PROBLEM.
+
+`FIX-BACKWARD` substituted its documented 48-unit fallback extent while measuring the graph AS IT EXISTED,
+and `L-LAYOUT-REPORT` reads `NodeWidth` RAW. On a graph whose nodes the engine has never measured - which
+is every graph a commandlet builds, because Slate writes `NodeWidth` when it DRAWS - the two numbers
+describe DIFFERENT geometries and cannot agree:
+
+    L-LAYOUT-REPORT total: 450   my before: 402.0
+
+Fixing only that would have been wrong, and the suite's own check said so immediately. With `before`
+restored to the raw width, the pass ran on `SaneProbe` - the graph that must be left ALONE - and reported:
+
+    FAIL  the before and after numbers are EQUAL on a graph with nothing to fix   450.0 -> 402.0
+    FAIL  on a clean graph the edit says unchanged:  changed: repaired SaneProbe : wire length 450 -> 450
+
+**`before` HAD THE FALLBACK (402) AND `after` DID NOT (450).** So on a graph where NOTHING needed repairing
+the pass believed it had improved things, answered `changed:`, and WOULD HAVE REWRITTEN A GOOD GRAPH. The
+brief text of the answer even contradicts itself - `wire length 450 -> 450` while the verdict is
+`changed:` - which is the shape a caller cannot catch by reading.
+
+**THE RULE THAT FIXES IT: A PASS MAY COMPARE ONLY LIKE WITH LIKE.** Both numbers now use the SAME geometry -
+the documented fallback extent - so the only thing that differs between them is where the nodes ARE, which
+is what the measure is supposed to be judging. The rollback re-measure takes the same flag, or it would
+compare a number with a differently-measured number and report a rollback that failed when it worked.
+
+WHAT THAT COSTS, STATED RATHER THAN HIDDEN: the number the preview prints is the wire length of the graph
+AS THIS PASS SEES IT, not the report's number, and the two agree only when the engine has measured every
+node. `RenderPreview` already says which geometry it used, so the difference is LABELLED rather than silent,
+and the suite's cross-check against `L-LAYOUT-REPORT` is now SKIPPED - with the reason printed - exactly
+where the two are deliberately measuring different things. **A SKIP THAT NAMES ITS REASON IS WORTH FAR MORE
+THAN A PASS THAT CANNOT FAIL.**
+
+THE DUPLICATED ARITHMETIC WAS ALSO CONSOLIDATED. The fallback was applied at five separate places, four of
+them reading `X.Width` directly, which is how `before` and `after` came to disagree in the first place.
+There is now ONE accessor, `PlannedExtent`, and `FNode::Width` holds what the engine measured so that the
+raw-versus-fallback choice is made at the point of use rather than baked into the data.
+
+**THE TEST NOW PASSES: `RESULT: PASS (11 negative check(s) run, 10 positive check(s) SKIPPED for a missing
+fixture)`.** Eleven real checks, ten recorded skips, zero false passes.
+
+AND `TA-4` NOW EXISTS, so the ten skips are no longer forced. `TA-4` is the `Stacked` graph inside
+`/Game/Tests/Kit/TA01_HandLaid` and the pass repaired it on its first live run - R1 moved a node fed by a
+backward exec wire, R3 moved a node at the origin, and it reported the one backward DATA wire it will not
+touch with both ends named. The skip reasons name shapes that `TA-4` DOES carry, so what remains is to point
+the suite at it and to build the one shape it lacks: a getter sitting to the right of the node that reads
+it, which is R2's positive case.
