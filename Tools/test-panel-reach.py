@@ -80,6 +80,10 @@ def main():
     failures = []
     unreachable = []
     typed = []
+    # A list rather than an int so the loop can count without a global, and so the closing line reports
+    # the number of tools ACTUALLY DRIVEN rather than a literal. The first version printed a hardcoded
+    # zero under a passing check, which is the kind of detail that teaches a reader to distrust output.
+    driven = [0]
 
     print("=== every tool the registry serves, reached the way the PANEL reaches it ===")
     for toolset in TOOLSETS:
@@ -90,7 +94,12 @@ def main():
             failures.append("%s listing" % toolset)
             continue
 
-        names = re.findall(r"^\s+((?:Read|Look|Preview|Edit)TurboMCP\w+)\s", listing,
+        # THE NAMES ARE AT COLUMN 0, NOT INDENTED, and the first version of this pattern required
+        # leading whitespace. It parsed ZERO names from all four toolsets and reported "Read parsed no
+        # names" for a toolset with twenty-one - A READER FAULT REPORTED AS A SUBJECT FAULT, which is the
+        # worst kind of check, because it declares working things broken. The count line and the name
+        # lines were in the output all along.
+        names = re.findall(r"^((?:Read|Look|Preview|Edit)TurboMCP\w+)\s+\S", listing,
                            re.MULTILINE)
         count = re.search(r"(\d+) tool\(s\)", listing)
         print("  %-8s %s tool(s), %d name(s) parsed"
@@ -117,6 +126,7 @@ def main():
             args = {p: sample_for(t) for p, t in params}
             answer = session.call(FULL_TOOLSET[toolset], name, args)
 
+            driven[0] += 1
             if not isinstance(answer, str):
                 unreachable.append("%s answered a %s, not text" % (name, type(answer).__name__))
             elif len(answer.strip()) == 0:
@@ -126,7 +136,7 @@ def main():
 
     print()
     print("=== the results ===")
-    print("    %d tool(s) answered a sample built from their own schema" % 0)
+    print("    %d tool(s) were driven with a sample built from their own schema" % driven[0])
     for item in unreachable:
         print("    UNREACHABLE: %s" % item)
     for item in typed:
