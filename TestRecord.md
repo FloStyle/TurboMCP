@@ -1806,3 +1806,70 @@ a caller should not retry it.
 
 `P/E-VARS-ADD`, `E-WIDGETS-AS-VARS`, `P/E-OVERRIDE-ADD`, `E-FUNCTION-ADD` and `E-FUNCTION-REMOVE`,
 and `P/E-WIDGET-RETARGET`.
+
+---
+
+## 4b. P/E-VARS-ADD, and a Preview that lied
+
+28 tools. 13 acceptance suites. `T-STRUCT-1` is exercised by `python Tools/test-vars-add.py`.
+
+### A preview that lied, found by its own suite
+
+The first version resolved the variable's **type** in `Apply` only. So `P-VARS-ADD` happily printed
+a plan for `X: banana` while `E-VARS-ADD` refused it — **exactly the disagreement `D-02` exists to
+prevent**.
+
+It was found because the suite asks the **Preview** to refuse the bad inputs rather than the edit.
+The type is now resolved while planning, so both tools refuse the same list. This is the second
+time in phase 4 that the shared-code-path rule has caught a real divergence rather than being
+decorative.
+
+### The splitter counts depth, because a map has a comma in it
+
+`Map<String, int>` carries a comma inside it, so a plain comma split turns one variable into two
+broken ones. Depth is counted rather than pattern-matched. A type whose brackets do not balance is
+refused **by name** rather than silently truncated.
+
+### Five API names were guessed and all five were wrong
+
+Each was corrected by reading the engine, and each is worth recording because guessing is what
+this project keeps having to unlearn:
+
+| Guessed | Reality |
+|---|---|
+| `GetEdGraphPinTypeFromSimpleType` | does not exist; the wrappers are `GetBasicTypeByName`, `GetStructType`, `GetArrayType`, `GetSetType`, `GetMapType` |
+| `UBlueprintEditorLibrary::GetEnumType` | does not exist; an enum's pin type is `PC_Byte` with the `UEnum` as the sub-category object |
+| `CPF_Private` | **does not exist in UE 5.8**; a Blueprint variable's "private" is `CPF_EditConst` |
+| `CPF_BlueprintReadWrite` | does not exist either; read-write is the **absence** of `CPF_BlueprintReadOnly` |
+| `SetBlueprintVariableMetaData(4 args)` | takes a local-variable-scope argument, `NULL` for a Blueprint-level variable, as the engine's own `BlueprintEditorLibrary.cpp` passes |
+
+### The engine's type resolver cannot report failure
+
+`GetBasicTypeByName` says so in its own comment: it *"returns 'int' type if invalid type is
+provided"*. A caller trusting it would **silently add an int where a `banana` was asked for**. So
+the name is checked against the accepted list first, and the resolver only ever sees a name known
+to be valid.
+
+### The check that matters reads back through a different tool, after a save
+
+`E-VARS-ADD` reports what it added and read back, but **both numbers come from the same code**. The
+suite then calls `R-BP-LOAD`, which reads the Blueprint's own variable list:
+
+| Fact | Evidence after the save |
+|---|---|
+| the variables exist | `Speed : Float (double-precision)`, `bIsArmed : Boolean`, `Label : String` |
+| the category survived | `category: Movement` |
+| the read-only flag survived | `BlueprintReadOnly` |
+
+**Every name is checked before anything is added**, so a list of five that would clash on the
+fourth adds none and says `unchanged:`, rather than leaving the Blueprint half-changed.
+
+### Nine refusals, each naming its reason
+
+An unknown type, an unknown field, a duplicate name, a name with a space, a missing colon, an
+unbalanced type, an empty list, no asset, and a container of an unknown type.
+
+### Still to come in phase 4
+
+`E-WIDGETS-AS-VARS`, `P/E-OVERRIDE-ADD`, `E-FUNCTION-ADD` and `E-FUNCTION-REMOVE`, and
+`P/E-WIDGET-RETARGET`.
