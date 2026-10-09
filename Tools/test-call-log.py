@@ -63,6 +63,25 @@ def main():
     session = Session()
     session.connect()
 
+    # START FROM AN EMPTY LOG FILE, WHICH MAKES THE SUITE INDEPENDENT OF WHAT CAME BEFORE.
+    #
+    # The file ACCUMULATES and is never rotated, and it carries lines written by earlier builds —
+    # including builds whose hash resolution was incomplete. A check that "no line is left with an
+    # unresolved hash" then read those old lines and went red on work that was already fixed, which
+    # is the fifth order-dependent check this project has had to fix.
+    #
+    # The file is truncated rather than deleted: it is the record of what happened, the suite just
+    # starts its own record. The in-memory list is cleared through the tool, which is also a check
+    # that the clear works with logging off.
+    session.call(EDIT_TOOLSET, "EditTurboMCPCallLog", {"enabled": "false"})
+    session.call(EDIT_TOOLSET, "EditTurboMCPCallLogClear", {"confirm": "yes"})
+    try:
+        if os.path.isfile(LOG_PATH):
+            open(LOG_PATH, "w", encoding="utf-8").close()
+    except OSError as problem:
+        print("  could not truncate the log file: %s" % problem)
+    print("=== starting from an empty log file: %s ===" % os.path.basename(LOG_PATH))
+
     print("=== the log STARTS OFF, per the spec ===")
     # Read the state first, without changing it, by asking the read tool. The setting persists, so a
     # previous run may have left it on; that is checked too.
@@ -149,27 +168,48 @@ def main():
               isinstance(newest.get("error"), bool), str(newest.get("error")))
 
     print()
-    print("=== the plugin's OWN toolset resolves to its real name ===")
-    # The engine's event carries only hashes. This plugin's toolset names ARE resolvable, because
-    # the hash of the name is reproduced. So at least one engine-sourced line must carry a real
-    # toolset name and not a hash marker.
+    print("=== EVERY name resolves: no hash placeholder may remain (Q-10, closed) ===")
+    # THE CHECK THAT WOULD HAVE CAUGHT THE PARTIAL RESOLUTION. The first version accepted a line
+    # with a real name in ONE slot and a hash in the other, and that half-resolved state LOOKS
+    # finished. The names now come from the engine's own `GetTools()` and `ParseToolsetName`, so an
+    # unresolved hash is a FAILURE rather than a tolerated state.
     if after:
         engine_lines = [e for e in after if e.get("source") == "engine"]
         print("    %d engine-sourced line(s)" % len(engine_lines))
         check("at least one engine line was recorded", len(engine_lines) > 0)
-        resolved = [e for e in engine_lines if "TurboMCP" in e.get("toolset", "")]
-        check("the plugin's toolset name IS resolved, not left as a hash",
-              len(resolved) > 0,
-              "; ".join(e.get("toolset", "")[:50] for e in engine_lines[:3]))
-        # THE HONEST LABEL: an unresolved half must say what it is rather than be invented.
-        unresolved = [e for e in engine_lines if "engine tool ending" in e.get("tool", "")]
-        if unresolved:
-            check("an unresolved tool half is LABELLED rather than invented",
-                  all(e["tool"].startswith("(engine tool ending") for e in unresolved),
-                  unresolved[0]["tool"])
-            check("the label carries enough to tell two apart",
-                  len(unresolved[0]["tool"]) > len("(engine tool ending )") + 4,
-                  unresolved[0]["tool"])
+
+        unresolved = [e for e in engine_lines
+                      if "engine tool ending" in e.get("toolset", "")
+                      or "engine tool ending" in e.get("tool", "")]
+        check("NO line is left with an unresolved hash",
+              len(unresolved) == 0,
+              "; ".join("%s.%s" % (e.get("toolset"), e.get("tool"))
+                        for e in unresolved[:3]))
+
+        # A top-level tool hashes against the EMPTY prefix, which is a REAL key and is written as
+        # `(top-level)` rather than left blank or mistaken for a failed lookup. Conflating
+        # "resolved to empty" with "not resolved" was a real bug: it printed
+        # `(engine tool ending ...)` for a toolset it had just named.
+        check("a top-level tool is named, not blank or a hash",
+              any(e.get("toolset") == "(top-level)" for e in engine_lines),
+              "; ".join(e.get("toolset", "") for e in engine_lines[:3]))
+
+        # The inner event of a call_tool dispatch names the real target with its full toolset.
+        check("an inner call names its real toolset",
+              any(e.get("toolset", "").startswith("TurboMCP.") for e in engine_lines),
+              "; ".join(e.get("toolset", "") for e in engine_lines[:3]))
+        check("an inner call names its real tool, qualified",
+              any(e.get("tool", "").startswith("TurboMCP.") for e in engine_lines),
+              "; ".join(e.get("tool", "") for e in engine_lines[:3]))
+
+        # TWO EVENTS PER CALL IS THE ENGINE'S OWN DESIGN, not a bug: `call_tool` emits one for
+        # itself and one for the inner tool it dispatched, so per-toolset analytics for the real
+        # target stay visible. `ModelContextProtocolServer.cpp:887` and `:907`.
+        call_tools = [e for e in engine_lines if e.get("tool") == "call_tool"]
+        inner = [e for e in engine_lines if e.get("tool") != "call_tool"]
+        check("the two emissions per call are both recorded",
+              len(call_tools) > 0 and len(inner) > 0,
+              "%d call_tool, %d inner" % (len(call_tools), len(inner)))
 
     print()
     print("=== the tool's own read agrees with the file ===")

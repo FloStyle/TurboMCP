@@ -484,3 +484,81 @@ of every pair. So the server records the event twice, or records it once from th
 from the transport. Not investigated; recorded rather than guessed at.
 
 ---
+
+---
+
+## Q-10 RESOLVED (round 25). The engine's identifiers, found by reading where they are built
+
+**The question is closed. Every name in the call log resolves; a check now fails if any hash
+placeholder survives.**
+
+### What was wrong
+
+The first answer accepted that engine tool names could not be resolved, because
+`UToolsetRegistry` exposes no list of served toolsets or tools. **That was the wrong place to
+look.** The engine already solves this exact problem for itself:
+`ModelContextProtocolToolHashMappingCommandlet` builds a hash-to-name mapping, and reading it gave
+the whole answer.
+
+### The three facts that closed it
+
+1. **`IModelContextProtocolModule::GetTools()`** returns every registered tool with its identifier.
+   The plugin's provider now reads it rather than keeping a hand-written table, so a tool added
+   anywhere resolves without any file being touched.
+
+2. **`UE::ModelContextProtocol::Analytics::HashToolIdentifier` and `ParseToolsetName` are exported
+   `UE_API`.** The first version *reimplemented* the hash — UTF-8 through `FBlake3::HashBuffer`,
+   then `LexToString` — and that was a liability: a reimplementation is correct only while it
+   matches, and **nothing would have said so when it stopped.** The engine's own function is now
+   called, which makes the lookup exact by construction.
+
+3. **In tool-search mode, `GetTools()` returns exactly THREE identifiers** — `call_tool`,
+   `describe_toolset`, `list_toolsets`, all with an **empty** toolset prefix. Measured, not assumed.
+   The toolset's own tools are *"dispatched through `call_tool` without being registered"*, as
+   `ModelContextProtocolToolsetRegistryAdapter.h` says. So the inner event's toolset hash is over
+   the string the caller passed, and the **tool slot holds the hash of the whole qualified name**:
+   `ModelContextProtocolServer.cpp:904` builds `ResolvedFullName = toolset_name + "." + tool_name`
+   and passes *that*. Registering the bare tool name was not enough.
+
+### The two events per call are the engine's own design, not a bug
+
+`ModelContextProtocolServer.cpp:887` emits one event for `call_tool` and `:907` emits a **second**
+for the inner tool, with the comment:
+
+> *Tool-search mode routes every actual toolset invocation through `call_tool`; without a second
+> emission every routed call collapses onto the empty-prefix toolset hash and per-toolset analytics
+> for the real targets stay invisible.*
+
+So two lines per call is correct. The earlier note in this file calling it an unexplained
+duplication is **withdrawn**.
+
+### A bug the fix exposed: resolved-and-empty is not unresolved
+
+The empty toolset prefix is a **legitimate key** — the engine's own commandlet registers it — so
+`call_tool` resolves to the empty string. The lookup then tested `IsEmpty()` to decide whether
+resolution had happened, and printed:
+
+```
+(engine tool ending af1349b9f5f9)  .  call_tool
+```
+
+**a line saying it could not name a toolset it had just named.** Resolution is now tracked by
+whether the key was **found**, not by whether the value is empty, and an empty prefix is written as
+`(top-level)` so a reader sees a name rather than a blank column.
+
+### Measured, after the fix
+
+```
+(top-level)                   .  call_tool
+TurboMCP.TurboMCPEditToolset  .  TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog
+(top-level)                   .  call_tool
+TurboMCP.TurboMCPReadToolset  .  TurboMCP.TurboMCPReadToolset.ReadTurboMCPBlueprintLoad
+```
+
+### The check that would have caught the earlier half-state
+
+The suite previously *tolerated* a line with a name in one slot and a hash in the other, which
+**looks finished**. It now refuses any line containing a hash placeholder, so the half-resolved
+state cannot pass again.
+
+---
