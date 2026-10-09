@@ -165,5 +165,90 @@ Untried routes, cheapest first:
 Question: which of these actually makes the nodes appear, and is the answer the same for
 the widget Designer and for materials?
 
-Answer: not yet answered. Until it is, `L-CAPTURE` reports its own image correctly and
-`TestRecord.md` section 3c says plainly that the canvas is empty.
+Answer: **partly answered.** A follow-up session found and fixed a real root cause and
+ruled out a route. What is now known:
+
+FOUND AND FIXED. A newly opened tab has no geometry until Slate has ticked MORE THAN ONCE.
+One tick was not enough; up to eight are now pumped, stopping as soon as the panel reports
+a size. The panel went from `0x0` to **988x742**, the tab went from greyed out to active,
+and the frame stopped being clipped. Also fixed: Slate geometry is in slate units and the
+picture is in pixels, so the panel origin is divided by the widget scale. On this machine
+the scale is 1.00, so it changed nothing here, but it is a real bug elsewhere.
+
+RULED OUT. `FWidgetRenderer::DrawWidget` on the graph editor alone is the wrong route: it
+does `Window->SetContent(Widget)` and restores the original parent afterwards, so the panel
+paints against a hierarchy it did not grow up in. `DrawWindow` on the real window is the
+right shape and does paint through the engine's own `SWindow::Paint`.
+
+STILL OPEN. With the geometry correct, the computed crop (`x 17 to 1488, y 344 to 657` of a
+1670x911 window) lands on the LEFT SIDEBAR — the `My Blueprint` panel — not the graph
+canvas. So the remaining defect is in mapping the frame to window pixels, not in the view
+move and not in the panel geometry.
+
+NEXT, IN ORDER:
+1. Check whether the render target's content origin matches the window's screen origin at
+   all. `FWidgetRenderer::DrawWindow` derives its geometry from `DrawSize` and `Scale`, and
+   the render thread update it schedules uses `FApp::GetDeltaTime()` rather than the
+   `DeltaTime` argument the caller passes. Verify where widget (0,0) actually lands in the
+   picture by rendering the whole window scaled to the requested size and measuring a known
+   widget's position in the output.
+2. If the offset is not a constant, crop by SCANNING rather than by arithmetic: render the
+   whole window, and cut the graph canvas out by finding the panel's own background colour
+   instead of computing its position.
+3. Only then decide whether the engine-screenshot fallback is still needed. It works today
+   — it returns a real 1670x911 PNG of the editor window — and the result labels it in
+   words so it can never be mistaken for the frame that was asked for.
+
+THE TEST LESSON, which outlives the bug. Every check in `test-capture.py` passed while the
+canvas was empty: existence, size, PNG header and file name are all true of a picture of
+nothing. The suite now counts distinct colours and requires at least eight, which a flat
+fill cannot reach. A check that cannot fail the way reality fails proves nothing.
+
+---
+
+## Q-8. Can the UHT freshness check be made content-based instead of timestamp-based?
+
+Status: **open. A content-based version was written, could not be made to fail, and was
+withdrawn.**
+
+`Tools/check-plugin.py` compares the mtime of each reflection header against
+`TurboMCPToolsets.generated.h`. Editing any reflection header makes it newer, so the check
+reports `UHT must re-run` — but UHT **does** run, and when the reflected declarations are
+unchanged its output is **byte-identical**, so the generated file keeps its old mtime and
+the check reports staleness that is not there.
+
+This produced a false positive this session. The check said the reflection was stale while
+`LookTurboMCPCapture` was loading and answering MCP calls, and the generated header was
+confirmed to contain the declaration:
+
+```
+LookTurboMCPCapture dans le generated.h ? True
+LookTurboMCPWidgetPreview dans le generated.h ? True
+```
+
+A content-based replacement was written: for each reflection header, require every
+reflected name it declares to appear in its `.generated.h`. On the real tree it behaves
+correctly and reports `generated code carries every declaration from 1 reflection header`.
+The name extraction was verified separately against the real header and finds all 27
+declarations, with 0 missing.
+
+**It was withdrawn because it could not be made to fail.** Breaking the generated header on
+purpose — replacing `LookTurboMCPCapture` with `XXLookTurboMCPCapture` — left the check
+green, three times, including after the first attempt was found to have written through
+the `Marketplace` junction instead of the real path. A check whose failure cannot be
+demonstrated is worth less than a check whose false positive is written down, so the
+original was restored with the false positive documented in place and here.
+
+Question: what is wrong with the break test, and once it genuinely fails on a broken
+generated header, should the content-based version replace the timestamp one?
+
+Two candidate explanations for the break test, neither confirmed:
+
+- `check_uht_freshness` may not be the function the script actually runs, though
+  `def check_uht_freshness` appears exactly once.
+- The generated header the check reads and the one the break test writes may not be the
+  same file, despite both naming
+  `<REPO>\Intermediate\Build\Win64\UnrealEditor\Inc\TurboMCP\UHT\TurboMCPToolsets.generated.h`.
+
+Answer: not yet answered. The timestamp check stands, and its failure message now tells the
+reader to confirm before acting.

@@ -82,6 +82,12 @@ public class TurboMCP : ModuleRules
 				// Blueprint's WidgetTree lives.
 				"UMG",
 				"UMGEditor",
+
+				// L-CAPTURE falls back to the engine's own screenshot when the graph
+				// panel has no geometry to frame with. Its doc comment says to prefer it
+				// over SceneTools.take_screenshot for editor UI, and calling it beats
+				// writing a second capture path that could disagree with it.
+				"SlateInspectorToolset",
 			});
 	}
 }

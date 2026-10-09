@@ -775,11 +775,61 @@ What was established before stopping:
   with the view moved. `FSlateApplication::ForceRedrawWindow` was added to force the panel
   to recompute what is on screen, and it did not change the outcome.
 
-The next thing to try is another rendering route: `FWidgetRenderer` with a deferred
-render target update, or drawing the panel's own geometry rather than the composed editor
-widget. If that fails, the fallback is to capture the on-screen window through the
-engine's `USlateInspectorToolset::Screenshot` and accept that the frame is whatever is
-visible. Raised as Q-7.
+### Follow-up session: the cause is narrowed, and the tool now fails honestly
+
+The first attempt rendered the graph editor widget alone with
+`FWidgetRenderer::DrawWidget`. That was replaced with a different route, and one real
+**root cause was found and fixed**, but the canvas is still empty. Both facts matter.
+
+**Found and fixed: a new tab has no geometry until Slate has ticked more than once.**
+
+`OpenGraphAndBringToFront` spawns the tab, but the panel reports a size of `0x0` until the
+layout and activation passes have run. One `FSlateApplication::Tick` was not enough. The
+tool now pumps up to eight ticks, stopping as soon as the panel reports a size, and the
+panel goes from `0x0` to **`988x742`**, with the frame landing fully inside the window
+instead of being clipped. The tab was drawn greyed out in the window before this and is
+active after it.
+
+**Also fixed:** Slate geometry is in slate units and the picture is in pixels, so the
+panel origin is divided by the widget scale. Leaving that out is a real bug that puts the
+crop on the wrong panel on a scaled display. On this machine the scale is 1.00, so it
+changes nothing here — it is recorded because it would matter elsewhere.
+
+**Still not fixed: the framed crop does not land on the graph canvas.** With the geometry
+correct, the computed frame is `x 17 to 1488, y 344 to 657` in a 1670x911 window, and the
+image that comes out shows the **left sidebar** — the `My Blueprint` panel with its GRAPHS,
+FUNCTIONS, MACROS and VARIABLES lists — not the graph canvas. So the picture is of the
+editor, in the right place in the editor, but not of the graph.
+
+**The engine's own screenshot was tried as the fallback and does work**: it returns a real
+1670x911 PNG of the whole editor window, and `USlateInspectorToolset::Screenshot` was
+called rather than reimplemented, as its own doc comment asks. Because the spec forbids a
+silent fallback, the result labels it in words — `framed: the whole editor window, NOT the
+graph, because the graph panel reported no geometry` — so the two cases can never be
+confused.
+
+**A test that could not fail the way reality fails.** Every check in this suite passed for
+the whole session while the canvas was empty. Existence, size, header and file name are all
+true of a picture of nothing. The suite now counts distinct colours in the image and
+requires at least eight, which a flat fill cannot reach. That is the check that was
+missing, and its absence is the more useful lesson than the bug.
+
+Measurements taken while narrowing this, so they are not retaken:
+
+| Fact | Value |
+|---|---|
+| Window size | 1670x911 |
+| Graph panel inside it | x 259 y 130, **988x742** |
+| Panel screen position | x 704 y 370, window at x 445 y 241 |
+| Widget scale | 1.00 |
+| Frame asked for | zoom 0.729, applied **0.750** at x 980 y 208 |
+| Frame in window pixels | x 17 to 1488, y 344 to 657 (**1470x312**) |
+
+`FWidgetRenderer::DrawWindow` paints through the engine's own `SWindow::Paint`, and the
+render thread update it schedules uses `FApp::GetDeltaTime()`, not the `DeltaTime` argument
+the caller passes. That is the next thing to look at, and it is written into Q-7.
+
+Raised as Q-7, still open.
 
 ### A wrong assumption this tool corrected
 
@@ -1089,3 +1139,48 @@ out.
 | 2026-10-08 | Layout fixed, second build | **FAILED**, one C2662 const error |
 | 2026-10-08 | Const fixed, third build | **SUCCEEDED**, 6.04 s |
 | 2026-10-08 | Headless commandlet run | **PASS**, all four toolsets registered |
+
+---
+
+## 3c-bis. The UHT freshness check gave a false positive
+
+`Tools/check-plugin.py` reported, all session:
+
+```
+FAIL  these reflection headers are newer than the generated code: TurboMCPToolsets.h
+```
+
+It was wrong, and this is the proof rather than an argument:
+
+```
+generated file: Intermediate\...\UHT\TurboMCPToolsets.generated.h
+  contains LookTurboMCPCapture        ? True
+  contains LookTurboMCPWidgetPreview  ? True
+```
+
+Both declarations are in the generated header, and `LookTurboMCPCapture` was loading and
+answering MCP calls throughout. The build succeeded, exit 0, several times.
+
+**Why it happens.** Editing a reflection header changes its mtime. UHT re-runs. When the
+reflected declarations have not changed, UHT's output is **byte-identical**, so the
+generated file keeps its old mtime while the edited header's is new. A timestamp
+comparison cannot tell "UHT has not run" from "UHT ran and produced the same bytes".
+
+**What was fixed.** The check compared *every* reflection header against one hard-coded
+generated header, which is a category error: `TurboMCPToolsets.generated.h` says nothing
+about whether another header is fresh. It now compares a header only against **its own**
+generated file, and reports a header with no generated file of its own as a note rather
+than as staleness. The failure message now says the result can be a false positive and
+tells the reader to confirm before acting.
+
+**What was NOT fixed, and is recorded instead.** A content-based replacement was written:
+require every reflected name a header declares to appear in its `.generated.h`. It behaves
+correctly on the real tree and the name extraction was verified to find all 27 declarations
+with 0 missing. It was **withdrawn** because breaking the generated header on purpose did
+not make it fail, three times, including after the first attempt was found to have written
+through the `Marketplace` junction rather than the real path.
+
+A check whose failure cannot be demonstrated is worth less than one whose false positive is
+written down. Raised as Q-8.
+
+The check is still red on this tree, and that is stated rather than worked around.
