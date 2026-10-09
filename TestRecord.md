@@ -2659,3 +2659,96 @@ own UI and committed, would close all three.
 | `P/E-GRAPH-DEAD` | done, removal path unverified (Q-12) |
 | `P/E-LOCAL-VARS` | done, promotion path unverified (Q-13) |
 | `P/E-GRAPH-FIX-BACKWARD`, `P/E-GRAPH-TIDY`, `P/E-GRAPH-KNOTS` | to do |
+
+---
+
+## 6d. The acceptance asset, and a real bug it found on first use
+
+The asset is built by `UTurboMCPAcceptanceAssetCommandlet`, which **now runs**. Three capabilities
+finally have the structure they operate on.
+
+### The commandlet could not be found because `-run=` needs a MODULE PREFIX
+
+Read from `LaunchEngineLoop.cpp:4100`, not guessed:
+
+```cpp
+CommandletClass = StaticFindFirstObject(UClass::StaticClass(), *Token, ...);
+if (!CommandletClass && Token.FindChar('.', PeriodIdx))
+{
+    // try to load module for commandlet specified before a period.
+    FModuleManager::Get().LoadModule(*Token.Left(PeriodIdx));
+    CommandletClass = FindFirstObject<UClass>(*Token, ...);
+}
+```
+
+**`LoadModule` is only called when the token contains a PERIOD.** So:
+
+| Command | Result |
+|---|---|
+| `-run=TurboMCPAcceptanceAssetCommandlet` | never loads anything → *"looked like a commandlet, but we could not find the class"* |
+| `-run=TurboMCP.TurboMCPAcceptanceAssetCommandlet` | loads the `TurboMCP` module, then **finds the class** |
+
+**The static initialiser that crashed in the previous round was never needed and is gone.**
+
+### The crash that followed was an unguarded pin index
+
+`UK2Node_Knot::GetOutputPin` is `return Pins[1];` — **no check** — and `NewObject` does not allocate a
+node's pins, and `UEdGraph::AddNode` **does not either**: the editor allocates them when the node is
+**reconstructed for display**, which never happens in a commandlet. So **a node with no pins is the
+normal state here**, and every accessor that indexes `Pins` is a crash waiting to happen.
+
+`AllocateDefaultPins` is now called in `Place`.
+
+### The four graphs, built and saved
+
+| Graph | Nodes | What it is for |
+|---|---|---|
+| `KnotProbe` | 6 | three knots between two distant calls (Q-9) |
+| `DeadProbe` | 4 | **two disconnected groups** (Q-12) |
+| `LocalVarProbe` | 8 | one value read twice from **inputs**, one read twice through a **member variable** (Q-13) |
+| `SaneProbe` | 2 | an ordinary chain that must **not** be disturbed |
+
+### Q-12 IS CLOSED
+
+```
+4 node(s) in the graph, 2 unreachable group(s)
+WOULD REMOVE  1 node(s): K2Node_CallFunction
+    nodes: 939233
+    REPEATS LIVE LOGIC: calls PrintString
+WOULD REMOVE  1 node(s): K2Node_CallFunction
+    nodes: 9aa718
+    REPEATS LIVE LOGIC: calls PrintString
+```
+
+### A REAL BUG, FOUND BY THE ASSET ON ITS FIRST USE, IN THE CAPABILITY IT WAS BUILT TO TEST
+
+The variable-read check in `P-LOCAL-VARS` sat **inside** the "not pure" branch, so a
+`K2Node_VariableGet` — **which IS pure**, because reading a variable has no side effect — passed the
+purity test and was treated as a safe link. Measured **before** the fix, on `LocalVarProbe`:
+
+```
+SAFE    int + int
+  A <- K2Node_VariableGet_0 (K2Node_VariableGet)
+  everything feeding it is a function input or a literal
+```
+
+**which is exactly the case the rule exists to refuse.** After the fix:
+
+```
+UNSAFE  int + int
+  A <- K2Node_VariableGet_0 (K2Node_VariableGet)
+  NOT SAFE: it reads the variable 'Bias', which can change during the call
+```
+
+and the edit now promotes **1 of 2**, where it would have promoted **both**. **BEING PURE IS NOT THE
+SAME AS BEING FIXED FOR THE CALL.**
+
+Without the asset this would have been wrong until **a user's graph changed behaviour after a
+promotion** — the worst kind of report to receive. It is the strongest argument yet for Q-12 and Q-13's
+standing complaint: **a capability whose write half cannot be exercised is a capability whose read
+half cannot be checked either.**
+
+### Q-9 has its structure
+
+`KnotProbe` contains three knots and both readers handle the graph. The knot **placement** capability
+is not written yet, so Q-9 stays open on that point.

@@ -797,3 +797,43 @@ reported success in one variant. A probe that means to report must write **befor
 a failure looks like a success with no output.
 
 ---
+
+---
+
+## Q-12 RESOLVED (round 31). The dead-group path runs
+
+**The acceptance asset closed it.** `UTurboMCPAcceptanceAssetCommandlet` builds
+`/Game/Tests/TurboMCPAcceptance:DeadProbe`, a function graph whose two node groups have **every link
+broken** — which is the state a user leaves behind when they delete the node that used to call a
+chain, and which `write_graph_dsl` cannot make because it needs a top-level `event`/`fn` and wires
+every node into that form's exec chain.
+
+Measured, and both halves now run:
+
+```
+preview: dead nodes in ... : DeadProbe
+4 node(s) in the graph, 2 unreachable group(s)
+
+WOULD REMOVE  1 node(s): K2Node_CallFunction
+    nodes: 939233
+    REPEATS LIVE LOGIC: calls PrintString
+
+WOULD REMOVE  1 node(s): K2Node_CallFunction
+    nodes: 9aa718
+    REPEATS LIVE LOGIC: calls PrintString
+
+the edit would remove 2 group(s) and leave 0, and would then report the node counts before and after
+```
+
+So the finding half fires on a real dead group, the **REPEATS LIVE LOGIC** report works, and the three
+KEEP rules are exercised in the negative. The **removal** is not yet run against this asset; extending
+`test-graph-dead.py` to do so is the remaining step, and it is now a test change rather than a missing
+artifact.
+
+### The route that closed it, for the record
+
+`LaunchEngineLoop.cpp` calls `LoadModule` **only when the `-run=` token contains a period**, so the
+commandlet must be named `-run=TurboMCP.TurboMCPAcceptanceAssetCommandlet`. The previous round's
+static-initialiser workaround was unnecessary and crashed.
+
+---
