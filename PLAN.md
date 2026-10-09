@@ -86,40 +86,56 @@ Two phase 1 parts still need the kit, and are recorded as gaps rather than
 claims: `E-COMPILE` on a broken Blueprint (the node ID tie-in), and `E-SAVE`'s
 refusal during play.
 
-### Step 3 - Phase 2, Blueprint reading (in progress)
+### Step 3 - Phase 2, Blueprint reading: COMPLETE
 
-Eight capabilities, and the base for phases 6, 7 and 8:
-`R-BP-LOAD`, `R-GRAPH-LOAD` (both formats), `R-REFS`, `R-OVERRIDES`,
-`R-NODE-RESOLVE`, `R-NODE-FIND`, `R-DATATABLE`, `R-COMMENT-LIST`.
+All eight capabilities are done and merged. **21 tools. Six acceptance suites pass**,
+plus the plugin checks, the include check, the server check and the graph rebuild.
 
 | # | Capability | State |
 |---|---|---|
-| 1 | Node IDs (`04_FORMATS.md` section 3) | **DONE** - `TurboMCPNodeId`, one implementation shared by every reader and writer |
+| 1 | Node IDs (`04_FORMATS.md` section 3) | **DONE** - one implementation shared by every reader and writer |
 | 2 | `R-NODE-RESOLVE` | **DONE** - tested against a real Blueprint |
 | 3 | `R-NODE-FIND` | **DONE** - tested against a real Blueprint |
-| 4 | `R-GRAPH-LOAD` | next |
-| 5 | The graph text writer | the hardest single piece; needed by `R-GRAPH-LOAD` and `R-BP-LOAD` |
-| 6 | `R-BP-LOAD` | |
-| 7 | `R-REFS`, `R-OVERRIDES`, `R-DATATABLE`, `R-COMMENT-LIST` | |
+| 4 | The graph text writer | **DONE** - the hardest single piece, shared by `R-GRAPH-LOAD` and `R-BP-LOAD` so they cannot disagree |
+| 5 | `R-GRAPH-LOAD` | **DONE** - both branches of a branch survive, variables get canonical IDs |
+| 6 | `R-BP-LOAD` | **DONE** - four detail levels, relation layer, graph filter, token budget |
+| 7 | `R-REFS` | **DONE** - both directions, 7 out and 81 in on real engine assets |
+| 8 | `R-OVERRIDES` | **DONE** - built on the editor's own `ListEvents` and `ListFunctions` |
+| 9 | `R-COMMENT-LIST` | **DONE** - 21 boxes on Epic's own content; nesting and overlap unverified |
+| 10 | `R-DATATABLE` | **DONE** - schema, rows and readers on a real engine table |
 
-**15 tools. Both suites pass.**
+Two items the R-BP-LOAD spec asks for are **not** done, and are refused by name rather
+than faked: output format `json`, and the widget tree section for widget Blueprints.
+Both belong with phase 3, where the widget work starts.
 
-The test Blueprint `BP_NodeTest` exists. `Tools/make-test-blueprint.py` scaffolds
-the empty Blueprint only; the **engine** then writes its graph, so the readers are
-pointed at content Epic wrote rather than content we wrote. That is what makes the
-node type ID comparison meaningful.
+#### The method that produced this phase
 
-#### Limitation found in phase 2
+Three times, reading the engine's own implementation beat writing a rule:
 
-The node type ID the engine's writer accepts is `<menu category>|<node title>`,
-and its **title half follows the editor's language**. The category half is fixed
-by reading the `FText` source string; the title half cannot be, because Epic
-builds it at run time from separate localised fragments.
+- the **node type ID** is `<category>|<title>`, not the C++ class name;
+- the **`FText` source string** is reached through `FTextInspector`, not a member;
+- the **overridable set** is `UBlueprintEditorLibrary::ListEvents`/`ListFunctions`,
+  which already covers interfaces including natively-implemented ones.
 
-It is not fatal: the engine's own `find_node_types` returns localised IDs too, so
-the localised form is what its writer accepts on this machine. It will not
-transfer to an editor in another language. The node's C++ class is printed beside
-it as the one locale-independent name. Raised as Q-3.
+A hand-rolled rule is a second source of truth for something the editor already
+enforces, and each one was wrong in a way only the comparison revealed.
+
+#### Limitations found and named, not hidden
+
+| Limitation | Recorded as |
+|---|---|
+| the node type ID's title half follows the editor's language | Q-3, mitigated by pinning `-culture=en` |
+| `E-SAVE` is classified `Edit` but makes no change | Q-4 |
+| comment box nesting and overlap unverified | Q-5, model-tested only |
+| no project-owned DataTable could be built | Q-6, four engine rules recorded |
+
+#### The test assets
+
+`BP_NodeTest` exists. `Tools/make-test-blueprint.py` scaffolds the empty Blueprint
+only; the **engine** then writes its graph, so the readers are pointed at content Epic
+wrote rather than content we wrote. That is what makes the node type ID comparison
+meaningful, and `Tools/build-test-graph.py` rebuilds it and **proves the save** from
+the asset's own unsaved flag.
 
 ### The engine's toolsets are OFF by default
 
