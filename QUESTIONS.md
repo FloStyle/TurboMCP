@@ -122,3 +122,48 @@ to build the hand-made acceptance kit that `06_ACCEPTANCE.md` requires. If so, t
 kit and this check share one piece of machinery rather than two.
 
 Answer: not yet answered.
+
+---
+
+## Q-7. Do the node widgets really not draw into an off-screen render?
+
+Status: **open, and it limits what `L-CAPTURE` can be claimed to do.**
+
+`L-CAPTURE` moves the graph view and renders the live `SGraphEditor` widget into a render
+target. What comes out is the **real graph editor chrome** — toolbar, back and forward
+arrows, the breadcrumb `BP_NodeTest > EventGraph`, the `BLUEPRINT` watermark — and **no
+nodes**.
+
+So the widget really is the graph editor, the render really ran, and the image size is
+exactly what was asked for. The nodes are simply not in it.
+
+What is already known, so nobody repeats it:
+
+- The view move **is** applied. `GetViewLocation` read back after `SetViewLocation` gives
+  `applied 0.750 at x 980 y 208` against `asked 0.729`. The engine accepted the centre and
+  clamped the zoom to its own limit, which is expected and fine.
+- `FSlateApplication::ForceRedrawWindow` on the widget's window, to make the node panel
+  recompute which nodes are on screen, **did not change the outcome**.
+- `FWidgetRenderer::DrawWidget` renders the composed widget as it is. A node panel culls
+  nodes outside its geometry, so an empty canvas is what a panel with no laid-out geometry
+  would produce — but the chrome around it renders at the right size, so the outer widget
+  does have geometry.
+
+Untried routes, cheapest first:
+
+1. `FWidgetRenderer::DrawWidget` with `bDeferRenderTargetUpdate` and an explicit geometry
+   pass, or feeding `SNodePanel` its own `Tick` and `Paint` with a synthetic `FGeometry` of
+   the requested size, so the panel believes it has the room the render target gives it.
+2. Render at the panel's **actual** on-screen size rather than the requested size, which
+   removes the mismatch between what the panel thinks it has and what is being drawn, then
+   scale the image.
+3. Give up on off-screen rendering for this tool and call the engine's own
+   `USlateInspectorToolset::Screenshot`, which captures the on-screen window. That works by
+   construction but loses the framing: the image is whatever is visible, so the frame has
+   to be achieved by moving the view and hoping the window is the right shape.
+
+Question: which of these actually makes the nodes appear, and is the answer the same for
+the widget Designer and for materials?
+
+Answer: not yet answered. Until it is, `L-CAPTURE` reports its own image correctly and
+`TestRecord.md` section 3c says plainly that the canvas is empty.

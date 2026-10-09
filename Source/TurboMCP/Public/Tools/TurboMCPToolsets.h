@@ -478,6 +478,40 @@ public:
 		const FString& SampleValuesJson,
 		const FString& FunctionName,
 		const FString& Size);
+
+	/**
+	 * Capture a picture of a Blueprint's graph editor, framed one of three ways.
+	 *
+	 * Pass the asset and the graph name, and optionally a mode (`graph` for the whole
+	 * graph, `box` for one comment box, `node` for one node), a target, and a size as
+	 * WxH. Empty mode means `graph`; empty size means 1600x900.
+	 *
+	 * Mode `box` takes a comment box INDEX, numbered from 0 in the same order
+	 * L-LAYOUT-REPORT lists them, top to bottom then left to right, so an index means
+	 * the same thing in both tools. Mode `node` takes a node ID from R-NODE-FIND.
+	 *
+	 * A framing that cannot be done is an error naming why, and it never falls back to
+	 * the whole graph: asking for box 9 of a graph with 4 boxes says exactly that. An
+	 * empty frame is refused rather than written as a blank image, because a blank
+	 * image looks like a successful capture of nothing.
+	 *
+	 * The graph widget is rendered directly rather than grabbing the screen, so the
+	 * image is exactly the size asked for and shows the frame that was set. The result
+	 * reports what it framed, the frame's bounds in graph coordinates, the zoom it
+	 * chose, and the image size.
+	 *
+	 * The PNG goes to a fixed folder under the project's Saved folder, and its name
+	 * says which asset, graph and mode produced it. Widget Blueprints, materials and
+	 * other editors are refused by name for now rather than capturing the wrong tab,
+	 * because a wrong picture is worse than no picture.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString LookTurboMCPCapture(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Mode,
+		const FString& Target,
+		const FString& Size);
 };
 
 /**

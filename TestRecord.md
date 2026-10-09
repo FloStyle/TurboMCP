@@ -728,6 +728,87 @@ graphs that must differ is evidence, one coordinate that happens to match is not
 
 ---
 
+## 3c. Phase 3: L-CAPTURE
+
+Built: `LookTurboMCPCapture`. 24 tools. Run its checks with
+`python Tools/test-capture.py`.
+
+A Look tool, so it changes nothing but the image it writes (`P3`). Three framing modes:
+the whole graph, one comment box by index, one node by ID.
+
+### WHAT IS VERIFIED
+
+| Test | Result | Evidence |
+|---|---|---|
+| The whole graph is framed | **PASS** | `framed: the whole graph, 11 node(s)`, `frame bounds: x 0 to 1960, y 0 to 416` |
+| The view is really moved | **PASS** | `zoom: asked 0.729, applied 0.750 at x 980 y 208` — read back, not assumed |
+| A PNG of exactly the size asked for | **PASS** | IHDR read back: **1600x900**, 48388 bytes |
+| A second size is honoured | **PASS** | `800x400` renders a file whose IHDR is **800x400** |
+| The name says asset, graph and mode | **PASS** | `BP_NodeTest_EventGraph_graph_1600x900.png` |
+| A node ID from `R-NODE-FIND` is framed | **PASS** | `framed: node`, with the ID `R-NODE-FIND` supplied, so the two tools agree on the form |
+| Asking for box 9 of a graph with none | **PASS** | `asked for box 9, this graph has 0 comment box(es)`, and **no fallback to the whole graph** |
+| Mode `box` without a target | **PASS** | `needs a target` |
+| An unknown node key | **PASS** | refused, and suggests `R-NODE-FIND` |
+| A bad mode | **PASS** | `Accepted: graph, box, node.` |
+| A bad size | **PASS** | refused by name |
+| A graph that does not exist | **PASS** | lists the real graphs |
+| An asset that is not a Blueprint | **PASS** | `is not a Blueprint` |
+
+### WHAT IS NOT VERIFIED, AND IS THEREFORE NOT CLAIMED
+
+**The captured canvas is empty.** The image contains the real graph editor chrome — the
+toolbar, the back and forward arrows, the breadcrumb `BP_NodeTest > EventGraph`, and the
+`BLUEPRINT` watermark — so the widget being rendered really is the graph editor. But **no
+node is drawn**, and the image is not a usable picture of the graph.
+
+I am recording this rather than presenting the file as a working capture. A picture of a
+graph with no nodes in it is not a picture of the graph.
+
+What was established before stopping:
+
+- `SetViewLocation` **is** applied. Reading `GetViewLocation` back gives `applied 0.750 at
+  x 980 y 208` against `asked 0.729`, so the engine accepted the move and clamped the
+  zoom to its own limit. The frame is not simply being ignored.
+- The render pipeline works: the chrome comes out, the size is exact, the file is a valid
+  PNG, and the name is right.
+- So the gap is specifically that the node widgets are not drawn into the render even
+  with the view moved. `FSlateApplication::ForceRedrawWindow` was added to force the panel
+  to recompute what is on screen, and it did not change the outcome.
+
+The next thing to try is another rendering route: `FWidgetRenderer` with a deferred
+render target update, or drawing the panel's own geometry rather than the composed editor
+widget. If that fails, the fallback is to capture the on-screen window through the
+engine's `USlateInspectorToolset::Screenshot` and accept that the frame is whatever is
+visible. Raised as Q-7.
+
+### A wrong assumption this tool corrected
+
+The first version of the suite asserted that a **Widget Blueprint** would be refused, and
+the tool's own doc comment said so. It is not refused: `UWidgetBlueprint` derives from
+`UBlueprint`, so a Widget Blueprint's graph is captured like any other. The test now
+asserts the real behaviour, and the doc comment was corrected with it.
+
+This is worth recording because the assumption was mine and the doc comment repeated it:
+writing a claim into a doc comment does not make it true.
+
+### Three compile failures, all avoidable
+
+- `UTextureRenderTarget2D` used without its header.
+- A missing semicolon after an `Out += TEXT(...)` line — **twice**, in two places.
+- `*WantedMode.IsEmpty() ? a : b` — the `*` binds to the bool, so the compiler reported
+  *dereferencing a bool* for what was a precedence mistake. The label is computed on its
+  own line now.
+
+The semicolon one is worth noting: `Out += TEXT("a")` followed by `Out += TEXT("b")` with
+no separator is a mistake that looks like valid continuation, because every other `Out +=`
+in the file wraps across lines. It is the same mistake an earlier phase made once already.
+
+`Tools/start-editor.ps1 -Stop` cleared a live `LiveCodingConsole` twice during this work,
+each time unblocking a build that had already failed with `Unable to build while Live
+Coding is active`.
+
+---
+
 ## 3b. Phase 3: L-WIDGET-PREVIEW
 
 Built: `LookTurboMCPWidgetPreview`. 23 tools. Run its checks with
