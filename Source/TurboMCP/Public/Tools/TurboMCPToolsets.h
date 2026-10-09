@@ -180,6 +180,48 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPDirtyList(const FString& Limit);
+
+	/**
+	 * Turn node IDs into nodes.
+	 *
+	 * Pass one or more IDs separated by commas or pipes, in the form
+	 * `AssetName:GraphName:NodeKey`, for example `WBP_ShopCard:RefreshPrice:3fa91c`.
+	 * The full path form `/Game/UI/WBP_ShopCard.WBP_ShopCard:RefreshPrice:3fa91c`
+	 * is always accepted too.
+	 *
+	 * Each ID gives back the node reference the engine's own tools take, its
+	 * title, its node type ID — the form the engine's graph writer accepts, not
+	 * the C++ class name — its graph, and every pin by name with its direction
+	 * and its index within that direction.
+	 *
+	 * An ID whose asset name fits more than one asset is refused and every full
+	 * path it fits is listed. An ID whose node is gone says so and offers the
+	 * nodes in that graph whose key starts the same way, so a rebuild can be
+	 * survived without guessing. A key that fits more than one node is refused
+	 * with the longer IDs that would disambiguate it (`04_FORMATS.md` 3.2).
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPNodeResolve(const FString& NodeIds);
+
+	/**
+	 * Find nodes in a Blueprint by what they say.
+	 *
+	 * Pass the asset, one or more words separated by commas or pipes, and
+	 * optionally one graph name. Every word must appear, which is what makes a
+	 * two word search narrow rather than widen.
+	 *
+	 * The words are matched against each node's title, its called function, its
+	 * variable, its class and its pin names. Every graph is searched unless one is
+	 * named. Each match prints its node ID, title and node type ID.
+	 *
+	 * Nothing matching says how many nodes and graphs were searched and what to
+	 * try instead; a graph name that does not exist lists the real graph names.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPNodeFind(
+		const FString& Asset,
+		const FString& Words,
+		const FString& GraphName);
 };
 
 /**

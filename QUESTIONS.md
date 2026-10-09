@@ -31,3 +31,45 @@ Question: is "Suggest" and "Apply" the pair to use, or does the owner want
 another pair?
 
 Answer: not yet answered.
+
+---
+
+## Q-3 2026-10-09 Spec/03_TOOLS.md R-NODE-RESOLVE
+
+`R-NODE-RESOLVE` must print "the node type ID (the one the engine's node creation
+tool accepts)". That ID is `<menu category>|<node title>` with whitespace
+removed, and **the title half follows the editor's language**. On this French
+editor the engine's own `find_node_types` offers `Affichage|Événement|...` and
+`Utilitaires|Casting|...`, so the localised form is genuinely what the engine's
+writer accepts here.
+
+This plugin now prints the un-localised category (`AddEvent` rather than
+`Ajouterunévénement`) but cannot un-localise the title, because Epic builds a node
+title at run time from separate localised fragments. It also prints the node's
+C++ class (`K2Node_Event`) beside it as the one locale-independent name.
+
+Question: is that acceptable, or does the specification want something stronger —
+for example a type ID that is stable across languages even when the engine's own
+writer would not accept it? A stable ID would have to come from somewhere other
+than the title, and would then need translating before it could be handed to the
+engine's writer.
+
+Answer: not yet answered.
+
+---
+
+## Q-4 2026-10-09 Spec/03_TOOLS.md E-SAVE
+
+`E-SAVE` is classified as an **Edit** tool, but it does not make a change: it
+writes to disk changes that were already made. Its own spec even has it report
+"had no changes" as a normal outcome.
+
+This plugin follows the spec and puts it in `UTurboMCPEditToolset`, and it opens
+its result with `unchanged:` when nothing was saved and `changed: saved N` when
+something was, which satisfies `P4`.
+
+Question: is `Edit` the intended class for a save, or should `E-SAVE` sit outside
+the four kinds? The four kinds are described as Read, Look, Preview and Edit, and
+"an Edit is one transaction" (`P4`) does not obviously describe a save.
+
+Answer: not yet answered.

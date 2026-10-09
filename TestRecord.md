@@ -172,6 +172,73 @@ how the remaining kit scaffolding should be built.
 
 ---
 
+## 2f. Phase 2: node IDs, resolve and find
+
+Built: `TurboMCPNodeId` (the ID format, shared by every reader and writer),
+`ReadTurboMCPNodeResolve` and `ReadTurboMCPNodeFind`. 15 tools total.
+
+Tested against `BP_NodeTest`, an Actor Blueprint created by
+`Tools/make-test-blueprint.py`, whose EventGraph the engine itself populated with
+its three standard events.
+
+| Test | Result | Evidence |
+|---|---|---|
+| Node IDs are the documented shape | **PASS** | `BP_NodeTest:EventGraph:696d11` from GUID `696d11...`, lower case, six digits |
+| Every graph kind is searched | **PASS** | found `EventGraph` without being told which array holds it |
+| Node type IDs compose like the engine's | **PASS** | `AddEvent\|evnementBeginPlay`, and `AddEvent\|Collision\|...` for the collision event that carries a subcategory |
+| The stable class name is reported | **PASS** | `class: K2Node_Event` |
+| `R-NODE-FIND` matches on several fields | **PASS** | `Event` matched 3 of 4 nodes across 1 of 1 graphs |
+| An empty word list is refused with an example | **PASS** | `error: no words given... for example PrintString, or MyVar.` |
+
+### A real limitation found: the engine writer's type ID is localised
+
+`03_TOOLS.md` requires `R-NODE-RESOLVE` to print "the node type ID (the one the
+engine's node creation tool accepts)". The engine builds that ID as
+`<menu category>|<node title>` with whitespace removed, so **the title half
+follows the editor's language**.
+
+The first version printed `Ajouterunévénement|événementBeginPlay` on this French
+editor. The category half was fixed by reading the `FText` source string instead
+of its translated display string:
+
+```
+before:  Ajouterunévénement|événementBeginPlay
+after:   AddEvent|événementBeginPlay          <- category fixed, title not
+```
+
+The title half cannot be fixed this way. Epic builds a node title at runtime from
+separate localised fragments, so there is no single English source string to
+read. `FTextInspector::GetSourceString` returns what was passed in, and what was
+passed in is already translated.
+
+**Why this matters, and why it is not fatal.** The engine's own `find_node_types`
+returns localised IDs too: on this editor it offers 2215 IDs beginning
+`Utilitaires|Casting|...`, `Affichage|Événement|...`. So the localised form is
+what the engine's writer accepts **on this machine**, and a type ID this plugin
+prints will feed straight back into the engine's writer. What it will **not** do
+is transfer to an editor running a different language.
+
+**What was done about it:** the node's C++ class (`K2Node_Event`) is printed
+beside the type ID. That is the one name for a node that cannot change with
+locale, and it is also what disambiguates two nodes whose localised titles
+collide. It is a mitigation, not a fix.
+
+### Also verified
+
+- `FText` has **no** `GetSourceString` member in 5.8.3. The method of that name
+  at `Text.h` line 365 belongs to `FTextFormat`. The working call is
+  `FTextInspector::GetSourceString(Text)`, a static at line 1289. This cost two
+  build cycles to find.
+- Reading a Blueprint's graph through the engine's `read_graph_dsl` returned an
+  empty string for a graph of unconnected events, so it could not be used to
+  cross-check type IDs. The node type catalog from `find_node_types` was used
+  instead.
+- No engine tool creates a Blueprint, so the asset had to be scaffolded by a
+  commandlet first. The **structure** was then written by the engine, not by this
+  plugin, which is what keeps the comparison honest.
+
+---
+
 ## 2d. Phase 1: type find and dirty list
 
 | Test | Result | Evidence |

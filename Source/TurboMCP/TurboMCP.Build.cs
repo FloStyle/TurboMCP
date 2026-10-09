@@ -32,6 +32,14 @@ public class TurboMCP : ModuleRules
 				// Editor-only work: asset registry, Blueprint graphs, Slate panel.
 				"AssetRegistry",
 				"BlueprintGraph",
+				// UEdGraphNode and its pins live in Engine, which is a public
+				// dependency above, so it is not repeated here.
+				//
+				// UK2Node_CustomEvent and UK2Node_CallFunction, needed for the node
+				// type ID rule and for matching a node against search words. Kismet
+				// is also listed further down for the compiler API, so this entry
+				// carries only the node-class reason.
+				"KismetCompiler",
 				// UDeveloperSettings, the base of the engine's MCP settings class
 				// read by ReadTurboMCPStatus.
 				"DeveloperSettings",

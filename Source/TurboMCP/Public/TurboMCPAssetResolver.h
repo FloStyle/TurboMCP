@@ -89,6 +89,24 @@ public:
 	 */
 	static TArray<FString> SplitList(const FString& InRaw);
 
+	/**
+	 * Every asset whose own name matches.
+	 *
+	 * Public because `04_FORMATS.md` 3.2 requires a caller that is given an
+	 * ambiguous asset name to refuse it **and list every full path it fits**.
+	 * Naming the ambiguity is only possible if the caller can ask for all the
+	 * candidates, so this is not an implementation detail.
+	 *
+	 * @param InName         The name to match.
+	 * @param bContainsMatch True for a substring match, false for a whole-name
+	 *                       match. Substring matching is what `R-ASSET-SEARCH`
+	 *                       uses; a node ID holds a whole name.
+	 */
+	static void FindAllByName(
+		const FString& InName,
+		TArray<FResolved>& OutMatches,
+		bool bContainsMatch = false);
+
 private:
 	/**
 	 * Tries the cheap forms first: an object that is already loaded, then an
@@ -113,21 +131,4 @@ private:
 	 * asset registry. Returns false when no single asset lives at that path.
 	 */
 	static bool CompleteFromPackagePath(const FString& InPackagePath, FResolved& OutResolved);
-
-	/**
-	 * Finds assets by their own name.
-	 *
-	 * Uses the asset registry rather than the disk so that assets which are in
-	 * memory but not yet saved are found too (`P5`).
-	 *
-	 * @param InName  The name to look for.
-	 * @param OutMatches  Appended to.
-	 * @param bContainsMatch  When true, match names that contain InName rather
-	 *        than equal it. Used only to offer near misses in an error, never to
-	 *        resolve a tool input, because a contains match is a guess.
-	 */
-	static void FindByName(
-		const FString& InName,
-		TArray<FResolved>& OutMatches,
-		bool bContainsMatch = false);
 };

@@ -48,7 +48,7 @@ FString FTurboMCPAssetResolver::Resolve(const FString& InInput, FResolved& OutRe
 	// where guessing would be dangerous (P2, D-10), so it either finds exactly
 	// one asset or refuses and lists what it found.
 	TArray<FResolved> Matches;
-	FindByName(Input, Matches);
+	FindAllByName(Input, Matches);
 
 	if (Matches.Num() == 1)
 	{
@@ -84,7 +84,7 @@ FString FTurboMCPAssetResolver::Resolve(const FString& InInput, FResolved& OutRe
 	FString Error = FString::Printf(TEXT("error: no asset named '%s'. "), *Input);
 
 	TArray<FResolved> NearMisses;
-	FindByName(Input, NearMisses, /*bContainsMatch=*/true);
+	FindAllByName(Input, NearMisses, /*bContainsMatch=*/true);
 
 	if (NearMisses.Num() > 0)
 	{
@@ -313,7 +313,7 @@ bool FTurboMCPAssetResolver::CompleteFromPackagePath(
 	return true;
 }
 
-void FTurboMCPAssetResolver::FindByName(
+void FTurboMCPAssetResolver::FindAllByName(
 	const FString& InName,
 	TArray<FResolved>& OutMatches,
 	bool bContainsMatch)
