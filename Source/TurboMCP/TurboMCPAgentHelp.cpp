@@ -312,20 +312,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 	WantedToolset.TrimStartAndEndInline();
 	WantedTool.TrimStartAndEndInline();
 
-	// A caller may pass the joined form, because that is how tools/list prints
-	// it. Accept both rather than failing on the more obvious of the two.
-	if (WantedTool.IsEmpty())
-	{
-		FString JoinedToolset;
-		FString JoinedTool;
-		SplitName(WantedToolset, JoinedToolset, JoinedTool);
-		if (!JoinedToolset.IsEmpty())
-		{
-			WantedToolset = JoinedToolset;
-			WantedTool = JoinedTool;
-		}
-	}
-
 	if (WantedToolset.IsEmpty() && WantedTool.IsEmpty())
 	{
 		return TEXT("error: no tool named. Pass a toolset name and a tool name, or one joined ")
@@ -349,6 +335,37 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 		KnownToolsetNames.Add(Entry.Name);
 	}
 
+	// Does this name already name a toolset exactly? Checked before any split,
+	// because a toolset name may itself contain dots, for example
+	// `editor_toolset.toolsets.asset.AssetTools`. Splitting that on the last dot
+	// would truncate it to a name no toolset answers to.
+	auto IsKnownToolset = [&KnownToolsetNames](const FString& InName)
+	{
+		for (const FString& Known : KnownToolsetNames)
+		{
+			if (Known.Equals(InName, ESearchCase::IgnoreCase))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	// Only treat the toolset argument as a joined `Toolset.Tool` when the tool
+	// name was left empty AND the argument does not name a toolset as given. That
+	// keeps both supported: a toolset name with dots, and one joined name.
+	if (WantedTool.IsEmpty() && !WantedToolset.IsEmpty() && !IsKnownToolset(WantedToolset))
+	{
+		FString JoinedToolset;
+		FString JoinedTool;
+		SplitName(WantedToolset, JoinedToolset, JoinedTool);
+		if (!JoinedToolset.IsEmpty() && IsKnownToolset(JoinedToolset))
+		{
+			WantedToolset = JoinedToolset;
+			WantedTool = JoinedTool;
+		}
+	}
+
 	const FTurboMCPTraps& Traps = FTurboMCPTraps::Get();
 
 	// Match a toolset by its full name or by its short form, because the full
@@ -360,7 +377,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 			|| InName.EndsWith(TEXT(".") + WantedToolset, ESearchCase::IgnoreCase);
 	};
 
-	// Summary mode: no tool name given, so one line per tool in the toolset.
+	// Summary mode: one line per tool in the toolset.
 	if (WantedTool.IsEmpty())
 	{
 		for (const FToolsetEntry& Entry : Toolsets)
@@ -370,15 +387,41 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 				continue;
 			}
 
+			/**
+			 * How many tools one summary may list.
+			 *
+			 * R-TOOL-SCHEMA sets the 2000 character budget for help output, and
+			 * an engine toolset can hold dozens of tools, so an uncapped summary
+			 * would break that budget. The count of what was left out is printed
+			 * so a reader knows the list is short (`P6`).
+			 */
+			constexpr int32 MaxSummaryTools = 12;
+
+			const int32 Shown = FMath::Min(Entry.Tools.Num(), MaxSummaryTools);
+
 			FString Summary = FString::Printf(TEXT("read: %s, %d tools"),
 				*Entry.Name, Entry.Tools.Num());
-			for (const TSharedPtr<FJsonObject>& Tool : Entry.Tools)
+			if (Entry.Tools.Num() > Shown)
 			{
+				Summary += FString::Printf(TEXT(", listing the first %d"), Shown);
+			}
+
+			for (int32 Index = 0; Index < Shown; ++Index)
+			{
+				const TSharedPtr<FJsonObject>& Tool = Entry.Tools[Index];
 				const FString Bare = BareToolName(Field(Tool, TEXT("name")));
 				Summary += FString::Printf(TEXT("\n%s %s - %s"),
 					*KindOf(Entry.Name), *Bare,
 					*FirstSentence(Field(Tool, TEXT("description"))));
 			}
+
+			if (Entry.Tools.Num() > Shown)
+			{
+				Summary += FString::Printf(
+					TEXT("\n(%d more, name one tool to see its parameters and traps)"),
+					Entry.Tools.Num() - Shown);
+			}
+
 			return Summary;
 		}
 

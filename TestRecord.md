@@ -116,8 +116,79 @@ These correct `07_ENGINE_NOTES.md` and were found by experiment:
 
 ### Not yet verified in phase 1
 
-`R-ASSET-SEARCH`, `R-ASSET-DESCRIBE`, `R-TYPE-FIND`, `R-DIRTY-LIST`, `E-COMPILE`
-and `E-SAVE` are not written yet.
+`R-TYPE-FIND`, `R-DIRTY-LIST`, `E-COMPILE` and `E-SAVE` are not written yet.
+
+---
+
+## 2c. Phase 1: asset search and describe
+
+| Test | Result | Evidence |
+|---|---|---|
+| `R-ASSET-SEARCH` finds a project asset | **PASS** | `TA11` returns `/Game/Tests/TA11_TestEnum.TA11_TestEnum [UserDefinedEnum]` |
+| Search with a type filter | **PASS** | `type:Material` found 2288 matches across 9207 assets |
+| Search prints a cap and the number left out | **PASS** | the result says how many are shown and how many were omitted |
+| Search matching nothing | **PASS** | says nothing matched **and how many assets were searched**, so "no match" cannot be read as "nothing searched" (`P1`) |
+| Search with an empty query | **PASS** | refuses and gives the example `type:Material shop` |
+| `R-ASSET-DESCRIBE` all path forms agree | **PASS** | short name `TA11_TestEnum` and package path `/Game/Tests/TA11_TestEnum` produce byte-identical output |
+| Describe reports an unreadable fact as unknown | **PASS** | `unsaved changes: unknown, the asset is not loaded`, rather than claiming "no" (`D-05`) |
+| Describe counts honestly | **PASS** | says `all 1 described`, or `N described, M refused` when some fail |
+
+### Two bugs these tests caught
+
+1. The describe summary claimed `1 asset(s) described` even when **zero** resolved,
+   because it counted the inputs instead of the successes. Fixed: it now prints
+   `N described, M refused` (`P1`).
+2. `R-TOOL-SCHEMA` truncated any toolset name containing a dot, because it split
+   on the last dot before checking whether the name was already valid. That broke
+   every `editor_toolset.toolsets.*` toolset. Fixed: a name is used as given when
+   it is a known toolset, and only split when that split resolves.
+3. Its summary mode listed all 21 tools of a toolset with no cap, breaking the
+   2000 character rule. Now capped at 12 with the remainder counted.
+
+---
+
+## 3. Engine toolsets: a finding that changes the picture
+
+`07_ENGINE_NOTES.md` describes Blueprint and widget toolsets as if they are always
+present. They are **not**. In UE 5.8.3 they live in plugin toolsets that are all
+off by default, under `Engine/Plugins/Experimental/Toolsets/`. With only
+`ModelContextProtocol` enabled, the server serves almost nothing: in this project
+just `AgentSkillToolset`.
+
+Enabling `EditorToolset` alone brings up 17 more toolsets, including
+`editor_toolset.toolsets.blueprint.BlueprintTools`,
+`...material.MaterialTools`, `...asset.AssetTools`,
+`...data_table.DataTableTools` and `...object.ObjectTools`. `UMGToolSet` brings up
+the widget tools.
+
+This matters twice over:
+
+- TurboMCP cannot be tested against the tools it exists to improve unless those
+  plugins are on, so `TestProject/TurboMCPTest.uproject` now enables them.
+- It is version drift from the 5.8.1 notes, which is exactly what `QUESTIONS.md`
+  Q-1 predicted.
+
+---
+
+## 4. Building the test kit without a person
+
+`06_ACCEPTANCE.md` requires TA-1 to TA-13 to be built **by hand**, because a tool
+tested against an asset a tool built proves nothing.
+
+Verified this session: the editor can run editor Python headlessly, which makes
+the mechanical parts scriptable:
+
+```
+UnrealEditor.exe <project> -run=PythonScriptCommandlet -Script=Tools/make-test-assets.py -unattended -nullrhi
+```
+
+It created `Content/Tests/TA11_TestEnum.uasset` on disk with exit code 0.
+
+The intent is to script only the **scaffolding** — an empty asset of the right
+class, saved, so the asset registry and the path forms have something real to
+resolve against. The **structure** the tests actually measure, such as TA-1's 60
+to 90 hand-laid nodes and its nested comment boxes, must still be built by hand,
+and no test result may be recorded until it is.
 
 ### How registration was verified without a human
 

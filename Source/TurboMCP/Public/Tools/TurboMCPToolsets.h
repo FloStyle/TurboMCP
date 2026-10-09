@@ -104,6 +104,45 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPToolHelp(const FString& ToolsetName, const FString& ToolName);
+
+	/**
+	 * Read assets matching a query, like the editor's quick open search.
+	 *
+	 * Pass words to match against asset names and folder paths. Every word must
+	 * appear in one or the other. Two filters may appear at any position, alone
+	 * or with words: `type:<class words>` and `path:<folder words>`.
+	 *
+	 * Ranking is exact name first, then names that start with the words, then
+	 * names that contain them, then folder only matches, and shorter names first
+	 * on a tie.
+	 *
+	 * Finds assets that are in memory but not saved, not only those on disk.
+	 * Every result carries its full object path and class, and a Blueprint also
+	 * carries its parent. Results are capped and the count left out is printed.
+	 *
+	 * Pass "" to see the refusal message. A query matching nothing says how many
+	 * assets were searched, so "no match" never looks like "nothing searched".
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPAssetSearch(const FString& Query);
+
+	/**
+	 * Read what one or more assets are, in any path form.
+	 *
+	 * Pass assets separated by commas or pipes. Every form resolves: a short
+	 * name, a package path, an object path, or a generated class path. A short
+	 * name that fits more than one asset is refused with the full list rather
+	 * than guessed at.
+	 *
+	 * Each answer gives the package path, object path, class, generated class
+	 * path when the asset has one, parent for a Blueprint, whether the asset is
+	 * loaded, whether it has unsaved changes, and whether it is on disk.
+	 *
+	 * A fact that could not be read is reported as unknown with the reason, never
+	 * as a confident answer (`D-05`).
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPAssetDescribe(const FString& Assets);
 };
 
 /**
