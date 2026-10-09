@@ -67,17 +67,55 @@ beyond keeping it working.
 ### Step 2 — Phase 1, agent help
 Highest value per unit of risk, and no graph-writing machinery needed.
 
-| Order | Capability | Why here |
+| Order | Capability | State |
 |---|---|---|
-| 1 | Traps data file (D-07) | `R-TOOL-SCHEMA` depends on it; must update without a rebuild |
-| 2 | `R-TOOL-INDEX` | Cheapest real tool; makes the whole surface visible |
-| 3 | `R-TOOL-SCHEMA` | Needs the traps file; the 2000-char budget is the hard part |
-| 4 | `R-ASSET-SEARCH` | Foundation for every asset-taking tool |
-| 5 | `R-ASSET-DESCRIBE` | Proves the resolver against real assets |
-| 6 | `R-TYPE-FIND` | Struct/enum lookup |
-| 7 | `R-DIRTY-LIST` | Small; needed by `E-SAVE` |
-| 8 | `E-COMPILE` | First write-class tool; one transaction and a roll back rule |
-| 9 | `E-SAVE` | Uses the unsaved flag, per `D-33` |
+| 1 | Traps data file (D-07) | **DONE** - verified, project override works with no rebuild |
+| 2 | `R-TOOL-INDEX` | **DONE** - 7 checks pass |
+| 3 | `R-TOOL-SCHEMA` | **DONE** - 6 checks pass, 297 chars against a 2000 budget |
+| 4 | `R-ASSET-SEARCH` | next |
+| 5 | `R-ASSET-DESCRIBE` | |
+| 6 | `R-TYPE-FIND` | |
+| 7 | `R-DIRTY-LIST` | |
+| 8 | `E-COMPILE` | first write-class tool; one transaction and a roll back rule |
+| 9 | `E-SAVE` | uses the unsaved flag, per `D-33` |
+
+Verified by `python Tools/test-agent-help.py`, which exits non-zero on failure.
+Run it after every change to this phase so a regression is caught at once.
+
+#### The fast loop, in full
+
+```powershell
+# 1. stop the editor, or the plugin DLL is locked
+Get-Process UnrealEditor -EA SilentlyContinue | Stop-Process -Force
+# 2. build just the module (about 30 seconds once the engine exists)
+& cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"<REPO>\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
+# 3. start it headless, which also starts the MCP server on 8000
+Start-Process 'C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor.exe' -ArgumentList @('<REPO>\TestProject\TurboMCPTest.uproject','-nullrhi','-unattended','-nosplash','-nosound') -WindowStyle Hidden
+# 4. verify on the wire
+python Tools\test-agent-help.py
+```
+
+#### Findings that correct the spec or the engine notes
+
+Recorded because each one cost a build cycle:
+
+- `call_tool`'s `arguments` is a **JSON object**, not a JSON string as
+  `07_ENGINE_NOTES.md` section 3.1 says. A string yields "input params Json is
+  empty".
+- The published tool `name` is the full `Toolset.Function`; `call_tool` wants the
+  bare function name.
+- `UFUNCTION` parameter names are exposed **camelCased** (`toolsetName`).
+- An `FString` parameter is **required** in the schema whatever its default, so
+  there is no way to express an optional string. Pass `""` and treat it as "not
+  given". This is exactly the open question `07_ENGINE_NOTES.md` section 2.1
+  raises, now answered.
+- The toolset name is the class name with the leading `U` **stripped**
+  (`TurboMCP.TurboMCPReadToolset`). `FFunctionLibraryToolset::GetToolsetClassName`
+  keeps the `U` and is therefore the wrong function to copy.
+- The engine's Blueprint and widget toolsets are **not registered** in this
+  project; only `AgentSkillToolset` is. The shipped traps target tools that are
+  absent here, so the trap lookup is proven through the project override file
+  instead.
 
 ### Step 3 — Phase 2, Blueprint reading
 `R-BP-LOAD`, `R-GRAPH-LOAD` (both formats), `R-REFS`, `R-OVERRIDES`,
