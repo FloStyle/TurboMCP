@@ -728,6 +728,78 @@ graphs that must differ is evidence, one coordinate that happens to match is not
 
 ---
 
+## 3b. Phase 3: L-WIDGET-PREVIEW
+
+Built: `LookTurboMCPWidgetPreview`. 23 tools. Run its checks with
+`python Tools/test-widget-preview.py`.
+
+A Look tool, so it changes nothing that outlives the call (`P3`). The instance it makes
+is transient, is not saved, and is destroyed before the tool returns. The one thing it
+writes is the PNG, which is the point of the tool.
+
+| Test | Result | Evidence |
+|---|---|---|
+| It renders and writes a PNG | **PASS** | `image: .../Saved/TurboMCP/Captures/WBP_NodeTest_1280x720.png` |
+| The file is a real PNG at the size asked for | **PASS** | IHDR read back: **1280x720**, 17709 bytes |
+| A requested size is honoured | **PASS** | `640x360` renders a second file whose IHDR is **640x360** |
+| It says how many values it set | **PASS** | `sample values: 0 set, 0 refused` |
+| It says the function was not asked for | **PASS** | `function: none asked for` |
+| It explains the forced alpha | **PASS** | says why a transparent PNG would look empty |
+| It reports script messages | **PASS** | `script messages: 0 warning(s), 0 error(s)` |
+| An unknown variable is refused with suggestions | **PASS** | `'NotAVariable' is not a property of this widget. Some it does have: ColorAndOpacity, ForegroundColor, Padding, ...` |
+| Sample values must be a JSON object | **PASS** | an array is refused, saying `a variable has to be named` |
+| A bad size is refused by name | **PASS** | `'banana' is not a size. Pass WxH, for example 1280x720.` |
+| A size above the limit is refused, not clamped | **PASS** | `9000x9000 is larger than the 4096 limit` |
+| A function taking parameters is refused | **PASS** | `'SetPositionInViewport' takes 2 parameter(s)` |
+| A non-widget is refused with its class | **PASS** | `is a Blueprint, and only a Widget Blueprint can be previewed` |
+
+### The image is entirely black, and that is the correct result
+
+The test asset is a bare Canvas Panel with two empty Text Blocks and no background, so
+the PNG is black. That is what those widgets look like. The suite asserts the pipeline
+rather than the picture: an instance is made, the render target is written, the pixels
+come back at **exactly** the requested size, and a valid PNG lands on disk with a
+readable IHDR.
+
+It is recorded this way deliberately. Presenting a black rectangle as "a rendered
+widget" would be exactly the kind of claim this record exists to avoid. A caller wanting
+a meaningful image sets values or adds content, which is their job and not the tool's.
+
+### Three defects found building it
+
+**1. `FImage` does not link.** Its constructor is not exported from the module, so
+`FImage Image(...)` produced an unresolved external. `FImageUtils::PNGCompressImageArray`
+takes the `FColor` array directly, which is exactly what the render target read back, so
+`FImage` is not needed at all.
+
+**2. `EGammaSpace::SRGB` does not exist.** The value is `sRGB`, lower case s.
+
+**3. A short name did not find an asset that was loaded but not yet saved.** This is a
+real hole in the resolver, not a mistake in the test.
+
+An asset created in this editor session is loaded and addressable by its **full path**,
+but the short-name search goes through the asset registry, and a package that has never
+been saved may not be in it. So `WBP_NodeTest` was reported as missing while
+`/Game/Tests/WBP_NodeTest.WBP_NodeTest` worked, and the scaffolding script tried to
+create the asset a second time and was told `The path already exists`.
+
+Fixed by checking the object graph with `FindObject` before the registry search, for a
+short name only. That is the one case the registry cannot see, and it is exactly the
+case a caller hits right after creating something.
+
+### The lesson, for the third time
+
+The same Widget Blueprint was created, previewed, and then **gone**: it had never been
+saved, so stopping the editor destroyed it. `Tools/make-test-widget.py` now creates it
+**and saves it**, and proves the save from the asset's own unsaved flag rather than from
+a tool's return value.
+
+This is the third occurrence in this project — after 13 lost nodes and the `R-DATATABLE`
+readers. The pattern is always the same: a tool call that returns success is not evidence
+that anything persisted. Only the asset's own flag is.
+
+---
+
 ## 2d. Phase 1: type find and dirty list
 
 | Test | Result | Evidence |

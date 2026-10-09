@@ -75,6 +75,13 @@ public class TurboMCP : ModuleRules
 				// Used by the panel to draw and by capture tools later.
 				"ImageWrapper",
 				"RenderCore",
+
+				// L-WIDGET-PREVIEW: FWidgetRenderer draws a widget into a render
+				// target off screen, and UUserWidget is what gets instantiated.
+				// UMGEditor carries UBaseWidgetBlueprint, which is where a Widget
+				// Blueprint's WidgetTree lives.
+				"UMG",
+				"UMGEditor",
 			});
 	}
 }

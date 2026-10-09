@@ -446,6 +446,38 @@ public:
 	static FString LookTurboMCPLayoutReport(
 		const FString& Asset,
 		const FString& GraphName);
+
+	/**
+	 * Render a Widget Blueprint with sample values and write a PNG.
+	 *
+	 * Pass the widget, sample values as a JSON object of variable name to value, an
+	 * optional function to call after the values are set, and a size as WxH. Empty
+	 * sample values means the widget's own defaults; an empty size means 1280x720.
+	 *
+	 * A transient instance is made off screen, the values are set through reflection,
+	 * the function is called, the widget is rendered into a render target and written
+	 * to a PNG, and the instance is destroyed before the call returns. No play session
+	 * is needed.
+	 *
+	 * Values are set with the engine's own text import, so the accepted spellings are
+	 * the details panel's and not a format invented here. A variable name that does not
+	 * exist is reported along with some names that do, rather than being ignored. A
+	 * function that takes parameters is refused, because this tool has no way to supply
+	 * them.
+	 *
+	 * The PNG goes to a fixed folder under the project's Saved folder, its alpha is
+	 * forced opaque because a widget background is transparent by default, and every
+	 * engine warning and error raised while setting values and rendering is reported.
+	 *
+	 * A widget with no generated class is refused, because an instance of it would not
+	 * run its own Construct or its own functions.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString LookTurboMCPWidgetPreview(
+		const FString& Widget,
+		const FString& SampleValuesJson,
+		const FString& FunctionName,
+		const FString& Size);
 };
 
 /**

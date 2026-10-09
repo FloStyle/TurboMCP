@@ -44,6 +44,25 @@ FString FTurboMCPAssetResolver::Resolve(const FString& InInput, FResolved& OutRe
 		return FString();
 	}
 
+	// A short name is normally found through the asset registry, in FindAllByName
+	// below. An asset created in this editor session and NOT YET SAVED is loaded but
+	// may not be in the registry, so the object graph is checked first.
+	//
+	// This is not hypothetical. A Widget Blueprint created through the engine's own
+	// tools was addressable by its full path and not by its own name, which made a
+	// scaffolding script try to create it a second time and read "The path already
+	// exists" while every resolver call said the asset was missing.
+	if (!Input.Contains(TEXT("/")))
+	{
+		if (UObject* Loaded = FindObject<UObject>(nullptr, *Input))
+		{
+			if (CompleteFromObject(Loaded, OutResolved))
+			{
+				return FString();
+			}
+		}
+	}
+
 	// Nothing exact matched, so treat the input as a short name. This is the step
 	// where guessing would be dangerous (P2, D-10), so it either finds exactly
 	// one asset or refuses and lists what it found.
