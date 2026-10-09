@@ -417,7 +417,7 @@ decided, and it is not claimed either way.
 
 ---
 
-## Q-10. The engine's tool-call event does not carry enough to name the tool
+## Q-10 RESOLVED. The engine's tool-call event does not carry enough to name the tool
 
 **Status: the log works. The ENGINE's tool names resolve only partly; the plugin's own tools are
 logged from inside themselves with full arguments, which is the case the spec actually cares about.**
