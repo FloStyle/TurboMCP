@@ -81,6 +81,43 @@ Tools\start-editor.ps1
 That whole loop takes about 24 seconds. The plugin's own panel is under
 **Window > TurboMCP**, and it calls the same code path the MCP does (`P9`).
 
+## Working on a feature
+
+Work happens on a branch, is validated, and is merged only when every check
+passes. `origin` is `https://github.com/FloStyle/TurboMCP`, so a branch is also
+the backup.
+
+```powershell
+git checkout -b feature/<capability>          # for example feature/r-graph-load
+
+# ... build, and validate before merging: all five must pass ...
+python Tools\check-plugin.py                  # 10 pre-build checks
+python Tools\check-includes.py                # every include resolves
+python Tools\check-mcp-server.py              # the server and all four toolsets
+python Tools\test-agent-help.py
+python Tools\test-asset-tools.py
+python Tools\build-test-graph.py              # rebuilds the test graph and saves it
+
+git add -A && git commit -m "<what changed and why>"
+git push -u origin feature/<capability>
+
+git checkout main
+git merge --no-ff feature/<capability>
+git push origin main
+```
+
+**A `.uasset` cannot be merged.** Test content changed on two branches once and
+stopped a merge completely. `.gitattributes` now routes content files through the
+`ours` driver so git does not attempt it, which needs this once per clone:
+
+```powershell
+git config --global merge.ours.driver true
+```
+
+Every dependency must be in both files: `TurboMCP.Build.cs` **and**
+`TurboMCP.uplugin`. A module dependency present in only one of them fails at
+link time or, worse, at load time with a toolset silently missing.
+
 `Tools/check-mcp-server.py` speaks JSON-RPC to the running server, lists what it
 serves and reports whether TurboMCP's toolsets are visible. It exits non-zero
 when the server is unreachable or TurboMCP is missing, so it can be used as a

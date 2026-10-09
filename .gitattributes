@@ -42,3 +42,26 @@
 # Diffs for content files are not readable, so do not try.
 *.uasset   -diff
 *.umap     -diff
+
+# A binary file cannot be merged, and letting git try only stops a merge halfway
+# with a conflict. Test content changed on two branches once and blocked a merge
+# of `feature/r-graph-load` into `main`.
+#
+# `merge=ours` is not built in. It resolves through the driver named here, which is
+# configured in the repository, so a fresh clone needs the config too:
+#
+#   git config merge.ours.driver true
+#
+# Without that config git falls back to its normal binary behaviour, which is the
+# conflict again rather than anything worse. Resolve it by keeping one side
+# deliberately and saying which:
+#
+#   git checkout --theirs TestProject/Content/Tests/<asset>.uasset   # the branch being merged in
+#   git checkout --ours   TestProject/Content/Tests/<asset>.uasset   # the branch you are on
+#   git add               TestProject/Content/Tests/<asset>.uasset
+#
+# There is no automatic right answer: a test asset that both branches changed has
+# to be rebuilt from whichever branch holds the state the tests were written
+# against. For the kit that is `Tools/build-test-graph.py`, which is reproducible.
+*.uasset   merge=ours
+*.umap     merge=ours

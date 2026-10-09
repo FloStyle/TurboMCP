@@ -307,6 +307,49 @@ while two editors were running, because they asked "does an editor answer?"
 rather than "how many editors are there?". That is the lesson: a check that
 cannot fail in the way reality failed is not a check.
 
+### M-9 A UHT check that cried wolf
+
+`Tools/check-plugin.py` failed on **every** header newer than the generated code,
+including `TurboMCPGraphText.h` and `TurboMCPNodeId.h`, which carry no reflection
+at all. UnrealHeaderTool reads a header for `UCLASS`, `USTRUCT`, `UENUM`,
+`UFUNCTION` and `UPROPERTY`; a header with none of those cannot make the generated
+code stale.
+
+It was wrong rather than merely cautious, and wrong in the harmful direction: a
+check that fails on a correct change teaches the reader to ignore it. It now
+examines only reflection headers and reports how many it examined, so a zero is
+visible instead of silent.
+
+### M-10 Thirteen nodes were written, read back, and lost
+
+The graph text reader was developed against a graph the engine's own
+`write_graph_dsl` wrote. It produced a correct 13-node read. Then the editor was
+stopped for a rebuild and **all 13 nodes were gone**: `write_graph_dsl` compiles
+the Blueprint, which marks it dirty, but nothing saves it.
+
+The verification was perfect and the work did not exist. This is the same shape as
+M-6 and M-8: a result that looked right while the thing itself was absent.
+
+`Tools/build-test-graph.py` now ends by saving through the plugin's own `E-SAVE`
+and then **proving the save from the asset's unsaved flag**, so the graph cannot
+be trusted without being on disk.
+
+### M-11 A binary asset stopped a merge
+
+Merging `feature/r-graph-load` into `main` failed with
+`CONFLICT (content): Merge conflict in TestProject/Content/Tests/BP_NodeTest.uasset`.
+The same test asset had been changed on both branches, and a binary file has no
+merge.
+
+`.gitattributes` now sends `*.uasset` and `*.umap` through the `ours` driver, so
+git does not attempt a merge it cannot do. That driver is not built in and needs
+`git config --global merge.ours.driver true` once per clone.
+
+The deeper point: **a test asset that both branches changed has no automatic right
+answer.** It has to be rebuilt from whichever branch holds the state the tests were
+written against. For this kit that is `Tools/build-test-graph.py`, which is why the
+graph is written by a script rather than by hand-editing an asset.
+
 ---
 
 ## Part 4: wire format, established by testing
