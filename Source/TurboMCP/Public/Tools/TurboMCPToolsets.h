@@ -645,6 +645,43 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPWidgetRetarget(const FString& Asset);
+
+	/**
+	 * Work out what a comment-box change would do, without making it.
+	 *
+	 * `action` is REQUIRED and one of `create`, `set`, `fit`, `delete`. It is required rather than
+	 * guessed from which other fields are present, because a caller who forgot one field would
+	 * otherwise get the other operation.
+	 *
+	 *  - `create` takes `nodes`, one or more node keys or full node ids, and boxes them. The box is
+	 *    sized to enclose them; `size=WxH` overrides that.
+	 *  - `set` takes `box` and any of `text=`, `color=`, `size=WxH`.
+	 *  - `fit` resizes every box in the graph to enclose what is inside it, leaving the box's
+	 *    top-left where it is and allowing for the title bar above the rectangle.
+	 *  - `delete` takes `box` and removes the BOX ONLY. A box is a label, not a container: nothing
+	 *    inside it is removed or moved, and the result says so.
+	 *
+	 * Boxes are named by their node key, the six hex digits `R-COMMENT-LIST` reports.
+	 *
+	 * WHAT IS INSIDE A BOX IS THE ENGINE'S ANSWER, not a rectangle compared by hand: membership
+	 * comes from `UEdGraphNode::GetNodesUnderComment`, which is what the editor itself uses. A
+	 * hand-rolled overlap test would disagree with the editor the first time either changed, and the
+	 * disagreement would be invisible.
+	 *
+	 * EVERY action LISTS THE BOXES THAT HOLD NOTHING, because a box around no nodes is a label with
+	 * nothing to label and is usually a leftover. `fit` leaves those alone rather than shrinking
+	 * them to nothing, which would look like a deletion.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPComment(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Action,
+		const FString& Nodes,
+		const FString& Box,
+		const FString& Text,
+		const FString& Color,
+		const FString& Size);
 };
 
 /**
@@ -901,6 +938,32 @@ public:
 		const FString& Widget,
 		const FString& Property,
 		const FString& Function);
+
+	/**
+	 * Make a comment-box change.
+	 *
+	 * The same inputs, read and validated the same way, as `P-COMMENT`, because the two share one
+	 * code path up to the write (`D-02`).
+	 *
+	 * THE DELETION NEVER TOUCHES THE NODES. A box is a label rather than a container, so removing it
+	 * removes the label and nothing else. The result says how many nodes it held and re-counts the
+	 * boxes afterwards, so the claim is CHECKED rather than asserted — getting that wrong would
+	 * destroy a caller's work, which is why it is the one thing this tool states twice.
+	 *
+	 * `set` captures the old text, colour and size first, so the result reports what CHANGED rather
+	 * than only what the values are now (`P4`), and a `set` that changes nothing opens with
+	 * `unchanged:`.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPComment(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Action,
+		const FString& Nodes,
+		const FString& Box,
+		const FString& Text,
+		const FString& Color,
+		const FString& Size);
 
 	/**
 	 * Turn the call log on or off.
