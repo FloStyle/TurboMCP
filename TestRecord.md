@@ -2180,3 +2180,90 @@ which would be tautological and prove nothing.
 | `P/E-WIDGET-RETARGET` + `E-WIDGET-BIND-ADD` | this commit |
 
 Next is **phase 5: call log and analytics**.
+
+---
+
+## 5a. The call log, over an engine hook that carries less than the spec expected
+
+40 tools. 18 acceptance suites, all green. `E-CALL-LOG`, `R-CALL-LOG` and `E-CALL-LOG-CLEAR`.
+`T-LOG-1` to `T-LOG-3` are exercised by `python Tools/test-call-log.py`.
+
+### The engine's hook does not carry what the spec assumed
+
+Read from the engine's own `ModelContextProtocolAnalytics.cpp`, a tool-call event carries **exactly
+five attributes**:
+
+| Attribute | Value |
+|---|---|
+| `SessionId` | the MCP session id |
+| `ToolsetNameHash` | `LexToString(FBlake3::HashBuffer(utf8(name)))` |
+| `ToolNameHash` | the same, over the tool identifier |
+| `Duration` | seconds |
+| `ResultStatus` | `Success` or `Error` |
+
+**The names are BLAKE3 hashes and there are no arguments at all.** `07_ENGINE_NOTES.md` section 2.4
+anticipated this and gave the shape of the answer the plugin took: *"record the fields it has for
+engine tools, and record full detail for the plugin's own tools from inside those tools."*
+
+### Never replace a hook without passing its events on
+
+`FTurboMCPAnalyticsProvider` holds whatever provider was installed before it and forwards **every**
+call to it. That was the exact risk the phase 0 stub was guarding against — *"so that a wrong guess
+cannot corrupt engine telemetry"* — and it is handled in the provider rather than by not installing
+one.
+
+### The hash is reproduced, not guessed
+
+The engine hashes the **UTF-8 bytes** of the name and prints the hash with `LexToString`. Hashing
+the `TCHAR` buffer instead would differ for any non-ASCII name, so the UTF-8 step is reproduced
+exactly. This plugin's own toolset names then resolve:
+
+```
+2026-10-09T17:07:20.229Z  end  engine  TurboMCP.TurboMCPEditToolset...
+```
+
+### The harder half does not resolve, and is labelled rather than invented
+
+`UToolsetRegistry` exposes **no list** of served toolsets or tools — only `IsToolsetRegistered(name)`
+— so the engine's tools cannot be enumerated from here and their hashes cannot be turned back into
+names. Those lines carry the first twelve characters of the hash with the word `engine`:
+
+```
+(engine tool ending 43b186416e61)
+```
+
+That tells two engine tools apart inside a session and **says what it is**. `QUESTIONS.md` **Q-10**
+records the limitation and the one route that would close it.
+
+### A wrong answer worse than a hash, caught by reading the output
+
+The first version tried each tool against **every** toolset prefix and logged:
+
+```
+TurboMCP.TurboMCPReadToolset.TurboMCP.TurboMCPReadToolset.ReadTurboMCPBlueprintLoad
+```
+
+— the toolset repeated inside the tool name, which **looks right and is not**. It was visible in the
+first run's own output. The pairing is now data rather than a loop.
+
+### The observer is part of the log
+
+`R-CALL-LOG` is a tool call like any other, so **every read of the log appends to the log**; and
+`E-CALL-LOG-CLEAR` writes its own records, so clearing and then reading found the clear's own lines
+and reported ten entries in a memory that had just been emptied. The suite now switches logging off
+around the measurement.
+
+### A count is parsed, not substring-matched
+
+A check that looked for the **absence** of `"0 in memory"` was true both when the report was empty
+**and** when the memory really held none, so the second run went red on a correct state. That is the
+**fourth** order-dependent check this project has had to fix, and the fix is the same each time:
+**assert a parsed value, not a string that can appear for two reasons.**
+
+### The switch
+
+The log **starts OFF**, per the spec, and the choice persists in the editor settings via a
+`UDeveloperSettings` subclass. The value is parsed **strictly** rather than through
+`FString::ToBool`, which answers false for anything it does not recognise — so a caller who typed
+`on` would have silently turned the log **OFF**. `E-CALL-LOG-CLEAR` drops only the in-memory entries
+and says so: the **file** is the record of what happened.

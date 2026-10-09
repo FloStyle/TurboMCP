@@ -414,3 +414,73 @@ plugin using `FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Knot>` the way
 THE PIN INDEX half is untouched and still ambiguous: `full` prints `; out NAME -> N link(s)` and
 no numeric index, while the spec names "pin indexes". Deliberate difference or gap has not been
 decided, and it is not claimed either way.
+
+---
+
+## Q-10. The engine's tool-call event does not carry enough to name the tool
+
+**Status: the log works. The ENGINE's tool names resolve only partly; the plugin's own tools are
+logged from inside themselves with full arguments, which is the case the spec actually cares about.**
+
+### What was measured, not assumed
+
+`ModelContextProtocolAnalytics.cpp` records one event per tool call, named `<namespace>.ToolCall`,
+carrying exactly five attributes:
+
+| Attribute | Value |
+|---|---|
+| `SessionId` | the MCP session id |
+| `ToolsetNameHash` | `LexToString(FBlake3::HashBuffer(utf8(toolset name)))` |
+| `ToolNameHash` | the same hash over the tool identifier |
+| `Duration` | seconds, as a string |
+| `ResultStatus` | `Success` or `Error` |
+
+**There are no names and no arguments.** A reader of the engine's event has a 64-character hash and
+nothing else.
+
+### What resolves
+
+`FTurboMCPAnalyticsProvider` reproduces the engine's own hash — the UTF-8 step matters, because
+hashing the `TCHAR` buffer would differ for any non-ASCII name — and holds a hash-to-name table.
+This plugin's own four TOOLSET names resolve. Measured:
+
+```
+2026-10-09T17:07:20.229Z  end  engine  TurboMCP.TurboMCPEditToolset...
+```
+
+### What does not, and why
+
+**The tool identifier the engine hashes is not the string this plugin registers**, and the exact
+string it does hash was not pinned down in this round. Measured symptoms:
+
+- With only the toolsets registered, the line read
+  `TurboMCP.TurboMCPReadToolset.(engine tool ending 43b186416e61)` — a name beside a hash.
+- With the tool registered as `<Toolset>.<Tool>`, the hash still did not match.
+- With the tool tried against EVERY toolset prefix (a bug), the log showed
+  `TurboMCP.TurboMCPReadToolset.TurboMCP.TurboMCPReadToolset.ReadTurboMCPBlueprintLoad` — the
+  toolset repeated inside the tool name. That is **worse than a hash, because it looks correct**.
+  The pairing is now data rather than a loop, so that wrong answer cannot come back.
+
+### The honest position
+
+Engine tool names are written as `(engine tool ending <12 hex>)`. That is **labelled as what it is**
+rather than invented, and twelve hex characters tell two engine tools apart inside one session.
+`07_ENGINE_NOTES.md` section 2.4 anticipated exactly this and gave the shape of the answer the
+plugin took: *"When arguments are missing from the event, record the fields it has for engine tools,
+and record full detail for the plugin's own tools from inside those tools."*
+
+### The route that would close it
+
+Read the identifier the engine ACTUALLY hashes, from the engine source that builds it, rather than
+inferring it from the call site. `RecordToolCallEvent(SessionId, ToolName, ...)` receives `ToolName`
+from the server's dispatch and the string it holds at that point has not been read. One grep of the
+caller, and the registration table would be exact.
+
+### The other measured fact: two events per call
+
+Every plugin tool call produced **two** log lines with the same duration, one whose toolset resolved
+and one whose toolset hash did not — `(engine tool ending af1349b9f5f9)` appears on the second line
+of every pair. So the server records the event twice, or records it once from the handler and once
+from the transport. Not investigated; recorded rather than guessed at.
+
+---

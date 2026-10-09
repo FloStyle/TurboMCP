@@ -390,6 +390,33 @@ public:
 	static FString ReadTurboMCPDataTable(
 		const FString& Asset,
 		const FString& Include);
+
+	/**
+	 * Read the call log: what the server recorded about its own use.
+	 *
+	 * EVERY tool call is recorded when the log is on, including the ENGINE's own toolsets. The log
+	 * has TWO SOURCES and one line shape, so a reader does not have to know which produced a line;
+	 * the `source` field says `plugin` or `engine`.
+	 *
+	 *  - For this plugin's tools the arguments are known, so the line carries them.
+	 *  - For the engine's tools the event carries only BLAKE3 hashes of the names and no arguments
+	 *    at all, measured from the engine's own `ModelContextProtocolAnalytics.cpp`. This plugin's
+	 *    own toolset names are hashed back to names; an engine tool's hash CANNOT be, because
+	 *    `UToolsetRegistry` exposes no list of served toolsets or tools. Those lines carry the first
+	 *    twelve characters of the hash, labelled as what they are, rather than an invented name.
+	 *
+	 * `filter` matches the toolset, the tool or the source. `since` is an ISO-8601 timestamp and
+	 * returns only later entries, so a caller pages forward instead of re-reading. `limit` defaults
+	 * to 50 and is capped at 500.
+	 *
+	 * An empty log is never just empty: the result says whether logging is OFF, or on with nothing
+	 * recorded, or on with entries that do not match the filter.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPCallLog(
+		const FString& Filter,
+		const FString& Limit,
+		const FString& Since);
 };
 
 /**
@@ -874,6 +901,34 @@ public:
 		const FString& Widget,
 		const FString& Property,
 		const FString& Function);
+
+	/**
+	 * Turn the call log on or off.
+	 *
+	 * The choice is stored in the EDITOR SETTINGS, so it survives a restart, which `03_TOOLS.md`
+	 * requires: "It starts unticked, and the choice persists in editor settings." It starts off,
+	 * deliberately, because a log that switched itself on would make every user pay for it.
+	 *
+	 * The value is parsed strictly rather than through `FString::ToBool`, which answers false for
+	 * anything it does not recognise — so a caller who typed `on` would silently turn the log OFF
+	 * instead of being told their word was not understood. `true`/`on`/`yes`/`1` and
+	 * `false`/`off`/`no`/`0` are accepted; anything else is refused by name.
+	 *
+	 * Calls made BEFORE it is switched on are not in the log, including engine tool calls, because
+	 * the analytics provider only sees events from the moment it is installed.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPCallLog(const FString& Enabled);
+
+	/**
+	 * Drop the in-memory call log entries.
+	 *
+	 * Needs `confirm=yes`. ONLY THE IN-MEMORY ENTRIES ARE DROPPED: the log FILE on disk is left
+	 * alone, because it is the record of what happened and erasing it is not this tool's job. The
+	 * result says so, so a caller is not left believing the file was cleared too.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPCallLogClear(const FString& Confirm);
 };
 
 /**
