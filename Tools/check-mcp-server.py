@@ -26,9 +26,9 @@ PROTOCOL_VERSION = "2025-11-25"
 CLIENT_NAME = "turbomcp-build-check"
 CLIENT_VERSION = "1.0"
 
-# The engine's own tool-search entry point. TurboMCP tools are reached through
-# call_tool when bEnableToolSearch is on, which is the default.
-CALL_TOOL = "call_tool"
+# list_toolsets is an MCP-level meta-tool. When bEnableToolSearch is on, which is
+# the default, the client sees only list_toolsets, describe_toolset and
+# call_tool, and every other toolset tool is reached through call_tool.
 LIST_TOOLSETS = "list_toolsets"
 
 
@@ -146,18 +146,25 @@ def main():
     for name in names:
         print("      %s" % name)
 
-    # 3. The real test: ask the server to list TurboMCP's own toolsets.
-    #    Tool search wraps every toolset behind call_tool, so this is how an
-    #    agent discovers them.
+    # 3. The real test: list the registered toolsets and look for TurboMCP.
+    #
+    #    list_toolsets is an MCP-level meta-tool, so it is called with tools/call
+    #    taking the bare name, NOT through call_tool. Going through call_tool
+    #    needs a toolset name for the meta-tool itself, and guessing it fails.
+    #
+    #    Note also that call_tool's own `arguments` is a JSON OBJECT, not a
+    #    string, which this file got wrong before it was corrected against the
+    #    live server.
     print()
     print("TurboMCP toolsets:")
 
     if LIST_TOOLSETS not in names:
-        print("  tool search appears to be OFF (list_toolsets is not offered).")
-        print("  TurboMCP toolsets would then appear directly in tools/list above.")
+        # Tool search off: every tool is registered natively, so TurboMCP's own
+        # tools appear directly in tools/list.
+        print("  tool search is OFF, so toolsets are not wrapped behind call_tool.")
         turbo = [n for n in names if "TurboMCP" in n]
         if turbo:
-            print("  PASS  found %d TurboMCP tool(s):" % len(turbo))
+            print("  PASS  found %d TurboMCP tool(s) in tools/list:" % len(turbo))
             for name in turbo:
                 print("      %s" % name)
             return 0
@@ -167,37 +174,47 @@ def main():
     try:
         result, _ = rpc(
             args.url,
-            CALL_TOOL,
-            {"toolset_name": "ToolsetRegistry", "tool_name": LIST_TOOLSETS,
-             "arguments": "{}"},
+            "tools/call",
+            {"name": LIST_TOOLSETS, "arguments": {}},
             request_id=3,
             session_id=session,
         )
-    except RpcError:
-        # The tool-set listing toolset name differs between engine versions.
-        # Fall back to reading it straight from tools/call on the MCP level.
-        try:
-            result, _ = rpc(
-                args.url,
-                "tools/call",
-                {"name": LIST_TOOLSETS, "arguments": {}},
-                request_id=3,
-                session_id=session,
-            )
-        except RpcError as exc:
-            print("  could not list toolsets: %s" % exc)
-            return 2
+    except RpcError as exc:
+        print("  could not list toolsets: %s" % exc)
+        return 2
 
-    text = json.dumps(result, indent=2) if not isinstance(result, str) else result
-    print(text)
+    # The catalog arrives as content blocks whose text lists toolsets as
+    # "- Name: description", and a description can run to many wrapped lines. Only
+    # the names are wanted here, so each entry is cut at its first line and the
+    # continuation lines are dropped: the point of this check is whether the four
+    # toolsets are registered, not what they say about themselves.
+    if isinstance(result, dict):
+        blocks = result.get("content", [])
+        catalog = "\n".join(b.get("text", "") for b in blocks if isinstance(b, dict))
+    else:
+        catalog = str(result)
 
-    turbo_hits = text.count("TurboMCP")
+    entries = [l.strip() for l in catalog.splitlines() if l.strip().startswith("- ")]
+    for entry in entries:
+        # Keep the toolset name; drop the description after the first colon.
+        name = entry[2:].split(":", 1)[0].strip()
+        print("      %s" % name)
+
     print()
-    if turbo_hits:
-        print("PASS  the server knows about TurboMCP (%d mention(s))." % turbo_hits)
+    turbo = [e for e in entries if "TurboMCP" in e]
+    if len(turbo) >= 4:
+        print("PASS  all %d TurboMCP toolsets are registered, of %d toolsets served."
+              % (len(turbo), len(entries)))
         return 0
+    if turbo:
+        print("FAIL  only %d of the four TurboMCP toolsets are registered:" % len(turbo))
+        for entry in turbo:
+            print("      %s" % entry[2:].split(":", 1)[0].strip())
+        print("      Check the editor Output Log for:")
+        print("        LogTurboMCP: Warning: Toolset '...' did not register.")
+        return 1
 
-    print("FAIL  the server answered but never mentions TurboMCP.")
+    print("FAIL  the server answered but lists no TurboMCP toolset, of %d served." % len(entries))
     print("      The plugin is not registered. Check the editor Output Log for:")
     print("        LogTurboMCP: Warning: Toolset '...' did not register.")
     return 1
