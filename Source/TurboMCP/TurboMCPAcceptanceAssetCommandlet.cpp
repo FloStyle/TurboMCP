@@ -20,6 +20,8 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Misc/PackageName.h"
+#include "HAL/PlatformFileManager.h"
+#include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 #include "TurboMCPModule.h"
 #include "UObject/Package.h"
@@ -32,7 +34,7 @@
 
 namespace
 {
-	const TCHAR* const PackagePath = TEXT("/Game/Tests/TurboMCPAcceptance");
+	const FString PackagePath = TEXT("/Game/Tests/TurboMCPAcceptance");
 
 	/**
 	 * NOTHING HERE FORCES THE MODULE TO LOAD, AND THAT IS A MEASURED CONCLUSION RATHER THAN AN
@@ -367,25 +369,38 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 {
 	UE_LOG(LogTurboMCP, Display, TEXT("TurboMCP: building the acceptance asset"));
 
-	// A FRESH PACKAGE, so re-running the commandlet reproduces the asset rather than piling up
-	// copies. That is what makes the structure legible and the asset regenerable.
-	UPackage* Package = FindPackage(nullptr, PackagePath);	if (Package != nullptr)
+	// THE OLD ASSET IS DESTROYED, NOT JUST MARKED, AND THE PACKAGE IS MADE AFTERWARDS.
+	//
+	// MEASURED FAILURE: a re-run reported "TurboMCP: Error: could not save ... TurboMCPAcceptance.uasset"
+	// while all four probe graphs built successfully. The asset already existed on disk, so the package
+	// that `FindPackage` returned still owned the old Blueprint and the save could not take its place.
+	// Building into a package that already holds an object of the same name is the collision, and
+	// `MarkAsGarbage` does not clear it — the object is still in the package's object list until the
+	// garbage is collected, which a commandlet never reaches.
+	//
+	// So the existing object is REMOVED from its package outright, and the package is then created
+	// fresh. That is what makes this commandlet re-runnable, which is what lets a destructive test use
+	// it to reset the fixture.
 	{
-		Package->SetDirtyFlag(false);
+		UPackage* Existing = FindPackage(nullptr, *PackagePath);
+		if (Existing != nullptr)
+		{
+			Existing->SetDirtyFlag(false);
+			if (UObject* Old = FindObject<UObject>(Existing, TEXT("TurboMCPAcceptance")))
+			{
+				// `Rename` to the transient package takes it out of the asset package's object list
+				// without deleting it, which is the only safe way to free the name here.
+				Old->Rename(nullptr, GetTransientPackage(),
+					REN_DontCreateRedirectors | REN_NonTransactional);
+			}
+		}
 	}
 
-	Package = CreatePackage(PackagePath);
+	UPackage* Package = CreatePackage(*PackagePath);
 	if (Package == nullptr)
 	{
-		UE_LOG(LogTurboMCP, Error, TEXT("could not create the package %s"), PackagePath);
+		UE_LOG(LogTurboMCP, Error, TEXT("could not create the package %s"), *PackagePath);
 		return 1;
-	}
-
-	// The old asset is discarded so the new one is the only content, which keeps the asset's node
-	// counts stable between runs.
-	if (UBlueprint* Existing = FindObject<UBlueprint>(Package, TEXT("TurboMCPAcceptance")))
-	{
-		Existing->MarkAsGarbage();
 	}
 
 	UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(
@@ -422,8 +437,41 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 	Package->MarkPackageDirty();
 
-	const FString FileName = FPackageName::LongPackageNameToFilename(
-		PackagePath, FPackageName::GetAssetPackageExtension());
+	// THE ABSOLUTE PATH IS BUILT BY HAND, BECAUSE THE ENGINE'S CONVERSION GOES RELATIVE HERE.
+	//
+	// MEASURED FAILURE: `FPackageName::LongPackageNameToFilename` answered
+	// `../../../..<REPO>/TestProject/Content/Tests/TurboMCPAcceptance.uasset`,
+	// a path RELATIVE TO THE ENGINE DIRECTORY, and `UPackage::SavePackage` reported
+	// "could not save". The package was in memory and every probe graph had built — the write was the
+	// only thing that failed, which is the shape of failure this project keeps having to look for.
+	//
+	// The package path is a compile-time constant and the engine remaps `/Game` to the PROJECT content
+	// directory, so the absolute path is that constant without its `/Game` prefix, under
+	// `FPaths::ProjectContentDir()`.
+	const FString ContentDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+	const FString FileName = ContentDir
+		+ PackagePath.RightChop(FCString::Strlen(TEXT("/Game")))
+		+ FPackageName::GetAssetPackageExtension();
+
+	UE_LOG(LogTurboMCP, Display, TEXT("TurboMCP: saving to %s"), *FileName);
+
+	// THE OLD FILE IS DELETED BEFORE THE SAVE, WHICH IS WHAT MAKES THE COMMANDLET RE-RUNNABLE.
+	//
+	// MEASURED: building into a package that still held an object of the same name made
+	// `UPackage::SavePackage` answer "could not save" while every probe graph had built. Moving the
+	// old object to the transient package did NOT settle it — the save still failed — so the file is
+	// removed and the package written into a space that is known empty.
+	{
+		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+		if (PlatformFile.FileExists(*FileName) && !PlatformFile.DeleteFile(*FileName))
+		{
+			UE_LOG(LogTurboMCP, Error,
+				TEXT("the existing asset at %s could not be deleted, so the save would collide"),
+				*FileName);
+			return 3;
+		}
+	}
+
 	FSavePackageArgs SaveArgs;
 	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
 	SaveArgs.SaveFlags = SAVE_NoError;
