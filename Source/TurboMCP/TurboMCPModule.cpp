@@ -8,6 +8,7 @@
 #include "ToolsetRegistry/UToolsetRegistry.h"
 
 #include "Logging.h"
+#include "TurboMCPAnalyticsProvider.h"
 #include "Panel/STurboMCPPanel.h"
 #include "Tools/TurboMCPToolsets.h"
 #define LOCTEXT_NAMESPACE "FTurboMCPModule"
@@ -74,13 +75,35 @@ void FTurboMCPModule::UnregisterToolsets()
 
 void FTurboMCPModule::InstallAnalyticsProvider()
 {
-	// Deliberately empty in phase 0. The call log arrives in phase 5
-	// (`08_ROADMAP.md`) and needs the engine's analytics attribute names read
-	// from source first, so that a wrong guess cannot corrupt engine telemetry.
+	// The phase 0 stub said the attribute names had to be read from source first, "so that a
+	// wrong guess cannot corrupt engine telemetry". They were, and they are:
+	//
+	//     SessionId, ToolsetNameHash, ToolNameHash, Duration, ResultStatus
+	//
+	// on an event named `<namespace>.ToolCall`, from `ModelContextProtocolAnalytics.cpp`. The
+	// names are BLAKE3 hashes and there are no arguments, which is why the plugin's own tools
+	// write their own full-detail lines as well.
+	//
+	// `Install` KEEPS whatever provider was already there and forwards every event to it, so
+	// installing this cannot lose an event the engine's own telemetry wanted. That was the risk
+	// the phase 0 note was guarding against, and it is handled in the provider rather than by
+	// not installing one.
+	FTurboMCPAnalyticsProvider::Install();
+
+	bInstalledAnalyticsProvider = FTurboMCPAnalyticsProvider::IsInstalled();
+
+	UE_LOG(LogTurboMCP, Log,
+		TEXT("TurboMCP analytics provider installed: %s"),
+		bInstalledAnalyticsProvider ? TEXT("yes") : TEXT("no"));
 }
 
 void FTurboMCPModule::RemoveAnalyticsProvider()
 {
+	// Unconditional rather than guarded by `bInstalledAnalyticsProvider`: the provider restores
+	// the one it wrapped only when it is still the one installed, so calling this when it was
+	// never installed, or when something else has since replaced it, is safe and does nothing.
+	FTurboMCPAnalyticsProvider::Uninstall();
+
 	if (!bInstalledAnalyticsProvider)
 	{
 		return;

@@ -83,6 +83,11 @@ public class TurboMCP : ModuleRules
 				"UMG",
 				"UMGEditor",
 
+				// The call log installs an `IAnalyticsProviderET` over the MCP module's own
+				// analytics hook, so the ET provider interface, its event attribute type and the
+				// BLAKE3 hash the engine's tool identifier uses must all link.
+				"AnalyticsET",
+
 				// L-CAPTURE falls back to the engine's own screenshot when the graph
 				// panel has no geometry to frame with. Its doc comment says to prefer it
 				// over SceneTools.take_screenshot for editor UI, and calling it beats
