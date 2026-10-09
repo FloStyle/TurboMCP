@@ -31,6 +31,11 @@ public class TurboMCP : ModuleRules
 			{
 				// Editor-only work: asset registry, Blueprint graphs, Slate panel.
 				"AssetRegistry",
+				// UBlueprintEditorLibrary::ListEvents and ListFunctions. The engine
+				// already computes the set of overridable functions and events,
+				// interface members included, and R-OVERRIDES uses it rather than
+				// reproducing the rule.
+				"BlueprintEditorLibrary",
 				"BlueprintGraph",
 				// UEdGraphNode and its pins live in Engine, which is a public
 				// dependency above, so it is not repeated here.

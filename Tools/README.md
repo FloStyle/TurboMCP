@@ -20,6 +20,7 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-agent-help.py` | a running editor | The agent help acceptance checks |
 | `test-asset-tools.py` | a running editor | The asset and type tool acceptance checks |
 | `test-refs.py` | a running editor | The reference tool acceptance checks, in both directions |
+| `test-overrides.py` | a running editor | The overridable-function acceptance checks |
 | `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 
@@ -40,6 +41,7 @@ python Tools\check-mcp-server.py
 python Tools\test-agent-help.py
 python Tools\test-asset-tools.py
 python Tools\test-refs.py
+python Tools\test-overrides.py
 ```
 
 ## A leftover LiveCodingConsole blocks every build

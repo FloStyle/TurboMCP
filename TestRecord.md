@@ -464,6 +464,75 @@ instead.
 
 ---
 
+## 2j. Phase 2: R-OVERRIDES
+
+Built: `ReadTurboMCPOverrides`. 19 tools. Run its checks with
+`python Tools/test-overrides.py`.
+
+| Test | Result | Evidence |
+|---|---|---|
+| The parent chain is reported | **PASS** | `parent: /Script/Engine.Actor` |
+| The overridable set is found | **PASS** | 23 overridable, 4 already overridden, 19 available |
+| Signatures have inputs marked | **PASS** | `ReceiveAnyDamage : (float Damage, UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)` |
+| Signatures have outputs marked | **PASS** | `ReceiveHit : (...) -> (FHitResult Hit)` |
+| Events are labelled | **PASS** | `[event]` |
+| The declaring class is named | **PASS** | `from: /Script/Engine.Actor` |
+| It never names the Blueprint's own class | **PASS** | `BP_NodeTest_C` appears nowhere |
+| The `overridden` filter works | **PASS** | `shown: 4 of 4`, and no `state: available` line |
+| The `available` filter works | **PASS** | `shown: 19 of 19`, and no `state: overridden here` line |
+| The two filters add up | **PASS** | 4 + 19 = 23 |
+| Counts are taken before the filter | **PASS** | the `overridden` result still says `23 overridable` |
+| A bad filter is refused by name | **PASS** | `Accepted: all, overridden, available.` |
+| A non-Blueprint is refused | **PASS** | `is not a Blueprint, so it has no parent chain to override` |
+| Every path form agrees | **PASS** | short, package and object forms give one identical body |
+
+### The engine already had the answer, and finding it changed the design
+
+The first version of this tool walked the parent chain itself with
+`TFieldIterator<UFunction>` and filtered on `FUNC_Event`. It reported **3**
+overridden functions. Then `UBlueprintEditorLibrary` turned out to expose
+`ListEvents` and `ListFunctions`, documented as listing "locally defined function
+graphs, overridable parent-class functions, and functions declared on interfaces
+(both explicitly implemented and **inherited through a natively-implemented
+interface**)", each with an `is_implemented` flag.
+
+That is the required set, computed by the editor. The tool is now built on it and is
+**shorter** than the hand-rolled version, which was correct for a plain Actor
+Blueprint and would never have seen a natively-implemented interface member at all,
+because those are not in `UBlueprint::ImplementedInterfaces`.
+
+Two things the hand-rolled version got wrong, both caught by comparing against the
+engine:
+
+- **It said 3 overridden; the engine says 4.** The fourth is
+  `UserConstructionScript`, whose graph is a real override. The hand-written walk
+  missed it, and the test now pins the engine's count so a regression to a
+  hand-rolled filter changes it.
+- **It needed a special case to drop `UObject::ExecuteUbergraph`.** That function
+  carries `FUNC_Event`, so a `FUNC_Event` filter keeps it, and it is not an override
+  target. The engine's set does not contain it, so the special case is gone.
+
+This is the third time in this phase that reading the engine's own implementation
+beat writing a rule: the node type ID, the `FText` source string, and now the
+overridable set. A rule that mimics the editor is a second source of truth for
+something the editor already enforces.
+
+### Two compile failures on the way
+
+- **`FindFunction` as a free function shadowed `UObject::FindFunction`.** Inside a
+  member of a toolset, an unqualified call to a helper of that name resolves through
+  the class's base, and the compiler reported `FindFunction takes no 2 arguments`
+  for a call that was not the one being made. Renamed to `ResolveFunction`.
+- **`FindFunctionByName` takes the include-super flag second**,
+  `(FName, EIncludeSuperFlag::Type)`, not first.
+
+`Tools/start-editor.ps1 -Stop` also proved itself: a build failed with
+`Unable to build while Live Coding is active`, the stop command cleared it, and the
+next build succeeded. That trap cost an hour before the fix and now costs one
+command.
+
+---
+
 ## 2d. Phase 1: type find and dirty list
 
 | Test | Result | Evidence |

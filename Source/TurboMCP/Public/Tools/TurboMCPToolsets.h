@@ -315,6 +315,33 @@ public:
 	static FString ReadTurboMCPRefs(
 		const FString& Asset,
 		const FString& Direction);
+
+	/**
+	 * Read what a Blueprint can override, and what it already does.
+	 *
+	 * Pass one Blueprint in any path form, and optionally an include filter: `all`
+	 * for everything, `overridden` for what this Blueprint already overrides, or
+	 * `available` for what it has not overridden yet. Empty means all.
+	 *
+	 * Every function comes from the parent chain or from an implemented interface,
+	 * with its full signature and its inputs and outputs marked. Interface
+	 * functions are labelled, because a Blueprint that implements an interface has
+	 * to answer each of them.
+	 *
+	 * Each entry says whether it is already overridden here, and which class the
+	 * engine says it really comes from, which is what a caller needs in order to
+	 * call the parent implementation. Both facts come from the editor's own helpers
+	 * rather than from a rule written here.
+	 *
+	 * Counts are reported before the filter is applied, so asking for `available`
+	 * still says how many exist in total. A filter matching nothing says so and says
+	 * what would work, and a parent chain with nothing to override says that plainly
+	 * rather than looking like a failure.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPOverrides(
+		const FString& Asset,
+		const FString& Include);
 };
 
 /**
