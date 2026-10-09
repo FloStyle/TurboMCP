@@ -222,6 +222,35 @@ public:
 		const FString& Asset,
 		const FString& Words,
 		const FString& GraphName);
+
+	/**
+	 * Read one graph as text.
+	 *
+	 * Pass the asset, the graph name, a format and a detail level. Format `read`
+	 * is the default and the only one implemented; the engine's own write dialect
+	 * is refused by name rather than silently returning the wrong thing.
+	 *
+	 * Detail levels, each a superset of the one below: `manifest` (entry points by
+	 * name and counts), `signatures` (entry points with their output pins),
+	 * `bodies` (the default, every entry point with its body as graph text), and
+	 * `full` (bodies plus node classes and pin indexes).
+	 *
+	 * The graph text is S-expressions, one top level form per event or function,
+	 * with exec chains reading top to bottom. Every node carries its node ID in a
+	 * comment, shared value nodes are defined once and referred to by node ID, and
+	 * plain reroute knots are transparent. Nodes not reachable from any entry
+	 * point are listed separately with a count.
+	 *
+	 * A graph name that does not exist lists the real graph names. A node that
+	 * cannot be printed becomes an inline `; error:` line rather than a silent gap,
+	 * and is also counted at the end so the gap cannot be missed.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPGraphLoad(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Format,
+		const FString& Detail);
 };
 
 /**
