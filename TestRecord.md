@@ -1728,3 +1728,81 @@ commandlet in this plugin using `FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2No
 Whether the **pin index** the spec names should be printed. `full` prints `; out NAME -> N
 link(s)` and no numeric index. Deliberate difference or gap is not decided, and it is not claimed
 either way. Q-9 keeps that half open.
+
+---
+
+## 4a. Phase 4 begins: the P/E-ENUM-ADD pair
+
+Phase 4 is the first **writing** phase. 26 tools now. `T-STRUCT-2` is exercised by
+`python Tools/test-enum-add.py`.
+
+### One code path, two outcomes, enforced by construction
+
+`FTurboMCPEnumAdd::Plan` validates the request, `RenderPreview` prints it, and `Apply` carries out
+exactly that plan. Both tools call `Plan` and differ only in what they do with the result, because
+`D-02` requires a Preview and its Edit twin to share everything up to the write step.
+
+### The engine's own creator, not a hand-built asset
+
+The enum is made through `FEnumEditorUtils::CreateUserDefinedEnum`, and its values through
+`FEnumEditorUtils::AddNewEnumeratorForUserDefinedEnum`, so it stays **editable in the enum editor**
+rather than being an asset the editor cannot open.
+
+### A mistake the tool caught on itself
+
+The first version tried to set the enumerator names by writing `UEnum`'s private `Names` array
+through reflection. It could not, and it **said so** rather than writing wrong names:
+
+```
+error: TA18_ColourSuite was created with 3 value(s) but the engine's enumeration
+names could not be reached, so they carry generated names.
+```
+
+`UEnum::Names` is a private **union** — a `const FName*` used by compiled-in enums and a `TArray`
+used by user-defined ones — and it carries no `UPROPERTY`, so `FindFProperty` cannot see it. The
+tool detecting its own limitation is what stopped a broken enum from shipping.
+
+### The right API, found by reading the engine
+
+`FEnumEditorUtils::AddNewEnumeratorForUserDefinedEnum` itself calls **`UEnum::SetEnums`** to
+rebuild the name list, and `SetEnums` is public. The tool now uses it. It rebuilds in one step,
+which is also safer than poking entries: there is no half-renamed state to leave behind.
+
+Two naming traps, both hit and both recorded: **`EEnumFlags` is a GLOBAL enum** in
+`ObjectMacros.h`, while **`EAddMaxKeyIfMissing` and `EUnderlyingType` are members of `UEnum`**.
+
+### The check that matters: the names are in the SAVED file
+
+The tool reports how many names it set, but that number comes from **the same code that set them**,
+so on its own it proves nothing. The suite therefore:
+
+1. creates the enum through the tool,
+2. **saves** it, because an unsaved asset dies with the editor and this project has lost test
+   assets that way three times,
+3. confirms the asset's **own unsaved flag**, and
+4. **opens the `.uasset` and looks for the value names in it.**
+
+A name that was never written is not in a serialised archive. Measured on the **1933-byte** file:
+`Red`, `Green`, `Blue`, `Dark Green` and the engine's own `_MAX` entry are all present. Stripping
+them makes the check go **red**, which was verified rather than assumed.
+
+### Seven refusals, each naming its reason
+
+| Refused | Message |
+|---|---|
+| an empty path | `no path given` |
+| a relative path | `does not start with '/'` |
+| no values | `no values given` |
+| a name with a space | `' ' is not a letter, a digit or an underscore` |
+| a name starting with a digit | `does not start with a letter or underscore` |
+| `_MAX` | `reserved: every user-defined enum carries one` |
+| a duplicate | `'Red' is given twice` |
+
+A refusal opens with **`error:`** and an existing asset opens with **`unchanged:`**. They are
+deliberately different: one means the request was wrong, the other means nothing needed doing and
+a caller should not retry it.
+
+### Still to come in phase 4
+
+`P/E-VARS-ADD`, `E-WIDGETS-AS-VARS`, `P/E-OVERRIDE-ADD`, `E-FUNCTION-ADD` and `E-FUNCTION-REMOVE`,
+and `P/E-WIDGET-RETARGET`.

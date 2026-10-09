@@ -542,6 +542,23 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPToolset();
+
+	/**
+	 * Work out what creating an enum asset would do, without creating it.
+	 *
+	 * Pass a package path such as `/Game/Tests/MyEnum` and the values, as a comma-separated
+	 * list where each entry is `Name` or `Name=Display Name`.
+	 *
+	 * Prints every value with its display name when it has one, and says whether the asset
+	 * already exists, because that fact decides whether the edit will be refused. A value
+	 * whose name is not a usable identifier is refused by name, a duplicate value is
+	 * refused, and `_MAX` is refused because every user-defined enum carries one already.
+	 *
+	 * This and its Edit twin share one code path up to the write, so the two cannot disagree
+	 * about what would happen (`D-02`). It writes nothing.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPEnumAdd(const FString& Path, const FString& Values);
 };
 
 /**
@@ -607,6 +624,26 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPSave(const FString& Assets);
+
+	/**
+	 * Create an enum asset from a list of values.
+	 *
+	 * Pass a package path such as `/Game/Tests/MyEnum` and the values, as a comma-separated
+	 * list where each entry is `Name` or `Name=Display Name`. The same inputs, validated the
+	 * same way, as `P-ENUM-ADD`, because the two share one code path up to the write.
+	 *
+	 * REFUSES an existing path rather than overwriting it: a name someone else chose is not
+	 * this tool's to replace, which is what `P8` means by never leaving the user worse off.
+	 * The refusal opens with `unchanged:` so a caller can tell it from a failure (`P4`).
+	 *
+	 * The enum is created through the editor's own `FEnumEditorUtils`, so it stays editable
+	 * in the enum editor rather than being a hand-built asset the editor cannot open. The
+	 * result says how many names were set and how many display names, and it says plainly
+	 * that the asset is NOT yet saved: an unsaved asset dies with the editor, which has cost
+	 * this project three times.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPEnumAdd(const FString& Path, const FString& Values);
 };
 
 /**
