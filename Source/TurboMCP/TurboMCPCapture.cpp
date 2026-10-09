@@ -462,8 +462,8 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		PanelSize = PanelGeometry.GetAbsoluteSize();
 
 		GeometryNote = FString::Printf(
-			TEXT("\ngeometry: panel at screen x %.0f y %.0f, window at x %.0f y %.0f, ")
-			TEXT("scale %.2f, so the panel sits at x %.0f y %.0f in the picture"),
+			TEXT("\ngeometry: panel at render x %.0f y %.0f, window at x %.0f y %.0f, ")
+			TEXT("layout scale %.2f, so the panel sits at x %.0f y %.0f in the picture"),
 			PanelScreen.X, PanelScreen.Y, WindowScreen.X, WindowScreen.Y,
 			PanelScale, PanelOrigin.X, PanelOrigin.Y);
 	}
