@@ -2941,3 +2941,38 @@ because the editor loads the DLL.** Two agents were building while I tested; tha
 **CONSEQUENCE FOR THE CAPABILITY: write `P/E-GRAPH-KNOTS` normally.** No defensive "are the sizes zero"
 branch is needed, and the spec's instruction to refuse does not apply. The arithmetic in the spec can be
 used as written.
+
+---
+
+## 6h. The fifth probe graph REFUSED to be built, which is the check working
+
+Two specification documents, written independently, both found the SAME defect in the committed acceptance
+asset: `KnotProbe`'s straight route between its two calls crosses no node, so a crossing predicate finds
+nothing, and the asset has ZERO comment boxes, so a tidy pass's nesting checks rest on code review. Both
+asked for a fifth probe graph.
+
+The workstream that added it got the answer a project should want. Measured, from the commandlet's own
+report:
+
+```
+TurboMCP: LayoutProbe crossing: 10 wire(s) cross 0 distinct node(s)
+TurboMCP: Error: LayoutProbe was built but no wire crosses a node, so the graph cannot exercise
+              the crossing case it exists for. The COORDINATES need moving, not the check.
+TurboMCP: KnotProbe=ok DeadProbe=ok LocalVarProbe=ok SaneProbe=ok LayoutProbe=FAILED
+```
+
+**IT BUILT THE GRAPH, MEASURED IT, FOUND THE CHECK COULD NOT FAIL, SAID SO, AND REFUSED TO REPORT SUCCESS.**
+That is the discipline this record has been arguing for since section 4a, applied by the thing being built
+rather than by a reviewer: *a check that cannot fail is worse than no check, because it looks like
+evidence.*
+
+THE INSTRUCTION IT GAVE ITSELF IS THE RIGHT ONE: "the COORDINATES need moving, not the check". The tempting
+repair - loosen the predicate until the graph passes - would have produced a probe that proves nothing
+while looking green, which is precisely the failure mode recorded five times in this file.
+
+A SECOND THING WORTH KEEPING. This is the third consecutive capability whose FIXTURE had to be built before
+the capability could be trusted, and in every case the fixture found something the code review had not:
+`DeadProbe` found the dead-group path, `LocalVarProbe` found that a member-variable read was treated as
+safe, and the material fixture found that `ConstantForInput` missed the constant MOST expression classes
+keep, that `MarkReached` did not follow a label to its declaration, and that its own comments went into the
+wrong array. **The fixture is not overhead. It is where the defects are.**
