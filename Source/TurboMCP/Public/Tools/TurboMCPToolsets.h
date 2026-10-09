@@ -417,6 +417,73 @@ public:
 		const FString& Filter,
 		const FString& Limit,
 		const FString& Since);
+
+	/**
+	 * The exact schema of one tool: its signature, one row per parameter, and its trap notes.
+	 *
+	 * Pass a toolset name and an empty tool to get one line per tool in it. The toolset is accepted in
+	 * its FULL form and in its SHORT form, and a name that fits nothing is refused with the CLOSEST
+	 * REAL NAMES rather than a bare "not found".
+	 *
+	 * TRAPS COME FROM A DATA FILE, not from code, so they are corrected without a rebuild. When that
+	 * file cannot be read the answer SAYS SO rather than looking like "no traps".
+	 *
+	 * The ENGINE's own tools are covered by the same code path, because the schemas are read from the
+	 * toolset registry. A tool's help is capped at 2000 characters, and what did not fit is named
+	 * rather than silently dropped.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPToolSchema(const FString& Toolset, const FString& Tool);
+
+	/**
+	 * Read the named reroutes of a material: every label, its readers, and the unused ones.
+	 *
+	 * Named reroutes are the material graph's own way of naming a wire. An UNUSED label is the thing
+	 * this reader exists to find, because it is a wire somebody meant to reuse and did not.
+	 *
+	 * Call this FIRST on any material: the answer is short, and a caller who had to pass an argument
+	 * would be tempted to skip it.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPMaterialLabels(const FString& Asset);
+
+	/**
+	 * Read a whole material: its parameters, then every connected output as a tree.
+	 *
+	 * Works for a material, a material function and a material instance. An INSTANCE reports its
+	 * parent, and `bIncludeInstanceOverrides` adds the parameters it overrides, which is where an
+	 * instance's real behaviour lives.
+	 *
+	 * `TokenBudget` caps the answer. Zero means no cap; a non-zero budget is honoured by NAMING what
+	 * was left out rather than by truncating silently.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPMaterialLoad(
+		const FString& Asset,
+		bool bIncludeInstanceOverrides,
+		int32 TokenBudget);
+
+	/**
+	 * Read ONE output of a material rather than all of them.
+	 *
+	 * The same reader as `R-MAT-LOAD` restricted to one output, which is what a caller wants when
+	 * chasing a single problem rather than paying for the whole graph. The output property is
+	 * REQUIRED, and an empty or unconnected one is refused by LISTING the connected ones.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPMaterialTrace(
+		const FString& Asset,
+		const FString& OutputProperty,
+		int32 TokenBudget);
+
+	/**
+	 * Read a material by BLOCK of logic, one block per comment box.
+	 *
+	 * A material graph is usually organised into comment boxes, and reading it block by block is how a
+	 * caller answers "what does this part do" without reading the whole thing.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPMaterialBlocks(const FString& Asset, int32 TokenBudget);
 };
 
 /**
@@ -724,6 +791,48 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
+
+	/**
+	 * Finds the REAL node type id the engine's node creation tool will accept.
+	 *
+	 * Give plain words and it matches them against every id this graph accepts, normalising both sides
+	 * the same way: case, spaces, underscores, brackets, and the category part before the last `|`.
+	 * It finds functions and variables added in this session, and says when the asset must be compiled
+	 * first for the engine's own tool to accept one.
+	 *
+	 * Each match gives the exact id, the class that declares it, whether it is pure, and why it
+	 * matched. When the id this plugin's graph text uses differs from the id the engine creates, BOTH
+	 * are printed, because one matches graph text and the other creates the node.
+	 *
+	 * Results are capped at ten unless `limit` says otherwise, and a miss is refused with the closest
+	 * real names. `P-NODE-PINS` gives the pins of an id this returns.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPNodeType(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Words,
+		const FString& Limit);
+
+	/**
+	 * The pins a node type produces, WITHOUT TOUCHING the asset's own graph.
+	 *
+	 * Each pin gives its name, its type, its direction in the spelling the engine's pin tools expect
+	 * (`EGPD_Input` or `EGPD_Output`), its default, and its position COUNTED SEPARATELY for inputs and
+	 * outputs, which is what the engine does.
+	 *
+	 * It also says whether the node is pure or latent, and when a latent node is not allowed in this
+	 * graph kind it says that instead of leaving you to find out at compile time.
+	 *
+	 * The node is built in a THROWAWAY graph and discarded, so the asset's node count does not change.
+	 * The engine's own reader adds a probe to the real graph and LEAVES IT THERE, which this
+	 * deliberately does not repeat.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPNodePins(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& TypeId);
 };
 
 /**

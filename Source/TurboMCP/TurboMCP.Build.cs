@@ -59,6 +59,15 @@ public class TurboMCP : ModuleRules
 				"Json",
 				"JsonUtilities",
 				"Kismet",
+
+				// INPUTCORE IS REQUIRED BY THE PANEL'S LIST AND COMBO WIDGETS, AND ITS ABSENCE IS A
+				// LINK ERROR RATHER THAN A COMPILE ERROR - which is why it survived every earlier
+				// build. `SListView` and `SComboBox` read `EKeys::Enter`, `EKeys::BackSpace`,
+				// `EKeys::LeftMouseButton` and eight more, and `EKeys` lives in
+				// `InputCore/Public/InputCoreTypes.h:345`. `Slate` and `SlateCore` were already
+				// listed and are NOT enough: twelve `LNK2019: unresolved external symbol` errors named
+				// the keys, which reads like a Slate problem and is not one.
+				"InputCore",
 				"Slate",
 				"SlateCore",
 				"ToolMenus",
@@ -82,6 +91,13 @@ public class TurboMCP : ModuleRules
 				// Blueprint's WidgetTree lives.
 				"UMG",
 				"UMGEditor",
+
+				// The material readers call `UMaterialEditingLibrary` and the expression classes, so
+				// the editor module that owns them must link. Its header is INCLUDED as
+				// `MaterialEditingLibrary.h` and NOT as `MaterialEditor/MaterialEditingLibrary.h`,
+				// because it sits at that module's Public ROOT - checked, and the slash form failed
+				// the build with "No such file or directory".
+				"MaterialEditor",
 
 				// The call log installs an `IAnalyticsProviderET` over the MCP module's own
 				// analytics hook, so the ET provider interface, its event attribute type and the
