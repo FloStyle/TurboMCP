@@ -2418,3 +2418,80 @@ there is no way to read the panel's widget tree from here, and no automated chec
 What IS proven: it compiles, it is constructed in the panel's Slate tree, and the state and the
 toggle go through the same code paths the tools do — the tool side is covered by
 `test-call-log.py`. **A human looking at the window is still the only proof of the layout.**
+
+---
+
+## 6a. P/E-COMMENT, and two engine caches that are not what they look like
+
+42 tools. 19 acceptance suites, all green. Phase 6 is the local graph repair phase; `P/E-COMMENT` is
+its second capability. `T-LAY-12` is exercised by `python Tools/test-comment-boxes.py`.
+
+### Membership in a box is COMPUTED, not read — and that was the whole problem
+
+`UEdGraphNode_Comment::GetNodesUnderComment` returns a **cached** set that
+`SGraphNodeComment::HandleSelection` fills from **rendered widgets**: it walks the graph panel's
+children and adds each node whose rendered rectangle is contained in the comment's.
+
+**Measured consequence:** an asset read **without its graph editor open** reports **nothing** inside
+every box. A box drawn around two nodes reported:
+
+```
+changed: created comment box 000000 in ... : EventGraph
+size: 360x122 at (240, -82)
+holds 0 node(s)          <-- two nodes were boxed
+```
+
+and *"list every box with nothing inside"* — which `03_TOOLS.md` asks for **by name** — would have
+called **every box in every asset empty**. The engine exposes **no function that rebuilds the cache.**
+
+So the **rule** is reproduced rather than the cache read, taken from
+`SGraphNodeComment::IsNodeUnderComment`, which is `FSlateRect::IsRectangleContained` in graph space.
+A box's rectangle starts **`TitleBarHeight` below** its position, because the title bar's own strip
+sits above it; using the position directly would claim a box contains the row of nodes drawn under
+its title.
+
+### The box key did not identify
+
+The first version left every box created in one session with the key **`000000`**, because `AddNode`
+is what makes the node's GUID and the key was read back straight afterwards. **Measured: two boxes
+were made and BOTH reported `000000`**, so *"refer to it later as 000000"* was useless and `set`
+would have hit whichever box came first.
+
+`CreateNewGuid` is now called before the read-back. **A key that does not identify is worse than no
+key, because it looks like one.**
+
+### Delete never touches the nodes, and the claim is CHECKED
+
+It is the one thing this tool says **twice**, because getting it wrong destroys a caller's work. The
+result says how many nodes the box held and **re-counts the boxes**; the suite counts the nodes **by
+their own keys** before and after:
+
+```
+=== DELETE removes the box and NEVER the nodes ===
+changed: deleted comment box 'Health setup' from EventGraph
+boxes in the graph now: 1 (was 2)
+its 2 node(s) are untouched: a box is a label, not a container.
+```
+
+The node count in the graph drops by one — **the box itself is a node** — so the suite checks the
+**member keys**, not the total, which is the check that actually proves the point.
+
+### The suite's own cleanup was the sixth order-dependent mistake
+
+It tried to recognise its work by the **text** it had set, and a `set` that only **resized** a box
+left the text alone. **Five boxes were left behind**, and they then made `test-comments` go red —
+**correctly**, because that suite reads the boxes on the same asset and expects none.
+
+**Cleaning up by a marker is a guess about what was made; a key is the thing itself.** Every key is
+now remembered and removed by key, and the suite asserts **zero** boxes are left.
+
+### Two of the suite's own assertions were too wide
+
+It demanded a `size:` line on a **text-only** set, and it demanded the empty-box sentence on a graph
+where **no box was empty**. Both were fixed rather than worked around: **a check must assert what the
+call asked for**, not what a different call would produce.
+
+### Still to come in phase 6
+
+`P/E-GRAPH-FIX-BACKWARD`, `P/E-GRAPH-DEAD`, `P/E-GRAPH-TIDY` with nested boxes, `P/E-GRAPH-KNOTS` and
+`P/E-LOCAL-VARS`.

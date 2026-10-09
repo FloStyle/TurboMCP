@@ -36,6 +36,7 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-function.py` | a running editor | E-FUNCTION-ADD/REMOVE, including the silent-rename guard |
 | `test-widget-retarget.py` | a running editor | P/E-WIDGET-RETARGET, and that exactly one of two bindings survives |
 | `test-call-log.py` | a running editor | E/R/E-CALL-LOG, including the JSONL file on disk |
+| `test-comment-boxes.py` | a running editor | P/E-COMMENT, including that delete keeps the nodes |
 | `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 
@@ -71,6 +72,7 @@ python Tools\test-override-add.py
 python Tools\test-function.py
 python Tools\test-widget-retarget.py
 python Tools\test-call-log.py
+python Tools\test-comment-boxes.py
 ```
 
 ## A leftover LiveCodingConsole blocks every build
