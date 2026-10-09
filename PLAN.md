@@ -86,25 +86,40 @@ Two phase 1 parts still need the kit, and are recorded as gaps rather than
 claims: `E-COMPILE` on a broken Blueprint (the node ID tie-in), and `E-SAVE`'s
 refusal during play.
 
-### Step 3 - Phase 2, Blueprint reading (next)
+### Step 3 - Phase 2, Blueprint reading (in progress)
 
 Eight capabilities, and the base for phases 6, 7 and 8:
 `R-BP-LOAD`, `R-GRAPH-LOAD` (both formats), `R-REFS`, `R-OVERRIDES`,
 `R-NODE-RESOLVE`, `R-NODE-FIND`, `R-DATATABLE`, `R-COMMENT-LIST`.
 
-Build order inside the phase, because later readers reuse the earlier ones:
+| # | Capability | State |
+|---|---|---|
+| 1 | Node IDs (`04_FORMATS.md` section 3) | **DONE** - `TurboMCPNodeId`, one implementation shared by every reader and writer |
+| 2 | `R-NODE-RESOLVE` | **DONE** - tested against a real Blueprint |
+| 3 | `R-NODE-FIND` | **DONE** - tested against a real Blueprint |
+| 4 | `R-GRAPH-LOAD` | next |
+| 5 | The graph text writer | the hardest single piece; needed by `R-GRAPH-LOAD` and `R-BP-LOAD` |
+| 6 | `R-BP-LOAD` | |
+| 7 | `R-REFS`, `R-OVERRIDES`, `R-DATATABLE`, `R-COMMENT-LIST` | |
 
-1. Node IDs (`04_FORMATS.md` section 3) with `R-NODE-RESOLVE` and
-   `R-NODE-FIND`. Proving the ID scheme before any body reader uses it means a
-   broken ID cannot look like a broken reader.
-2. `R-GRAPH-LOAD` at detail `manifest` and `signatures`, which needs no body
-   walking.
-3. The graph text writer shared by `R-GRAPH-LOAD` and `R-BP-LOAD`. This is the
-   hardest single piece.
-4. `R-BP-LOAD`'s relation layer, then its body levels.
-5. `R-REFS`, `R-OVERRIDES`, `R-DATATABLE`, `R-COMMENT-LIST`.
+**15 tools. Both suites pass.**
 
-A real Blueprint is needed to test any of it, so kit scaffolding comes first.
+The test Blueprint `BP_NodeTest` exists. `Tools/make-test-blueprint.py` scaffolds
+the empty Blueprint only; the **engine** then writes its graph, so the readers are
+pointed at content Epic wrote rather than content we wrote. That is what makes the
+node type ID comparison meaningful.
+
+#### Limitation found in phase 2
+
+The node type ID the engine's writer accepts is `<menu category>|<node title>`,
+and its **title half follows the editor's language**. The category half is fixed
+by reading the `FText` source string; the title half cannot be, because Epic
+builds it at run time from separate localised fragments.
+
+It is not fatal: the engine's own `find_node_types` returns localised IDs too, so
+the localised form is what its writer accepts on this machine. It will not
+transfer to an editor in another language. The node's C++ class is printed beside
+it as the one locale-independent name. Raised as Q-3.
 
 ### The engine's toolsets are OFF by default
 
