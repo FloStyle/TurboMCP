@@ -72,12 +72,48 @@ Highest value per unit of risk, and no graph-writing machinery needed.
 | 1 | Traps data file (D-07) | **DONE** - verified, project override works with no rebuild |
 | 2 | `R-TOOL-INDEX` | **DONE** - 7 checks pass |
 | 3 | `R-TOOL-SCHEMA` | **DONE** - 6 checks pass, 297 chars against a 2000 budget |
-| 4 | `R-ASSET-SEARCH` | next |
-| 5 | `R-ASSET-DESCRIBE` | |
-| 6 | `R-TYPE-FIND` | |
+| 4 | `R-ASSET-SEARCH` | **DONE** - 5 checks pass |
+| 5 | `R-ASSET-DESCRIBE` | **DONE** - 3 checks pass, all path forms agree |
+| 6 | `R-TYPE-FIND` | next |
 | 7 | `R-DIRTY-LIST` | |
 | 8 | `E-COMPILE` | first write-class tool; one transaction and a roll back rule |
 | 9 | `E-SAVE` | uses the unsaved flag, per `D-33` |
+
+### The engine's toolsets are OFF by default
+
+This changes how the plugin must be tested. `07_ENGINE_NOTES.md` describes the
+Blueprint and widget tools as if they are always present. In UE 5.8.3 they live in
+plugin toolsets under `Engine/Plugins/Experimental/Toolsets/`, and every one of
+them ships disabled. With only `ModelContextProtocol` on, the server served a
+single engine toolset.
+
+`TestProject/TurboMCPTest.uproject` now enables:
+
+| Plugin | What it brings |
+|---|---|
+| `EditorToolset` | 17 toolsets: `BlueprintTools`, `MaterialTools`, `AssetTools`, `DataTableTools`, `ObjectTools`, `SceneTools`, and more |
+| `UMGToolSet` | the widget tools |
+| `SlateInspectorToolset` | Slate widget inspection, useful for phase 3 captures |
+| `AutomationTestToolset` | test running |
+| `SemanticSearchToolset` | semantic asset search, a comparison point for `R-ASSET-SEARCH` |
+| `PythonScriptPlugin` | scripted editor work, which is how the test kit is scaffolded |
+
+Compiling these took 18 seconds because their binaries already existed.
+
+### Building the test kit
+
+The editor can run editor Python headlessly:
+
+```
+UnrealEditor.exe <project> -run=PythonScriptCommandlet -Script=Tools/make-test-assets.py -unattended -nullrhi
+```
+
+Verified: it created `Content/Tests/TA11_TestEnum.uasset`, exit code 0.
+
+Only **scaffolding** is scripted - an empty asset of the right class, saved, so
+the registry and the path forms have something real to resolve. The **structure**
+the acceptance tests measure (TA-1's 60 to 90 hand-laid nodes, its nested comment
+boxes) must stay hand-built, and no test result is recorded until it is.
 
 Verified by `python Tools/test-agent-help.py`, which exits non-zero on failure.
 Run it after every change to this phase so a regression is caught at once.
