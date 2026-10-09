@@ -250,7 +250,23 @@ def check_apis(report):
         report.ok("all %d engine APIs present" % len(ENGINE_APIS))
 
 
+UHT_MARKER_RE = re.compile(
+    r"\bUCLASS\b|\bUSTRUCT\b|\bUENUM\b|\bUFUNCTION\b|\bUPROPERTY\b|\bGENERATED_BODY\b"
+)
+
+
 def check_uht_freshness(report):
+    """Only headers that carry reflection matter here.
+
+    UnrealHeaderTool reads a header for `UCLASS`, `USTRUCT`, `UENUM`, `UFUNCTION`
+    and `UPROPERTY`. A header with none of those is invisible to it, so changing
+    one cannot make the generated code stale and cannot force a re-plan.
+
+    This check used to flag **every** header, which made it wrong rather than
+    cautious: it failed on TurboMCPGraphText.h and TurboMCPNodeId.h, which carry
+    no reflection at all, and a check that cries wolf on a correct change is worse
+    than no check, because it trains the reader to ignore it.
+    """
     report.section("UHT freshness")
     generated = os.path.join(UHT_OUT, "TurboMCPToolsets.generated.h")
     if not os.path.isfile(generated):
@@ -259,21 +275,29 @@ def check_uht_freshness(report):
 
     generated_time = os.path.getmtime(generated)
     stale = []
+    reflected = 0
     for path in plugin_files(".h"):
         if os.path.basename(path).endswith(".generated.h"):
             continue
+
+        with open(path, "r", encoding="utf-8", errors="replace") as handle:
+            text = handle.read()
+        if not UHT_MARKER_RE.search(text):
+            continue
+
+        reflected += 1
         if os.path.getmtime(path) > generated_time:
             stale.append(os.path.basename(path))
 
     if stale:
         report.fail(
-            "these headers are newer than the generated code: %s. "
+            "these reflection headers are newer than the generated code: %s. "
             "UHT must re-run, or the build will use stale reflection and fail. "
             "A header change also makes UBT re-plan, discarding completed actions."
             % ", ".join(stale)
         )
     else:
-        report.ok("generated code is newer than every plugin header")
+        report.ok("generated code is newer than all %d reflection header(s)" % reflected)
 
 
 def check_tools(report):
