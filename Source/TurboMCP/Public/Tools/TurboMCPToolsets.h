@@ -833,6 +833,31 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& TypeId);
+
+	/**
+	 * Work out which wires cross a node, and where a knot would fix them, without placing any.
+	 *
+	 * T-LAY-10's contract, and it is narrower than the prose: the preview lists ONLY wires that CROSS A
+	 * NODE, and after the edit those wires are straighter than they were.
+	 *
+	 * A wire is reported ONCE, naming every node it crosses, even when it crosses several: counting once
+	 * per crossing would list one wire three times and make the before and after counts incomparable.
+	 *
+	 * A knot is only offered where the route through it is ONE RUN PLUS ONE BEND. The position is one of
+	 * exactly two: level with the source pin, or level with the target pin.
+	 *
+	 * REFUSED, and the preview says which and why: a wire between neighbouring columns, a wire with no
+	 * free space at either candidate position, and a wire already carrying a knot. Sharing is offered
+	 * when one pin feeds several distant nodes, and refused with the reason when no single position
+	 * suits them all.
+	 *
+	 * WHEN THE ENGINE HAS MEASURED NO NODE SIZES the answer SAYS SO and judges crossings against a small
+	 * square at each node position, which UNDER-REPORTS rather than inventing a crossing. That is not
+	 * unusual: NodeWidth is written only by Slate when a node is drawn, so a graph built headlessly has
+	 * no measured sizes until something draws it.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
 };
 
 /**
@@ -1134,6 +1159,23 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
+
+	/**
+	 * Place the knots the preview listed.
+	 *
+	 * The same inputs, found and judged the same way, as `P-GRAPH-KNOTS`, because the two share one code
+	 * path up to the write.
+	 *
+	 * Each wire is re-resolved BY PIN IDENTITY first, because a plan is made and applied in two calls and
+	 * the graph can change between them. A wire whose pins no longer connect is REPORTED and skipped
+	 * rather than silently dropped.
+	 *
+	 * The crossing count is measured before and after, and the whole pass is ROLLED BACK when the result
+	 * is not lower. The rollback is then RE-MEASURED to confirm it restored the original count, because a
+	 * rollback whose result is not checked is a rollback nobody knows works.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
 
 	/**
 	 * Promote the SAFE values to local variables.

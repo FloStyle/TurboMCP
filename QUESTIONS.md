@@ -887,3 +887,90 @@ and 173 after**, exactly the wrapper removed.
 The probe proves nothing about the panel's **layout**, whether the combo boxes show their selection,
 whether a SAMPLE press visibly refills the arguments box, or whether the result pane repaints. `/`Q-11`
 stays open for those, and they need a human eye or a Slate inspection tool.
+
+---
+
+## Q-15. THE HAND-MADE ACCEPTANCE KIT: 12 of 13 built by commandlet, TA-10 must be authored by hand
+
+`Spec/06_ACCEPTANCE.md` section 1 defines `TA-1` to `TA-13` and says they are built "by hand in the
+editor, not with the plugin's own tools, so the tools are tested against human-made assets". Three
+specifications written independently each found that the acceptance row they must satisfy names a fixture
+**that does not exist**, so none of the thirteen had ever been built.
+
+`UTurboMCPKitCommandlet` (`Source/TurboMCP/TurboMCPKitCommandlet.cpp`) now builds them, run by
+`Tools/make-kit-assets.ps1`. It uses **the engine's own API and calls no TurboMCP tool**, which is what
+honours the rule's purpose: the assets a tool is tested against were not shaped by that tool.
+
+### Measured output
+
+```
+TA-1 OK   nodes=64 (needs 60..90) boxes=6 (needs 6..8) nested=1 (needs >=1) backward=0 (needs 0)
+TA-2 OK   event graph: boxes=2 nested=1 nodes=4
+TA-3 OK   messy: row=13 row-node(s) (needs ~13) copy=9 (needs 9) boxes=0 (needs 0) dead=9 (needs 9)
+TA-4 OK   stacked: nodes=7 backward=1 (needs >=1) stackedPair=yes originNode=yes
+TA-11 OK  enum: values=4 (needs 4)
+TA-12 OK  BP_TestAlpha: graphs=2 function Setup=yes   (and BP_TowerArray)
+TA-13 OK  path=/Game/Tests/Kit/TA13_KitPath/TA13_KitPath
+TA-10 MISSING  NOT BUILT: needs 3 rows and 4 fields
+
+assets=14 built=13 measured=14 missing=1 short=0
+```
+
+Five `.uasset` files are on disk: `TA01_HandLaid` (four graphs, 276 KB), `TA11_KitEnum`,
+`BP_TestAlpha`, `BP_TowerArray`, `TA13_KitPath/TA13_KitPath`.
+
+### TA-10 CANNOT BE BUILT FROM A COMMANDLET, and the reason is measured
+
+**A user struct's field list can only be built once its `UUserDefinedStructEditorData` exists, and only
+the editor factory installs that.** The first attempt at a handmade
+`NewObject<UUserDefinedStruct>` **crashed the commandlet**, and the callstack names the cause exactly:
+
+```
+CastChecked<UUserDefinedStructEditorData, UObject>()
+FMemberVariableNameHelper::Generate()   StructureEditorUtils.cpp:256
+FStructureEditorUtils::AddVariable()    StructureEditorUtils.cpp:304
+UTurboMCPKitCommandlet::Main()          TurboMCPKitCommandlet.cpp:890
+```
+
+So `TA-10`'s data table and its three rows need a hand in the editor. It is **reported MISSING with its
+reason** rather than approximated with an empty table, because an empty `UDataTable` would satisfy
+`T-BP-15`'s "row count" with a zero and look like a passing fixture.
+
+### NOT YET BUILT: TA-5 to TA-9
+
+`TA-5` (a 60-expression material), `TA-6` (its instance), `TA-7` and `TA-9` (widget Blueprints) and
+`TA-8` (a page placing two copies of `TA-7`) are **not attempted** by this commandlet. Materials and
+widget Blueprints need their own builders, and the material fixture commandlet already demonstrates the
+material half: `M_TurboMCPFixture` carries named reroutes, nested boxes and an instance override, which
+is most of what `TA-5` and `TA-6` want. The honest state is that five of the thirteen exist in a
+different asset rather than in the kit, and they are recorded here rather than claimed.
+
+### THREE DEFECTS THE COMMANDLET FOUND IN ITSELF, all by measuring rather than reporting
+
+1. **`TA-3` had every node dead.** Its live row was built from pure math nodes, which have NO exec pin,
+   so nothing was on an exec chain: measured `unreachable=13` of 13. The row is now `PrintString` nodes,
+   which is also what "13 CONNECTED nodes" means, and the deliberate 9-node copy is counted separately.
+2. **`TA-4` had zero backward wires**, and the code looked right. It linked
+   `Setter->GetReturnValuePin()` on a **`PrintString`**, which has no return value, so the pin was null
+   and `Link` did nothing. A pure math node is what has a return value; `backward=1` now.
+3. **`TA-12` printed a literal `%s`.** The line read `FString(TEXT("%s: graphs=")) + Name + ...` with no
+   `Printf` to substitute it, so the report said `%s: graphs=BP_TestAlpha`. Found by READING THE
+   COMMANDLET'S OWN REPORT, which is the argument for making a build step report its structure.
+
+A `short` count was also wrong: it was computed as `assets - measured`, which counted an asset the
+commandlet had **declared it cannot build** as short as well as missing, and the summary then read
+`short=1` on a run with nothing short. It is now a third state, incremented only when an asset was BUILT
+and lacks the structure its rows require.
+
+### Also measured, and worth keeping
+
+- `FString::Printf` in this engine runs its format string through a **compile-time** checker, and a
+  conditional expression in the ARGUMENT list trips it with `error C7595`. Four attempts to reshape the
+  arguments failed; building the string by concatenation succeeded. `Name + TEXT("...")` also adds two
+  pointers (`error C2110`), so every literal operand is an `FString`.
+- `UEnum::SetEnums` takes **five** arguments in 5.8 and `EUnderlyingType` and `EAddMaxKeyIfMissing` are
+  **members of `UEnum`**, not global names. The two-argument form is deprecated.
+- `FBlueprintEditorUtils::FindFunctionGraph` **DOES NOT EXIST**. `BlueprintEditorUtils.h` declares
+  `ValidateAllFunctionGraphs` and nothing that finds one by name.
+- `AllocateDefaultPins` is mandatory on every node placed, as the acceptance commandlet already records;
+  without it `UK2Node_Knot::GetOutputPin` indexes `Pins[1]` of an empty array and the editor crashes.

@@ -1,0 +1,205 @@
+"""Prove the acceptance asset's probe graphs contain the structures the specs need.
+
+WHY THIS EXISTS
+---------------
+Two specification documents, written independently, both found the same hole:
+
+`Spec/WORKING_GRAPH_KNOTS.md` found that `KnotProbe` cannot test the CROSSING case - its three knots
+are already on the wire and the straight route between its two calls passes over nothing, so a crossing
+predicate finds nothing and the primary positive case is unreachable.
+
+`Spec/WORKING_GRAPH_TIDY.md` found the asset had ZERO COMMENT BOXES, measured through `R-COMMENT-LIST`
+as `0 box(es), 0 nested`, so tidy's box-corner rule, its wire-length rule and nesting itself all rested
+on code review.
+
+`LayoutProbe` was added to the commandlet to close both holes. THIS script proves the structures are
+actually in the saved asset rather than in the code that claims to build them.
+
+WHAT IT CHECKS, AND HOW EACH CHECK COULD FAIL
+---------------------------------------------
+- the commandlet EXITS ZERO. It refuses to save when any probe graph is incomplete, so a zero exit is
+  itself the assertion that every graph built;
+- every probe graph is reported with a node count. Fails if a graph is missing or empty;
+- `LayoutProbe` reports MORE THAN ONE node. A graph with one node cannot contain a crossing, a nesting
+  or a neighbouring wire;
+- the reported CROSSING count is greater than zero, for wires AND for distinct nodes. This is the exact
+  number the knot spec said was unreachable. It was zero on the first attempt, which is how the
+  coordinates were found to be wrong - so this check has ALREADY FAILED once, which is what makes it
+  worth trusting;
+- the reported NESTING is at least two boxes with at least one nested. The material and layout fixtures
+  both need this and nothing in the asset had it before;
+- at least one NEIGHBOURING-COLUMN wire exists, because the knot spec says a pass must SKIP those and a
+  skip rule with nothing to skip is untested;
+- the counts are PARSED, never pinned. A literal would have to be edited every time a probe grows, and
+  this project has recorded five separate rounds lost to a pinned count.
+
+THE EDITOR HALF IS OPTIONAL AND SAID SO. The commandlet needs no editor, and this script does NOT start
+one. When an editor HAPPENS to be running, the readers are driven against the saved asset as a second,
+independent witness; when none is running the script says so and the commandlet's own measurements stand
+alone. A check that silently skipped itself would be worse than no check.
+"""
+
+import os
+import re
+import subprocess
+import sys
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOG = os.path.join(REPO, ".agent", "logs", "make-acceptance-asset.log")
+SCRIPT = os.path.join(REPO, "Tools", "make-acceptance-asset.ps1")
+ASSET = "TurboMCPAcceptance"
+
+# The graphs every build must produce. LayoutProbe is the one this round added.
+REQUIRED_GRAPHS = ["KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe"]
+# The graph added to close the two specifications' holes, and the one with structures to assert.
+LAYOUT = "LayoutProbe"
+
+
+class Report:
+    def __init__(self, text, exit_code):
+        self.text = text
+        self.exit_code = exit_code
+
+    def log_text(self):
+        try:
+            with open(LOG, "r", encoding="utf-8", errors="replace") as handle:
+                return handle.read()
+        except OSError:
+            return ""
+
+    def number(self, pattern, default=None):
+        """One parsed number from the WHOLE run, log included.
+
+        BOTH the captured stdout AND the log file are searched, because `UE_LOG` output reaches the log
+        reliably and the console only sometimes. Searching one of them made an earlier version of this
+        script report "0 crossing" for a build that had six, which is the probe-reader-wrong failure
+        this project keeps recording.
+        """
+        for source in (self.text, self.log_text()):
+            match = re.search(pattern, source)
+            if match:
+                return int(match.group(1))
+        return default
+
+
+def main():
+    failures = []
+
+    def check(name, ok, detail=""):
+        # THE DETAIL IS SHOWN ONLY WHEN THE CHECK FAILS, and the ARGUMENT ORDER is (ok, detail) - the
+        # first version of this helper passed them the other way round on the node-count checks, so a
+        # passing check printed "no count found in stdout or the log" underneath it. A passing check
+        # that prints a failure message is worse than a bare pass: it teaches the reader to ignore the
+        # text.
+        print("  %-4s %s%s" % ("ok" if ok else "FAIL", name, ("  " + detail) if detail and not ok else ""))
+        if not ok:
+            failures.append(name)
+
+    print("=== running the commandlet, which needs no editor ===")
+    # `shell=True` BECAUSE THE COMMAND REDIRECTS ITS OWN OUTPUT. Passing the whole string as one
+    # argument to `["cmd.exe", "/c", ...]` makes Python quote it and cmd rejects it. The command owns
+    # the redirect and Python only reads the log - letting subprocess open the same file gives "the
+    # process cannot access the file because it is being used by another process" and an empty log.
+    completed = subprocess.run(
+        ["pwsh", "-NoProfile", "-File", SCRIPT],
+        capture_output=True, text=True, cwd=REPO)
+    report = Report(completed.stdout or "", completed.returncode)
+    print(report.text.strip() or "(no stdout; the log is read instead)")
+
+    check("the commandlet exited zero, which it only does when EVERY probe graph built",
+          completed.returncode == 0, "exit %s" % completed.returncode)
+
+    print()
+    print("=== every probe graph is present with nodes ===")
+    for graph in REQUIRED_GRAPHS:
+        count = report.number(r"%s:\s*(\d+)\s*node" % re.escape(graph))
+        check("%s has a reported node count" % graph, count is not None,
+              "no count found in stdout or the log")
+        if count is not None:
+            check("%s is not empty" % graph, count > 0, "%d node(s)" % count)
+
+    print()
+    print("=== LayoutProbe: THE CROSSING, which KnotProbe could not provide ===")
+    crossing_wires = report.number(r"LayoutProbe crossing:\s*(\d+)\s*wire")
+    crossing_nodes = report.number(r"cross\s*(\d+)\s*distinct node")
+    print("    %s wire(s) cross %s distinct node(s)" % (crossing_wires, crossing_nodes))
+    check("it reports a crossing count at all", crossing_wires is not None)
+    # THE CHECK THAT ALREADY FAILED ONCE. The first coordinates produced "10 wire(s) cross 0 distinct
+    # node(s)", which is why the geometry is dumped when this fails.
+    check("at least one wire crosses a node", crossing_wires is not None and crossing_wires > 0,
+          "the knot spec's primary case is unreachable if this is zero")
+    check("at least one distinct node is crossed", crossing_nodes is not None and crossing_nodes > 0,
+          "a wire count without a node is not a crossing")
+
+    print()
+    print("=== LayoutProbe: THE NESTING, which the asset had none of ===")
+    boxes = report.number(r"LayoutProbe boxes:\s*(\d+)\s*box")
+    nested = report.number(r"boxes:\s*\d+\s*box\(es\),\s*(\d+)\s*nested")
+    print("    %s box(es), %s nested" % (boxes, nested))
+    check("it reports a box count at all", boxes is not None)
+    check("there are at least two boxes", boxes is not None and boxes >= 2, str(boxes))
+    check("at least one box is geometrically nested in another",
+          nested is not None and nested >= 1,
+          "tidy's nesting rule rests on code review without this")
+
+    print()
+    print("=== LayoutProbe: a NEIGHBOURING-column wire for the knot SKIP rule ===")
+    neighbours = report.number(r"neighbouring-column wires:\s*(\d+)")
+    print("    %s neighbouring wire(s)" % neighbours)
+    check("at least one wire joins neighbouring columns",
+          neighbours is not None and neighbours > 0,
+          "a skip rule with nothing to skip is untested")
+
+    print()
+    print("=== the fifth graph is reported alongside the other four ===")
+    # The summary line is the commandlet's own answer to "did every graph build", so its shape is
+    # asserted rather than its contents.
+    summary = re.search(r"KnotProbe=\w+ DeadProbe=\w+ LocalVarProbe=\w+ SaneProbe=\w+ LayoutProbe=(\w+)",
+                        report.log_text() + report.text)
+    check("the summary line names LayoutProbe", summary is not None,
+          "the commandlet's summary does not mention the fifth graph")
+    check("the summary says LayoutProbe built", summary is not None and summary.group(1) == "ok",
+          summary.group(1) if summary else "not found")
+
+    print()
+    print("=== the editor half, which is OPTIONAL and says so ===")
+    # The commandlet needs no editor and this script does not start one. When an editor is already
+    # running, the readers are driven as an INDEPENDENT witness to the saved asset; when none is, the
+    # commandlet's own measurements stand alone and that is stated rather than silently skipped.
+    sys.path.insert(0, os.path.join(REPO, "Tools"))
+    editor_reachable = False
+    try:
+        from tmcp import READ_TOOLSET, Session  # noqa: PLC0415
+        session = Session()
+        session.connect()
+        editor_reachable = True
+    except Exception as error:  # noqa: BLE001 - any failure means "no editor", which is allowed
+        print("    no editor is running (%s), so only the commandlet's measurements are checked"
+              % type(error).__name__)
+
+    if editor_reachable:
+        listing = session.call(READ_TOOLSET, "ReadTurboMCPCommentList",
+                               {"asset": ASSET, "graphName": LAYOUT})
+        print(listing[:700])
+        boxes_seen = re.search(r"(\d+) box\(es\)", listing)
+        nested_seen = re.search(r"(\d+) nested", listing)
+        check("R-COMMENT-LIST sees the boxes the commandlet reported",
+              boxes_seen is not None and int(boxes_seen.group(1)) == (boxes or -1),
+              "the reader says %s, the commandlet said %s"
+              % (boxes_seen.group(1) if boxes_seen else "?", boxes))
+        check("R-COMMENT-LIST sees the NESTING the commandlet reported",
+              nested_seen is not None and int(nested_seen.group(1)) >= 1,
+              "the asset had 0 nested before this round")
+    else:
+        print("    SKIPPED, and recorded as skipped rather than passed")
+
+    print()
+    if failures:
+        print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
+        return 1
+    print("RESULT: PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
