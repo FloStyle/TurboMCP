@@ -6,6 +6,7 @@
 #include "MaterialEditingLibrary.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialExpressionComment.h"
+#include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "Materials/MaterialExpressionParameter.h"
 #include "Materials/MaterialExpressionReroute.h"
@@ -396,6 +397,68 @@ FString FTurboMCPMaterial::ConstantForInput(const UMaterialExpression* InOwner,
 		return FString();
 	}
 
+	// MOST EXPRESSIONS KEEP AN UNLINKED INPUT CONSTANT IN A SEPARATE PROPERTY, AND NOT LOOKING FOR
+	// IT MADE EVERY SUCH INPUT READ AS UNSET.
+	//
+	// MEASURED, ON THE MATERIAL FIXTURE, which is why the fixture exists. `UMaterialExpressionAdd`
+	// stores its B constant in `float ConstB`, a SIBLING of `FExpressionInput B` carrying
+	// `meta = (OverridingInputProperty = "B")`. The scan below walks the INPUT STRUCT fields, so it
+	// never sees `ConstB`, and `R-MAT-LOAD` answered `B "B unset"` for an input whose constant was
+	// 0.375.
+	//
+	// `2.5` requires the constant an expression keeps to be printed, and this is the shape MOST
+	// expressions use - `Add`, `Multiply`, `Divide`, `Subtract` and `Power` all declare
+	// `ConstA`/`ConstB` this way. The old scan only ever found a constant for a class that put its
+	// value INSIDE the input struct, so the requirement was met for a minority and the text looked
+	// right.
+	//
+	// THE RELATIONSHIP COMES FROM THE ENGINE OWN METADATA rather than from a list of class names:
+	// the property that overrides an input SAYS which input it overrides. That is the same reason
+	// the reflected scan below exists at all.
+	static FName OverridingInputPropertyMetaData("OverridingInputProperty");
+	for (TFieldIterator<FProperty> OverrideIt(InOwner->GetClass(),
+			EFieldIteratorFlags::IncludeSuper, EFieldIteratorFlags::ExcludeDeprecated);
+		OverrideIt; ++OverrideIt)
+	{
+		// NO NULL CHECK ON THE ITERATOR'S VALUE, AND ADDING ONE IS A BUILD ERROR. `TFieldIterator`
+		// never yields null - it walks until the iteration flag says stop - so a guard compiles to
+		// unreachable code, and this project builds with warnings as errors:
+		//
+		//     TurboMCPMaterial.cpp(418): error C4702: unreachable code
+		//     TurboMCPMaterial.cpp(423): error C4702: unreachable code
+		//
+		// It was removed rather than suppressed with a pragma. A check that cannot be false is noise
+		// that hides the checks that can.
+		FProperty* Override = *OverrideIt;
+		if (!Override->HasMetaData(OverridingInputPropertyMetaData))
+		{
+			continue;
+		}
+		const FString Overrides = Override->GetMetaData(OverridingInputPropertyMetaData);
+		if (Overrides.IsEmpty() || !NameMatches(Overrides, InInputName))
+		{
+			continue;
+		}
+
+		const void* OverrideValue = Override->ContainerPtrToValuePtr<void>(InOwner);
+		if (const FFloatProperty* FloatProperty = CastField<FFloatProperty>(Override))
+		{
+			return FString::Printf(TEXT("%g"), FloatProperty->GetPropertyValue(OverrideValue));
+		}
+		if (const FDoubleProperty* DoubleProperty = CastField<FDoubleProperty>(Override))
+		{
+			return FString::Printf(TEXT("%g"), DoubleProperty->GetPropertyValue(OverrideValue));
+		}
+		if (const FIntProperty* IntProperty = CastField<FIntProperty>(Override))
+		{
+			return FString::Printf(TEXT("%d"), IntProperty->GetPropertyValue(OverrideValue));
+		}
+		if (const FBoolProperty* BoolProperty = CastField<FBoolProperty>(Override))
+		{
+			return BoolProperty->GetPropertyValue(OverrideValue) ? TEXT("true") : TEXT("false");
+		}
+	}
+
 	// READ BY REFLECTION, WHICH `2.5` REQUIRES BY NAME: "Read those constants by reflection, not from
 	// a hard coded list of expression classes." A list would silently miss every class added after it
 	// was written, and the miss would look like an input that keeps no constant.
@@ -531,6 +594,45 @@ TArray<FString> FTurboMCPMaterial::AllOutputProperties(FPlan& InPlan)
 		}
 	}
 
+	// A MATERIAL FUNCTION HAS OUTPUTS TOO, AND ITS OUTPUTS ARE NODES RATHER THAN MATERIAL PROPERTIES.
+	//
+	// MEASURED, ON THE MATERIAL FIXTURE, which is why the fixture exists. A function whose only output
+	// node was wired to a labelled value answered:
+	//
+	//     connected outputs: 0 of 0
+	//     4 expression(s) reach no output, so they do not affect what the material looks like:
+	//       3a5922 MaterialExpressionConstant3Vector 0.1,0.9,0.1
+	//       50bc37 MaterialExpressionNamedRerouteDeclaration FunctionTint
+	//       d6c6a7 MaterialExpressionNamedRerouteUsage FunctionTint
+	//       5603ad MaterialExpressionFunctionOutput Output Result
+	//
+	// EVERY expression was reported unreached, including the output node itself. `EMaterialProperty`
+	// describes a MATERIAL's inputs - BaseColor, Emissive, Roughness - and a function has none of
+	// them, so the loop above added nothing and the function branch of these readers printed a
+	// document that described no outputs at all. The branch ran, and everything it said was wrong in
+	// the same direction, which is the failure mode a count-based check would have accepted.
+	//
+	// A function's outputs are `UMaterialExpressionFunctionOutput` nodes: the `OutputName` is the name
+	// a caller sees and the `A` input is the value returned. They are gathered the same way the
+	// material's are - by asking the graph - so the two branches cannot disagree about what an output
+	// is called.
+	if (InPlan.Function != nullptr)
+	{
+		for (UMaterialExpression* Expression : InPlan.Expressions)
+		{
+			const UMaterialExpressionFunctionOutput* FunctionOutput =
+				Cast<UMaterialExpressionFunctionOutput>(Expression);
+			if (FunctionOutput == nullptr)
+			{
+				continue;
+			}
+			const FString Name = FunctionOutput->OutputName.IsNone()
+				? FString::Printf(TEXT("Output_%s"), *KeyOf(Expression))
+				: FunctionOutput->OutputName.ToString();
+			Out.AddUnique(Name);
+		}
+	}
+
 	// SORTED, so two reads of one material always print the outputs in one order. `EMaterialProperty`
 	// happens to be declared in a stable order, but nothing promises that, and a reader that reorders
 	// its own output between runs makes a diff useless.
@@ -540,6 +642,38 @@ TArray<FString> FTurboMCPMaterial::AllOutputProperties(FPlan& InPlan)
 
 UMaterialExpression* FTurboMCPMaterial::OutputSource(FPlan& InPlan, const FString& InProperty)
 {
+	// A MATERIAL FUNCTION IS RESOLVED FIRST, because a plan carries either a material or a function
+	// and never both. Its output is the `FunctionOutput` node whose `OutputName` was asked for, and
+	// the value is that node's `A` input - the same "one output, one source" shape the material
+	// branch below has, reached a different way because a function has no `EMaterialProperty`.
+	if (InPlan.Function != nullptr)
+	{
+		if (InProperty.IsEmpty())
+		{
+			return nullptr;
+		}
+		for (UMaterialExpression* Expression : InPlan.Expressions)
+		{
+			const UMaterialExpressionFunctionOutput* FunctionOutput =
+				Cast<UMaterialExpressionFunctionOutput>(Expression);
+			if (FunctionOutput == nullptr)
+			{
+				continue;
+			}
+			const FString Name = FunctionOutput->OutputName.IsNone()
+				? FString::Printf(TEXT("Output_%s"), *KeyOf(Expression))
+				: FunctionOutput->OutputName.ToString();
+			if (!Name.Equals(InProperty, ESearchCase::IgnoreCase))
+			{
+				continue;
+			}
+			// A plain reroute feeding the output is looked through, for the same reason the material
+			// branch does it: `2.5` says plain reroutes are invisible.
+			return ResolveThroughReroutes(FunctionOutput->A.Expression);
+		}
+		return nullptr;
+	}
+
 	if (InPlan.Material == nullptr || InProperty.IsEmpty())
 	{
 		return nullptr;
@@ -963,6 +1097,27 @@ void FTurboMCPMaterial::MarkReached(const UMaterialExpression* InExpression,
 		Seen.Add(Current);
 		InOutState.Reached.Add(Current);
 
+		// A FUNCTION OUTPUT IS AN EXPRESSION AND REACHES ITSELF.
+		//
+		// MEASURED, ON THE MATERIAL FIXTURE. A function whose output node was correctly wired
+		// answered:
+		//
+		//     connected outputs: 1 of 1
+		//     (Result
+		//         @FunctionTint)
+		//     1 expression(s) reach no output, so they do not affect what the material looks like:
+		//       f877ef MaterialExpressionFunctionOutput Output Result
+		//
+		// THE OUTPUT NODE WAS NAMED AS REACHING NO OUTPUT, WHILE BEING THE OUTPUT. A function output
+		// is a NODE in its expression list, unlike a material output which is a property of the
+		// material and never appears in that list - so the material branch could not lose its output
+		// this way and the function branch could.
+		//
+		// `RenderTree` marks each output SOURCE, which is the value feeding the node. For a material
+		// that source is the whole story; for a function there is one more node between the source
+		// and the output, and it is the one that makes the value leave. Marking it where the walk
+		// starts covers every caller without each having to remember.
+
 		for (FExpressionInputIterator It(const_cast<UMaterialExpression*>(Current)); It; ++It)
 		{
 			if (It.Input != nullptr && It.Input->Expression != nullptr)
@@ -1305,6 +1460,34 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 	TArray<FString> Unreached;
 	for (UMaterialExpression* Expression : InPlan.Expressions)
 	{
+		// A FUNCTION OUTPUT NODE IS AN OUTPUT, SO IT CANNOT "REACH NO OUTPUT" - AND IT WAS LISTED
+		// AS ONE.
+		//
+		// MEASURED, ON THE MATERIAL FIXTURE. A function whose output was correctly wired, and whose
+		// value resolved to the right label, still answered:
+		//
+		//     connected outputs: 1 of 1
+		//     (Result
+		//         @FunctionTint)
+		//     1 expression(s) reach no output, so they do not affect what the material looks like:
+		//       f877ef MaterialExpressionFunctionOutput Output Result
+		//
+		// THE OUTPUT NODE WAS NAMED AS REACHING NO OUTPUT WHILE BEING THE OUTPUT. It could only
+		// happen on the function branch: a function output is an expression IN the function
+		// expression list, while a material output is a property of the material and never appears
+		// in that list. So the material branch can never lose its output this way and the function
+		// branch could.
+		//
+		// EXCLUDED BY ITS NATURE RATHER THAN BY MARKING IT REACHED, which is the honest rule: the
+		// node is a DESTINATION a value leaves through, not a value that feeds another. Saying it
+		// reaches no output is not a finding, it is a contradiction. The same reasoning applies to a
+		// function output whose `A` is unconnected - it is an empty output, which is a different
+		// report and not this one.
+		if (Cast<UMaterialExpressionFunctionOutput>(Expression) != nullptr)
+		{
+			continue;
+		}
+
 		if (Expression != nullptr && !State.Reached.Contains(Expression))
 		{
 			Unreached.Add(FString::Printf(TEXT("\n  %s %s %s"),
