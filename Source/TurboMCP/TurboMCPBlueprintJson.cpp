@@ -52,16 +52,13 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 		return FString();
 	}
 
-	// `manifest`, `signatures` and `bodies` are written. `full` is refused BY NAME: a
-	// partial document would be read as a complete one.
-	if (InDetailLevel < 0 || InDetailLevel > 2)
+	// ALL FOUR LEVELS are written. The guard stays because the level arrives as an int, and
+	// an out-of-range value must be refused rather than silently treated as one of the four.
+	if (InDetailLevel < 0 || InDetailLevel > 3)
 	{
 		OutError = FString::Printf(
-			TEXT("format 'json' is implemented for detail 'manifest', 'signatures' and ")
-			TEXT("'bodies', and '%s' was asked for. The text format carries every level. ")
-			TEXT("This refuses rather than returning a partial document that a caller ")
-			TEXT("would read as a full answer."),
-			InDetailLevel == 3 ? TEXT("full") : TEXT("that level"));
+			TEXT("'%d' is not a detail level. Accepted: 0 manifest, 1 signatures, ")
+			TEXT("2 bodies, 3 full."), InDetailLevel);
 		return FString();
 	}
 
@@ -103,7 +100,9 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 	Root->SetBoolField(TEXT("ok"), true);
 	Root->SetStringField(TEXT("detail"),
 		InDetailLevel == 0 ? TEXT("manifest")
-			: InDetailLevel == 1 ? TEXT("signatures") : TEXT("bodies"));
+			: InDetailLevel == 1 ? TEXT("signatures")
+			: InDetailLevel == 2 ? TEXT("bodies")
+			: TEXT("full"));
 	Root->SetStringField(TEXT("asset"), InBlueprint->GetPathName());
 	Root->SetStringField(TEXT("class"), InBlueprint->GetClass()->GetName());
 
@@ -141,7 +140,16 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 	// second node model for the same nodes: two shapes that could disagree, which is the
 	// drift the format rules exist to prevent. A caller parses the graph text with the one
 	// parser it already has.
+	//
+	// `full` IS PASSED STRAIGHT THROUGH to the graph writer, which already knows what it
+	// adds: knot nodes named on a link instead of being followed through them, each node's
+	// C++ class, and pin indexes. Reimplementing that here would be the second node model
+	// the paragraph above refuses, so the level is forwarded and the extra detail arrives
+	// inside the body text.
 	const bool bWantsBodies = InDetailLevel >= 2;
+	const FTurboMCPGraphText::EDetail GraphDetail = InDetailLevel >= 3
+		? FTurboMCPGraphText::EDetail::Full
+		: FTurboMCPGraphText::EDetail::Bodies;
 
 	// The same writer `R-GRAPH-LOAD` uses, so a body cannot differ between the two tools.
 	const FTurboMCPGraphText GraphWriter;
@@ -156,7 +164,7 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 		if (bWantsBodies)
 		{
 			Graph->SetStringField(TEXT("body"),
-				GraphWriter.Render(Graphs[Index], FTurboMCPGraphText::EDetail::Bodies,
+				GraphWriter.Render(Graphs[Index], GraphDetail,
 					InBlueprint->GetPathName(), BodyNotes));
 		}
 

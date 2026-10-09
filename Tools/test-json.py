@@ -395,17 +395,64 @@ def main():
         check("it returns no graphs", not nomatch_doc.get("graphs"))
 
     print()
-    print("=== full is still refused by name, and only full ===")
-    full = load(session, ASSET, detail="full", fmt="json")
-    full_doc = json_body(full)
-    print(full[:280])
-    print()
-    check("the refusal parses", full_doc is not None)
+    print("=== full: the editing details are present, and the bodies still match ===")
+    # `full` is forwarded to the graph text writer, which already knows what it adds: each
+    # node's C++ class, its linked outputs, the long-form node IDs, and a knot named on a
+    # link instead of being followed through it. The first three are checked here.
+    full_text = load(session, ASSET, detail="full")
+    full_json = load(session, ASSET, detail="full", fmt="json")
+    full_doc = json_body(full_json)
+    check("the full document parses", full_doc is not None)
+
     if full_doc is not None:
-        check("it reports failure", full_doc.get("ok") is False)
-        check("it names 'full'", "full" in str(full_doc.get("error", "")))
-        check("it does not return a partial document",
-              "counts" not in full_doc and "graphs" not in full_doc)
+        check("it reports the level it answered", full_doc.get("detail") == "full",
+              str(full_doc.get("detail")))
+
+        full_bodies = {g.get("name"): (g.get("body") or "").strip()
+                       for g in full_doc.get("graphs", [])}
+        full_from_text, _full_trailer = text_bodies(full_text)
+
+        # The same EXACT equality as at bodies, because the same writer produces both.
+        check("both renderings cover the same graphs",
+              sorted(full_from_text) == sorted(full_bodies),
+              "text=%s json=%s" % (sorted(full_from_text), sorted(full_bodies)))
+        for name in sorted(set(full_from_text) & set(full_bodies)):
+            same = full_from_text[name] == full_bodies[name]
+            check("%s: the full body is identical in both renderings" % name, same,
+                  "" if same else "text %d chars, json %d chars"
+                  % (len(full_from_text[name]), len(full_bodies[name])))
+
+        joined = "\n".join(full_bodies.values())
+        bodies_joined = "\n".join(
+            (g.get("body") or "") for g in bodies_doc.get("graphs", []))
+
+        # The details the spec names that this asset can actually exercise.
+        check("full adds each node's C++ class", "; class " in joined)
+        check("bodies does NOT carry the C++ class", "; class " not in bodies_joined)
+        check("full adds the linked outputs", "; out " in joined)
+        check("full uses the long-form node IDs",
+              "/Game/Tests/BP_NodeTest.BP_NodeTest:EventGraph:" in joined)
+        check("bodies uses the short-form node IDs",
+              "/Game/Tests/BP_NodeTest.BP_NodeTest:EventGraph:" not in bodies_joined)
+        check("full is larger than bodies", len(joined) > len(bodies_joined),
+              "%d vs %d" % (len(joined), len(bodies_joined)))
+
+        # NOT VERIFIED HERE, and stated rather than assumed: the spec also asks full to name
+        # a knot on a link, and BP_NodeTest has no knot, so that branch is exercised by no
+        # test in this repository. Raised as Q-9.
+        print("        note: the knot branch of 'full' is NOT exercised: this asset has"
+              " no knot. See QUESTIONS Q-9.")
+
+    print()
+    print("=== an unknown detail NAME is refused by the reader, listing the four ===")
+    # The JSON writer's own guard covers an out-of-range INT, which no caller can reach
+    # through the tool because a detail arrives as a name. What a caller CAN reach is a
+    # misspelled name, so that is what is checked here.
+    bogus = load(session, ASSET, detail="banana", fmt="json")
+    print(bogus[:220])
+    print()
+    check("the refusal names every accepted level",
+          all(word in bogus for word in ("manifest", "signatures", "bodies", "full")))
 
     print()
     print("=== the text rendering still works, so JSON did not replace it ===")
