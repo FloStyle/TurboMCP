@@ -2567,3 +2567,95 @@ on a tool that was right. **That is the fifth time this project has had to learn
 | `P/E-COMMENT` | done |
 | `P/E-GRAPH-DEAD` | done, removal path unverified (Q-12) |
 | `P/E-GRAPH-FIX-BACKWARD`, `P/E-GRAPH-TIDY`, `P/E-GRAPH-KNOTS`, `P/E-LOCAL-VARS` | to do |
+
+---
+
+## 6c. P/E-LOCAL-VARS, and what its own promotion path cannot prove
+
+46 tools. 21 acceptance suites, all green. `T-LAY-13` is exercised by
+`python Tools/test-local-vars.py`.
+
+### The safety rule is the whole capability
+
+Capturing a value once and reading it twice is only the same as computing it twice when the value
+**cannot change between the two reads.** A value derived from a member variable can change if the exec
+chain between the reads writes that variable; one derived from an impure node can differ every time.
+**Only a value fed by the function's own inputs and by literals is fixed for the whole call.**
+
+### And the rule is TRANSITIVE
+
+A one-level check would call `A(input) -> B(A) -> read twice` safe for B **without ever looking at A**.
+The walk follows every data input back, with a **visited set** so a cycle is detected rather than
+walked forever — and **a cycle is itself UNSAFE**, because a value that depends on itself is not fixed
+by its inputs.
+
+### Only function graphs can hold a local, and that is ASKED of the engine
+
+`FBlueprintEditorUtils::DoesSupportLocalVariables` supplies the answer rather than a name being
+matched. The difference between *"this graph cannot hold a local"* and *"nothing found"* is a reason a
+caller acts on:
+
+```
+error: 'EventGraph' is not a function graph of this Blueprint. Its functions are:
+UserConstructionScript. An event graph has no local variables.
+```
+
+**The event graph is refused by BOTH the preview and the edit, with the same reason**, because `D-02`
+requires a preview and its edit twin to refuse the same input.
+
+### The edit promotes only what the preview called safe
+
+Re-checked on the node about to change rather than trusted from a plan made in an earlier call. A local
+is added through the editor's own `AddLocalVariable`, a getter is placed where the value was computed,
+each consumer is re-pointed **pin by pin**, and **the original is removed LAST** — removing it first
+would break the links the rewire needs.
+
+### The promotion path is NOT verified, and that is recorded rather than hidden
+
+A candidate needs a **pure node whose value is read more than once**, and the engine's
+`write_graph_dsl` **cannot express one**: a DSL expression is a **tree**, and a tree has no way to name
+an intermediate value, so every sub-expression is consumed by exactly one parent. Measured against the
+DSL's own examples:
+
+```
+(fn DoubleIt (Value)
+  (return (* Value 2)))
+```
+
+Every value there is used exactly once. **So the test graphs have no candidate and none can be made** —
+the same wall `Q-9` hit with reroute knots and `Q-12` with disconnected groups. `QUESTIONS.md` **Q-13**
+records it.
+
+| Claim | Evidence |
+|---|---|
+| a graph that cannot hold locals is refused **with that reason** | `An event graph has no local variables.` |
+| the refusal **lists the functions that do exist** | `Its functions are: UserConstructionScript.` |
+| a **function** graph is accepted | the same tool answers without an error |
+| a function with no candidate says **why** | `0 value(s) used more than once … read once gains nothing` |
+| the preview changes nothing | the asset manifest compared before and after |
+| the edit says `unchanged:`, not `changed: promoted 0` | `unchanged: no value in … was promoted` |
+| the **edit refuses the event graph too**, same reason | `D-02` |
+
+### The suite leaves its probe function behind, on purpose
+
+The engine's package **does not release a function name at once**, so `E-FUNCTION-ADD` refuses to
+re-add a name that was just removed rather than creating a numbered graph. The first version removed
+its probe and re-added it in the same run, and **the second run failed on NINE checks** because of it.
+The suite now **adds only when missing and leaves the empty function in place** — the only shape that
+is re-runnable.
+
+### The gap is now one asset wide, not three
+
+`Q-9` (knots), `Q-12` (dead groups) and `Q-13` (local-variable candidates) are **all three** blocked by
+the same thing: **no writer available to this project can build the structure each capability operates
+on.** One asset that **ships with a candidate, a dead group and a knot**, built once in the editor's
+own UI and committed, would close all three.
+
+### Phase 6 progress
+
+| Capability | State |
+|---|---|
+| `P/E-COMMENT` | done |
+| `P/E-GRAPH-DEAD` | done, removal path unverified (Q-12) |
+| `P/E-LOCAL-VARS` | done, promotion path unverified (Q-13) |
+| `P/E-GRAPH-FIX-BACKWARD`, `P/E-GRAPH-TIDY`, `P/E-GRAPH-KNOTS` | to do |
