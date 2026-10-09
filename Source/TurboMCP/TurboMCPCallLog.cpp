@@ -122,6 +122,44 @@ void FTurboMCPCallLog::AppendToFile(const FString& InLine) const
 		PlatformFile.CreateDirectoryTree(*Directory);
 	}
 
+	// ROTATION, BECAUSE THE FILE GREW WITHOUT BOUND.
+	//
+	// Measured before this was added: 402 KB and 1229 lines from ONE ROUND of testing, because
+	// every tool call writes a line — and every READ of the log is a tool call, so reading the log
+	// grows the log. Left alone, a long session produces a file nobody will open and a disk cost
+	// nobody asked for. `P6` caps the in-memory list at 1000 entries for the same reason; the file
+	// had no cap at all.
+	//
+	// ONE rotation, not a numbered series. A second file is what makes a crash readable: the
+	// current file holds what just happened, the previous one holds what led up to it, and a
+	// directory of a hundred rotated files is a directory nobody reads. The older file is REPLACED
+	// rather than kept, so the on-disk cost has a hard ceiling of about twice the limit.
+	if (PlatformFile.FileSize(*Path) >= MaxFileBytes)
+	{
+		const FString PreviousPath = Path + TEXT(".1");
+
+		// The previous file is removed BEFORE the move, because `MoveFile` fails when the
+		// destination exists and a failed move would leave rotation silently not happening — the
+		// exact shape of failure this project keeps having to look for.
+		PlatformFile.DeleteFile(*PreviousPath);
+		PlatformFile.MoveFile(*PreviousPath, *Path);
+
+		// A marker line, so a reader of the older file can see WHY it stops where it does rather
+		// than wondering whether the log lost data. It is written with the same field set as every
+		// other line, so a parser needs no special case.
+		FTurboMCPCallLog::FEntry Marker;
+		Marker.Timestamp = FDateTime::UtcNow().ToIso8601();
+		Marker.Phase = TEXT("rotate");
+		Marker.Source = TEXT("plumbing");
+		Marker.Result = FString::Printf(
+			TEXT("the log reached %d bytes and was rotated to %s.1"),
+			MaxFileBytes, *Path);
+
+		FFileHelper::SaveStringToFile(ToJsonLine(Marker) + LINE_TERMINATOR, *Path,
+			FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM,
+			&IFileManager::Get(), FILEWRITE_Append);
+	}
+
 	FFileHelper::SaveStringToFile(InLine + LINE_TERMINATOR, *Path,
 		FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM,
 		&IFileManager::Get(), FILEWRITE_Append);

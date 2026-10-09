@@ -19,6 +19,7 @@ unresolved half is LABELLED rather than invented.
 import json
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -293,6 +294,65 @@ def main():
           "%s -> %s" % (lines_before_clear, lines_after_clear))
     check("the tool says the file is left alone",
           "untouched" in cleared or "left alone" in cleared, cleared[:200])
+
+    print()
+    print("=== the log ROTATES, so it cannot grow without bound ===")
+    # The file previously had NO cap and reached 402 KB in a single round of testing, because every
+    # tool call writes a line and every READ of the log is itself a tool call. The bound is tested
+    # by REACHING it rather than by reading the constant: a limit nobody has crossed is a limit
+    # nobody knows works.
+    rotated = LOG_PATH + ".1"
+    try:
+        if os.path.isfile(rotated):
+            os.remove(rotated)
+        padding = ('{"time":"2026-01-01T00:00:00.000Z","phase":"end","source":"engine",'
+                   '"toolset":"padding","tool":"padding","duration_ms":0,'
+                   '"result_chars":0,"token_estimate":0,"error":false}\n')
+        with open(LOG_PATH, "a", encoding="utf-8") as handle:
+            written = 0
+            while written < 4_250_000:
+                handle.write(padding)
+                written += len(padding)
+        size_before = os.path.getsize(LOG_PATH)
+        print("    filled the log to %d bytes" % size_before)
+        check("the file is over the 4 MB limit", size_before > 4 * 1024 * 1024)
+
+        # One call is enough: the rotation is checked on the way in to writing a line.
+        session.call(READ_TOOLSET, "ReadTurboMCPStatus", {})
+        time.sleep(0.5)
+
+        check("a rotated file appeared", os.path.isfile(rotated),
+              "expected %s" % os.path.basename(rotated))
+        if os.path.isfile(rotated):
+            check("the rotated file holds what was there before",
+                  os.path.getsize(rotated) >= size_before,
+                  "%d vs %d" % (os.path.getsize(rotated), size_before))
+            check("the current file started again, so it is far smaller",
+                  os.path.getsize(LOG_PATH) < size_before,
+                  "%d vs %d" % (os.path.getsize(LOG_PATH), size_before))
+
+            # The marker is what stops a reader of the older file wondering whether the log lost
+            # data. It carries the same fields as every other line, so a parser needs no special
+            # case for it.
+            first = ""
+            with open(LOG_PATH, "r", encoding="utf-8", errors="replace") as handle:
+                first = handle.readline().strip()
+            marker = json.loads(first) if first else {}
+            check("the marker says the log rotated", marker.get("phase") == "rotate",
+                  first[:120])
+            check("the marker is a normal line with normal fields",
+                  all(k in marker for k in ("time", "phase", "source", "toolset", "tool")),
+                  ", ".join(sorted(marker.keys())))
+            check("the marker says where the older file went",
+                  ".1" in marker.get("result", ""), marker.get("result", "")[:120])
+
+        # Cleaned up, because 4 MB of padding is not something to leave behind.
+        if os.path.isfile(rotated):
+            os.remove(rotated)
+        open(LOG_PATH, "w", encoding="utf-8").close()
+        print("    cleaned up the padding")
+    except OSError as problem:
+        check("the rotation could be tested", False, str(problem))
 
     print()
     print("=== the request is validated ===")
