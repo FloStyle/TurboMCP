@@ -687,6 +687,30 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
+
+	/**
+	 * Mark widgets as variables, or unmark them, in one call.
+	 *
+	 * Pass a Widget Blueprint, one or more widget names separated by commas, and the value the
+	 * flag should end up with. The flag is set through the editor's own
+	 * `FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable`, the same call the details
+	 * panel's "Is Variable" checkbox makes, so a widget marked here is indistinguishable from
+	 * one marked by hand.
+	 *
+	 * THIS TOOL HAS NO PREVIEW TWIN, deliberately rather than by omission. A preview exists to
+	 * show the shape of a change a caller cannot see without making it, and a boolean flag has
+	 * no shape. The result carries the OLD and the NEW value of the flag for every widget,
+	 * which is what a preview would have shown.
+	 *
+	 * Every name is resolved before anything is changed, so a misspelled widget in a list
+	 * leaves the tree untouched and the refusal lists the real names. A widget already in the
+	 * requested state is reported as not touched rather than counted as changed.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPWidgetsAsVars(
+		const FString& Asset,
+		const FString& Widgets,
+		bool bIsVariable);
 };
 
 /**

@@ -1873,3 +1873,72 @@ unbalanced type, an empty list, no asset, and a container of an unknown type.
 
 `E-WIDGETS-AS-VARS`, `P/E-OVERRIDE-ADD`, `E-FUNCTION-ADD` and `E-FUNCTION-REMOVE`, and
 `P/E-WIDGET-RETARGET`.
+
+---
+
+## 4c. E-WIDGETS-AS-VARS: an Edit with no Preview twin
+
+29 tools. 14 acceptance suites. `T-STRUCT-3` is exercised by
+`python Tools/test-widgets-as-vars.py`.
+
+### Edit only, on purpose, and the reporting earns it
+
+`03_TOOLS.md` says no Preview twin is needed *"because it is a flag change and the Edit reports old
+and new state"*. A preview exists to show the shape of a change a caller cannot see without making
+it, and **a boolean flag has no shape**. What replaces the preview is the reporting:
+
+```
+changed: 2 of 2 widget(s) in /Game/Tests/WBP_NodeTest.WBP_NodeTest
+set to: variable
+  TitleText: was not a variable, now variable
+  TitleText2: was not a variable, now variable
+; there is no Preview twin for this tool: it is a flag change, and this line reports the
+  old and the new state of every widget, which is what a preview would have shown.
+```
+
+The suite checks that the **old** value is really there, because that is the claim a preview-less
+tool has to earn.
+
+### The editor's own call
+
+The flag is set through `FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable`, the same call the
+details panel's "Is Variable" checkbox makes, so a widget marked here is indistinguishable from one
+marked by hand. The class is public and its methods are per-method exported, so it links without
+reaching into the engine.
+
+### Atomic, and proved rather than asserted
+
+Every name is resolved **before** anything is touched. A call naming one real widget and one
+misspelled one changes **nothing** and lists the real names:
+
+```
+unchanged: 1 widget name(s) do not exist in /Game/Tests/WBP_NodeTest.WBP_NodeTest, so nothing
+was changed: NoSuchWidget. The widgets are: RootCanvas, TitleText, TitleText2
+```
+
+The suite proves the atomicity rather than trusting it: it marks two widgets, then calls with one
+good and one bad name to **unmark**, then reads the flag back — and the good name is **still
+marked**, so the refused call did not half-apply. That is `P8`, and it is the check most likely to
+be skipped.
+
+### Idempotent, and honest about it
+
+A second call in the same direction opens with `unchanged:` and says `already in that state: 2`
+rather than counting them as changes. A caller that asked for ten and got three needs to know
+**which** three.
+
+### The read-back is through a different tool
+
+The tool reports what it changed; `R-BP-LOAD` prints a widget as `variable` from the asset's own
+flag. After a save:
+
+```
+widget tree: 3 widget(s), depth-first from the root
+  RootCanvas  [CanvasPanel]  visibility=SelfHitTestInvisible
+  TitleText  [TextBlock]  variable
+  TitleText2  [TextBlock]  variable
+```
+
+### Still to come in phase 4
+
+`P/E-OVERRIDE-ADD`, `E-FUNCTION-ADD` and `E-FUNCTION-REMOVE`, and `P/E-WIDGET-RETARGET`.
