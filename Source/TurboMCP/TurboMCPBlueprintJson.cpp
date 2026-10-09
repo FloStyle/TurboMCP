@@ -16,6 +16,7 @@
 
 #include "TurboMCPBlueprintRead.h"
 #include "TurboMCPDescribe.h"
+#include "TurboMCPGraphText.h"
 
 namespace
 {
@@ -37,10 +38,13 @@ FString FTurboMCPBlueprintJson::WriteError(const FString& InMessage)
 	return Out;
 }
 
-FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint, int32 InDetailLevel,
-	int32 InBudgetChars, FString& OutError)
+FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
+	const FRequest& InRequest, FString& OutError)
 {
 	OutError.Empty();
+
+	const int32 InDetailLevel = InRequest.DetailLevel;
+	const int32 InBudgetChars = InRequest.BudgetChars;
 
 	if (InBlueprint == nullptr)
 	{
@@ -48,30 +52,58 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint, int32 InDet
 		return FString();
 	}
 
-	// Only `manifest` is written. Refusing the others by name is deliberate: a partial
-	// document would be read as a complete one.
-	// `manifest` and `signatures` are written. `bodies` and `full` are refused BY NAME:
-	// a partial document would be read as a complete one.
-	if (InDetailLevel != 0 && InDetailLevel != 1)
+	// `manifest`, `signatures` and `bodies` are written. `full` is refused BY NAME: a
+	// partial document would be read as a complete one.
+	if (InDetailLevel < 0 || InDetailLevel > 2)
 	{
 		OutError = FString::Printf(
-			TEXT("format 'json' is implemented for detail 'manifest' and 'signatures' ")
-			TEXT("only, and '%s' was asked for. The text format carries every level. This ")
-			TEXT("refuses rather than returning a partial document that a caller would ")
-			TEXT("read as a full answer."),
-			InDetailLevel == 2 ? TEXT("bodies")
-				: InDetailLevel == 3 ? TEXT("full") : TEXT("that level"));
+			TEXT("format 'json' is implemented for detail 'manifest', 'signatures' and ")
+			TEXT("'bodies', and '%s' was asked for. The text format carries every level. ")
+			TEXT("This refuses rather than returning a partial document that a caller ")
+			TEXT("would read as a full answer."),
+			InDetailLevel == 3 ? TEXT("full") : TEXT("that level"));
 		return FString();
 	}
 
 	// The same accessors the text writer uses, so the two carry the same facts.
+	TArray<UEdGraph*> AllGraphs;
+	FTurboMCPBlueprintRead::CollectGraphs(InBlueprint, AllGraphs);
+
+	// THE FILTER IS APPLIED THE WAY THE TEXT WRITER APPLIES IT, so both cover the same
+	// graphs. A JSON that quietly included graphs the text omitted would look like the
+	// filter did not work.
 	TArray<UEdGraph*> Graphs;
-	FTurboMCPBlueprintRead::CollectGraphs(InBlueprint, Graphs);
+	for (UEdGraph* Graph : AllGraphs)
+	{
+		if (FTurboMCPBlueprintRead::GraphMatchesFilter(
+				Graph->GetName(), InRequest.GraphFilter))
+		{
+			Graphs.Add(Graph);
+		}
+	}
+
+	// A filter that matched nothing is a REFUSAL, not an empty document. The text writer
+	// refuses for the same reason: an empty answer looks like "this Blueprint has nothing"
+	// when the truth is "your filter is wrong".
+	if (InRequest.GraphFilter.Num() > 0 && Graphs.Num() == 0)
+	{
+		TArray<FString> Names;
+		for (const UEdGraph* Graph : AllGraphs)
+		{
+			Names.Add(Graph->GetName());
+		}
+		OutError = FString::Printf(
+			TEXT("no graph matches '%s'. The graphs are: %s"),
+			*FString::Join(InRequest.GraphFilter, TEXT(", ")),
+			Names.Num() > 0 ? *FString::Join(Names, TEXT(", ")) : TEXT("(none)"));
+		return FString();
+	}
 
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetBoolField(TEXT("ok"), true);
 	Root->SetStringField(TEXT("detail"),
-		InDetailLevel == 0 ? TEXT("manifest") : TEXT("signatures"));
+		InDetailLevel == 0 ? TEXT("manifest")
+			: InDetailLevel == 1 ? TEXT("signatures") : TEXT("bodies"));
 	Root->SetStringField(TEXT("asset"), InBlueprint->GetPathName());
 	Root->SetStringField(TEXT("class"), InBlueprint->GetClass()->GetName());
 
@@ -101,16 +133,49 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint, int32 InDet
 			? InBlueprint->SimpleConstructionScript->GetAllNodes().Num() : 0);
 	Root->SetObjectField(TEXT("counts"), Counts);
 
-	// Every graph, with its name. A graph body is added at `bodies` and above, where it
-	// is carried as the S-expression text rather than reshaped; see the header.
+	// Every graph, with its name. At `bodies` and above each also carries its body, as the
+	// S-EXPRESSION TEXT rather than reshaped into objects.
+	//
+	// This is where the "bodies stay strings" decision pays off. `04_FORMATS.md` section 2
+	// defines one graph text format, and turning it into JSON objects here would create a
+	// second node model for the same nodes: two shapes that could disagree, which is the
+	// drift the format rules exist to prevent. A caller parses the graph text with the one
+	// parser it already has.
+	const bool bWantsBodies = InDetailLevel >= 2;
+
+	// The same writer `R-GRAPH-LOAD` uses, so a body cannot differ between the two tools.
+	const FTurboMCPGraphText GraphWriter;
+	TArray<FString> BodyNotes;
+
 	TArray<TSharedPtr<FJsonValue>> GraphsJson;
 	for (int32 Index = 0; Index < Graphs.Num(); ++Index)
 	{
 		TSharedRef<FJsonObject> Graph = MakeShared<FJsonObject>();
 		Graph->SetStringField(TEXT("name"), Graphs[Index]->GetName());
+
+		if (bWantsBodies)
+		{
+			Graph->SetStringField(TEXT("body"),
+				GraphWriter.Render(Graphs[Index], FTurboMCPGraphText::EDetail::Bodies,
+					InBlueprint->GetPathName(), BodyNotes));
+		}
+
 		GraphsJson.Add(MakeShared<FJsonValueObject>(Graph));
 	}
 	Root->SetArrayField(TEXT("graphs"), GraphsJson);
+
+	// Anything the graph writer could not print is carried as a list rather than dropped.
+	// The text writer inlines these as `; error:` comments; a JSON caller gets them as
+	// values it can test, and their PRESENCE is the signal that a body is incomplete.
+	if (BodyNotes.Num() > 0)
+	{
+		TArray<TSharedPtr<FJsonValue>> NotesJson;
+		for (const FString& Note : BodyNotes)
+		{
+			NotesJson.Add(MakeShared<FJsonValueString>(Note));
+		}
+		Root->SetArrayField(TEXT("body_notes"), NotesJson);
+	}
 
 	// A cap is stated with the number left, in both renderings, as `04_FORMATS.md`
 	// section 1 requires. The text prints "(N more)"; the JSON carries the number so a
