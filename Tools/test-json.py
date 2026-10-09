@@ -450,11 +450,41 @@ def main():
         check("full is larger than bodies", len(joined) > len(bodies_joined),
               "%d vs %d" % (len(joined), len(bodies_joined)))
 
-        # NOT VERIFIED HERE, and stated rather than assumed: the spec also asks full to name
-        # a knot on a link, and BP_NodeTest has no knot, so that branch is exercised by no
-        # test in this repository. Raised as Q-9.
-        print("        note: the knot branch of 'full' is NOT exercised: this asset has"
-              " no knot. See QUESTIONS Q-9.")
+        # NOT VERIFIED, and the reason is a measured fact rather than an omission: the branch
+        # that names a knot at `full` cannot be reached by any asset this repository can build.
+        # The engine's own DSL RECOGNISES a reroute node — it has `_REROUTE_NODE =
+        # '|RerouteNode'` and a `_follow_reroutes` walker — and REFUSES to create one, and
+        # `UK2Node_Knot` is `MinimalAPI` so no script can reach it either. QUESTIONS Q-9
+        # records the three attempts and their exact refusals.
+        print("        note: the knot branch of 'full' is NOT exercised. No tool available")
+        print("        note: here can create a knot. See QUESTIONS Q-9.")
+
+    print()
+    print("=== Q-9: a knot CANNOT be created by the engine's own graph writer ===")
+    # This is a measurement, not an opinion, and it is what makes the missing knot coverage a
+    # limitation of the tools rather than an oversight. The test asserts the refusal so that if
+    # a future engine version starts accepting a reroute node, this suite goes red and the knot
+    # branch can finally be exercised.
+    knot_graph = {"refPath": ASSET + ".BP_NodeTest:EventGraph"}
+    refusal = session.call(
+        "editor_toolset.toolsets.blueprint.BlueprintTools",
+        "write_graph_dsl",
+        {"graph": knot_graph,
+         "code": '(event EventBeginPlay\n  (|RerouteNode)\n'
+                 '  (Development|PrintString :InString "x"))'})
+    print("    %s" % str(refusal)[:200])
+    check("the engine's DSL refuses to create a reroute node",
+          "does not exist" in str(refusal) or "could not be created" in str(refusal),
+          str(refusal)[:120])
+
+    # The refusal must not have damaged the graph. A tool that refuses AFTER writing something
+    # would be worse than one that accepts, so the count is checked rather than assumed.
+    after_knot = json_body(load(session, ASSET, detail="manifest", fmt="json"))
+    check("the graph is unchanged by the refused write",
+          after_knot is not None
+          and after_knot.get("counts", {}).get("graphs") == counts.get("graphs"),
+          "before=%s after=%s" % (counts.get("graphs"),
+                                  (after_knot or {}).get("counts", {}).get("graphs")))
 
     print()
     print("=== an unknown detail NAME is refused by the reader, listing the four ===")

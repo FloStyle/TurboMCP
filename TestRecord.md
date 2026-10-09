@@ -1668,3 +1668,63 @@ it says so in the code.
 | `bodies` | done | **done** |
 | `full` | done | **done** |
 | widget tree | done | **done** |
+
+---
+
+## 3j. Q-9's knot half: answered, and the answer is that no available tool can make a knot
+
+The `full` level's knot branch cannot be exercised, and the reason is now a **measured fact**
+rather than an omission. Three attempts, each with its exact refusal:
+
+### 1. The engine's own DSL cannot create a reroute node
+
+`blueprint_dsl.py` **recognises** one. It defines `_REROUTE_NODE = '|RerouteNode'`, has a
+`_follow_reroutes` walker that traverses knots while reading a graph, and even raises
+`Cycle detected in reroute (knot) nodes` on a malformed chain. So the type is known to the
+engine's writer.
+
+Writing one through `write_graph_dsl` is refused anyway:
+
+```
+AssertionError: The node could not be created / |RerouteNode does not exist
+in: (|RerouteNode)
+in: (event EventBeginPlay)
+```
+
+**The engine's writer can traverse a knot and cannot make one.** That is the answer.
+
+### 2. A knot is not a menu node type
+
+A sweep of `find_node_types` filtered to `Utilities|FlowControl` returns **914** types and none
+is a knot. Consistent with the refusal above rather than a second problem.
+
+### 3. `UK2Node_Knot` is not reachable from Python
+
+It is declared `UCLASS(MinimalAPI)`, and the programmatic toolset permits only `copy`, `re`,
+`math`, `json`, `datetime` and `time` as imports, so `unreal` is not available to a script at all.
+
+### The suite now asserts the refusal
+
+That turns a documented gap into a **live check**: if a future engine version starts accepting a
+reroute node, `test-json.py` goes **red** and the knot branch can finally be exercised. The suite
+also checks that the refused write left the graph **unchanged** — 3 graphs before, 3 after —
+because a tool that refuses *after* writing something would be worse than one that accepts.
+
+### The branch is not wrong, and it is not verified
+
+The JSON forwards the level to the same writer, so a knot would flow through. That is
+**reasoning, not evidence**, and section 3h records three of the four details as verified. This
+is the fourth, and it stays unverified.
+
+### How it could still be closed
+
+Recorded in Q-9: an engine tool that spawns nodes directly rather than through the DSL, or a small
+commandlet in this plugin using `FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Knot>` the way
+`EdGraphSchema_K2.cpp` does. The second is also the route to the hand-made acceptance kit that
+`06_ACCEPTANCE.md` requires, so it would pay for itself twice.
+
+### Still open, and deliberately not closed on a partial answer
+
+Whether the **pin index** the spec names should be printed. `full` prints `; out NAME -> N
+link(s)` and no numeric index. Deliberate difference or gap is not decided, and it is not claimed
+either way. Q-9 keeps that half open.

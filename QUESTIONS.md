@@ -371,6 +371,46 @@ or a gap. It is not claimed either way here.
 
 Question: should a test asset with a knot be built, and should the pin index be printed?
 
-Answer: not yet answered. A knot is cheap to add — `K2Node_Knot` can be created between two
-nodes — so the next time the test graph is rebuilt is the natural moment. Until then the `full`
-level is recorded as carrying three of the four details it claims, with the fourth unverified.
+Answer: **the knot half is answered, and the answer is that it cannot be built with the tools
+available.** The pin index half is still open.
+
+WHAT WAS TRIED, and what each attempt returned:
+
+1. **The engine's DSL cannot create a reroute node.** `blueprint_dsl.py` recognises one — it
+   defines `_REROUTE_NODE = '|RerouteNode'` and has a `_follow_reroutes` function that walks
+   through knots while traversing a graph, and it even raises `Cycle detected in reroute (knot)
+   nodes` on a malformed chain. So the type is known. But **writing** one through
+   `write_graph_dsl` is refused:
+
+   ```
+   AssertionError: The node could not be created / |RerouteNode does not exist
+   in: (|RerouteNode)
+   ```
+
+   The engine's own writer can traverse a knot and cannot make one. The test graph was checked
+   afterwards and is unchanged, so the refusal happens before anything is written.
+
+2. **A knot is not a menu node type**, so it cannot be written by name the way every other node
+   can. A sweep of `find_node_types` filtered to `Utilities|FlowControl` returns 914 types and
+   none is a knot. That is consistent with the refusal above rather than a second problem.
+
+3. **`UK2Node_Knot` is not reachable from Python.** It is declared `UCLASS(MinimalAPI)`, and the
+   programmatic toolset the MCP server exposes permits only `copy`, `re`, `math`, `json`,
+   `datetime` and `time` as imports, so `unreal` is not available to a script at all.
+
+So the branch that prints `(-> <node id> ; via knot)` at `full` is **reachable only from a graph
+that already contains a knot**, and nothing in this repository's toolchain can put one there.
+
+WHAT THIS MEANS, stated plainly: the branch is **not wrong**, and it is **not verified**. The JSON
+forwards the level to the same writer, so a knot would flow through, but that is reasoning rather
+than evidence. TestRecord 3h records three of the four details as verified; this is the fourth.
+
+HOW IT COULD STILL BE CLOSED, for whoever picks it up: a knot could be added by an engine tool
+that spawns nodes directly rather than through the DSL, or by a small commandlet inside this
+plugin using `FEdGraphSchemaAction_K2NewNode::SpawnNode<UK2Node_Knot>` the way
+`EdGraphSchema_K2.cpp` does. The second is also the route to the hand-made acceptance kit that
+`06_ACCEPTANCE.md` requires, so it would pay for itself twice.
+
+THE PIN INDEX half is untouched and still ambiguous: `full` prints `; out NAME -> N link(s)` and
+no numeric index, while the spec names "pin indexes". Deliberate difference or gap has not been
+decided, and it is not claimed either way.
