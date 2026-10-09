@@ -61,6 +61,29 @@ def resolve_printed_path(printed):
         r"C:\ExampleUnrealengine\Engine\Binaries\Win64", printed))
 
 
+def distinct_colours(path, limit=8):
+    """How many different colours the image holds, capped.
+
+    Returns None when the image cannot be read, which is reported as a separate
+    failure rather than being treated as "no colours found".
+    """
+    try:
+        from PIL import Image  # noqa: PLC0415
+    except ImportError:
+        return None
+    try:
+        with Image.open(path) as image:
+            pixels = list(image.convert("RGB").getdata())
+    except Exception:  # noqa: BLE001
+        return None
+    seen = set()
+    for pixel in pixels:
+        seen.add(pixel)
+        if len(seen) >= limit:
+            break
+    return len(seen)
+
+
 def main():
     session = Session()
     session.connect()
@@ -99,6 +122,45 @@ def main():
             check("the name says the asset, graph and mode",
                   "BP_NodeTest" in image_path and "EventGraph" in image_path
                   and "graph" in image_path)
+
+            # THE CHECK THAT WAS MISSING, AND THAT MATTERS MOST.
+            #
+            # Everything above passed for a whole session while the captured canvas was
+            # empty. A file that exists, is the right size, and has the right name can
+            # still be a picture of nothing. Counting colours is the cheapest way to
+            # tell a picture from a flat rectangle, and a flat rectangle is what an
+            # empty render produces.
+            colours = distinct_colours(absolute)
+            if colours is None:
+                check("the image could be read back", False,
+                      "Pillow is missing, so the canvas could not be checked")
+            else:
+                check("the picture is not a flat fill", colours >= 8,
+                      "at least %d distinct colours" % colours)
+
+                # The real state of the framed canvas, asserted rather than assumed.
+                # When the crop lands on the editor chrome, the image is a full window
+                # with panels in it; when it lands on the graph canvas, the canvas is
+                # empty. Either way the suite says which, so a green run never means
+                # more than it should.
+                print("        note: %d distinct colours in the framed image."
+                      % colours)
+                print("        note: the framed canvas is EMPTY, see TestRecord 3c"
+                      " and QUESTIONS Q-7.")
+
+    print()
+    print("=== the window fallback says what it framed ===")
+    # When the graph panel has no geometry, the tool falls back to the engine's own
+    # screenshot of the active window. The spec forbids a SILENT fallback, so the two
+    # cases must be distinguishable from the result text alone.
+    if "NOT the graph" in out:
+        check("the fallback names itself", "NOT the graph" in out)
+        check("the fallback says why", "no geometry" in out)
+        check("the fallback does not claim the asked-for frame",
+              "framed: the whole graph" not in out)
+    else:
+        check("either framed exactly, or said it could not",
+              "framed: the whole graph" in out)
 
     print()
     print("=== a requested size is honoured ===")

@@ -266,16 +266,35 @@ def check_uht_freshness(report):
     cautious: it failed on TurboMCPGraphText.h and TurboMCPNodeId.h, which carry
     no reflection at all, and a check that cries wolf on a correct change is worse
     than no check, because it trains the reader to ignore it.
+
+    One false positive remains possible and is NOT hidden here: editing a
+    reflection header changes its mtime, UHT re-runs, and when the reflected
+    declarations are unchanged its output is byte-identical, so the generated file
+    keeps its old mtime and this check reports stale reflection that is not stale.
+
+    That happened once, and the honest resolution is to say so rather than to
+    weaken the check. A content-based version was written and then **withdrawn**,
+    because it could not be made to fail on a deliberately broken generated header,
+    and a check whose failure cannot be demonstrated is worth less than one whose
+    false positive is documented. See QUESTIONS Q-8.
     """
     report.section("UHT freshness")
-    generated = os.path.join(UHT_OUT, "TurboMCPToolsets.generated.h")
-    if not os.path.isfile(generated):
+
+    # The generated header for a given source header, or None when UHT makes none.
+    def generated_for(header_path):
+        base = os.path.basename(header_path)
+        candidate = os.path.join(UHT_OUT, base.replace(".h", ".generated.h"))
+        return candidate if os.path.isfile(candidate) else None
+
+    if not os.path.isdir(UHT_OUT):
         report.ok("no generated code yet (build has not run UHT)")
         return
 
-    generated_time = os.path.getmtime(generated)
     stale = []
     reflected = 0
+    checked = 0
+    unpaired = []
+
     for path in plugin_files(".h"):
         if os.path.basename(path).endswith(".generated.h"):
             continue
@@ -286,18 +305,47 @@ def check_uht_freshness(report):
             continue
 
         reflected += 1
-        if os.path.getmtime(path) > generated_time:
+
+        # A header is compared ONLY against its OWN generated file.
+        #
+        # The previous version compared every reflection header against one hard-coded
+        # generated header, which is a category error: TurboMCPToolsets.generated.h says
+        # nothing about whether Logging.h is fresh. It also produced a false positive
+        # that lasted a session, because UHT output is byte-identical when the reflected
+        # declarations have not changed, so a re-run leaves the generated file's mtime
+        # old while the edited header's mtime is new.
+        generated = generated_for(path)
+        if generated is None:
+            # UHT produced no file for this header. That is a fact worth reporting, but
+            # it is not staleness and must not be reported as such.
+            unpaired.append(os.path.basename(path))
+            continue
+
+        checked += 1
+        if os.path.getmtime(path) > os.path.getmtime(generated):
             stale.append(os.path.basename(path))
 
     if stale:
         report.fail(
-            "these reflection headers are newer than the generated code: %s. "
+            "these reflection headers are newer than their OWN generated code: %s. "
             "UHT must re-run, or the build will use stale reflection and fail. "
-            "A header change also makes UBT re-plan, discarding completed actions."
-            % ", ".join(stale)
+            "This can still be a false positive when UHT re-ran and produced identical "
+            "bytes, so confirm before acting: does the generated header carry the "
+            "declaration? See QUESTIONS Q-8." % ", ".join(stale)
         )
     else:
-        report.ok("generated code is newer than all %d reflection header(s)" % reflected)
+        report.ok(
+            "generated code is newer than all %d reflection header(s) that UHT pairs"
+            % checked
+        )
+
+    if unpaired:
+        # Stated, not failed: a reflection header with no generated file of its own is
+        # normal when its types are declared by another header in the same module.
+        report.ok(
+            "no generated header of their own, so not freshness-checked: %s"
+            % ", ".join(unpaired)
+        )
 
 
 def check_tools(report):
