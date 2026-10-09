@@ -32,3 +32,7 @@ desktop.ini
 # Python bytecode from the Tools scripts
 __pycache__/
 *.pyc
+
+# Commit-message files are a workflow artefact, not part of the plugin.
+.commit-msg*.txt
+.agent/
