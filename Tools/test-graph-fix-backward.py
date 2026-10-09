@@ -91,6 +91,36 @@ def report_finding_count(text, kind):
     return len(re.findall(r"\b%s\b" % re.escape(kind), text))
 
 
+def rebuild_kit_and_reconnect(timeout=180):
+    """
+    Rebuilds the kit fixture and returns a connected Session, or None.
+
+    WHY THE SUITE MUST DO THIS, AND IT LEARNED IT THE HARD WAY. The positive cases MUTATE `TA01_HandLaid`:
+    `R1` moves a node out of a backward wire and `R3` moves a node off the origin, and those shapes are gone
+    once the pass succeeds. So the SECOND run of this suite found `backward-exec 0` and `stray 0` and
+    reported EIGHT FAILURES - on a tool that had worked perfectly the first time.
+
+    That is the same defect the override suite was recorded with: A SUITE THAT OWNS A SHARED RESOURCE MUST
+    RESTORE IT ON THE WAY IN AS WELL AS THE WAY OUT. Removing the damage at the end would not be enough
+    either, because a run killed part-way leaves the same mess behind. Rebuilding FIRST makes the suite
+    re-runnable from any state, which is the property that matters.
+
+    `Tools/make-kit-assets.ps1` is the commandlet that builds the kit, and a `-run=` commandlet EXITS THE
+    EDITOR when it finishes, so the editor is started again afterwards and the caller gets a fresh Session.
+    """
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    rebuild = subprocess.run(
+        ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "make-kit-assets.ps1")],
+        capture_output=True, text=True, cwd=repo)
+    ok = rebuild.returncode == 0 and "PASS" in (rebuild.stdout or "")
+    print("    kit rebuild: %s" % ((rebuild.stdout or rebuild.stderr).strip().splitlines() or ["no output"])[0])
+    check("the kit fixture was regenerated, so this suite is re-runnable", ok,
+          (rebuild.stdout or rebuild.stderr)[-300:])
+    if not ok:
+        return None
+    return ensure_editor([])
+
+
 def ensure_editor(session_holder):
     """Starts the editor and returns a connected Session, or None with the reason printed."""
     start = subprocess.call(
@@ -244,50 +274,165 @@ def main():
 
     # ---------------------------------------------------------------------------------------------
     print()
-    print("=== THE POSITIVE CASES: SKIPPED, WITH THE REASON RECORDED ===")
+    print("=== THE POSITIVE CASES ON TA-4, WHICH NOW EXISTS ===")
     #
-    # EVERY SKIP BELOW NAMES THE SHAPE THAT IS MISSING. These are the checks that would prove the
-    # capability REPAIRS anything; without the fixture they cannot run, and a check that passed here
-    # would be evidence of nothing.
-    missing = ("TA-4 does not exist, and no committed probe graph carries this shape. "
-               "SaneProbe is deliberately clean, KnotProbe is two calls and three knots, and "
-               "LayoutProbe has a crossing, two nested boxes and a messy run - but no stacked "
-               "backward exec pair, no getter under its consumer and no lone node at the origin.")
+    # `TA-4` IS THE `Stacked` GRAPH INSIDE `/Game/Tests/Kit/TA01_HandLaid`, and it is THE fixture this
+    # capability's acceptance row names. The kit commandlet places each defect DELIBERATELY and MEASURES IT
+    # BACK, failing its own build if the defect is absent, so the fixture cannot silently lose the shape a
+    # check depends on. Measured on it: 7 nodes and the report's own findings are backward-exec 1,
+    # backward-data 1, overlap 1, stray 1.
+    #
+    # THE EDIT MUTATES THIS GRAPH, AND `R1` AND `R3` REMOVE THE VERY SHAPES THE CHECKS BELOW ASSERT ON. So
+    # the fixture is REBUILT IMMEDIATELY BEFORE IT IS USED, which is what makes this suite re-runnable: the
+    # first version passed once and then reported EIGHT FAILURES on every later run, on a tool that had
+    # worked perfectly. A suite that owns a shared resource must restore it ON THE WAY IN as well as on the
+    # way out - removing the damage at the end is not enough, because a run killed part-way leaves the same
+    # mess behind. See `rebuild_kit_and_reconnect`.
+    KIT_ASSET = "TA01_HandLaid"
+    KIT_GRAPH = "Stacked"
 
-    skip("check 4: the two stacked exec nodes share a row afterwards",
-         "needs a stacked backward exec pair. " + missing)
-    skip("check 5: the target is to the RIGHT of the source",
-         "needs a stacked backward exec pair. " + missing)
+    session = rebuild_kit_and_reconnect()
+    if session is None:
+        print("RESULT: FAIL (the kit fixture could not be rebuilt, so the positive cases cannot run)")
+        return 1
+
+    def kit_report():
+        return session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport",
+                            {"asset": KIT_ASSET, "graphName": KIT_GRAPH})
+
+    before = kit_report()
+    print(before[:600])
+    print()
+
+    # THE FIXTURE IS CHECKED BEFORE THE PASS IS JUDGED, because a check on a defect that is not there
+    # proves nothing. This is the same rule the kit commandlet applies to itself.
+    before_backward_exec = report_finding_count(before, "backward-exec")
+    before_stray = report_finding_count(before, "stray")
+    check("TA-4 really carries a backward exec wire before the pass",
+          before_backward_exec > 0, "backward-exec occurrences: %d" % before_backward_exec)
+    check("TA-4 really carries a stray node at the origin before the pass",
+          before_stray > 0, "stray occurrences: %d" % before_stray)
+
+    kit_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphFixBackward",
+                               {"asset": KIT_ASSET, "graphName": KIT_GRAPH, "bForce": False})
+    print(kit_preview)
+    print()
+    check("the preview on TA-4 says the wiring WOULD be shorter",
+          "shorter" in kit_preview, kit_preview[:200])
+
+    # THE MOVES ARE PARSED OUT OF THE PREVIEW, EVERY TIME. The frame is
+    #   R1  a9722a K2Node_CallFunction (400,300) -> (680,0)  <why>
+    moves = re.findall(
+        r"(R\d)\s+(\w{6})\s+\w+\s+\((-?\d+),(-?\d+)\)\s*->\s*\((-?\d+),(-?\d+)\)", kit_preview)
+    print("    moves the preview plans: %d" % len(moves))
+    for rule, key, x0, y0, x1, y1 in moves:
+        print("      %s %s (%s,%s) -> (%s,%s)" % (rule, key, x0, y0, x1, y1))
+
+    r1_moves = [m for m in moves if m[0] == "R1"]
+    r3_moves = [m for m in moves if m[0] == "R3"]
+    check("R1 has a move to make, so the backward wire is really repaired",
+          len(r1_moves) > 0, "R1 moves: %d" % len(r1_moves))
+    check("R3 has a move to make, so the stray is really moved",
+          len(r3_moves) > 0, "R3 moves: %d" % len(r3_moves))
+
+    # CHECK 5: THE TARGET IS TO THE RIGHT OF THE SOURCE. That is the rule's whole point, and it is
+    # asserted on the PLANNED position rather than on a sentence about it.
+    if r1_moves:
+        _, key, x0, y0, x1, y1 = r1_moves[0]
+        check("check 5: R1 moves the node to the RIGHT",
+              int(x1) > int(x0), "%s: x %s -> %s" % (key, x0, x1))
+    else:
+        check("check 5: R1 moves the node to the RIGHT", False, "no R1 move to check")
+
+    # CHECK 17: THE STRAY'S NEAREST LINK IS WITHIN 1200 UNITS AFTERWARDS. The preview states the distance
+    # BEFORE the move, so the same sentence gives both numbers and the improvement is checkable rather than
+    # asserted. 1200 is `StrayLinkDistance` from the spec.
+    if r3_moves:
+        distance = re.search(r"(\d+(?:\.\d+)?)\s*unit", kit_preview)
+        stated = float(distance.group(1)) if distance else -1.0
+        check("check 17: the stray WAS further than the 1200-unit rule",
+              stated > 1200.0, "stated distance: %s" % stated)
+    else:
+        check("check 17: the stray WAS further than the 1200-unit rule", False, "no R3 move to check")
+
+    edited = session.call(EDIT_TOOLSET, "EditTurboMCPGraphFixBackward",
+                          {"asset": KIT_ASSET, "graphName": KIT_GRAPH, "bForce": False})
+    print(edited)
+    print()
+    check("the edit on TA-4 reports that it changed the graph",
+          edited.startswith("changed:"), edited[:120])
+
+    after = kit_report()
+    print(after[:600])
+    print()
+    after_backward_exec = report_finding_count(after, "backward-exec")
+    after_stray = report_finding_count(after, "stray")
+
+    # CHECK 7 AND 17, READ THROUGH A DIFFERENT TOOL. `L-LAYOUT-REPORT` is the independent witness: the pass
+    # is asked to repair, and the REPORTER is asked whether it did. A pass reporting its own success is not
+    # evidence, which is why these go through the report rather than through the edit's sentence.
+    check("check 7: L-LAYOUT-REPORT no longer reports backward-exec",
+          after_backward_exec == 0, "backward-exec before %d, after %d"
+          % (before_backward_exec, after_backward_exec))
+    check("check 17: L-LAYOUT-REPORT no longer reports a stray node",
+          after_stray == 0, "stray before %d, after %d" % (before_stray, after_stray))
+
+    # THE DATA WIRE IS LEFT ALONE, AND THE PASS SAYS SO WITH BOTH ENDS NAMED. A pass that moved it would be
+    # guessing, and one that said nothing would look as though it had handled it.
+    check("the backward DATA wire is reported as left alone, with both ends named",
+          "left alone" in kit_preview and "backward DATA" in kit_preview, kit_preview[:400])
+    before_data = report_finding_count(before, "backward-data")
+    after_data = report_finding_count(after, "backward-data")
+    check("the DATA wire is still there afterwards, because no rule covers it",
+          after_data >= before_data, "backward-data before %d, after %d" % (before_data, after_data))
+
+    # IDEMPOTENT ON ITS OWN OUTPUT: the shapes it repairs are gone, so a second pass has nothing to do. This
+    # is the `already tidy` case reached from a graph that genuinely needed work, which is stronger than
+    # reaching it from a graph that never did.
+    second = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphFixBackward",
+                          {"asset": KIT_ASSET, "graphName": KIT_GRAPH, "bForce": False})
+    second_moves = re.findall(
+        r"(R\d)\s+(\w{6})\s+\w+\s+\((-?\d+),(-?\d+)\)\s*->\s*\((-?\d+),(-?\d+)\)", second)
+    check("a second pass finds NOTHING left to move",
+          len(second_moves) == 0, "still planned: %s" % second_moves)
+
+    print()
+    print("=== STILL SKIPPED, WITH THE SHAPE THAT IS MISSING NAMED ===")
+    #
+    # A SKIP IS NOT A PASS, AND THESE FOUR HAVE NO FIXTURE THAT CAN RUN THEM. Each one names the shape it
+    # needs, so the next person does not have to rediscover it.
+    #
+    # WHAT TA-4 DID SETTLE AND THESE DO NOT: it carries a stacked backward exec pair (checks 4, 5, 7), a
+    # lone node linked 3038 units away (check 17), and a backward DATA wire no rule covers. It carries NO
+    # getter at all, so R2 has no positive evidence, and it has no comment box, no pure chain and no shape
+    # whose repair would measure LONGER.
     skip("check 6: a backward getter ends on its consumer's row, to its left",
-         "needs a getter placed under the node that reads it. " + missing)
-    skip("check 7: L-LAYOUT-REPORT no longer reports backward-exec for that wire",
-         "needs a backward exec wire to repair before it can be repaired. " + missing)
+         "needs a getter placed under the node that reads it. TA-4 reports `R2 backward getters: 0 found`, "
+         "so R1 and R3 have live evidence and R2 has NONE.")
     skip("check 8: L-LAYOUT-REPORT no longer reports getter-place for the moved getters",
-         "needs a getter under its consumer. " + missing)
+         "needs a getter under its consumer, for the same reason as check 6.")
     skip("check 11: when the measure would be worse, nothing is written",
-         "needs a graph whose planned repair LENGTHENS the wiring. No committed graph has a shape this "
-         "pass would move and get worse: the clean graph produces no moves at all, so the roll-back "
-         "branch is reached only through the already-correct short circuit, which is a different path.")
+         "needs a graph whose planned repair LENGTHENS the wiring. TA-4's repair measures SHORTER, so the "
+         "roll-back branch is not reached: the clean graph short-circuits before it and TA-4 keeps its pass.")
     skip("check 12: Force says WORSE in capitals",
          "needs a graph whose pass would be worse, for the same reason as check 11.")
     skip("check 15: a node whose fix would leave its box is refused, naming the box",
-         "needs a comment box around a node whose correct position is outside it. LayoutProbe has nested "
-         "boxes but no node that any of R1, R2 or R3 would move, so the box guard is never reached.")
+         "needs a comment box around a node the pass would move outside it. TA-4 has `boxes: 0 seen`, so "
+         "the box guard is never reached.")
     skip("check 16: the pure chain moves as a unit, and MaxPureChain's cap is exercised by nine",
-         "needs a pure chain four long AND a chain of nine. " + missing)
-    skip("check 17: the stray's nearest neighbour is within 1200 units afterwards",
-         "needs a lone node at the origin linked more than 1200 units away. " + missing)
+         "needs a pure chain four long AND a chain of nine. TA-4 reports `R1 pure nodes carried with their "
+         "consumer: 0`.")
 
     print()
-    print("  RECORDED: %d of the spec's 18 checks were SKIPPED, not passed, and each says why." % len(skips))
-    print("  A skip is not a pass. The four negative cases above ran for real; the positive cases did not.")
+    print("  RECORDED: %d check(s) SKIPPED, not passed, each naming the shape no fixture carries." % len(skips))
+    print("  A skip is not a pass. The negative cases ran for real, and so did the TA-4 cases.")
 
     print()
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1
-    print("RESULT: PASS (%d negative check(s) run, %d positive check(s) SKIPPED for a missing fixture)"
-          % (11, len(skips)))
+    print("RESULT: PASS (%d check(s) run including %d against TA-4, %d SKIPPED for a shape no fixture carries)"
+          % (25, 14, len(skips)))
     return 0
 
 
