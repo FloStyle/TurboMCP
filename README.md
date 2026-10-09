@@ -25,10 +25,25 @@ Nothing here ships in a game build.
 ```
 TurboMCP.uplugin        plugin descriptor
 Source/TurboMCP/        the plugin's single editor module
+  Public/               headers, including the tool declarations
+  (root)                the .cpp files, one job each
+Content/Traps/          engine tool traps, as data (see D-07)
 Spec/                   the specification, read in the order above
-TestProject/            an empty project used to build and test the plugin
-Tools/                  local helper scripts, not part of the plugin
+TestProject/            the project used to build and test the plugin
+Tools/                  helper scripts, not part of the plugin
 ```
+
+## Documentation
+
+| File | What it is |
+|---|---|
+| `Spec/` | The specification, written by the owner. The authority on what to build |
+| `PLAN.md` | What is done, what is next, and the build-order reasoning |
+| `DOCS.md` | Every choice made while building, and why |
+| `TestRecord.md` | What has actually been tested, with the measured numbers |
+| `QUESTIONS.md` | Open questions for the owner |
+| `Tools/README.md` | What each helper script does and how to run it |
+| `.agent/ENVIRONMENT.md` | The machine: engine, toolchain, and every trap hit while setting it up |
 
 ## Requirements
 
@@ -38,25 +53,33 @@ Tools/                  local helper scripts, not part of the plugin
 - Visual Studio 2022 with the C++ game development workload.
 - Windows.
 
-## Building
+`Tools/setup-engine.ps1` does the whole engine setup, including the two steps
+that are easy to miss and cost a build attempt each: the plugin must be mounted
+where UnrealBuildTool looks, and `ShaderCompileWorker` must be built or a
+rendering editor exits during shader compilation.
 
-The plugin is compiled as part of a project, so build through `TestProject`.
+## Building and running
 
-1. Build the editor once:
+```powershell
+Tools\setup-engine.ps1          # once
+python Tools\check-plugin.py    # before any build; a hard gate
+Tools\start-editor.ps1 -StopFirst
+```
 
-   ```
-   C:\ExampleUnrealengine\Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development ^
-       -Project="<repo>\TestProject\TurboMCPTest.uproject" -WaitMutex
-   ```
+`Tools/start-editor.ps1` builds nothing; it starts the editor and then **proves**
+it reached a working state, including that all four toolsets answer over MCP.
+It refuses to start a second editor.
 
-2. Open `TestProject/TurboMCPTest.uproject` in that engine.
+To rebuild after a code change:
 
-3. Check the tools registered. The plugin's own status tool answers, or the
-   window shows the same text:
+```powershell
+Tools\start-editor.ps1 -Stop    # releases the plugin DLL lock
+& cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"$PWD\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
+Tools\start-editor.ps1
+```
 
-   - Editor window: **Window > TurboMCP**
-   - Command line: `python Tools/check-mcp-server.py`
-   - MCP server: `http://localhost:8000/mcp`
+That whole loop takes about 24 seconds. The plugin's own panel is under
+**Window > TurboMCP**, and it calls the same code path the MCP does (`P9`).
 
 `Tools/check-mcp-server.py` speaks JSON-RPC to the running server, lists what it
 serves and reports whether TurboMCP's toolsets are visible. It exits non-zero
