@@ -1237,3 +1237,81 @@ version in the table above and the only one that shows anything.
 The general lesson, and it is the same one as section 3c-bis: a test that exercises the
 whole suite to prove one check can fail is testing the harness, not the check. Break the
 thing the check reads, then call the check.
+
+---
+
+## 3d. Phase 2 closed: R-BP-LOAD's widget tree section
+
+The last substantive item of phase 2 is done. `R-BP-LOAD` at `signatures` and above now
+carries a compact widget tree for a Widget Blueprint: one line per widget with its name,
+class, whether the designer marked it a variable, its visibility when that is not the
+default, its slot padding when that is not zero, any bound events, and the properties whose
+value on a placed copy differs from the class default. Run its checks with
+`python Tools/test-widget-tree.py`.
+
+The JSON output format is still not done, and is still refused by name rather than faked.
+
+### The bindings come from the Blueprint's own list, not from reflection
+
+The first version walked the generated class's multicast delegate properties and matched
+them to a widget by name prefix. That is a **reconstruction** of a fact the asset already
+stores: `UWidgetBlueprint::Bindings` is an array of `FDelegateEditorBinding`, each naming
+`ObjectName` (the widget), `PropertyName` (the delegate) and `FunctionName` (the function
+graph bound to it). It was replaced with the direct read.
+
+That is the fourth time in this project that reading the engine's own data beat deriving it,
+after the node type ID, the `FText` source string and the overridable set.
+
+### Three defects found while building it
+
+**1. Object properties always differ.** The comparison reported `Slot` on every widget,
+because `Slot` is a reference to that placed copy's own slot and so can never equal the
+class default. Object properties are now skipped, which is what the spec means by the
+instance-editable *values* a placed copy stores.
+
+**2. `FText` cannot be compared as exported text.** Editing both sides with `ExportText` and
+comparing the strings reported a difference on every `TextBlock` in the tree. `ExportText`
+writes a text literal as `NSLOCTEXT(namespace, key, value)`, and the two sides can carry
+different keys for the same visible string. `FText::EqualTo` compares what the user sees.
+
+**3. One side of a difference is not a difference.** After fix 2, a real difference printed
+as `Text="Text Block"`, which reads like no difference at all. Both sides are printed now,
+so it reads `Text="Text Block" (class default "")`.
+
+### The asset was lying, not the reader
+
+The first run reported one widget where the script had added three, and the reader looked
+wrong. It was not: the engine's own `GetWidgets` reported one widget too, so the **asset**
+had lost its children somewhere between being scaffolded and being saved, and the loss was
+silent. The tree now holds three because they were added and saved again, and the
+scaffolding script asserts the count after every mutating step so the loss cannot happen
+unnoticed a second time.
+
+### A check that could never pass, found by reading rather than by running
+
+`make-test-widget.py` verified the tree with `'"widgetCount":3' in tree`. `Session.call`
+**decodes** the result, so `tree` is a dict and that substring can never be in it. The check
+would have been red on every run, for a reason with nothing to do with widgets, and reading
+the line is what found it.
+
+### Both new checks were shown to fail
+
+`test-widget-tree.py` passes on the real asset, and it was then run with
+`EXPECTED_WIDGETS = 99` to confirm it goes red:
+
+```
+exit code avec EXPECTED_WIDGETS=99 : 1
+FAIL it reports the widget count  expected 99
+RESULT: FAIL (1) -> it reports the widget count
+```
+
+### A real defect in the plugin manifest, reported by the build
+
+UHT warned that `TurboMCP` does not list `SlateInspectorToolset` as a dependency while its
+module depends on that module. `L-CAPTURE` added that module dependency for its fallback and
+the manifest was not updated with it. The plugin now declares it, and the warning is gone.
+
+### What is still not done in phase 2
+
+The **JSON output format** for `R-BP-LOAD`. It is refused by name, which is honest, and it
+stays on the list rather than being quietly dropped. It is the last item of the phase.

@@ -96,7 +96,7 @@ def main():
         "widgetClass": {"refPath": "/Script/UMG.CanvasPanel"},
         "widgetDisplayName": "RootCanvas",
     })
-    print("  canvas: %s" % root[:180])
+    print("  canvas: %s" % str(root)[:180])
     root_ref = None
     try:
         root_ref = json.loads(root)["returnValue"]["widget"]["refPath"]
@@ -116,25 +116,53 @@ def main():
             "widgetDisplayName": name,
             "parentWidget": {"refPath": root_ref},
         })
-        print("  %s: %s" % (name, added[:140]))
+        print("  %s: %s" % (name, str(added)[:140]))
         check("added %s" % name, name in added)
 
     print()
     print("=== 4. the tree, as the engine sees it ===")
     tree = session.call(UMG, "GetWidgets", {"widgetBlueprint": {"refPath": OBJECT}})
-    print(tree[:900])
-    check("the tree holds three widgets", '"widgetCount":3' in tree)
+    print(str(tree)[:900])
+
+    # `Session.call` DECODES the result, so this is a dict and not JSON text. The first
+    # version of this check looked for '"widgetCount":3' in it, which could never be true
+    # for a dict, so it would have failed on every run and told us nothing about the
+    # widgets. A substring search on a decoded value is a check that cannot pass; the
+    # count is read from the field instead.
+    if isinstance(tree, dict):
+        actual_count = tree.get("info", {}).get("widgetCount")
+        names = [w["widget"]["refPath"].rsplit(".", 1)[-1]
+                 for w in tree.get("widgets", [])]
+        print("  count=%s names=%s" % (actual_count, names))
+        check("the tree holds three widgets", actual_count == 3,
+              "count=%s" % actual_count)
+        check("the root is the canvas", names[:1] == ["RootCanvas"], str(names[:1]))
+    else:
+        check("the tree could be read as a structure", False, "got %s" % type(tree))
 
     print()
-    print("=== 5. make the text a variable, so a sample value has a target ===")
-    # A widget property is what L-WIDGET-PREVIEW's sample values address. Turning the
-    # text block into a variable gives the preview something real to set.
+    print("=== 5. make a text widget a variable, so a sample value has a target ===")
+    # A widget property is what L-WIDGET-PREVIEW's sample values address, and what the
+    # widget tree section reports as 'variable'. Both need one to exist.
     toggled = session.call(UMG, "ToggleWidgetAsVariable", {
         "widgetBlueprint": {"refPath": OBJECT},
         "widget": {"refPath": OBJECT + ":WidgetTree.TitleText"},
         "bIsVariable": True,
     })
-    print("  %s" % toggled[:200])
+    print("  %s" % str(toggled)[:200])
+
+    print()
+    print("=== 6. the tree must still hold three widgets after the toggle ===")
+    # The children were lost once before, between being added and being saved, and the
+    # loss was silent. This asserts the count again after every mutating step so a
+    # regression here cannot pass unnoticed.
+    tree_again = session.call(UMG, "GetWidgets", {"widgetBlueprint": {"refPath": OBJECT}})
+    if isinstance(tree_again, dict):
+        count_again = tree_again.get("info", {}).get("widgetCount")
+        check("still three widgets after the toggle", count_again == 3,
+              "count=%s" % count_again)
+    else:
+        check("the tree could be read again", False, "got %s" % type(tree_again))
 
     print()
     print("=== 6. save, and prove it from the asset's own flag ===")

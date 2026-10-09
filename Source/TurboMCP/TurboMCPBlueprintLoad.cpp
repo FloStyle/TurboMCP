@@ -7,9 +7,11 @@
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
 
+#include "BaseWidgetBlueprint.h"
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPBlueprintRead.h"
+#include "TurboMCPWidgetTree.h"
 
 /**
  * R-BP-LOAD: read whole Blueprints.
@@ -156,6 +158,33 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 
 		Result += FString::Printf(TEXT("\n\n===== %s ====="), *Resolved.ObjectPath);
 		Result += TEXT("\n") + Read.Text;
+
+		// The widget tree, at `signatures` and above, per `03_TOOLS.md`.
+		//
+		// A Widget Blueprint is a Blueprint, so this section is additive rather than a
+		// separate tool: an agent reading a UI Blueprint wants the tree in the same answer
+		// as its graphs, because the tree is what the graphs act on.
+		if (DetailLevel == FTurboMCPBlueprintRead::EDetail::Signatures
+			|| DetailLevel == FTurboMCPBlueprintRead::EDetail::Bodies
+			|| DetailLevel == FTurboMCPBlueprintRead::EDetail::Full)
+		{
+			if (UBaseWidgetBlueprint* WidgetBlueprint = Cast<UBaseWidgetBlueprint>(Blueprint))
+			{
+				FString TreeError;
+				const FString TreeText =
+					FTurboMCPWidgetTree::Render(WidgetBlueprint, TreeError);
+
+				if (!TreeError.IsEmpty())
+				{
+					Result += FString::Printf(
+						TEXT("\n\n  widget tree: could not be read (%s)"), *TreeError);
+				}
+				else if (!TreeText.IsEmpty())
+				{
+					Result += TEXT("\n\n") + TreeText;
+				}
+			}
+		}
 
 		if (Read.bReduced)
 		{
