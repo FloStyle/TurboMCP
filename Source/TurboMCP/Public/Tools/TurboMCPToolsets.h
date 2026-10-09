@@ -342,6 +342,27 @@ public:
 	static FString ReadTurboMCPOverrides(
 		const FString& Asset,
 		const FString& Include);
+
+	/**
+	 * Read the comment boxes of a Blueprint's graphs as data.
+	 *
+	 * Pass one Blueprint in any path form, and optionally one graph name. Empty
+	 * means every graph, which is usually what a caller wants before choosing one.
+	 *
+	 * Each box gives its node ID, its title, its colour, its rectangle in graph
+	 * coordinates, its parent box when it is nested, and the IDs of the nodes inside
+	 * it. A graph with no boxes says so rather than being left out, and a box that
+	 * covers no node says that too, because both are facts rather than gaps.
+	 *
+	 * Membership and nesting are computed from the rectangles, because a comment box
+	 * does not store either. A node that falls inside more than one box is reported
+	 * with a warning and counted, rather than being assigned to one of them, because
+	 * moving it changes the membership of every box that covers it.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPCommentList(
+		const FString& Asset,
+		const FString& GraphName);
 };
 
 /**

@@ -533,6 +533,68 @@ command.
 
 ---
 
+## 2k. Phase 2: R-COMMENT-LIST
+
+Built: `ReadTurboMCPCommentList`. 20 tools. Run its checks with
+`python Tools/test-comments.py`.
+
+Verified against `/Engine/EditorBlueprintResources/StandardMacros`, which is
+**Epic's own content** and carries 21 comment boxes, 17 of them covering nodes.
+
+| Test | Result | Evidence |
+|---|---|---|
+| Boxes are found | **PASS** | `counts: 21 box(es), 0 nested, 17 with nodes` |
+| Every box has a title | **PASS** | `title: Execute Loop Body`, and a long warning title |
+| Every box has a colour | **PASS** | `colour: #FFFFFF` |
+| Every box has a rectangle | **PASS** | `rect: x -240, y -320, 1152 wide, 256 tall` |
+| Every box says whether it is nested | **PASS** | `parent box: none, this is a top level box` |
+| Node membership is computed | **PASS** | 5 node IDs listed under the `DoOnce` box |
+| A box covering nothing says so | **PASS** | `(this box covers no node)` |
+| A graph with no boxes says so | **PASS** | `graph CompareFloat: no comment boxes` |
+| One graph at a time works | **PASS** | `graphName: DoOnce` gives `1 comment box(es)` and no `ForEachLoop` |
+| A missing graph lists the real names | **PASS** | names the Blueprint's graphs |
+| A non-Blueprint is refused | **PASS** | `is not a Blueprint, so it has no graphs to list comment boxes from` |
+| A Blueprint with no boxes is an honest zero | **PASS** | `counts: 0 box(es)` plus a sentence saying the graphs were looked at |
+
+### What is NOT verified, and is therefore not claimed
+
+**Nesting and overlap are unverified against real content.** Every engine asset tried
+reports `0 nested` and `0 node(s) inside more than one box`, so no nested or
+overlapping box was available to render. Both code paths are written and **neither
+has been seen to produce output**.
+
+The arithmetic behind them is checked against a **model** in
+`Tools/test-comments.py`: containment, edge and corner coverage, innermost-parent
+selection, identical rectangles not parenting each other, and a node counted once per
+covering box. That proves the arithmetic is right. It does **not** prove the C++
+renders a nested box correctly, because there was no nested box to render.
+
+This is the R-REFS lesson applied deliberately: a check that cannot fail the way
+reality fails proves nothing, so the gap is named rather than papered over with a
+test that passes for the wrong reason. `QUESTIONS.md` records it.
+
+### Why membership is computed rather than read
+
+A comment box stores its title, colour and rectangle. It does **not** store which
+nodes it covers or which box contains it: the editor computes both from the
+rectangles while drawing. So this tool computes them the same way rather than
+inventing a rule.
+
+Two decisions came out of that:
+
+- **A node is covered by its position, not its rectangle.** An unlaid-out node
+  reports a zero-size rectangle, so testing the rectangle would silently miss nodes
+  the editor counts as inside. Position is also what a reader means by "inside".
+- **A box is not a node inside a box.** Nesting is reported on the `parent box` line
+  instead, so a nested box is described once rather than also appearing in its
+  parent's node list.
+
+A node inside two boxes is reported with a warning and counted, rather than being
+assigned to one, because moving it changes the membership of every box that covers
+it.
+
+---
+
 ## 2d. Phase 1: type find and dirty list
 
 | Test | Result | Evidence |
