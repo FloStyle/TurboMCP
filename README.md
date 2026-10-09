@@ -153,3 +153,51 @@ tool is written in, not by care. See
 
 Registration happens after every module loading phase completes, not in
 `StartupModule`, because the registry does not exist earlier.
+
+## License
+
+**Mozilla Public License 2.0** (`MPL-2.0`). The full text is in [`LICENSE`](LICENSE).
+
+**You can use this plugin in a commercial game and ship that game.** MPL-2.0 is a file-level copyleft
+license, not a viral one: it does not reach into your game's own code, your Blueprints, or your assets. Your
+game stays yours, under whatever license you choose.
+
+**If you modify the plugin's own files, those files stay under MPL-2.0.** That is the one condition, and it
+is deliberately narrow:
+
+| You do this | What MPL-2.0 asks of you |
+|---|---|
+| Ship a commercial game that uses the plugin | Nothing. No fee, no notice in your game. |
+| Modify a plugin `.cpp` or `.h` and distribute it | Publish **that file's** source under MPL-2.0. |
+| Add a **new** file that includes plugin code | That new file is also covered, because it contains Covered Software. |
+| Add a **new**, separate file that only calls the plugin | Yours. Keep it closed if you want. |
+| Combine the plugin with your own code | Allowed, under terms of your choice, as long as the plugin files keep their license. |
+
+Two things MPL-2.0 asks for in practice:
+
+- **Keep the notices.** The MPL-2.0 header at the top of each source file is a license notice. Section 3.4
+  says you may not remove or alter it.
+- **Tell recipients where to get the license.** If you distribute modified plugin source, point them at
+  `https://mozilla.org/MPL/2.0/`, or include the `LICENSE` file. Section 3.1.
+
+Distributing the plugin as a compiled `.dll` inside a shipped game is **Executable Form**, and MPL-2.0
+allows it under any terms as long as the source stays available as above (Section 3.2). In practice the
+plugin is editor-only and does not ship in a game build at all.
+
+Every source file carries this header, and `Tools/apply-license-header.ps1` reapplies it:
+
+```cpp
+// Copyright FloStyle. All Rights Reserved.
+// SPDX-License-Identifier: MPL-2.0
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+```
+
+The `SPDX-License-Identifier` line is the machine-readable form, so tooling can identify the license
+without parsing prose. Run `pwsh -File Tools\apply-license-header.ps1 -Check` in a build to fail when a new
+file is missing the notice; the script is idempotent, so running it twice changes nothing.
+
+This is a plain description of what the license says, not legal advice. For a commercial release, read
+[`LICENSE`](LICENSE) itself.

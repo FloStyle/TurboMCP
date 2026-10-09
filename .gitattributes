@@ -24,6 +24,20 @@
 *.json     text eol=lf
 .gitignore text eol=lf
 
+# THE LICENSE AND THE FILE NOTICE ARE PINNED TOO, AND THAT IS NOT COSMETIC.
+#
+# `LICENSE` is the official MPL-2.0 text, kept byte-for-byte as mozilla.org publishes it. Without an entry
+# here the machine's `core.autocrlf=true` rewrites it to CRLF on checkout, so the file a reader opens is
+# NOT the file that was verified. A license whose exact text a line-ending conversion has altered is a
+# small problem but a real one. Measured: git warned "LF will be replaced by CRLF the next time Git
+# touches it" for both of these until they were listed.
+#
+# The notice is pinned for the same reason: it is copied verbatim into every source file by
+# `Tools/apply-license-header.ps1`, so a converted notice would make that script's output depend on the
+# checkout rather than on the file it reads.
+LICENSE                  text eol=lf
+Tools/license-header.txt text eol=lf
+
 # Build scripts the engine ships from elsewhere may need CRLF on Windows.
 *.bat      text eol=crlf
 
