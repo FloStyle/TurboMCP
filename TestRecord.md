@@ -1527,3 +1527,75 @@ with its real size rather than cut.
 
 The "bodies stay strings" decision also holds: the JSON body of `EventGraph` is the same
 S-expression text the text rendering carries, verified by equality rather than by eye.
+
+---
+
+## 3h. R-BP-LOAD's JSON is complete: all four levels
+
+`full` was the last one. Every detail level now has a JSON rendering, and every level's bodies
+are required to be **identical character for character** between the two renderings.
+
+### Full is forwarded, not reimplemented
+
+The graph text writer already knows what `full` adds: each node's C++ class, its linked
+outputs, the long-form node IDs, and a knot named on a link instead of being followed through
+it. `TurboMCPBlueprintJson` picks the detail level and hands it over. Reimplementing any of that
+would be the second node model the "bodies stay strings" decision exists to prevent.
+
+Measured for the three graphs of `BP_NodeTest`: `full` is **2872** characters against `bodies`'
+**1993**.
+
+### Three of the four details the spec names are verified
+
+| Detail | Result | Evidence |
+|---|---|---|
+| node type IDs, long form | **PASS** | `full` carries the full path; `bodies` does not |
+| each node's C++ class | **PASS** | 8 × `; class ` at full, 0 at bodies |
+| linked outputs | **PASS** | 7 × `; out ` at full, 0 at bodies |
+| a knot named on a link | **NOT VERIFIED** | `BP_NodeTest` has no knot, so the branch never runs |
+
+### The fourth is not verified, and is not claimed
+
+`TurboMCPGraphText.cpp` has the branch:
+
+```cpp
+if (IsKnot(Target) && bFull)
+{
+    return FString::Printf(TEXT("(-> %s ; via knot)"), *TurboMCPNodeId::MakeForNode(Target));
+}
+```
+
+**No test in this repository reaches it.** The JSON forwards the level to that same writer, so a
+knot would flow through correctly — but *would* is not evidence, and this project has already
+shipped four checks that passed while the thing they claimed to verify was broken.
+
+The suite says so in its own output rather than leaving it implicit:
+
+```
+note: the knot branch of 'full' is NOT exercised: this asset has no knot. See QUESTIONS Q-9.
+```
+
+The **pin indexes** the spec also names are not visible in the output either: `full` prints
+`; out NAME -> N link(s)` but no numeric index. That may be a deliberate difference from the
+spec's wording or a gap, and it is not claimed either way. Both are recorded as Q-9.
+
+### Two defects found
+
+1. The document's `detail` field announced **`bodies`** for a `full` request, because the
+   ternary fell through to bodies for everything above `signatures`.
+2. A **stale section of the suite** still asserted that `full` was refused, which stopped being
+   true the moment it was implemented. It also replaced a real check with a printed promise to
+   check, which is worse than the stale assertion. A misspelled detail **name** is checked
+   instead, because that is what a caller can actually reach through the tool.
+
+### Where R-BP-LOAD now stands
+
+| Level | Text | JSON |
+|---|---|---|
+| `manifest` | done | **done** |
+| `signatures` | done | **done** |
+| `bodies` | done | **done** |
+| `full` | done | **done** |
+
+One item remains in this area: the **widget tree in JSON** at `signatures` and above, which the
+text rendering already carries.

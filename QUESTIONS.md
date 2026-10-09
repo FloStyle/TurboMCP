@@ -334,3 +334,43 @@ Two candidate explanations for the break test, neither confirmed:
 
 Answer: not yet answered. The timestamp check stands, and its failure message now tells the
 reader to confirm before acting.
+
+---
+
+## Q-9. Is the `full` level's knot handling exercised by any test?
+
+Status: **open. The branch exists and no test in this repository reaches it.**
+
+`Spec/03_TOOLS.md` says `full` adds "the editing details: node type IDs, knots on links, pin
+indexes". Three of those are now verified against a real Blueprint:
+
+| Detail | Verified | Evidence |
+|---|---|---|
+| node type IDs, long form | **yes** | `full` carries `/Game/Tests/BP_NodeTest.BP_NodeTest:EventGraph:` while `bodies` carries the short form |
+| each node's C++ class | **yes** | 8 occurrences of `; class ` in `full`, 0 in `bodies` |
+| linked outputs | **yes** | 7 occurrences of `; out ` in `full`, 0 in `bodies` |
+| **a knot named on a link** | **NO** | `BP_NodeTest` has no knot node, so the branch that prints `(-> ... ; via knot)` never runs |
+
+`TurboMCPGraphText.cpp` has the branch:
+
+```cpp
+if (IsKnot(Target) && bFull)
+{
+    return FString::Printf(TEXT("(-> %s ; via knot)"), *TurboMCPNodeId::MakeForNode(Target));
+}
+```
+
+and it is **unreached by every suite in `Tools/`**. The JSON writer forwards the level to that
+same writer, so a knot would flow through correctly — but "would" is not evidence, and this
+project has already shipped four checks that passed while the thing they claimed to verify was
+broken.
+
+The pin INDEXES named in the spec are also not visible in the output: `full` prints `; out NAME
+-> N link(s)` but no numeric index. That may be a deliberate difference from the spec's wording
+or a gap. It is not claimed either way here.
+
+Question: should a test asset with a knot be built, and should the pin index be printed?
+
+Answer: not yet answered. A knot is cheap to add — `K2Node_Knot` can be created between two
+nodes — so the next time the test graph is rebuilt is the natural moment. Until then the `full`
+level is recorded as carrying three of the four details it claims, with the fourth unverified.
