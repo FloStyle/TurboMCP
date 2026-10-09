@@ -74,10 +74,37 @@ Highest value per unit of risk, and no graph-writing machinery needed.
 | 3 | `R-TOOL-SCHEMA` | **DONE** - 6 checks pass, 297 chars against a 2000 budget |
 | 4 | `R-ASSET-SEARCH` | **DONE** - 5 checks pass |
 | 5 | `R-ASSET-DESCRIBE` | **DONE** - 3 checks pass, all path forms agree |
-| 6 | `R-TYPE-FIND` | next |
-| 7 | `R-DIRTY-LIST` | |
-| 8 | `E-COMPILE` | first write-class tool; one transaction and a roll back rule |
-| 9 | `E-SAVE` | uses the unsaved flag, per `D-33` |
+| 6 | `R-TYPE-FIND` | **DONE** - 5 checks pass |
+| 7 | `R-DIRTY-LIST` | **DONE** - verified against a really modified asset |
+| 8 | `E-COMPILE` | **DONE** - refuses kinds it cannot compile, reports from the compiler log |
+| 9 | `E-SAVE` | **DONE** - three modify-then-save cycles pass |
+
+**Phase 1 is complete: 13 tools, both suites pass.** 9 of the spec's 31
+capabilities are done.
+
+Two phase 1 parts still need the kit, and are recorded as gaps rather than
+claims: `E-COMPILE` on a broken Blueprint (the node ID tie-in), and `E-SAVE`'s
+refusal during play.
+
+### Step 3 - Phase 2, Blueprint reading (next)
+
+Eight capabilities, and the base for phases 6, 7 and 8:
+`R-BP-LOAD`, `R-GRAPH-LOAD` (both formats), `R-REFS`, `R-OVERRIDES`,
+`R-NODE-RESOLVE`, `R-NODE-FIND`, `R-DATATABLE`, `R-COMMENT-LIST`.
+
+Build order inside the phase, because later readers reuse the earlier ones:
+
+1. Node IDs (`04_FORMATS.md` section 3) with `R-NODE-RESOLVE` and
+   `R-NODE-FIND`. Proving the ID scheme before any body reader uses it means a
+   broken ID cannot look like a broken reader.
+2. `R-GRAPH-LOAD` at detail `manifest` and `signatures`, which needs no body
+   walking.
+3. The graph text writer shared by `R-GRAPH-LOAD` and `R-BP-LOAD`. This is the
+   hardest single piece.
+4. `R-BP-LOAD`'s relation layer, then its body levels.
+5. `R-REFS`, `R-OVERRIDES`, `R-DATATABLE`, `R-COMMENT-LIST`.
+
+A real Blueprint is needed to test any of it, so kit scaffolding comes first.
 
 ### The engine's toolsets are OFF by default
 
