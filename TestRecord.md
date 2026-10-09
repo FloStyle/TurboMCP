@@ -2345,3 +2345,76 @@ The log accumulates and is never rotated, so it carried lines from builds whose 
 incomplete, and the new strict check went red on work that was **already fixed**. The suite now
 starts from an empty log file — **truncated rather than deleted**, because it is the record of what
 happened and the suite merely starts its own.
+
+---
+
+## 5c. The panel checkbox, the summary, and rotation
+
+18 acceptance suites, all green. This closes the three items phase 5 had left.
+
+### The checkbox reads and writes the same settings object the tool does
+
+`03_TOOLS.md` asks for the log to be *"turned on by a checkbox in the panel"* with the choice
+persisting in editor settings. There is now **one writer** for that fact: the checkbox calls
+`FTurboMCPCallLog::SetEnabled`, which is the same call `E-CALL-LOG` makes, and the check state is
+read back from the same object. The panel and the tool **cannot disagree**.
+
+### The summary is read from the log, not from a counter beside it
+
+`T-PANEL-6` wants a line count and a token estimate shown. Those figures are **summed from the
+entries themselves**, so a number on screen is a number that was written. It also follows `P1` — it
+never shows nothing:
+
+| State | Shown |
+|---|---|
+| off | `off  \|  N entries held, nothing new is being recorded` |
+| on, empty | `on  \|  no calls recorded yet this session` |
+| on, with records | `on  \|  N records, M calls, C characters, ~T tokens (estimate)` |
+
+The text is green while recording and muted when not, so the state reads at a glance without parsing
+it — the same intent as the server dot above it.
+
+### Rotation, because the file grew without bound
+
+**Measured before this was added: 402 KB and 1229 lines from ONE round of testing**, because every
+tool call writes a line **and every read of the log is itself a tool call**. `P6` caps the in-memory
+list at 1000 entries; **the file had no cap at all.**
+
+### The rotation is tested by reaching it, not by reading the constant
+
+The suite fills the file past 4 MB, makes one call, and checks the outcome. Measured on the way:
+
+```
+filled the log to 4281098 bytes
+after:  TurboMCPCalls.jsonl     932 octets
+after:  TurboMCPCalls.jsonl.1  4281098 octets
+```
+
+and the marker line in the new file:
+
+```
+{"time":"...","phase":"rotate","source":"plumbing","toolset":"","tool":"",
+ "result":"the log reached 4194304 bytes and was rotated to .../TurboMCPCalls.jsonl.1", ...}
+```
+
+**A limit nobody has crossed is a limit nobody knows works.**
+
+### One rotation, not a numbered series
+
+A second file is what makes a crash readable: the current file holds what just happened and the
+previous one holds what led up to it. A directory of a hundred rotated files is a directory nobody
+reads. The older file is **replaced** rather than kept, so the on-disk cost has a hard ceiling of
+about twice the limit.
+
+The marker carries **the same field set as every other line**, so a parser needs no special case for
+it — and a reader of the older file can see **why** it ends where it does rather than wondering
+whether the log lost data.
+
+### What is NOT verified, recorded rather than claimed
+
+**The checkbox's text and layout have not been seen.** This plugin has no Slate inspection tool, so
+there is no way to read the panel's widget tree from here, and no automated check covers it.
+
+What IS proven: it compiles, it is constructed in the panel's Slate tree, and the state and the
+toggle go through the same code paths the tools do — the tool side is covered by
+`test-call-log.py`. **A human looking at the window is still the only proof of the layout.**

@@ -562,3 +562,32 @@ The suite previously *tolerated* a line with a name in one slot and a hash in th
 state cannot pass again.
 
 ---
+
+---
+
+## Q-11. The panel's checkbox has never been SEEN
+
+**Status: open, and deliberately recorded rather than worked around.**
+
+`03_TOOLS.md` requires the call log to be turned on by a checkbox in the panel. The checkbox exists,
+compiles, and is constructed in the panel's Slate tree; the state it shows and the toggle it fires go
+through the same code paths the tools use, and the tool side is covered by `test-call-log.py`.
+
+**What is missing is any check on the WIDGET ITSELF.** This plugin has no Slate inspection tool, so
+the panel's widget tree cannot be read from here, and `test-agent-help` does not reach it either. So
+these are unverified:
+
+- that the checkbox's label reads as intended and is not clipped;
+- that the summary line fits and is readable at the default panel width;
+- that ticking the box actually repaints the summary, rather than showing a stale figure until the
+  next tool call refreshes it. **This one is a real risk**: `GetCallLogSummary` is a bound attribute,
+  which Slate re-evaluates on paint, but paint is not guaranteed to happen just because the setting
+  changed, and no code calls `Invalidate` after a tick.
+
+**The route that would close it:** a Slate inspection capability over the panel's widget tree, which
+is the same gap the engine's own `SlateInspectorToolset` fills for the editor's other windows. Adding
+one is a candidate for phase 6, where the layout tools live.
+
+Until then, a human opening the Window menu and looking at the TurboMCP tab is the only proof.
+
+---

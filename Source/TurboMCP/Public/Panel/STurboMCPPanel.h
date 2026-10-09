@@ -34,6 +34,29 @@ private:
 	/** Re-reads the status and repaints. */
 	FReply OnRefreshClicked();
 
+	/**
+	 * The call log's check state.
+	 *
+	 * Read from the SAME settings object the tool writes, so the box and `E-CALL-LOG` cannot
+	 * disagree. `03_TOOLS.md` requires the log to be "turned on by a checkbox in the panel" and
+	 * the choice to persist in editor settings.
+	 */
+	ECheckBoxState GetCallLogCheckState() const;
+
+	/** Turns the log on or off through the shared log object, which persists the choice. */
+	void OnCallLogCheckStateChanged(ECheckBoxState InState);
+
+	/**
+	 * One line about the log: whether it is on, how many entries are held, and the token estimate.
+	 *
+	 * `06_ACCEPTANCE.md` T-PANEL-6 wants a line count and a token estimate shown. Reading it from
+	 * the log rather than from a counter kept here means the number cannot drift from the log.
+	 */
+	FText GetCallLogSummary() const;
+
+	/** Colour for the summary: the accent when recording, muted when not. */
+	FSlateColor GetCallLogSummaryColor() const;
+
 	/** Cached status text, refreshed on construct and on demand. */
 	FString CachedStatus;
 };

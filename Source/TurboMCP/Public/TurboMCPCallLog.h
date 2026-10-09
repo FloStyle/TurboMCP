@@ -135,4 +135,14 @@ private:
 
 	/** The cap, from `02_PRINCIPLES.md` `P6`: a list must not grow without bound. */
 	static constexpr int32 MaxEntries = 1000;
+
+	/**
+	 * The file size at which the log rotates, in bytes.
+	 *
+	 * 4 MB holds roughly ten thousand lines at the size measured in phase 5 — about 400 bytes a
+	 * line — which is many sessions of work. The exact figure is not the point: it is that a bound
+	 * EXISTS. The file previously had none and reached 402 KB in a single round of testing, because
+	 * every tool call writes a line and every READ of the log is itself a tool call.
+	 */
+	static constexpr int64 MaxFileBytes = 4 * 1024 * 1024;
 };
