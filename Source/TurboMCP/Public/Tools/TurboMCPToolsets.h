@@ -559,6 +559,27 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPEnumAdd(const FString& Path, const FString& Values);
+
+	/**
+	 * Work out what adding Blueprint variables would do, without adding them.
+	 *
+	 * Pass a Blueprint and a list of variables. Each item is `Name: Type` followed by
+	 * optional fields: `default=`, `category=`, `tooltip=`, `private=`, `readonly=`,
+	 * `instanceEditable=`, `exposeOnSpawn=`. Items are separated by commas at the top level,
+	 * so a type with a comma in it such as `Map<String, Int>` stays one item.
+	 *
+	 * Basic types are bool, int, int64, byte, real, float, double, name, string and text.
+	 * Struct names are Vector, Rotator, Transform, Vector2D, LinearColor and Color. For an
+	 * enum or a struct asset, pass its path. Containers are `Array<T>`, `Set<T>` and
+	 * `Map<K, V>`.
+	 *
+	 * A name that is not a usable identifier is refused, a duplicate is refused, an unknown
+	 * field is refused rather than ignored, and an unbalanced type is refused rather than
+	 * truncated. This and its Edit twin share one code path up to the write (`D-02`), and
+	 * this writes nothing.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
 };
 
 /**
@@ -644,6 +665,28 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPEnumAdd(const FString& Path, const FString& Values);
+
+	/**
+	 * Add Blueprint variables in bulk.
+	 *
+	 * The same inputs, parsed and validated the same way, as `P-VARS-ADD`, because the two
+	 * share one code path up to the write (`D-02`).
+	 *
+	 * EVERY NAME IS CHECKED BEFORE ANYTHING IS ADDED: a name that is already a variable, or
+	 * already on the parent class, refuses the whole call with `unchanged:`. A list that
+	 * added three of five and then refused would leave the Blueprint in a state the caller
+	 * did not ask for, which is what `P8` forbids.
+	 *
+	 * The variables are then added, their flags, category and tooltip set, and the Blueprint
+	 * compiled ONCE. The single compile is a requirement and not an optimisation: before it
+	 * the skeleton class does not carry the new members, so a read-back would report the
+	 * previous state.
+	 *
+	 * The result says how many were added AND how many were read back from the Blueprint,
+	 * because a tool reporting its own intention is not evidence that it succeeded.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
 };
 
 /**
