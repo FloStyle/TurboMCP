@@ -1394,3 +1394,76 @@ the only reason it surfaced at all.
 Every capability of phase 2 is implemented. The JSON format covers `manifest`; the three
 larger levels are refused by name and the refusal is honest about what to use instead. That
 is the state: **not complete, and not claimed to be.**
+
+---
+
+## 3f. R-BP-LOAD's JSON reaches signatures, and the budget becomes a refusal
+
+`signatures` is now written in JSON as well as text. `bodies` and `full` remain, refused by
+name with a parseable document that carries no partial content.
+
+### The budget decision, which the level forced
+
+The text writer steps a graph's detail down when the budget is passed, because a text
+document that stops early is still readable. **A JSON document that stops early is not**: it
+does not parse at all, so a truncated one is worse than useless, because the caller cannot
+even read why it failed.
+
+So the JSON is built in full, measured, and **refused** with a parseable error that names the
+real size, the budget, and what to ask for instead. Measured on `BP_NodeTest`:
+
+```
+{"ok": false,
+ "error": "the JSON document for detail 'signatures' is 1136 characters and the budget is
+           500, so it was refused rather than cut. A cut JSON document does not parse,
+           which is worse than no document. Ask for a lower detail level, or use the text
+           format, whose writer steps a graph's detail down to fit."}
+```
+
+The same call with a 100000 budget succeeds, which is what makes the refusal about the budget
+rather than about the level.
+
+### One collection, two renderings, enforced by refactoring
+
+A variable's flag list and a function's parameter list lived in an anonymous namespace inside
+the text writer, which was fine while the text writer was the only reader. Two spellings of
+one fact is the drift `04_FORMATS.md` warns about **even when both are right**, so they moved
+to a shared `TurboMCPDescribe` module and both writers call it. The event and function
+collection moved onto `FTurboMCPBlueprintRead` as a public method for the same reason.
+
+The refactor was verified **behaviour-neutral before any JSON was added**: the existing suites
+passed and the text output was read back unchanged. That order matters — a refactor and a
+feature landing together cannot be told apart when something breaks.
+
+### Four defects in my own test, all found by the refusal and comparison paths
+
+1. The first run reported that the refusal did not parse. **The refusal was valid JSON the
+   whole time.** `json.loads` was applied from the first brace to the end of the output, and
+   the tool appends its own footer after the document. `raw_decode` reads one document and
+   reports where it ended, which is right when the surrounding text belongs to the wrapper.
+2. The text extractor treated the header's trailing count as a name, so `events: 3`
+   contributed the name `"3"`.
+3. It then ended a section only at a line ending in a colon, so it ran through
+   `functions: 1` and the entire relation layer. **Indentation** is what delimits these
+   sections, and the extractor uses it now.
+4. A stale section of the suite still asserted that `signatures` was **refused**, which
+   stopped being true the moment it was implemented.
+
+Every one of those looked like the tool disagreeing with itself and was **the reader being
+wrong**. That is the same shape as 3c-ter: a test exercising the harness rather than the
+check.
+
+### The equivalence check was still shown to fail
+
+Fed a text naming a graph the JSON does not have, it reports exactly that graph as missing,
+and the section boundaries were checked directly on a synthetic document rather than through
+the whole suite.
+
+### Where the JSON stands
+
+| Level | State |
+|---|---|
+| `manifest` | **done** |
+| `signatures` | **done** |
+| `bodies` | refused by name, no partial document |
+| `full` | refused by name, no partial document |

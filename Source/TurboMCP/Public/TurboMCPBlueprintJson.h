@@ -41,10 +41,19 @@ public:
 	/**
 	 * Writes one Blueprint as a JSON object.
 	 *
-	 * Returns an empty string and fills OutError when the level is not implemented, so a
-	 * caller can tell "refused, and here is why" from "empty document".
+	 * Returns an empty string and fills OutError when the level is not implemented, or when
+	 * the document would not fit InBudgetChars, so a caller can tell "refused, and here is
+	 * why" from "empty document".
+	 *
+	 * THE BUDGET IS A REFUSAL AND NOT A TRUNCATION. The text writer steps a graph's detail
+	 * down when the budget is passed, because a text document that stops early is still
+	 * readable. A JSON document that stops early is NOT: it does not parse at all, so a
+	 * truncated one is worse than useless, because the caller cannot even find out what went
+	 * wrong. The document is therefore built in full, measured, and refused with a parseable
+	 * error naming what to ask for instead. Zero means no ceiling.
 	 */
-	static FString Write(const UBlueprint* InBlueprint, int32 InDetailLevel, FString& OutError);
+	static FString Write(const UBlueprint* InBlueprint, int32 InDetailLevel,
+		int32 InBudgetChars, FString& OutError);
 
 	/**
 	 * Writes a machine-readable error object.
