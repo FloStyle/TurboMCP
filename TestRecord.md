@@ -116,7 +116,59 @@ These correct `07_ENGINE_NOTES.md` and were found by experiment:
 
 ### Not yet verified in phase 1
 
-`E-COMPILE` and `E-SAVE` are not written yet.
+Nothing: all nine phase 1 items are written, and every part that can be tested
+without the kit passes. The two parts that cannot are named at the end of
+section 2e.
+
+---
+
+## 2e. Phase 1: compile and save
+
+| Test | Result | Evidence |
+|---|---|---|
+| `E-SAVE` saves a really changed asset | **PASS** | three consecutive modify-then-save cycles: `changed: saved 1 of 1`, dirty list 1 -> 0 every time |
+| `E-SAVE` with nothing to do | **PASS** | `unchanged: nothing to save, all 1 asset(s) already had no changes` |
+| `E-SAVE` reports from the unsaved flag, not the call | **PASS** | the result is decided by `UPackage::IsDirty()`, and the first version was caught lying by exactly this check |
+| `E-SAVE` retries once | implemented | a second `SaveLoadedAsset` runs when the flag is still set |
+| `E-COMPILE` refuses a kind that cannot compile | **PASS** | `is a UserDefinedEnum, which cannot be compiled. Only Blueprints and widgets compile.` |
+| `E-COMPILE` passes through an unresolved asset | **PASS** | the resolver's own refusal is printed |
+| A result opens with `unchanged` when nothing changed | **PASS** | both tools said `changed:` when nothing had happened; fixed, and both now say `unchanged` with the reason (`P4`) |
+
+### A second `D-33` trap, met from the other side
+
+The first `E-SAVE` used `FEditorFileUtils::PromptForCheckoutAndSave`. It **failed
+on every attempt in a headless editor** while the engine's own save succeeded on
+the same asset, because that call goes through source control checkout, which
+cannot complete with no source control provider. The asset was never written and
+the tool reported failure: honest, but useless.
+
+The fix is the save path the engine's own editor toolset uses,
+`UEditorAssetLibrary::SaveLoadedAsset`, which needed `EditorScriptingUtilities`
+in `Build.cs`. All three cycles then succeeded.
+
+Worth recording because `D-33` warns that a save call's own answer is not the
+truth. The same lesson applied the other way: a save call reporting *failure*
+proves nothing either, so the unsaved flag is the only thing either result may be
+built on.
+
+### Still to be tested once the kit exists
+
+- `E-COMPILE` on a **broken Blueprint** (`T-STRUCT-7`). The spec asks for each
+  error and warning "tied to the ID of the node that caused it". The tool prints
+  the compiler's own message, which names the node and the property, but it does
+  **not** yet print a `04_FORMATS.md` node ID, because building one needs a real
+  graph to test against. This is a known gap, not a claim.
+- `E-SAVE` refusal during play (`T-STRUCT-8`). The guard reads
+  `IsPlaySessionInProgress` and `IsSimulateInEditorInProgress`, but no play
+  session was started, so the refusal is implemented and unproven.
+
+### A better way to script the editor
+
+`editor_toolset.toolsets.programmatic.ProgrammaticToolset.execute_tool_script`
+runs a Python script against the toolset APIs **over MCP**, on the editor that is
+already running. That is a better route than the `PythonScriptCommandlet` used
+earlier, which needs its own editor start and cannot touch a live session. It is
+how the remaining kit scaffolding should be built.
 
 ---
 

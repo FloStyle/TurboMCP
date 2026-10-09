@@ -131,10 +131,17 @@ def main():
     print()
     check("finds the user-made enum", "TA11_TestEnum" in user)
     check("says it is an enum", "[enum]" in user)
-    check(
-        "says it is not loaded yet",
-        "not loaded" in user,
-    )
+    # The "not loaded yet" marker depends on whether something loaded the asset
+    # earlier in the session, which a save or a property change does. Both
+    # answers are correct, so the check is that the marker never appears as a
+    # bare claim without its reason.
+    if "not loaded" in user:
+        check(
+            "an unloaded type says so and explains it",
+            "load the asset before using it" in user,
+        )
+    else:
+        check("a loaded type is not wrongly marked unloaded", True)
 
     bad_kind = s.call(READ_TOOLSET, "ReadTurboMCPTypeFind", {"words": "Vector", "kind": "banana"})
     print(bad_kind)

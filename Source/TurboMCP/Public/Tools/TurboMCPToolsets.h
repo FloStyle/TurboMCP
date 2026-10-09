@@ -261,6 +261,46 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPEditQueue();
+
+	/**
+	 * Compile one or more Blueprints or widgets, with a real answer each.
+	 *
+	 * Pass assets separated by commas or pipes. Each asset gets its own line:
+	 * clean, clean with warnings, or its errors and warnings with the node that
+	 * caused each one. A line also says whether the asset still has unsaved
+	 * changes, so a successful compile is never mistaken for saved work.
+	 *
+	 * The answer comes from the compiler's own message log, not from a return
+	 * value, because the engine's compile tool can answer null for success and
+	 * for failure alike.
+	 *
+	 * Warnings raised by the compile pass are counted and named, never pasted,
+	 * because engine log text does not belong in a result (`P6`).
+	 *
+	 * An asset kind that cannot compile is refused with the reason (`P2`).
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPCompile(const FString& Assets);
+
+	/**
+	 * Save one or more assets without noise.
+	 *
+	 * Pass assets separated by commas or pipes, in any path form.
+	 *
+	 * Refuses while a play or simulate session runs, with that reason, because
+	 * saves made then failed or half worked (`D-34`).
+	 *
+	 * Saves one asset at a time and retries a failure once. Each asset is
+	 * reported from its unsaved flag after the save, never from what the save
+	 * call returned, because an engine save once reported an error when it had
+	 * worked and saved only some of the assets it was given (`D-33`).
+	 *
+	 * Each line states saved, had no changes, or failed with the reason. Engine
+	 * log text is counted and attributed to the asset that raised it, never
+	 * pasted (`P6`).
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPSave(const FString& Assets);
 };
 
 /**

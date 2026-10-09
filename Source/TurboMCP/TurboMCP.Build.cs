@@ -36,6 +36,11 @@ public class TurboMCP : ModuleRules
 				// read by ReadTurboMCPStatus.
 				"DeveloperSettings",
 				"EditorFramework",
+				// UEditorAssetLibrary::SaveLoadedAsset, the same save path the
+				// engine's own editor toolset uses. FEditorFileUtils tries to
+				// check out from source control and fails headless, which made
+				// E-SAVE report failure while nothing was written.
+				"EditorScriptingUtilities",
 				"EditorSubsystem",
 				"GraphEditor",
 				"Json",
