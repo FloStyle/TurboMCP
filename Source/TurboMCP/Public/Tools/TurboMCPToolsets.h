@@ -682,6 +682,28 @@ public:
 		const FString& Text,
 		const FString& Color,
 		const FString& Size);
+
+	/**
+	 * Work out which nodes are dead and would be removed, without removing them.
+	 *
+	 * A candidate is a DISCONNECTED GROUP that nothing reaches from any entry AND whose writes are
+	 * never read. Every group found is listed with the reason it would be KEPT, when it would be, so
+	 * a caller sees the decision rather than only its outcome.
+	 *
+	 * The spec names three rules and all three are enforced:
+	 *  - a group holding an event, a custom event or a function entry is NEVER removed, because a
+	 *    hook the user made on purpose looks exactly like one that nothing calls;
+	 *  - a group whose write is read by live code is kept;
+	 *  - the preview says for each group whether it REPEATS LIVE LOGIC, which is what a reader needs
+	 *    before agreeing to delete a copy of something.
+	 *
+	 * REACHABILITY IS FOLLOWED ACROSS EXEC AND DATA WIRES, deliberately generously. A pure node with
+	 * no exec wire reaching it can still be live if a live node reads its value, so judging liveness
+	 * on exec alone would delete nodes the Blueprint computes with. The cost is that this tool errs
+	 * toward KEEPING things, which is the only safe direction for a delete.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
 };
 
 /**
@@ -964,6 +986,25 @@ public:
 		const FString& Text,
 		const FString& Color,
 		const FString& Size);
+
+	/**
+	 * Remove the dead copies in a graph.
+	 *
+	 * The same inputs, found and judged the same way, as `P-GRAPH-DEAD`, because the two share one
+	 * code path up to the write.
+	 *
+	 * THE ENTRY RULE IS RE-CHECKED ON THE NODE ABOUT TO GO, not trusted from the plan, because a plan
+	 * is made and applied in two calls and the graph can change between them. It is the rule whose
+	 * failure destroys work.
+	 *
+	 * A node key that no longer resolves is REPORTED rather than silently skipped: quietly removing
+	 * eight of ten nodes would be a half-applied edit, which `P8` forbids.
+	 *
+	 * The result reports the node count before and after, so the change can be checked against the
+	 * graph rather than believed from a sentence.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
 
 	/**
 	 * Turn the call log on or off.

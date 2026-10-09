@@ -2495,3 +2495,75 @@ call asked for**, not what a different call would produce.
 
 `P/E-GRAPH-FIX-BACKWARD`, `P/E-GRAPH-DEAD`, `P/E-GRAPH-TIDY` with nested boxes, `P/E-GRAPH-KNOTS` and
 `P/E-LOCAL-VARS`.
+
+---
+
+## 6b. P/E-GRAPH-DEAD, and what its own removal path cannot prove
+
+44 tools. 20 acceptance suites, all green. `T-LAY-11` is exercised by
+`python Tools/test-graph-dead.py`.
+
+### Reachability is followed across EXEC AND DATA wires, deliberately generously
+
+A pure node with no exec wire reaching it is **still live** when a live node reads its value, which is
+how a Blueprint computes anything. Judging liveness on **exec alone** would call that node dead and
+delete it — **the failure that destroys a user's work**.
+
+The cost of the generous reading is that the tool **errs toward KEEPING things**, which is the only
+safe direction for a delete. The suite checks the graph's pure operator nodes are **not** reported
+dead, which is the evidence that data wires are followed:
+
+```
+11 node(s) in the graph, 0 unreachable group(s)
+```
+
+### "Whose writes are never read" is checked across the WHOLE Blueprint
+
+A group that writes a variable **another graph reads** is live, because removing it would change what
+that graph sees. Looking only inside the group would have deleted it.
+
+### The three KEEP rules are checked in `Plan`, so the Preview states the reason
+
+The edit cannot surprise a caller who had already agreed. An **entry re-check runs again on the node
+about to go**, because a plan is made and applied in two calls and the graph can change between them —
+and that is the rule whose failure destroys work.
+
+### The removal path is NOT verified, and that is recorded rather than hidden
+
+This plugin's tools **do not create graph nodes**; the engine's `write_graph_dsl` does, and it
+**refuses to build a disconnected group** — it needs a top-level `event` or `fn` form and wires every
+node into that form's exec chain. Both measured attempts failed:
+
+| Attempt | Result |
+|---|---|
+| `(Development\|PrintString "orphan probe")` | `Top-level form must start with "event" or "fn"` |
+| `(fn OrphanProbe (Development\|PrintString "orphan probe"))` | `The node could not be created / AddEvent\|OrphanProbe does not exist` |
+
+**So the test graph has no dead node, and no dead node could be made** — the same wall `Q-9` hit with
+reroute knots. `QUESTIONS.md` **Q-12** records what **is** verified and the route that would close it:
+an asset that **ships with a dead group**, built once and committed, the way the hand-made acceptance
+kit works.
+
+| Claim | Evidence |
+|---|---|
+| a live graph is reported as having nothing dead | parsed: `11 node(s), 0 unreachable group(s)` |
+| the walk follows data wires | the pure operator nodes have no exec chain of their own and none is called dead |
+| the preview changes nothing | node set compared **by identity** before and after |
+| a no-op edit says `unchanged:` | `unchanged: EventGraph has 0 unreachable group(s) and none is safe to remove` |
+| the request is validated | no asset, a non-Blueprint, and a missing graph each refused by name |
+
+**The generous rule is the point of the verified half.** A walk that over-reports would call live code
+dead, and a live graph answering "nothing" is the single most important result to get right.
+
+### A check must parse the value, not match a string beside it
+
+The suite first scraped node ids out of `R-BP-LOAD`, got **8** while the graph has **11**, and went red
+on a tool that was right. **That is the fifth time this project has had to learn the same lesson.**
+
+### Phase 6 progress
+
+| Capability | State |
+|---|---|
+| `P/E-COMMENT` | done |
+| `P/E-GRAPH-DEAD` | done, removal path unverified (Q-12) |
+| `P/E-GRAPH-FIX-BACKWARD`, `P/E-GRAPH-TIDY`, `P/E-GRAPH-KNOTS`, `P/E-LOCAL-VARS` | to do |

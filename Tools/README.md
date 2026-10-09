@@ -37,6 +37,7 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-widget-retarget.py` | a running editor | P/E-WIDGET-RETARGET, and that exactly one of two bindings survives |
 | `test-call-log.py` | a running editor | E/R/E-CALL-LOG, including the JSONL file on disk |
 | `test-comment-boxes.py` | a running editor | P/E-COMMENT, including that delete keeps the nodes |
+| `test-graph-dead.py` | a running editor | P/E-GRAPH-DEAD; the removal path is unverified, see Q-12 |
 | `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 
@@ -73,6 +74,7 @@ python Tools\test-function.py
 python Tools\test-widget-retarget.py
 python Tools\test-call-log.py
 python Tools\test-comment-boxes.py
+python Tools\test-graph-dead.py
 ```
 
 ## A leftover LiveCodingConsole blocks every build
