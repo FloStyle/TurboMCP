@@ -1184,3 +1184,56 @@ A check whose failure cannot be demonstrated is worth less than one whose false 
 written down. Raised as Q-8.
 
 The check is still red on this tree, and that is stated rather than worked around.
+
+---
+
+## 3c-ter. The reference picture that located Q-7, and three checks that can now fail
+
+`L-CAPTURE` gained a `debug-window` mode: it renders the **whole editor window** at the
+requested size with **no cropping**. It is what turned Q-7 from a guess into a
+measurement, and it is kept because re-deriving it costs more than the mode does.
+
+The uncropped 1600x900 picture shows the real graph canvas with the real nodes in it —
+`Print String`, `In String`, `Development Only` — clustered in the upper right of the
+canvas, which is where a view centred on x 980 y 208 at zoom 0.75 puts them.
+
+**So the render pipeline works.** The defect is not that nodes fail to draw. The nodes
+draw, and the crop cuts out the wrong rectangle: it lands on the left sidebar. Q-7b has
+the arithmetic, including the back-solved view centre that disagrees with the one read
+back, and the vertical origin mismatch that explains it.
+
+### The framed image was 195 colours and the window picture 1659
+
+That pair is the evidence, and it is now a check. Before this, every assertion in the
+suite was true of a picture of nothing: existence, exact size, a valid PNG header and the
+right file name.
+
+### Three checks were shown to fail, and one method was wrong twice
+
+The colour count is only worth having if it can go red, so it was broken on purpose:
+
+| What was done | Result |
+|---|---|
+| A real framed image | **195** distinct colours, `>= 8` passes |
+| The same file overwritten with a flat black fill | **1** colour, `>= 8` fails |
+| A missing file | `None`, and reported as *could not be read*, not as a flat image |
+| The uncropped window picture | **1659** colours, `>= 500` passes |
+
+**The first two attempts to break it proved nothing**, and both are worth recording
+because each one looked like a passing test:
+
+1. The image was flattened **while the editor was running**. The suite calls the tool,
+   which writes a fresh image, and then checks that image — so it checked a good picture
+   and passed. `exit code 0`, and it meant nothing.
+2. The same thing was then done **with the editor stopped**, so the tool could not
+   overwrite it. The suite does not reach its check at all in that state, because the
+   first RPC fails with `WinError 10061` and it exits on the connection. `exit code 1`,
+   from the wrong cause.
+
+The fix was to stop testing the suite and test **the check**: `distinct_colours` was
+called directly on a real image, on a flattened one, and on a missing path. That is the
+version in the table above and the only one that shows anything.
+
+The general lesson, and it is the same one as section 3c-bis: a test that exercises the
+whole suite to prove one check can fail is testing the harness, not the check. Break the
+thing the check reads, then call the check.

@@ -206,6 +206,56 @@ fill cannot reach. A check that cannot fail the way reality fails proves nothing
 
 ---
 
+## Q-7b. The graph panel uses a different vertical origin than the window
+
+Status: **open, and the defect is now located rather than guessed.**
+
+Route 1 from Q-7 was taken: a `debug-window` mode renders the whole editor window with NO
+cropping, at the requested size, so the computed frame's position can be MEASURED instead
+of assumed. That mode is kept in the tool, because it is the only way to answer this
+question and re-deriving it costs more than one mode costs.
+
+**The render pipeline is proven to work.** The uncropped 1600x900 picture shows the real
+graph canvas with the real nodes in it: `Print String`, `In String` and `Development Only`
+are all visible, clustered in the upper right of the canvas, which is where a view centred
+on x 980 y 208 at zoom 0.75 puts them.
+
+**The numbers that do not agree.** The frame the tool computes is `x 17 to 1488,
+y 344 to 657` in a 1670x911 window. Reading the node positions back out of the uncropped
+picture gives a different answer:
+
+| Quantity | Value |
+|---|---|
+| Graph nodes visible at | image x 950-1100, y 165-230 |
+| Canvas in the window | x 259 to 1247, y 130 to 872 |
+| `GetViewLocation` reads back | x 980, **y 208**, zoom 0.750 |
+| Back-solving the node's y from the picture | view centre **y ≈ -181** |
+
+The vertical difference between the applied view centre and the one the picture was drawn
+with is about **390 pixels**, which is a little over half the panel height (742). A
+half-panel offset is the signature of the panel measuring itself from its own top-left
+while the transform assumes the window's, so the next thing to check is what
+`SGraphEditor::GetTickSpaceGeometry()` and `SNodePanel`'s own view transform each use as
+their origin — not what the frame arithmetic does with them.
+
+What is already ruled out, so it is not retried: the view move itself (read back and
+applied), the panel geometry (`988x742`, correct and non-zero), DPI scaling (1.00 here, and
+the origin is divided by it anyway), and `SWindow::GetPositionInScreen` versus
+`GetWindowGeometryInScreen` (same origin, so not the cause).
+
+The horizontal placement is right — nodes fall inside the crop's x range — so this is
+specifically a vertical origin mismatch, not a general mapping error.
+
+NOT VERIFIED: whether the offset is constant or depends on the panel's size, the window's
+position, or the zoom. Route 2 from Q-7 — crop by scanning for the canvas background colour
+rather than computing its position — remains the fallback if it turns out not to be
+constant, and it would be robust either way.
+
+Answer: not yet answered. `L-CAPTURE`'s `debug-window` mode captures the window correctly
+today, and the framing modes still need this fixed before they can be claimed to work.
+
+---
+
 ## Q-8. Can the UHT freshness check be made content-based instead of timestamp-based?
 
 Status: **open. A content-based version was written, could not be made to fail, and was
