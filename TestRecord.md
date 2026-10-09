@@ -1599,3 +1599,72 @@ spec's wording or a gap, and it is not claimed either way. Both are recorded as 
 
 One item remains in this area: the **widget tree in JSON** at `signatures` and above, which the
 text rendering already carries.
+
+---
+
+## 3i. R-BP-LOAD is complete: the widget tree in JSON
+
+The last leftover. The text rendering has carried the widget tree since 3d; the JSON now carries
+the same facts, and `R-BP-LOAD` is complete in both renderings at all four levels.
+
+### One collection, two renderings
+
+The JSON calls `FTurboMCPWidgetTree::Collect`, the same call the text rendering makes, rather
+than walking the widget tree a second time. A second walk would be a second opinion about the
+same tree, which is the drift `04_FORMATS.md` warns about.
+
+### The visibility difference is deliberate, and the suite checks it as such
+
+The text omits `visibility=Visible` because it is the enum default, and printing it on every
+line buries the widgets whose visibility is **not** the default. JSON has no such noise: a
+caller reads a field and compares it, so the default is exactly what it wants written down.
+
+JSON therefore carries the visibility of **every** widget, and that makes the two renderings
+**deliberately different on one point**. A comparison that treated every difference as drift
+would fail; one that ignored differences would miss real ones. The suite is written to expect
+this specific difference:
+
+| Check | Result |
+|---|---|
+| Every widget in the JSON is named in the text | **PASS** | `RootCanvas`, `TitleText`, `TitleText2` in both |
+| Every non-default visibility in the JSON appears in the text | **PASS** | `visibility=SelfHitTestInvisible` is in both |
+| The text does **not** print the default visibility | **PASS** | `visibility=Visible` appears nowhere in the text |
+| The class of each widget appears in the text | **PASS** | `[CanvasPanel]`, `[TextBlock]` |
+| The count agrees | **PASS** | `widget tree: 3 widget(s)` |
+| The root is at depth zero and a child is deeper | **PASS** | 0 and 1 |
+
+Padding is carried as an **object** of four numbers rather than as the text's four-number
+string, for the same reason: a caller parsing JSON should not have to parse a string inside it.
+
+The comparison was shown to fail: fed a JSON naming a widget the text does not have, it reports
+exactly that widget as missing.
+
+### Three defects in my test, all the same shape as the previous rounds
+
+1. It loaded the Widget Blueprint at the default `manifest` level, where **neither** rendering
+   carries a tree, and reported the tree missing from **both**.
+2. The name extractor returned whole decoration strings for widget lines —
+   `RootCanvas [CanvasPanel] visibility=...` — so the two renderings were compared on strings
+   the JSON does not repeat.
+3. It then returned the facts that follow a name — `bound: ...` and
+   `differs from the class default: ...` — as if they were names of widgets.
+
+Each looked like the tool disagreeing with itself. That is now the fifth round in a row where
+the reader was the defect, and it is recorded as the standing risk it is.
+
+### A cast worth explaining rather than hiding
+
+`Cast` cannot drop const, and the engine's widget-tree accessors are non-const, so the JSON
+writer takes a `const_cast`. **Nothing writes through it**: this is a Read tool and `P3` says a
+Read tool cannot change anything. The cast is for the accessor signatures, not for a write, and
+it says so in the code.
+
+### R-BP-LOAD, complete
+
+| Level | Text | JSON |
+|---|---|---|
+| `manifest` | done | **done** |
+| `signatures` | done | **done** |
+| `bodies` | done | **done** |
+| `full` | done | **done** |
+| widget tree | done | **done** |

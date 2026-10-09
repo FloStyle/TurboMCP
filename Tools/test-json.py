@@ -107,6 +107,19 @@ def text_names(text, section):
         if stripped.startswith("("):
             # A cap line such as "(12 more not shown)", not a name.
             continue
+
+        # A widget's own facts continue on deeper lines that are not names of anything:
+        # `bound: X -> Y` and `differs from the class default: ...`. They belong to the
+        # widget above them, so they are skipped rather than returned as entries.
+        if stripped.startswith("bound:") or stripped.startswith("differs from"):
+            continue
+
+        # A widget line carries its class and its facts after the name — `RootCanvas
+        # [CanvasPanel] visibility=...` — while a graph or variable line is a bare name.
+        # Only the NAME is returned, so the two renderings are compared on names rather
+        # than on a whole decoration string the JSON does not repeat.
+        if "[" in stripped:
+            stripped = stripped.split("[", 1)[0].strip()
         names.append(stripped)
     return names
 
@@ -460,12 +473,75 @@ def main():
     check("the text still lists the graphs", "EventGraph" in text)
 
     print()
-    print("=== a Widget Blueprint renders as JSON too ===")
-    wjson = load(session, WIDGET, fmt="json")
+    print("=== a Widget Blueprint carries the SAME widget tree in both renderings ===")
+    # At `signatures`, which is the level the tree appears at. Loading at the default
+    # `manifest` returns no tree in EITHER rendering, and the first version of this section
+    # did exactly that and reported the tree missing from both.
+    wjson = load(session, WIDGET, detail="signatures", fmt="json")
+    wtext = load(session, WIDGET, detail="signatures")
     wdoc = json_body(wjson)
     check("the widget's JSON parses", wdoc is not None)
     if wdoc is not None:
         check("it has a graph", len(wdoc.get("graphs", [])) > 0)
+
+        widgets = wdoc.get("widget_tree", [])
+        check("the widget tree is present", len(widgets) > 0,
+              "%d widget(s)" % len(widgets))
+        check("the text rendering carries it too", "widget tree:" in wtext)
+
+        # Every widget named in one rendering must appear in the other.
+        json_names = [w.get("name") for w in widgets]
+        print("    text widgets: %s" % [n for n in text_names(wtext, "widget tree")])
+        print("    json widgets: %s" % json_names)
+        for name in json_names:
+            check("%s is named in the text too" % name, name in wtext)
+        check("the count agrees with the text",
+              "widget tree: %d widget(s)" % len(widgets) in wtext,
+              "json has %d" % len(widgets))
+
+        # The class is carried in both.
+        for one in widgets:
+            check("%s: the class appears in the text" % one.get("name"),
+                  "[%s]" % one.get("class") in wtext, str(one.get("class")))
+
+        # Depth is carried, and the root is at zero.
+        check("the root is at depth zero", widgets[0].get("depth") == 0,
+              str(widgets[0].get("depth")))
+        check("a child is deeper than the root", widgets[1].get("depth", 0) > 0,
+              str(widgets[1].get("depth")))
+
+        # `is_variable` is a boolean in JSON. The text marks a variable with the word, so
+        # the two must agree on WHICH widgets are variables rather than on a spelling.
+        for one in widgets:
+            in_text = ("variable" in wtext.split(one["name"], 1)[-1].split("\n", 1)[0]
+                       if one["name"] in wtext else False)
+            check("%s: is_variable agrees with the text" % one.get("name"),
+                  bool(one.get("is_variable")) == in_text,
+                  "json=%s text=%s" % (one.get("is_variable"), in_text))
+
+    print()
+    print("=== THE VISIBILITY DIFFERENCE IS DELIBERATE, AND CHECKED AS SUCH ===")
+    # The text omits `visibility=Visible` because it is the enum default and printing it on
+    # every line buries the widgets whose visibility is NOT the default. JSON has no such
+    # noise: a caller reads a field and compares it, so the default is exactly what it wants
+    # written down. The two renderings are therefore allowed to differ HERE and nowhere else,
+    # and the difference is checked rather than tolerated.
+    if wdoc is not None:
+        widgets = wdoc.get("widget_tree", [])
+        check("JSON carries visibility for EVERY widget",
+              all("visibility" in one for one in widgets))
+        check("JSON carries the default as a value, not as an omission",
+              any(one.get("visibility") == "Visible" for one in widgets),
+              str([one.get("visibility") for one in widgets]))
+        # Every NON-default visibility must also be in the text, which is what makes the
+        # difference an omission of the default rather than a disagreement.
+        for one in widgets:
+            if one.get("visibility") not in ("Visible", None):
+                check("%s: a non-default visibility is in the text too" % one.get("name"),
+                      "visibility=%s" % one["visibility"] in wtext,
+                      str(one.get("visibility")))
+        check("the text does NOT print the default visibility",
+              "visibility=Visible" not in wtext)
 
     print()
     if failures:
