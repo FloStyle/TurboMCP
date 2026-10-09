@@ -368,6 +368,7 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 
 	int32 Printed = 0;
 	int32 InputIndex = 0;
+	int32 OutputIndex = 0;
 
 	for (const UEdGraphPin* Pin : InNode->Pins)
 	{
@@ -377,7 +378,12 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 		}
 
 		const bool bIsInput = Pin->Direction == EGPD_Input;
-		const int32 Index = bIsInput ? InputIndex++ : -1;
+		// THE INDEX IS COUNTED PER DIRECTION, which is what the engine does: an input's index is its
+		// place among the INPUTS, not its place in `Pins`. `Spec/03_TOOLS.md:172` lists "pin indexes"
+		// among what the `full` level adds, and the first version advanced the counter for OUTPUTS
+		// too while printing -1 for them, so the index it did print for an input was already wrong
+		// once an output had been walked.
+		const int32 Index = bIsInput ? InputIndex++ : OutputIndex++;
 
 		if (!bIsInput)
 		{
@@ -385,8 +391,11 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 			// from it. It is printed only at full, where the pin indexes matter.
 			if (bFull && Pin->LinkedTo.Num() > 0)
 			{
-				Out += FString::Printf(TEXT("\n    ; out %s -> %d link(s)"),
-					*Pin->PinName.ToString(), Pin->LinkedTo.Num());
+				// THE INDEX AND THE LINK COUNT ARE BOTH PRINTED, because `03_TOOLS.md:172` asks for
+				// the INDEX at `full` and the link count was all that was here. A caller reading an
+				// out line needs to know WHICH output, not only how many wires leave it.
+				Out += FString::Printf(TEXT("\n    ; out %d %s -> %d link(s)"),
+					OutputIndex - 1, *Pin->PinName.ToString(), Pin->LinkedTo.Num());
 			}
 			continue;
 		}
