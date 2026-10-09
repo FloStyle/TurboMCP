@@ -713,3 +713,87 @@ kit. **One committed asset would close Q-12 and Q-13 together**, and would unblo
 (Q-9) if it also carried a knot.
 
 ---
+
+---
+
+## Q-14. A commandlet in this plugin cannot be found, and the route that works
+
+**Status: the commandlet is written and compiles; it cannot be DISCOVERED. The working route is
+Python, and it is measured.**
+
+### Wall 1: the engine does not load this plugin to look for a commandlet
+
+Running `-run=TurboMCPAcceptanceAsset` answers:
+
+```
+LogInit: Error: TurboMCPAcceptanceAssetCommandlet looked like a commandlet,
+but we could not find the class.
+```
+
+The class is in the binary. The engine's lookup **infers a module name from the commandlet name**
+(`TurboMCPAcceptanceAsset`), calls `LoadModule` for it, finds nothing, and gives up — it does not know
+to load **this** plugin. The `.uplugin` loads the module at `PostEngineInit`, which is **later than
+commandlet discovery**, so the class was present and **unregistered**. That is the same shape as phase
+0's toolset registration, and the same lesson: a class present and unregistered looks exactly like a
+class that is missing.
+
+### Wall 2: a static initialiser that loads the module CRASHES
+
+Measured, so nobody tries it again:
+
+```
+LogWindows: Error: Fatal error!
+LogWindows: Error: Unhandled Exception: EXCEPTION_ACCESS_VIOLATION reading address 0x0000011e05c975a8
+[Callstack] UnrealEditor-Core.dll!FModuleManager::LoadModuleWithFailureReason()
+            [ModuleManager.cpp:1222]
+```
+
+A static initialiser inside a module **that is being loaded** runs **during** that load, so asking the
+manager to load the same module again **re-enters it before it is on the list**. The initialiser has
+been removed, and this note is in the source file too.
+
+### The route that WORKS, measured
+
+Python's commandlet runs, and **Python can build every structure the acceptance asset needs**:
+
+```
+add_function_graph -> <Object '/Game/Tests/BP_NodeTest.BP_NodeTest:PyProbe' Class 'EdGraph'>
+new_object K2Node_Knot -> <Object '/Engine/Transient.K2Node_Knot_0' Class 'K2Node_Knot'>
+```
+
+And a K2Node's pins are reachable **without** `unreal.EdGraphPin`, which is **not exposed to Python**,
+through the node's own accessors:
+
+| Accessor | Available |
+|---|---|
+| `find_input_pin` | yes |
+| `find_output_pin` | yes |
+| `find_execute_pin` | yes |
+| `find_data_input_pin` | yes |
+| `find_result_pin` | yes |
+| `find_self_pin` | yes |
+
+So the acceptance asset can be built by a **Python commandlet script** — the route phase 2 already
+proved with `make-test-blueprint.py` — and the C++ commandlet stays as the **record of the structure**
+and of the wall it hit.
+
+### What this means for Q-9, Q-12 and Q-13
+
+All three stay open, but they are now **one script away** rather than blocked by an unknown. The script
+needs to build, in `/Game/Tests/TurboMCPAcceptance`:
+
+1. **KnotProbe** — three `K2Node_Knot`s between two distant calls, for `P/E-GRAPH-KNOTS` (Q-9);
+2. **DeadProbe** — a node group with **every link broken**, for `P/E-GRAPH-DEAD` (Q-12);
+3. **LocalVarProbe** — a pure node whose value is read by **two** consumers, one fed by a function
+   input (SAFE) and one by a member variable (UNSAFE), for `P/E-LOCAL-VARS` (Q-13);
+4. **SaneProbe** — an ordinary chain that **should not be disturbed**, which is what a rollback test
+   needs.
+
+### A Python probe failure worth recording
+
+A probe script that called `dir(unreal.EdGraphPin)` **wrote no file and exited -1**, because the class
+does not exist and the exception aborted the script before the write. **Silent**: the commandlet still
+reported success in one variant. A probe that means to report must write **before** the risky call, or
+a failure looks like a success with no output.
+
+---
