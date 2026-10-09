@@ -29,6 +29,7 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-capture.py` | a running editor | The capture checks, including the uncropped `debug-window` reference |
 | `test-widget-tree.py` | a running editor | The R-BP-LOAD widget tree section |
 | `test-json.py` | a running editor | JSON and text must carry the same facts |
+| `test-enum-add.py` | a running editor | P/E-ENUM-ADD, including the names in the saved file |
 | `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 
@@ -57,6 +58,7 @@ python Tools\test-widget-preview.py
 python Tools\test-capture.py
 python Tools\test-widget-tree.py
 python Tools\test-json.py
+python Tools\test-enum-add.py
 ```
 
 ## A leftover LiveCodingConsole blocks every build
