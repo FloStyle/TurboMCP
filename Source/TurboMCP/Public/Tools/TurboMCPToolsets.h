@@ -363,6 +363,33 @@ public:
 	static FString ReadTurboMCPCommentList(
 		const FString& Asset,
 		const FString& GraphName);
+
+	/**
+	 * Describe a data table.
+	 *
+	 * Pass one DataTable in any path form, and optionally an include filter: `all`,
+	 * `readers` for which graphs read it, or `schema` for the row struct and rows.
+	 * Empty means all.
+	 *
+	 * The row struct is reported with every field and its type, then the row count
+	 * and the row names. **Row values are not printed**: the spec puts them out of
+	 * scope because the engine's own tools read and write them, and the result says
+	 * so rather than leaving a caller to wonder.
+	 *
+	 * The readers are found in two steps. The asset registry gives every asset that
+	 * depends on the table, which is complete but names no graph; loaded Blueprints
+	 * among them are then searched for a node reading this exact table, which is what
+	 * turns an asset into a graph name. A reader that is not loaded is still
+	 * reported, saying its graph was not searched, rather than being omitted.
+	 *
+	 * A table with no rows, or a struct with no fields, reports that as a fact. A
+	 * table whose row struct was deleted says so instead of printing an empty schema.
+	 * A filter that is not one of the three is refused by name.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPDataTable(
+		const FString& Asset,
+		const FString& Include);
 };
 
 /**

@@ -95,3 +95,30 @@ the test kit, given `06_ACCEPTANCE.md` requires the kit's structure to be built 
 hand anyway?
 
 Answer: not yet answered.
+
+---
+
+## Q-6 2026-10-09 Spec/03_TOOLS.md R-DATATABLE, project-owned tables
+
+`R-DATATABLE` is verified against an engine DataTable with a known struct, fields and
+rows. It is **not** verified against a table whose row struct is a project asset,
+because no such table could be built and four attempts failed on engine rules rather
+than on anything in this plugin:
+
+- a `UserDefinedEnum` cannot be a row struct, because it is not a `UScriptStruct`;
+- `BlueprintEditorLibrary.add_member_variable` only accepts a **Blueprint**, so a
+  `UserDefinedStruct` cannot be given fields that way;
+- `DataTable::RowStruct` is **read-only** once the asset exists;
+- a CSV import through `AssetImportTask` refuses with "A Data table row type must be
+  specified in the import settings json file for automated import".
+
+Question: should a project-owned table be built, and if so how? Two routes are known
+and both cost more than the check is worth right now: an import-settings JSON beside
+the CSV, or a small C++ commandlet inside the plugin that creates the struct with
+`FStructureEditorUtils` and the table with `NewObject`.
+
+The second may be worth preferring, because a commandlet in the plugin is also the way
+to build the hand-made acceptance kit that `06_ACCEPTANCE.md` requires. If so, that
+kit and this check share one piece of machinery rather than two.
+
+Answer: not yet answered.

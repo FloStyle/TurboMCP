@@ -595,6 +595,67 @@ it.
 
 ---
 
+## 2l. Phase 2: R-DATATABLE
+
+Built: `ReadTurboMCPDataTable`. 21 tools. Run its checks with
+`python Tools/test-datatable.py`.
+
+Verified against `/DatasmithContent/Datasmith/AreaLightsTable`, real content with a
+known struct, known fields and 5 known rows.
+
+| Test | Result | Evidence |
+|---|---|---|
+| The row struct is reported | **PASS** | `/DatasmithContent/Datasmith/AreaLightsStruct.AreaLightsStruct` |
+| Fields are reported with their types | **PASS** | `fields: 1`, `Mesh_...  : UStaticMesh*` |
+| The row count is exact | **PASS** | `rows: 5` |
+| Row names are listed | **PASS** | 5 names, sorted |
+| Row values are not printed | **PASS** | says so, and names the engine's own tools |
+| Readers are found from the registry | **PASS** | `readers: 2 asset(s)` |
+| An unloaded reader says its graph was not searched | **PASS** | `graph: not searched, this asset is not loaded` |
+| A loaded reader's graph is named | **PASS** | `graph: UserConstructionScript`, and `2 of 2 reader(s) had their graphs searched` |
+| The `schema` and `readers` filters each omit the other | **PASS** | asserted both ways |
+| A bad filter is refused by name | **PASS** | `Accepted: all, readers, schema.` |
+| A non-DataTable is refused with the class it found | **PASS** | names `Blueprint` |
+| Every path form agrees | **PASS** | one identical body |
+
+### A defect in the test, not the tool
+
+The first version asserted that the readers start **unloaded** and that their graphs
+are therefore not searched. It passed once and failed on every run after that,
+because the Blueprints stay loaded for the rest of the editor session.
+
+That is a test that cannot be re-run, which is worse than no test: it trains the
+reader to ignore a red result. It now reads the actual starting state and asserts the
+matching branch, so it passes on a fresh editor **and** on a second run in the same
+session. Both were checked.
+
+### A project-owned DataTable was attempted four times and abandoned
+
+The engine's table proves the schema, the field types and the row names. It does
+**not** prove the reader against a `UserDefinedStruct`, which is what a project-owned
+table would have. Four attempts, all recorded because each is an engine rule worth
+knowing:
+
+| Attempt | Result |
+|---|---|
+| a `UserDefinedEnum` as the row struct | refused: a `UEnum` is not a `UScriptStruct` |
+| `BlueprintEditorLibrary.add_member_variable` on a `UserDefinedStruct` | refused: that function only takes a **Blueprint**, so the struct stayed empty |
+| rows written into that empty struct | only the last row survived, as row `Gamma`, against one auto-named field `MemberVar_0_...` |
+| CSV import through `AssetImportTask` | refused: `A Data table row type must be specified in the import settings json file for automated import` |
+
+Setting the row struct afterwards is not an option either: `RowStruct` is
+**read-only** once the asset exists.
+
+So a project-owned table needs either an import-settings JSON or a C++ commandlet.
+Neither is worth building only to restate what the engine's own table already proves,
+so the attempt is stopped and the gap **named** rather than hidden. Raised as Q-6.
+
+One useful thing came out of it: the abandoned `ST_ShapeRow` and `DT_ShapeTest`
+assets were deleted rather than left in the project, because a half-built asset that
+`R-DATATABLE` can still open is worse than no asset — it looks like evidence.
+
+---
+
 ## 2d. Phase 1: type find and dirty list
 
 | Test | Result | Evidence |
