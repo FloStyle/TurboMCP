@@ -858,6 +858,57 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
+
+	/**
+	 * Work out a clean layout for one graph, WITHOUT moving anything.
+	 *
+	 * Assigns each node a COLUMN from what it depends on, spaces the rows, and lays each COMMENT BOX out
+	 * AROUND ITS OWN CONTENTS, so a nested box is sized from the boxes inside it.
+	 *
+	 * MEASURES AND ROLLS BACK, like the knot pass: the total wire length is measured before and after, and
+	 * the plan is offered only when the result is SHORTER. `bForce` offers it regardless, so a caller who
+	 * disagrees with the measure can still see the plan.
+	 *
+	 * REFUSES rather than guesses: a graph with a cycle, a graph with no nodes, and a graph whose nodes
+	 * have NO MEASURED SIZE are each refused by name. That last one is not unusual - NodeWidth is written
+	 * only by Slate when a node is drawn, so a graph built headlessly has no measured sizes until
+	 * something draws it.
+	 *
+	 * The number it prints is the TOTAL WIRE LENGTH, which is what this pass is judged on. `P-GRAPH-KNOTS`
+	 * is judged on WIRES CROSSING NODES instead, and the two numbers are deliberately not comparable.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphTidy(
+		const FString& Asset,
+		const FString& GraphName,
+		bool bForce);
+
+	/**
+	 * Repair the bad spots in a mostly-good graph, WITHOUT moving anything.
+	 *
+	 * A LOCAL pass, not a layout. It fixes three specific things and leaves the rest alone: an exec wire
+	 * that RUNS BACKWARD, a GETTER sitting to the right of the node that reads it, and a LONE NODE left
+	 * at the origin next to nothing.
+	 *
+	 * IT NEVER MOVES A COMMENT BOX, and that is a property of the type rather than a promise: the plan
+	 * carries no box position at all, so there is nothing to write one from.
+	 *
+	 * MEASURES AND ROLLS BACK like the tidy pass: the total wire length is measured on the PLANNED
+	 * positions and the plan is offered only when the result is SHORTER. `bForce` offers it anyway, and
+	 * it lives HERE rather than on the edit so the preview can state a rollback the edit would perform.
+	 *
+	 * REFUSES rather than guesses, naming the reason. Where the engine has measured NO NODE SIZES it uses
+	 * a documented fallback square and SAYS SO, under-reporting rather than inventing a position. That is
+	 * not unusual: NodeWidth is written only by Slate when a node is drawn.
+	 *
+	 * The number it prints is the TOTAL WIRE LENGTH, the same quantity `P-GRAPH-TIDY` reports, so the two
+	 * are comparable. `P-GRAPH-KNOTS` reports WIRES CROSSING NODES and is deliberately not comparable.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphFixBackward(
+		const FString& Asset,
+		const FString& GraphName,
+		bool bForce);
 };
 
 /**
@@ -1176,6 +1227,44 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
+
+	/**
+	 * Apply the layout the preview worked out.
+	 *
+	 * The same inputs, laid out the same way, as `P-GRAPH-TIDY`, because the two share one code path up to
+	 * the write. It re-measures AFTER the write and reports the number it actually achieved rather than
+	 * the one it predicted, because a plan and its result are two different claims.
+	 *
+	 * A COMMENT BOX MOVES WITH ITS CONTENTS and is resized from them, so nesting is preserved. A box is
+	 * never moved on its own.
+	 *
+	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
+	 * disagrees with the measure asks for.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphTidy(
+		const FString& Asset,
+		const FString& GraphName,
+		bool bForce);
+
+	/**
+	 * Apply the repairs the preview listed.
+	 *
+	 * The same inputs, found and judged the same way, as `P-GRAPH-FIX-BACKWARD`, because the two share one
+	 * code path up to the write. Every node is RE-RESOLVED BY KEY before it moves, because a plan is made
+	 * and applied in two calls and the graph can change between them.
+	 *
+	 * A COMMENT BOX IS NEVER MOVED. Nothing in the plan holds a box position, so no code path here can
+	 * write one.
+	 *
+	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
+	 * disagrees with the measure asks for.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphFixBackward(
+		const FString& Asset,
+		const FString& GraphName,
+		bool bForce);
 
 	/**
 	 * Promote the SAFE values to local variables.
