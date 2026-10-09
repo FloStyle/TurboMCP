@@ -19,6 +19,8 @@ fails, so it can be used as a gate instead of something a person reads.
 | `check-mcp-server.py` | a running editor | Prove the server answers and all four toolsets are registered |
 | `test-agent-help.py` | a running editor | The agent help acceptance checks |
 | `test-asset-tools.py` | a running editor | The asset and type tool acceptance checks |
+| `test-refs.py` | a running editor | The reference tool acceptance checks, in both directions |
+| `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 
 ## The order they are used in
@@ -37,7 +39,23 @@ Tools\start-editor.ps1 -StopFirst
 python Tools\check-mcp-server.py
 python Tools\test-agent-help.py
 python Tools\test-asset-tools.py
+python Tools\test-refs.py
 ```
+
+## A leftover LiveCodingConsole blocks every build
+
+`LiveCodingConsole.exe` is a separate process that the editor starts, and it can
+outlive the editor. While it runs, UnrealBuildTool refuses **every** build with:
+
+```
+Unable to build while Live Coding is active. Exit the editor and game, or press
+Ctrl+Alt+F11 if iterating on code in the editor or game
+```
+
+Nothing about that message points at the real cause, and a leftover console from a
+Live Coding experiment once blocked a build an hour later.
+`Tools\start-editor.ps1 -Stop` now stops it as well as the editor, so the trap
+cannot recur. If a build fails this way, that command clears it.
 
 ## The iteration loop
 
