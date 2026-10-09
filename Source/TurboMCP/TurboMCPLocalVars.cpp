@@ -131,24 +131,37 @@ namespace
 				return false;
 			}
 
+			// A VARIABLE READ IS NEVER SAFE, AND THIS CHECK HAS TO COME FIRST.
+			//
+			// MEASURED BUG: this test used to sit INSIDE the `!IsNodePure()` branch below, so a
+			// `K2Node_VariableGet` — which IS pure, because reading a variable has no side effect —
+			// passed the purity test and was treated as a safe link. Measured consequence, on the
+			// acceptance asset built for exactly this case:
+			//
+			//     SAFE    int + int
+			//       A <- K2Node_VariableGet_0 (K2Node_VariableGet)
+			//       everything feeding it is a function input or a literal
+			//
+			// which is the case the rule exists to REFUSE, because a member variable can change
+			// between the two reads. BEING PURE IS NOT THE SAME AS BEING FIXED FOR THE CALL, and only
+			// the second matters here. The check is ordered before the purity test for that reason.
+			if (const UK2Node_VariableGet* Get = Cast<UK2Node_VariableGet>(Source))
+			{
+				OutWhy = FString::Printf(
+					TEXT("it reads the variable '%s', which can change during the call"),
+					*Get->GetVarName().ToString());
+				return false;
+			}
+
 			// ONLY A PURE NODE CAN BE PART OF A SAFE CHAIN. An impure node runs on an exec wire and
 			// can have a side effect, so its output is not fixed by the function's inputs.
 			const UK2Node* SourceK2 = Cast<UK2Node>(Source);
 			if (SourceK2 == nullptr || !SourceK2->IsNodePure())
 			{
-				if (const UK2Node_VariableGet* Get = Cast<UK2Node_VariableGet>(Source))
-				{
-					OutWhy = FString::Printf(
-						TEXT("it reads the variable '%s', which can change during the call"),
-						*Get->GetVarName().ToString());
-				}
-				else
-				{
-					OutWhy = FString::Printf(
-						TEXT("it is fed by %s (%s), which is not a pure node, so its output is not "
-							"fixed by the function inputs"),
-						*Source->GetName(), *Source->GetClass()->GetName());
-				}
+				OutWhy = FString::Printf(
+					TEXT("it is fed by %s (%s), which is not a pure node, so its output is not ")
+					TEXT("fixed by the function inputs"),
+					*Source->GetName(), *Source->GetClass()->GetName());
 				return false;
 			}
 

@@ -58,13 +58,27 @@ namespace
 	 * proved works for `make-test-blueprint.py`.
 	 */
 
-	/** Puts a node in a graph at a position, with a fresh GUID. */
+	/**
+	 * Puts a node in a graph at a position, with a fresh GUID and ITS PINS ALLOCATED.
+	 *
+	 * `AllocateDefaultPins` IS NOT OPTIONAL HERE, AND LEAVING IT OUT CRASHES. Measured:
+	 *
+	 *     Error: Array index out of bounds: 1 into an array of size 0
+	 *     UnrealEditor-TurboMCP.dll!BuildKnotProbe() [..Commandlet.cpp:144]
+	 *
+	 * `UK2Node_Knot::GetOutputPin` is `return Pins[1];` — an unguarded index. `NewObject` does not
+	 * allocate a node's pins and `UEdGraph::AddNode` does not either: the editor allocates them when
+	 * the node is RECONSTRUCTED for display, which never happens in a commandlet with no Slate. So a
+	 * node with no pins is the normal state here, and every accessor that indexes `Pins` is a crash
+	 * waiting to happen.
+	 */
 	void Place(UEdGraph* InGraph, UEdGraphNode* InNode, double InX, double InY)
 	{
 		InNode->CreateNewGuid();
 		InNode->NodePosX = static_cast<int32>(InX);
 		InNode->NodePosY = static_cast<int32>(InY);
 		InGraph->AddNode(InNode, /*bUserAction=*/false, /*bSelectNewNode=*/false);
+		InNode->AllocateDefaultPins();
 	}
 
 	/** A function graph with an entry and a result node, ready to be wired. */
