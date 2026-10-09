@@ -22,6 +22,7 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-refs.py` | a running editor | The reference tool acceptance checks, in both directions |
 | `test-overrides.py` | a running editor | The overridable-function acceptance checks |
 | `test-comments.py` | a running editor | The comment box acceptance checks, plus a model of the rectangle rules |
+| `test-datatable.py` | a running editor | The DataTable acceptance checks |
 | `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 
@@ -44,6 +45,7 @@ python Tools\test-asset-tools.py
 python Tools\test-refs.py
 python Tools\test-overrides.py
 python Tools\test-comments.py
+python Tools\test-datatable.py
 ```
 
 ## A leftover LiveCodingConsole blocks every build
