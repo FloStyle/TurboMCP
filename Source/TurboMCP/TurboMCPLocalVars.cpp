@@ -533,21 +533,76 @@ FString FTurboMCPLocalVars::Apply(const FPlan& InPlan)
 			continue;
 		}
 
-		// The variable's type comes from the pin, with the const and reference qualifiers cleared,
-		// which is what the editor's own promote does.
+		// The variable's type comes from the pin, with the const, reference AND WEAK POINTER
+		// qualifiers cleared, which is what the editor's own promote does. `bIsWeakPointer` was
+		// MISSING here and is a defect the source audit found: the engine clears all three
+		// (`BlueprintEditor.cpp:4885`), so a weak-pointer output would have produced a local of the
+		// wrong type.
 		FEdGraphPinType NewType = Outputs[0]->PinType;
 		NewType.bIsConst = false;
 		NewType.bIsReference = false;
+		NewType.bIsWeakPointer = false;
+		const FString DefaultValue = Outputs[0]->DefaultValue;
+		const double NodeX = Node->NodePosX;
+		const double NodeY = Node->NodePosY;
 
 		// `FindUniqueKismetName` already answers an `FName`, so no dereference is needed here.
 		const FName VarName = FBlueprintEditorUtils::FindUniqueKismetName(
 			Blueprint, *Candidate.ProposedName);
 
 		if (!FBlueprintEditorUtils::AddLocalVariable(Blueprint, Graph, VarName, NewType,
-				Outputs[0]->DefaultValue))
+				DefaultValue))
 		{
 			++Refused;
 			Lines.Add(FString::Printf(TEXT("  %s: the engine refused to add local '%s'"),
+				*Candidate.Key, *VarName.ToString()));
+			continue;
+		}
+
+		// THE NODE AND ITS PINS ARE RE-RESOLVED, BECAUSE ADDING THE VARIABLE COMPILED.
+		//
+		// FOUND BY SOURCE AUDIT, NOT BY A RUN. `FBlueprintEditorUtils::AddLocalVariable` ends with
+		// `MarkBlueprintAsStructurallyModified` (`BlueprintEditorUtils.cpp:5529`), which calls
+		// `FBlueprintCompilationManager::CompileSynchronously` and then `Blueprint->BroadcastChanged()`.
+		// A synchronous compile can RECONSTRUCT nodes, so `Node` and every pointer in `Outputs` may
+		// be freed by the call above — and they were used afterwards to read a position, to break
+		// links and to destroy the original.
+		//
+		// The engine's own promote guards against exactly this. `BlueprintEditor.cpp:4982` carries
+		// the comment "the owning node may have been reconstructed as a result of adding a new
+		// variable above, so ensure the pin reference is up-to-date", and re-fetches. That is the
+		// strongest available evidence, from the code that already solved it.
+		//
+		// The node is found again BY KEY rather than by pointer, and the output pins are re-derived
+		// from it, so nothing below can touch a freed object.
+		Node = nullptr;
+		for (UEdGraphNode* Found : Graph->Nodes)
+		{
+			if (Found != nullptr && KeyOf(Found).Equals(Candidate.Key, ESearchCase::IgnoreCase))
+			{
+				Node = Found;
+				break;
+			}
+		}
+		if (Node == nullptr)
+		{
+			// The value is gone after the compile. Reported, and the local variable that was just
+			// added is LEFT in place rather than removed: it is a harmless unused local, and
+			// removing it would be a second write to undo the first.
+			++Refused;
+			Lines.Add(FString::Printf(
+				TEXT("  %s: it no longer exists after the compile that adding local '%s' caused, so ")
+				TEXT("nothing was rewired and no node was removed. The local '%s' is unused."),
+				*Candidate.Key, *VarName.ToString(), *VarName.ToString()));
+			continue;
+		}
+		Outputs.Reset();
+		OutputPins(Node, Outputs);
+		if (Outputs.Num() == 0)
+		{
+			++Refused;
+			Lines.Add(FString::Printf(
+				TEXT("  %s: it has no data output pin after the compile; local '%s' is unused"),
 				*Candidate.Key, *VarName.ToString()));
 			continue;
 		}
@@ -558,29 +613,56 @@ FString FTurboMCPLocalVars::Apply(const FPlan& InPlan)
 		Getter->CreateNewGuid();
 		Getter->VariableReference.SetLocalMember(VarName, Graph->GetName(),
 			FBlueprintEditorUtils::FindLocalVariableGuidByName(Blueprint, Graph, VarName));
-		Getter->NodePosX = Node->NodePosX;
-		Getter->NodePosY = Node->NodePosY;
+		// THE GETTER GOES WHERE THE VALUE WAS, using the position captured BEFORE the compile rather
+		// than read from the re-resolved node. Both would usually agree; the captured pair cannot be
+		// a stale read, and the whole point of capturing it was to have a value that survived.
+		Getter->NodePosX = static_cast<int32>(NodeX);
+		Getter->NodePosY = static_cast<int32>(NodeY);
 		Graph->Modify();
 		Graph->AddNode(Getter, /*bUserAction=*/true, /*bSelectNewNode=*/false);
 
+		// THE PINS ARE ALLOCATED EXPLICITLY, AND THIS WAS A SEVERE DEFECT BEFORE IT WAS HERE.
+		//
+		// FOUND BY SOURCE AUDIT, NOT BY A RUN: `UK2Node_VariableGet::AllocateDefaultPins` is guard-
+		// ed on `GetVarName() != NAME_None` and is what creates the value pin, while `GetValuePin`
+		// is `FindPin(GetVarName())`. With no allocation it returns NULL — and the rewire below was
+		// written to SKIP ITSELF when that happened, `continue` past it, DESTROY THE ORIGINAL NODE
+		// ANYWAY, and report `changed:`. That is the worst possible outcome: the graph is severed
+		// and the tool says it succeeded.
+		//
+		// This project already MEASURED the identical trap in the acceptance-asset commandlet, where
+		// `UK2Node_Knot::GetOutputPin` crashed on `Pins[1]` of an empty array. There it crashed; here
+		// the null guard turned the same omission into silence.
+		Getter->AllocateDefaultPins();
+		UEdGraphPin* GetterValue = Getter->GetValuePin();
+		if (GetterValue == nullptr)
+		{
+			// REFUSED RATHER THAN HALF-DONE. The getter is removed again and the original is left
+			// COMPLETELY ALONE, because continuing would destroy it with nothing to replace it.
+			Getter->DestroyNode();
+			++Refused;
+			Lines.Add(FString::Printf(
+				TEXT("  %s: the getter for local '%s' produced no value pin, so NOTHING was ")
+				TEXT("changed for this value and the original node is untouched"),
+				*Candidate.Key, *VarName.ToString()));
+			continue;
+		}
+
 		// THE CONSUMERS ARE RE-POINTED AT THE GETTER, pin by pin.
 		int32 Rewired = 0;
-		if (Getter->GetValuePin() != nullptr)
+		for (UEdGraphPin* Output : Outputs)
 		{
-			for (UEdGraphPin* Output : Outputs)
+			// A COPY of the array, because `BreakLinkTo` mutates `LinkedTo` while it is walked.
+			TArray<UEdGraphPin*> Consumers = Output->LinkedTo;
+			for (UEdGraphPin* Consumer : Consumers)
 			{
-				// A COPY of the array, because `BreakLinkTo` mutates `LinkedTo` while it is walked.
-				TArray<UEdGraphPin*> Consumers = Output->LinkedTo;
-				for (UEdGraphPin* Consumer : Consumers)
+				if (Consumer == nullptr)
 				{
-					if (Consumer == nullptr)
-					{
-						continue;
-					}
-					Output->BreakLinkTo(Consumer);
-					Getter->GetValuePin()->MakeLinkTo(Consumer);
-					++Rewired;
+					continue;
 				}
+				Output->BreakLinkTo(Consumer);
+				GetterValue->MakeLinkTo(Consumer);
+				++Rewired;
 			}
 		}
 

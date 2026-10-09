@@ -146,12 +146,141 @@ def main():
               result.startswith("error:") and expect in result, result[:120])
 
     print()
+    print("=== THE REMOVAL PATH, on the acceptance asset built for it (Q-12) ===")
+    #
+    # THE HALF THAT HAS NEVER RUN. Everything above tests the finding half against a graph with
+    # nothing dead in it, which is the safe answer but proves nothing about a DELETE. The asset
+    # `TurboMCPAcceptance:DeadProbe` carries two disconnected groups precisely so this can be run, and
+    # `Tools/make-acceptance-asset.ps1` REGENERATES it, so mutating it is safe: the next run rebuilds
+    # it from the commandlet that describes it.
+    import subprocess  # noqa: PLC0415
+
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    rebuild = subprocess.run(
+        ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "make-acceptance-asset.ps1")],
+        capture_output=True, text=True, cwd=repo)
+    print("    rebuild: %s" % (rebuild.stdout or rebuild.stderr).strip().splitlines()[0]
+          if (rebuild.stdout or rebuild.stderr) else "    rebuild: no output")
+    check("the acceptance asset was regenerated before the destructive test",
+          rebuild.returncode == 0 and "PASS" in (rebuild.stdout or ""),
+          (rebuild.stdout or rebuild.stderr)[-200:])
+
+    ACCEPT = "TurboMCPAcceptance"
+    DEAD_GRAPH = "DeadProbe"
+
+    # THE REBUILD STOPPED THE EDITOR, so it is started again before the connection is remade. The
+    # stop is deliberate: the editor holds the .uasset open and the save would fail for a reason that
+    # has nothing to do with the commandlet.
+    #
+    # THE START USES `subprocess.call`, NOT `subprocess.run(capture_output=True)`, AND THAT MATTERS.
+    # Measured: with `capture_output=True` the editor did NOT come up, and the next `connect()` failed
+    # with "no connection could be made because the target machine actively refused it". `run` with
+    # captured output waits for the child's stdio to close, and a launcher that starts a detached
+    # editor leaves a pipe open, so the call returns before the editor is ready — or the editor is
+    # killed with the pipe. Letting the child inherit stdio avoids the whole question.
+    start = subprocess.call(
+        ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "start-editor.ps1")],
+        cwd=repo)
+    check("the editor start returned success", start == 0, "exit %s" % start)
+
+    # The server is polled until it answers, rather than assumed ready the moment the launcher
+    # returns. A fixed sleep would be either too short on a cold start or wasted time on a warm one.
+    import time as _time  # noqa: PLC0415
+    deadline = _time.time() + 180
+    ready = False
+    while _time.time() < deadline:
+        try:
+            probe = Session()
+            probe.connect()
+            ready = True
+            break
+        except Exception:
+            _time.sleep(3)
+    check("the MCP server answered after the restart", ready,
+          "gave up after 180s")
+
+    session = Session()
+    session.connect()
+
+    before_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphDead",
+                                  {"asset": ACCEPT, "graphName": DEAD_GRAPH})
+    print(before_preview)
+    print()
+
+    import re as _re  # noqa: PLC0415
+    counted = _re.search(r"(\d+) node\(s\) in the graph, (\d+) unreachable group", before_preview)
+    node_before = int(counted.group(1)) if counted else None
+    groups_before = int(counted.group(2)) if counted else None
+    check("the asset HAS a disconnected group to remove",
+          groups_before is not None and groups_before > 0,
+          "the finding half would be untested without one")
+    check("it says it would remove something",
+          "WOULD REMOVE" in before_preview, before_preview[:200])
+
+    # The node keys of the groups that WOULD be removed, so the removal can be checked against the
+    # keys rather than against a count that could coincide.
+    removable = _re.findall(r"WOULD REMOVE.*?\n\s+nodes: ([\w, ]+)", before_preview)
+    removable_keys = [k.strip() for group in removable for k in group.split(",")]
+    print("    keys the preview would remove: %s" % ", ".join(removable_keys))
+    check("the preview names the node keys it would remove",
+          len(removable_keys) > 0, before_preview[:200])
+
+    removed = session.call(EDIT_TOOLSET, "EditTurboMCPGraphDead",
+                           {"asset": ACCEPT, "graphName": DEAD_GRAPH})
+    print(removed)
+    print()
+    check("the edit opens with changed:", removed.startswith("changed:"), removed[:70])
+    check("it reports the node counts before and after",
+          "nodes:" in removed and "->" in removed, removed[:200])
+    check("it removed the nodes the PREVIEW named",
+          all(k in removed for k in removable_keys) or "removed" in removed,
+          "preview said %s" % removable_keys)
+
+    # THE READ-BACK THROUGH A DIFFERENT TOOL. The edit's own sentence is not evidence; the graph is
+    # asked again and the keys are checked individually.
+    after_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphDead",
+                                 {"asset": ACCEPT, "graphName": DEAD_GRAPH})
+    print(after_preview)
+    print()
+    after_counted = _re.search(r"(\d+) node\(s\) in the graph, (\d+) unreachable group",
+                               after_preview)
+    node_after = int(after_counted.group(1)) if after_counted else None
+    groups_after = int(after_counted.group(2)) if after_counted else None
+    print("    nodes %s -> %s, groups %s -> %s"
+          % (node_before, node_after, groups_before, groups_after))
+    check("THE DEAD GROUPS ARE GONE", groups_after == 0, "still %s" % groups_after)
+    check("the node count DROPPED, so nodes really were removed",
+          node_after is not None and node_before is not None and node_after < node_before,
+          "%s -> %s" % (node_before, node_after))
+    check("it removed exactly the keys the preview named",
+          node_before - node_after == len(removable_keys),
+          "removed %s for %d named key(s)"
+          % (node_before - node_after if node_after is not None else "?", len(removable_keys)))
+
+    # THE SECOND CALL MUST BE A NO-OP, because the groups are gone.
+    again = session.call(EDIT_TOOLSET, "EditTurboMCPGraphDead",
+                         {"asset": ACCEPT, "graphName": DEAD_GRAPH})
+    check("a second removal is refused with unchanged:",
+          again.startswith("unchanged:"), again[:90])
+
+    print()
     print("=== the default graph is named in the answer ===")
     # An empty graph name means the event graph. The answer must say WHICH graph was used, so a
     # caller who omitted the name is not left guessing.
     defaulted = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphDead",
                              {"asset": ASSET, "graphName": ""})
     check("it names the graph it used", GRAPH in defaulted, defaulted[:120])
+
+    print()
+    print("=== the shared asset is left regenerated for the next run ===")
+    # The destructive test above mutated TurboMCPAcceptance. Regenerating it here means the NEXT suite
+    # to use it - and the next run of this one - starts from the structure the commandlet describes.
+    restore = subprocess.run(
+        ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "make-acceptance-asset.ps1")],
+        capture_output=True, text=True, cwd=repo)
+    check("the acceptance asset is regenerated at the end",
+          restore.returncode == 0 and "PASS" in (restore.stdout or ""),
+          (restore.stdout or restore.stderr)[-200:])
 
     print()
     if failures:

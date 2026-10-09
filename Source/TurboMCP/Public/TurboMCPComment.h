@@ -19,19 +19,42 @@ class UEdGraphNode_Comment;
  *    (NEVER its nodes), fit every box to its contents, and list any box left with nothing inside;
  *  - the Preview and the Edit share one code path up to the write (`D-02`).
  *
- * HOW A BOX KNOWS WHAT IS INSIDE IT, AND WHY THAT IS NOT INVENTED HERE
- * -------------------------------------------------------------------
- * A comment node holds no list of members. The engine decides membership from GEOMETRY, through
- * `UEdGraphNode::GetNodesUnderComment`, and that is what this file calls rather than comparing
- * rectangles by hand. A hand-rolled overlap test would disagree with the editor the first time
- * either changed, and the disagreement would be invisible.
+ * HOW A BOX KNOWS WHAT IS INSIDE IT: THE ENGINE'S RULE, NOT THE ENGINE'S CACHE
+ * -----------------------------------------------------------------------------
+ * A comment node holds no list of members, and the engine's `GetNodesUnderComment` CANNOT BE USED
+ * HEADLESSLY: it returns a CACHED set that `SGraphNodeComment::HandleSelection` fills from RENDERED
+ * widgets, so an asset read without its graph editor open reports NOTHING inside every box. Measured:
+ * a box drawn around two nodes reported `holds 0 node(s)`, which would have made "list every box with
+ * nothing inside" call every box in every asset empty.
  *
- * `fit` and `list empty boxes` therefore mean what the editor means by them, because both are asked
- * of the same engine call.
+ * So the RULE is reproduced rather than the cache read, from
+ * `SGraphNodeComment::IsNodeUnderComment`, which is `FSlateRect::IsRectangleContained` in graph
+ * space - and a box's rectangle starts `TitleBarHeight` BELOW its position, because the title bar's
+ * own strip sits above it.
+ *
+ * THIS COMMENT USED TO SAY THE OPPOSITE, and it is corrected here because it is the first thing a
+ * reader of the layout code sees. Anyone implementing a pass that moves nodes into or out of boxes
+ * must use `MembersOf` below, which is this same rule, rather than `GetNodesUnderComment` or a
+ * freshly written overlap test: three copies of a membership rule agree only until one of them is
+ * changed.
+ *
+ * `fit` and `list empty boxes` therefore mean what the editor means by them.
  */
 class FTurboMCPComment
 {
 public:
+	/**
+	 * The nodes a box encloses, by the editor's own geometric rule.
+	 *
+	 * PUBLIC SO THE LAYOUT PASSES SHARE ONE COPY. `P/E-GRAPH-TIDY` has to move nodes in and out of
+	 * boxes and `P/E-GRAPH-FIX-BACKWARD` must never move a box, so both need this rule. It was in an
+	 * anonymous namespace, which meant the only ways to reuse it were to copy it or to duplicate the
+	 * bug the copy would eventually differ by.
+	 *
+	 * `InComment`'s own graph is used, and comments nested inside other comments are NOT members,
+	 * because the engine treats nesting as its own relationship rather than as membership.
+	 */
+	static void MembersOf(UEdGraphNode_Comment* InComment, TArray<FString>& OutMembers);
 	/** The operation the caller asked for. */
 	enum class EAction : uint8
 	{

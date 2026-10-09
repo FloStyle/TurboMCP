@@ -109,7 +109,7 @@ namespace
 	 * starts `TitleBarHeight` BELOW its position, because the title bar's own strip sits above it;
 	 * using the position directly would claim a box contains the row of nodes drawn under its title.
 	 */
-	void ComputeMembers(UEdGraphNode_Comment* InComment, TArray<FString>& OutMembers)
+	void LocalComputeMembers(UEdGraphNode_Comment* InComment, TArray<FString>& OutMembers)
 	{
 		OutMembers.Reset();
 		UEdGraph* Graph = InComment->GetGraph();
@@ -161,7 +161,7 @@ namespace
 		OutBox.Width = InComment->NodeWidth;
 		OutBox.Height = InComment->NodeHeight;
 
-		ComputeMembers(InComment, OutBox.Members);
+		LocalComputeMembers(InComment, OutBox.Members);
 		OutBox.MemberCount = OutBox.Members.Num();
 	}
 
@@ -189,7 +189,7 @@ namespace
 		double& OutWidth, double& OutHeight)
 	{
 		TArray<FString> Members;
-		ComputeMembers(InComment, Members);
+		LocalComputeMembers(InComment, Members);
 		if (Members.Num() == 0)
 		{
 			return false;
@@ -331,6 +331,11 @@ namespace
 		OutColor = FLinearColor(Channels[0], Channels[1], Channels[2], 1.0f);
 		return true;
 	}
+}
+
+void FTurboMCPComment::MembersOf(UEdGraphNode_Comment* InComment, TArray<FString>& OutMembers)
+{
+	LocalComputeMembers(InComment, OutMembers);
 }
 
 bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
@@ -717,7 +722,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			}
 
 			TArray<FString> Members;
-			ComputeMembers(Comment, Members);
+			LocalComputeMembers(Comment, Members);
 			const int32 MemberTotal = Members.Num();
 			const FString Text = Comment->NodeComment;
 
