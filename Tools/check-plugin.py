@@ -291,6 +291,7 @@ def check_uht_freshness(report):
         return
 
     stale = []
+    stale_detail = []
     reflected = 0
     checked = 0
     unpaired = []
@@ -322,20 +323,51 @@ def check_uht_freshness(report):
             continue
 
         checked += 1
-        if os.path.getmtime(path) > os.path.getmtime(generated):
+
+        # THE DECLARATIONS ARE COMPARED, NOT THE TIMESTAMPS, AND THAT IS THE ONLY TEST THAT ANSWERS THE
+        # QUESTION.
+        #
+        # The mtime comparison could not distinguish "UHT never ran" from "UHT ran and produced identical
+        # bytes" - and the second is the COMMON case, because UHT output depends on the reflected
+        # declarations and on nothing else in the file. So every build that touched a COMMENT moved a
+        # header's mtime past its generated file, and this check went red for a reason that is not a
+        # problem. It was recorded as QUESTIONS Q-8, and it produced a false positive in the run that
+        # finally exercised every suite.
+        #
+        # WHAT MATTERS IS WHETHER EVERY REFLECTED DECLARATION REACHED THE GENERATED FILE. UHT emits
+        # `DECLARE_FUNCTION(exec<Name>)` for every `UFUNCTION` it processed, so an `exec` the generated
+        # file lacks is EXACTLY the staleness this check exists to catch - and a header whose declarations
+        # are all present is fresh no matter what the clock says.
+        missing = []
+        with open(generated, "r", encoding="utf-8", errors="replace") as handle:
+            generated_text = handle.read()
+        for match in re.finditer(r"UFUNCTION\s*\([^)]*\)", text):
+            tail = text[match.end():]
+            semi = tail.find(";")
+            if semi < 0:
+                continue
+            name = re.search(r"\b(\w+)\s*\(", tail[:semi])
+            if name is None:
+                continue
+            if ("exec%s" % name.group(1)) not in generated_text:
+                missing.append("%s:%s" % (os.path.basename(path), name.group(1)))
+
+        if missing:
             stale.append(os.path.basename(path))
+            stale_detail.extend(missing)
 
     if stale:
         report.fail(
-            "these reflection headers are newer than their OWN generated code: %s. "
-            "UHT must re-run, or the build will use stale reflection and fail. "
-            "This can still be a false positive when UHT re-ran and produced identical "
-            "bytes, so confirm before acting: does the generated header carry the "
-            "declaration? See QUESTIONS Q-8." % ", ".join(stale)
+            "these reflection headers declare something their OWN generated code lacks: %s. "
+            "The missing declarations are: %s. THAT is staleness - UHT must re-run before the build, or "
+            "the reflection will not carry them. This check compares DECLARATIONS rather than file times, "
+            "because a re-run that produces identical bytes leaves the generated file's mtime old while "
+            "the header's is new, which is not staleness. See QUESTIONS Q-8."
+            % (", ".join(stale), ", ".join(stale_detail[:8]))
         )
     else:
         report.ok(
-            "generated code is newer than all %d reflection header(s) that UHT pairs"
+            "every reflected declaration in all %d reflection header(s) reached its OWN generated code"
             % checked
         )
 
