@@ -34,7 +34,7 @@ a line-ending conversion is not the license that was verified.
 This is **Exhibit A** of the license itself, which is the form the license asks a file to carry.
 
 ```cpp
-// Copyright FloStyle. All Rights Reserved.
+// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
 // SPDX-License-Identifier: MPL-2.0
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -54,10 +54,10 @@ pwsh -File Tools\apply-license-header.ps1 -Check    # fail if a file lacks it (u
 pwsh -File Tools\apply-license-header.ps1 -Root <dir>   # try it on a copy first
 ```
 
-**Applied to all 109 `.h` and `.cpp` files.** The diff is the proof it did nothing else:
+**Applied to all 111 `.h` and `.cpp` files** - the plugin module under `Source/` and the test module under `TestProject/Source`. The diff is the proof it did nothing else:
 
 ```
-109 files changed, 545 insertions(+), 0 deletions(-)
+111 files, one notice and one copyright line each
 ```
 
 Five added lines per file, **nothing removed**, and **every file carries exactly one notice**.
@@ -65,11 +65,15 @@ Five added lines per file, **nothing removed**, and **every file carries exactly
 Three properties make it safe to run again, each verified on a scratch copy before the real tree was
 touched:
 
-- **Idempotent.** A second run reports `0 prepended, 0 replaced, 109 already correct` and writes nothing.
+- **Idempotent.** A second run reports `0 prepended, 0 replaced, 111 already correct`, leaves every MD5 identical, and writes nothing.
   The natural failure of a header script is to *stack* notices, and a file with three copies of one notice
   is a file nobody reads.
-- **It replaces, not duplicates.** All 109 files already had a `// Copyright FloStyle.` line; the script
-  consumes it and writes the full notice in its place.
+- **It replaces, not duplicates.** Every file already had a copyright line; the script consumes it and
+  writes the full notice in its place, so the count stays one. It also had to be TAUGHT the current spelling:
+  its first pattern required `All Rights Reserved`, which the line
+  `// Copyright (c) 2026 Florian ESCHALIER (FloStyle)` does not end with, so it stopped recognising the line
+  it was supposed to consume and **prepended the notice above it, leaving two copyright lines in two files**.
+  The pattern now matches any `// Copyright` line.
 - **It detects the line ending instead of choosing one.** This repository pins LF in `.gitattributes`. The
   first version hard-coded a CRLF join *and* PowerShell's `-split "\`n"` silently failed to split an LF-only
   file — so each file arrived as one line, no pattern matched the top of it, and the script announced it
@@ -117,7 +121,7 @@ plugin is editor-only and does not ship in a game build at all.
 Every source file carries this header, and `Tools/apply-license-header.ps1` reapplies it:
 
 ```cpp
-// Copyright FloStyle. All Rights Reserved.
+// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
 // SPDX-License-Identifier: MPL-2.0
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
