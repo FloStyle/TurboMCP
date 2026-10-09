@@ -2,6 +2,7 @@
 
 #include "TurboMCPBlueprintJson.h"
 
+#include "BaseWidgetBlueprint.h"
 #include "Blueprint/BlueprintSupport.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
@@ -17,6 +18,7 @@
 #include "TurboMCPBlueprintRead.h"
 #include "TurboMCPDescribe.h"
 #include "TurboMCPGraphText.h"
+#include "TurboMCPWidgetTree.h"
 
 namespace
 {
@@ -304,6 +306,104 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 			}
 		}
 		Root->SetArrayField(TEXT("component_details"), ComponentDetails);
+
+		// -----------------------------------------------------------------------------
+		// THE WIDGET TREE, for a Widget Blueprint.
+		//
+		// It calls `FTurboMCPWidgetTree::Collect`, the same call the text rendering makes,
+		// rather than walking the tree a second time. That is the rule the rest of this
+		// file follows: one collection, two renderings. A second walk would be a second
+		// opinion about the same tree, which is the drift `04_FORMATS.md` warns about.
+		// -----------------------------------------------------------------------------
+		// `Cast` cannot drop const, and `FTurboMCPWidgetTree::Collect` takes a non-const
+		// pointer because the engine's `UWidgetTree` accessors are non-const. Nothing here
+		// or in `Collect` writes to it: this is a Read tool and `P3` says a Read tool
+		// cannot change anything. The cast is for the accessor signatures, not for a write.
+		if (UBaseWidgetBlueprint* WidgetBlueprint =
+				const_cast<UBaseWidgetBlueprint*>(Cast<UBaseWidgetBlueprint>(InBlueprint)))
+		{
+			TArray<FTurboMCPWidgetTree::FEntry> Entries;
+			FString TreeError;
+
+			if (!FTurboMCPWidgetTree::Collect(WidgetBlueprint, Entries, TreeError))
+			{
+				// A tree that could not be read is reported as a field, not silently
+				// omitted: an absent `widget_tree` and an unreadable one are different
+				// facts, and a caller cannot tell them apart if both are missing.
+				Root->SetStringField(TEXT("widget_tree_error"), TreeError);
+			}
+			else if (Entries.Num() > 0)
+			{
+				TArray<TSharedPtr<FJsonValue>> WidgetsJson;
+				for (const FTurboMCPWidgetTree::FEntry& Entry : Entries)
+				{
+					TSharedRef<FJsonObject> One = MakeShared<FJsonObject>();
+					One->SetStringField(TEXT("name"), Entry.Name.ToString());
+					One->SetStringField(TEXT("class"), Entry.ClassName);
+					One->SetNumberField(TEXT("depth"), Entry.Depth);
+					One->SetBoolField(TEXT("is_variable"), Entry.bIsVariable);
+
+					// VISIBILITY IS CARRIED ON EVERY WIDGET, AND THAT IS A DELIBERATE
+					// DIFFERENCE FROM THE TEXT.
+					//
+					// The text omits `visibility=Visible` because it is the enum default,
+					// and printing it on every line buries the widgets whose visibility is
+					// NOT the default. JSON has no such noise: a caller reads a field and
+					// compares it, so the default is exactly what it wants to see written
+					// down. test-json.py knows this is intentional and checks the two
+					// renderings accordingly rather than reporting a drift.
+					One->SetStringField(TEXT("visibility"), Entry.Visibility);
+
+					// Padding is CARRIED AS AN OBJECT, always, for the same reason. The text
+					// prints it only when it is not zero, as a four-number string; a caller
+					// parsing JSON should not have to parse that string, and should not have
+					// to guess whether an absent field means zero or "not collected".
+					if (!Entry.Padding.IsEmpty())
+					{
+						TArray<FString> Parts;
+						Entry.Padding.ParseIntoArray(Parts, TEXT(","), /*CullEmpty=*/true);
+						if (Parts.Num() == 4)
+						{
+							TSharedRef<FJsonObject> Pad = MakeShared<FJsonObject>();
+							Pad->SetNumberField(TEXT("left"), FCString::Atof(*Parts[0]));
+							Pad->SetNumberField(TEXT("top"), FCString::Atof(*Parts[1]));
+							Pad->SetNumberField(TEXT("right"), FCString::Atof(*Parts[2]));
+							Pad->SetNumberField(TEXT("bottom"), FCString::Atof(*Parts[3]));
+							One->SetObjectField(TEXT("padding"), Pad);
+						}
+					}
+
+					if (!Entry.NamedSlotHost.IsNone())
+					{
+						One->SetStringField(TEXT("named_slot_host"),
+							Entry.NamedSlotHost.ToString());
+					}
+
+					if (Entry.BoundEvents.Num() > 0)
+					{
+						TArray<TSharedPtr<FJsonValue>> Bound;
+						for (const FString& Event : Entry.BoundEvents)
+						{
+							Bound.Add(MakeShared<FJsonValueString>(Event));
+						}
+						One->SetArrayField(TEXT("bound_events"), Bound);
+					}
+
+					if (Entry.NonDefaultProperties.Num() > 0)
+					{
+						TArray<TSharedPtr<FJsonValue>> Diff;
+						for (const FString& Property : Entry.NonDefaultProperties)
+						{
+							Diff.Add(MakeShared<FJsonValueString>(Property));
+						}
+						One->SetArrayField(TEXT("differs_from_class_default"), Diff);
+					}
+
+					WidgetsJson.Add(MakeShared<FJsonValueObject>(One));
+				}
+				Root->SetArrayField(TEXT("widget_tree"), WidgetsJson);
+			}
+		}
 	}
 
 	FString Out;
