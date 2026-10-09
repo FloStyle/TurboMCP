@@ -33,6 +33,7 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-vars-add.py` | a running editor | P/E-VARS-ADD, read back through R-BP-LOAD after a save |
 | `test-widgets-as-vars.py` | a running editor | E-WIDGETS-AS-VARS, including that a refusal is atomic |
 | `test-override-add.py` | a running editor | P/E-OVERRIDE-ADD, and it removes its own override |
+| `test-function.py` | a running editor | E-FUNCTION-ADD/REMOVE, including the silent-rename guard |
 | `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 
@@ -65,6 +66,7 @@ python Tools\test-enum-add.py
 python Tools\test-vars-add.py
 python Tools\test-widgets-as-vars.py
 python Tools\test-override-add.py
+python Tools\test-function.py
 ```
 
 ## A leftover LiveCodingConsole blocks every build
