@@ -55,10 +55,16 @@ $ErrorActionPreference = 'Stop'
 
 $Repo = if ($Root) { $Root } else { Split-Path -Parent $PSScriptRoot }
 $HeaderFile = Join-Path $PSScriptRoot 'license-header.txt'
-$SourceRoot = Join-Path $Repo 'Source'
+# EVERY first-party C++ tree, not only the plugin module. `TestProject/Source` holds the test module, which
+# is this project's own code and carries the same notice; the first version of this script missed it because
+# it only walked `Source/`.
+$SourceRoots = @(
+    (Join-Path $Repo 'Source'),
+    (Join-Path $Repo 'TestProject\Source')
+) | Where-Object { Test-Path $_ }
 
 if (-not (Test-Path $HeaderFile)) { throw "the notice text is not at $HeaderFile" }
-if (-not (Test-Path $SourceRoot)) { throw "the source tree is not at $SourceRoot" }
+if ($SourceRoots.Count -eq 0) { throw "no source tree found under $Repo" }
 
 $LF = [string][char]10
 $CR = [string][char]13
@@ -75,8 +81,16 @@ $NoticeLines = $noticeRaw.TrimEnd([char]10) -split $LF
 $Marker = 'SPDX-License-Identifier: MPL-2.0'
 
 # Lines this script may REPLACE rather than duplicate, matched only at the TOP of a file.
+#
+# THE COPYRIGHT PATTERN MUST MATCH ANY COPYRIGHT LINE, AND IT USED TO REQUIRE "All Rights Reserved".
+# Measured consequence of that requirement: when the holder line changed to
+# `// Copyright (c) 2026 Florian ESCHALIER (FloStyle)`, which does NOT end with that phrase, the script no
+# longer recognised it as replaceable and PREPENDED the notice ABOVE it - so two files ended up carrying the
+# copyright line TWICE, once inside the notice and once below it. A pattern that matches one spelling of a
+# line it is supposed to consume will duplicate the others, and a duplicated notice is exactly the failure
+# this script exists to prevent.
 $ReplaceablePatterns = @(
-    '^// Copyright .*All Rights Reserved\.?\s*$',
+    '^// Copyright\b.*$',
     '^// SPDX-License-Identifier:.*$',
     '^// This Source Code Form is subject to the terms of the Mozilla Public.*$',
     '^// License, v\. 2\.0\..*$',
@@ -140,7 +154,7 @@ function Get-FilePlan {
     return [pscustomobject]@{ Path = $Path; State = $state; Text = $text; Ending = $ending }
 }
 
-$files = Get-ChildItem $SourceRoot -Recurse -Include '*.h', '*.cpp' -File |
+$files = Get-ChildItem $SourceRoots -Recurse -Include '*.h', '*.cpp' -File |
     Where-Object { $_.FullName -notmatch '[\\/]Intermediate[\\/]' } |
     Sort-Object FullName
 

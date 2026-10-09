@@ -187,7 +187,7 @@ plugin is editor-only and does not ship in a game build at all.
 Every source file carries this header, and `Tools/apply-license-header.ps1` reapplies it:
 
 ```cpp
-// Copyright FloStyle. All Rights Reserved.
+// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
 // SPDX-License-Identifier: MPL-2.0
 //
 // This Source Code Form is subject to the terms of the Mozilla Public

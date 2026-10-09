@@ -1,4 +1,4 @@
-// Copyright FloStyle. All Rights Reserved.
+// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
 // SPDX-License-Identifier: MPL-2.0
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
