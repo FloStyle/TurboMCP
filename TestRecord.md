@@ -2090,3 +2090,93 @@ Without it, a mistyped function name could only be cleared in the editor by hand
 ### Still to come in phase 4
 
 `P/E-WIDGET-RETARGET`. `E-COMPILE` is already done.
+
+---
+
+## 4f. P/E-WIDGET-RETARGET closes phase 4
+
+37 tools. 17 acceptance suites, all green. **Phase 4 is complete: all six capabilities.**
+
+### The engine's own check is too narrow for real widget events
+
+`FDelegateEditorBinding::IsBindingValid` looks for a **`FDelegateProperty`** named
+`<PropertyName>Delegate` or `<PropertyName>`. Measured against the engine's own headers:
+
+```
+Button.h:18   DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnButtonClickedEvent);
+Button.h:75   UPROPERTY(BlueprintAssignable, Category="Button|Event")
+Button.h:76   FOnButtonClickedEvent OnClicked;
+```
+
+`UButton::OnClicked` is a **multicast** delegate, so that check **never finds it**. A rule that
+rejected every normal widget event would be useless and its **"ok" case would be unreachable** —
+which means a test of the broken case alone would have passed while proving **nothing** about the
+good one. Both property kinds now count, and the result says which was found:
+
+```
+ok      TitleText.TextDelegate  on TextBlock  (a single delegate)  -> GetTitleText
+```
+
+### Both paths are checked, and that is the whole point
+
+A tool that removes broken bindings can be tested with a broken binding alone — and such a test
+**passes while the tool deletes EVERY binding it sees**. The suite makes one of each:
+
+```
+preview: retarget /Game/Tests/WBP_NodeTest.WBP_NodeTest
+1 binding(s), 1 the current class cannot satisfy
+  ok      TitleText.TextDelegate  on TextBlock  (a single delegate)  -> GetTitleText
+  BROKEN  TitleText2.NoSuchDelegate  TextBlock has no delegate 'NoSuchDelegateDelegate'
+```
+
+and checks that **exactly one survives**, reading the result back through the **preview** rather
+than trusting the edit's own report.
+
+### `E-WIDGET-BIND-ADD` exists because the retarget tool has nothing to repair without it
+
+A binding is a `FDelegateEditorBinding` inside the Widget Blueprint, and **the editor only writes
+one when a user picks an event in the details panel**, which does not exist headless. Without this
+tool the retarget capability could only ever be tested against an asset with **no bindings** — a
+check that passes while proving nothing.
+
+Binding a delegate the widget's class does **not** carry reproduces exactly the state a class swap
+leaves behind, and the result **says** which kind it made.
+
+### A wrong guess, corrected by reading the engine
+
+The first attempt bound `TextBlock.OnTextChanged` on the assumption that `TextBlock` carries it.
+**It does not:**
+
+```
+TextBlock.h:35   FGetText TextDelegate;
+TextBlock.h:44   FGetSlateColor ColorAndOpacityDelegate;
+TextBlock.h:73   FGetLinearColor ShadowColorAndOpacityDelegate;
+```
+
+The "ok" path stayed unreachable until `TextBlock.h` was read. That is the **fourth** guessed API
+name this phase has had to correct, and the reason this project reads the engine before writing
+against it.
+
+### The preview says how validity is decided
+
+Its own output carries the sentence a reader needs to trust the `BROKEN` marks: *validity is decided
+the way the engine's own compiler decides it: the binding's delegate is looked for ON THE WIDGET'S
+CURRENT CLASS.*
+
+The removal is by the pair the engine itself uses as a binding's identity — `ObjectName` and
+`PropertyName` — rather than by list index, which would shift under the loop. The read-back
+**re-counts** the bindings and reports how many are still broken, rather than writing `N of N`,
+which would be tautological and prove nothing.
+
+### Phase 4 complete
+
+| Capability | Commit |
+|---|---|
+| `P/E-ENUM-ADD` | `d08f4bb` |
+| `P/E-VARS-ADD` | `eb5ad04` |
+| `E-WIDGETS-AS-VARS` | `8a0f994` |
+| `P/E-OVERRIDE-ADD` + `E-OVERRIDE-REMOVE` | `a488aad` |
+| `E-FUNCTION-ADD` + `E-FUNCTION-REMOVE` | `b107b17` |
+| `P/E-WIDGET-RETARGET` + `E-WIDGET-BIND-ADD` | this commit |
+
+Next is **phase 5: call log and analytics**.

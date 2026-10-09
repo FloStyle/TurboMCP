@@ -600,6 +600,24 @@ public:
 	static FString PreviewTurboMCPOverrideAdd(
 		const FString& Asset,
 		const FString& FunctionOrEvent);
+
+	/**
+	 * Work out which widget bindings a class swap has left broken, without changing anything.
+	 *
+	 * When a widget is replaced by one of another class under the same name, its bound events may
+	 * still expect the old class. This lists EVERY binding with the widget's current class and says
+	 * which ones that class can no longer satisfy.
+	 *
+	 * VALIDITY IS THE ENGINE'S OWN ANSWER, not a rule invented here: a binding is satisfiable when
+	 * the widget's CURRENT class carries a delegate named `<PropertyName>Delegate` or
+	 * `<PropertyName>`, which is exactly what `FDelegateEditorBinding::IsBindingValid` looks for
+	 * and therefore what the engine's compiler would accept.
+	 *
+	 * Call nodes naming a function the current class does not have are REPORTED and not touched,
+	 * because removing a node is a bigger change than the spec asks for here.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPWidgetRetarget(const FString& Asset);
 };
 
 /**
@@ -812,6 +830,50 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPFunctionRemove(const FString& Asset, const FString& Name);
+
+	/**
+	 * Repair widget bindings after a class swap.
+	 *
+	 * The same finding as `P-WIDGET-RETARGET`, because the two share one code path (`D-02`).
+	 *
+	 * KEEPS every binding the widget's current class can still satisfy, and REMOVES each one it
+	 * cannot, naming what was removed and why. A widget whose name no longer exists in the tree is
+	 * treated as broken for the same reason.
+	 *
+	 * A removal is by the pair the engine itself uses as a binding's identity — `ObjectName` and
+	 * `PropertyName` — rather than by list index, which would shift under the loop.
+	 *
+	 * The result RE-COUNTS the bindings from the Blueprint afterwards and says how many are still
+	 * broken, rather than reporting `N of N`, which would prove nothing. Call nodes are reported
+	 * and not touched.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPWidgetRetarget(const FString& Asset);
+
+	/**
+	 * Bind an event on a widget to a function name.
+	 *
+	 * THIS TOOL EXISTS BECAUSE `P/E-WIDGET-RETARGET` HAS NOTHING TO REPAIR WITHOUT IT. A binding is
+	 * a `FDelegateEditorBinding` inside the Widget Blueprint, and the editor only writes one when a
+	 * user picks an event in the details panel, which does not exist headless. Without this, the
+	 * retarget capability could only be tested against an asset with NO bindings — a check that
+	 * passes while proving nothing.
+	 *
+	 * The property named is looked for as a delegate ON THE WIDGET'S OWN CLASS, so binding a
+	 * delegate the class does not carry is possible. That is exactly the state a class swap leaves
+	 * behind, and the result SAYS which kind it made: a valid binding or a broken one. A caller
+	 * testing the retarget tool wants the broken kind on purpose.
+	 *
+	 * A binding is identified by the widget and the property together, so binding the same pair
+	 * again REPLACES the previous binding rather than adding a second, which is what the engine's
+	 * own comparison and the editor's one-binding-per-property rule both require.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPWidgetBindAdd(
+		const FString& Asset,
+		const FString& Widget,
+		const FString& Property,
+		const FString& Function);
 };
 
 /**
