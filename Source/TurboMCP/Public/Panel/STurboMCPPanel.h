@@ -89,6 +89,15 @@ private:
 	void OnToolsetChanged(TSharedPtr<FString> InItem, ESelectInfo::Type InSelectInfo);
 	void OnToolChanged(TSharedPtr<FString> InItem, ESelectInfo::Type InSelectInfo);
 
+	/**
+	 * What each combo box shows on its face.
+	 *
+	 * Bound rather than passed once. A combo box with no selection must say so rather than showing a
+	 * blank, because a blank face and a missing list look the same (`P1`).
+	 */
+	FText GetSelectedToolsetText() const;
+	FText GetSelectedToolText() const;
+
 	/** Fills the arguments box from the selected tool's own schema. */
 	FReply OnSampleClicked();
 
@@ -126,6 +135,23 @@ private:
 
 	/** Why the registry could not be read, shown in place of an empty list. */
 	FText DiscoveryErrorText;
+
+	/**
+	 * The arguments box's text, bound rather than passed once.
+	 *
+	 * Slate RE-EVALUATES a bound attribute and does not re-read a value, so a plain `FString` handed
+	 * over at construction would leave the box showing whatever it had then - and the SAMPLE button,
+	 * whose whole job is to replace that text, would appear to do nothing.
+	 */
+	FText GetArgumentsText() const { return ArgumentsText; }
+
+	/**
+	 * Keeps the member in step with what was typed.
+	 *
+	 * `FOnTextChanged` is `DECLARE_DELEGATE_OneParam(FOnTextChanged, const FText&)` -
+	 * `Engine/Source/Runtime/Slate/Public/Framework/SlateDelegates.h:92`.
+	 */
+	void OnArgumentsChanged(const FText& InText);
 
 	/** The runner: discovery, samples and execution, all of it testable without Slate. */
 	FTurboMCPPanelToolRunner ToolRunner;

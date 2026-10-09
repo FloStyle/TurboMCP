@@ -224,25 +224,37 @@ bool FTurboMCPPanelToolRunner::ListTools(const FString& InToolsetName,
 					if ((*InputSchema)->TryGetObjectField(TEXT("properties"), Properties)
 						&& Properties != nullptr)
 					{
+						// THE MAP IS ITERATED DIRECTLY, because `TMapBase::GetKeys` is gone in 5.8 and
+						// `Find` would not accept the `const FString&` a sorted key array hands it.
+						// Iterating is both the supported call and the one that cannot have a
+						// key/value type mismatch.
+						//
 						// SORTED, so the sample is stable between opens. A map's iteration order is
 						// not the caller's, and a sample whose field order changes at random is one
 						// nobody can compare.
-						TArray<FString> Keys;
-						(*Properties)->Values.GetKeys(Keys);
-						Keys.Sort();
-
-						for (const FString& Key : Keys)
+						TArray<TPair<FString, TSharedPtr<FJsonValue>>> Sorted;
+						for (const auto& Pair : (*Properties)->Values)
 						{
-							const TSharedPtr<FJsonValue>* Property =
-								(*Properties)->Values.Find(Key);
-							if (Property == nullptr || !Property->IsValid())
+							Sorted.Emplace(Pair.Key, Pair.Value);
+						}
+						Sorted.Sort([](const TPair<FString, TSharedPtr<FJsonValue>>& A,
+									   const TPair<FString, TSharedPtr<FJsonValue>>& B)
+						{
+							return A.Key < B.Key;
+						});
+
+						for (const auto& Pair : Sorted)
+						{
+							const FString& Key = Pair.Key;
+							const TSharedPtr<FJsonValue>& Property = Pair.Value;
+							if (!Property.IsValid())
 							{
 								continue;
 							}
 
 							FString Type;
 							const TSharedPtr<FJsonObject>* PropObject = nullptr;
-							if ((*Property)->TryGetObject(PropObject) && PropObject != nullptr)
+							if (Property->TryGetObject(PropObject) && PropObject != nullptr)
 							{
 								Type = Field(*PropObject, TEXT("type"));
 							}
@@ -351,6 +363,19 @@ void FTurboMCPPanelToolRunner::BeginCall(const FString& InToolsetName, const FSt
 	ReadResultIfComplete();
 }
 
+const FTurboMCPPanelToolRunner::FCallResult& FTurboMCPPanelToolRunner::RefreshIfPending() const
+{
+	// `const` BECAUSE SLATE'S ATTRIBUTE GETTERS ARE. It mutates only the completion bookkeeping, never
+	// the call. Casting away const in the PANEL instead would have hidden that a real read of shared
+	// state happens during a paint, which is the kind of thing worth having in one place.
+	//
+	// The cast is safe here because the only member it changes is `bCallPending`, and the panel that
+	// calls this is the same object that started the call.
+	FTurboMCPPanelToolRunner* Self = const_cast<FTurboMCPPanelToolRunner*>(this);
+	Self->ReadResultIfComplete();
+	return Result;
+}
+
 void FTurboMCPPanelToolRunner::ReadResultIfComplete()
 {
 	if (!AsyncResult.IsValid() || Result.bIsComplete)
@@ -374,22 +399,24 @@ void FTurboMCPPanelToolRunner::ReadResultIfComplete()
 	}
 	else
 	{
-		// THE VALUE IS A JSON STRING, NOT THE TOOL'S TEXT. `GetValueAsJsonString` serialises the
-		// result object, so a tool that returns `read: 3 nodes` arrives as `"read: 3 nodes"` WITH
-		// QUOTES AND ESCAPES. A human reading the pane wants the text the tool actually produced, so
-		// the JSON string is decoded. A non-string value is shown as its JSON, which is the honest
-		// rendering of a result that is not text.
-		const FString Json = AsyncResult->GetValueAsJsonString();
-
-		FString Decoded;
-		const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Json);
-		if (FJsonSerializer::Deserialize(Reader, Decoded))
+		// THE VALUE IS READ FROM THE RESULT'S OWN FIELD, NOT DECODED FROM JSON.
+		//
+		// `UToolCallAsyncResultString` carries `Value` as a plain `FString` that IS the tool's text -
+		// read from `ToolCallAsyncResultString.h:27`, `UPROPERTY(BlueprintReadOnly) FString Value;`.
+		// The first version called `GetValueAsJsonString()` and then tried to deserialise it, which
+		// failed to compile AND was the long way round: that call serialises the result into a JSON
+		// document, so a tool returning `read: 3 nodes` arrives as a QUOTED, ESCAPED JSON string that
+		// then has to be unescaped. The field is already what a human wants to read.
+		//
+		// The cast is checked rather than assumed: a tool whose result is not a string is a different
+		// subclass, and its JSON is the honest rendering of it.
+		if (UToolCallAsyncResultString* AsString = Cast<UToolCallAsyncResultString>(AsyncResult.Get()))
 		{
-			Result.Value = Decoded;
+			Result.Value = AsString->Value;
 		}
 		else
 		{
-			Result.Value = Json;
+			Result.Value = AsyncResult->GetValueAsJsonString();
 		}
 	}
 

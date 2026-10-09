@@ -111,6 +111,7 @@ def read_calls():
         for name in re.findall(r'"((?:Read|Look|Preview|Edit)TurboMCP\w+)"', text):
             calls.setdefault(name, {"files": set(), "keys": set()})
             calls[name]["files"].add(entry)
+
     return calls
 
 
@@ -169,10 +170,22 @@ def main():
         if name not in calls:
             continue
         supplied = calls[name]["keys"]
-        # A parameter counts as supplied when its name appears as a key, OR when the suite supplies
-        # every key the tool takes (a full sample need not name each one if the blob is complete).
+        # A PARAMETER COUNTS AS SUPPLIED WHEN ITS NAME APPEARS AS A KEY IN A FILE THAT CALLS THE
+        # TOOL. Not "anywhere in any suite" - that would let the key `Asset`, which appears in a dozen
+        # unrelated helpers, satisfy every tool's `Asset` parameter and make the check worthless.
+        # Scoped to the calling files, a tool driven through a helper or a loop IS covered, because
+        # its own suite spells the keys.
+        local_keys = set()
+        for entry in calls[name]["files"]:
+            path = os.path.join(TOOLS_DIR, entry)
+            try:
+                with open(path, "r", encoding="utf-8", errors="replace") as handle:
+                    local_keys |= set(re.findall(r'"(\w+)"\s*:', handle.read()))
+            except OSError:
+                pass
+        supplied_lower = {k.lower() for k in supplied} | {k.lower() for k in local_keys}
         missing = [p for p in tools[name]["params"]
-                   if p not in supplied and p.lower() not in {k.lower() for k in supplied}]
+                   if p not in supplied and p.lower() not in supplied_lower]
         if missing and len(supplied) < len(tools[name]["params"]):
             blank[name] = missing
     for name in sorted(blank):

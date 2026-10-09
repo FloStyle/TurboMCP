@@ -136,11 +136,17 @@ public:
 	/**
 	 * Calls a tool and returns the value, waiting for the registry to answer.
 	 *
-	 * WAITS FOR UP TO `InTimeoutSeconds`, pumping nothing itself. The editor's own tick drives the
-	 * completion, so this must NOT be called from a thread that blocks the game thread, and a caller
-	 * that cannot afford to wait should use `BeginCall` and `GetResult` instead. It exists because a
-	 * test needs a synchronous answer and the panel can afford neither the complexity nor the risk of
-	 * an unread result.
+	 * IT MUST NOT BE CALLED FROM THE PANEL, AND THE REASON IS A DEADLOCK RATHER THAN A PREFERENCE.
+	 * The completion is delivered by the FUTURE's lambda, which the EDITOR'S OWN TICK drives. Waiting
+	 * on the game thread therefore blocks the very tick that would deliver the answer, so a panel that
+	 * called this would freeze the editor until the timeout expired.
+	 *
+	 * It exists for a test or a commandlet, which runs while the editor ticks around it, and it is
+	 * what makes the runner verifiable without Slate. `BeginCall` plus `RefreshIfPending` is the pair
+	 * the panel uses.
+	 *
+	 * A timeout is reported as a distinct answer rather than as an empty value, because an empty value
+	 * would look like a tool that returned nothing.
 	 */
 	FString CallAndWait(const FString& InToolsetName, const FString& InToolName,
 		const FString& InArgumentsJson, double InTimeoutSeconds = 10.0);
@@ -158,6 +164,16 @@ public:
 	/** The call's state, readable at any time. */
 	const FCallResult& GetResult() const { return Result; }
 
+	/**
+	 * Reads a pending call's outcome, and returns the current state.
+	 *
+	 * THE PANEL CALLS THIS WHILE IT PAINTS, which is why it is `const` and tracks completion in a
+	 * `mutable` flag: a Slate attribute getter has to be `const`, and the alternative - a
+	 * `const_cast` in the panel - would be a lie about what the call does. It does not start or
+	 * change a call; it only notices that one finished.
+	 */
+	const FCallResult& RefreshIfPending() const;
+
 	/** True when a call has been started and has not yet answered. */
 	bool IsCallPending() const { return bCallPending; }
 
@@ -172,7 +188,10 @@ private:
 	TStrongObjectPtr<UToolCallAsyncResultString> AsyncResult;
 
 	FCallResult Result;
-	bool bCallPending = false;
+
+	/** True while a call is outstanding. Mutable so `RefreshIfPending` can be `const`. */
+	mutable bool bCallPending = false;
+
 	double CallStartedSeconds = 0.0;
 
 	/** Reads the result object into `Result` when the registry has answered. */
