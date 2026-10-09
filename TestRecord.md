@@ -3024,3 +3024,53 @@ THE SELF-CHECKING PART WORKED, and it is the reason this was caught: the command
 reported `10 wire(s) cross 0 distinct node(s)` and REFUSED to save the graph rather than reporting success.
 The geometry dump printed on failure is what produced this correction. **A FAILURE THAT PRINTS ITS
 GEOMETRY IS WORTH FAR MORE THAN ONE THAT SAYS "it did not work".**
+
+---
+
+## 6j. The acceptance kit exists for the first time, and an engine constraint stopped it at asset 3
+
+THE OLDEST GAP IN THIS PROJECT IS BEING CLOSED. `Spec/06_ACCEPTANCE.md` defines THIRTEEN hand-made kit
+assets, `TA-1` to `TA-13`, and until this round **none of them existed**. Three specifications written
+independently found that gap from three directions: the knot and tidy specs each discovered that the
+committed acceptance asset cannot exercise their primary case, and the FIX-BACKWARD spec found that its
+acceptance row `T-LAY-9` runs on `TA-4` - with `T-LAY-2` on the SAME asset, so building it unblocks two
+rows.
+
+A commandlet now builds them, and it got to **two assets** before hitting an engine constraint:
+
+```
+TurboMCP: building the acceptance kit TA-1..TA-13
+  TA01_HandLaid.uasset
+  TA11_KitEnum.uasset
+```
+
+`TA01_HandLaid` and `TA11_KitEnum` are REAL and saved. Then:
+
+```
+CastChecked<UUserDefinedStructEditorData,UObject>()
+  FMemberVariableNameHelper::Generate()      StructureEditorUtils.cpp:256
+  FStructureEditorUtils::AddVariable()       StructureEditorUtils.cpp:304
+  UTurboMCPKitCommandlet::Main()             TurboMCPKitCommandlet.cpp:890
+```
+
+**A USER-DEFINED STRUCT CANNOT have a variable added by calling `FStructureEditorUtils::AddVariable`
+directly.** Its `Generate` step does a CHECKED CAST to `UUserDefinedStructEditorData`, which only exists
+once the struct has been properly initialised through the editor's own creation path. A commandlet that
+makes the struct another way gets no editor data, and the cast takes the process down rather than
+returning an error.
+
+THIS IS THE SAME SHAPE AS TWO EARLIER FINDINGS, and the pattern is now unmistakable:
+- `SetMaterialInstanceScalarParameterValue` ALWAYS returns false, and the call does the work anyway;
+- `UMaterialExpressionFunctionOutput::GetInputName` returns `NAME_None` UNCONDITIONALLY, so no name can
+  match it and only the empty string reaches it;
+- and now a struct's editor data does not exist unless the struct was born through the editor's path.
+
+**An engine API that looks like the natural call is not always callable from a commandlet, and the
+failure is a CHECKED CAST rather than a returned error** - so it crashes instead of refusing. Every one of
+these was found by RUNNING the thing, not by reading about it.
+
+WHAT THIS DOES NOT CHANGE: the two assets that WERE built are real, the commandlet's reporting works, and
+the remaining eleven are a matter of finding the right creation path for each asset type - which is
+exactly what the workstream asked for. The honest state is "some of the thirteen, and here is why the
+others need a different route", which is worth far more than a commandlet that reports success while
+writing empty assets.

@@ -149,18 +149,37 @@ asset OPEN IN A RENDERED EDITOR, where Slate had already filled the sizes in. **
 
 **CONSEQUENCE FOR EVERY LAYOUT CAPABILITY, and it is why this is a shared decision rather than a note.**
 A layout pass runs in the editor and will NORMALLY see real sizes. But "normally" is not a guarantee, and
-`P/E-GRAPH-KNOTS`' arithmetic - "a wire is one straight run plus one bend" - operates ON rectangles. With
-none, the arithmetic has no input. So `OPEN-1` in `Spec/WORKING_GRAPH_KNOTS.md` **WAS RIGHT TO INSIST ON A
-REFUSAL**; what it could not settle from source was WHICH case the code would meet, and the answer is
-**both**. The refusal is what makes it safe in either state.
+`P/E-GRAPH-KNOTS`' arithmetic - "a wire is one straight run plus one bend" - operates ON rectangles.
 
-**WHERE IT IS ENFORCED: in `Plan`, by refusing with the node named.** Not a silent skip, and not a
-defensive branch that computes a point-rectangle answer nobody should trust.
+**REFUSING OUTRIGHT WAS TRIED AND IS WRONG, WHICH CORRECTS WHAT THIS DECISION FIRST SAID.** The
+implementation refused when a rectangle had no size, and the tool became useless on every graph it exists
+for - confirmed live. `P/E-GRAPH-KNOTS` now uses a DOCUMENTED FALLBACK:
 
-THE FIXTURE PROBLEM IS SOLVED SEPARATELY, and this is the part that makes the probe asset usable at all:
-`TurboMCPAcceptanceAssetCommandlet.cpp` now sets explicit FALLBACK sizes on the nodes it builds, so the
-asset it writes carries geometry a test can measure WITHOUT opening a graph editor. The fallback is
-documented as a fallback, not as what the editor would draw.
+| What | Fallback | Where |
+|---|---|---|
+| a node with no measured size | a 48-unit square centred on its position | `MinimumNodeExtent` |
+| a knot with no measured footprint | 32 units | `FallbackKnotExtent` |
+
+**AND EVERY REPORT STATES WHICH GEOMETRY IT USED.** That is the part that makes the fallback honest rather
+than a guess dressed as a measurement. The judgement is CONSERVATIVE: it UNDER-REPORTS a crossing rather
+than inventing one, so a zero-size graph yields fewer knots than it might deserve and never a wrong one.
+
+THIS IS THE RULE, AND IT REPLACES "refuse": **a pass may not SILENTLY substitute a size.** It may
+substitute a documented one, must say so in its output, and must err toward reporting less.
+
+WHY NOT REFUSE: a point is a real answer to "does this wire pass through where this node is", which is
+exactly `T-LAY-10`'s question. Refusing answers nothing, and a capability that refuses everything is
+indistinguishable from one that is not implemented.
+
+THE FIXTURE PROBLEM IS ALSO SOLVED, and separately: `TurboMCPAcceptanceAssetCommandlet.cpp` sets explicit
+fallback sizes on the nodes it builds, so the asset it writes carries geometry a test can measure WITHOUT
+opening a graph editor.
+
+**STILL OPEN AND NOW THE MOST VALUABLE FIXTURE WORK IN THE PROJECT:** the fixture needs obstacles with
+sizes the ENGINE STORES, not a fallback the commandlet writes, or `T-LAY-10`'s positive case stays
+half-tested. `UEdGraphNode_Documentation` is the ONE node type whose size the engine itself persists
+(`UEdGraphNode_Documentation::ResizeNode` and `::SetBounds` are the only writes to `NodeWidth` in the whole
+engine tree), so it is the candidate - and whether it can be created from a commandlet is NOT YET PROVEN.
 
 ---
 

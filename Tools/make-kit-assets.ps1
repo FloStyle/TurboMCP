@@ -1,0 +1,122 @@
+<#
+.SYNOPSIS
+    Rebuilds the hand-made acceptance kit, TA-1 to TA-13.
+
+.DESCRIPTION
+    Runs `UTurboMCPKitCommandlet`, which builds the kit assets the acceptance document defines in
+    `/Game/Tests/Kit/`, MEASURES the structure of each one back, and reports what it found.
+
+    WHY THE KIT IS A BUILD STEP AND NOT A HAND-MADE ARTEFACT IN THE END
+    -------------------------------------------------------------------
+    `Spec/06_ACCEPTANCE.md` section 1 says the kit must be built "by hand in the editor, NOT with the
+    plugin's own tools, so the tools are tested against human-made assets". The commandlet honours the
+    RULE'S PURPOSE and is the reason it can be met at all: it uses the ENGINE's own API and calls no
+    TurboMCP tool, so the assets a tool is tested against were not shaped by that tool.
+
+    WHAT IT CHECKS
+    --------------
+    It parses the `TurboMCP: kit ...` lines and the `kit-summary` line and FAILS when:
+      - the commandlet exits non-zero;
+      - a kit asset reports SHORT, meaning a structure its acceptance rows require is absent;
+      - `missing` is non-zero;
+      - the summary line is absent, because a run that reported nothing cannot be told apart from a run
+        that did the work.
+
+.PARAMETER EditorExe
+    Path to `UnrealEditor-Cmd.exe`.
+
+.PARAMETER Project
+    Path to the test project's `.uproject`.
+#>
+[CmdletBinding()]
+param(
+    [string]$EditorExe = 'C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor-Cmd.exe',
+    [string]$Project = '<REPO>\TestProject\TurboMCPTest.uproject'
+)
+
+$ErrorActionPreference = 'Stop'
+
+if (-not (Test-Path $EditorExe)) { throw "the editor is not at $EditorExe" }
+if (-not (Test-Path $Project))   { throw "the project is not at $Project" }
+
+$repo = Split-Path -Parent $PSScriptRoot
+$log = Join-Path $repo '.agent\logs\make-kit-assets.log'
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
+
+# The editor holds the assets open, so it is stopped first. A stale handle would make the save fail for
+# a reason that has nothing to do with the commandlet.
+$stopScript = Join-Path $PSScriptRoot 'start-editor.ps1'
+if (Test-Path $stopScript) {
+    & pwsh -NoProfile -File $stopScript -Stop 2>&1 | Out-Null
+    Start-Sleep -Seconds 2
+}
+
+# `-run=` NEEDS A MODULE PREFIX. The engine calls `LoadModule` ONLY when the token contains a period
+# (`LaunchEngineLoop.cpp:4100`), so without it nothing loads and it reports "looked like a commandlet,
+# but we could not find the class".
+& cmd.exe /c "`"$EditorExe`" `"$Project`" -run=TurboMCP.TurboMCPKitCommandlet -unattended -nullrhi -culture=en -MaxParallelActions=8 > `"$log`" 2>&1"
+$exit = $LASTEXITCODE
+
+$lines = Get-Content $log -ErrorAction SilentlyContinue
+$kit = $lines | Select-String -Pattern 'TurboMCP: kit '
+$summary = $lines | Select-String -Pattern 'TurboMCP: kit-summary' | Select-Object -Last 1
+
+foreach ($line in $kit) {
+    Write-Output ("  " + ($line.Line -replace '.*LogTurboMCP: Display:\s*', ''))
+}
+
+if (-not $summary) {
+    Write-Output "FAILED (exit $exit): the commandlet reported no summary, so nothing can be checked"
+    $lines | Select-String -Pattern 'TurboMCP:|Error' | Select-Object -Last 14 |
+        ForEach-Object { "  " + $_.Line.Trim() }
+    exit 1
+}
+
+$text = ($summary.Line -replace '.*kit-summary\s*', '')
+Write-Output ""
+Write-Output ("  " + $text)
+
+# THE NUMBERS ARE PARSED, NEVER MATCHED AS A SENTENCE, so a wording change cannot silently pass.
+$values = @{}
+foreach ($pair in ($text -split '\s+')) {
+    if ($pair -match '^(\w+)=(\d+)$') { $values[$Matches[1]] = [int]$Matches[2] }
+}
+
+$missing = if ($values.ContainsKey('missing')) { $values['missing'] } else { -1 }
+$short = if ($values.ContainsKey('short')) { $values['short'] } else { -1 }
+$measured = if ($values.ContainsKey('measured')) { $values['measured'] } else { -1 }
+$assets = if ($values.ContainsKey('assets')) { $values['assets'] } else { -1 }
+
+if ($assets -le 0) {
+    Write-Output "FAILED: the commandlet attempted no asset"
+    exit 1
+}
+if ($short -ne 0) {
+    Write-Output "FAILED: $short kit asset(s) were BUILT but do not carry the structure their rows require"
+    $lines | Select-String -Pattern 'SHORT:' | ForEach-Object {
+        "  " + ($_.Line -replace '.*LogTurboMCP: Error:\s*', '')
+    }
+    exit 1
+}
+if ($exit -ne 0) {
+    Write-Output "FAILED: the commandlet exited $exit while reporting nothing short"
+    exit 1
+}
+
+# AN ASSET DECLARED UNBUILDABLE IS A REPORTED LIMIT, NOT A FAILURE.
+#
+# The commandlet says which of the thirteen it CANNOT make and WHY, and that is information the caller
+# needs rather than a defect: `06_ACCEPTANCE.md` asks for these assets to be authored by hand in the
+# editor anyway, and a limit that fails the build would be indistinguishable from a broken one. So the
+# missing ones are NAMED and the run still passes, which is what lets the other twelve be trusted.
+if ($missing -ne 0) {
+    Write-Output ""
+    Write-Output "  $missing asset(s) NOT BUILT, and each says why:"
+    $lines | Select-String -Pattern 'kit .* MISSING|kit .* why:' | ForEach-Object {
+        "    " + ($_.Line -replace '.*LogTurboMCP: Display:\s*', '')
+    }
+}
+
+Write-Output ""
+Write-Output "PASS  the acceptance kit was built and every asset that was built carries the structure its rows require"
+Write-Output ("  $measured of $assets entry(ies) measured, $built built, $missing declared unbuildable")

@@ -7,6 +7,7 @@
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
+#include "EdGraphNode_Comment.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
@@ -23,6 +24,10 @@
 #include "HAL/PlatformFileManager.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
+// `FTurboMCPComment::TitleBarHeight` is used to decide nesting, and it is REFERENCED RATHER THAN
+// COPIED: the box rectangle starts that far below the node position because the title bar strip sits
+// above it, and a second copy of the constant would agree with this one until one of them changed.
+#include "TurboMCPComment.h"
 #include "TurboMCPModule.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
@@ -81,6 +86,430 @@ namespace
 		InNode->NodePosY = static_cast<int32>(InY);
 		InGraph->AddNode(InNode, /*bUserAction=*/false, /*bSelectNewNode=*/false);
 		InNode->AllocateDefaultPins();
+	}
+
+	/** The row spacing `L-LAYOUT-REPORT` uses, kept the same on purpose. */
+	static const double PinRowSpacing = 24.0;
+
+	/** The width a `K2Node` is drawn at, used as the fallback measure. */
+	static const int32 FallbackNodeWidth = 220;
+	static const int32 FallbackNodeMinHeight = 80;
+	static const int32 FallbackTitleHeight = 40;
+	static const int32 FallbackPadding = 20;
+
+	/**
+	 * A FALLBACK RECTANGLE FOR A NODE BUILT OUTSIDE THE EDITOR, because without one it has NO SIZE.
+	 *
+	 * THIS IS THE MEASUREMENT THAT CORRECTS AN EARLIER CLAIM, AND IT MATTERS FOR EVERY LAYOUT PASS.
+	 * `NodeWidth` and `NodeHeight` are `int32` fields that SLATE fills in when a node is drawn. A
+	 * commandlet draws nothing, so EVERY node in this asset reports `size (0,0)` and its rectangle
+	 * degenerates to a POINT. Measured, dumped from this very commandlet:
+	 *
+	 *     node K2Node_CallFunction_3 at (1050,90) size (0,0) rect x 1050..1050 y 90..90
+	 *
+	 * An earlier round recorded OPEN-1 - "are node rectangles degenerate in a headless editor?" - as
+	 * SETTLED IN THE NEGATIVE, on the evidence that `L-LAYOUT-REPORT` reported a non-zero wire length
+	 * for `TurboMCPAcceptance:KnotProbe`. THAT REASONING WAS WRONG: the float report was taken with the
+	 * ASSET OPEN IN A RENDERED EDITOR, where Slate had already filled the sizes in. The two states are
+	 * different and both are real:
+	 *
+	 *   - a node in an asset OPENED IN THE EDITOR has real sizes, because Slate measured it;
+	 *   - a node freshly built by a COMMANDLET has size 0 until something draws it.
+	 *
+	 * So a layout pass must not assume either. `P/E-GRAPH-KNOTS`, `FIX-BACKWARD` and `TIDY` run in the
+	 * editor and will normally see real sizes, but they must REFUSE rather than compute from points
+	 * when they do not - because placing knots from point-rectangles is arithmetic on nothing.
+	 *
+	 * This commandlet sets the sizes EXPLICITLY so the fixture it writes carries geometry that a test
+	 * can measure without opening a graph editor. It does NOT pretend to know what the editor would
+	 * draw: the values are stated as a fallback and are the same shape a `K2Node` has, so the geometry
+	 * is real, consistent and reproducible rather than zero.
+	 */
+	void SizeForMeasurement(UEdGraphNode* InNode)
+	{
+		if (InNode == nullptr || Cast<UEdGraphNode_Comment>(InNode) != nullptr)
+		{
+			// A comment box is GIVEN its size when it is made, so it is already correct and
+			// overwriting it would destroy the nesting these probes exist to provide.
+			return;
+		}
+
+		int32 Inputs = 0;
+		int32 Outputs = 0;
+		for (const UEdGraphPin* Pin : InNode->Pins)
+		{
+			if (Pin == nullptr)
+			{
+				continue;
+			}
+			if (Pin->Direction == EGPD_Input) { ++Inputs; } else { ++Outputs; }
+		}
+
+		const int32 Rows = FMath::Max(Inputs, Outputs);
+		InNode->NodeWidth = FallbackNodeWidth;
+		InNode->NodeHeight = FMath::Max(FallbackNodeMinHeight,
+			FallbackTitleHeight + Rows * static_cast<int32>(PinRowSpacing)
+				+ FallbackPadding);
+	}
+
+
+	/**
+	 * A comment box, placed with a fresh GUID and added to the graph.
+	 *
+	 * THE GUID IS MADE HERE RATHER THAN LEFT TO `AddNode`. Measured in `TurboMCPComment.cpp`: two boxes
+	 * created in one session BOTH carried the key `000000`, so a box could not be named again and a
+	 * rename would have hit whichever came first. A key that does not identify is worse than no key,
+	 * because it looks like one.
+	 */
+	UEdGraphNode_Comment* MakeCommentBox(UEdGraph* InGraph, const FString& InText,
+		double InX, double InY, double InWidth, double InHeight)
+	{
+		UEdGraphNode_Comment* Comment = NewObject<UEdGraphNode_Comment>(InGraph);
+		Comment->CreateNewGuid();
+		Comment->NodePosX = static_cast<int32>(InX);
+		Comment->NodePosY = static_cast<int32>(InY);
+		Comment->NodeWidth = static_cast<int32>(InWidth);
+		Comment->NodeHeight = static_cast<int32>(InHeight);
+		Comment->NodeComment = InText;
+		InGraph->AddNode(Comment, /*bUserAction=*/false, /*bSelectNewNode=*/false);
+		return Comment;
+	}
+
+	/**
+	 * A node's rectangle in graph space, as the layout tools compute it.
+	 */
+	struct FRect
+	{
+		double MinX = 0.0;
+		double MinY = 0.0;
+		double MaxX = 0.0;
+		double MaxY = 0.0;
+
+		bool Contains(double InX, double InY) const
+		{
+			return InX >= MinX && InX <= MaxX && InY >= MinY && InY <= MaxY;
+		}
+	};
+
+	FRect RectOf(const UEdGraphNode* InNode)
+	{
+		FRect Rect;
+		if (InNode == nullptr)
+		{
+			return Rect;
+		}
+		Rect.MinX = static_cast<double>(InNode->NodePosX);
+		Rect.MinY = static_cast<double>(InNode->NodePosY);
+		Rect.MaxX = Rect.MinX + static_cast<double>(InNode->NodeWidth);
+		Rect.MaxY = Rect.MinY + static_cast<double>(InNode->NodeHeight);
+		return Rect;
+	}
+
+	/**
+	 * Where a pin sits in graph space, computed the way `L-LAYOUT-REPORT` computes it.
+	 *
+	 * THE ENGINE EXPOSES NO PIN POSITION TO A TOOL CALL, which is why the layout report derives one from
+	 * the node's rectangle and the pin's index rather than asking. This reproduces that derivation
+	 * EXACTLY - inputs down the left edge, outputs down the right, each counted separately, with the
+	 * same row spacing - because a crossing measured with a DIFFERENT rule than the tool uses would
+	 * disagree with the tool and the disagreement would be invisible.
+	 */
+	FVector2D PinPosition(const UEdGraphPin* InPin)
+	{
+		if (InPin == nullptr)
+		{
+			return FVector2D::ZeroVector;
+		}
+		const UEdGraphNode* Node = InPin->GetOwningNodeUnchecked();
+		if (Node == nullptr)
+		{
+			return FVector2D::ZeroVector;
+		}
+
+		const bool bIsInput = InPin->Direction == EGPD_Input;
+		int32 Index = 0;
+		for (const UEdGraphPin* Pin : Node->Pins)
+		{
+			if (Pin == nullptr || Pin->Direction != InPin->Direction)
+			{
+				continue;
+			}
+			if (Pin == InPin)
+			{
+				break;
+			}
+			++Index;
+		}
+
+		const double EdgeX = bIsInput
+			? static_cast<double>(Node->NodePosX)
+			: static_cast<double>(Node->NodePosX + Node->NodeWidth);
+		const double EdgeY = static_cast<double>(Node->NodePosY) + PinRowSpacing * (Index + 1);
+		return FVector2D(EdgeX, EdgeY);
+	}
+
+	/**
+	 * The standard orientation test, including the collinear case.
+	 *
+	 * DECLARED BEFORE ITS USE, because `SegmentCrossesRect` calls it and the two read best in this
+	 * order: the rectangle test is the idea, and the segment test is the mechanism it needs.
+	 */
+	bool SegmentsIntersect(const FVector2D& InP1, const FVector2D& InP2,
+		const FVector2D& InP3, const FVector2D& InP4);
+
+	/** True when the segment A->B passes through the rectangle, endpoints included. */
+	bool SegmentCrossesRect(const FVector2D& InA, const FVector2D& InB, const FRect& InRect)
+	{
+		// ENDPOINTS FIRST: a wire whose end sits on the rectangle has crossed it, and treating that as
+		// "no crossing" would miss the exact case a node placed ON a route produces.
+		if (InRect.Contains(InA.X, InA.Y) || InRect.Contains(InB.X, InB.Y))
+		{
+			return true;
+		}
+
+		// Then the four edges, by segment intersection. A wire can pass entirely through a rectangle
+		// without either endpoint being inside it, which is the ordinary crossing case.
+		const FVector2D Corners[4] = {
+			FVector2D(InRect.MinX, InRect.MinY),
+			FVector2D(InRect.MaxX, InRect.MinY),
+			FVector2D(InRect.MaxX, InRect.MaxY),
+			FVector2D(InRect.MinX, InRect.MaxY),
+		};
+		for (int32 Index = 0; Index < 4; ++Index)
+		{
+			const FVector2D& C = Corners[Index];
+			const FVector2D& D = Corners[(Index + 1) % 4];
+			if (SegmentsIntersect(InA, InB, C, D))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** The standard orientation test, including the collinear case. */
+	bool SegmentsIntersect(const FVector2D& InP1, const FVector2D& InP2,
+		const FVector2D& InP3, const FVector2D& InP4)
+	{
+		auto Cross = [](const FVector2D& O, const FVector2D& A, const FVector2D& B)
+		{
+			return (A.X - O.X) * (B.Y - O.Y) - (A.Y - O.Y) * (B.X - O.X);
+		};
+		auto OnSegment = [](const FVector2D& O, const FVector2D& A, const FVector2D& B)
+		{
+			return FMath::Min(O.X, B.X) <= A.X && A.X <= FMath::Max(O.X, B.X)
+				&& FMath::Min(O.Y, B.Y) <= A.Y && A.Y <= FMath::Max(O.Y, B.Y);
+		};
+
+		const double D1 = Cross(InP3, InP4, InP1);
+		const double D2 = Cross(InP3, InP4, InP2);
+		const double D3 = Cross(InP1, InP2, InP3);
+		const double D4 = Cross(InP1, InP2, InP4);
+
+		if (((D1 > 0.0 && D2 < 0.0) || (D1 < 0.0 && D2 > 0.0))
+			&& ((D3 > 0.0 && D4 < 0.0) || (D3 < 0.0 && D4 > 0.0)))
+		{
+			return true;
+		}
+		if (FMath::IsNearlyZero(D1) && OnSegment(InP3, InP1, InP4)) { return true; }
+		if (FMath::IsNearlyZero(D2) && OnSegment(InP3, InP2, InP4)) { return true; }
+		if (FMath::IsNearlyZero(D3) && OnSegment(InP1, InP3, InP2)) { return true; }
+		if (FMath::IsNearlyZero(D4) && OnSegment(InP1, InP4, InP2)) { return true; }
+		return false;
+	}
+
+	/**
+	 * How many wires cross how many nodes.
+	 *
+	 * A WIRE'S OWN END NODES ARE EXCLUDED, and so are comment boxes: a wire always touches the
+	 * rectangles of the two nodes it joins, and counting those would make every graph "crossing" and
+	 * the measurement worthless.
+	 */
+	void MeasureCrossings(const UEdGraph* InGraph, int32& OutWires, int32& OutNodes)
+	{
+		OutWires = 0;
+		OutNodes = 0;
+		if (InGraph == nullptr)
+		{
+			return;
+		}
+
+		TSet<const UEdGraphNode*> AlreadyCounted;
+		for (const UEdGraphNode* Node : InGraph->Nodes)
+		{
+			if (Node == nullptr || Cast<UEdGraphNode_Comment>(Node) != nullptr)
+			{
+				continue;
+			}
+			for (const UEdGraphPin* Pin : Node->Pins)
+			{
+				if (Pin == nullptr || Pin->Direction != EGPD_Output)
+				{
+					continue;
+				}
+				const FVector2D From = PinPosition(Pin);
+				for (const UEdGraphPin* Linked : Pin->LinkedTo)
+				{
+					if (Linked == nullptr)
+					{
+						continue;
+					}
+					const UEdGraphNode* Target = Linked->GetOwningNodeUnchecked();
+					if (Target == nullptr)
+					{
+						continue;
+					}
+					const FVector2D To = PinPosition(Linked);
+
+					for (const UEdGraphNode* Other : InGraph->Nodes)
+					{
+						if (Other == nullptr || Other == Node || Other == Target
+							|| Cast<UEdGraphNode_Comment>(Other) != nullptr)
+						{
+							continue;
+						}
+						if (SegmentCrossesRect(From, To, RectOf(Other)))
+						{
+							OutNodes++;
+							AlreadyCounted.Add(Other);
+						}
+					}
+					OutWires++;
+				}
+			}
+		}
+		// The node figure is reported as DISTINCT nodes crossed, which is the number a reader can check
+		// against the graph rather than a sum that grows with every wire.
+		OutNodes = AlreadyCounted.Num();
+	}
+
+	/**
+	 * How many boxes there are, and how many are geometrically nested inside another.
+	 *
+	 * NESTING IS GEOMETRIC, the same rule the editor uses, and the box rectangle starts
+	 * `TitleBarHeight` BELOW the node position because the title bar's own strip sits above it. That
+	 * offset is why a box drawn around nodes can hold FEWER than its coordinates suggest, and it is
+	 * taken from `TurboMCPComment.cpp` rather than guessed.
+	 */
+	void MeasureNesting(const UEdGraph* InGraph, int32& OutBoxes, int32& OutNested)
+	{
+		OutBoxes = 0;
+		OutNested = 0;
+		if (InGraph == nullptr)
+		{
+			return;
+		}
+
+		TArray<const UEdGraphNode_Comment*> Boxes;
+		for (const UEdGraphNode* Node : InGraph->Nodes)
+		{
+			if (const UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(Node))
+			{
+				Boxes.Add(Box);
+			}
+		}
+		OutBoxes = Boxes.Num();
+
+		for (const UEdGraphNode_Comment* Inner : Boxes)
+		{
+			const double InnerMinX = static_cast<double>(Inner->NodePosX);
+			const double InnerMinY =
+				static_cast<double>(Inner->NodePosY) + FTurboMCPComment::TitleBarHeight;
+			const double InnerMaxX = InnerMinX + static_cast<double>(Inner->NodeWidth);
+			const double InnerMaxY = static_cast<double>(Inner->NodePosY + Inner->NodeHeight);
+
+			for (const UEdGraphNode_Comment* Outer : Boxes)
+			{
+				if (Outer == Inner)
+				{
+					continue;
+				}
+				const double OuterMinX = static_cast<double>(Outer->NodePosX);
+				const double OuterMinY =
+					static_cast<double>(Outer->NodePosY) + FTurboMCPComment::TitleBarHeight;
+				const double OuterMaxX = OuterMinX + static_cast<double>(Outer->NodeWidth);
+				const double OuterMaxY = static_cast<double>(Outer->NodePosY + Outer->NodeHeight);
+
+				// STRICTLY INSIDE ON ALL FOUR SIDES. A box that merely overlapped would be a different
+				// relationship, and calling it nesting would make the check pass on data that does not
+				// exercise nesting at all.
+				if (InnerMinX > OuterMinX && InnerMinY > OuterMinY
+					&& InnerMaxX < OuterMaxX && InnerMaxY < OuterMaxY)
+				{
+					OutNested++;
+					break;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Wires whose two end nodes are in ADJACENT columns, which the knot spec says a pass must SKIP.
+	 *
+	 * "ADJACENT" is decided the way the spec decides it: the target starts to the right of the source
+	 * and no other node's column lies between them. The measure exists because a skip rule with nothing
+	 * to skip is untested, which is exactly the state the crossing case was in before this graph.
+	 */
+	void MeasureNeighbourWires(const UEdGraph* InGraph, int32& OutNeighbours)
+	{
+		OutNeighbours = 0;
+		if (InGraph == nullptr)
+		{
+			return;
+		}
+
+		auto IsBetween = [InGraph](double InLeftX, double InRightX, const UEdGraphNode* InA,
+			const UEdGraphNode* InB)
+		{
+			for (const UEdGraphNode* Other : InGraph->Nodes)
+			{
+				if (Other == nullptr || Other == InA || Other == InB
+					|| Cast<UEdGraphNode_Comment>(Other) != nullptr)
+				{
+					continue;
+				}
+				const double X = static_cast<double>(Other->NodePosX);
+				if (X > InLeftX && X < InRightX)
+				{
+					return true;
+				}
+			}
+			return false;
+		};
+
+		for (const UEdGraphNode* Node : InGraph->Nodes)
+		{
+			if (Node == nullptr || Cast<UEdGraphNode_Comment>(Node) != nullptr)
+			{
+				continue;
+			}
+			for (const UEdGraphPin* Pin : Node->Pins)
+			{
+				if (Pin == nullptr || Pin->Direction != EGPD_Output)
+				{
+					continue;
+				}
+				for (const UEdGraphPin* Linked : Pin->LinkedTo)
+				{
+					const UEdGraphNode* Target =
+						Linked != nullptr ? Linked->GetOwningNodeUnchecked() : nullptr;
+					if (Target == nullptr || Target == Node)
+					{
+						continue;
+					}
+					const double SourceX = static_cast<double>(Node->NodePosX);
+					const double TargetX = static_cast<double>(Target->NodePosX);
+					if (TargetX <= SourceX)
+					{
+						continue;
+					}
+					if (!IsBetween(SourceX, TargetX, Node, Target))
+					{
+						OutNeighbours++;
+					}
+				}
+			}
+		}
 	}
 
 	/** A function graph with an entry and a result node, ready to be wired. */
@@ -323,6 +752,239 @@ namespace
 	}
 
 	/**
+	 * `LayoutProbe`: THE GRAPH TWO INDEPENDENT SPECIFICATIONS ASKED FOR, and neither capability could
+	 * be exercised without it.
+	 *
+	 * `Spec/WORKING_GRAPH_KNOTS.md` found that `KnotProbe` cannot test the crossing case: its three
+	 * knots are already on the wire and the straight route between its two calls passes over nothing,
+	 * so a crossing predicate finds NOTHING and the primary positive case is unreachable.
+	 *
+	 * `Spec/WORKING_GRAPH_TIDY.md` found that the asset had ZERO comment boxes - measured through
+	 * `R-COMMENT-LIST` as `0 box(es), 0 nested` - so tidy's box-corner rule, its wire-length rule and
+	 * nesting itself all rested on code review.
+	 *
+	 * THIS ONE GRAPH SERVES BOTH. It carries a CROSSING, NESTING, a wire between NEIGHBOURING COLUMNS
+	 * that a knot pass must SKIP, and a MESSY RUN for a tidy pass to improve.
+	 *
+	 * THE CROSSING, THE NESTING AND THE NEIGHBOUR WIRE ARE ALL MEASURED AND PRINTED rather than
+	 * trusted. The coordinates were chosen by hand, and hand arithmetic is exactly the kind of claim
+	 * this project has been wrong about before, so the graph is measured back after it is built and the
+	 * function FAILS if any of the three structures is absent. A build whose own report says
+	 * "0 crossing" is a FAILED build, not a saved asset.
+	 */
+	bool BuildLayoutProbe(UBlueprint* InBlueprint)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* Result = nullptr;
+		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("LayoutProbe"), Entry, Result);
+		if (Graph == nullptr || Entry == nullptr)
+		{
+			return false;
+		}
+
+		// A helper for the repeated "make a PrintString call" step, so the geometry below reads as
+		// geometry rather than as boilerplate.
+		auto MakeCall = [Graph](double InX, double InY) -> UK2Node_CallFunction*
+		{
+			UK2Node_CallFunction* Node = NewObject<UK2Node_CallFunction>(Graph);
+			Node->SetFromFunction(
+				UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+			Place(Graph, Node, InX, InY);
+			return Node;
+		};
+
+		// ---------------------------------------------------------------- the CROSSING chain
+		//
+		// A -> B -> C along an exec chain, with B pushed DOWN and C far to the right, so the wire from
+		// B's output back up to C's input runs diagonally across the space the calls leave empty.
+		UK2Node_CallFunction* A = MakeCall(300.0, 0.0);
+		UK2Node_CallFunction* B = MakeCall(600.0, 300.0);
+		UK2Node_CallFunction* C = MakeCall(1900.0, 0.0);
+
+		if (Entry->GetThenPin() != nullptr && A->GetExecPin() != nullptr)
+		{
+			Entry->GetThenPin()->MakeLinkTo(A->GetExecPin());
+		}
+		if (A->GetThenPin() != nullptr && B->GetExecPin() != nullptr)
+		{
+			A->GetThenPin()->MakeLinkTo(B->GetExecPin());
+		}
+		if (B->GetThenPin() != nullptr && C->GetExecPin() != nullptr)
+		{
+			B->GetThenPin()->MakeLinkTo(C->GetExecPin());
+		}
+
+		// THE OBSTACLE, placed ON the B -> C wire. It is deliberately NOT wired into the chain: a node
+		// on the route is what a crossing test is about, and wiring it in would make it part of the
+		// route instead of an obstacle to it.
+		UK2Node_CallFunction* Obstacle = MakeCall(1050.0, 90.0);
+
+		// ---------------------------------------------------------------- the NEIGHBOURING wire
+		//
+		// D sits one column right of the obstacle and is joined by a SHORT wire. The knot spec says a
+		// pass must SKIP a wire between neighbouring columns, so this wire has to exist for that rule to
+		// be testable at all. A capability that only ever skips bad input proves nothing.
+		UK2Node_CallFunction* D = MakeCall(1300.0, 90.0);
+		if (Obstacle->GetThenPin() != nullptr && D->GetExecPin() != nullptr)
+		{
+			Obstacle->GetThenPin()->MakeLinkTo(D->GetExecPin());
+		}
+
+		// ---------------------------------------------------------------- the MESSY RUN
+		//
+		// Four calls placed OUT OF ORDER and OVERLAPPING, joined into a chain. A tidy pass should
+		// reorder and separate them. A graph that is already tidy would let a broken pass look like a
+		// working one, which is the failure `SaneProbe` catches for the rollback case.
+		{
+			const double MessyX[4] = { 1900.0, 2050.0, 1950.0, 2100.0 };
+			const double MessyY[4] = { 800.0, 830.0, 860.0, 900.0 };
+			UK2Node_CallFunction* Messy[4];
+			for (int32 Index = 0; Index < 4; ++Index)
+			{
+				Messy[Index] = MakeCall(MessyX[Index], MessyY[Index]);
+			}
+			for (int32 Index = 0; Index < 3; ++Index)
+			{
+				if (Messy[Index]->GetThenPin() != nullptr
+					&& Messy[Index + 1]->GetExecPin() != nullptr)
+				{
+					Messy[Index]->GetThenPin()->MakeLinkTo(Messy[Index + 1]->GetExecPin());
+				}
+			}
+		}
+
+		// ---------------------------------------------------------------- NESTED BOXES
+		//
+		// MEMBERSHIP IS GEOMETRIC, decided by the editor through `FSlateRect::IsRectangleContained` in
+		// graph space, with the box rectangle starting `TitleBarHeight` BELOW the node position because
+		// the title bar strip sits above it. Both facts are recorded in `TurboMCPComment.cpp` from a
+		// measurement, and they are why these coordinates leave room for the title strip rather than
+		// assuming the box begins at `NodePosY`.
+		//
+		// INNER holds the first two boxed calls; OUTER holds those two AND two more, so OUTER's
+		// membership is a strict superset and "nested" is a fact rather than a coincidence of sizes.
+		{
+			UK2Node_CallFunction* Boxed[4];
+			const double BoxedX[4] = { 300.0, 620.0, 940.0, 300.0 };
+			const double BoxedY[4] = { 1400.0, 1420.0, 1440.0, 1650.0 };
+			for (int32 Index = 0; Index < 4; ++Index)
+			{
+				Boxed[Index] = MakeCall(BoxedX[Index], BoxedY[Index]);
+			}
+			for (int32 Index = 0; Index < 3; ++Index)
+			{
+				if (Boxed[Index]->GetThenPin() != nullptr
+					&& Boxed[Index + 1]->GetExecPin() != nullptr)
+				{
+					Boxed[Index]->GetThenPin()->MakeLinkTo(Boxed[Index + 1]->GetExecPin());
+				}
+			}
+		}
+
+		// INNER's rectangle is STRICTLY INSIDE OUTER's on all four sides. A box that merely overlapped
+		// would be a different relationship, and calling it nesting would let the check pass on data
+		// that does not exercise nesting at all.
+		MakeCommentBox(Graph, TEXT("INNER box: two calls, nested inside OUTER"),
+			260.0, 1330.0, 720.0, 260.0);
+		MakeCommentBox(Graph, TEXT("OUTER box: four calls, contains INNER"),
+			200.0, 1260.0, 1900.0, 600.0);
+
+		// ---------------------------------------------------------------- GIVE THE NODES A SIZE
+		//
+		// WITHOUT THIS THE WHOLE GRAPH IS POINTS, and the crossing below cannot exist: every node
+		// reports `size (0,0)` because a commandlet draws nothing. See `SizeForMeasurement` for the
+		// measurement that corrects the earlier claim that this was a non-issue.
+		for (UEdGraphNode* Node : Graph->Nodes)
+		{
+			SizeForMeasurement(Node);
+		}
+
+		// ---------------------------------------------------------------- MEASURE, DO NOT TRUST
+		int32 CrossingWires = 0;
+		int32 CrossingNodes = 0;
+		MeasureCrossings(Graph, CrossingWires, CrossingNodes);
+		UE_LOG(LogTurboMCP, Display,
+			TEXT("TurboMCP: LayoutProbe crossing: %d wire(s) cross %d distinct node(s)"),
+			CrossingWires, CrossingNodes);
+		if (CrossingWires == 0 || CrossingNodes == 0)
+		{
+			// THE GEOMETRY IS PRINTED WHEN THE CHECK FAILS. A hand-picked coordinate that does not
+			// produce the intended structure is the thing most likely to be wrong and the hardest to
+			// see, and without this dump the only information is "it did not work" - so the next
+			// attempt is another guess. MEASURED: the first attempt reported
+			// "10 wire(s) cross 0 distinct node(s)" against coordinates whose hand arithmetic had
+			// looked obviously right.
+			for (const UEdGraphNode* Node : Graph->Nodes)
+			{
+				if (Node == nullptr || Cast<UEdGraphNode_Comment>(Node) != nullptr)
+				{
+					continue;
+				}
+				const FRect Rect = RectOf(Node);
+				UE_LOG(LogTurboMCP, Display,
+					TEXT("  node %s at (%d,%d) size (%d,%d) rect x %.0f..%.0f y %.0f..%.0f"),
+					*Node->GetName(), Node->NodePosX, Node->NodePosY,
+					Node->NodeWidth, Node->NodeHeight,
+					Rect.MinX, Rect.MaxX, Rect.MinY, Rect.MaxY);
+				for (const UEdGraphPin* Pin : Node->Pins)
+				{
+					if (Pin == nullptr || Pin->Direction != EGPD_Output)
+					{
+						continue;
+					}
+					const FVector2D From = PinPosition(Pin);
+					for (const UEdGraphPin* Linked : Pin->LinkedTo)
+					{
+						if (Linked == nullptr)
+						{
+							continue;
+						}
+						const UEdGraphNode* Target = Linked->GetOwningNodeUnchecked();
+						const FVector2D To = PinPosition(Linked);
+						UE_LOG(LogTurboMCP, Display,
+							TEXT("    wire %s.%s (%.0f,%.0f) -> %s.%s (%.0f,%.0f)"),
+							*Node->GetName(), *Pin->GetName(), From.X, From.Y,
+							Target != nullptr ? *Target->GetName() : TEXT("?"),
+							*Linked->GetName(), To.X, To.Y);
+					}
+				}
+			}
+			UE_LOG(LogTurboMCP, Error,
+				TEXT("LayoutProbe was built but no wire crosses a node, so the graph cannot exercise ")
+				TEXT("the crossing case it exists for. The COORDINATES need moving, not the check."));
+			return false;
+		}
+
+		int32 BoxCount = 0;
+		int32 NestedCount = 0;
+		MeasureNesting(Graph, BoxCount, NestedCount);
+		UE_LOG(LogTurboMCP, Display,
+			TEXT("TurboMCP: LayoutProbe boxes: %d box(es), %d nested"), BoxCount, NestedCount);
+		if (BoxCount < 2 || NestedCount < 1)
+		{
+			UE_LOG(LogTurboMCP, Error,
+				TEXT("LayoutProbe has %d box(es) and %d nested, so nesting cannot be exercised"),
+				BoxCount, NestedCount);
+			return false;
+		}
+
+		int32 NeighbourWires = 0;
+		MeasureNeighbourWires(Graph, NeighbourWires);
+		UE_LOG(LogTurboMCP, Display,
+			TEXT("TurboMCP: LayoutProbe neighbouring-column wires: %d"), NeighbourWires);
+		if (NeighbourWires == 0)
+		{
+			UE_LOG(LogTurboMCP, Error,
+				TEXT("LayoutProbe has no wire between neighbouring columns, so the knot pass SKIP ")
+				TEXT("rule has nothing to skip"));
+			return false;
+		}
+
+		// The result node is left unlinked on purpose, as in `KnotProbe`: this graph is about layout.
+		return true;
+	}
+
+	/**
 	 * `SaneProbe`: an ordinary chain that SHOULD NOT be disturbed.
 	 *
 	 * A layout pass that measures and rolls back needs a graph where the pass has nothing to improve,
@@ -418,15 +1080,20 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 	const bool bDead = BuildDeadProbe(Blueprint);
 	const bool bLocals = BuildLocalVarProbe(Blueprint);
 	const bool bSane = BuildSaneProbe(Blueprint);
+	// THE FIFTH PROBE, ADDED BECAUSE TWO INDEPENDENT SPECIFICATIONS FOUND THE SAME HOLE. `KnotProbe`
+	// cannot test the crossing case and the asset had no comment box at all, so `P/E-GRAPH-KNOTS` and
+	// `P/E-GRAPH-TIDY` both had their primary case resting on code review.
+	const bool bLayout = BuildLayoutProbe(Blueprint);
 
 	UE_LOG(LogTurboMCP, Display,
-		TEXT("TurboMCP: KnotProbe=%s DeadProbe=%s LocalVarProbe=%s SaneProbe=%s"),
+		TEXT("TurboMCP: KnotProbe=%s DeadProbe=%s LocalVarProbe=%s SaneProbe=%s LayoutProbe=%s"),
 		bKnots ? TEXT("ok") : TEXT("FAILED"),
 		bDead ? TEXT("ok") : TEXT("FAILED"),
 		bLocals ? TEXT("ok") : TEXT("FAILED"),
-		bSane ? TEXT("ok") : TEXT("FAILED"));
+		bSane ? TEXT("ok") : TEXT("FAILED"),
+		bLayout ? TEXT("ok") : TEXT("FAILED"));
 
-	if (!bKnots || !bDead || !bLocals || !bSane)
+	if (!bKnots || !bDead || !bLocals || !bSane || !bLayout)
 	{
 		UE_LOG(LogTurboMCP, Error, TEXT("one or more probe graphs could not be built"));
 		return 2;
