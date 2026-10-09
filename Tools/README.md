@@ -26,6 +26,7 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-layout.py` | a running editor | The layout report checks, over a clean graph and a messy one |
 | `test-widget-preview.py` | a running editor | The widget preview checks, including the PNG's own header |
 | `make-test-widget.py` | a running editor | Creates and SAVES the Widget Blueprint test asset |
+| `test-capture.py` | a running editor | The capture checks. Its canvas is EMPTY; see TestRecord 3c |
 | `build-test-graph.py` | a running editor | Rebuilds the test graph through the engine's writer, then saves and verifies it |
 | `make-test-assets.py` | a headless editor | Create test-kit **scaffolding** (see the warning below) |
 
@@ -51,6 +52,7 @@ python Tools\test-comments.py
 python Tools\test-datatable.py
 python Tools\test-layout.py
 python Tools\test-widget-preview.py
+python Tools\test-capture.py
 ```
 
 ## A leftover LiveCodingConsole blocks every build
