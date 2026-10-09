@@ -165,4 +165,21 @@ namespace TurboMCPNodeId
 	 * source, because some nodes build their title at runtime.
 	 */
 	FString Unlocalised(const FText& InText);
+
+	/**
+	 * The type ID of a member-variable get or set node.
+	 *
+	 * Variable nodes are not palette nodes, so they have no menu category, and the
+	 * generic rule in GetNodeTypeId cannot build their ID. The engine's own writer
+	 * uses the canonical form `Variables|<variable category>|Set<Name>` or
+	 * `Get<Name>`, and its `_expand_type_id` in `blueprint_dsl.py` resolves a
+	 * shorthand `|SetName` back to exactly that.
+	 *
+	 * Matching it is what lets an ID this plugin prints be handed straight back to
+	 * the engine's graph writer, which is what `03_TOOLS.md` requires.
+	 *
+	 * Returns an empty string when the variable cannot be found on the Blueprint,
+	 * so the caller refuses rather than printing an ID that will not resolve.
+	 */
+	FString GetVariableNodeTypeId(const class UK2Node_Variable* InNode);
 }

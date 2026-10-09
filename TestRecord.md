@@ -229,13 +229,106 @@ collide. It is a mitigation, not a fix.
   at `Text.h` line 365 belongs to `FTextFormat`. The working call is
   `FTextInspector::GetSourceString(Text)`, a static at line 1289. This cost two
   build cycles to find.
-- Reading a Blueprint's graph through the engine's `read_graph_dsl` returned an
-  empty string for a graph of unconnected events, so it could not be used to
-  cross-check type IDs. The node type catalog from `find_node_types` was used
-  instead.
 - No engine tool creates a Blueprint, so the asset had to be scaffolded by a
   commandlet first. The **structure** was then written by the engine, not by this
   plugin, which is what keeps the comparison honest.
+
+---
+
+## 2g. Phase 2: R-GRAPH-LOAD
+
+Built: `FTurboMCPGraphText` (the graph text writer, shared with `R-BP-LOAD`) and
+`ReadTurboMCPGraphLoad`. 16 tools.
+
+Tested on `BP_NodeTest`, whose EventGraph the **engine's own `write_graph_dsl`
+wrote**: an event, a write to a member variable, a print, a branch that reads that
+variable, and a different print on each arm. 11 nodes.
+
+```
+(event ReceiveBeginPlay
+  (Variables|Default|SetHealth ; BP_NodeTest:EventGraph:a280af
+      execute (-> BP_NodeTest:EventGraph:4d9d9c)
+      Health 42.0)
+  (Development|PrintString ; BP_NodeTest:EventGraph:285ce6
+      execute (-> BP_NodeTest:EventGraph:a280af)
+      InString "before the branch"
+      ...)
+  (Utilities|FlowControl|Branch ; BP_NodeTest:EventGraph:fe61a9
+      execute (-> BP_NodeTest:EventGraph:285ce6)
+      Condition (Math|Float|float>float ; BP_NodeTest:EventGraph:c186f4
+      A (Variables|Default|GetHealth ; BP_NodeTest:EventGraph:5e1484)
+      B (Math|Float|MakeLiteralFloat ; BP_NodeTest:EventGraph:97c189
+      Value 10.0)))
+  (:then
+    (Development|PrintString ... InString "healthy" ...))
+  (:else
+    (Development|PrintString ... InString "hurt" ...)))
+```
+
+| Test | Result | Evidence |
+|---|---|---|
+| Exec flow reads in order | **PASS** | each node's `execute` points at its predecessor, top to bottom |
+| Every node carries its ID | **PASS** | a `; <node ID>` comment on every node |
+| Pins by real name | **PASS** | `InString`, `Condition`, `execute` |
+| Value nodes print inline | **PASS** | the condition's `A` and `B` nested inside it |
+| Variable get and set get canonical IDs | **PASS** | `Variables\|Default\|SetHealth`, `...\|GetHealth` |
+| Both branches of a branch survive | **PASS** | `:then` and `:else`, each with its own body |
+| An entry point with no body says so | **PASS** | `; this entry point has no exec chain and no body` |
+| A wrong graph name lists the real ones | **PASS** | `error: ... has no graph named 'X'. Its graphs are: EventGraph` |
+| A bad detail level is refused with the list | **PASS** | `Accepted: manifest, signatures, bodies, full.` |
+| `format write` is refused, not faked | **PASS** | says it is not implemented yet and names `04_FORMATS.md` 2.6 |
+
+### Three defects the engine-written graph exposed
+
+These were invisible when the graph had only unconnected events. Writing real
+content through Epic's writer is what found them.
+
+**1. Entry nodes were listed as unreachable.** Every event appeared twice: once as
+its own form, and again under "not reachable from any entry point". The entry
+nodes were never marked as printed. Fixed by marking them before any body is
+walked.
+
+**2. Variable get and set nodes had no type ID.** `K2Node_VariableGet` and
+`K2Node_VariableSet` are not palette nodes, so `GetMenuCategory()` is empty and
+the generic `<category>|<title>` rule refused them. The result was that **every
+variable access in a graph was unprintable**. The engine's writer uses the
+canonical `Variables|<variable category>|Set<Name>`, with `Default` for an
+uncategorised variable, and its own `_expand_type_id` in `blueprint_dsl.py`
+resolves that form. Fixed by special-casing variable nodes the same way custom
+events already were.
+
+**3. The `else` arm was lost.** The exec walk followed only the **first** exec
+output, so an `if/else` printed one arm and left the other in the unreachable
+list. Fixed by following every exec output and writing each arm as a named
+`(:PinName ...)` continuation, which is the engine's own shape for a multi-exec
+node.
+
+### A method failure worth more than the three defects
+
+An earlier run wrote **13 nodes** through the engine's writer and read them back
+correctly. Then the editor was stopped for a rebuild and **all 13 were gone**.
+`write_graph_dsl` compiles the Blueprint, which marks it dirty, but nothing had
+saved it. The verification looked perfect and the work did not exist.
+
+`Tools/build-test-graph.py` now ends by saving through the plugin's own `E-SAVE`
+and then **proving the save from the asset's unsaved flag**, so this cannot happen
+quietly again.
+
+### The editor language decides the type ID, and can be pinned
+
+`Tools/start-editor.ps1` now passes `-culture=en` by default. This matters more
+than it looks and is the fix for the limitation in section 2f:
+
+| Editor language | Type ID for BeginPlay |
+|---|---|
+| French (the machine default) | `AddEvent\|événementBeginPlay` |
+| English (now pinned) | `AddEvent\|EventBeginPlay` |
+
+The English form is the one the engine's own documentation and examples use, and
+the one that transfers between machines. Pinning it makes every result in this
+record reproducible and comparable, and removes the need for the C++ class name
+as a workaround — though the class is still printed, because it is what
+disambiguates two nodes whose titles collide.
 
 ---
 
