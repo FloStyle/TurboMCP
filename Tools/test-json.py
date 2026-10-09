@@ -41,9 +41,9 @@ def check(name, ok, detail=""):
         failures.append(name)
 
 
-def load(session, asset, detail="manifest", fmt="", budget=""):
+def load(session, asset, detail="manifest", fmt="", budget="", graph=""):
     return session.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad", {
-        "assets": asset, "detail": detail, "graphFilter": "",
+        "assets": asset, "detail": detail, "graphFilter": graph,
         "format": fmt, "tokenBudget": budget,
     })
 
@@ -109,6 +109,55 @@ def text_names(text, section):
             continue
         names.append(stripped)
     return names
+
+
+def text_bodies(text):
+    """The graph bodies in the text output, as {graph name: body text}.
+
+    The text writer separates them with `; ---- Name ----` markers, which are part of the
+    text format's own comment syntax and therefore the reliable delimiter.
+
+    THE DOCUMENT'S OWN TRAILER IS NOT A BODY. After the last graph the text writer appends
+    a count of items it could not print in full. That trailer has no marker, so a first
+    version of this attach it to the LAST graph and reported a divergence on that graph
+    alone — 318 characters against 145 — when the bodies themselves were identical. The
+    trailer is cut off at its own header and returned separately, and the JSON's
+    `body_notes` is the equivalent of it.
+    """
+    bodies = {}
+    current = None
+    collected = []
+    trailer = []
+    for line in text.splitlines():
+        stripped = line.strip()
+
+        # The trailer header ends the LAST graph as well as starting the trailer, so the
+        # graph in progress is stored before the trailer takes over. A first version
+        # switched straight to `__trailer__` and lost that graph entirely.
+        if re.match(r"^;\s*\d+\s+item\(s\) could not be printed in full", stripped):
+            if current is not None and current != "__trailer__":
+                bodies[current] = "\n".join(collected)
+            current = "__trailer__"
+            # The header line itself is not a note, so it is not collected.
+            continue
+
+        match = re.match(r"^;\s*----\s*(.+?)\s*----\s*$", stripped)
+        if match:
+            if current is not None and current != "__trailer__":
+                bodies[current] = "\n".join(collected)
+            current = match.group(1)
+            collected = []
+            continue
+
+        if current == "__trailer__":
+            if stripped:
+                trailer.append(stripped)
+        elif current is not None:
+            collected.append(line)
+
+    if current is not None and current != "__trailer__":
+        bodies[current] = "\n".join(collected)
+    return {name: body.strip() for name, body in bodies.items()}, trailer
 
 
 def main():
@@ -260,18 +309,103 @@ def main():
     check("the same call with room succeeds", (json_body(roomy) or {}).get("ok") is True)
 
     print()
-    print("=== a level that is not implemented is refused as PARSEABLE JSON (P2) ===")
-    bodies = load(session, ASSET, detail="bodies", fmt="json")
-    bodies_doc = json_body(bodies)
-    print(bodies[:400])
-    print()
-    check("the refusal parses", bodies_doc is not None)
+    print("=== bodies: each graph carries the SAME body text as the text rendering ===")
+    # This is where the "bodies stay strings" decision pays off, and it is also where a
+    # comparison is worth the most: a body is the largest thing either rendering produces,
+    # so a divergence here would be the easiest to miss by eye and the most damaging.
+    bodies_text = load(session, ASSET, detail="bodies")
+    bodies_json = load(session, ASSET, detail="bodies", fmt="json")
+    bodies_doc = json_body(bodies_json)
+    check("the bodies document parses", bodies_doc is not None)
+
     if bodies_doc is not None:
-        check("it reports failure", bodies_doc.get("ok") is False)
-        check("it names the level asked for",
-              "bodies" in str(bodies_doc.get("error", "")))
+        check("it reports the level it answered", bodies_doc.get("detail") == "bodies",
+              str(bodies_doc.get("detail")))
+
+        from_text, trailer = text_bodies(bodies_text)
+        from_json = {g.get("name"): (g.get("body") or "").strip()
+                     for g in bodies_doc.get("graphs", [])}
+        notes_json = bodies_doc.get("body_notes", [])
+
+        print("    graphs in the text: %s" % sorted(from_text))
+        print("    graphs in the JSON: %s" % sorted(from_json))
+        check("both renderings cover the same graphs",
+              sorted(from_text) == sorted(from_json))
+        check("the bodies are not empty, so the comparison means something",
+              all(len(body) > 0 for body in from_json.values())
+              and len(from_json) > 0,
+              "%d graph(s)" % len(from_json))
+
+        # EVERY body must be identical, character for character. Not a prefix, not a
+        # summary: the two writers call the same graph text writer, so anything short of
+        # equality is a defect worth failing on.
+        for name in sorted(set(from_text) & set(from_json)):
+            same = from_text[name] == from_json[name]
+            check("%s: the body text is identical in both renderings" % name, same,
+                  "" if same else "text %d chars, json %d chars"
+                  % (len(from_text[name]), len(from_json[name])))
+
+        # Spot-check a fact inside a body, so the equality above is not the only evidence.
+        check("a body carries a node ID",
+              any("BP_NodeTest:EventGraph:" in body or "BP_NodeTest:" in body
+                  for body in from_json.values()))
+        check("a body carries an S-expression",
+              any("(event " in body for body in from_json.values()))
+
+        # The notes trailer is the document's, not a body's, and the JSON carries the same
+        # facts under `body_notes`. Both must agree on whether anything was unprintable.
+        print("    notes in the text trailer: %d" % len(trailer))
+        print("    notes in the JSON        : %d" % len(notes_json))
+        check("both renderings agree that something was unprintable, or that nothing was",
+              (len(trailer) > 0) == (len(notes_json) > 0),
+              "text=%d json=%d" % (len(trailer), len(notes_json)))
+        # A note names the node it is about, and that node ID must appear in the other
+        # rendering too, or the two are describing different problems.
+        for note in notes_json:
+            check("the note names a node the text also mentions",
+                  note.split(":")[0] in bodies_text or note[:40] in bodies_text,
+                  note[:70])
+
+    print()
+    print("=== bodies respects the graph filter, in both renderings ===")
+    filtered_text = load(session, ASSET, detail="bodies", graph="Construction")
+    filtered_json = load(session, ASSET, detail="bodies", fmt="json",
+                         graph="Construction")
+    filtered_doc = json_body(filtered_json)
+    print(filtered_json[:260])
+    print()
+    if filtered_doc is not None:
+        names = [g.get("name") for g in filtered_doc.get("graphs", [])]
+        check("the filter is applied in JSON", len(names) < 3, str(names))
+        check("the filtered graph is the one asked for",
+              all("Construction" in n for n in names), str(names))
+        check("the text is filtered the same way",
+              "EventGraph" not in filtered_text.split("bodies:")[-1][:400])
+
+    print()
+    print("=== a filter that matches nothing is refused, not answered empty ===")
+    nomatch = load(session, ASSET, detail="bodies", fmt="json", graph="zzzznotagraph")
+    nomatch_doc = json_body(nomatch)
+    print(nomatch[:300])
+    print()
+    check("the refusal parses", nomatch_doc is not None)
+    if nomatch_doc is not None:
+        check("it reports failure", nomatch_doc.get("ok") is False)
+        check("it lists the real graphs", "EventGraph" in str(nomatch_doc.get("error", "")))
+        check("it returns no graphs", not nomatch_doc.get("graphs"))
+
+    print()
+    print("=== full is still refused by name, and only full ===")
+    full = load(session, ASSET, detail="full", fmt="json")
+    full_doc = json_body(full)
+    print(full[:280])
+    print()
+    check("the refusal parses", full_doc is not None)
+    if full_doc is not None:
+        check("it reports failure", full_doc.get("ok") is False)
+        check("it names 'full'", "full" in str(full_doc.get("error", "")))
         check("it does not return a partial document",
-              "counts" not in bodies_doc and "graphs" not in bodies_doc)
+              "counts" not in full_doc and "graphs" not in full_doc)
 
     print()
     print("=== the text rendering still works, so JSON did not replace it ===")

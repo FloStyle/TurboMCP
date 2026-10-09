@@ -1467,3 +1467,63 @@ the whole suite.
 | `signatures` | **done** |
 | `bodies` | refused by name, no partial document |
 | `full` | refused by name, no partial document |
+
+---
+
+## 3g. R-BP-LOAD's JSON reaches bodies, checked by exact equality
+
+Each graph now carries its body as the S-expression text, produced by the same
+`FTurboMCPGraphText` the text writer and `R-GRAPH-LOAD` use, so all three cannot disagree.
+`full` remains, refused by name.
+
+### The comparison at this level is exact, and that is the point
+
+For `manifest` and `signatures` the check is that a fact in one rendering appears in the
+other, which is necessarily lenient because the text is prose. **A body is not prose**: both
+renderings call one writer, so the two bodies must be identical character for character. The
+suite requires that, and it was verified that a one-character difference is detected.
+
+A lenient comparison would have passed while all three defects below were present.
+
+### Three defects in my test, all in the text extractor
+
+1. The document's own trailer — `; N item(s) could not be printed in full:` — has no graph
+   marker, so a first version attached it to the **last** graph and reported that graph as
+   diverging, `318 characters` against `145`, when the bodies themselves were identical.
+2. Adding trailer detection then **discarded the last graph**, because the trailer header
+   both ends the final body and starts the trailer.
+3. The trailer's header line was collected as a note, so the text reported 2 notes where the
+   JSON reported 1. A header is a header, not a note.
+
+Each looked like the tool disagreeing with itself. The exact comparison is what found them.
+
+### The filter and the notes are shared behaviour, not two implementations
+
+The graph filter is applied the way the text writer applies it, so both cover the same
+graphs, and a filter matching nothing is a **refusal** rather than an empty document. The
+reason is the one the text writer already gives: an empty answer looks like "this Blueprint
+has nothing" when the truth is "your filter is wrong".
+
+Anything the graph writer could not print is carried as `body_notes`, a list, rather than
+dropped. The text inlines those as `; error:` comments; a JSON caller gets values it can
+test, and their **presence** is the signal that a body is incomplete. Both renderings are
+required to agree on whether anything was unprintable, and the suite checks it: 1 note in
+each, for the same node.
+
+### Where the JSON stands
+
+| Level | State |
+|---|---|
+| `manifest` | **done** |
+| `signatures` | **done** |
+| `bodies` | **done** |
+| `full` | refused by name, no partial document |
+
+### Two decision records the round confirmed rather than assumed
+
+The budget decision from 3f holds at this level, which is where it matters most, because
+bodies is where the document gets large: the JSON is built in full, measured, and refused
+with its real size rather than cut.
+
+The "bodies stay strings" decision also holds: the JSON body of `EventGraph` is the same
+S-expression text the text rendering carries, verified by equality rather than by eye.

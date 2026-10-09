@@ -158,8 +158,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 			// The JSON rendering, from the same accessors as the text above, so the two
 			// cannot disagree about what the Blueprint contains.
 			FString JsonError;
+			FTurboMCPBlueprintJson::FRequest JsonRequest;
+			JsonRequest.DetailLevel = static_cast<int32>(DetailLevel);
+			JsonRequest.GraphFilter = Request.GraphFilter;
+			JsonRequest.BudgetChars = BudgetChars;
 			const FString Json = FTurboMCPBlueprintJson::Write(
-				Blueprint, static_cast<int32>(DetailLevel), BudgetChars, JsonError);
+				Blueprint, JsonRequest, JsonError);
 
 			if (!JsonError.IsEmpty())
 			{

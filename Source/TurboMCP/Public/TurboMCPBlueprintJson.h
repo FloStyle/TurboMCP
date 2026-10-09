@@ -30,30 +30,49 @@ class UBlueprint;
  *
  * WHAT IS NOT YET IMPLEMENTED
  * ---------------------------
- * Only `manifest` is written. `signatures`, `bodies` and `full` are REFUSED by name
- * rather than answered with a partial document, because a caller that asked for
- * signatures and got a manifest-shaped document would read fields that are not there and
- * conclude the Blueprint has no functions.
+ * `full` is REFUSED by name rather than answered with a partial document, because a caller
+ * that asked for the editing details and got a body-shaped document would read fields that
+ * are not there.
  */
 class FTurboMCPBlueprintJson
 {
 public:
 	/**
+	 * Everything the writer needs.
+	 *
+	 * A struct rather than five arguments, for the same reason `FTurboMCPBlueprintRead::
+	 * FRequest` is one: the filter and the budget interact, because a filter that matched
+	 * nothing is a refusal and not an empty document, and adding parameters one at a time
+	 * is how a call site ends up passing them in the wrong order.
+	 */
+	struct FRequest
+	{
+		/** The detail level, as `FTurboMCPBlueprintRead::EDetail`'s underlying value. */
+		int32 DetailLevel = 0;
+
+		/** The same filter the text writer used, so both cover the same graphs. */
+		TArray<FString> GraphFilter;
+
+		/** Zero means no ceiling. */
+		int32 BudgetChars = 0;
+	};
+
+	/**
 	 * Writes one Blueprint as a JSON object.
 	 *
-	 * Returns an empty string and fills OutError when the level is not implemented, or when
-	 * the document would not fit InBudgetChars, so a caller can tell "refused, and here is
-	 * why" from "empty document".
+	 * Returns an empty string and fills OutError when the level is not implemented, when the
+	 * filter matched nothing, or when the document would not fit the budget, so a caller can
+	 * tell "refused, and here is why" from "empty document".
 	 *
 	 * THE BUDGET IS A REFUSAL AND NOT A TRUNCATION. The text writer steps a graph's detail
 	 * down when the budget is passed, because a text document that stops early is still
 	 * readable. A JSON document that stops early is NOT: it does not parse at all, so a
 	 * truncated one is worse than useless, because the caller cannot even find out what went
 	 * wrong. The document is therefore built in full, measured, and refused with a parseable
-	 * error naming what to ask for instead. Zero means no ceiling.
+	 * error naming what to ask for instead.
 	 */
-	static FString Write(const UBlueprint* InBlueprint, int32 InDetailLevel,
-		int32 InBudgetChars, FString& OutError);
+	static FString Write(const UBlueprint* InBlueprint, const FRequest& InRequest,
+		FString& OutError);
 
 	/**
 	 * Writes a machine-readable error object.
