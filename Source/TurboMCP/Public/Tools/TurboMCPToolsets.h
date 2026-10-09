@@ -143,6 +143,43 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPAssetDescribe(const FString& Assets);
+
+	/**
+	 * Read the exact type path a pin or a variable needs.
+	 *
+	 * Pass part of a type name, and optionally a kind of struct, enum, class,
+	 * interface or any. Every word must appear in the type's name or its full
+	 * path.
+	 *
+	 * Searches native C++ types through reflection and user-made struct and enum
+	 * assets, and says which of the two each result is. Each result gives the
+	 * exact path to use, its kind, and the module or asset it lives in.
+	 *
+	 * A type that exists on disk but is not loaded is still listed, marked as not
+	 * loaded, with the note that the asset must be loaded before a graph can use
+	 * it. Results are capped and the number left out is printed.
+	 *
+	 * Pass an empty kind for `any`. An unknown kind is refused with the list of
+	 * accepted kinds.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPTypeFind(const FString& Words, const FString& Kind);
+
+	/**
+	 * Read every asset with unsaved changes.
+	 *
+	 * One line per unsaved asset: its package path and its class. Reads the
+	 * package's own unsaved flag rather than a save call's return value, because
+	 * `D-33` records that an engine save once reported an error when it worked.
+	 *
+	 * The class is read from the asset registry, so listing unsaved work never
+	 * forces an asset to load. Pass a number to raise the default cap of 50.
+	 *
+	 * When nothing is unsaved it says so, because a zero that names its reason is
+	 * different from a check that did not run (`P1`).
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPDirtyList(const FString& Limit);
 };
 
 /**

@@ -35,7 +35,21 @@ public:
 		/** The asset's own name, for example `WBP_Card`. */
 		FString AssetName;
 
-		/** The generated class path when the asset has one, else empty. */
+		/**
+		 * The asset's class path, for example `/Script/Engine.Blueprint`.
+		 *
+		 * Filled by both resolution routes so the answer cannot differ between
+		 * path forms, which `T-ASSET-2` requires.
+		 */
+		FString AssetClass;
+
+		/**
+		 * The generated class path, filled only when the input named one.
+		 *
+		 * Left empty otherwise rather than being guessed from the asset name:
+		 * inventing `Asset._C` for every asset made this differ between path
+		 * forms. `R-ASSET-DESCRIBE` prints it under its own label.
+		 */
 		FString ClassPath;
 	};
 
@@ -85,8 +99,14 @@ private:
 	/**
 	 * Fills OutResolved from a loaded object. This is the only path that finds
 	 * an asset that exists in memory but was never saved.
+	 *
+	 * @param bWasClassPath  True when the caller's input named a generated class,
+	 *        which is the only case where ClassPath is filled.
 	 */
-	static bool CompleteFromObject(const class UObject* InObject, FResolved& OutResolved);
+	static bool CompleteFromObject(
+		const class UObject* InObject,
+		FResolved& OutResolved,
+		bool bWasClassPath = false);
 
 	/**
 	 * Fills the remaining fields of OutResolved from a package path, using the

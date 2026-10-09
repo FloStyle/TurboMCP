@@ -116,7 +116,56 @@ These correct `07_ENGINE_NOTES.md` and were found by experiment:
 
 ### Not yet verified in phase 1
 
-`R-TYPE-FIND`, `R-DIRTY-LIST`, `E-COMPILE` and `E-SAVE` are not written yet.
+`E-COMPILE` and `E-SAVE` are not written yet.
+
+---
+
+## 2d. Phase 1: type find and dirty list
+
+| Test | Result | Evidence |
+|---|---|---|
+| `R-TYPE-FIND` finds a native struct | **PASS** | `Vector kind:struct` puts `/Script/CoreUObject.Vector` **first** among 333 matches |
+| It gives the exact pin path and the module | **PASS** | `/Script/Engine.VectorCurve  [struct] in Engine` |
+| It finds a user-made enum | **PASS** | `TA11` returns `/Game/Tests/TA11_TestEnum.TA11_TestEnum  [enum]`, marked not loaded yet |
+| It caps the list | **PASS** | says `showing the first 30` and how many more exist |
+| It refuses an unknown kind | **PASS** | lists `any, struct, enum, class, interface` |
+| `R-DIRTY-LIST` sees a real unsaved asset | **PASS** | after a property change, reports `1 package(s) dirty` and names it with its class |
+| It handles nothing unsaved | **PASS** | `0 package(s) dirty` + `Nothing has unsaved changes.` |
+| Two tools agree on the unsaved state | **PASS** | `R-ASSET-DESCRIBE` independently reported `unsaved changes: yes` and `on disk: not fully` |
+
+Run both suites with:
+
+```
+python Tools/test-agent-help.py
+python Tools/test-asset-tools.py
+```
+
+### The serious bug `T-ASSET-2` caught
+
+The three path forms of one asset produced **three different answers**:
+
+| Input form | What it said |
+|---|---|
+| short name `TA11_TestEnum` | object `...Enum.Enum`, class `UserDefinedEnum`, class path `none` |
+| package path `/Game/Tests/TA11_TestEnum` | object `/Game/Tests/TA11_TestEnum`, class **`Package`** |
+| object path `...Enum.Enum` | class path **`/Script/Engine.UserDefinedEnum`** |
+
+Two faults, both fixed:
+
+1. The **package path form resolved the `UPackage` instead of the asset**. The
+   resolver dropped the object name and then looked the path up as an object, so
+   it found the container. It reported `class: Package` and the package as the
+   object path, which is simply the wrong answer to "which asset is this". The
+   resolver now tells an object path from a package path by whether the object
+   name is really part of the input, and sends a package path through the
+   registry.
+2. `ClassPath` was **invented** as `<Asset>_C` for every asset on one route and
+   left empty on another. It is now filled only when the caller actually named a
+   generated class, and the asset's own class is carried in a separate
+   `AssetClass` field set by all three routes.
+
+After the fix, the three forms are byte-identical, which is what `T-ASSET-2`
+requires and what `P9` implies: one question, one answer.
 
 ---
 

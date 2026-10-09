@@ -222,12 +222,30 @@ namespace
 		// a caller learns the asset is not on disk.
 		const bool bLoaded = FindObject<UObject>(nullptr, *InResolved.ObjectPath) != nullptr;
 
-		FString Line = FString::Printf(TEXT("package: %s\n  object: %s\n  class: %s"),
-			*InResolved.PackagePath, *InResolved.ObjectPath, *ClassNameOf(Asset));
+		// The class name comes from the resolver, which fills it on both routes,
+		// so every path form prints the same class.
+		FString ClassShort = InResolved.AssetClass;
+		int32 LastDot = INDEX_NONE;
+		if (ClassShort.FindLastChar(TEXT('.'), LastDot))
+		{
+			ClassShort = ClassShort.Mid(LastDot + 1);
+		}
 
-		Line += InResolved.ClassPath.IsEmpty()
-			? TEXT("\n  class path: none (this asset kind has no generated class)")
-			: FString::Printf(TEXT("\n  class path: %s"), *InResolved.ClassPath);
+		FString Line = FString::Printf(TEXT("package: %s\n  object: %s\n  class: %s"),
+			*InResolved.PackagePath, *InResolved.ObjectPath,
+			ClassShort.IsEmpty() ? TEXT("unknown") : *ClassShort);
+
+		// The generated class is a separate, real thing that the engine's own
+		// tools ask for by name, so it is printed only when it exists. Saying
+		// "none" is a positive statement that the check ran (`P1`).
+		const FString GeneratedClassPath = FString::Printf(
+			TEXT("%s.%s_C"), *InResolved.PackagePath, *InResolved.AssetName);
+		const FAssetData ClassAsset = Registry->GetAssetByObjectPath(
+			FSoftObjectPath(GeneratedClassPath), /*bIncludeOnlyOnDiskAssets=*/false);
+
+		Line += ClassAsset.IsValid()
+			? FString::Printf(TEXT("\n  generated class: %s"), *ClassAsset.GetObjectPathString())
+			: TEXT("\n  generated class: none, this asset kind has no generated class");
 
 		const FString Parent = BlueprintParentOf(Asset);
 		if (!Parent.IsEmpty())

@@ -171,7 +171,13 @@ bool FTurboMCPAssetResolver::TryDirectForms(const FString& InInput, FResolved& O
 	// A generated class path names the class, not the asset, so drop the `_C`
 	// suffix and keep looking. `04_FORMATS.md` section 4 lists that form and P5
 	// requires it to work.
-	if (ObjectPath.EndsWith(ClassSuffix))
+	const int32 DotBeforeSuffix = ObjectPath.Len() - (UE_ARRAY_COUNT(ClassSuffix) - 1) - 1;
+	const bool bHadClassSuffix =
+		ObjectPath.EndsWith(ClassSuffix)
+		&& DotBeforeSuffix >= 0
+		&& ObjectPath[DotBeforeSuffix] == TEXT('.');
+
+	if (bHadClassSuffix)
 	{
 		ObjectPath.LeftChopInline(UE_ARRAY_COUNT(ClassSuffix) - 1);
 	}
@@ -190,20 +196,49 @@ bool FTurboMCPAssetResolver::TryDirectForms(const FString& InInput, FResolved& O
 		return false;
 	}
 
+	// A path names an object when it carries an object name that is not just the
+	// package: either `/Mount/Folder/Package.Object`, or `...Package.Object_C`
+	// before the suffix was dropped. Without this check the package path form
+	// `/Game/Tests/TA11_TestEnum` resolves to the UPackage, and the asset is then
+	// reported as class `Package` with the package as its object path. That is
+	// the wrong answer to "which asset is this", and it made the path forms
+	// disagree, which `T-ASSET-2` forbids.
+	const bool bLooksLikeObjectPath =
+		!ObjectName.IsEmpty()
+		&& (ObjectPath.Contains(TEXT(".") + ObjectName) || bHadClassSuffix);
+
+	if (!bLooksLikeObjectPath)
+	{
+		// The input named a package. P5 requires this form to work, so it is
+		// resolved through the registry, which finds the asset inside it.
+		return CompleteFromPackagePath(PackageName, OutResolved);
+	}
+
 	// An asset with unsaved changes exists only in memory. Completing from the
 	// package path alone would answer "not found" for the very asset the agent
 	// just made, so prefer the loaded object (P5).
 	if (UObject* Loaded = FindObject<UObject>(nullptr, *ObjectPath))
 	{
-		return CompleteFromObject(Loaded, OutResolved);
+		return CompleteFromObject(Loaded, OutResolved, /*bWasClassPath=*/bHadClassSuffix);
 	}
 
 	return CompleteFromPackagePath(PackageName, OutResolved);
 }
 
-bool FTurboMCPAssetResolver::CompleteFromObject(const UObject* InObject, FResolved& OutResolved)
+bool FTurboMCPAssetResolver::CompleteFromObject(
+	const UObject* InObject,
+	FResolved& OutResolved,
+	bool bWasClassPath)
 {
 	if (InObject == nullptr)
+	{
+		return false;
+	}
+
+	// A UPackage is not an asset. Reporting one names the container instead of
+	// the thing inside it, so it is refused and the caller resolves through the
+	// registry instead.
+	if (InObject->IsA<UPackage>())
 	{
 		return false;
 	}
@@ -216,11 +251,23 @@ bool FTurboMCPAssetResolver::CompleteFromObject(const UObject* InObject, FResolv
 		OutResolved.PackagePath = Package->GetName();
 	}
 
-	// Only an asset that has a generated class can be used where the engine wants
-	// the class form, so leave it empty rather than inventing one.
-	if (const UClass* Class = InObject->GetClass())
+	// The class path is filled only for a generated class, which is the one form
+	// the engine's own tools ask for. Inventing `Asset._C` for every asset made
+	// this field disagree between path forms, so it stays empty when the asset
+	// has no generated class. The asset's own class is printed separately.
+	if (bWasClassPath)
 	{
-		OutResolved.ClassPath = Class->GetPathName();
+		if (const UClass* Class = InObject->GetClass())
+		{
+			OutResolved.ClassPath = Class->GetPathName();
+		}
+	}
+
+	// The asset's own class, set on this route too so the loaded-object route and
+	// the registry route cannot disagree (`T-ASSET-2`).
+	if (const UClass* AssetClass = InObject->GetClass())
+	{
+		OutResolved.AssetClass = AssetClass->GetPathName();
 	}
 
 	return true;
@@ -254,21 +301,14 @@ bool FTurboMCPAssetResolver::CompleteFromPackagePath(
 	OutResolved.PackagePath = Asset.PackageName.ToString();
 	OutResolved.AssetName = Asset.AssetName.ToString();
 
-	// A Blueprint has a generated class registered as a separate asset named
-	// `<AssetName>_C`. Not every asset kind has one, so an invalid result means
-	// "this asset has no generated class" and ClassPath stays empty rather than
-	// carrying an invented path.
-	const FString GeneratedClassPath = FString::Printf(
-		TEXT("%s.%s_C"), *OutResolved.PackagePath, *OutResolved.AssetName);
+	// The asset's own class, taken from the registry so this route and the
+	// loaded-object route cannot disagree. `T-ASSET-2` requires every path form
+	// of one asset to produce the same line.
+	OutResolved.AssetClass = Asset.AssetClassPath.ToString();
 
-	const FAssetData ClassAsset = Registry->GetAssetByObjectPath(
-		FSoftObjectPath(GeneratedClassPath),
-		/*bIncludeOnlyOnDiskAssets=*/false);
-
-	if (ClassAsset.IsValid())
-	{
-		OutResolved.ClassPath = ClassAsset.GetObjectPathString();
-	}
+	// ClassPath stays empty on this route. It is only meaningful when the caller
+	// actually named a generated class, and `R-ASSET-DESCRIBE` prints the
+	// generated class under its own label by asking the registry for it.
 
 	return true;
 }
@@ -311,6 +351,10 @@ void FTurboMCPAssetResolver::FindByName(
 		Match.ObjectPath = Asset.GetObjectPathString();
 		Match.PackagePath = Asset.PackageName.ToString();
 		Match.AssetName = AssetName;
+		// Set here as well as on the other two routes, or the short name form
+		// prints "class: unknown" while the package and object forms print the
+		// real class, and `T-ASSET-2` requires all forms to agree.
+		Match.AssetClass = Asset.AssetClassPath.ToString();
 		OutMatches.Add(MoveTemp(Match));
 	}
 }
