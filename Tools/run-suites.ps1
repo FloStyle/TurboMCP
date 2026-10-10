@@ -340,10 +340,19 @@ foreach ($name in $NeedsEditor) {
     $out = $run.Output
     $result = ($out | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
     if (-not $result) {
-        # A suite that dies without a result line is worth seeing, so the tail is printed.
-        $Results[$name] = 'RESULT: no result line'
-        Write-Output "  no RESULT line; last lines:"
-        $out | Select-Object -Last 4 | ForEach-Object { "    " + $_ }
+        # *** A SUITE THAT DIES WITHOUT A RESULT LINE IS WORTH SEEING, AND THIS USED TO PRINT ITS TAIL AND THEN
+        # THROW IT AWAY. *** MEASURED REASON: it printed `no RESULT line; last lines:` and the four following
+        # lines, AND THE RUN'S SUMMARY FILTERS OUTPUT DOWN TO LINES MATCHING `FAIL`, SO THE TAIL NEVER REACHED
+        # ANYONE READING THE SUMMARY. THREE ROUNDS WERE SPENT ASKING WHY FOUR SUITES REPORTED NOTHING WHILE PASSING
+        # INDIVIDUALLY, AND THE ANSWER WAS BEING COLLECTED AND DISCARDED AT THE LAST STEP.
+        #
+        # SO THE TAIL IS PART OF THE VERDICT STRING ITSELF rather than a line beside it. A verdict is what the
+        # summary carries, and a diagnosis attached to it cannot be filtered away.
+        #
+        # IT ALSO ANSWERS A QUESTION THE PER-SUITE DEADLINE CANNOT ASK: the deadline catches a suite that never
+        # returns, AND THIS CATCHES ONE THAT RETURNED EMPTY - a different failure that was invisible.
+        $Tail = @($out | Select-Object -Last 4 | ForEach-Object { "        " + $_ }) -join "`n"
+        $Results[$name] = "RESULT: no result line" + $(if ($Tail.Trim()) { "`n      the suite's last lines were:`n$Tail" } else { " and it produced NO OUTPUT AT ALL" })
     } else {
         $Results[$name] = $result
         Write-Output ("  " + $result.Trim())
