@@ -33,6 +33,11 @@ EDIT_TOOLSET = "TurboMCP.TurboMCPEditToolset"
 class Session:
     def __init__(self):
         self.id = None
+        # TRUE WHILE A RE-CONNECT IS IN PROGRESS, SO A FAILURE INSIDE IT PROPAGATES INSTEAD OF RE-ENTERING THE
+        # RETRY. `connect()` calls `rpc()` and `rpc()` calls `connect()` on failure, so without this flag an
+        # unreachable server recurses - each level waiting out a full request timeout - which is what made
+        # `check-probe-graphs` run past 600 seconds.
+        self._connecting = False
 
     def rpc(self, method, params=None, request_id=1):
         """
@@ -57,10 +62,28 @@ class Session:
         try:
             return self._rpc_once(method, params, request_id)
         except Exception:
+            # *** A RE-CONNECT MUST NOT RE-ENTER THIS RETRY, AND THAT IS A MEASURED BUG I INTRODUCED. ***
+            #
+            # `connect()` CALLS `rpc()`, and this method calls `connect()` on failure. SO WHEN THE SERVER IS NOT
+            # ANSWERING, THE ORIGINAL VERSION RECURSED: rpc fails, connect runs, connect's own rpc fails, that
+            # rpc calls connect again, and so on - EACH LEVEL WAITING OUT THE FULL REQUEST TIMEOUT. MEASURED
+            # CONSEQUENCE: `Tools/check-probe-graphs.py` calls `session.connect()` at its line 207 and the suite
+            # ran PAST 600 SECONDS, which is the exact symptom that took FIVE ROUNDS and five falsified causes to
+            # trace - and the cause was a retry I added two rounds earlier.
+            #
+            # THE GUARD IS `_connecting`. While it is set, a failure propagates to the caller instead of
+            # re-entering the reconnect, so an unreachable server costs ONE timeout rather than an unbounded
+            # number of them. The flag is cleared in a `finally` so a failed connect leaves the object usable.
+            if self._connecting:
+                raise
             # Clear the stale id FIRST, so the re-initialise is a genuinely new session rather than a request
             # that presents the id of the editor that no longer exists.
             self.id = None
-            self.connect()
+            self._connecting = True
+            try:
+                self.connect()
+            finally:
+                self._connecting = False
             return self._rpc_once(method, params, request_id)
 
     def _rpc_once(self, method, params=None, request_id=1):
