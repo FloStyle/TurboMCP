@@ -3983,3 +3983,44 @@ PURPOSE, TWICE, BY FIXES THAT WERE EACH CORRECT** - the process wait and the mut
 made that cost VISIBLE. Before it, the same total was being paid as an indefinite hang that nobody could attribute
 to anything. **A BOUND TURNS AN UNATTRIBUTABLE HANG INTO A NAMED, MEASURABLE COST**, and that is the whole argument
 for bounding things even when the bound is not the fix.
+
+---
+
+## 8f. CORRECTION: THE REBUILD IS FAST (7.9 s). THE COST IS IN THE CALLER, NOT THE SCRIPT.
+
+**THE MEASUREMENT THAT NARROWS IT, AND IT CONTRADICTS WHAT I WROTE LAST ROUND.**
+
+    make-acceptance-asset.ps1 ALONE:  exit 0, 7.9 SECONDS, every probe graph named
+    check-probe-graphs.py:            STILL RUNNING after 300 seconds, with no output
+
+**SO THE REBUILD IS NOT SLOW. The suite that CALLS it is slow**, and the two numbers differ by a factor of about
+forty - so the cost is in the caller's environment or in its own work, NOT in the script I named.
+
+**WHAT IS NOW RULED OUT, SO THE NEXT ATTEMPT DOES NOT REPEAT IT:**
+- the fixture rebuild itself: **7.9 seconds**, measured, exit 0, all probe graphs present;
+- a retry or sleep loop in the suite: `log_text()` at line 63 is called **ONCE**, and there is **no `while`, no
+  `sleep`, and no retry anywhere in the file**;
+- the mutex being held forever by an orphan: the only processes alive were the editor's, and clearing them did not
+  change the behaviour.
+
+**WHAT IS LEFT IS A SHORT LIST, AND ONE ITEM FITS EVERY NUMBER:**
+1. **THE MUTEX IS HELD, NOT ORPHANED.** `make-acceptance-asset.ps1` waits up to **300 SECONDS** on
+   `Global\TurboMCP.AcceptanceAsset`, AND 300 SECONDS IS ALMOST EXACTLY WHERE THIS SUITE WAS STILL RUNNING. If the
+   rebuild inside the suite waits out that full timeout while the standalone run acquires the mutex immediately,
+   EVERY OBSERVED NUMBER IS EXPLAINED: fast alone, about 300 seconds under the suite, and over 600 in a full run
+   where it happens more than once.
+2. **THE EDITOR INTERACTION.** Standalone, no editor is running. Under the suite the harness may have started one,
+   and the script STOPS it - so the suite pays the stop, the wait for the process, and the restart.
+
+**THE DECISIVE MEASUREMENT IS ONE RUN AND IT IS CHEAP:** instrument the mutex acquisition in
+`make-acceptance-asset.ps1` to PRINT whether it waited and for how long, then run `check-probe-graphs` once. A wait
+near 300 seconds confirms cause 1, and the fix is to find WHAT HOLDS THE MUTEX - most likely a `pwsh` process left
+by an earlier rebuild that acquired it and did not release, which the `finally` was written to prevent and which
+would mean the release path itself has a hole.
+
+**AND THE HONEST NOTE, BECAUSE IT IS THE POINT OF THIS RECORD:** last round I wrote that the script had been made
+slower on purpose twice and that their sum exceeded the deadline. **THE FIRST HALF WAS WRONG - THE SCRIPT IS FAST.**
+The waits I named are real but they are NOT what the suite is paying, and one line of measurement says so.
+**RECORDING THE WRONG CAUSE WOULD HAVE SENT THE NEXT ATTEMPT TO OPTIMISE A 7.9-SECOND SCRIPT.** That is the third
+time in this record that a plausible mechanism was named and then contradicted by a single number, and it is why
+every claim here carries the measurement that produced it.
