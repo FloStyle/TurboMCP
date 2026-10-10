@@ -60,6 +60,25 @@ $SlowSuites = @('test-capture')
 function Start-EditorAndWait {
     param([int] $TimeoutSeconds = 240)
 
+    # THE SERVER FROM THE PREVIOUS SUITE MUST BE PROVEN DEAD BEFORE THE NEW ONE IS STARTED, AND THIS IS A
+    # FIX RATHER THAN A PRECAUTION.
+    #
+    # MEASURED: `Start-EditorAndWait` used to call `start-editor.ps1` and then poll until the MCP server
+    # answered. But a suite that stops the editor to rebuild a fixture - `test-graph-dead` does exactly that,
+    # twice - can leave the PREVIOUS editor's server still answering for a few seconds while it shuts down.
+    # The probe then returned `PASS` immediately, the suite was launched against an editor that was still
+    # going away, and it died with NO RESULT LINE AT ALL. `test-comments,test-graph-dead` in sequence failed
+    # that way, and `test-graph-dead` alone passed - which is the signature of a race, not of a broken tool.
+    #
+    # A PROBE THAT CAN PASS ON A DYING PROCESS IS A PROBE THAT MEASURES THE WRONG THING. So the wait now
+    # runs in both directions: DOWN first, then up.
+    $downDeadline = (Get-Date).AddSeconds(60)
+    while ((Get-Date) -lt $downDeadline) {
+        $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
+        if ($probe -notmatch '^PASS') { break }
+        Start-Sleep -Seconds 2
+    }
+
     & pwsh -NoProfile -File $StartEditor 2>&1 | Out-Null
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $deadline) {
