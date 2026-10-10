@@ -78,10 +78,23 @@ def stop_editor():
 def rebuild_fixture(script, env=None):
     """Rebuild a fixture with `script`, stopping the editor first.
 
+    *** THIS STOPS THE EDITOR AND DOES NOT START IT AGAIN. CALL `ensure_editor()` AFTERWARDS. ***
+
+    THAT IS NOT AN OVERSIGHT, AND IT IS WRITTEN HERE BECAUSE IT COST A SUITE WHEN IT WAS NOT. MEASURED: I converted
+    `Tools/test-graph-dead.py` to call this and then use the session it already had, and the suite died with
+    `URLError: [WinError 10061] Aucune connexion n'a pu etre etablie` - because THE EDITOR THAT WAS ANSWERING HAD
+    BEEN STOPPED AND NOTHING BROUGHT IT BACK.
+
+    The reason the contract is split rather than fused is that FUSING IT WOULD BE WRONG FOR MOST CALLERS:
+    `Tools/test-graph-replace.py` is invoked BY THE HARNESS, and the harness starts the editor again after the
+    suite returns - so a fused restart would start a SECOND editor and fight the harness for the project, WHICH IS
+    THE VERY HYBRID THIS MODULE EXISTS TO REMOVE. **A CALLER THAT RUNS STANDALONE NEEDS THE RESTART AND A CALLER
+    THAT RUNS UNDER THE HARNESS MUST NOT DO IT**, so the two are separate functions and the caller chooses.
+
     RETURNS (ok, first_line). IT NEVER RAISES AND IT NEVER PRETENDS: a rebuild that did not report success is
     reported as FALSE so the caller can say the suite cannot run, rather than continuing against a fixture of
-    unknown shape. `Tools/test-graph-replace.py` already does this correctly and this function is its shape made
-    shared.
+    unknown shape. `Tools/test-graph-replace.py` already did this correctly and this function is its shape made
+    shared. `(None, reason)` means the rebuild was NOT REQUESTED, which is not a failure.
     """
     names = [n for n in (list(env or []) + [REBUILD_ENV]) if n]
     if not any(os.environ.get(name) == "1" for name in names):
