@@ -4125,3 +4125,61 @@ activity, 18 to 25 minutes - pointed at **the environment** rather than at a too
 `E-MAT-BLOCKS`. **`E-GRAPH-REPLACE` and `E-GRAPH-PATCH` share everything already built** - the shared lexer, the
 checker gate, the node factory, the `Plan`/`Apply` split, the linking, and the round trip - and differ from `APPEND`
 only in what they do with the OLD graph.
+
+---
+
+## 10. REPLACE lands, and the run is 40 of 40
+
+**MEASURED, ON AN IDLE MACHINE, WITH `P/E-GRAPH-REPLACE` MERGED: `passed 40, failed 0, blocked 0, of 40`.** The
+count is 40 rather than 39 because `test-graph-replace` was ADDED - one new suite, all of it green, nothing lost.
+
+### 10.1 A reported regression that was CONTENTION, and the reporting was right anyway
+
+The workstream that implemented REPLACE reported **`35 of 40`** with five failures - `test-json`, `test-play-check`,
+`test-trace`, `test-uncovered-tools`, `test-widgets-as-vars`, **none of which touches a graph writer** - AND IT
+REPORTED THEM AS UNRESOLVED RATHER THAN CLAIMING THE BASELINE HAD SURVIVED.
+
+**THE CAUSE WAS THAT MY VALIDATION RUN AND ITS TESTING RUN WERE EXECUTING AT THE SAME TIME.** Both of us were
+starting editors, rebuilding fixtures and running suites against one machine. **A CONCURRENT RUN MAKES UNRELATED
+SUITES FAIL, AND THIS IS NOW THE THIRD TIME THIS SHAPE HAS APPEARED HERE** - twice as my own harness defects, and
+once as exactly this. **The discipline of reporting an unexplained red run instead of explaining it away is what
+kept it from being recorded as a regression.**
+
+### 10.2 A real defect REPLACE caused, found, and fixed - and it is the shared-fixture rule again
+
+Its FIRST version left the shared `SaneProbe` graph MUTATED, and the full run fell to 35 of 40 **WITH THE FAILURES
+IN ITS NEIGHBOURS**: `check-probe-graphs` losing its 15 count checks, and `test-graph-check` reporting that the
+asset's *"size, MTIME and MD5 are unchanged"* was false. **BOTH PASS ALONE.** The cause is the one this project has
+now recorded three times: **TWO OWNERS OF ONE FIXTURE**, because `check-probe-graphs` rebuilds that same asset.
+
+**AND THE DISTINCTION THAT MADE IT FIXABLE IS EXACT: `APPEND` AVOIDS THIS BECAUSE IT ONLY ADDS, WHILE A REPLACE THAT
+IS NOT UNDONE LEAVES THE GRAPH IT CONSUMED.** So the suite now **RESTORES THE FIXTURE ON THE WAY IN AND ON THE WAY
+OUT, AND ASSERTS THAT THE RESTORATION SUCCEEDED** - measured after: `passed 6, failed 0` on
+`test-graph-replace,check-probe-graphs,test-graph-check`. **THE RULE WAS RECORDED THREE ROUNDS BEFORE IT WAS BROKEN
+AGAIN, AND THIS TIME IT WAS FIXED RATHER THAN DOCUMENTED.**
+
+### 10.3 Why REPLACE was affordable: it SHARES rather than duplicates
+
+`FTurboMCPGraphReplace::Plan` calls `FTurboMCPGraphAppend::Plan` - the checker gate, the single-dialect lexing, the
+type-id resolution through the engine's action database, the pin-name capture - and its `Apply` calls
+`FTurboMCPGraphAppend::Apply` for creation, linking, layout, compile and the read-back comparison. **THE ONLY THING
+REPLACE ADDS IS THE QUESTION OF THE OLD GRAPH.** That is exactly the shape this record predicted: REPLACE and PATCH
+share everything and differ only in what they do with the old graph.
+
+KEPT, EACH FOR A MEASURED REASON: entry, result, event and custom event are NEVER removal candidates, because the
+spec's *"never adds a second entry"* and *"writes into the EXISTING entry"* are the same sentence; and **COMMENTS ARE
+KEPT**, because `E-GRAPH-DEAD` already taught this project that a comment HAS NO PINS and is unreachable by any
+walk - and treating that as removable had once queued an author's documentation for deletion.
+
+AND THE REMOVAL LIST IS A LIST RATHER THAN A COUNT, with key, class and title per entry, because the spec says
+*"LISTS WHAT IT REMOVED"*. **THE NODES ARE COPIED BEFORE ITERATION**: removing while iterating skips every other
+element, which here would mean a HALF-REPLACED BODY, the worst possible outcome for this capability.
+
+### 10.4 Where the project stands
+
+    66 tools · 46 of 50 capabilities · FULL RUN 40 of 40, 0 failed, 0 blocked
+    R- READING 21/21 COMPLETE · L- VISION 3/3 COMPLETE · P- PREVIEW 4/4 COMPLETE · E- EDIT 19/23
+
+**Four capabilities remain, all writes:** `E-GRAPH-PATCH`, `E-MAT-LABEL-PROMOTE`, `E-MAT-TIDY`, `E-MAT-BLOCKS`.
+`E-GRAPH-PATCH` shares the whole machinery and what remains to it is matching BY NODE ID and touching only the
+differences.
