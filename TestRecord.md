@@ -3305,3 +3305,56 @@ NOT SETTLED, AND NOT GUESSED AT: whether making both numbers read the measured p
 `LayoutProbe` measure SHORTER, and therefore whether the keep-branch fires. That needs a run, and it is the
 single most valuable next step for this capability - it is the same fix, in the same shape, that turned
 FIX-BACKWARD's positive cases from unprovable into fourteen that run.
+
+---
+
+## 6p. Q-16 narrowed: the pure node satisfies every condition the LOOP ENTRY tests
+
+The previous round instrumented the PLACEMENT and saw nothing. This round examined the LOOP ENTRY conditions at
+`TurboMCPGraphFixBackward.cpp:1025-1032`, which gate whether a candidate is considered at all:
+
+```cpp
+if (!Pure.bIsPure || Pure.bIsComment || Pure.bIsKnot
+    || CandidateIndex == ConsumerIndex || Visited.Contains(Pure.Key))
+{
+    continue;
+}
+```
+
+**THE FIXTURE'S PURE NODE SATISFIES ALL FIVE, MEASURED AGAINST THE FIXTURE SOURCE RATHER THAN ASSUMED:**
+
+| Condition | The fixture's node | Verdict |
+|---|---|---|
+| `bIsPure` | `ProbePure` is `UKismetMathLibrary::Add_IntInt` via `MakeCall` - a `UK2Node_CallFunction` with no exec pins, so `AsK2->IsNodePure()` is true | passes |
+| `bIsComment` | it is a `CallFunction`, not a comment | passes |
+| `bIsKnot` | it is not a knot | passes |
+| `CandidateIndex == ConsumerIndex` | `ProbePure` at x=6100 is not `CarryTarget` at x=6600 | passes |
+| `Visited` | **the only one not yet established** | unknown |
+
+And the PREDICATE two lines later is satisfied by construction: `ProbePure->GetReturnValuePin()` is linked to
+`CarryTarget->FindPin(TEXT("InString"))` and to nothing else, so `LinkCount == ToConsumer == 1`.
+
+**SO THE BLOCKER IS NOT IN THE LOOP ENTRY EITHER, UNLESS `Visited` ALREADY CONTAINS `ProbePure`.** That is now
+the leading hypothesis and it is testable in one line: print `Visited.Num()` and whether it contains each pure
+candidate's key when the loop is entered for `CarryTarget`.
+
+WHY `Visited` IS THE RIGHT SUSPECT: `ProbePure` was placed at `x=6100`, which is LEFT of `CarryTarget`'s
+original 6600 and left of `CarrySource`'s 8400. A node that is a candidate for an EARLIER backward wire in the
+same graph could have been added to `Visited` first and then skipped here - and `Visited` is never cleared
+between consumers, so one earlier visit disables the carry for every later one.
+
+THE TWO REMAINING POSSIBILITIES, IN ORDER, FOR THE NEXT ATTEMPT:
+1. `Visited` already holds `ProbePure`'s key when the loop runs for `CarryTarget` - most likely, and checkable
+   without a rebuild by reading whether the graph has an earlier backward wire whose target also consumes
+   `ProbePure`.
+2. `bIsPure` is false at runtime even though `Add_IntInt` is a pure maths function - `IsNodePure()` may require
+   the node to have NO exec pins AND to be a member of a pure-only class. Instrument `bIsPure` for `ProbePure`
+   specifically rather than trusting the fixture's intent.
+
+WHAT HAS NOW BEEN RULED OUT BY EXAMINATION, NOT BY GUESSING: `MaxPureChain` (8, and the fixture needs 1), the
+predicate `bUsedOnlyByConsumer` (instrumented by a previous workstream and printing `eq=YES`), the carry
+arithmetic (fixed in `2e17f9b` and verified), and all five LOOP ENTRY conditions except `Visited`.
+
+**The next attempt should print, for each backward wire's consumer: the consumer key, the number of pure
+candidates considered, and for each one the outcome of all five loop conditions. One instrumented run answers
+it, and neither the predicate nor the placement is where the answer lives.**

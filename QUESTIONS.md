@@ -1081,3 +1081,67 @@ examined and the remaining refusal is somewhere neither has looked.
 
 WHAT IS NOT IN DOUBT: the arithmetic in the section above was right, it was reproduced by an independent
 workstream, and the fix matches it.
+
+---
+
+## Q-17. OPEN, NARROWED BUT NOT CLOSED: `test-play-check` cannot prove its warning/error COUNT is MEASURED
+
+**WHAT WAS WRONG.** Breaking the renderer to hardcode `0 warning(s) and 0 error(s)` still passed the whole
+suite. Two causes, both now fixed as far as they can be without an injection the project cannot yet perform:
+
+1. **A CHECK THAT COULD NOT FAIL WAS REMOVED.** `test-play-check.py` asserted
+   `"no warnings and no errors" in final or "warning(s) and" in final`. The SECOND DISJUNCT IS TRUE FOR EVERY
+   REPORT THE TOOL CAN PRODUCE, because `warning(s) and` is part of the count line itself, so the check passed
+   whether the window was clean, noisy, or rendered by a renderer that had been rewritten to lie. It now
+   demands the tool's own sentence for a clean window and nothing weaker.
+
+2. **A SELF-CONTRADICTION THE TOOL COULD MAKE IS NOW IMPOSSIBLE.** Measured by break-test: with the count
+   hardcoded non-zero the report answered `5 warning(s) and 0 error(s) in the window` **and**
+   `The session raised no warnings and no errors.` IN THE SAME ANSWER. The number and the sentence come from
+   one computation that is supposed to have a single outcome, so a reader following the sentence was told the
+   run was clean while the number said otherwise. Two checks now fail on that combination.
+
+**WHAT WAS ADDED INSTEAD OF THE INJECTION: A CROSS-CHECK AGAINST THE ENGINE'S OWN LOG.** `UE_LOG` writes to
+`GLog` **and** to the log file, so the file is an INDEPENDENT COUNTER over the same window. The suite records
+the log's size before the watch, reads only what was appended, parses the severity field
+(`]Category: Warning: text`) rather than matching any sentence, and requires the tool's parsed counts to
+AGREE with it. MEASURED in a passing run: `the engine's own log over the same window: 0 warning(s), 0
+error(s)` and `tool said 0/0, the log says 0/0`.
+
+**IT IS A REAL CHECK, DEMONSTRATED RATHER THAN CLAIMED.** With the renderer changed to report
+`Answer.WarningCount + 5`:
+
+```
+    the engine's own log over the same window: 0 warning(s), 0 error(s)
+  FAIL the report's counts AGREE with the engine's own log over the same window  tool said 5/0, the log says 0/0
+  FAIL ...and the second window is clean too, since nothing was injected into it
+  RESULT: FAIL (2) -> the report's counts AGREE with the engine's own log over the same window, ...
+```
+
+**THE HOLE THAT REMAINS, STATED PLAINLY.** The cross-check can catch a report that claims a count the log does
+not support. It CANNOT catch a report that SUPPRESSES a real count, because the suite's own session raises
+nothing to suppress - a forged zero over a true zero is not distinguishable by any assertion. Closing it needs
+a KNOWN warning and error INSIDE the window, and **FOUR MECHANISMS WERE INVESTIGATED AND EVERY ONE IS BLOCKED**:
+
+1. **`PrintString` / `LogString` CANNOT EMIT A WARNING AT ALL.** `UKismetSystemLibrary::PrintString` logs
+   `UE_LOGF(LogBlueprintUserMessages, Log, "%ls", ...)` unconditionally - `Log` severity, with no parameter to
+   raise it (KismetSystemLibrary.cpp, the `if (bPrintToLog)` branch). So **no Blueprint node can put a Warning
+   in the window, whatever the fixture** - which rules out the BeginPlay-with-PrintString idea the task
+   suggested. MEASURED against the engine source, not assumed.
+2. **`unreal.log_warning` / `unreal.log_error` EXIST BUT CANNOT REACH THE WATCHING PROCESS.**
+   (PythonScriptPlugin `PyCore.cpp:2067-2068`.) They log in whatever process runs them, and the tool's device
+   is attached to `GLog` IN THE EDITOR PROCESS. MEASURED: launching a second editor with
+   `-ExecCmds="py <file>"` does NOT reach the running one - the marker appeared ZERO times in the live
+   editor's log, and the spawned process counted from frame `[  0]`.
+3. **NO C++ TEST EMITTER IS IN SCOPE.** A `UE_LOG` emitter added to `TurboMCPPlayCheck.cpp` purely so its own
+   test can pass would be a hook in a production tool, not a test, and would make the suite's strength depend
+   on the code it is judging.
+4. **PIE RAISES NOTHING ON A CLEAN RUN.** MEASURED 0 and 0, and `PlayLevel.cpp`'s Warning paths are on paths
+   this project cannot reach without breaking the run.
+
+**WHAT WOULD CLOSE IT.** An in-process way to execute a statement in the EDITOR during the watch. The cleanest
+one found is `IConsoleCommandExecutor`, which the Python plugin registers as a modular feature
+(`PythonScriptPlugin.cpp:1022`): a plugin-side hook that runs `ExecPythonCommand` would let the suite inject
+`unreal.log_warning` / `unreal.log_error` and assert exactly 1 and 1. That needs a new tool or an MCP-visible
+hook, which is outside this suite's file boundaries and should be a deliberate decision rather than a side
+effect of closing a test hole.
