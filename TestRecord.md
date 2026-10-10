@@ -4277,3 +4277,67 @@ in isolation - `test-material-tidy` PASS (19 checks), audit `uncalled: (none)` a
 and the alternative was to hold a verified capability out of `main` on the strength of a run already identified as
 contaminated. **WHAT THAT MEANS IS THAT `main` NOW CARRIES A CAPABILITY WHOSE FULL-RUN EFFECT IS NOT ESTABLISHED,
 AND IT IS RECORDED HERE RATHER THAN LEFT FOR SOMEONE TO DISCOVER.** The next clean run decides it.
+
+---
+
+## 13. E-MAT-TIDY verified, and the FULL RUN is ONE NET SHORT because TWO fixtures are not given back
+
+**MEASURED BY THE WORKSTREAM: `passed 40, failed 2, blocked 0, of 42`, against a `41/41` baseline - ONE NET SHORT.**
+Measured by me separately, the same thing appears from a different angle:
+
+    FAIL test-graph-replace  RESULT: FAIL (1) -> the shared fixture was GIVEN BACK, so the next suite reads what it expects
+    FAIL test-material-tidy  RESULT: FAIL (1) -> the shared fixture was GIVEN BACK
+
+*** TWO SUITES BUILT TO ASSERT THAT THEY GIVE THEIR SHARED FIXTURE BACK ARE BOTH REPORTING THAT THEY DID NOT.***
+Those assertions are the suites WORKING CORRECTLY - the same shape as `REPLACE`'s original defect, which was found
+in its neighbours rather than in itself. **AND THE ASSERTIONS EXIST PRECISELY BECAUSE ALL THREE PREVIOUS INSTANCES
+WERE REAL:** `test-override-add` left an override, `test-graph-append` grew a shared graph by one node per run, and
+`test-graph-replace`'s first version left `SaneProbe` mutated so the run fell to 35 of 40.
+
+**NARROWER EVIDENCE, WHICH IS WHY THIS IS NOT SIMPLY CONTENTION:** I ran `test-material-tidy` AND THEN
+`test-graph-check` in that order and BOTH PASSED, `passed 5, failed 0`. So the fixture IS given back in THAT pairing.
+**THE FAILURE NEEDS A PARTICULAR SEQUENCE OR A LONGER RUN** - which is exactly what a state leak looks like, and
+exactly what "passes in isolation" cannot rule out.
+
+### 13.1 The compiled-result check IS done properly, and that is the point of the capability
+
+`UMaterial::StateId` (`Material.h:1239`) and `UMaterialEditingLibrary::RecompileMaterial`
+(`MaterialEditingLibrary.h:267`) drive it, with `ForceRecompileForRendering` (`:1399`) as the trigger.
+
+**BUT THE ASSERTION RESTS ON THE SET OF EXPRESSIONS, NOT `StateId`** - because `StateId` can legitimately change
+from a background shader compile, SO ASSERTING ON IT WOULD FAIL FOR OTHER PEOPLE'S REASONS. It is REPORTED.
+
+The set comparison runs IN BOTH DIRECTIONS and is read back through **`R-MAT-TRACE`, THE READER** - a different code
+path from the writer. Measured on the fixture: `the expression set is IDENTICAL (12 of 12, none added, none
+removed) and the engine reports 0 error(s)`. Its break test made the baseline set lie and produced `FAILED: the
+layout changed the SET OF EXPRESSIONS, so it was ROLLED BACK. 0 lost, 1 gained` - WITH EVERY OTHER CHECK STILL
+PASSING, which is the right shape.
+
+### 13.2 Four editor stops cost the run TEN failures, and that is the fifth time
+
+Its first version called `make-material-asset.ps1` **FOUR TIMES PER RUN**, and that script stops the editor each
+time. The full run fell to **32 of 42 with ten failures whose names changed between runs** - **the race signature
+this project has now recorded in SIX different harness defects.** Making the rebuild conditional moved it to 40.
+That is the same class as the SEVEN concurrent rebuilds that needed a mutex, and **the fifth time a redundant
+editor stop has been the cause.**
+
+### 13.3 Two more defects it found in itself, both of the shape that costs most
+
+- **A WRONG ASSET PATH AND OUTPUT NAME.** The asset name is not the file name, so the real path is
+  `/Game/Tests/TurboMCPMaterialFixture.M_TurboMCPFixture`; and `BaseColor` is not a connected output - the reader
+  answered `MP_BaseColor`. **GETTING THAT WRONG WOULD HAVE LEFT THE BASELINE KEY SET EMPTY, AND AN EMPTY BASELINE
+  MAKES SUBSET CHECKS PASS FOR THE WRONG REASON** - the exact test-bug shape that already cost this project seven
+  checks.
+- **A MATERIAL COMMENT BOX HOLDS NO MEMBER LIST**, so blocks are computed as dependency columns; and a comment
+  belongs in a DIFFERENT ARRAY from expressions (`EditorComments`, not `AddExpression`).
+
+### 13.4 And the workstream falsified its own theory
+
+It reported that over three runs the failing names were `{call-log, graph-check}`, `{json, play-check}` and
+`{graph-check, layout, knots, fix-backward}`, and it **FALSIFIED ITS OWN HYPOTHESIS that `test-play-check` was the
+culprit**, because `test-refs` and `test-vars-add` pass immediately after it. **A WORKSTREAM THAT FALSIFIES ITS OWN
+THEORY AND REPORTS THE FALSIFICATION IS DOING THE THING THIS PROJECT ASKS FOR.**
+
+NOT SETTLED: the two fixture assertions; `P/E-MAT-TIDY` reuses an existing box ONLY by matching its LEFT EDGE, so a
+box at a different X is added alongside rather than found; and the fallback geometry is used for every expression
+because A MATERIAL EXPRESSION STORES NO SIZE, so the layout under-reports space by design and says so.
