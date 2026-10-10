@@ -54,6 +54,42 @@ $repo = Split-Path -Parent $PSScriptRoot
 $log = Join-Path $repo '.agent\logs\make-acceptance-asset.log'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
 
+# ---------------------------------------------------------------------------------------------
+# ONE REBUILD AT A TIME, ACROSS PROCESSES, AND THIS IS THE MISSING PIECE.
+#
+# MEASURED: a full run reported `31 of 39` and the failures were EXACTLY the suites that rebuild this asset -
+# `test-graph-dead`, `test-graph-knots`, `check-probe-graphs` - INCLUDING two new failures whose text is about
+# the SECOND rebuild ("regenerated at the end", "rebuilt at the end"). Meanwhile calling this script TWICE IN A
+# ROW by hand returns exit 0 and prints PASS BOTH TIMES, which is what proves the fault is in the INTERACTION
+# rather than in the script.
+#
+# `Tools/run-suites.ps1` runs the suites ONE AT A TIME, but a suite that rebuilds this asset STOPS THE EDITOR
+# while doing it - so the harness's own editor lifecycle and the script's are both driving the same editor and
+# the same `.uasset` at once. Every one of these suites had been passing alone, which is the signature this
+# project has now recorded four times.
+#
+# A NAMED MUTEX MAKES THE REBUILD MUTUALLY EXCLUSIVE ACROSS PROCESSES, which is the only kind of lock that helps
+# here: the competitors are separate `pwsh` invocations launched by Python, not threads in one runspace. The
+# name is fixed rather than derived, because the resource is fixed - there is exactly one acceptance asset.
+# ---------------------------------------------------------------------------------------------
+$mutexName = 'Global\TurboMCP.AcceptanceAsset'
+$owned = $false
+$buildMutex = New-Object System.Threading.Mutex($false, $mutexName)
+try {
+    # A generous timeout: a rebuild runs a commandlet, and waiting is always better than two commandlets racing
+    # for one `.uasset`. If the wait expires the script FAILS LOUDLY rather than proceeding unlocked, because
+    # proceeding unlocked is the defect this exists to prevent.
+    try {
+        $owned = $buildMutex.WaitOne([TimeSpan]::FromSeconds(300))
+    } catch [System.Threading.AbandonedMutexException] {
+        # A previous holder died without releasing. Windows hands ownership to us, which is exactly right.
+        $owned = $true
+    }
+    if (-not $owned) {
+        Write-Output "FAILED (another rebuild held the acceptance-asset lock for 300s)"
+        exit 1
+    }
+
 # The editor holds the asset open, so it is stopped first. A stale handle would make the save fail
 # for a reason that has nothing to do with the commandlet.
 #
@@ -102,9 +138,22 @@ if ($exit -ne 0 -or -not $wrote) {
     Write-Output "FAILED (exit $exit)"
     Select-String -Path $log -Pattern 'TurboMCP:|Error' -EA SilentlyContinue |
         Select-Object -Last 12 | ForEach-Object { "  " + $_.Line.Trim() }
-    exit 1
+    # NOT `exit 1` HERE: AN `exit` INSIDE A `try` DOES NOT RUN THE `finally`, SO THE MUTEX WOULD STAY HELD AND
+    # EVERY LATER REBUILD WOULD WAIT ITS FULL TIMEOUT BEFORE FAILING TOO - turning one failure into what looks
+    # like a hang. The code is recorded and the script leaves through the `finally` below.
+    $script:FailCode = 1
+} else {
+    Write-Output "PASS  the acceptance asset was rebuilt"
+    Write-Output ("  " + ($wrote.Line -replace '.*wrote\s+', ''))
+    foreach ($line in $counts) { Write-Output ("  " + ($line.Line -replace '.*LogTurboMCP: Display:\s+', '')) }
 }
 
-Write-Output "PASS  the acceptance asset was rebuilt"
-Write-Output ("  " + ($wrote.Line -replace '.*wrote\s+', ''))
-foreach ($line in $counts) { Write-Output ("  " + ($line.Line -replace '.*LogTurboMCP: Display:\s+', '')) }
+} finally {
+    # RELEASED IN A `finally` SO A FAILED REBUILD STILL LETS THE NEXT ONE RUN.
+    if ($owned) {
+        try { $buildMutex.ReleaseMutex() } catch { }
+    }
+    $buildMutex.Dispose()
+}
+
+if ($script:FailCode -ne 0) { exit $script:FailCode }
