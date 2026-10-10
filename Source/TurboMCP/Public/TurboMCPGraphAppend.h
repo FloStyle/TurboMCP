@@ -59,23 +59,41 @@ public:
 
 		/** Filled by `Plan` when the type id resolves: the node class the engine will build. */
 		FString ResolvedClass;
+
+		/**
+		 * The pins the node will HAVE, read off the probe `Plan` built and then removed.
+		 *
+		 * WHY A FORM NEEDS THIS. A link is `(-> Node:Pin)` and its SOURCE may be a node this same text creates,
+		 * which does not exist yet when `Plan` runs. The probe is the only place the pin set of a not-yet-created
+		 * node can be READ while still keeping `Plan` free of any change to the asset, so the names are CAPTURED
+		 * here and the link is validated against them. Without it, a link onto a created node could only be
+		 * refused at apply time, and `P1` requires the Preview and the Edit to refuse the SAME input.
+		 */
+		TArray<FString> ProbePinNames;
 	};
 
 	/** One link the plan will make, by node id or by a node this same text creates. */
 	struct FNewLink
 	{
-		/** The node the wire starts at, as a key or as a form index. */
-		FString FromNode;
+		/**
+		 * EACH END IS EITHER A NODE ALREADY IN THE GRAPH OR A FORM THIS SAME TEXT CREATES, and which one it is is a
+		 * FIELD RATHER THAN A GUESS. The earlier shape carried `bUsesCreatedNode`, a SINGLE BOOL FOR A TWO-SIDED
+		 * FACT, so a link FROM a created node TO an existing one was indistinguishable from the reverse, and the
+		 * apply step would have had to re-derive what the plan already knew.
+		 */
+		FString FromNodeKey;
+		int32 FromFormIndex = INDEX_NONE;
 		FString FromPin;
 
-		/** The node the wire ends at. */
-		FString ToNode;
+		FString ToNodeKey;
+		int32 ToFormIndex = INDEX_NONE;
 		FString ToPin;
 
-		/** True when either end names a node this text CREATES rather than one already present. */
-		bool bUsesCreatedNode = false;
-
+		/** 1-based line of the pin value that wrote the link, so a refusal can point at it. */
 		int32 Line = 0;
+
+		/** 1-based column of the pin value. */
+		int32 Column = 0;
 	};
 
 	/** What the plan decided, so `Apply` can act without deciding anything. */

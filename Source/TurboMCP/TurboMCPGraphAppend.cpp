@@ -248,25 +248,156 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		// THE CLASS IS RECORDED, because it is what `Apply` reports and what makes the round trip checkable: a
 		// caller comparing the input with the read-back needs to know what the id resolved TO.
 		Form.ResolvedClass = Probe->GetClass()->GetName();
+
+		// THE PROBE'S PIN NAMES ARE CAPTURED BEFORE IT IS REMOVED, because a link whose SOURCE is a node this
+		// same text creates has to be validated against pins that do not exist in the graph yet. The probe is
+		// the only place they can be READ without `Plan` touching the asset.
+		for (const UEdGraphPin* ProbePin : Probe->Pins)
+		{
+			if (ProbePin != nullptr)
+			{
+				Form.ProbePinNames.Add(ProbePin->PinName.ToString());
+			}
+		}
+
 		Graph->RemoveNode(Probe);
 	}
 
-	// ---- 5. LINKS WRITTEN AS A PIN VALUE ARE REFUSED BY NAME, FOR NOW, AND THE REASON IS STATED ---------
+	// ---- 5. LINKS WRITTEN AS A PIN VALUE ARE PLANNED HERE AND MADE IN `Apply` --------------------------
 	//
-	// The format prints a wire as `(-> Node:Pin)` in a pin's value position, and creating a link needs both
-	// ends to exist as REAL nodes - which means the link must be made AFTER the nodes are created, in `Apply`,
-	// against the nodes `Plan` decided to build. That ordering is the next piece of work. Refusing it HERE,
-	// naming the line, is the honest alternative to writing a string where a wire was meant.
-	for (const FNewNode& Form : OutPlan.Nodes)
+	// The format prints a wire as `(-> Node:Pin)` in a pin's value position, and making it needs BOTH ENDS AS
+	// REAL NODES - so the decision is taken here, where a refusal can be reported with its line and column and
+	// the Preview and the Edit refuse the SAME input, and the wire itself is created in `Apply` after the nodes
+	// exist. `P1` is the reason for that split rather than an implementation convenience.
+	//
+	// AN END MAY BE A NODE ALREADY IN THE GRAPH OR A FORM THIS SAME TEXT CREATES, and both cases matter: the
+	// second is what makes an appended BLOCK useful rather than a set of disconnected nodes.
 	{
-		for (const TurboMCPGraphTextLex::FPinForm& Pin : Form.Pins)
+		// The nodes already in the graph, by every key form a caller may have written, so a link resolves the
+		// same way `R-GRAPH-LOAD` prints it.
+		TMap<FString, UEdGraphNode*> ExistingByKey;
+		for (UEdGraphNode* Node : Graph->Nodes)
 		{
-			if (ValueIsALink(Pin.Value))
+			if (Node == nullptr)
 			{
-				OutPlan.Refusals.Add(FString::Printf(
-					TEXT("line %d, column %d: pin '%s' is written as a LINK (%s), and linking is not ")
-					TEXT("implemented yet. Write the pin's value instead, or link it by hand in the editor."),
-					Pin.Line, Pin.Column, *Pin.Name, *Pin.Value));
+				continue;
+			}
+			ExistingByKey.Add(TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true), Node);
+			ExistingByKey.Add(TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/false), Node);
+			// The short key alone is also accepted, because a caller copying a line out of a report may have
+			// only that much.
+			ExistingByKey.Add(Node->NodeGuid.ToString(EGuidFormats::Digits).Left(6), Node);
+		}
+
+		// The forms this text creates, by the key a link may name. A created form has no id yet, so it is
+		// addressed by ITS TYPE ID - which is what a caller writing a block by hand can actually know.
+		TMap<FString, int32> FormByTypeId;
+		for (int32 Index = 0; Index < OutPlan.Nodes.Num(); ++Index)
+		{
+			const FNewNode& Form = OutPlan.Nodes[Index];
+			if (!Form.bLinksToExisting && !FormByTypeId.Contains(Form.TypeId))
+			{
+				FormByTypeId.Add(Form.TypeId, Index);
+			}
+		}
+
+		// Resolves one end of a wire to either an existing node or a created form. Returns false and fills
+		// `OutReason` when neither can supply it, so the refusal names what was wrong rather than only that
+		// something was.
+		auto ResolveEnd = [&](const FString& InName, int32 InLine, int32 InColumn, const TCHAR* InSide,
+			FString& OutKey, int32& OutFormIndex, UEdGraphNode*& OutNode, TArray<FString>& OutKnownPins,
+			FString& OutReason) -> bool
+		{
+			if (UEdGraphNode* const* Found = ExistingByKey.Find(InName))
+			{
+				OutNode = *Found;
+				// THE CANONICAL KEY IS STORED, NOT THE NAME THE CALLER WROTE, AND APPLY DEPENDS ON THAT.
+				// MEASURED: this used to keep `InName` while `Apply` compared against
+				// `MakeForNode(Node, /*bLongForm=*/true)`, and the two agree only when the caller happened to
+				// write the long form with no pin suffix. A link naming the SHORT key, or the bare key, planned
+				// fine and then failed at apply time with "one end was not in the graph" - a message that blamed
+				// the graph for a key mismatch this code created. Normalising at resolution makes the plan and
+				// the apply agree by construction rather than by the caller's spelling.
+				OutKey = TurboMCPNodeId::MakeForNode(OutNode, /*bLongForm=*/true);
+				OutFormIndex = INDEX_NONE;
+				for (const UEdGraphPin* Pin : OutNode->Pins)
+				{
+					if (Pin != nullptr)
+					{
+						OutKnownPins.Add(Pin->PinName.ToString());
+					}
+				}
+				return true;
+			}
+
+			if (const int32* Found = FormByTypeId.Find(InName))
+			{
+				OutNode = nullptr;
+				OutKey.Reset();
+				OutFormIndex = *Found;
+				OutKnownPins = OutPlan.Nodes[*Found].ProbePinNames;
+				return true;
+			}
+
+			OutReason = FString::Printf(
+				TEXT("line %d, column %d: the link's %s names '%s', which is neither a node in '%s' nor a node ")
+				TEXT("this text creates. A link's ends are a node id already in the graph or the type id of a ")
+				TEXT("form written above it."),
+				InLine, InColumn, InSide, *InName, *OutPlan.GraphName);
+			return false;
+		};
+
+		for (FNewNode& Form : OutPlan.Nodes)
+		{
+			if (Form.bLinksToExisting)
+			{
+				continue;
+			}
+
+			for (const TurboMCPGraphTextLex::FPinForm& Pin : Form.Pins)
+			{
+				if (!TurboMCPGraphTextLex::ValueIsALink(Pin.Value))
+				{
+					continue;
+				}
+
+				TurboMCPGraphTextLex::FLinkForm Link;
+				FString Reason;
+				if (!TurboMCPGraphTextLex::ParseLinkValue(Pin.Value, Link, Reason))
+				{
+					OutPlan.Refusals.Add(FString::Printf(TEXT("line %d, column %d: %s"),
+						Pin.Line, Pin.Column, *Reason));
+					continue;
+				}
+
+				FNewLink NewLink;
+				NewLink.Line = Pin.Line;
+				NewLink.Column = Pin.Column;
+				NewLink.ToFormIndex = &Form - OutPlan.Nodes.GetData();
+				NewLink.ToPin = Pin.Name;
+
+				UEdGraphNode* FromNode = nullptr;
+				TArray<FString> KnownPins;
+				if (!ResolveEnd(Link.FromNode, Pin.Line, Pin.Column, TEXT("source"),
+					NewLink.FromNodeKey, NewLink.FromFormIndex, FromNode, KnownPins, Reason))
+				{
+					OutPlan.Refusals.Add(Reason);
+					continue;
+				}
+				NewLink.FromPin = Link.FromPin;
+
+				// THE SOURCE PIN MUST EXIST, and the refusal lists the real names - which is the rule the spec
+				// states for a pin generally, applied to the end of a wire.
+				if (KnownPins.Num() > 0 && !KnownPins.Contains(Link.FromPin))
+				{
+					OutPlan.Refusals.Add(FString::Printf(
+						TEXT("line %d, column %d: the link's source pin '%s' does not exist on '%s'. It has: %s."),
+						Pin.Line, Pin.Column, *Link.FromPin, *Link.FromNode,
+						*FString::Join(KnownPins, TEXT(", "))));
+					continue;
+				}
+
+				OutPlan.Links.Add(MoveTemp(NewLink));
 			}
 		}
 	}
@@ -323,6 +454,17 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 		*InPlan.GraphName, *InPlan.Asset, NewCount, LinkCount);
 	Out += FString::Printf(TEXT("\n%d node(s) in the graph now, and %d would be added"),
 		InPlan.NodeCountBefore, NewCount);
+
+	// THE WIRES ARE REPORTED IN THE PREVIEW TOO, so a caller sees before writing whether the block will be
+	// CONNECTED or a set of loose nodes - which is the difference between an append and a pile.
+	for (const FNewLink& Link : InPlan.Links)
+	{
+		Out += FString::Printf(TEXT("\n  wire  line %d: %s:%s -> %s"),
+			Link.Line,
+			Link.FromFormIndex != INDEX_NONE
+				? *InPlan.Nodes[Link.FromFormIndex].TypeId : *Link.FromNodeKey,
+			*Link.FromPin, *Link.ToPin);
+	}
 
 	for (const FNewNode& Form : InPlan.Nodes)
 	{
@@ -389,13 +531,20 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 	// ---- CREATE, THEN LINK, THEN SET PINS. THAT ORDER IS NOT ARBITRARY: a pin value can only be written on a
 	// node whose pins exist, and pins exist only after `AllocateDefaultPins`, which the factory runs. ---------
-	TArray<UEdGraphNode*> Created;
+	//
+	// `Created` IS INDEXED BY FORM, NOT DENSELY, because `FNewLink` addresses its two ends by form index. A
+	// dense array would silently mis-address every link whose source is not the first form created.
+	TArray<UEdGraphNode*> CreatedByForm;
+	CreatedByForm.SetNum(InPlan.Nodes.Num());
 	TArray<FString> CreatedByLine;
 	TArray<FString> Unmatched;
 	int32 PinsWritten = 0;
+	int32 LinksMade = 0;
+	TArray<UEdGraphNode*> Created;
 
-	for (const FNewNode& Form : InPlan.Nodes)
+	for (int32 FormIndex = 0; FormIndex < InPlan.Nodes.Num(); ++FormIndex)
 	{
+		const FNewNode& Form = InPlan.Nodes[FormIndex];
 		if (Form.bLinksToExisting)
 		{
 			continue;
@@ -418,12 +567,20 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			return false;
 		}
 
+		CreatedByForm[FormIndex] = Made;
 		Created.Add(Made);
 		CreatedByLine.Add(FString::Printf(TEXT("%s (%s)"), *Form.TypeId, *Made->GetName()));
 
 		// ---- THE PINS, BY KEYWORD NAME ONLY ------------------------------------------------------------
 		for (const TurboMCPGraphTextLex::FPinForm& Pin : Form.Pins)
 		{
+			// A LINK IS NOT A LITERAL AND IS MADE BELOW, once every node exists. Writing `(-> A:B)` into a pin
+			// as text is exactly the silent corruption this skip prevents.
+			if (TurboMCPGraphTextLex::ValueIsALink(Pin.Value))
+			{
+				continue;
+			}
+
 			UEdGraphPin* Target = nullptr;
 			for (UEdGraphPin* Candidate : Made->Pins)
 			{
@@ -459,6 +616,91 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		}
 	}
 
+	// ---- THE WIRES, MADE HERE BECAUSE BOTH ENDS EXIST ONLY NOW ------------------------------------------
+	//
+	// A wire is the part of an append most likely to be silently dropped, so every failure below ROLLS BACK
+	// AND RETURNS FALSE rather than reporting a partial success. The read-back comparison after this cannot
+	// see a wire that was never made, which is exactly why the making is checked as it happens.
+	for (const FNewLink& Link : InPlan.Links)
+	{
+		UEdGraphNode* FromNode = nullptr;
+		if (Link.FromFormIndex != INDEX_NONE)
+		{
+			FromNode = CreatedByForm.IsValidIndex(Link.FromFormIndex)
+				? CreatedByForm[Link.FromFormIndex] : nullptr;
+		}
+		else
+		{
+			for (UEdGraphNode* Node : Graph->Nodes)
+			{
+				if (Node != nullptr && TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true) == Link.FromNodeKey)
+				{
+					FromNode = Node;
+					break;
+				}
+			}
+		}
+
+		UEdGraphNode* ToNode = (Link.ToFormIndex != INDEX_NONE && CreatedByForm.IsValidIndex(Link.ToFormIndex))
+			? CreatedByForm[Link.ToFormIndex] : nullptr;
+
+		if (FromNode == nullptr || ToNode == nullptr)
+		{
+			Transaction.Cancel();
+			OutError = FString::Printf(
+				TEXT("line %d: the plan accepted a link from '%s' to '%s', but one end was not in the graph ")
+				TEXT("at apply time. NOTHING was written."),
+				Link.Line, *Link.FromNodeKey, *Link.ToPin);
+			return false;
+		}
+
+		UEdGraphPin* FromPin = nullptr;
+		for (UEdGraphPin* Candidate : FromNode->Pins)
+		{
+			if (Candidate != nullptr
+				&& Candidate->PinName.ToString().Equals(Link.FromPin, ESearchCase::CaseSensitive))
+			{
+				FromPin = Candidate;
+				break;
+			}
+		}
+		UEdGraphPin* ToPin = nullptr;
+		for (UEdGraphPin* Candidate : ToNode->Pins)
+		{
+			if (Candidate != nullptr
+				&& Candidate->PinName.ToString().Equals(Link.ToPin, ESearchCase::CaseSensitive))
+			{
+				ToPin = Candidate;
+				break;
+			}
+		}
+
+		if (FromPin == nullptr || ToPin == nullptr)
+		{
+			Transaction.Cancel();
+			OutError = FString::Printf(
+				TEXT("line %d: the plan accepted a link '%s' -> '%s', but a pin was missing at apply time ")
+				TEXT("(%s). NOTHING was written."),
+				Link.Line, *Link.FromPin, *Link.ToPin,
+				FromPin == nullptr ? TEXT("source") : TEXT("target"));
+			return false;
+		}
+
+		// THE ENGINE'S OWN CONNECTION PATH, so the schema decides whether the two pins may join rather than this
+		// tool assuming they can. A refusal here is a PLAN fault rather than a caller fault only in appearance:
+		// the plan checked that the pins EXIST, and existence is not the same as compatibility.
+		if (!Graph->GetSchema()->TryCreateConnection(FromPin, ToPin))
+		{
+			Transaction.Cancel();
+			OutError = FString::Printf(
+				TEXT("line %d: the engine refused the link '%s' -> '%s'. The pins exist but the schema will ")
+				TEXT("not join them, so NOTHING was written."),
+				Link.Line, *Link.FromPin, *Link.ToPin);
+			return false;
+		}
+		++LinksMade;
+	}
+
 	// ---- COMPILE, THEN READ BACK AND COMPARE, which the spec demands rather than a claim of success --------
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 
@@ -491,6 +733,10 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		*InPlan.GraphName, *InPlan.Asset, Survived, InPlan.NodeCountBefore, Graph->Nodes.Num());
 
 	Out += FString::Printf(TEXT("\n%d pin value(s) written across those node(s)"), PinsWritten);
+	// THE WIRE COUNT IS REPORTED because a wire is the part most easily dropped in silence, and a caller
+	// comparing this against the number of link lines it submitted is the cheapest way to notice that.
+	Out += FString::Printf(TEXT("\n%d wire(s) made, of %d the text described"),
+		LinksMade, InPlan.Links.Num());
 	Out += FString::Printf(TEXT("\n%d of %d created node(s) are in the graph after the write"),
 		Survived, Created.Num());
 

@@ -191,6 +191,81 @@ namespace TurboMCPGraphTextLex
 		return InValue.Len() >= 2 && InValue[0] == TEXT('"') && InValue[InValue.Len() - 1] == TEXT('"');
 	}
 
+	// ---- LINKS, `(-> Node:Pin)` -------------------------------------------------------------------------
+	//
+	// THE ONE PLACE THAT KNOWS THE WIRE SYNTAX. The append tool used to test `StartsWith("(")` locally and
+	// refuse, which meant the dialect's link rule lived in a tool rather than in the format's own reader.
+
+	bool ValueIsALink(const FString& InValue)
+	{
+		return InValue.StartsWith(TEXT("("));
+	}
+
+	bool ParseLinkValue(const FString& InValue, FLinkForm& OutLink, FString& OutReason)
+	{
+		OutReason.Reset();
+
+		// A link is parenthesised, and the arrow is what makes it a WIRE rather than some other grouped form
+		// the reader may print.
+		//
+		// THE CLOSING PARENTHESIS IS OPTIONAL HERE, AND THAT IS MEASURED RATHER THAN LENIENT. The format writes
+		// a form as `(Head` ... `)` and puts the form's closing parenthesis on the LAST pin's line, so a link
+		// written last arrives with that parenthesis already stripped by the pin-line reader:
+		//
+		//     (Development|PrintString
+		//         InString (-> BP_NodeTest:EventGraph:65754a:ReturnValue)
+		//     )
+		//
+		// The REQUIREMENT is the arrow and the two halves, not the trailing bracket - and demanding the bracket
+		// rejected the dialect's own output, which is the most damaging kind of parser fault because the reader
+		// and the writer would then disagree about text the reader itself printed.
+		FString Body = InValue.TrimStartAndEnd();
+		if (!Body.StartsWith(TEXT("(")))
+		{
+			OutReason = FString::Printf(
+				TEXT("'%s' does not start with '(' , so it is not a link"), *InValue);
+			return false;
+		}
+		Body = Body.Mid(1).TrimStartAndEnd();
+		if (Body.EndsWith(TEXT(")")))
+		{
+			Body = Body.LeftChop(1).TrimStartAndEnd();
+		}
+
+		if (!Body.StartsWith(TEXT("->")))
+		{
+			OutReason = FString::Printf(
+				TEXT("'%s' is a parenthesised value but not a wire: a link is written '(-> Node:Pin)'"),
+				*InValue);
+			return false;
+		}
+		Body = Body.Mid(2).TrimStartAndEnd();
+
+		// THE LAST COLON SPLITS THE TWO HALVES, because a node id itself contains colons - the long form is
+		// `Asset.Object:Graph:Key`. Splitting on the FIRST colon would read the asset path as the node and the
+		// rest as the pin, which is the mistake this comment exists to prevent.
+		int32 Split = INDEX_NONE;
+		if (!Body.FindLastChar(TEXT(':'), Split) || Split <= 0 || Split >= Body.Len() - 1)
+		{
+			OutReason = FString::Printf(
+				TEXT("'%s' names no pin: a link is written '(-> Node:Pin)' and the pin is missing"),
+				*InValue);
+			return false;
+		}
+
+		OutLink.FromNode = Body.Left(Split).TrimStartAndEnd();
+		OutLink.FromPin = Body.Mid(Split + 1).TrimStartAndEnd();
+
+		if (OutLink.FromNode.IsEmpty() || OutLink.FromPin.IsEmpty())
+		{
+			OutReason = FString::Printf(
+				TEXT("'%s' has an empty node or pin, so there is nothing to link from"), *InValue);
+			return false;
+		}
+
+		return true;
+	}
+
 	bool LooksNumeric(const FString& InValue)
 	{
 		if (InValue.IsEmpty())

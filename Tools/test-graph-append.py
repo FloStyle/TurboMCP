@@ -24,7 +24,9 @@ rather than silent.
 import json
 import os
 import re
+import subprocess
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tmcp import Session  # noqa: E402
@@ -33,8 +35,25 @@ PREVIEW_TOOLSET = "TurboMCP.TurboMCPPreviewToolset"
 EDIT_TOOLSET = "TurboMCP.TurboMCPEditToolset"
 READ_TOOLSET = "TurboMCP.TurboMCPReadToolset"
 
-ASSET = "BP_NodeTest"
-GRAPH = "EventGraph"
+# THE FIXTURE IS A GRAPH THIS SUITE CAN REBUILD, AND THAT IS THE WHOLE POINT OF THE CHANGE.
+#
+# THIS SUITE USED TO APPEND TO `BP_NodeTest:EventGraph` AND COULD NOT CLEAN UP - removal is the capability
+# `E-GRAPH-APPEND` deliberately does not have - so THE GRAPH GREW BY ONE NODE PER RUN, measured from 12 to 17,
+# while `BP_NodeTest` is shared with about fifteen other suites. A suite that slowly poisons the fixture every
+# other suite depends on is worse than one that fails: it makes OTHER suites look flaky.
+#
+# `SaneProbe` lives in `/Game/Tests/TurboMCPAcceptance`, which `Tools/make-acceptance-asset.ps1` REGENERATES from
+# the commandlet that describes it, so the suite restores its own fixture ON THE WAY IN and is re-runnable from
+# any state rather than merely repeatable.
+ASSET = "TurboMCPAcceptance"
+GRAPH = "SaneProbe"
+ASSET_FILE = "TurboMCPAcceptance.uasset"
+
+# THE NODE THE APPENDED BLOCK LINKS INTO, READ FROM THE FIXTURE RATHER THAN PINNED. `SaneProbe` is built by the
+# commandlet, so a hard-coded key would break the moment the fixture is rebuilt with a different order - the
+# "never pin a count on a shared asset" rule applied to an ID.
+LINK_TARGET_TYPE = "Development|PrintString"
+LINK_TARGET_PIN = "then"
 
 failures = []
 
@@ -66,20 +85,138 @@ def node_ids(session):
 def asset_fingerprint():
     """The saved asset's size and mtime, which no in-memory claim can fake."""
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                        "TestProject", "Content", "Tests", "BP_NodeTest.uasset")
+                        "TestProject", "Content", "Tests", ASSET_FILE)
     if not os.path.isfile(path):
         return None
     stat = os.stat(path)
     return (stat.st_size, stat.st_mtime_ns)
 
 
+def rebuild_fixture_and_reconnect():
+    """
+    Regenerates the acceptance asset and returns a fresh connected Session, or None.
+
+    THE SUITE RESTORES ITS FIXTURE ON THE WAY IN, NOT ONLY ON THE WAY OUT, because this one CANNOT restore it on
+    the way out: it appends nodes and the tool it tests has no way to remove them. Rebuilding first makes the
+    suite re-runnable from ANY state, which is the property that matters - a run killed part-way leaves the same
+    mess behind, and cleaning up at the end would not have helped.
+
+    `make-acceptance-asset.ps1` runs a `-run=` commandlet, WHICH EXITS THE EDITOR when it finishes, so the
+    editor is started again afterwards and the caller gets a new Session.
+    """
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def clear_strays():
+        """Stops the editor and the two background services, and WAITS for the editor to be gone."""
+        subprocess.run(
+            ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "start-editor.ps1"), "-Stop"],
+            capture_output=True, text=True, cwd=repo)
+        for stray in ("UnrealEditor", "UnrealEditor-Cmd"):
+            subprocess.run(["taskkill", "/F", "/IM", "%s.exe" % stray],
+                           capture_output=True, text=True, cwd=repo)
+        limit = time.time() + 60
+        while time.time() < limit:
+            probe = subprocess.run(["tasklist", "/FI", "IMAGENAME eq UnrealEditor.exe", "/NH"],
+                                   capture_output=True, text=True, cwd=repo)
+            if "UnrealEditor.exe" not in (probe.stdout or ""):
+                break
+            time.sleep(1)
+        for service in ("UnrealTraceServer", "zenserver"):
+            subprocess.run(["taskkill", "/F", "/IM", "%s.exe" % service],
+                           capture_output=True, text=True, cwd=repo)
+        time.sleep(3)
+
+    def run_rebuild():
+        return subprocess.run(
+            ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "make-acceptance-asset.ps1")],
+            capture_output=True, text=True, cwd=repo)
+
+    # THE REBUILD IS CLEARED AGAIN AND RETRIED, AND THE RETRY IS NOT A SUPERSTITION.
+    #
+    # MEASURED: under `Tools/run-suites.ps1` the rebuild kept answering `FAILED (exit 1)` with
+    # `Le processus ne peut pas acceder au fichier car ce fichier est utilise par un autre processus`, EVEN
+    # after the editor had been stopped and the process table showed it gone - because the HARNESS starts a
+    # fresh editor for each suite and one arrived between the clearing and the commandlet's file access. The
+    # lock is therefore TRANSIENT AND EXTERNALLY GENERATED: this suite cannot prevent it by being clean itself,
+    # so it clears and tries again rather than failing and blaming the fixture.
+    clear_strays()
+    rebuild = run_rebuild()
+    if rebuild.returncode != 0:
+        print("    the rebuild was blocked by a process holding the asset; clearing and retrying once")
+        clear_strays()
+        rebuild = run_rebuild()
+    ok = rebuild.returncode == 0 and "PASS" in (rebuild.stdout or "")
+    first = ((rebuild.stdout or rebuild.stderr).strip().splitlines() or ["no output"])[0]
+    print("    fixture rebuild: %s" % first)
+
+    # THE REBUILD'S WHOLE ANSWER IS KEPT, because "could not be rebuilt" is not a diagnosis and this project
+    # has spent rounds on failures whose only visible symptom was a status code. A file rather than stdout,
+    # because the harness shows only the tail of a suite's output and this is needed when it fails.
+    try:
+        with open(os.path.join(repo, ".agent", "logs", "append-rebuild.log"), "w",
+                  encoding="utf-8", errors="replace") as handle:
+            handle.write("returncode=%s\n" % rebuild.returncode)
+            handle.write(rebuild.stdout or "")
+            handle.write(rebuild.stderr or "")
+    except OSError:
+        pass
+
+    if not ok:
+        print("    the acceptance asset could not be rebuilt, so this suite cannot run")
+        print((rebuild.stdout or rebuild.stderr)[-400:])
+        return None
+
+    start = subprocess.call(
+        ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "start-editor.ps1")], cwd=repo)
+    if start != 0:
+        print("    the editor launcher returned %s (non-zero means one was ALREADY RUNNING)" % start)
+
+    deadline = time.time() + 180
+    while time.time() < deadline:
+        try:
+            candidate = Session()
+            candidate.connect()
+            return candidate
+        except Exception:
+            time.sleep(3)
+    return None
+
+
 def text_for(marker, extra_pins=""):
     return '(Development|PrintString\n    InString "%s"\n    Duration 1.5%s)' % (marker, extra_pins)
 
 
+def link_target_id(session):
+    """
+    The node id of the fixture's PrintString, READ from the graph rather than pinned.
+
+    `SaneProbe` is built by a commandlet, so a hard-coded key would break the moment it is rebuilt in a different
+    order. Parsing it is the same rule the rest of this suite follows for counts.
+    """
+    out = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
+                       {"asset": ASSET, "graphName": GRAPH, "detail": "full",
+                        "format": "", "tokenBudget": ""})
+    found = re.search(r"\(%s ; [^:]+:%s:([0-9a-f]{6})" % (re.escape(LINK_TARGET_TYPE), re.escape(GRAPH)), out)
+    return (found.group(1) if found else None), out
+
+
+def linked_text_for(marker, target_key):
+    """
+    A block whose EXEC input is a wire to an existing node's `then`, which is the shape this suite exists to prove.
+
+    THE WIRE IS WRITTEN IN A PIN'S VALUE POSITION, which is how the format prints it, and the target is named by
+    NODE ID - the spec's "links them to existing nodes by node ID".
+    """
+    return ('(Development|PrintString\n    InString "%s"\n    execute (-> %s:%s:%s:%s))'
+            % (marker, ASSET, GRAPH, target_key, LINK_TARGET_PIN))
+
+
 def main():
-    session = Session()
-    session.connect()
+    session = rebuild_fixture_and_reconnect()
+    if session is None:
+        print("RESULT: FAIL (the fixture could not be rebuilt, so nothing was tested)")
+        return 1
+    check("the fixture was REBUILT on the way in, so this suite is re-runnable from any state", True)
 
     before_count, before_text = node_count(session)
     before_ids, _ = node_ids(session)
@@ -176,16 +313,77 @@ def main():
           "before %s, after %s" % (after_count, refused_count))
 
     print()
-    print("=== 5. a LINK is refused by name rather than written as text ===")
-    # The format prints a wire as `(-> Node:Pin)`. Writing that as a STRING where a wire was meant would
-    # compile and be silently wrong, so the tool must refuse it and say so.
-    linked = ("(Development|PrintString\n    InString (-> %s:%s:000000)\n    Duration 1.0)"
-              % (ASSET, GRAPH))
-    link_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
-                                {"asset": ASSET, "graphName": GRAPH, "text": linked})
-    print(link_preview[:400])
-    check("a pin written as a LINK is refused rather than written as text",
-          "refused" in link_preview and "LINK" in link_preview, link_preview[:300])
+    print("=== 5. a LINK is planned, made, and witnessed ===")
+    #
+    # THIS SECTION USED TO ASSERT THE OPPOSITE - that a link was REFUSED - because linking was not implemented.
+    # It is now the capability, so the checks are the other way round, and the negative case that survives is a
+    # link whose SOURCE does not exist, which must still be refused BY NAME rather than written as text.
+    target_key, target_text = link_target_id(session)
+    check("the fixture exposes a node to link INTO, so the link checks are not vacuous",
+          target_key is not None, target_text[-200:] if target_key is None else target_key)
+
+    if target_key is not None:
+        link_out = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
+                                {"asset": ASSET, "graphName": GRAPH,
+                                 "text": linked_text_for("PROBE-LINK-PREVIEW", target_key)})
+        print(link_out[:500])
+        check("the preview PLANS the wire rather than refusing it",
+              "wire  line" in link_out, link_out[:300])
+        check("the planned wire names BOTH ends, so a caller can check it before writing",
+              target_key in link_out and "execute" in link_out, link_out[:300])
+
+        before_link_count, _ = node_count(session)
+        link_edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend",
+                                 {"asset": ASSET, "graphName": GRAPH,
+                                  "text": linked_text_for("PROBE-LINK-REAL", target_key)})
+        print(link_edit[:500])
+        check("the edit reports a WIRE was made", "wire(s) made" in link_edit, link_edit[:300])
+        # PARSED, NOT MATCHED. "1 wire(s) made, of 1 the text described" is read as two numbers, because a
+        # sentence beside them could stay right while the numbers went wrong.
+        made = re.search(r"(\d+) wire\(s\) made, of (\d+)", link_edit)
+        check("the wire count is parseable and NON-ZERO", made is not None and int(made.group(1)) > 0,
+              made.group(0) if made else link_edit[:200])
+        check("it made every wire the text described, not merely one",
+              made is not None and made.group(1) == made.group(2),
+              made.group(0) if made else "not parsed")
+
+        # THE WITNESS IS A DIFFERENT TOOL. A writer saying it made a wire is not evidence; the READER printing
+        # `; out 0 then -> 1 link(s)` off the live graph is, because it reads identity and links from the graph
+        # rather than from the plan.
+        _, after_link_text = link_target_id(session)
+        check("THE READER WITNESSES THE WIRE on the target's own output pin",
+              re.search(r"out \d+ %s -> \d+ link\(s\)" % re.escape(LINK_TARGET_PIN), after_link_text)
+              is not None,
+              [l for l in after_link_text.splitlines() if LINK_TARGET_PIN in l][:2])
+
+        check("the link grew the graph, so the check is not measuring a refusal",
+              (node_count(session)[0] or 0) > (before_link_count or 0),
+              "before %s after %s" % (before_link_count, node_count(session)[0]))
+
+        print()
+        print("=== 5b. a link to a node that does NOT exist is still refused by name ===")
+        ghost = ("(Development|PrintString\n    execute (-> %s:%s:ffffff:then))" % (ASSET, GRAPH))
+        ghost_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
+                                     {"asset": ASSET, "graphName": GRAPH, "text": ghost})
+        print(ghost_preview[:400])
+        check("a link whose SOURCE is not in the graph is refused", "refused" in ghost_preview,
+              ghost_preview[:300])
+        check("and the refusal names the line", "line 2" in ghost_preview, ghost_preview[:300])
+        check("and it names what could not be resolved", "ffffff" in ghost_preview, ghost_preview[:300])
+
+        print()
+        print("=== 5c. a link to a PIN that does not exist names the real pins ===")
+        bad_pin = linked_text_for("PROBE-LINK-BADPIN", target_key).replace(
+            ":%s))" % LINK_TARGET_PIN, ":noSuchPin))")
+        pin_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
+                                   {"asset": ASSET, "graphName": GRAPH, "text": bad_pin})
+        print(pin_preview[:500])
+        check("a link to a pin that does not exist is refused", "refused" in pin_preview,
+              pin_preview[:300])
+        # THE REAL NAMES ARE THE POINT. A refusal that only says "no such pin" leaves the caller guessing, and
+        # the spec asks for the real names.
+        check("and the refusal lists the pins the node really has",
+              "It has:" in pin_preview and "then" in pin_preview, pin_preview[:400])
 
     print()
     print("=== 6. an empty text is nothing to do, not a change ===")

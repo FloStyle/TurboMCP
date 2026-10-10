@@ -137,6 +137,35 @@ namespace TurboMCPGraphTextLex
 	bool LooksBoolean(const FString& InValue);
 
 	/**
+	 * A wire written in a pin's value position, as `(-> Node:Pin)`.
+	 *
+	 * THE FORMAT PRINTS A WIRE THIS WAY AND THIS IS THE ONLY PLACE THAT KNOWS SO. It used to live as a local
+	 * helper in the append tool, which is precisely the shape the spec's first write rule forbids: a second
+	 * reader of the dialect is how a second dialect appears, and this project has recorded two-tools-one-format
+	 * bugs twice already. The checker, the writer and any later PATCH all ask THIS function.
+	 */
+	struct FLinkForm
+	{
+		/** The node the wire starts at, as written: a node id, or a form this same text creates. */
+		FString FromNode;
+
+		/** The pin on that node, as written. */
+		FString FromPin;
+	};
+
+	/** True when a pin value is written as a link rather than as a literal. */
+	bool ValueIsALink(const FString& InValue);
+
+	/**
+	 * Reads `(-> Node:Pin)` into its two halves.
+	 *
+	 * Returns FALSE when the value is a link that cannot be split, which is a fault worth naming rather than
+	 * silently treating as a literal: writing `(-> Foo)` into a pin as text is exactly the failure this
+	 * recognition exists to prevent. When it returns false, `OutReason` says what was wrong with the value.
+	 */
+	bool ParseLinkValue(const FString& InValue, FLinkForm& OutLink, FString& OutReason);
+
+	/**
 	 * The node ID carried by a comment line, or empty.
 	 *
 	 * The format puts the node's ID in the first comment inside its form. Recognising the long form

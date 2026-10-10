@@ -107,13 +107,30 @@ function Start-EditorAndWait {
     Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue |
         Stop-Process -Force -ErrorAction SilentlyContinue
 
+    # THE LAUNCH TIME IS RECORDED SO THE POLL CAN PROVE A *NEW* EDITOR ANSWERED.
+    #
+    # MEASURED, AND THIS IS THE FOURTH INSTANCE OF ONE SHAPE. A full run reported `31 of 39` while the failing
+    # suites were EXACTLY the ones that rebuild a fixture, and EVERY ONE passed in isolation;
+    # `make-acceptance-asset.ps1` run directly returns exit 0. There are now TWENTY invocations of fixture
+    # scripts across the suites, each of which stops the editor and runs a commandlet, so the harness restarts
+    # an editor far more often than before - and the probe below only asked whether SOMETHING answered on port
+    # 8000. A server from an editor that is still SHUTTING DOWN answers for a few seconds, so the probe
+    # returned PASS, the suite connected to a dying editor, and it died with NO RESULT LINE. The names changed
+    # between runs and each passed alone, which is the signature this project has now recorded four times.
+    #
+    # A PROBE THAT CAN PASS ON A PROCESS THAT IS LEAVING MEASURES THE WRONG THING. So the poll requires BOTH:
+    # an `UnrealEditor` THAT STARTED AFTER THIS LAUNCH, and a server that answers.
+    $launchTime = Get-Date
     & pwsh -NoProfile -File $StartEditor 2>&1 | Out-Null
+
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $deadline) {
-        # THE SERVER IS POLLED, NOT ASSUMED READY. A fixed sleep is either too short on a cold start or
-        # wasted time on a warm one, and this project has been bitten by both.
-        $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
-        if ($probe -match '^PASS') { return $true }
+        $fresh = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
+            Where-Object { $_.StartTime -ge $launchTime.AddSeconds(-2) }
+        if ($fresh) {
+            $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
+            if ($probe -match '^PASS') { return $true }
+        }
         Start-Sleep -Seconds 3
     }
     return $false
