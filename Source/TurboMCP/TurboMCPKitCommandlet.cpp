@@ -1196,35 +1196,48 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			Link(ProbeFirst != nullptr ? ProbeFirst->GetThenPin() : nullptr,
 				ProbeSecond != nullptr ? ProbeSecond->GetExecPin() : nullptr);
 
-			// ---- SHAPE (b): A PURE NODE CARRIED WITH ITS CONSUMER: NOT BUILT, AND WHY --------------
+			// ---- SHAPE (b): A PURE NODE CARRIED WITH ITS CONSUMER, NOW THAT R1 CAN DO IT -----------
 			//
-			// THE REASON IS A MEASURED DEFECT IN `R1`'s CARRY, NOT A MISSING FIXTURE. Five attempts were
-			// built and every one was refused by the overlap guard. The arithmetic says EVERY attempt must
-			// be:
+			// THE RULE WAS BROKEN AND IS NOW FIXED, AND THIS FIXTURE PAID FOR THE DIAGNOSIS. The carry
+			// used to compute `PureToX = Consumer.PlannedX - Pure.Width - Gap`, and the consumer's final
+			// `PlannedX` is `Source.PlannedX + Source.Width + Gap`, so substituting gave
 			//
-			//     R1 moves the target to   ToX     = Source.PlannedX + Source.Width + 60
-			//     the carry places it at   PureToX = Target.PlannedX - Pure.Width - 60
-			//     substitute:              PureToX = Source.PlannedX + Source.Width - Pure.Width
+			//     PureToX = Source.PlannedX + Source.Width - Pure.Width
 			//
-			// so the carried node lands ON THE SOURCE'S OWN LEFT EDGE. The source is still there - `R1`'s
-			// push, which would move it clear, runs AFTER the carry - so the two rectangles coincide and
-			// `PlannedRectIsClear` refuses. With equal widths they coincide EXACTLY; a narrower pure node
-			// only moves the collision, because the push then drives the SOURCE onto the carried node.
+			// - the carried node landed ON THE SOURCE'S OWN LEFT EDGE while the source was still there, so
+			// the overlap guard refused and the carry could NEVER fire. Seven configurations were built
+			// against it before the arithmetic was pinned down; the fix anchors the carried node clear of
+			// the source. With the rule fixed, the shape this fixture was built for now works.
 			//
-			// MEASURED on this very graph, with a pure node satisfying every stated condition of the rule -
-			// one link, one consumer, `IsNodePure() == true`, not a getter:
-			//
-			//     R1 backward exec wires: 4 found, 2 node(s) moved, 0 pushed along
-			//     R1 pure nodes carried with their consumer: 0
-			//
-			// Check 16 therefore stays SKIPPED with this reason. A fixture built to make it pass would be a
-			// fixture that lied about the rule.
-			//
-			// A SECOND, SEPARATE CORRECTION WAS FOUND HERE AND IS KEPT. This kit's own counter counted the
-			// variable getter as a carry candidate - it is pure, it has one link, and that link lands on one
-			// consumer - so `pureUsedOnce` read **2** while the pass read **0**. `R1` SKIPS GETTERS because
-			// `R2` owns them, so the counter claimed a carry the rule refuses: the "a check that passes
-			// without the shape proves nothing" failure, caught by the pass disagreeing with it.
+			// THE PURE NODE IS NARROWER THAN THE SOURCE, at 140 against 220, so the carried node clears the
+			// pushed source. `SizeForMeasurement` would stamp 220, so the width is set explicitly.
+			UK2Node_CallFunction* CarryTarget = MakeCall(BackwardProbe,
+				UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 6600.0, 3000.0);
+			UK2Node_CallFunction* CarrySource = MakeCall(BackwardProbe,
+				UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 8400.0, 2600.0);
+			if (CarryTarget != nullptr)
+			{
+				Link(CarrySource != nullptr ? CarrySource->GetThenPin() : nullptr,
+					CarryTarget->GetExecPin());
+				// THE FLOW CONTINUES PAST THE TARGET, so the pair is not the end of a chain and `R1`'s
+				// push has a node to work with.
+				if (UK2Node_CallFunction* CarryNext = MakeCall(BackwardProbe,
+						UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 9000.0, 3000.0))
+				{
+					Link(CarryTarget->GetThenPin(), CarryNext->GetExecPin());
+				}
+			}
+			if (UK2Node_CallFunction* ProbePure = MakeCall(BackwardProbe,
+					UKismetMathLibrary::StaticClass(), TEXT("Add_IntInt"), 6100.0, 3000.0))
+			{
+				SizeForMeasurement(ProbePure);
+				ProbePure->NodeWidth = 140;
+				if (CarryTarget != nullptr)
+				{
+					Link(ProbePure->GetReturnValuePin(), CarryTarget->FindPin(TEXT("InString")));
+				}
+			}
+			// (`BoxedSecond` -> `CarrySource` is wired after the boxed pair below, which declares it.)
 
 			// ---- SHAPE (c): A COMMENT BOX AROUND A NODE THE PASS WOULD MOVE OUTSIDE IT --------
 			//
@@ -1273,6 +1286,12 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 				(void)GuardBox;
 			}
 
+			// THE CARRY CHAIN'S EXEC WIRE IS COMPLETED HERE, because `BoxedSecond` is declared above this
+			// point and the carry pair is declared above THAT. The chain runs boxed pair -> carry source ->
+			// carry target, so the box refusal and the carry shape are in one flow.
+			Link(BoxedSecond != nullptr ? BoxedSecond->GetThenPin() : nullptr,
+				CarrySource != nullptr ? CarrySource->GetExecPin() : nullptr);
+
 			// The chain's exec flow is carried on by the boxed pair's own successor, so `R1`'s push has a
 			// node to work with even when the box guard refuses the boxed member.
 			if (UK2Node_CallFunction* AfterBoxes = MakeCall(BackwardProbe,
@@ -1299,7 +1318,7 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			Ta5.bBuilt = BackwardProbe != nullptr;
 			Ta5.Detail = FString::Printf(
 				TEXT("backwardProbe: nodes=%d backward=%d (needs >=3) getterUnderConsumer=%d (needs >=1) ")
-				TEXT("pureUsedOnce=%d (not required) nodesInBox=%d (needs >=1)"),
+				TEXT("pureUsedOnce=%d (needs >=1) nodesInBox=%d (needs >=1)"),
 				ProbeNodes, ProbeBackward, ProbeGetters, ProbePure, ProbeBoxed);
 
 			if (BackwardProbe == nullptr)
@@ -1319,11 +1338,16 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 					Ta5.Findings.Add(TEXT("no getter sits under the node that reads it, so R2 has nothing to ")
 						TEXT("find and checks 6 and 8 stay unprovable"));
 				}
-				// THE PURE-CARRY SHAPE IS MEASURED BUT NOT REQUIRED, AND THAT IS DELIBERATE. Requiring it
-				// would make this commandlet fail the build for a shape `R1`'s own geometry cannot produce
-				// (see the block above), so the count is REPORTED at zero so check 16's skip has a measured
-				// reason rather than an asserted one. A requirement that no fixture can satisfy is a build
-				// that can never pass.
+				// THE PURE-CARRY SHAPE IS REQUIRED NOW THAT `R1` CAN PERFORM IT. It was reported but NOT
+				// required while the rule's geometry made it unreachable (see block (b)): requiring a
+				// shape the rule refuses would have been a build that can never pass. The rule is fixed,
+				// so the requirement is real and a regression in either the rule or this fixture fails
+				// the build here rather than silently emptying check 16.
+				if (ProbePure < 1)
+				{
+					Ta5.Findings.Add(TEXT("no pure node is used only by one consumer, so R1 has nothing to ")
+						TEXT("carry and check 16 stays unprovable"));
+				}
 				if (ProbeBoxed < 1)
 				{
 					Ta5.Findings.Add(TEXT("no node sits inside a comment box, so the box guard is never ")
