@@ -286,7 +286,18 @@ if (-not [string]::IsNullOrWhiteSpace($Culture)) { $Args += @("-culture=$Culture
 # BringToFrontAsync to the server's own ShowConsole/BringToFront delegates and runs BringToFront as a main
 # thread task, AND IT IS LAUNCHED WITH -Hidden (LiveCodingModule.cpp:1104) - which is why an enumeration of
 # VISIBLE windows never saw it.
-$Args += @('-nosplash','-nosound','-nopause')
+# -unattended IS WHAT ACTIVATES THE FOCUS GUARD, AND IT IS THE ONLY THING THAT CAN.
+#
+# FTurboMCPFocusGuard hands the foreground back when this editor takes it, and it is gated on
+# FApp::IsUnattended() (App.cpp:278, which parses -unattended) BECAUSE A HUMAN WHO LAUNCHES THE EDITOR WANTS
+# TO TYPE IN IT. So the flag is passed by the SUITE HARNESS only - an interactive launch keeps the editor's normal
+# behaviour and keeps the foreground it takes.
+#
+# IT REPLACES -Offscreen, WHICH WAS MEASURED AND REMOVED: -Offscreen implied -nullrhi, and that made the
+# editor FAIL TO START - 	he editor process exited after 8s, twice - while a plain launch reached PASS in 16
+# seconds. -nullrhi is not an option for this project, and the script's own check list says why: a -NullRHI
+# editor never needs ShaderCompileWorker.exe, AND THAT IS THE CHECK A HEADLESS RUN HIDES.
+$Args += @('-nosplash','-nosound','-nopause','-unattended')
 
 $StartTime = Get-Date
 Write-Host "  $EditorExe $($Args -join ' ')"

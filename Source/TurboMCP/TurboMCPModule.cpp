@@ -14,6 +14,7 @@
 
 #include "Logging.h"
 #include "TurboMCPAnalyticsProvider.h"
+#include "TurboMCPFocusGuard.h"
 #include "Panel/STurboMCPPanel.h"
 #include "Tools/TurboMCPToolsets.h"
 #define LOCTEXT_NAMESPACE "FTurboMCPModule"
@@ -30,6 +31,14 @@ void FTurboMCPModule::StartupModule()
 	// opening it before the toolsets exist sees the honest "MISSING" lines.
 	RegisterTurboMCPPanel();
 
+	// AND THE FOCUS GUARD IS INSTALLED AT THE SAME MOMENT, FOR THE SAME REASON: it needs Slate and nothing else.
+	// IT IS THE FIX FOR THE OWNER'S REPORT THAT A TEST RUN KEEPS TAKING THEIR FOCUS, and it lives here because
+	// FOUR ATTEMPTS FROM OUTSIDE THE PROCESS WERE MEASURED AND EACH KILLED THE EDITOR - a process that manages its
+	// own message loop treats an externally hidden or minimised main window as a shutdown condition. From inside,
+	// the editor activates itself normally and this hands the foreground back. It does nothing unless the run is
+	// unattended, so a human launching the editor to work in it is unaffected.
+	FTurboMCPFocusGuard::Install();
+
 	UE_LOG(LogTurboMCP, Log, TEXT("TurboMCP module started"));
 }
 
@@ -44,6 +53,9 @@ void FTurboMCPModule::ShutdownModule()
 	UnregisterToolsets();
 	RemoveAnalyticsProvider();
 	UnregisterTurboMCPPanel();
+
+	// Removed after the panel, because the guard needs Slate to unhook itself.
+	FTurboMCPFocusGuard::Remove();
 
 	UE_LOG(LogTurboMCP, Log, TEXT("TurboMCP module shut down"));
 }
