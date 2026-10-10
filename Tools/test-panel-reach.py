@@ -1,3 +1,14 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-PANEL-5
+#
+# NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3 says a
+# capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF DONE - and a
+# script over the tree measured 91 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing could answer
+# 'is this row passing?' without a human reading it.
+#
+# THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
+#   
+#   | T-PANEL-5 | Same output | One tool on one asset gives identical text from the panel and the MCP |
+
 """Prove that EVERY tool is reachable the way the PANEL reaches it.
 
 WHY THIS SUITE EXISTS

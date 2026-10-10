@@ -1,4 +1,15 @@
 #!/usr/bin/env python3
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-DBG-2
+#
+# NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3 says a
+# capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF DONE - and a
+# script over the tree measured 91 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing could answer
+# 'is this row passing?' without a human reading it.
+#
+# THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
+#   
+#   | T-DBG-2 | Trace point | One line per tick in play with pin values; clear stops it; panel lists it |
+
 """
 `E-TRACE` and `R-TRACE`: arming a trace point, reading it, and clearing it.
 

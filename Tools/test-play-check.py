@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-DBG-8
 #
 # NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3 says a
@@ -8,7 +9,6 @@
 # THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
 #   | T-DBG-8 | Automation report | One known-passing and one deliberately failing engine test: both appear with
 
-#!/usr/bin/env python3
 """`R-PLAY-CHECK`: play the project briefly and report what it complained about.
 
 THE TOOL IS DELIBERATELY TWO CALLS, so this suite is written around that. A tool call runs on the editor's
