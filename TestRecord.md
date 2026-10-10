@@ -4389,3 +4389,50 @@ WOLVES HAVE BEEN IS WORSE THAN A MISSING ONE.**
 
 NOT SETTLED: whether a leak ALSO exists. Neither narrow pairing reproduced one, and the long-run failures need a
 sequence I did not find. Both facts are recorded rather than one being promoted over the other.
+
+---
+
+## 15. BOTH branches of the fixture-hygiene check can fail, and both depend on ONE parsed number
+
+Reading `Tools/test-material-tidy.py:331-347` in full settles what the two failing assertions depend on:
+
+    look = session.call(READ_TOOLSET, "ReadTurboMCPMaterialBlocks", ...)
+    boxes_now = number_before(r"blocks: (\d+) comment box", look)
+    dirty = boxes_now is not None and boxes_now != 2
+
+    if dirty:
+        restored = rebuild_fixture()
+        check("the shared fixture was GIVEN BACK", restored, ...)      # asserts WHAT THE REBUILD DID
+    else:
+        check("the fixture is left in the state it was built with, so no rebuild is needed",
+              boxes_now == 2, ...)                                      # asserts ON THE PARSED NUMBER
+
+**BOTH BRANCHES ASSERT, AND BOTH DEPEND ON THE SAME PARSED VALUE.** The first reaches its assertion only when
+`boxes_now != 2`, and then asserts on `restored` - a claim about what the rebuild reported, which is the RIGHT KIND
+of claim. The second asserts `boxes_now == 2` directly.
+
+**SO THE CHECK CANNOT PASS WHEN `boxes_now` IS ANYTHING OTHER THAN 2, EXCEPT BY TAKING THE FIRST BRANCH AND HAVING
+THE REBUILD SUCCEED.** And `boxes_now` comes from a REGEX APPLIED TO A READER'S OUTPUT over SHARED, MUTABLE STATE.
+Three things make it not-2 without this suite being at fault: a CONCURRENT PROCESS rebuilding the same asset; the
+fixture being left in any state other than exactly what it was built with, INCLUDING ONE AN EARLIER SUITE LEFT; and
+**THE REGEX ITSELF NOT MATCHING, in which case `number_before` RETURNS `None`, `dirty` IS FALSE, AND THE `else`
+BRANCH ASSERTS `None == 2`.** That last one is the same class as PATCH's key-extraction regex that missed the
+`/Game/Tests/` prefix - **WHICH ALREADY COST THIS PROJECT SEVEN CHECKS IN ONE ROUND.**
+
+**AND THE DIRECTIONS ARE OPPOSITE, WHICH IS WHY IT IS WORTH RECORDING RATHER THAN JUST FIXING:** the `if` branch is
+HONEST - *"the fixture was dirty, so I rebuilt it, and here is whether the rebuild worked"*. The `else` branch is
+the one that reaches outside, **AND IT IS ALSO THE ONE THAT RUNS ON THE SUCCESS PATH. A CHECK THAT ONLY ASSERTS WHEN
+NOTHING WENT WRONG IS A CHECK THAT PUNISHES THE GOOD CASE.**
+
+WHAT TO DO, IN ORDER, AND BOTH ARE SMALL:
+1. **MAKE THE REGEX'S FAILURE LOUD RATHER THAN SILENT.** `number_before` returning None must be its own reported
+   outcome - *"the reader did not print a box count I could parse"* - instead of being folded into a comparison that
+   then fails with a misleading message about the fixture's state.
+2. **MOVE FROM ASSERTING TO REPORTING ON THE SUCCESS PATH.** The box count is SHARED STATE, and a concurrent run
+   owns it as much as this suite does, so the right assertion is on what the suite DID - that its restore succeeded
+   - and the number should be PRINTED. `restored` already exists and is exactly the right thing.
+
+NOT DONE, AND STATED PLAINLY: I did not make this edit. I reached the diagnosis with the context I had left and
+stopped rather than change a suite I could no longer test end to end - **THE SAME JUDGEMENT THREE PREVIOUS
+WORKSTREAMS MADE, AND THE REASON THIS PROJECT HAS NINE RECORDED CASES RATHER THAN TEN.** The finding is complete and
+the change is a few lines; what is missing is the run that proves it.
