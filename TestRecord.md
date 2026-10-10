@@ -3548,7 +3548,7 @@ entry point would mean writing the parser three times or discovering the need fo
 
 ---
 
-## 6t. THE PIE TEST MAP: one fixture closed BOTH open holes
+## 6u. THE PIE TEST MAP: one fixture closed BOTH open holes
 
 `TurboMCPTestMap` is a level carrying a native `ATurboMCPTestLogActor` and a `BP_TurboMCPTestLog` actor whose
 `ReceiveBeginPlay` runs a `PrintString` node. It exists because `TestProject/Content` had NO `.umap` at all, so
@@ -3599,3 +3599,70 @@ AND A THIRD, ON THE SECOND RUN: `BlueprintTools.create` answered nothing because
 was still held. The commandlet now deletes the `.uasset` FILE before the Python step runs, because the registry
 can answer "exists" for an asset whose file is gone and `delete_asset` then answers false - and treating that
 false as fatal stopped a rebuild that would have worked. A FIXTURE THAT CAN ONLY BE BUILT ONCE IS NOT A FIXTURE.
+
+---
+
+## 6v. THE FIXTURE-REBUILD RACE: a fixed 2-second sleep, and the third instance of one shape
+
+**MEASURED BEFORE:** a full harness run reported `31 of 38`, WHILE EVERY FAILING SUITE PASSED IN ISOLATION and
+`Tools/make-acceptance-asset.ps1` run DIRECTLY returned exit 0 and printed PASS. **THE FAILING NAMES WERE EXACTLY
+THE ONES THAT REBUILD A FIXTURE**: `check-probe-graphs`, `test-graph-dead`, `test-graph-knots`.
+
+**THE CAUSE IS MECHANICAL.** That script stopped the editor and then slept a **FIXED 2 SECONDS** before launching
+the commandlet. It runs INSIDE suites as well as by hand - `test-graph-dead.py` calls it twice and
+`check-probe-graphs.py` calls it too - so under the harness it ALWAYS FOLLOWS AN EDITOR ANOTHER SUITE WAS HOLDING.
+Two seconds is not enough on a busy machine, the commandlet found the `.uasset` still locked, and it returned
+non-zero; `test-graph-dead`'s own assertion `rebuild.returncode == 0 and "PASS" in stdout` then failed, and the
+suites downstream of the asset failed with it. **THE SCRIPT WAS NEVER WRONG IN ITSELF, WHICH IS WHY RUNNING IT BY
+HAND ALWAYS WORKED** - and that is what made this read like a flaky tool rather than a deterministic race.
+
+**THE FIX** polls the PROCESS up to 30 seconds rather than sleeping, KILLS a process that outlives that rather than
+waiting indefinitely, and clears `UnrealEditor-Cmd`, because the failure mode here is a locked `.uasset` that looks
+like a build error. **MEASURED AFTER:** the four suites report `passed 7, failed 0`, and the FULL RUN reports
+`37 of 38`.
+
+**THIS IS THE THIRD INSTANCE OF ONE SHAPE, AND THE SHAPE NOW HAS A NAME.** Round 51 was the harness waiting on the
+**SERVER** while `start-editor.ps1` decides from the **PROCESS**. This round was a script sleeping two seconds while
+the process was still exiting. **BOTH PRODUCED INTERMITTENT FAILURES WHOSE NAMES CHANGED BETWEEN RUNS AND PASSED IN
+ISOLATION.** That signature - not the failing suite's name - is what identifies this class, and it is now the first
+thing to check.
+
+---
+
+## 6w. The shared graph-text LEXER, and why a second reader is how a second dialect appears
+
+`TurboMCPGraphTextLex.{h,cpp}` now holds the line reader, the comment rule, the head-of-form rule, the pin-line
+rule, the literal classifiers and the node-id-from-comment rule, and `FTurboMCPGraphCheck` CONSUMES them.
+
+**WHY THIS CAME BEFORE THE WRITER.** The checker's lexing lived in an **ANONYMOUS NAMESPACE inside its own .cpp**,
+so it was **STRUCTURALLY UNAVAILABLE** to any second reader. A writer that lexed for itself would **BE** that second
+reader, and the spec's FIRST rule for every write entry point is *"Accepts exactly the graph text format that the
+readers print. NO SECOND DIALECT."* **THIS PROJECT HAS ALREADY RECORDED TWO-TOOLS-ONE-FORMAT BUGS TWICE** - the
+graph text and the node ID - and two readers is precisely how a third appears.
+
+**PROVEN NON-REGRESSING**, which was the risk: `test-graph-check`, `test-json`, `test-batch-tools` and
+`test-graph-dead` report `passed 7, failed 0`. `TurboMCPGraphCheck.cpp` went 827 -> 735 lines, and its local
+`FLine` is now a `using` declaration onto the shared namespace, so **ONE TYPE EXISTS RATHER THAN TWO THAT MERELY
+LOOK ALIKE**, and the ~300 lines below it did not have to change.
+
+---
+
+## 6x. THE NEXT PREREQUISITE MEASURED, AND A CORRECTION TO MY OWN FIRST READING OF IT
+
+I first judged the writer's blocker BOUNDED, because a type ID looked like owner-class plus function-name.
+**THAT WAS WRONG AND THE HEADER SAYS SO.** `TurboMCPNodeId.h:136-137` gives the format as `<category>|<title>`, and
+`:163` records that **THE TITLE IS LOCALIZED - ON A FRENCH EDITOR `PrintString` BECOMES `Afficher`.** A localized
+display title is a POOR REVERSE KEY, so resolving a type ID back to something BUILDABLE needs the ENGINE'S OWN
+NODE-MENU MACHINERY - which is what `FTurboMCPNodeType` already reaches for when it FINDS nodes.
+
+**AND `FTurboMCPGraphCheck::ResolveTypeId` IS GRAPH-SCOPED:** it matches a type ID against the nodes ALREADY IN THE
+GRAPH, so **A WRITER CANNOT USE IT TO CREATE A TYPE THE GRAPH DOES NOT ALREADY CONTAIN** - which is the tool's
+entire purpose.
+
+BOTH FACTS POINT AT ONE SHARED ADDITION, and the pieces are already in the plugin rather than needing invention:
+`TurboMCPNodeType.cpp:12` includes `BlueprintNodeSpawner.h` and `:208` keeps `Entry.Spawner`, and
+`UBlueprintNodeSpawner::SpawnNode(ParentGraph, Bindings, Location, ...)` is at
+`Engine/Source/Editor/BlueprintGraph/Public/BlueprintNodeSpawner.h:320`. A factory built on that would give the
+checker and the writer **the same real answer**, and would settle the `P-GRAPH-CHECK` closest-match deviation
+already recorded - the checker suggests from the graph's own IDs precisely BECAUSE `FTurboMCPNodeType::Plan`
+refuses an empty asset.
