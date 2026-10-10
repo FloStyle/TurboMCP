@@ -142,6 +142,46 @@ public:
 	static UEdGraphNode* BuildProbeNode(UBlueprint* InBlueprint, UEdGraph* InGraph,
 		const FString& InTypeId, FString& OutNote);
 
+	/** What the factory did, so a caller can report WHY rather than only that it failed. */
+	enum class ESpawnResult : uint8
+	{
+		/** A node was built and added to the target graph. */
+		Spawned,
+		/** No node type in this graph has that id. */
+		NoSuchTypeId,
+		/** The id exists but the engine's action filter rejects it HERE. */
+		FilteredOut,
+		/** The id matched and passed the filter, but the spawner declined to build. */
+		SpawnerDeclined,
+	};
+
+	/**
+	 * THE FACTORY: builds a node of this type and ADDS IT TO THE REAL GRAPH.
+	 *
+	 * WHY THIS EXISTS SEPARATELY FROM `BuildProbeNode`, WHICH IT MIRRORS. `BuildProbeNode` spawns
+	 * into a THROWAWAY graph because `P-NODE-PINS` only wants to read the pins and `P3` forbids a
+	 * read tool from changing the node count. A WRITER wants the opposite: a real node, in the real
+	 * graph. The two differ in ONE argument and in nothing else, which is why the database walk
+	 * below is deliberately the same code rather than a second, cleverer one.
+	 *
+	 * A TYPE ID IS NOT CLASS PLUS FUNCTION, WHICH IS WHY THIS CANNOT BE A LOOKUP. Measured from
+	 * `TurboMCPNodeId.h:136-137`, the id is `<category>|<title>` and `:163` records that the title
+	 * is LOCALIZED - on a French editor `PrintString` becomes `Afficher`. So the only authority for
+	 * "what does this id name" is the engine's own action database and its `GetUiSpec`, which is
+	 * what this walks. `FTurboMCPGraphCheck::ResolveTypeId` CANNOT serve here: it is GRAPH-SCOPED,
+	 * matching against nodes ALREADY in the graph, so it could never create a type the graph does
+	 * not already contain - which is the whole point of an append.
+	 *
+	 * THE NODE IS ADDED TO `InGraph` AND ITS PINS ARE ALLOCATED, because a node created outside
+	 * the editor is never reconstructed for display: a pin accessor on an unallocated node reads an
+	 * EMPTY `Pins` array, and that has already caused one crash and one silent corruption here.
+	 * The caller still owns the TRANSACTION; this function does not open one.
+	 *
+	 * @param OutNote  Why it could not be built, when it could not. Never empty unless Spawned.
+	 */
+	static ESpawnResult SpawnNodeOfType(UBlueprint* InBlueprint, UEdGraph* InGraph,
+		const FString& InTypeId, UEdGraphNode*& OutNode, FString& OutNote);
+
 	/** Resolves a guess against the real ids and caps the answer. */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, const FString& InGuess,
 		const FString& InLimit, FPlan& OutPlan, FString& OutError);
