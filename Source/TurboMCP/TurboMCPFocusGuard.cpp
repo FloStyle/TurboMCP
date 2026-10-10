@@ -104,6 +104,29 @@ void FTurboMCPFocusGuard::Install()
 		return;
 	}
 
+	// *** AND SLATE MUST ACTUALLY EXIST, WHICH IS A MEASURED CRASH RATHER THAN A PRECAUTION. ***
+	//
+	// `StartupModule` RUNS IN `UnrealEditor-Cmd.exe -run=<Commandlet>` TOO, AND A COMMANDLET HAS NO SLATE AT ALL.
+	// Calling `FSlateApplication::Get()` there tripped the engine's own assertion:
+	//
+	//     LogWindows: Error: Assertion failed: CurrentApplication.IsValid()
+	//
+	// WHICH TOOK OUT **EVERY MATERIAL FIXTURE REBUILD** and with it TEN SUITES - `test-material-tidy`,
+	// `test-material-label-promote`, `test-graph-dead`, `test-graph-knots`, `test-graph-tidy`,
+	// `check-probe-graphs` and more - so a FOCUS FIX BROKE THE MATERIAL HALF OF THE TEST HARNESS. It is the same
+	// trap this project already recorded twice from the other direction: **`-run=` IS NOT THE EDITOR**, and code
+	// that assumes an interactive application is exactly the code that a commandlet destroys.
+	//
+	// `IsInitialized()` IS THE CORRECT GUARD, not a try/catch: an assertion is not an exception, so there would
+	// have been nothing to catch.
+	if (!FSlateApplication::IsInitialized())
+	{
+		UE_LOG(LogTurboMCP, Log,
+			TEXT("Focus guard NOT installed: Slate is not initialised, so this is not an interactive editor (a ")
+			TEXT("-run= commandlet has no Slate at all)."));
+		return;
+	}
+
 #if PLATFORM_WINDOWS
 	// THE CAPTURE HAPPENS ON THE FIRST ACTIVATION NOTIFICATION, AND IT HAS TO BE TRIED REPEATEDLY.
 	//
