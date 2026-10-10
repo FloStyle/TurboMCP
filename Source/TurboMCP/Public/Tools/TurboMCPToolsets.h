@@ -940,6 +940,34 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		bool bForce);
+
+	/**
+	 * Check graph text before writing it, and write nothing.
+	 *
+	 * The gate every write entry point depends on. Feed it exactly the text a reader
+	 * printed - there is no second dialect - and it parses, resolves and checks it,
+	 * then reports every unknown node type with the closest real IDs, every pin the
+	 * node does not have with the real names, every literal that cannot be the pin's
+	 * type naming both sides, and every construct it will refuse with the reason.
+	 * Each finding carries its line and column.
+	 *
+	 * Call this BEFORE P-GRAPH-APPEND, P-GRAPH-REPLACE or P-GRAPH-PATCH. Those three
+	 * take this same text and reach the same decision through this same check, so a
+	 * text that passes here is one they accept - and a text that fails here names
+	 * what to fix rather than failing halfway through a write.
+	 *
+	 * A graph name is required, not optional: a node type and a pin name are both
+	 * resolved against a live graph, so an unnamed graph is refused rather than
+	 * guessed at.
+	 *
+	 * Writes nothing, and cannot. It is in this toolset, which holds no tool that can
+	 * change an asset.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphCheck(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Text);
 };
 
 /**

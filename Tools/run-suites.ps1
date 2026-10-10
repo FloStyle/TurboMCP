@@ -60,24 +60,52 @@ $SlowSuites = @('test-capture')
 function Start-EditorAndWait {
     param([int] $TimeoutSeconds = 240)
 
-    # THE SERVER FROM THE PREVIOUS SUITE MUST BE PROVEN DEAD BEFORE THE NEW ONE IS STARTED, AND THIS IS A
-    # FIX RATHER THAN A PRECAUTION.
+    # A PROBE THAT CAN PASS ON A DYING PROCESS MEASURES THE WRONG THING, SO THE WAIT RUNS IN BOTH
+    # DIRECTIONS: the previous server must be GONE, and then the new one must ANSWER.
     #
-    # MEASURED: `Start-EditorAndWait` used to call `start-editor.ps1` and then poll until the MCP server
-    # answered. But a suite that stops the editor to rebuild a fixture - `test-graph-dead` does exactly that,
-    # twice - can leave the PREVIOUS editor's server still answering for a few seconds while it shuts down.
-    # The probe then returned `PASS` immediately, the suite was launched against an editor that was still
-    # going away, and it died with NO RESULT LINE AT ALL. `test-comments,test-graph-dead` in sequence failed
-    # that way, and `test-graph-dead` alone passed - which is the signature of a race, not of a broken tool.
+    # AND THE PROCESS MUST BE GONE TOO, WHICH IS A SEPARATE CONDITION AND WAS THE MISSING ONE.
+    # `start-editor.ps1` REFUSES to start when it believes an editor is already running - correctly, because
+    # two editors fight over the same `.uasset` - and it decides that from the PROCESS. But the server can
+    # stop answering seconds before the process finally exits, so the down-probe passed, the launcher was
+    # called while the old editor was still shutting down, the launcher REFUSED, and the up-probe then waited
+    # the full timeout for a server nothing was ever going to start. That is `BLOCKED (the editor would not
+    # start)` on a machine where the editor was fine - and it is why the failing suite names CHANGED between
+    # runs, which is the signature of a race rather than of a tool.
     #
-    # A PROBE THAT CAN PASS ON A DYING PROCESS IS A PROBE THAT MEASURES THE WRONG THING. So the wait now
-    # runs in both directions: DOWN first, then up.
+    # MEASURED CONSEQUENCE BEFORE THIS FIX: `passed 32, failed 4, blocked 1, of 37`, then `passed 31, failed
+    # 6`, with `test-graph-check`, `test-layout`, `test-panel-reach`, `test-vars-add` and others each PASSING
+    # when run alone or in a small group.
     $downDeadline = (Get-Date).AddSeconds(60)
     while ((Get-Date) -lt $downDeadline) {
         $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
         if ($probe -notmatch '^PASS') { break }
         Start-Sleep -Seconds 2
     }
+
+    # THE PROCESS IS WAITED FOR SEPARATELY, because "the server stopped answering" and "the process exited"
+    # are not the same event and only the second one lets the launcher start a new editor.
+    $procDeadline = (Get-Date).AddSeconds(45)
+    while ((Get-Date) -lt $procDeadline) {
+        $alive = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
+        if (-not $alive) { break }
+        Start-Sleep -Seconds 1
+    }
+    # AND IF IT IS STILL THERE AFTER THAT, IT IS KILLED RATHER THAN WAITED FOR INDEFINITELY. A stubborn
+    # editor holds the plugin DLL and the `.uasset` handles, so leaving it would make the next suite fail for
+    # a reason that has nothing to do with the suite.
+    $stubborn = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
+    if ($stubborn) {
+        Write-Output ("    a previous editor (PID {0}) outlived the stop; killing it before starting a new one" -f `
+            ($stubborn.Id -join ', '))
+        $stubborn | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 3
+    }
+
+    # THE GHOST PROCESSES ARE CLEARED TOO. MEASURED: an `UnrealEditor-Cmd` left by an experiment keeps
+    # `UnrealEditor-TurboMCP.dll` mapped and makes the NEXT BUILD fail with `LNK1104`, and `-Stop` does not
+    # know about it because it is not the editor the launcher started.
+    Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
 
     & pwsh -NoProfile -File $StartEditor 2>&1 | Out-Null
     $deadline = (Get-Date).AddSeconds($TimeoutSeconds)

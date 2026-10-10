@@ -3358,3 +3358,60 @@ arithmetic (fixed in `2e17f9b` and verified), and all five LOOP ENTRY conditions
 **The next attempt should print, for each backward wire's consumer: the consumer key, the number of pure
 candidates considered, and for each one the outcome of all five loop conditions. One instrumented run answers
 it, and neither the predicate nor the placement is where the answer lives.**
+
+---
+
+## 6q. Q-16 RESOLVED IN CAUSE: the pure carry is never reached because its TARGET is never moved
+
+**THE TWO PREVIOUS ATTEMPTS INSTRUMENTED THE WRONG THING, AND THIS ROUND FOUND WHY BY READING THE SCOPE.**
+
+`Visited` and `ChainDepth` are declared INSIDE the per-target R1 block:
+
+```cpp
+// TurboMCPGraphFixBackward.cpp:1005-1013
+// ---- R1's pure nodes: carried along, to the LEFT of their consumer ---------------
+{
+    int32 ChainDepth = 0;
+    TSet<FString> Visited;          // <- FRESH PER TARGET, not shared across consumers
+    TArray<int32> Frontier;
+    Frontier.Add(TargetIndex);
+```
+
+So the leading hypothesis for the last two rounds - that `Visited` already held `ProbePure`'s key, because it is never
+cleared between consumers - **is WRONG. It cannot be: the set is constructed once per target.** That hypothesis
+came from reading `Visited.Add` and `Visited.Contains` without reading where the set is declared, which is the
+same mistake as trusting a name instead of its scope.
+
+**THE REAL CAUSE IS THE GUARD IMMEDIATELY ABOVE THE CARRY, IN THE SAME BLOCK:**
+
+```cpp
+// :994-1003
+FString Blocker;
+if (!PlannedRectIsClear(Nodes, Target, Blocker))
+{
+    Target.PlannedX = OldX;
+    Target.PlannedY = OldY;
+    AddRefusal(OutPlan, FString::Printf(TEXT("%s: the planned position overlaps %s..."), ...));
+    continue;                       // <- LEAVES THE WHOLE R1 BLOCK, CARRY INCLUDED
+}
+```
+
+**THE PURE CARRY ONLY RUNS FOR A TARGET THAT R1 SUCCESSFULLY MOVED.** And the pass does not move every backward
+wire it finds: measured on `BackwardProbe`, `R1 backward exec wires: 4 found, 2 node(s) moved` - TWO OF THE FOUR
+TARGETS ARE REFUSED. If `CarryTarget` is one of the refused two, its pure node is never considered, no placement
+diagnostic can fire, and `R1 pure nodes carried with their consumer` reads 0 - **WITH THE CARRY RULE ENTIRELY
+CORRECT AND THE FIXTURE ENTIRELY CORRECT.**
+
+**THIS EXPLAINS EVERY OBSERVATION THAT THE LAST TWO ROUNDS COULD NOT:** the predicate instrumented `eq=YES` (the
+predicate is fine), the placement diagnostic never fired (the block was never entered), and the loop-entry
+conditions all pass when examined (they are never tested, because the block is skipped first).
+
+**WHAT TO MEASURE NEXT, AND IT IS ONE RUN:** instrument the `continue` at `:1002` to print the TARGET KEY and the
+BLOCKER, then read the preview for whether `CarryTarget`'s key appears there. If it does, the fix is a FIXTURE
+CHANGE - move `CarryTarget`/`CarrySource`/`ProbePure`/`CarryNext` (currently at x = 6600, 8400, 6100, 9000) far
+enough from every other node that the planned position is clear - and NOT a change to the carry rule at all.
+
+**THE GENERAL LESSON, WHICH IS THE THIRD TIME THIS SHAPE HAS COST A ROUND:** an instrumented diagnostic that never
+fires is evidence about the ENCLOSING SCOPE, not about the line that was instrumented. Two workstreams
+instrumented the predicate and the placement; the answer was three lines above the block they were reading, in a
+`continue` that belongs to a DIFFERENT guard.
