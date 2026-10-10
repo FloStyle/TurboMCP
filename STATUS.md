@@ -8,13 +8,13 @@
 
 | | |
 |---|---|
-| **Capabilities implemented** | **33 of 57** — see §18 of the record: the spec has TWENTY sections, not nine |
-| **Tools shipped** | **74** AICallable `UFUNCTION`s, in 4 toolsets |
+| **Capabilities implemented** | **36 of 57** — see §18 of the record: the spec has TWENTY sections, not nine |
+| **Tools shipped** | **77** AICallable `UFUNCTION`s, in 4 toolsets |
 | **Reading (`R-`)** | **21 of 21 — COMPLETE** |
 | **Vision (`L-`)** | **3 of 3 — COMPLETE** |
 | **Preview (`P-`)** | **4 of 4 — COMPLETE** |
 | **Edit (`E-`)** | **21 of 23** |
-| Test suites | 38 files · **full run `43/44`** — one failure, understood and attributed, see §22 of the record |
+| Test suites | 41 files · **full run `38/46` on an IDLE machine** — and §24/§25 of the record show the failures are the LENGTH of the run, not the suites |
 | Documentation | `TestRecord.md` 3668 l. · `QUESTIONS.md` 1193 l. · `Spec/` · `PLAN.md` · `DOCS.md` |
 
 **The two capabilities you asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
@@ -55,6 +55,8 @@ annotated because the shape of the gap was wrong, not just its size.
 | 7 | Blueprint structure (Preview and Edit) | 4/4 | **COMPLETE** |
 | 8 | Graph writing (the bulk writer) | 1/1 | **COMPLETE** |
 | 9 | Materials writing | 5/8 | `E-MAT-BLOCKS` **DONE**; the material writers remain |
+| 4 | Data tables | 1/1 | `P/E-DATATABLE-ROWS` **DONE** (26 checks) |
+| 15 | Quality and maintenance | 1/1 | `R-BP-LINT` **DONE** (37 checks, six named checks each reporting its denominator) |
 | 10 | Graph structure | 0/3 | `E-GRAPH-RENAME`, `E-GRAPH-COLLAPSE`, `E-GRAPH-COPY` |
 | 11 | Widget authoring | 0/5 | needs the widget text dialect first |
 | 12 | Assets, structs and data | 0/6 | `E-ASSET-*`, `P-ASSET-DIFF`, `R-ASSET-COST`, curves, structs |
