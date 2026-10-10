@@ -3813,3 +3813,49 @@ suites, which need no editor and finish in seconds - the cheapest possible feedb
 Specifically: first make `Invoke-SuiteProcess` return the output for ONE static suite, changing nothing else;
 only then wire it into the loop. THE STATIC SUITES ARE THE RIGHT TEST BED FOR A HARNESS CHANGE AND WERE AVAILABLE
 THE WHOLE TIME.
+
+---
+
+## 8b. THE DEADLINE HELPER WORKS; THE EXTRACTION IS WHAT FAILS, AND THAT IS NARROWER THAN LAST TIME
+
+**THE SECOND ATTEMPT GOT FURTHER AND THE MEASUREMENT IS WORTH KEEPING.** Last round the helper returned nothing and
+I could not say why. This round, built incrementally and proved in isolation first, the answer is precise.
+
+**`Tools/test-suite-timeout.ps1` PROVES THE HELPER ON ITS OWN, against a suite that needs no editor:**
+```
+check-includes: timedOut=False exit=0 outputLength=293
+its verdict line: PASS  every include resolves to a real file in the engine or the plugin.
+1-second deadline: timedOut=True verdict=RESULT: TIMED OUT (1s)
+```
+**THE KILL PATH IS EXERCISED, NOT REASONED ABOUT** - which is the part no previous attempt had established.
+
+**WIRED INTO THE HARNESS, THE HELPER STILL WORKS AND SOMETHING ELSE BREAKS.** With a temporary debug line the
+harness printed, for the three static suites:
+```
+DEBUG len=3167 timedout=False
+DEBUG len=1062 timedout=False
+DEBUG len=293  timedout=False
+DEBUG first120=[indexing the engine source tree (this takes a moment)...
+```
+**SO THE OUTPUT IS CAPTURED, IS THE RIGHT LENGTH, AND CONTAINS THE RIGHT TEXT - AND THE HARNESS STILL RECORDS
+`RESULT: no result line` FOR ALL THREE.** The helper is not the defect any more. THE DEFECT IS BETWEEN THE CAPTURE
+AND THE VERDICT: `$out = $run.Output`, and the three static suites reported no result while the editor-needing
+ones did not even print their `last lines:` tail. The shape to suspect is that `$run.Output` is a DOT-SOURCED
+PROPERTY OF A HASHTABLE rather than a plain string, and `$out | Select-String` then behaves differently from
+`$out` being an array of lines as it was when the value came from `& python ... 2>&1`.
+
+**THE NEXT MEASUREMENT IS ONE LINE AND IS NOW OBVIOUS:** print `$out.GetType().FullName` and
+`($out | Select-String -Pattern '^PASS').Count` for ONE static suite. If the type is `String` and the count is 0
+while the text plainly contains `PASS` at the start of a line, then the newline handling from
+`Get-Content -Raw` is the cause - and the fix is to SPLIT the captured text into lines at the boundary rather than
+passing one long string into a line-oriented cmdlet.
+
+**WHAT I DID RIGHT THIS ROUND, AND IT IS THE LESSON THE LAST SECTION RECORDED:** I proved the helper ALONE first,
+against the cheapest possible test bed, and I REVERTED as soon as the wiring did not work rather than leaving the
+harness broken. The harness is CONFIRMED working again after the revert - `passed 3, failed 0, of 3` on the static
+suites - and `Tools/test-suite-timeout.ps1` is kept because it is a genuine asset: it proves the helper and its
+kill path in seconds, with no editor, and the next attempt starts from it rather than from scratch.
+
+**WHAT REMAINS UNCHANGED:** the per-suite deadline is still the right fix, the invocation still has no timeout, and
+the reason it matters is unchanged - three runs were left hanging for 18 to 25 minutes because a blocked suite
+blocks the whole run and no guard on the editor can help.
