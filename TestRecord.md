@@ -3502,3 +3502,100 @@ handed back with its Step 0 settled rather than as code nobody had run, on the g
 already recorded nine "a check that passes while the thing it verifies is broken" cases and six recalled engine
 names, and a confident-looking trace that was never executed would be the tenth and the worst. **That is the
 correct trade and it is recorded as such.**
+
+---
+
+## 6t. What `E-GRAPH-APPEND` must add, measured against what `P-GRAPH-CHECK` already provides
+
+`P-GRAPH-CHECK` landed and gives a WRITER two things and not a third. Measured from
+`Source/TurboMCP/Public/TurboMCPGraphCheck.h`:
+
+**WHAT IT GIVES:**
+- `FTurboMCPGraphCheck::Plan(Asset, GraphName, Text)` PARSES, RESOLVES and CHECKS the one dialect, and its
+  `FFinding` carries a KIND (`node-type`, `pin-name`, `type-mismatch`, `refused`), a LINE and a COLUMN, and
+  `Suggestions` - so a writer can assume its input was validated before it is asked to act;
+- `FPlan::bAcceptable()` is the single gate, which is exactly the "put every check in Plan" rule the project
+  requires of a writer.
+
+**WHAT IT DOES NOT GIVE, AND THIS IS THE WORK:**
+- `FPlan` **COUNTS** what it understood (`NodeFormsFound`, `PinLinesFound`) and **DOES NOT RETAIN THE PARSED
+  FORMS**. There is no array of parsed nodes, pins or links. So a writer cannot reuse the validator's parse - it
+  must parse the text a SECOND time, and the obvious risk of a second parser is that the two disagree about the
+  dialect. **A SHARED PARSE IS THE FIRST THING `E-GRAPH-APPEND` SHOULD REFACTOR OUT**, not a new parser written
+  beside the old one: the spec forbids a second dialect, and two parsers is how one appears.
+
+**THE WRITER'S OWN WORK, WHICH IS THE BULK OF IT:**
+- create real nodes from a type ID - and **`AllocateDefaultPins` IS MANDATORY**, because a node created outside
+  the editor is never reconstructed for display and calling a pin accessor on an empty `Pins` array has already
+  caused one crash and one silent corruption in this project;
+- set pin values by KEYWORD ARGUMENT only, and refuse a positional argument by naming the pins (spec, "Rules for
+  all write entry points");
+- link new nodes to EXISTING nodes by node ID, which is what makes it APPEND rather than REPLACE - it cannot
+  remove anything;
+- LAY OUT the nodes it created by the section 6 rules, reusing `L-LAYOUT-REPORT`'s geometry decisions;
+- then the round trip the spec demands: COMPILE, READ THE GRAPH BACK, COMPARE WITH THE INPUT, AND LIST EVERY
+  INPUT LINE THE READ BACK DOES NOT MATCH - and **A FAILED COMPARE IS A FAILURE, NOT A SUCCESS WITH A NOTE**;
+- one transaction, and ROLL BACK on any new compile error.
+
+**`E-GRAPH-REPLACE` AND `E-GRAPH-PATCH` THEN SHARE ALL OF THAT** - REPLACE writes into the EXISTING entry and
+result nodes and removes every node the new text does not describe (listing what it removed), and PATCH matches by
+node ID and applies only the differences, leaving unmentioned nodes alone. So the parse, the node creation, the
+linking and the round trip are built ONCE and the three differ only in what they do with the OLD graph.
+
+**ORDERING NOTE, SO THE NEXT ATTEMPT DOES NOT START IN THE WRONG PLACE:** the shared parse and the node factory
+are the foundation and should come first; the three tools are then thin. Starting from `E-GRAPH-APPEND`'s tool
+entry point would mean writing the parser three times or discovering the need for the shared one late.
+
+---
+
+## 6t. THE PIE TEST MAP: one fixture closed BOTH open holes
+
+`TurboMCPTestMap` is a level carrying a native `ATurboMCPTestLogActor` and a `BP_TurboMCPTestLog` actor whose
+`ReceiveBeginPlay` runs a `PrintString` node. It exists because `TestProject/Content` had NO `.umap` at all, so
+Play-In-Editor ran the engine's empty `/Temp/UEDPIE_0_Untitled_1` world and NOTHING EXECUTED.
+
+Q-17 CLOSED, MEASURED:
+
+    play check: played for 6.0 second(s) on /Game/Tests/TurboMCPTestMap
+    1 warning(s) and 1 error(s) in the window
+        warn  TURBOMCP-TESTLOG-WARN beginplay warning
+        ERROR TURBOMCP-TESTLOG-ERROR beginplay error
+
+Q-18 CLOSED, MEASURED - THE FIRST LIVE TRACE HIT IN THIS PROJECT:
+
+    trace: SUBSCRIBED to FBlueprintCoreDelegates::OnScriptException
+    1 armed point(s), 2 recorded hit(s)
+    8 script exception(s) have reached this module
+      type 1 : 4      type 1 is Tracepoint
+      type 2 : 4      type 2 is WireTracepoint
+      BP_TurboMCPTestLog:EventGraph:914137 : 2 hit(s)
+      16817910.851  BP_TurboMCPTestLog:EventGraph:914137  PrintString  thread 25212
+
+SIX DEFECTS FOUND BY MEASURING, EVERY ONE OF WHICH WOULD HAVE LOOKED LIKE A FIXTURE PROBLEM:
+
+1. A PLUGIN MODULE CANNOT DEPEND ON A GAME MODULE. Including the test actor's header failed with "No such file
+   or directory", so the commandlet finds the class BY NAME in the registry instead.
+2. `py "<path>"` PASSES THE PATH AS PYTHON SOURCE - `SyntaxError: invalid syntax` pointing at the `C:`. The
+   file's CONTENTS are read and passed instead.
+3. THE PACKAGE'S FLAGS ARE NOT THE ASSET'S. Setting `RF_Public | RF_Standalone` on the package only made
+   `SavePackage` answer `does not have any of the provided object flags (0x10000003)` and return FALSE, so a
+   map with its actor placed AND COUNTED was NEVER WRITTEN.
+4. WORLD PARTITION DEFAULTS TO ON, and the teardown then reported `Tickable subsystem
+   WorldPartitionSubsystem ... was destroyed while still initialized`. The init values are now built
+   explicitly, following `WorldFactory.cpp:38-46`.
+5. `unreal.BlueprintTools` DOES NOT EXIST - `AttributeError: module 'unreal' has no attribute 'BlueprintTools'`.
+   It is a Python CLASS imported from the EditorToolset plugin's module.
+6. `(event BeginPlay ...)` PARSES AND ADDS NOTHING. The event's own name is `EventBeginPlay`. A
+   SILENTLY-EMPTY DSL WRITE is exactly why the script counts the nodes back.
+
+AND TWO CHECKS THAT FAILED ON A CORRECT RESULT, which is the failure this project records most often:
+
+- the first node check asserted a TYPE ID and reported failure WHILE THE NODE WAS THERE - `Development|PrintString`
+  did not answer through the accessor, so the check read a second-hand value and called a good fixture broken;
+- the second asserted the probe EVENT's name after the event had changed to `BeginPlay`, so it looked for a node
+  the graph no longer had.
+
+AND A THIRD, ON THE SECOND RUN: `BlueprintTools.create` answered nothing because the previous Blueprint's name
+was still held. The commandlet now deletes the `.uasset` FILE before the Python step runs, because the registry
+can answer "exists" for an asset whose file is gone and `delete_asset` then answers false - and treating that
+false as fatal stopped a rebuild that would have worked. A FIXTURE THAT CAN ONLY BE BUILT ONCE IS NOT A FIXTURE.
