@@ -4024,3 +4024,44 @@ The waits I named are real but they are NOT what the suite is paying, and one li
 **RECORDING THE WRONG CAUSE WOULD HAVE SENT THE NEXT ATTEMPT TO OPTIMISE A 7.9-SECOND SCRIPT.** That is the third
 time in this record that a plausible mechanism was named and then contradicted by a single number, and it is why
 every claim here carries the measurement that produced it.
+
+---
+
+## 8g. FIFTH CANDIDATE FALSIFIED: the suite IS given an editor, and the rebuild is 7.8 seconds
+
+**THE MEASUREMENT THAT WITHDRAWS THE PREVIOUS ROUND'S CAUSE, TAKEN IN ONE SESSION:**
+
+    make-acceptance-asset.ps1:  7.8 SECONDS, exit 0, every probe graph named
+    check-probe-graphs.py:      STILL RUNNING after 600 seconds
+
+**TWO ORDERS OF MAGNITUDE APART. THE REBUILD IS NOT SLOW AND THE SUITE THAT CALLS IT IS.** Recording the script as
+the cause would have sent the next attempt to optimise a 7.8-second script. The script's waits - the 300-second
+mutex and the process wait - are **real and are NOT what the suite is paying**, because the script finishes in under
+eight seconds when run directly.
+
+**AND A FIFTH CANDIDATE I RAISED THIS ROUND AND FALSIFIED IN ONE COMMAND.** I hypothesised that
+`check-probe-graphs` was miscclassified as a STATIC suite, so that its MCP call at line 214 was made against a
+server the harness never started for it. **FALSE.** `Tools/run-suites.ps1:52` lists exactly `audit-tool-coverage`,
+`audit-suite-quality` and `check-includes` as static, so this suite **IS** given an editor. One line to check, and
+wrong.
+
+**THE RULED-OUT LIST IS NOW SHORT, AND IT IS THE REAL PRODUCT OF FIVE ROUNDS:**
+- the fixture rebuild itself: **7.8 seconds**, measured twice;
+- its waits: real, and **not paid**, because the script finishes in under eight seconds standalone;
+- the mutex held by an orphan: clearing every process changed nothing;
+- a retry or sleep loop in the suite: `log_text()` is called **once**, and there is no `while`, no `sleep` and no
+  retry anywhere in the file;
+- a classification error: **falsified**, the suite is not static.
+
+**WHAT REMAINS IS ONE THING.** After the rebuild the suite makes an MCP call at line 214
+(`ReadTurboMCPCommentList`) behind a reachability probe it performs itself, and `Session.rpc` now **re-initialises
+and retries once** on failure - so a probe or a call that does not respect a timeout, against a server that is not
+answering, is the shape that turns a sub-second failure into minutes. **THE DECISIVE MEASUREMENT IS ONE RUN:**
+instrument the reachability probe and the call with their own elapsed times and print them.
+
+**AND THE PATTERN ACROSS FIVE ROUNDS IS WORTH STATING PLAINLY, BECAUSE IT IS NOT A FAILURE OF METHOD - IT IS THE
+METHOD WORKING SLOWLY.** Every candidate was named **with** a measurement, every one was falsified **by** a
+measurement, and **nothing wrong was ever recorded as fixed**. What has been produced is a ruled-out list short
+enough to finish, plus a **real bound** on the suite so it can no longer be killed silently at ten minutes. **THE
+COST IS TIME, AND THE ALTERNATIVE - GUESSING AND OPTIMISING THE WRONG THING - IS WHAT THIS PROJECT HAS ALREADY PAID
+FOR NINE TIMES.**
