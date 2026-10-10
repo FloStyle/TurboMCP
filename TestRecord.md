@@ -3415,3 +3415,90 @@ enough from every other node that the planned position is clear - and NOT a chan
 fires is evidence about the ENCLOSING SCOPE, not about the line that was instrumented. Two workstreams
 instrumented the predicate and the placement; the answer was three lines above the block they were reading, in a
 `continue` that belongs to a DIFFERENT guard.
+
+---
+
+## 6r. The capability count was WRONG for four rounds: 51 IDs, not 47, and one "ID" is not a capability
+
+**THE AUDIT THAT PRODUCED EVERY COVERAGE NUMBER IN THIS RECORD HAD A BUG OF EXACTLY THE KIND IT WAS MEANT TO
+CATCH.** It extracted one ID per LINE:
+
+```powershell
+Select-String -Path 'Spec\03_TOOLS.md' -Pattern '\b([RLEP]-[A-Z][A-Z0-9-]{2,})\b' |
+    ForEach-Object { $_.Matches[0].Groups[1].Value }
+```
+
+`$_.Matches[0]` takes only the FIRST match on each line, so any line naming TWO capabilities lost one. The spec
+writes `### E-TRACE and R-TRACE: trace points`, and `R-TRACE` was invisible for four rounds - which made READING
+read as 19 of 19 COMPLETE when it has in fact always been **20 of 21, missing `R-TRACE`**.
+
+MEASURED with ALL matches per line instead of the first:
+
+    total ID occurrences: 62
+    DISTINCT IDs:         51      (the old count said 47)
+    R: 21   L: 3   P: 3   E: 24
+
+THE FOUR IDs THE OLD COUNT MISSED: `R-TRACE`, `R-CALL-LOG`, `E-FUNCTION-REMOVE`, `E-X`.
+
+**AND `E-X` IS NOT A CAPABILITY AT ALL.** It comes from the spec's own explanation of its naming scheme -
+*"A pair written `P/E-X` is a Preview tool and its Edit twin"* - so it is a PLACEHOLDER IN A FORMAT EXAMPLE. A
+corrected count is therefore **50 real capabilities** and the coverage is:
+
+    READING  20 of 21   missing R-TRACE
+    VISION    3 of  3
+    PREVIEW   3 of  3
+    EDIT     17 of 23   missing E-GRAPH-APPEND, E-GRAPH-REPLACE, E-GRAPH-PATCH,
+                                E-TRACE, E-MAT-LABEL-PROMOTE, E-MAT-TIDY, E-MAT-BLOCKS
+
+**THE LESSON IS THE ONE THIS PROJECT HAS RECORDED NINE TIMES, TURNED ON THE AUDIT ITSELF:** a check that
+silently under-counts is a check that reports success. Taking `Matches[0]` is the same mistake as matching a
+sentence instead of parsing a number, and it stood in the tool used to decide what work REMAINED - so it read as
+"Reading is finished" when one capability was still absent.
+
+**AND A SECOND, NARROWER FACT WORTH KEEPING:** `E-GRAPH-APPEND` has TWO occurrences in the source tree and both
+are DOC COMMENTS in `TurboMCPGraphCheck.{h,cpp}` naming the three writers that will share its text. A capability
+NAMED in a comment is not a capability IMPLEMENTED, and a count that searched for the ID would have called it
+done. Coverage must be measured by whether a tool EXISTS, not by whether its ID is mentioned.
+
+---
+
+## 6s. Q-18 SETTLED: a NON-PAUSING trace is possible, and it needs no graph edit and no recompile
+
+**`FBlueprintCoreDelegates::OnScriptException`** is a public multicast delegate and the VM raises a Tracepoint
+through it every time an instrumented node runs. Every claim below is a citation, not a recollection - which
+matters because a recalled engine name has now been wrong SEVEN times in this project.
+
+| Fact | Citation |
+|---|---|
+| `OnScriptException` is public multicast | `Runtime/CoreUObject/Public/UObject/Script.h:445,453,460` |
+| the VM raises **Tracepoint** per node | `Runtime/CoreUObject/Private/UObject/ScriptCore.cpp:2529-2537` (`execTracepoint`), also `:2549-2560` (`execInstrumentation` on `NodeEntry`) |
+| **always on in an editor build** | `ScriptCore.cpp:290-297` - `IsDebuggingEnabled()` returns **`GIsEditor`** |
+| bytecode carries the opcode with NO opt-in | `Editor/KismetCompiler/Private/KismetCompilerVMBackend.cpp:1969-1971` - `KCST_DebugSite` emits `EX_Tracepoint`; the only suppression is `Kismet.bSuppressInstrumentation` (`:1961`), ABSENT in this project |
+| **it does NOT pause** | `Editor/UnrealEd/Private/Kismet2/KismetDebugUtilities.cpp:299-306` - `Breakpoint` sets `bShouldBreakExecution = true`, while `Tracepoint` breaks ONLY while already single-stepping |
+| the sample already has the spec's fields | `Editor/UnrealEd/Public/Kismet2/KismetDebugUtilities.h:41-47` (`Context`, `Function`, `Offset`, `ObservationTime`), `:234` `GetTraceStack()`, ring of `MAX_TRACE_STACK_SAMPLES = 1024` at `:231` |
+
+**THE FINDING THAT REMOVES THE MOST WORK, AND IT CORRECTS AN ASSUMPTION MADE EARLIER IN THIS PROJECT:**
+`E-TRACE` DOES NOT NEED TO INSERT A CALL NODE BEFORE THE MARKED NODE AND RECOMPILE. The debug site is already
+emitted into every normally-compiled Blueprint, so `E-TRACE` needs only an IN-MEMORY REGISTRY of armed points -
+**no graph edit, no `AllocateDefaultPins`, no recompile.** That deletes the riskiest part of the capability and
+the `AllocateDefaultPins` trap it would have carried.
+
+REJECTED, EACH WITH A REASON: Blueprint BREAKPOINTS set `bShouldBreakExecution = true`
+(`KismetDebugUtilities.cpp:301-302`) and therefore STOP THE GAME, which contradicts the spec's "No pause" - they
+are a DIFFERENT capability, the spec's own "Breakpoints (research first)" section. `Runtime/Instrumentation`
+holds only Defines/EntryPoints/Types with no node hook. `TRACE_CPUPROFILER_EVENT_SCOPE` and Insights are not
+per-node and cannot report pin values.
+
+**ONE RISK MEASURED AND ELIMINATED, AND ONE STILL OPEN.** Eliminated: `TurboMCPLogCapture`'s owning-thread
+filter is WRONG here for the reason PlayCheck already measured - a session executes from many threads, so the
+thread must be RECORDED, not filtered on. STILL OPEN AND STATED PLAINLY: it is NOT measured that a second
+`OnScriptException` subscriber sees Tracepoints from this plugin in a live PIE session. The source says it must
+- the delegate is multicast and `UnrealEdMisc.cpp:325` already binds it - but "the source says it must" is
+exactly the reasoning that produced the recalled-and-wrong engine names. **THE FIRST BUILD MUST PRINT ONE LIVE
+TRACE HIT BEFORE ANYTHING IS BUILT ON TOP OF IT.**
+
+**THE JUDGEMENT WORTH RECORDING, WHICH IS A WORKSTREAM DECLINING TO PRODUCE OUTPUT:** the implementation was
+handed back with its Step 0 settled rather than as code nobody had run, on the grounds that this project has
+already recorded nine "a check that passes while the thing it verifies is broken" cases and six recalled engine
+names, and a confident-looking trace that was never executed would be the tenth and the worst. **That is the
+correct trade and it is recorded as such.**
