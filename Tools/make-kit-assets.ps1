@@ -134,6 +134,22 @@ if ($missing -ne 0) {
 }
 
 Write-Output ""
+# WHAT THE NEWEST GRAPH CARRIES, LISTED SO A READER DOES NOT HAVE TO OPEN THE ASSET.
+#
+# `TA-5` is the `BackwardProbe` graph, added for the shapes `P/E-GRAPH-FIX-BACKWARD` had no positive
+# evidence for. The commandlet prints its counts and this repeats them in the script's own voice, because
+# the point of the fixture is WHICH shapes it holds and a bare `OK` does not say.
+$ta5 = $lines | Select-String -Pattern 'kit TA-5 (OK|PARTIAL)' | Select-Object -Last 1
+if ($ta5) {
+    Write-Output "  TA-5 BackwardProbe (the shapes P/E-GRAPH-FIX-BACKWARD needs):"
+    Write-Output ("    " + ($ta5.Line -replace '.*TurboMCP: kit ', ''))
+    Write-Output "      backward exec pairs  -> checks 4, 5 and 7"
+    Write-Output "      a getter under its consumer -> checks 6 and 8 for R2, which had NO positive evidence"
+    Write-Output "      a node inside a comment box -> check 15, the box guard"
+    Write-Output "      pureUsedOnce is REPORTED BUT NOT REQUIRED: R1's carry cannot be reached, measured, and"
+    Write-Output "      the reason is in the suite's skip for check 16 rather than hidden behind a number."
+}
+Write-Output ""
 Write-Output "PASS  the acceptance kit was built and every asset that was built carries the structure its rows require"
 # THE NUMBERS ARE PRINTED ONE PER LINE, WHICH REMOVES THE PROBLEM ENTIRELY. Two attempts to put them
 # in one interpolated string left `$built` blank - the line read "14 of 14 entry(ies) measured,  built,

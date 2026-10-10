@@ -974,3 +974,110 @@ and lacks the structure its rows require.
   `ValidateAllFunctionGraphs` and nothing that finds one by name.
 - `AllocateDefaultPins` is mandatory on every node placed, as the acceptance commandlet already records;
   without it `UK2Node_Knot::GetOutputPin` indexes `Pins[1]` of an empty array and the editor crashes.
+
+---
+
+## Q-16. OPEN, MEASURED: `R1`'s pure-node carry can never be reached, so check 16 has no positive evidence
+
+**Answer needed: is the carry meant to work, or should the rule be removed and the check retired?**
+
+This is NOT a missing fixture. It is the rule's own geometry, measured with a fixture built for the purpose.
+
+`TurboMCPGraphFixBackward.cpp` moves the target of a backward exec wire to
+
+```
+ToX = Source.PlannedX + PlannedExtent(Source.Width) + HorizontalNodeGap      // line 965, gap = 60
+```
+
+and then, for each pure node used only by that target, carries it to
+
+```
+PureToX = Consumer.PlannedX - PlannedExtent(Pure.Width) - HorizontalNodeGap  // line 1118
+```
+
+Substituting the first into the second cancels the source's own terms:
+
+```
+PureToX = Source.PlannedX + Source.Width - Pure.Width
+```
+
+**So the carried node lands on the source's own left edge, and the source is still there when the
+overlap guard runs** - `R1`'s push, the section that would move the source clear, is section 5 and the
+carry is section 4. With equal widths the two rectangles coincide exactly and `PlannedRectIsClear`
+refuses the move. Making the pure node narrower only shifts the collision: the push then drives the
+SOURCE onto the carried node instead.
+
+MEASURED, seven fixture configurations in `/Game/Tests/Kit/TA01_HandLaid:BackwardProbe`, each with a pure
+node that satisfies every STATED condition of the rule - `IsNodePure() == true`, exactly one link, exactly
+one consumer, not a getter:
+
+| configuration | result |
+|---|---|
+| pure level with the pair, at the chain's end | `overlaps <source>` refusal |
+| pure in its own row, source at +1400 | `overlaps <source>` refusal |
+| pure narrower by 80 units | `overlaps <source>` refusal |
+| pair at the chain's end, flow continued past it | `overlaps <source>` refusal |
+| pure fed the boxed chain's neighbour | `overlaps`, and the box guard also fired |
+| pure given its own impure consumer | carry predicate FIRED, then the overlap guard refused |
+| final: three backward pairs, box and getter isolated | `R1 backward exec wires: 4 found, 3 node(s) moved, 0 pushed along` / `R1 pure nodes carried: 0` |
+
+**THE PREDICATE ITSELF WORKS.** Instrumenting the block showed `eq=YES` on the key comparison, so the
+`bUsedOnlyByConsumer` test is satisfied and the code AFTER it is what refuses. The rule is not dead code
+that never matches; it is code whose next step cannot succeed.
+
+WHAT THIS COSTS: check 16 of the 18 in `Spec/WORKING_GRAPH_FIX_BACKWARD.md` stays SKIPPED, and
+`Tools/test-graph-fix-backward.py` says so with the arithmetic above rather than with "no fixture".
+
+TWO WAYS OUT, AND THE CHOICE IS THE OWNER'S:
+
+1. **Fix the rule.** The carry should place the pure node somewhere that is not the source's cell - for
+   example at `Source.PlannedX` AFTER the push has run, or by ordering the carry after the push in
+   section 5. Either changes the layout the pass produces, so it is a behaviour change and not a bug fix.
+2. **Retire it.** If carrying pure nodes was never wanted, both the block and check 16 should go, and
+   `MaxPureChain` with them. Leaving a branch that can never run is the "check that cannot fail" problem
+   in its most expensive form: it reads as working code.
+
+NOT DONE, DELIBERATELY: no fixture was built to make the number non-zero. A pure node narrow enough and a
+pair spaced widely enough might force a single carry through, but the resulting check would assert a
+layout the rule does not actually produce, which is worse than a recorded skip.
+
+A SEPARATE, SMALLER FINDING FROM THE SAME WORK, already fixed: this kit's own
+`CountPureNodesUsedOnlyByOneConsumer` counted the VARIABLE GETTER as a carry candidate - it is pure, one
+link, one consumer - so the fixture reported `pureUsedOnce=2` while the pass reported `0`. `R1` skips
+getters because `R2` owns them, so the counter claimed a carry the rule refuses. The counter now mirrors
+the rule's exclusions, and the fixture reports `pureUsedOnce=0` and says the count is not required.
+
+### Q-16 ADDENDUM (after the rule was fixed)
+
+The diagnosis above was acted on: commit `2e17f9b` ("Fix R1's pure carry: the carried node was landing on
+the source's own edge", merged as `20f26f0`) changed the carry to
+
+```
+PureToX = Min(Consumer.PlannedX - Pure.Width - Gap,
+              Source.PlannedX   - Pure.Width - Gap)
+```
+
+which is exactly the anchor the arithmetic called for. The carry predicate itself was already correct -
+instrumenting it had shown the key comparison succeeding - so the fix was in the placement, as recorded.
+
+**THE FIXTURE NOW CARRIES THE SHAPE.** `TA-5` places a pure `Add_IntInt` node, 140 units wide, linked to the
+one node `R1` moves in its own backward exec pair, and the commandlet measures it back:
+
+```
+TA-5 OK backwardProbe: nodes=12 backward=4 (needs >=3) getterUnderConsumer=1 (needs >=1)
+                       pureUsedOnce=1 (needs >=1) nodesInBox=1 (needs >=1)
+```
+
+`pureUsedOnce` was `0` and reported as "not required" while the rule could not perform a carry; it is now a
+REAL REQUIREMENT, so a regression in either the rule or the fixture fails the kit build rather than
+silently emptying check 16.
+
+**CHECK 16 IS STILL SKIPPED, AND HONESTLY SO.** With a qualifying pure node confirmed present by the
+commandlet's own count, `R1 pure nodes carried with their consumer` still reads **0** on `BackwardProbe`.
+One measurement was taken and it showed the candidate loop was not reached - the same symptom as before the
+fix, from a different cause that has NOT been found. This is recorded rather than forced: the next step is
+to instrument the placement again on the FIXED rule, because the predicate and the placement have both been
+examined and the remaining refusal is somewhere neither has looked.
+
+WHAT IS NOT IN DOUBT: the arithmetic in the section above was right, it was reproduced by an independent
+workstream, and the fix matches it.
