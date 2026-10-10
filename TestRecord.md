@@ -3263,3 +3263,45 @@ SIX CHECKS REMAIN SKIPPED, each naming the shape no fixture carries: a getter un
 still has no positive evidence**; a graph whose repair would measure LONGER, so the roll-back branch is never
 reached; a comment box around a node the pass would move outside it; and a pure chain to carry. Those four
 shapes are the fixture work that remains.
+
+---
+
+## 6o. TIDY still has the geometry mismatch that FIX-BACKWARD was cured of
+
+**FOUND BY READING, NOT BY A RUN, AND IT EXPLAINS THE ONE GAP LEFT IN THE PROJECT'S LAYOUT EVIDENCE.**
+
+`Tools/test-graph-tidy.py` reports that tidy's plan for `LayoutProbe` measures **LONGER** - `3108.8 -> 7600.0`
+- so the pass correctly rolls back and **the branch that KEEPS a pass has never once been observed to fire.**
+Nobody has seen this capability improve a graph.
+
+The reason is in the measure itself, `TurboMCPGraphTidy.cpp:1079-1080`:
+
+```cpp
+const double SourceWidth = bUsePlanned ? Source.Width : Source.MeasuredWidth;
+const double TargetWidth = bUsePlanned ? Target.Width : Target.MeasuredWidth;
+```
+
+**THE BEFORE-NUMBER IS COMPUTED FROM THE ENGINE'S RECTANGLES AND THE AFTER-NUMBER FROM THE SUBSTITUTED ONES.**
+`MeasuredWidth` is what Slate wrote, and `Width` is the 48-unit fallback for a node the engine never measured.
+So the two numbers do not describe the same geometry, and the comparison between them is not like-with-like.
+
+THIS IS THE SAME DEFECT THAT WAS FOUND AND FIXED IN `P/E-GRAPH-FIX-BACKWARD`, where it was WORSE: there the
+mismatch made the pass believe it had improved `SaneProbe` - a graph where nothing needed repairing - answer
+`changed:`, and nearly rewrite a good graph. It was fixed by keeping the measured size and the planned extent
+apart and having the MEASURE read the measured pair only, which also removed the geometry flag entirely.
+
+TIDY KEPT ITS FLAG AND ITS TWO GEOMETRIES, deliberately, because its `WireLengthBefore` is REQUIRED to equal
+`L-LAYOUT-REPORT`'s number - the cross-tool agreement the suite asserts at `3108.8 vs 3109.0`. That
+requirement is real and worth keeping. **BUT IT DOES NOT REQUIRE THE AFTER-NUMBER TO USE A DIFFERENT
+GEOMETRY.** Both numbers can be computed from the engine's rectangles and still differ, because they differ in
+WHERE THE NODES ARE, which is the only thing a layout pass is supposed to be judged on.
+
+**CONSEQUENCE WHILE IT STANDS, STATED PLAINLY:** tidy's `after < before` test is comparing a fallback-geometry
+layout against a measured-geometry original, so on a graph of unmeasured nodes the plan is measured with
+LARGER rectangles than the original and the plan loses. That is why `LayoutProbe` shows `7600` against `3108`.
+**The rollback is firing for the wrong reason, and the capability may be refusing work it should keep.**
+
+NOT SETTLED, AND NOT GUESSED AT: whether making both numbers read the measured pair makes tidy's plan for
+`LayoutProbe` measure SHORTER, and therefore whether the keep-branch fires. That needs a run, and it is the
+single most valuable next step for this capability - it is the same fix, in the same shape, that turned
+FIX-BACKWARD's positive cases from unprovable into fourteen that run.

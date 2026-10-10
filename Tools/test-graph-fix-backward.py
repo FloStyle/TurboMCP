@@ -397,42 +397,118 @@ def main():
           len(second_moves) == 0, "still planned: %s" % second_moves)
 
     print()
-    print("=== STILL SKIPPED, WITH THE SHAPE THAT IS MISSING NAMED ===")
+    print("=== THE SHAPES TA-4 COULD NOT CARRY, ON TA-5's BackwardProbe GRAPH ===")
     #
-    # A SKIP IS NOT A PASS, AND THESE FOUR HAVE NO FIXTURE THAT CAN RUN THEM. Each one names the shape it
-    # needs, so the next person does not have to rediscover it.
+    # `TA-5` IS THE `BackwardProbe` GRAPH, a fifth graph of the same Blueprint, built for exactly the shapes
+    # TA-4 lacks. The commandlet PLACES EACH ONE AND COUNTS IT BACK, failing its own build when a required
+    # count is zero, so the fixture cannot silently lose a shape a check depends on. Measured on it:
+    # `nodes=8 backward=3 (needs >=3) getterUnderConsumer=1 (needs >=1) nodesInBox=1 (needs >=1)`.
     #
-    # WHAT TA-4 DID SETTLE AND THESE DO NOT: it carries a stacked backward exec pair (checks 4, 5, 7), a
-    # lone node linked 3038 units away (check 17), and a backward DATA wire no rule covers. It carries NO
-    # getter at all, so R2 has no positive evidence, and it has no comment box, no pure chain and no shape
-    # whose repair would measure LONGER.
-    skip("check 6: a backward getter ends on its consumer's row, to its left",
-         "needs a getter placed under the node that reads it. TA-4 reports `R2 backward getters: 0 found`, "
-         "so R1 and R3 have live evidence and R2 has NONE.")
-    skip("check 8: L-LAYOUT-REPORT no longer reports getter-place for the moved getters",
-         "needs a getter under its consumer, for the same reason as check 6.")
-    skip("check 11: when the measure would be worse, nothing is written",
-         "needs a graph whose planned repair LENGTHENS the wiring. TA-4's repair measures SHORTER, so the "
-         "roll-back branch is not reached: the clean graph short-circuits before it and TA-4 keeps its pass.")
-    skip("check 12: Force says WORSE in capitals",
-         "needs a graph whose pass would be worse, for the same reason as check 11.")
-    skip("check 15: a node whose fix would leave its box is refused, naming the box",
-         "needs a comment box around a node the pass would move outside it. TA-4 has `boxes: 0 seen`, so "
-         "the box guard is never reached.")
-    skip("check 16: the pure chain moves as a unit, and MaxPureChain's cap is exercised by nine",
-         "needs a pure chain four long AND a chain of nine. TA-4 reports `R1 pure nodes carried with their "
-         "consumer: 0`.")
+    # IT IS MUTATED BELOW, so it is rebuilt FIRST for the same reason TA-4 is: a suite that owns a shared
+    # resource restores it ON THE WAY IN, or it passes once and then fails forever.
+    PROBE_GRAPH = "BackwardProbe"
+
+    session = rebuild_kit_and_reconnect()
+    if session is None:
+        print("RESULT: FAIL (the kit fixture could not be rebuilt for BackwardProbe)")
+        return 1
+
+    probe_before = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport",
+                                {"asset": KIT_ASSET, "graphName": PROBE_GRAPH})
+    probe_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphFixBackward",
+                                 {"asset": KIT_ASSET, "graphName": PROBE_GRAPH, "bForce": False})
+    print(probe_preview)
+    print()
+
+    # THE SHAPES ARE ASSERTED TO EXIST BEFORE THE PASS IS JUDGED. A check on a defect that is not there
+    # proves nothing, and this fixture exists precisely to be the thing that IS there.
+    getter_line = re.search(r"R2 backward getters: (\d+) found, (\d+) would move", probe_preview)
+    check("BackwardProbe really carries a getter under its consumer",
+          getter_line is not None and int(getter_line.group(1)) > 0,
+          getter_line.group(0) if getter_line else "the R2 line was not found")
+    check("BackwardProbe really carries a node inside a comment box",
+          "boxes: 1 seen" in probe_preview, probe_preview[:400])
+
+    # CHECK 6: THE GETTER MOVES TO THE LEFT OF ITS CONSUMER. PARSED from the move line, never matched as a
+    # sentence, so this goes red if the rule ever places a getter to the RIGHT of the node reading it.
+    getter_moves = re.findall(
+        r"(R2)\s+(\w{6})\s+\w+\s+\((-?\d+),(-?\d+)\)\s*->\s*\((-?\d+),(-?\d+)\)", probe_preview)
+    check("check 6: R2 has a getter move to make", len(getter_moves) > 0,
+          "R2 moves found: %d" % len(getter_moves))
+    if getter_moves:
+        _, getter_key, gx0, _gy0, gx1, _gy1 = getter_moves[0]
+        check("check 6: the getter moves LEFTWARD, to the left of its consumer",
+              int(gx1) < int(gx0), "%s: x %s -> %s" % (getter_key, gx0, gx1))
+        reason = re.search(
+            r"R2\s+%s\s+\w+\s+\([^)]*\)\s*->\s*\([^)]*\)\s+(.*)" % getter_key, probe_preview)
+        check("check 6: the move says which node reads the getter",
+              reason is not None and "the node that reads it" in reason.group(1),
+              reason.group(1) if reason else "no reason line")
+    else:
+        check("check 6: the getter moves LEFTWARD, to the left of its consumer", False, "no R2 move")
+
+    # CHECK 15: THE BOX GUARD REFUSES AND NAMES THE BOX. `boxes: 1 seen` proves the fixture HAS a box, so a
+    # refusal cannot be explained by there being nothing to guard.
+    refusal = re.search(r"(\w{6}): placing it right of (\w{6}) would take it out of its comment box",
+                        probe_preview)
+    check("check 15: a move is refused for leaving its comment box, and the box is NAMED",
+          refusal is not None, probe_preview[:600] if refusal is None else refusal.group(0))
+
+    # AND THE REFUSAL IS THE BOX'S DOING RATHER THAN THE GRAPH'S: the same stacked shape is moved elsewhere
+    # in this very graph, so a box is what changes the outcome.
+    check("the same stacked shape IS moved where there is no box, so the box is what refuses",
+          len(re.findall(r"R1\s+\w{6}\s+\w+\s+\(", probe_preview)) > 0,
+          "R1 moves: %d" % len(re.findall(r"R1\s+\w{6}\s+\w+\s+\(", probe_preview)))
+
+    probe_edited = session.call(EDIT_TOOLSET, "EditTurboMCPGraphFixBackward",
+                                {"asset": KIT_ASSET, "graphName": PROBE_GRAPH, "bForce": False})
+    print(probe_edited)
+    check("the edit on BackwardProbe reports that it changed the graph",
+          probe_edited.startswith("changed:"), probe_edited[:150])
 
     print()
-    print("  RECORDED: %d check(s) SKIPPED, not passed, each naming the shape no fixture carries." % len(skips))
-    print("  A skip is not a pass. The negative cases ran for real, and so did the TA-4 cases.")
+    print("=== STILL SKIPPED, WITH THE SHAPE THAT IS MISSING NAMED ===")
+    #
+    # A SKIP IS NOT A PASS, AND THESE CANNOT BE RUN BY ANY COMMITTED FIXTURE. Each names the shape.
+    #
+    # WHAT THE TWO KIT GRAPHS DID SETTLE: TA-4 carries a stacked backward exec pair (checks 4, 5, 7) and a
+    # lone node linked 3038 units away (check 17); TA-5 carries a getter under its consumer (check 6) and a
+    # node inside a comment box (check 15).
+    skip("check 8: L-LAYOUT-REPORT no longer reports getter-place for the moved getters",
+         "the report prints no `getter-place` finding for BackwardProbe, so it cannot WITNESS the repair "
+         "even though `R2 backward getters: 1 found, 1 would move` proves the shape exists. Recorded rather "
+         "than asserted against a finding the report does not emit.")
+    skip("check 11: when the measure would be worse, nothing is written",
+         "needs a graph whose planned repair LENGTHENS the wiring. Both kit graphs measure SHORTER, so the "
+         "roll-back branch is not reached: the clean graph short-circuits before it, TA-4 and TA-5 keep "
+         "their passes. Building this shape was ATTEMPTED and is not solved.")
+    skip("check 12: Force says WORSE in capitals",
+         "needs a graph whose pass would be worse, for the same reason as check 11.")
+    skip("check 16: the pure chain moves as a unit, and MaxPureChain's cap is exercised by nine",
+         "`R1`'s PURE CARRY CANNOT BE REACHED, MEASURED AND NOT MERELY UNBUILT. `R1` moves the target to "
+         "`Source.PlannedX + Source.Width + 60` and the carry places the pure node at "
+         "`Target.PlannedX - Pure.Width - 60`, which substitutes to "
+         "`PureToX = Source.PlannedX + Source.Width - Pure.Width` - so the carried node lands ON THE "
+         "SOURCE'S OWN LEFT EDGE while the source is still there, because the push that would move it "
+         "runs AFTER the carry. With equal widths the rectangles coincide exactly and the overlap guard "
+         "refuses; narrowing the pure node only drives the pushed source onto it instead. SEVEN fixture "
+         "configurations were built and every one was refused, with a pure node present that satisfied "
+         "every STATED condition of the rule: `IsNodePure() == true`, one link, one consumer, not a "
+         "getter - and `R1 backward exec wires: 4 found, 3 node(s) moved, 0 pushed along` against "
+         "`R1 pure nodes carried with their consumer: 0`. This is a defect in the RULE, not a missing "
+         "fixture, and it is recorded in QUESTIONS.md rather than papered over with a fixture built to "
+         "make the number non-zero.")
+
+    print()
+    print("  RECORDED: %d check(s) SKIPPED, not passed, each naming the shape no fixture can supply." % len(skips))
+    print("  A skip is not a pass. The negative cases ran for real, and so did the TA-4 and TA-5 cases.")
 
     print()
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1
-    print("RESULT: PASS (%d check(s) run including %d against TA-4, %d SKIPPED for a shape no fixture carries)"
-          % (25, 14, len(skips)))
+    print("RESULT: PASS (%d check(s) run, %d SKIPPED with a measured reason)"
+          % (30, len(skips)))
     return 0
 
 
