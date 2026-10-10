@@ -4793,3 +4793,71 @@ PROVIDES AN UNCONNECTED OUTPUT TO TEST IT WITH.**
 one by reading the commandlet would be the guessing this record forbids, and the honest state is that `main` is at
 **43 of 44** with this as the one failure - **understood, attributed, and neither hidden nor blamed on the workstream
 that reported it correctly.**
+
+---
+
+## 23. The stale-binary trap fired a SIXTH time, and it was diagnosed by TIMESTAMPS rather than by symptom
+
+**THE MOST USEFUL THING THIS ROUND PRODUCED, BECAUSE IT EXPLAINS A TRAP THAT HAS COST FIVE PREVIOUS ROUNDS AND WAS
+NEVER UNDERSTOOD.**
+
+The workstream broke its own check, rebuilt, saw it go red, **restored the file from a backup**, rebuilt again and got
+`Result: Succeeded` - **AND THE SUITE STILL FAILED WITH THE SAME SIX CHECKS.** Instead of assuming contention or
+re-reading its code, IT MEASURED:
+
+    source mtime: 00:20:29      <- Move-Item RESTORED THE BACKUP AND PRESERVED ITS OLD TIMESTAMP
+    DLL before:   00:30:12
+    Result: Succeeded
+    DLL after:    00:30:12      <- UNCHANGED. UBT NEVER RECOMPILED ANYTHING.
+
+*** SO `Result: Succeeded` MEANT "NOTHING NEEDED REBUILDING", NOT "THE BINARY CHANGED". *** That is the whole trap in
+one line, AND IT IS THE FIRST TIME HERE IT HAS BEEN CAUGHT BY COMPARING TIMESTAMPS rather than by noticing that a
+break test did not go red. Forcing the source mtime forward produced `[1/5] Compile [x64] TurboMCPDataTableRows.cpp`,
+the DLL moved to 00:35:35, and the checks went green.
+
+**THE GUARD, AND IT IS A ONE-LINE RULE FOR THE PROJECT: AFTER RESTORING A FILE FROM A BACKUP, TOUCH IT. A COPY THAT
+PRESERVES `mtime` IS INVISIBLE TO UBT, SO A REVERT LOOKS EXACTLY LIKE A CHANGE THAT DID NOT NEED BUILDING.** Every
+earlier firing was explained as *"the loaded DLL was stale"*; **THE MECHANISM IS NOW NAMED.**
+
+### 23.1 The round's own numbers, without flattering either of them
+
+    ISOLATED, per suite through the harness:  test-bp-lint 34 checks PASS
+                                             test-datatable-rows 26 checks PASS
+    AUDIT:                                    77 tools, uncalled: (none), PASS
+    FULL RUN, on the committed state:         40 of 46
+
+**AND THE FULL RUN IS NOT CLEAN, WHICH IS THE HONEST STATE RATHER THAN A PASS.** The six failures are three
+`no result line` (`test-call-log`, `test-comments`, `test-trace`), one fixture rebuild refusal (`test-graph-knots`),
+one shared-fixture restore assertion (`test-material-tidy`), and `test-play-check` reporting two failures. The
+contention was heavy in the PREVIOUS run and is not fully explained in this one - the three workstreams' editors had
+been started and stopped repeatedly, and this project has recorded FOUR false regressions from concurrent runs.
+**I DID NOT ESTABLISH WHICH OF THE SIX ARE REAL, AND I AM NOT GOING TO GUESS: the number to trust is the ISOLATED
+one, and the next round's job is a full run on a machine where nothing else has run first.**
+
+### 23.2 And the structural lesson, which is worth more than the six failures
+
+*** PARALLEL WORK CREATES VALIDATION DEBT. *** Three workstreams produced three capabilities in the time one would
+have taken, **AND LEFT A FULL RUN THAT NOBODY CAN READ.** The isolation results are real - 34 checks and 26 checks,
+each with a break test proving the checks can fail - **BUT "verified in isolation" IS A WEAKER CLAIM THAN "verified on
+a clean full run", AND THE DIFFERENCE HAS TO BE PAID BACK BEFORE THE WORK IS CREDITED.** Serialising the BUILDS was
+not enough: **one broken build blocked two agents for a whole round, and three concurrent suite runs produced a
+number that had to be discounted.**
+
+### 23.3 What landed, committed as `d4aab19` - 11 files, 3599 lines
+
+`P/E-DATATABLE-ROWS` (26 checks) and `R-BP-LINT` (34 checks, six named checks each reporting how many things it
+looked at, in the READ toolset which is **structurally unable to write**), plus `P/E-WIDGET-TREE`'s text dialect and
+parser **with ZERO declarations** because everything left needs a live tree and **a declaration without a definition
+compiles and then fails to link.**
+
+**AND THE DATATABLE WORKSTREAM FOUND THE PROJECT'S NINTH WRONG RECALLED ENGINE NAME** (`UScriptStruct::GetDefaultInstance`
+does not exist; the real API is `UStruct::InitializeStruct` at `Class.h:754`) **AND A NEW CLASS OF BUILD FAILURE** -
+an `error C7595` from UE5's COMPILE-TIME format checker, where a ternary of `TEXT()` passed into a variadic argument
+has a type the sanitiser cannot prove.
+
+**ITS THREE TEST DEFECTS ARE ALSO THE SHAPE THIS RECORD KEEPS FINDING, AND EACH IS A SENTENCE WORTH KEEPING:**
+- it loaded the asset BEFORE parsing the input, so the parser's own refusals were UNREACHABLE and TEN CHECKS FAILED
+  FROM ONE ORDERING MISTAKE - *** "a refusal about the REQUEST must not be masked by a refusal about the TARGET" ***;
+- it hard-coded a field name that the reader prints with a GUID suffix, FAILING THREE CHECKS ON A WORKING TOOL;
+- and its own test parser EXCLUDED any line containing a colon, while EVERY row name in that table contains `::` -
+  *** "A PARSER WHOSE RULE EXCLUDES THE DATA IS INDISTINGUISHABLE FROM DATA THAT IS ABSENT." ***
