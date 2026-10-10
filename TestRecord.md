@@ -3780,3 +3780,36 @@ MCP session that survived the editor being restarted underneath it.
 **AND THE LESSON GENERALISES TO THE SUITE OUTPUT ITSELF:** every suite prints `RESULT: PASS` or `RESULT: FAIL`, and
 this project has already recorded nine cases where such a line was right about the wrong thing. Reading a verdict
 without reading WHAT PRODUCED IT is the mistake this section records against myself.
+
+---
+
+## 8a. A HELPER I ADDED BROKE A WORKING HARNESS, AND THE FAILURE LOOKED LIKE THREE FAILING SUITES
+
+**WHAT I TRIED.** The suite invocation is `& python <suite> 2>&1` with NO TIMEOUT, so a suite that blocks blocks
+the whole run - which is how three runs were each left hanging for 18 to 25 minutes. The fix is a wall-clock
+deadline per suite, and `&` gives no way to interrupt a child, so I added an `Invoke-SuiteProcess` helper using
+`Start-Process -PassThru` with redirected output files and `WaitForExit($ms)`, killing on expiry and recording
+`RESULT: TIMED OUT`.
+
+**WHAT IT DID INSTEAD: IT RETURNED NOTHING FOR EVERY SUITE.** Measured after the change, THREE STATIC SUITES that
+need no editor at all - `check-includes`, `audit-tool-coverage`, `audit-suite-quality` - each reported
+`RESULT: no result line`, and the summary said `passed 0, failed 3, of 3`. Reverting the one file restored
+`passed 3, failed 0, of 3` immediately.
+
+**THE LESSON IS THE ONE THIS PROJECT KEEPS RECORDING, THIS TIME AGAINST ME: A HELPER THAT SILENTLY YIELDS NOTHING
+IS INDISTINGUISHABLE FROM A SUITE THAT SAYS NOTHING.** The symptom pointed at three suites; the defect was one
+function. And I chased it for several steps - adding `$script:SuiteRoot` for a `$PSScriptRoot`-is-empty problem
+that WAS real - before the decisive move, which was to REVERT AND CONFIRM THE HARNESS WORKED AGAIN. **PROVING THE
+OLD STATE STILL WORKS IS WHAT LOCALISED THE CHANGE**, and it should have been the first step rather than the last.
+
+**WHAT I GOT RIGHT, EVENTUALLY, AND IT IS WORTH NAMING:** I did not leave the harness broken and I did not claim
+the timeout worked. I reverted to the last committed state, CONFIRMED the harness passed three suites again, and
+am recording the attempt as a failure rather than a partial success. A change that cannot be shown to work is not
+a change.
+
+**WHAT REMAINS TRUE AND STILL NEEDS DOING:** the per-suite deadline is still the right fix and the invocation
+still has no timeout. The next attempt should build it INCREMENTALLY and prove each step against the static
+suites, which need no editor and finish in seconds - the cheapest possible feedback loop, and one I did not use.
+Specifically: first make `Invoke-SuiteProcess` return the output for ONE static suite, changing nothing else;
+only then wire it into the loop. THE STATIC SUITES ARE THE RIGHT TEST BED FOR A HARNESS CHANGE AND WERE AVAILABLE
+THE WHOLE TIME.
