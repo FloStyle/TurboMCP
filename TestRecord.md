@@ -5048,3 +5048,38 @@ THE BUG IS IN WHAT IT DOES WITH THE EVIDENCE - NOT IN WHAT IT RECEIVED.**
 RESULTS WHILE THE FULL RUN DISAGREED, AND THE FULL RUN WAS WRONG. THAT IS THE ARGUMENT FOR THE PRACTICE THIS PROJECT
 ADOPTED: RE-RUN A FAILING SUITE ALONE BEFORE BELIEVING IT - WHICH IS WHAT CAUGHT THIS, AND WHAT WOULD HAVE
 MISATTRIBUTED IT IF THE ISOLATED RESULTS HAD NOT BEEN TRUSTED OVER THE AGGREGATE.**
+
+---
+
+## 27. A pre-flight check now runs BEFORE a capability is assigned: does its acceptance row name a fixture that EXISTS?
+
+*** THIS IS THE TRANSFERABLE LESSON OF THE PARALLEL ROUNDS, AND IT COSTS ONE COMMAND PER ROW. *** The previous
+parallel round spent a whole workstream's budget discovering that **`TA-14` does not exist**, so `T-DATA-1` could not
+pass as written - and the workstream correctly REFUSED TO GUESS PAST THE BOUNDARY rather than inventing a file.
+
+MEASURED BEFORE ASSIGNING THIS ROUND'S THREE, AND TWO CANDIDATE CAPABILITIES WERE DELIBERATELY NOT ASSIGNED:
+
+    T-STRUCT-9/10/11  -> TA-1, TA-2            EXIST (TA01_HandLaid, BP_TowerArray)      ASSIGNED
+    T-MAT-10          -> TA-6                  DOES NOT EXIST -> MI_TurboMCPFixture     ASSIGNED with the substitute
+                                               exists at TurboMCPMaterialFixtureCommandlet.cpp:609
+    T-HELP-6          -> no asset named        the call log is the fixture              ASSIGNED
+    T-LEVEL-1/2       -> TA-15, TA-16          NEITHER EXISTS                           NOT ASSIGNED
+
+**AND `TA-15`/`TA-16` WERE NOT MERELY SKIPPED: THEIR PREREQUISITE ALREADY HAS ITS OWN ROW.** `TurboMCPKitCommandlet.cpp:744`
+builds TA-1 to TA-13, and `WORKING_PLAN.md` row **1.5** is *"Build the new kit assets TA-14 to TA-21 by hand"*,
+`todo`. **SO THE ORDER THE PLAN ALREADY SPECIFIES IS THE ANSWER: build the kit first, then the capabilities that
+depend on it.** Building the kit inside a capability would reorder the plan, which is what the plan's own section 5
+warns against - *"a capability that cannot be built as specified does not become a smaller capability silently"*.
+
+**THE FAILURE MODE THIS PREVENTS IS NOT A WRONG ANSWER, IT IS A WASTED WORKSTREAM.** A capability whose acceptance
+row names a missing asset does not produce bad code; **it produces a workstream that cannot finish and does not know
+why until it has read the kit commandlet.** One command per row converts that into an assignment decision.
+
+**AND FOR `T-MAT-10` THE PRE-FLIGHT DID SOMETHING BETTER THAN SKIP IT: THE SUBSTITUTE WAS FOUND BEFORE THE BRIEF WAS
+WRITTEN.** `MI_TurboMCPFixture` already exists, so the workstream was handed the answer instead of being left to stop
+and ask - **and was told to state the deviation in its suite header rather than cite `T-MAT-10` as though `TA-6`
+existed.** That is the practice this project established one round earlier, when a suite cited `T-DATA-1` with the
+deviation spelled out underneath.
+
+**THE GENERAL FORM, WHICH IS WORTH KEEPING: AN ACCEPTANCE ROW IS A CLAIM ABOUT A FIXTURE AS WELL AS ABOUT A TOOL.
+CHECKING THE FIXTURE HALF BEFORE STARTING IS ONE COMMAND, AND NOT CHECKING IT HAS COST A FULL WORKSTREAM.**
