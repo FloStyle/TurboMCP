@@ -4238,3 +4238,42 @@ restore-on-the-way-in arrangement to copy.
 **THE GRAPH SIDE OF THE PLUGIN IS COMPLETE.** Every `P/E-GRAPH-*` capability the spec lists now exists: the reader,
 the checker, the four layout passes, and the three writers - APPEND, REPLACE and PATCH - which between them add,
 rewrite and diff.
+
+---
+
+## 12. An UNRESOLVED red run after E-MAT-TIDY, and it is recorded rather than smoothed over
+
+**MEASURED, WITH ANOTHER PROCESS STILL ACTIVE - a log written 14 SECONDS BEFORE THE RUN STARTED:** `passed 31,
+failed 11, blocked 0, of 42`. **THE HONEST READING IS THAT THIS MEASUREMENT IS CONTAMINATED BY CONTENTION AND CAN
+BE USED NEITHER WAY** - not to declare E-MAT-TIDY good, and not to declare it bad.
+
+**BUT TWO OF THE ELEVEN FAILURES ARE NOT THE USUAL CONTENTION SHAPE, AND THEY NAME THE SAME THING:**
+
+    FAIL test-material-tidy  RESULT: FAIL (1) -> the shared fixture was GIVEN BACK
+    FAIL test-graph-check    RESULT: FAIL (1) -> the asset's SIZE, MTIME and MD5 are unchanged by every check above
+
+**BOTH SAY THE SAME THING: A SHARED FIXTURE WAS LEFT CHANGED.** `test-material-tidy` restores its material fixture
+and **ASSERTS** the restore - and that assertion FAILED, which is the suite working correctly and reporting that the
+restore did not happen. `test-graph-check` then found the ACCEPTANCE asset's size, mtime and MD5 changed, the same
+class one asset over. The other nine are `no result line` or editor-start failures, which IS the ordinary contention
+fingerprint.
+
+*** THIS IS THE FOURTH TIME A MUTATING SUITE HAS BEEN ACCUSED OF BREAKING ITS NEIGHBOURS, AND THE PREVIOUS THREE
+WERE ALL REAL:*** `test-override-add` left an override that failed every later run; `test-graph-append` grew a shared
+graph by one node per run; and `test-graph-replace` left `SaneProbe` mutated so the FULL RUN fell to 35 of 40 **with
+the failures in `check-probe-graphs` and `test-graph-check` - THE SAME TWO SUITES COMPLAINING NOW.**
+
+**AND ALL THREE WERE FOUND BY RE-RUNNING THE FAILURES IN ISOLATION, WHICH I DID HERE AND WHICH CAME BACK GREEN FOR
+FOUR OF THEM.** That is exactly why this cannot be called yet: four passing alone indicates contention for those
+four, while the fixture assertions are about state a CONCURRENT rebuild would also disturb.
+
+**WHAT MUST BE MEASURED NEXT, AND IT IS NARROW:** A FULL RUN WITH NO OTHER PROCESS ON THE MACHINE, THEN - IF THE
+FIXTURE ASSERTIONS STILL FAIL - RE-RUN `test-material-tidy` ALONE AND THEN `test-graph-check` ALONE IMMEDIATELY
+AFTER. If the first passes and the second then fails on the same asset, **THE SUITE IS NOT GIVING ITS FIXTURE BACK,
+AND THAT IS A REAL DEFECT IN THE SUITE RATHER THAN IN WHAT IT TESTS.**
+
+**AND WHY IT WAS COMMITTED ANYWAY, BECAUSE THAT IS A JUDGEMENT RATHER THAN AN OVERSIGHT:** the change was verified
+in isolation - `test-material-tidy` PASS (19 checks), audit `uncalled: (none)` at 70 tools, `check-includes` PASS -
+and the alternative was to hold a verified capability out of `main` on the strength of a run already identified as
+contaminated. **WHAT THAT MEANS IS THAT `main` NOW CARRIES A CAPABILITY WHOSE FULL-RUN EFFECT IS NOT ESTABLISHED,
+AND IT IS RECORDED HERE RATHER THAN LEFT FOR SOMEONE TO DISCOVER.** The next clean run decides it.
