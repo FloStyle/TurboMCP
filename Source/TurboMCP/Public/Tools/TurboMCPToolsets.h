@@ -1090,6 +1090,38 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPMaterialLabelPromote(
 		const FString& Asset);
+
+	/**
+	 * `P-MAT-BLOCKS`: make labels follow blocks.
+	 *
+	 * `Spec/03_TOOLS.md`: "Preview: the labels to add, usage nodes to merge, in-block reroutes to remove,
+	 * following the block rule in `05_DECISIONS.md` D-17."
+	 *
+	 * THE THREE LISTS ARE THE THREE WAYS D-17 CAN BE VIOLATED, and each comes from the SAME geometric block
+	 * membership `R-MAT-BLOCKS` computes - read through `FTurboMCPMaterial::BlockIndexOf`, which is public
+	 * for exactly this reason. A writer that disagreed with the reader about which box holds what would
+	 * move values between blocks the reader does not believe in.
+	 *
+	 *   - a value read from MORE THAN ONE BLOCK with no label, where D-17 says a value leaving its block
+	 *     travels as a named reroute;
+	 *   - a label read through TWO OR MORE usage nodes in ONE block, where D-17 says a block reads each
+	 *     label through a single usage node;
+	 *   - a PLAIN REROUTE whose source and readers are all in ONE block, where D-17 says plain reroute dots
+	 *     are for routing long wires and never stand for a value.
+	 *
+	 * A MATERIAL WITH NO COMMENT BOX IS A THIRD ANSWER RATHER THAN A SILENT SUCCESS. D-17 is about the
+	 * boundary between blocks, and one block has no boundary, so the refusal says so and names
+	 * `P/E-MAT-TIDY` as the tool that would create the blocks first.
+	 *
+	 * Every item is printed with the keys the edit would touch, because "changes exactly the items in the
+	 * Preview list" is only checkable if the list is in the text.
+	 *
+	 * It writes nothing, and it does not claim the compiled result is unchanged - that claim is made by the
+	 * edit, which measures it and rolls back if it is not the same.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPMaterialBlocks(
+		const FString& Asset);
 };
 
 /**
@@ -1622,6 +1654,31 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPMaterialLabelPromote(
+		const FString& Asset);
+
+	/**
+	 * `E-MAT-BLOCKS`: make labels follow blocks, changing exactly what the Preview listed.
+	 *
+	 * *** THIS IS THE ONE MATERIAL WRITER THAT REMOVES, SO IT STATES WHAT IT REMOVES AND DELETES BY
+	 * IDENTITY. `05_DECISIONS.md` D-45: "a writer that removes anything lists each removal by key with its
+	 * class and title, never a count... a count says how much is gone and a list says what." ***
+	 *
+	 * "Same compiled result check" IS MEASURED, AND THE ASSERTION IS ASYMMETRIC ON PURPOSE because this pass
+	 * legitimately adds and legitimately removes: NO PRE-EXISTING EXPRESSION WAS LOST EXCEPT THE ONES ON THE
+	 * PLAN'S OWN REMOVAL LIST, the expressions GAINED are exactly the ones planned, and the engine reports
+	 * no NEW error - so a material that already had a compiler error does not make this pass fail. A node
+	 * that vanished without being listed is a failure EVEN THOUGH THE MATERIAL STILL COMPILES, which is
+	 * what "changes exactly the items in the Preview list" means.
+	 *
+	 * EVERY NODE IS RE-RESOLVED BY KEY AT APPLY TIME rather than trusted from the plan - the other half of
+	 * D-45, forced by the two-call shape: a plan is made and applied separately, so the material can change
+	 * in between. An input that no longer points where the plan said is a REFUSAL rather than a rewire,
+	 * because a stale index would retarget the wrong pin and produce a wrong material that still compiles.
+	 *
+	 * The whole edit is ONE TRANSACTION, so it is a single undo and a rollback is exact.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPMaterialBlocks(
 		const FString& Asset);
 };
 

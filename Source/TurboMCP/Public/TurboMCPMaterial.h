@@ -165,6 +165,54 @@ public:
 	static TArray<FString> ConnectedOutputs(FPlan& InPlan);
 
 	/**
+	 * WHICH BLOCK AN EXPRESSION BELONGS TO, which is the innermost comment box that contains it, or
+	 * `INDEX_NONE` when it is inside no box at all.
+	 *
+	 * *** THIS IS PUBLIC BECAUSE TWO TOOLS MUST AGREE ON IT AND THE MATERIAL COMMENT BOX DOES NOT STORE
+	 * THE ANSWER. *** A comment box holds no list of members. This project measured that on the Blueprint
+	 * side - the cache is filled from RENDERED widgets and is therefore empty headlessly - and a material
+	 * box has no equivalent accessor at all. Membership is therefore GEOMETRIC: the box's rectangle is
+	 * computed from its position and size and compared against each expression, which is what the editor
+	 * itself does. `R-MAT-BLOCKS` already computes it, and `P/E-MAT-BLOCKS` must decide which values
+	 * CROSS a block boundary - SO IT NEEDS THE SAME ANSWER. Two copies of a geometric rule drift the
+	 * moment either is adjusted, and a writer that disagreed with the reader about which box holds what
+	 * would move values between blocks the reader does not believe in.
+	 *
+	 * THE BOXES ARE ENUMERATED IN THE ORDER `InPlan.Comments` HOLDS THEM, so an index is stable for one
+	 * plan. It is deliberately an INDEX rather than a pointer, because comparing indices is the whole
+	 * question and a caller that wanted the box can index `InPlan.Comments` itself.
+	 *
+	 * THE RULE IS "SMALLEST CONTAINING BOX WINS", so a box inside a box owns its own members rather than
+	 * both claiming them. That is the same innermost-wins rule this project reports for Blueprint comment
+	 * nesting, and using a different one here would make the two tools disagree about one picture.
+	 */
+	static int32 BlockIndexOf(const FPlan& InPlan, const UMaterialExpression* InExpression);
+
+	/** The number of blocks a plan has, which is its comment box count. */
+	static int32 BlockCount(const FPlan& InPlan) { return InPlan.Comments.Num(); }
+
+	/**
+	 * True when an expression is a PLAIN reroute - `UMaterialExpressionReroute`, not a named one.
+	 *
+	 * PUBLIC BECAUSE `P/E-MAT-BLOCKS` MUST FIND IN-BLOCK REROUTES, and it must find them by the SAME
+	 * definition the reader uses to decide that a value crosses a boundary. `2.5` says a plain reroute is
+	 * invisible and links go through it, while a NAMED reroute has its own meaning and its own label -
+	 * so the two classes are not interchangeable and a writer that conflated them would try to delete a
+	 * label.
+	 */
+	static bool IsPlainReroute(const UMaterialExpression* InExpression);
+
+	/**
+	 * Follows plain reroutes to the expression a value really comes from, or null.
+	 *
+	 * PUBLIC FOR THE REASON ABOVE: the writer must know what a value's REAL SOURCE is before it can
+	 * decide whether that source is in the same block, and it must follow the same reroutes the reader
+	 * follows. `2.5`: "Plain reroutes are invisible: links go through them." A NAMED reroute is NOT
+	 * followed, because a named one carries a label rather than passing a wire along.
+	 */
+	static UMaterialExpression* ResolveThroughReroutes(const UMaterialExpression* InExpression);
+
+	/**
 	 * The expression feeding one output property, or null.
 	 *
 	 * THE PLAN IS MUTABLE HERE, AND THAT IS FORCED BY THE ENGINE. The output lookup goes through
@@ -266,16 +314,11 @@ private:
 	/** The label a usage node refers to, resolved through its declaration when the pointer is valid. */
 	static FString LabelOfUsage(const UMaterialExpressionNamedRerouteUsage* InUsage);
 
-	/** True when this expression is a plain reroute, which `2.5` says the reader looks through. */
-	static bool IsPlainReroute(const UMaterialExpression* InExpression);
-
 	/**
-	 * Follows plain reroutes to the expression a value really comes from.
-	 *
-	 * `2.5`: "Plain reroutes are invisible: links go through them." A NAMED reroute is NOT followed,
-	 * because a named one has its own meaning and its own label.
+	 * `IsPlainReroute` AND `ResolveThroughReroutes` USED TO BE DECLARED HERE AND ARE NOW PUBLIC, because
+	 * `P/E-MAT-BLOCKS` needs the same two answers the reader uses. Their one definition each stays in
+	 * `TurboMCPMaterial.cpp` - moving a declaration changes who may call a function, not what it does.
 	 */
-	static UMaterialExpression* ResolveThroughReroutes(const UMaterialExpression* InExpression);
 
 	/** Marks everything an output depends on as reached, so the unreached list is exact. */
 	static void MarkReached(const UMaterialExpression* InExpression, FRenderState& InOutState);

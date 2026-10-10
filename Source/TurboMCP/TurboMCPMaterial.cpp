@@ -1558,6 +1558,52 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 	return Out;
 }
 
+int32 FTurboMCPMaterial::BlockIndexOf(const FPlan& InPlan, const UMaterialExpression* InExpression)
+{
+	if (InExpression == nullptr)
+	{
+		return INDEX_NONE;
+	}
+
+	// THE SMALLEST CONTAINING BOX WINS, so a box inside a box owns its own members rather than both
+	// claiming them. That is the innermost-wins rule this project reports for Blueprint comment nesting,
+	// and a different rule here would make the two tools disagree about one picture.
+	int32 BestIndex = INDEX_NONE;
+	int64 BestArea = MAX_int64;
+
+	for (int32 Index = 0; Index < InPlan.Comments.Num(); ++Index)
+	{
+		const UMaterialExpressionComment* Comment = InPlan.Comments[Index];
+		if (Comment == nullptr)
+		{
+			continue;
+		}
+
+		const int32 Left = Comment->MaterialExpressionEditorX;
+		const int32 Top = Comment->MaterialExpressionEditorY;
+		const int32 Right = Left + Comment->SizeX;
+		const int32 Bottom = Top + Comment->SizeY;
+
+		if (InExpression->MaterialExpressionEditorX >= Left
+			&& InExpression->MaterialExpressionEditorX <= Right
+			&& InExpression->MaterialExpressionEditorY >= Top
+			&& InExpression->MaterialExpressionEditorY <= Bottom)
+		{
+			// `int64` RATHER THAN `int32`, because a large box's area overflows `int32` and a negative
+			// area would then win the comparison - a bug that would only appear on a big material and
+			// would look like the wrong box owning a node.
+			const int64 Area = static_cast<int64>(Right - Left) * static_cast<int64>(Bottom - Top);
+			if (Area < BestArea)
+			{
+				BestArea = Area;
+				BestIndex = Index;
+			}
+		}
+	}
+
+	return BestIndex;
+}
+
 FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 {
 	FString Out = FString::Printf(TEXT("read: %s by block of logic"), *InPlan.Asset);
@@ -1582,14 +1628,17 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 		return Out;
 	}
 
-	// MEMBERSHIP IS GEOMETRIC AND IS COMPUTED HERE RATHER THAN READ FROM THE EDITOR.
+	// MEMBERSHIP IS GEOMETRIC AND IS COMPUTED BY `BlockIndexOf`, WHICH IS PUBLIC AND SHARED.
 	//
-	// A material comment box holds no list of members; the editor decides membership when it lays
-	// the graph out, exactly as `SGraphNodeComment` does for a Blueprint. This project MEASURED that
-	// the Blueprint side's cache is filled from RENDERED widgets and is therefore empty headlessly -
-	// see the long note in `TurboMCPComment.cpp` - and a material box has no equivalent accessor at
-	// all. So the rectangle is computed from the box position and size and compared against each
-	// expression, which is the only route available and is what the editor does too.
+	// A material comment box holds no list of members; the editor decides membership when it lays the
+	// graph out, exactly as `SGraphNodeComment` does for a Blueprint. This project MEASURED that the
+	// Blueprint side's cache is filled from RENDERED widgets and is therefore empty headlessly - see the
+	// long note in `TurboMCPComment.cpp` - and a material box has no equivalent accessor at all.
+	//
+	// THE COMPUTATION USED TO BE A LAMBDA RIGHT HERE, AND IT MOVED FOR A MEASURED REASON: `P/E-MAT-BLOCKS`
+	// must decide which values CROSS a block boundary, so it needs exactly this answer - and two copies of
+	// a geometric rule drift the moment either is adjusted. A writer that disagreed with this reader about
+	// which box holds what would move values between blocks this reader does not believe in.
 	struct FBox
 	{
 		UMaterialExpressionComment* Comment = nullptr;
@@ -1620,32 +1669,10 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 	// owns its own members rather than both claiming them. That is the same "innermost wins" rule the
 	// comment reader reports for Blueprint nesting, and using a different one here would make the two
 	// tools disagree about the same picture.
-	auto BoxFor = [&Boxes](const UMaterialExpression* Expression, int32& OutIndex) -> bool
+	auto BoxFor = [&InPlan](const UMaterialExpression* Expression, int32& OutIndex) -> bool
 	{
-		int32 BestIndex = INDEX_NONE;
-		int32 BestArea = MAX_int32;
-		for (int32 Index = 0; Index < Boxes.Num(); ++Index)
-		{
-			const FBox& Box = Boxes[Index];
-			if (Expression->MaterialExpressionEditorX >= Box.Left
-				&& Expression->MaterialExpressionEditorX <= Box.Right
-				&& Expression->MaterialExpressionEditorY >= Box.Top
-				&& Expression->MaterialExpressionEditorY <= Box.Bottom)
-			{
-				const int32 Area = (Box.Right - Box.Left) * (Box.Bottom - Box.Top);
-				if (Area < BestArea)
-				{
-					BestArea = Area;
-					BestIndex = Index;
-				}
-			}
-		}
-		if (BestIndex != INDEX_NONE)
-		{
-			OutIndex = BestIndex;
-			return true;
-		}
-		return false;
+		OutIndex = FTurboMCPMaterial::BlockIndexOf(InPlan, Expression);
+		return OutIndex != INDEX_NONE;
 	};
 
 	for (UMaterialExpression* Expression : InPlan.Expressions)
