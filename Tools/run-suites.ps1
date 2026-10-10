@@ -57,6 +57,73 @@ $StaticSuites = @('audit-tool-coverage', 'audit-suite-quality', 'check-includes'
 # A suite that is slow and whose value does not change per run.
 $SlowSuites = @('test-capture')
 
+# ---------------------------------------------------------------------------------------------
+# A WALL-CLOCK DEADLINE PER SUITE, WHICH IS THE ONLY THING THAT CAN BOUND A RUN.
+#
+# MEASURED: the invocation was `& python <suite> 2>&1` WITH NO TIMEOUT AT ALL. Three full runs were left for 18,
+# 25 and 24 minutes with NO EDITOR ALIVE AND NO LOG ACTIVITY, indistinguishable from a hang. A suite that blocks
+# on a request blocks THE WHOLE RUN INDEFINITELY, AND NO GUARD ON THE EDITOR CAN HELP, because the harness is not
+# looking at the editor while it waits.
+#
+# `Start-Process` WITH REDIRECTED FILES RATHER THAN A PIPELINE, because `& python ... 2>&1` gives no way to
+# interrupt: PowerShell waits for the child to close its streams and never gets to decide otherwise. Killing the
+# process on expiry is the only lever and it needs the process HANDLE.
+#
+# *** THE OUTPUT IS SPLIT INTO LINES BEFORE IT IS RETURNED, AND THAT ONE LINE IS THE WHOLE POINT. ***
+# A previous version returned `Get-Content -Raw`, which is ONE `System.String` carrying the file's `\r\n` endings,
+# and the harness feeds it to a LINE-ORIENTED cmdlet. MEASURED on `check-includes`:
+#
+#     type: System.String          length: 293
+#     newline style: CR=True LF=True
+#     Select-String count: 0                     <- IT MATCHED NOTHING
+#     verdict via split: PASS  every include resolves to a real file in the engine or the plugin.
+#
+# CARET DOES NOT MATCH AFTER A CARRIAGE RETURN, so a single multi-line string DEFEATS A LINE-ANCHORED PATTERN even
+# though the text plainly begins a line with `PASS`. That is why THREE PASSING STATIC SUITES were recorded as
+# `no result line` while the helper itself captured 293 correct characters. A HELPER THAT SILENTLY YIELDS NOTHING
+# AND A CONSUMER THAT SILENTLY MATCHES NOTHING ARE INDISTINGUISHABLE FROM OUTSIDE, AND BOTH LOOK LIKE FAILING
+# SUITES. The split restores the shape the old invocation produced - an ARRAY OF LINES - so every consumer sees
+# what it saw before.
+#
+# `$root` IS READ FROM THE CALLER'S SCOPE. MEASURED in an earlier attempt: `$PSScriptRoot` is EMPTY inside a
+# function called from another scope, `Join-Path` threw on an empty path, and THAT was one of the two causes.
+#
+# THE DEFAULT IS GENEROUS ON PURPOSE: the slowest suite measures about two minutes and the default is TEN, so a
+# deadline firing means something is genuinely wrong rather than merely slow.
+$script:SuiteTimeoutSeconds = 600
+$suiteRoot = $PSScriptRoot
+
+function Invoke-SuiteProcess {
+    param([string] $SuiteName, [int] $TimeoutSeconds = $script:SuiteTimeoutSeconds)
+
+    $exe = (Get-Command python).Source
+    $outFile = Join-Path $env:TEMP "tmcp-$SuiteName.out"
+    $errFile = Join-Path $env:TEMP "tmcp-$SuiteName.err"
+    Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
+
+    $proc = Start-Process -FilePath $exe `
+        -ArgumentList (Join-Path $suiteRoot "$SuiteName.py") `
+        -WorkingDirectory $suiteRoot -NoNewWindow -PassThru `
+        -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+
+    if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
+        # KILLED, AND THE KILL IS REPORTED RATHER THAN HIDDEN. A suite that had to be killed is recorded as
+        # TIMED OUT so it can never be mistaken for one that passed, failed, or was never run.
+        try { $proc.Kill($true) } catch { try { $proc.Kill() } catch { } }
+        Start-Sleep -Seconds 2
+        return @{ Output = @("RESULT: TIMED OUT (${TimeoutSeconds}s)"); TimedOut = $true }
+    }
+
+    $text = ''
+    if (Test-Path $outFile) { $text = Get-Content $outFile -Raw -ErrorAction SilentlyContinue }
+    if (Test-Path $errFile) {
+        $errText = Get-Content $errFile -Raw -ErrorAction SilentlyContinue
+        if ($errText) { $text = "$text`n$errText" }
+    }
+    Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
+    return @{ Output = ($text -split "`r?`n"); TimedOut = $false }
+}
+
 function Start-EditorAndWait {
     param([int] $TimeoutSeconds = 240)
 
@@ -176,7 +243,8 @@ $Results = [ordered]@{}
 
 Write-Output "--- static suites, which need no editor ---"
 foreach ($name in $Static) {
-    $out = & python (Join-Path $PSScriptRoot "$name.py") 2>&1
+    $run = Invoke-SuiteProcess -SuiteName $name
+    $out = $run.Output
     # TWO SUITES REPORT THEIR VERDICT WITHOUT A `RESULT:` LINE - `check-includes` and `check-mcp-server`
     # print `PASS <what>` or `FAIL <what>`. The first version of this runner looked only for `^RESULT`,
     # found nothing, and reported them as FAILING when they had both passed. A runner that MISREADS a
@@ -260,7 +328,8 @@ foreach ($name in $NeedsEditor) {
         continue
     }
     $script:EditorFailures = 0
-    $out = & python (Join-Path $PSScriptRoot "$name.py") 2>&1
+    $run = Invoke-SuiteProcess -SuiteName $name
+    $out = $run.Output
     $result = ($out | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
     if (-not $result) {
         # A suite that dies without a result line is worth seeing, so the tail is printed.
