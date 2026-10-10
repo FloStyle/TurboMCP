@@ -4683,3 +4683,62 @@ not be attempted before that.** The plan orders 0.1 first for a reason, and this
 **AND I DID NOT EDIT THE SUITES.** I reached the boundary between "copy the pattern" and "decide who owns the
 editor", and that boundary is a measurement rather than an edit - the same call four previous workstreams made
 here, and the reason this record has nine measured cases rather than ten.
+
+---
+
+## 21. The acceptance document is not the spec for what is TESTED: 91 of 122 rows are cited by no suite
+
+**MEASURED WITH A SCRIPT OVER THE TREE, WHICH IS THE ONLY WAY THIS IS VISIBLE:**
+
+    tests defined in Spec/06_ACCEPTANCE.md:              122
+    cited by at least one suite in Tools/:                31
+    CITED BY NO SUITE AT ALL:                             91
+
+    BP      12   MAT     13   DBG      8   WIDGET   8   LOOK     7
+    PANEL    6   DATA     6   STRUCT   6   LAY      5   LEVEL    5
+    ASSET    4   QUAL     3   BUILD    2   HELP     2   MEASURE  2
+    VCS      1   WRITE    1
+
+*** AND THE TWO THAT MATTER MOST RIGHT NOW ARE IN THAT LIST. *** **`T-MAT-8`** is the acceptance row for
+`P/E-MAT-BLOCKS` - the capability a workstream is building AS THIS IS WRITTEN - and **all eight `T-DBG-*` rows** are
+uncited, at the moment a measurement has just closed that whole group by decision. **A TEST THAT NOTHING CLAIMS TO
+RUN IS NOT EVIDENCE THAT ANYTHING WAS TESTED, AND NOT EVIDENCE THAT NOTHING WAS EITHER - IT IS SIMPLY UNKNOWN**,
+which is the worse of the two.
+
+### 21.1 The honest nuance, stated before the alarm
+
+**BEHAVIOUR CAN BE TESTED WITHOUT ITS ID BEING QUOTED.** `T-LAY-5` and `T-LAY-7` are about layout and
+`Tools/test-layout.py` cites `T-LAY-1` and `T-LAY-4` - so those behaviours are almost certainly covered and merely
+uncited. **AND I DID NOT CHECK WHICH OF THE 91 ARE COVERED AND WHICH ARE NOT, BECAUSE THAT CHECK IS A ROW-BY-ROW READ
+OF 91 ROWS AGAINST 41 SUITES AND I DO NOT HAVE THE CONTEXT FOR IT.** Claiming either way would be exactly the
+mistake this record is built to prevent.
+
+### 21.2 Why it matters structurally
+
+The project's own rule is that a capability is done when its test row in `06_ACCEPTANCE.md` passes -
+`WORKING_PLAN.md` section 1.3 says it in those words. **SO THE ACCEPTANCE DOCUMENT IS THE DEFINITION OF DONE, AND
+NOTHING IN THE TREE CAN CURRENTLY ANSWER "IS THIS ROW PASSING?" WITHOUT A HUMAN READING IT.** That is a structural
+gap rather than a missing citation: **the 43-suite green run cannot be mapped onto the 122 rows by any mechanical
+means today.**
+
+WHAT THE NEXT ATTEMPT SHOULD DO, IN ORDER:
+1. **ADD ONE LINE PER SUITE naming the test rows it claims to prove** - a comment, not a mechanism - which
+   immediately turns the 25 suites that already cite something into full coverage claims for their rows.
+2. **THEN the 91 shrink to whatever is genuinely unbuilt**, which is the real number nobody currently has.
+3. **AND ONLY THEN** is it worth building anything to enforce it, because a mechanism over an unmapped set enforces
+   nothing.
+
+### 21.3 The sharpest sub-list
+
+**THE 16 ROWS THAT ARE NEITHER CITED BY A SUITE NOR MENTIONED ANYWHERE IN `Tools/`**: `T-BP-2`, `T-BP-3`, `T-BP-4`,
+`T-BP-5`, `T-BP-6`, `T-BP-7`, `T-LAY-3`, `T-LOOK-2`, `T-LOOK-3`, `T-MAT-3`, `T-PANEL-2`, `T-PANEL-3`, `T-PANEL-4`,
+`T-PANEL-5`, `T-WIDGET-2`, `T-WIDGET-3`. **SIX OF THE SIXTEEN ARE BLUEPRINT-READING ROWS, WHICH IS THE SECTION THIS
+PROJECT CALLS COMPLETE** - worth a measurement rather than an assumption, because "complete" was itself one of the
+claims that turned out to be a nine-section reading of a twenty-section spec.
+
+### 21.4 And the documentation workstream's claim was VERIFIED rather than trusted
+
+Every one of the 106 test ids referenced elsewhere in `Spec/` IS defined - `REFERENCÉS MAIS NON DÉFINIS: 0` - so its
+own cross-reference check was correct. **IT CHECKED ONE DIRECTION AND NOT THE OTHER, AND THE OTHER DIRECTION IS WHERE
+THE GAP WAS. A cross-reference check that only asks "is everything referenced defined" cannot see "is everything
+defined referenced", and the second question is the one the definition of done depends on.**
