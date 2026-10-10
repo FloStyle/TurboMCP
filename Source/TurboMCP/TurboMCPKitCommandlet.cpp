@@ -239,6 +239,36 @@ namespace
 		}
 	}
 
+	/**
+	 * A GETTER FOR A LOCAL VARIABLE, with its pins allocated.
+	 *
+	 * THE ORDER MATTERS AND IT IS NOT THE ORDER `MakeCall` USES. `UK2Node_VariableGet::AllocateDefaultPins`
+	 * is guarded on `GetVarName() != NAME_None` and is what creates the value pin, so the VARIABLE
+	 * REFERENCE MUST BE SET BEFORE THE PINS ARE ALLOCATED. `Place` allocates them, so setting the
+	 * reference afterwards leaves a getter with no value pin - and `R2` skips a getter whose
+	 * `GetValuePin()` is null, so the rule would find nothing while the code looked correct.
+	 *
+	 * `GetValuePin` is `FindPin(GetVarName())` and needs SUPER-pin name flags on some paths, which is why
+	 * the caller checks it rather than this function assuming it worked.
+	 */
+	UK2Node_VariableGet* MakeLocalGetter(UEdGraph* InGraph, UBlueprint* InBlueprint,
+		const FName InVariable, double InX, double InY)
+	{
+		if (InGraph == nullptr || InBlueprint == nullptr || InVariable.IsNone())
+		{
+			return nullptr;
+		}
+		UK2Node_VariableGet* Getter = NewObject<UK2Node_VariableGet>(InGraph);
+		if (Getter == nullptr)
+		{
+			return nullptr;
+		}
+		Getter->VariableReference.SetLocalMember(InVariable, InGraph->GetName(),
+			FBlueprintEditorUtils::FindLocalVariableGuidByName(InBlueprint, InGraph, InVariable));
+		Place(InGraph, Getter, InX, InY);
+		return Getter;
+	}
+
 	/** One kit asset's build result, so `Main` can report and count them. */
 	struct FKitResult
 	{
@@ -408,6 +438,162 @@ namespace
 		 * what makes a reader's eye travel back across the graph. It is counted on the graph rather
 		 * than declared, so an asset claiming to be clean is checked rather than believed.
 		 */
+		/**
+		 * GETTERS THAT SIT UNDER THE NODE THAT READS THEM, which is exactly `R2`'s precondition.
+		 *
+		 * `R2` compares `GetterRect.MinY >= ConsumerRect.MaxY` - the report's own `bUnderneath` test,
+		 * reused so the two tools agree - and then finds the consumer through the getter's VALUE PIN.
+		 * So this counts a getter only when BOTH hold: the value pin exists and is linked, and the
+		 * getter's top is at or below the consumer's bottom. A getter to the RIGHT on the same row is
+		 * NOT backward and the rule leaves it alone, so counting one here would claim a shape the pass
+		 * would never move.
+		 *
+		 * THIS MEASURES THE PRECONDITION RATHER THAN THE INTENT. Counting "a getter exists" would pass on
+		 * a getter the rule skips, which is the failure this kit exists to prevent.
+		 */
+		int32 CountGettersUnderTheirConsumer(const UEdGraph* InGraph)
+		{
+			int32 Count = 0;
+			if (InGraph == nullptr)
+			{
+				return 0;
+			}
+			for (const UEdGraphNode* Node : InGraph->Nodes)
+			{
+				const UK2Node_VariableGet* Getter = Cast<UK2Node_VariableGet>(Node);
+				if (Getter == nullptr)
+				{
+					continue;
+				}
+				const UEdGraphPin* ValuePin = Getter->GetValuePin();
+				if (ValuePin == nullptr)
+				{
+					continue;
+				}
+				for (const UEdGraphPin* Link : ValuePin->LinkedTo)
+				{
+					const UEdGraphNode* Consumer = Link != nullptr
+						? Link->GetOwningNodeUnchecked() : nullptr;
+					if (Consumer == nullptr || Cast<UEdGraphNode_Comment>(Consumer) != nullptr)
+					{
+						continue;
+					}
+					// The getter's TOP at or below the consumer's BOTTOM. Integers, because both nodes
+					// carry a size stamped by `SizeForMeasurement` - nothing renders them here.
+					if (static_cast<int64>(Getter->NodePosY)
+						>= static_cast<int64>(Consumer->NodePosY) + static_cast<int64>(Consumer->NodeHeight))
+					{
+						++Count;
+					}
+					break;
+				}
+			}
+			return Count;
+		}
+
+		/**
+		 * PURE, NON-GETTER NODES WHOSE EVERY LINK LANDS ON ONE CONSUMER: `R1`'s carry precondition.
+		 *
+		 * GETTERS ARE EXCLUDED, AND THAT IS A MEASURED CORRECTION. The first version counted any pure node,
+		 * and a variable getter IS pure with one link to one consumer - so this counter read **2** while the
+		 * pass's own `R1 pure nodes carried` read **0**. `R1` skips getters because `R2` owns them, so
+		 * counting one here claimed a carry the rule refuses: exactly the "a check that passes without the
+		 * shape proves nothing" failure. The counter now mirrors the rule's own exclusions.
+		 */
+		int32 CountPureNodesUsedOnlyByOneConsumer(const UEdGraph* InGraph)
+		{
+			int32 Count = 0;
+			if (InGraph == nullptr)
+			{
+				return 0;
+			}
+			for (const UEdGraphNode* Node : InGraph->Nodes)
+			{
+				const UK2Node* AsK2 = Cast<UK2Node>(Node);
+				if (AsK2 == nullptr || !AsK2->IsNodePure()
+					|| Cast<UEdGraphNode_Comment>(Node) != nullptr
+					|| Cast<UK2Node_VariableGet>(Node) != nullptr)
+				{
+					continue;
+				}
+				const UEdGraphNode* Only = nullptr;
+				int32 Links = 0;
+				bool bSplit = false;
+				for (const UEdGraphPin* Pin : Node->Pins)
+				{
+					if (Pin == nullptr)
+					{
+						continue;
+					}
+					for (const UEdGraphPin* Other : Pin->LinkedTo)
+					{
+						const UEdGraphNode* Owner = Other != nullptr
+							? Other->GetOwningNodeUnchecked() : nullptr;
+						if (Owner == nullptr || Owner == Node)
+						{
+							continue;
+						}
+						++Links;
+						if (Only == nullptr)
+						{
+							Only = Owner;
+						}
+						else if (Only != Owner)
+						{
+							bSplit = true;
+						}
+					}
+				}
+				if (Links > 0 && !bSplit && Only != nullptr)
+				{
+					++Count;
+				}
+			}
+			return Count;
+		}
+
+		/** HOW MANY NODES SIT INSIDE A COMMENT BOX, so the box guard has something to act on. */
+		int32 CountNodesInsideABox(const UEdGraph* InGraph)
+		{
+			int32 Count = 0;
+			if (InGraph == nullptr)
+			{
+				return 0;
+			}
+			for (const UEdGraphNode* Node : InGraph->Nodes)
+			{
+				if (Node == nullptr || Cast<UEdGraphNode_Comment>(Node) != nullptr)
+				{
+					continue;
+				}
+				for (const UEdGraphNode* Other : InGraph->Nodes)
+				{
+					const UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(Other);
+					if (Box == nullptr)
+					{
+						continue;
+					}
+					// The box's rectangle starts `TitleBarHeight` BELOW its position, and membership is
+					// geometric - the engine's own cache is filled from RENDERED widgets and is empty here.
+					const int64 BoxTop = static_cast<int64>(Box->NodePosY) + static_cast<int64>(TitleBarHeight);
+					const int64 BoxLeft = Box->NodePosX;
+					const int64 BoxRight = static_cast<int64>(Box->NodePosX) + Box->NodeWidth;
+					const int64 BoxBottom = static_cast<int64>(Box->NodePosY) + Box->NodeHeight;
+					const int64 NodeLeft = Node->NodePosX;
+					const int64 NodeTop = Node->NodePosY;
+					const int64 NodeRight = static_cast<int64>(Node->NodePosX) + Node->NodeWidth;
+					const int64 NodeBottom = static_cast<int64>(Node->NodePosY) + Node->NodeHeight;
+					if (NodeLeft >= BoxLeft && NodeRight <= BoxRight
+						&& NodeTop >= BoxTop && NodeBottom <= BoxBottom)
+					{
+						++Count;
+						break;
+					}
+				}
+			}
+			return Count;
+		}
+
 		int32 CountBackwardWires(const UEdGraph* InGraph)
 		{
 			int32 Count = 0;
@@ -900,6 +1086,23 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 				}
 			}
 
+			// A PURE NODE USED ONLY BY THE MOVED NODE, which is `R1`'s carry precondition and check 16's
+			// shape. `Second` is the node R1 moves - it is fed by an exec wire from `First` that runs
+			// backward - so a pure node whose ONLY link lands on `Second` must travel with it.
+			//
+			// THE LINK GOES TO A DATA INPUT, NOT TO THE EXEC PIN. Linking an output to an exec pin is a
+			// type mismatch the schema would refuse, and the link would silently not exist - which is the
+			// same shape as the bug this block already records, where `PrintString` has no return value
+			// and `Link` did nothing while the code looked correct.
+			if (UK2Node_CallFunction* PureFeeder = MakeCall(Stacked,
+					UKismetMathLibrary::StaticClass(), TEXT("Add_IntInt"), 1780.0, 300.0))
+			{
+				if (Second != nullptr)
+				{
+					Link(PureFeeder->GetReturnValuePin(), Second->FindPin(TEXT("InString")));
+				}
+			}
+
 			for (UEdGraphNode* Node : Stacked->Nodes)
 			{
 				SizeForMeasurement(Node);
@@ -926,6 +1129,209 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			}
 			Ta4.bMeasured = Ta4.Findings.Num() == 0;
 			Builder.Results.Add(Ta4);
+		}
+
+		// TA-5: THE `BackwardProbe` GRAPH, WHICH CARRIES THE FOUR SHAPES `P/E-GRAPH-FIX-BACKWARD` HAD NO
+		// POSITIVE EVIDENCE FOR. TA-1 to TA-4 are four graphs of ONE Blueprint, so this is a fifth.
+		//
+		// WHY A SEPARATE GRAPH RATHER THAN MORE NODES IN `Stacked`: `Stacked` is asserted on by `T-LAY-2`
+		// and `T-LAY-9`, and adding shapes to it would change the numbers those rows read. A new graph
+		// cannot disturb them, and it keeps each shape's geometry independent so one refusal cannot
+		// silently hide another.
+		//
+		// EVERY SHAPE IS MEASURED BACK, and the build FAILS if a required count is zero. That is the
+		// standard `BuildLayoutProbe` set: it built its own graph, measured it, found `0` crossing, and
+		// the commandlet REFUSED TO SAVE IT rather than report success. A fixture whose defects are not
+		// there is a fixture that makes checks pass without proving anything.
+		UK2Node_FunctionEntry* ProbeEntry = nullptr;
+		UK2Node_FunctionResult* ProbeResult = nullptr;
+		UEdGraph* BackwardProbe = MakeFunction(Kit, TEXT("BackwardProbe"), ProbeEntry, ProbeResult);
+		{
+			// A LOCAL VARIABLE FOR THE GETTER TO READ. `R2` finds the consumer through the getter's
+			// VALUE PIN, and that pin only exists when the variable does.
+			FBlueprintEditorUtils::AddLocalVariable(Kit, BackwardProbe, TEXT("ProbeValue"),
+				FEdGraphPinType(UEdGraphSchema_K2::PC_Int, NAME_None, nullptr, EPinContainerType::None,
+					false, FEdGraphTerminalType()),
+				TEXT("0"));
+
+			// ---- SHAPE (a): A GETTER UNDER THE NODE THAT READS IT -------------------------------
+			//
+			// `R2`'s precondition is `GetterRect.MinY >= ConsumerRect.MaxY`, so the getter is placed
+			// BELOW and to the RIGHT of its consumer. The rule then puts it at
+			// `Consumer.PlannedX - Width - GetterGap`, level with the consumer's row.
+			UK2Node_CallFunction* ProbeConsumer = MakeCall(BackwardProbe,
+				UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 1200.0, 200.0);
+			Link(ProbeEntry != nullptr ? ProbeEntry->GetThenPin() : nullptr,
+				ProbeConsumer != nullptr ? ProbeConsumer->GetExecPin() : nullptr);
+
+			UK2Node_VariableGet* ProbeGetter = MakeLocalGetter(BackwardProbe, Kit,
+				TEXT("ProbeValue"), 1500.0, 700.0);
+			if (ProbeGetter != nullptr && ProbeConsumer != nullptr)
+			{
+				Link(ProbeGetter->GetValuePin(), ProbeConsumer->FindPin(TEXT("InString")));
+			}
+
+			// ---- SHAPE (b): A PURE NODE USED ONLY BY THE NODE R1 MOVES --------------------------
+			//
+			// A SECOND backward exec pair, with a pure node feeding the moved node. `R1` carries a pure
+			// node whose every link lands on the consumer.
+			//
+			// THE TWO NODES ARE STAGGERED, AND THE FIRST MEASUREMENT IS WHY. They began at the SAME `X`,
+			// and this kit counts a backward wire as `Target.NodePosX < Source.NodePosX` - STRICTLY less -
+			// so an equal-`X` pair counts as FORWARD and contributed nothing. The graph measured
+			// `backward=2` against a requirement of three. The first measurement caught it; the code had
+			// looked correct.
+			//
+			// THE PAIR IS ALSO FAR FROM THE GUARD BOX, AND THAT TOO IS A MEASUREMENT. It began at
+			// `x=3400`, inside the box's own column, and the box guard REFUSED the very exec move the pure
+			// node was supposed to be carried with - so `R1 pure nodes carried` came back **0** and the
+			// carry code was never reached at all. The shapes have to be in SEPARATE COLUMNS, or one
+			// refusal silently disables another check.
+			UK2Node_CallFunction* ProbeFirst = MakeCall(BackwardProbe,
+				UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 6000.0, 1200.0);
+			UK2Node_CallFunction* ProbeSecond = MakeCall(BackwardProbe,
+				UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 5400.0, 1200.0);
+			Link(ProbeConsumer != nullptr ? ProbeConsumer->GetThenPin() : nullptr,
+				ProbeFirst != nullptr ? ProbeFirst->GetExecPin() : nullptr);
+			Link(ProbeFirst != nullptr ? ProbeFirst->GetThenPin() : nullptr,
+				ProbeSecond != nullptr ? ProbeSecond->GetExecPin() : nullptr);
+
+			// ---- SHAPE (b): A PURE NODE CARRIED WITH ITS CONSUMER: NOT BUILT, AND WHY --------------
+			//
+			// THE REASON IS A MEASURED DEFECT IN `R1`'s CARRY, NOT A MISSING FIXTURE. Five attempts were
+			// built and every one was refused by the overlap guard. The arithmetic says EVERY attempt must
+			// be:
+			//
+			//     R1 moves the target to   ToX     = Source.PlannedX + Source.Width + 60
+			//     the carry places it at   PureToX = Target.PlannedX - Pure.Width - 60
+			//     substitute:              PureToX = Source.PlannedX + Source.Width - Pure.Width
+			//
+			// so the carried node lands ON THE SOURCE'S OWN LEFT EDGE. The source is still there - `R1`'s
+			// push, which would move it clear, runs AFTER the carry - so the two rectangles coincide and
+			// `PlannedRectIsClear` refuses. With equal widths they coincide EXACTLY; a narrower pure node
+			// only moves the collision, because the push then drives the SOURCE onto the carried node.
+			//
+			// MEASURED on this very graph, with a pure node satisfying every stated condition of the rule -
+			// one link, one consumer, `IsNodePure() == true`, not a getter:
+			//
+			//     R1 backward exec wires: 4 found, 2 node(s) moved, 0 pushed along
+			//     R1 pure nodes carried with their consumer: 0
+			//
+			// Check 16 therefore stays SKIPPED with this reason. A fixture built to make it pass would be a
+			// fixture that lied about the rule.
+			//
+			// A SECOND, SEPARATE CORRECTION WAS FOUND HERE AND IS KEPT. This kit's own counter counted the
+			// variable getter as a carry candidate - it is pure, it has one link, and that link lands on one
+			// consumer - so `pureUsedOnce` read **2** while the pass read **0**. `R1` SKIPS GETTERS because
+			// `R2` owns them, so the counter claimed a carry the rule refuses: the "a check that passes
+			// without the shape proves nothing" failure, caught by the pass disagreeing with it.
+
+			// ---- SHAPE (c): A COMMENT BOX AROUND A NODE THE PASS WOULD MOVE OUTSIDE IT --------
+			//
+			// A THIRD backward exec pair, with the node `R1` would move INSIDE A BOX. The box's right edge
+			// is held at 3600 while the rule's planned position is 3660, so the move is REFUSED and the
+			// refusal must NAME the box.
+			//
+			// THE LARGER BOX IS ALSO A MEASUREMENT RESULT. The first version was `300x160`, and
+			// `nodesInBox` came back **0**: a member has to fit VERTICALLY as well, and `MakeBox` gives a
+			// rectangle of `y+TitleBarHeight .. y+height`, so a box 160 tall left only 130 of usable
+			// height against a node 150 tall. The box is now generous in `Y` and still TIGHT IN `X`,
+			// because it is the `X` edge that the guard is about.
+			//
+			//   the box         3300 .. 3600 wide, 1390 .. 1650 tall
+			//   BoxedSecond     3400 .. 3620 wide, 1400 .. 1552 tall   -> ENTIRELY INSIDE
+			//   the planned X   3400 + 220 + 40 = 3660                  -> OUTSIDE the right edge
+			UK2Node_CallFunction* BoxedFirst = MakeCall(BackwardProbe,
+				UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 3400.0, 1100.0);
+			UK2Node_CallFunction* BoxedSecond = MakeCall(BackwardProbe,
+				UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 3400.0, 1400.0);
+			Link(ProbeSecond != nullptr ? ProbeSecond->GetThenPin() : nullptr,
+				BoxedFirst != nullptr ? BoxedFirst->GetExecPin() : nullptr);
+			Link(BoxedFirst != nullptr ? BoxedFirst->GetThenPin() : nullptr,
+				BoxedSecond != nullptr ? BoxedSecond->GetExecPin() : nullptr);
+
+			// THE BOX MUST CONTAIN ITS MEMBER **ENTIRELY** AND STILL BE NARROWER THAN THE PLANNED MOVE, and
+			// the first version satisfied NEITHER - while a comment above it claimed "ENTIRELY INSIDE".
+			// MEASURED, from the commandlet's own diagnostic:
+			//
+			//   the box         3300 .. 3600 wide, 1372 .. 1992 tall
+			//   BoxedSecond     3400 .. 3620 wide, 1400 .. 1608 tall   -> 3620 > 3600, so NOT a member
+			//
+			// A member is contained WHOLLY (`LocalComputeMembers`, the editor's own rule: a partly covered
+			// node is not a member), so the right edge has to clear 3620. It is 3640, which leaves 20 units
+			// of slack and is still left of the planned `X + width + gap = 3660`:
+			//
+			//   the box         3300 .. 3640 wide, 1358 .. 1992 tall
+			//   BoxedSecond     3400 .. 3620 wide, 1400 .. 1608 tall   -> ENTIRELY INSIDE
+			//   the planned X   3660                                    -> OUTSIDE the right edge, so REFUSED
+			//
+			// THE COMMENT WAS THE BUG'S ACCOMPLICE: it asserted the containment that the numbers did not
+			// give, and a reader would have believed it. The count below is what settles it.
+			if (UEdGraphNode_Comment* GuardBox = MakeBox(BackwardProbe, TEXT("GUARD: keeps its member"),
+					3300.0, 1358.0, 340.0, 640.0))
+			{
+				(void)GuardBox;
+			}
+
+			// The chain's exec flow is carried on by the boxed pair's own successor, so `R1`'s push has a
+			// node to work with even when the box guard refuses the boxed member.
+			if (UK2Node_CallFunction* AfterBoxes = MakeCall(BackwardProbe,
+					UKismetSystemLibrary::StaticClass(), TEXT("PrintString"), 6000.0, 1400.0))
+			{
+				Link(BoxedSecond != nullptr ? BoxedSecond->GetThenPin() : nullptr,
+					AfterBoxes->GetExecPin());
+			}
+
+			for (UEdGraphNode* Node : BackwardProbe->Nodes)
+			{
+				SizeForMeasurement(Node);
+			}
+
+			const int32 ProbeNodes = Builder.CountLiveNodes(BackwardProbe);
+			const int32 ProbeBackward = Builder.CountBackwardWires(BackwardProbe);
+			const int32 ProbeGetters = Builder.CountGettersUnderTheirConsumer(BackwardProbe);
+			const int32 ProbePure = Builder.CountPureNodesUsedOnlyByOneConsumer(BackwardProbe);
+			const int32 ProbeBoxed = Builder.CountNodesInsideABox(BackwardProbe);
+
+			FKitResult Ta5;
+			Ta5.Id = TEXT("TA-5");
+			Ta5.Name = TEXT("TA01_HandLaid");
+			Ta5.bBuilt = BackwardProbe != nullptr;
+			Ta5.Detail = FString::Printf(
+				TEXT("backwardProbe: nodes=%d backward=%d (needs >=3) getterUnderConsumer=%d (needs >=1) ")
+				TEXT("pureUsedOnce=%d (not required) nodesInBox=%d (needs >=1)"),
+				ProbeNodes, ProbeBackward, ProbeGetters, ProbePure, ProbeBoxed);
+
+			if (BackwardProbe == nullptr)
+			{
+				Ta5.Findings.Add(TEXT("the BackwardProbe graph was not created"));
+			}
+			else
+			{
+				if (ProbeBackward < 3)
+				{
+					Ta5.Findings.Add(FString::Printf(
+						TEXT("only %d backward wire(s), and the graph needs three separate pairs so R1, R2 ")
+						TEXT("and the box guard cannot hide one another"), ProbeBackward));
+				}
+				if (ProbeGetters < 1)
+				{
+					Ta5.Findings.Add(TEXT("no getter sits under the node that reads it, so R2 has nothing to ")
+						TEXT("find and checks 6 and 8 stay unprovable"));
+				}
+				// THE PURE-CARRY SHAPE IS MEASURED BUT NOT REQUIRED, AND THAT IS DELIBERATE. Requiring it
+				// would make this commandlet fail the build for a shape `R1`'s own geometry cannot produce
+				// (see the block above), so the count is REPORTED at zero so check 16's skip has a measured
+				// reason rather than an asserted one. A requirement that no fixture can satisfy is a build
+				// that can never pass.
+				if (ProbeBoxed < 1)
+				{
+					Ta5.Findings.Add(TEXT("no node sits inside a comment box, so the box guard is never ")
+						TEXT("reached and check 15 stays unprovable"));
+				}
+			}
+			Ta5.bMeasured = Ta5.Findings.Num() == 0;
+			Builder.Results.Add(Ta5);
 		}
 
 		// ONE SAVE FOR THE SHARED BLUEPRINT, after every graph is in it.
