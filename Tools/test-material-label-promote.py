@@ -1,3 +1,13 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-MAT-7
+#
+# NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3 says a
+# capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF DONE - and a
+# script over the tree measured 91 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing could answer
+# 'is this row passing?' without a human reading it.
+#
+# THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
+#   | T-MAT-7 | Promote labels | Material compiles; compiled result unchanged; new label read count right |
+
 """`P/E-MAT-LABEL-PROMOTE`: give values names - create the declaration, rewire the readers.
 
 WHAT THIS SUITE EXISTS TO PROVE, AND THE ONE CHECK THAT MATTERS MOST
