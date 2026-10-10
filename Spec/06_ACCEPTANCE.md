@@ -26,6 +26,14 @@ testing.
 | TA-11 | User enum asset | 4 values |
 | TA-12 | Name collision pair | Two Blueprints whose initials are the same (for example `BP_TestAlpha` and `BP_TowerArray`), each with a function `Setup` |
 | TA-13 | A Blueprint whose name is also a folder name | To test path resolution |
+| TA-14 | Data table asset with a project-owned row struct | 3 rows, 4 fields, one field of a struct type. Built by hand, because a struct cannot be built by a commandlet (Q-15) |
+| TA-15 | Blueprint actor, "kit actor" | Four components in a hierarchy: a scene root, a static mesh, a point light under the static mesh, and a box collision. Two properties set away from their class default, one component flagged as inherited from the Blueprint and one added on the instance |
+| TA-16 | Test level, "kit level" | 12 actors: two lights, a player start, three static meshes, two copies of TA-15 with one component override each, one actor in a folder, one actor hidden in game, one editor-only actor, one actor whose label is deliberately duplicated with another |
+| TA-17 | Curve float and a curve table | A curve with 5 keys and non-zero tangents; a curve table with 3 rows |
+| TA-18 | Animation Blueprint and Anim Sequence | A state machine with two states and one transition; a sequence of 1 second with 3 keys on one bone |
+| TA-19 | Niagara system | One emitter, so a capture has something to frame |
+| TA-20 | Material parameter collection | 5 parameters: 2 scalar, 2 vector, one read by no material |
+| TA-21 | User struct asset | 4 fields, built by hand, because `AddVariable` needs an editor factory (Q-15) |
 
 Two things are made during the tests, not stored:
 
@@ -87,6 +95,10 @@ date.
 | T-MAT-7 | Promote labels | Material compiles; compiled result unchanged; new label read count right |
 | T-MAT-8 | Apply blocks | Only what the Preview listed changes; result unchanged |
 | T-MAT-9 | Tidy material | One box per block; result unchanged |
+| T-MAT-10 | Read an instance | TA-6's parent chain, the two overridden parameters with their values, and the parent's parameters it does NOT override all marked inherited. A parameter name the parent does not declare is reported as orphaned |
+| T-MAT-11 | Set instance overrides | Two overrides set in one call read back through the reader; a parameter that does not exist on the parent is refused with close real names; a value that raises a new engine error rolls the edit back |
+| T-MAT-12 | Read a collection | TA-20's 5 parameters with types, defaults and reader counts, and the one nothing reads printed as unused with its index |
+| T-MAT-13 | Edit a collection | Add and change a parameter, then remove one with loaded readers: the readers are listed, the index shift of every later parameter is stated, and the removal is refused until `force` names the count |
 
 ### Layout and looking
 
@@ -148,3 +160,95 @@ date.
 | T-PANEL-4 | Fields | Only the inputs the selected tool uses |
 | T-PANEL-5 | Same output | One tool on one asset gives identical text from the panel and the MCP |
 | T-PANEL-6 | Status | Line count and token estimate shown |
+
+### Graph structure
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-STRUCT-9 | Rename with references | Rename a variable of TA-1 that has getters, setters and a widget binding: every reference reads back with the new name, the counts are reported, the asset compiles, and a new name that is taken is refused naming what holds it |
+| T-STRUCT-10 | Collapse | Extract three connected nodes of TA-1 into a function: the signature read back matches the crossing links, the nodes are gone from the body, the asset compiles, and a selection holding an event is refused by name |
+| T-STRUCT-11 | Copy a block | Copy three nodes from TA-1's `hand laid` into TA-2's event graph and link the block to an existing event: it compiles; a reference to a member the target does not have refuses the whole copy and names it |
+| T-STRUCT-12 | Interfaces | Add an interface: its unimplemented functions are listed. Remove it while implemented: refused and they are named. With `force`: removed, and the orphans are reported |
+
+### Widget authoring
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-WIDGET-1 | Append | Add a button inside a box inside TA-7's tree by path: it compiles, the tree reads back with the button in the order given, and a path that does not exist refuses with close real paths |
+| T-WIDGET-2 | Replace | Rewrite TA-7's tree: every removed widget is listed by name, the reader and writer round trip is identical, and a text that renames a widget is refused pointing at `P/E-WIDGET-SET` |
+| T-WIDGET-3 | Patch | Change one widget's class in one line: exactly that widget changes and the rest of the tree is proven unchanged by reading it back |
+| T-WIDGET-4 | Round trip | TA-7 and TA-8 read and written back unchanged read back identical, animations included |
+| T-WIDGET-5 | Properties, slot and style | Set visibility, slot padding and a button style in one call: each reads back from the right object, a C++ property name is matched despite its case, a non-instance-editable property is refused by name, and renaming a bound widget updates its binding with the count reported |
+| T-WIDGET-6 | Read animations | TA-7 with an animation whose target widget was renamed: the broken track is reported with the missing path, not dropped |
+| T-WIDGET-7 | Write animations | Add a 0.5 second animation with 3 keys on one widget: every key reads back as written; rewriting an existing animation without `replace` is refused by name |
+| T-WIDGET-8 | Bindings | A property binding is added and a wrong-kind request is refused explaining which is which; removing an event binding names the function it orphans |
+
+### Data and assets
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-DATA-1 | Data table rows | Add a row to TA-14, change one field of another and remove a third, in one call: every change reads back from the table, each removal is listed, and a field name that does not exist is refused with the real field names |
+| T-DATA-2 | New struct | Create a struct with 4 fields including one struct-typed field: it exists and reads back through `R-TYPE-FIND`; an existing path is refused |
+| T-DATA-3 | Struct fields | Add, reorder and remove a field of TA-21: each change reads back; a removal with a loaded reader is refused and names the reader and the count, and applies with `force` |
+| T-DATA-4 | Enum edit | Add and rename a value of TA-11, then reorder two: the reorder is reported as affecting saved data; an attempt to change `_MAX` is refused by name |
+| T-DATA-5 | Curve read | TA-17's curve prints its 5 keys with times and values and its interpolation; its table prints its 3 row names |
+| T-DATA-6 | Curve write | Replace the keys of one curve table row: every key reads back, and a key the engine would store differently is reported rather than silently rounded |
+| T-ASSET-3 | Asset cost | TA-1's cost: its own size, hard references, soft references and the largest contributors are listed with sizes; an asset whose size cannot be read reports unknown with the reason, not zero |
+| T-ASSET-4 | Diff | Rename a variable of a COPY of TA-1 and diff the copy against the original: exactly that rename is printed, and a section that could not be compared is listed as not compared |
+| T-ASSET-5 | New, duplicate, rename | Create an asset at a new path; duplicate TA-1; rename it: old and new paths reported, the assets that referenced it are counted, and one redirector is confirmed fixed by resolving the old path |
+| T-ASSET-6 | Rename an open asset | Rename an asset that has an editor tab open: refused, naming the tab |
+
+### Level and actors
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-LEVEL-1 | Read a level | TA-16's actor count before the filter; each actor's label, class, folder, editor-only flag and transform; a filter matching nothing says so and still prints the total |
+| T-LEVEL-2 | Read one actor | TA-15's component hierarchy with parents, and the one component overridden on the placed instance marked as an instance change rather than an inherited one; a duplicated label is refused with both candidates |
+| T-LEVEL-3 | Place actors | Place three actors including two of TA-15 with different transforms: each label and path read back from the level, and a class path fitting nothing lists the closest real names |
+| T-LEVEL-4 | Move and configure | Move one actor and change one property: old and new reported and re-read; renaming the actor's object name is refused by name and pointed at the content tools |
+| T-LEVEL-5 | Components | Add a component to TA-15 and reparent another: the result says the change reaches every instance, it compiles, an instance-level change is refused and pointed at `E-ACTOR-SET`, and a removal names the levels that place the Blueprint |
+
+### Vision and comparison
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-LOOK-7 | Added framing modes | `selection` on three selected nodes frames exactly those; `selection` with nothing selected is refused; `neighbours` at N=1 frames the node and exactly its linked neighbours, counting a link through a knot once |
+| T-LOOK-8 | Asset editors | A PNG is written for a material, a Material Instance, a Material Function, a Widget Designer, a DataTable, an Anim Blueprint, an Anim Sequence and a Niagara system, each showing that editor; every editor kind it cannot do is refused BY NAME in the same answer |
+| T-LOOK-9 | Level and PIE | The level viewport, a framed actor and the level selection each produce a PNG; `pie` with no session is refused and names the two tools that start one, and with a session shows the game frame |
+| T-LOOK-10 | Image compare | Two captures of the same framing and size with nothing changed report no difference; after moving a node the difference count is non-zero, the bounding box contains that node, and the difference PNG exists. Two captures of different sizes are refused |
+
+### Debugging: measurement first
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-MEASURE-1 | Breakpoint and the server | The procedure in `03_TOOLS.md` section 14 is run and its outcome recorded in `07_ENGINE_NOTES.md` section 5 with the date and the engine version. Pass when the outcome is one of the three named results WITH its evidence, not when the server answers |
+| T-MEASURE-2 | Automation test from a tool call | The same shape: a run of one engine automation test started from a tool call, and whether the call returned or blocked, recorded the same way |
+
+### Debugging tools (only after T-MEASURE-1 allows them)
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-DBG-3 | Breakpoints | Arm two nodes and clear one: `R-BREAKPOINT` lists exactly the armed one with its graph and title; arming a node in an uncompiled graph is refused naming why |
+| T-DBG-4 | Read breakpoints | A filter narrows the list; asking it to clear is refused by name and the state is returned instead |
+| T-DBG-5 | Debug state | Paused at a known node: the node, the graph and the call stack from the top down match what the editor shows; a named variable reads its real value; a variable that cannot be read says unknown with the reason; with no session running it says which of the three cases it is |
+| T-DBG-6 | Debug control | Step over moves one node and the state is re-read from the same code path; a step with no paused session is refused by name; any action lists the armed breakpoints afterwards |
+| T-DBG-7 | PIE scenario | A scenario pressing one key at 500 ms makes the game actor that reacts to that key change state, proven by a trace hit or a variable named in the scenario; a step naming a key that is not real is refused with close real key names; the first call returns immediately and the second collects |
+| T-DBG-8 | Automation report | One known-passing and one deliberately failing engine test: both appear with their state, the failure carries its first error, and a filter matching nothing lists close real test names |
+
+### Quality, session and source control
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-QUAL-1 | Blueprint lint | On TA-3: the dead copy is reported with its node IDs. On TA-4: the backward getters and the node at the origin are reported. A hard reference over the threshold in TA-1 is reported with its size. Each check reports how many things it looked at, and one check named alone returns only that check |
+| T-QUAL-2 | Session | Three edits inside one session are reversed by ONE undo; a session past its limit ends itself and says so; `abandon` rolls the whole series back and the asset reads back at its pre-session state; a second `begin` is refused by name |
+| T-QUAL-3 | Batch | Five assets, one of them unresolvable: four lines report the change and the fifth names the resolver's refusal, and the whole batch is one undo |
+| T-HELP-6 | Call cost | With the log on: the most expensive call, the slowest and the totals per tool match the log lines the same calls wrote; with the log off the answer says the log is off rather than reporting zero |
+| T-VCS-1 | Checkout | With source control off: the answer says so per asset. With it on: the state is reported per asset, a checkout is attempted through the provider, and the provider's own answer is repeated. A headless run of the same call records what the provider did, because that is the case that already failed once |
+
+### Build portability
+
+| ID | Test | Pass when |
+|---|---|---|
+| T-BUILD-1 | The documented build | Following `09_BUILD.md` from a clean checkout builds the plugin and its tools appear in the MCP tool list after an editor restart. Every step that could differ on another machine says what to change |
+| T-BUILD-2 | A missing engine module | Renaming one engine module the plugin depends on produces the failure `09_BUILD.md` documents, and the file's guidance identifies it. Pass when the documented symptom matches what the build actually prints |
+

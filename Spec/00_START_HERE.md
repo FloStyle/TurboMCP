@@ -1,6 +1,12 @@
 # Start here
 
-Spec version: 1.0 (2026-10-07)
+Spec version: 1.1 (2026-10-12)
+
+Version 1.1 adds the capabilities of a later round: `03_TOOLS.md` sections 9
+to 19, `05_DECISIONS.md` from `D-38` on, the new test assets and test tables
+in `06_ACCEPTANCE.md`, the reordered `08_ROADMAP.md`, and `09_BUILD.md`. It
+also states the compilation goal as 5.8.3 (`D-38`). Nothing in version 1.0 was
+renumbered, so every existing reference still resolves.
 
 This folder is the full specification for a new Unreal Engine editor plugin.
 You are the build side. Everything you need to know about WHAT to build is in
@@ -39,10 +45,15 @@ documentation.
 | `05_DECISIONS.md` | Decisions already made, with the reason for each |
 | `06_ACCEPTANCE.md` | Test assets to create and the tests to pass |
 | `07_ENGINE_NOTES.md` | Unreal Engine facts and traps in the engine's own MCP tools |
-| `08_ROADMAP.md` | The order to build in |
+| `08_ROADMAP.md` | The order to build in, and where the project actually is |
+| `09_BUILD.md` | How to build, and what to change on an engine that is not vanilla 5.8.3 |
+| `WORKING_PLAN.md` | The live plan: state of each capability and what to pick up next |
 
 Read `02_PRINCIPLES.md` and `05_DECISIONS.md` before you write any code.
 They exist because the obvious approach failed before.
+
+`WORKING_PLAN.md` is a working document and changes every round. Everything
+else in this folder is normative (`D-60`).
 
 ## 3. Questions
 
@@ -50,6 +61,12 @@ Write a question in `../QUESTIONS.md` with a number, the date and the spec
 file and section it is about. Do not guess on a point the spec leaves open
 if the answer changes how a tool behaves. Answers come back as a new spec
 version, .
+
+In practice the build side writes that new version into this folder and the
+owner reads it (`D-59`), because the build side is the only party that has
+measured the engine. A capability that needs no decision still needs its
+refusals, its inputs and its done test written down before it is built.
+
 
 ## 4. Project rules from the owner
 

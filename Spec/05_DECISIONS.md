@@ -163,6 +163,34 @@ the value is a function input or a literal.
 writes), apply, verify. Build Append first (cannot destroy work), then
 Replace (Append plus a clear), then Patch (needs a proven resolver).
 
+## Engine target and portability
+
+**D-38 The compilation goal is 5.8.3.** The brief's target line said 5.8.1
+and the engine actually built is branch `release`, which is 5.8.3. The goal
+is now stated once, as 5.8.3. Rejected: keeping 5.8.1 as the target while
+building 5.8.3. Why: a spec whose stated target is not the binary anyone
+compiles is a spec whose engine facts are checked against the wrong source,
+and `07_ENGINE_NOTES.md` was learned on 5.8.1 (Q-1). Every engine fact in
+that file is re-checked against the compiled version before it is relied on
+again, and the file says which version each fact was checked on.
+
+**D-39 Building against an engine that is not vanilla 5.8.3 is documented,
+not assumed.** The module list, the two engine plugins the plugin depends on
+(`ToolsetRegistry`, `ModelContextProtocol`), the fact that a module
+dependency needs an entry in `Build.cs` AND in the `.uplugin`, and the
+editor-only build requirement are all written down in `09_BUILD.md` with the
+evidence for each. Rejected: "it builds here, so it builds anywhere". Why:
+the engine's MCP support is experimental and moves; an engine that renamed
+one of its modules would fail this plugin's build in a way that reads like a
+bug in the plugin.
+
+**D-40 Nothing in the spec may depend on an engine API that only exists in a
+version later than the stated target.** When a capability needs an API that
+is newer, the capability says so by name and refuses, rather than being
+written against it and failing to compile. Why: this plugin is meant to be
+reusable across projects, and a hard dependency on one engine build is
+exactly what "reusable" forbids.
+
 **D-29 Round trip is the gate.** After a write, read back and compare.
 Read a function and write it back unchanged: it must be identical. Why: the
 graph text hides defaults, `self` and knots on purpose, so editing the
@@ -199,3 +227,171 @@ waits until a person resumes the game. Trace points never pause.
 
 **D-37 The call log writes at call start.** Why: the editor crashed during
 an engine tool call once, and the last call is the one that matters.
+
+---
+
+## Added after the first delivery
+
+These decisions extend the numbered series. The numbers continue; nothing
+above is renumbered, so every existing reference still resolves.
+
+### Vision and looking
+
+**D-41 A capture never falls back to a wider frame.** A framing that cannot
+be done is an error naming why. Rejected: fall back to the whole graph or the
+whole screen. Why: an agent that asked for one node and got the whole graph
+cannot tell the difference from the result text alone, and will reason about
+a picture it believes is focused. A wrong picture is worse than no picture.
+
+**D-42 Hop counting follows the graph the reader prints.** `neighbours` counts
+a hop through a plain reroute knot as one hop, because the reader hides knots
+on purpose (`04_FORMATS.md` 2.1 rule 7). Rejected: counting over the engine's
+node list. Why: a capture whose neighbourhood came from a different graph than
+the one the agent read frames nodes the agent never saw named.
+
+### Materials
+
+**D-43 A material instance is not written through the graph writer.** It is a
+list of overrides, so it has its own read and write tools
+(`R-MAT-INST-LOAD`, `P/E-MAT-INST-SET`). Rejected: printing an instance as its
+parent's graph and writing overrides into that text. Why: an instance's real
+behaviour lives in the overrides, and a text that hides them invites an edit
+that changes the wrong asset.
+
+**D-44 A collection parameter removal is a refusal by default.** Removing one
+shifts the index of every later parameter, and readers reference parameters by
+index. So the removal names the loaded readers and is refused unless `force`
+names the count. Why: this is the one edit in a parameter collection whose
+damage appears in a different asset and much later.
+
+### Writing
+
+**D-45 Every writer states what it can destroy, and deletes by identity.** A
+writer that removes anything lists each removal by key with its class and
+title, never a count, and it re-resolves every node by key at apply time
+rather than trusting a plan from an earlier call. Why: a plan is made and
+applied in two calls, and the graph can change between them; a count says how
+much is gone and a list says what.
+
+**D-46 A rename refuses rather than renames partially.** `E-GRAPH-RENAME`
+refuses when a name is taken, and reports referenced members it could not
+update by name and rolls back. Rejected: rename what can be renamed and
+report the rest. Why: a rename that leaves one reference behind does not fail
+at the rename; it fails at a later compile, in a different asset, for whoever
+compiles next.
+
+**D-47 Extraction and copying compute their boundary rather than being told
+it.** Collapse and copy derive the inputs and outputs of the extracted block
+from the links that cross the selection edge. Rejected: taking the boundary
+from the caller. Why: the caller cannot see the crossing links without a read
+that this tool can do exactly, and a wrong boundary produces a member with the
+wrong signature that still compiles.
+
+### Widgets
+
+**D-48 A widget tree needs its own text dialect.** The widget tree text of
+`04_FORMATS.md` section 8 is a second format, sharing the shape rules of the
+graph text and nothing else. Rejected: expressing a widget tree in the graph
+text. Why: a widget tree's child ORDER is its draw order and its layout lives
+on the slot, neither of which the graph text can express. A dialect that
+cannot express order would silently reorder children on a round trip.
+
+**D-49 A widget rename happens in exactly one tool.** `P/E-WIDGET-SET` changes
+a widget's name and updates every binding and call node that names it.
+`P/E-WIDGET-TREE` REFUSES a tree text that renames a widget. Rejected: letting
+the tree writer rename. Why: a name change breaks every reference to it, and a
+tree writer has no view of the graph side where those references live.
+
+**D-50 Slot layout and widget properties are never confused.** An assignment
+names which of the three layers it belongs to: the widget's own property, its
+slot's layout, or its style. Why: `Padding`, `Anchors` and `Offsets` live on
+the slot type and not on the widget (`07_ENGINE_NOTES.md` section 3.2), and a
+tool that tries the widget first reports a property that does not exist for a
+property the user can see in the details panel.
+
+### Assets and data
+
+**D-51 A struct editor tool is editor-only, and says so.** Creating and
+editing a user struct needs a `UUserDefinedStructEditorData` that only the
+editor factory installs; from a commandlet it crashes (Q-15, TA-10). So
+`P/E-STRUCT-*` are editor-only tools and their tests run against a live
+editor. Rejected: finding a commandlet-safe path first. Why: the crash was
+measured, twice, and a tool that works in the editor and crashes headless is
+better than no tool as long as the limit is written down.
+
+**D-52 A size is reported with its provenance.** `R-ASSET-COST` splits its
+answer into the asset's own size, what it pulls in, and whether each reference
+is hard, soft or editor-only. Rejected: one total size. Why: the total names no
+cause and cannot be acted on. The check that matters is "a heavy hard
+reference where a soft one would do", and that fact does not exist inside a
+total.
+
+**D-53 A diff names what it did not compare.** `P-ASSET-DIFF` lists every
+field or section it could not compare, with the reason. Rejected: omitting an
+incomparable section. Why: a diff that omits a section reads as "nothing
+changed there", which is the one sentence a diff must never say wrongly.
+
+### Running and debugging
+
+**D-54 A tool call must never block the thread the game runs on.** A tool call
+runs on the editor's game thread and PIE is ticked on that same thread, so a
+capability that must wait for the game gets a request half and a collect half
+instead of one call. This is already how `R-PLAY-CHECK` works; the same split
+is required for a scripted PIE scenario and for an automation test run if the
+same blocking applies. Rejected: one call that waits, with a long timeout.
+Why: the failure mode is not a slow answer, it is an answer that never comes.
+
+**D-55 No pausing tool exists until the server is PROVEN to answer while
+paused.** A Blueprint breakpoint stops the editor in a nested loop, and if the
+MCP server does not answer there then an agent that armed one hangs until a
+human resumes the game. Trace points were built first for that reason
+(`D-36`). Rejected: building breakpoints and documenting the risk. Why: a
+capability whose failure mode is "the agent stops forever" has to be gated on
+a measurement, not on a warning. If the measurement says the server does not
+answer, the breakpoint tools are NOT BUILT and the refusal goes in the
+description of the tools an agent would reach for instead. If it answers but
+only slowly, the tools are split like `R-PLAY-CHECK` and the split is stated
+in their descriptions.
+
+### Sessions and source control
+
+**D-56 A work session is bounded, and it says when it ended itself.** One
+`E-SESSION begin` makes a whole series of edits one undo. An unbounded one is
+refused: a session older than its limit, or holding more edits than its limit,
+ends itself and says so. Why: an agent that opens a session and then fails
+leaves the editor holding one open transaction, and every later edit joins a
+transaction nobody will ever end.
+
+**D-57 Nothing checks an asset out automatically until the checkout tool is
+proven.** `E-VCS-CHECKOUT` is built and tested before any write tool calls it.
+Why: the engine's own checkout path already failed once, headless, and made
+`E-SAVE` report a failure while nothing had been written. An automatic
+checkout wired into every write would turn a source control problem into a
+"every tool reports failure" problem, and the cause would be invisible from
+any of those results.
+
+**D-58 A scripted play session uses the engine's input path.** A PIE scenario
+asserts a key or a click through the engine's own input handling. Rejected:
+calling the handler the input would have called. Why: the capability exists to
+check the input path, and a call straight into the handler proves nothing
+about the part that is usually wrong.
+
+### Build documents and who writes the spec
+
+**D-59 The specification files are written by the build side, and the reading
+order is normative.** `00_START_HERE.md` section 3 says an answer to a question
+arrives as a new spec version, ***REMOVED*** .. In practice
+the build side writes the new version into `Spec/`, and the owner reads it.
+Rejected: waiting for the owner to author each capability. Why: the build side
+is the only party that has measured the engine, and the alternative was that
+capabilities were built with no specification at all.
+
+**D-60 A plan runs in `Spec/WORKING_PLAN.md`, not in this file.** A multi-round
+plan, the state of each capability and the next capability to pick up live in
+`Spec/WORKING_PLAN.md`, which is a working document and is expected to change
+every round. This file holds only what is DECIDED, and a decision changes only
+through a question. Why: a working plan that lives in the decisions file turns
+every progress edit into a decision edit, and then the decisions stop meaning
+"do not undo this without asking".
+
+

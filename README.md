@@ -18,7 +18,11 @@ Nothing here ships in a game build.
 - What to build and why: [`Spec/00_START_HERE.md`](Spec/00_START_HERE.md)
 - The rules every tool follows: [`Spec/02_PRINCIPLES.md`](Spec/02_PRINCIPLES.md)
 - Decisions already made: [`Spec/05_DECISIONS.md`](Spec/05_DECISIONS.md)
-- Build order: [`Spec/08_ROADMAP.md`](Spec/08_ROADMAP.md)
+- Build order, and where the project actually is: [`Spec/08_ROADMAP.md`](Spec/08_ROADMAP.md)
+- **The live plan: [`Spec/WORKING_PLAN.md`](Spec/WORKING_PLAN.md)** — what is built,
+  what is next, which test proves it, and which spec section to read first. It is a
+  working document and changes every round.
+- Building against an engine that is not vanilla 5.8.3: [`Spec/09_BUILD.md`](Spec/09_BUILD.md)
 
 ## Layout
 
@@ -37,10 +41,13 @@ Tools/                  helper scripts, not part of the plugin
 
 | File | What it is |
 |---|---|
-| `Spec/` | The specification, written by the owner. The authority on what to build |
+| `Spec/` | The specification, at version 1.1. The authority on what to build |
+| `Spec/WORKING_PLAN.md` | The live plan: state of each capability and what to pick up next. Changes every round |
+| `Spec/09_BUILD.md` | How to build, and what to change on an engine that is not vanilla 5.8.3 |
 | `PLAN.md` | What is done, what is next, and the build-order reasoning |
 | `DOCS.md` | Every choice made while building, and why |
 | `TestRecord.md` | What has actually been tested, with the measured numbers |
+| `STATUS.md` | The status report at the commit it names. Its capability table predates spec 1.1; `Spec/WORKING_PLAN.md` is the current one |
 | `QUESTIONS.md` | Open questions for the owner |
 | `Tools/README.md` | What each helper script does and how to run it |
 | `.agent/ENVIRONMENT.md` | The machine: engine, toolchain, and every trap hit while setting it up |

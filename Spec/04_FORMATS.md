@@ -95,6 +95,24 @@ Material graphs use the same S-expression rules:
 - Every input printed: linked value, or the expression's own constant.
 - Parameters listed with defaults and groups at the top.
 
+**Material functions.** A material function has inputs and one or more
+outputs, and its text is a normal material text with an input section at the
+top: one line per function input with its name, type and sort priority, then
+the output forms as usual. A function input reads as an input and not as a
+parameter, which is what stops a writer from turning one into a
+`ScalarParameter` and quietly changing the function's interface.
+
+**What the material writer accepts.** Exactly the text `R-MAT-LOAD` prints at
+its `full` detail, the same way section 2.2 requires for graphs. The three
+write entry points (`P/E-MAT-APPEND`, `P/E-MAT-REPLACE`, `P/E-MAT-PATCH`)
+differ only in what they do with the expressions the text does not describe,
+which is the same split as their graph twins.
+
+**Material instances are not in this format.** An instance is not a graph; it
+is a list of overrides and has its own pair of tools
+(`R-MAT-INST-LOAD`, `P/E-MAT-INST-SET`). Printing an instance as a graph would
+be printing its parent and calling it the instance.
+
 ### 2.6 Engine write dialect (bridge)
 
 R-GRAPH-LOAD format `write` prints a graph in the form the engine's own
@@ -189,7 +207,103 @@ Never cut text in the middle of a form.
   `<Asset>_<Tab>_<Framing>_<time>.png` unless the agent gives a path.
 - The result gives the path, the image size, and what was framed.
 
+### 6.1 Framing names
+
+Every capture tool spells its framing the same way, so a framing means one
+thing everywhere (`03_TOOLS.md` section 18):
+
+| Framing | Means |
+|---|---|
+| `graph` | the whole graph |
+| `screen` | what is on screen now |
+| `selection` | the current editor selection |
+| `box` | one comment box, by its index in L-LAYOUT-REPORT |
+| `box-neighbours` | one comment box plus the N boxes it links to |
+| `node` | one node, by node ID |
+| `neighbours` | one node plus every node within N hops of linked nodes |
+| `viewport` | the level editor viewport |
+| `selected-actors` | the level viewport framed on the current selection |
+| `actor` | the level viewport framed on one actor |
+| `pie` | the running play session's viewport |
+
+### 6.2 Hop counting for `neighbours`
+
+A hop is followed over the graph THE READER PRINTS, so a link through a plain
+reroute knot is one hop and not two. The reader hides knots deliberately
+(`04_FORMATS.md` section 2.1 rule 7), and a capture whose neighbourhood came
+from a different graph than the one the agent read would frame nodes the agent
+never saw named.
+
+### 6.3 Comparison
+
+`P-IMAGE-COMPARE` takes two captures made by the SAME call with the SAME
+framing and the SAME size (`03_TOOLS.md` section 19). Two images of different
+sizes are refused, not scaled: scaling invents pixels and a difference count
+computed on invented pixels is a number that means nothing.
+
 ## 7. Logs
 
 - Call log and trace log: one JSON object per line, under
   `<Project>/Saved/<plugin folder>/Logs/`, one file per day.
+
+---
+
+## 8. Widget tree text
+
+The text form of a Widget Blueprint's widget tree. `R-BP-LOAD` prints it at
+`signatures` and above; `P/E-WIDGET-TREE` accepts it. You design the exact
+syntax. It must meet every rule below.
+
+### 8.1 Why this is not the graph text
+
+A widget tree is not a graph. It is an ORDERED HIERARCHY where the order of
+children is the order they draw in, and every child carries layout on its
+SLOT, which lives on the slot type and not on the widget. A graph text cannot
+express either fact, which is why this is a second dialect and not a reuse of
+section 2.
+
+It follows the same shape rules as section 2 deliberately, because an agent
+that can read one can read the other: S-expressions, `;` comments, one top
+level form per thing that can be edited on its own.
+
+### 8.2 Required properties
+
+1. **Parseable.** S-expressions, the same lexer as the graph text, comments
+   with `;`. A real parser reads it back with no guessing.
+2. **One form per root.** A Widget Blueprint has one root widget, so there is
+   one top level form for the tree. Named animations are their own top level
+   forms.
+3. **Order is meaning.** Children are printed in their panel slot order, top
+   to bottom, and the writer adds them in that order. A reader that reordered
+   them would change which widget draws on top, which is a visible change
+   nobody asked for.
+4. **Every widget carries its path**, the same path form `R-BP-LOAD` prints
+   and `04_FORMATS.md` section 4 lists for a widget inside a tree. A widget
+   the writer creates is addressable by that path in the next call.
+5. **A widget's class is written once**, in its head, in the form
+   `R-TYPE-FIND` returns, so the writer never has to guess a class from a
+   name.
+6. **Slot layout is a separate clause from the widget's own properties.** The
+   two live on different objects and the writer must not confuse them
+   (`03_TOOLS.md` `P/E-WIDGET-SET`). Which clause an assignment belongs to is
+   part of the syntax, not a convention.
+7. **Properties that match the class default are not printed**, and the
+   writer applies the same rule in reverse. Printing every property of a
+   `UButton` would bury the two that were changed.
+8. **A bound event is printed with its target**, at `signatures` and above:
+   the widget, the delegate, and the function that answers it.
+9. **Animations are printed as their own forms**, with each track's widget
+   path, property and keys.
+10. **Errors inline.** A widget that cannot be printed becomes a comment line
+    `; error: <reason>` in its place, never a silent gap.
+11. **A broken track names what is missing.** An animation track whose target
+    widget no longer exists prints that, with the path it was looking for,
+    rather than being dropped.
+
+### 8.3 Round trip
+
+The writer accepts every widget tree text the reader prints. Reading a Widget
+Blueprint and writing the text back with `replace`, unchanged, gives the same
+text back. That is the main test of the format (T-WIDGET-4), and it is the
+same gate as section 2.2.
+

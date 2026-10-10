@@ -75,10 +75,58 @@ The order of work for an agent is always Read, then Preview, then Edit.
 - Runtime or shipping features.
 - A general Blueprint editor UI. The window is for calling tools and
   debugging, not for editing graphs by hand.
-- Reading or writing C++ source code.
+- Reading or writing the project's own C++ source code. **Documenting the
+  build steps for this plugin is not the same thing** and is a goal:
+  `09_BUILD.md` exists because the engine's MCP support is experimental and
+  building against a non-vanilla engine is a supported case, not a favour.
+
+## Beyond the first delivery
+
+The brief above describes the plugin as first specified. A later round added
+capabilities that the same agent users asked for after using it. They are
+specified in full in `03_TOOLS.md` sections 9 to 19, decided in
+`05_DECISIONS.md` from `D-38` on, and ordered in `08_ROADMAP.md` section 2:
+
+- **Seeing more**: captures of every asset editor, of the level viewport and
+  of a running play session; neighbourhood framing; before and after image
+  comparison. The first delivery captured Blueprint graphs only.
+- **Materials end to end**: a material instance's overrides edited as
+  overrides and not as a graph, material functions, material parameter
+  collections, and the material graph written in the same text the reader
+  prints.
+- **Structure**: renaming a variable, function or event with its references
+  updated; extracting a selection into a function or a macro; copying a block
+  between graphs; adding and removing interfaces.
+- **Widgets**: writing the widget tree, its properties, slots and style, its
+  animations and its bindings. The first delivery could only read a tree and
+  bind one event.
+- **Data and assets**: data table rows, user structs, enums edited rather than
+  only created, asset creation, rename, move and duplicate with redirectors
+  fixed, curve assets and curve tables, a size and reference report, and a
+  text diff between two versions of an asset.
+- **Levels and actors**: reading a level and an actor with its components,
+  placing and configuring actors, and editing a Blueprint actor's component
+  hierarchy.
+- **Running**: breakpoints, a debug state read, stepping, a scripted play
+  session, and the automation test report. The first two are gated on a
+  measurement, not on effort (`D-55`).
+- **Quality and cost**: a Blueprint lint, one undo for a whole series of
+  edits, batches in one transaction, the calls that cost the most, and a
+  source control checkout before a write.
+
+The rule that governs all of them is the one already in `05_DECISIONS.md`:
+**a capability that pauses, deletes or blocks is gated on a measurement, and
+its refusal is written before its feature is.**
 
 ## Target
 
-- Unreal Engine 5.8.1, Windows editor.
+- Unreal Engine 5.8.3, Windows editor. This is the **compilation goal**
+  (`D-38`): it is the engine branch actually built, and every engine fact in
+  `07_ENGINE_NOTES.md` carries a marker saying which version it was checked
+  on.
 - The engine's `ToolsetRegistry` and `ModelContextProtocol` plugins
   (experimental, ship with the engine).
+- Building against an engine that is not vanilla 5.8.3 is supported and
+  documented in `09_BUILD.md`, because those two plugins are experimental
+  and an engine that renamed one of their modules would fail this plugin's
+  build in a way that reads like a bug in the plugin.

@@ -1191,3 +1191,106 @@ capability maintains an IN-MEMORY REGISTRY of armed points only.
 and the node's identity, but the SUITE has not been run against a graph where the arming is deliberately broken
 in the engine's own recording path - the break test renames the fixture Blueprint away, which proves the CHECK
 bites rather than that the CAPTURE cannot silently drop a hit.
+
+---
+
+## Q-19 2026-10-12 Spec/03_TOOLS.md section 8, graph writing
+
+The owner's list of requested capabilities contains **no** push-down writer.
+The three existing write entry points are the three that were specified:
+Append adds, Replace rewrites a whole body, Patch changes named pins.
+
+An agent that wants to insert an operation into the middle of an existing exec
+chain has to do it with two writes today: patch the upstream node's output to
+point elsewhere, then append. That is not atomic and the intermediate state
+does not compile, so a failure between the two calls leaves a broken graph.
+
+**Question:** is a fourth action `P/E-GRAPH-PUSH` worth building — one that
+takes a block and a wire, and inserts the block into that wire by cutting it
+— or is Patch plus Append enough? It is the only writer whose job is to CUT a
+link that already exists, which makes it the most destructive thing in the
+group, and `D-28` deliberately ordered the writers from least to most
+destructive. It also needs a solver: an inserted block may have several
+inputs, and deciding which existing wire lands on which input is a real
+problem and not a rename.
+
+**Answer: not yet answered.** Until it is, the plan does not build it, and an
+agent that wants the insert does it in two calls and is told the intermediate
+state does not compile.
+
+---
+
+## Q-20 2026-10-12 Spec/03_TOOLS.md section 17, source control
+
+`E-VCS-CHECKOUT` must check assets out before a write. The engine reaches
+source control through `ISourceControlModule` and its providers, and this
+project already knows one measured fact: `FEditorFileUtils` tried to check out
+during a headless save, failed, and made `E-SAVE` report a failure while
+nothing had been written (see the `EditorScriptingUtilities` comment in
+`Build.cs`, and `06_ACCEPTANCE.md` T-VCS-1).
+
+**Question:** which provider is the first one that must work — Perforce, git,
+or both — and what should a write tool do when the asset is NOT checked out
+and the provider cannot check it out? Three candidate answers, and they are
+not equivalent: refuse the write and change nothing; write anyway and say the
+file is not checked out; or write and report it as a failure like the engine's
+own path once did. The third is what already went wrong.
+
+Tied to it: git has no lock, so a checkout is not a meaningful state for it,
+and an asset modified under git is a change someone else may already have.
+That means Perforce's answer cannot simply be reused for git.
+
+**Answer: not yet answered.** `D-57` already settles the ordering question —
+nothing is checked out automatically until this tool is proven — so the
+question changes the tool's behaviour and not the plan's first step.
+
+---
+
+## Q-21 2026-10-12 Spec/03_TOOLS.md `P-ASSET-DIFF`
+
+`P-ASSET-DIFF` compares two versions of one asset in text. The graph text
+format already gives a line-level diff for a Blueprint graph body, and the
+widget tree text does the same for a widget tree once it exists
+(`04_FORMATS.md` section 8). What has no text form is everything else: an
+asset's property values, a material's compiled state, a data table's rows, an
+animation's curves.
+
+**Question:** how deep must the diff go? The cheap version compares the fields
+the readers already print (variables, functions, bodies, widgets, parameters)
+and lists everything else as not compared. The deep version needs a text form
+for each asset class it covers, which is a format and a reader per class, and
+that is a much larger piece of work than a diff.
+
+**Answer: not yet answered.** The plan builds the cheap version first, because
+`D-53` requires it to NAME what it did not compare, which makes the cheap
+version honest rather than misleading.
+
+---
+
+## Q-22 2026-10-12 Spec/03_TOOLS.md section 14
+
+`D-36` ordered trace points before breakpoints because a breakpoint stops the
+editor in a nested loop, and `D-55` now states that no pausing tool exists
+until the server is PROVEN to answer while paused (T-MEASURE-1). The
+experiment is specified and has not been run.
+
+**Question, for the case where the measurement says the server does NOT
+answer:** is that the end of the group, or is there an acceptable variant? Two
+variants exist and neither is obviously right:
+
+- **Arm-only.** The tools set and clear breakpoints and report them, and the
+  agent is told to ask a human to look at what stopped. Nothing in the plugin
+  ever reads a paused state, so nothing can hang.
+- **Deferred read.** A breakpoint tool call returns immediately with "a
+  breakpoint was hit at time T", written by a hook that does not need the
+  server, and the agent collects the paused state on a LATER call that a human
+  has unblocked. The failure mode becomes a stale answer rather than a hang,
+  which is better, but the answer describes a pause that may already have been
+  resumed.
+
+**Answer: not yet answered, and deliberately not answered before the
+measurement.** Deciding now would be deciding what to do about a result
+nobody has.
+
+---
+
