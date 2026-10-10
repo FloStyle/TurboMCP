@@ -4589,3 +4589,57 @@ MARGIN, WHICH IS WORSE THAN A MISSING NUMBER BECAUSE IT LOOKS LIKE A FINISHED PR
 `R-MAT-INST-LOAD` added, and a real distinction recorded: **A MATERIAL INSTANCE IS NOT A GRAPH - it is a list of
 overrides - so it gets its own pair rather than being forced through the graph writers.** It is committed now so the
 denominator is visible rather than silently changing under a report that still said 50.
+
+---
+
+## 19. MEASUREMENT 1.1 IS ANSWERED, AND IT SAYS NO: the MCP server cannot answer while paused
+
+*** THIS IS THE MEASUREMENT `WORKING_PLAN.md` GATES FOUR CAPABILITIES ON, AND `D-55` REQUIRES IT BEFORE ANY PAUSING
+TOOL IS BUILT. IT IS TAKEN, AND FROM THE ENGINE SOURCE RATHER THAN FROM A RUN - WHICH MATTERS, BECAUSE THE
+OBSERVABLE FORM OF THIS FAILURE IS "THE AGENT STOPS FOREVER" AND AN EXPERIMENT THAT HANGS IS NOT A MEASUREMENT. ***
+
+    Ticker.h:35         [[nodiscard]] static CORE_API FTSTicker& GetCoreTicker();
+    Ticker.h:168-170    void ExecuteOnGameThread(...)
+                            FTSTicker::GetCoreTicker().AddTicker(DebugName, 0.0f, ...);
+    HttpServerModule.h:26   class FHttpServerModule ... , public FTSTickerObjectBase
+    HttpServerModule.cpp:182-191   bool FHttpServerModule::Tick(float DeltaTime) { ... Listener.Value->Tick(DeltaTime); }
+
+**`GetCoreTicker()` IS THE LITERAL MECHANISM OF `ExecuteOnGameThread()`** - that is what the engine's own helper uses
+to get onto the game thread. `FHttpServerModule` derives from `FTSTickerObjectBase`, so it ticks on that same core
+ticker: **THE GAME THREAD.**
+
+A BLUEPRINT BREAKPOINT STOPS THE EDITOR IN A NESTED LOOP, as `D-36` and `D-55` already say. The game thread stops
+ticking, **THE HTTP SERVER'S OWN `Tick` DOES NOT RUN, SO THE REQUEST IS NEVER DISPATCHED TO A TOOL - AND THE SERVER
+IS NOT SLOW, IT IS SILENT.** The agent that armed the breakpoint waits until a person resumes the game.
+
+### 19.1 And D-55 had already written this down, including the rejection of the alternative
+
+    "No pausing tool exists until the server is PROVEN to answer while paused. ... Rejected: building breakpoints
+    and documenting the risk. Why: a capability whose failure mode is 'the agent stops forever' has to be gated on a
+    measurement, not on a warning."
+
+    D-54: "A tool call must never block the thread the game runs on. ... Rejected: one call that waits, with a long
+    timeout. Why: the failure mode is not a slow answer, it is an answer that never comes."
+
+**THE MEASUREMENT SAYS NO, SO `G.1` TO `G.4` ARE NOT BUILT** - `E-BREAKPOINT`, `R-BREAKPOINT`, `R-DEBUG-STATE`,
+`E-DEBUG-CONTROL`, `R-AUTOMATION-RUN`. `WORKING_PLAN.md:191-193` says what happens instead, in its own words: *"the
+refusal goes into the description of the tools an agent would reach for instead (`E-TRACE`, `R-TRACE`,
+`R-PLAY-CHECK`). That is a decision, not a failure."*
+
+### 19.2 And I stopped a workstream that was building them
+
+It had added no tool and no declaration, and its own last message had found the same mechanism independently:
+*"`FHttpServerModule` reçoit la requête sur son thread, MAIS LE TRAITEMENT EST TIRÉ PAR `GetCoreTicker()` - le game
+thread."* **TWO ARRIVALS AT THE SAME CONCLUSION, ONE FROM THE PLAN AND ONE FROM THE CODE, AND THE WORKSTREAM WAS
+ABOUT TO SPEND HOURS ON FOUR TOOLS THAT THE PLAN FORBIDS.** The gate existed, it was written down, the prerequisite
+was unmeasured, and the work started anyway - **WHICH IS THE ARGUMENT FOR READING THE PLAN BEFORE DELEGATING RATHER
+THAN AFTER.** `WORKING_PLAN.md` arrived in the same commit that started the work, and I delegated from the task
+board without reading it.
+
+### 19.3 What is implemented instead, and why it is not a gap
+
+`E-TRACE` AND `R-TRACE` already exist and already capture a live hit with node identity through
+`FBlueprintCoreDelegates::OnScriptException` (`Script.h:445,453,460`), and **A TRACE POINT NEVER PAUSES** - that is
+what `D-36` means by *"trace points before breakpoints"*. So the remaining work for section 14 is **NOT four new
+tools**; it is **the refusal text**, which goes in the descriptions of `E-TRACE`, `R-TRACE` and `R-PLAY-CHECK`, so an
+agent that wants a breakpoint is told WHY it cannot have one and what to use instead.
