@@ -42,28 +42,69 @@
 
 ## 3. What is left
 
-Five capabilities, all writes:
+**Derived from `Spec/03_TOOLS.md`'s own `###` entries, section by section, not from a hand-kept list. THE EARLIER
+TABLE IN THIS FILE WAS A NINE-SECTION READING OF A SPEC THAT HAS TWENTY SECTIONS**, and it is replaced rather than
+annotated because the shape of the gap was wrong, not just its size.
 
-| Capability | Phase | What it needs |
-|---|---|---|
-| ~~`E-GRAPH-REPLACE`~~ | 7 | **DONE** - writes into the existing entry and result nodes, never adds a second entry, removes every node the new text does not describe and LISTS what it removed. The first writer that can destroy, and the suite that uses it restores its fixture on the way IN and OUT |
-| ~~`E-GRAPH-PATCH`~~ | 7 | **DONE** - matches by node ID and applies only the differences. Every other node id is proven to survive, PARSED from the reader rather than trusted from the tool |
-| `E-MAT-LABEL-PROMOTE` | 8 | Material |
-| ~~`E-MAT-TIDY`~~ | 7 | **DONE** - one comment box per block, same layout rules as graphs. The compiled result is verified through the SET OF EXPRESSIONS read back through `R-MAT-TRACE`, compared in both directions, with `StateId` REPORTED rather than asserted |
-| `E-MAT-BLOCKS` | 8 | Material |
+| § | Section | Done | State |
+|---|---|---|---|
+| 2 | Agent help (Read and Preview) | 8/8 | **COMPLETE** |
+| 3 | Blueprint and widget reading | 8/8 | **COMPLETE** |
+| 4 | Materials | 4/4 | **COMPLETE** |
+| 5 | Look | 4/4 | **COMPLETE** |
+| 7 | Blueprint structure (Preview and Edit) | 4/4 | **COMPLETE** |
+| 8 | Graph writing (the bulk writer) | 1/1 | **COMPLETE** |
+| 9 | Materials writing | 3/8 | in progress - `E-MAT-BLOCKS` is the next row |
+| 10 | Graph structure | 0/3 | `E-GRAPH-RENAME`, `E-GRAPH-COLLAPSE`, `E-GRAPH-COPY` |
+| 11 | Widget authoring | 0/5 | needs the widget text dialect first |
+| 12 | Assets, structs and data | 0/6 | `E-ASSET-*`, `P-ASSET-DIFF`, `R-ASSET-COST`, curves, structs |
+| 13 | Level and actors | 1/5 | `R-ACTOR-LOAD`, `E-ACTOR-PLACE`, `P/E-ACTOR-SET`, `E-COMPONENTS` |
+| 14 | Debugging | 2/7 | **CLOSED BY MEASUREMENT** - see §4 |
+| 15 | Quality and maintenance | 0/1 | `R-BP-LINT` |
+| 16 | Agent and session tooling | 0/4 | `E-SESSION`, `P/E-ASSET-BATCH`, `R-CALL-COST` |
+| 17 | Source control | 0/2 | gated on measurement 1.3 |
+| 18 | Vision: what a Look may capture | 0/4 | `L-CAPTURE-ASSET`, `L-CAPTURE-LEVEL`, `P-IMAGE-COMPARE` |
+| 19 | Before and after | 0/1 | `P-IMAGE-COMPARE` |
+| 11 | Build portability | 0/1 | `09_BUILD.md` |
 
-**`E-GRAPH-REPLACE` and `E-GRAPH-PATCH` share everything already built** — the lexer, the checker gate, the factory, the `Plan`/`Apply` split, the linking, and the round trip. They differ from `APPEND` only in what they do with the **old** graph, so they are the cheapest remaining work and the largest in value.
+**`Spec/WORKING_PLAN.md` IS THE AUTHORITATIVE ORDER**, and it is a working document that changes every round. The
+rows above are its steps: materials end to end, then data tables, then widget authoring, then graph structure, then
+assets and data, then level and actors, then quality and session, then source control, then build portability.
+
+### 3.1 The one thing that is deliberately NOT built
+
+`E-BREAKPOINT`, `R-BREAKPOINT`, `R-DEBUG-STATE`, `E-DEBUG-CONTROL` and `R-AUTOMATION-RUN` are **refused by decision,
+not deferred by effort.** Measurement 1.1 asked whether the MCP server answers while the editor is stopped at a
+Blueprint breakpoint, and **it answers NO**, proven from the engine source rather than from a run:
+
+    Ticker.h:35         static CORE_API FTSTicker& GetCoreTicker();
+    Ticker.h:168-170    void ExecuteOnGameThread(...) { FTSTicker::GetCoreTicker().AddTicker(...); }
+    HttpServerModule.h:26   class FHttpServerModule ... , public FTSTickerObjectBase
+    HttpServerModule.cpp:182-191   FHttpServerModule::Tick(...) { ... Listener.Value->Tick(...); }
+
+**`GetCoreTicker()` IS THE LITERAL MECHANISM OF `ExecuteOnGameThread()`, so the HTTP server ticks on the GAME
+THREAD.** A breakpoint stops the editor in a nested loop, the game thread stops ticking, and **THE SERVER'S OWN
+`Tick` NEVER RUNS - THE REQUEST IS NEVER DISPATCHED TO A TOOL. THE SERVER IS NOT SLOW, IT IS SILENT.** An agent that
+armed the breakpoint waits until a person resumes the game.
+
+`D-55` had already written this down and had already rejected the alternative: *"Rejected: building breakpoints and
+documenting the risk. Why: a capability whose failure mode is 'the agent stops forever' has to be gated on a
+measurement, not on a warning."* **THE TRACE POINTS ARE THE ANSWER INSTEAD, AND THEY ALREADY EXIST**: `E-TRACE` and
+`R-TRACE` capture a live hit with node identity through `FBlueprintCoreDelegates::OnScriptException`
+(`Script.h:445,453,460`), **AND A TRACE POINT NEVER PAUSES** - which is what `D-36` means by *"trace points before
+breakpoints"*.
 
 ---
 
-## 4. The blocker, stated plainly
+## 4. The blocker, and it is no longer the harness
 
-**The capability work is nearly complete. The verification harness is now the bottleneck.**
+**An earlier revision of this file said "the capability work is nearly complete; the verification harness is now the
+bottleneck", with a full run reporting `31 of 39` and failing suite names that changed between runs. BOTH HALVES OF
+THAT ARE NOW WRONG.**
 
-A full run reports **`31 of 39`**, and the failures are **not** tool defects:
-
-- every failing suite **passes in isolation**;
-- the **names change between runs**;
+**THE HARNESS IS GREEN: `passed 43, failed 0, blocked 0, of 43`, measured on an idle machine.** Six defects of one
+shape were fixed to get there, each of which had produced "failing names that change between runs and pass in
+isolation":
 - the **rebuild scripts return exit 0 and print PASS** in every invocation shape that can be reproduced.
 
 **Six defects of one shape have been found and fixed**, each producing exactly that signature:
@@ -87,7 +128,30 @@ A full run reports **`31 of 39`**, and the failures are **not** tool defects:
 
 `make-kit-assets.ps1` behaves identically: `returncode 0`, `PASS: True`, 3965 chars, every asset named.
 
-**So the rebuild is not the defect in any shape reproducible from a shell or from Python.** What remains is the one thing not yet reproduced outside the harness: **the state of the editor at the moment the harness hands control to the suite.** That is the next measurement, and it is narrow.
+**AND THE SENTENCE THAT FOLLOWED THIS TABLE WAS WRONG.** It said the next measurement was *"the state of the editor
+at the moment the harness hands control to the suite"*, and named the rebuild as the remaining suspect. **THE
+REBUILD WAS NEVER THE DEFECT AND THE DEFECT WAS NOT NEAR IT.** What was actually happening was measured later and in
+one line: `Tools/tmcp.py` had gained a re-connect retry so a suite whose editor was restarted underneath it would
+recover - correct in itself - **but `connect()` CALLS `rpc()` AND `rpc()` CALLS `connect()` ON FAILURE, SO WHEN THE
+SERVER DID NOT ANSWER THE RETRY RECURSED, each level waiting out a full request timeout.**
+
+    check-probe-graphs.py BEFORE:  777.3 SECONDS, and killed at 600 in a full run
+    check-probe-graphs.py AFTER:    16.1 SECONDS, RESULT: PASS
+
+**AND THE SUITE'S OWN GUARD COULD NOT FIRE**: its `try`/`except` is written to treat any MCP failure as *"no editor,
+which is allowed"* - **BUT THE EXCEPTION NEVER ARRIVED, because the recursion consumed the stack and the clock
+instead of raising. A GUARD THAT CANNOT BE REACHED BECAUSE THE FAILURE PATH NEVER RETURNS IS NOT A GUARD.**
+
+**THE LESSON, WHICH IS THE MOST EXPENSIVE ONE IN THIS FILE: A FIX INTRODUCES ITS OWN FAILURE MODES AND MUST BE
+MEASURED LIKE ANYTHING ELSE.** That retry was verified against the case it was written for - an editor restarted
+underneath a suite - and **never against the case where no editor comes back at all.** Five candidate causes were
+named across five rounds and every one was falsified by a single measurement; the real one was a change made to
+SOLVE something, in a file nobody suspected for that reason.
+
+**AND THE PER-SUITE WALL-CLOCK DEADLINE IS WHAT MADE IT FINDABLE.** Before it, this suite hung indefinitely and the
+symptom - no editor, no log activity, 18 to 25 minutes - pointed at the environment rather than at a tool. **THE
+BOUND TURNED AN UNATTRIBUTABLE HANG INTO `RESULT: TIMED OUT (600s)`, AND NAMING THE SUITE IS WHAT MADE THE
+RECURSION VISIBLE. A bound is not a fix, and it is what makes a fix possible.**
 
 Two structural notes that survive regardless: the harness now **owns the editor only between suites and never inside one**, and **ONE owner of the editor lifecycle** remains the architectural fix — the hybrid, where a suite and the harness both drive the same editor, is what keeps producing this.
 
