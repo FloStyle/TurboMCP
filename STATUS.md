@@ -1,6 +1,6 @@
 # TurboMCP — status report
 
-**Measured on `main` = `origin/main` = `fcc947d`.** Every number here was read off the tree, not recalled.
+**Measured on `main` = `origin/main` = `a9a589e`.** Every number here was read off the tree, not recalled.
 
 ---
 
@@ -14,7 +14,7 @@
 | **Vision (`L-`)** | **3 of 3 — COMPLETE** |
 | **Preview (`P-`)** | **4 of 4 — COMPLETE** |
 | **Edit (`E-`)** | **18 of 23** |
-| Test suites | 33 files · full run `31/39` — **see §4** |
+| Test suites | 33 files · full run `31/39` — **see §4, and read the falsified-hypothesis table before concluding anything about the tools** |
 | Documentation | `TestRecord.md` 3668 l. · `QUESTIONS.md` 1193 l. · `Spec/` · `PLAN.md` · `DOCS.md` |
 
 **The two capabilities you asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
@@ -64,18 +64,32 @@ A full run reports **`31 of 39`**, and the failures are **not** tool defects:
 
 - every failing suite **passes in isolation**;
 - the **names change between runs**;
-- `make-acceptance-asset.ps1` called directly returns **exit 0** and prints **PASS**.
+- the **rebuild scripts return exit 0 and print PASS** in every invocation shape that can be reproduced.
 
-**Four separate defects of one shape have been found and fixed**, each producing exactly that signature:
+**Six defects of one shape have been found and fixed**, each producing exactly that signature:
 
 1. the harness waited on the **server** while `start-editor.ps1` decides from the **process**;
 2. `make-acceptance-asset.ps1` slept a **fixed 2 seconds** instead of waiting for the process;
-3. the probe could pass on an editor that was **still shutting down** — it now requires an `UnrealEditor` that started **after** the launch AND a server that answers;
-4. **seven** concurrent rebuilds of the **one** acceptance asset are now serialized by a **named mutex**.
+3. the probe could pass on an editor that was **still shutting down** — it now requires an `UnrealEditor` that started **after** the launch;
+4. **seven** concurrent rebuilds of the **one** acceptance asset are serialized by a **named mutex**;
+5. the harness **killed the editor a previous suite had healthily started** — it is now **subordinate to a healthy editor** and reuses it;
+6. a live editor process whose **server never came up** made the launcher refuse every later start — now **cleared and retried once**.
 
-**And the dominant cause remains:** a suite **stops and restarts the editor itself** while the harness is also driving that editor. **Two owners of one editor and one `.uasset`.** The mutex fixes concurrent *rebuilds*; it cannot fix two *owners*.
+### Five hypotheses about the failing rebuild, each FALSIFIED by measurement
 
-**The fix is a decision, not a patch: ONE owner of the editor lifecycle.** Either the harness regenerates every fixture once before the suites run and the suites stop touching editors, or the suites own the editor and the harness stops managing it between them. The hybrid is what keeps producing this.
+| Hypothesis | Measurement |
+|---|---|
+| the script does not print PASS | it does |
+| its exit code is non-zero | it is 0 |
+| the suite's call shape breaks it | `subprocess.run(capture_output=True)` from Python → `returncode 0`, 284 chars, `PASS: True` |
+| a log-file lock | falsified — the captured stdout is correct and complete |
+| the harness's editor holds the `.uasset` | falsified — run **with** an editor alive: `returncode 0`, `PASS: True`, every probe graph named |
+
+`make-kit-assets.ps1` behaves identically: `returncode 0`, `PASS: True`, 3965 chars, every asset named.
+
+**So the rebuild is not the defect in any shape reproducible from a shell or from Python.** What remains is the one thing not yet reproduced outside the harness: **the state of the editor at the moment the harness hands control to the suite.** That is the next measurement, and it is narrow.
+
+Two structural notes that survive regardless: the harness now **owns the editor only between suites and never inside one**, and **ONE owner of the editor lifecycle** remains the architectural fix — the hybrid, where a suite and the harness both drive the same editor, is what keeps producing this.
 
 ---
 
