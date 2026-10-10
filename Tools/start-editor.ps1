@@ -34,6 +34,22 @@
     Start with -nullrhi, which skips rendering and therefore needs no shader
     worker. Faster, but no window to look at.
 
+.PARAMETER Offscreen
+    Start the editor WITHOUT A WINDOW, for the suites. This is the mode the harness
+    uses, and it exists because the windowed editor TAKES THE FOREGROUND EVERY TIME IT
+    STARTS: a full suite run restarts the editor between suites, so the machine was
+    stealing focus from whoever was using it several times per run.
+
+    It implies -nullrhi, so there is no window to focus and no shader compilation
+    either - which ALSO makes each start faster. Every TurboMCP tool operates on
+    graphs, assets and Blueprints through reflection, and NONE OF THEM NEEDS RENDERING,
+    so nothing the suites check is lost.
+
+    IT IS DELIBERATELY NOT THE DEFAULT FOR AN INTERACTIVE START. `-nullrhi` never
+    exercises the renderer or ShaderCompileWorker, so a human launching the editor to
+    LOOK at something must get the windowed path; the comment above about check 2 is
+    exactly about what a headless run hides.
+
 .PARAMETER Culture
     The editor's language, for example `en` or `fr`. Defaults to `en`.
 
@@ -78,6 +94,7 @@ param(
     [int]    $TimeoutSeconds = 420,
     [string] $Culture = 'en',
     [switch] $NullRHI,
+    [switch] $Offscreen,
     [switch] $StopFirst,
     [switch] $Stop,
     [switch] $KeepOpen
@@ -227,6 +244,12 @@ if ($Running -or $PortBusy) {
 Step 'Starting the editor'
 # ---------------------------------------------------------------------------
 $Args = @($Project)
+# `-Offscreen` IS WHAT THE SUITES USE, AND IT IS `-nullrhi -unattended` WITH A HIDDEN WINDOW. MEASURED REASON: the
+# windowed editor TAKES THE FOREGROUND ON EVERY START, and a full suite run restarts it between suites, so the
+# machine stole focus several times per run. It also skips shader compilation, which makes each start faster. Every
+# TurboMCP tool works on graphs, assets and Blueprints through reflection, so NO SUITE LOSES ANYTHING - and the
+# interactive path is untouched, because a human who launches the editor wants the window and the renderer.
+if ($Offscreen) { $NullRHI = $true }
 if ($NullRHI) { $Args += @('-nullrhi','-unattended') }
 if (-not [string]::IsNullOrWhiteSpace($Culture)) { $Args += @("-culture=$Culture") }
 $Args += @('-nosplash','-nosound')

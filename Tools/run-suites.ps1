@@ -179,7 +179,10 @@ function Start-EditorAndWait {
         Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 5
     $launchTime = Get-Date
-    & pwsh -NoProfile -File $StartEditor 2>&1 | Out-Null
+    # restarts it between suites - so the machine stole focus several times per run. It also skips shader
+    # compilation, which makes each start faster, and no suite loses anything because every TurboMCP tool
+    # works through reflection rather than rendering.
+    & pwsh -NoProfile -File $StartEditor -Offscreen 2>&1 | Out-Null
     $retryDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $retryDeadline) {
         $fresh = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
