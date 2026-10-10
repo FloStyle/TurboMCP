@@ -1088,7 +1088,38 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 							}
 
 							const FNode& Consumer = Nodes[ConsumerIndex];
-							const double PureToX = Consumer.PlannedX - PlannedExtent(Pure.Width) - HorizontalNodeGap;
+
+							// THE CARRIED NODE IS ANCHORED TO CLEAR THE SOURCE, NOT ONLY ITS CONSUMER, AND
+							// THAT IS A FIX RATHER THAN A PREFERENCE.
+							//
+							// MEASURED DEFECT: this line used to be
+							//
+							//     PureToX = Consumer.PlannedX - Pure.Width - Gap
+							//
+							// and `Consumer.PlannedX` is the target's FINAL position, which the move below
+							// sets to `Source.PlannedX + Source.Width + Gap`. Substituting gives
+							//
+							//     PureToX = Source.PlannedX + Source.Width - Pure.Width
+							//
+							// so with equal widths the carried node lands EXACTLY ON THE SOURCE'S OWN LEFT
+							// EDGE while the source is still there, the overlap guard refuses, and the pure
+							// carry NEVER FIRES. A workstream built SEVEN fixture configurations against
+							// this - every one refused, with a pure node satisfying every STATED condition
+							// of the rule (`IsNodePure()`, one link, one consumer, not a getter) - and
+							// recorded it as a defect in the RULE rather than papering over it with a
+							// fixture built to make a counter non-zero.
+							//
+							// THE FIX IS ONE `Min`: the carried node must clear BOTH the consumer it feeds
+							// and the source that stays where it is. The push runs after the carry, so a
+							// carried node placed on the source's edge is refused before anything can move
+							// out of its way - which is why anchoring to the source works and reordering
+							// would not have been enough on its own.
+							const double SourceClearX =
+								Nodes[SourceIndex].PlannedX
+								- PlannedExtent(Pure.Width) - HorizontalNodeGap;
+							const double ConsumerClearX =
+								Consumer.PlannedX - PlannedExtent(Pure.Width) - HorizontalNodeGap;
+							const double PureToX = FMath::Min(ConsumerClearX, SourceClearX);
 							const double PureToY = Consumer.PlannedY;
 
 							const double PureOldX = Pure.PlannedX;

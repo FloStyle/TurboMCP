@@ -107,8 +107,22 @@ def rebuild_kit_and_reconnect(timeout=180):
 
     `Tools/make-kit-assets.ps1` is the commandlet that builds the kit, and a `-run=` commandlet EXITS THE
     EDITOR when it finishes, so the editor is started again afterwards and the caller gets a fresh Session.
+
+    THE EDITOR IS STOPPED FIRST, AND THAT IS A MEASURED REQUIREMENT RATHER THAN TIDINESS. This suite calls
+    this TWICE - once for TA-4 and once for TA-5 - and the SECOND call was measured to produce an asset that
+    had LOST the new graph: the commandlet printed `kit TA-5 OK` and the saved package came back with
+    `Its graphs are: EventGraph, HandLaid, Messy, Stacked, UserConstructionScript`. The commandlet frees a
+    package's name and rebuilds it, and a package the running editor already holds in memory is not the one
+    that reaches disk. Stopping the editor makes the commandlet work on a package it loaded itself, so the
+    write is the one that was measured.
     """
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    stop = subprocess.run(
+        ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "start-editor.ps1"), "-Stop"],
+        capture_output=True, text=True, cwd=repo)
+    # `-Stop` answers non-zero when nothing was running, which is fine and not a failure.
+    _ = stop
+    time.sleep(3)
     rebuild = subprocess.run(
         ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "make-kit-assets.ps1")],
         capture_output=True, text=True, cwd=repo)
