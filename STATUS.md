@@ -49,7 +49,7 @@ Five capabilities, all writes:
 | ~~`E-GRAPH-REPLACE`~~ | 7 | **DONE** - writes into the existing entry and result nodes, never adds a second entry, removes every node the new text does not describe and LISTS what it removed. The first writer that can destroy, and the suite that uses it restores its fixture on the way IN and OUT |
 | ~~`E-GRAPH-PATCH`~~ | 7 | **DONE** - matches by node ID and applies only the differences. Every other node id is proven to survive, PARSED from the reader rather than trusted from the tool |
 | `E-MAT-LABEL-PROMOTE` | 8 | Material |
-| `E-MAT-TIDY` | 8 | Material |
+| ~~`E-MAT-TIDY`~~ | 7 | **DONE** - one comment box per block, same layout rules as graphs. The compiled result is verified through the SET OF EXPRESSIONS read back through `R-MAT-TRACE`, compared in both directions, with `StateId` REPORTED rather than asserted |
 | `E-MAT-BLOCKS` | 8 | Material |
 
 **`E-GRAPH-REPLACE` and `E-GRAPH-PATCH` share everything already built** — the lexer, the checker gate, the factory, the `Plan`/`Apply` split, the linking, and the round trip. They differ from `APPEND` only in what they do with the **old** graph, so they are the cheapest remaining work and the largest in value.
