@@ -60,6 +60,31 @@ $SlowSuites = @('test-capture')
 function Start-EditorAndWait {
     param([int] $TimeoutSeconds = 240)
 
+    # ---------------------------------------------------------------------------------------------
+    # A HEALTHY EDITOR IS REUSED RATHER THAN REPLACED, AND THIS IS THE FIX FOR THE CLASS OF FAILURE THAT
+    # HAS COST FOUR ROUNDS.
+    #
+    # MEASURED: a full run reported `31 of 39` while EVERY failing suite passed in isolation and
+    # `make-acceptance-asset.ps1` run by hand returned exit 0. Four defects of ONE shape were found and
+    # fixed - the harness waiting on the SERVER while the launcher decides from the PROCESS, a fixed
+    # 2-second sleep, a probe that could pass on an editor still shutting down, and seven concurrent
+    # rebuilds of one asset - AND THE FAILURES PERSISTED. The reason is that THE HARNESS AND THE SUITE WERE
+    # BOTH DRIVING ONE EDITOR AND ONE `.uasset`: several suites STOP the editor to rebuild a fixture and
+    # then START one and connect to it, while the harness ALSO stopped the editor before every suite -
+    # KILLING THE VERY EDITOR THE PREVIOUS SUITE HAD JUST HEALTHILY STARTED, then racing a fresh start
+    # against the next suite's expectations.
+    #
+    # SO THE HARNESS IS SUBORDINATE TO A HEALTHY EDITOR INSTEAD OF THE OWNER OF ONE. If a server already
+    # answers, that editor is REUSED and NOTHING is stopped or started. That is strictly less work, and a
+    # suite that manages its own editor is left alone rather than sabotaged mid-flight.
+    #
+    # THE GUARD IS THE HEALTH PROBE RATHER THAN AN ASSUMPTION: an editor left WEDGED by a suite - alive,
+    # port open, game thread not servicing requests - would make every later suite fail, so a probe that
+    # does NOT answer falls through to the full stop-and-start below, which is the recovery path.
+    # ---------------------------------------------------------------------------------------------
+    $healthy = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
+    if ($healthy -match '^PASS') { return $true }
+
     # A PROBE THAT CAN PASS ON A DYING PROCESS MEASURES THE WRONG THING, SO THE WAIT RUNS IN BOTH
     # DIRECTIONS: the previous server must be GONE, and then the new one must ANSWER.
     #
@@ -200,7 +225,35 @@ Write-Output "--- suites that need an editor, run ONE AT A TIME with the editor 
 foreach ($name in $NeedsEditor) {
     Write-Output ""
     Write-Output "--- $name ---"
-    Stop-Editor
+
+    # ---------------------------------------------------------------------------------------------
+    # ONE OWNER OF THE EDITOR, AND IT IS NOT ALWAYS THE HARNESS. THIS IS THE FIX FOR THE CLASS OF
+    # FAILURE THAT HAS COST FOUR ROUNDS.
+    #
+    # MEASURED: a full run reported `31 of 39` while EVERY failing suite passed in isolation and
+    # `make-acceptance-asset.ps1` run by hand returned exit 0. Four defects of ONE shape were found and
+    # fixed - the harness waiting on the SERVER while the launcher decides from the PROCESS, a fixed
+    # 2-second sleep, a probe that could pass on an editor still shutting down, and seven concurrent
+    # rebuilds of one asset - AND THE FAILURES PERSISTED. The reason is that THE HARNESS AND THE SUITE WERE
+    # BOTH DRIVING ONE EDITOR AND ONE `.uasset`: several suites STOP the editor to rebuild a fixture and
+    # then START one and connect to it, while this loop ALSO stopped the editor before every suite -
+    # KILLING THE VERY EDITOR THE PREVIOUS SUITE HAD JUST HEALTHILY STARTED, then racing a fresh start
+    # against the next suite's expectations.
+    #
+    # SO THE HARNESS IS SUBORDINATE TO A HEALTHY EDITOR INSTEAD OF THE OWNER OF ONE. If a server already
+    # answers, that editor is REUSED and NOTHING is stopped or started. That is strictly less work, and a
+    # suite that manages its own editor is left alone instead of being sabotaged mid-flight.
+    #
+    # THE GUARD IS THE HEALTH PROBE RATHER THAN AN ASSUMPTION: an editor left WEDGED by a suite - alive,
+    # port open, game thread not servicing requests - would make every later suite fail, so a probe that
+    # does not answer triggers a full stop of everything and one clean start.
+    # ---------------------------------------------------------------------------------------------
+    $healthy = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
+    if ($healthy -match '^PASS') {
+        Write-Output "  an editor is already answering; reusing it rather than restarting one under the suite"
+    }
+    # `Start-EditorAndWait` ITSELF DECIDES: it reuses a healthy server and only stops and starts when none
+    # answers. The decision lives in ONE place rather than being made twice and disagreeing.
     if (-not (Start-EditorAndWait)) {
         # RECORDED AS AN ENVIRONMENT FAILURE RATHER THAN A CAPABILITY ONE. This distinction is the whole
         # reason the script exists: "the editor could not be started" is not a statement about the tool.
