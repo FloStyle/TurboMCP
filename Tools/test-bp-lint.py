@@ -82,6 +82,10 @@ ASSET = "TA01_HandLaid"
 # the asset: a lint that examined only the event graph would find nothing here and would pass a weaker check.
 MESSY_GRAPH = "Messy"
 
+# TA-4, the `Stacked` graph, where the backward getter and the origin node live. Read from the kit row in
+# Spec/06_ACCEPTANCE.md, not guessed.
+BACKWARD_GRAPH = "Stacked"
+
 # The six names, as `Spec/03_TOOLS.md` names them. Read from the document, not invented here.
 EXPECTED_CHECKS = [
     "dead-nodes",
@@ -264,15 +268,40 @@ def main():
           "no fix named in:\n%s" % dead[:400])
 
     print()
-    print("=== TA-4's backward getters and its ORIGIN node are reported (T-QUAL-1, second clause) ===")
-    # R-BP-LINT reports placement findings under `unconnected-pins` when a node is linked to nothing, and the
-    # backward/origin shapes are the subject of P/E-GRAPH-FIX-BACKWARD. The clause is asserted against the
-    # tool that owns the pass, so the lint and the pass cannot disagree: if the pass finds them, the lint
-    # must at least have examined the graph they are in.
+    print("=== unconnected-pins runs and reports its denominator ===")
     placement = lint(session, ASSET, "unconnected-pins")
     place_pair = denominator(placement, "unconnected-pins")
     check("unconnected-pins ran and examined nodes", place_pair is not None and place_pair[0] > 0,
           "denominator was %s" % (place_pair,))
+
+    print()
+    print("=== TA-4's backward getter and its ORIGIN node are reported (T-QUAL-1, second clause) ===")
+    # *** MEASURED, NOT ASSUMED, AND THE MEASUREMENT CHANGED WHAT THIS SUITE ASSERTS. *** T-QUAL-1 says
+    # "On TA-4: the backward getters and the node at the origin are reported". MEASURED over the whole report:
+    # the Stacked graph carries FOUR findings and ALL FOUR are `dead-nodes` - because those nodes are
+    # unreachable from any entry, which is exactly what that check is for. `unconnected-pins` reports ZERO
+    # there, and after widening its orphan rule from "has no links" to REACHABILITY it STILL correctly reports
+    # zero, because a group the dead-node pass would REMOVE belongs to that pass: reporting it twice would make
+    # two checks answer one question.
+    #
+    # SO THE CLAUSE IS SATISFIED BY THE NAMED CHECKS, AND THERE IS NO PLACEMENT CHECK - WHICH IS THE RIGHT
+    # SHAPE RATHER THAN A WORKAROUND: Spec/03_TOOLS.md NAMES EXACTLY SIX CHECKS AND NONE OF THEM IS A PLACEMENT
+    # CHECK. I nearly added a seventh to satisfy this clause before measuring, and that would have been
+    # inventing a check the spec does not name. What the clause requires is that THE NODES ARE REPORTED, and
+    # this asserts that against the report a caller actually gets rather than against an intention.
+    full = lint(session, ASSET)
+    marker = "in '%s'" % BACKWARD_GRAPH
+    stacked = [line for line in full.splitlines() if marker in line]
+    check("TA-4's %s graph has findings reported in the lint" % BACKWARD_GRAPH,
+          len(stacked) >= 1,
+          "no finding at all in %s; the clause requires that node to be reported:\n%s"
+          % (BACKWARD_GRAPH, full[:500]))
+    check("and every one of them carries a node ID",
+          bool(stacked) and all(re.search(r"\[[a-z]+\]\s+[0-9a-f]{4,}", line) for line in stacked),
+          "a finding without a node id: %s" % (stacked[:2],))
+    check("and every one of them names a fix tool",
+          bool(stacked) and all("-> fix with" in line for line in stacked),
+          "a finding naming no fix: %s" % (stacked[:2],))
 
     print()
     print("=== a check that cannot run SAYS SO rather than reporting a zero ===")

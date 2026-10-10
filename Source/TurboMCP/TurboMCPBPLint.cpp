@@ -658,24 +658,60 @@ static void RunUnconnectedPins(const UBlueprint* InBlueprint, const TArray<UEdGr
 			{
 				if (Pin != nullptr && Pin->LinkedTo.Num() > 0) { bHasAnyLink = true; break; }
 			}
-			if (bHasAnyLink) { continue; }
+			// *** AN ORPHAN IS ABOUT REACHABILITY, NOT ABOUT HAVING NO LINKS, AND THE FIRST VERSION GOT THAT
+			// WRONG IN A WAY ONLY A MEASUREMENT COULD SHOW. *** It reported a node only when `bHasAnyLink`
+			// was false, and measured against TA-4's `Stacked` graph it produced `Stacked: 0` - while
+			// `T-QUAL-1` says "the node at the origin" IS reported there. THE KIT ROW SAYS WHY: TA-4 has
+			// "one node at the origin linked to nodes far away", SO THE NODE IS LINKED AND STILL UNREACHED.
+			// "Has no links" and "nothing reaches it" are DIFFERENT PREDICATES, and the narrower one answers
+			// a question the acceptance row does not ask.
+			if (!bHasAnyLink)
+			{
+				FTurboMCPBPLint::FFinding Finding;
+				Finding.Check = Out.Name;
+				Finding.NodeKey = KeyOf(Node);
+				Finding.GraphName = Graph->GetName();
+				Finding.Severity = TEXT("info");
+				Finding.Why = FString::Printf(
+					TEXT("%s is linked to nothing, so nothing can reach it; P/E-GRAPH-DEAD decides whether it is safe to remove"),
+					*TitleOf(Node));
+				Finding.FixTool = TEXT("P/E-GRAPH-DEAD");
+				Out.Findings.Add(Finding);
+			}
+		}
 
-			FTurboMCPBPLint::FFinding Finding;
-			Finding.Check = Out.Name;
-			Finding.NodeKey = KeyOf(Node);
-			Finding.GraphName = Graph->GetName();
-			// `info` rather than `error`: an isolated node is the shape `dead-nodes` decides about, and this
-			// check does not apply the entry and write rules, so it must not shout louder than the pass that
-			// does. Saying less is the right answer when the stronger tool exists.
-			Finding.Severity = TEXT("info");
-			Finding.Why = FString::Printf(
-				TEXT("%s is linked to nothing, so nothing can reach it; P/E-GRAPH-DEAD decides whether it is safe to remove"),
-				*TitleOf(Node));
-			Finding.FixTool = TEXT("P/E-GRAPH-DEAD");
-			Out.Findings.Add(Finding);
+		// (2b) THE LINKED-BUT-UNREACHED GROUPS, from the pass that already knows the entry rule. A group the
+		// pass would REMOVE is `dead-nodes`' finding and is skipped here, so two checks never answer the same
+		// question - this check reports the groups the pass KEEPS, which is the "orphaned" half of its bullet.
+		if (!bHasEntry) { continue; }
+
+		FTurboMCPGraphDead::FPlan DeadPlan;
+		FString DeadError;
+		if (!FTurboMCPGraphDead::Plan(InBlueprint->GetName(), Graph->GetName(), DeadPlan, DeadError))
+		{
+			continue;
+		}
+		for (int32 GroupIndex = 0; GroupIndex < DeadPlan.Groups.Num(); ++GroupIndex)
+		{
+			const FTurboMCPGraphDead::FGroup& Group = DeadPlan.Groups[GroupIndex];
+			if (!Group.bUnreachable) { continue; }
+			if (DeadPlan.CandidateIndices.Contains(GroupIndex)) { continue; }
+
+			for (const FString& Key : Group.Keys)
+			{
+				FTurboMCPBPLint::FFinding Finding;
+				Finding.Check = Out.Name;
+				Finding.NodeKey = Key;
+				Finding.GraphName = Graph->GetName();
+				Finding.Severity = TEXT("info");
+				Finding.Why = TEXT("nothing reaches it from any entry point, though it may still be linked; P/E-GRAPH-DEAD decides whether it is safe to remove");
+				Finding.FixTool = TEXT("P/E-GRAPH-DEAD");
+				Out.Findings.Add(Finding);
+			}
 		}
 	}
 }
+
 
 bool FTurboMCPBPLint::Lint(const FString& InAsset, const FString& InChecks,
 	FReport& OutReport, FString& OutError)
