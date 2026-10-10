@@ -1007,6 +1007,27 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& Text);
+
+	/**
+	 * Rewrite the body of one function, override or event, and list what it removes.
+	 *
+	 * Replaces the body rather than adding to it, so it is the FIRST writer that can remove
+	 * anything. It writes into the EXISTING entry and result nodes and never adds a second
+	 * entry, and it keeps the nodes the text does not describe as removals.
+	 *
+	 * Returns the nodes to create, the nodes to LINK to, and - the part that matters here - the
+	 * nodes it would REMOVE, each by key with its class and title. A removal is LISTED rather
+	 * than counted, and every entry, result, event and comment is kept, because removing one
+	 * would delete a signature or an author's documentation.
+	 *
+	 * Writes nothing, and cannot. It is in this toolset, which holds no tool that can
+	 * change an asset.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphReplace(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Text);
 };
 
 /**
@@ -1450,6 +1471,27 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphAppend(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Text);
+
+	/**
+	 * Rewrite the body of one function, override or event, and report every node it removed.
+	 *
+	 * The Edit twin of PreviewTurboMCPGraphReplace. It reaches the SAME plan, so everything it
+	 * refuses the preview refused first, with the same words.
+	 *
+	 * IT CAN DESTROY, WHICH NO OTHER WRITER IN THIS PLUGIN CAN, so two things are deliberate.
+	 * Every removal is LISTED by key with its class and title rather than counted, because a
+	 * count says how much is gone and a list says what. And the node list is COPIED before
+	 * iterating, because removing while iterating a container skips every other element - which
+	 * here would mean a body silently HALF replaced, the worst outcome this capability has.
+	 *
+	 * One transaction, rolled back on any new compile error, and the result is read back through
+	 * the project's own reader and compared rather than reported from memory.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphReplace(
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& Text);
