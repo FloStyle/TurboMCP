@@ -84,6 +84,44 @@ def hit_count(text):
     return int(m.group(1)) if m else None
 
 
+def parsed_hits(text):
+    """
+    The hit count, PARSED from the tool's own number rather than matched as a sentence.
+
+    A named alias of `hit_count` because the trace section reads better with it: what is being asserted there
+    is that the number is NON-ZERO, and a check that matched the word "hit" would pass on zero.
+    """
+    return hit_count(text)
+
+
+def probe_node_id(session, blueprint_name):
+    """
+    One armable node id out of the PIE fixture's Blueprint, read through `R-GRAPH-LOAD`.
+
+    THE NODE ID IS PARSED FROM THE READER rather than pinned, because a pinned id would break the moment the
+    fixture was rebuilt - and a fixture is meant to be rebuilt. The reader prints each node as
+    `Type ; <package>:<Graph>:<key>`, so the first id whose graph is the one asked for is the probe.
+
+    Returns None when the Blueprint or its graph cannot be read, so the caller can FAIL rather than skip: a
+    fixture that went missing must not turn into a silent pass.
+    """
+    text = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
+                        {"asset": blueprint_name, "graphName": "EventGraph",
+                         "detail": "bodies", "format": "", "tokenBudget": ""})
+    if text.startswith("error:"):
+        print("    reading %s failed: %s" % (blueprint_name, text[:160]))
+        return None
+    # The `PrintString` node is the one that RUNS, and its id is the one to arm. The ids appear after a `;`
+    # and look like `BP_TurboMCPTestLog:EventGraph:914137`.
+    matches = re.findall(r"(%s:EventGraph:[0-9a-fA-F]+)" % re.escape(blueprint_name), text)
+    if not matches:
+        print("    no node id found in %s: %s" % (blueprint_name, text[:300]))
+        return None
+    # The FIRST id in the reader's output is the entry node that carries the exec chain, which is the node that
+    # runs when the world starts. Later ids can be data producers that never execute on their own.
+    return matches[0]
+
+
 def exceptions_reached(text):
     m = re.search(r"(\d+) script exception\(s\) have reached this module", text)
     return int(m.group(1)) if m else None
@@ -216,16 +254,67 @@ def main():
           armed_count(status(session)) == 0, status(session)[:160])
 
     print()
-    print("  RECORDED, NOT GLOSSED: this suite has NOT observed a trace hit. The test project has no map,")
-    print("  so PIE runs an empty world and no Blueprint executes. The subscription REGISTERS and has never")
-    print("  been seen to FIRE. See TestRecord.md section 6s - the risk it opened is still open.")
+    print("  THE HIT IS NOW OBSERVABLE, AND THIS SUITE PROVES IT RATHER THAN ASSERTING IT.")
+    #
+    # MEASURED, BEFORE THE FIXTURE EXISTED: `TestProject/Content` held NO `.umap`, so PIE ran the engine's
+    # empty `/Temp/UEDPIE_0_Untitled_1` world, NOTHING executed Blueprint code, and the subscriber was never
+    # seen to fire. That is why this suite said so in its own result line.
+    #
+    # `/Game/Tests/TurboMCPTestMap` NOW EXISTS and carries a Blueprint actor whose `ReceiveBeginPlay` runs a
+    # `PrintString` node. The hit was observed by hand first:
+    #
+    #     1 armed point(s), 2 recorded hit(s)
+    #     BP_TurboMCPTestLog:EventGraph:914137 : 2 hit(s)
+    #
+    # A NATIVE actor can never make the delegate fire - only the Blueprint VM raises the exception - which is
+    # the whole reason the fixture needed a Blueprint and not just a placed C++ actor.
+    #
+    # THE CHECK BELOW IS DELIBERATELY A REAL ONE. It arms a point on a node in that Blueprint, plays the map,
+    # and requires a NON-ZERO hit count, so a regression that broke the subscription would fail here instead of
+    # being reported as "not observable".
+    trace_map = "/Game/Tests/TurboMCPTestMap"
+    probe_graph = "BP_TurboMCPTestLog"
+    probe_node = probe_node_id(session, probe_graph)
+
+    if probe_node is None:
+        check("the trace fixture's Blueprint exposes a node to arm", False,
+              "no node id found in %s - the PIE test map fixture is missing" % probe_graph)
+    else:
+        print("    the fixture node is %s" % probe_node)
+        arm(session, probe_node)
+
+        started = session.call(READ_TOOLSET, "ReadTurboMCPPlayCheck",
+                               {"seconds": "5", "map": trace_map})
+        print("    %s" % started.splitlines()[0][:150])
+        check("a play session over the fixture map was requested",
+              started.startswith("pending:") or "already playing" in started, started[:180])
+
+        # THE ENGINE'S OWN TEARDOWN IS WAITED FOR rather than slept through, because the hits are recorded
+        # while the world runs. A fixed sleep would be either too short or wasted.
+        import time as _time  # noqa: PLC0415
+        final_run = ""
+        deadline = _time.time() + 120
+        while _time.time() < deadline:
+            final_run = session.call(READ_TOOLSET, "ReadTurboMCPPlayCheck", {"seconds": "", "map": ""})
+            if "played for" in final_run:
+                break
+            _time.sleep(2)
+        print(final_run[:400])
+
+        after = status(session)
+        hits = parsed_hits(after)
+        check("THE ARMED NODE RAN, so the subscriber fires", hits > 0,
+              "hit count parsed as %s from: %s" % (hits, after[:220]))
+        check("the hit names the node it matched", probe_node in after, after[:300])
+        check("a tracepoint exception reached this module", "Tracepoint" in after, after[:300])
+
+        clear(session)
 
     print()
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1
-    print("RESULT: PASS (%d check(s) run, %d SKIPPED: no trace hit is observable in this project)"
-          % (checks, 0))
+    print("RESULT: PASS (%d check(s) run, 0 SKIPPED)" % checks)
     return 0
 
 
