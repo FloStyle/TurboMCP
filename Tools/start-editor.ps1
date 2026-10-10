@@ -266,6 +266,17 @@ $Args = @($Project)
 if ($Offscreen) { $NullRHI = $true }
 if ($NullRHI) { $Args += @('-nullrhi','-unattended') }
 if (-not [string]::IsNullOrWhiteSpace($Culture)) { $Args += @("-culture=$Culture") }
+# -LiveCoding=0 SUPPRESSES THE LIVE CODING CONSOLE, WHICH IS WHAT TAKES THE FOREGROUND DURING A BUILD.
+#
+# MEASURED, FROM THE ENGINE SOURCE RATHER THAN FROM BEHAVIOUR (LiveCodingModule.cpp:490-498):
+#     if (bool bCommandLineEnable; FParse::Bool(FCommandLine::Get(), TEXT("-LiveCoding="), bCommandLineEnable))
+#     { bAllowAutoStart &= bCommandLineEnable; bForceStart = bCommandLineEnable; }
+# SO -LiveCoding=0 CLEARS THE AUTO-START FLAG, and line 501 gates the auto-start on AllowAutoStart.
+#
+# AND THE CONSOLE IS THE CULPRIT RATHER THAN THE EDITOR WINDOW: LiveCodingConsole.cpp binds BringToFront and
+# BringToFrontAsync to the server's own ShowConsole/BringToFront delegates and runs BringToFront as a main
+# thread task, AND IT IS LAUNCHED WITH -Hidden (LiveCodingModule.cpp:1104) - which is why an enumeration of
+# VISIBLE windows never saw it.
 $Args += @('-nosplash','-nosound','-nopause')
 
 $StartTime = Get-Date
