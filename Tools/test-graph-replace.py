@@ -27,6 +27,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tmcp_editor  # noqa: E402
 from tmcp import PREVIEW_TOOLSET, READ_TOOLSET, EDIT_TOOLSET, Session  # noqa: E402
 
 # THE FIXTURE IS A GRAPH THE HARNESS'S OWN SUITE REBUILDS, WHICH IS THE POINT.
@@ -78,25 +79,21 @@ def connect_with_fixture():
     re-runnable from ANY state, which is the property that matters - a run killed part-way leaves the same mess
     behind, and cleaning up at the end would not have helped.
     """
-    stop = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1"), "-Stop"],
-        capture_output=True, text=True, cwd=REPO)
-    _ = stop  # `-Stop` answers non-zero when nothing was running, which is not a failure.
-    time.sleep(3)
-
-    if os.environ.get("TURBOMCP_REPLACE_REBUILD") == "1":
-        rebuild = subprocess.run(
-            ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "make-acceptance-asset.ps1")],
-            capture_output=True, text=True, cwd=REPO)
-        ok = rebuild.returncode == 0 and "PASS" in (rebuild.stdout or "")
-        print("    fixture rebuild: %s"
-              % ((rebuild.stdout or rebuild.stderr).strip().splitlines() or ["no output"])[0])
+    # THE EDITOR LIFECYCLE IS NOT THIS SUITE'S BUSINESS ANY MORE, WHICH IS `Spec/WORKING_PLAN.md` ROW 0.1.
+    # `Tools/tmcp_editor.py` owns stop, rebuild and ensure; ELEVEN SUITES USED TO RE-IMPLEMENT THESE THREE
+    # SUBPROCESS CALLS WITH DIFFERENT OPT-IN VARIABLE NAMES, and that variation is what made one suite and the
+    # harness disagree about who held the editor. THE PROMPT STILL SAYS `TURBOMCP_REPLACE_REBUILD`, because that
+    # spelling has been in this suite's output for many rounds and a message that changes is a message nobody
+    # greps for; the shared name works too, and the module names both when neither is set.
+    ok, detail = tmcp_editor.rebuild_fixture(
+        "make-acceptance-asset.ps1", ["TURBOMCP_REPLACE_REBUILD"])
+    if ok is None:
+        print("    fixture rebuild: not requested; using the committed SaneProbe (%s)" % detail)
+    else:
+        print("    fixture rebuild: %s" % detail)
         if not ok:
             print("    the acceptance asset could not be rebuilt, so this suite cannot run")
             return None
-    else:
-        print("    fixture rebuild: not requested; using the committed SaneProbe "
-              "(set TURBOMCP_REPLACE_REBUILD=1 to regenerate it)")
 
     started = subprocess.call(
         ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1")], cwd=REPO)
