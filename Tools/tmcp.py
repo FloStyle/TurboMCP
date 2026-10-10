@@ -35,6 +35,35 @@ class Session:
         self.id = None
 
     def rpc(self, method, params=None, request_id=1):
+        """
+        One JSON-RPC call, WITH ONE AUTOMATIC RE-CONNECT WHEN THE EDITOR WAS RESTARTED UNDER US.
+
+        MEASURED, AND IT IS THE CAUSE OF A CLASS OF FAILURE THAT COST SIX ROUNDS. A suite opens ONE `Session` and
+        reuses it. A fixture rebuild STOPS the editor that session is connected to, runs a commandlet, and starts a
+        NEW editor with a NEW `Mcp-Session-Id` - while the suite still holds the OLD one. Its next request then
+        fails, and in `test-graph-dead` the very next thing after the first rebuild IS the second rebuild and the
+        checks that follow, which is exactly where the failures were reported (`regenerated at the end`, `rebuilt
+        at the end`). THE FIRST REBUILD'S CHECK PASSED AND THE SECOND FAILED: the signature of a session that
+        survived one rebuild's timing but not two.
+
+        THE EVIDENCE THAT THIS IS IT, RATHER THAN A GUESS: `Tools/test-graph-fix-backward.py` already worked around
+        it by hand - its `rebuild_kit_and_reconnect` builds a NEW `Session` after its rebuild - AND THE ONE SUITE
+        THAT RE-CONNECTS BY HAND IS THE ONE THAT DID NOT FAIL THIS WAY.
+
+        THE RETRY IS EXACTLY ONE, deliberately. A loop here would turn a genuinely dead editor into a run that
+        appears to hang, and this project has had to undo that failure mode more than once. If the second attempt
+        also fails, the caller sees the real error.
+        """
+        try:
+            return self._rpc_once(method, params, request_id)
+        except Exception:
+            # Clear the stale id FIRST, so the re-initialise is a genuinely new session rather than a request
+            # that presents the id of the editor that no longer exists.
+            self.id = None
+            self.connect()
+            return self._rpc_once(method, params, request_id)
+
+    def _rpc_once(self, method, params=None, request_id=1):
         payload = {"jsonrpc": "2.0", "id": request_id, "method": method}
         if params is not None:
             payload["params"] = params
