@@ -56,11 +56,39 @@ New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
 
 # The editor holds the asset open, so it is stopped first. A stale handle would make the save fail
 # for a reason that has nothing to do with the commandlet.
+#
+# THE FIXED SLEEP WAS NOT ENOUGH, AND IT IS THE CAUSE OF A WHOLE CLASS OF INTERMITTENT FAILURE.
+# This script runs INSIDE a suite as well as by hand: `Tools/test-graph-dead.py` calls it twice, and
+# `Tools/check-probe-graphs.py` calls it too, so under the harness it always follows another editor.
+# MEASURED: a full harness run reported `31 of 38` while EVERY failing suite passed in isolation, and the
+# failing names were exactly the ones that REBUILD A FIXTURE - `check-probe-graphs`, `test-graph-dead`,
+# `test-graph-knots`. `make-acceptance-asset.ps1` run DIRECTLY returns exit 0 and prints PASS, so the script
+# was never wrong in itself; what failed is the SECOND call inside one suite, racing the editor the FIRST
+# call's commandlet had just been holding.
+#
+# A FIXED SLEEP IS EITHER TOO SHORT ON A BUSY MACHINE OR WASTED TIME ON AN IDLE ONE - the same reason
+# `start-editor.ps1` polls the server instead of sleeping. So the PROCESS is waited for, and a stubborn one
+# is killed, because the commandlet's failure mode here is a locked `.uasset` that looks like a build error.
 $stopScript = Join-Path $PSScriptRoot 'start-editor.ps1'
 if (Test-Path $stopScript) {
     & pwsh -NoProfile -File $stopScript -Stop 2>&1 | Out-Null
-    Start-Sleep -Seconds 2
 }
+
+$deadline = (Get-Date).AddSeconds(30)
+while ((Get-Date) -lt $deadline) {
+    if (-not (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue)) { break }
+    Start-Sleep -Seconds 1
+}
+$stubborn = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
+if ($stubborn) {
+    Write-Output ("  a previous editor (PID {0}) outlived the stop; killing it before the commandlet runs" -f `
+        ($stubborn.Id -join ', '))
+    $stubborn | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 3
+}
+# The launcher's own editor is a different process name and holds the same DLL, so it is cleared too.
+Get-Process -Name UnrealEditor-Cmd -ErrorAction SilentlyContinue |
+    Stop-Process -Force -ErrorAction SilentlyContinue
 
 & cmd.exe /c "`"$EditorExe`" `"$Project`" -run=TurboMCP.TurboMCPAcceptanceAssetCommandlet -unattended -nullrhi -culture=en -MaxParallelActions=8 > `"$log`" 2>&1"
 $exit = $LASTEXITCODE
