@@ -4994,3 +4994,57 @@ EXPLAIN THIS ONE.**
 MINUTES LATER.** So the full run's number for a NEW capability can be a FALSE NEGATIVE while the capability is fine,
 **AND THE ONLY WAY TO TELL IS TO RE-RUN IT ALONE - WHICH IS THE PRACTICE THIS PROJECT ALREADY ADOPTED, AND WHICH THE
 FULL RUN'S NUMBER MUST NEVER BE ALLOWED TO OVERRIDE.**
+
+---
+
+## 26. 46 of 46: THE FAILING SUITES WERE NEVER FAILING, AND THE HARNESS WAS DISCARDING THE DIAGNOSIS THAT SAID SO
+
+**MEASURED, ON AN IDLE MACHINE, AFTER ONE CHANGE TO THE HARNESS AND NOTHING ELSE: `passed 46, failed 0, blocked 0, of
+46`.** Before it, on the same idle machine: `passed 38, failed 8`. **THE EIGHT SUITES WERE NEVER FAILING.**
+
+### 26.1 The defect
+
+`Tools/run-suites.ps1:343` had this:
+
+    $Results[$name] = 'RESULT: no result line'
+    Write-Output "  no RESULT line; last lines:"
+    $out | Select-Object -Last 4 | ForEach-Object { "    " + $_ }
+
+**IT COLLECTED THE RIGHT DIAGNOSIS AND THEN THREW IT AWAY AT THE LAST STEP.** The four "last lines" that say WHY a
+suite died were written to the run's output as ordinary lines - **AND EVERY FULL RUN IN THIS PROJECT IS READ THROUGH A
+SUMMARY THAT FILTERS THE OUTPUT DOWN TO LINES MATCHING `FAIL`. THE TAIL MATCHED NOTHING, SO IT WAS DISCARDED.** Three
+rounds were spent asking why four suites reported nothing while passing individually, **AND THE ANSWER WAS BEING
+PRINTED THE WHOLE TIME, IN LINES NOBODY COULD SEE.**
+
+THE FIX IS ONE IDEA: **THE TAIL IS NOW PART OF THE VERDICT STRING ITSELF RATHER THAN A LINE BESIDE IT.** A verdict is
+what the summary carries, and a diagnosis attached to it cannot be filtered away.
+
+### 26.2 And this falsifies the hypothesis recorded last round
+
+**THE ACCUMULATION HYPOTHESIS - "something about the editor or the harness degrades across a long run" - IS
+FALSIFIED.** There was no degradation. Once the tail reached the summary the run was CLOCKWORK: no suite died, no
+suite lost its connection. **THERE WAS A SUITE PRINTING ITS VERDICT IN A FORM THE HARNESS COULD NOT SEE, AND THE
+HARNESS BLAMING IT FOR SAYING NOTHING.**
+
+**AND THE GUARD I ADDED FOR THE EARLIER INSTANCE OF THIS DEFECT COULD NOT HAVE CAUGHT IT: the per-suite wall-clock
+deadline bounds a suite that never returns, AND THESE SUITES RETURNED - WITH A VERDICT - WHICH THE HARNESS DID NOT
+SEE.**
+
+### 26.3 The tenth instance of the shape, and the purest one yet
+
+*** A CONSUMER THAT SILENTLY MATCHES NOTHING MAKES A WORKING PRODUCER LOOK BROKEN. *** The earlier instance was a
+caret that does not match after a carriage return, which made three PASSING static suites read as `no result line`.
+**THIS IS THE SAME DEFECT ONE LEVEL UP: THE FIRST TIME THE SUITE'S OUTPUT WAS MISREAD; THIS TIME THE HARNESS'S OWN
+DIAGNOSIS OF THAT MISREADING WAS MISREAD.**
+
+**THE LESSON WORTH KEEPING: WHEN A TOOL REPORTS "NO RESULT", THE FIRST QUESTION IS NOT WHAT THE PRODUCER DID WRONG
+BUT WHERE THE CONSUMER LOOKED. AND WHEN THE CONSUMER HAS ALREADY COLLECTED THE EVIDENCE AND STILL REPORTS NOTHING,
+THE BUG IS IN WHAT IT DOES WITH THE EVIDENCE - NOT IN WHAT IT RECEIVED.**
+
+### 26.4 And the round's other work, which is still real
+
+`R-BP-LINT` (37 checks, six named checks each reporting its denominator) and `P/E-DATATABLE-ROWS` (26 checks) and
+`P/E-WIDGET-TREE`'s dialect and parser all remain correct and committed. **THEY WERE CREDITED ON THEIR ISOLATED
+RESULTS WHILE THE FULL RUN DISAGREED, AND THE FULL RUN WAS WRONG. THAT IS THE ARGUMENT FOR THE PRACTICE THIS PROJECT
+ADOPTED: RE-RUN A FAILING SUITE ALONE BEFORE BELIEVING IT - WHICH IS WHAT CAUGHT THIS, AND WHAT WOULD HAVE
+MISATTRIBUTED IT IF THE ISOLATED RESULTS HAD NOT BEEN TRUSTED OVER THE AGGREGATE.**
