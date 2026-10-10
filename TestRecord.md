@@ -3859,3 +3859,53 @@ kill path in seconds, with no editor, and the next attempt starts from it rather
 **WHAT REMAINS UNCHANGED:** the per-suite deadline is still the right fix, the invocation still has no timeout, and
 the reason it matters is unchanged - three runs were left hanging for 18 to 25 minutes because a blocked suite
 blocks the whole run and no guard on the editor can help.
+
+---
+
+## 8c. ROOT CAUSE FOUND AND MEASURED: a carriage return defeats the line anchor, and the type defeats the cmdlet
+
+**THE ONE-LINE MEASUREMENT, TAKEN EXACTLY AS SECTION 8b SAID IT SHOULD BE, AND IT ANSWERS THE WHOLE QUESTION.**
+
+```
+type: System.String
+length: 293
+newline style: CR=True LF=True
+Select-String count: 0                      <- IT MATCHES NOTHING
+--- essai avec split ---
+lignes: 9
+verdict via split: PASS  every include resolves to a real file in the engine or the plugin.
+```
+
+**TWO DEFECTS, ONE LINE APART, AND BOTH ARE NEEDED TO EXPLAIN THE SILENCE.**
+
+1. **THE TYPE.** `Get-Content -Raw` returns ONE `System.String`, while the previous invocation -
+   `& python <suite> 2>&1` - produced an **ARRAY OF LINES**. The harness feeds the value to a LINE-ORIENTED cmdlet:
+   `$out | Select-String -Pattern '^RESULT|^PASS|^FAIL'`.
+2. **THE CARRIAGE RETURN, AND THIS IS THE ONE THAT ACTUALLY KILLS THE MATCH.**
+   **`^` DOES NOT MATCH AFTER A `\r`.** `Get-Content -Raw` keeps the file's `\r\n` endings, so a single multi-line
+   string defeats a line-anchored pattern EVEN THOUGH THE TEXT PLAINLY BEGINS A LINE WITH `PASS`. The measurement
+   is unambiguous: `Select-String count: 0` on the whole string, and the SAME text `-split "`r?`n"` yields 9 lines
+   and finds the verdict immediately.
+
+**THIS IS WHY THREE PASSING STATIC SUITES WERE RECORDED AS `no result line` WHILE THE HELPER WAS WORKING
+PERFECTLY.** The helper captured 293 correct characters; the consumer could not read a verdict out of them.
+**A HELPER THAT SILENTLY YIELDS NOTHING AND A CONSUMER THAT SILENTLY MATCHES NOTHING ARE INDISTINGUISHABLE FROM
+OUTSIDE, AND BOTH LOOK LIKE FAILING SUITES.** That is the third time this project has recorded that shape, and the
+first time it was diagnosed down to the character class responsible.
+
+**THE FIX IS ONE LINE, IN THE HELPER RATHER THAN AT THE CALL SITE SO EVERY CONSUMER SEES THE SHAPE THE OLD
+INVOCATION PRODUCED:**
+
+    return @{ Output = ($text -split "`r?`n"); TimedOut = $false }
+
+**AND THE ATTEMPT TO APPLY IT IS RECORDED AS ANOTHER FAILURE, HONESTLY.** My line-indexed PowerShell edit MATCHED
+THE WRONG LINE - it reported `ligne trouvee: 0` and then deleted part of the file - so I reverted immediately and
+confirmed the harness passes three static suites again. **I did not leave the file broken and I did not claim the
+fix landed.** The diagnosis is complete and the change is a single line; what failed is the EDIT, not the
+understanding, and the next attempt should make that edit with a tool that edits text by content rather than by
+line number.
+
+**THE ASYMMETRY IS WORTH NAMING, BECAUSE IT COST THREE ROUNDS.** The FAILED ATTEMPT was loud - three suites went
+red immediately. THE ACTUAL DEFECT WAS SILENT - a pattern matching nothing, reported as `no result line`, which
+reads like a suite that said nothing rather than a consumer that read nothing. **WHEN A CAPTURE AND ITS CONSUMER
+BOTH FAIL SILENTLY, THE SYMPTOM APPEARS AT THE FAR END OF THE PIPE.**
