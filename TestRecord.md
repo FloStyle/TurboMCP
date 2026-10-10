@@ -3706,3 +3706,47 @@ instead of stopping and starting one before every suite, so the harness no longe
 suite healthily started. That is a real reduction in ownership conflict and it is kept. It did NOT by itself make
 the rebuild succeed, which is what narrows the cause to the editor HOLDING the asset rather than the editor being
 restarted.
+
+---
+
+## 6z. THE REBUILD IS NOT THE DEFECT AT ALL - IT IS THE MCP SESSION, AND A NEW MEASUREMENT POINTS AT IT
+
+**THE EXPERIMENT THAT INVERTED THE DIAGNOSIS.** The exact harness sequence was reproduced outside the harness:
+start the editor with `Tools/start-editor.ps1`, then call `make-acceptance-asset.ps1` from Python with
+`capture_output=True`, which is character-for-character what `test-graph-dead.py` does at its line 182.
+
+    RESULT: PASS                  <- the launcher said it worked
+    server before: False
+    server after start: False     <- AND THE SERVER NEVER ANSWERED
+    rebuild returncode: 0  PASS: True
+    stdout len: 284
+      PASS  the acceptance asset was rebuilt
+
+TWO FACTS FALL OUT OF THAT, AND BOTH MATTER.
+
+**FIRST: `Tools/start-editor.ps1` CAN REPORT `RESULT: PASS` WHILE `check-mcp-server.py` CANNOT REACH A SERVER.**
+Its own success criterion and the server's reachability are therefore NOT the same claim, and every suite depends
+on the second one. That is a defect in the launcher's verdict, independently of everything else in this record.
+
+**SECOND: THE REBUILD SUCCEEDS EVEN WHEN NO SERVER IS UP.** So the rebuild is not failing because of the editor,
+the `.uasset`, the log, the call shape, the exit code or the mutex - it is not failing at all in any state that
+can be reproduced. **THE FAILURE IS DOWNSTREAM OF IT.**
+
+**THE HYPOTHESIS THIS POINTS AT, AND IT FITS EVERY OBSERVATION.** A suite opens ONE MCP `Session` at its start and
+reuses it. A fixture rebuild STOPS THE EDITOR the session is connected to, runs a commandlet, and starts a NEW
+editor with a NEW server session id. The suite's `Session` object still holds the OLD session id, so its NEXT
+request fails - and in `test-graph-dead` the very next thing after the first rebuild is THE SECOND REBUILD AND THE
+CHECKS THAT FOLLOW IT, which is exactly where the failures are reported (`regenerated at the end`, `rebuilt at the
+end`). THE FIRST REBUILD'S CHECK PASSES AND THE SECOND ONE FAILS, WHICH IS THE SIGNATURE OF A SESSION THAT SURVIVED
+ONE REBUILD'S WORTH OF TIMING BUT NOT TWO.
+
+THE FIX IS A RE-CONNECT AFTER ANYTHING THAT RESTARTS THE EDITOR, and it belongs in the shared `Session` helper in
+`Tools/tmcp.py` rather than in each suite: a request that fails to connect should be retried ONCE after
+re-initialising the session, because the cause is almost always "the editor was restarted underneath me".
+**`Tools/test-graph-fix-backward.py` ALREADY DOES THIS BY HAND** - its `rebuild_kit_and_reconnect` builds a NEW
+`Session` after the rebuild. That is the workaround a workstream found independently, and it is the strongest
+evidence for this hypothesis: THE ONE SUITE THAT RE-CONNECTS IS THE ONE THAT DOES NOT FAIL THIS WAY.
+
+**WHAT TO MEASURE NEXT, IN ONE RUN:** print the MCP session id before and after a rebuild inside one suite. If the
+id changes and the suite keeps using the old one, the cause is confirmed and the fix is a single re-connect in
+`tmcp.py` that every suite inherits.
