@@ -3750,3 +3750,33 @@ evidence for this hypothesis: THE ONE SUITE THAT RE-CONNECTS IS THE ONE THAT DOE
 **WHAT TO MEASURE NEXT, IN ONE RUN:** print the MCP session id before and after a rebuild inside one suite. If the
 id changes and the suite keeps using the old one, the cause is confirmed and the fix is a single re-connect in
 `tmcp.py` that every suite inherits.
+
+---
+
+## 7a. A CORRECTION TO THE PREVIOUS SECTION, AND IT MATTERS MORE THAN THE FINDING IT WITHDRAWS
+
+Section 7 of this record - written one round earlier - claims **"`Tools/start-editor.ps1` can print `RESULT: PASS`
+while `check-mcp-server.py` cannot reach a server"**, and calls that a defect in the launcher's verdict.
+
+**THAT CLAIM IS WITHDRAWN. IT WAS A MISREADING OF MY OWN EXPERIMENT.** `start-editor.ps1:150` prints
+`RESULT: PASS` inside the **`-Stop` branch**, after confirming the editor is gone and the DLL is unlocked. The
+experiment read a `RESULT: PASS` off a run and took it as evidence that a LAUNCH had succeeded - when the run had
+in fact gone down the STOP path and reported that stopping worked, which is exactly what it said. The launcher was
+telling the truth and the reading was wrong.
+
+**WHY THIS IS WORTH A SECTION RATHER THAN A QUIET EDIT.** This project's whole method is that a claim is only as
+good as the measurement behind it, and here a measurement was correct while the INFERENCE from it was not - the
+same failure as `check-probe-graphs` reading a stale log, and the same failure as a check that passes while the
+thing it verifies is broken. **A TRUE OUTPUT INTERPRETED AS THE WRONG CLAIM IS ITS OWN CLASS OF DEFECT**, and the
+only defence is to name what produced the output rather than what it looked like. `RESULT: PASS` is printed by
+BOTH paths of that script, so it does not identify which path ran; the STEP LINES around it do.
+
+**WHAT SURVIVES FROM SECTION 7, AND IT IS THE PART THAT MATTERS:** the five hypotheses about the failing fixture
+rebuild were all falsified by direct measurement - the script prints PASS, its exit code is 0, calling it exactly
+as the suites do from Python returns 0 with correct stdout, it is not a log-file lock, and it is not the harness's
+editor holding the `.uasset`. Those measurements stand and they are what turned the diagnosis downstream, to the
+MCP session that survived the editor being restarted underneath it.
+
+**AND THE LESSON GENERALISES TO THE SUITE OUTPUT ITSELF:** every suite prints `RESULT: PASS` or `RESULT: FAIL`, and
+this project has already recorded nine cases where such a line was right about the wrong thing. Reading a verdict
+without reading WHAT PRODUCED IT is the mistake this section records against myself.
