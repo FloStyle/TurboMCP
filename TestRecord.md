@@ -4487,3 +4487,46 @@ that was never there.
 ### 16.4 State
 
     70 tools · 48 of 50 capabilities · FULL RUN 42 of 42, 0 failed, 0 blocked
+
+---
+
+## 17. The focus stealing is FIXED, and Live Coding needs a measurement before it needs code
+
+**THE USER ASKED FOR TWO THINGS, AND THE FIRST IS DONE AND MEASURED.**
+
+The harness started the editor with `-nosplash -nsound` and NO nullrhi, so it opened a REAL WINDOW and took the
+foreground - and because the harness restarts the editor when it cannot reuse one, A TEST RUN STOLE FOCUS SEVERAL
+TIMES. `start-editor.ps1 -Offscreen` now gives **`MainWindowHandle=0` - NO WINDOW AT ALL** - with the MCP server
+listening on port 8000, the toolsets registered, and a start time of **20.2 SECONDS**. Both a static suite and
+`test-json`, which needs the editor, PASS through the harness in that mode.
+
+IMPLEMENTED AS A SWITCH THE HARNESS PASSES RATHER THAN BY CHANGING THE DEFAULT, and the reason is in the script's own
+documented check list: **a `-NullRHI` editor never needs `ShaderCompileWorker.exe`, AND THAT IS EXACTLY THE CHECK A
+HEADLESS RUN HIDES.** A human launching the editor to LOOK at something must get the windowed path.
+`run-suites.ps1:185` is the single caller that passes `-Offscreen`.
+
+### 17.1 Live Coding, and why the measurement changes the argument
+
+**FACT ONE, MEASURED: THE HARNESS ALREADY REUSES A HEALTHY EDITOR.** `Tools/run-suites.ps1:127-153` calls
+`check-mcp-server.py` first and RETURNS EARLY WHEN IT ANSWERS `PASS` - *"A HEALTHY EDITOR IS REUSED RATHER THAN
+REPLACED"* - so a full 42-suite run does NOT pay one editor start per suite. It pays ONE start for the run.
+
+**FACT TWO: WHAT COSTS TIME PER ITERATION IS THE FULL REBUILD, NOT THE EDITOR START.** 20 seconds is not the
+bottleneck; the 25-to-60-second build is, and Live Coding is aimed exactly at that.
+
+*** FACT THREE IS THE ONE THAT DECIDES IT, AND IT IS ABOUT THIS PROJECT SPECIFICALLY. THE STALE-BINARY TRAP HAS
+ALREADY FIRED FIVE TIMES HERE - a break test PASSED because the loaded DLL was still the old one - AND EVERY VERIFIED
+CLAIM IN THIS PROJECT DEPENDS ON KNOWING THE LOADED BINARY CHANGED. LIVE CODING'S ENTIRE PREMISE IS THAT THE LOADED
+BINARY CHANGES UNDERNEATH A RUNNING PROCESS. *** That does not make it wrong; it makes it **THE EXACT MECHANISM THAT
+HAS ALREADY DECEIVED THIS PROJECT FIVE TIMES, PROMOTED FROM AN ACCIDENT TO THE INTENDED WORKFLOW.**
+
+**SO THE HONEST POSITION IS NOT "NO" AND NOT "YES": LIVE CODING WOULD BUY ITERATION SPEED AND WOULD SPEND
+VERIFICATION INTEGRITY, AND THIS PROJECT HAS ALREADY SPENT FIVE ROUNDS ON THE SECOND. And I did not measure the
+trade because I did not have the context left to do it properly - THE SAME JUDGEMENT THREE PREVIOUS WORKSTREAMS MADE
+AND THE REASON THIS RECORD HAS NINE MEASURED CASES RATHER THAN TEN.**
+
+THE EXPERIMENT THAT DECIDES IT, AND IT IS SMALL: enable Live Coding, change ONE tool so a check MUST go red, apply
+the patch, and run that suite WITHOUT restarting the editor. **If the suite goes red, Live Coding is safe for the
+verification loop. If it stays green, the stale-binary trap has fired a SIXTH time and Live Coding must never be used
+for a run whose result is going to be recorded** - only for loose exploration between measurements. ONE BUILD, ONE
+PATCH, ONE SUITE, AND IT SETTLES THE QUESTION WITH A MEASUREMENT INSTEAD OF A PREFERENCE.
