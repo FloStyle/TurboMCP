@@ -4861,3 +4861,82 @@ has a type the sanitiser cannot prove.
 - it hard-coded a field name that the reader prints with a GUID suffix, FAILING THREE CHECKS ON A WORKING TOOL;
 - and its own test parser EXCLUDED any line containing a colon, while EVERY row name in that table contains `::` -
   *** "A PARSER WHOSE RULE EXCLUDES THE DATA IS INDISTINGUISHABLE FROM DATA THAT IS ABSENT." ***
+
+---
+
+## 24. The validation debt is NOT paid: 38 of 46 on an IDLE machine, and the four `no result line` are not contention
+
+**THIS ROUND'S JOB WAS TO PAY BACK THE VALIDATION DEBT - A FULL RUN ON A MACHINE WHERE NOTHING ELSE HAD RUN - AND IT
+IS NOT PAID.** The measurement is `passed 38, failed 8, blocked 0, of 46`.
+
+    no result line:  test-agent-help, test-bp-lint, test-capture, test-comment-boxes
+    assertions:      test-graph-dead, test-graph-replace, test-material, test-override-add
+
+**AND THE MACHINE WAS VERIFIED IDLE FIRST, WHICH IS WHAT MAKES THIS DIFFERENT FROM THE PREVIOUS TWO RUNS:** `UBT=0
+editeur=0` immediately before, every workstream finished and its files committed. **SO "CONTENTION" IS NOT AVAILABLE
+AS THE EXPLANATION THIS TIME, AND I AM NOT GOING TO USE IT.**
+
+*** AND THE SHARPEST EVIDENCE THAT IT IS NOT CONTENTION: `test-bp-lint` REPORTED `no result line` IN THE FULL RUN AND
+PASSES `RESULT: PASS (37 check(s) run)` THROUGH THE SAME HARNESS IN THE SAME SESSION. *** `test-datatable-rows` does
+the same - `PASS (26 check(s) run)`. Both were verified through `run-suites.ps1 -Suites`, **which is the harness path
+the full run uses**, so the difference is not the invocation.
+
+**THE CONCLUSION I CAN DEFEND: A SUFFIX OF THE RUN LOSES ITS CONNECTION TO THE EDITOR**, and four suites reporting
+`no result line` in one run while passing individually is that signature.
+
+### 24.1 And a workstream diagnosed this area correctly - for a DEFECT THAT WAS ALREADY FIXED
+
+It reported: *"`Tools/tmcp.py`'s re-connect retry RECURSES: `rpc()` calls `connect()` on failure and `connect()`
+calls `rpc()`, so an unreachable server makes each level wait out the 120 s timeout instead of raising. That is why a
+stopped editor produces a stack trace and `no result line` rather than a clean failure."* **THAT IS EXACTLY RIGHT
+AND IT WAS FIXED SEVERAL ROUNDS AGO** - the `_connecting` guard is at `Tools/tmcp.py:40,77,82,86`, and it is the fix
+that took the 600-second suite from 777.3 s to 16.1 s. **THE WORKSTREAM READ A STALE MENTAL MODEL OF THE FILE, WHICH
+IS ITS OWN SMALL LESSON: A CORRECT DIAGNOSIS OF A FIXED DEFECT IS INDISTINGUISHABLE FROM A CORRECT DIAGNOSIS OF A
+LIVE ONE UNTIL THE CURRENT FILE IS READ.**
+
+**SO THE FOUR `no result line` ARE NOW UNEXPLAINED, AND THAT IS THE HONEST STATE.** The guard makes an unreachable
+server cost ONE timeout rather than an unbounded number - and **ONE 120-SECOND TIMEOUT IS STILL LONGER THAN THE
+HARNESS'S PATIENCE FOR A SUITE THAT THEN REPORTS NOTHING. A SINGLE TIMEOUT THAT STILL PRODUCES `no result line`
+INSTEAD OF A NAMED FAILURE IS A FIX THAT MADE THE SYMPTOM FASTER RATHER THAN CLEARER.** That is the next thing to
+measure.
+
+### 24.2 The other four are REAL, and two are the shared-fixture class
+
+- `test-material` on `MP_EmissiveColor` - **VERIFIED file and line last round**: the suite demands an unconnected
+  output the fixture deliberately connects.
+- `test-override-add` on `ReceiveActorOnClicked was left overridden` - the residue class, recorded, and the suite
+  DETECTS it rather than silently reusing it.
+- `test-graph-replace` on *"the shared fixture was GIVEN BACK"* - **ITS OWN ASSERTION, AND IT PASSED LAST ROUND.**
+  *** AN ASSERTION THAT PASSES AND FAILS ON DIFFERENT RUNS WITH THE SAME INPUT DEPENDS ON SOMETHING OTHER THAN ITS
+  OWN SUITE *** - the defect diagnosed two rounds ago and **NOT yet fixed**: it reads a box count from a SHARED ASSET
+  and compares it to a constant.
+- `test-graph-dead` on *"the acceptance asset was regenerated before the destructive test"* - the rebuild assertion,
+  same family.
+
+### 24.3 What this round DID establish
+
+    test-bp-lint          PASS (37 checks)  -- through the harness
+    test-datatable-rows   PASS (26 checks)  -- through the harness
+    77 tools, audit PASS, uncalled: (none), build Succeeded
+    committed as d4aab19 and 6d53e27
+
+**`R-BP-LINT` DELIVERED SIX NAMED CHECKS EACH REPORTING ITS DENOMINATOR, WHICH IS THE ROW'S OWN REQUIREMENT:** `dead-nodes`
+67/72, `unnecessary-casts` 0/0, `expensive-tick` 1/1, `heavy-hard-references` 0/0, `unused-declarations` 5/5,
+`unconnected-pins` 115/64.
+
+*** AND ITS BREAK TEST PRODUCED THE BEST DEMONSTRATION YET OF WHY A DENOMINATOR IS NOT ENOUGH: `dead-nodes: looked at
+67, found 0` IS EXACTLY WHAT A CLEAN ASSET LOOKS LIKE. *** The reported count can be right while the check is broken,
+**WHICH IS WHY THE SUITE ALSO ASSERTS THE SPECIFIC FINDINGS - a check on a count alone would have passed.**
+
+**A GAP IT FLAGGED RATHER THAN HID, AND ITS JUDGEMENT WAS CORRECT:** `T-QUAL-1`'s second clause says *"on TA-4: the
+backward getters and the node at the origin are reported"*, and no check it wrote detects backward getters. It
+MEASURED that those nodes ARE reported - `Stacked` carries 4 findings, all `dead-nodes`, because they are unreachable
+from any entry - **so the clause is satisfied by REACHABILITY rather than by a placement detector.** It had written a
+seventh check reusing the fix pass's own R2/R3 rules and **REVERTED IT rather than invent a check the spec does not
+name**, because `Spec/03_TOOLS.md` names exactly six. **THE RIGHT CALL FOR THE RIGHT REASON: the alternative would be
+a check with no spec behind it counting toward the row.**
+
+AND TWO OF ITS SELF-CAUSED BUGS ARE NEW SENTENCES HERE: it wrote `ASSET = "BP_NodeTest"` where the kit blueprint is
+`TA01_HandLaid`, so `dead-nodes` correctly reported `looked at 0, found 0` ABOUT THE WRONG ASSET and three checks
+failed on *** a tool defect that did not exist ***; and its node-key parser was non-greedy and anchored on `^\S` while
+the findings are INDENTED, **so it returned nothing and looked exactly like a tool reporting no node IDs.**
