@@ -144,20 +144,46 @@ def connect():
 
 
 def main():
-    print("=== rebuilding the shared fixture, so this suite is re-runnable from any state ===")
-    if not rebuild_fixture():
-        print()
-        print("RESULT: FAIL (the material fixture could not be rebuilt)")
-        return 1
-    print("  ok   the fixture was regenerated, so the layout starts from a known state")
-
-    # THE SESSION IS MADE AFTER THE REBUILD, because the rebuild stopped the editor. See
-    # `rebuild_fixture` above for the measurement that made this necessary.
+    print("=== checking whether the shared fixture needs rebuilding, WITHOUT stopping the editor ===")
+    # THE FIXTURE IS INSPECTED BEFORE IT IS REBUILT, AND THAT ORDER IS THE WHOLE POINT OF THIS CHANGE.
+    #
+    # `make-material-asset.ps1` STOPS THE EDITOR, and the first version of this suite called it FOUR
+    # TIMES in one run. The full run priced that: 32 of 42 with TEN failures whose names changed
+    # between runs and which pass in isolation - the race signature. SO THE CHEAP QUESTION IS ASKED
+    # FIRST: can the editor even answer? If it can, the fixture is usually already clean and NOBODY
+    # HAS TO BE RESTARTED. Only a fixture that is genuinely dirty pays the reboot.
     session = connect()
     if session is None:
         print()
         print("RESULT: FAIL (the editor never came up, so nothing could be checked)")
         return 1
+
+    look = session.call(READ_TOOLSET, "ReadTurboMCPMaterialBlocks",
+                        {"asset": ASSET, "tokenBudget": 4000})
+    boxes_at_start = number_before(r"blocks: (\d+) comment box", look)
+    print("    the fixture reports %s box(es); it is built with 2" % boxes_at_start)
+
+    if boxes_at_start != 2:
+        print("    it is NOT in its built state, so it is rebuilt - and that stops the editor, so the")
+        print("    session is remade afterwards.")
+        del session
+        if not rebuild_fixture():
+            print()
+            print("RESULT: FAIL (the material fixture could not be rebuilt)")
+            return 1
+        session = connect()
+        if session is None:
+            print()
+            print("RESULT: FAIL (the editor never came back after the rebuild)")
+            return 1
+        # RE-READ, because the fixture was replaced underneath the session and the earlier answer is
+        # about an asset that no longer exists.
+        look = session.call(READ_TOOLSET, "ReadTurboMCPMaterialBlocks",
+                            {"asset": ASSET, "tokenBudget": 4000})
+        boxes_at_start = number_before(r"blocks: (\d+) comment box", look)
+        print("    after the rebuild it reports %s box(es)" % boxes_at_start)
+    else:
+        print("    it is already in its built state, so the editor was NOT stopped")
 
     print()
     print("=== the PREVIEW writes nothing and says what it would do ===")
@@ -284,10 +310,41 @@ def main():
           "a zero-sized box would be a box the author cannot use")
 
     print()
-    print("=== restoring the fixture, so the next suite reads a known state ===")
-    restored = rebuild_fixture()
-    check("the shared fixture was GIVEN BACK", restored,
-          "a suite that owns a shared asset must restore it on the way IN as well as out")
+    print("=== restoring the fixture ONLY IF THIS RUN LEFT IT DIFFERENT ===")
+    # *** WHY THIS IS CONDITIONAL, AND IT IS A MEASURED DECISION RATHER THAN A SHORTCUT. ***
+    #
+    # THE FIRST VERSION REBUILT THE FIXTURE FOUR TIMES PER RUN, AND `make-material-asset.ps1` STOPS THE
+    # EDITOR TO DO IT. Four editor stops inside one suite is churn the harness has to absorb, and the
+    # FULL RUN MEASURED THE COST: it fell to 32 of 42 with TEN failures whose names CHANGED BETWEEN RUNS
+    # and which PASS IN ISOLATION - `test-comment-boxes`, `test-function`, `test-panel-reach`,
+    # `test-play-check`, `test-refs`, `test-trace`, `test-vars-add`, `test-widget-retarget`. THAT IS THE
+    # RACE SIGNATURE THIS PROJECT HAS RECORDED MANY TIMES, and the churn was mine.
+    #
+    # A REBUILD IS ONLY NEEDED WHEN THE FIXTURE IS ACTUALLY DIRTY, so it is read first and written back
+    # only on a real difference. THIS IS CHECKED RATHER THAN ASSUMED because an assumption here is what
+    # produced the churn: the suite's own second pass already leaves the material UNCHANGED, so the
+    # common case is a clean fixture and no editor stop at all.
+    #
+    # AND THE FIXTURE IS NOT THE ONLY SAFETY NET: `test-material-tidy` restores WHAT IT CHANGED by
+    # design - the tidy is idempotent, so a second pass is a no-op - and the restore below covers the
+    # case where a run was interrupted part-way and left the material mid-layout.
+    look = session.call(READ_TOOLSET, "ReadTurboMCPMaterialBlocks",
+                        {"asset": ASSET, "tokenBudget": 4000})
+    boxes_now = number_before(r"blocks: (\d+) comment box", look)
+    dirty = boxes_now is not None and boxes_now != 2
+
+    if dirty:
+        print("    the fixture carries %s box(es) instead of the 2 it is built with, so it is rebuilt"
+              % boxes_now)
+        restored = rebuild_fixture()
+        check("the shared fixture was GIVEN BACK", restored,
+              "a suite that mutates a shared asset must give it back")
+    else:
+        # NOT A SKIP: it is the assertion that the fixture is in the state the next suite expects.
+        check("the fixture is left in the state it was built with, so no rebuild is needed",
+              boxes_now == 2,
+              "the reader saw %s box(es); the fixture is built with 2" % boxes_now)
+        print("    the fixture is clean, so the editor was NOT stopped again")
 
     print()
     if failures:
