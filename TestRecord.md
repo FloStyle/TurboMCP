@@ -3909,3 +3909,42 @@ line number.
 red immediately. THE ACTUAL DEFECT WAS SILENT - a pattern matching nothing, reported as `no result line`, which
 reads like a suite that said nothing rather than a consumer that read nothing. **WHEN A CAPTURE AND ITS CONSUMER
 BOTH FAIL SILENTLY, THE SYMPTOM APPEARS AT THE FAR END OF THE PIPE.**
+
+---
+
+## 8d. THE RUN IS BOUNDED, AND BOUNDING IT NAMED THE CULPRIT IN ONE LINE OF OUTPUT
+
+**MEASURED, WITH THE DEADLINE IN PLACE:** `passed 37, failed 2, blocked 0, of 39`.
+
+```
+FAIL    check-probe-graphs           RESULT: TIMED OUT (600s)
+FAIL    test-override-add            RESULT: FAIL (ReceiveActorOnClicked was left overridden by an earlier run)
+```
+
+**THE RUN COMPLETED.** Before this, three runs were each abandoned after 18 to 25 minutes with no editor alive and
+no log activity, and nobody could say which suite was responsible. Now the answer is one line: **`check-probe-graphs`
+spent TEN MINUTES and was killed.** THAT IS THE SUITE THAT WAS BLOCKING THE WHOLE RUN, and it was invisible for
+four rounds because a hang and a slow failure look identical from outside - which is exactly what the per-suite
+deadline exists to separate.
+
+**AND THE SECOND FAILURE IS THE KNOWN SHARED-FIXTURE RESIDUE**, already recorded: `test-override-add` leaves an
+override in `BP_NodeTest` when a run is interrupted, and every later run then fails on a fixture that is not in the
+state the suite assumes.
+
+**WHAT THIS MEANS FOR THE PROJECT, STATED PLAINLY:** the verification harness is no longer the bottleneck.
+`37 of 39` is the highest number this project has recorded, the two failures are both named and both understood,
+and neither is a tool defect - one is a suite that runs too long and the other is fixture residue. The next work is
+ordinary: make `check-probe-graphs` finish inside its deadline, and make the suites that mutate a shared fixture
+restore it ON THE WAY IN.
+
+**THE SEQUENCE THAT GOT HERE IS WORTH KEEPING, BECAUSE EVERY STEP WAS A FAILURE FIRST.** Four attempts to bound the
+run failed. The first two returned nothing for every suite. The third found `$PSScriptRoot` empty inside a function.
+The fourth found the same thing plus something nobody had suspected: **`Get-Content -Raw` returns ONE STRING WITH
+`\r\n` ENDINGS, AND CARET DOES NOT MATCH AFTER A CARRIAGE RETURN** - so three PASSING static suites were recorded
+as `no result line` while the helper captured 293 correct characters. **A HELPER THAT SILENTLY YIELDS NOTHING AND A
+CONSUMER THAT SILENTLY MATCHES NOTHING ARE INDISTINGUISHABLE FROM OUTSIDE, AND BOTH LOOK LIKE FAILING SUITES.**
+
+**AND THE METHOD THAT FINALLY WORKED IS THE ONE THE RECORD KEPT PRESCRIBING:** prove the piece ALONE against the
+cheapest available test bed - `Tools/test-suite-timeout.ps1` proves the helper and ITS KILL PATH in seconds with no
+editor - then wire it in and prove it against the SAME three static suites, then against one that needs an editor.
+Reaching for the full run first is what cost the four earlier attempts.
