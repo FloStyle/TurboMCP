@@ -4530,3 +4530,62 @@ the patch, and run that suite WITHOUT restarting the editor. **If the suite goes
 verification loop. If it stays green, the stale-binary trap has fired a SIXTH time and Live Coding must never be used
 for a run whose result is going to be recorded** - only for loose exploration between measurements. ONE BUILD, ONE
 PATCH, ONE SUITE, AND IT SETTLES THE QUESTION WITH A MEASUREMENT INSTEAD OF A PREFERENCE.
+
+---
+
+## 18. THE REAL COVERAGE MAP: 31 of 57, and "49 of 50" was a NINE-SECTION reading of a TWENTY-SECTION spec
+
+*** THIS CORRECTS A NUMBER THIS PROJECT HAD BEEN REPORTING FOR MANY ROUNDS. *** The running figure was "50
+capabilities, Reading 21/21, Vision 3/3, Preview 4/4, Edit 18/23". **THE SPEC HAS TWENTY SECTIONS, NOT NINE**, and
+the capability count taken from its real `###` entries is **57, of which 31 are implemented**. The old figure came
+from a list assembled early and never re-derived from the file.
+
+    2.  Agent help (Read and Preview)               8/8   COMPLETE
+    3.  Blueprint and widget reading                8/8   COMPLETE
+    4.  Materials                                   4/4   COMPLETE
+    5.  Look                                        4/4   COMPLETE
+    7.  Blueprint structure (Preview and Edit)      4/4   COMPLETE
+    8.  Graph writing (the bulk writer)             1/1   COMPLETE
+    9.  Materials writing (later)                   0/2
+    10. Graph structure tools                       0/3
+    11. Widget authoring                            0/1
+    12. Assets, structs and data                    0/4
+    13. Level and actors                            0/4
+    14. Debugging                                   2/7
+    15. Quality and maintenance                     0/1
+    16. Agent and session tooling                   0/2
+    17. Source control before a write               0/1
+    18. Vision: what a Look may capture             0/2
+    19. Before and after                            0/1
+    TOTAL: 31 of 57
+
+### 18.1 And the counting went wrong TWICE in one round
+
+First I pattern-matched every `[RLEP]-NNN` token in the file and got **87 capabilities with 36 remaining**. THEN I
+CHECKED FOUR OF THEM BY HAND and found that **`E-MAT-APPEND`, `P-MAT-CHECK`, `E-READS` and `R-ONLY` HAVE NO `###`
+ENTRY AT ALL** - they are PROSE MENTIONS, in a format description and an explanatory sentence.
+
+**A REGEX OVER PROSE COUNTS MENTIONS OF CAPABILITIES AS CAPABILITIES**, which is precisely the defect this project
+recorded when its own audit took only the first id per line and hid `R-TRACE` behind a heading naming two. **THE
+MEASUREMENT THAT MATTERS IS THE ONE TAKEN FROM THE FILE'S OWN STRUCTURE - the `###` headings - NOT FROM IDENTIFIERS
+APPEARING IN ITS TEXT.** Three different denominators in one round, and only the third is defensible.
+
+### 18.2 What is actually outstanding
+
+Material writing (`E-MAT-APPEND`, `E-MAT-REPLACE`, `E-MAT-PATCH` and their gate), graph structure (`E-GRAPH-COPY`,
+`E-GRAPH-COLLAPSE`, `E-GRAPH-RENAME`), widget authoring, assets and structs, level and actors, five more debugging
+capabilities, quality and maintenance, agent and session tooling, source control before a write, two vision
+captures, and before/after comparison. **SUBSTANTIAL RATHER THAN TWO ITEMS.**
+
+### 18.3 What this does NOT change
+
+**`passed 43, failed 0, blocked 0, of 43` on an idle machine, 72 tools, all declared and all called.** What changes
+is the DENOMINATOR - **and a report saying "49 of 50" while the spec defines 57 OVERSTATES PROGRESS BY A WIDE
+MARGIN, WHICH IS WORSE THAN A MISSING NUMBER BECAUSE IT LOOKS LIKE A FINISHED PROJECT.**
+
+### 18.4 And the spec was extended in the working tree, uncommitted
+
+688 lines to 1131, `###` entries to 77, with `P/E-MAT-APPEND`, `P/E-MAT-REPLACE`, `P/E-MAT-PATCH`, `P-MAT-CHECK` and
+`R-MAT-INST-LOAD` added, and a real distinction recorded: **A MATERIAL INSTANCE IS NOT A GRAPH - it is a list of
+overrides - so it gets its own pair rather than being forced through the graph writers.** It is committed now so the
+denominator is visible rather than silently changing under a report that still said 50.
