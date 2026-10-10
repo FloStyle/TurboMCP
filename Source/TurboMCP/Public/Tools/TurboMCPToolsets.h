@@ -515,6 +515,21 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPPlayCheck(const FString& Seconds, const FString& Map);
+
+	/**
+	 * Read the trace: what is armed, and how often each point has run.
+	 *
+	 * Pass `action=status` with no node ID. Answers with whether the engine subscription is
+	 * live, every armed point with its hit count, and the hits with their time, node and thread.
+	 *
+	 * This is the READ side, so it cannot arm or clear anything: asking it to do either is
+	 * refused by name and the current state is returned instead. Call the Edit twin for changes.
+	 *
+	 * A zero is reported with its reason, because "nothing has run yet" and "nothing is armed"
+	 * need different answers from whoever reads it.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPTrace(const FString& Action, const FString& NodeId);
 };
 
 /**
@@ -1372,6 +1387,24 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPCallLogClear(const FString& Confirm);
+
+	/**
+	 * Mark a node to be traced, or clear the marks.
+	 *
+	 * `action=arm` with one or more node IDs records that node every time it runs in a play
+	 * session, without pausing; `action=clear` with IDs removes those marks and their hits, and
+	 * with no IDs removes every mark and every hit. Always answers with the arming summary.
+	 *
+	 * NOTHING IS ADDED TO ANY GRAPH AND NOTHING IS RECOMPILED. The engine already emits a trace
+	 * point into every normally-compiled node and the VM raises it through a delegate, so arming
+	 * is an in-memory registry entry. That is why this tool cannot corrupt a graph.
+	 *
+	 * It is in the Edit toolset although it writes no file, because it changes state a caller
+	 * must be able to undo and a Read toolset is the one this plugin promises cannot change
+	 * anything.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPTrace(const FString& Action, const FString& NodeId);
 };
 
 /**
