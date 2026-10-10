@@ -100,9 +100,42 @@ def main():
     # argument to `["cmd.exe", "/c", ...]` makes Python quote it and cmd rejects it. The command owns
     # the redirect and Python only reads the log - letting subprocess open the same file gives "the
     # process cannot access the file because it is being used by another process" and an empty log.
-    completed = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", SCRIPT],
-        capture_output=True, text=True, cwd=REPO)
+    # A TIMEOUT OF ITS OWN, BECAUSE THE SCRIPT IT CALLS CAN LEGITIMATELY WAIT A LONG TIME AND NOTHING BOUNDED IT.
+    #
+    # MEASURED, WITH THE HARNESS DEADLINE IN PLACE: a full run reported `passed 37, failed 2, blocked 0, of 39` and
+    # THIS SUITE WAS ONE OF THE TWO - `RESULT: TIMED OUT (600s)`. Run ALONE it also exceeds 600 seconds with no
+    # other suite involved, so it is THE UNBOUNDED UNIT that blocked the whole run for four rounds. It stayed
+    # invisible because a hang and a slow failure look identical from outside.
+    #
+    # THE TWO TERMS THAT ADD UP PAST ANY DEADLINE: this call had NO `timeout=`, and
+    # `Tools/make-acceptance-asset.ps1` now waits up to 300 SECONDS on a named mutex, waits for the editor PROCESS
+    # rather than sleeping, and the harness's start path can spend two 240-second timeouts. EVERY ONE OF THOSE WAITS
+    # IS CORRECT AND WAS ADDED BECAUSE A RACE PRODUCED A WRONG ANSWER, and their sum still exceeds the budget.
+    #
+    # SO THE SUITE NOW BOUNDS ITSELF AND SAYS SO, INSTEAD OF BEING KILLED BY THE HARNESS. A suite that reports
+    # "the rebuild did not finish in N seconds" is DIAGNOSABLE; a suite the harness had to kill is visible only
+    # because the deadline exists at all. THE FAILURE IS REPORTED, NEVER SWALLOWED - an expired rebuild must not
+    # look like a rebuild that ran.
+    REBUILD_TIMEOUT_SECONDS = 240
+    try:
+        completed = subprocess.run(
+            ["pwsh", "-NoProfile", "-File", SCRIPT],
+            capture_output=True, text=True, cwd=REPO,
+            timeout=REBUILD_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired as expired:
+        print()
+        print("THE FIXTURE REBUILD DID NOT FINISH IN %d SECONDS." % REBUILD_TIMEOUT_SECONDS)
+        print("  This is a TIMEOUT, not a build failure and not a passing run. The script was still working:")
+        print("  it waits up to 300s on the acceptance-asset mutex, waits for the editor process, and the")
+        print("  harness's start path can spend two 240s timeouts of its own. Every one of those waits is")
+        print("  deliberate, and their SUM is what this bound exists to catch.")
+        # A STAND-IN WITH A NON-ZERO EXIT SO EVERY DOWNSTREAM CHECK FAILS FOR THE RIGHT REASON rather than
+        # silently reading whatever partial stdout happened to be buffered.
+        class _Expired(object):
+            stdout = ""
+            stderr = "timed out after %ds" % REBUILD_TIMEOUT_SECONDS
+            returncode = 124
+        completed = _Expired()
     report = Report(completed.stdout or "", completed.returncode)
     print(report.text.strip() or "(no stdout; the log is read instead)")
 
