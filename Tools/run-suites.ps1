@@ -85,71 +85,36 @@ function Start-EditorAndWait {
     $healthy = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
     if ($healthy -match '^PASS') { return $true }
 
-    # A PROBE THAT CAN PASS ON A DYING PROCESS MEASURES THE WRONG THING, SO THE WAIT RUNS IN BOTH
-    # DIRECTIONS: the previous server must be GONE, and then the new one must ANSWER.
+    # ---------------------------------------------------------------------------------------------
+    # THE CAUSE OF THE WHOLE CLASS, MEASURED AT LAST, AND IT IS NOT THE FIXTURE REBUILD.
     #
-    # AND THE PROCESS MUST BE GONE TOO, WHICH IS A SEPARATE CONDITION AND WAS THE MISSING ONE.
-    # `start-editor.ps1` REFUSES to start when it believes an editor is already running - correctly, because
-    # two editors fight over the same `.uasset` - and it decides that from the PROCESS. But the server can
-    # stop answering seconds before the process finally exits, so the down-probe passed, the launcher was
-    # called while the old editor was still shutting down, the launcher REFUSED, and the up-probe then waited
-    # the full timeout for a server nothing was ever going to start. That is `BLOCKED (the editor would not
-    # start)` on a machine where the editor was fine - and it is why the failing suite names CHANGED between
-    # runs, which is the signature of a race rather than of a tool.
+    # Five hypotheses were tested and FALSIFIED before this one: the rebuild script does not fail to print
+    # PASS, its exit code is zero, calling it EXACTLY as the suites do from Python returns 0 with correct
+    # stdout, it is not a log-file lock, and it is not the harness's editor holding the `.uasset`.
     #
-    # MEASURED CONSEQUENCE BEFORE THIS FIX: `passed 32, failed 4, blocked 1, of 37`, then `passed 31, failed
-    # 6`, with `test-graph-check`, `test-layout`, `test-panel-reach`, `test-vars-add` and others each PASSING
-    # when run alone or in a small group.
-    $downDeadline = (Get-Date).AddSeconds(60)
-    while ((Get-Date) -lt $downDeadline) {
-        $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
-        if ($probe -notmatch '^PASS') { break }
-        Start-Sleep -Seconds 2
-    }
-
-    # THE PROCESS IS WAITED FOR SEPARATELY, because "the server stopped answering" and "the process exited"
-    # are not the same event and only the second one lets the launcher start a new editor.
-    $procDeadline = (Get-Date).AddSeconds(45)
-    while ((Get-Date) -lt $procDeadline) {
-        $alive = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
-        if (-not $alive) { break }
-        Start-Sleep -Seconds 1
-    }
-    # AND IF IT IS STILL THERE AFTER THAT, IT IS KILLED RATHER THAN WAITED FOR INDEFINITELY. A stubborn
-    # editor holds the plugin DLL and the `.uasset` handles, so leaving it would make the next suite fail for
-    # a reason that has nothing to do with the suite.
-    $stubborn = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
-    if ($stubborn) {
-        Write-Output ("    a previous editor (PID {0}) outlived the stop; killing it before starting a new one" -f `
-            ($stubborn.Id -join ', '))
-        $stubborn | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 3
-    }
-
-    # THE GHOST PROCESSES ARE CLEARED TOO. MEASURED: an `UnrealEditor-Cmd` left by an experiment keeps
-    # `UnrealEditor-TurboMCP.dll` mapped and makes the NEXT BUILD fail with `LNK1104`, and `-Stop` does not
-    # know about it because it is not the editor the launcher started.
+    # WHAT IS ACTUALLY WRONG: `Tools/start-editor.ps1` REFUSES TO START WHEN IT BELIEVES AN EDITOR IS ALREADY
+    # RUNNING - correctly, because two editors fight over the same `.uasset` - AND IT DECIDES THAT FROM THE
+    # PROCESS. MEASURED: `start-editor.ps1` answered `FAIL an editor is already running (PID 53852)` while
+    # `check-mcp-server.py` could NOT REACH A SERVER, and the suite then died on `connect()`. So the harness
+    # had a LIVE PROCESS WHOSE SERVER NEVER CAME UP, and every later suite inherited it: the launcher refused
+    # to start a fresh editor and the old one never answered. THAT IS THE FAILURE, AND IT EXPLAINS EVERY
+    # OBSERVATION - the names changing between runs, every suite passing alone, and the complaints landing on
+    # whichever fixture the wedged editor happened to be holding.
+    #
+    # ONE RETRY, AFTER CLEARING THE PROCESS. The first attempt has already run above and its probe has already
+    # failed, so the process in the way is not merely slow - it is not coming. Killing it and starting once
+    # more is the recovery, and ONE retry is deliberate: a loop would turn a genuinely broken editor into a run
+    # that appears to hang, which is the failure mode this project keeps having to undo.
+    Write-Output "  the editor in the way answers nothing; clearing it and retrying ONCE"
+    Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
     Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue |
         Stop-Process -Force -ErrorAction SilentlyContinue
-
-    # THE LAUNCH TIME IS RECORDED SO THE POLL CAN PROVE A *NEW* EDITOR ANSWERED.
-    #
-    # MEASURED, AND THIS IS THE FOURTH INSTANCE OF ONE SHAPE. A full run reported `31 of 39` while the failing
-    # suites were EXACTLY the ones that rebuild a fixture, and EVERY ONE passed in isolation;
-    # `make-acceptance-asset.ps1` run directly returns exit 0. There are now TWENTY invocations of fixture
-    # scripts across the suites, each of which stops the editor and runs a commandlet, so the harness restarts
-    # an editor far more often than before - and the probe below only asked whether SOMETHING answered on port
-    # 8000. A server from an editor that is still SHUTTING DOWN answers for a few seconds, so the probe
-    # returned PASS, the suite connected to a dying editor, and it died with NO RESULT LINE. The names changed
-    # between runs and each passed alone, which is the signature this project has now recorded four times.
-    #
-    # A PROBE THAT CAN PASS ON A PROCESS THAT IS LEAVING MEASURES THE WRONG THING. So the poll requires BOTH:
-    # an `UnrealEditor` THAT STARTED AFTER THIS LAUNCH, and a server that answers.
+    Start-Sleep -Seconds 5
     $launchTime = Get-Date
     & pwsh -NoProfile -File $StartEditor 2>&1 | Out-Null
-
-    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
-    while ((Get-Date) -lt $deadline) {
+    $retryDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $retryDeadline) {
         $fresh = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
             Where-Object { $_.StartTime -ge $launchTime.AddSeconds(-2) }
         if ($fresh) {
@@ -158,8 +123,11 @@ function Start-EditorAndWait {
         }
         Start-Sleep -Seconds 3
     }
+    # THE RETRY FAILED TOO, SO THE FUNCTION REPORTS THAT RATHER THAN FALLING THROUGH INTO THE CODE BELOW,
+    # WHICH BELONGS TO THE NORMAL PATH AND WOULD START A THIRD EDITOR.
     return $false
 }
+
 
 function Stop-Editor {
     & pwsh -NoProfile -File $StartEditor -Stop 2>&1 | Out-Null
