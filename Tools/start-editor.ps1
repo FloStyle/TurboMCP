@@ -266,12 +266,21 @@ $Args = @($Project)
 if ($Offscreen) { $NullRHI = $true }
 if ($NullRHI) { $Args += @('-nullrhi','-unattended') }
 if (-not [string]::IsNullOrWhiteSpace($Culture)) { $Args += @("-culture=$Culture") }
-# -LiveCoding=0 SUPPRESSES THE LIVE CODING CONSOLE, WHICH IS WHAT TAKES THE FOREGROUND DURING A BUILD.
+# LIVE CODING IS DROPPED, AND THESE ARE THE MEASUREMENTS THAT DROPPED IT, KEPT SO NOBODY RE-TRIES THEM.
 #
-# MEASURED, FROM THE ENGINE SOURCE RATHER THAN FROM BEHAVIOUR (LiveCodingModule.cpp:490-498):
-#     if (bool bCommandLineEnable; FParse::Bool(FCommandLine::Get(), TEXT("-LiveCoding="), bCommandLineEnable))
-#     { bAllowAutoStart &= bCommandLineEnable; bForceStart = bCommandLineEnable; }
-# SO -LiveCoding=0 CLEARS THE AUTO-START FLAG, and line 501 gates the auto-start on AllowAutoStart.
+# `LiveCodingConsole` IS WHAT CALLS `BringToFront` BY DESIGN - LiveCodingConsole.cpp binds `BringToFront` and
+# `BringToFrontAsync` to the server's own ShowConsole/BringToFront delegates and runs `BringToFront` as a main
+# thread task - AND IT IS LAUNCHED WITH `-Hidden` (LiveCodingModule.cpp:1104), which is why an enumeration of
+# VISIBLE windows never saw it. `-LiveCoding=0` IS a real flag and DID suppress it (measured: 0 processes),
+# BUT THE EDITOR THEN FAILED TO REACH A HEALTHY STATE, twice.
+#
+# AND THAT IS THE FOURTH SUPPRESSION TO COST MORE THAN IT FIXED: `-Offscreen` (which implies `-nullrhi`),
+# `ShowWindow(SW_HIDE)` and `ShowWindow(SW_SHOWMINNOACTIVE)` each killed the editor outright.
+# THE OWNER'S CALL WAS TO CONTINUE HEADLESS: "si live coding demarre pas pour l'instant continue en headless".
+#
+# WHAT REMAINS TRUE ABOUT FOCUS: the CPU competition is fixed by `-LowPriority` (BelowNormal, applied AFTER a
+# proven startup), so a game keeps its frame budget. The editor window still takes the foreground, and the
+# four attempts to stop that are recorded above rather than re-attempted.
 #
 # AND THE CONSOLE IS THE CULPRIT RATHER THAN THE EDITOR WINDOW: LiveCodingConsole.cpp binds BringToFront and
 # BringToFrontAsync to the server's own ShowConsole/BringToFront delegates and runs BringToFront as a main
