@@ -4940,3 +4940,57 @@ AND TWO OF ITS SELF-CAUSED BUGS ARE NEW SENTENCES HERE: it wrote `ASSET = "BP_No
 `TA01_HandLaid`, so `dead-nodes` correctly reported `looked at 0, found 0` ABOUT THE WRONG ASSET and three checks
 failed on *** a tool defect that did not exist ***; and its node-key parser was non-greedy and anchored on `^\S` while
 the findings are INDENTED, **so it returned nothing and looked exactly like a tool reporting no node IDs.**
+
+---
+
+## 25. The four `no result line` are neither contention nor individual failure: they are the LENGTH of the run
+
+**MEASURED, AND IT RULES OUT BOTH SIMPLE EXPLANATIONS.** The machine was verified idle (`UBT=0 editeur=0`) and the
+three suites that reported `no result line` in the full run were run TOGETHER through the same harness:
+
+    test-agent-help      RESULT: PASS
+    test-capture         RESULT: PASS
+    test-comment-boxes   RESULT: PASS
+    passed 6, failed 0, blocked 0, of 6
+
+**SO THEY ARE NOT CONTENTION - nothing else was running - AND THEY ARE NOT INDIVIDUALLY BROKEN.** The same three
+suites, through the same invocation, pass. **WHAT DIFFERS IS ONLY THAT IN THE FULL RUN THEY CAME AFTER FORTY-ODD
+OTHER SUITES.**
+
+*** AND THAT IS A DIFFERENT KIND OF DEFECT FROM EVERY ONE THIS PROJECT HAS RECORDED SO FAR. *** The four false
+regressions fixed earlier were all CONTENTION - two things running at once. **THIS IS ACCUMULATION: SOMETHING ABOUT
+THE EDITOR OR THE HARNESS DEGRADES ACROSS A LONG RUN, AND THE SUITES THAT FAIL ARE WHATEVER REACHES THE DEGRADED
+STATE FIRST.** That is why the failing NAMES have moved between runs while each suite passes alone, **and it is why
+"check for another process" - the guard that correctly explained the previous three false regressions - DOES NOT
+EXPLAIN THIS ONE.**
+
+### 25.1 What is already narrowed
+
+- **IT IS NOT THE SESSION RETRY RECURSING.** Fixed and verified; the `_connecting` guard is at
+  `Tools/tmcp.py:40,77,82,86`. A workstream diagnosed that defect correctly this round while reading a STALE MODEL of
+  the file - **recorded because a right diagnosis of a fixed defect looks exactly like a right diagnosis of a live
+  one.**
+- **IT IS NOT A SUITE'S OWN TIMEOUT.** `no result line` is what the HARNESS prints when a suite produces no verdict.
+- **AND THE PER-SUITE DEADLINE OF TEN MINUTES DID NOT FIRE**, so these suites did not hang - **they ENDED without a
+  verdict. A SUITE THAT EXITS WITHOUT A VERDICT IS DIFFERENT FROM ONE THAT HANGS, AND THE DEADLINE CANNOT SEE IT.**
+  That is a gap in the guard: it bounds a suite that never returns and says nothing about one that returns empty.
+
+### 25.2 The hypotheses worth measuring next, in order of cheapness
+
+1. **A LEAK, SUCH AS SOCKETS OR HANDLES.** Forty-three suites each open MCP connections; if one is not released, a
+   later `urlopen` fails and the suite dies before printing. **Cheap: run the full suite and watch the process and
+   handle counts of the editor and the python processes across the run.**
+2. **THE EDITOR ITSELF DEGRADING.** **Cheap: the harness already reuses a healthy editor by design, so a run that
+   restarts it every N suites would show whether the failures move to the restart boundary.**
+3. **THE HARNESS'S OWN ACCOUNTING.** `no result line` is a verdict the harness writes; if it is written on a PATH
+   rather than as a consequence of the suite, a suite could have passed and been recorded as voiceless. *** THAT
+   WOULD BE THE WORST OF THE THREE, because it would mean the 38 is not a measurement of the suites at all - and the
+   way to rule it out is to make the harness PRESERVE THE STDOUT of a suite that produced no verdict instead of
+   discarding it. ***
+
+### 25.3 And the consequence for every future run
+
+**`test-bp-lint` REPORTED `no result line` IN THE FULL RUN AND `PASS (37 check(s) run)` THROUGH THE SAME HARNESS
+MINUTES LATER.** So the full run's number for a NEW capability can be a FALSE NEGATIVE while the capability is fine,
+**AND THE ONLY WAY TO TELL IS TO RE-RUN IT ALONE - WHICH IS THE PRACTICE THIS PROJECT ALREADY ADOPTED, AND WHICH THE
+FULL RUN'S NUMBER MUST NEVER BE ALLOWED TO OVERRIDE.**
