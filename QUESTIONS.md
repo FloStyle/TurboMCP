@@ -1084,7 +1084,7 @@ workstream, and the fix matches it.
 
 ---
 
-## Q-17. OPEN, NARROWED BUT NOT CLOSED: `test-play-check` cannot prove its warning/error COUNT is MEASURED
+## Q-17. CLOSED (round 25): `test-play-check` now MEASURES its warning/error count, because the PIE test map makes a real warning possible
 
 **WHAT WAS WRONG.** Breaking the renderer to hardcode `0 warning(s) and 0 error(s)` still passed the whole
 suite. Two causes, both now fixed as far as they can be without an injection the project cannot yet perform:
@@ -1145,3 +1145,49 @@ one found is `IConsoleCommandExecutor`, which the Python plugin registers as a m
 `unreal.log_warning` / `unreal.log_error` and assert exactly 1 and 1. That needs a new tool or an MCP-visible
 hook, which is outside this suite's file boundaries and should be a deliberate decision rather than a side
 effect of closing a test hole.
+
+---
+
+## Q-18. CLOSED (round 25): a NON-PAUSING trace is possible, needs no graph edit, and now has a live hit
+
+**WHAT WAS OPEN.** `FBlueprintCoreDelegates::OnScriptException` was subscribed and had NEVER BEEN OBSERVED TO
+FIRE. The subscription registered and the count stayed at zero, and the cause could not be told apart from
+"nothing in this project executes Blueprint code".
+
+**WHAT CLOSED IT, AND THE REASON WAS A FACT ABOUT THE PROJECT RATHER THAN ABOUT THE MECHANISM.**
+`TestProject/Content` contained ZERO `.umap` files, so Play-In-Editor ran the engine's empty
+`/Temp/UEDPIE_0_Untitled_1` world, NOTHING IN IT EXECUTED BLUEPRINT CODE, and the VM never reached an
+`EX_Tracepoint`. `Tools/make-test-map.ps1` now builds `/Game/Tests/TurboMCPTestMap` carrying a native
+`ATurboMCPTestLogActor` and a Blueprint `BP_TurboMCPTestLog` whose `ReceiveBeginPlay` runs a node.
+
+**THE BLUEPRINT WAS MANDATORY RATHER THAN A PREFERENCE:** ONLY THE BLUEPRINT VM RAISES `OnScriptException`, so a
+native actor could never make the trace fire however much code it ran.
+
+**MEASURED, THE FIRST LIVE TRACE HIT IN THIS PROJECT:**
+```
+8 script exception(s) have reached this module
+  type 1 : 4      type 1 is Tracepoint
+  type 2 : 4      type 2 is WireTracepoint
+  BP_TurboMCPTestLog:EventGraph:914137 : 2 hit(s)
+  16817910.851  BP_TurboMCPTestLog:EventGraph:914137  PrintString  thread 25212
+```
+
+**AND THE SAME FIXTURE CLOSED Q-17**, which had been blocked for exactly the same reason: nothing executed, so
+nothing could raise a warning. `play check: played for 6.0 second(s) on /Game/Tests/TurboMCPTestMap` now reports
+`1 warning(s) and 1 error(s) in the window` with `TURBOMCP-TESTLOG-WARN` and `TURBOMCP-TESTLOG-ERROR` both
+present. ONE FIXTURE CLOSED TWO OPEN HOLES, and that is worth noting because they had been recorded for several
+rounds as if they were separate problems.
+
+**THE MECHANISM, KEPT HERE BECAUSE THE CITATIONS TOOK A WORKSTREAM TO GATHER:** the VM raises a Tracepoint per
+instrumented node (`ScriptCore.cpp:2529-2537`), `IsDebuggingEnabled()` returns `GIsEditor` in an editor build
+(`:290-297`) so it is ALWAYS ON, the bytecode already carries the opcode
+(`KismetCompilerVMBackend.cpp:1969-1971`, suppressed only by an absent config value), and IT DOES NOT PAUSE,
+which the spec requires (`KismetDebugUtilities.cpp:299-306`: `Breakpoint` sets `bShouldBreakExecution` while
+`Tracepoint` breaks only while already single-stepping). **A KEY CONSEQUENCE RECORDED AS A CORRECTION: `E-TRACE`
+NEEDS NO GRAPH EDIT AND NO RECOMPILE** - the debug site is already in every normally-compiled Blueprint, so the
+capability maintains an IN-MEMORY REGISTRY of armed points only.
+
+**AND ONE LIMIT THAT REMAINS, SO THIS IS NOT READ AS FULLY SETTLED:** `test-trace` proves a NON-ZERO hit count
+and the node's identity, but the SUITE has not been run against a graph where the arming is deliberately broken
+in the engine's own recording path - the break test renames the fixture Blueprint away, which proves the CHECK
+bites rather than that the CAPTURE cannot silently drop a hit.
