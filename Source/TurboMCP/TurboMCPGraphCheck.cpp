@@ -7,6 +7,8 @@
 
 #include "TurboMCPGraphCheck.h"
 
+#include "TurboMCPGraphTextLex.h"
+
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
 #include "TurboMCPNodeType.h"
@@ -39,122 +41,24 @@
 
 namespace
 {
-	/**
-	 * One line of the submission, with the number a reader starts at.
-	 *
-	 * A LINE AND A COLUMN ARE 1-BASED because that is what every editor, compiler and log the caller has
-	 * open uses. An earlier format in this project reported 0-based indexes and the cost was a caller
-	 * looking one line above the fault.
-	 */
-	struct FLine
-	{
-		FString Text;
-		int32 Number = 0;
-	};
+	// THE LINE TYPE AND EVERY LEXICAL RULE NOW COME FROM THE SHARED LEXER, so the checker and the first
+	// writer cannot disagree about what a line is. The project has recorded two-tools-one-format bugs
+	// twice - the graph text and the node ID - and a second reader is exactly how a second dialect starts.
+	//
+	// THE ALIAS IS THE WHOLE TRICK OF THIS REFACTOR: the checker's own name for a line keeps working, so
+	// the ~300 lines below that already use `FLine` did not have to change, while the RULES behind it moved
+	// to one place. `Using` is a namespace-level declaration rather than a second struct, so there is one
+	// type and not two that merely look alike.
+	using TurboMCPGraphTextLex::FLine;
+	using TurboMCPGraphTextLex::IsCommentLine;
+	using TurboMCPGraphTextLex::ExtractHeadTypeId;
+	using TurboMCPGraphTextLex::IsQuoted;
+	using TurboMCPGraphTextLex::LooksNumeric;
 
 	/** The text split on newlines, keeping every line including blanks. */
 	TArray<FLine> SplitLines(const FString& InText)
 	{
-		TArray<FLine> Out;
-		FString Current;
-		int32 Number = 1;
-		for (int32 Index = 0; Index < InText.Len(); ++Index)
-		{
-			const TCHAR Ch = InText[Index];
-			if (Ch == TEXT('\n'))
-			{
-				Out.Add(FLine{ Current, Number });
-				Current.Empty();
-				++Number;
-				continue;
-			}
-			// A carriage return is part of the line ending, never of the content, so a file saved on
-			// Windows and one saved on Linux produce the SAME findings rather than differing by an
-			// invisible character at the end of every line.
-			if (Ch == TEXT('\r'))
-			{
-				continue;
-			}
-			Current.AppendChar(Ch);
-		}
-		Out.Add(FLine{ Current, Number });
-		return Out;
-	}
-
-	/** True when the whole line is a comment, which the format allows anywhere. */
-	bool IsCommentLine(const FLine& InLine)
-	{
-		return InLine.Text.TrimStartAndEnd().StartsWith(TEXT(";"));
-	}
-
-	/**
-	 * The type ID at the start of a node form, with the column it starts at.
-	 *
-	 * A node form is `(<TypeId>` at the head of a line. This deliberately does NOT accept a form that
-	 * merely contains a parenthesis, because the format prints one node per line and the value nodes
-	 * inside a pin are introduced by a SPACE followed by `(`. Recognising only a head-of-line form is
-	 * what keeps `(Math|Float|float>float` after `Condition ` from being mistaken for a statement
-	 * rather than a value - and it is also what makes the column meaningful.
-	 *
-	 * `(-> target)` is skipped: it is a link, not a node, and it is the one other parenthesised form the
-	 * dialect prints.
-	 */
-	bool ExtractHeadTypeId(const FString& InLine, FString& OutTypeId, int32& OutColumn, int32& OutAfter)
-	{
-		OutTypeId.Empty();
-		OutColumn = 0;
-		OutAfter = 0;
-
-		int32 Index = 0;
-		while (Index < InLine.Len() && FChar::IsWhitespace(InLine[Index]))
-		{
-			++Index;
-		}
-		if (Index >= InLine.Len() || InLine[Index] != TEXT('('))
-		{
-			return false;
-		}
-
-		const int32 Open = Index;
-		++Index;
-		const int32 Start = Index;
-		while (Index < InLine.Len() && InLine[Index] != TEXT(')') && InLine[Index] != TEXT(' '))
-		{
-			++Index;
-		}
-
-		const FString Head = InLine.Mid(Start, Index - Start);
-		if (Head.IsEmpty())
-		{
-			return false;
-		}
-
-		// A link form and the two continuation forms the writer emits are not nodes.
-		if (Head == TEXT("->") || Head == TEXT(":then") || Head == TEXT(":else"))
-		{
-			return false;
-		}
-
-		OutTypeId = Head;
-		OutColumn = Open + 1;
-		OutAfter = Index;
-		return true;
-	}
-
-	/** True when a value is written as a quoted string, which the writer does for text and for structs. */
-	bool IsQuoted(const FString& InValue)
-	{
-		return InValue.Len() >= 2 && InValue[0] == TEXT('"') && InValue[InValue.Len() - 1] == TEXT('"');
-	}
-
-	/** True when the value is a plain number the writer would print for a numeric pin. */
-	bool LooksNumeric(const FString& InValue)
-	{
-		if (InValue.IsEmpty())
-		{
-			return false;
-		}
-		return InValue.IsNumeric();
+		return TurboMCPGraphTextLex::SplitLines(InText);
 	}
 
 	/** True when the value is `true` or `false`. */
@@ -225,103 +129,9 @@ namespace
 	 */
 	bool ParsePinLine(const FString& InLine, FString& OutName, FString& OutValue, int32& OutColumn)
 	{
-		OutName.Empty();
-		OutValue.Empty();
-		OutColumn = 0;
-
-		// Drop the trailing editing comment (`; in 3`, `; out 0 then -> 1 link(s)`), which is never part
-		// of the value. The writer only ever emits ONE `;` per pin line and it is always last.
-		FString Body = InLine;
-		const int32 Comment = Body.Find(TEXT(";"), ESearchCase::CaseSensitive, ESearchDir::FromStart);
-		if (Comment != INDEX_NONE)
-		{
-			// A `;` inside a quoted value is content, so only a `;` OUTSIDE quotes ends the body.
-			bool bInQuotes = false;
-			int32 Cut = INDEX_NONE;
-			for (int32 Index = 0; Index < Body.Len(); ++Index)
-			{
-				if (Body[Index] == TEXT('"'))
-				{
-					bInQuotes = !bInQuotes;
-					continue;
-				}
-				if (!bInQuotes && Body[Index] == TEXT(';'))
-				{
-					Cut = Index;
-					break;
-				}
-			}
-			if (Cut != INDEX_NONE)
-			{
-				Body = Body.Left(Cut);
-			}
-		}
-
-		int32 Index = 0;
-		while (Index < Body.Len() && FChar::IsWhitespace(Body[Index]))
-		{
-			++Index;
-		}
-		if (Index >= Body.Len())
-		{
-			return false;
-		}
-
-		OutColumn = Index + 1;
-
-		// A quoted pin name, which the writer uses when the real name holds a space.
-		if (Body[Index] == TEXT('"'))
-		{
-			const int32 Close = Body.Find(TEXT("\""), ESearchCase::CaseSensitive, ESearchDir::FromStart,
-				Index + 1);
-			if (Close == INDEX_NONE)
-			{
-				return false;
-			}
-			OutName = Body.Mid(Index + 1, Close - Index - 1);
-			Index = Close + 1;
-		}
-		else
-		{
-			const int32 Start = Index;
-			while (Index < Body.Len() && !FChar::IsWhitespace(Body[Index]))
-			{
-				++Index;
-			}
-			OutName = Body.Mid(Start, Index - Start);
-		}
-
-		if (OutName.IsEmpty())
-		{
-			return false;
-		}
-
-		while (Index < Body.Len() && FChar::IsWhitespace(Body[Index]))
-		{
-			++Index;
-		}
-		OutValue = Body.Mid(Index).TrimStartAndEnd();
-
-		// THE FORM'S CLOSING PARENTHESIS IS GLUED TO THE LAST PIN'S VALUE, AND MEASURED, THIS COST A
-		// WRONG ANSWER RATHER THAN A CRASH.
-		//
-		// The writer emits `... InString "hi" ; in 3)` when a pin is last, so the value arrives as
-		// `"hi")` - and the first version passed that straight on. The result was that a genuine
-		// mismatch (`InString 42.0`) was reported as an UNJUDGED bare name, `42.0)`, because the value
-		// no longer looked like a number. The checker was not wrong about the text being odd; it was
-		// judging a value the caller never wrote.
-		//
-		// Every `)` that closes the enclosing form or a nested one is TRAILING, because the format puts
-		// one node per line and a nested value node opens its own `(` earlier in the same line. A `)`
-		// inside a QUOTED value is content and is protected by the quote scan above, which is why this
-		// only touches the tail.
-		while (OutValue.EndsWith(TEXT(")")))
-		{
-			OutValue.LeftChopInline(1);
-			OutValue.TrimEndInline();
-		}
-
-		return true;
+		// DELEGATED TO THE SHARED LEXER. The rule for what a pin line is now lives with the rule for what
+		// a node form is, so the checker and the writer cannot drift apart about either.
+		return TurboMCPGraphTextLex::ParsePinLine(InLine, OutName, OutValue, OutColumn);
 	}
 }
 
