@@ -637,9 +637,443 @@ is refused by name.
 Same pipeline as section 8, for material graphs, after R-MAT-LOAD prints
 every input (constants included). Test: T-WRITE-6.
 
+The write entry points are the same three names as section 8, with `MAT` in
+place of `GRAPH`: `P/E-MAT-APPEND`, `P/E-MAT-REPLACE`, `P/E-MAT-PATCH`, and
+the gate `P-MAT-CHECK`. They differ from the graph ones in exactly one way:
+the compiled result must be the same, because a material's output is what it
+computes and not the text of its graph. The same measured check that
+`E-MAT-TIDY` and `E-MAT-LABEL-PROMOTE` already perform (set of expressions
+identical, no new engine error, `StateId` reported and not asserted) is the
+gate for all three.
+
+A material instance is NOT written through these. It is not a graph: it is a
+list of overrides, and it gets its own pair (`P/E-MAT-INST-SET`).
+
+### R-MAT-INST-LOAD: read a material instance
+
+- Input: one material instance, optional detail.
+- Output: the parent chain up to the base material, then every parameter the
+  instance overrides with its value, then every parameter the parent has that
+  this instance does NOT override, marked as inherited.
+- The second list is the one that matters: an agent asked to change a
+  parameter needs to know whether the value it wants to change is really on
+  this instance or inherited from a parent it does not own.
+- A parameter name the parent does not declare is reported as orphaned
+  rather than dropped, because a renamed parameter leaves one behind.
+- Test: T-MAT-10.
+
+### P/E-MAT-INST-SET: change overrides on a material instance
+
+- Input: instance, a list of `Parameter = value` pairs, and a flag for what
+  to do with a parameter the parent does not declare.
+- Preview: each parameter with its current value, its new value, and whether
+  it is inherited, overridden here or orphaned. A parameter that does not
+  exist on the parent is refused by name with the closest real parameter
+  names, because setting one would write a value nothing reads.
+- Edit: sets the overrides and re-reads them through R-MAT-INST-LOAD rather
+  than reporting its own intention.
+- Also reports the compiled `StateId` before and after, and rolls back when
+  the engine raises a NEW error.
+- Test: T-MAT-11.
+
+### R-MAT-ARGS: read a material parameter collection
+
+- Input: collection asset.
+- Output: one line per parameter with its name, its type (scalar or vector),
+  its default value and how many loaded materials or Blueprints read it.
+- A collection parameter nothing reads is printed as unused, with its index,
+  because a collection is small and an unused entry is nearly free to see
+  and expensive to guess.
+- Test: T-MAT-12.
+
+### P/E-MAT-ARGS-SET: edit a material parameter collection
+
+- Input: collection, list of parameters to add, change or remove, each as
+  `Name: Type = Default`.
+- Preview: every change, and for a removal, the loaded readers that reference
+  it by index. **A removal changes the index of every later parameter**, so
+  the readers are listed and the shift is stated in words. When readers
+  exist, the removal is refused unless `force` names the count.
+- Edit: applies, then re-reads the collection through R-MAT-ARGS.
+- Test: T-MAT-13.
+
 ---
 
-## 10. Debugging
+## 10. Graph structure tools
+
+The capabilities in this section are the ones an agent needs to restructure
+a Blueprint rather than to edit one body. They are all in the graph writing
+family and share its pipeline (`08_ROADMAP.md`).
+
+### E-GRAPH-RENAME: rename a variable, function or event, with the references
+
+- Input: Blueprint, a kind (`variable`, `function`, `event`, `custom event`),
+  the current name, the new name.
+- Renames the member AND every reference to it, in every graph of the
+  Blueprint, through the editor's own rename path rather than by rewriting
+  nodes: `FKismetEditorUtilities` and `UBlueprintEditorLibrary` already do
+  this, and a second implementation would disagree with the editor the first
+  time either changed.
+- Refuses a new name that is already used, and NAMES what holds it, exactly
+  as `E-FUNCTION-ADD` does.
+- Reports, as separate counts: how many getters, setters, call nodes, local
+  uses, widget property bindings and delegate bindings were updated, and how
+  many references it could NOT update, each named. A rename that leaves one
+  broken reference compiles into an error the agent did not ask for.
+- Then compiles and reports new errors, and rolls back on any new one.
+- NO PREVIEW TWIN, deliberately, and the description says so: the rename is
+  not reversible by a Preview, and its refusals are all name checks that
+  `R-BP-LOAD` and `R-OVERRIDES` already answer.
+- Test: T-STRUCT-9.
+
+### E-GRAPH-COLLAPSE: extract a selection into a function or a macro
+
+- Input: Blueprint, graph, the node IDs to extract, the new member's name,
+  and `function` or `macro`.
+- The selection's boundary is computed, not guessed: every link that crosses
+  the selection edge becomes an input or an output of the new member, in
+  order. A selection with no exec boundary is refused, naming why, because a
+  function needs one entry and one result.
+- Uses the engine's own `FBlueprintEditorUtils::CollapseNodesIntoGraph`. A
+  hand-built member would not be the thing the editor's own Collapse makes.
+- Refuses a selection that contains an entry, an event or a result node,
+  naming it, because collapsing those is not a refactor the agent asked for.
+- Reports the new signature (inputs and outputs with their types) READ BACK
+  from the created member, the replaced node count, and the compile result.
+  One transaction; rolled back on any new compile error.
+- Test: T-STRUCT-10.
+
+### E-GRAPH-COPY: copy a block from one graph to another
+
+- Input: source asset, source graph, node IDs, target asset, target graph,
+  and optional target node ID to link the copied block's entry into.
+- The boundary is computed the same way as collapse: a link that leaves the
+  selection and stays inside the target scope is re-linked; a link that
+  leaves it and has nothing to point at in the target is REPORTED by name and
+  left unconnected rather than silently dropped.
+- A variable, function or event the target asset does not have REFUSES the
+  whole copy and names each missing member, because half a block is worse
+  than none.
+- Same asset and graph on both sides is refused by name and pointed at the
+  paste-in-place case, which is what a duplicate actually is.
+- One transaction. Test: T-STRUCT-11.
+
+### P/E-INTERFACE: add, implement and remove interfaces
+
+- Input: Blueprint, interface asset path, action (`add`, `remove`).
+- `add` adds the interface and reports which of its functions are not
+  implemented yet, by name, from the same source `R-OVERRIDES` uses.
+- `remove` REFUSES while the Blueprint still implements any of the
+  interface's functions, and names them, unless `force` is given: removing
+  the interface with implementations still present leaves graphs nothing
+  calls and a Blueprint that no longer compiles.
+- A name that fits more than one interface asset is refused with both paths
+  (P2).
+- Preview lists the change and what would be left unimplemented. Edit
+  re-reads the interface list from the Blueprint afterwards. One transaction.
+- Test: T-STRUCT-12.
+
+---
+
+## 11. Widget authoring
+
+`R-BP-LOAD` already reads a widget tree. Nothing writes one. This section is
+that writer, and it needs a text dialect of its own, because a widget tree is
+not a graph: it is an ordered hierarchy with per-slot layout on every child.
+The dialect is specified in `04_FORMATS.md` section 8 and follows the same
+rule as `D-15`: what the reader prints is what the writer accepts.
+
+### P/E-WIDGET-TREE: write the widget tree
+
+- Input: Widget Blueprint, tree text in the dialect of `04_FORMATS.md`
+  section 8, and an action: `append`, `replace`, `patch`.
+- The three actions mean exactly what their graph twins mean: `append` adds
+  and cannot remove; `replace` rewrites the whole tree under the root and
+  LISTS every widget it removes; `patch` matches by widget path and changes
+  only what the text describes.
+- Every widget is addressed by its path in the tree
+  (`Root/Overlay/Card/PriceText`), which is the form `R-BP-LOAD` prints, so
+  an agent never invents a name. A path that does not exist is refused with
+  the closest real paths.
+- Renaming a widget is a REFUSAL, not a rename: a name that changes breaks
+  every binding and every call node that names it. `P/E-WIDGET-SET` changes
+  the name and updates the references, in one place, on purpose.
+- A panel's slot count is enforced where the engine enforces it: adding a
+  third child to a `SizeBox` is refused by name rather than accepted and
+  discovered at compile time.
+- The reader and the writer share one code path, as `D-15` requires: the
+  tree prints in the dialect this accepts, at any detail level.
+- One transaction, compile, read back, compare, roll back on a new error.
+- Tests: T-WIDGET-1 to T-WIDGET-4.
+
+### P/E-WIDGET-SET: widget properties, slots and style
+
+- Input: Widget Blueprint, widget path, and property assignments.
+- Covers three layers, and names which one each assignment lands on:
+  - the widget's own properties (`Visibility`, `ToolTipText`, `bIsEnabled`),
+  - its SLOT properties, which live on the slot type and not on the widget
+    (`Padding`, `HorizontalAlignment`, `Anchors`, `Offsets`, `Size`),
+  - its STYLE, for the widgets that carry one (`FButtonStyle`,
+    `FSlateBrush`, fonts, colours), addressed by style member.
+- Values are set through the engine's own text import, so the accepted
+  spellings are the details panel's and not a format invented here. A
+  property name that does not exist is refused with the closest real names
+  from that widget's reflection, which is what `07_ENGINE_NOTES.md`
+  section 3.2 requires, because widget property names are the C++
+  names and their case varies.
+- A property marked not instance editable is refused by name; setting it
+  would write a value the instance cannot hold.
+- Renaming a widget is done HERE and here only: the name change is followed
+  by updating every binding and every call node that names it, and the count
+  of each is reported. When a reference cannot be updated it is named and the
+  whole change is rolled back.
+- Preview lists old value, new value and the layer for each assignment. Edit
+  re-reads each value afterwards rather than reporting its intent. One
+  transaction.
+- Test: T-WIDGET-5.
+
+### R-WIDGET-ANIM: read widget animations
+
+- Input: Widget Blueprint, optional animation name.
+- Output per animation: its name, its length in seconds, whether it loops,
+  and one line per track: the target widget's path, the property animated,
+  and every key with its time, its value and its interpolation.
+- A track whose target widget no longer exists is reported as broken with the
+  missing path rather than skipped, because a widget rename is exactly how
+  that happens and the animation is the last place anyone looks.
+- Test: T-WIDGET-6.
+
+### P/E-WIDGET-ANIM: write widget animations
+
+- Input: Widget Blueprint, animation name, and a list of tracks, each naming
+  a widget path, a property and its keys.
+- An animation that does not exist is created; one that exists is refused
+  unless `replace` is asked for, and the refusal names it.
+- Preview: every track with the keys it would write, and for an existing
+  animation the keys it would change or drop, listed rather than counted.
+- Edit: one transaction, then re-reads through R-WIDGET-ANIM and reports
+  every key that did not read back as written.
+- Test: T-WIDGET-7.
+
+### P/E-WIDGET-BIND: property and event bindings
+
+- Input: Widget Blueprint, widget path, kind (`property` or `event`), the
+  target function or property, action (`add`, `remove`).
+- `event` and `property` are different things and are refused apart: an
+  event binding answers a delegate and points at a function; a property
+  binding answers a value and points at a function or a property. A caller
+  that names the wrong one is told which is which.
+- `R-BP-LOAD` already reads event bindings. This pair adds the WRITE side and
+  the property-binding side, and reuses `EditTurboMCPWidgetBindAdd`'s code
+  rather than growing a second binder (`E-WIDGET-BIND-ADD` stays as the
+  low-level single-binding tool and is pointed at by this one).
+- A remove that would leave a function with no caller is reported as such and
+  not refused, because an agent may be about to delete that function next.
+- Preview re-reads through the readers; Edit re-counts the bindings from the
+  Blueprint afterwards. One transaction.
+- Test: T-WIDGET-8.
+
+---
+
+## 12. Assets, structs and data
+
+### P/E-DATATABLE-ROWS: rows of a data table
+
+- Input: DataTable, and a list of row operations, each naming a row and
+  either the field values or `remove`.
+- Values are written through the row struct's own text import, so the
+  accepted spellings are the struct's export text and not a format invented
+  here. A field name that does not exist is refused with the real field
+  names.
+- A row added must have a struct-compatible name (the engine requires it, and
+  deriving a name silently is how two rows end up fighting over one entry).
+- Preview: each row with its current and new values, listed field by field,
+  and each removal listed by name.
+- Edit: one transaction, then re-reads the row names and each changed value
+  back from the table. A table with unsaved changes is reported as such.
+- This is only possible because the table asset already exists: `RowStruct`
+  is read-only once created (Q-6), so this tool never creates a table.
+- Test: T-DATA-1.
+
+### P/E-STRUCT-NEW and P/E-STRUCT-FIELDS: user structs
+
+- `P/E-STRUCT-NEW`: create a user struct asset at a package path, with its
+  fields in one call. Each field is `Name: Type`, plus optional
+  `default=`, `tooltip=`, `category=`. Refuses an existing path rather than
+  overwriting it.
+- `P/E-STRUCT-FIELDS`: add, change, reorder and remove fields on an existing
+  struct. A removal is reported with the count of loaded readers that use
+  that field, and refused unless `force` names that count, because a struct
+  field removal breaks every asset that reads it.
+- Both go through `FStructureEditorUtils`, which is what the editor's own
+  struct editor calls.
+- **These cannot be done from a commandlet.** `AddVariable` needs a
+  `UUserDefinedStructEditorData` that only the editor factory installs; the
+  crash that proved this is recorded in Q-15 (TA-10). They are therefore
+  EDITOR-ONLY, and their tests run against a live editor. A commandlet that
+  needs a user struct imports it rather than building it.
+- Tests: T-DATA-2, T-DATA-3.
+
+### P/E-ENUM-EDIT: change an existing enum
+
+- Input: enum asset, and the full desired value list with display names.
+- `P/E-ENUM-ADD` creates an enum and refuses an existing path. This is the
+  other half: it changes one, and it is a separate tool because the refusal
+  in the add is the safe behaviour and must not be relaxed.
+- Preview: values added, renamed, removed, and REORDERED, each listed.
+  `_MAX` and the underlying type are read-only and any attempt to change them
+  is refused by name.
+- A removal is reported with the count of loaded readers that reference that
+  value. Because a user enum's value ORDER is its serialised identity,
+  reordering is reported as a change that affects saved data, in words.
+- Test: T-DATA-4.
+
+### R-ASSET-COST: the size map and hard references of one asset
+
+- Input: one asset, optional detail.
+- Output: the asset's own serialised size, the size of what it pulls in,
+  split into hard references, soft references and editor-only references;
+  then the largest contributors, capped, each with its size and why it is
+  referenced.
+- The numbers come from the asset registry's own size and dependency data
+  plus the package's serialised size. A size that cannot be read is reported
+  as unknown with the reason, never as zero (`P1`, `D-05`).
+- This is the check that catches "a heavy hard reference in a Blueprint that
+  a data asset could have carried", which is invisible in any read of the
+  graph.
+- Test: T-ASSET-3.
+
+### P-ASSET-DIFF: diff two versions of one asset, in text
+
+- Input: two assets, or one asset and a saved copy of it, plus an optional
+  scope.
+- Prints, in the same text the readers produce, only what differs: variables
+  added, removed, retyped; functions added, removed, with a changed
+  signature; graph bodies with a line-level diff of the graph text; widget
+  tree changes; material expression and parameter changes.
+- It is a PREVIEW and not a Read, because it is the tool an agent calls
+  before and after an edit to see what it did, and it belongs beside the
+  other "work it out and report it" tools. It writes nothing.
+- When the two assets are of different classes the diff is refused by name,
+  because a diff between a widget and a material is not a diff.
+- A field it cannot compare is listed as not compared, with the reason. A
+  diff that quietly omits a section reads as "nothing changed there", which
+  is the one thing a diff must never say wrongly.
+- Test: T-ASSET-4.
+
+### E-ASSET-NEW, E-ASSET-RENAME, E-ASSET-MOVE, E-ASSET-DUPLICATE
+
+- `E-ASSET-NEW`: create an empty asset of a named class at a path. Refuses an
+  existing path.
+- `E-ASSET-RENAME` and `E-ASSET-MOVE`: rename or move, then FIX THE
+  REDIRECTORS, because a rename that leaves redirectors behind breaks every
+  asset that pointed at the old path and does it silently, at a later date,
+  in someone else's session.
+- `E-ASSET-DUPLICATE`: copy an asset to a new path.
+- All four report the OLD and NEW object paths, the count of other assets
+  whose references were updated, and the redirectors fixed. They call the
+  editor's own asset tools, which already do the fixup, rather than moving
+  files on disk.
+- A rename or move of an asset that is currently open in an editor tab
+  REFUSES and names the tab, because the editor's own tools are the only
+  thing that can close it safely and this tool cannot.
+- Tests: T-ASSET-5, T-ASSET-6.
+
+### R-CURVE-LOAD and P/E-CURVE-SET: curve assets and curve tables
+
+- `R-CURVE-LOAD`: read a `UCurveFloat`, `UCurveVector`, `UCurveLinearColor`
+  or `UCurveTable`. Prints the interpolation, the key count and every key
+  with its time and value. For a curve table, also prints the row names.
+- `P/E-CURVE-SET`: replace the keys of one curve or one curve table row,
+  with the same add / replace / remove vocabulary as the other writers, then
+  re-read through `R-CURVE-LOAD` and report every key that did not read back.
+- A curve with no keys and a table with no rows are both printed as facts,
+  not as empty output.
+- Tests: T-DATA-5, T-DATA-6.
+
+---
+
+## 13. Level and actors
+
+### R-LEVEL-LOAD: read a level
+
+- Input: a map asset, an optional filter (words, class, folder) and an
+  optional detail level.
+- Output: the map's own path and world settings, then one line per actor:
+  its label, its class, its folder, whether it is editor-only, whether it is
+  a Blueprint actor and which Blueprint, and its transform.
+- Detail `properties` adds the actor's editor-visible property values that
+  differ from the class default, read by reflection. That is the list an
+  agent needs before it changes anything, because a value that matches the
+  default is not written anywhere.
+- Components are NOT printed at this level: `R-ACTOR-LOAD` does that for one
+  actor, because a level with 4000 actors cannot carry 4000 component trees
+  in one answer.
+- The actor count is always printed before the filter is applied, so a filter
+  that matches nothing cannot look like an empty level.
+- A map that is not currently loaded is loaded read-only; the result says
+  whether it had to load it.
+- Test: T-LEVEL-1.
+
+### R-ACTOR-LOAD: read one actor and its components
+
+- Input: a map asset and an actor (by label, by path, or by node ID), and an
+  optional detail level.
+- Output: the actor's class, transform, every editor-visible property with
+  its value, and its COMPONENT HIERARCHY: one line per component with its
+  name, its class, its parent in the hierarchy, its transform, and the
+  properties that differ from the class default.
+- An actor whose label fits more than one actor in the level is refused with
+  every candidate and its path, because a label is not an identity (P2).
+- A Blueprint actor's components are marked as inherited from the Blueprint or
+  added on this instance: the difference decides whether changing one belongs
+  in `P/E-COMPONENTS` or here.
+- Test: T-LEVEL-2.
+
+### E-ACTOR-PLACE: place actors in a level
+
+- Input: a map asset, a list of actors to place: class or Blueprint path,
+  transform, label, folder, and optional property values.
+- Uses the editor's own actor factory path, so a placed Blueprint actor is
+  the same thing the Place Actors panel makes, with its components built.
+- A class or Blueprint path that fits nothing is refused with the closest
+  asset names for a Blueprint and the closest class names for a native class.
+- Reports each placed actor's label and path as the editor now sees it, read
+  back from the level, rather than the transform it was asked for.
+- One transaction for the whole list. Test: T-LEVEL-3.
+
+### P/E-ACTOR-SET: move and configure actors
+
+- Input: a map asset, one or more actors (label, path or node ID), and
+  property or transform assignments.
+- Preview: each actor with its old and new values, and for a transform the
+  old and new location, rotation and scale.
+- Edit: sets the values and RE-READS each one from the actor, reporting every
+  assignment that did not read back as written. One transaction.
+- Renaming an actor's LABEL is allowed and is not the same as renaming the
+  actor's object name, which is a different operation this tool refuses by
+  name and points at the content tools for.
+- Test: T-LEVEL-4.
+
+### E-COMPONENTS: edit a Blueprint actor's component hierarchy
+
+- Input: a Blueprint actor asset, and a list of component operations: add a
+  component of a class, remove one, reparent one, rename one, and set its
+  properties.
+- This is the Blueprint's component list, NOT a placed instance's overrides:
+  a change here reaches every instance, and the result says so in words,
+  because that is the mistake this tool exists to make impossible.
+- An instance-level change is refused by name and pointed at `E-ACTOR-SET`,
+  and the two outputs name their scope explicitly.
+- A removal is reported with the count of loaded levels that place this
+  Blueprint, because removing a component an instance overrides loses the
+  override.
+- One transaction, compile, read back, roll back on a new error.
+- Test: T-LEVEL-5.
+
+---
+
+## 14. Debugging
 
 ### E-CALL-LOG and R-CALL-LOG: record every tool call
 
@@ -666,17 +1100,351 @@ every input (constants included). Test: T-WRITE-6.
   them all.
 - Test: T-DBG-2.
 
-### Breakpoints (research first)
+### Breakpoints: research first, and the research is the first deliverable
 
-Only after checking that the MCP server still answers while the editor is
-stopped at a Blueprint breakpoint. If it does not, an agent would hang.
-Then: set and clear breakpoints by node ID, read the debug state (where it
-stopped, the stack of calls, variable values), continue, step. Shown in
-the panel with a remove all button.
+`D-36` says trace points come before breakpoints because a breakpoint stops the
+editor in a nested loop. That reasoning still stands, and it is now an
+EXPERIMENT rather than a paragraph.
+
+**The measurement, before any breakpoint tool is written:**
+
+1. Arm one Blueprint breakpoint by any means, in one node that runs early in a
+   play session.
+2. Call `R-TOOL-INDEX` over the MCP while the editor is stopped there, with a
+   short timeout.
+3. Record which happened, with the evidence: the call answered; the call
+   blocked until the session was resumed by hand; the editor stopped
+   answering the server entirely.
+4. Repeat with a breakpoint hit from a node whose Blueprint is being edited in
+   an open tab, because the nested loop may only block the thread that owns
+   the paused session.
+
+The result decides the shape of everything below and is written into
+`07_ENGINE_NOTES.md` section 5 with the date and the engine version.
+
+- If the server **answers**, the tools below are buildable as specified.
+- If the server **blocks**, then no tool that pauses can exist in this plugin,
+  because the agent that called it would hang until a human resumed the game.
+  That is a HARD refusal, not a limitation to work around by waiting. The
+  alternative for that case is already built: `E-TRACE` and `R-TRACE` report
+  pin values and named variables without pausing, and the honest answer to
+  "why can I not step through it" belongs in the refusal text of the
+  breakpoint tools, or in a decision that they are not built at all.
+- If the server **answers but slowly** (a call that has to wait for the game
+  thread), the tools must be split into a request half and a collect half
+  exactly like `R-PLAY-CHECK`, and their descriptions must say so.
+
+**The tools, once the measurement allows them:**
+
+### E-BREAKPOINT: set and clear breakpoints
+
+- Input: `action` (`set`, `clear`), one or more node IDs, and an optional
+  enabled flag.
+- A breakpoint is armed on a NODE, by the same node ID every other tool uses.
+- It refuses to arm a node in a graph that is not compiled, naming why: a
+  breakpoint on a node the VM does not run is a breakpoint that never hits,
+  and "it never stopped" is the worst evidence to debug from.
+- Everything it arms is listed by `R-BREAKPOINT`, so `P8` holds: nothing an
+  agent sets for debugging is invisible to the human at the keyboard.
+- Test: T-DBG-3.
+
+### R-BREAKPOINT: the breakpoints that are armed
+
+- Input: optional asset or graph filter.
+- Output: every armed breakpoint with its node ID, its graph, its node title,
+  whether it is enabled, and its hit count this session.
+- This is the READ half and cannot arm or clear anything; asking it to is
+  refused by name and the current state is returned instead, exactly as
+  `R-TRACE` does.
+- Test: T-DBG-4.
+
+### R-DEBUG-STATE: where the session is stopped
+
+- Input: optional node ID, optional list of variables to read.
+- Output: whether a session is paused at all; if it is, where it stopped
+  (node ID, graph, the Blueprint instance), the CALL STACK from the top down
+  with each frame's function and its current node, and the values of the
+  named variables, each read through reflection.
+- A variable whose value cannot be read at this stop is reported as unknown
+  with the reason, never as a default or a zero (`D-05`). This is the whole
+  point of the tool: a wrong variable value during a pause sends an agent
+  down a wrong path with full confidence.
+- When no session is paused it says which of the three cases it is: no play
+  session, a play session running, or a paused session it cannot see.
+- Test: T-DBG-5.
+
+### E-DEBUG-CONTROL: continue, step, stop
+
+- Input: `action` (`continue`, `step over`, `step into`, `step out`, `stop`).
+- `continue` in this tool means "resume and let the session run", never
+  "resume and pause again somewhere".
+- `stop` stops a session this plugin did not start. That is deliberate and it
+  is the one place `R-PLAY-CHECK`'s "leave someone else's session alone" rule
+  does not hold, because a session stopped at a breakpoint is a session the
+  user cannot use either. The description says so in those words.
+- A step with no paused session is refused by name rather than silently doing
+  nothing.
+- Every action answers with the new debug state, from the same code path as
+  `R-DEBUG-STATE`, so the two cannot disagree (`D-02`).
+- Test: T-DBG-6.
+
+### P/E-PIE-SCENARIO: run a play session with scripted input
+
+- Input: a scenario: a map, a list of steps, and a duration. A step is a wait,
+  a key press or release, a mouse move, a click or release, or an axis value,
+  each with a time offset in milliseconds.
+- The scenario is applied through the engine's own input path, so what the
+  game receives is an input event and not a direct call into a function. A
+  tool that called the handler directly would prove nothing about the input
+  path, which is what the capability is for.
+- **This is two calls, and that is the engine rather than a choice.** A tool
+  call runs on the editor's game thread and PIE is ticked on that same thread,
+  so a call that started a session and then played the scenario would block
+  the one thread the session needs. `R-PLAY-CHECK` is already split for
+  exactly this reason. The first call validates the scenario and starts the
+  session; the second collects the result, the warnings and errors with their
+  source, the final state of any variables named in the scenario, and any
+  trace hits recorded during it.
+- A step that names a key that is not a real key is refused by name with the
+  closest real key names.
+- One session at a time, like `R-PLAY-CHECK`. A second request while one is
+  pending is refused by name rather than mixing two runs.
+- Preview validates the scenario and reports what it would press, in order,
+  with the times, without starting anything.
+- Test: T-DBG-7.
+
+### R-AUTOMATION-RUN: run the automation tests and read the report
+
+- Input: an optional filter of test names, an optional filter of flags, and a
+  timeout.
+- Starts the engine's own automation tests (`FAutomationTestFramework`), waits
+  for the run, and prints the report: one line per test with its state
+  (success, failure, warning, not run), its duration, and for a failure its
+  first error message with the file and line the engine reported.
+- A test list that matches nothing is refused with the closest real test
+  names, because the engine's test names are long and a typo is the common
+  case.
+- **Whether a tool call may wait for a test run at all is an open
+  measurement**: an automation test can tick the editor, and a call that
+  waits on the game thread may deadlock the same way a paused breakpoint
+  would. The measurement and the two-call fallback are the same as
+  `E-BREAKPOINT`'s, and the result goes into `07_ENGINE_NOTES.md` section 5.
+- Test: T-DBG-8.
 
 ---
 
-## 11. Editor window
+## 15. Quality and maintenance
+
+### R-BP-LINT: what is wrong with this Blueprint
+
+- Input: one or more Blueprints and an optional check filter.
+- Every finding carries a node ID, a severity, and one line saying why it is a
+  finding. The checks are named, not numbered, so a caller can ask for one:
+  - **dead nodes**: the disconnected groups `P-GRAPH-DEAD` would remove, with
+    the entry rule already applied, so nothing an event reaches is ever
+    reported;
+  - **unnecessary casts**: a cast whose result is only used to call a function
+    that is already on the class, or a cast on an object whose type is already
+    known at that point;
+  - **expensive Tick**: work done directly in a Tick or a `ReceiveTick` that
+    could be event driven, with the nodes it depends on named. This is a
+    REPORT and never a claim of a performance number, because no such number
+    can be measured from here;
+  - **heavy hard references**: hard references to assets over a threshold,
+    read from the registry, each naming the asset and its size (the same
+    numbers as `R-ASSET-COST`);
+  - **unused variables, functions and events**: computed the way
+    `R-BP-LOAD`'s relation layer computes it, printed only as the FACTS the
+    relation layer can prove (`D-05`): a variable nothing reads, a function
+    nothing calls, an event nothing binds;
+  - **unconnected pins and orphaned nodes**: an input pin that is required and
+    not linked, and a node nothing reaches.
+- Each check says how many things it looked at, so a check that found nothing
+  is distinguishable from a check that could not run (`P1`).
+- This is a READ tool and it never edits: the fix for a finding is the
+  existing tool, named in the finding.
+- Test: T-QUAL-1.
+
+---
+
+## 16. Agent and session tooling
+
+### R-CALL-COST: the calls that cost the most
+
+- Input: an optional time range, an optional tool filter and a cap.
+- Reads the call log the same code writes and answers the question the log
+  exists for: which calls cost the most tokens, which are slowest, which
+  failed, and what the totals are per tool and per asset.
+- Every line names the exact call that produced it, so the next step is
+  another call and not a guess (`P7`).
+- An empty answer says which of the three it is: logging off, on with no
+  entries, or on with entries that do not match the filter (`P1`). It reads
+  the same log `R-CALL-LOG` reads and shares its parser, so the two cannot
+  disagree.
+- Test: T-HELP-6.
+
+### E-SESSION: one undo for a whole series of edits
+
+- Input: `action` (`begin`, `end`, `abandon`), and a name.
+- `begin` opens one editor transaction and a named session. Every Edit tool
+  called while the session is open joins that transaction instead of opening
+  its own, so the whole series is ONE undo.
+- **The session is bounded and it refuses to be unbounded**: a session older
+  than a configurable number of minutes, or holding more than a configurable
+  number of edits, ends itself and SAYS SO rather than letting an abandoned
+  agent leave the editor holding one transaction for the rest of the day.
+- `abandon` rolls the whole transaction back, which is the escape hatch an
+  agent needs after a series that went wrong halfway.
+- `R-EDIT-SESSION` reads the state: whether a session is open, its name, how
+  long it has been open and how many edits joined it.
+- An Edit that is REFUSED inside a session does not end it or corrupt it: it
+  reports the refusal and leaves the session open, because one bad call in a
+  series should not throw away the good ones.
+- A second `begin` while one is open is refused by name and names the open
+  session.
+- Test: T-QUAL-2.
+
+### P/E-ASSET-BATCH: many assets in one call
+
+- A cross-asset batch is not a new capability so much as a rule, and it is
+  written here because it keeps being asked for: **every tool that takes one
+  asset takes a list**, in the list form of section 1.2, and answers one line
+  per asset, in the order given.
+- The rule has three parts and all three are already how `E-COMPILE`,
+  `E-SAVE`, `R-ASSET-DESCRIBE`, `P/E-VARS-ADD` and `R-BP-LOAD` behave:
+  one line per asset, a failure on one asset does not stop the others, and an
+  asset that could not be resolved is named with the resolver's refusal.
+- `E-ASSET-BATCH` is the deliberate exception to "there is no batching tool":
+  it applies the SAME operation to many assets in ONE transaction, which is
+  what makes it worth a tool. It is `E-SESSION` plus a list, and it is
+  specified as such rather than as a second implementation.
+- Test: T-QUAL-3.
+
+---
+
+## 17. Source control before a write
+
+### E-VCS-CHECKOUT: take the lock before writing
+
+- Input: one or more assets, or no argument to read the state.
+- Before an Edit writes to an asset, the file must be writable in the source
+  control system the project uses. Perforce will refuse a save that is not
+  checked out; git will not, and will happily leave a modified file for
+  someone else to find.
+- This tool reports, per asset: whether the project has source control on at
+  all and which provider; whether the asset's file is under source control;
+  whether it is checked out for edit here; and whether it is out of date with
+  respect to the depot.
+- With assets given it CHECKS THEM OUT, through `ISourceControlModule`'s own
+  provider rather than by shelling out to `p4` or `git`, and reports what the
+  provider answered per asset.
+- **The engine's own checkout path fails headless**, and `07_ENGINE_NOTES.md`
+  records the consequence: `FEditorFileUtils` tried to check out during a
+  headless save, failed, and made `E-SAVE` report a failure while nothing had
+  been written. So this tool must exist BEFORE any automatic checkout is
+  wired into the write tools, and the headless behaviour of each provider is
+  measured and recorded before it is relied on.
+- No automatic checkout happens anywhere until this tool's own tests pass.
+  That ordering is the decision, not an implementation note.
+- Test: T-VCS-1.
+
+---
+
+## 18. Vision: what a Look may capture
+
+Section 5 specifies `L-CAPTURE` for a Blueprint graph. The capture tools below
+extend the same PNG contract of `04_FORMATS.md` section 6 to every editor an
+agent works in, and they are grouped here so the framing rules are written
+once.
+
+### What every capture tool shares
+
+- The PNG contract of `04_FORMATS.md` section 6: a path under the project's
+  Saved folder, the image size, and what was actually framed.
+- `MaxEdge` is 4096 and is the same constant everywhere, so two captures of
+  the same thing at the same size are the same image.
+- A framing that cannot be done is an error naming why, and it NEVER falls
+  back to a wider frame. Asking for box 9 of a graph with 4 boxes says exactly
+  that.
+- An empty frame is refused rather than written as a blank image, because a
+  blank image looks like a successful capture of nothing.
+
+### Framing modes added to L-CAPTURE
+
+| Mode | Target | What it frames |
+|---|---|---|
+| `selection` | none | the nodes currently selected in the open graph |
+| `neighbours` | node ID and N | the node plus every node within N hops of linked nodes |
+| `box-neighbours` | box index and N | one comment box plus the N boxes it links to |
+| `screen` | none | the whole editor window, at its current size |
+
+- `neighbours` followed a link THROUGH a knot as a hop, because a knot is not
+  a node an agent thinks in. The hop count is therefore over the graph the
+  READER prints, not over the engine's node list, so the number an agent reads
+  is the number it can act on.
+- `selection` with nothing selected is refused and says so; it does not
+  capture the whole graph, which is the silent fallback this rule forbids.
+- Test: T-LOOK-7.
+
+### L-CAPTURE-ASSET: capture any asset editor
+
+- Input: an asset, the tab or mode to open (a graph name, a Designer, an
+  animation timeline, a Niagara system graph), a framing mode and a size.
+- Works on the editors an agent actually works in: material, Material
+  Instance, Material Function, Widget Blueprint (Designer and Graph),
+  DataTable, Animation Blueprint, Anim Sequence, Niagara, and Blueprint.
+- Each editor kind is either supported or REFUSED BY NAME, listed in the
+  tool's own answer, so "which editors can this capture" is never a guess.
+  A kind that is refused says which tool can capture it instead, if any.
+- An editor that cannot be opened headless is reported with that reason rather
+  than captured as the wrong tab, because a wrong picture is worse than no
+  picture.
+- Test: T-LOOK-8.
+
+### L-CAPTURE-LEVEL: capture a level viewport or a play session
+
+- Input: a map, a framing mode and a size, and optionally a position to look
+  at or fit to.
+- Modes: `viewport` for the level editor viewport, `selected-actors` to frame
+  the current selection, `actor` to frame one actor, and `pie` for the
+  running game's viewport.
+- `pie` requires a running play session and REFUSES without one, naming the
+  two tools that start one (`R-PLAY-CHECK`, `E-PIE-SCENARIO`). It never
+  starts a session itself: a capture that started a play session would change
+  the editor's state, and a Look cannot (P3).
+- `pie` is the frame the game is actually rendering, taken through the play
+  session's own viewport, so what it shows is what the player sees and not what
+  the editor draws around it.
+- A framing that needs a viewport that does not exist yet (an editor tab never
+  opened, a session not started) says which one is missing.
+- Test: T-LOOK-9.
+
+---
+
+## 19. Before and after
+
+### P-IMAGE-COMPARE: what an image pair differs by
+
+- Input: two PNG paths produced by any capture tool, and an optional
+  threshold.
+- Output: the image size of each, whether they are the same size at all, the
+  count and percentage of pixels that differ beyond the threshold, the
+  bounding box of the differences, and a third PNG that is the difference
+  image with the changed region marked.
+- The two images are produced by the SAME capture call with the SAME framing
+  and the SAME size, and that is a rule rather than advice: a comparison
+  between two differently framed images is meaningless and the tool says so
+  when the sizes disagree.
+- Its purpose is the round an agent actually runs: capture, edit, capture
+  again, compare, and see whether the graph, the widget or the level moved the
+  way it intended. An empty difference is reported as the fact that nothing
+  changed, with both paths, so "no change" is evidence and not silence.
+- Test: T-LOOK-10.
+
+
+---
+
+## 20. Editor window
 
 - One dockable window, in the editor's Tools menu, in its own section.
   Choose a plain icon from the editor's own icon set.
@@ -692,6 +1460,6 @@ the panel with a remove all button.
 - Use the Content Browser selection as input.
 - Graph dropdown filled from the picked asset.
 - Output pane with line count and token estimate.
-- Call log controls (section 10) and the trace point list.
+- Call log controls (section 14) and the trace point list.
 - Calls the same functions as the MCP (P9).
 - Tests: T-PANEL-1 to T-PANEL-6.
