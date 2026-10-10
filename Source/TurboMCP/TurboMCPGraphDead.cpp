@@ -141,7 +141,26 @@ namespace
 		}
 	}
 
-	/** Groups the nodes that are not reachable, by which ones are wired to each other. */
+	/**
+	 * Groups the nodes that are not reachable, by which ones are wired to each other.
+	 *
+	 * A COMMENT NODE IS NEVER A GROUP, AND ITS INCLUDE AT THE TOP OF THIS FILE USED TO BE UNUSED - WHICH WAS
+	 * THE CLUE. A comment is a DOCUMENTATION BOX: it has NO PINS AT ALL, so a walk that starts from entry
+	 * nodes and follows wires can NEVER reach one. Every comment in every graph therefore looked exactly
+	 * like an unreachable orphan, and since it also writes no variable and holds no entry, it satisfied all
+	 * three conditions of the removal test.
+	 *
+	 * MEASURED, which is how this was found: `BP_NodeTest:EventGraph` has 13 nodes and the tool reported
+	 * `1 unreachable group(s)` whose only member was `EdGraphNode_Comment`, as `WOULD REMOVE`. The author's
+	 * COMMENT BOXES were queued for deletion as dead code. `E-GRAPH-DEAD` is documented in
+	 * `Spec/03_TOOLS.md` as removing dead code, and a comment is not code - it is the one part of a graph
+	 * that exists purely to be read by a person.
+	 *
+	 * THE GUARD IS HERE RATHER THAN IN `MarkReachable` DELIBERATELY. Marking comments reachable would also
+	 * put them in the live set that other answers are computed from, and a comment has no pins to
+	 * contribute to those answers either way. Excluding them at the point where a group is FORMED is the
+	 * smallest change that cannot make another answer disagree.
+	 */
 	void CollectUnreachableGroups(UEdGraph* InGraph, const TSet<UEdGraphNode*>& InReachable,
 		TArray<TArray<UEdGraphNode*>>& OutGroups)
 	{
@@ -150,6 +169,13 @@ namespace
 		{
 			if (Seed == nullptr || InReachable.Contains(Seed) || Seen.Contains(Seed))
 			{
+				continue;
+			}
+
+			// A comment is not dead code, so it neither forms a group nor seeds one.
+			if (Seed->IsA<UEdGraphNode_Comment>())
+			{
+				Seen.Add(Seed);
 				continue;
 			}
 

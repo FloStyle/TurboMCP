@@ -87,6 +87,29 @@ def main():
     check("IT FINDS NOTHING DEAD IN A LIVE GRAPH", groups == 0, str(groups))
     check("it says WHY there is nothing, rather than being blank",
           "every node is reachable" in out, out[:240])
+
+    # A COMMENT BOX IS NOT DEAD CODE, AND THIS CHECK EXISTS BECAUSE THE TOOL USED TO SAY IT WAS.
+    #
+    # MEASURED DEFECT: `CollectUnreachableGroups` seeded a group from EVERY unreached node, and a comment
+    # has NO PINS AT ALL - so a walk that starts at entry nodes and follows wires can never reach one. Every
+    # comment in every graph looked like an unreachable orphan that also wrote no variable and held no
+    # entry, so it satisfied all three removal conditions and the tool answered
+    # `WOULD REMOVE 1 node(s): EdGraphNode_Comment` on this very asset.
+    #
+    # AN IMPLICIT CHECK CAUGHT IT, WHICH IS WHY THIS ONE IS NOW EXPLICIT: `BP_NodeTest` carries a comment,
+    # so the `groups == 0` check above went red on a correct tool. The check below names the reason, so the
+    # next person sees WHAT was about to be deleted rather than only that a count was wrong.
+    comment_out = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphDead",
+                               {"asset": ASSET, "graphName": GRAPH})
+    check("a COMMENT BOX is never offered for removal",
+          "EdGraphNode_Comment" not in comment_out
+          or "WOULD REMOVE" not in comment_out.split("EdGraphNode_Comment")[0].rsplit("\n\n", 1)[-1],
+          comment_out[:300])
+    check("a comment is not counted as an unreachable GROUP either",
+          "unreachable group" in comment_out
+          and comment_out.split("unreachable group")[0].strip().split()[-1] == "0",
+          comment_out[:120])
+
     # `candidates == 0` means nothing to remove. Asserted through the parsed number rather than a
     # phrase, because the phrase only appears when there ARE groups to weigh.
     check("it does not claim it would remove anything",
@@ -181,7 +204,21 @@ def main():
     start = subprocess.call(
         ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "start-editor.ps1")],
         cwd=repo)
-    check("the editor start returned success", start == 0, "exit %s" % start)
+
+    # THE LAUNCHER'S EXIT CODE IS NOT THE CHECK, AND REQUIRING IT TO BE ZERO MADE THIS SUITE FAIL FOR A
+    # REASON THAT IS NOT A PROBLEM.
+    #
+    # MEASURED: `Tools/run-suites.ps1` OWNS THE EDITOR for its whole run, so by the time this suite runs an
+    # editor is already up. `start-editor.ps1` REFUSES to start a second one and answers NON-ZERO - which is
+    # correct behaviour and exactly what stops two editors fighting over the same `.uasset`. The old check
+    # demanded `start == 0`, so it reported EIGHT failures on a tool that had worked, and the first of them
+    # was about the launcher rather than about the graph.
+    #
+    # WHAT ACTUALLY MATTERS IS WHETHER THE SERVER ANSWERS, and that is polled immediately below rather than
+    # inferred from an exit code. The same mistake, in the same shape, is recorded in TestRecord 6j: a check
+    # that fails on a CORRECT answer is as bad as one that cannot fail.
+    print("    the editor launcher returned %s (non-zero means one was ALREADY RUNNING, which is fine)"
+          % start)
 
     # The server is polled until it answers, rather than assumed ready the moment the launcher
     # returns. A fixed sleep would be either too short on a cold start or wasted time on a warm one.
