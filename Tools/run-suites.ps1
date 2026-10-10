@@ -182,7 +182,12 @@ function Start-EditorAndWait {
     # restarts it between suites - so the machine stole focus several times per run. It also skips shader
     # compilation, which makes each start faster, and no suite loses anything because every TurboMCP tool
     # works through reflection rather than rendering.
-    & pwsh -NoProfile -File $StartEditor -Offscreen 2>&1 | Out-Null
+    #
+    # `-LowPriority` BECAUSE THE EDITOR STARTS AT `Normal` AND SO DOES A RUNNING GAME, so a suite run COMPETED ON
+    # EQUAL TERMS with whatever the machine's owner was doing - MEASURED as a game hitching for the whole run. The
+    # Windows scheduler gives BelowNormal threads the CPU only when nothing at Normal wants it, so the suites slow
+    # down and the foreground work does not notice. An interactive launch does not have to pass either switch.
+    & pwsh -NoProfile -File $StartEditor -Offscreen -LowPriority 2>&1 | Out-Null
     $retryDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $retryDeadline) {
         $fresh = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |

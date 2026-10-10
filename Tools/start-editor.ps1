@@ -34,6 +34,19 @@
     Start with -nullrhi, which skips rendering and therefore needs no shader
     worker. Faster, but no window to look at.
 
+.PARAMETER LowPriority
+    Start the editor BELOW NORMAL PRIORITY, so a game or any interactive work on the same
+    machine keeps the CPU it needs.
+
+    MEASURED REASON: the editor starts at `Normal`, and so does a running game - so a test
+    run COMPETES ON EQUAL TERMS WITH WHATEVER THE MACHINE'S OWNER IS DOING, and the
+    observable effect is a game hitching or stuttering for the whole run. The Windows
+    scheduler gives BelowNormal threads the CPU only when nothing at Normal wants it, so
+    THE SUITES SLOW DOWN AND THE FOREGROUND WORK DOES NOT NOTICE.
+
+    The harness passes it. It does NOT make the editor slow enough to matter for a suite
+    that is already waiting on the editor's own startup.
+
 .PARAMETER Offscreen
     Start the editor WITHOUT A WINDOW, for the suites. This is the mode the harness
     uses, and it exists because the windowed editor TAKES THE FOREGROUND EVERY TIME IT
@@ -94,6 +107,7 @@ param(
     [int]    $TimeoutSeconds = 420,
     [string] $Culture = 'en',
     [switch] $NullRHI,
+    [switch] $LowPriority,
     [switch] $Offscreen,
     [switch] $StopFirst,
     [switch] $Stop,
@@ -337,6 +351,22 @@ Write-Host ("  startup:  {0}s" -f [int]((Get-Date) - $StartTime).TotalSeconds)
 if (-not $NullRHI) {
     Write-Host ''
     Write-Host '  Look for the TurboMCP panel under: Window > TurboMCP'
+}
+Write-Host ''
+# *** THE PRIORITY IS LOWERED HERE, AFTER THE EDITOR IS PROVEN WORKING, AND NOT AT LAUNCH - AND THAT IS A
+# MEASURED CORRECTION RATHER THAN A PREFERENCE. *** Setting `BelowNormal` immediately after `Start-Process` STARVED
+# THE EDITOR'S OWN STARTUP: the launch reported `FAIL the editor process (PID 49768) exited after 10s`. The editor
+# spends its first seconds loading modules, cooking shader metadata and starting workers, and at BelowNormal those
+# threads only run when nothing at Normal wants the CPU - so on a machine that is actually being used, THE STARTUP
+# ITSELF TIMES OUT. LOWERING IT AFTERWARDS GETS BOTH: the launch competes normally and does not starve, and the
+# LONG-RUNNING editor - the part that competes with a game for minutes - sits below the foreground.
+if ($LowPriority) {
+    try {
+        $Started.PriorityClass = [System.Diagnostics.ProcessPriorityClass]::BelowNormal
+        Write-Host '  priority:  BelowNormal (lowered after the editor was proven working)'
+    } catch {
+        Write-Host "  could not lower the editor priority: $_"
+    }
 }
 Write-Host ''
 Write-Host 'RESULT: PASS' -ForegroundColor Green
