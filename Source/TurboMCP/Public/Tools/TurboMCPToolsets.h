@@ -530,6 +530,31 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPTrace(const FString& Action, const FString& NodeId);
+
+	/**
+	 * Lint one or more Blueprints and report what is wrong with them, with each check NAMED.
+	 *
+	 * `assets` takes one or more asset names. `checks` filters by name - `dead-nodes`,
+	 * `unnecessary-casts`, `expensive-tick`, `heavy-hard-references`, `unused-declarations`,
+	 * `unconnected-pins` - and empty means every check. **`list` returns the check names and
+	 * nothing else**, because `P1` says a filter that matches nothing must say what exists.
+	 *
+	 * EVERY CHECK REPORTS HOW MANY THINGS IT LOOKED AT, AND THAT COUNT IS THE POINT: a lint
+	 * that says "no problems found" without a denominator is indistinguishable from a lint that
+	 * examined nothing. A check that could not run says so rather than reporting zero.
+	 *
+	 * EVERY FINDING CARRIES A NODE ID, A SEVERITY AND ONE LINE SAYING WHY, and where a fix
+	 * exists THE FINDING NAMES THE EXISTING TOOL RATHER THAN DESCRIBING ONE. The fix for dead
+	 * nodes is `P/E-GRAPH-DEAD`; for backward placement it is `P/E-GRAPH-FIX-BACKWARD`.
+	 *
+	 * This is a READ tool and it NEVER EDITS - the reader toolset is structurally unable to
+	 * write, which is what makes a lint's answer worth trusting.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPBPLint(
+		const FString& Assets,
+		const FString& Checks,
+		const FString& TokenBudget);
 };
 
 /**
@@ -1122,6 +1147,21 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPMaterialBlocks(
 		const FString& Asset);
+
+	/**
+	 * Preview row operations on a DataTable. WRITES NOTHING.
+	 *
+	 * `Rows` is one operation per line: `name = field=value, field=value` to set a row, or `- name` to remove one.
+	 * The values are the row struct's OWN export text, because they are parsed by the engine's own importer rather
+	 * than by a format invented here. A field the struct does not declare is refused with the real field names.
+	 *
+	 * EVERY REMOVAL IS LISTED BY NAME AND NEVER COUNTED, and every changed field is printed with the value it has
+	 * now and the value it would get. A plan with any refusal prints the refusals and writes nothing.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPDataTableRows(
+		const FString& Asset,
+		const TArray<FString>& Rows);
 };
 
 /**
@@ -1680,6 +1720,18 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPMaterialBlocks(
 		const FString& Asset);
+
+	/**
+	 * Apply row operations to a DataTable in ONE transaction, then re-read the rows back from the table.
+	 *
+	 * It refuses exactly what the Preview refuses, because both run the same Plan. Every row is named rather than
+	 * addressed by position, and every name is looked up again at apply time, so a plan made before another editor
+	 * changed the table cannot write into the wrong row. A table with unsaved changes is reported as such.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPDataTableRows(
+		const FString& Asset,
+		const TArray<FString>& Rows);
 };
 
 /**

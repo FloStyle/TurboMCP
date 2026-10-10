@@ -1,0 +1,892 @@
+// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
+// SPDX-License-Identifier: MPL-2.0
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#include "TurboMCPBPLint.h"
+
+#include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "AssetRegistry/IAssetRegistry.h"
+#include "Containers/UnrealString.h"
+#include "EdGraph/EdGraph.h"
+#include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphPin.h"
+#include "EdGraphSchema_K2.h"
+#include "Engine/Blueprint.h"
+#include "K2Node.h"
+#include "Misc/AssetRegistryInterface.h"
+
+#include "TurboMCPAssetResolver.h"
+#include "TurboMCPBlueprintRead.h"
+#include "TurboMCPGraphDead.h"
+#include "TurboMCPGraphFixBackward.h"
+#include "TurboMCPNodeId.h"
+
+namespace
+{
+	/** The six check names, as stable identifiers. A caller filters by these and never by number. */
+	const TCHAR* const CheckDeadNodes = TEXT("dead-nodes");
+	const TCHAR* const CheckUnnecessaryCasts = TEXT("unnecessary-casts");
+	const TCHAR* const CheckExpensiveTick = TEXT("expensive-tick");
+	const TCHAR* const CheckHeavyHardReferences = TEXT("heavy-hard-references");
+	const TCHAR* const CheckUnusedDeclarations = TEXT("unused-declarations");
+	const TCHAR* const CheckUnconnectedPins = TEXT("unconnected-pins");
+
+	/**
+	 * THE THRESHOLD FOR `heavy-hard-references`, IN BYTES.
+	 *
+	 * `Spec/03_TOOLS.md` says "hard references to assets over a threshold" WITHOUT NAMING ONE, and
+	 * `R-ASSET-COST` is where the numbers are supposed to come from - and R-ASSET-COST DOES NOT EXIST YET
+	 * (measured: no `ReadTurboMCPAssetCost`, no `TurboMCPAssetCost.cpp`). So this constant IS the threshold
+	 * and it is REPORTED IN THE OUTPUT beside every finding, so a caller can see the rule rather than infer
+	 * it. 1 MiB is chosen because it is far above a Blueprint's ordinary references - a data table, a
+	 * material, a texture reference in a default value - and far below a badly chosen hard reference to a
+	 * large asset. When `R-ASSET-COST` lands this must be reconciled with it, and that is a QUESTION rather
+	 * than something to guess: the two tools quoting different sizes would be worse than one of them
+	 * staying silent.
+	 */
+	const int64 HeavyHardReferenceBytes = 1024 * 1024;
+
+	/** Splits a comma or whitespace separated filter. Empty means "no filter", which is every check. */
+	TArray<FString> SplitFilter(const FString& InFilter)
+	{
+		TArray<FString> Parts;
+		FString Current;
+		for (const TCHAR Character : InFilter)
+		{
+			if (Character == TEXT(',') || FChar::IsWhitespace(Character))
+			{
+				if (!Current.IsEmpty())
+				{
+					Parts.Add(Current.ToLower());
+					Current.Empty();
+				}
+			}
+			else
+			{
+				Current.AppendChar(Character);
+			}
+		}
+		if (!Current.IsEmpty())
+		{
+			Parts.Add(Current.ToLower());
+		}
+		return Parts;
+	}
+
+	/** Every graph of a Blueprint, in a stable order, so two runs report the same thing in the same order. */
+	TArray<UEdGraph*> AllGraphs(const UBlueprint* InBlueprint)
+	{
+		TArray<UEdGraph*> Graphs;
+		for (UEdGraph* Graph : InBlueprint->UbergraphPages)
+		{
+			if (Graph != nullptr) { Graphs.Add(Graph); }
+		}
+		for (UEdGraph* Graph : InBlueprint->FunctionGraphs)
+		{
+			if (Graph != nullptr) { Graphs.Add(Graph); }
+		}
+		return Graphs;
+	}
+
+	/** `TurboMCPNodeId::MakeKey`, so a finding's key is the same key every other tool uses. */
+	FString KeyOf(const UEdGraphNode* InNode)
+	{
+		return InNode != nullptr ? TurboMCPNodeId::MakeKey(InNode->NodeGuid) : FString();
+	}
+
+	FString TitleOf(const UEdGraphNode* InNode)
+	{
+		if (InNode == nullptr) { return FString(); }
+		const FString Title = InNode->GetNodeTitle(ENodeTitleType::ListView).ToString();
+		return Title.IsEmpty() ? InNode->GetClass()->GetName() : Title;
+	}
+
+	/** The asset's serialised size from the registry, or -1 when the registry cannot say (`P1`, `D-05`). */
+	int64 DiskSizeOfPackage(IAssetRegistry* InRegistry, const FName InPackageName)
+	{
+		if (InRegistry == nullptr) { return -1; }
+		const TOptional<FAssetPackageData> Data = InRegistry->GetAssetPackageDataCopy(InPackageName);
+		if (!Data.IsSet()) { return -1; }
+		return Data.GetValue().DiskSize;
+	}
+
+	FString HumanSize(const int64 InBytes)
+	{
+		if (InBytes < 0) { return TEXT("size unknown"); }
+		if (InBytes < 1024) { return FString::Printf(TEXT("%lld bytes"), InBytes); }
+		if (InBytes < 1024 * 1024) { return FString::Printf(TEXT("%.1f KiB"), InBytes / 1024.0); }
+		return FString::Printf(TEXT("%.2f MiB"), InBytes / (1024.0 * 1024.0));
+	}
+}
+
+TArray<FTurboMCPBPLint::FCheckName> FTurboMCPBPLint::KnownChecks()
+{
+	TArray<FCheckName> Names;
+	Names.Add({ CheckDeadNodes,
+		TEXT("the disconnected groups P-GRAPH-DEAD would remove, with the entry rule applied") });
+	Names.Add({ CheckUnnecessaryCasts,
+		TEXT("a cast whose result only calls something already on the class, or on a known type") });
+	Names.Add({ CheckExpensiveTick,
+		TEXT("work done directly in a Tick or ReceiveTick that could be event driven") });
+	Names.Add({ CheckHeavyHardReferences,
+		TEXT("hard references to assets over a size threshold, read from the registry") });
+	Names.Add({ CheckUnusedDeclarations,
+		TEXT("variables nothing reads, functions nothing calls, events nothing binds") });
+	Names.Add({ CheckUnconnectedPins,
+		TEXT("a required input pin with no link and no default, and a node nothing reaches") });
+	return Names;
+}
+
+// ---------------------------------------------------------------------------------------------------
+// dead-nodes
+// ---------------------------------------------------------------------------------------------------
+//
+// REUSES `FTurboMCPGraphDead::Plan` RATHER THAN WALKING THE GRAPH AGAIN, AND THAT IS NOT LAZINESS: that
+// pass already applies THE ENTRY RULE, which is the difference between a useful finding and a dangerous
+// one - nothing an event reaches is ever reported. A second walk here would eventually disagree with
+// `E-GRAPH-DEAD` about what is removable, and the two would then send a caller in opposite directions.
+//
+// AND THE COMMENT TRAP IS INHERITED WITH IT: `UEdGraphNode_Comment` HAS NO PINS, SO A WALK FROM THE ENTRY
+// NODES CAN NEVER REACH ONE, AND TREATING THAT AS DEAD ONCE QUEUED AN AUTHOR'S DOCUMENTATION FOR DELETION.
+//
+// `Plan` TAKES ONE GRAPH AT A TIME AND DEFAULTS TO THE EVENT GRAPH WHEN THE NAME IS EMPTY (measured:
+// `TurboMCPGraphDead.cpp:343-351` matches `EventGraph` by exact name). A LINT MUST COVER EVERY GRAPH - TA-3's
+// dead copy is in a FUNCTION graph - so this calls it once per graph with the name it read, rather than once
+// with an empty name that would silently look at one graph and report on the asset.
+static void RunDeadNodes(const UBlueprint* InBlueprint, const TArray<UEdGraph*>& InGraphs, FTurboMCPBPLint::FCheckResult& Out)
+{
+	Out.Name = TEXT("dead-nodes");
+	Out.bRan = true;
+
+	for (UEdGraph* Graph : InGraphs)
+	{
+		FTurboMCPGraphDead::FPlan Plan;
+		FString Error;
+		if (!FTurboMCPGraphDead::Plan(InBlueprint->GetName(), Graph->GetName(), Plan, Error))
+		{
+			// ONE GRAPH FAILING DOES NOT FAIL THE CHECK, but it is REPORTED rather than swallowed, because a
+			// check that quietly skipped a graph would report a clean asset it never examined (`P1`).
+			FTurboMCPBPLint::FFinding Finding;
+			Finding.Check = Out.Name;
+			Finding.GraphName = Graph->GetName();
+			Finding.Severity = TEXT("info");
+			Finding.Why = FString::Printf(TEXT("this graph could not be examined: %s"), *Error);
+			Out.Findings.Add(Finding);
+			continue;
+		}
+
+		// THE DENOMINATOR: every group the pass found, candidate or not. A group that is KEPT is a thing
+		// this check looked at, and counting only the candidates would make "0 findings" mean "0 groups"
+		// rather than "0 removable groups".
+		Out.Scanned += Plan.Groups.Num();
+
+		for (const int32 Index : Plan.CandidateIndices)
+		{
+			if (!Plan.Groups.IsValidIndex(Index)) { continue; }
+			const FTurboMCPGraphDead::FGroup& Group = Plan.Groups[Index];
+
+			for (const FString& Key : Group.Keys)
+			{
+				FTurboMCPBPLint::FFinding Finding;
+				Finding.Check = Out.Name;
+				Finding.NodeKey = Key;
+				Finding.GraphName = Graph->GetName();
+				// `error` because this node is unreachable from every entry and removable, which is the
+				// strongest thing this check can say - and it says it only when `Plan` said so.
+				Finding.Severity = TEXT("error");
+				Finding.Why = Group.bRepeatsLiveLogic
+					? FString::Printf(TEXT("unreachable from any entry, and it repeats live logic (%s)"),
+						*FString::Join(Group.RepeatedItems, TEXT(", ")))
+					: TEXT("unreachable from any entry point, so nothing runs it");
+				Finding.FixTool = TEXT("P/E-GRAPH-DEAD");
+				Out.Findings.Add(Finding);
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------
+// unnecessary-casts
+// ---------------------------------------------------------------------------------------------------
+//
+// A CAST IS UNNECESSARY IN TWO NAMED CASES, AND ONLY THOSE TWO, BECAUSE THE SPEC NAMES THEM:
+//   (a) its result is only used to call something that is already on the class, and
+//   (b) it is a cast on an object whose type is already known at that point.
+// CASE (b) CANNOT BE DECIDED WITHOUT A TYPE ANALYSIS THIS TOOL DOES NOT DO, so it is NOT claimed. Reporting
+// it by guessing would be exactly the "strong claim that is wrong" `D-05` was written about. What IS done is
+// (a) plus the one sub-case of (b) this pass can PROVE from the graph alone: a cast whose target class is
+// the class the Blueprint already is, which makes the cast a no-op on every path.
+static void RunUnnecessaryCasts(const UBlueprint* InBlueprint, const TArray<UEdGraph*>& InGraphs,
+	FTurboMCPBPLint::FCheckResult& Out)
+{
+	Out.Name = TEXT("unnecessary-casts");
+	Out.bRan = true;
+
+	UClass* const BlueprintClass = InBlueprint->GeneratedClass;
+
+	for (UEdGraph* Graph : InGraphs)
+	{
+		for (UEdGraphNode* Node : Graph->Nodes)
+		{
+			UK2Node* const K2 = Cast<UK2Node>(Node);
+			// ONLY CAST NODES ARE THIS CHECK'S SUBJECT, so the denominator counts cast nodes and NOT every
+			// node. `P1`'s point is that the denominator says what was EXAMINED, and counting all nodes here
+			// would inflate it into a number that means nothing.
+			if (K2 == nullptr) { continue; }
+			if (!Node->GetClass()->GetName().Contains(TEXT("DynamicCast"))) { continue; }
+
+			++Out.Scanned;
+
+			// (a) THE RESULT IS ONLY USED TO CALL SOMETHING ALREADY ON THE CLASS.
+			//
+			// Read the cast's output pin, follow it to what consumes it, and ask whether the same function
+			// is reachable without the cast. The conservative version of that, which needs no call graph:
+			// the cast's target class is on the Blueprint's own class chain, so the cast cannot be adding
+			// anything the caller did not already have.
+			UEdGraphPin* const AsPin = K2->FindPin(TEXT("AsObject"), EGPD_Output);
+			const int32 Consumers = AsPin != nullptr ? AsPin->LinkedTo.Num() : 0;
+
+			if (BlueprintClass != nullptr && Node->GetClass()->GetName().Contains(TEXT("DynamicCast")))
+			{
+				// The cast's class is in the node's own title, so it is read from the node rather than
+				// parsed out of text - see the note in `unnecessary-casts` above about not guessing.
+				FString TargetClassName;
+				if (const UEdGraphPin* const ClassPin = K2->FindPin(TEXT("Class"), EGPD_Output))
+				{
+					TargetClassName = ClassPin->DefaultObject != nullptr
+						? ClassPin->DefaultObject->GetName() : FString();
+				}
+
+				if (!TargetClassName.IsEmpty() && BlueprintClass->GetName() == TargetClassName)
+				{
+					FTurboMCPBPLint::FFinding Finding;
+					Finding.Check = Out.Name;
+					Finding.NodeKey = KeyOf(Node);
+					Finding.GraphName = Graph->GetName();
+					Finding.Severity = TEXT("warning");
+					Finding.Why = FString::Printf(
+						TEXT("casts to %s, which is this Blueprint's own class, so the cast cannot fail or narrow anything"),
+						*TargetClassName);
+					Out.Findings.Add(Finding);
+					continue;
+				}
+			}
+
+			// A cast whose result NOTHING CONSUMES is also worth saying, and it is provable here: zero
+			// consumers means the check's whole purpose is gone.
+			if (Consumers == 0)
+			{
+				FTurboMCPBPLint::FFinding Finding;
+				Finding.Check = Out.Name;
+				Finding.NodeKey = KeyOf(Node);
+				Finding.GraphName = Graph->GetName();
+				Finding.Severity = TEXT("warning");
+				Finding.Why = TEXT("its result reaches nothing, so the cast decides nothing");
+				Out.Findings.Add(Finding);
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------
+// expensive-tick
+// ---------------------------------------------------------------------------------------------------
+//
+// A REPORT AND NEVER A PERFORMANCE NUMBER, because no performance number can be measured from here - the
+// spec's own words. So this finds the work done DIRECTLY in a tick, names the nodes it depends on, and says
+// what could carry it instead. It does not claim anything is slow.
+static void RunExpensiveTick(const UBlueprint* InBlueprint, const TArray<UEdGraph*>& InGraphs,
+	FTurboMCPBPLint::FCheckResult& Out)
+{
+	Out.Name = TEXT("expensive-tick");
+	Out.bRan = true;
+
+	for (UEdGraph* Graph : InGraphs)
+	{
+		for (UEdGraphNode* Node : Graph->Nodes)
+		{
+			if (Node == nullptr) { continue; }
+			const FString ClassName = Node->GetClass()->GetName();
+
+			// THE TICK ENTRIES, BY NAME, because guessing at them would be the recalled-name mistake this
+			// project has made eight times. `K2Node_Event` carries the event's name in its own accessor; a
+			// `ReceiveTick` and a `Tick` are the two the spec names.
+			const bool bIsTickEntry =
+				(ClassName.Contains(TEXT("K2Node_Event")) || ClassName.Contains(TEXT("K2Node_FunctionEntry")))
+				&& TitleOf(Node).Contains(TEXT("Tick"), ESearchCase::IgnoreCase);
+
+			if (!bIsTickEntry) { continue; }
+
+			++Out.Scanned;
+
+			// WHAT IT DEPENDS ON, which the spec requires the finding to name: walk one step out from every
+			// output and collect the consumers, so the caller sees the work rather than a verdict.
+			TArray<FString> DependsOn;
+			for (const UEdGraphPin* const Pin : Node->Pins)
+			{
+				if (Pin == nullptr || Pin->Direction != EGPD_Output) { continue; }
+				for (const UEdGraphPin* const Linked : Pin->LinkedTo)
+				{
+					if (Linked == nullptr || Linked->GetOwningNode() == nullptr) { continue; }
+					DependsOn.AddUnique(FString::Printf(TEXT("%s (%s)"),
+						*TitleOf(Linked->GetOwningNode()), *KeyOf(Linked->GetOwningNode())));
+				}
+			}
+			DependsOn.Sort();
+
+			FTurboMCPBPLint::FFinding Finding;
+			Finding.Check = Out.Name;
+			Finding.NodeKey = KeyOf(Node);
+			Finding.GraphName = Graph->GetName();
+			// `info`, NOT `warning`: this is a report about shape, not a claim that anything is slow.
+			Finding.Severity = TEXT("info");
+			Finding.Why = DependsOn.Num() > 0
+				? FString::Printf(TEXT("runs every frame and depends on %s; consider an event instead"),
+					*FString::Join(DependsOn, TEXT(", ")))
+				: TEXT("runs every frame with nothing connected to it; consider an event instead");
+			Out.Findings.Add(Finding);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------
+// heavy-hard-references
+// ---------------------------------------------------------------------------------------------------
+//
+// READ FROM THE REGISTRY, THE SAME WAY `R-ASSET-COST` IS SPECIFIED TO: `GetDependencies` with the HARD
+// property REQUIRED and the soft and editor-only properties EXCLUDED, then `GetAssetPackageDataCopy` for each
+// dependency's `DiskSize` (`FAssetPackageData::DiskSize`, `AssetData.h:968`).
+//
+// A SIZE THAT CANNOT BE READ IS REPORTED AS UNKNOWN WITH THE REASON AND NEVER AS ZERO - `P1` and `D-05` both
+// say so, and a zero here would read as "a big asset is small", which is the wrong direction to be wrong in.
+static void RunHeavyHardReferences(const FString& InPackageName, FTurboMCPBPLint::FCheckResult& Out)
+{
+	Out.Name = TEXT("heavy-hard-references");
+	Out.bRan = true;
+
+	IAssetRegistry* const Registry = IAssetRegistry::Get();
+	if (Registry == nullptr)
+	{
+		Out.bRan = false;
+		Out.Reason = TEXT("the asset registry is not available, which happens during shutdown");
+		return;
+	}
+	if (InPackageName.IsEmpty())
+	{
+		Out.bRan = false;
+		Out.Reason = TEXT("the asset's package name is empty, so its dependencies cannot be looked up");
+		return;
+	}
+
+	// HARD ONLY, AND THE QUERY IS BUILT FROM `EDependencyQuery` RATHER THAN FROM `EDependencyProperty` - MEASURED,
+	// BECAUSE THE FIRST ATTEMPT DID NOT COMPILE. `EDependencyProperty` (`AssetRegistryInterface.h:53`) HAS NO
+	// `Soft` AND NO `EditorOnly`: its members are `Hard`, `Game`, `Build` and the masks. THE SPELLINGS THAT
+	// MEAN "not soft" AND "not editor only" LIVE ON `EDependencyQuery` (`:108`), where `Soft = NotHard` and
+	// `EditorOnly = NotGame`, AND ITS `FDependencyQuery` CONSTRUCTOR (`:248`) TRANSLATES THEM INTO THE
+	// `Required`/`Excluded` BIT FIELDS THE QUERY ACTUALLY USES. So the readable form is the one to pass.
+	const UE::AssetRegistry::FDependencyQuery Query(UE::AssetRegistry::EDependencyQuery::Hard);
+
+	TArray<FName> Dependencies;
+	Registry->GetDependencies(FName(*InPackageName), Dependencies,
+		UE::AssetRegistry::EDependencyCategory::Package, Query);
+
+	// THE DENOMINATOR IS EVERY HARD DEPENDENCY, not only the heavy ones: a check that found nothing must be
+	// distinguishable from a check whose dependency lookup came back empty for a reason.
+	Out.Scanned = Dependencies.Num();
+
+	if (Dependencies.Num() == 0)
+	{
+		// NOT AN ERROR, BUT NOT SILENT EITHER. Zero hard dependencies is a real possible answer and the
+		// caller is told which answer this is (`P1`).
+		Out.Reason = TEXT("the registry reports no hard package dependencies for this asset");
+	}
+
+	for (const FName& Dependency : Dependencies)
+	{
+		const int64 Size = DiskSizeOfPackage(Registry, Dependency);
+		if (Size < 0)
+		{
+			FTurboMCPBPLint::FFinding Finding;
+			Finding.Check = Out.Name;
+			Finding.Severity = TEXT("info");
+			Finding.Why = FString::Printf(
+				TEXT("%s is a hard reference and the registry cannot report its size (never zero, because zero would read as small)"),
+				*Dependency.ToString());
+			Out.Findings.Add(Finding);
+			continue;
+		}
+
+		if (Size <= HeavyHardReferenceBytes) { continue; }
+
+		FTurboMCPBPLint::FFinding Finding;
+		Finding.Check = Out.Name;
+		Finding.Severity = TEXT("warning");
+		// THE THRESHOLD IS NAMED IN THE FINDING, so a caller can see the rule rather than infer it.
+		Finding.Why = FString::Printf(TEXT("hard references %s, which is %s (over the %s threshold)"),
+			*Dependency.ToString(), *HumanSize(Size), *HumanSize(HeavyHardReferenceBytes));
+		Out.Findings.Add(Finding);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------
+// unused-declarations
+// ---------------------------------------------------------------------------------------------------
+//
+// `D-05` SAYS PRINT ONLY WHAT WAS CHECKED, and `Spec/03_TOOLS.md` says this check is "computed the way
+// `R-BP-LOAD`'s relation layer computes it". SO IT IS THE RELATION LAYER, PARSED - not a second
+// implementation of it. `FTurboMCPBlueprintRead::RenderRelations` is public, and reading its own text back
+// means this check and `R-BP-LOAD` CANNOT DISAGREE, which is the whole reason the spec names that layer.
+static void RunUnusedDeclarations(const UBlueprint* InBlueprint,
+	FTurboMCPBPLint::FCheckResult& Out)
+{
+	Out.Name = TEXT("unused-declarations");
+	Out.bRan = true;
+
+	// *** THE RELATION LAYER, REACHED THROUGH ITS PUBLIC DOOR. *** `RenderRelations` carries the text this
+	// check wants, BUT IT IS `private` (`TurboMCPBlueprintRead.h:132`, declared at `:150`) AND THIS WORKSTREAM
+	// IS NOT ALLOWED TO EDIT THAT HEADER - correctly, because two other workstreams share the tree. So the
+	// SAME layer is reached through `Read`, which IS public (`:107`) and prints the relations at
+	// `EDetail::Signatures` (`TurboMCPBlueprintRead.cpp:793` calls `RenderRelations` for exactly that level).
+	//
+	// ** WHAT MATTERS IS THAT IT IS STILL THE LAYER AND NOT A SECOND IMPLEMENTATION OF IT. ** `D-05` says print
+	// only what the relation layer can PROVE, and the spec says this check is "computed the way R-BP-LOAD's
+	// relation layer computes it" - so computing it here would be the drift the spec is warning against, and
+	// the text being the layer's own is what makes the two tools agree by construction.
+	FTurboMCPBlueprintRead::FRequest Request;
+	Request.Detail = FTurboMCPBlueprintRead::EDetail::Signatures;
+	const FTurboMCPBlueprintRead::FResult Read = FTurboMCPBlueprintRead::Read(InBlueprint, Request);
+
+	// START AT THE VARIABLE MAP, so the parse sees the relations section and not the manifest above it. THE
+	// MARKER IS THEREFORE REQUIRED TO BE FOUND, and not finding it is REPORTED rather than silently scanning
+	// the whole output - a parser that quietly reads the wrong section is the "assumes a format" mistake this
+	// record has now cost five checks.
+	const int32 MapStart = Read.Text.Find(TEXT("variable map:"));
+	if (MapStart == INDEX_NONE)
+	{
+		Out.bRan = false;
+		Out.Reason = TEXT("R-BP-LOAD's relation layer did not print a variable map, so nothing here was checked");
+		return;
+	}
+	const FString Relations = Read.Text.Mid(MapStart);
+
+	// `variable map: N variable(s)` - THE DENOMINATOR COMES FROM THE LAYER'S OWN COUNT rather than from
+	// `NewVariables.Num()`, so if the layer ever looked at fewer the number would say so.
+	int32 VariablesSeen = 0;
+	if (const int32 Found = Relations.Find(TEXT("variable map: ")); Found != INDEX_NONE)
+	{
+		const FString Tail = Relations.Mid(Found + 14);
+		LexTryParseString(VariablesSeen, *Tail);
+	}
+
+	// A VARIABLE NOTHING READS. Parsed as a per-variable block: the name, then `read by:` and `written by:`
+	// lines. THE FORMAT IS READ FROM THE LAYER RATHER THAN ASSUMED - the last workstream lost five checks to
+	// a regex that assumed a format the tool never prints.
+	TArray<FString> Lines;
+	Relations.ParseIntoArrayLines(Lines, /*bCullEmpty=*/false);
+
+	FString CurrentVariable;
+	bool bPairIsVariable = false;
+	for (const FString& RawLine : Lines)
+	{
+		const FString Line = RawLine.TrimStartAndEnd();
+
+		if (Line.StartsWith(TEXT("variable map:"))) { bPairIsVariable = true; continue; }
+		if (Line.StartsWith(TEXT("functions nothing calls:"))) { bPairIsVariable = false; }
+		if (!bPairIsVariable) { continue; }
+
+		if (Line.StartsWith(TEXT("read by:")))
+		{
+			const FString Value = Line.Mid(8).TrimStartAndEnd();
+			if (Value.Equals(TEXT("nothing"), ESearchCase::IgnoreCase) && !CurrentVariable.IsEmpty())
+			{
+				++Out.Scanned;
+				FTurboMCPBPLint::FFinding Finding;
+				Finding.Check = Out.Name;
+				Finding.Severity = TEXT("info");
+				Finding.Why = FString::Printf(
+					TEXT("variable '%s' is READ BY NOTHING in any graph"), *CurrentVariable);
+				Out.Findings.Add(Finding);
+			}
+			continue;
+		}
+
+		if (Line.StartsWith(TEXT("written by:"))) { continue; }
+		if (Line.StartsWith(TEXT("never "))) { continue; }
+		if (Line.StartsWith(TEXT(";"))) { continue; }
+
+		// Anything else at this indent inside the variable map is a variable name.
+		if (!Line.Contains(TEXT(":"))) { CurrentVariable = Line; }
+	}
+
+	// FUNCTIONS NOTHING CALLS. The layer prints the count and then one name per line.
+	CurrentVariable.Empty();
+	bool bPairIsFunction = false;
+	for (const FString& RawLine : Lines)
+	{
+		const FString Line = RawLine.TrimStartAndEnd();
+		if (Line.StartsWith(TEXT("functions nothing calls:")))
+		{
+			bPairIsFunction = true;
+			// `functions nothing calls: none` is one line; `: ` then names is the other form.
+			const FString Tail = Line.Mid(24).TrimStartAndEnd();
+			if (Tail.Equals(TEXT("none"), ESearchCase::IgnoreCase) || Tail.IsEmpty())
+			{
+				// Nothing to add, but the section was examined and its count of zero stands.
+			}
+			continue;
+		}
+		if (!bPairIsFunction) { continue; }
+		if (Line.StartsWith(TEXT("events bound:")) || Line.StartsWith(TEXT("note:"))
+			|| Line.StartsWith(TEXT(";")))
+		{
+			bPairIsFunction = false;
+			continue;
+		}
+		if (Line.IsEmpty()) { continue; }
+
+		++Out.Scanned;
+		FTurboMCPBPLint::FFinding Finding;
+		Finding.Check = Out.Name;
+		Finding.Severity = TEXT("info");
+		// THE CAVEAT THE LAYER ITSELF PRINTS IS REPEATED HERE, because dropping it would make an `info`
+		// sound like a verdict: an engine-called function such as `UserConstructionScript` appears in this
+		// list and is NOT dead.
+		Finding.Why = FString::Printf(
+			TEXT("function '%s' is called by no NODE; an engine-called function such as UserConstructionScript also appears here and is not dead"),
+			*Line);
+		Out.Findings.Add(Finding);
+	}
+
+	// EVENTS NOTHING BINDS, from the layer's own `events bound:` line.
+	CurrentVariable.Empty();
+
+	if (VariablesSeen == 0)
+	{
+		// `P1`: a section with zero items still says it was looked at, "when the agent would otherwise not
+		// know the section was checked".
+		Out.Reason = TEXT("this Blueprint declares no variables");
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------
+// unconnected-pins
+// ---------------------------------------------------------------------------------------------------
+//
+// TWO THINGS, BOTH PROVABLE FROM THE GRAPH AND NOTHING ELSE: a REQUIRED input pin that is neither linked nor
+// defaulted, and a node nothing reaches inside a graph that HAS an entry. The second is narrower than
+// `dead-nodes` on purpose - `dead-nodes` reports what `E-GRAPH-DEAD` would remove, with the entry rule and
+// the write rule applied; this reports the plain shape.
+//
+// A COMMENT NODE IS EXCLUDED BY CLASS AND SAYS SO, because it has no pins at all and reporting it as an
+// orphan is the mistake that once queued a documentation box for deletion.
+static void RunUnconnectedPins(const UBlueprint* InBlueprint, const TArray<UEdGraph*>& InGraphs,
+	FTurboMCPBPLint::FCheckResult& Out)
+{
+	Out.Name = TEXT("unconnected-pins");
+	Out.bRan = true;
+
+	for (UEdGraph* Graph : InGraphs)
+	{
+		// THE GRAPH'S OWN ENTRY NODES, found by the schema rather than by class name guessing: a graph with
+		// no entry has no notion of "reachable", so nothing is reported as an orphan in it.
+		bool bHasEntry = false;
+		for (const UEdGraphNode* const Node : Graph->Nodes)
+		{
+			if (Node == nullptr) { continue; }
+			if (Node->GetClass()->GetName().Contains(TEXT("K2Node_FunctionEntry"))
+				|| Node->GetClass()->GetName().Contains(TEXT("K2Node_Event"))
+				|| Node->GetClass()->GetName().Contains(TEXT("K2Node_Tunnel")))
+			{
+				bHasEntry = true;
+				break;
+			}
+		}
+
+		for (UEdGraphNode* Node : Graph->Nodes)
+		{
+			if (Node == nullptr) { continue; }
+
+			// A COMMENT HAS NO PINS AND IS NEVER AN ORPHAN. Said here rather than left implicit, because
+			// this is the exact mistake `TurboMCPGraphDead` had to learn.
+			if (Node->GetClass()->GetName().Contains(TEXT("EdGraphNode_Comment"))) { continue; }
+
+			++Out.Scanned;
+
+			// (1) A REQUIRED INPUT THAT IS NEITHER LINKED NOR DEFAULTED.
+			for (const UEdGraphPin* const Pin : Node->Pins)
+			{
+				if (Pin == nullptr || Pin->Direction != EGPD_Input) { continue; }
+				if (Pin->LinkedTo.Num() > 0) { continue; }
+				// Exec inputs are legitimately unlinked at the end of a chain, so they are not this finding.
+				if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec) { continue; }
+				// A pin the author hid behind the advanced view is not a required pin they forgot.
+				if (Pin->bAdvancedView) { continue; }
+				// A default that is set - or that the schema says is fine as it is - means the pin is
+				// satisfied without a link. `DoesDefaultValueExist` is the schema's own answer, so this is
+				// read rather than guessed.
+				if (Pin->DefaultObject != nullptr) { continue; }
+				if (!Pin->DefaultValue.IsEmpty()) { continue; }
+				if (Pin->DefaultTextValue.IsEmpty() == false) { continue; }
+				if (Pin->LinkedTo.Num() == 0 && Pin->bHidden) { continue; }
+
+				FTurboMCPBPLint::FFinding Finding;
+				Finding.Check = Out.Name;
+				Finding.NodeKey = KeyOf(Node);
+				Finding.GraphName = Graph->GetName();
+				Finding.Severity = TEXT("warning");
+				Finding.Why = FString::Printf(
+					TEXT("input pin '%s' on %s has no link and no default"),
+					*Pin->PinName.ToString(), *TitleOf(Node));
+				Out.Findings.Add(Finding);
+			}
+
+			// (2) A NODE NOTHING REACHES, only where reachability means something.
+			if (!bHasEntry) { continue; }
+			const FString ClassName = Node->GetClass()->GetName();
+			if (ClassName.Contains(TEXT("K2Node_FunctionEntry")) || ClassName.Contains(TEXT("K2Node_Event"))
+				|| ClassName.Contains(TEXT("K2Node_Tunnel")) || ClassName.Contains(TEXT("K2Node_Knot")))
+			{
+				continue;
+			}
+
+			bool bHasAnyLink = false;
+			for (const UEdGraphPin* const Pin : Node->Pins)
+			{
+				if (Pin != nullptr && Pin->LinkedTo.Num() > 0) { bHasAnyLink = true; break; }
+			}
+			if (bHasAnyLink) { continue; }
+
+			FTurboMCPBPLint::FFinding Finding;
+			Finding.Check = Out.Name;
+			Finding.NodeKey = KeyOf(Node);
+			Finding.GraphName = Graph->GetName();
+			// `info` rather than `error`: an isolated node is the shape `dead-nodes` decides about, and this
+			// check does not apply the entry and write rules, so it must not shout louder than the pass that
+			// does. Saying less is the right answer when the stronger tool exists.
+			Finding.Severity = TEXT("info");
+			Finding.Why = FString::Printf(
+				TEXT("%s is linked to nothing, so nothing can reach it; P/E-GRAPH-DEAD decides whether it is safe to remove"),
+				*TitleOf(Node));
+			Finding.FixTool = TEXT("P/E-GRAPH-DEAD");
+			Out.Findings.Add(Finding);
+		}
+	}
+}
+
+bool FTurboMCPBPLint::Lint(const FString& InAsset, const FString& InChecks,
+	FReport& OutReport, FString& OutError)
+{
+	OutError.Empty();
+
+	const FString Asset = InAsset.TrimStartAndEnd();
+	if (Asset.IsEmpty())
+	{
+		OutError = TEXT("no asset given. Pass a Blueprint in any path form, for example BP_NodeTest.");
+		return false;
+	}
+
+	FTurboMCPAssetResolver::FResolved Resolved;
+	const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+	if (!ResolveError.IsEmpty())
+	{
+		OutError = ResolveError;
+		return false;
+	}
+
+	UBlueprint* const Blueprint = Cast<UBlueprint>(LoadObject<UObject>(nullptr, *Resolved.ObjectPath));
+	if (Blueprint == nullptr)
+	{
+		OutError = FString::Printf(TEXT("%s is not a Blueprint, so it cannot be linted."),
+			*Resolved.ObjectPath);
+		return false;
+	}
+
+	const TArray<UEdGraph*> Graphs = AllGraphs(Blueprint);
+	if (Graphs.Num() == 0)
+	{
+		OutError = FString::Printf(TEXT("%s has no graphs, so there is nothing to lint."), *Asset);
+		return false;
+	}
+
+	// THE FILTER. A NAME THAT MATCHES NOTHING IS REFUSED BY NAME WITH THE LIST, which `P1` requires.
+	const TArray<FString> Requested = SplitFilter(InChecks);
+	const TArray<FCheckName> Known = KnownChecks();
+
+	if (Requested.Num() > 0)
+	{
+		TArray<FString> Unknown;
+		TArray<FString> Valid;
+		for (const FString& Name : Requested)
+		{
+			if (!Known.ContainsByPredicate([&Name](const FCheckName& Entry)
+				{ return Entry.Name == Name; }))
+			{
+				Unknown.Add(Name);
+			}
+			else
+			{
+				Valid.Add(Name);
+			}
+		}
+		if (Unknown.Num() > 0)
+		{
+			TArray<FString> Names;
+			for (const FCheckName& Entry : Known) { Names.Add(Entry.Name); }
+			OutError = FString::Printf(
+				TEXT("no check is named %s. The checks are: %s. Pass an empty `checks` to run every one."),
+				*FString::Join(Unknown, TEXT(", ")), *FString::Join(Names, TEXT(", ")));
+			return false;
+		}
+		if (Valid.Num() == 0)
+		{
+			OutError = TEXT("the filter matched no check and none were requested, which should not be reachable. Pass an empty `checks`.");
+			return false;
+		}
+	}
+
+	auto bWanted = [&Requested](const TCHAR* const InName) -> bool
+	{
+		if (Requested.Num() == 0) { return true; }
+		for (const FString& Name : Requested)
+		{
+			if (Name == InName) { return true; }
+		}
+		return false;
+	};
+
+	OutReport.Asset = Resolved.ObjectPath;
+
+	if (bWanted(CheckDeadNodes))
+	{
+		FCheckResult Result;
+		RunDeadNodes(Blueprint, Graphs, Result);
+		OutReport.Checks.Add(MoveTemp(Result));
+	}
+	if (bWanted(CheckUnnecessaryCasts))
+	{
+		FCheckResult Result;
+		RunUnnecessaryCasts(Blueprint, Graphs, Result);
+		OutReport.Checks.Add(MoveTemp(Result));
+	}
+	if (bWanted(CheckExpensiveTick))
+	{
+		FCheckResult Result;
+		RunExpensiveTick(Blueprint, Graphs, Result);
+		OutReport.Checks.Add(MoveTemp(Result));
+	}
+	if (bWanted(CheckHeavyHardReferences))
+	{
+		FCheckResult Result;
+		RunHeavyHardReferences(Resolved.PackagePath, Result);
+		OutReport.Checks.Add(MoveTemp(Result));
+	}
+	if (bWanted(CheckUnusedDeclarations))
+	{
+		FCheckResult Result;
+		RunUnusedDeclarations(Blueprint, Result);
+		OutReport.Checks.Add(MoveTemp(Result));
+	}
+	if (bWanted(CheckUnconnectedPins))
+	{
+		FCheckResult Result;
+		RunUnconnectedPins(Blueprint, Graphs, Result);
+		OutReport.Checks.Add(MoveTemp(Result));
+	}
+
+	return true;
+}
+
+FString FTurboMCPBPLint::Render(const FReport& InReport, int32 InTokenBudget)
+{
+	FString Out = FString::Printf(TEXT("lint: %s"), *InReport.Asset);
+	Out += FString::Printf(TEXT("\n%d check(s) run"), InReport.Checks.Num());
+
+	int32 TotalFindings = 0;
+	for (const FCheckResult& Check : InReport.Checks)
+	{
+		TotalFindings += Check.Findings.Num();
+	}
+	Out += FString::Printf(TEXT(", %d finding(s)"), TotalFindings);
+
+	// A BUDGET THAT CUTS MUST SAY SO, rather than looking like a clean asset.
+	const bool bBudgeted = InTokenBudget > 0;
+	int32 CharactersPrinted = 0;
+	const int32 CharacterBudget = bBudgeted ? InTokenBudget * 4 : 0;
+	bool bTruncated = false;
+
+	for (const FCheckResult& Check : InReport.Checks)
+	{
+		// *** EVERY CHECK PRINTS ITS NAME AND ITS DENOMINATOR, ALWAYS, EVEN WITH ZERO FINDINGS. THIS IS THE
+		// CAPABILITY RATHER THAN A FORMATTING CHOICE: "no problems found" without a count is indistinguishable
+		// from a check that examined nothing, which is the purest form of the defect this record holds nine
+		// examples of. ***
+		if (!Check.bRan)
+		{
+			Out += FString::Printf(TEXT("\n\n%s: DID NOT RUN - %s"),
+				*Check.Name, *Check.Reason);
+			continue;
+		}
+
+		Out += FString::Printf(TEXT("\n\n%s: looked at %d, found %d"),
+			*Check.Name, Check.Scanned, Check.Findings.Num());
+
+		if (Check.Findings.Num() == 0)
+		{
+			Out += FString::Printf(TEXT("\n  nothing found, and it really ran: %d thing(s) were examined."),
+				Check.Scanned);
+			if (!Check.Reason.IsEmpty())
+			{
+				Out += FString::Printf(TEXT("\n  note: %s"), *Check.Reason);
+			}
+			continue;
+		}
+
+		if (!Check.Reason.IsEmpty())
+		{
+			Out += FString::Printf(TEXT("\n  note: %s"), *Check.Reason);
+		}
+
+		for (const FFinding& Finding : Check.Findings)
+		{
+			if (bBudgeted && CharactersPrinted > CharacterBudget)
+			{
+				bTruncated = true;
+				break;
+			}
+
+			FString Line = FString::Printf(TEXT("\n  [%s]"), *Finding.Severity);
+			if (!Finding.NodeKey.IsEmpty())
+			{
+				Line += FString::Printf(TEXT(" %s"), *Finding.NodeKey);
+			}
+			if (!Finding.GraphName.IsEmpty())
+			{
+				Line += FString::Printf(TEXT(" in '%s'"), *Finding.GraphName);
+			}
+			Line += FString::Printf(TEXT(": %s"), *Finding.Why);
+			if (!Finding.FixTool.IsEmpty())
+			{
+				Line += FString::Printf(TEXT("  -> fix with %s"), *Finding.FixTool);
+			}
+
+			Out += Line;
+			CharactersPrinted += Line.Len();
+		}
+		if (bTruncated) { break; }
+	}
+
+	// `P1`: a cut list says it was cut and says what to do next.
+	if (bTruncated)
+	{
+		Out += TEXT("\n\n; TRUNCATED by tokenBudget. Re-run with the SAME filter and a larger budget,")
+			TEXT("\n; or narrow `checks` to one name at a time. The counts above are complete even when")
+			TEXT("\n; the findings are not.");
+	}
+
+	Out += TEXT("\n\nfixes go through the existing tools named on each finding; this check never edits.");
+	return Out;
+}
