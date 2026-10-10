@@ -1028,6 +1028,29 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& Text);
+
+	/**
+	 * Change only what changed: name existing nodes by id and give the pins that differ.
+	 *
+	 * Read the graph first, then submit ONLY the nodes whose pin values you want to change, each
+	 * with its node id from the reader. Nodes you do not mention are LEFT ALONE, and it counts
+	 * and names the nodes it would change - which is the number that matters, because a patch
+	 * that touches a third node has failed even when the graph still compiles.
+	 *
+	 * It CHANGES and does not ADD or REMOVE. A form with no node id is refused and told which
+	 * tool adds nodes, because "applies only the differences" is not "adds a block" - that is
+	 * P/E-GRAPH-APPEND - and removing is P/E-GRAPH-REPLACE. A form that names a node but writes
+	 * no pin value changes nothing, and is refused rather than reported as a change of zero.
+	 *
+	 * Returns the nodes that would change, each by key with its class, and the count of nodes
+	 * named against the count that would actually differ. Writes nothing, and cannot. It is in
+	 * this toolset, which holds no tool that can change an asset.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphPatch(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Text);
 };
 
 /**
@@ -1492,6 +1515,31 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphReplace(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Text);
+
+	/**
+	 * The Edit twin of PreviewTurboMCPGraphPatch. It reaches the SAME plan, so everything it
+	 * refuses the preview refused first, with the same words.
+	 *
+	 * ONLY A PIN WHOSE VALUE ACTUALLY DIFFERS IS WRITTEN, and that is the capability rather than
+	 * an optimisation: setting every described pin to the value it already holds would dirty the
+	 * asset and report a change that is not one, which is precisely what "applies only the
+	 * differences" forbids.
+	 *
+	 * The change is MEASURED rather than restated. The node ids and the described pin values are
+	 * read BEFORE the write and the ids are read again AFTER it, and the report is computed from
+	 * those two sets - so a patch that quietly created or destroyed a node FAILS THE COMPARE
+	 * instead of passing on the tool's own summary. That matters because the acceptance row is a
+	 * claim about WHICH nodes changed: a patch that touches a third node has failed even when
+	 * the graph still compiles.
+	 *
+	 * One transaction, rolled back on any new compile error, and the first line is `changed` or
+	 * `unchanged`.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphPatch(
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& Text);
