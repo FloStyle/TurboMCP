@@ -187,7 +187,7 @@ function Start-EditorAndWait {
     # EQUAL TERMS with whatever the machine's owner was doing - MEASURED as a game hitching for the whole run. The
     # Windows scheduler gives BelowNormal threads the CPU only when nothing at Normal wants it, so the suites slow
     # down and the foreground work does not notice. An interactive launch does not have to pass either switch.
-    & pwsh -NoProfile -File $StartEditor -Offscreen -LowPriority 2>&1 | Out-Null
+    & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null
     $retryDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $retryDeadline) {
         $fresh = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |

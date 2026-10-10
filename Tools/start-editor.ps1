@@ -266,7 +266,7 @@ $Args = @($Project)
 if ($Offscreen) { $NullRHI = $true }
 if ($NullRHI) { $Args += @('-nullrhi','-unattended') }
 if (-not [string]::IsNullOrWhiteSpace($Culture)) { $Args += @("-culture=$Culture") }
-$Args += @('-nosplash','-nosound')
+$Args += @('-nosplash','-nosound','-nopause')
 
 $StartTime = Get-Date
 Write-Host "  $EditorExe $($Args -join ' ')"
