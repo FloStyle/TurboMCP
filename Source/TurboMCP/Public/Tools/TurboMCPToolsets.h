@@ -983,6 +983,30 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& Text);
+
+	/**
+	 * Add a block to a graph from graph text, and write nothing.
+	 *
+	 * Use this before the edit. It reports every way the text cannot be applied, each
+	 * naming its line, and it reports what WOULD be created - so a caller can see the
+	 * change before agreeing to it.
+	 *
+	 * It adds nodes and links them to existing nodes BY NODE ID. It CANNOT REMOVE: the
+	 * code path that would delete a node does not exist in this capability, which is
+	 * what separates it from P-GRAPH-REPLACE. A form carrying a node id is read as a
+	 * LINK to that node, never as a second copy of it.
+	 *
+	 * The text is the same dialect the readers print, checked by P-GRAPH-CHECK first, so
+	 * a text this accepts is one the edit accepts.
+	 *
+	 * Writes nothing, and cannot. It is in this toolset, which holds no tool that can
+	 * change an asset.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphAppend(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Text);
 };
 
 /**
@@ -1405,6 +1429,30 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPTrace(const FString& Action, const FString& NodeId);
+
+	/**
+	 * Add a block to a graph from graph text.
+	 *
+	 * The same decision as `P-GRAPH-APPEND`, made in the same place, because the two share
+	 * one code path up to the write: the plan is built once, and this consumes it. A text
+	 * the preview refused is refused here with the same words.
+	 *
+	 * IT ADDS AND LINKS AND CANNOT REMOVE. There is no code path in this capability that
+	 * deletes a node - not a disabled one, an ABSENT one - which is what keeps "cannot
+	 * remove anything" true rather than merely intended.
+	 *
+	 * ONE TRANSACTION, and it rolls back on any failure. If a node the plan accepted is
+	 * refused at apply time, NOTHING is written and the report says so.
+	 *
+	 * AFTER WRITING it reads the graph back and compares, and a node the plan created that
+	 * is NOT in the graph is reported as `FAILED COMPARE` - a FAILURE, not a success with a
+	 * note. The first line is `changed` or `unchanged`.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphAppend(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& Text);
 };
 
 /**

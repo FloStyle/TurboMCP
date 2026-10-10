@@ -368,6 +368,109 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 	return nullptr;
 }
 
+FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
+	UBlueprint* InBlueprint, UEdGraph* InGraph, const FString& InTypeId,
+	UEdGraphNode*& OutNode, FString& OutNote)
+{
+	OutNode = nullptr;
+	OutNote.Empty();
+
+	if (InBlueprint == nullptr)
+	{
+		OutNote = TEXT("no Blueprint");
+		return ESpawnResult::SpawnerDeclined;
+	}
+	if (InGraph == nullptr)
+	{
+		OutNote = TEXT("no graph");
+		return ESpawnResult::SpawnerDeclined;
+	}
+
+	// THE SAME WALK AS `BuildProbeNode` ABOVE, DELIBERATELY. The two differ in ONE thing - which
+	// graph the spawner is handed - and a second, cleverer traversal here is how the two would come
+	// to disagree about what a type id names. The filter is built from the REAL graph so that "is
+	// this allowed HERE" is answered by the engine.
+	FBlueprintActionFilter Filter;
+	Filter.Context.Blueprints.Add(InBlueprint);
+	Filter.Context.Graphs.Add(InGraph);
+
+	FBlueprintActionDatabase& Database = FBlueprintActionDatabase::Get();
+	const FBlueprintActionDatabase::FActionRegistry& Registry = Database.GetAllActions();
+
+	bool bIdExistsButWasFiltered = false;
+
+	for (FBlueprintActionDatabase::FActionRegistry::TConstIterator Iterator =
+			Registry.CreateConstIterator(); Iterator; ++Iterator)
+	{
+		UObject* ActionObject = Iterator->Key.ResolveObjectPtr();
+		if (ActionObject == nullptr)
+		{
+			continue;
+		}
+
+		for (const UBlueprintNodeSpawner* NodeSpawner : Iterator->Value)
+		{
+			if (NodeSpawner == nullptr)
+			{
+				continue;
+			}
+
+			FBlueprintActionInfo ActionInfo(ActionObject, NodeSpawner);
+
+			const FBlueprintActionUiSpec UiSpec =
+				NodeSpawner->GetUiSpec(Filter.Context, ActionInfo.GetBindings());
+			if (!IdFromUiSpec(UiSpec).Equals(InTypeId, ESearchCase::CaseSensitive))
+			{
+				continue;
+			}
+
+			if (Filter.IsFiltered(ActionInfo))
+			{
+				bIdExistsButWasFiltered = true;
+				continue;
+			}
+
+			// THE REAL GRAPH, unlike the probe. `Invoke` is the engine's own creation path, so the
+			// node it returns is the node the editor would have made, with its class, its default
+			// pins and its own `AllocateDefaultPins` already run by the spawner.
+			UEdGraphNode* Spawned = NodeSpawner->Invoke(InGraph, ActionInfo.GetBindings(),
+				FVector2D::ZeroVector);
+			if (Spawned == nullptr)
+			{
+				OutNote = FString::Printf(
+					TEXT("the engine's spawner for '%s' returned no node, so it declined to ")
+					TEXT("build one in this graph"), *InTypeId);
+				return ESpawnResult::SpawnerDeclined;
+			}
+
+			// THE PINS ARE ALLOCATED AGAIN ON PURPOSE, AND IT IS NOT REDUNDANT. A node created
+			// outside the editor is never reconstructed for display, so a pin accessor reads an
+			// EMPTY `Pins` array unless someone runs this. Most spawners do it themselves, which is
+			// why this is cheap; the ones that do not are exactly the ones that would crash a caller
+			// that assumed they had. Running it twice is harmless because the engine's own
+			// implementation early-outs when the pins are already there.
+			Spawned->AllocateDefaultPins();
+
+			OutNode = Spawned;
+			return ESpawnResult::Spawned;
+		}
+	}
+
+	if (bIdExistsButWasFiltered)
+	{
+		OutNote = FString::Printf(
+			TEXT("'%s' exists but the engine's action filter REJECTS it in this graph. A latent ")
+			TEXT("node in a function graph is the usual reason: the engine does not allow latent ")
+			TEXT("nodes there."), *InTypeId);
+		return ESpawnResult::FilteredOut;
+	}
+
+	OutNote = FString::Printf(
+		TEXT("no node type this graph can hold has the id '%s'. P-NODE-TYPE lists the real ones ")
+		TEXT("and names the closest."), *InTypeId);
+	return ESpawnResult::NoSuchTypeId;
+}
+
 bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	const FString& InGuess, const FString& InLimit, FPlan& OutPlan, FString& OutError)
 {
