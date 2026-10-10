@@ -4341,3 +4341,51 @@ THEORY AND REPORTS THE FALSIFICATION IS DOING THE THING THIS PROJECT ASKS FOR.**
 NOT SETTLED: the two fixture assertions; `P/E-MAT-TIDY` reuses an existing box ONLY by matching its LEFT EDGE, so a
 box at a different X is added alongside rather than found; and the fallback geometry is used for every expression
 because A MATERIAL EXPRESSION STORES NO SIZE, so the layout under-reports space by design and says so.
+
+---
+
+## 14. The fixture assertion fires on a STATE ANOTHER PROCESS CAN LEGITIMATELY CHANGE
+
+**TWO NARROW SEQUENCES, EACH IN THE ORDER THAT WOULD EXPOSE A LEAK, EACH ON AN IDLE MACHINE:**
+
+    test-material-tidy then test-graph-check  ->  PASS, PASS   (passed 5, failed 0)
+    test-graph-replace then test-graph-check  ->  PASS, PASS   (passed 5, failed 0)
+
+**SO NEITHER LEAK REPRODUCES IN THE PAIRING DESIGNED TO CATCH IT.** Both suites DO give their fixture back when
+they run immediately before `test-graph-check`. The long-run failures need a sequence or a length these two do not
+reach, and I did not find it.
+
+*** AND READING THE ASSERTION SHOWS WHY IT CAN FAIL ON A CORRECT RUN.*** `Tools/test-material-tidy.py` around line
+333 reads the fixture's CURRENT state through the reader and decides whether a restore is needed:
+
+    boxes_now = number_before(r"blocks: (\d+) comment box", look)
+    dirty = boxes_now is not None and boxes_now != 2
+    if dirty:
+        restored = rebuild_fixture()
+        check("the shared fixture was GIVEN BACK", restored, ...)
+
+**IT ASSERTS ON A NUMBER PARSED FROM A SHARED ASSET'S LIVE STATE, AND `!= 2` IS A CLAIM ABOUT WHAT THE FIXTURE
+SHOULD LOOK LIKE - NOT ABOUT WHAT THIS SUITE DID TO IT.** A CONCURRENT PROCESS REBUILDING THE SAME ASSET CHANGES
+THAT NUMBER LEGITIMATELY, so the assertion fires on a run where this suite behaved perfectly. **THAT IS THE SHAPE
+THIS PROJECT HAS RECORDED NINE TIMES, AND IT HAS NOW PRODUCED ONE ITSELF: A CHECK THAT FAILS ON A CORRECT OUTCOME IS
+AS BAD AS ONE THAT CANNOT FAIL.**
+
+**THE ASYMMETRY IS THE EVIDENCE, AND IT IS SHARP.** `test-material-tidy`'s assertion and `test-graph-replace`'s are
+WORDED THE SAME - *"the shared fixture was GIVEN BACK"* - and they CHECK DIFFERENT THINGS. REPLACE's is about the
+restore SUCCEEDING, a claim about its own behaviour. TIDY's also depends on a state comparison against a constant.
+**THE ONE THAT CAN FAIL FOR SOMEONE ELSE'S REASON IS THE ONE THAT READS A NUMBER FROM THE ASSET AND COMPARES IT TO A
+FIXED EXPECTATION.**
+
+WHAT IT SHOULD DO, AND IT IS A ONE-LINE CHANGE IN PRINCIPLE: assert on WHAT THE SUITE DID - that the rebuild ran and
+reported success - and REPORT the observed box count rather than asserting it equals the built state, because THAT
+count is SHARED STATE and a concurrent run owns it as much as this suite does. `restored = rebuild_fixture()`
+already returns exactly the right thing to assert on; the `dirty` comparison is the part that reaches outside.
+
+**WHY THIS MATTERS FOR THE PROJECT RATHER THAN FOR ONE SUITE:** the FULL RUN stood at 40 of 42 with BOTH failures
+being this assertion. If it can fire on a correct outcome then the run is not actually short by two - and, more
+importantly, **THE NEXT PERSON TO SEE IT WILL GO LOOKING FOR A LEAK THAT IS NOT THERE.** The fixture-hygiene rule has
+been REAL three times, so a fourth accusation is believed by default. **AN ASSERTION THAT CRIES WOLF WHERE THE
+WOLVES HAVE BEEN IS WORSE THAN A MISSING ONE.**
+
+NOT SETTLED: whether a leak ALSO exists. Neither narrow pairing reproduced one, and the long-run failures need a
+sequence I did not find. Both facts are recorded rather than one being promoted over the other.
