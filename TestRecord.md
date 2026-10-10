@@ -3948,3 +3948,38 @@ CONSUMER THAT SILENTLY MATCHES NOTHING ARE INDISTINGUISHABLE FROM OUTSIDE, AND B
 cheapest available test bed - `Tools/test-suite-timeout.ps1` proves the helper and ITS KILL PATH in seconds with no
 editor - then wire it in and prove it against the SAME three static suites, then against one that needs an editor.
 Reaching for the full run first is what cost the four earlier attempts.
+
+---
+
+## 8e. `check-probe-graphs` IS THE UNBOUNDED UNIT, AND THE CAUSE IS TWO WAITS THAT ADD UP PAST THE DEADLINE
+
+**CONFIRMED BY RUNNING IT ALONE: `check-probe-graphs` exceeds 600 seconds WITH NO OTHER SUITE INVOLVED.** It is the
+suite that blocked the whole run for four rounds, and it stayed invisible because a hang and a slow failure look
+identical from outside - which is exactly what a per-suite deadline exists to separate.
+
+**THE CAUSE HAS TWO TERMS THAT ADD UP PAST THE DEADLINE.**
+
+1. **IT RUNS THE FIXTURE REBUILD WITH NO TIMEOUT OF ITS OWN.** `Tools/check-probe-graphs.py:103` calls
+   `subprocess.run([... make-acceptance-asset.ps1 ...])` with **no `timeout=` argument**, so the suite's own
+   duration is whatever that script takes. The harness deadline is the only bound, and it fires only after TEN
+   MINUTES.
+
+2. **THE SCRIPT IT CALLS CAN LEGITIMATELY WAIT A LONG TIME, AND EVERY ONE OF THOSE WAITS WAS ADDED FOR A GOOD
+   REASON.** `make-acceptance-asset.ps1` waits up to **300 seconds** on the named mutex
+   `Global\TurboMCP.AcceptanceAsset`; it waits for the editor PROCESS rather than sleeping; and the harness's own
+   start path can spend **two 240-second timeouts** before giving up. **EACH IS CORRECT INDIVIDUALLY - each was
+   added because a race produced a wrong answer - AND THEIR SUM EXCEEDS THE SUITE DEADLINE.**
+
+**SO THE DEFECT IS NOT THAT ANY ONE WAIT IS WRONG. IT IS THAT NOTHING BETWEEN THEM IS BOUNDED: THE SCRIPT BOUNDS
+ITS OWN MUTEX WAIT AND NOTHING BOUNDS THE SCRIPT.**
+
+**THE FIX BELONGS IN THE SUITE RATHER THAN THE SCRIPT:** give the `subprocess.run` call a `timeout=` and handle the
+expiry explicitly, so `check-probe-graphs` FAILS WITH A NAMED REASON INSIDE ITS OWN DEADLINE INSTEAD OF BEING KILLED
+BY THE HARNESS. A suite that reports "the rebuild did not finish in N seconds" is diagnosable; a suite the harness
+had to kill is only visible because the deadline exists at all.
+
+**AND IT IS WORTH NAMING WHAT THE DEADLINE REVEALED, BECAUSE IT IS UNCOMFORTABLE: THE SCRIPT WAS MADE SLOWER ON
+PURPOSE, TWICE, BY FIXES THAT WERE EACH CORRECT** - the process wait and the mutex. The per-suite deadline is what
+made that cost VISIBLE. Before it, the same total was being paid as an indefinite hang that nobody could attribute
+to anything. **A BOUND TURNS AN UNATTRIBUTABLE HANG INTO A NAMED, MEASURABLE COST**, and that is the whole argument
+for bounding things even when the bound is not the fix.
