@@ -190,6 +190,8 @@ foreach ($name in $Static) {
 Write-Output ""
 Write-Output "--- suites that need an editor, run ONE AT A TIME with the editor restarted between ---"
 
+$script:EditorFailures = 0
+
 foreach ($name in $NeedsEditor) {
     Write-Output ""
     Write-Output "--- $name ---"
@@ -227,8 +229,37 @@ foreach ($name in $NeedsEditor) {
         # reason the script exists: "the editor could not be started" is not a statement about the tool.
         $Results[$name] = 'RESULT: BLOCKED (the editor would not start)'
         Write-Output "  BLOCKED: the editor would not start, so this suite was NOT run"
+
+        # ---------------------------------------------------------------------------------------------
+        # THREE IN A ROW ABORTS THE RUN, BECAUSE A LATE FAILURE AND A SILENT HANG LOOK IDENTICAL.
+        #
+        # MEASURED, TWICE: a full run was left for 18 and 25 minutes with NO EDITOR ALIVE AND NO LOG
+        # ACTIVITY, and it turned out to be `Start-EditorAndWait` spending its FULL 240-SECOND TIMEOUT on
+        # every suite in turn. Thirty-six suites at four minutes each is TWO AND A HALF HOURS of output that
+        # says nothing, and from outside it is indistinguishable from a hang. A runner that can spend hours
+        # failing invisibly is worse than one that stops and says so.
+        #
+        # THE THRESHOLD IS THREE rather than one deliberately: a single editor that will not start can be a
+        # transient, and this project has SEEN that - runs that stalled and then worked on the next attempt.
+        # Three consecutive failures is no longer transient, and the message names the real cause so the
+        # remaining suites are reported as NOT RUN rather than quietly missing from the summary.
+        # ---------------------------------------------------------------------------------------------
+        $script:EditorFailures++
+        if ($script:EditorFailures -ge 3) {
+            Write-Output ""
+            Write-Output ("  ABORTING after {0} consecutive editor start failures. THIS IS AN ENVIRONMENT FAILURE," -f $script:EditorFailures)
+            Write-Output "  NOT A CAPABILITY ONE: the editor will not come up, so no tool was exercised."
+            Write-Output "  The remaining suites are recorded as NOT RUN rather than reported as failures."
+            foreach ($remaining in $NeedsEditor) {
+                if (-not $Results.ContainsKey($remaining)) {
+                    $Results[$remaining] = 'RESULT: NOT RUN (aborted: the editor would not start)'
+                }
+            }
+            break
+        }
         continue
     }
+    $script:EditorFailures = 0
     $out = & python (Join-Path $PSScriptRoot "$name.py") 2>&1
     $result = ($out | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
     if (-not $result) {
