@@ -3666,3 +3666,43 @@ BOTH FACTS POINT AT ONE SHARED ADDITION, and the pieces are already in the plugi
 checker and the writer **the same real answer**, and would settle the `P-GRAPH-CHECK` closest-match deviation
 already recorded - the checker suggests from the graph's own IDs precisely BECAUSE `FTurboMCPNodeType::Plan`
 refuses an empty asset.
+
+---
+
+## 6y. The rebuild works in EVERY invocation shape the suites use, so the difference is the HARNESS'S EDITOR
+
+**THREE HYPOTHESES TESTED AND ALL THREE FALSIFIED, BY MEASUREMENT.**
+
+The failing suites complain about their fixture rebuild - `the acceptance asset was regenerated before the
+destructive test`, `the kit fixture could not be rebuilt`, `the acceptance asset could not be rebuilt` - so the
+script's exit code and stdout were the first suspects.
+
+1. **"The script does not print PASS."** FALSIFIED: `make-acceptance-asset.ps1` prints
+   `PASS  the acceptance asset was rebuilt`.
+2. **"The suite's call shape breaks it."** FALSIFIED: invoked EXACTLY as the suites invoke it -
+   `subprocess.run([...], capture_output=True, text=True)` from Python - it returns `returncode: 0`,
+   `len(stdout): 284`, `has PASS: True`.
+3. **"A log-file lock"** - the leading hypothesis, because this project has already recorded that letting a
+   subprocess open a file Python holds gives EMPTY output. FALSIFIED for the same reason: the captured stdout is
+   present and correct, and the log is read back by the script itself and reports every probe graph.
+
+AND THE SAME IS TRUE OF THE OTHER SCRIPT: `make-kit-assets.ps1` called the same way returns `returncode: 0`,
+`PASS: True`, `len: 3965`, and names every asset it wrote.
+
+**WHAT IS LEFT, AND IT IS NOW NARROWED TO ONE VARIABLE: THE HARNESS'S OWN EDITOR IS RUNNING WHEN THE SUITE
+CALLS THE REBUILD.** Every direct test above ran WITHOUT a harness-started editor in the way. A rebuild stops
+the editor, runs a commandlet, and the harness had just started one; the commandlet needs the `.uasset` and the
+editor holds it. That is consistent with every observation: works alone, works from Python, fails inside the
+harness, and the failure text is always about the rebuild.
+
+**THE NEXT MEASUREMENT IS ONE RUN AND IT IS SPECIFIC:** start an editor with `Tools/start-editor.ps1`, LEAVE IT
+RUNNING, and then call `make-acceptance-asset.ps1` from Python with captured output. If it returns non-zero with
+the editor up and zero with the editor down, the cause is confirmed and the fix is to make the rebuild script's
+`-Stop` genuinely wait for the editor to release the `.uasset` - not merely for the PROCESS to disappear, which
+is what it waits for today.
+
+**AND ONE STRUCTURAL NOTE THAT SURVIVES WHATEVER THAT SHOWS.** `Tools/run-suites.ps1` now REUSES a healthy editor
+instead of stopping and starting one before every suite, so the harness no longer kills the editor a previous
+suite healthily started. That is a real reduction in ownership conflict and it is kept. It did NOT by itself make
+the rebuild succeed, which is what narrows the cause to the editor HOLDING the asset rather than the editor being
+restarted.
