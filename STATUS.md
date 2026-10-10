@@ -1,6 +1,6 @@
 # TurboMCP — status report
 
-**Measured on `main` = `origin/main` = `8a0e5be`.** Every number here was read off the tree, not recalled.
+**Measured on `main` = `origin/main` = `1542e95`.** Every number here was read off the tree, not recalled.
 
 ---
 
@@ -8,13 +8,13 @@
 
 | | |
 |---|---|
-| **Capabilities implemented** | **47 of 50** |
-| **Tools shipped** | **68** AICallable `UFUNCTION`s, in 4 toolsets |
+| **Capabilities implemented** | **48 of 50** |
+| **Tools shipped** | **70** AICallable `UFUNCTION`s, in 4 toolsets |
 | **Reading (`R-`)** | **21 of 21 — COMPLETE** |
 | **Vision (`L-`)** | **3 of 3 — COMPLETE** |
 | **Preview (`P-`)** | **4 of 4 — COMPLETE** |
-| **Edit (`E-`)** | **20 of 23** |
-| Test suites | 35 files · **full run `41/41`, 0 failed, 0 blocked** |
+| **Edit (`E-`)** | **21 of 23** |
+| Test suites | 36 files · **full run `42/42`, 0 failed, 0 blocked** |
 | Documentation | `TestRecord.md` 3668 l. · `QUESTIONS.md` 1193 l. · `Spec/` · `PLAN.md` · `DOCS.md` |
 
 **The two capabilities you asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
