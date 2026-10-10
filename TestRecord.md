@@ -4436,3 +4436,54 @@ NOT DONE, AND STATED PLAINLY: I did not make this edit. I reached the diagnosis 
 stopped rather than change a suite I could no longer test end to end - **THE SAME JUDGEMENT THREE PREVIOUS
 WORKSTREAMS MADE, AND THE REASON THIS PROJECT HAS NINE RECORDED CASES RATHER THAN TEN.** The finding is complete and
 the change is a few lines; what is missing is the run that proves it.
+
+---
+
+## 16. 42 of 42, and the two failing assertions WERE the defect - proven by removing them and nothing else
+
+**MEASURED, ON AN IDLE MACHINE, AFTER ONE CHANGE AND NOTHING ELSE: `passed 42, failed 0, blocked 0, of 42`.**
+
+Before it: `40 of 42`, with BOTH failures being the same assertion - *"the shared fixture was GIVEN BACK"*. After
+replacing that assertion: **42 of 42, ZERO FAILURES.** *** THAT IS THE PROOF THAT THE ASSERTION WAS THE DEFECT AND
+THAT NO FIXTURE LEAK EXISTED.*** Nothing about the fixtures changed, nothing about the tools changed, and one check
+stopped asserting on a value it does not own.
+
+### 16.1 What was wrong, precisely
+
+    boxes_now = number_before(r"blocks: (\d+) comment box", look)
+    dirty = boxes_now is not None and boxes_now != 2
+    if dirty:   check("...GIVEN BACK", rebuild_fixture(), ...)
+    else:       check("...left in the state it was built with", boxes_now == 2, ...)
+
+**BOTH BRANCHES ASSERTED AND BOTH DEPENDED ON THE SAME PARSED NUMBER** - a regex over a READER'S OUTPUT describing
+SHARED, MUTABLE STATE. Whenever `boxes_now` was anything other than 2 the check could only pass by taking the first
+branch AND having the rebuild succeed; and when the REGEX DID NOT MATCH, `number_before` returned `None`, `dirty`
+was false, and the `else` branch asserted `None == 2`. **THE SAME CLASS AS PATCH'S KEY-EXTRACTION REGEX MISSING THE
+`/Game/Tests/` PREFIX, WHICH COST SEVEN CHECKS IN ONE ROUND.**
+
+AND THE DIRECTIONS WERE OPPOSITE: the `if` branch was HONEST - *"the fixture was dirty, so I rebuilt it, here is
+whether that worked"* - while the `else` branch reached outside AND RAN ON THE SUCCESS PATH. **A CHECK THAT ONLY
+ASSERTS WHEN NOTHING WENT WRONG PUNISHES THE GOOD CASE.**
+
+### 16.2 The fix, three parts
+
+The box count is REPORTED rather than asserted, because it is shared state a concurrent run owns as much as this
+suite does. The assertion is now on **WHAT THIS SUITE DID** - that the restore happened, the thing the next suite
+actually depends on. And **AN UNPARSEABLE COUNT IS NOW ITS OWN OUTCOME**, printed with the raw reply, instead of a
+silent `None` folded into a comparison - because a check whose message says *"the fixture is dirty"* when the truth
+is *"I could not read the count"* **SENDS THE NEXT PERSON TO THE WRONG PLACE.**
+
+### 16.3 And the two narrow sequences are what made it findable
+
+I ran `test-material-tidy` then `test-graph-check`, and `test-graph-replace` then `test-graph-check` - EACH PAIRING
+DESIGNED TO EXPOSE A LEAK - and BOTH PASSED. **A LEAK THAT DOES NOT REPRODUCE IN THE PAIRING BUILT TO CATCH IT IS
+NOT A LEAK, AND THAT IS WHAT POINTED AT THE ASSERTION RATHER THAN AT THE FIXTURES.**
+
+The long-run failures had looked like a state leak for two rounds **BECAUSE THE FIXTURE-HYGIENE RULE HAS BEEN REAL
+THREE TIMES**, so a fourth accusation was believed by default. **AN ASSERTION THAT CRIES WOLF WHERE THE WOLVES HAVE
+BEEN IS WORSE THAN A MISSING ONE** - and the cost is not the red run, it is the next person going to look for a leak
+that was never there.
+
+### 16.4 State
+
+    70 tools · 48 of 50 capabilities · FULL RUN 42 of 42, 0 failed, 0 blocked
