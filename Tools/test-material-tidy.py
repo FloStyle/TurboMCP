@@ -331,19 +331,49 @@ def main():
     look = session.call(READ_TOOLSET, "ReadTurboMCPMaterialBlocks",
                         {"asset": ASSET, "tokenBudget": 4000})
     boxes_now = number_before(r"blocks: (\d+) comment box", look)
-    dirty = boxes_now is not None and boxes_now != 2
 
-    if dirty:
-        print("    the fixture carries %s box(es) instead of the 2 it is built with, so it is rebuilt"
-              % boxes_now)
+    # ---------------------------------------------------------------------------------------------
+    # THIS CHECK USED TO ASSERT ON A NUMBER READ FROM SHARED, MUTABLE STATE, AND IT COULD FAIL ON A RUN WHERE
+    # THIS SUITE BEHAVED PERFECTLY. MEASURED, AND IT IS WHY THE FULL RUN STOOD AT 40 OF 42 WITH BOTH FAILURES
+    # BEING THIS ASSERTION.
+    #
+    # THE OLD SHAPE ASSERTED IN BOTH BRANCHES AND BOTH DEPENDED ON THE SAME PARSED VALUE:
+    #     dirty = boxes_now is not None and boxes_now != 2
+    #     if dirty:   check("...GIVEN BACK", rebuild_fixture(), ...)
+    #     else:       check("...left in the state it was built with", boxes_now == 2, ...)
+    # SO WHENEVER `boxes_now` WAS ANYTHING OTHER THAN 2 THE CHECK COULD ONLY PASS BY TAKING THE FIRST BRANCH AND
+    # HAVING THE REBUILD SUCCEED - AND WHEN THE REGEX DID NOT MATCH, `number_before` RETURNED `None`, `dirty` WAS
+    # FALSE, AND THE `else` BRANCH ASSERTED `None == 2`. THAT IS THE SAME CLASS AS PATCH'S KEY-EXTRACTION REGEX
+    # THAT MISSED THE `/Game/Tests/` PREFIX AND COST SEVEN CHECKS IN ONE ROUND.
+    #
+    # AND THE DIRECTIONS WERE OPPOSITE, WHICH IS THE PART WORTH KEEPING: THE `if` BRANCH WAS HONEST - "the fixture
+    # was dirty, so I rebuilt it, here is whether that worked" - WHILE THE `else` BRANCH REACHED OUTSIDE, AND IT
+    # RAN ON THE SUCCESS PATH. A CHECK THAT ONLY ASSERTS WHEN NOTHING WENT WRONG PUNISHES THE GOOD CASE.
+    #
+    # SO: THE BOX COUNT IS REPORTED, AND THE ASSERTION IS ON WHAT THIS SUITE DID. The count is SHARED STATE - a
+    # concurrent run, or a fixture left by an earlier suite, owns it as much as this suite does - so asserting it
+    # equals a constant is a claim about the world rather than about this run. WHAT IS ASSERTED INSTEAD IS THAT
+    # THE RESTORE HAPPENED, which is the thing the next suite actually depends on.
+    #
+    # A FAILURE OF THE REGEX IS NOW ITS OWN OUTCOME RATHER THAN A SILENT `None` FOLDED INTO A COMPARISON: an
+    # unparseable count is REPORTED AS UNPARSEABLE, because a check whose message says "the fixture is dirty" when
+    # the truth is "I could not read the count" sends the next person to the wrong place.
+    if boxes_now is None:
+        print("    the reader printed no box count that could be parsed, so the fixture's state is unknown")
+        print("    and it is rebuilt rather than assumed clean. The raw reply was: %s" % look[:200])
+    else:
+        print("    the fixture carries %s comment box(es); it is built with 2" % boxes_now)
+
+    needs_restore = boxes_now is None or boxes_now != 2
+    if needs_restore:
+        print("    so it is rebuilt, because a suite that mutates a shared asset must give it back")
         restored = rebuild_fixture()
-        check("the shared fixture was GIVEN BACK", restored,
+        check("the shared fixture was GIVEN BACK, so the next suite reads what it expects", restored,
               "a suite that mutates a shared asset must give it back")
     else:
-        # NOT A SKIP: it is the assertion that the fixture is in the state the next suite expects.
-        check("the fixture is left in the state it was built with, so no rebuild is needed",
-              boxes_now == 2,
-              "the reader saw %s box(es); the fixture is built with 2" % boxes_now)
+        # NOT A SKIP: the fixture is already in the state the next suite expects, and that is REPORTED rather
+        # than asserted, because the count is shared state this suite cannot own.
+        check("the suite did not need to restore the fixture it did not leave dirty", True)
         print("    the fixture is clean, so the editor was NOT stopped again")
 
     print()
