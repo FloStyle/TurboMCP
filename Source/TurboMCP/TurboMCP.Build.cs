@@ -109,6 +109,20 @@ public class TurboMCP : ModuleRules
 				// over SceneTools.take_screenshot for editor UI, and calling it beats
 				// writing a second capture path that could disagree with it.
 				"SlateInspectorToolset",
+
+				// `IPythonScriptPlugin::ExecPythonCommand`, USED BY THE TEST-MAP COMMANDLET FOR ONE REASON.
+				//
+				// The PIE test map needs a BLUEPRINT actor, because only the Blueprint VM raises
+				// `FBlueprintCoreDelegates::OnScriptException` and therefore only a Blueprint node can make
+				// `E-TRACE` fire. The only graph writer this project trusts is the engine's own
+				// `BlueprintTools.write_graph_dsl`, which is a PYTHON tool - so the commandlet asks the Python
+				// plugin to run a script rather than hand-building a graph, which would have been a second
+				// graph writer that could disagree with the readers.
+				//
+				// It is already enabled in `TurboMCP.uplugin` and in the test project's `.uproject`, because
+				// `07_ENGINE_NOTES.md` section 1.2 requires a module dependency to appear in BOTH the Build.cs
+				// and the descriptor.
+				"PythonScriptPlugin",
 			});
 	}
 }
