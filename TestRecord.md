@@ -4065,3 +4065,63 @@ measurement, and **nothing wrong was ever recorded as fixed**. What has been pro
 enough to finish, plus a **real bound** on the suite so it can no longer be killed silently at ten minutes. **THE
 COST IS TIME, AND THE ALTERNATIVE - GUESSING AND OPTIMISING THE WRONG THING - IS WHAT THIS PROJECT HAS ALREADY PAID
 FOR NINE TIMES.**
+
+---
+
+## 9. THE RUN IS GREEN: 39 of 39, and the cause of five rounds was INFINITE RECURSION IN MY OWN RETRY
+
+**MEASURED, FIRST TIME IN THIS PROJECT:** `passed 39, failed 0, blocked 0, of 39`.
+
+### 9.1 The defect, and it was mine
+
+`Tools/tmcp.py` gained a re-connect retry two rounds earlier so a suite whose editor was restarted underneath it
+would recover - **which was correct and fixed a real class of failure**. But:
+
+```
+`connect()` CALLS `rpc()`, AND `rpc()` CALLS `connect()` ON FAILURE.
+```
+
+**When the server is not answering, the retry RECURSES**: `rpc` fails, `connect` runs, `connect`'s own `rpc` fails,
+that `rpc` calls `connect` again - **each level waiting out the full request timeout**.
+
+**MEASURED BEFORE AND AFTER, SAME SUITE, SAME MACHINE:**
+
+    check-probe-graphs.py BEFORE:  777.3 SECONDS   (and over 600 in a full run, where it was killed)
+    check-probe-graphs.py AFTER:    16.1 SECONDS   RESULT: PASS
+
+**AND THE SUITE'S OWN GUARD COULD NOT FIRE.** Its MCP block is a `try/except` written to treat any failure as "no
+editor, which is allowed" - **but the exception never arrived**, because the recursion consumed the stack and the
+clock instead of raising. **A GUARD THAT CANNOT BE REACHED BECAUSE THE FAILURE PATH NEVER RETURNS IS NOT A GUARD.**
+
+THE FIX is a `_connecting` flag: while a re-connect is in progress, a failure **propagates** to the caller instead of
+re-entering the retry, and the flag is cleared in a `finally` so a failed connect leaves the object usable. An
+unreachable server now costs **ONE** timeout instead of an unbounded number.
+
+### 9.2 The honest accounting, and it is uncomfortable
+
+**I named FIVE causes for this suite's slowness across five rounds and every one was falsified by one measurement:**
+the fixture rebuild's waits, then the script's speed, then the mutex, then a retry loop in the suite, then a
+classification error. **The real cause was a retry I had added, in a file I did not suspect because I had written it
+to FIX something.**
+
+> **THE LESSON IS NOT "MEASURE MORE". IT IS THAT A FIX INTRODUCES ITS OWN FAILURE MODES AND MUST BE MEASURED LIKE
+> ANYTHING ELSE.** The `Session.rpc` retry was verified against the case it was written for - an editor restarted
+> underneath a suite - and **never against the case where NO editor comes back at all.**
+
+### 9.3 And the per-suite deadline is what made it findable
+
+**Before the deadline this suite hung indefinitely and blocked the whole run**, and the symptom - no editor, no log
+activity, 18 to 25 minutes - pointed at **the environment** rather than at a tool.
+
+> **THE BOUND TURNED AN UNATTRIBUTABLE HANG INTO `RESULT: TIMED OUT (600s)`, AND NAMING THE SUITE IS WHAT MADE THE
+> RECURSION VISIBLE.** A bound is not a fix, and it is what makes the fix possible.
+
+### 9.4 Where the project stands
+
+    64 tools · 45 of 50 capabilities · READING 21/21 · VISION 3/3 · PREVIEW 4/4 · EDIT 18/23
+    FULL RUN: 39 of 39, 0 failed, 0 blocked
+
+**The five that remain are all writes:** `E-GRAPH-REPLACE`, `E-GRAPH-PATCH`, `E-MAT-LABEL-PROMOTE`, `E-MAT-TIDY`,
+`E-MAT-BLOCKS`. **`E-GRAPH-REPLACE` and `E-GRAPH-PATCH` share everything already built** - the shared lexer, the
+checker gate, the node factory, the `Plan`/`Apply` split, the linking, and the round trip - and differ from `APPEND`
+only in what they do with the OLD graph.
