@@ -1,0 +1,925 @@
+// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
+// SPDX-License-Identifier: MPL-2.0
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+#include "TurboMCPGraphCheck.h"
+
+#include "TurboMCPAssetResolver.h"
+#include "TurboMCPNodeId.h"
+#include "TurboMCPNodeType.h"
+
+// `EdGraphSchema_K2.h` IS REQUIRED FOR `UEdGraphSchema_K2::PC_Exec`, which is the one pin category this
+// checker has to name by constant rather than by string.
+//
+// `K2Node.h` IS REQUIRED FOR `UK2Node::IsLatentForMacros`, AND THIS REPLACED A GUESSED CLASS. The first
+// version included `K2Node_LatentGameplayNode.h` and used `UK2Node_LatentGameplayNode` - A NAME THAT DOES
+// NOT EXIST IN UE 5.8, caught by the build as a missing include and then by a search of the engine. The
+// real mechanism is `UK2Node::IsLatentForMacros()` (`Editor/BlueprintGraph/Classes/K2Node.h:459-460`,
+// default false), overridden by `UK2Node_CallFunction::IsLatentForMacros()`
+// (`Editor/BlueprintGraph/Private/K2Node_CallFunction.cpp:3379-3382`), which answers
+// `TargetFunction->HasMetaData(FBlueprintMetadata::MD_Latent)`. THIS IS THE FIFTH TIME IN THIS PROJECT THAT
+// A RECALLED ENGINE NAME WAS WRONG, and the rule that an engine symbol must be READ stands.
+#include "EdGraphSchema_K2.h"
+#include "EdGraph/EdGraph.h"
+#include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphPin.h"
+#include "Engine/Blueprint.h"
+#include "K2Node.h"
+#include "K2Node_CallFunction.h"
+#include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
+#include "UObject/UObjectGlobals.h"
+
+#include "Containers/Set.h"
+#include "Containers/UnrealString.h"
+#include "Misc/Char.h"
+
+namespace
+{
+	/**
+	 * One line of the submission, with the number a reader starts at.
+	 *
+	 * A LINE AND A COLUMN ARE 1-BASED because that is what every editor, compiler and log the caller has
+	 * open uses. An earlier format in this project reported 0-based indexes and the cost was a caller
+	 * looking one line above the fault.
+	 */
+	struct FLine
+	{
+		FString Text;
+		int32 Number = 0;
+	};
+
+	/** The text split on newlines, keeping every line including blanks. */
+	TArray<FLine> SplitLines(const FString& InText)
+	{
+		TArray<FLine> Out;
+		FString Current;
+		int32 Number = 1;
+		for (int32 Index = 0; Index < InText.Len(); ++Index)
+		{
+			const TCHAR Ch = InText[Index];
+			if (Ch == TEXT('\n'))
+			{
+				Out.Add(FLine{ Current, Number });
+				Current.Empty();
+				++Number;
+				continue;
+			}
+			// A carriage return is part of the line ending, never of the content, so a file saved on
+			// Windows and one saved on Linux produce the SAME findings rather than differing by an
+			// invisible character at the end of every line.
+			if (Ch == TEXT('\r'))
+			{
+				continue;
+			}
+			Current.AppendChar(Ch);
+		}
+		Out.Add(FLine{ Current, Number });
+		return Out;
+	}
+
+	/** True when the whole line is a comment, which the format allows anywhere. */
+	bool IsCommentLine(const FLine& InLine)
+	{
+		return InLine.Text.TrimStartAndEnd().StartsWith(TEXT(";"));
+	}
+
+	/**
+	 * The type ID at the start of a node form, with the column it starts at.
+	 *
+	 * A node form is `(<TypeId>` at the head of a line. This deliberately does NOT accept a form that
+	 * merely contains a parenthesis, because the format prints one node per line and the value nodes
+	 * inside a pin are introduced by a SPACE followed by `(`. Recognising only a head-of-line form is
+	 * what keeps `(Math|Float|float>float` after `Condition ` from being mistaken for a statement
+	 * rather than a value - and it is also what makes the column meaningful.
+	 *
+	 * `(-> target)` is skipped: it is a link, not a node, and it is the one other parenthesised form the
+	 * dialect prints.
+	 */
+	bool ExtractHeadTypeId(const FString& InLine, FString& OutTypeId, int32& OutColumn, int32& OutAfter)
+	{
+		OutTypeId.Empty();
+		OutColumn = 0;
+		OutAfter = 0;
+
+		int32 Index = 0;
+		while (Index < InLine.Len() && FChar::IsWhitespace(InLine[Index]))
+		{
+			++Index;
+		}
+		if (Index >= InLine.Len() || InLine[Index] != TEXT('('))
+		{
+			return false;
+		}
+
+		const int32 Open = Index;
+		++Index;
+		const int32 Start = Index;
+		while (Index < InLine.Len() && InLine[Index] != TEXT(')') && InLine[Index] != TEXT(' '))
+		{
+			++Index;
+		}
+
+		const FString Head = InLine.Mid(Start, Index - Start);
+		if (Head.IsEmpty())
+		{
+			return false;
+		}
+
+		// A link form and the two continuation forms the writer emits are not nodes.
+		if (Head == TEXT("->") || Head == TEXT(":then") || Head == TEXT(":else"))
+		{
+			return false;
+		}
+
+		OutTypeId = Head;
+		OutColumn = Open + 1;
+		OutAfter = Index;
+		return true;
+	}
+
+	/** True when a value is written as a quoted string, which the writer does for text and for structs. */
+	bool IsQuoted(const FString& InValue)
+	{
+		return InValue.Len() >= 2 && InValue[0] == TEXT('"') && InValue[InValue.Len() - 1] == TEXT('"');
+	}
+
+	/** True when the value is a plain number the writer would print for a numeric pin. */
+	bool LooksNumeric(const FString& InValue)
+	{
+		if (InValue.IsEmpty())
+		{
+			return false;
+		}
+		return InValue.IsNumeric();
+	}
+
+	/** True when the value is `true` or `false`. */
+	bool LooksBoolean(const FString& InValue)
+	{
+		return InValue == TEXT("true") || InValue == TEXT("false");
+	}
+
+	/**
+	 * The category a pin's type belongs to, in the words the report uses.
+	 *
+	 * An empty string means the pin carries no type this checker can name, and a caller reading it must
+	 * treat that as "not known" rather than as a category - which is why the mismatch check below refuses
+	 * to fire when either side is unnamed.
+	 */
+	FString TypeWordOf(const UEdGraphPin* InPin)
+	{
+		if (InPin == nullptr)
+		{
+			return FString();
+		}
+		const FEdGraphPinType& Type = InPin->PinType;
+		if (Type.PinCategory == UEdGraphSchema_K2::PC_Exec)
+		{
+			return TEXT("exec");
+		}
+		return Type.PinCategory.ToString();
+	}
+
+	/** A one-line list of pin names, for a finding that has to name the real ones. */
+	FString JoinNames(const TArray<FString>& InNames)
+	{
+		return FString::Join(InNames, TEXT(", "));
+	}
+
+	/** The pins a node really has, inputs first, in the order the writer prints them. */
+	TArray<FString> RealPinNames(const UEdGraphNode* InNode)
+	{
+		TArray<FString> Out;
+		if (InNode == nullptr)
+		{
+			return Out;
+		}
+		for (const UEdGraphPin* Pin : InNode->Pins)
+		{
+			if (Pin == nullptr)
+			{
+				continue;
+			}
+			if (Pin->Direction != EGPD_Input)
+			{
+				continue;
+			}
+			// The format prints an input pin under its real name, and hides `self` and the world context
+			// pin when they are implicit. Both are included here, because a caller writing one of them
+			// explicitly must not be told the pin does not exist.
+			Out.AddUnique(Pin->PinName.ToString());
+		}
+		return Out;
+	}
+
+	/**
+	 * The graph text's own pin line: the keyword, its value, and the column the keyword starts at.
+	 *
+	 * A pin line is `Name value` optionally quoted and optionally followed by `; in <n>`. Parsing the
+	 * TRAILING COMMENT OFF FIRST is what makes a pin name holding a space readable, because the writer
+	 * quotes such a name.
+	 */
+	bool ParsePinLine(const FString& InLine, FString& OutName, FString& OutValue, int32& OutColumn)
+	{
+		OutName.Empty();
+		OutValue.Empty();
+		OutColumn = 0;
+
+		// Drop the trailing editing comment (`; in 3`, `; out 0 then -> 1 link(s)`), which is never part
+		// of the value. The writer only ever emits ONE `;` per pin line and it is always last.
+		FString Body = InLine;
+		const int32 Comment = Body.Find(TEXT(";"), ESearchCase::CaseSensitive, ESearchDir::FromStart);
+		if (Comment != INDEX_NONE)
+		{
+			// A `;` inside a quoted value is content, so only a `;` OUTSIDE quotes ends the body.
+			bool bInQuotes = false;
+			int32 Cut = INDEX_NONE;
+			for (int32 Index = 0; Index < Body.Len(); ++Index)
+			{
+				if (Body[Index] == TEXT('"'))
+				{
+					bInQuotes = !bInQuotes;
+					continue;
+				}
+				if (!bInQuotes && Body[Index] == TEXT(';'))
+				{
+					Cut = Index;
+					break;
+				}
+			}
+			if (Cut != INDEX_NONE)
+			{
+				Body = Body.Left(Cut);
+			}
+		}
+
+		int32 Index = 0;
+		while (Index < Body.Len() && FChar::IsWhitespace(Body[Index]))
+		{
+			++Index;
+		}
+		if (Index >= Body.Len())
+		{
+			return false;
+		}
+
+		OutColumn = Index + 1;
+
+		// A quoted pin name, which the writer uses when the real name holds a space.
+		if (Body[Index] == TEXT('"'))
+		{
+			const int32 Close = Body.Find(TEXT("\""), ESearchCase::CaseSensitive, ESearchDir::FromStart,
+				Index + 1);
+			if (Close == INDEX_NONE)
+			{
+				return false;
+			}
+			OutName = Body.Mid(Index + 1, Close - Index - 1);
+			Index = Close + 1;
+		}
+		else
+		{
+			const int32 Start = Index;
+			while (Index < Body.Len() && !FChar::IsWhitespace(Body[Index]))
+			{
+				++Index;
+			}
+			OutName = Body.Mid(Start, Index - Start);
+		}
+
+		if (OutName.IsEmpty())
+		{
+			return false;
+		}
+
+		while (Index < Body.Len() && FChar::IsWhitespace(Body[Index]))
+		{
+			++Index;
+		}
+		OutValue = Body.Mid(Index).TrimStartAndEnd();
+
+		// THE FORM'S CLOSING PARENTHESIS IS GLUED TO THE LAST PIN'S VALUE, AND MEASURED, THIS COST A
+		// WRONG ANSWER RATHER THAN A CRASH.
+		//
+		// The writer emits `... InString "hi" ; in 3)` when a pin is last, so the value arrives as
+		// `"hi")` - and the first version passed that straight on. The result was that a genuine
+		// mismatch (`InString 42.0`) was reported as an UNJUDGED bare name, `42.0)`, because the value
+		// no longer looked like a number. The checker was not wrong about the text being odd; it was
+		// judging a value the caller never wrote.
+		//
+		// Every `)` that closes the enclosing form or a nested one is TRAILING, because the format puts
+		// one node per line and a nested value node opens its own `(` earlier in the same line. A `)`
+		// inside a QUOTED value is content and is protected by the quote scan above, which is why this
+		// only touches the tail.
+		while (OutValue.EndsWith(TEXT(")")))
+		{
+			OutValue.LeftChopInline(1);
+			OutValue.TrimEndInline();
+		}
+
+		return true;
+	}
+}
+
+FString FTurboMCPGraphCheck::WordFor(EFindingKind InKind)
+{
+	switch (InKind)
+	{
+	case EFindingKind::NodeType:     return TEXT("node-type");
+	case EFindingKind::PinName:      return TEXT("pin-name");
+	case EFindingKind::TypeMismatch: return TEXT("type-mismatch");
+	case EFindingKind::Refused:      return TEXT("refused");
+	case EFindingKind::Unjudged:     return TEXT("unjudged");
+	}
+	return TEXT("unknown");
+}
+
+int32 FTurboMCPGraphCheck::FPlan::CountOf(EFindingKind InKind) const
+{
+	int32 Count = 0;
+	for (const FFinding& Finding : Findings)
+	{
+		if (Finding.Kind == InKind)
+		{
+			++Count;
+		}
+	}
+	return Count;
+}
+
+const UEdGraphNode* FTurboMCPGraphCheck::ResolveTypeId(const UEdGraph* InGraph,
+	const FString& InTypeId, TArray<FString>& OutSuggestions)
+{
+	OutSuggestions.Reset();
+	if (InGraph == nullptr || InTypeId.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	// FIRST THE EXACT ANSWER, and it is exact by the canonical generator rather than by a string
+	// comparison the caller chose. `03_TOOLS.md` requires the accepted text to be exactly what the
+	// readers print, and the readers print `TurboMCPNodeId::GetNodeTypeId`. So the authority for "does
+	// this type ID exist" is that function, applied to the graph's own nodes - not a hand-built list,
+	// which would be a second opinion about the format.
+	TArray<FString> RealTypeIds;
+	for (const UEdGraphNode* Node : InGraph->Nodes)
+	{
+		if (Node == nullptr)
+		{
+			continue;
+		}
+		const FString TypeId = TurboMCPNodeId::GetNodeTypeId(Node);
+		if (TypeId.IsEmpty())
+		{
+			continue;
+		}
+		if (TypeId == InTypeId)
+		{
+			return Node;
+		}
+		RealTypeIds.AddUnique(TypeId);
+	}
+
+	// THE CLOSEST REAL IDS, AND THE AUTHORITY IS THE GRAPH RATHER THAN A SEPARATE CATALOGUE.
+	//
+	// This is deliberately NOT a call to `FTurboMCPNodeType::Plan`, and the reason was MEASURED: that
+	// function REFUSES an empty asset (`no asset given`), so it cannot be asked about a type ID without
+	// a Blueprint in hand. `P-GRAPH-CHECK` does have one, so the fallback below does call it - but the
+	// PRIMARY source is the set of type IDs that EXIST IN THIS GRAPH, because that is the set the
+	// caller's text has to match and therefore the set a suggestion must come from. A suggestion drawn
+	// from a catalogue of everything the engine can build could name a type this graph cannot hold,
+	// which would send the caller to fix a word that was not the problem.
+	//
+	// The score is deliberately crude and explainable: a type ID whose LAST `|`-separated segment shares
+	// the most characters with the written one, best first. Crude is correct here because the answer is
+	// read by a person or an agent choosing a word, not executed.
+	const FString Guess = [&InTypeId]()
+	{
+		int32 LastPipe = INDEX_NONE;
+		if (InTypeId.FindLastChar(TEXT('|'), LastPipe))
+		{
+			return InTypeId.Mid(LastPipe + 1);
+		}
+		return InTypeId;
+	}();
+
+	TArray<TPair<int32, FString>> Scored;
+	for (const FString& Real : RealTypeIds)
+	{
+		FString RealTail = Real;
+		int32 LastPipe = INDEX_NONE;
+		if (Real.FindLastChar(TEXT('|'), LastPipe))
+		{
+			RealTail = Real.Mid(LastPipe + 1);
+		}
+
+		// Longest common prefix, plus a bonus when one contains the other, so `PrintStringg` finds
+		// `PrintString` rather than a longer name that merely starts the same way.
+		int32 Common = 0;
+		const int32 Max = FMath::Min(Guess.Len(), RealTail.Len());
+		while (Common < Max && Guess[Common] == RealTail[Common])
+		{
+			++Common;
+		}
+		int32 Score = Common;
+		if (RealTail.Contains(Guess) || Guess.Contains(RealTail))
+		{
+			Score += 100;
+		}
+		if (Real == InTypeId)
+		{
+			Score += 1000;
+		}
+		if (Score > 0)
+		{
+			Scored.Add(TPair<int32, FString>(Score, Real));
+		}
+	}
+
+	Scored.Sort([](const TPair<int32, FString>& A, const TPair<int32, FString>& B)
+	{
+		if (A.Key != B.Key)
+		{
+			return A.Key > B.Key;
+		}
+		return A.Value < B.Value;
+	});
+
+	const int32 Cap = FMath::Min(Scored.Num(), 5);
+	for (int32 Index = 0; Index < Cap; ++Index)
+	{
+		OutSuggestions.Add(Scored[Index].Value);
+	}
+
+	return nullptr;
+}
+
+bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphName,
+	const FString& InText, FPlan& OutPlan, FString& OutError)
+{
+	OutError.Empty();
+	OutPlan = FPlan();
+	OutPlan.Asset = InAsset.TrimStartAndEnd();
+	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
+
+	if (OutPlan.Asset.IsEmpty())
+	{
+		OutError = TEXT("no asset given. Pass the Blueprint the text is meant for, for example BP_NodeTest.");
+		return false;
+	}
+	if (InText.TrimStartAndEnd().IsEmpty())
+	{
+		OutError = TEXT("no text given. Pass the graph text to check, exactly as R-GRAPH-LOAD prints it.");
+		return false;
+	}
+
+	FTurboMCPAssetResolver::FResolved Resolved;
+	const FString ResolveError = FTurboMCPAssetResolver::Resolve(OutPlan.Asset, Resolved);
+	if (!ResolveError.IsEmpty())
+	{
+		OutError = ResolveError;
+		return false;
+	}
+
+	UBlueprint* Blueprint = Cast<UBlueprint>(LoadObject<UObject>(nullptr, *Resolved.ObjectPath));
+	if (Blueprint == nullptr)
+	{
+		OutError = FString::Printf(
+			TEXT("%s is not a Blueprint, so it has no graph text to check."), *Resolved.ObjectPath);
+		return false;
+	}
+
+	// THE GRAPH IS REQUIRED, AND THAT IS A DELIBERATE REFUSAL RATHER THAN A CONVENIENCE.
+	//
+	// A type ID and a pin name are both resolved AGAINST A GRAPH, because the same words mean different
+	// things in different graphs: `ReceiveBeginPlay` exists in an event graph and not in a function
+	// graph, and a local variable is a variable in one function and invisible in the next. Checking text
+	// with no graph to check it against would report a type as missing when it merely belongs to a graph
+	// the caller did not name - the "a reader fault reported as a subject fault" mistake this project has
+	// recorded. So an unnamed graph is refused, and the refusal names the graphs that would work.
+	TArray<UEdGraph*> Graphs;
+	for (UEdGraph* Graph : Blueprint->UbergraphPages)
+	{
+		if (Graph != nullptr) { Graphs.Add(Graph); }
+	}
+	for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+	{
+		if (Graph != nullptr) { Graphs.Add(Graph); }
+	}
+	for (UEdGraph* Graph : Blueprint->MacroGraphs)
+	{
+		if (Graph != nullptr) { Graphs.Add(Graph); }
+	}
+
+	UEdGraph* Graph = nullptr;
+	if (OutPlan.GraphName.IsEmpty())
+	{
+		TArray<FString> Names;
+		for (const UEdGraph* Candidate : Graphs)
+		{
+			Names.Add(Candidate->GetName());
+		}
+		OutError = FString::Printf(
+			TEXT("no graph given, and the check needs one because a type ID and a pin name are both ")
+			TEXT("resolved AGAINST A GRAPH. %s has: %s."),
+			*Resolved.ObjectPath, *JoinNames(Names));
+		return false;
+	}
+
+	for (UEdGraph* Candidate : Graphs)
+	{
+		if (Candidate->GetName() == OutPlan.GraphName)
+		{
+			Graph = Candidate;
+			break;
+		}
+	}
+	if (Graph == nullptr)
+	{
+		TArray<FString> Names;
+		for (const UEdGraph* Candidate : Graphs)
+		{
+			Names.Add(Candidate->GetName());
+		}
+		OutError = FString::Printf(
+			TEXT("no graph named '%s' in %s. The graphs are: %s."),
+			*OutPlan.GraphName, *Resolved.ObjectPath, *JoinNames(Names));
+		return false;
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// Everything below only READS. `Graph` is const from here on, so a mutating call would not compile
+	// rather than merely being absent - which is the strongest form this guarantee can take.
+	// ---------------------------------------------------------------------------------------------
+	const UEdGraph* ReadOnlyGraph = Graph;
+
+	// A reverse index from a type ID to a node that has it, so each form is resolved ONCE rather than
+	// scanning the graph per line. It is built from the live graph, so it cannot drift from the format.
+	TMap<FString, const UEdGraphNode*> NodeByTypeId;
+	for (const UEdGraphNode* Node : ReadOnlyGraph->Nodes)
+	{
+		if (Node == nullptr)
+		{
+			continue;
+		}
+		const FString TypeId = TurboMCPNodeId::GetNodeTypeId(Node);
+		if (!TypeId.IsEmpty() && !NodeByTypeId.Contains(TypeId))
+		{
+			NodeByTypeId.Add(TypeId, Node);
+		}
+	}
+
+	const bool bInsideFunction = Graph->GetSchema() != nullptr
+		&& Graph->GetClass()->GetName().Contains(TEXT("Function"));
+
+	const TArray<FLine> Lines = SplitLines(InText);
+
+	// The node form the pin lines below belong to, so a pin is checked against the RIGHT node.
+	const UEdGraphNode* CurrentNode = nullptr;
+	int32 CurrentNodeLine = 0;
+
+	// True when the most recent node head could not be resolved, so the pins under it are a consequence
+	// of a fault already reported rather than a second, separate one. See the `CurrentNode == nullptr`
+	// block below for the measurement that put this here.
+	bool bLastHeadUnresolved = false;
+
+	for (const FLine& Line : Lines)
+	{
+		if (IsCommentLine(Line))
+		{
+			continue;
+		}
+
+		FString TypeId;
+		int32 Column = 0;
+		int32 AfterTypeId = 0;
+		if (ExtractHeadTypeId(Line.Text, TypeId, Column, AfterTypeId))
+		{
+			++OutPlan.NodeFormsFound;
+
+			// NAMED `NodeForType` RATHER THAN `Resolved`, BECAUSE `Resolved` IS ALREADY THE ASSET above.
+			// The build caught the shadow as `error C4456`, which this project treats as an error: a
+			// second `Resolved` in the same scope reads as the same thing to a reader and is not.
+			const UEdGraphNode* NodeForType = nullptr;
+			if (const UEdGraphNode* const* Found = NodeByTypeId.Find(TypeId))
+			{
+				NodeForType = *Found;
+			}
+
+			if (NodeForType == nullptr)
+			{
+				TArray<FString> Suggestions;
+				NodeForType = ResolveTypeId(ReadOnlyGraph, TypeId, Suggestions);
+
+				FFinding Finding;
+				Finding.Kind = EFindingKind::NodeType;
+				Finding.KindWord = WordFor(Finding.Kind);
+				Finding.Line = Line.Number;
+				Finding.Column = Column;
+				Finding.Written = TypeId;
+				Finding.Suggestions = Suggestions;
+				Finding.Message = FString::Printf(
+					TEXT("no node type in %s is written '%s'."), *OutPlan.GraphName, *TypeId);
+				if (Suggestions.Num() > 0)
+				{
+					Finding.Message += FString::Printf(
+						TEXT(" Closest real IDs: %s."), *JoinNames(Suggestions));
+				}
+				else
+				{
+					Finding.Message += TEXT(" No close match exists in this graph.");
+				}
+				OutPlan.Findings.Add(Finding);
+			}
+
+			CurrentNode = NodeForType;
+			CurrentNodeLine = Line.Number;
+			bLastHeadUnresolved = (NodeForType == nullptr);
+
+			// A LATENT NODE INSIDE A FUNCTION IS REFUSED, and this is the example `03_TOOLS.md` names.
+			//
+			// A latent action is one that spans frames - a delay, a timeline, an async load. It is only
+			// legal where the engine can resume it later, and a function graph is inlined into its
+			// callers with no such place, so the engine's own compiler rejects it. Refusing here means
+			// the caller learns before a writer has touched the asset, which is the whole point of a
+			// checker that runs first.
+			//
+			// THE TEST IS `IsLatentForMacros()`, WHICH IS THE ENGINE'S OWN ANSWER and not a class list
+			// written here. See the include comment: the first version tested against a class that does
+			// not exist in this engine version.
+			const UK2Node* AsK2 = Cast<UK2Node>(NodeForType);
+			if (bInsideFunction && AsK2 != nullptr && AsK2->IsLatentForMacros())
+			{
+				FFinding Finding;
+				Finding.Kind = EFindingKind::Refused;
+				Finding.KindWord = WordFor(Finding.Kind);
+				Finding.Line = Line.Number;
+				Finding.Column = Column;
+				Finding.Written = TypeId;
+				Finding.Message = FString::Printf(
+					TEXT("'%s' is a LATENT node and %s is a FUNCTION graph. A latent action spans frames ")
+					TEXT("and a function is inlined into its callers, so the engine cannot compile it ")
+					TEXT("here. Put it in an event graph, or make the call from one."),
+					*TypeId, *OutPlan.GraphName);
+				OutPlan.Findings.Add(Finding);
+			}
+
+			continue;
+		}
+
+		// Not a node head, so it is either a pin line or a continuation/sub-block line. A sub-block head
+		// (`:then`) carries the pins of the node it belongs to, so the current node is NOT cleared - the
+		// format puts a continuation's pins under the continuation.
+		FString PinName;
+		FString PinValue;
+		int32 PinColumn = 0;
+		if (!ParsePinLine(Line.Text, PinName, PinValue, PinColumn))
+		{
+			continue;
+		}
+
+		// A continuation head is not a pin.
+		if (PinName == TEXT(":then") || PinName == TEXT(":else") || PinName.StartsWith(TEXT(":")))
+		{
+			continue;
+		}
+
+		++OutPlan.PinLinesFound;
+
+		if (CurrentNode == nullptr)
+		{
+			// A PIN UNDER AN UNRESOLVED NODE HEAD IS NOT REPORTED AGAIN, AND THE REASON IS COUNTING.
+			//
+			// MEASURED: the first version reported the unknown node type AND then reported its pins as
+			// "no node form is open above it", so ONE wrong node type produced TWO findings. A caller
+			// fixing the type ID would have seen a finding disappear that was never about anything they
+			// wrote - and `T-WRITE-1` requires that a text with three faults give EXACTLY THREE
+			// findings. The type ID was already named on the line above; saying it twice is noise, and
+			// noise is what makes a checker's count useless.
+			//
+			// A PIN WITH NO NODE ABOVE IT AT ALL IS DIFFERENT and is still refused: that is a real
+			// indentation fault in the caller's text, not a consequence of a fault already reported.
+			if (bLastHeadUnresolved)
+			{
+				continue;
+			}
+
+			FFinding Finding;
+			Finding.Kind = EFindingKind::Refused;
+			Finding.KindWord = WordFor(Finding.Kind);
+			Finding.Line = Line.Number;
+			Finding.Column = PinColumn;
+			Finding.Written = PinName;
+			Finding.Message = FString::Printf(
+				TEXT("'%s' is written as a pin but no node form is open above it, so there is nothing to ")
+				TEXT("check it against. A pin line belongs under the node it is a pin of."),
+				*PinName);
+			OutPlan.Findings.Add(Finding);
+			continue;
+		}
+
+		// THE PIN MUST EXIST ON THE RESOLVED NODE.
+		const UEdGraphPin* FoundPin = nullptr;
+		for (const UEdGraphPin* Pin : CurrentNode->Pins)
+		{
+			if (Pin != nullptr && Pin->Direction == EGPD_Input && Pin->PinName.ToString() == PinName)
+			{
+				FoundPin = Pin;
+				break;
+			}
+		}
+
+		if (FoundPin == nullptr)
+		{
+			FFinding Finding;
+			Finding.Kind = EFindingKind::PinName;
+			Finding.KindWord = WordFor(Finding.Kind);
+			Finding.Line = Line.Number;
+			Finding.Column = PinColumn;
+			Finding.Written = PinName;
+			Finding.Suggestions = RealPinNames(CurrentNode);
+			Finding.Message = FString::Printf(
+				TEXT("'%s' is not a pin of %s."), *PinName,
+				*TurboMCPNodeId::GetNodeTypeId(CurrentNode));
+			if (Finding.Suggestions.Num() > 0)
+			{
+				Finding.Message += FString::Printf(
+					TEXT(" It has: %s."), *JoinNames(Finding.Suggestions));
+			}
+			else
+			{
+				Finding.Message += TEXT(" It has no input pins at all.");
+			}
+			OutPlan.Findings.Add(Finding);
+			continue;
+		}
+
+		// A LINK OR A DEFAULT, never both, and the format's own shape decides: a value starting with `(`
+		// is a link to another node, and a link's target is checked by the node it names rather than by a
+		// literal comparison here.
+		if (PinValue.StartsWith(TEXT("(")) || PinValue == TEXT("self"))
+		{
+			continue;
+		}
+
+		// THE TYPE MISMATCH, NAMING BOTH SIDES.
+		//
+		// Only a literal can be judged, and only when BOTH the written form and the pin's own category
+		// are known. Where either side is NOT known the case is reported as `unjudged` WITH THE REASON
+		// rather than passed over in silence: a caller reading "0 findings" cannot otherwise tell whether
+		// every literal was checked or none was, and silence is indistinguishable from agreement.
+		if (PinValue.IsEmpty())
+		{
+			// A pin named with no value keeps its default, which `03_TOOLS.md` allows explicitly:
+			// "Pins not named keep their defaults". Nothing to judge.
+			continue;
+		}
+
+		const FString PinTypeWord = TypeWordOf(FoundPin);
+
+		const bool bNumericLiteral = LooksNumeric(PinValue);
+		const bool bBoolLiteral = LooksBoolean(PinValue);
+		const bool bQuotedLiteral = IsQuoted(PinValue);
+
+		FString WrittenType;
+		if (bNumericLiteral) { WrittenType = TEXT("a number"); }
+		else if (bBoolLiteral) { WrittenType = TEXT("a boolean"); }
+		else if (bQuotedLiteral) { WrittenType = TEXT("a quoted string"); }
+
+		// A bare word that is neither a number, a boolean, nor quoted is a NAME reference in this
+		// dialect - an enum entry, an object path - and naming its type would be a guess. Reported as
+		// unjudged so the count says so.
+		if (WrittenType.IsEmpty())
+		{
+			FFinding Finding;
+			Finding.Kind = EFindingKind::Unjudged;
+			Finding.KindWord = WordFor(Finding.Kind);
+			Finding.Line = Line.Number;
+			Finding.Column = PinColumn;
+			Finding.Written = PinName;
+			Finding.Message = FString::Printf(
+				TEXT("pin '%s' is written the bare name '%s', which this dialect uses for an enum entry ")
+				TEXT("or an object path, so its type cannot be told from the text alone. NOT A FAULT."),
+				*PinName, *PinValue);
+			OutPlan.Findings.Add(Finding);
+			continue;
+		}
+
+		if (PinTypeWord.IsEmpty())
+		{
+			FFinding Finding;
+			Finding.Kind = EFindingKind::Unjudged;
+			Finding.KindWord = WordFor(Finding.Kind);
+			Finding.Line = Line.Number;
+			Finding.Column = PinColumn;
+			Finding.Written = PinName;
+			Finding.Message = FString::Printf(
+				TEXT("pin '%s' is given %s, but the pin carries no type this checker can name, so the ")
+				TEXT("pair cannot be judged. NOT A FAULT."),
+				*PinName, *WrittenType);
+			OutPlan.Findings.Add(Finding);
+			continue;
+		}
+
+		// An exec pin takes no literal, but the format never prints one either, so a value on an exec
+		// pin is a shape the writer cannot produce. Reported as unjudged rather than as a mismatch,
+		// because this checker cannot say what a writer would do with it.
+		if (PinTypeWord == TEXT("exec"))
+		{
+			FFinding Finding;
+			Finding.Kind = EFindingKind::Unjudged;
+			Finding.KindWord = WordFor(Finding.Kind);
+			Finding.Line = Line.Number;
+			Finding.Column = PinColumn;
+			Finding.Written = PinName;
+			Finding.Message = FString::Printf(
+				TEXT("pin '%s' is an exec pin and the text gives it the literal '%s'. The format prints a ")
+				TEXT("link on an exec pin, never a value. NOT A FAULT, but not a shape the writer makes."),
+				*PinName, *PinValue);
+			OutPlan.Findings.Add(Finding);
+			continue;
+		}
+
+		// A number fits every numeric category and a number is what the writer prints for all of them,
+		// so only the CROSS-FAMILY cases are faults: a number where text is wanted, text where a number
+		// is wanted, and a boolean where neither is. Comparing the families rather than the exact
+		// categories is deliberate - `float`, `int` and `byte` all accept `42.0` as the writer prints
+		// it, and a checker that called those mismatches would refuse text the engine accepts.
+		const bool bPinIsText = PinTypeWord == TEXT("String") || PinTypeWord == TEXT("Name")
+			|| PinTypeWord == TEXT("Text");
+		const bool bPinIsNumeric = PinTypeWord == TEXT("float") || PinTypeWord == TEXT("int")
+			|| PinTypeWord == TEXT("int64") || PinTypeWord == TEXT("byte") || PinTypeWord == TEXT("real")
+			|| PinTypeWord == TEXT("double");
+		const bool bPinIsBool = PinTypeWord == TEXT("bool");
+
+		bool bMismatch = false;
+		if (bPinIsText && !bQuotedLiteral)
+		{
+			bMismatch = true;
+		}
+		else if (bPinIsNumeric && (bBoolLiteral || bQuotedLiteral))
+		{
+			bMismatch = true;
+		}
+		else if (bPinIsBool && (bNumericLiteral || bQuotedLiteral))
+		{
+			bMismatch = true;
+		}
+
+		if (bMismatch)
+		{
+			FFinding Finding;
+			Finding.Kind = EFindingKind::TypeMismatch;
+			Finding.KindWord = WordFor(Finding.Kind);
+			Finding.Line = Line.Number;
+			Finding.Column = PinColumn;
+			Finding.Written = PinName;
+			Finding.Message = FString::Printf(
+				TEXT("pin '%s' of %s is %s, and the text gives %s (%s)."),
+				*PinName, *TurboMCPNodeId::GetNodeTypeId(CurrentNode),
+				*PinTypeWord, *WrittenType, *PinValue);
+			OutPlan.Findings.Add(Finding);
+		}
+	}
+
+	return true;
+}
+
+FString FTurboMCPGraphCheck::Render(const FPlan& InPlan)
+{
+	FString Out = FString::Printf(TEXT("preview: checking graph text for %s in %s"),
+		*InPlan.GraphName, *InPlan.Asset);
+	Out += FString::Printf(
+		TEXT("\n%d node form(s) and %d pin line(s) read, %d finding(s)"),
+		InPlan.NodeFormsFound, InPlan.PinLinesFound, InPlan.Findings.Num());
+
+	if (InPlan.Findings.Num() == 0)
+	{
+		// `P1`: never return nothing. "Nothing found" WITH the counts above it is the answer.
+		Out += TEXT("\nthe text would be accepted: no unknown node type, no unknown pin and no type mismatch.");
+		Out += TEXT("\nNOTHING WAS WRITTEN: this tool parses, resolves and checks only.");
+		return Out;
+	}
+
+	for (const FFinding& Finding : InPlan.Findings)
+	{
+		Out += FString::Printf(TEXT("\n\n  %s  line %d, column %d: %s"),
+			*Finding.KindWord, Finding.Line, Finding.Column, *Finding.Message);
+	}
+
+	Out += FString::Printf(
+		TEXT("\n\n%d finding(s): %d node-type, %d pin-name, %d type-mismatch, %d refused, %d unjudged."),
+		InPlan.Findings.Num(),
+		InPlan.CountOf(EFindingKind::NodeType),
+		InPlan.CountOf(EFindingKind::PinName),
+		InPlan.CountOf(EFindingKind::TypeMismatch),
+		InPlan.CountOf(EFindingKind::Refused),
+		InPlan.CountOf(EFindingKind::Unjudged));
+	Out += TEXT("\nNOTHING WAS WRITTEN: this tool parses, resolves and checks only.");
+
+	return Out;
+}
