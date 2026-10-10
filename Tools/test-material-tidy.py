@@ -274,8 +274,8 @@ def main():
           boxes_after is not None and boxes_before is not None and boxes_after > boxes_before,
           "boxes went from %s to %s" % (boxes_before, boxes_after))
     check("the expression count is UNCHANGED, seen by the reader",
-          expressions_after == 12,
-          "the reader counted %s expression(s); the fixture builds 12" % expressions_after)
+          expressions_after == 16,
+          "the reader counted %s expression(s); the fixture builds 16" % expressions_after)
 
     # ONE BOX PER BLOCK, PARSED. The preview said how many blocks it planned, and the edit wrote
     # that many boxes on top of the two the fixture already had. A layout that boxed every

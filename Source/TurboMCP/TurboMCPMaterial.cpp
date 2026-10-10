@@ -1248,6 +1248,30 @@ FString FTurboMCPMaterial::RenderLabels(const FPlan& InPlan)
 			Declaration != nullptr ? Declaration->MaterialExpressionEditorY : 0);
 		Out += FString::Printf(TEXT("\n    read in %d place(s)"), ReaderCount);
 
+		// WHAT THE DECLARATION FORWARDS, NAMED BY CLASS.
+		//
+		// *** THIS LINE EXISTS BECAUSE A BREAK TEST EXPOSED A BLIND SPOT, AND THE BLIND SPOT WAS IN THE
+		// TEST RATHER THAN IN THE TOOL. *** `P/E-MAT-LABEL-PROMOTE` was deliberately broken so that each
+		// declaration forwarded NOTHING - `Input.Expression` left null - and the suite that tests it
+		// STILL PASSED, because `read in N place(s)` counts USAGE NODES, and a usage pointing at a
+		// declaration that forwards nothing is still a usage. The material would have compiled to an
+		// unconnected input and NO READER WOULD HAVE SAID SO.
+		//
+		// SO THE READER NOW NAMES THE FORWARDING SOURCE'S CLASS. It is the ONE fact that separates a
+		// label that carries a value from a label that carries nothing, and it is readable without
+		// compiling the material. A caller who sees `forwards NOTHING` is looking at a broken label, and
+		// A READER THAT CANNOT DISTINGUISH THOSE TWO STATES IS NOT WITNESSING THE THING THAT MATTERS.
+		if (Declaration != nullptr && Declaration->Input.Expression != nullptr)
+		{
+			Out += FString::Printf(TEXT("\n    forwards %s"),
+				*Declaration->Input.Expression->GetClass()->GetName());
+		}
+		else
+		{
+			Out += TEXT("\n    forwards NOTHING: this declaration has no source expression, so every ")
+				TEXT("usage of it reads an unconnected input.");
+		}
+
 		if (ReaderCount == 0)
 		{
 			// `03_TOOLS.md`: "the ones nothing reads." Named as such rather than omitted, because an

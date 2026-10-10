@@ -289,6 +289,63 @@ namespace
 			}
 		}
 
+		// --- THE VALUE READ IN TWO PLACES, WHICH IS WHAT A LABEL IS FOR --------------------------
+		//
+		// `P/E-MAT-LABEL-PROMOTE` exists to name values that are "used far away or in several boxes",
+		// and WITHOUT THIS THE FIXTURE HAS NO SUCH VALUE AT ALL. MEASURED while writing the capability:
+		// every expression the fixture built was read by at most ONE distinct consumer, because the one
+		// multiply that genuinely fans out is read by its two NamedRerouteUsage nodes - and a LABEL IS
+		// NOT A REASON TO ADD A LABEL, so those are excluded by the promotion rule. A capability whose
+		// positive case cannot occur on its own fixture cannot be tested, so the fixture gains the case
+		// rather than the test gaining an exemption.
+		//
+		// THE CHANNEL IS DELIBERATELY SEPARATE. It reaches `MP_EmissiveColor` through its own Add, so it
+		// touches no existing wire, moves no existing count, and leaves the label story - two
+		// declarations, two usages, one of them unread - exactly as the other suites assert it.
+		UMaterialExpressionConstant3Vector* SharedTint =
+			Add<UMaterialExpressionConstant3Vector>(InMaterial, nullptr, 1200, 900);
+		if (SharedTint != nullptr)
+		{
+			// The value is chosen to be recognisable in a report, so a reader can see which constant was
+			// named rather than having to trust a key.
+			SharedTint->Constant = FLinearColor(0.25f, 0.5f, 0.75f, 1.0f);
+			++OutCounts.Expressions;
+
+			// TWO DISTINCT CONSUMERS, which is the minimum the promotion rule recognises. ONE
+			// EXPRESSION READING IT TWICE WOULD NOT DO: the rule counts distinct readers, so a single
+			// Multiply with both A and B pointing here is ONE place the value is used.
+			UMaterialExpressionMultiply* SharedUseA =
+				Add<UMaterialExpressionMultiply>(InMaterial, nullptr, 1400, 900);
+			UMaterialExpressionAdd* SharedUseB =
+				Add<UMaterialExpressionAdd>(InMaterial, nullptr, 1400, 1050);
+			if (SharedUseA != nullptr && SharedUseB != nullptr)
+			{
+				++OutCounts.Expressions;
+				++OutCounts.Expressions;
+
+				// A SHARED CONSTANT CARRIES A REAL NUMBER, not a unit one, so the multiply it feeds is
+				// not the identity - a promotion that accidentally DROPPED this value would then show up
+				// as a changed picture rather than as two expressions that happen to agree.
+				Wire(OutCounts, SharedTint, TEXT(""), SharedUseA, TEXT("A"));
+				Wire(OutCounts, SharedTint, TEXT(""), SharedUseB, TEXT("A"));
+
+				// BOTH REACH THE OUTPUT SO THE SHARED VALUE IS REACHED BY THE UNREACHED WALK. A value
+				// nothing reads would pollute the unreached finding, which exists to name a PARAMETER
+				// the author forgot.
+				UMaterialExpressionAdd* SharedOut =
+					Add<UMaterialExpressionAdd>(InMaterial, nullptr, 1600, 950);
+				if (SharedOut != nullptr)
+				{
+					++OutCounts.Expressions;
+					Wire(OutCounts, SharedUseA, TEXT(""), SharedOut, TEXT("A"));
+					Wire(OutCounts, SharedUseB, TEXT(""), SharedOut, TEXT("B"));
+					UMaterialEditingLibrary::ConnectMaterialProperty(
+						SharedOut, TEXT(""), MP_EmissiveColor);
+					++OutCounts.Connections;
+				}
+			}
+		}
+
 		return true;
 	}
 

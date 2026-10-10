@@ -1070,6 +1070,26 @@ public:
 	static FString PreviewTurboMCPMaterialTidy(
 		const FString& Asset,
 		const FString& Force);
+
+	/**
+	 * List the values in a material worth a name, and change nothing.
+	 *
+	 * A VALUE IS WORTH A NAME WHEN IT IS READ IN SEVERAL PLACES, which is what the specification asks
+	 * for - used far away or in several boxes. A value read in exactly one place is not shared, so a
+	 * label would add a node and a name and save nothing. Distinct READERS are counted rather than
+	 * inputs, so one expression that reads the same value into two of its own inputs counts once.
+	 *
+	 * EACH CANDIDATE CARRIES A PROPOSED NAME TAKEN FROM CONTEXT, which is the part of the specification a
+	 * list of values alone would not satisfy. The name comes from the expression's own caption, which is
+	 * what the material editor draws, and it is printed with the places that would read it and with
+	 * whether the name already exists.
+	 *
+	 * It writes nothing, and it does not claim the compiled result is unchanged - that claim is made by
+	 * the edit, which measures it and rolls back if it is not the same.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPMaterialLabelPromote(
+		const FString& Asset);
 };
 
 /**
@@ -1582,6 +1602,27 @@ public:
 	static FString EditTurboMCPMaterialTidy(
 		const FString& Asset,
 		const FString& Force);
+
+	/**
+	 * Give a material values names: create the declaration and rewire the readers.
+	 *
+	 * A MATERIAL LABEL IS A NAMED REROUTE, so this creates a declaration that forwards to the value it
+	 * names and re-points every input that read the value directly at the declaration instead. It ADDS
+	 * and REWIRES; it never removes anything.
+	 *
+	 * THE MATERIAL'S COMPILED RESULT IS PROVEN UNCHANGED AND THE EDIT IS ROLLED BACK IF IT IS NOT. A
+	 * declaration compiles by forwarding to its input, so reading a value directly and reading it
+	 * through a label must compile to the same thing - which is what makes the edit legitimate and what
+	 * the check confirms. Three statements are made afterwards and the answer says which is which: no
+	 * pre-existing expression was LOST, the expressions GAINED are exactly the declarations this pass
+	 * planned, and the engine reports no NEW error. The engine's own StateId is printed, REPORTED rather
+	 * than asserted because it can change for reasons a label promotion does not control.
+	 *
+	 * The whole promotion is ONE TRANSACTION, so it is a single undo and a rollback is exact.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPMaterialLabelPromote(
+		const FString& Asset);
 };
 
 /**

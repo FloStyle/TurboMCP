@@ -180,6 +180,29 @@ public:
 	 */
 	static UMaterialExpression* OutputSource(FPlan& InPlan, const FString& InProperty);
 
+	/**
+	 * True when an expression is a label declaration, with the label it names.
+	 *
+	 * PUBLIC BECAUSE THE LABEL WRITER NEEDS THE SAME ANSWER THE READER GIVES. `P/E-MAT-LABEL-PROMOTE`
+	 * must recognise a declaration and a usage for two reasons - it must not promote a label as if it
+	 * were an unlabelled value, and it must dedupe a value it already named - and reimplementing that
+	 * test in the writer would be the second-dialect mistake in a new place, the one this project has
+	 * already paid for on the graph side with the lexer.
+	 */
+	static bool IsLabelDeclaration(const UMaterialExpression* InExpression, FString& OutLabel);
+
+	/** True when an expression reads a label, with the label it reads. Public for the reason above. */
+	static bool IsLabelUsage(const UMaterialExpression* InExpression, FString& OutLabel);
+
+	/**
+	 * The expression's caption, which is what the material editor draws for it.
+	 *
+	 * PUBLIC BECAUSE IT IS THE ONLY HONEST SOURCE FOR A PROPOSED LABEL NAME. The label writer derives
+	 * the name it offers from the expression's own caption; deriving one from the class name instead
+	 * would propose `MaterialExpressionConstant3Vector` where the editor prints the value.
+	 */
+	static FString CaptionOf(const UMaterialExpression* InExpression);
+
 private:
 	/**
 	 * The per-render state.
@@ -240,17 +263,8 @@ private:
 	 */
 	static TArray<FString> AllOutputProperties(FPlan& InPlan);
 
-	/** True when this expression is a label declaration, and its label. */
-	static bool IsLabelDeclaration(const UMaterialExpression* InExpression, FString& OutLabel);
-
-	/** True when this expression only reads a label, and the label it reads. */
-	static bool IsLabelUsage(const UMaterialExpression* InExpression, FString& OutLabel);
-
 	/** The label a usage node refers to, resolved through its declaration when the pointer is valid. */
 	static FString LabelOfUsage(const UMaterialExpressionNamedRerouteUsage* InUsage);
-
-	/** A short human label for an expression: its caption, or its class when it has none. */
-	static FString CaptionOf(const UMaterialExpression* InExpression);
 
 	/** True when this expression is a plain reroute, which `2.5` says the reader looks through. */
 	static bool IsPlainReroute(const UMaterialExpression* InExpression);
