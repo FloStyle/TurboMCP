@@ -489,6 +489,32 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPMaterialBlocks(const FString& Asset, int32 TokenBudget);
+
+	/**
+	 * Play the project for a few seconds and report the warnings and errors it raised.
+	 *
+	 * THIS IS TWO CALLS, AND THAT IS THE ENGINE RATHER THAN A CHOICE. A tool call runs on the editor's game
+	 * thread, and PIE is ticked on that same thread inside the editor's own tick, so a call that started a
+	 * session and then waited would be blocking the one thread the session needs in order to run. It would
+	 * hang, or report a window that never happened.
+	 *
+	 * So: pass `seconds` to REQUEST a session and return immediately; then call again with `seconds` EMPTY
+	 * to collect. The second call answers `pending` while it is still running, and only reports once the
+	 * engine has actually torn the session down.
+	 *
+	 * It uses the engine's own play controls, so what runs is exactly what the Play button runs. A session
+	 * already running when you ask is LEFT ALONE and said so, because stopping someone else's play session
+	 * is not this tool's decision. It stops only what it started.
+	 *
+	 * `map` overrides which map plays; empty means the project's default, which is what the Play button
+	 * does. `seconds` is capped at 600.
+	 *
+	 * One session is watched at a time, so a second request while one is pending is refused by name rather
+	 * than mixing two runs into one log. Returns warnings and errors only - not ordinary log lines - counted
+	 * per source category, and it names anything the list cap left out.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPPlayCheck(const FString& Seconds, const FString& Map);
 };
 
 /**
