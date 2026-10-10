@@ -4643,3 +4643,43 @@ board without reading it.
 what `D-36` means by *"trace points before breakpoints"*. So the remaining work for section 14 is **NOT four new
 tools**; it is **the refusal text**, which goes in the descriptions of `E-TRACE`, `R-TRACE` and `R-PLAY-CHECK`, so an
 agent that wants a breakpoint is told WHY it cannot have one and what to use instead.
+
+---
+
+## 20. Row 0.2 is understood but NOT landed, because the rebuild path is a different KIND of thing
+
+`Spec/WORKING_PLAN.md` row 0.2: *"Make `test-override-add` and `test-comment-boxes` restore their fixture **on the
+way in**"*, citing `STATUS.md` section 7 and `P8`. Both touch the same asset:
+
+    Tools/test-override-add.py:27    ASSET = "BP_NodeTest"
+    Tools/test-comment-boxes.py:34   ASSET = "BP_NodeTest"
+
+*** AND `BP_NodeTest` IS NOT REBUILT BY A COMMANDLET, WHICH IS WHY THE ESTABLISHED PATTERN DOES NOT TRANSFER. *** The
+model I was going to copy - `Tools/test-material-tidy.py` - restores by calling `Tools/make-material-asset.ps1`,
+which is a `-run=` COMMANDLET: it STOPS THE EDITOR, regenerates from nothing, and exits. **THE REBUILD PATH FOR
+`BP_NodeTest` IS A DIFFERENT KIND OF THING:**
+
+    Tools/make-test-blueprint.py:41   BLUEPRINT_PACKAGE = "/Game/Tests/BP_NodeTest"
+    Tools/build-test-graph.py:38      BLUEPRINT = "/Game/Tests/BP_NodeTest"
+    Tools/build-test-graph.py:61      {"assets": "BP_NodeTest"}          <- SAVES through the MCP session
+
+**IT DRIVES THE MCP SERVER FROM PYTHON AND SAVES THROUGH IT - IT IS A CLIENT, NOT A COMMANDLET - SO CALLING IT FROM
+INSIDE A SUITE MEANS A SUITE REBUILDING THE ASSET THE HARNESS'S OWN EDITOR IS HOLDING.** That is the same
+two-owners shape this project has paid for four times, and the material pattern does not answer it because there the
+rebuild stops the editor first.
+
+**SO ROW 0.2 IS NOT A MECHANICAL COPY, AND SAYING SO IS BETTER THAN DOING IT BADLY.** One thing can be said without
+a measurement: `test-override-add` ALREADY DETECTS the leftover and REPORTS it rather than silently reusing it -
+`Tools/test-override-add.py:71-80` prints *"is ALREADY overridden, which a previous run must have left behind"* and
+then fails. **A SUITE THAT REPORTS A LEFT-BEHIND FIXTURE IS NOT THE SAME DEFECT AS ONE THAT IGNORES IT**: the
+failure mode is a run that goes red on residue, not a check that passes on it. What row 0.2 adds is the ability to
+RECOVER, and recovery needs a decision about which process owns the editor at that moment.
+
+**WHAT THE NEXT ATTEMPT SHOULD MEASURE FIRST, AND IT IS ONE RUN:** whether `build-test-graph.py` can rebuild and save
+`BP_NodeTest` while the harness's editor is up, or whether it needs the editor stopped the way the material rebuild
+does. **If it needs a stop, then row 0.2 IS REALLY ROW 0.1** - one owner of the editor lifecycle - **and it should
+not be attempted before that.** The plan orders 0.1 first for a reason, and this is that reason arriving in practice.
+
+**AND I DID NOT EDIT THE SUITES.** I reached the boundary between "copy the pattern" and "decide who owns the
+editor", and that boundary is a measurement rather than an edit - the same call four previous workstreams made
+here, and the reason this record has nine measured cases rather than ten.
