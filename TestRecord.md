@@ -4183,3 +4183,58 @@ element, which here would mean a HALF-REPLACED BODY, the worst possible outcome 
 **Four capabilities remain, all writes:** `E-GRAPH-PATCH`, `E-MAT-LABEL-PROMOTE`, `E-MAT-TIDY`, `E-MAT-BLOCKS`.
 `E-GRAPH-PATCH` shares the whole machinery and what remains to it is matching BY NODE ID and touching only the
 differences.
+
+---
+
+## 11. PATCH lands: 68 tools, 47 of 50 capabilities, 41 of 41 green
+
+**INDEPENDENTLY VERIFIED BY THE ORCHESTRATOR, ON AN IDLE MACHINE, FROM THE MERGED COMMIT: `passed 41, failed 0,
+blocked 0, of 41`, `68 AICallable tool(s) declared`, `uncalled: (none)`.** The workstream measured the same number
+AND CHECKED FOR COMPETING PROCESSES BEFORE BELIEVING ANY FAILURE - which is the discipline the previous round
+taught, when a concurrent run made five unrelated suites fail and looked exactly like a regression.
+
+### 11.1 The decision inside PATCH that is worth keeping
+
+It calls `FTurboMCPGraphAppend::Plan` WHOLESALE - the parse, the one-dialect lexing, the checker gate, the type-id
+resolution, the link planning and the refusal wording - because a second parser would be a second dialect.
+
+**IT DOES NOT ROUTE THROUGH APPEND's `Apply`, AND THE REASON IS EXACT: APPEND RESOLVES A FORM NAMING AN EXISTING NODE
+INTO A LINK TARGET AND `continue`s PAST IT, SO NO PIN VALUE UNDER SUCH A FORM IS EVER APPLIED.** That is correct for
+a tool whose contract is *"cannot remove anything"* and whose job is to add - AND IT IS PRECISELY THE GAP PATCH
+FILLS. **TEACHING A TOOL WHOSE CONTRACT IS "ADD" TO ALSO MODIFY IS HOW THE APPEND CONTRACT GETS LOST.** So PATCH
+shares everything and writes its own `Apply`: one transaction, only pins that DIFFER, compile, read back.
+
+AND `T-WRITE-5` IS SATISFIED BY PARSING RATHER THAN TRUSTING - the report says `1 node(s) changed`, and
+independently `before_keys.issubset(after_keys)` AND `after_keys.issubset(before_keys)` both hold with the node count
+unchanged, so **EVERY OTHER NODE SURVIVED AND NO NODE WAS ADDED**. A second identical patch answers `unchanged ...
+0 node(s) changed`, which is what makes it a DIFF rather than a write.
+
+### 11.2 Two defects the workstream caused, and both are shapes this record exists to catch
+
+1. **A TEST BUG THAT MIMICS A PASSING TOOL.** Its key-extraction regex matched `ASSET.ASSET:GRAPH:` without the
+   `/Game/Tests/` prefix the reader prints, so it matched nothing, `target_key` stayed None, and the suite built a
+   patch **NAMING NODE `null`**. SEVEN checks failed from that - **INCLUDING THE IDEMPOTENCE CHECK, WHICH REPORTED
+   `unchanged` EVERY TIME**, because a text naming `null` is refused and A REFUSAL LOOKS EXACTLY LIKE A WORKING
+   DIFF. **A SUITE THAT CANNOT NAME WHAT IT MEANS TO CHANGE WILL REPORT SUCCESS FOR NOTHING.**
+
+2. **A PREVIEW THAT SAID NOTHING WAS WRONG.** `RenderPreview` printed only PATCH's own refusals, but APPEND
+   validates the pins of a form naming an existing node - so `NoSuchPin` was refused by APPEND, `Plan` returned
+   early, and PATCH's refusal list was EMPTY. The caller saw `0 node(s) in the graph now` **WITH NO REFUSAL AT
+   ALL**. **A PREVIEW THAT SAYS NOTHING IS WRONG IS WORSE THAN NO PREVIEW.** Fixed with `FPlan::AllRefusals()`, the
+   de-duplicated union, used by the preview, `bAcceptable()` AND `Apply` - so an Edit cannot proceed on a refusal it
+   inherited.
+
+### 11.3 Where the project stands
+
+    68 tools · 47 of 50 capabilities · FULL RUN 41 of 41, 0 failed, 0 blocked
+    R- READING 21/21 COMPLETE · L- VISION 3/3 COMPLETE · P- PREVIEW 4/4 COMPLETE · E- EDIT 20/23
+
+**THREE REMAIN, ALL MATERIAL WRITES:** `E-MAT-LABEL-PROMOTE`, `E-MAT-TIDY`, `E-MAT-BLOCKS`. The material side
+already has readers - `R-MAT-LOAD`, `R-MAT-TRACE`, `R-MAT-BLOCKS`, `R-MAT-LABELS` - and a REBUILDABLE fixture at
+`/Game/Tests/TurboMCPMaterialFixture` built by `Tools/make-material-asset.ps1`, carrying `M_TurboMCPFixture`,
+`MF_TurboMCPFixture` and `MI_TurboMCPFixture`. So the writers have a fixture to work against and the
+restore-on-the-way-in arrangement to copy.
+
+**THE GRAPH SIDE OF THE PLUGIN IS COMPLETE.** Every `P/E-GRAPH-*` capability the spec lists now exists: the reader,
+the checker, the four layout passes, and the three writers - APPEND, REPLACE and PATCH - which between them add,
+rewrite and diff.
