@@ -1,4 +1,4 @@
-// Copyright FloStyle. All Rights Reserved.
+// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
 
 using UnrealBuildTool;
 
