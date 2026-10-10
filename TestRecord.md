@@ -4742,3 +4742,54 @@ Every one of the 106 test ids referenced elsewhere in `Spec/` IS defined - `REFE
 own cross-reference check was correct. **IT CHECKED ONE DIRECTION AND NOT THE OTHER, AND THE OTHER DIRECTION IS WHERE
 THE GAP WAS. A cross-reference check that only asks "is everything referenced defined" cannot see "is everything
 defined referenced", and the second question is the one the definition of done depends on.**
+
+---
+
+## 22. `test-material.py` expects an output to be UNCONNECTED that the fixture DELIBERATELY connects
+
+**VERIFIED RATHER THAN TAKEN ON TRUST**, because the claim was *"this failure is not mine"* and that is the kind of
+claim this project verifies. Three checks, all from the tree:
+
+    Tools/test-material.py:141-148
+        refused = session.call(READ_TOOLSET, "ReadTurboMCPMaterialTrace",
+                               {"asset": ASSET, "outputProperty": "MP_EmissiveColor", "tokenBudget": 0})
+        check("an UNCONNECTED output is refused", refused.startswith("error:"), refused[:200])
+        check("the refusal LISTS the connected outputs", "MP_BaseColor" in refused, refused[:300])
+
+    Source/TurboMCP/TurboMCPMaterialFixtureCommandlet.cpp:302
+        // THE CHANNEL IS DELIBERATELY SEPARATE. It reaches `MP_EmissiveColor` through its own Add, ...
+    Source/TurboMCP/TurboMCPMaterialFixtureCommandlet.cpp:343
+        SharedOut, TEXT(""), MP_EmissiveColor);
+
+    git show --stat e98d5af  ->  NEITHER FILE APPEARS, so E-MAT-BLOCKS did not touch either
+
+*** SO THE SUITE DEMANDS THAT `MP_EmissiveColor` BE REFUSED AS UNCONNECTED WHILE THE FIXTURE CONNECTS IT ON PURPOSE -
+AND THE COMMENT SAYS WHY: IT IS THE SHARED-VALUE CHANNEL ADDED BY `E-MAT-LABEL-PROMOTE`, WHICH NEEDS A VALUE THAT
+GENUINELY REACHES AN OUTPUT SO ITS POSITIVE CASE HAS SOMETHING TO PROMOTE. ***
+
+**THIS IS THE SHARED-FIXTURE RULE ARRIVING FROM THE OTHER DIRECTION.** The rule recorded four times here is that a
+MUTATING suite must give a shared fixture back. **THIS IS A FIXTURE WHOSE SHAPE CHANGED LEGITIMATELY - to serve a NEW
+capability - AND A SUITE THAT WAS NEVER UPDATED TO MATCH.** Nobody mutated anything in the wrong order; one workstream
+extended the fixture for a good reason and another file kept an expectation the extension invalidated. **The cost is
+the same either way: A CHECK THAT NOW FAILS ON A CORRECT FIXTURE.**
+
+AND THE FAILURE IS THE RIGHT KIND TO HAVE: it is `check(...)` going red on a REAL disagreement, not a check silently
+passing on a broken tool. The two assertions are about a REFUSAL CONTRACT - *"an unconnected output is refused"* and
+*"the refusal lists the connected outputs"* - and **THE CONTRACT ITSELF IS FINE; IT IS THE FIXTURE THAT NO LONGER
+PROVIDES AN UNCONNECTED OUTPUT TO TEST IT WITH.**
+
+### 22.1 The fix is a test-design choice, and the options are not equal
+
+- **OPTION A, PREFERRED:** keep both assertions and point them at a DIFFERENT output that is GENUINELY unconnected, so
+  the refusal contract stays tested. `MP_EmissiveColor` is now taken by the shared-value channel.
+- **OPTION B:** keep `MP_EmissiveColor` and change what the suite asserts - WHICH DELETES THE CONTRACT TEST. That
+  trades a failing check for a missing one, **AND A MISSING CHECK IS THE WORSE OF THE TWO.**
+- **OPTION C, REJECTED:** disconnect the channel so the old test passes. That BREAKS `E-MAT-LABEL-PROMOTE`'s positive
+  case - a verified capability - to satisfy an assertion about a state nobody needs.
+
+### 22.2 And why it is recorded rather than fixed
+
+**THE FIX NEEDS A MEASUREMENT I HAVE NOT MADE: WHICH OUTPUT IS GENUINELY UNCONNECTED IN THE FIXTURE NOW.** Choosing
+one by reading the commandlet would be the guessing this record forbids, and the honest state is that `main` is at
+**43 of 44** with this as the one failure - **understood, attributed, and neither hidden nor blamed on the workstream
+that reported it correctly.**
