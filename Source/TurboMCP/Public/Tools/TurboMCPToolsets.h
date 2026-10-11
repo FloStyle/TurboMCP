@@ -491,6 +491,25 @@ public:
 	static FString ReadTurboMCPMaterialBlocks(const FString& Asset, int32 TokenBudget);
 
 	/**
+	 * Read a material INSTANCE: its parent chain, what it overrides, and - the list that matters - what it
+	 * inherits from a parent it does not own.
+	 *
+	 * `03_TOOLS.md` `R-MAT-INST-LOAD` says the inherited list "is the one that matters", because an agent asked to
+	 * change a parameter needs to know whether the value is REALLY ON THIS INSTANCE or inherited from a parent it
+	 * does not own. A parameter the parent does not declare is reported as ORPHANED rather than dropped, because a
+	 * renamed parameter leaves one behind.
+	 *
+	 * IT IS A SEPARATE READER FROM THE MATERIAL READER AND THAT IS `D-43`: an instance is a list of overrides, and
+	 * "a text that hides them invites an edit that changes the wrong asset".
+	 *
+	 * A BASE MATERIAL IS REFUSED BY NAME rather than answered with everything inherited, because every parameter of
+	 * a base material is editable on the material itself and the distinction this tool exists to make would not
+	 * apply - say `R-MAT-LOAD` for the graph.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPMaterialInstance(const FString& Asset);
+
+	/**
 	 * Play the project for a few seconds and report the warnings and errors it raised.
 	 *
 	 * THIS IS TWO CALLS, AND THAT IS THE ENGINE RATHER THAN A CHOICE. A tool call runs on the editor's game
