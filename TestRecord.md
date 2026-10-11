@@ -9484,3 +9484,84 @@ RATHER THAN A CORRECTION. THAT IS THE FIRST TIME IN THIS STRETCH THAT A BREAK TE
 **NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED HERE.** *`p4 set` still points at `ssl:example.invalid:1666`, which does
 not answer; `cm` and `svn` are not on PATH.* *** EVERY CHECKOUT ANSWER IT REPORTS IS THE ANSWER TO A REFUSAL OR TO A NO-OP
 PROVIDER - AND IT SAYS SO RATHER THAN LETTING 62 GREEN CHECKS IMPLY OTHERWISE. ***
+
+---
+
+## 145. *** ROW 10.2 COMPLETE: 2 OF 32 WRITERS WIRED, test-vcs-write PASS 62 CHECKS, FULL RUN 55 OF 55 ***
+
+    HEAD == origin/main == 04386e0 · its commits 2e08d53, 07bb80a, b5bdd9a, 04386e0
+    suite RESULT: PASS (62 check(s) run, no check skipped) · audit uncalled: (none), 93 tools
+    FULL RUN passed 55, failed 0, blocked 0, of 55   (54 -> 55; test-struct AND test-vcs both green in it)
+    build Result: Succeeded WITH `Compile TurboMCPSourceControlWrite.cpp` + `Link UnrealEditor-TurboMCP.dll` VISIBLE
+
+### 145.1 THE DECISION, AND THE PART THAT MATTERS IS WHAT IT DID NOT DO
+
+**OPTION (b): attempt it and report the provider's own answer.** *(a) skip-and-say is a skip rather than a measurement; (c)
+refuse-unless-opted-in would refuse EVERY write on Git and on a provider-less editor - **D-57's own "every tool reports failure"
+outcome arrived at from the other side.***
+
+*** AND IT READ `D-57` IN FULL FIRST AND THEN SAID THE PROJECT HAD NOT ANSWERED THE QUESTION - IN THE TOOL'S OWN OUTPUT: ***
+
+    policy, provenance : D-57 (Spec/05_DECISIONS.md:382-388) answers the ORDERING only - E-VCS-CHECKOUT is built and
+    tested before any write tool calls it - and it does NOT answer what a write tool does when UsesCheckout() == false.
+    That choice is row 10.2's own, and it is (b).
+
+*** THAT IS THE BRIEF'S REQUIREMENT - "SAY SO IF `D-57` DOES NOT ANSWER THE QUESTION RATHER THAN INVENTING AN ANSWER THAT LOOKS
+LIKE THE PROJECT'S" - MET IN THE PLACE A CALLER WILL ACTUALLY READ IT, WHICH IS THE TOOL'S OUTPUT RATHER THAN A SPEC FILE. ***
+
+**AND THE LINE THAT KEEPS THE DECISION SAFE: `THE CHECKOUT ANSWER NEVER GATES THE WRITE.`** *(c) is rejected *because* a gate
+would make a source control problem into an every-tool-fails problem, which is the exact outcome `D-57` exists to prevent - so the
+row implemented the decision `D-57` did make in order to reject the one it did not.*
+
+### 145.2 *** AND THE FINDING IS BIGGER THAN THE ROW: THE ENGINE'S SAVE PATH ALREADY ISSUES A CHECKOUT ON EVERY SAVE ***
+
+    `UEditorAssetLibrary::SaveLoadedAsset` -> `EditorAssetSubsystem.cpp:1309`
+      -> `UEditorLoadingAndSavingUtils::SavePackages` -> `FileHelpers.cpp:6019-6023`
+      -> `InternalCheckoutAndSavePackages`, WHOSE `:5925-5929` CALLS `FEditorFileUtils::CheckoutPackages`
+         WHENEVER `IsSourceControlModule::Get().IsEnabled()`, **DISCARDING THE RESULT**.
+
+*** SO ON GIT THE ENGINE ISSUES AN OPERATION THAT PROVIDER CANNOT EXECUTE **ON EVERY SAVE** AND RECORDS NOTHING - which is why option
+(b) costs nothing new, AND it is the cleanest possible statement of why this row exists: **THE ENGINE ALREADY DOES THE OPERATION
+AND THROWS AWAY THE ANSWER; THIS ROW DOES THE OPERATION AND REPEATS THE ANSWER.** ***
+
+### 145.3 And the check that falsified the row's own claim, which is the best use of a check in this record
+
+**ITS FIRST "NOTHING ELSE MOVED" CHECK WENT RED, AND IT WAS RIGHT.** *`?? path` after phase A → **still** `?? path` after the
+tool's checkout on Git → **`AM path` AFTER `E-SAVE`.*** *** `E-SAVE` WITH GIT STAGES A NEW ASSET: `FileHelpers.cpp:2483` builds
+`FinalPackageMarkForAddList` and `:2536-2538` executes `FMarkForAdd`, WHICH GIT IMPLEMENTS AS A REAL `git add`. THE CHECK WAS TRUE
+OF THE TOOL AND FALSE OF THE ENGINE, AND THE ROW REPORTED THE FALSIFICATION RATHER THAN FIXING THE CHECK TO PASS. ***
+
+**AND THE HAZARD IT CREATED AND CLEANED: A STAGED ENTRY OUTLIVES ITS FILE.** *Its first runs left `AD ...TA22_VcsWrite_R*.uasset`
+in the index; the suite now **unstage every such entry ON THE WAY IN AND OUT AND ASSERTS THE RESTORE** - the restore-on-the-way-in
+rule applied to a GIT INDEX rather than a fixture.*
+
+### 145.4 And its break test paid for itself twice
+
+**FOUR deliberate breaks → 12 OF 61 CHECKS RED, ending with the trap itself going red WITH BOTH VALUES IN IT:
+`helper 'True' vs tool False`.** *** AND THE SAME RED RUN FOUND A REAL DEFECT IN ITS OWN CODE: `decision: DO NOT ATTEMPT - ` WITH
+NOTHING AFTER THE DASH - an absent explanation reading exactly like a decision, i.e. `P1`'s defect INSIDE A DECISION - because the
+flag and the reason were computed in two steps. IT FIXED IT AND ADDED A CHECK THAT NO `decision` LINE IN ANY OF THE SEVEN BLOCKS IN
+EITHER PHASE IS EVER EMPTY, AND THAT CHECK IS ONE OF THE 62. ***
+
+### 145.5 And no check depends on shared mutable state - the defect row 10.1 replaced
+
+**THE FIXTURE IS PER-RUN (`TA22_VcsWrite_R<pid>`), AND THE TWO GIT CHECKS COMPARE THE FIXTURE'S OWN STATUS BEFORE AND AFTER RATHER
+THAN AGAINST `""` - SO SOMEBODY ELSE'S `git add` OR COMMIT CANNOT TURN THIS SUITE RED.** *That is precisely the defect row 10.1
+replaced a check over, one row earlier, and row 10.2 did not reproduce it.*
+
+### 145.6 What it claims nothing about, and the branch that never ran
+
+    *** NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED - NOT BY ROW 10.1, NOT BY ROW 10.2, NOT BY ANYONE.
+    `p4 set` STILL POINTS AT ssl:example.invalid:1666 (DOES NOT ANSWER); `cm` AND `svn` ARE NOT ON PATH.
+    "EVERY CHECKOUT ANSWER I REPORT IS THE ANSWER TO A REFUSAL OR TO A NO-OP PROVIDER. I DO NOT CLAIM AN AUTOMATIC
+    CHECKOUT WORKS - I CLAIM THE OPERATION IS ISSUED THROUGH THE PROVIDER AND THE PROVIDER'S OWN ANSWER IS WHAT GETS
+    REPORTED." ***
+    AND THE `UsesCheckout() == true` ACTING BRANCH NEVER EXECUTED - the only such provider here is Perforce and it is
+    `IsAvailable() == false`, so the mechanism refuses first BY DESIGN. **WHAT A SUCCESSFUL `FCheckOut` LOOKS LIKE IS
+    UNMEASURED, AND THE FIRST THING TO REVISIT ON A REACHABLE DEPOT IS THE "ALREADY checked out here" BRANCH OF
+    `NotAttemptedReason`.**
+
+**SO TWO ROWS HAVE NOW BOTH ENDED WITH THE SAME SENTENCE: THE ONE THING THIS CAPABILITY NEEDS MOST IS A SOURCE CONTROL SERVER
+THAT ANSWERS, AND THIS MACHINE HAS NEVER HAD ONE.** *That is not a gap in the work - it is a **measured boundary of the
+environment**, stated twice by two independent workstreams, and it is the honest reason the plan's remaining source-control work
+is bounded rather than unfinished.*
