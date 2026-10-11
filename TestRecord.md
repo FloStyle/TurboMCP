@@ -6217,3 +6217,30 @@ trap.***
     test-graph-structure.py  OWED
 
 **SO THE ONE RED THING IN THIS TREE IS THE ONE THING I EXPECT TO BE RED, AND IT NAMES ITSELF WHEN IT IS READ.**
+
+---
+
+## 47. Round 88: a quiet round, recorded as quiet rather than dressed up
+
+**MEASURED AND UNCHANGED:** `main` = `origin/main` = `c83085e`; **85 tools**; working tree clean;
+`Tools/test-graph-structure.py` still does not exist; the graph workstream is still running; the editor is up.
+
+### Why this is written down instead of passed over
+
+**A ROUND WITH NO NEW ARTEFACT IS STILL A ROUND, AND THE HONEST RECORD OF IT IS ONE LINE RATHER THAN A NARRATIVE.**
+*Four consecutive rounds before this one each produced a preserved file, a verified compile, a regression check or a
+falsification; inventing a fifth thing to say here would make the record harder to trust, not richer.*
+
+### And the thing that has NOT changed is itself information
+
+**EIGHT ROUNDS OF `git status` HAVE NOW SHOWN THE GRAPH WORKSTREAM PRODUCING REAL, INCREASING WORK** - a 210-line
+header, then a 983-line implementation that compiles, then 1001 lines with two declarations, then the tool bodies with
+a GREEN FULL MODULE BUILD and 85 tools - **AND IT HAS NOT ONCE LEFT THE TREE IN A STATE WHERE A REVERT WAS NEEDED.**
+*That is the opposite of the round-30 failure, and the difference is procedural rather than lucky: **the brief said
+COMMIT, the tree was never reverted while the workstream was live, and the file it was going to write was checked
+before it was written.***
+
+**AND THE ONE THING I OWE IT IS PATIENCE RATHER THAN A SECOND WORKSTREAM.** The suite is the last piece, it is named in
+its brief with its two debts spelled out - which `T-STRUCT-11` it actually proves, and naming the input that makes each
+check fail - **and starting a parallel build now would put two agents into one mutex, which is the condition that
+produced both the three-workstream block and the section-30 data loss.**
