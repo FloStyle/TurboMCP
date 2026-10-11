@@ -8015,3 +8015,28 @@ PROCESS TABLE, AND SECTION 123 COST A NEAR-FALSE-ALARM BY READING ONLY THE FIRST
 **WHAT IS STILL OWED IS THE SAME TWO THINGS: THE FULL RUN, WHICH IS THE LIKELIEST NEXT STEP NOW THAT THE FIXTURES ARE
 REBUILT, AND THE CLOSE-OR-MOVE ANSWER.** *Both are the workstream's, and the third signal above is why I am not asking
 whether it is alive: a rebuild completing is a thing that happens, not a thing that stops.*
+
+---
+
+## 93. Round 134: the editor is back up, which is the fourth signal and the one that closes the loop
+
+    MEASURED   main = origin/main = 304fd5d   ·   86 tools   ·   editor UP again (it was DOWN last round)
+
+*** LAST ROUND I READ THE EDITOR COMING DOWN AS "A PHASE ENDING", AND THIS ROUND IT IS UP AGAIN - WHICH CONFIRMS THE READING
+RATHER THAN LEAVING IT AS AN INTERPRETATION OF A SINGLE OBSERVATION. A COMMANDLET THAT EXITED IS A COMMANDLET THAT
+FINISHED, AND THE NEXT PHASE HAS STARTED. ***
+
+**AND THE FOUR SIGNALS HAVE NOW EACH BEEN OBSERVED DOING BOTH THINGS AT LEAST ONCE IN THIS STRETCH:**
+
+    SOURCE FILES   quiet for thirteen minutes, then rewritten - so quiet is not stopped
+    LOGS           moving, then stopped - so movement alone does not mean a phase is live either
+    EDITOR         up, then down, then up - the phase boundary
+    PROCESS TABLE  no build, no python, and both appeared when they should
+
+*** AND THE CONCLUSION IS NOT "WATCH MORE SIGNALS", IT IS NARROWER AND MORE USEFUL: NO SINGLE ONE OF THEM DISTINGUISHES
+WORKING FROM STOPPED, AND THE ONES THAT DO ARE THE PROCESS TABLE AND THE EDITOR - BECAUSE THEY ARE THE ONLY TWO THAT A
+STOPPED WORKSTREAM CANNOT PRODUCE. SECTION 123 READ A SOURCE TIMESTAMP AND NEARLY CONCLUDED FAILURE; SECTION 131 READ A LOG
+AND CONCLUDED LIFE; THIS ROUND READS THE EDITOR AND CONFIRMS WHICH OF THE TWO WAS RIGHT. ***
+
+**STILL OWED, UNCHANGED: the full run and the close-or-move answer.** *And nothing else in the project is waiting on this
+row, which is why four quiet rounds have cost nothing but rounds.*
