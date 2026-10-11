@@ -22,7 +22,7 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 
 ---
 
-## 2. Le plan : **40 `todo`, 6 `done`** sur 48 lignes (la row 2.2 vient de finir et va y passer)
+## 2. Le plan : **39 `todo`, 7 `done`** sur 48 lignes
 
 *Compté **par champ** — la dernière cellule de la ligne. Voir §7 : une regex sur la ligne donne un chiffre faux.*
 
@@ -278,6 +278,6 @@ Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un 
 
 ## 12. En une ligne
 
-> **93 outils, 57/57 suites vertes, 40 rows de plan restantes — et une machine de vérification qui, sur les trois dernières rows, a produit des résultats corrects sans que j'aie à intervenir.**
+> **93 outils, 57/57 suites vertes, 39 rows de plan restantes — et une machine de vérification qui, sur les trois dernières rows, a produit des résultats corrects sans que j'aie à intervenir.**
 >
 > ***Ce qui reste n'est pas bloqué par des inconnues : c'est borné par du temps, par cinq fixtures qui n'existent pas, et par un serveur source control que cette machine n'a jamais eu.***
