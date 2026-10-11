@@ -8530,3 +8530,41 @@ produce one.***
 is one line from the agent that I will not get - and the honest position is that **THE CLOSE-OR-MOVE QUESTION IS NOW MINE TO
 ANSWER RATHER THAN HIS**, and I have more evidence for it than he did: the normaliser half is covered by the log TODAY, the
 `AssetFromArguments` half is not, and a tool reporting on its own literal inputs is still a producer reporting on itself. ***
+
+---
+
+## 113. *** THE VERDICT THAT SIXTEEN ROUNDS DID NOT PRODUCE TOOK ONE COMMAND, AND IT IS PASS ***
+
+    pwsh -NoProfile -File Tools/run-suites.ps1 -Suites test-pure-checks
+
+    PASS    audit-suite-quality     RESULT: PASS (advisory: 5 candidate(s) reported)
+    PASS    audit-tool-coverage     RESULT: PASS
+    PASS    test-pure-checks        RESULT: PASS (22 check(s) run)
+    passed 4, failed 0, blocked 0, of 4
+
+*** SO THE TOOL WORKS AND ITS SUITE PASSES. THE THING I INTERRUPTED A WORKSTREAM OVER - BECAUSE SEVENTEEN ROUNDS HAD NOT
+PRODUCED IT - WAS ONE SUITE RUN OF ABOUT TWENTY SECONDS AGAINST A FREE EDITOR. ***
+
+### 113.1 And the honest accounting of that, which is worse than the delay
+
+    THE WORKSTREAM SPENT 17 ROUNDS: 3 fixture-rebuild cycles, ~8 editor starts, 2 full-run attempts it did not finish,
+    and one falsification of my brief THAT WAS WORTH ITS OWN ROUNDS
+    THE VERDICT TOOK: ONE COMMAND
+
+*** I AM NOT GOING TO PRETEND THE FALSIFICATION WAS NOT VALUABLE - IT REPLACED MY PREMISE, IT PROVED A BREAK TEST THAT HAD
+BEEN REPORTED AS NOT BITING, AND IT NARROWED THE JUSTIFICATION TO A HALF THAT IS TRUE. **BUT THE VERDICT IT OWED WAS NOT
+BLOCKED BY ANY OF THAT**, and it was available the moment the tool compiled and the editor was free - which was at least ten
+rounds ago. ***
+
+**AND THE LESSON IS NOT "STOP AGENTS SOONER". IT IS THE ONE THIS RECORD HAS NOW EARNED FROM FIVE DIRECTIONS: THE THING THAT
+SETTLES A QUESTION IS ALMOST ALWAYS ONE ACTION, AND I KEPT ACCEPTING MEASUREMENTS ABOUT THE ACTION INSTEAD OF TAKING IT.** *The
+graph suite's `no result line` was one `NameError`; the commandlet was one `check(GEditor)`; the editor was one `Get-Process`;
+my own count was one `Get-ChildItem`; and this is one suite run.*
+
+### 113.2 What that leaves owed
+
+    DONE      `Tools/test-pure-checks.py` -> PASS (22 checks), 86 tools, audit green
+    OWED      the full suite set against the new tool
+    OWED      the close-or-move answer, which is now MINE and for which I already have the evidence:
+              the normaliser half IS covered by the log today; the `AssetFromArguments` half IS NOT;
+              and a tool reporting on its own literal inputs is still a producer reporting on itself
