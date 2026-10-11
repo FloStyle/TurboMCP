@@ -7598,3 +7598,52 @@ graph and not about either file.*
 *** SO THE NEXT ATTEMPT OWES ONE MORE THING THAN THE LAST ONE: NOT JUST THE ASSERTIONS, BUT THE DECISION TO EXPOSE THE
 TWO FUNCTIONS THROUGH A TOOL SO THAT A SUITE DRIVEN OVER MCP CAN REACH THEM. That is a small addition to an existing
 toolset and it is the only shape the engine permits. ***
+
+---
+
+## 79. Round 120: AT A QUARTER OF THE ROUND BUDGET, AND THE ARITHMETIC THE RECORD HAS NOT YET STATED
+
+**MEASURED AT ROUND 120 OF 256:**
+
+    85 AICallable tools          45 suites           build green          full run 51/51
+    Spec/WORKING_PLAN.md         42 rows `todo`, 2 rows `done`
+    Spec/03_TOOLS.md             57 real capabilities, of which the report claims 36
+    TestRecord.md                7600 lines
+
+*** SO 120 ROUNDS HAVE PRODUCED FOUR CAPABILITIES AND TWO PLAN ROWS, AND 42 PLAN ROWS REMAIN. AT THAT RATE THE PLAN IS
+ROUGHLY A THOUSAND ROUNDS OF WORK AND THE REMAINING BUDGET IS 136. ***
+
+**AND THE HONEST READING IS NOT THAT THE RATE WAS WASTED - IT IS THAT THE RATE WAS SPENT ON SOMETHING THE PLAN DOES NOT
+COUNT.** *This stretch produced: the recovery of a capability I destroyed; a 39-of-47 baseline explained and raised to 51 of
+51; a measured root cause for a row that had burned six workstreams; eleven safety commits on one row; a false-green
+diagnostic I had been distributing in briefs; an eighth firing of the `mtime` trap in a new costume; five vacuity reports;
+and an engine constraint (`BlueprintEditorModule.cpp:214`) that closes a whole class of tooling. **NONE OF THOSE ARE ROWS
+IN `WORKING_PLAN.md`, AND ALL OF THEM WERE NECESSARY - the green run was not trustworthy before them, and the fixtures
+were not reachable.***
+
+**BUT NECESSARY IS NOT THE SAME AS SUFFICIENT, AND THE OBJECTIVE SAYS "UNTIL TURBOMCP IS COMPLETE".** *42 rows is not a
+finishing sprint at this rate, and no amount of orchestration changes that: the binding constraint is that each row needs
+an agent that reads a spec, measures engine behaviour, writes a capability, writes a suite, proves the suite can fail, and
+commits - and the round budget left is one seventh of what the plan needs on the evidence so far.*
+
+### What I am NOT doing, and why
+
+**I AM NOT MARKING THE GOAL BLOCKED.** *The policy requires the same blocking condition to persist across three
+consecutive rounds and says difficulty and remaining work are not blockers.* **THIS IS REMAINING WORK, NOT A BLOCKER: the
+project advances every time an agent lands a row, and rows 7.1 and the vacuity route are both specified and unattempted.**
+
+*** AND I AM NOT RE-SCOPEING THE OBJECTIVE TO FIT THE ROUNDS LEFT. That is the tidy move and it is the same defect as the
+two unsupported conclusions I have already had to withdraw: writing the story the evidence does not support. ***
+
+### What the next rounds can actually change
+
+    CHEAPEST REAL PROGRESS   the vacuity route, now a BRIEF rather than a mystery: expose NormaliseToolset and
+                             AssetFromArguments through a TOOL so an MCP suite can reach them - the only shape the
+                             engine permits, and a small addition to an existing toolset
+    HIGHEST-VALUE REMAINING  row 7.1 (`P/E-STRUCT-NEW`, `P/E-STRUCT-FIELDS`, editor-only and saying so) - specified,
+                             unattempted, and it carries the two measurements that decide it
+    THEN                     the kit's measured table, the material writers, widget authoring, level and actors,
+                             session and cost, source control, vision, build portability
+
+**AND THE RECORD SHOULD SAY PLAINLY WHAT IT HAS EARNED: THE PROJECT IS HONEST, BUILDABLE, AND GREEN, AND IT IS NOT CLOSE
+TO COMPLETE.**
