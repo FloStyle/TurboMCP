@@ -431,12 +431,35 @@ def main():
         check("and each row carries its OWN checked-out / out-of-date answer rather than one repeated line",
               all(("checked out here:" in body and "out of date:" in body) for _, body in git_blocks),
               repr([b[0] for b in git_blocks]))
-        # *** TWO ASSETS, ONE REPORTED AS SOURCE CONTROLLED AND ONE NOT, IS THE PER-ASSET CLAIM MADE
-        # OBSERVABLE. The check does not say WHICH is which, so it does not pin a state onto a shared asset -
-        # it asserts only that the two rows were answered INDEPENDENTLY, which is the property in question. ***
-        check("and the two rows are answered INDEPENDENTLY rather than given one repeated state",
-              len(set(field(body, "under source control") for _, body in git_blocks)) == 2,
-              repr([field(body, "under source control") for _, body in git_blocks]))
+
+        # ---------------------------------------------------------------------------------------------
+        # *** PER ASSET, WITH A PROVIDER ANSWERING, AND THE DIFFERENCE COMES FROM THE INPUT RATHER
+        # THAN FROM THE GIT INDEX. ***
+        #
+        # AN EARLIER VERSION OF THIS CHECK ASSERTED THAT THE TWO REAL ASSETS GOT DIFFERENT STATES. IT DID
+        # - one is tracked and one is not - BUT THAT MADE THE SUITE DEPEND ON A FILE STAYING UNTRACKED, SO
+        # COMMITTING THAT FILE WOULD HAVE TURNED A GREEN SUITE RED FOR A REASON THAT HAS NOTHING TO DO WITH
+        # THIS CAPABILITY. A CHECK WHOSE FAILING INPUT IS SOMEBODY ELSE'S COMMIT IS THE DEFECT THIS PROJECT
+        # HAS RECORDED REPEATEDLY, SO IT WAS REPLACED BY ONE WHOSE FAILING INPUT IS THE CALLER'S OWN
+        # ARGUMENT: the tool must not answer a name it cannot resolve with the state of a name it can.
+        #
+        # THE OBSERVATION IS STILL PRINTED, so a reader sees whether the two real assets differed without
+        # the suite depending on it.
+        # ---------------------------------------------------------------------------------------------
+        observed = [field(body, "under source control") for _, body in git_blocks]
+        print("    the two real assets read as: %s  (printed, NOT asserted - it depends on the git index)"
+              % observed)
+
+        git_mixed = session.call(READ_TOOLSET, "ReadTurboMCPVcsState",
+                                 {"assets": "TA01_HandLaid,NoSuchAsset_TurboMCPVcsProbe"})
+        mixed_git_good = row_named(git_mixed, "TA01_HandLaid")
+        mixed_git_bad = row_named(git_mixed, "NoSuchAsset_TurboMCPVcsProbe")
+        check("with a provider answering, the resolvable asset gets a STATE and the unresolvable one is "
+              "REFUSED, in the same call",
+              mixed_git_good is not None and "under source control:" in mixed_git_good
+              and mixed_git_bad is not None and refusal_of(mixed_git_bad) is not None
+              and "under source control:" not in mixed_git_bad,
+              git_mixed[:700])
 
         print("--- phase B1: the checkout, through the provider ---")
         git_edit = session.call(EDIT_TOOLSET, "EditTurboMCPVcsCheckout", {"assets": ASSETS})

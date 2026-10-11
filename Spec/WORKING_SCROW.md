@@ -912,6 +912,25 @@ pass-through arguments.
 
 **IT TAKES 125 SECONDS**, well inside the runner's 600-second per-suite deadline.
 
+### One check was REPLACED, and the reason is worth keeping
+
+The Git phase first asserted that the two real assets got **different** states -
+they do, because `TA01_HandLaid` is tracked by git and `TA14_KitDataTable` is
+not. **THAT MADE THE SUITE DEPEND ON A FILE STAYING UNTRACKED, SO SOMEBODY
+ELSE'S `git add` WOULD HAVE TURNED A GREEN SUITE RED FOR A REASON THAT HAS
+NOTHING TO DO WITH THIS CAPABILITY.** It was replaced by a check whose failing
+input is the caller's own argument - with a provider answering, the resolvable
+asset must get a state and an unresolvable name must still be refused **in the
+same call** - and the tracked/untracked observation is **printed rather than
+asserted**:
+
+```
+    the two real assets read as: ['true', 'false']  (printed, NOT asserted - it depends on the git index)
+```
+
+**A CHECK WHOSE FAILING INPUT IS SOMEBODY ELSE'S COMMIT IS THE DEFECT THIS
+PROJECT HAS RECORDED REPEATEDLY.**
+
 ### The checks were shown RED, and the break was restored
 
 A build was made with **four deliberate breaks in
