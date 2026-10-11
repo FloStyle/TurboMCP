@@ -143,7 +143,7 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 | 7.1 | `P/E-STRUCT-NEW` and `P/E-STRUCT-FIELDS`, **editor-only**, and saying so | `03_TOOLS.md` section 12 | `D-51` | T-DATA-2 **SATISFIED**, T-DATA-3 blocked on a missing fixture | `3732b17`; build Succeeded, `test-struct` PASS, audit `uncalled: (none)`, full run **53/53**. **THE "EDITOR-ONLY" PREMISE WAS WRONG AND THE SPEC'S REASON WAS WRONG:** `StructureEditorUtils.cpp:42-64` shows `CreateUserDefinedStruct` installing the `EditorData` at `:49-50` and THEN calling `AddVariable` at `:59` - so the function `D-51` calls unavailable installs the very data it says only the editor factory installs, and the recorded crash was `NewObject` + a hand-built field list, **one call short of the public static**. It needs an EDITOR PROCESS, not an OPEN EDITOR: `AddVariable` reads only `Struct->EditorData`, `GetVarDesc` is one `CastChecked`, `CompileStructure` goes via KismetCompiler - **no `GEditor`, so the `check(GEditor)` limits do not bind.** AND THE ROW **DOES** NEED A `UUserDefinedStruct`: `TurboMCPKitRow.h` is right that a native `USTRUCT` is project-owned, **and a native struct is compiled C++ source so no runtime tool can add a field** - two true statements about two different rows, with the native struct now refused by name. **T-DATA-3 NAMES `TA-21`, WHICH DOES NOT EXIST** (4th such row after `TA-6`, `TA-15/16`, `TA-8`), so the suite builds what it edits. **Four defects found by RUNNING it:** `RemoveVariable` refuses to empty a struct; `AddVariable` cannot name a field (empty base -> literal `MemberVar`); *** `GetBasicTypeByName` SILENTLY SUBSTITUTES `int` for any non-`PC_*` name (`BlueprintEditorLibrary.cpp:2118-2122`), so `Alpha: double` created an int field WHILE REPORTING SUCCESS ***; `ChangeVariableType` returns `false` for a no-op. | done |
 | 7.2 | `P/E-ENUM-EDIT`, with reordering reported as affecting saved data | `P/E-ENUM-EDIT` | `D-45` | T-DATA-4 | todo |
 | 7.3 | `R-CURVE-LOAD` and `P/E-CURVE-SET` | `03_TOOLS.md` section 12 | `P1` | T-DATA-5, T-DATA-6 | todo |
-| 7.4 | `R-ASSET-COST`, split by provenance | `R-ASSET-COST` | `D-52` | T-ASSET-3 | todo |
+| 7.4 | `R-ASSET-COST`, split by provenance | `R-ASSET-COST` | `D-52` | T-ASSET-3 | done |
 | 7.5 | `P-ASSET-DIFF`, naming what it did not compare | `P-ASSET-DIFF` | `D-53` | T-ASSET-4 | open (Q-21) |
 | 7.6 | `E-ASSET-NEW`, `E-ASSET-RENAME`, `E-ASSET-MOVE`, `E-ASSET-DUPLICATE`, with redirectors fixed and an open tab refusing | `03_TOOLS.md` section 12 | `P8`, `D-45` | T-ASSET-5, T-ASSET-6 | todo |
 
@@ -161,10 +161,10 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 
 | # | Work | Spec | Decisions | Test | State |
 |---|---|---|---|---|---|
-| 9.1 | `R-BP-LINT`, every check named, each reporting how many things it looked at | `R-BP-LINT` | `P1`, `D-05` | T-QUAL-1 | todo |
+| 9.1 | `R-BP-LINT`, every check named, each reporting how many things it looked at | `R-BP-LINT` | `P1`, `D-05` | T-QUAL-1 | done |
 | 9.2 | `E-SESSION` and `R-EDIT-SESSION`, bounded, and saying when it ended itself | `E-SESSION` | `D-56` | T-QUAL-2 | todo |
 | 9.3 | `P/E-ASSET-BATCH` as `E-SESSION` plus a list, one transaction | `P/E-ASSET-BATCH` | `D-56` | T-QUAL-3 | todo |
-| 9.4 | `R-CALL-COST` | `R-CALL-COST` | `P1`, `P7` | T-HELP-6 | todo |
+| 9.4 | `R-CALL-COST` | `R-CALL-COST` | `P1`, `P7` | T-HELP-6 | done |
 
 ### Step 10 — source control
 
