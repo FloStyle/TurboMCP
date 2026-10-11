@@ -629,3 +629,345 @@ still returned `current_provider='Perforce'`, `is_available=False`.
    default provider and the helpers, and `Engine/Source/Developer/UncontrolledChangelists`
    and `Engine/Source/Developer/SourceControlViewport` are UI/cache consumers,
    **not** providers. The four real providers are all plugins.
+
+---
+
+# ROW 10.1 BUILT AND MEASURED: `E-VCS-CHECKOUT`
+
+**Row 1.3 measured which provider to build and test first. This section is the
+capability that measurement authorised, and it re-measures the one thing 1.3
+recorded as unsettled.**
+
+*** SECTION 1 OF THIS FILE ANSWERS `Q-20` ("which source control provider comes
+first") WITH *Git*, BECAUSE GIT IS THE ONLY PROVIDER AVAILABLE ON THIS MACHINE
+WITH NOTHING BUT THE `Provider` SETTING. GIT WAS BUILT AND TESTED FIRST. PERFORCE
+IS THE SECOND, AND IT TURNED OUT TO BE THE ONE THAT PROVES THE MOST. ***
+
+## 1. WHAT WAS BUILT, AND WHERE
+
+| File | What it is |
+|---|---|
+| `Source/TurboMCP/TurboMCPSourceControl.h` | `FTurboMCPSourceControlAsset`, `FTurboMCPSourceControlPlan` and `FTurboMCPSourceControl` (`Plan`, `Render`, `Checkout`). **ALL THREE TOOLS READ ONE `Plan`, SO THE PREVIEW AND ITS EDIT TWIN CANNOT REFUSE DIFFERENT INPUT.** |
+| `Source/TurboMCP/TurboMCPSourceControl.cpp` | The whole decision. `Plan` asks the module facts once and then builds one row per asset; `Checkout` is the only function that can reach a provider with a write-intent operation. |
+| `Source/TurboMCP/TurboMCPSourceControlTools.cpp` | The three tool bodies, each three lines long, so no tool decides anything. |
+| `Source/TurboMCP/Public/Tools/TurboMCPToolsets.h` | Three declarations added, nothing else touched: `ReadTurboMCPVcsState` in the Read toolset, `PreviewTurboMCPVcsCheckout` in Preview, `EditTurboMCPVcsCheckout` in Edit. |
+| `Tools/test-vcs.py` | 55 checks, four phases, and it OWNS THE EDITOR to reach every branch. |
+
+**THE MODULE DEPENDENCY NEEDED NO CHANGE AND THAT IS CHECKED RATHER THAN
+ASSUMED.** `TurboMCP.Build.cs` was not touched: `UnrealEd` **publicly** depends
+on `SourceControl` (`Engine/Source/Editor/UnrealEd/UnrealEd.Build.cs:68`, inside
+the `PublicDependencyModuleNames` block that begins at `:52`), so both the
+include path and `SOURCE_CONTROL_WITH_SLATE=1` - a **`PublicDefinitions`** entry
+at `Engine/Source/Developer/SourceControl/SourceControl.Build.cs:22` - reach this
+module transitively, and `ISourceControlProvider.h:25` `#error`s without that
+define. The build linked without a single Build.cs edit.
+
+## 2. HOW BOTH QUESTIONS ARE ASKED, AND THE PROVIDER THAT PROVES BOTH ARE NEEDED
+
+`FTurboMCPSourceControl::Plan` follows `SourceControlHelpers.cpp:61-85` in order:
+
+```
+ISourceControlModule* Module = FModuleManager::LoadModulePtr<ISourceControlModule>(TEXT("SourceControl"));
+...
+Plan.bEnabled = Module->IsEnabled();                       // SourceControlModule.cpp:376
+Plan.ProviderName = Module->GetProvider().GetName().ToString();
+if (!Plan.bEnabled) { RunRefusal = "Revision control is not enabled."; }        // SourceControlHelpers.cpp:67
+else {
+    Plan.bAvailable = Module->GetProvider().IsAvailable(); // asked ONLY when bEnabled - and SAID to have been
+    ...
+    if (!Plan.bAvailable) { RunRefusal = "Revision control server is currently not available."; }  // :76
+}
+```
+
+**AND THE PERFORCE CASE IS THE MEASURED PROOF THAT BOTH ARE REQUIRED**, produced
+by relaunching the editor with `-SCCProvider=Perforce`:
+
+```
+provider in use      : 'Perforce'
+  IsEnabled()        : true
+  IsAvailable()      : false
+  UsesCheckout()     : true
+```
+
+`IsEnabled()` is **true** and `IsAvailable()` is **false**, on the provider whose
+`UsesCheckout() == true` (`PerforceSourceControlProvider.cpp:622-625`) is the
+reason the capability exists. A tool that asked only the first would report a
+working provider here. **THIS IS THE PROVIDER THAT CATCHES IT, AND IT IS
+REACHABLE ON THIS MACHINE** - only round-tripping to a depot is not.
+
+## 3. THE TOOL'S OUTPUT, VERBATIM
+
+### 3.1 No provider: the refusal, named per asset
+
+```
+--- phase A: state per asset, with no provider ---
+=== source control: E-VCS-CHECKOUT ===
+WHAT THIS ANSWER IS: the state source control holds for each asset, or, when there is
+no usable provider, a REFUSAL NAMED PER ASSET. The refusal strings are the ENGINE'S OWN.
+
+module loaded        : true
+provider in use      : 'None'
+registered providers : 5 -> Subversion, Git, Plastic SCM, Perforce, None
+  IsEnabled()        : false
+  IsAvailable()      : NOT ASKED, because IsEnabled() was already false.
+  UsesCheckout()     : NOT READ, because no provider was selected.
+
+REFUSAL, THE SAME FOR EVERY ASSET BELOW: Revision control is not enabled.
+  the string is the engine's own: SourceControlHelpers.cpp:67 (the engine's own gate)
+  NO PROVIDER WAS REACHED, so no state is reported and no zero is printed (P1).
+
+assets: 2
+
+  [1] TA01_HandLaid
+      package: /Game/Tests/Kit/TA01_HandLaid
+      file: <REPO>/TestProject/Content/Tests/Kit/TA01_HandLaid.uasset
+      file found by: FPackageName::DoesPackageExist (PackageName.h:450)
+      REFUSED: Revision control is not enabled.
+      NOTHING WAS ASKED OF ANY PROVIDER FOR THIS ASSET.
+
+  [2] TA14_KitDataTable
+      package: /Game/Tests/Kit/TA14_KitDataTable
+      file: <REPO>/TestProject/Content/Tests/Kit/TA14_KitDataTable.uasset
+      file found by: FPackageName::DoesPackageExist (PackageName.h:450)
+      REFUSED: Revision control is not enabled.
+      NOTHING WAS ASKED OF ANY PROVIDER FOR THIS ASSET.
+```
+
+*** `IsAvailable()` IS `NOT ASKED` RATHER THAN `false`, AND THAT IS `P1` IN ONE
+LINE. *** `false` there would read as a measured "the server is down"; the
+measurement did not happen, so the answer says so. `UsesCheckout()` is reported
+the same way and for the same reason.
+
+### 3.2 Git: the state per asset, and the checkout answer
+
+```
+provider in use      : 'Git'
+  IsEnabled()        : true
+  IsAvailable()      : true
+  UsesCheckout()     : false
+  UsesLocalReadOnly(): false
+  ^ A CHECKOUT ON THIS PROVIDER IS A NO-OP. It has no lock command, so every
+    tracked file in the working copy is already checked out. Say so rather than
+    implying a lock was taken.
+
+assets: 2
+
+  [1] TA01_HandLaid
+      under source control:  true
+      checked out here:      true
+      added (open for add):  false
+      current (up to date):  true
+      out of date:           false
+      modified:              false
+      ignored:               false
+      CanCheckout():         false
+      the provider's own state text: Unchanged
+
+  [2] TA14_KitDataTable
+      under source control:  false
+      checked out here:      false
+      added (open for add):  false
+      current (up to date):  true
+      out of date:           false
+      modified:              false
+      ignored:               false
+      CanCheckout():         false
+      the provider's own state text: Not Under Revision Control
+```
+
+**THE TWO ROWS ARE ANSWERED INDEPENDENTLY** - one tracked asset and one untracked
+one - which is the per-asset claim made observable. The suite asserts only that
+the two states DIFFER, never which is which, so it pins no state onto a shared
+asset.
+
+### 3.3 THE GIT CHECKOUT **ANSWER**, MEASURED - THE HALF SECTION 5 ITEM 6 LEFT OPEN
+
+```
+=== checkout (E-VCS-CHECKOUT) ===
+  [1] TA01_HandLaid
+      UsesCheckout() == false: A CHECKOUT IS A NO-OP ON THIS PROVIDER. Nothing is
+      locked, because this provider has no lock command - so this line is NOT a claim
+      that a lock was taken. The operation is issued anyway to record what the
+      provider actually answers.
+      provider answer, verbatim: ECommandResult::Failed
+      ^ AND THAT IS THE MEASURED ANSWER TO A GIT CHECKOUT, not a prediction of one.
+      provider error: Operation 'CheckOut' not supported by revision control provider 'Git'
+      NO FILE WAS WRITTEN BY THIS TOOL. A checkout is a source control operation;
+      the asset's contents are not touched here.
+```
+
+*** SO THIS FILE'S SECTION 5 ITEM 6 IS NOW CLOSED: A GIT CHECKOUT WAS RUN, AND
+THE ANSWER IS `ECommandResult::Failed` WITH THE PROVIDER'S OWN
+`"Operation 'CheckOut' not supported by revision control provider 'Git'"`. ***
+That is exactly what `GitSourceControlProvider.cpp:286-289` and `:257-260`
+predicted; the prediction and the measurement agree, and the measurement is the
+one that counts. The failure is produced at the worker lookup
+(`GitSourceControlProvider.cpp:225-238`) **before any command runs**, so nothing
+on disk was touched - and that is confirmed below by a third tool.
+
+### 3.4 Perforce: refused by name with the SECOND engine string
+
+```
+provider in use      : 'Perforce'
+  IsEnabled()        : true
+  IsAvailable()      : false
+  UsesCheckout()     : true
+  UsesLocalReadOnly(): true
+
+REFUSAL, THE SAME FOR EVERY ASSET BELOW: Revision control server is currently not available.
+  the string is the engine's own: SourceControlHelpers.cpp:76 (the engine's own gate)
+  NO PROVIDER WAS REACHED, so no state is reported and no zero is printed (P1).
+```
+
+**The second engine string is now measured *through this tool*, per asset.** Row
+1.3 could only reproduce it through the engine's Python surface.
+
+## 4. THE READ-BACK THROUGH A DIFFERENT TOOL, AND THE TRAP IT FOUND
+
+*** A TOOL'S OWN REPORT IS NOT EVIDENCE, SO EVERY CLAIM ABOVE IS CHECKED AGAINST
+`USourceControlHelpers` - A DIFFERENT CODE PATH (`SourceControlHelpers.cpp`, not
+`FTurboMCPSourceControl`) - DRIVEN BY THE ENGINE'S OWN `PythonScriptCommandlet`
+WITH `-SCCProvider=`. THE PROBE IS EMBEDDED IN `Tools/test-vcs.py`, WRITTEN TO A
+TEMP FILE AND RUN, SO THE CROSS-CHECK IS PART OF THE SUITE RATHER THAN A NOTE.***
+
+```
+no provider : exit 0  {'present': 'True', 'current_provider': "'None'", 'is_enabled': 'False',
+                       'is_available': 'False', 'check_out_file_returned': 'False',
+                       'last_error_msg': 'Text("Revision control is not enabled.")'}
+git         : exit 0  {'present': 'True', 'current_provider': "'Git'", 'is_enabled': 'True',
+                       'is_available': 'True', 'check_out_file_returned': 'True',
+                       'last_error_msg': 'Text("")'}
+```
+
+The engine agrees with this tool about the provider and about both questions, and
+it reproduces `"Revision control is not enabled."` verbatim.
+
+### AND IT FOUND A TRAP, WHICH IS THE MOST USEFUL THING IN THIS SECTION
+
+*** `USourceControlHelpers::CheckOutFile` ANSWERS `True` ON GIT, WITH AN EMPTY
+`LastErrorMsg()`, AND IT NEVER ISSUES A CHECKOUT AT ALL. ***
+
+`CheckOutFile` returns true at `SourceControlHelpers.cpp:456-460` when the state
+says `IsCheckedOut() || IsAdded()` - **and Git reports `IsCheckedOut() == true`
+for every tracked file**, which is the very line this tool prints for
+`TA01_HandLaid` above. So on Git the engine's helper's `true` means
+*"the state says it is already checked out"*, **NOT** *"a lock was taken"*.
+
+**THE TWO ANSWERS ARE NOT IN CONFLICT: THEY ANSWER DIFFERENT QUESTIONS, AND THE
+SUITE ASSERTS BOTH SO NEITHER CAN BE MISTAKEN FOR THE OTHER.**
+
+- the engine's helper: `true`, because Git's state says the file is checked out;
+- this tool: `Failed` + `"Operation 'CheckOut' not supported"`, because it goes
+  through `ISourceControlProvider::Execute` and records the **operation's** answer.
+
+**WHY THIS MATTERS FOR `D-57`.** A write tool wired to `CheckOutFile` and reading
+its `true` as "checked out, safe to write" would, on Git, be relying on a lock
+that does not exist - and `Spec/03_TOOLS.md:1348-1351` says exactly that:
+*"Perforce will refuse a save that is not checked out; git will not, and will
+happily leave a modified file for someone else to find."* **THE ENGINE'S OWN
+HELPER CANNOT DISTINGUISH THOSE TWO CASES; THIS TOOL CAN, AND IT SAYS WHICH ONE
+IT IS ON.** That is the concrete finding row 10.2 has to act on.
+
+### AND NOTHING MOVED, CONFIRMED BY A THIRD TOOL
+
+`git status --porcelain -- TestProject/Content/Tests/Kit/TA01_HandLaid.uasset`
+is **empty** before and after all three provider probes and all three commandlet
+read-backs. **The `git` CLI is a third tool and it answers a question neither of
+the other two can: did any of this touch a file.** It did not.
+
+## 5. THE HAZARDS SECTION 4 OF THIS FILE NAMED, AND HOW EACH IS HANDLED
+
+| Hazard (section 4) | How it is handled, and it is a code fact rather than a promise |
+|---|---|
+| `SetProvider(FName)` is **FATAL** on an unmatched name (`SourceControlModule.cpp:404-417`). | **`SetProvider` IS NEVER CALLED.** The tool uses the provider the project selected. `GetProviderNames` is still called - to **print** the registry's own list, so the provider name in the answer is the engine's answer rather than a guess. |
+| `GetProvider()` dereferences `CurrentSourceControlProvider` (`:379-382`). | Guarded by `FModuleManager::LoadModulePtr<ISourceControlModule>` returning non-null, after which the engine's own first callback has already assigned it. Still **not observable here**, as section 4 said: it is a code guard, not a measured case. |
+| `GetState` returns a **NULL** state that reads as "not under source control" (`DefaultSourceControlProvider.cpp:52-60`). | `GetState` is called **only after both questions pass**. A null state that arrives anyway is printed as `STATE: unknown - <reason>`, with the explicit line `THIS IS NOT 'not under source control'`. |
+| `-SCCProvider=Plastic SCM` contains a **space** (`PlasticSourceControlProvider.cpp:34`). | The suite passes the switch as **one element of an argv list**, so there is no quoting to get wrong. The launch line is printed, verbatim, in the suite output. |
+| The refusal must be in `Plan` and be **per asset**. | `Plan` writes `RunRefusal` into **every** asset row, and each row also carries its own `Refusal`/resolve error. The suite compares the refusal text of the Read, Preview and Edit tools **string for string**. |
+
+**WHERE THE FIXTURE PATH COMES FROM, AND WHY IT IS NOT
+`LongPackageNameToFilename`.** `TurboMCPAcceptanceAssetCommandlet.cpp:1114-1118`
+and `TurboMCPTestMapCommandlet.cpp:325-334` both record that conversion answering
+a path **relative to the engine directory** in this project. So the file is found
+by `FPackageName::DoesPackageExist` (`Misc/PackageName.h:450`, the mount-aware
+answer, which is what produced every `file:` line above), with the hand-built
+`/Game` path as a checked fallback - and **`IFileManager::FileExists` verifies
+whichever one wins** before it is used. The route that won is printed.
+
+## 6. THE SUITE: 55 CHECKS, FOUR PHASES, AND NO BRANCH SKIPPED
+
+`Tools/test-vcs.py` is the only suite this row adds. **IT OWNS THE EDITOR
+LIFECYCLE**, because reaching every branch means restarting the editor with a
+different `-SCCProvider=` - which is the only mechanism that sets it
+(`SourceControlSettings.cpp:58-65`), and `Tools/start-editor.ps1` takes no
+pass-through arguments.
+
+| Phase | What it measures | How |
+|---|---|---|
+| A | "source control off": the refusal, **per asset** | the editor as handed; **if a provider is already selected the suite restarts the editor without one**, so this phase runs in every invocation |
+| B1 | Git: state per asset **and the measured checkout answer** | relaunch with `-SCCProvider=Git` (14s to answer, measured) |
+| B2 | Perforce: `IsEnabled()==true`, `IsAvailable()==false`, both engine refusals | relaunch with `-SCCProvider=Perforce` (32s, measured) |
+| B3 | the same answers through the **engine's own helper**, plus the `git` CLI | two `PythonScriptCommandlet` runs and `git status --porcelain` |
+| C | **RESTORE, ASSERTED** | relaunch through `Tools/tmcp_editor.py`, then read `IsEnabled()` back through the tool |
+
+**IT TAKES 125 SECONDS**, well inside the runner's 600-second per-suite deadline.
+
+### The checks were shown RED, and the break was restored
+
+A build was made with **four deliberate breaks in
+`TurboMCPSourceControl.cpp`** - the `NotEnabledText` literal paraphrased, a
+`under source control:  false` line added to the refusal branch, and both no-op
+sentences reworded away. **SIX named checks went red, with the wrong value
+visible rather than as a bare red line:**
+
+```
+  FAIL and it names the engine's own refusal for every asset, up front  === source control: E-VCS-CHECKOUT ===
+  FAIL and the refusal is THE ENGINE'S OWN STRING, verbatim  ['Revision control is disabled.', 'Revision control is disabled.']
+  FAIL and NO state is reported for any of them, so no false 'not under source control' can be read  [... '      REFUSED: Revision control is disabled.\n      under source control:  false\n ...']
+  FAIL and it SAYS a checkout is a no-op on this provider instead of implying a lock was taken  === source control: E-VCS-CHECKOUT ===
+  FAIL and the answer says a no-op was expected HERE rather than claiming a lock was taken  ...
+  FAIL and no state is reported, because asking for one would be reaching a provider that has none  === source control: E-VCS-CHECKOUT ===
+RESULT: FAIL (6 of 55) -> and it names the engine's own refusal for every asset, up front, ...
+```
+
+Note the **third** one: the deliberately re-introduced `under source control:
+false` on a **refused** asset is exactly the `P1` mistake the check exists to
+catch, and it appears in the failure detail as the wrong value.
+
+**THEN IT WAS RESTORED, AND THE RESTORE WAS ASSERTED RATHER THAN ASSUMED:**
+`git checkout -- Source/TurboMCP/TurboMCPSourceControl.cpp`, then
+`git diff --stat` showed **only** the intended `Tools/test-vcs.py` change and no
+diff under `Source/`, the broken literals were confirmed absent by a `grep`, the
+target was rebuilt, and the suite returned `RESULT: PASS (55 check(s) run, no
+check skipped)`.
+
+## 7. WHAT COULD NOT BE SETTLED
+
+1. **PLASTIC SCM AND SUBVERSION CANNOT BE EXERCISED HERE AT ALL**, and this is not
+   new: section 1 measured that `cm` and `svn` are not on `PATH`. Their
+   `AVAILABLE` branch is unreachable, so `IsAvailable() == true` was never seen
+   for either. The suite says so in its own closing lines rather than implying
+   coverage.
+2. **NO CHECKOUT AGAINST A LIVE DEPOT WAS EVER PERFORMED BY ANYONE.** Git's answer
+   is now measured but it is a **refusal**, and Perforce's `AVAILABLE` branch
+   needs a server that answers (`p4 set` still points at
+   `ssl:example.invalid:1666`). So *"what Perforce does when it is available
+   headless"* - section 5 item 2 of this file - **is still unmeasured**, and it is
+   the single most important thing row 10.2 needs before it wires automatic
+   checkout into a write tool.
+3. **The Perforce `-SCCProvider=Perforce` EDITOR path was measured only as far as
+   the refusal.** The editor came up and answered in 32s, and the tool refused
+   before asking anything, so **no connection attempt was made from this tool** -
+   which is why the editor survived. Whether a `GetState` on Perforce would
+   connect, hang, or fail is **not measured**, because reaching it would require
+   the connection the tool deliberately avoids.
+4. **`Tools/start-editor.ps1` CANNOT PASS `-SCCProvider=`**, and that is a fact
+   about the repository rather than about the engine: it takes no
+   pass-through arguments. The suite therefore launches the editor directly for
+   the two provider phases. **A future harness that wants a provider selected
+   will need either that argument passed through, or a
+   `SourceControlSettings.ini`** - and neither exists today, which is what
+   section 1 already recorded.
+5. **The `GetProvider()`-before-any-provider-registers hazard remains a code fact
+   and not a measured failure** (section 4 of this file). Nothing here changed
+   that.

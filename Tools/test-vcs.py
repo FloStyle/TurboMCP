@@ -249,6 +249,15 @@ def git_porcelain(path):
 
 
 def main():
+    # THE SUITE ENSURES AN EDITOR RATHER THAN ASSUMING ONE. Under the harness one is already up and this is a
+    # no-op, but this suite owns the editor lifecycle for three relaunches and it must also be runnable by hand
+    # - and MEASURED: run without an editor it died on `connect()` with a `URLError` and printed NO result line
+    # at all, which the runner records as a suite that produced nothing rather than as a diagnosis.
+    edited_ok, editor_detail = tmcp_editor.ensure_editor()
+    if not edited_ok:
+        print("RESULT: FAIL (no editor to measure: %s)" % editor_detail)
+        return 1
+
     session = Session()
     session.connect()
 
