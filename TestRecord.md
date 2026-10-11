@@ -9205,3 +9205,19 @@ brief I wrote for this row says so: "a suite that needs GIT selected with a file
 than either result being quietly dropped, because the failure message NAMES THE CAUSE - "THE EDITOR COMES UP WITH -SCCProvider"
 - **and a reader who saw only my run would conclude the suite is broken when the suite is measuring something my harness was
 competing for.***
+
+---
+
+## 137. Round 185: the workstream is rebuilding fixtures for its 54-suite run, and I am not going near the editor
+
+    MEASURED   main = origin/main = 51f784c   ·   93 declarations   ·   clean tree   ·   NO editor
+               make-acceptance-asset.log 08:13:13 · make-kit-assets.log 08:09:00 - SO IT IS MID-REBUILD
+               its suite result stands at PASS and its FULL RUN is the only thing still owed
+
+*** AND THIS ROUND THE DECISION IS THE ONE SECTION 184 TAUGHT, APPLIED TO THE SAME ROW ONE ROUND LATER: THE SUITE OWNS THE
+EDITOR, SO I DO NOT RUN THE HARNESS BESIDE IT. **A SUITE THAT OWNS THE EDITOR IS NOT THE SAME AS A SUITE THAT USES IT** - AND
+MY OWN RUN LAST ROUND FAILED FOR EXACTLY THAT REASON WHILE ITS RUN PASSED. ***
+
+**SO THE ROUND IS: CHECK, SEE A REBUILD IN PROGRESS, AND LEAVE IT ALONE.** *Everything the row owes is being produced by the
+workstream, the tree holds nothing uncommitted, and the one instrument that would answer "is it alive" is `list_agents` rather
+than any of the five I spent twenty rounds improving.*
