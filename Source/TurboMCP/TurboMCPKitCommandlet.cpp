@@ -16,6 +16,7 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Engine/DataTable.h"
+#include "Materials/MaterialParameterCollection.h"
 #include "TurboMCPKitRow.h"
 #include "Engine/UserDefinedEnum.h"
 
@@ -1806,6 +1807,79 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			// THE PACKAGE ITSELF. Reused rather than reimplemented, which is what the acceptance row's fixtures
 			// have always done.
 			Builder.SaveContainer(Table, TEXT("TA-14"), Ta14.Name);
+		}
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// TA-20: A MATERIAL PARAMETER COLLECTION WITH FIVE PARAMETERS, ONE OF THEM READ BY NO MATERIAL.
+	//
+	// `Spec/06_ACCEPTANCE.md`: *"5 parameters: 2 scalar, 2 vector, one read by no material"* - WHICH IS FOUR NAMED
+	// PLUS A FIFTH, AND THE FIFTH IS THE POINT: `T-MAT-12` and `T-MAT-13` need a collection parameter that NOTHING
+	// reads, because that is the case where an index shift is invisible until much later. A collection whose every
+	// parameter is used cannot test the thing the rows exist for.
+	//
+	// THE PARAMETER ARRAYS ARE PUBLIC (`MaterialParameterCollection.h:91,94`), so this needs no factory and no editor
+	// object - WHICH IS WHY IT IS BUILDABLE FROM A COMMANDLET WHERE THE USER-STRUCT PATH IS NOT.
+	// ---------------------------------------------------------------------------------------------
+	{
+		FKitResult Ta20;
+		Ta20.Id = TEXT("TA-20");
+		Ta20.Name = TEXT("TA20_KitParameters");
+
+		const FString PackagePath = FString::Printf(TEXT("%s/%s"), KitFolder, *Ta20.Name);
+		UPackage* Package = CreatePackage(*PackagePath);
+		UMaterialParameterCollection* Collection =
+			NewObject<UMaterialParameterCollection>(Package, *Ta20.Name, RF_Public | RF_Standalone);
+
+		auto AddScalar = [Collection](const TCHAR* ParameterName, float DefaultValue)
+		{
+			FCollectionScalarParameter Parameter;
+			Parameter.ParameterName = FName(ParameterName);
+			Parameter.DefaultValue = DefaultValue;
+			Collection->ScalarParameters.Add(Parameter);
+		};
+		auto AddVector = [Collection](const TCHAR* ParameterName, float R, float G, float B)
+		{
+			FCollectionVectorParameter Parameter;
+			Parameter.ParameterName = FName(ParameterName);
+			Parameter.DefaultValue = FLinearColor(R, G, B, 1.0f);
+			Collection->VectorParameters.Add(Parameter);
+		};
+
+		// TWO SCALARS AND TWO VECTORS, AS THE ROW ASKS.
+		AddScalar(TEXT("KitScalarA"), 0.25f);
+		AddScalar(TEXT("KitScalarB"), 0.75f);
+		AddVector(TEXT("KitVectorA"), 1.0f, 0.0f, 0.0f);
+		AddVector(TEXT("KitVectorB"), 0.0f, 1.0f, 0.0f);
+
+		// THE FIFTH: A SECOND SCALAR, AND IT IS THE ONE THE FIXTURE IS FOR. Whether any MATERIAL reads it cannot be
+		// checked here - that needs the materials, which is the capability's job - so the collection simply CARRIES
+		// a parameter the acceptance row's reader can find and report as unread.
+		AddScalar(TEXT("KitScalarUnread"), 0.5f);
+
+		const int32 ScalarCount = Collection->ScalarParameters.Num();
+		const int32 VectorCount = Collection->VectorParameters.Num();
+
+		Ta20.bBuilt = (ScalarCount == 3) && (VectorCount == 2);
+		Ta20.bMeasured = true;
+		Ta20.Detail = FString::Printf(TEXT("scalars=%d vectors=%d (KitScalarUnread exists for the unread case)"),
+			ScalarCount, VectorCount);
+		Ta20.Why = TEXT("The parameter arrays are public, so this needs no editor factory - which is why it is "
+			"buildable from a commandlet where the user-struct path is not. Whether KitScalarUnread is REALLY read "
+			"by no material is asserted by the capability's suite, not here.");
+		if (ScalarCount != 3)
+		{
+			Ta20.Findings.Add(FString::Printf(TEXT("expected 3 scalars, found %d"), ScalarCount));
+		}
+		if (VectorCount != 2)
+		{
+			Ta20.Findings.Add(FString::Printf(TEXT("expected 2 vectors, found %d"), VectorCount));
+		}
+
+		Builder.Results.Add(Ta20);
+		if (Ta20.bBuilt)
+		{
+			Builder.SaveContainer(Collection, TEXT("TA-20"), Ta20.Name);
 		}
 	}
 
