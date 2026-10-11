@@ -11,13 +11,13 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 
 | Métrique | Valeur mesurée |
 |---|---|
-| Commits sur `main` | **447** |
+| Commits sur `main` | **480** |
 | Outils `AICallable` | **93** (audit : `uncalled: (none)`, PASS) |
-| Suites (`Tools/test-*.py`) | **51** fichiers |
+| Suites (`Tools/test-*.py`) | **52** fichiers (58 suites au total dans le harnais) |
 | **Full run** | **`passed 57, failed 0, blocked 0, of 57`** |
-| C++ du plugin | **61 137 lignes** dans **185** fichiers |
+| C++ du plugin | **61 455 lignes** dans **185** fichiers |
 | Spec | **7 738 lignes** dans **17** fichiers |
-| `TestRecord.md` | **10 178 lignes** (le journal de bord) |
+| `TestRecord.md` | **10 502 lignes** (le journal de bord) |
 | Licence | **MPL-2.0** sur chaque fichier, `Copyright (c) 2026 Florian ESCHALIER (FloStyle)` |
 
 ---
