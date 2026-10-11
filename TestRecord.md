@@ -8884,3 +8884,25 @@ three I asked it to name, and it named them.* ***
 
 **AND THE ROUND IS ONE LINE BECAUSE ROW 1.3 IS ONE ROUND IN AND A MEASUREMENT ROW PRODUCES NOTHING UNTIL IT PRODUCES THE TABLE.**
 *Its brief asks for a table with file and line per provider, and the honest state is that the table does not exist yet.*
+
+---
+
+## 126. Round 172: row 1.3 is reading, and the plan's arithmetic is now the thing to state rather than the milestones
+
+    MEASURED   main = origin/main = ce907a3   ·   90 tools   ·   clean tree
+               no `Spec/WORKING_SCROW.md`, no source-control source - ROW 1.3 IS STILL READING, TWO ROUNDS IN
+               the newest spec timestamp is mine (WORKING_PLAN 07:16:24); the three spec corrections are 3732b17's at 07:07
+
+*** AND THE ARITHMETIC WORTH STATING AT ROUND 172 IS THE ONE THAT DECIDES WHAT THE REMAINING 84 ROUNDS CAN DO: THE PLAN IS 41
+ROWS `todo` AND THREE `done` - SO SEVENTY-TWO ROUNDS HAVE PRODUCED ONE PLAN ROW, AND EIGHTY-FOUR REMAIN. ***
+
+**BUT THE HONEST READING IS NOT THAT THE RATE WAS WASTED, AND SECTION 79 ALREADY SAID WHY: THE ROUNDS WENT TO MAKING THE PROJECT
+TRUSTWORTHY AND MEASURABLE, WHICH THE PLAN DOES NOT COUNT.** *This stretch produced the recovery of a destroyed capability; a
+full run raised from 39 of 47 to 53 of 53; a measured root cause for a row that had burned six workstreams; an engine
+constraint that closed a whole class of tooling; four missing-fixture rows found; a false-green diagnostic withdrawn from every
+brief; and **two spec premises corrected by asking what they were actually about** (`TA-14`'s native struct, row 7.1's
+`UUserDefinedStruct`).*
+
+*** AND THE PLAN NOW MOVES FASTER THAN IT LOOKS, BECAUSE TWO OF THE THINGS IT DOES NOT COUNT ARE PREREQUISITES OF THE ROWS IT
+DOES: ROW 1.3's SOURCE-CONTROL TABLE DECIDES WHETHER SEVERAL ROWS ARE BUILDABLE OR GATED, AND ROW 1.4's CLOSED TWO DECISIONS
+WITH ONE TABLE. A MEASUREMENT ROW LOOKS LIKE NO PROGRESS AND IS THE THING WHICH MAKES THREE OTHER ROWS POSSIBLE. ***
