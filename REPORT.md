@@ -311,7 +311,39 @@ Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un 
 
 ---
 
-## 12. En une ligne
+## 12. Ce qui a changé depuis la première version de ce rapport
+
+*Le rapport a été écrit au round 217. Voici ce qui a bougé depuis, et la colonne de droite est ce qui compte : **pourquoi**.*
+
+| | Round 217 | **Maintenant** | Le fait qui explique le mouvement |
+|---|---|---|---|
+| Full run | *`passed 56, of 56`* | ***`passed 58, failed 0, blocked 0, of 58`*** | ***deux défauts **préexistants** corrigés, dont un qui rendait le vert **impossible***** |
+| Plan | *40 `todo`, 6 `done`* | ***31 `todo`, 15 `done`*** | ***huit rows étaient **déjà construites** et marquées `todo`*** |
+| Audit des suites | *advisory* | ***BLOQUANT*** | *trois invariants tenus par convention sont passés à la machine* |
+| Éditeur étranger | *indétectable* | ***détecté, `exit 3`*** | *la collision qui a coûté quatre mesures* |
+| Kit | *« `TA-17`/`18`/`19` buildables »* | ***`TA-17` CONSTRUIT ; `18`/`19` refusés par nom*** | *et `TA-18` n'était **pas** buildable — mon rapport avait tort* |
+
+### 12.1 Et les deux corrections les plus importantes n'étaient dans **aucune** des cinq priorités
+
+> ***LE RAPPORT NOMMAIT CINQ CHOSES SUR LESQUELLES JE PASSERAIS DU TEMPS. LES DEUX DÉFAUTS QUI BLOQUAIENT LE PROPRE SIGNAL VERT DU PROJET N'EN FAISAIENT PAS PARTIE.***
+>
+> *Ils ont été trouvés par un workstream faisant une row de fixtures, et par moi **suivant son évidence**. **La liste a été utile pour commencer ; l'évidence a été utile pour finir.***
+
+### 12.2 Et la leçon qui a coûté le plus cher, énoncée une fois
+
+**NEUF FOIS DANS CETTE SÉQUENCE, UNE OPÉRATION A ÉCHOUÉ EN SILENCE ET A ÉTÉ LUE COMME UN SUCCÈS :**
+
+| | |
+|---|---|
+| `git checkout` avec `capture_output=True` **et le résultat jamais lu** | *7ᵉ — l'erreur était **capturée et personne ne l'a regardée*** |
+| une regex qui supposait le mauvais format | *8ᵉ — **dans la suite qui existe pour faire respecter la règle*** |
+| un compte codé en dur sur un asset partagé | *9ᵉ — la suite **passait ou échouait selon la fixture qu'elle regardait*** |
+
+> ***C'EST LA MÊME PHRASE QUE « UN REFUS INVISIBLE SE LIT COMME UNE CAPACITÉ », ET ELLE EST LE DÉFAUT LE PLUS RÉCURRENT DE CE PROJET — Y COMPRIS DANS LES OUTILS QUI EXISTENT POUR L'ATTRAPER.***
+
+---
+
+## 13. En une ligne
 
 > **93 outils, `passed 58, failed 0, blocked 0, of 58` — LE FULL RUN EST ENTIÈREMENT VERT — 31 rows de plan restantes, et une machine de vérification qui produit maintenant des résultats corrects sans que j'aie à intervenir.**
 >
