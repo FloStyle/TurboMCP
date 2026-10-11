@@ -6244,3 +6244,53 @@ before it was written.***
 its brief with its two debts spelled out - which `T-STRUCT-11` it actually proves, and naming the input that makes each
 check fail - **and starting a parallel build now would put two agents into one mutex, which is the condition that
 produced both the three-workstream block and the section-30 data loss.**
+
+---
+
+## 48. Round 89: the graph workstream stopped WITHOUT its suite, and everything it produced is safe
+
+**MEASURED, ALL FOUR FILES, BY AGE:**
+
+    04:03:58  TurboMCPGraphStructureTools.cpp      32 lines, COMMITTED (520099b)
+    04:03:50  Public/Tools/TurboMCPToolsets.h      4 declarations, COMMITTED (520099b)
+    04:03:06  TurboMCPGraphStructure.cpp          1001 lines, COMMITTED (d6cb5bd)
+    04:00:50  TurboMCPGraphStructure.h            210 lines, COMMITTED (6b3455a)
+    ---------
+    Tools/test-graph-structure.py                 *** NEVER APPEARED ***
+
+    main = origin/main = 2ff2c3a    85 AICallable tools    working tree clean (only two generated .uasset files)
+
+*** SO THE WORKSTREAM PRODUCED FOUR OF THE FIVE THINGS THIS ROW NEEDS AND STOPPED ON THE LAST ONE, WHICH IS THE ONE
+THAT MAKES IT A CAPABILITY RATHER THAN FOUR FILES. THE FOUR IT PRODUCED ARE ALL COMMITTED, SO NOTHING IS LOST - AND
+THAT IS THE ENTIRE POINT OF THE SEVEN SAFETY COMMITS. ***
+
+### What the state says, and what it does NOT say
+
+**IT DOES NOT SAY THE WORKSTREAM FAILED.** Four files, 1243 lines, a GREEN FULL MODULE BUILD, and the tool count moved
+81 -> 85. **IT SAYS THE ROUND ENDED BETWEEN THE LAST TWO STEPS OF A FIVE-STEP ORDER, WHICH IS WHERE EVERY PREVIOUS ROUND
+OF THIS ROW ALSO ENDED:** implementation, then declarations, then the tool bodies, then the suite. **THE PREVIOUS
+WORKSTREAM ON THIS EXACT ROW GOT AS FAR AS THE DESIGN AND NO CODE AT ALL; THE ONE BEFORE THAT DID NOT SETTLE THE
+REACHABILITY QUESTION. THIS ONE GOT FURTHEST.**
+
+### And the audit is RED for exactly one reason, which is the reason it should be red
+
+    uncalled: EditTurboMCPGraphCollapse, EditTurboMCPGraphCopy,
+              PreviewTurboMCPGraphCollapse, PreviewTurboMCPGraphCopy
+
+**FOUR TOOLS THAT EXIST, COMPILE, LINK AND CAN BE CALLED, AND THAT NO SUITE HAS EVER CALLED.** *`uncalled` is the
+correct word for them and the audit is right to fail - which is why the red state was committed deliberately in section
+45 rather than hidden.*
+
+### The next attempt starts from a much better place, and its brief is already written
+
+**ITS IMPLEMENTATION EXISTS AND COMPILES, SO THE NEXT WORKSTREAM WRITES A SUITE RATHER THAN A CAPABILITY.** *That is
+strictly smaller work than the two attempts before it, and the two debts its suite owes are already recorded in
+section 45 and in the round-87 brief:*
+1. **STATE WHICH `T-STRUCT-11` IS PROVED** - copying between two GRAPHS of one blueprint (which is what `TA-2` actually
+   is, because `TurboMCPKitCommandlet.cpp:939-940` sets `Ta2.Name = "TA01_HandLaid"`) **or between two ASSETS**, for
+   which `BP_TowerArray` and `TA07_Card` exist. **The row says "between graphs and Blueprints" AND THE FIXTURE CANNOT
+   DO THE SECOND HALF.**
+2. **NAME THE INPUT THAT MAKES EACH CHECK FAIL.** *A copy suite's natural checks are relations - the link count
+   matches, the destination grew by N nodes, each crossing link is reported - AND EVERY ONE PASSES ON AN EMPTY COPY.
+   That is the mechanism four consecutive workstreams discovered by breaking their own code and watching the suite stay
+   green.*
