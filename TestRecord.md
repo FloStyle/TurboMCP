@@ -10176,3 +10176,87 @@ AN ENUM - AND IT WAS FOUND BY THE BREAK TEST, WHICH IS NOW THE FOURTH ROW IN A R
 RESOLVED IT AGAINST MY LIST RATHER THAN MY INSTRUCTION AND EXPLAINED WHY - AND IT IS RIGHT. *** **My answer: KEEP IT. The +78/-0 diff is
 verified additive, the flag stands as a note about my brief and not about the work, and the alternative is a row whose measurements have
 nowhere to live.**
+
+---
+
+## 166. *** ROW 2.2 COMPLETE: 57 OF 57, NINE KINDS, AND THE BREAK TEST FOUND A TOOL DEFECT THAT A WHOLE SUITE COULD NOT ***
+
+    FULL RUN passed 57, failed 0, blocked 0, of 57   (56 -> 57; its new suite is the 57th)
+    AUDIT 93 AICallable tools, uncalled: (none), PASS
+    NO NEW DECLARATION - `asset-editor` IS A MODE of the existing `L-CAPTURE`, which is why 93 DID NOT MOVE
+
+### 166.1 *** THE DEFECT WORTH THE WHOLE ROW: A FAILED WRITE THAT A CALLER READS AS A SUCCESS ***
+
+    IT MADE THE TARGET PNG READ-ONLY AND RAN THE **UNMODIFIED** SUITE:
+      error: could not write .../CubeMaterial_asset-editor_1664x849.png
+      RESULT: PASS
+    *** THE TOOL REPORTED THE FAILURE AND THE SUITE STILL SAID PASS - because the answer BEGAN with the success banner
+    `look: capture of an asset editor`, the engine's tool layer does not flag that, and `out.startswith("error:")` WAS FALSE.
+    THE CONVENTION THIS TOOL ITSELF DOCUMENTS WAS BROKEN BY ITS OWN OUTPUT ORDER. ***
+    FIXED: the banner is prepended ONLY on success. *** THAT IS THE SAME DEFECT ROW 2.1 FOUND ON THE `select-nodes` PROBE, ONE
+    LAYER DOWN - AND "AN INVISIBLE REFUSAL READS AS A CAPABILITY" (SECTION 163) ARRIVING A THIRD TIME, NOW IN A TOOL'S OUTPUT ORDER. ***
+
+**AND NO SUITE COULD HAVE FOUND IT**: *the suite passed, the audit passed, and the tool printed the error. **It took making the FILE unwritable and then believing the tool's own error line over the suite's verdict.***
+
+### 166.2 And the size check is the best-designed check in this project, for a reason that took three measurements to find
+
+    BREAKING THE FILE ON DISK **DOES NOT REACH THE LIVE CHECK** - the tool rewrites its output every run.
+    MEASURED THREE WAYS, each with the wrong value confirmed present on disk first:
+      IHDR width 1671 WITH A RECOMPUTED CRC · a zero-byte read-only file · a DIRECTORY at the target path
+    *** AND THE SUITE REPORTED PASS IN ALL THREE. THAT IS NOT A HOLE - IT IS THE CHECK READING THE ARTIFACT THE TOOL
+    PRODUCED IN THAT SAME RUN. ***
+    SO THE CHECK IS NOW HANDED A REAL PNG COPY WITH A CORRUPTED HEADER, **CRC RECOMPUTED SO THE FILE IS A VALID PNG OF THE
+    WRONG SIZE** - the failure cannot be blamed on a malformed file - and the wrong value is PRINTED:
+      correct header (1664, 849) | broken header (1671, 849)
+      ok   the size check is RED on the broken header  text 1664x849, header (1671, 849)
+      ok   every chunk CRC of the broken file is still valid
+
+*** THAT IS THE DIFFERENCE BETWEEN A BREAK TEST THAT PROVES A CHECK CAN GO RED AND ONE THAT PROVES IT GOES RED FOR THE RIGHT REASON.
+THE CRC IS THE PART THAT MAKES IT HONEST. ***
+
+### 166.3 *** AND THE BREAK TEST FOUND THREE DEFECTS IN ITS OWN SUITE, ONE OF WHICH MADE A CHECK UNABLE TO PASS ***
+
+    1. `re.search(r"^size: (\d+)x", out)` WITHOUT `re.MULTILINE` - `^` MATCHED ONLY THE START OF THE WHOLE STRING, SO THE
+       SIZE CHECK COULD **NEVER** PASS. 16 OF 18 FAILURES CAME FROM ONE FUNCTION.
+       *** A CHECK THAT CANNOT PASS IS AS USELESS AS ONE THAT CANNOT FAIL - AND THIS RECORD HAS SPENT FIVE SECTIONS ON THE
+       SECOND AND NEVER ONCE ON THE FIRST. ***
+    2. `UnboundLocalError` - a name used before its assignment.
+    3. *** EVERY CHECK PASSED WHILE THE TOOL PRINTED ITS BANNER TWICE (`look: capture of an asset editorlook: capture of an
+       asset editor`) AND PRINTED `error: error: no asset named ...`. FOUND BY READING THE RAW MCP RESPONSE, NOT THROUGH THE
+       SUITE - which is why the suite now asserts THE WHOLE FIRST LINE and the banner count. ***
+       **THAT IS ROW 2.1's PREFIX DEFECT ONE LEVEL UP: 2.1's check matched a prefix and could not see a change AFTER it; 2.2's
+       checks could not see a change BEFORE it - a DOUBLED prefix.**
+
+### 166.4 And its `IsModuleLoaded` table is the same mistake as section 165.2, now measured three ways
+
+    IT CALLED DataTable REFUSED WHILE THE MODULE WAS LOADED
+    IT CALLED Niagara REFUSED BECAUSE THE .uproject DOES NOT LIST NIAGARA - AND **THE CAPTURE SUCCEEDED ANYWAY**
+      (`Niagara.uplugin` sets `EnabledByDefault: true`)
+    *** AND THE TABLE MOVED BETWEEN TWO CALLS OF THE SAME TOOL IN THE SAME PROCESS: 4/3/2, THEN 5/3/1, THEN 6/3/0 ***
+    NOW: `LoadModuleWithFailureReason`, WHICH LOADS ON DEMAND.
+    *** LINKING A MODULE IS NOT THE SAME AS REACHING ITS EDITOR. ***
+
+### 166.5 The nine kinds, and the seventh premise of mine falsified in seven rows
+
+    Material 3422 · Material Instance 37717 · Material Function 14963 · Widget Designer 1281 · DataTable 519
+    Anim Blueprint (CATALOGUE ONLY - no fixture exists anywhere) · Anim Sequence 25560 · Niagara 36071 · Blueprint 1641
+    *** ALL NINE COLOUR COUNTS ARE DISTINCT, AND FOUR DIFFERENT ASSETS REPORT THE SAME `1664x849` - SO SIZE PROVES NOTHING
+    AND THE COLOUR COUNTS ARE WHAT PROVE THESE ARE NOT ONE CACHED RECTANGLE. ***
+    AND `mode screen`'s PNG WAS COMPARED **BYTE FOR BYTE** AGAINST THE ASSET-EDITOR PNG: DIFFERENT BYTES. A caption change
+    alone would not do that.
+    *** MY BRIEF SAID "SIX NAMED KINDS". `WORKING_PLAN.md:97` AND `06_ACCEPTANCE.md:235` NAME EIGHT, THE PLAN ADDS A NINTH.
+    SEVEN CONSECUTIVE ROWS HAVE NOW FALSIFIED A PREMISE OF MINE, EVERY TIME IN THE DIRECTION OF UNDERSTATING WHAT EXISTS. ***
+
+### 166.6 And it did the fixture audit itself rather than accepting my warning
+
+    `R-ASSET-SEARCH type:AnimSequence` -> 2, BOTH `/Engine/Tutorial/...`
+    `type:NiagaraSystem` -> 19, ALL engine or plugin. **NOTHING UNDER `/Game`.** SO `TA-18`/`TA-19` ARE MISSING EXACTLY AS WARNED
+    *** AND IT DID NOT INVENT THEM AND DID NOT QUIETLY SKIP THE ROW: Anim Sequence and Niagara were captured FROM ENGINE CONTENT
+    and THE SUBSTITUTION IS PRINTED IN THE TOOL'S OWN CATALOGUE TEXT. Anim Blueprint is answered through the CATALOGUE because
+    there is no fixture anywhere, and THE SUITE SAYS SO IN ITS OWN DOCSTRING. ***
+    AND A NEW FINDING: `/Game/Tests/TurboMCPMaterialFixture` HAS NO OBJECT NAMED AFTER ITS PACKAGE, SO THE PROJECT'S OWN
+    MATERIAL-INSTANCE FIXTURE IS UNREACHABLE BY `FTurboMCPAssetResolver` - which narrows section 5's `T-MAT-10` note further still.
+
+### 166.7 Its answer on the spec edit, and the decision is mine to make
+
+**IT NOTES THE COLOUR COUNTS IN THE SPEC TEXT NOW PREDATE THE FINAL BUILD AND ARE SLIGHTLY STALE, AND OFFERS TO REFRESH THEM.** *And it asks again about the do-not-edit list colliding with the append instruction.* **My answer stands: KEEP THE EDIT** - the diff is `+78/-0`, verified additive - **AND THE STALE COUNTS SHOULD BE REFRESHED, because a spec that carries a slightly wrong measurement is worse than one that carries none.** *That is a follow-up, not a condition of this row.*
