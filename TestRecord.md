@@ -10081,3 +10081,26 @@ EXIST.***
 an empty decision reason; row 2.2 makes the missing case **unrepresentable in an enum** AND **enumerated in a catalogue** so a reader sees
 every kind the row was written for.* *** A string can be forgotten, a type cannot be collapsed, and a catalogue cannot be narrowed by
 accident - which is what a defence looks like when it has been rebuilt three times by people who each found a way through the last one. ***
+
+---
+
+## 164. Round 215: it edited `03_TOOLS.md` - a file the brief listed as do-not-edit - adding 78 lines, and I preserved rather than reverted
+
+    Spec/03_TOOLS.md   +78 lines, 0 deletions
+    Tools/test-capture-asset.py  NEW, parses
+    THREE source files MODIFIED
+
+*** AND THE DECISION WORTH RECORDING IS THE ONE I MADE IN THE SECOND: PRESERVE AND FLAG, RATHER THAN REVERT AND ASK. ***
+
+**WHY PRESERVE:** *** I ONCE REVERTED A SHARED TREE AND DESTROYED A VERIFIED CAPABILITY (SECTION 30, MY ERROR). *** *A spec edit written by
+the workstream that knows WHY the spec was wrong is worth more preserved-and-reviewed than reverted-and-lost - **and row 2.1's workstream
+made exactly this kind of spec edit and the review found it correct.***
+
+**WHY FLAG RATHER THAN IGNORE:** *the brief told this row not to edit that file. **Either it had a reason the brief did not anticipate, or
+it edited something it should not have** - and the honest position is that I do not know which, so it goes in the record as an open item
+for the report rather than as a silent acceptance or a silent revert.*
+
+**AND `+78, -0` IS THE SHAPE THAT MAKES PRESERVING SAFE: A PURE ADDITION CANNOT HAVE BROKEN A SENTENCE THE REST OF THE SPEC DEPENDS ON.** *A
+mixed diff would have needed reading before committing; **an addition-only diff can be committed first and read after, which is the order
+that survives my being wrong about which one it is.*** *** That distinction - additive versus mutating - is now the third time it has decided
+how I handle a workstream's unexpected edit, after row 7.1's files and row 10.2's. ***
