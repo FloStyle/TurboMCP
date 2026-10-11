@@ -8040,3 +8040,23 @@ AND CONCLUDED LIFE; THIS ROUND READS THE EDITOR AND CONFIRMS WHICH OF THE TWO WA
 
 **STILL OWED, UNCHANGED: the full run and the close-or-move answer.** *And nothing else in the project is waiting on this
 row, which is why four quiet rounds have cost nothing but rounds.*
+
+---
+
+## 94. Round 135: active, and the record's own four-signal instrument is now the thing being used rather than described
+
+    MEASURED   main = origin/main = 75a2d43   ·   86 tools   ·   clean tree
+    make-material-asset.log   05:55:03   <- ELEVEN SECONDS BEFORE THE CHECK
+
+*** AND THE ROUND IS ONE LINE BECAUSE THE HONEST CONTENT IS ONE LINE. WHAT CHANGED ACROSS THE LAST FOUR ROUNDS IS NOT THE
+WORKSTREAM'S PROGRESS - IT IS THAT I NOW HAVE AN INSTRUMENT THAT ANSWERS "IS IT ALIVE" IN ONE COMMAND, AND THAT I HAVE
+STOPPED WRITING ESSAYS ABOUT WHETHER IT IS. ***
+
+**THE FOUR SIGNALS WERE EACH OBSERVED IN BOTH STATES ACROSS SECTIONS 123 TO 134, AND THE CONCLUSION THAT SURVIVED IS THE
+NARROW ONE: THE EDITOR AND THE PROCESS TABLE ARE THE ONLY TWO A STOPPED WORKSTREAM CANNOT PRODUCE.** *This round the log
+alone answers it, because eleven seconds is not ambiguous.*
+
+**AND THE DEBT THE ROUNDS THEMSELVES OWE IS WORTH STATING PLAINLY: FOUR ROUNDS HAVE NOW BEEN SPENT OBSERVING A WORKSTREAM
+THAT NEEDS NO OBSERVATION.** *The safety commits are what make that affordable - the work is in git as it moves, so a
+review round costs a round and nothing else - **but "affordable" is not "useful", and the honest position is that the round
+budget is being spent on patience rather than on the 42 rows that remain.***
