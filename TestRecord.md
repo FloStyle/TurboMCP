@@ -9953,3 +9953,32 @@ FIELD.** *The field is `run-suites.ps1:195`'s argument list, which says `-LowPri
 RUN WITH A REAL RHI AND A REAL WINDOW, SO `screen` WAS NEVER IMPOSSIBLE HERE - AND `-nullrhi` INSTALLS `SlateNullRenderer` RATHER THAN
 OMITTING SLATE (`LaunchEngineLoop.cpp:3343` -> `:3345-3347` -> `:3354`), SO THE REFUSAL IS A RENDERER QUESTION RATHER THAN A SLATE
 ONE. BOTH FACTS CHANGE WHAT ROWS 2.2 TO 2.4 CAN DO. ***
+
+---
+
+## 159. Round 211: row 2.2 launched, and the brief's first section is three corrections from the row before it
+
+    LAUNCHED  `L-CAPTURE-ASSET` - material, instance, function, widget designer, DataTable, Anim Blueprint (row 2.2)
+    PLAN NOW 40 todo, 6 done (BY FIELD)   ·   93 tools   ·   56/56   ·   clean tree at launch
+
+*** AND THIS IS THE FIRST BRIEF IN THE PROJECT WHOSE OPENING IS ENTIRELY "WHAT THE LAST ROW PROVED WRONG", AND ALL THREE CORRECTIONS
+MATTER TO THIS ROW SPECIFICALLY RATHER THAN BEING GENERAL ADVICE: ***
+
+    (1) L-CAPTURE IS 2,062 LINES ACROSS THREE FILES AND **TWO SUITES ALREADY TEST IT AND BOTH PASS** - so this row
+        is an extension AND must not overwrite `test-capture.py` or `test-capture-selectors.py`
+    (2) *** `-nullrhi` IS NOT WHAT THE SUITES RUN WITH - AND I AM THE ONE WHO WROTE THAT INTO FOUR BRIEFS ***
+    (3) `screen` PROVED REAL PIXELS ARE AVAILABLE (1670x911, 1335 colours) - SO THIS ROW CAN CAPTURE REAL PIXELS
+        RATHER THAN ARGUING ABOUT WHETHER IT CAN
+
+*** (2) IS THE ONE I HAVE TO OWN: THE FALSE PREMISE WAS MINE, IT CAME FROM READING A STALE COMMENT AT `start-editor.ps1:261`
+INSTEAD OF THE ARGUMENT LIST AT `run-suites.ps1:195`, AND **I HAVE NOW FIXED THE COMMENT SO THE NEXT READER CANNOT REPEAT IT.**
+THE BRIEF TELLS THIS WORKSTREAM TO READ THE CALLER'S ARGUMENTS AND NOT ANY COMMENT. ***
+
+**AND THE ROW IS SET UP TO BE ALLOWED TO PARTLY FAIL, WHICH IS THE DECISION WORTH RECORDING.** *Six editor kinds is a lot; the
+brief says a tool that renders FOUR and NAMES THE TWO IT CANNOT IS BETTER THAN ONE THAT CLAIMS SIX AND RENDERS FOUR - **and it cites
+row 10.2, which wired 2 of 32 writers, named the 30 unwired one by one, and was accepted as complete.*** *** A plan whose rows are
+allowed to end in a measured partial result is a plan that can be finished; one that requires six of six is one where the sixth
+becomes the reason the fifth is never committed. ***
+
+**AND THE FIXTURE WARNING IS PRE-EMPTIVE RATHER THAN DISCOVERED:** *`TA-18` and `TA-19` do not exist, row 2.2 may need them, and the
+brief says so BEFORE the work starts - so the row does not spend its first rounds finding out what row 2.1 already measured.*
