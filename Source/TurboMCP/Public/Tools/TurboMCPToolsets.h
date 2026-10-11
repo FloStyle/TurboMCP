@@ -825,30 +825,55 @@ public:
 		const FString& Size);
 
 	/**
-	 * Capture a picture of a Blueprint's graph editor, framed one of three ways.
+	 * Capture a picture of a Blueprint's graph editor, framed one of seven ways.
 	 *
-	 * Pass the asset and the graph name, and optionally a mode (`graph` for the whole
-	 * graph, `box` for one comment box, `node` for one node), a target, and a size as
-	 * WxH. Empty mode means `graph`; empty size means 1600x900.
+	 * Pass the asset and the graph name, and optionally a mode, a target, and a size.
+	 * Empty mode means `graph`.
 	 *
-	 * Mode `box` takes a comment box INDEX, numbered from 0 in the same order
-	 * L-LAYOUT-REPORT lists them, top to bottom then left to right, so an index means
-	 * the same thing in both tools. Mode `node` takes a node ID from R-NODE-FIND.
+	 * Modes taking no target: `graph` frames the whole graph, `screen` frames the whole
+	 * editor window at its current size, and `selection` frames the nodes selected on
+	 * the graph canvas of the graph named.
+	 *
+	 * Modes taking a target: `box` takes a comment box INDEX, numbered from 0 in the
+	 * same order L-LAYOUT-REPORT lists them, top to bottom then left to right, so an
+	 * index means the same thing in both tools. `node` takes a node ID from
+	 * R-NODE-FIND. `neighbours` takes a node ID and frames that node plus every node
+	 * within N hops, where N is passed in Size as a whole number and empty means 0.
+	 * `box-neighbours` takes a comment box index in Target and N in Size, and frames
+	 * that box plus the N boxes whose nodes are linked to its nodes.
+	 *
+	 * Size means the picture size as WxH for `graph`, `box` and `node`, and empty means
+	 * 1600x900. FOR `neighbours` AND `box-neighbours` IT MEANS THE HOP COUNT, because
+	 * those framings compute their own picture size from the frame, exactly as `node`
+	 * and `box` already do.
+	 *
+	 * `selection` means the GRAPH CANVAS SELECTION and nothing else: it is read from
+	 * SGraphEditor::GetSelectedNodes (`GraphEditor.h:394`). The level actor selection
+	 * (`GEditor->GetSelectedActors`, `Editor/EditorEngine.h:1969`), the component
+	 * selection (`:2000`) and the Content Browser asset selection are DIFFERENT
+	 * SELECTIONS and this mode reads none of them, so it is a refusal rather than a
+	 * surprising picture. With nothing selected it refuses and says so.
+	 *
+	 * `neighbours` counts a hop over the graph the READER prints, so a link through a
+	 * plain reroute knot is one hop and not two (`D-42`), and a knot is never framed.
+	 * Each of the three selectors PRINTS ITS OWN DEFINITION in the result, so a caller
+	 * can check the claim instead of trusting it.
+	 *
+	 * `screen` frames the whole editor window with the Slate renderer, at the window's
+	 * current size unless the 4096 edge cap scales it. IT IS REFUSED BY NAME when the
+	 * editor runs with `-nullrhi`, because `LaunchEngineLoop.cpp:3343` then installs the
+	 * NULL Slate renderer at `:3345-3347` (`GUsingNullRHI`, `RHIGlobals.h:894`) and
+	 * there is no rendered pixel to read: a black image would look like a successful
+	 * capture of a dark window.
 	 *
 	 * A framing that cannot be done is an error naming why, and it never falls back to
-	 * the whole graph: asking for box 9 of a graph with 4 boxes says exactly that. An
-	 * empty frame is refused rather than written as a blank image, because a blank
-	 * image looks like a successful capture of nothing.
+	 * a wider frame (`D-41`): asking for box 9 of a graph with 4 boxes says exactly
+	 * that. An empty frame is refused rather than written as a blank image, because a
+	 * blank image looks like a successful capture of nothing.
 	 *
-	 * The graph widget is rendered directly rather than grabbing the screen, so the
-	 * image is exactly the size asked for and shows the frame that was set. The result
-	 * reports what it framed, the frame's bounds in graph coordinates, the zoom it
-	 * chose, and the image size.
-	 *
-	 * The PNG goes to a fixed folder under the project's Saved folder, and its name
-	 * says which asset, graph and mode produced it. Widget Blueprints, materials and
-	 * other editors are refused by name for now rather than capturing the wrong tab,
-	 * because a wrong picture is worse than no picture.
+	 * The result reports what it framed, the frame's bounds in graph coordinates, the
+	 * zoom it chose, and the image size. The PNG goes to a fixed folder under the
+	 * project's Saved folder, and its name says which asset, graph and mode produced it.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPCapture(

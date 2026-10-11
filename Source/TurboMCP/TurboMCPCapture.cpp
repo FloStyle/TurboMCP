@@ -36,6 +36,7 @@
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPBlueprintRead.h"
+#include "TurboMCPCapture.h"
 #include "TurboMCPLayoutReport.h"
 #include "TurboMCPNodeId.h"
 
@@ -120,12 +121,77 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// computed position and its real position can then be compared instead of assumed.
 	const bool bDebugWindow = WantedMode == TEXT("debug-window");
 
-	if (!bWholeGraph && !bOneBox && !bOneNode && !bDebugWindow)
+	// THE FOUR SELECTORS ADDED BY ROW 2.1, AND THE ONE THAT NEEDS NO ASSET AT ALL.
+	//
+	// They are routed through `TurboMCPCaptureSelector` below rather than resolved
+	// here, so there is still exactly ONE `LookTurboMCPCapture` and one PNG contract
+	// (`04_FORMATS.md` section 6). The selectors decide WHICH NODES are framed; this
+	// function still owns the frame arithmetic and the picture.
+	const bool bScreen = WantedMode == TEXT("screen");
+	const bool bRhiState = WantedMode == TEXT("rhi-state");
+	const bool bNewSelector = WantedMode == TEXT("selection")
+		|| WantedMode == TEXT("neighbours")
+		|| WantedMode == TEXT("box-neighbours");
+
+	if (!bWholeGraph && !bOneBox && !bOneNode && !bDebugWindow
+		&& !bScreen && !bNewSelector && !bRhiState)
 	{
+		// `debug-window` and `rhi-state` are the two diagnostic modes and are NOT
+		// listed: an agent reading this refusal is being told what it may pass, and a
+		// diagnostic is not something a caller should be steered into.
 		return FString::Printf(
-			TEXT("error: '%s' is not a capture mode. Accepted: graph, box, node. ")
-			TEXT("Leave it empty for graph."), *Mode);
+			TEXT("error: '%s' is not a capture mode. Accepted: graph, box, node, ")
+			TEXT("selection, neighbours, box-neighbours, screen. Leave it empty for ")
+			TEXT("graph."), *Mode);
 	}
+
+	if (bDebugWindow && !Target.TrimStartAndEnd().IsEmpty())
+	{
+		// The target was silently ignored here, which is the same silent behaviour the
+		// selectors below are careful to avoid: a caller who passed a node ID and got
+		// the whole window back would have no way to tell.
+		return FString::Printf(
+			TEXT("error: mode debug-window takes no target, and '%s' was given. This ")
+			TEXT("mode renders the whole window and a target would be ignored."),
+			*Target);
+	}
+
+	// `rhi-state` MEASURES INSTEAD OF RENDERING, and that is deliberate rather than a
+	// convenience: the state that decides whether `screen` can work at all cannot be
+	// seen on a machine that IS headless, so the answer is taken from this process and
+	// printed as a measurement rather than inferred. It writes nothing.
+	if (bRhiState)
+	{
+		FString State = FString::Printf(TEXT("look: rendering state of the editor process"));
+		TurboMCPCaptureSelector::DescribeScreenAvailability(State);
+		return State;
+	}
+
+	// `screen` IS HANDLED BEFORE THE ASSET IS RESOLVED, and that is the point of it:
+	// the whole editor window does not belong to an asset. Requiring one would make
+	// the caller name something the picture does not contain.
+	if (bScreen)
+	{
+		FString Out = TEXT("look: capture of the whole editor window");
+		FString ImagePath;
+		FString Error;
+		if (!TurboMCPCaptureSelector::RenderScreen(Out, ImagePath, Error))
+		{
+			// REFUSED BY NAME. `D-41` forbids a wider frame in place of the one asked
+			// for, and a black rectangle is the wider-frame failure in its worst form:
+			// it looks like a successful capture of a dark window.
+			return FString::Printf(TEXT("%s\nerror: mode screen cannot work here: %s"),
+				*Out, *Error);
+		}
+		return Out;
+	}
+
+	// The hop count lives in `Size` for the two neighbourhood selectors. `04_FORMATS.md`
+	// section 6.1 gives the framing names but no parameter spellings, and `Target` is
+	// already taken by the node ID or the box index, so the free parameter carries it.
+	// Size is parsed below exactly as it is for the older modes, so `1610` is refused
+	// rather than silently read as 1610 hops.
+	int32 NeighbourHops = 0;
 
 	if ((bOneBox || bOneNode) && Target.TrimStartAndEnd().IsEmpty())
 	{
@@ -165,6 +231,22 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			return FString::Printf(
 				TEXT("error: %dx%d is larger than the %d limit."),
 				Width, Height, MaxEdge);
+		}
+	}
+
+	if (bNewSelector && !Size.TrimStartAndEnd().IsEmpty())
+	{
+		// THE HOP COUNT IS `Width` HERE, and this mode deliberately reuses the size
+		// path so a malformed value is refused by the code that already refuses one.
+		// It is NOT a picture size for these modes: the size of the picture is
+		// computed from the frame, exactly as `mode node` and `mode box` already do.
+		NeighbourHops = Width;
+		if (Height != 0)
+		{
+			return FString::Printf(
+				TEXT("error: mode '%s' reads Size as a whole number of hops, and '%s' ")
+				TEXT("carries two numbers. Pass 0 for the target alone, or a count such ")
+				TEXT("as 3."), *WantedMode, *Size);
 		}
 	}
 
@@ -212,7 +294,66 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	TArray<UEdGraphNode*> Targets;
 	FString FrameLabel;
 
-	if (bWholeGraph || bDebugWindow)
+	// THE SELECTOR MODES, WHICH NEED THE LIVE GRAPH PANEL AND SO ARE RESOLVED WITH IT.
+	//
+	// `selection` reads the Slate panel, so unlike every other mode it cannot be
+	// resolved before the editor opens: there is no selection to read until a canvas
+	// exists. `neighbours` and `box-neighbours` read the graph only, but they are
+	// resolved here with it so all three selectors take ONE code path and cannot
+	// disagree about a mode name, a target or a hop count.
+	FString SelectorDefinition;
+	if (bNewSelector)
+	{
+		UAssetEditorSubsystem* SelectorEditors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+		if (SelectorEditors == nullptr)
+		{
+			return TEXT("error: the asset editor subsystem is not available, so no editor ")
+				TEXT("tab can be opened and no selector can be read.");
+		}
+
+		IAssetEditorInstance* SelectorInstance =
+			SelectorEditors->FindEditorForAsset(Blueprint, /*bFocusIfOpen=*/false);
+		if (SelectorInstance == nullptr)
+		{
+			SelectorEditors->OpenEditorForAsset(Blueprint);
+			SelectorInstance = SelectorEditors->FindEditorForAsset(Blueprint, /*bFocusIfOpen=*/false);
+		}
+
+		FBlueprintEditor* SelectorBlueprintEditor =
+			SelectorInstance != nullptr ? static_cast<FBlueprintEditor*>(SelectorInstance) : nullptr;
+		if (SelectorBlueprintEditor == nullptr)
+		{
+			return FString::Printf(
+				TEXT("error: %s did not open a Blueprint editor, so mode %s has no ")
+				TEXT("canvas to read. This happens for an asset whose editor is not the ")
+				TEXT("Blueprint editor."), *Resolved.ObjectPath, *WantedMode);
+		}
+
+		// The graph the caller NAMED is the one brought to the front, so `selection`
+		// reads the canvas it is about rather than whichever tab was last active.
+		TSharedPtr<SGraphEditor> SelectorPanel =
+			SelectorBlueprintEditor->OpenGraphAndBringToFront(Graph);
+		if (!SelectorPanel.IsValid())
+		{
+			return FString::Printf(
+				TEXT("error: the editor opened %s but gave no graph panel for graph %s, ")
+				TEXT("so mode %s has no canvas to read."),
+				*Resolved.ObjectPath, *Graph->GetName(), *WantedMode);
+		}
+
+		TurboMCPCaptureSelector::FSelection Selection;
+		FString Why;
+		if (!TurboMCPCaptureSelector::Resolve(WantedMode, Target, NeighbourHops,
+				Resolved.ObjectPath, Graph, SelectorPanel.Get(), Selection, Why))
+		{
+			return FString::Printf(TEXT("error: %s"), *Why);
+		}
+
+		Targets = Selection.Targets;
+		FrameLabel = Selection.FrameLabel;
+		SelectorDefinition = Selection.Definition;
+	}
+	else if (bWholeGraph || bDebugWindow)
 	{
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
@@ -476,6 +617,12 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	FString Out = FString::Printf(TEXT("look: capture of %s"), *Resolved.ObjectPath);
 	Out += FString::Printf(TEXT("\ngraph: %s"), *Graph->GetName());
 	Out += FString::Printf(TEXT("\nframed: %s"), *FrameLabel);
+	if (!SelectorDefinition.IsEmpty())
+	{
+		// THE SELECTOR DEFINES ITSELF IN ITS OWN OUTPUT, which is what makes the claim
+		// checkable by the caller rather than only by whoever wrote the selector.
+		Out += FString::Printf(TEXT("\n%s"), *SelectorDefinition);
+	}
 	Out += FString::Printf(TEXT("\nframe bounds: x %.0f to %.0f, y %.0f to %.0f"),
 		Box.MinX, Box.MaxX, Box.MinY, Box.MaxY);
 	Out += FString::Printf(TEXT("\nzoom: asked %.3f, applied %.3f at x %.0f y %.0f"),
