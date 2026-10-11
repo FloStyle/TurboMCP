@@ -1,6 +1,6 @@
 # TurboMCP — status report
 
-**Measured on `main` = `origin/main` = `de1c06b`.** Every number here was read off the tree, not recalled.
+**Measured on `main` = `origin/main` = `ad0aa2d`.** Every number here was read off the tree, not recalled.
 
 ---
 
@@ -8,16 +8,24 @@
 
 | | |
 |---|---|
-| **Capabilities implemented** | **36 of 57** — see §18 of the record: the spec has TWENTY sections, not nine |
-| **Tools shipped** | **79** AICallable `UFUNCTION`s, in 4 toolsets |
-| **Reading (`R-`)** | **21 of 21 — COMPLETE** |
-| **Vision (`L-`)** | **3 of 3 — COMPLETE** |
-| **Preview (`P-`)** | **4 of 4 — COMPLETE** |
-| **Edit (`E-`)** | **21 of 23** |
-| Test suites | 45 files (`Tools/test-*.py`) · **full run `51/51`, ZERO FAILURES** — the last red suite was a fixture left dirty by a preceding one (row 0.2) |
-| Documentation | `TestRecord.md` 3668 l. · `QUESTIONS.md` 1193 l. · `Spec/` · `PLAN.md` · `DOCS.md` |
+| **Tools shipped** | **93** AICallable `UFUNCTION`s, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
+| **The audit** | **`uncalled: (none)`** — every declared tool is named by a suite |
+| **Test suites** | **52 files** (`Tools/test-*.py`), **58 suites** in the harness |
+| **FULL RUN** | ***`passed 58, failed 0, blocked 0, of 58` — EXIT CODE 0. THE FIRST FULLY GREEN RUN SINCE THE TWO PRE-EXISTING DEFECTS BELOW EXISTED.*** |
+| **The audit that BLOCKS** | `audit-suite-quality.py` **fails the run** if any suite contains a check that cannot fail **or cannot pass** — currently **0 candidates** |
+| **C++** | **61 455 lines** in **185** files |
+| **Spec** | **7 738 lines** in **17** files |
+| **The record** | `TestRecord.md` **10 502 lines** · `REPORT.md` **316 lines** · `QUESTIONS.md` |
+| **Plan** | **39 `todo` · 7 `done`** of 48 rows — *COUNTED BY FIELD, never by a regex over the line* |
 
-**The two capabilities you asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
+### The two defects that were blocking the green signal, and neither was on the priority list
+
+| | |
+|---|---|
+| ***The full-run conflict*** | *`test-vcs` required `TA01_HandLaid.uasset` clean while `test-graph-fix-backward`, which runs **before** it, rebuilds the kit — so **the full run could not be green at HEAD**. Fixed in the harness (`bee3160`), where the editor can be stopped: a suite that needs the editor live cannot restore the file itself, because `git checkout` answers `unable to unlink old ...: Invalid argument` while it is held open.* |
+| ***A count pinned on a shared asset*** | *`test-material-tidy` asserted `expressions_after == 16` while the fixture held 12, so **the suite passed or failed according to which fixture it happened to be looking at** — and reported a defect in the material tool that was a property of the fixture. The project's own rule forbids this in these words: "never pin a count or an ID on a shared asset". (`0d99671`)* |
+
+**The two capabilities the owner asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
 
 ---
 
