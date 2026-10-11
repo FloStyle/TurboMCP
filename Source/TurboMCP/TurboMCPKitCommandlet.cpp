@@ -16,6 +16,7 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Engine/DataTable.h"
+#include "TurboMCPKitRow.h"
 #include "Engine/UserDefinedEnum.h"
 
 
@@ -1721,6 +1722,90 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			Ta7.Why = TEXT("FWidgetBlueprintOperationUtils::CreateWidgetBlueprint returned no tree");
 			Ta7.bMeasured = true;
 			Builder.Results.Add(Ta7);
+		}
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// TA-14: A DATA TABLE WITH A PROJECT-OWNED ROW STRUCT - AND IT IS BUILDABLE, WHICH TA-10 IS NOT.
+	//
+	// *** THE DISTINCTION IS THE WHOLE FINDING: A `UUserDefinedStruct` IS ONE WAY TO GET A PROJECT-OWNED STRUCT AND
+	// IT IS THE ONLY WAY THIS COMMANDLET IS BLOCKED FROM. *** TA-10 is reported MISSING above because
+	// `FStructureEditorUtils::AddVariable()` crashes without the `UUserDefinedStructEditorData` that ONLY the editor
+	// factory installs. **BUT `Spec/06_ACCEPTANCE.md` ASKS FOR A *"PROJECT-OWNED ROW STRUCT"*, NOT A USER-DEFINED
+	// ONE** - and `FTurboMCPKitRow` (`Public/TurboMCPKitRow.h`) IS A NATIVE, REFLECTED, PROJECT-OWNED `UScriptStruct`,
+	// which is exactly what a DataTable's `RowStruct` must be.
+	//
+	// AND THE OTHER HALF OF WHY THIS WAS THOUGHT IMPOSSIBLE DOES NOT APPLY HERE EITHER. `Tools/test-datatable.py:11-31`
+	// records that *"the row struct of a table cannot be set after the fact: `RowStruct` is read-only once the asset
+	// exists"* - TRUE, AND IT IS ABOUT SETTING IT **AFTER THE FACT**. THIS SETS IT AT CONSTRUCTION, BEFORE THE ASSET
+	// IS SAVED, WHICH IS THE ONE MOMENT THE ENGINE ALLOWS.
+	//
+	// FOUR FIELDS, THE FOURTH BEING `FTurboMCPKitNested`, WHICH IS THE *"one field of a struct type"* CLAUSE.
+	// ---------------------------------------------------------------------------------------------
+	{
+		FKitResult Ta14;
+		Ta14.Id = TEXT("TA-14");
+		Ta14.Name = TEXT("TA14_KitDataTable");
+
+		const FString AssetPath = FString::Printf(TEXT("%s/%s"), KitFolder, *Ta14.Name);
+		const FString PackagePath = FString::Printf(TEXT("%s/%s"), KitFolder, *Ta14.Name);
+		UPackage* Package = CreatePackage(*PackagePath);
+
+		UDataTable* Table = NewObject<UDataTable>(Package, *Ta14.Name, RF_Public | RF_Standalone);
+
+		// THE ROW STRUCT IS SET HERE, AT CONSTRUCTION, WHICH IS THE MOMENT THE ENGINE ALLOWS.
+		Table->RowStruct = FTurboMCPKitRow::StaticStruct();
+
+		// THREE ROWS, with the fourth field carrying a real nested struct so the struct-type clause is exercised
+		// rather than merely declared.
+		auto AddRow = [Table](const TCHAR* RowName, float Weight, const TCHAR* Label, int32 Count, float Amount,
+			const TCHAR* Tag)
+		{
+			FTurboMCPKitRow Row;
+			Row.Weight = Weight;
+			Row.Label = FName(Label);
+			Row.Count = Count;
+			Row.Nested.Amount = Amount;
+			Row.Nested.Tag = FName(Tag);
+			// `AddRow` IS THE ENGINE'S OWN ENTRY POINT ON A DataTable, and it takes the row by reference and copies
+			// it into the table's own storage using the row struct's size - so the struct does not have to be
+			// allocated by hand and the memory is the table's.
+			Table->AddRow(FName(RowName), Row);
+		};
+
+		AddRow(TEXT("Row_A"), 1.5f, TEXT("alpha"), 3, 0.25f, TEXT("nested_a"));
+		AddRow(TEXT("Row_B"), 2.5f, TEXT("beta"), 5, 0.50f, TEXT("nested_b"));
+		AddRow(TEXT("Row_C"), 3.5f, TEXT("gamma"), 7, 0.75f, TEXT("nested_c"));
+
+		// MEASURED RATHER THAN CLAIMED: count what is actually IN the table, and check the struct is ours.
+		const int32 RowCount = Table->GetRowMap().Num();
+		const bool bStructIsOurs = (Table->RowStruct == FTurboMCPKitRow::StaticStruct());
+
+		Ta14.bBuilt = (RowCount == 3) && bStructIsOurs;
+		Ta14.bMeasured = true;
+		Ta14.Detail = FString::Printf(
+			TEXT("rowStruct=%s rows=%d (the row struct is NATIVE and PROJECT-OWNED rather than user-defined)"),
+			bStructIsOurs ? TEXT("FTurboMCPKitRow") : TEXT("WRONG"), RowCount);
+		Ta14.Why = TEXT("TA-10 is blocked because a UUserDefinedStruct needs the editor factory's "
+			"UUserDefinedStructEditorData. TA-14 does NOT need one: the acceptance row asks for a "
+			"PROJECT-OWNED row struct, and a native USTRUCT in the plugin module is exactly that. "
+			"RowStruct is read-only AFTER the asset exists; this sets it AT CONSTRUCTION.");
+		if (RowCount != 3)
+		{
+			Ta14.Findings.Add(FString::Printf(TEXT("expected 3 rows, found %d"), RowCount));
+		}
+		if (!bStructIsOurs)
+		{
+			Ta14.Findings.Add(TEXT("the table's RowStruct is not FTurboMCPKitRow"));
+		}
+
+		Builder.Results.Add(Ta14);
+		if (Ta14.bBuilt)
+		{
+			// `SaveContainer(UObject*, Id, Name)` IS THE BUILDER'S OWN SAVE PATH - THREE ARGUMENTS, AND IT CREATES
+			// THE PACKAGE ITSELF. Reused rather than reimplemented, which is what the acceptance row's fixtures
+			// have always done.
+			Builder.SaveContainer(Table, TEXT("TA-14"), Ta14.Name);
 		}
 	}
 
