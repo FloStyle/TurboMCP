@@ -89,28 +89,50 @@ def audit(path):
         if re.search(r"check\(\s*(True|False|1|0)\s*,", line):
             findings.append(("ALWAYS-PASS", index, "a check whose condition is a constant"))
 
-    # 4. Does it parse anything out of a response?
+    # 4. Does it match a number AS A SUBSTRING rather than parse it?
     #
-    # THE RULE IS NARROW ON PURPOSE, and the first version was too broad. It reported sixteen suites for
-    # "no regex", which is a FALSE POSITIVE: a substring test is the CORRECT tool for a NAME, a LABEL or a
-    # REFUSAL MESSAGE, because those are exact strings a reader is meant to recognise. The project's
-    # recorded lesson is narrower than "always parse": PARSE A VALUE, never substring-match it BESIDE THE
-    # VALUE. So what this looks for is a suite that ASSERTS ON A NUMBER without extracting it, which is
-    # the shape that lets `7` in a timestamp satisfy a check about a count.
+    # THE RULE IS NARROW ON PURPOSE, and BOTH earlier versions were too broad in different ways. The first
+    # reported sixteen suites for "no regex", which is a FALSE POSITIVE: a substring test is the CORRECT tool
+    # for a NAME, a LABEL or a REFUSAL MESSAGE, because those are exact strings a reader is meant to
+    # recognise. The project's recorded lesson is narrower than "always parse": PARSE A VALUE, never
+    # substring-match it BESIDE THE VALUE.
+    #
+    # AND THE SECOND VERSION WAS STILL TOO BROAD. It reported `cover_count == 2`, `len(bodies) == 1` and
+    # `again.count("not touched") == 2` as defects - FOUR FALSE POSITIVES, each of which is a COMPUTED VALUE
+    # compared to a literal and CANNOT be satisfied by a number sitting beside it. Comparing a count to 2 is
+    # not the dangerous shape; MATCHING A NUMBER AS A SUBSTRING OF A RESPONSE is. That shape is spelled
+    # `in str(...)` or `in "..."` - and the finding now names only that, so what it reports is what it means.
     parses = len(re.findall(r"re\.(?:search|findall|match)\(", text))
     checks = len(re.findall(r"\bcheck\(", text))
-    # A check whose condition compares to a NUMERIC LITERAL, with no regex anywhere in the file, is the
-    # candidate: the number could be matching anything on the line.
     numeric_checks = 0
     for raw in lines:
-        line = strip_strings(raw)
-        if "check(" in line and re.search(r"==\s*\d+|\d+\s*==|in\s+str\(", line):
+        # *** THE RAW LINE, NOT THE STRIPPED ONE - AND THIS IS THE FIFTH TIME IN THIS FILE THAT READING A
+        # SANITISED COPY HID THE VERY THING BEING LOOKED FOR. `strip_strings` removes string literals, and
+        # THE LITERAL IS THE SUBJECT: `check("a", "7" in out)` becomes `check("a",  in out)` and both `in str(`
+        # and the bare numeral disappear before the check looks. A check that reads a sanitised copy cannot
+        # report on what was sanitised away. ***
+        if "check(" not in raw:
+            continue
+        if re.search(r"in\s+str\(", raw):
+            numeric_checks += 1
+            continue
+        # *** A BARE DIGIT IS THE DANGEROUS SHAPE; A LABELLED PHRASE IS NOT. ***
+        # A quoted string that contains a LETTER is a LABEL, and matching a label is the CORRECT use of a
+        # substring test. What can be silently satisfied by an unrelated number is a string that is ONLY a
+        # number: `"7" in out` is satisfied by the `7` in a node id, which is the exact failure this project
+        # records. So the literal must consist of nothing but a numeral.
+        #
+        # AND THE PATTERN IS WRITTEN THIS WAY BECAUSE THE OBVIOUS ONE WAS WRONG: `([\"'])(.*?)\1\s+in\s+` on
+        # `check("a count", "7" in out)` captures `a count", "7`, because the non-greedy body still reaches the
+        # FIRST closing quote THAT IS FOLLOWED BY `in` - which is the one after the 7. Requiring the literal to
+        # be numerals only removes the ambiguity instead of trying to out-guess the backtracking.
+        if re.search(r"[\"'][-+]?\d+(?:\.\d+)?[\"']\s+(?:not\s+)?in\s+", raw):
             numeric_checks += 1
     if checks >= 3 and parses == 0 and numeric_checks > 0:
         findings.append(("NUMBER-NOT-PARSED", 0,
-                         "%d numeric assertion(s) and no regex: a number matched as a substring can be "
-                         "satisfied by a number beside it, such as a count in a node id"
-                         % numeric_checks))
+                         "%d assertion(s) test whether a BARE NUMBER IS A SUBSTRING of a response and the file "
+                         "has no regex: a bare numeral can be satisfied by a number beside it, such as a count "
+                         "in a node id" % numeric_checks))
 
     # 5. A value assigned a constant and then asserted truthy in the next few lines.
     for index in range(len(lines) - 3):
