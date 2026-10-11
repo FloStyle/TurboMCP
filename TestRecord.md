@@ -9802,3 +9802,27 @@ message. **The measurement is the same measurement; what changed is that it no l
 outstanding, and **the three that finished were 53/53, 54/54 and 55/55 - each with a newly written suite in it and zero failures.***
 *** So the cycle is not a symptom, it is the shape of a row that needs a fixture, and the record can now say so in one sentence
 instead of four hundred words - which is the difference between a lesson written down and a lesson learned. ***
+
+---
+
+## 155. Round 206: a FIFTH cycle in twenty minutes, and the distinction that matters is between a cycle and a LOOP
+
+    cycle 1  10:02:32  10:06:16  10:08:58  10:09:34
+    cycle 2  10:19:19  10:20:09/34  10:24:29  10:27:10  10:27:46
+    cycle 3  10:38:50  10:39:42
+    HEAD = origin/main = 1254112 · clean tree · NO full run yet
+
+*** AND SECTION 205 SAID I HAD NOTHING NEW TO SAY ABOUT A FOURTH CYCLE, WHICH WAS TRUE. A FIFTH ONE TWENTY MINUTES LATER IS A
+DIFFERENT OBSERVATION AND IT DESERVES THE DISTINCTION RATHER THAN THE SAME SENTENCE: **A CYCLE IS A ROW PREPARING A FIXTURE; A LOOP
+IS A ROW THAT FAILS TO GET PAST PREPARING ONE.** ***
+
+**AND THE HONEST POSITION IS THAT I CANNOT TELL THEM APART FROM TIMESTAMPS - WHICH IS EXACTLY THE MEASUREMENT SECTION 187 ALREADY
+RECORDED AND THE DISCRIMINATOR SECTION 187 ALREADY NAMED.** *The workstream has a PASSING suite, a PASSING audit, a completed break
+test, and two commits of its own; **so every fact I hold says it is making progress and none of them says otherwise.*** *** And the
+one instrument that would separate a cycle from a loop is the same one as last time: THE COMMIT MESSAGE, which for this row has been
+honest three times out of three.***
+
+**AND THE COST OF BEING WRONG IS NOW MEASURABLE, WHICH IT WAS NOT IN SECTIONS 140 TO 146.** *Row 10.1's workstream spent seventeen rounds
+on rebuild cycles and produced a verdict when I stopped it - **and the verdict took one command.*** *** So if this is a loop, the fix
+is one interruption and one suite run; if it is a cycle, an interruption costs the row its context. **The asymmetry favours waiting,
+and the wait is bounded by the fact that the machine is quiet and the tree is clean - nothing is being held.***
