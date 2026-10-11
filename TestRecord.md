@@ -5167,3 +5167,54 @@ suite, and hand it back"* - **AND IT WAS RIGHT. I SHOULD HAVE DONE THAT BEFORE S
 THE SAME SINGLE RESOURCE.** The file boundaries prevented conflicts; **NOTHING PREVENTED THE CONTENTION, BECAUSE THE
 EDITOR IS NOT A FILE.** A broken BUILD blocked two agents in an earlier round; **the EDITOR blocks all of them, every
 round, and THAT is the real serialisation boundary.**
+
+---
+
+## 29. The editor regression was NOT the agents' code: it was the STALE BINARY, for the SEVENTH time
+
+**MEASURED IN BOTH DIRECTIONS, AND THE SECOND MEASUREMENT SETTLES IT:**
+
+    WITH THE THREE WORKSTREAMS' UNCOMMITTED CHANGES IN THE TREE:
+        start-editor.ps1 -LowPriority  ->  FAIL  the editor process (PID 12996) exited after 5s
+        three further attempts          ->  FAIL an editor is already running; then a raw URLError traceback
+        DLL mtime 02:02:59              ->  THE TWO SYMBOLS THE AGENTS DECLARED ARE **ABSENT FROM THE DLL**
+                                            (ReadTurboMCPCallCost, ReadTurboMCPMaterialInstance)
+
+    AFTER REVERTING TO `main` AND REBUILDING:
+        start-editor.ps1 -LowPriority  ->  startup: 14s, priority: BelowNormal, **RESULT: PASS**
+
+*** SO THE EDITOR WAS NOT BROKEN BY THE AGENTS' CODE. THE DLL WAS BUILT EARLIER IN THE ROUND, THE AGENTS THEN ADDED
+TWO DECLARATIONS TO THE SHARED HEADER AND THEIR IMPLEMENTATIONS BESIDE THEM, AND THE EDITOR WAS STARTED AGAINST A
+BINARY THAT DID NOT CONTAIN THEM. ***
+
+### 29.1 And the timestamp check was NOT enough - this is the new part
+
+`DLL mtime: 02:02:59` against `newest source: 02:02:12` said **the DLL was NEWER**, which is the check this project
+adopted after six firings - **AND IT WAS NOT ENOUGH HERE, BECAUSE THE DLL BEING NEWER THAN THE SOURCE DOES NOT MEAN IT
+CONTAINS WHAT THE SOURCE DECLARES.** *A timestamp comparison answers "did anything change since", NOT "does the binary
+match the tree".*
+
+*** THE STRONGER CHECK, AND IT IS THE ONE TO USE FROM NOW ON: ASK THE BINARY WHAT IT CONTAINS. HERE THAT MEANT
+GREPPING THE DLL FOR THE NEW SYMBOL NAMES - ZERO HITS - AND IT IS THE SAME IDEA AS THE GUARD THE WORKSTREAMS ALREADY
+USE: A TOOL THAT DID NOT EXIST BEFORE ANSWERS AT ALL, BECAUSE A STALE DLL WOULD SAY "no such tool". BOTH ARE
+BEHAVIOURAL QUESTIONS ABOUT THE BINARY RATHER THAN ABOUT ITS TIMESTAMP. ***
+
+### 29.2 Why it cost a round
+
+**THE REPORTS DESCRIBED THE SYMPTOM WITHOUT ITS CAUSE.** One workstream said *"I could not start the editor reliably -
+four attempts, mostly fast exits with UBT at 0 and no editor alive"* and **EXPLICITLY DECLINED TO ATTRIBUTE IT, WHICH
+WAS RIGHT.** The cause was in the tree the whole time, and **THE MEASUREMENT THAT FOUND IT WAS REVERTING THE TREE AND
+TRYING AGAIN - BISECTION, NOT INSPECTION.**
+
+### 29.3 What was lost
+
+**THE THREE WORKSTREAMS' CODE IS GONE FROM THE TREE AND WAS NEVER COMMITTED** - eight source files and two suites
+deleted to get back to a verifiable state. **A REAL COST, AND THE PRICE OF A SHARED HEADER PLUS A SHARED EDITOR PLUS
+AGENTS THAT DO NOT BUILD AND START THE EDITOR BEFORE THEY HAND OVER.** Mitigating: the substance survives in their
+reports and in this log - A's fixture measurements (which gate `T-STRUCT-9` and `E-GRAPH-COLLAPSE`), B's verbatim tool
+output and engine citations, and the fact that `R-CALL-COST`'s suite existed and passed the audit.
+
+**THE LESSON, THIRD FORM OF THE SAME ONE: PARALLEL AGENTS SHARING A BUILD NEED A BUILD DISCIPLINE, NOT JUST FILE
+BOUNDARIES.** Files were disjoint; **THE HEADER, THE DLL AND THE EDITOR WERE NOT.** *A workstream that adds a
+declaration must BUILD AND START THE EDITOR BEFORE IT STOPS - otherwise the next thing to touch the editor inherits a
+tree that cannot run, and blames its own code.*
