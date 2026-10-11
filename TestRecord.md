@@ -10104,3 +10104,75 @@ for the report rather than as a silent acceptance or a silent revert.*
 mixed diff would have needed reading before committing; **an addition-only diff can be committed first and read after, which is the order
 that survives my being wrong about which one it is.*** *** That distinction - additive versus mutating - is now the third time it has decided
 how I handle a workstream's unexpected edit, after row 7.1's files and row 10.2's. ***
+
+---
+
+## 165. *** ROW 2.2: NINE KINDS, NONE REFUSED, AND THE COST OF MY OWN SAFETY COMMITS NAMED BY THE WORKSTREAM ***
+
+    *** "You have been auto-committing my working tree mid-row ... THAT IS FINE, BUT IT MEANS HEAD CONTAINS BROKEN INTERMEDIATE
+    STATES. Right now, TurboMCPCapture.cpp IS MODIFIED AND UNCOMMITTED and it is the FIX for two defects that are IN HEAD.
+    Please do not revert it and please do not assume HEAD is green - it is not." ***
+
+*** AND THAT IS THE FIRST TIME ANYONE HAS NAMED THE COST OF THE PRACTICE THIS RECORD HAS BEEN CONGRATULATING ITSELF ON FOR TWENTY
+ROUNDS. PRESERVING EVERY ITERATION GUARANTEES HEAD IS SOMETIMES RED. ***
+
+    WHAT I GAINED   ZERO WORK LOST ACROSS 23 SAFETY COMMITS AND FIVE WORKSTREAMS (section 30's destroyed capability has not recurred)
+    WHAT I PAID     HEAD IS NOT A GREEN SIGNAL AND MUST NOT BE READ AS ONE. The green signal is the FULL RUN.
+
+*** THE TRADE IS CORRECT - A RED HEAD IS RECOVERABLE AND A LOST ITERATION IS NOT - BUT I HAD BEEN WRITING "COMMIT EARLY AND OFTEN" INTO
+BRIEFS FOR TWENTY ROUNDS WITHOUT EVER WRITING DOWN ITS PRICE, AND THE WORKSTREAM HAD TO TELL ME. ***
+
+### 165.1 And the row found NINE kinds where my brief said six - and my brief was wrong in the direction of UNDERCOUNTING
+
+    `WORKING_PLAN.md:97` AND `06_ACCEPTANCE.md:235` NAME **EIGHT**; THE PLAN ADDS A NINTH
+    IT BUILT ALL NINE - NONE REFUSES
+    verbatim: `kinds: 9 BUILT here, 0 captured by another tool, 0 REFUSED, of 9 named`
+    AND ALL NINE CAPTURED REAL PIXELS AT 1664x849 WITH **DISTINCT COLOUR COUNTS**:
+      Material 3421 · Material Instance 37717 · Material Function 14963 · Widget Designer 1281 · DataTable 519
+      Anim Sequence 25560 · Niagara 36071 · Blueprint 1641
+
+*** "THAT MY BRIEF SAID SIX" IS THE **FIFTH** PREMISE OF MINE FALSIFIED IN SIX ROWS, AND THE SECOND IN THIS ROW ALONE. THE PATTERN SECTION
+150 NAMED - EVERY ROW'S PREMISE IS WRONG IN THE DIRECTION OF UNDERSTATING WHAT EXISTS - HAS NOW HELD FOR FIVE CONSECUTIVE ROWS. ***
+
+### 165.2 *** AND IT FALSIFIED TWO OF ITS OWN PREMISES, BOTH OF WHICH IT HAD WRITTEN AS REFUSALS ***
+
+    "I claimed NIAGARA was unreachable because the test project's .uproject does not list it.
+     FALSE: the engine enables Niagara by default (`Niagara.uplugin`, `EnabledByDefault: true`) and it captured at 13282 colours."
+    "I claimed ANIM SEQUENCE was unreachable because `AnimationEditor` is not in `TurboMCP.Build.cs`.
+     FALSE AS A CAPABILITY CLAIM: the module loads ON DEMAND and the engine's Tutorial_Idle captured at 1787 colours.
+     *** LINKING A MODULE IS NOT THE SAME AS REACHING ITS EDITOR. ***"
+
+*** AND THE MEASUREMENT THAT PROVES THE OLD CHECK WAS MEASURING HISTORY RATHER THAN CAPABILITY IS THE BEST SINGLE OBSERVATION IN THIS
+STRETCH: **THE TABLE THAT ASKED `IsModuleLoaded` MOVED BETWEEN TWO CALLS OF THE SAME TOOL IN THE SAME PROCESS - `4/3/2`, THEN `5/3/1`,
+THEN `6/3/0` AS EACH EDITOR WAS OPENED.** *It is now a load-on-demand measurement and is `9/9/0` STABLE.* ***
+
+**AND THAT IS THE `IsModuleLoaded` EQUIVALENT OF `IsEnabled()` WITHOUT `IsAvailable()` - ROW 10.1's EXACT DEFECT, ONE LAYER DOWN AND IN A
+DIFFERENT SUBSYSTEM.** *Row 10.1: Perforce, Plastic and Subversion return `IsEnabled()==true` UNCONDITIONALLY while `IsAvailable()` is false,
+so asking only the first reports a working provider where there is none. **Row 2.2: `IsModuleLoaded` reports what has happened rather than
+what can happen, and it CHANGED BETWEEN TWO CALLS.*** *** THE SAME MISTAKE, FOUND TWICE, IN TWO CAPABILITIES THAT SHARE NOTHING BUT THE
+PROJECT'S METHOD - which is the strongest evidence yet that the method is what finds these and not the domain knowledge. ***
+
+### 165.3 And the three defects, one of which is the project's oldest shape arriving from `Plan` rather than from a check
+
+    DEFECT 1: A REFUSAL THAT READ AS A SUCCESS. `CaptureAssetEditor` appended its frame and image lines BEFORE returning, so the
+    `look:` banner was written FIRST and a FAILED WRITE arrived as `look: capture of an asset editor / error: could not write ...`.
+    *** THE ENGINE'S TOOL LAYER DOES NOT FLAG THAT, SO A CALLER TESTING THE `error:` PREFIX - THE CONVENTION THIS TOOL ITSELF
+    DOCUMENTS - READ A FAILED WRITE AS A SUCCESS. *** FOUND BY A BREAK TEST (the target PNG made read-only), NOT BY READING.
+    FIX: the banner is prepended only on success.
+    DEFECT 2: `mode screen` DEMANDED A GRAPH NAME - the guard added for `asset-editor` checked only `asset-editor`.
+    DEFECT 3: THE OTHER-TOOL STATUS WAS DECIDED BY `AlternativeTool` BEING NON-EMPTY, so Widget Designer was reported as
+    captured by another tool WHILE THE SAME PROCESS CAPTURED IT AT 1664x849 WITH 1278 DISTINCT COLOURS.
+
+*** DEFECT 1 IS "AN INVISIBLE REFUSAL READS AS A CAPABILITY" (SECTION 163) ARRIVING IN A TOOL'S OUTPUT ORDER RATHER THAN IN A TABLE OR
+AN ENUM - AND IT WAS FOUND BY THE BREAK TEST, WHICH IS NOW THE FOURTH ROW IN A ROW WHERE THAT RITUAL PAID. ***
+
+### 165.4 And it asked me to decide about the spec edit, with the reason it cannot simply be dropped
+
+    "Your brief listed `Spec/03_TOOLS.md` as DO-NOT-EDIT, and it ALSO said append to whichever spec file row 2.1 used.
+     Row 2.1's findings ARE in `Spec/03_TOOLS.md`. **IF YOU DECIDE THE SPEC EDIT SHOULD GO, SAY SO AND I WILL REMOVE IT - BUT
+     THEN THE ROW'S MEASUREMENTS HAVE NOWHERE TO LIVE AND THE NEXT ROW RE-DERIVES THEM.**"
+
+*** AND THE CONTRADICTION IS MINE: I WROTE A DO-NOT-EDIT LIST **AND** AN INSTRUCTION TO APPEND TO A FILE THAT WAS ON IT. THE WORKSTREAM
+RESOLVED IT AGAINST MY LIST RATHER THAN MY INSTRUCTION AND EXPLAINED WHY - AND IT IS RIGHT. *** **My answer: KEEP IT. The +78/-0 diff is
+verified additive, the flag stands as a note about my brief and not about the work, and the alternative is a row whose measurements have
+nowhere to live.**
