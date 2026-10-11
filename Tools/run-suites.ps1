@@ -150,7 +150,12 @@ function Start-EditorAndWait {
     # does NOT answer falls through to the full stop-and-start below, which is the recovery path.
     # ---------------------------------------------------------------------------------------------
     $healthy = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
-    if ($healthy -match '^PASS') { return $true }
+    # *** INSTRUMENTED: THE REUSE/START/FAIL DECISION IS NOW PRINTED, BECAUSE THE FAILING SUITE NAMES MOVE
+    # BETWEEN RUNS AND THIS IS THE POINT THAT DECIDES WHY. A rebuilding suite STOPS the editor (a `-run=` commandlet
+    # needs the project to itself), so the harness has to bring one back; if it cannot, EVERY SUITE AFTER IT inherits
+    # the absence and the failure set moves with the race rather than with the code. ONE LINE OF OUTPUT DECIDES
+    # BETWEEN "the restart failed" AND "the reuse path is at fault".
+    if ($healthy -match '^PASS') { Write-Host "  [editor] REUSED a healthy editor"; return $true }
 
     # ---------------------------------------------------------------------------------------------
     # THE CAUSE OF THE WHOLE CLASS, MEASURED AT LAST, AND IT IS NOT THE FIXTURE REBUILD.
@@ -194,12 +199,13 @@ function Start-EditorAndWait {
             Where-Object { $_.StartTime -ge $launchTime.AddSeconds(-2) }
         if ($fresh) {
             $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
-            if ($probe -match '^PASS') { return $true }
+    if ($probe -match '^PASS') { Write-Host "  [editor] STARTED a fresh editor"; return $true }
         }
         Start-Sleep -Seconds 3
     }
     # THE RETRY FAILED TOO, SO THE FUNCTION REPORTS THAT RATHER THAN FALLING THROUGH INTO THE CODE BELOW,
     # WHICH BELONGS TO THE NORMAL PATH AND WOULD START A THIRD EDITOR.
+    Write-Host "  [editor] *** COULD NOT BE STARTED after the full timeout ***"
     return $false
 }
 
