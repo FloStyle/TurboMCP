@@ -6430,3 +6430,26 @@ an empty copy.**
 the round where a revert destroyed a verified capability on a row in this exact state. **THE MECHANISM THAT PREVENTED A
 REPEAT WAS NOT CARE - it was that the briefs say COMMIT, that the tree is never reverted while a workstream lives, and
 that a filename is checked before it is written to.** Nine commits on one row is what that looks like from the outside.*
+
+---
+
+## 53. Round 96: the tenth safety commit, and the row is being fixed at the PRODUCER again
+
+**MEASURED:** `main` = `origin/main` = `58f293d`; **85 tools**; audit **PASS**, `uncalled: (none)`; `TurboMCPGraphStructure.cpp`
+**1014 -> 1032 lines**, MODIFIED IN PLACE and now committed.
+
+**AND IT IS AGAIN THE PRODUCER RATHER THAN THE CONSUMER, WHICH IS THE RIGHT DIRECTION AND THE ONE THE PREVIOUS ATTEMPT
+ALSO TOOK.** *After two suite revisions it went to the C++. The cheap move available at every one of those moments was
+to loosen an assertion until the suite printed a verdict; the move taken was to find out what the tool actually does.*
+
+    SAFETY COMMITS ON THIS ONE ROW            10
+    WORKSTREAMS THAT PRODUCED SOMETHING       5
+    WORK DESTROYED BY A REVERT                0
+    TIMES A STEP WAS REDONE                   0
+
+*** THE NUMBER THAT MATTERS IS THE LAST TWO, AND THEY ARE THE ONLY REASON A ROW THAT HAS HAD FIVE WORKSTREAMS IS STILL
+MOVING FORWARD RATHER THAN CIRCLING: NOTHING HAS BEEN REBUILT AND NOTHING HAS BEEN LOST. THE FIRST NUMBER IS WHAT THAT
+COSTS - TEN COMMITS - AND TEN COMMITS IS CHEAPER THAN ONE SECTION-30. ***
+
+**OPEN, UNCHANGED: the suite reaches no `RESULT:` line; which `T-STRUCT-11` is proved (two graphs of one blueprint, or
+two assets); and for each check, the input that makes it fail.**
