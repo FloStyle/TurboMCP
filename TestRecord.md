@@ -6555,3 +6555,104 @@ is exactly the state a revert destroys. DO NOT REVERT THE TREE."*
 
 **AND THE RULE THIS PRODUCES IS NOT "CHECK HARDER". IT IS: A WORKSTREAM THAT OBSERVES ITS OWN BRIEF CONTRADICTING THE
 TREE MUST STOP AND ASK, AND MUST SAY WHAT IT MEASURED. THAT IS A MECHANISM, AND IT WORKED.**
+
+---
+
+## 56. The graph suite's missing verdict has a ONE-LINE cause, and the suite is largely vacuous
+
+*** A WORKSTREAM THAT MADE NO EDIT PRODUCED THE MOST VALUABLE REPORT ON THIS ROW, AND ITS TWO HEADLINE FINDINGS ARE
+BOTH THINGS I WOULD HAVE KEPT MISDIAGNOSING. ***
+
+### 56.1 The suite reaches no verdict because IT NEVER PRINTS ONE
+
+**NOT A CRASH. NOT A HANG. NOT A TRACEBACK.** `Tools/test-graph-structure.py:221-223` computes `failed`, prints
+`... N of M check(s) passed`, and returns the exit code - **AND NEVER PRINTS A `RESULT:` LINE.** `run-suites.ps1`
+captures a RESULT line, finds none, and reports `no result line`.
+
+**CONFIRMED INDEPENDENTLY, AND THE CONTRAST IS THE PROOF:** `test-asset-cost.py:170` ends with
+`print("RESULT: PASS (%d check(s) run)")`. **Every other suite prints one. This one does not - so a one-line fix makes
+the suite report, and EVERY OTHER CONCLUSION I DREW FROM `no result line` WAS WRONG.** *I spent rounds reading the
+harness tail and reasoning about what the suite had "reached"; the answer was that it never had a verdict to reach.*
+
+### 56.2 *** AND FIVE OF ITS CHECKS PASS BECAUSE THE COPY WAS REFUSED - WHICH IS THE VACUITY MECHANISM IN ITS PUREST FORM ***
+
+**They would pass if the tool were DELETED:**
+
+    the preview prints the UNLINKABLE list even when it is empty   -> passes on a refusal, because a refused plan
+                                                                     prints the section with (0)
+    the target graph's node count is UNCHANGED by a preview        -> before == after passes trivially when refused
+    the edit prints the UNCONNECTED list as its own section        -> passes on the refusal text
+    A REFUSED COLLAPSE WROTE NOTHING                               -> VACUOUS BY CONSTRUCTION: PlanCollapse returns true
+                                                                     with an unacceptable plan, so Apply returns
+                                                                     RenderPreview WITHOUT ENTERING THE TRANSACTION.
+                                                                     NO NODE COUNT CAN CHANGE. IT CANNOT FAIL.
+    the fixture is left as it was found                            -> the else-branch checks True
+
+*** THAT LAST ONE IS THE SHARPEST: `the fixture is left as it was found` HAS AN ELSE-BRANCH THAT LITERALLY CHECKS
+`True`. A CHECK WITH A BRANCH THAT CANNOT FAIL IS NOT A WEAK CHECK, IT IS A CLAIM WITH NO CONTENT. ***
+
+**AND DEBT 2 IS EXACTLY THE MECHANISM THE BRIEF NAMED, FOUND IN THE WILD:**
+
+    after == before + 1
+
+**PASSES ON A COPY THAT COPIED NOTHING, and it is the ONLY evidence the suite has that anything exists.** *There is no
+check that the copied node is actually IN the destination, NAMED, with its class - no `R-GRAPH-LOAD` of the destination
+filtered to the new node, no class assertion, no asset-path assertion.* **AND THE PROJECT'S OWN SOURCE STATES THE RULE
+THIS SUITE IGNORES, at `GraphReplace.cpp:153-156`: "THE KEYS ARE PRODUCED BY THE PROJECT'S OWN READER ... so a removal
+key that comes from anywhere else could name a node the caller cannot write."**
+
+### 56.3 THE RESTORE IS NOT IMPLEMENTED, AND THIS IS THE ONE THAT WOULD HAVE BITTEN SILENTLY
+
+**`Tools/test-graph-structure.py:161` ONLY RE-READS `EventGraph`. The comment at 157-160 claims "the removal goes
+through the project's own graph-replace path" - AND THERE IS NO REMOVAL CALL IN THE FILE.**
+
+*** SO THE SEQUENCE IS ALREADY ARMED: once the producer fix lands, the edit will SUCCEED, the count will go 6 -> 7,
+`the fixture is left as it was found` WILL FIRE AS A FAILURE - AND THE FIXTURE WILL STAY MUTATED, MAKING THE NEXT RUN
+READ 7. A SUITE THAT FAILS AND CORRUPTS ITS OWN FIXTURE IS WORSE THAN ONE THAT FAILS.** *It needs
+`EditTurboMCPGraphReplace` or a kit rebuild, AND A RESTORE ON THE WAY IN AS WELL AS OUT, ASSERTED - which is the
+project's own recorded rule.*
+
+### 56.4 Debt 1 is ALREADY CORRECT, and the cross-asset test now has a NAME
+
+**`test-graph-structure.py:9-23` states it explicitly: this proves the `TA-2` case = TWO GRAPHS OF ONE BLUEPRINT, and
+it does NOT prove the cross-asset case. THE ROW IS NOT FULLY SATISFIED AND THE SUITE SAYS SO.** *`Unlinkable` and the
+`Missing` refusal are only reachable when `!bSameAsset`.*
+
+*** AND THE WORKSTREAM NAMED THE CONCRETE TEST FROM THE CODE: COPYING `d88638` (a `UK2Node_CallFunction` calling
+`KismetMathLibrary::Add_IntInt`) FROM `TA01_HandLaid` INTO `BP_TowerArray` SHOULD BE REFUSED by `MemberNameOf` ->
+`BlueprintHasFunction` with `function 'Add_IntInt'`. THAT IS THE `Missing` REFUSAL, THE ONE THE SPEC'S "half a block is
+worse than none" SENTENCE IS ABOUT - AND IT IS BUILT AND HAS NEVER BEEN EXECUTED BY ANYTHING.** *So the next
+workstream can make the same-asset suite green and leave `T-STRUCT-11`'s most important clause UNPROVEN while the row
+looks satisfied - which is the exact shape of the four consecutive vacuous-check reports.*
+
+### 56.5 The crossing-link format, given as a format rather than faked as an observation
+
+**IT COULD NOT OBSERVE A NON-EMPTY `Unlinkable`** - printing it requires a cross-asset copy, which it did not run -
+**AND IT SAID SO INSTEAD OF INVENTING AN INSTANCE.** What it could give is the empty form, verbatim, **which is the
+shape that makes an absent section and an empty one different answers**:
+
+    crossing links that CANNOT be re-linked and are left unconnected (0)
+
+**AND A REAL COVERAGE GAP IT FOUND: the suite NEVER asserts `crossing links to re-link (N)` WITH N >= 1.** *`d88638`'s
+`ReturnValue -> 1 link(s)` leaves the selection when only that node is copied, so the `ReLinkable` path IS exercised -
+BUT THE SUITE DOES NOT CHECK IT, SO A `ReLinkable` OF 0 WOULD PASS.*
+
+### 56.6 Fixture facts, and the orphaned editor it warned about
+
+    TA01_HandLaid/HandLaid    = 70 nodes, 1 entry (fn HandLaid), 61 unreachable from any entry point
+    TA01_HandLaid/EventGraph  =  6 nodes, 3 events + Delay + comments
+    d88638 = "int + int";  fe13a8 / 039991 / 971fa8 = "int * int"
+    keys are 6 hex digits here and UNIQUE at 6, so UniqueKeyDigits == 6 on this fixture
+    BP_TowerArray and TA07_Card exist for the true cross-asset case
+
+**AND IT FLAGGED AN ORPHANED `UnrealEditor` PID 43664 IT DID NOT START, AND DID NOT KILL - because killing another
+agent's process is a shared-tree action it was told not to take.** *That is the correct instinct and the wrong
+conclusion for an orphan: a process nobody owns holds a stale DLL and the next build hits `LNK1104`. I killed it, and
+deleted its three scratch files (`.agent/probe_graph.py`, `.agent/head_gs.cpp`, `.agent/head2.cpp`).* **The rule is:
+a process with NO owner is the orchestrator's to clear, and a process with a live owner is not.**
+
+### 56.7 And it did not claim what it had not measured
+
+**NO verbatim destination read-back** (the copy never applied); **no non-empty `Unlinkable`**; **no break test**, because
+that needs a build and a run, both forbidden by the stand-down. *Three gaps, all named, none papered over - which is why
+the rest of its report can be trusted.*
