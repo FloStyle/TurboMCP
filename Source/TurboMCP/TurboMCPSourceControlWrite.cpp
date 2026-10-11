@@ -16,9 +16,9 @@
 
 #include "TurboMCPSourceControl.h"
 
-// NOTE ON COMMENTS IN THIS FILE: like the header, they contain no backtick characters, because a doc
-// comment holding a backtick and a later apostrophe is rejected by this project's comment checker and
-// warnings are errors here.
+// NOTE ON COMMENTS IN THIS FILE: no comment line here puts a backtick and a LATER apostrophe on the SAME
+// line, because UHT reads that pair as the start of something it never closes and warnings are errors here.
+// The header takes the stronger form and uses no backticks at all; this file uses them for identifiers.
 
 namespace
 {
@@ -86,9 +86,9 @@ namespace
 		// rejects a ternary of two TEXT() literals sitting inside a variadic argument (error C7595),
 		// which this project has already hit once.
 		const TCHAR* const WhatThisDoes = bActing
-			? TEXT("ISSUES the operation the plan allowed and writes no file")
-			: TEXT("WOULD issue the operation the plan allows and issues none here");
-		Out.Add(FString::Printf(TEXT("it %s anything."), WhatThisDoes));
+			? TEXT("the operation the plan allowed IS ISSUED here, and no file is written by this section")
+			: TEXT("the operation the plan allows WOULD be issued, and none is issued here");
+		Out.Add(FString::Printf(TEXT("what this call does: %s."), WhatThisDoes));
 		Out.Add(TEXT(""));
 
 		// PRINTF RATHER THAN operator+ ON PURPOSE: the concatenation form of these two lines was not worth
@@ -312,6 +312,16 @@ FTurboMCPWriteCheckoutPlan FTurboMCPSourceControlWrite::Plan(const TArray<FStrin
 		if (!WriteRow.bWillAttempt)
 		{
 			WriteRow.Intent = Reason;
+			// *** A DECISION WHOSE REASON IS EMPTY IS THE DEFECT `P1` NAMES, AND A RED-CHECK RUN FOUND IT
+			// HERE. *** With the decision made twice (the flag once and the reason afterwards) the reason
+			// could be dropped while the decision still printed, which left `decision: DO NOT ATTEMPT - `
+			// with nothing after it - an absent explanation reading like a decided one. `NotAttemptedReason`
+			// returns empty only when the row WOULD be attempted, so this cannot happen on the current
+			// paths; the guard is what makes that a property of the code rather than of the paths.
+			if (WriteRow.Intent.IsEmpty())
+			{
+				WriteRow.Intent = TEXT("refused, and the reason was not recorded - which is itself a defect");
+			}
 		}
 		else if (WriteRow.bNoOpExpected)
 		{
@@ -364,6 +374,7 @@ FString FTurboMCPSourceControlWrite::EnsureCheckedOut(const FTurboMCPWriteChecko
 	TArray<FString> Lines;
 	AddHeaderLines(Lines, InPlan, InWriteTool, /*bActing=*/true);
 	Lines.Add(FString::Printf(TEXT("assets: %d"), InPlan.Assets.Num()));
+	Lines.Add(TEXT(""));
 
 	if (InPlan.Assets.Num() == 0)
 	{
@@ -397,7 +408,6 @@ FString FTurboMCPSourceControlWrite::EnsureCheckedOut(const FTurboMCPWriteChecko
 		return FString::Join(Lines, TEXT("\n"));
 	}
 	ISourceControlProvider& Provider = Module->GetProvider();
-	Lines.Add(TEXT(""));
 
 	int32 Index = 0;
 	for (const FTurboMCPWriteCheckoutAsset& Row : InPlan.Assets)

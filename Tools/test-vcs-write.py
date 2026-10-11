@@ -168,6 +168,24 @@ def decisions(text):
     return re.findall(r"^\s+decision:\s*(.+?)\s*$", text, re.MULTILINE)
 
 
+def reasons(block):
+    """Every decision line's REASON, with the ATTEMPT / DO NOT ATTEMPT word stripped.
+
+    *** THIS EXISTS BECAUSE A RED-CHECK RUN FOUND THE DEFECT IT GUARDS. *** A build whose decision was made
+    in two steps printed `decision: DO NOT ATTEMPT - ` with NOTHING after the dash: the decision was stated
+    and its reason was lost, which is `P1`'s own defect - an absent explanation reading like a decision.
+    """
+    out = []
+    for line in decisions(block):
+        for prefix in ("DO NOT ATTEMPT - ", "ATTEMPT - "):
+            if line.startswith(prefix):
+                out.append(line[len(prefix):])
+                break
+        else:
+            out.append("")
+    return out
+
+
 def file_hash(path):
     """The file's SHA-256, or None. A DIFFERENT TOOL from the write tool: the filesystem itself."""
     try:
@@ -591,6 +609,28 @@ def main():
           "%s vs %s" % (file_hash(FILE), hash_before_git_edit))
     check("and the field this phase added is IN THE SAVED ASSET",
           file_contains(FILE, b"VcsProbeDelta"), FILE)
+
+    # -------------------------------------------------------------------------------------------------
+    # *** THE CHECK A RED-CHECK RUN EARNED, AND IT IS THE ONE THAT CAUGHT A DEFECT IN THIS ROW'S OWN
+    # CODE: A DECISION LINE WITH NOTHING AFTER THE DASH. *** A build that decided the flag and the reason
+    # in two steps printed `decision: DO NOT ATTEMPT - ` - the decision stated, the reason lost - which is
+    # `P1`'s defect exactly: an absent explanation that reads like a decision.
+    # THE INPUT THAT MAKES THIS FAIL IS A ROW WHOSE REASON IS EMPTY, in any of the seven blocks.
+    # -------------------------------------------------------------------------------------------------
+    all_blocks = {
+        "E-SAVE, phase A, brand-new asset": save_block,
+        "E-SAVE, phase A, second save": block_of(second_save, "E-SAVE"),
+        "P-STRUCT-FIELDS, phase A": preview_a_block,
+        "E-STRUCT-FIELDS, phase A": edit_a_block,
+        "P-STRUCT-FIELDS, phase B, Git": preview_g_block,
+        "E-STRUCT-FIELDS, phase B, Git": git_block,
+        "E-SAVE, phase B, Git": git_save_block,
+    }
+    empty_reasons = [name for name, text in all_blocks.items()
+                     if not reasons(text) or any(not r for r in reasons(text))]
+    check("*** NO decision LINE IS EVER EMPTY, IN ANY BLOCK OR PHASE: every row says WHY it went the way "
+          "it did ***", empty_reasons == [],
+          "blocks carrying an empty reason: %r" % empty_reasons)
 
     # -------------------------------------------------------------------------------------------------
     # *** THE TRAP, MEASURED IN ONE RUN: TWO ANSWERS TO ONE QUESTION FROM TWO CODE PATHS. ***
