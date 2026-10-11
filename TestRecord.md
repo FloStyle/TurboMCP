@@ -9756,3 +9756,28 @@ FULL RUN AND THREE OF THEM ENDED CLEAN.** *Rows 7.1, 10.1, 10.2 and now 2.1 - **
 written suite, an audit at `uncalled: (none)`, and a full run at zero failures.*** *** That is the machinery of sections 79 to 150
 paying out: the briefs, the safety commits, the pre-flight checks and the `P1` rule were built over thirty rounds and the last three
 rows have needed almost none of my intervention.*
+
+---
+
+## 153. Round 204: row 2.1's break test found a defect IN THE SUITE, which is the third time and the first time it was the suite rather than the code
+
+    `a6c5524  Row 2.1 break test: four checks shown red WITH THE WRONG VALUE, and it found a defect in the suite`
+    full run now in preparation: make-acceptance-asset 10:19:19 · make-kit-assets 10:20:09
+
+*** AND THE TITLE NAMES THE THING THAT MATTERS: IT FOUND A DEFECT IN **THE SUITE** RATHER THAN IN THE CODE. That is the third break
+test in this stretch to pay for itself twice - row 10.2's found an empty decision reason in its own C++ - AND IT IS THE FIRST WHERE
+THE SECOND FINDING IS IN THE TEST RATHER THAN THE SUBJECT. ***
+
+**AND THAT IS THE STRICTER FINDING OF THE TWO, BECAUSE A SUITE WITH A DEFECT IS A SUITE WHOSE GREEN MEANS LESS THAN IT SAYS.** *Row
+10.2's empty decision reason was a real bug in shipped behaviour and its fix was a check. **A defect in the suite means some check
+was passing for the wrong reason, and the fix is a change to what the suite MEASURES rather than to what it asserts about the
+product** - which is the `else` branch that literally checks `True`, found again, and this time by the author's own break test rather
+than by an auditor three sections later.*
+
+**AND THE HONEST SCALE OF THAT:** *this project has **five recorded capabilities whose check count overstated their coverage**, and
+every one was found by a LATER workstream or by me. **This is the first one found by the workstream that wrote it** - and it was found
+by the mechanism the briefs have required for thirty rounds, applied without being asked twice.*
+
+**AND `THREE TIMES OUT OF THREE` IS NOW THE RATE AT WHICH A BREAK TEST PAYS FOR ITSELF BEYOND ITS OWN PURPOSE.** *Row 7.1's showed four
+failures with mangled field names visible. Row 10.2's found a `P1` defect in a decision. Row 2.1's found a defect in the suite. **The
+break test is no longer a compliance step in this project; it is the cheapest defect detector it has.***
