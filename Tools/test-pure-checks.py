@@ -12,12 +12,15 @@ input, and the only thing watching it is the sentence `R-CALL-COST` prints when 
 cannot fill. That is this suite's first job.
 
 THE OTHER HALF IS REACHABLE, AND SAYING SO CORRECTS AN EARLIER RECORD RATHER THAN FLATTERING THIS
-SUITE. `NormaliseToolset` IS watched, weakly, by `Tools/test-call-cost.py`: against a build that
-demonstrably compiled `return Trimmed;` in its body (`[1/5] Compile [x64] TurboMCPCallCost.cpp`, DLL
-relinked), that suite reports `RESULT: FAIL (1) -> no tool row contains the engine's qualification
-path`. The log really does carry the qualified spelling - 116 of its 252 lines do. A previously
-reported break test that still passed is NOT reproducible, and the stale-binary trap this project has
-recorded seven times is the likely cause.
+SUITE. `NormaliseToolset` IS watched by `Tools/test-call-cost.py`: against a build that demonstrably
+compiled `return Trimmed;` in its body (`[1/5] Compile [x64] TurboMCPCallCost.cpp`, DLL relinked),
+that suite reports `RESULT: FAIL (1) -> no tool row contains the engine's qualification path`. The log
+really does carry the qualified spelling - 116 of its 252 lines do. A previously reported break test
+that still passed is NOT reproducible, and the most likely cause is the stale-binary trap this project
+has recorded seven times: the registration of the qualified form landed on 2026-10-09 (`08dda6e`) and
+the caller's spelling constant has only ever held the qualified value (`2b643ad`, same day), so the
+log's shape at that break test was the shape it has now. That run cannot be observed from here and is
+not claimed to be.
 
 SO WHAT THIS SUITE ADDS FOR THE NORMALISER IS NOT "A CHECK THAT CANNOT OTHERWISE FAIL" BUT "A CHECK
 THAT CANNOT GO VACUOUS". The existing check bites only while the log happens to carry a QUALIFIED
