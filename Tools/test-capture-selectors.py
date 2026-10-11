@@ -238,8 +238,14 @@ def main():
     else:
         check("does not refuse when the process does render",
               not refused(shot), shot.splitlines()[0] if shot else "")
-        check("says the WHOLE window was framed, not a graph",
-              "framed: the whole editor window" in shot)
+        # FAILS ON: the mode claiming anything other than the full uncropped window. The
+        # FIRST VERSION OF THIS CHECK ASSERTED ONLY THE PREFIX `framed: the whole editor
+        # window` AND PASSED AGAINST A BROKEN BUILD THAT SAID `cropped to the graph` --
+        # it was found by the break test rather than by review. The whole sentence is
+        # asserted now, because a prefix match cannot tell an uncropped window from a
+        # frame cut out of it.
+        check("says the WHOLE window was framed, uncropped, not a graph",
+              "framed: the whole editor window, uncropped, at its current size" in shot)
         check("says it is not the level viewport",
               "NOT the level viewport frame" in shot)
 
