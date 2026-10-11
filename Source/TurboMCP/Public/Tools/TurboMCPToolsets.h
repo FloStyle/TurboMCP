@@ -660,6 +660,46 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPWidgetTree(
 		const FString& Asset);
+
+	/**
+	 * Call the two PURE functions behind `R-CALL-COST` with LITERAL inputs, and print what they returned.
+	 *
+	 * THIS IS A TEST SURFACE AND THE GAP IT CLOSES IS MEASURED. `R-CALL-COST` totals calls by
+	 * `FTurboMCPCallCost::NormaliseToolset` and attributes them by `FTurboMCPCallCost::AssetFromArguments`.
+	 * ONE OF THE TWO IS UNREACHABLE FROM ANY SUITE THAT READS THE LOG: every entry in the real log is an
+	 * ENGINE event, and an engine event carries NO `arguments` field at all - measured over 252 lines, not
+	 * one of which had arguments - so nothing can hand `AssetFromArguments` a non-empty input. The
+	 * commandlet written to close that gap cannot run: the `Kismet` dependency puts `check(GEditor);` in
+	 * the way before any commandlet's `Main`. So the assertions run where every other check in this
+	 * project runs: over MCP, from a suite.
+	 *
+	 * THE OTHER HALF IS REACHABLE, AND THAT IS SAID HERE BECAUSE IT CORRECTS THE RECORD RATHER THAN
+	 * FLATTERING THIS TOOL. On a build that demonstrably compiled `return Trimmed;` in the normaliser's
+	 * body, `test-call-cost` DOES go red (`no tool row contains the engine's qualification path`), because
+	 * the log really does carry qualified names. What this tool adds is therefore not a check that cannot
+	 * otherwise fail but ONE THAT CANNOT GO VACUOUS: the log-dependent check bites only while the log
+	 * carries a qualified name, which is a fact about the engine's hash resolver, while a literal input is
+	 * the same assertion in every session.
+	 *
+	 * `toolsets` takes one or more toolset SPELLINGS separated by commas or pipes. Pass BOTH spellings of
+	 * one toolset to see them collapse: the analytics provider resolves names fully qualified, so an
+	 * engine entry records `TurboMCP.TurboMCPReadToolset`, while this plugin's own writer records the bare
+	 * `TurboMCPReadToolset`. Each spelling is printed with the key the normaliser gave it, and the number
+	 * of DISTINCT keys is printed as a NUMBER, so "one key" is read off a count and never inferred from a
+	 * sentence. An empty list says that no spelling was given rather than reporting zero keys (`P1`).
+	 *
+	 * `arguments` takes an arguments blob exactly as the log records one. The asset the function found is
+	 * printed with its LENGTH as a number, so "names no asset" is a measured zero: an engine event has no
+	 * arguments at all, and an absent measurement is not zero cost (`P1`). Line breaks in the echo are
+	 * written as spaces so one value stays on one line; the function is given the caller's own string.
+	 *
+	 * IT COMPUTES STRINGS AND WRITES NOTHING - no log is opened, no asset is loaded, no setting is
+	 * toggled - so it needs no fixture, it cannot race another suite, and it has nothing to restore.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPPureChecks(
+		const FString& Toolsets,
+		const FString& Arguments);
 };
 
 /**
