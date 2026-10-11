@@ -65,12 +65,16 @@ def set_log(session, enabled):
 
 
 def section(text, heading):
-    """The lines of one section, from its heading to the next blank-line-separated heading.
+    """The DATA lines of one section, from its heading to the next heading.
 
-    STRUCTURAL RATHER THAN A LIST OF MAGIC PHRASES. The lost work on this capability recorded the
-    lesson: its first fix for an unparseable section was a list of literal phrases to skip, which is
-    A PARSER THAT ASSUMES A FORMAT - and the same mistake has cost this project five checks twice.
-    A section here is whatever lies between two headings, whatever words it happens to contain.
+    TWO RULES, AND THE FIRST VERSION GOT BOTH WRONG IN THE SAME WAY - IT TREATED PROSE AS DATA:
+      * the section ends at the next heading, SO THE `ranked N entries of M` LINE THAT FOLLOWS THE
+        HEADINGS IS EXCLUDED - my first version let it through and then a check looking for "the
+        slowest line" matched that summary instead;
+      * a line starting with `;` is prose, and `; the token estimate is an estimate` is not a row.
+    STRUCTURAL RATHER THAN A LIST OF MAGIC PHRASES, which is the lesson the lost work on this
+    capability recorded: its first fix for an unparseable section was a list of literal phrases to
+    skip, and A PARSER THAT ASSUMES A FORMAT IS THE DEFECT, not the fix.
     """
     lines = text.splitlines()
     known = ("MOST EXPENSIVE BY TOKENS", "SLOWEST BY DURATION",
@@ -86,6 +90,10 @@ def section(text, heading):
     for line in lines[start:]:
         if any(k in line for k in known):
             break
+        stripped = line.strip()
+        # A `;` line is prose; a line with no pipe is a heading, a count sentence or an explanation.
+        if stripped.startswith(";") or "|" not in stripped:
+            continue
         out.append(line)
     return out
 
@@ -213,16 +221,17 @@ def main():
     # THE PER-ASSET SECTION NAMES ITS OWN ABSENCE. An empty list there would read as "no asset cost
     # anything" instead of "no entry named one", and those need different actions.
     # ---------------------------------------------------------------------------------------------
-    asset_section = "\n".join(section(text, "TOTALS PER ASSET"))
+    # The absence statement is PROSE rather than a data row, so it is looked for in the whole answer
+    # - `section` deliberately drops non-row lines, which is what makes it usable for the totals.
     check("the per-asset section is present even when it cannot fill",
           "TOTALS PER ASSET" in text, text[:200])
     check("when no entry names an asset, it says so rather than printing nothing",
-          "none can be computed" in asset_section or "call(s)" in asset_section, asset_section[:300])
-    if "none can be computed" in asset_section:
+          "none can be computed" in text, text[-600:])
+    if "none can be computed" in text:
         check("it says WHY the per-asset totals cannot be computed",
-              "NO ARGUMENTS" in asset_section or "name no asset" in asset_section, asset_section[:400])
+              "NO ARGUMENTS" in text or "name no asset" in text, text[-600:])
         check("it distinguishes an absent measurement from zero cost",
-              "not zero" in asset_section.lower(), asset_section[:400])
+              "not zero" in text.lower(), text[-600:])
 
     # ---------------------------------------------------------------------------------------------
     # THE FILTER, WHICH IS THE THIRD EMPTINESS `P1` NAMES.
@@ -246,7 +255,12 @@ def main():
           "TOTALS PER TOOL" in filtered and "none matching" not in filtered, filtered[:300])
 
     capped = cost(session, cap="1")
-    capped_rows = [l for l in section(capped, "TOTALS PER TOOL").splitlines() if "call(s)" in l]
+    # `section` RETURNS A LIST OF LINES, and the first version of this line called `.splitlines()`
+    # on it - which raised `AttributeError: 'list' object has no attribute 'splitlines'` and killed
+    # the suite BEFORE IT REPORTED ANY VERDICT. THE HARNESS SAID `no result line`, WHICH IS EXACTLY
+    # WHAT A CRASHED SUITE LOOKS LIKE AND EXACTLY WHY THE HARNESS NOW PRINTS THE TAIL.
+    cap_section = section(capped, "TOTALS PER TOOL")
+    capped_rows = [l for l in cap_section if "call(s)" in l]
     check("the cap bounds the rows SHOWN", len(capped_rows) == 1, "\n".join(capped_rows))
     # THE POINT OF THE CAP: it must not change a total, only how many rows are listed.
     total_in_cap = re.search(r"counts:\s*\d+ in the log,\s*(\d+) considered", capped)
