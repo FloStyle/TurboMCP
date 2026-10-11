@@ -10474,3 +10474,29 @@ opposite of the usual finding and worth saying plainly: a red suite can be the s
 **AND I HAVE NOT INVESTIGATED IT.** *I have the failing check's name and the fact that it survives isolation, and **that is not enough to
 name a cause** - this record has withdrawn exactly that kind of inference before. It is recorded as an open defect with the evidence that
 exists and nothing more.*
+
+---
+
+## 173. Round 238: the two pre-existing defects are both fixed, and the full run that proves it is in flight
+
+    `bee3160` THE HARNESS RESTORES THE SHARED FIXTURE - the full-run conflict is fixed
+    `b6e2bac` test-material-tidy WAS FAILING AND THE DEFECT WAS IN THE CHECK, NOT THE TOOL
+    BOTH RE-VERIFIED INDIVIDUALLY: the failing sequence gives `passed 5, failed 0, blocked 0, of 5`, and
+    test-material-tidy gives `RESULT: PASS (20 check(s) run)`
+    THE FULL RUN IS IN FLIGHT and is the only thing still owed
+
+*** AND BOTH DEFECTS WERE PRE-EXISTING AND IN NEITHER OF MY FIVE PRIORITIES, WHICH IS THE PART WORTH RECORDING: THE REPORT NAMED
+FIVE THINGS I WOULD SPEND TIME ON, AND THE TWO THAT TURNED OUT TO BE BLOCKING THE PROJECT'S OWN GREEN SIGNAL WERE NOT AMONG THEM.
+They were found by a workstream doing a fixture row and by me following its evidence, NOT by the plan. ***
+
+**AND BOTH HAD THE SAME ROOT SHAPE, WHICH IS THE PROJECT'S OLDEST RULE TWICE MORE:**
+
+    THE CONFLICT      `git checkout` with `capture_output=True` AND THE RESULT NEVER READ - so it failed and
+                      looked like it had worked. SEVENTH occurrence.
+    THE CHECK         a regex that assumed the wrong format, so it measured WHETHER THE REGEX MATCHED rather
+                      than what the reader said. EIGHTH occurrence, AND IT WAS INSIDE THE SUITE THAT EXISTS TO
+                      ENFORCE THE RULE.
+
+*** SO THE TWO MOST RECENT DEFECTS IN A PROJECT WHOSE ENTIRE DISCIPLINE IS "AN INVISIBLE FAILURE READS AS A SUCCESS" WERE BOTH THAT
+EXACT FAILURE, COMMITTED BY ME AND BY A CHECK. That is worth writing down without softening it: the rule is easy to state, this record
+has stated it perhaps a dozen times, and it still took two more instances to find. ***
