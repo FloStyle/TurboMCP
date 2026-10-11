@@ -301,32 +301,25 @@ def main():
     built = session.call(EDIT_TOOLSET, "EditTurboMCPStructNew",
                          {"path": PACKAGE_READ, "fields": "Keep: int, Drop: int"})
     print(built)
-    # A RERUN MEETS ITS OWN FIXTURE, and that is handled rather than fatal.
-    # `E-VARS-ADD` HAS NO REMOVAL TWIN, so a variable this suite adds cannot be
-    # taken away again; on a second run the SAME reader already exists and this
-    # tool is right to refuse to add it twice. `unchanged:` is therefore a PASS
-    # here, and the reader is left in place - which is harmless, because it is a
-    # variable of a struct that still exists.
-    rerun = built.startswith("unchanged:")
-    check("the reader fixture exists now (created, or left by a previous run)",
-          built.startswith("changed:") or rerun, built[:120])
-    if rerun:
-        print("    (a previous run left %s; using it, because there is no "
-              "E-VARS-REMOVE)" % OBJECT_READ)
+    check("the reader fixture was created", built.startswith("changed:"), built[:120])
+    check("the reader fixture holds exactly 2 fields",
+          "fields read back: 2" in built, built[:200])
 
+    # THE READER IS ASSIGNED AN IDEMPOTENT WAY ROUND. `E-VARS-ADD` has NO
+    # removal twin, so a variable this suite adds cannot be taken away again.
+    # That makes a name collide on the second run - and a `: Type` string is a
+    # use of the type, not a definition, so a Blueprint that ALREADY carries a
+    # variable of this struct's type is a fact this suite can measure instead of
+    # fight: `E-VARS-ADD` is called once, and whether it reports `changed:` or
+    # `unchanged:` the reader is there either way.
     reader = session.call(EDIT_TOOLSET, "EditTurboMCPVarsAdd",
                           {"asset": "/Game/Tests/Kit/TA01_HandLaid",
                            "variables": "StructHolder: " + OBJECT_READ})
     print(reader)
     print()
-    # `changed:` means this run added the reader; `unchanged:` means it was
-    # already there from a previous run. BOTH mean a reader exists, which is the
-    # only thing the rest of this section needs - and an actual `error:` is a
-    # failure, because then there is no reader and the guard would be tested
-    # against nothing.
-    check("a Blueprint variable of that struct type exists, and the tool did not error",
+    check("the Blueprint now carries a variable of that struct's type",
           reader.startswith("changed:") or reader.startswith("unchanged:"),
-          reader[:200])
+          reader[:220])
 
     # The count is READ from the preview and then used. It is never pinned,
     # because a shared asset's contents are not this suite's to assume.
