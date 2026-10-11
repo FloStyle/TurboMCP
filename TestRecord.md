@@ -9684,3 +9684,31 @@ UNDERSTATING WHAT EXISTS.** *Row 7.1's "editor-only" was too strict; row 1.3's p
 "`CheckOutFile` is the way" was a trap; and row 2.1's "add four selectors" is really "extend five framings, a refusal pattern and a
 tracked suite."* *** THE PLAN WAS WRITTEN BEFORE THE WORK, AND THE WORK HAS BEEN FINDING THAT THE PROJECT IS FURTHER ALONG THAN
 THE PLAN SAYS - WHICH IS THE OPPOSITE OF THE USUAL FAILURE MODE AND WORTH RECORDING AS SUCH. ***
+
+---
+
+## 150. Round 201: THE CAPABILITY IS 2,062 LINES ACROSS THREE FILES, AND ROW 2.1 IS AN EXTENSION OF ALL THREE
+
+    TurboMCPCapture.cpp           792 lines at the row's start  ->  968 NOW
+    TurboMCPCaptureSelector.cpp   A FOURTH PRE-EXISTING FILE THE PLAN NEVER MENTIONED  ->  913 lines
+    Public/TurboMCPCapture.h      181 lines
+    *** TOTAL 2,062 LINES OF EXISTING CAPTURE CAPABILITY THAT THE PLAN DESCRIBED AS A ROW ABOUT ADDING FOUR SELECTORS ***
+
+*** AND THE WORKSTREAM COMMITTED ITS OWN WORK-IN-PROGRESS WITH AN HONEST TITLE BEFORE I REACHED IT: ***
+    `e228eed  Row 2.1 work in progress: the four selectors are WRITTEN, not yet built or run`
+
+**AND `TurboMCPCaptureSelector.cpp` IS NAMED "Selector" AND IS 913 LINES - WHICH MEANS THE FILE FOR SELECTORS ALREADY EXISTED AND
+ALREADY HAS A SHAPE.** *So the row is not four new selectors in a file that did not have any; **it is four more in a file that is
+already 913 lines of them, and the consistency requirement I flagged in section 148 - "a selector bolted onto a 792-line tool's
+output has to be consistent with 792 lines of decisions rather than with a spec" - is now 2,062 lines of decisions.***
+
+### 150.1 And that is the fifth workstream-in-a-row that committed its own work, which makes it the norm rather than the exception
+
+    MY SAFETY COMMITS THIS STRETCH      20
+    WORKSTREAM SAFETY COMMITS           5 (rows 7.1, 10.1, 10.2, 2.1, and row 10.2's second)
+    WORK LOST                           0     STEPS REDONE     0
+
+*** AND EVERY ONE OF THE FIVE CARRIED A TITLE THAT UNDERSTATED ITS STATE - "not yet built or run", "not yet built and no suite
+yet", "SAFETY COMMIT ... not yet built and no suite yet". NONE OVERSTATED. *** **That is the mechanism that was written into the
+briefs after I destroyed a verified capability by reverting a shared tree, and it has now been adopted by five workstreams
+independently - which is the difference between an instruction obeyed and a practice held.**
