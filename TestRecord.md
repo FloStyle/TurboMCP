@@ -9733,3 +9733,26 @@ stopped being a progress signal** - which is worth recording before it gets mist
 **AND THE SECOND COMMIT'S TITLE IS AGAIN THE HONEST FORM:** *`d82c1ad the four selectors build and answer; the suite is written
 but not yet run`* **and then `54332da` says it passes.** *Two commits, two states, neither overstated - **the fifth workstream to
 report its own progress in the order it actually happened.***
+
+---
+
+## 152. Round 203: row 2.1 is preparing its full run, and the honest note is that its suite already passed twice
+
+    `54332da  test-capture-selectors PASSES, and test-capture still passes beside it`
+    AUDIT PASS at 93 tools, uncalled: (none)
+    NOW: make-kit-assets 10:02:32 · make-acceptance-asset 10:06:16 · make-material-asset 10:08:58 · panel-probe 10:09:34
+    NO full run yet; HEAD = origin/main = 2b778fc; clean tree
+
+*** SO WHAT IS OWED IS THE FULL RUN AND NOTHING ELSE: THE SUITE PASSES, THE PRE-EXISTING SUITE BESIDE IT PASSES, THE AUDIT PASSES, AND
+THE TREE HOLDS NOTHING UNCOMMITTED BECAUSE THE WORKSTREAM COMMITTED TWICE ON ITS OWN ACCOUNT. ***
+
+**AND THE FOUR TIMESTAMPS ARE THE SHAPE SECTION 186 NAMED AND THIS ROUND DOES NOT NEED TO RE-LEARN:** *a fixture rebuild before a
+full run is NORMAL, the suite needs fixtures, and the four are the same four this project has watched for twenty rounds.* **The
+difference is that this time I can say WHY rather than infer it - and the reason is in the row's own mechanism: `L-CAPTURE` renders
+a widget, and a widget needs an asset to be rendering.**
+
+**AND THE ONE THING WORTH ADDING TO THE RECORD IS THE THING THAT HAS CHANGED: FOUR SUITES IN TWENTY ROUNDS HAVE ALL ENDED WITH A
+FULL RUN AND THREE OF THEM ENDED CLEAN.** *Rows 7.1, 10.1, 10.2 and now 2.1 - **and the last three each produced a `PASS` on a newly
+written suite, an audit at `uncalled: (none)`, and a full run at zero failures.*** *** That is the machinery of sections 79 to 150
+paying out: the briefs, the safety commits, the pre-flight checks and the `P1` rule were built over thirty rounds and the last three
+rows have needed almost none of my intervention.*
