@@ -91,12 +91,14 @@ namespace
 		Out.Add(FString::Printf(TEXT("it %s anything."), WhatThisDoes));
 		Out.Add(TEXT(""));
 
-		AddField(Out, TEXT("policy"), FString(PolicyName) + TEXT(" - ") + PolicyStatement);
+		// PRINTF RATHER THAN operator+ ON PURPOSE: the concatenation form of these two lines was not worth
+		// a build to discover whether a TCHAR literal can be the left operand of FString addition here.
+		AddField(Out, TEXT("policy"), FString::Printf(TEXT("%s - %s"), PolicyName, PolicyStatement));
 		AddField(Out, TEXT("policy, provenance"), PolicyProvenance);
 		Out.Add(TEXT(""));
 
 		AddFlag(Out, TEXT("module loaded"), InPlan.bModuleLoaded);
-		AddField(Out, TEXT("provider in use"), TEXT("'") + InPlan.ProviderName + TEXT("'"));
+		AddField(Out, TEXT("provider in use"), FString::Printf(TEXT("'%s'"), *InPlan.ProviderName));
 		FString RegisteredText = FString::Join(InPlan.RegisteredProviders, TEXT(", "));
 		if (RegisteredText.IsEmpty())
 		{
@@ -440,7 +442,7 @@ FString FTurboMCPSourceControlWrite::EnsureCheckedOut(const FTurboMCPWriteChecko
 			Result.ProviderInfo.Add(Message.ToString());
 		}
 
-		AddAssetLines(Lines, InPlan, Result, Index, /*bActing=*/true);
+		AddAssetLines(Lines, Result, Index, /*bActing=*/true);
 	}
 
 	AddClosingLines(Lines, /*bActing=*/true);
