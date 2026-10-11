@@ -7678,3 +7678,29 @@ ROUNDED.***
 dispatched call name landing in the audit's unparsed list, a copied argument set, a break test left in the tree, and **a
 sixth vacuous check** - *because five capabilities have now reported that their check count overstates their coverage and
 one suite has an `else` branch that literally checks `True`.*
+
+---
+
+## 81. Round 122: the vacuity implementation is in its reading phase, and the round is recorded as such
+
+**MEASURED:** `main` = `origin/main` = `32038d2`; **85 tools**; working tree clean; no file under `Source/` or `Tools/`
+modified in the last six minutes; nothing written by the workstream launched last round.
+
+*** AND THIS ROUND I AM NOT REPEATING THE MISTAKE OF SECTION 72, WHERE FOUR ROUNDS OF SILENCE WERE READ THROUGH AN
+ARGUMENT THAT DID NOT APPLY. THE DISCRIMINATOR IS THE SAME ONE AND IT IS THE NARROW ONE: "HAS A LOG OR A FILE MOVED IN THE
+LAST FEW MINUTES" IS A DIFFERENT QUESTION FROM "HAS A COMMIT APPEARED", AND ONLY THE FIRST DISTINGUISHES READING FROM
+STOPPED. ***
+
+    THIS ROUND    no file has moved. The round is ONE MINUTE old in wall-clock terms for the agent and it is
+                  still reading TurboMCPCallCost.h and an existing suite for the house shape - WHICH IS THE
+                  CORRECT FIRST MOVE AND PRODUCES NO ARTEFACT.
+
+**AND THE BRIEF IT IS WORKING FROM IS THE SHORTEST THIS PROJECT HAS ISSUED IN ROUNDS, BECAUSE THE INVESTIGATION WAS PAID
+FOR BEFORE IT STARTED:** *two named functions, one named header and line, one named home (a reader, because it writes
+nothing), four assertions each with the input that makes it fail, and five failure modes not to reproduce. There is no
+measurement left in it and no mystery left in it - **which means a long silence here would be harder to justify than a
+long silence on a row that needed engine archaeology.***
+
+**SO THE NEXT ROUND APPLIES ITS OWN CRITERION RATHER THAN MY PATIENCE: IF NO FILE HAS MOVED BY THEN, SOMETHING IS WRONG
+AND I WILL SAY SO RATHER THAN WAIT A FOURTH TIME.** *Section 113's lesson was not "wait less" - it was "use the
+discriminator you already have".*
