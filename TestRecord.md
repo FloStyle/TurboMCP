@@ -7989,3 +7989,29 @@ that another round would change" WITHOUT A MOVING LOG; THIS ONE HAS A LOG THAT M
 **THE FIRST KIND NEEDS NO ACTION AND NO ARGUMENT; THE SECOND KIND NEEDS THE STOP-AND-ASK. AND THE ONLY WAY TO TELL THEM
 APART IS THE SEARCH SCOPE - `Source/`, `Tools/`, `TestProject/Content/` AND `.agent/logs` TOGETHER, because this project's
 work is not confined to the source tree.**
+
+---
+
+## 92. Round 133: the rebuild finished and the editor came down - the cycle advancing, read from three signals
+
+    MEASURED   main = origin/main = 8864e1a   ·   86 tools   ·   editor DOWN (was UP last round)
+    make-material-asset.log   05:54:18   22.9 KB   <- newest, and the EDITOR EXITED WITH IT
+
+*** THREE SIGNALS, ALL CONSISTENT WITH ONE THING: THE MATERIAL FIXTURE REBUILD COMPLETED AND THE COMMANDLET THAT HOLDS THE
+EDITOR EXITED. Section 131 saw the editor UP at 05:53:29 with the same log at 05:53:05; this round it is DOWN and the log is
+05:54:18. THAT IS A PHASE ENDING, NOT A PROCESS DYING - and the distinction matters because a `-run=` commandlet exiting is
+the SUCCESS path, while the same exit during a suite run is the failure this project has characterised and instrumented. ***
+
+### And the scope widened a third time
+
+    "has a SOURCE file moved"        -> no, for thirteen minutes
+    "has a LOG moved"                -> yes, and it has now STOPPED moving
+    "is the EDITOR running"          -> IT WAS, AND IT IS NOT
+
+*** EACH OF THOSE THREE QUESTIONS ALONE WOULD HAVE GIVEN A DIFFERENT AND PARTLY WRONG ANSWER, AND THE THIRD ONE IS THE ONE
+THAT SAYS THE PHASE ENDED. THE PROJECT'S ACTIVITY IS SPREAD ACROSS FOUR PLACES - SOURCE, TOOLS, CONTENT, LOGS - PLUS THE
+PROCESS TABLE, AND SECTION 123 COST A NEAR-FALSE-ALARM BY READING ONLY THE FIRST. ***
+
+**WHAT IS STILL OWED IS THE SAME TWO THINGS: THE FULL RUN, WHICH IS THE LIKELIEST NEXT STEP NOW THAT THE FIXTURES ARE
+REBUILT, AND THE CLOSE-OR-MOVE ANSWER.** *Both are the workstream's, and the third signal above is why I am not asking
+whether it is alive: a rebuild completing is a thing that happens, not a thing that stops.*
