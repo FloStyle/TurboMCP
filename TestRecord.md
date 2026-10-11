@@ -5449,3 +5449,70 @@ are at `MaterialParameterCollection.h:91` (scalar) and `:94` (vector).
 `f8b5b14` and `87c2853` - **WHICH IS THE NEW RULE BEING FOLLOWED, AND IT IS THE RULE THAT EXISTS BECAUSE I DESTROYED A
 VERIFIED CAPABILITY BY REVERTING THE TREE WHILE WORKSTREAMS WERE LIVE.** *A protection that lives in a mechanism
 rather than an instruction is the only kind that holds.*
+
+---
+
+## 34. The kit's feasibility table is MEASURED, TA-14 is built and read back by a DIFFERENT tool, and two assets need DECISIONS
+
+*** THE DELIVERABLE WAS A TABLE AND IT ARRIVED MEASURED RATHER THAN GUESSED: "TA-14 and TA-20 DONE; TA-15 and TA-17
+BUILDABLE; TA-16 NEEDS WORK; TA-18 NEEDS A MEASUREMENT; TA-19 AND TA-21 REFUSED." TWO BUILT, SIX ASSESSED, AND THE
+SIX ARE THE VALUABLE HALF. ***
+
+### 34.1 TA-14 REVERSES A REFUSAL THE PROJECT HAD RECORDED, AND IT IS RIGHT ABOUT WHY
+
+`TurboMCPKitCommandlet.cpp:1420-1447` records - **correctly** - that a `UUserDefinedStruct` cannot be built in this
+commandlet: `FStructureEditorUtils::AddVariable()` -> `FMemberVariableNameHelper::Generate()` ->
+`CastChecked<UUserDefinedStructEditorData>` **CRASHES, because `NewObject<UUserDefinedStruct>` does not create its
+`EditorData` and only the EDITOR FACTORY installs it.** `TA-10` STAYS REFUSED on that basis.
+
+*** BUT THAT IS A LIMIT ON `UUserDefinedStruct`, NOT ON A PROJECT-OWNED ROW STRUCT - AND A PROJECT-OWNED ROW STRUCT IS
+WHAT THE ACCEPTANCE ROW ASKS FOR.*** A NATIVE `USTRUCT` IN THE PLUGIN MODULE **is reflected, IS a `UScriptStruct`, and
+IS PROJECT-OWNED BY CONSTRUCTION.** `UUserDefinedStruct` is ONE way to obtain one, **and it is the only way that is
+blocked.**
+
+**AND THE SECOND SUPPOSED BLOCKER DOES NOT APPLY EITHER:** `Tools/test-datatable.py:11-31` says *"`RowStruct` is
+read-only once the asset exists"* - **TRUE, AND IT IS ABOUT SETTING IT AFTER THE FACT.** Here it is set AT
+CONSTRUCTION, BEFORE THE SAVE, **WHICH IS THE ONE MOMENT THE ENGINE ALLOWS.** *A statement about a TIMING was read as a
+statement about a POSSIBILITY, and the difference cost a fixture the project had declared impossible.*
+
+**AND IT WAS READ BACK THROUGH A TOOL THAT IS NOT THE BUILDER:**
+
+    kit TA-14 OK rowStruct=FTurboMCPKitRow rows=3
+    ReadTurboMCPDataTable {"asset":"TA14_KitDataTable","include":"schema"} verbatim:
+        row struct: /Script/TurboMCP.TurboMCPKitRow
+        fields: 4     Weight:float  Label:FName  Count:int32  Nested:FTurboMCPKitNested
+        rows: 3       Row_A / Row_B / Row_C
+
+**SO THE ROW IS SATISFIED LITERALLY - three rows, four fields, ONE FIELD OF A STRUCT TYPE. AND THE SPLIT IS HONEST
+RATHER THAN GLOSSED: the reader DECLINES to print row VALUES, so THE SCHEMA IS WITNESSED INDEPENDENTLY AND THE ROW
+COUNT IS WITNESSED BY THE COMMANDLET'S OWN MEASURED `rows=3`.** *Two witnesses for two claims, and saying which is
+which is what keeps a check from passing on the wrong half.*
+
+### 34.2 The two that need a DECISION rather than more effort
+
+**`TA-19` - NIAGARA - IS REFUSED FOR A STRUCTURAL REASON: `UNiagaraSystem` IS NOT IN THE ENGINE SOURCE TREE AT ALL; IT
+IS A PLUGIN.** Adding it means editing `TurboMCP.Build.cs`, **which this row's brief forbids** - so the workstream
+refused rather than quietly widening its own dependency list. **THE DECISION IS THE ORCHESTRATOR'S: add the dependency
+deliberately, or refuse `TA-19` AND THE TWO `T-LOOK-8` CLAUSES THAT NAME IT, BY DECISION** - the same shape as the
+breakpoint group, where a measurement closed a set of tools and the refusal went into the descriptions of what an
+agent should reach for instead.
+
+**`TA-18` - THE ANIM BLUEPRINT - IS FLAGGED `NEEDS A MEASUREMENT` AND THE WORKSTREAM NAMED THE SHAPE ITSELF:
+*"`UAnimBlueprint` normally needs a SKELETON and an editor factory - THE SAME SHAPE AS THE USER-STRUCT BLOCK."***
+**IT DECLINED TO GUESS WHILE GUESSING WAS CHEAP TO AVOID, WHICH IS EXACTLY WHAT `TA-14` JUST ANSWERED BY MEASUREMENT.**
+
+**`TA-21` IS REFUSED AND THE ROW ALREADY KNEW: its own text says *"built by hand, because `AddVariable` needs an
+editor factory"*** - so it must be authored in the editor, **which is what `06_ACCEPTANCE.md` asks for and is not a
+defect.**
+
+### 34.3 Two corrections, both from this one report
+
+1. *** `T-DATA-1` HAS ALREADY BEEN RE-POINTED AT `AreaLightsTable` BY DECISION, SO `TA-14` IS NOW NEEDED BY NO
+   CAPABILITY - and the workstream said so ITSELF while building it anyway, because the mechanism is known and a
+   project-owned table is STRICTLY BETTER EVIDENCE. IT ALSO CORRECTED THE PRIORITY ORDER: `TA-15`, `TA-17` AND `TA-20`
+   ARE THE ONES WHOSE ROWS STILL NEED THEM. ***
+2. *** AND I ANNOUNCED THE WRONG CONSEQUENCE OF MY OWN SAFETY COMMIT. *** I wrote that the audit WOULD report
+   `ReadTurboMCPCallCost` as uncalled and fail - **MEASURED, IT PASSES: `79 AICallable tool(s) declared`,
+   `uncalled: (none)`.** So the workstream HAD written its suite before it stopped, **AND MY COMMIT MESSAGE CONTAINS A
+   PREDICTION I DID NOT CHECK. THE CORRECTION IS RECORDED BECAUSE A PREDICTION IN A COMMIT MESSAGE READS AS A
+   MEASUREMENT TO EVERYONE WHO COMES AFTER - this project's oldest lesson, broken while writing about it.**
