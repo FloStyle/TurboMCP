@@ -8764,3 +8764,77 @@ creates what it tests, so a rebuild is the suite's own prerequisite and not a hy
 
 **AND THE STATE IS THE ONE SECTION 167 RECORDED AS ACTIONABLE - CLEAN TREE, NOTHING IN FLIGHT - WHICH MEANS THE VERDICT IS NOW
 ONE SUITE RUN AWAY AND NOTHING BLOCKS IT EXCEPT THAT THE WORKSTREAM IS MID-CYCLE AND IS THE ONE THAT OWES IT.**
+
+---
+
+## 123. *** ROW 7.1 IS COMPLETE: 53 OF 53, AND THE "CONCURRENT WORKSTREAM" IT REPORTED WAS ME ***
+
+    COMMIT 3732b17 - build Succeeded, `test-struct` PASS, audit `uncalled: (none)`, FULL RUN `passed 53, failed 0, blocked 0, of 53`
+    90 tools, 4 new, the fifth plan row closed
+
+*** AND THE FIRST THING IN ITS REPORT IS A CONFLICT WITH MY BRIEF, AND IT IS CORRECT TO RAISE IT AND WRONG ABOUT WHAT IT IS:
+IT SAYS "A WORKSTREAM IS LIVE AND PUSHING TO main WHILE I WORK - HEAD moved 3e58ea3 -> 480158a (13 commits)", AND EVERY ONE OF
+THOSE 13 COMMITS IS MINE. ITS OWN WORDS IDENTIFY THEM - "commits titled Round 157-168", "PRESERVE row 7.1...", and "at 07:05
+committed 'the workstream is rebuilding fixtures for its suite run'" - AND THAT LAST ONE IS MY SECTION 168, AND `41a0a02`,
+`5310bc9` AND `0685a22` ARE THE SAFETY COMMITS THAT PRESERVED **ITS OWN** IN-PROGRESS FILES. ***
+
+**SO THE ANSWER TO ITS WARNING IS NOT "the premise was false" BUT "the other process was your orchestrator, committing your
+work so that a revert could not destroy it".** *It reached the right conclusion anyway - "its commits were additive, never
+reverted me, and my measurements held" - **and it is worth noting that both halves of that sentence are the mechanism working:
+the commits WERE additive because they were `git add` of ITS files, and they never reverted it because this record's section 30
+rule is exactly that a shared tree is never reverted while a workstream lives.***
+
+### 123.1 And the finding itself is the best one of the stretch
+
+    StructureEditorUtils.cpp:42-64, FStructureEditorUtils::CreateUserDefinedStruct()
+      :48  Struct = NewObject<UUserDefinedStruct>(InParent, Name, Flags);
+      :49  UUserDefinedStructEditorData* EditorData = NewObject<UUserDefinedStructEditorData>(Struct, ...);
+      :50  Struct->EditorData = EditorData;      <-- INSTALLS IT ITSELF
+      :59  AddVariable(Struct, FGraphPinType(...PC_Boolean...));   <-- THEN USES IT
+
+*** THE FUNCTION THE SPEC SAYS IS UNAVAILABLE INSTALLS THE VERY DATA THE SPEC SAYS ONLY THE EDITOR FACTORY INSTALLS. THE
+RECORDED CRASH CAME FROM `NewObject<UUserDefinedStruct>` PLUS A HAND-BUILT FIELD LIST - `TurboMCPKitCommandlet.cpp:1420-1451`
+IS ONE CALL SHORT OF THE PUBLIC STATIC. AND THE ANSWER TO MY BRIEF'S QUESTION IS THE NARROW ONE: `FStructureEditorUtils` NEEDS
+AN EDITOR PROCESS, NOT AN OPEN ASSET EDITOR - `AddVariable` reads only `Struct->EditorData`, `GetVarDesc` is one
+`CastChecked`, `UserDefinedStructEnabled` is a config read, and `CompileStructure` goes via KismetCompiler. NO `GEditor`, NO
+Slate, so `LaunchEngineLoop.cpp:3343` and `BlueprintCheckEditorModule.cpp:214` DO NOT BIND HERE. ***
+
+**AND THE TENSION I FLAGGED IS RESOLVED RATHER THAN SIDED: the row DOES need a `UUserDefinedStruct`, AND `TurboMCPKitRow.h` IS
+STILL RIGHT THAT A NATIVE `USTRUCT` IS PROJECT-OWNED AND IS WHAT A DATATABLE'S `RowStruct` MUST BE - because a native struct is
+compiled C++ SOURCE, so no runtime tool can add a field to it.** *Two true statements about two different rows, and the native
+struct is now refused BY NAME with both spellings quoted correctly in its own correction.* **That is the second refusal this
+project has corrected by asking what it was about, after `TA-14`.**
+
+### 123.2 Four defects found by RUNNING it, and one of them is a silent engine substitution
+
+1. **`RemoveVariable` REFUSES TO EMPTY A STRUCT** (`:326-327` `bAllowToMakeEmpty = false`) - so the creator's own bool can only
+   be removed AFTER the caller's fields exist.
+2. **`AddVariable` CANNOT NAME A FIELD** - it passes an EMPTY name base to `Generate` (`:304`), which becomes the literal
+   `MemberVar` (`:251-253`). Names come from `RenameVariable` (`:347-373`).
+3. *** `GetBasicTypeByName` SILENTLY SUBSTITUTES `int` FOR ANY NAME THAT IS NOT A `PC_*` CATEGORY (`BlueprintEditorLibrary.cpp:2118-2122`) - SO `Alpha: double` CREATED AN `int` FIELD **WHILE REPORTING SUCCESS**. *** *That is the project's oldest shape in the engine itself: a consumer that silently matches nothing, here making a wrong type look accepted.*
+4. **`ChangeVariableType` RETURNS `false` FOR A NO-OP** (`:413-426`), indistinguishable at the call site from a refusal -
+   resolved by ASKING THE FIELD (`TypeMatches`) rather than reading the return value.
+
+**AND ALL FOUR WERE FOUND BY RUNNING THE THING RATHER THAN READING IT, WHICH IS THE LESSON OF SECTION 156 PAYING FOR ITSELF ONE
+ROUND AFTER IT WAS WRITTEN INTO A BRIEF.**
+
+### 123.3 And its break test is the strongest one this project has recorded
+
+**IT RESTORED THE FIXTURE ON THE WAY IN FIRST, ran `git diff --stat` to confirm no break was left, then broke exactly what the
+check reads** - `ReadFields` reporting `VarName` instead of `FriendlyName` - **rebuilt, and got FOUR failures with the mangled
+names visible in the output** (`Weight_5_0225DAA44D1476CEA7303E89C674D761`). *Then it verified the break was gone by grepping
+for its own identifier AND by `git diff --stat`, rebuilt, and went green.* **A break test that shows the wrong value rather
+than merely a red line is a break test that proves the CHECK, not just the build.**
+
+**AND THE READ-BACK IS THROUGH TWO DIFFERENT TOOLS** - `R-ASSET-DESCRIBE` (`class: UserDefinedStruct, unsaved changes: no, on
+disk: yes`) and `R-TYPE-FIND` (the tool `T-DATA-2` NAMES, which searches the object graph rather than asking the struct) -
+**PLUS THE SAVED `.uasset` ITSELF CONTAINS THE FIELD NAMES, WHICH IS THE ONLY FORM OF THAT CLAIM A NAME CANNOT FAKE.**
+
+### 123.4 What it could not settle, and the fourth missing fixture
+
+    THE FULL RUN IS ONE REVISION BEHIND ITS LAST CHANGE: it did NOT re-run the 53 after its last `FindReaders` signature
+    change, and it SAYS SO rather than quoting the number as current
+    `FindReaders` COUNTS ASSETS THAT HOLD THE STRUCT, NOT EVERY GRAPH THAT READS A FIELD BY NAME - and the preview SAYS so
+    rather than presenting its number as a total
+    `T-DATA-3` NAMES `TA-21`, WHICH DOES NOT EXIST - no `TA21_*` asset and NO `UserDefinedStruct` ANYWHERE IN THE REPO.
+    *** FOURTH SUCH ROW, AFTER TA-6, TA-15/16 AND TA-8 - AND ITS SUITE BUILDS THE STRUCT IT EDITS RATHER THAN DEPENDING ON IT ***
