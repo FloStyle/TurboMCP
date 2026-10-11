@@ -1878,6 +1878,50 @@ public:
 	static FString EditTurboMCPDataTableRows(
 		const FString& Asset,
 		const TArray<FString>& Rows);
+
+	/**
+	 * Copy a block of nodes from one graph to another, and report what could not come with it.
+	 *
+	 * THE SAME ASSET AND GRAPH ON BOTH SIDES IS REFUSED BY NAME and pointed at the paste-in-place
+	 * case, because that is a duplicate rather than a copy. A variable, function or event the target
+	 * asset does not have REFUSES THE WHOLE COPY and names every missing member, so a half block is
+	 * never written. The copy itself reads the SOURCE NODE AS THE TEMPLATE - which is what keeps a
+	 * copied call node calling the function it called - and every link that crosses the selection and
+	 * has nothing to point at in the target is REPORTED BY NAME rather than silently dropped.
+	 *
+	 * One transaction. After writing it reads the graph back and states the node count before and
+	 * after, so the first line is `changed`.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphCopy(
+		const FString& SourceAsset,
+		const FString& SourceGraph,
+		const TArray<FString>& NodeIds,
+		const FString& TargetAsset,
+		const FString& TargetGraph,
+		const FString& AnchorNodeId);
+
+	/**
+	 * Extract a selection into a function or a macro.
+	 *
+	 * NOT BUILT YET, AND IT REFUSES BY SAYING SO rather than by a vague failure. `03_TOOLS.md`
+	 * requires the engine's own `FBlueprintEditor::CollapseNodesIntoGraph`, which is a member of an
+	 * ASSET-EDITOR UI OBJECT (`BlueprintEditor.h:1125`); the measurement in
+	 * `TurboMCPGraphStructureNotes.h` enumerates every other piece as static and reachable, and
+	 * leaves exactly one question open - whether that instance can be constructed outside an open
+	 * asset editor. A hand-built member would NOT be the thing the editor's own Collapse makes, so
+	 * building one would be a different capability wearing this one's name.
+	 *
+	 * The plan still runs, so a caller learns what the input is missing - a selection containing an
+	 * entry, an event or a result node, or one with no exec boundary, is refused by name.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphCollapse(
+		const FString& Asset,
+		const FString& GraphName,
+		const TArray<FString>& NodeIds,
+		const FString& MemberName,
+		const FString& MemberKind);
 };
 
 /**
