@@ -536,11 +536,33 @@ def main():
     # not checked is a restore that can silently stop happening.
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     fixture_dir = os.path.join("TestProject", "Content", "Tests")
-    subprocess.run(["git", "checkout", "--", fixture_dir], capture_output=True, text=True, cwd=repo)
+    undo = subprocess.run(["git", "checkout", "--", fixture_dir],
+                          capture_output=True, text=True, cwd=repo)
+    # *** AND THE FAILURE IS READ, BECAUSE THE FIRST VERSION IGNORED IT ENTIRELY - AND THAT IS WHY THE FIX
+    # LOOKED LIKE IT HAD RUN WHILE THE FIXTURE STAYED MODIFIED. ***
+    #
+    # MEASURED CAUSE, AND IT IS NOT THE CODE: `git checkout` ANSWERS
+    #     error: unable to unlink old 'TestProject/Content/Tests/Kit/TA01_HandLaid.uasset': Invalid argument
+    #     exit 255
+    # AS LONG AS THE EDITOR HOLDS THE FILE, WHICH THIS SUITE HAS JUST RESTARTED. So the restore cannot work FROM
+    # HERE - it is the same reason every OTHER suite here restores while the editor is STOPPED. This suite needs
+    # the editor to run its checks and therefore ends with it live, which is exactly the state in which the file
+    # cannot be replaced.
+    #
+    # *** AND THAT IS THE PROJECT'S OLDEST DEFECT IN ITS PUREST FORM, FOR THE SEVENTH TIME: AN OPERATION THAT FAILS
+    # IN SILENCE, AND A READER WHO BELIEVES IT SUCCEEDED. `capture_output=True` HAD CAPTURED THE ERROR AND NOBODY
+    # LOOKED AT IT. ***
+    if undo.returncode != 0:
+        print("  *** THE FIXTURE COULD NOT BE RESTORED, AND THE REASON IS MEASURED RATHER THAN ASSUMED: ***")
+        print("      git checkout exit %d: %s" % (undo.returncode, (undo.stderr or undo.stdout).strip()))
+        print("      The editor holds the file, so it cannot be unlinked while it is running. This suite needs")
+        print("      the editor live to run its checks, so IT CANNOT BE THE ONE THAT RESTORES - the harness that")
+        print("      owns the editor must restore this fixture AFTER stopping it, which is what every other suite")
+        print("      here already relies on.")
     left = subprocess.run(["git", "status", "--porcelain", "--", fixture_dir],
                           capture_output=True, text=True, cwd=repo).stdout.strip()
     if left:
-        print("  NOTE the fixture directory is still dirty after the restore: %r" % left.splitlines()[:3])
+        print("  NOTE the fixture directory is still dirty after the restore attempt: %r" % left.splitlines()[:3])
     else:
         print("  the shared fixture is restored on the way out, so the next suite starts clean")
 
