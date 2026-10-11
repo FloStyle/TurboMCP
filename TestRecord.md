@@ -7565,3 +7565,36 @@ inventing one.*
 MEANS THE HONEST CONCLUSION IS THAT THE PURE ASSERTIONS BELONG IN A SUITE THAT TALKS TO A LIVE EDITOR AND CALLS A TOOL
 THAT EXPOSES THEM - NOT IN A COMMANDLET, AND NOT BECAUSE A COMMANDLET IS BETTER BUT BECAUSE THE ENGINE WILL NOT LET ONE
 RUN. ***
+
+---
+
+## 78. Round 119: the dead commandlet is REMOVED, and the build proves the removal was clean
+
+**MEASURED, AFTER DELETING BOTH FILES AND REBUILDING:** `Result: Succeeded`, **85 tools**, audit `uncalled: (none)`.
+
+*** AND THE ARGUMENT FOR REMOVING RATHER THAN KEEPING IS THE ONE THIS PROJECT APPLIES EVERYWHERE ELSE: "A FILE THAT
+DOCUMENTS A CONSTRAINT" SOUNDS USEFUL UNTIL YOU ASK WHAT A READER WOULD DO WITH IT. A reader who finds a commandlet class
+in the module would reasonably expect it to be INVOCABLE - and this one cannot be invoked in ANY launch mode, for an
+engine reason that is not its fault. THE CONSTRAINT IS BETTER SERVED BY FOUR SECTIONS OF THIS RECORD WITH THE ENGINE FILE
+AND LINE THAN BY A COMPILED `UCLASS` NO LAUNCH MODE CAN REACH. ***
+
+**AND IT IS REMOVED RATHER THAN LEFT AS A COMMENT BECAUSE THE TWO FILES WERE UNTRACKED ADDITIONS OF MINE** - *the tool
+count never referenced them, nothing includes them, and the module is unchanged by their absence, which the rebuild
+confirms rather than assumes.*
+
+**AND `TurboMCPCallCostCommandlet` STAYS.** *It is another workstream's committed work, AND ITS PRESENCE IS THE EVIDENCE
+THAT THE CONSTRAINT IS REAL: two commandlets in one module, both unreachable, is a fact about the engine's dependency
+graph and not about either file.*
+
+### What remains owed, stated as a brief rather than as a mystery
+
+    OWED   `NormaliseToolset` collapses the log's two toolset spellings to ONE key
+    OWED   `AssetFromArguments("")` is empty AND a literal argument names an asset - the `P1` distinction
+    ROUTE  a process where `GEditor` EXISTS: a suite that calls a TOOL exposing them, over MCP - which is how
+           every other check in this project runs
+    WHY NOT A COMMANDLET  `BlueprintEditorModule.cpp:214` is `check(GEditor)`, unconditional, in the StartupModule
+           of a module `TurboMCP.Build.cs:61` depends on. THE PROCESS DIES BEFORE ANY COMMANDLET'S `Main`.
+
+*** SO THE NEXT ATTEMPT OWES ONE MORE THING THAN THE LAST ONE: NOT JUST THE ASSERTIONS, BUT THE DECISION TO EXPOSE THE
+TWO FUNCTIONS THROUGH A TOOL SO THAT A SUITE DRIVEN OVER MCP CAN REACH THEM. That is a small addition to an existing
+toolset and it is the only shape the engine permits. ***
