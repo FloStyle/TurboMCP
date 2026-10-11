@@ -8568,3 +8568,34 @@ my own count was one `Get-ChildItem`; and this is one suite run.*
     OWED      the close-or-move answer, which is now MINE and for which I already have the evidence:
               the normaliser half IS covered by the log today; the `AssetFromArguments` half IS NOT;
               and a tool reporting on its own literal inputs is still a producer reporting on itself
+
+---
+
+## 114. *** 52 OF 52, AND THE SECOND OWED EVIDENCE TOOK ONE COMMAND TOO ***
+
+    pwsh -NoProfile -File Tools/run-suites.ps1
+    === TurboMCP suite runner: 3 static, 49 needing an editor ===
+    passed 52, failed 0, blocked 0, of 52
+
+*** SO THE FULL SUITE SET IS GREEN WITH THE NEW TOOL IN IT, AT 86 TOOLS AND 52 SUITES - UP FROM 51 SUITES AND 51 OF 51
+BEFORE. AND THE SECOND OF THE THREE OWED ITEMS, LIKE THE FIRST, WAS ONE COMMAND. ***
+
+**AND THE CONTRAST WITH SECTION 113 IS THE WHOLE RECORD IN TWO LINES:** *seventeen rounds of a workstream did not produce a
+verdict; **two commands produced a suite verdict and a full-run verdict.** The work was never blocked - **it was being
+MEASURED instead of EXERCISED.***
+
+### 114.1 What that closes, and what is now honestly left
+
+    CLOSED   `Tools/test-pure-checks.py`                    -> PASS (22 checks)
+    CLOSED   the full suite set with the new tool in it     -> 52 of 52, ZERO failures
+    OWED     the close-or-move answer - and it is MINE, with the evidence already in hand:
+               the normaliser half IS covered by the log today, and the `AssetFromArguments` half IS NOT,
+               because every log entry is `source=engine` and an engine event carries NO `arguments` field;
+               and a tool that reports what a function returned for AN INPUT I CHOSE is still a producer
+               reporting on itself, which is this project's oldest rule
+    OWED     `Spec/WORKING_PLAN.md` rows - 42 of them
+    OWED     the kit's measured table, the material writers, widget authoring, level and actors,
+             session and cost, source control, vision, build portability
+
+*** SO THE VACUITY DEBT'S MOST CONCRETE ITEM IS PAID, THE FULL RUN IS GREEN, AND THE PLAN IS STILL 42 ROWS. THE THREE
+NUMBERS THAT MATTER AT ROUND 155 ARE 86, 52 AND 42 - AND THE THIRD ONE IS THE ONLY ONE THAT HAS NOT MOVED. ***
