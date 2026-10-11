@@ -171,11 +171,26 @@ Or une cellule de statut peut contenir de la prose. **Le chiffre changeait entre
 
 ## 9. Ce que je prendrais le temps de faire, si le temps n'était pas compté
 
-**Dans cet ordre, parce que chaque item débloque le suivant :**
+**Dans cet ordre, parce que chaque item débloque le suivant. DEUX SONT LIVRÉS (9.1 et le trou structurel du §11.1) ; les trois autres restent.**
 
-### 9.1 **Détecter un éditeur étranger sur le port 8000** — *le durcissement le plus rentable*
+| Priorité | État |
+|---|---|
+| **§11.1 Le trou structurel** | ✅ **LIVRÉ** — CANNOT-MATCH ajouté et prouvé sur 6 cas, 5 faux positifs retirés, l'audit est **BLOQUANT**, 0 candidat |
+| **§9.1 Éditeur étranger** | ✅ **LIVRÉ** — check-mcp-server.py nomme le projet propriétaire du port, prouvé sur 3 cas |
+| **§9.2 Dépôt source control** | ⏳ *bloqué par l'environnement* |
+| **§9.3 Le kit TA-14→TA-21** | ⏳ *à faire* |
+| **§9.4 Vérificateur bloquant** | ✅ **LIVRÉ** (c'était le même item que §11.1) |
+| **§9.5 Les 30 writers** | ⏳ *mécanique* |
 
-Trois workstreams indépendants ont payé cette collision, dont moi. **`check-mcp-server.py` peut passer contre l'éditeur de quelqu'un d'autre, et la suite échoue alors avec « the provider is not Git » au lieu de « un autre processus possède le projet ».** *C'est un faux échec qui coûte un round à diagnostiquer chaque fois, et le correctif est un check d'identité du processus.*
+### 9.1 ✅ **Détecter un éditeur étranger sur le port 8000** — *LIVRÉ le 2026-10-11*
+
+Trois workstreams indépendants ont payé cette collision, dont moi. **`check-mcp-server.py` pouvait passer contre l'éditeur de quelqu'un d'autre, et la suite échouait alors avec « the provider is not Git » au lieu de « un autre processus possède le projet ».** *Un faux échec qui coûtait un round à diagnostiquer chaque fois.*
+
+> ***LIVRÉ : `check-mcp-server.py` interroge maintenant le processus, pas le protocole.*** *Le handshake MCP ne rapporte rien qui identifie un projet, donc un session id ne peut pas distinguer deux éditeurs ; **ce qui le peut est la ligne de commande** — `start-editor.ps1:260` construit `$Args = @($Project)` avec le **chemin absolu**.*
+>
+> **Prouvé sur trois cas exécutés :** *rien ne tourne → `NOTHING IS RUNNING`* · ***projet étranger → `RUNNING BUT NONE HAS project.uproject IN ITS COMMAND LINE — belongs to ANOTHER PROJECT`, exit 3*** · *le bon projet → `1 of them on turbomcptest.uproject`, handshake continue.*
+>
+> ***Et il a fallu trois corrections : `os` non importé ; « aucun processus » traité comme « projet étranger » (le **même** faux positif qu'il a fallu retirer de l'audit) ; et une ligne RESULT **générique** qui nommait la mauvaise cause — or un message d'échec confiant et faux est pire qu'un message vague.***
 
 ### 9.2 **Un dépôt source control qui répond** — *une seule commande fermerait la plus grande frontière du projet*
 
