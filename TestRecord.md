@@ -7307,3 +7307,57 @@ first one distinguishes reading from stopped.*
     the two briefs                BOTH COMMITTED AND PUSHED, so re-launching either row costs no rediscovery
 
 **AND `Spec/WORKING_PLAN.md` STILL READS 42 ROWS `todo`, WHICH REMAINS THE HONEST ANSWER TO HOW FAR THIS IS FROM DONE.**
+
+---
+
+## 73. *** I RAN THE NEVER-EXECUTED COMMANDLET, AND IT CRASHES. THAT IS THE FIRST MEASURED FACT ABOUT IT IN FOUR ROUNDS. ***
+
+**`TestRecord.md` SECTION 38 RECORDS `TurboMCPCallCostCommandlet` AS "IT COMPILES, AND IT CANNOT BE RUN here". THAT CLAIM
+HAD NEVER BEEN TESTED BY ANYONE - the workstream that wrote it had never executed it, the workstream I launched to run it
+was interrupted before it could, and FOUR ROUNDS OF THIS RECORD DESCRIBED IT AS AN OPEN ITEM. I RAN IT. TWICE. ***
+
+### First: I used the wrong invocation, and the file's own header told me so
+
+    $ UnrealEditor-Cmd.exe <proj> -run=TurboMCPCallCostCommandlet ...
+    LogInit: Error: TurboMCPCallCostCommandlet looked like a commandlet, but was not found
+
+*** AND THE HEADER SAYS, AT LINE 30: "HOW IT IS INVOKED. `-run=TurboMCP.TurboMCPCallCostCommandlet`, WITH THE MODULE
+PREFIX." I EXECUTED BEFORE I READ THE FILE THAT DOCUMENTS ITS OWN INVOCATION. *** *That is the eleventh-plus instance of
+this project's oldest shape, and this time the document was the SOURCE FILE I was running - the nearest possible copy.*
+
+### Second: with the correct invocation, IT CRASHES
+
+    $ UnrealEditor-Cmd.exe <proj> -run=TurboMCP.TurboMCPCallCostCommandlet ...
+    LogOutputDevice: Error: Ensure condition failed: InModuleName != NAME_None
+    LogWindows: Error: app_error called: Assertion failed: IsValid() [FModuleManager]
+    exit: 3
+
+*** SO "IT CANNOT BE RUN here" WAS CORRECT - AND THAT IS NOW MEASURED RATHER THAN ASSERTED. ***
+
+### 73.1 AND THE MEASUREMENT DISTINGUISHES TWO COMMANDLETS THAT I HAD WRONGLY LUMPED TOGETHER
+
+**A WORKSTREAM CLAIMED FOUR ROUNDS AGO THAT "-run= COMMANDLETS ARE BROKEN IN THIS TREE" AND I FALSIFIED IT** - because
+`make-kit-assets.ps1` **RUNS, WRITES EVERY ASSET INCLUDING `TA-14` AND `TA-20`, VERIFIES ITS OWN STRUCTURE AND EXITS
+ZERO.** *I concluded the `-run=` path was fine and that the workstream had generalised from two flaky observations.*
+
+*** AND THE TRUTH IS THAT BOTH MEASUREMENTS WERE RIGHT AND THEY ARE ABOUT DIFFERENT COMMANDLETS. THE HEADER OF THE PURE ONE
+SAYS SO AT LINE 32: "There is deliberately NO static initialiser calling `LoadModule`: `TurboMCPKitCommandlet` ..." - SO
+THE KIT LOADS ITS MODULE EXPLICITLY AND THE PURE COMMANDLET DELIBERATELY DOES NOT, AND THAT DIFFERENCE IS EXACTLY WHERE
+`InModuleName != NAME_None` FIRES. ***
+
+**SO MY FALSIFICATION WAS TOO BROAD IN THE SAME WAY THE WORKSTREAM'S GENERALISATION WAS: I TESTED ONE MEMBER OF A CLASS
+AND CONCLUDED ABOUT THE CLASS.** *Both errors are "a generalisation from the instance I happened to measure", which is the
+shape this record has now recorded against four other workstreams and twice against me.*
+
+### 73.2 What this means concretely
+
+    TurboMCPCallCostCommandlet   EXISTS, COMPILES, AND CANNOT BE RUN - MEASURED, exit 3, InModuleName != NAME_None
+    the fix                        is NOT known, and the difference from the kit is a NAMED lead:
+                                   the kit's explicit LoadModule call, which this file deliberately omits
+    what it would prove            the two `NormaliseToolset` behaviours the MCP suite STRUCTURALLY CANNOT test,
+                                   because the suite cannot make the engine emit a qualified toolset name
+
+*** AND THE CHEAPEST NEXT STEP IS ONE LINE OF INQUIRY RATHER THAN A WORKSTREAM: READ WHY THE KIT LOADS ITS MODULE AND
+WHETHER THE PURE COMMANDLET'S "DELIBERATELY NO STATIC INITIALISER" COMMENT IS DESCRIBING A CONSTRAINT OR A CHOICE. If it
+is a choice, adding the load is a two-line fix and the vacuity debt's most concrete item becomes provable. If it is a
+constraint, the file's whole reason for existing is unreachable and THAT belongs in the record rather than in a comment. ***
