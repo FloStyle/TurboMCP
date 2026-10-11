@@ -273,8 +273,21 @@ namespace
 			{
 				// NAMED RATHER THAN COUNTED. "one of the nodes was not found" would leave the caller to
 				// discover which, and a copy is the operation where that matters most.
+				//
+				// AND A SAMPLE OF THE KEYS THE GRAPH ACTUALLY HAS IS PRINTED, because a key format that
+				// does not match the reader's is the one failure a caller cannot diagnose from a refusal
+				// alone - the two tools would disagree while both looked correct.
+				TArray<FString> Samples;
+				for (UEdGraphNode* Node : InGraph->Nodes)
+				{
+					if (Node != nullptr && Samples.Num() < 3)
+					{
+						Samples.Add(KeyOf(Node));
+					}
+				}
 				OutRefusals.Add(FString::Printf(
-					TEXT("no node with id '%s' in graph '%s'"), *Key, *InGraph->GetName()));
+					TEXT("no node with id '%s' in graph '%s' (the graph's own ids look like: %s)"),
+					*Key, *InGraph->GetName(), *FString::Join(Samples, TEXT(", "))));
 				continue;
 			}
 			OutNodes.Add(Found);
