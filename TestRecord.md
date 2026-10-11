@@ -5772,3 +5772,67 @@ are not logged, which is how it was CONFIRMED rather than inferred.
 per-asset section says *"none can be computed"* with a reason. **A REPORT THAT SILENTLY RANKED ALL-ZERO ROWS WOULD
 IMPLY A RANKING EXISTED** - the same defect as the ten recorded cases of a check that passes while the thing it
 verifies is broken.
+
+---
+
+## 39. The claim "-run= commandlets are broken in this tree" is FALSIFIED - the kit commandlet runs and writes every asset
+
+*** AN AGENT DIAGNOSED A CRASH IN ITS OWN NEW COMMANDLET, RAN AN EXISTING ONE, SAW A SIMILAR CRASH, AND CONCLUDED THE
+WHOLE `-run=` PATH WAS BROKEN - CALLING IT "THE HIGHEST-VALUE LEAD IN THIS REPORT". IT IS NOT, AND MEASURING IT TOOK
+ONE COMMAND. ***
+
+WHAT IT REPORTED: *"I then ran the EXISTING, long-working `TurboMCPKitCommandlet` and IT CRASHES IDENTICALLY, same
+two lines, same place. ... EVERY FIXTURE REBUILD IN THIS PROJECT IS A `-run=` COMMANDLET ... THE COMMANDLET PATH
+ITSELF IS THE COMMON FACTOR ... VERY LIKELY WHY THE FULL RUN IS NOT 47/47."*
+
+WHAT I MEASURED, IDLE MACHINE, NO EDITOR ALIVE:
+
+    Tools/make-kit-assets.ps1
+        kit TA-1..4 wrote .../TA01_HandLaid        kit TA-11 wrote .../TA11_KitEnum.uasset
+        kit TA-12 wrote .../BP_TestAlpha.uasset     kit TA-13 wrote .../TA13_KitPath/...
+        kit TA-7  wrote .../TA07_Card.uasset        kit TA-14 wrote .../TA14_KitDataTable.uasset
+        kit TA-20 wrote .../TA20_KitParameters.uasset
+        kit TA-1 OK nodes=64 (needs 60..90) boxes=6 (needs 6..8) nested=1 (needs >=1) backward=0
+        exit: 0
+
+*** THE KIT COMMANDLET - THE ONE IT SAID "CRASHES IDENTICALLY" - RUNS, WRITES EVERY ASSET INCLUDING THE TWO NEW ONES,
+VERIFIES ITS OWN STRUCTURE, AND EXITS ZERO. SO THE `-run=` PATH IS NOT BROKEN. ***
+
+### 39.1 The mistake, in a form new enough to name
+
+**ITS MEASUREMENT WAS REAL AND ITS GENERALISATION WAS NOT.** It really did see a crash in its own commandlet; it
+really did see a crash running another. **AND THE SECOND WAS PROBABLY THE SAME TRANSIENT EDITOR-STARTUP FLAKINESS ITS
+OWN REPORT RECORDS SEPARATELY - *"the editor is flaky on startup (roughly 1 in 4 attempts dies at ~5s); retrying
+works"*.** *It had the disconfirming fact in its own report and joined the two crashes into a pattern instead.*
+
+*** THAT IS THE MIRROR OF "A CONSUMER THAT SILENTLY MATCHES NOTHING MAKES A WORKING PRODUCER LOOK BROKEN": HERE, TWO
+INSTANCES OF A FLAKY FAILURE WERE READ AS A STRUCTURAL ONE - AND THE STRUCTURAL READING IS MORE ATTRACTIVE BECAUSE IT
+EXPLAINS *MORE*, WHICH IS EXACTLY WHY IT NEEDS THE SAME MEASUREMENT BEFORE IT IS BELIEVED. A GENERALISATION FROM TWO
+OBSERVATIONS IS A HYPOTHESIS, AND THIS ONE CONTRADICTED A COMPONENT THAT HAD PASSED FOR DOZENS OF ROUNDS. ***
+
+### 39.2 What IS true and worth keeping from that report
+
+1. **ITS BREAK TEST DID NOT BITE AND IT SAID SO.** Replacing the body of `NormaliseToolset` with `return Trimmed;`
+   still gave **`PASS (29 checks)`**, because the check needs the log's `toolset` to be a QUALIFIED engine form **AND
+   THE SUITE CANNOT MAKE THE ENGINE EMIT ONE.** Its sentence: **"29 checks is not 29 independent checks"** - the same
+   class of gap `R-MAT-INST-LOAD` reported as *"20 checks is not 20 independent checks."* **TWO CAPABILITIES IN TWO
+   ROUNDS HAVE NOW REPORTED THAT THEIR CHECK COUNT OVERSTATES THEIR COVERAGE - a pattern about the SUITE STYLE rather
+   than about either capability.** Its fix is a PURE-FUNCTION COMMANDLET testing `NormaliseToolset` and
+   `AssetFromArguments` with literal inputs, *"the exact check an MCP suite structurally cannot make"* - **and it has
+   never executed, which is stated.**
+2. **ITS CORRECTION TO MY BRIEF WAS RIGHT:** the qualification is **a whole path appearing twice**, so the rule is the
+   **LAST DOTTED SEGMENT**. `TurboMCPAnalyticsProvider.cpp:55` registers FULLY QUALIFIED names, so `Toolset` arrives
+   as `TurboMCP.TurboMCPEditToolset` and `Tool` as `TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog` - **appending
+   one to the other doubles it, and no prefix strip can undo a doubling.**
+3. **A SECOND LIVE DEFECT:** an unresolved hash is written `(engine tool ending 866fe74ba22c)` - **human text WITH
+   DOTS** - so a slice produced a "tool" of `866fe74ba22c)`. **A PLACEHOLDER IS NOW ATOMIC: that label was a LIE about
+   a name honestly marked as unknown.**
+4. *** AND THE ROOT CAUSE OF THE ZERO TOKENS, WHICH IS A REAL GAP: NO PLUGIN TOOL EVER CALLS `FScopedCall`. ***
+   `TurboMCPCallLog.cpp:205` defines it, `:252` computes `TurboMCPTokenEstimate`, **AND IT IS CONSTRUCTED NOWHERE.**
+   Every line is `source=engine`, every `token_estimate` is 0, and no entry carries arguments. **`T-HELP-6`'s "most
+   expensive" CANNOT BE MET AS WRITTEN**, and the tool **reports the absence rather than a fake winner** - *"a report
+   that silently ranks all-zero rows implies a ranking existed."* **DECISION FOR THE ORCHESTRATOR: instrument the
+   dispatch, or reword the row.**
+5. **AND THE SAME RUN PROVED THE KIT IS REPRODUCIBLE:** `TA-14` and `TA-20` were rebuilt from the commandlet just
+   now, which is the property the project's fixture rule requires, **since generated assets are restored rather than
+   committed.**
