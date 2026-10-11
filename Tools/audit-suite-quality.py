@@ -227,7 +227,7 @@ def audit(path):
 def main():
     suites = sorted(f for f in os.listdir(TOOLS)
                     if f.endswith(".py") and f not in SKIP and f.startswith(("test-", "check-")))
-    print("=== %d suite(s) audited for checks that CANNOT fail ===" % len(suites))
+    print("=== %d suite(s) audited for checks that CANNOT fail and checks that CANNOT pass ===" % len(suites))
     print()
 
     total = 0
@@ -255,9 +255,29 @@ def main():
     print("and still assert something that does not matter. Only a run against a broken subject settles")
     print("that, which is why every suite is expected to have shown its check failing at least once.")
     print()
-    # This audit is ADVISORY and does not fail a build: it reports candidates for a human, and a
-    # non-zero exit would make it a gate it is not equipped to be.
-    print("RESULT: PASS (advisory: %d candidate(s) reported)" % total)
+    # *** THIS AUDIT NOW BLOCKS. IT USED TO BE ADVISORY, AND REPORT.md SECTION 11.1 NAMES THAT AS THE PROJECT'S
+    # STRUCTURAL HOLE: THREE OF ITS NINE INVARIANTS ARE HELD BY CONVENTION AND REVIEW RATHER THAN BY THE
+    # MACHINE, AND THEY ARE EXACTLY THE THREE THAT PRODUCED THE FIVE CAPABILITIES WHOSE CHECK COUNT
+    # OVERSTATED THEIR COVERAGE. THE INVARIANTS VERIFIED MECHANICALLY HAVE NEVER REGRESSED HERE. ***
+    #
+    # IT COULD NOT BLOCK BEFORE, AND THE REASON IS WORTH KEEPING: IT REPORTED FIVE CANDIDATES AND **ALL FIVE
+    # WERE FALSE POSITIVES** - four from a rule whose pattern contradicted its own message, and one from
+    # assuming a suite must name its failure list `failures`. A GATE THAT FAILS HEALTHY CODE IS NOT A GATE;
+    # IT IS A REASON TO BYPASS THE GATE. The findings were read, each false positive was removed, and the one
+    # REAL candidate it then found (`test-widget-preview.py:175`, a bare `"4096"` substring test that any
+    # other 4096 could satisfy) was FIXED rather than tolerated.
+    #
+    # SO THE COUNT IS NOW ZERO, AND ZERO IS THE CONDITION UNDER WHICH AN ADVISORY CAN BECOME A GATE. If a
+    # future suite introduces a candidate, THIS FAILS THE RUN - which is the point: the invariant is now held
+    # by the machine rather than by whoever remembers to read the output.
+    if total:
+        print("RESULT: FAIL (%d candidate(s): each one is a check that cannot fail or cannot pass, and" % total)
+        print("        each needs either a fix or a reason it is a false positive before this gate passes)")
+        return 1
+    # *** AND THE HEADING NAMES BOTH DIRECTIONS, BECAUSE THE AUDIT NOW LOOKS IN BOTH. *** The five original
+    # findings look for assertions that cannot FAIL; CANNOT-MATCH looks for one that cannot PASS. This project
+    # had spent five sections on the first and never once on the second.
+    print("RESULT: PASS (0 candidates: no check that cannot fail and none that cannot pass)")
     return 0
 
 

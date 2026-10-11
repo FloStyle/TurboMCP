@@ -172,7 +172,12 @@ def main():
     print(huge)
     print()
     check("refuses", huge.startswith("error:"))
-    check("names the limit", "4096" in huge)
+    # *** THIS CHECK USED TO BE `"4096" in huge`, AND IT WAS A BARE-NUMERAL SUBSTRING TEST. ***
+    # ANY 4096 ANYWHERE ON THE LINE SATISFIED IT - including the `9000`'s neighbour in a timestamp, a node id
+    # or a byte count - so the check could pass while the tool said nothing about a limit at all. The tool's
+    # own message is `error: %dx%d is larger than the %d limit.` (TurboMCPCapture.cpp:434), so the ASSERTION
+    # NOW NAMES THE WHOLE SENTENCE AND NOT ONLY THE NUMBER IN IT. The sentence is what makes it about a limit.
+    check("names the limit", "is larger than the 4096 limit" in huge)
 
     print()
     print("=== a function that takes parameters is refused ===")
