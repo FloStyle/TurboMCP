@@ -5655,3 +5655,50 @@ record has paid for most often.*
 **AND THE CHEAPER MEASUREMENT THAT WOULD SETTLE IT IS ONE RUN: print the `slowest_section` THE SUITE ACTUALLY RECEIVED
 at the moment it failed.** The check already passes `section=[...]` as its detail - **so the detail string in a failing
 run contains the answer, and the run I made did not show it because the harness prints only the verdict line.**
+
+---
+
+## 38. R-CALL-COST PASSES (29 checks) - and it took a RESTORED BREAK TEST to make that a real result
+
+*** `test-call-cost` REPORTS `RESULT: PASS (29 check(s) run)`, AND THE FIRST TIME I SAW THAT NUMBER THE BUILD WAS
+BROKEN. *** The suite passed against the PREVIOUS binary while the tree did not compile:
+
+    TurboMCPCallCost.cpp(117,2): error C2059
+    Result: Failed (OtherCompilationError)
+
+**AND THE CAUSE WAS A BREAK TEST THAT WAS NEVER RESTORED:**
+
+    L116: // *** BREAK TEST: RETURN THE NAME UNCHANGED, so the doubling is NOT collapsed. ***
+    L117: return Trimmed;
+
+**THE WORKSTREAM BROKE ITS OWN NORMALISER TO PROVE THE CHECK COULD FAIL - WHICH IS EXACTLY WHAT THIS PROJECT
+REQUIRES - AND THEN STOPPED WITH THE BREAK STILL IN THE TREE AND THE BUILD RED.** So the 29-check pass I first
+measured was **a suite passing against a stale binary**, which is the seventh-firing trap in a NEW COAT: not a
+restored `mtime`, but **an unrestored break test**. `git checkout -- TurboMCPCallCost.cpp` restored it, the build
+returned `Result: Succeeded`, and **the suite passed AGAIN at 29 checks against a binary that actually contains this
+code.**
+
+*** SO THE RULE THIS PRODUCES IS ONE LINE AND IT IS THE MIRROR OF THE `mtime` ONE: A BREAK TEST MUST BE RESTORED
+BEFORE THE WORKSTREAM STOPS, AND A `Result: Succeeded` AFTER A RESTORE MUST BE READ TOGETHER WITH "DID THE SOURCE
+CHANGE SINCE THE LAST BUILD". `git diff --stat` BEFORE ANY VERIFICATION RUN WOULD HAVE CAUGHT THIS IN ONE COMMAND -
+IT IS THE SAME CHECK THAT WOULD HAVE CAUGHT THE `mtime` FIRING FROM THE OTHER SIDE. *** *The `mtime` case is "the
+source changed and UBT did not notice"; this case is "the source was broken and the binary was the good one".*
+
+### 38.1 AND THE WORKSTREAM CORRECTED MY BRIEF, WHICH IS THE MORE INTERESTING HALF
+
+My brief said, as one of the two findings to carry forward, that the doubly-qualified toolset should be normalised by
+*"stripping a leading `TurboMCP.`"*. **THAT RULE IS WRONG, AND THE TOOL'S OWN FIRST LIVE RUN SAID SO:**
+
+    TOTALS PER TOOL (3 row(s), each with its call count)
+    TurboMCPEditToolset.TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog | 1 call(s) | ...
+
+*** THE QUALIFICATION IS NOT A PREFIX - IT IS A WHOLE PATH APPEARING TWICE, AND STRIPPING A PREFIX CANNOT UNDO A
+DOUBLING.*** The correct rule, which the workstream found and implemented, **takes the LAST SEGMENT**: it is the
+toolset's own name, **and it is stable against BOTH writers** - the analytics provider's
+`TurboMCP.TurboMCPReadToolset` and this plugin's bare `TurboMCPReadToolset` both end in the right segment, **so one
+rule collapses both spellings and nothing has to be kept in step with a prefix list.**
+
+**THAT IS THE ELEVENTH RECALLED-NAME-CLASS ERROR IN THIS PROJECT AND IT WAS MINE, IN A BRIEF, ABOUT A LOG FORMAT** -
+and it was caught by the one thing that catches this class: **reading the tool's own output instead of reasoning about
+the format it was described as having.** *The earlier ten were engine API names recalled instead of read; this one was
+a WIRE FORMAT recalled instead of read, which suggests the rule generalises further than "read the engine".*
