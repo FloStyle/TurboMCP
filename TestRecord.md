@@ -6364,3 +6364,31 @@ AT 225 COSTS TWO COMMITS AND MAKES BOTH STATES RECOVERABLE. ***
 **AND THE LAST TWO ARE THE ONES THAT MATTER, WHICH IS WHY THEY KEEP BEING RESTATED: A SUITE THAT NAMES FOUR TOOLS AND
 PRINTS NO VERDICT HAS MOVED THE AUDIT AND NOT THE EVIDENCE.** *The audit counts MENTIONS; only a `RESULT:` line is a
 claim, and only a check with a NAMED FAILING INPUT is a check.*
+
+---
+
+## 51. Round 93: the agent moved from the CONSUMER to the PRODUCER, which is the right direction
+
+**MEASURED:** `main` = `origin/main` = `4b4eda4`; **85 tools**; audit **PASS**; `TurboMCPGraphStructure.cpp` **1001 -> 1014
+lines**, MODIFIED IN PLACE and now committed, after the suite itself was revised twice (258 -> 225).
+
+*** THE FILE IT CHOSE IS THE INFORMATIVE PART. AFTER TWO REVISIONS OF THE SUITE IT WENT TO THE C++ - SO THE MISSING
+`RESULT:` LINE IS NOT THE SUITE FAILING TO PRINT, IT IS THE SUITE REACHING SOMETHING IN THE TOOL THAT DOES NOT BEHAVE,
+AND IT IS FIXING THE PRODUCER RATHER THAN WORKING AROUND IT IN THE CONSUMER. ***
+
+**AND THAT IS THE OPPOSITE OF THIS PROJECT'S MOST-REPEATED FAILURE.** *Ten recorded instances here are "a consumer that
+silently matches nothing makes a working producer look broken", and four recent rounds added a fifth mechanism on top of
+it - a check over a relationship inherits the vacuity of its input. **The cheap move available at this exact moment was
+to loosen the assertion until the suite printed a verdict; the move taken was to go and find out what the tool actually
+does.***
+
+### The counts on this row, for the record, because they are the argument for the mechanism
+
+    SAFETY COMMITS ON THIS ONE ROW            9
+    WORKSTREAMS THAT PRODUCED SOMETHING       4, each stopping at a different point
+    WORK DESTROYED BY A REVERT                0
+    TIMES A STEP WAS REDONE                   0
+
+**THE PREVIOUS WORKSTREAM ON THIS ROW GOT AS FAR AS THE DESIGN AND NO CODE. THIS ONE HAS COMMITTED EVERY INTERMEDIATE
+STATE, INCLUDING TWO SUITE REVISIONS AND AN IMPLEMENTATION FIX - so if it stops now, the next attempt starts at 1014
+lines of compiling code and a named open question rather than at a blank page.**
