@@ -6889,3 +6889,41 @@ Acting wrongly cost a near-collision and, one section earlier, a destroyed capab
 is a nice-to-have explanation of one red suite; row 1.4's answer feeds four decisions that are ALREADY RECORDED AS
 MINE TO MAKE, with their types and citations, so they do not decay by waiting.* **A round spent not disturbing a live
 measurement is cheaper than a round spent recovering from disturbing one - and this project has the receipts for both.**
+
+---
+
+## 63. Round 104: row 0.2 landed with a REPRODUCED failure first, and the dormancy was real work
+
+*** THE TWO-ROUND WAIT WAS THE RIGHT CALL AND THE PROOF ARRIVED AS A COMMIT RATHER THAN AS A MESSAGE: `80f2756`, "Row 0.2:
+both suites give their fixture back ON THE WAY IN, and assert it." ***
+
+**AND THE COMMIT OPENS WITH THE THING THIS PROJECT KEEPS HAVING TO LEARN:**
+
+    MEASURED REPRODUCTION FIRST, BECAUSE A RESTORE NOBODY REPRODUCED IS A GUESS:
+    `ReceiveActorOnClicked` was overridden by hand and saved with E-SAVE, the editor was STOPPED AND STARTED,
+    and the residue SURVIVED (5 overridden -> 6). The old suite then failed twice, identically:
+        FAIL (ReceiveActorOnClicked was left overridden by an earlier run)
+    THAT IS A REPORT OF A DIRTY FIXTURE, NOT A RECOVERY FROM ONE.
+
+*** "A RESTORE NOBODY REPRODUCED IS A GUESS" IS THE SENTENCE TO KEEP, AND IT IS THE STRONGEST FORM OF THE PROJECT'S OWN
+RULE YET: NOT "SHOW THE CHECK CAN FAIL" BUT "SHOW THE CONDITION THE CHECK EXISTS FOR CAN ARISE AT ALL". A SUITE THAT
+REPORTS A DIRTY FIXTURE HAS NOT RECOVERED FROM ONE - AND THE RECORD HAS FOUR ROUNDS OF EVIDENCE THAT THE DIFFERENCE
+BETWEEN THOSE TWO IS EXACTLY WHERE VACUOUS CHECKS LIVE. ***
+
+**AND IT STOPPED AND STARTED THE EDITOR TO PROVE THE RESIDUE SURVIVED**, which is the step that turns "the fixture looks
+clean" into "the fixture is dirty across a process boundary" - *the only version of the claim that means anything, since
+the whole defect is about state persisting where a later run reads it.*
+
+**WHAT IS STILL OWED FROM THIS ROW, STATED SO IT IS NOT MISTAKEN FOR DONE:** the full suite set is running now
+(`.agent/fullrun-row02.log`, started 04:47), **and the question it answers is whether `test-material-tidy` still fails in
+a full run** - *which is the entire reason row 0.2 was worth doing, since that suite passes alone and fails in the run.*
+*** IF IT STILL FAILS, THE FIXTURE-RESTORE THEORY IS WRONG FOR IT AND THAT MUST BE RECORDED AS A FALSIFICATION RATHER
+THAN AS A PARTIAL WIN. ***
+
+### And the reading that the wait was based on, settled
+
+**I wrote in section 62 that two idle rounds had two readings and that I was choosing to name the second rather than act
+on it. THE LOGS SETTLED IT: `make-material-asset.log` moved 2 minutes before the check and `panel-probe.log` before that
+- THE WORKSTREAM WAS MID-MEASUREMENT THE WHOLE TIME.** *Section 55 is the counterfactual: the same appearance, acted on,
+produced a launched agent on a live row and a stop-and-confirm. **THE DIFFERENCE BETWEEN THE TWO ROUNDS WAS NOT BETTER
+JUDGEMENT, IT WAS ASKING THE MACHINE INSTEAD OF READING ITS SILENCE.***
