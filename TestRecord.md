@@ -9400,3 +9400,19 @@ measured and what was not.***
 **AND IT NAMES THE TENSION INSTEAD OF PRETENDING IT IS ABSENT:** *the brief asks for a SMALL NAMED SET of write tools, not all of
 them, and requires the report to say which remain unwired - **because "a half-wired mechanism that says which half is wired is a
 complete deliverable, and a claim that all writers are covered when three are is not."***
+
+---
+
+## 143. Round 192: row 10.2 is rebuilding fixtures, one round after its wiring appeared
+
+    MEASURED   main = origin/main = d9f14bc   ·   93 declarations   ·   clean tree (all six files committed)
+               make-kit-assets.log 08:55:59 · make-acceptance-asset.log 08:56:51 · editor running
+               NO RESULT line for `test-vcs-write` YET
+
+*** SO THE ROW WENT FROM "NOTHING ON DISK" TO "SIX FILES, TWO OF THEM EXISTING WRITE TOOLS" TO "REBUILDING FIXTURES" IN ABOUT
+TEN MINUTES, AND THE REBUILD IS THE SAME NORMAL PREREQUISITE SECTION 186 NAMED: its suite must exercise a WRITE TOOL, and a write
+tool needs a fixture. ***
+
+**AND THE ONE NUMBER THAT HAS NOT MOVED IS THE INTERESTING ONE: 93 DECLARATIONS, UNCHANGED.** *Row 10.1 moved it 90 -> 93 by adding
+three tools. **Row 10.2 adds NONE** - it wires an existing mechanism into existing writers - **so for the first time the plan can
+advance without the tool count moving, which is precisely what a row that changes BEHAVIOUR rather than SURFACE looks like.***
