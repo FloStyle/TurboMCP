@@ -6772,3 +6772,35 @@ safety commit as purely costless.* **AND IT NOTED THAT THE AGENTS IT HEARD ABOUT
 LIVE, WHICH IS TRUE AND IS THE ROOT OF THE COLLISION IN SECTION 55.** *A brief's statement about OTHER workstreams is a
 snapshot, not a fact, and the next briefs should say that explicitly rather than asserting a state the brief cannot
 guarantee.*
+
+---
+
+## 59. The full run is 50 of 51, up from 47 of 48 - and the graph row is CLOSED
+
+    === TurboMCP suite runner: 3 static, 48 needing an editor ===
+    FAIL  test-material-tidy   RESULT: FAIL (1) -> the expression count is UNCHANGED, ...
+    passed 50, failed 1, blocked 0, of 51
+
+*** AND THE ONE FAILURE IS `test-material-tidy`, A SUITE THAT PREDATES THIS WORK AND IS NOT THE GRAPH ROW. THE GRAPH
+ROW'S SUITE IS IN THE 50. ***
+
+**THE ARC, MEASURED ACROSS THIS SEQUENCE:**
+
+    39 of 47   I attributed it to a harness restart race and STOPPED LOOKING
+    47 of 48   it was CODE - two capabilities landing and a pre-existing C2665 build break
+    50 of 51   four capabilities and a measured root cause
+
+*** AND THE ONE THING THAT MOVED IT WAS NOT ORCHESTRATION. IT WAS THE WILLINGNESS TO RUN THE THING INSTEAD OF REASONING
+ABOUT IT: `-SingleFile` gave a false green, the suite's `no result line` hid a `NameError`, and a `NameError` hid a
+producer defect that refused every copy. THREE LAYERS OF "THE DIAGNOSTIC WAS WORKING AND THE CONCLUSION WAS WRONG". ***
+
+### And the row is closed with both halves stated at the width they were actually tested
+
+    E-GRAPH-COPY      BUILT, PASS (24 checks), verified through a DIFFERENT tool (.uasset restored, not committed)
+    E-GRAPH-COLLAPSE  NOT BUILT, REFUSES BY SAYING SO, with the one open question named - and NOTHING written
+    T-STRUCT-11       PROVES two graphs of ONE blueprint; the cross-asset half is BUILT AND NOT EXERCISED,
+                      and the suite says so in its own header
+
+**SIX WORKSTREAMS TOUCHED THIS ROW. NOT ONE STEP WAS REDONE AND NO WORK WAS DESTROYED** - fifteen commits on the row,
+and the mechanism that made that possible was three rules: **the brief says COMMIT, the tree is never reverted while a
+workstream lives, and a workstream that finds its brief contradicting the tree STOPS AND ASKS.**
