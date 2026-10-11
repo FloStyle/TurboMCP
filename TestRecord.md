@@ -8934,3 +8934,18 @@ THOSE FIVE. ***
 
 *** SO THE HONEST SUMMARY OF FIVE SECTIONS OF INSTRUMENT WORK IS: I BUILT FOUR BETTER WAYS TO INFER A THING I COULD HAVE ASKED
 DIRECTLY. THE INFERENCE WAS NEVER WRONG IN ITS MEASUREMENTS AND IT WAS ALWAYS ONE STEP FROM THE ANSWER. ***
+
+---
+
+## 128. Round 174: the right instrument is now the one being used, and the round is one line
+
+    MEASURED   main = origin/main = acfd287   ·   90 tools   ·   clean tree   ·   `Spec/WORKING_SCROW.md` ABSENT
+               and `list_agents` says `427a3626 [running]`, which is the answer, not an inference
+
+*** SO THE ROUND IS: THE MEASUREMENT ROW IS STILL READING, THE ONLY INSTRUMENT THAT CAN SAY SO IS THE ONE THAT MEASURES THE
+AGENT, AND THERE IS NOTHING TO DECIDE. ***
+
+**AND THE USEFUL THING ABOUT WRITING IT DOWN IS THAT THIS IS THE FIRST ROUND IN THE WHOLE STRETCH WHERE THE LIVENESS QUESTION WAS
+ANSWERED RATHER THAN APPROACHED.** *Sections 123, 131, 140 and 141 each built a better inference; section 173 found the direct
+answer; and this round USES it instead of rebuilding it. **That is the whole difference between a lesson recorded and a lesson
+applied, which this project has documented eleven times in its own source comments.***
