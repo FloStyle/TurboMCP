@@ -6453,3 +6453,24 @@ COSTS - TEN COMMITS - AND TEN COMMITS IS CHEAPER THAN ONE SECTION-30. ***
 
 **OPEN, UNCHANGED: the suite reaches no `RESULT:` line; which `T-STRUCT-11` is proved (two graphs of one blueprint, or
 two assets); and for each check, the input that makes it fail.**
+
+---
+
+## 54. Round 97: an in-place edit that did not change the line count, and why it still got committed
+
+**MEASURED:** `main` = `origin/main` = `b667fcf`; **85 tools**; audit **PASS**; `TurboMCPGraphStructure.cpp` **1032 lines,
+unchanged in size**, modified 16 seconds before the commit.
+
+*** THE SIZE DID NOT MOVE, SO A TIMESTAMP-ONLY CHECK WOULD HAVE CALLED THIS NOTHING. IT WAS COMMITTED ANYWAY, AND THAT IS
+THE POINT: "MODIFIED" IS A FACT ABOUT THE FILE, NOT ABOUT ITS LENGTH. *** *The staleness trap this project has hit seven
+times runs on exactly this confusion - a `Result: Succeeded` that means "nothing needed rebuilding" read as "nothing
+changed". **The mirror of it is a file whose SIZE is unchanged and whose CONTENT is not**, and the only thing that
+distinguishes them is whether the change is in git.*
+
+    SAFETY COMMITS ON THIS ONE ROW            11
+    WORKSTREAMS THAT PRODUCED SOMETHING       5
+    WORK DESTROYED BY A REVERT                0
+    TIMES A STEP WAS REDONE                   0
+
+**OPEN, UNCHANGED: the suite reaches no `RESULT:` line; which `T-STRUCT-11` is proved; and for each check, the input
+that makes it fail.**
