@@ -102,7 +102,7 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 
 | # | Work | Spec | Decisions | Test | State |
 |---|---|---|---|---|---|
-| 3.1 | `P/E-MAT-BLOCKS`, the last phase 8 capability | `P/E-MAT-BLOCKS` | `D-17`, `D-44` | T-MAT-8 | todo |
+| 3.1 | `P/E-MAT-BLOCKS`, the last phase 8 capability | `P/E-MAT-BLOCKS` | `D-17`, `D-44` | T-MAT-8 | done |
 | 3.2 | Material reader at `full` detail: node type ids, pin indexes, function inputs distinguished from parameters | `04_FORMATS.md` section 2.5 | `D-14`, `D-15` | T-WRITE-6 | todo |
 | 3.3 | `P-MAT-CHECK`, then `P/E-MAT-APPEND` | `03_TOOLS.md` section 9 | `D-28`, `D-29`, `D-30` | T-WRITE-6 | todo |
 | 3.4 | `P/E-MAT-REPLACE`, then `P/E-MAT-PATCH` | `03_TOOLS.md` section 9 | `D-28`, `D-45` | T-WRITE-6 | todo |
