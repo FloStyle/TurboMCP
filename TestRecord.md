@@ -9076,3 +9076,27 @@ obeyed.*
 **NOTHING IS CLAIMED BEYOND THE COUNT: THE DECLARATIONS HAVE BODIES, THE MODULE BUILDS THE WORKSTREAM HAS NOT YET SAID, NO
 `RESULT` LINE EXISTS FOR `test-vcs`, AND `93` IS A COUNT OF DECLARATIONS UNTIL IT IS A COUNT OF VERIFIED TOOLS.** *The audit
 answers a different question - whether each declared tool is NAMED somewhere - and it answers that one correctly.*
+
+---
+
+## 133. Round 180: the three probe runs are the measurement being EXERCISED, not the suite, and they are 25 seconds apart
+
+    vcs-run-none.log       07:50:12
+    vcs-run-git.log        07:50:20
+    vcs-run-perforce.log   07:50:49
+    sc-run-perforce-co.log 07:31:26   ·   sc-run-plastic-co.log 07:31:35   (the PREVIOUS workstream's probes)
+
+*** SO ROW 10.1 IS RUNNING THE ENGINE WITH A DIFFERENT PROVIDER SELECTED THREE TIMES IN FORTY SECONDS, AND THE FILE NAMES SAY
+WHICH: none, git, perforce. THAT IS THE MEASUREMENT BEING EXERCISED RATHER THAN READ - AND IT IS WHAT THE BRIEF ASKED FOR WHEN IT
+SAID THE PREVIOUS WORKSTREAM'S GIT CHECKOUT ANSWER WAS UNMEASURED AND "A PREDICTION IS NOT A MEASUREMENT". ***
+
+**AND THE OUTPUT IS ONLY ENGINE STARTUP SO FAR, WHICH IS EXPECTED RATHER THAN DISAPPOINTING:** *a `-run=` commandlet takes about
+twenty-five seconds to reach the plugin's own logging, and the tail of each log at this moment is still
+`LogToolsetRegistry: Warning: IsAvailable: Editor is not available` - **the same line the kit commandlet prints, i.e. a healthy
+commandlet winding down, not a failure.*** **SO THE ROUND RECORDS THREE PROBES IN FLIGHT AND DOES NOT INTERPRET THEIR RESULT,
+WHICH DOES NOT EXIST YET.**
+
+**AND THE ONE THING WORTH NOTING ABOUT THE ORDER: `none` FIRST, THEN `git`, THEN `perforce`.** *That is the order the brief
+specified for BUILDING - Git first because it is the only one available here, Perforce second because `UsesCheckout()==true` is
+why the capability exists - and the probe order is running the unavailable default first as a CONTROL, which is what a careful
+measurement does and what the brief did not ask for explicitly.*
