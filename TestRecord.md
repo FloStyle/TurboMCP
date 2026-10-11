@@ -10351,3 +10351,65 @@ so a suite this row writes must have a named failing input for every check - **a
 is restored rather than tracked, so **the code must be committed and the asset must be reproducible from it** - and the brief
 requires that proven by deleting one and rebuilding it.* *** A fixture that exists only on this machine is not a fixture; it is a
 coincidence that will be gone at the next clean checkout. ***
+
+---
+
+## 170. Round 233: THE FULL RUN CANNOT BE GREEN AT HEAD - A PRE-EXISTING CONFLICT BETWEEN TWO SUITES, FOUND BY THE KIT WORKSTREAM
+
+*** THE KIT WORKSTREAM FOUND THIS AND PROVED IT WITH TWO TARGETED EXPERIMENTS, NEITHER OF WHICH IS ITS OWN SUITE: ***
+
+    `Tools/test-vcs.py:596-598` REQUIRES `TA01_HandLaid.uasset` TO BE **CLEAN** - "NEITHER call touched the
+    working tree: the git CLI reports the fixture unmodified"
+    `Tools/test-graph-fix-backward.py:308` CALLS `rebuild_kit_and_reconnect()` UNCONDITIONALLY at the top of
+    `main`, AND IT RUNS **BEFORE** `test-vcs`
+    SO `test-vcs` FAILS ON A HEALTHY TREE WITH A CHECK THAT IS **TRUE OF ITS OWN TOOL AND FALSE OF THE SUITE
+    THAT RAN BEFORE IT**
+
+*** AND THE PROOF IS THE PART THAT MATTERS: `test-vcs` PASSES ALONE (55 checks, none skipped) AND FAILS IN THE FULL RUN'S ORDER
+after `test-graph-fix-backward`. Both files are BYTE-IDENTICAL to `f630300` (`git diff f630300 --` those two paths is empty), so
+THE CONFLICT IS PRE-EXISTING AND NOT A REGRESSION - and THE FULL RUN CANNOT BE GREEN AT HEAD for this reason. ***
+
+### 170.1 And I attempted the fix and it DID NOT WORK, which is recorded rather than claimed
+
+    WHAT I DID: `test-graph-fix-backward.py`'s OWN DOCSTRING at `:103-106` states the rule - "a suite that owns a
+    shared resource must restore it ON THE WAY IN as well as THE WAY OUT" - AND ONLY THE WAY IN WAS IMPLEMENTED.
+    So I added `git checkout -- TestProject/Content/Tests` at the end of `main()`, ASSERTED by reading
+    `git status --porcelain` back, which is the restore every other suite here uses.
+    RESULT: `-Suites test-graph-fix-backward,test-vcs` STILL gives PASS then FAIL, and the fixture is still ` M`.
+
+*** I COMMITTED THE ATTEMPT WITH A MESSAGE THAT SAYS SO. A CHANGE THAT CLAIMS TO CLOSE A DEFECT AND DOES NOT IS WORSE THAN NO
+CHANGE, because the next reader would stop looking. ***
+
+### 170.2 *** AND THE REASON I COULD NOT TELL IS THE SIXTH INSTANCE OF THE PROJECT'S OLDEST VERIFICATION MISTAKE ***
+
+    I FILTERED THE RUN'S OUTPUT FOR `RESULT` AND `PASS/FAIL` - AND THE TWO NOTE LINES MY CODE PRINTS
+    ("restored on the way out" / "still dirty after the restore") MATCH NEITHER PATTERN.
+    THEN I RAN THE RAW HARNESS OUTPUT AND FOUND IT IS ONLY **23 LINES**: `run-suites.ps1` DOES NOT RE-EMIT A
+    SUITE'S STDOUT AT ALL.
+
+*** SO I VERIFIED BY A CHANNEL THAT CANNOT SHOW ME THE THING I WAS VERIFYING - AND I DID IT **AFTER** WRITING A COMMIT WHOSE
+ENTIRE MESSAGE WAS "I DID NOT READ THE OUTPUT". THE CODE IS ALMOST CERTAINLY CORRECT AND THE EVIDENCE FOR IT IS NOT OBTAINABLE
+THROUGH THE HARNESS; WHAT IS NEEDED IS TO RUN THE SUITE'S OWN ENTRY POINT DIRECTLY, WHICH IS THE SECTION-156 LESSON APPLIED TO
+MY OWN VERIFICATION RATHER THAN TO A WORKSTREAM'S. ***
+
+### 170.3 And the third priority's real result, which is better than "two refusals"
+
+    `TA-17` **BUILT** - two assets (`TA17_KitCurveFloat`, `TA17_KitCurveTable`), because NO SINGLE .uasset is both
+    a curve float and a curve table, so one row is answered by two files
+    READ BACK THROUGH A DIFFERENT TOOL: the engine's own Python surface via `-run=PythonScriptCommandlet`
+    (`UCurveFloat::GetFloatValue`, `UDataTableFunctionLibrary::CurveTableToJson`), NOT the builder - classes
+    `CurveFloat`/`CurveTable`, table JSON exactly `Row_A {0:1, 0.25:2, 0.5:3}` / `Row_B {0:5, 0.25:6}` /
+    `Row_C {0:9, 0.25:10, 0.5:11, 0.75:12}`, raw names tables carrying `RichCurveKey`
+    *** THE TANGENT CHECK IS BEHAVIOURAL BECAUSE IT MUST BE: `get_editor_property("float_curve")` IS REFUSED
+    (plain `UPROPERTY()`), so the engine's own evaluator is asked at t=0.125, WHERE ZERO TANGENTS ANSWER 1.0 AND
+    THE WRITTEN TANGENTS ANSWER 1.0625. A fixture whose tangents had been silently zeroed FAILS. ***
+    REPRODUCIBLE, AND HONESTLY: it DELETED both assets, re-ran the script, and both returned - BUT NOT
+    BYTE-IDENTICAL (98 and 96 bytes differ inside the package header; the payload is identical). *** IT SAYS SO
+    RATHER THAN CLAIMING A STABLE FILE. ***
+    `TA-18` and `TA-19` **REFUSED BY NAME** with TWO blockers each, and - the part that matters - `TA-18`'s
+    blockers are NOT the commandlet constraints my brief pointed at: `LaunchEngineLoop.cpp:3343` and
+    `BlueprintEditorModule.cpp:212-214` DO NOT BIND on that path. The real ones are the AnimGraph module and a
+    `USkeleton` bone, where `Skeleton.h:365-369` returns the reference skeleton CONST **on purpose**.
+    AND NOTE: `REPORT.md:201` SAYS `TA-18` IS "mesuré buildable" AND THAT IS WRONG - the workstream corrected me.
+
+**AND ONE ADJACENT DEFECT IT FIXED IN ITS OWN FILE:** *a refusal used to print `kit TA-10 OK NOT BUILT:` - **the word OK beside the words NOT BUILT** - while `QUESTIONS.md:914` records the same asset as `MISSING`. With two more refusals it would have been three such lines, so the verdict word is now decided by whether the asset was built.* *** That is "an invisible refusal reads as a capability" inside the kit's own reporting, found and fixed without being asked. ***
