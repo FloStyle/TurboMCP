@@ -5289,3 +5289,41 @@ ITSELF RATHER THAN ABOUT ITS CODE:**
 DIAGNOSIS; AND A PROTECTION THAT LIVES IN AN INSTRUCTION RATHER THAN IN A MECHANISM IS NOT A PROTECTION.** The
 workstreams were told not to commit, **AND THAT INSTRUCTION IS WHAT LEFT THEIR WORK ONE DELETE AWAY FROM GONE. THE FIX
 IS A MECHANISM - AGENTS COMMIT TO A BRANCH, OR THE TREE IS NEVER REVERTED - NOT A STRONGER WARNING.**
+
+---
+
+## 31. And the editor failure mode is now NAMED: a healthy editor SURVIVES A DLL REBUILD and then cannot serve
+
+**MEASURED BY BISECTION, WHICH IS WHAT FOUND IT AFTER INSPECTION FAILED:**
+
+    with an editor that had been alive ACROSS the rebuild of the recovered work:
+        run-suites.ps1 -Suites test-mat-inst-load  ->  FAIL  (no editor)
+    after killing it and letting the harness start a FRESH one:
+        run-suites.ps1 -Suites test-mat-inst-load  ->  PASS  (20 check(s) run)
+
+*** SO THE SUITE WAS NEVER WRONG AND THE EDITOR WAS NEVER ABSENT: AN EDITOR THAT WAS ALREADY RUNNING WHEN THE PLUGIN
+DLL WAS REBUILT PASSES THE HEALTH CHECK AND THEN CANNOT SERVE A REQUEST. *** The harness's reuse path asks
+`check-mcp-server.py` whether the server ANSWERS; **an editor holding a DLL that has been replaced on disk answers the
+health probe and then fails the real call.** Workstream B reported the same shape from the other side without being
+able to attribute it - *"`start-editor.ps1` reported `RESULT: PASS` and `startup: 14s`, and the log shows MY PLUGIN
+LOADED CLEANLY ... and then the process was GONE before my next call"* - **AND THAT IS WHY ITS SUITE WAS NEVER RUN:
+the tree could not serve, not the code.**
+
+**AND IT MEANS THE REUSE PATH HAS A HOLE THE HEALTH CHECK CANNOT SEE:** reuse is a GOOD design - it is the fix for the
+fifth of the six recorded harness defects, where the harness killed an editor a previous suite had healthily started -
+**but "the server answers" IS NOT "the server is running the code that is on disk". A REBUILD INVALIDATES EVERY LIVE
+EDITOR, AND NOTHING TELLS THE HARNESS THAT.** The cheap guard is a version or mtime marker the plugin publishes and
+the harness compares, **and until it exists, THE RULE IS: AFTER ANY BUILD, KILL THE EDITOR BEFORE RUNNING A SUITE.**
+
+### And the round's accounting, stated without spin
+
+    RECOVERED AND VERIFIED:  R-MAT-INST-LOAD  ->  PASS (20 checks), audit 78 tools, uncalled: (none)
+    PERMANENTLY LOST:        R-CALL-COST      ->  its agent measured PASS (30 checks) before I deleted it
+    LOST WITH ITS CONTEXT:   GRAPHSTRUCTURE   ->  its two files, though its MEASUREMENTS survive in its report
+    DELIVERED BY THE HARNESS: the diagnosis-preserving tail, which is what made `no result line` readable at all
+
+**AND THE TWO WORKSTREAMS THAT LOST WORK BOTH CONTRIBUTED SOMETHING THIS PROJECT CANNOT GET BACK BY REBUILDING:**
+Workstream A measured that **`T-STRUCT-9` CANNOT PASS AS WRITTEN** and that **`CollapseNodesIntoGraph` IS DECLARED ON
+`FBlueprintEditor`, a UI OBJECT, so COLLAPSE IS GATED ON A MEASUREMENT RATHER THAN `todo`**; Workstream C measured
+that **`Entry.Toolset` IS DOUBLY QUALIFIED UNDER TWO DIFFERENT KEYS**, so per-tool totals are wrong unless collapsed.
+**THOSE THREE FACTS ARE NOW IN THIS RECORD, WHICH IS THE ONE PLACE THEY CANNOT BE DELETED FROM.**
