@@ -221,6 +221,22 @@ def main():
     before_blocks = session.call(READ_TOOLSET, "ReadTurboMCPMaterialBlocks",
                                  {"asset": ASSET, "tokenBudget": 4000})
     boxes_before = number_before(r"blocks: (\d+) comment box", before_blocks)
+    # *** AND THE EXPRESSION COUNT IS READ FROM THE SAME LINE BEFORE THE EDIT, SO THE CHECK BELOW CAN COMPARE
+    # IT WITH ITSELF INSTEAD OF WITH A LITERAL. ***
+    #
+    # THE CHECK USED TO ASSERT `expressions_after == 16` - A COUNT PINNED ON A SHARED ASSET, WHICH THIS
+    # PROJECT'S OWN RULE FORBIDS IN THESE WORDS: "NEVER PIN A COUNT OR AN ID ON A SHARED ASSET - it has cost
+    # five rounds". It cost this one too, and in the worst way: the suite PASSED when the fixture held 16 and
+    # FAILED when it held 12, so IT REPORTED A DEFECT IN THE MATERIAL TOOL THAT WAS A PROPERTY OF WHICH FIXTURE
+    # IT HAPPENED TO BE LOOKING AT.
+    #
+    # The correct comparison was available the whole time - `keys_before`/`keys_after` already compare the
+    # expression SET with itself - and only the COUNT was pinned.
+    before_line = re.search(r"blocks:\s*(\d+)\s*comment box\(es\),\s*(\d+)\s*expression", before_blocks)
+    expressions_before = int(before_line.group(2)) if before_line else None
+    check("the reader printed the blocks line, so the box count read back is a measurement",
+          before_line is not None,
+          "no 'blocks: N comment box(es), N expression(s)' line was found before the edit either")
     check("the preview wrote nothing: the box count read back is the fixture's own",
           boxes_before == 2, "the reader saw %s box(es); the fixture builds 2" % boxes_before)
 
@@ -301,8 +317,9 @@ def main():
           boxes_after is not None and boxes_before is not None and boxes_after > boxes_before,
           "boxes went from %s to %s" % (boxes_before, boxes_after))
     check("the expression count is UNCHANGED, seen by the reader",
-          expressions_after == 16,
-          "the reader counted %s expression(s); the fixture builds 16" % expressions_after)
+          expressions_after is not None and expressions_before is not None
+          and expressions_after == expressions_before,
+          "the reader counted %s expression(s) before and %s after" % (expressions_before, expressions_after))
 
     # ONE BOX PER BLOCK, PARSED. The preview said how many blocks it planned, and the edit wrote
     # that many boxes on top of the two the fixture already had. A layout that boxed every
