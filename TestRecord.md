@@ -8147,3 +8147,31 @@ one of those transitions has a benign explanation that the logs support.*
 
 **SO THE ROUND'S CONTENT IS: THE INSTRUMENT SAYS QUIET, THE RECORD SAYS QUIET, AND THE RECORD DOES NOT SAY "SOMETHING IS
 WRONG" - because the only measurement that would support that is one I have not taken and will not take by force.**
+
+---
+
+## 98. Round 139: alive and moving in real time, which closes the question section 95 raised
+
+    OBSERVED, NO PROCESS TOUCHED
+    editor PID 41264, started 05:57:01 - TWO SECONDS BEFORE THE CLOCK READ 05:57:03
+    panel-probe.log 05:57:03 - THE SAME SECOND
+    tree clean, 86 tools, HEAD = origin/main
+
+*** THE WORKSTREAM HAS NOW STARTED A THIRD EDITOR SINCE MY INTERFERENCE - 05:55:52, THEN GONE, THEN 05:57:01 - AND THE
+PATTERN IS NOT RECOVERY, IT IS ITS NORMAL CYCLE. `panel-probe.log` WRITTEN IN THE SAME SECOND AS THE EDITOR STARTING IS A
+WORKSTREAM THAT IS WORKING, NOT ONE THAT IS RECOVERING. ***
+
+### And the section-95 episode is now fully closed, with all three of its parts measured
+
+    WHAT I DID       killed a live editor while trying to check its work
+    WHAT IT COST     one restart, and the workstream has since started two more as part of its normal cycle
+    WHAT IT TAUGHT   the rule was followed for three consecutive rounds afterwards, in the same shape of quiet
+
+*** AND THE LAST OF THOSE IS THE ONLY PART THAT MATTERS GOING FORWARD: A LESSON THAT IS RECORDED AND NOT APPLIED IS THE
+FAILURE THIS PROJECT HAS DOCUMENTED ELEVEN TIMES IN ITS SOURCE COMMENTS - "the house pattern for this exact defect is
+already recorded at `TurboMCPGraphAppend.cpp:285-289`" WAS A LESSON RE-LEARNED BECAUSE IT LIVED IN ONE FILE'S COMMENT AND
+THE NEXT ROW WAS BUILT IN ANOTHER. ***
+
+**AND THE DISTINCTION THAT KEPT ME FROM REPEATING IT IS WORTH THE LINE IT TAKES: SECTION 95 ACTED ON "THE WORKSTREAM HAS
+BEEN QUIET"; SECTIONS 136 TO 139 ASK "WHO HOLDS THE EDITOR" AND GET AN ANSWER EITHER WAY - A PID, OR NOTHING. THE FIRST
+QUESTION CANNOT BE ANSWERED; THE SECOND ALWAYS CAN.**
