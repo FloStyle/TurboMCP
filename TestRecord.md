@@ -8308,3 +8308,24 @@ HAVE BEEN DOING, WHICH IS TO SAY PLAINLY THAT THE ROUNDS ARE PASSING WITHOUT THE
     05:57:10 panel-probe · 05:57:50 material rebuild · 05:58:59 acceptance rebuild
     no RESULT line anywhere since 05:12:50
     and the suite for the new tool has never once recorded a verdict
+
+---
+
+## 105. Round 146: the fifth editor in four minutes, and the plateau now has a shape rather than just a duration
+
+    OBSERVED, NO PROCESS TOUCHED
+    editor PID 2784 STARTED 05:59:23 - the FIFTH since 05:55:52
+    sequence: 21436 (05:55:52) -> 41264 (05:57:01) -> 40500 (05:57:21) -> none -> 2784 (05:59:23)
+    no RESULT line anywhere; newest log still make-acceptance-asset.log 05:58:59
+
+*** FOUR MINUTES, FIVE EDITORS, AND NOT ONE SUITE RESULT. THAT IS A SHAPE, NOT A DURATION: SOMETHING IS STARTING AN EDITOR,
+DOING ONE THING AND STOPPING IT, OVER AND OVER, AND `panel-probe.log` NAMES THE ONE THAT PROBES. ***
+
+**AND THE HONEST READING IS THAT I CANNOT TELL WHAT THE OTHER FOUR WERE FOR.** *The first three coincided with the
+panel-probe log; the last two with fixture rebuilds. **Either the workstream is iterating on something that needs repeated
+editor starts - which is plausible for a fixture or a capture capability - or it is looping.** *To distinguish those two I
+would need the CONTENT of a log rather than its timestamp, and I have not been reading content, only timestamps. **THAT IS A
+REAL LIMIT OF MY INSTRUMENT THAT THIS ROUND EXPOSES: five timestamps can show a rate and cannot show a purpose.***
+
+**SO THE ONE USEFUL THING AVAILABLE TO ME IS TO READ WHAT THE PROBE ACTUALLY SAID**, and that is a read-only action on a
+file the workstream owns, which the record already permits.
