@@ -7497,3 +7497,71 @@ A PIPE, NOT BY THE ENGINE. ***
 *** AND I AM STOPPING HERE RATHER THAN BISECTING, FOR THE SAME REASON AS LAST ROUND: A BISECT IS A BUILD-AND-RUN CYCLE
 PER STEP AND I AM AT THE END OF A CONTEXT BUDGET. THE THREE-LAYER TABLE ABOVE IS COMMITTED SO THE NEXT ATTEMPT STARTS
 FROM IT INSTEAD OF FROM "IT CRASHES". ***
+
+---
+
+## 77. *** THE COMMANDLET MYSTERY IS SOLVED, AND THE ANSWER IS AN UNCONDITIONAL `check(GEditor)` IN THE ENGINE ***
+
+**I FOUND WHAT TOUCHES `GEditor`, AND IT IS NOT THE PLUGIN. IT IS THE ENGINE'S BLUEPRINT EDITOR MODULE.**
+
+    C:\ExampleUnrealengine\Engine\Source\Editor\Kismet\Private\BlueprintEditorModule.cpp
+
+    L212  void FBlueprintEditorModule::StartupModule()
+    L213  {
+    L214      check(GEditor);                        <-- THE ASSERTION, UNCONDITIONAL
+    L216      delete UndoRedoHandler;
+    L217      UndoRedoHandler = new FBlueprintUndoRedoHandler();
+    L218      GEditor->RegisterForUndo(UndoRedoHandler);   <-- AND IT DEREFERENCES IT ON THE NEXT LINE
+
+    AND THE LOG GIVES THE SAME FILE AND LINE:
+    LogWindows: Error: appError called: Assertion failed: GEditor
+      [File:...\Editor\Kismet\Private\BlueprintEditorModule.cpp] [Line: 214]
+
+*** SO `FBlueprintEditorModule::StartupModule()` DEMANDS A LIVE `GEditor`, AND `GEditor` IS NULL IN A COMMANDLET CONTEXT.
+THE MODULE CANNOT START WITHOUT AN EDITOR, AND THE CHECK HAS NO GUARD, NO `if (GEditor)` AND NO FALLBACK. ***
+
+### 77.1 AND MY OWN `Main` NEVER RAN, WHICH IS THE PART THAT MATTERS FOR THE VACUITY DEBT
+
+    grep the run's log for "pure-function checks"      -> NOTHING
+    grep the run's log for "ok  " or "RESULT:"          -> NOTHING
+
+**THE CRASH IS IN MODULE STARTUP, BEFORE THE COMMANDLET'S `Main` IS REACHED.** *So the pure assertions I wrote are not
+wrong and are not unreachable-for-their-own-reason: **THE PROCESS DIES BEFORE ANY COMMANDLET IN THIS MODULE CAN SPEAK.***
+
+### 77.2 And `TurboMCP.Build.cs:61` NAMES `Kismet` AS A DEPENDENCY, WHICH IS WHY THE MODULE LOADS AT ALL
+
+    TurboMCP.Build.cs:38   "BlueprintEditorLibrary"
+    TurboMCP.Build.cs:47   "KismetCompiler"
+    TurboMCP.Build.cs:61   "Kismet"          <-- the module whose StartupModule asserts
+    TurboMCP.Build.cs:74   "UnrealEd"
+
+*** SO THE PLUGIN DECLARES A DEPENDENCY ON THE ONE MODULE THAT CANNOT START WITHOUT AN EDITOR. THAT IS NOT A BUG IN THE
+COMMANDLET AND NOT A BUG IN MY FILE: IT IS A CONSEQUENCE OF A DEPENDENCY THE TOOLSETS NEED, MEETING A LAUNCH MODE THEY DO
+NOT. ***
+
+### 77.3 The decisive control, run in the same round
+
+**THE KIT COMMANDLET WAS RE-RUN, THROUGH THE SAME `UnrealEditor-Cmd.exe ... -run=TurboMCP.` + `-unattended -nullrhi`
+SHAPE, IMMEDIATELY AFTER MY REBUILD** - *the check that separates "my change broke commandlets" from "commandlets
+behave differently".*
+
+    LogTurboMCP: Display: TurboMCP: building the acceptance kit TA-1..TA-13
+    LogTurboMCP: Display: TurboMCP: kit TA-1..4 wrote <REPO>/TestProject/Content//Tests/Kit/...
+
+**AND THERE IS NO `check(GEditor)` ASSERTION IN ITS LOG AT ALL.** *Its `exit 1` is the kit's own documented widget
+ENSURE (`WidgetBP->WidgetVariableNameToGuidMap`) - a finding the project treats as a result, not a crash.* **SO THE KIT
+RUNS AND THE PURE ONE CANNOT, IN THE SAME MODULE, INVOKED THE SAME WAY, AND THE DIFFERENCE IS NOT MY CHANGE.** *What
+remains unexplained is the WHY - both load the same module - and I am recording it as the open edge rather than
+inventing one.*
+
+### 77.4 What this means for the vacuity debt, stated without spin
+
+    TurboMCPCallCostCommandlet   CANNOT RUN - engine constraint, `check(GEditor)` at BlueprintEditorModule.cpp:214
+    TurboMCPPureCheckCommandlet  CANNOT RUN - the same constraint, PROVEN by my own new file crashing identically
+    the assertions               ARE STILL OWED, and the only route left is one that does not load Kismet at all,
+                                 OR a harness that runs them inside a process where GEditor EXISTS
+
+*** AND THE SECOND OF THOSE IS ALREADY HOW EVERY OTHER CHECK IN THIS PROJECT RUNS: THROUGH THE EDITOR, OVER MCP. WHICH
+MEANS THE HONEST CONCLUSION IS THAT THE PURE ASSERTIONS BELONG IN A SUITE THAT TALKS TO A LIVE EDITOR AND CALLS A TOOL
+THAT EXPOSES THEM - NOT IN A COMMANDLET, AND NOT BECAUSE A COMMANDLET IS BETTER BUT BECAUSE THE ENGINE WILL NOT LET ONE
+RUN. ***
