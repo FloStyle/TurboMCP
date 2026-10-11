@@ -9373,3 +9373,30 @@ said, not fewer.*** *** The correction goes against my own narrative, which is t
 and building it wrong: *`USourceControlHelpers::CheckOutFile` answers `True` on Git and never issues a checkout, so a write tool
 wired to that boolean would read "checked out, safe to write" on a provider whose `UsesCheckout() == false` - the "git will not
 refuse, and will happily leave a modified file for someone else to find" of `03_TOOLS.md:1348-1351`.*
+
+---
+
+## 142. Round 190: row 10.2 launched, and the brief is built around the ONE thing that would make it wrong
+
+    LAUNCHED   wiring an automatic checkout into a NAMED SUBSET of the write tools (`D-57`, `T-VCS-1`)
+    THE BRIEF'S HEADLINE IS ROW 10.1's TRAP, NOT THE ROW'S TITLE
+
+*** AND THAT IS THE FIRST TIME IN THIS STRETCH THAT A BRIEF'S MOST IMPORTANT PARAGRAPH IS A FINDING FROM THE ROW THAT UNBLOCKED IT.
+Row 10.1 found that `USourceControlHelpers::CheckOutFile` ANSWERS `True` ON GIT AND NEVER ISSUES A CHECKOUT - `true` means "the
+state says it is already checked out", not "a lock was taken" - AND ROW 10.2 IS EXACTLY THE ROW THAT WOULD HAVE BEEN BUILT ON THAT
+BOOLEAN IF NOBODY HAD MEASURED IT. ***
+
+**AND THE BRIEF MAKES IT A DECISION RATHER THAN AN INSTRUCTION.** *On a provider where `UsesCheckout() == false` an automatic
+checkout can never help, and there is no obvious right answer: **skip it silently, attempt it and report the provider's answer, or
+refuse the write unless the caller opts in.** The brief requires one of the three, requires the TOOL TO SAY WHICH, requires it in
+`Plan` so Preview and Edit agree, AND REQUIRES IT TO READ `D-57` FIRST AND SAY SO IF `D-57` DOES NOT ANSWER THE QUESTION - **rather
+than inventing an answer that looks like the project's.***
+
+**AND IT BOUNDS THE CLAIM BEFORE THE WORK STARTS, WHICH IS THE DISCIPLINE THIS ROW INHERITED FROM THE LAST ONE:** *no checkout against
+a live depot has ever been performed here - `p4` points at a host that does not answer, `cm` and `svn` are not on PATH, and Git's
+answer is a REFUSAL. **So any claim that auto-checkout "works" is a claim about a refusal path, and the brief says to say what was
+measured and what was not.***
+
+**AND IT NAMES THE TENSION INSTEAD OF PRETENDING IT IS ABSENT:** *the brief asks for a SMALL NAMED SET of write tools, not all of
+them, and requires the report to say which remain unwired - **because "a half-wired mechanism that says which half is wired is a
+complete deliverable, and a claim that all writers are covered when three are is not."***
