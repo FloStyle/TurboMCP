@@ -6701,3 +6701,74 @@ of them was the cause; executing the suite printed the cause in one command.*
 *** AND THE RULE, WHICH THIS PROJECT HAS NOW EARNED FROM BOTH DIRECTIONS: WHEN A DIAGNOSTIC SAYS "NO RESULT", RUN THE
 THING BY HAND BEFORE THEORISING ABOUT WHAT IT DID. THE HARNESS TAIL IS A GOOD INSTRUMENT AND IT SHOWS THE LAST LINES,
 NOT THE FIRST FAILURE - AND A CRASH AND A MISSING PRINT ARE INDISTINGUISHABLE THROUGH IT. ***
+
+---
+
+## 58. `-SingleFile` GAVE A FALSE GREEN - and it was a flag I put in the briefs myself
+
+    Build.bat ... -SingleFile=TurboMCPGraphStructure.cpp
+    Result: Succeeded
+    ...WHILE THE OBJECT WAS 2 HOURS OLD AND THE SOURCE WAS 17 SECONDS OLD. IT COMPILED NOTHING.
+    A FULL BUILD THEN FAILED IMMEDIATELY WITH A REAL ERROR THE FLAG HAD HIDDEN.
+
+*** SO `-SingleFile` IS USEFUL FOR ATTRIBUTION - "does MY file compile while the module is red" - AND ITS
+`Result: Succeeded` IS NOT EVIDENCE: THE `mtime` TRAP RECORDED SEVEN TIMES, WEARING THE FLAG'S CLOTHES. AND I HAD BEEN
+WRITING IT INTO BRIEFS AS A RELIABLE CHECK, WHICH MAKES IT AN EIGHTH FIRING WITH ME AS THE DISTRIBUTOR. ***
+
+**WORSE THAN THE ORIGINAL TRAP IN ONE WAY: THE ORIGINAL NEEDED A RESTORED FILE; THIS ONE NEEDS ONLY TIME PASSING.** *A
+`-SingleFile` build whose object is already newer than the source returns success without compiling - so the flag's green
+is guaranteed whenever somebody has built recently, WHICH IS EXACTLY WHEN A WORKSTREAM USES IT.* **THE CORRECT USE IS
+ATTRIBUTION ONLY; THE STRONGEST GUARD REMAINS A TOOL THAT DID NOT EXIST BEFORE ANSWERS AT ALL - and this workstream used
+it, verifying the DLL contains all four new symbols.**
+
+### 58.1 Three findings, each bigger than the capability
+
+**(1) A REAL INTERFACE DEFECT BETWEEN THE PROJECT'S OWN TOOLS.** Readers print node ids SHORT (`Asset:Graph:key`); this
+WRITER built them LONG (`/Game/.../Asset.Asset:Graph:key`). *** AN AGENT THAT READ A GRAPH AND PASSED A KEY STRAIGHT BACK
+WAS REFUSED - BY A TOOL THAT WAS RIGHT AND AN ID THAT WAS REAL. *** Both forms are now accepted through one
+`NodeAnswersToKey` helper at EVERY comparison. **AND THE REFUSAL NOW PRINTS A SAMPLE OF THE IDS THE GRAPH ACTUALLY HAS -
+a diagnostic that lives in the TOOL rather than in a debugger, and it turned four rounds of inference into one command.**
+
+**(2) THE SUITE PINNED A NODE ID AND PASSED - UNTIL THE FIXTURE WAS REBUILT.** It pinned `TA01_HandLaid:HandLaid:d88638`
+and `make-kit-assets.ps1` regenerates every node GUID, **so the node ceased to exist.** *** A PINNED KEY IS A PIN ON A
+VALUE THE FIXTURE DOES NOT PROMISE - "never pin a count on a shared asset" in new clothes, a rule recorded five times
+before. *** The suite now READS the graph and uses an id the reader lists.
+
+**(3) THE FIXTURE RESTORE WAS IN THE WRONG PLACE.** `rebuild_fixture` STOPS THE EDITOR, so restoring at the END killed
+the server the suite was talking to - `WinError 10061`, measured twice. **Now ON THE WAY IN, the `test-graph-replace`
+pattern, which also makes the suite re-runnable from any state**, starting the editor with `subprocess.call` (NOT
+`run(capture_output=True)`) **and WAITING FOR THE SERVER TO ANSWER RATHER THAN SLEEPING.**
+
+### 58.2 What it built, what it refused, and what 24 checks do not prove
+
+**`E-GRAPH-COPY` IS BUILT AND PASSES 24 CHECKS, verified through a DIFFERENT tool:** the target graph's node count went
+6 -> 7 read back through `ReadTurboMCPGraphLoad`, and the reader agrees with the edit's own `after`.
+
+*** `E-GRAPH-COLLAPSE` IS NOT BUILT AND REFUSES BY SAYING SO: "`03_TOOLS.md` REQUIRES the engine's own
+`CollapseNodesIntoGraph`, so a hand-built member would be a different capability wearing this one's name." *** Its Plan is
+fully implemented and tested - the boundary from crossing links, the refusal of an entry/event/result node BY NAME, the
+refusal of a selection with no exec boundary - **and `Apply` refuses with the one open question named, NOTHING written.**
+*That is the outcome the reachability measurement pointed at, delivered as a measured refusal rather than a half-built
+feature.*
+
+*** AND IT DECLARED WHAT 24 CHECKS DO NOT PROVE: COPYING BETWEEN TWO GRAPHS OF ONE BLUEPRINT, NOT THE CROSS-ASSET CASE.
+The `Unlinkable` crossing-link report and the `Missing` member refusal are BUILT AND NOT EXERCISED, because inside one
+Blueprint every crossing link is re-linkable and the member check is skipped BY CONSTRUCTION. THIRD CAPABILITY IN THREE
+ROUNDS TO REPORT THAT ITS CHECK COUNT OVERSTATES ITS COVERAGE.*** *`BP_TowerArray` and `TA07_Card` exist for it.*
+
+### 58.3 The engine fact that cost a build
+
+`FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate` (`EdGraphSchema_K2_Actions.h:95`) **TAKES A `UK2Node*`, NOT A
+`UEdGraphNode*`** - its `CreateNode` overload (`:130`) declares the template parameter as `UK2Node*`, **so instantiating
+with `UEdGraphNode` does not compile (`error C2665` at `EdGraphSchema_K2_Actions.h(102,25)`).** The cast is CHECKED and a
+non-K2 node is REFUSED BY NAME rather than silently skipped.
+
+### 58.4 And the mechanical note about MY OWN commits arriving mid-work
+
+**THE WORKSTREAM SAID: "you committed my work while I was working, and that is fine but it caused two collisions: one
+`git commit` of mine exited 1 because you had already staged the same file."** *Committing a live workstream's files is
+the lesser evil - section 30 is worse - but it is not free, and the record should say so rather than presenting the
+safety commit as purely costless.* **AND IT NOTED THAT THE AGENTS IT HEARD ABOUT WERE EACH TOLD THEY WERE THE ONLY ONE
+LIVE, WHICH IS TRUE AND IS THE ROOT OF THE COLLISION IN SECTION 55.** *A brief's statement about OTHER workstreams is a
+snapshot, not a fact, and the next briefs should say that explicitly rather than asserting a state the brief cannot
+guarantee.*
