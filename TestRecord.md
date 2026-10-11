@@ -5613,3 +5613,45 @@ about WHICH ROW IS SLOWEST, on a log every process writes to.*
 
 **OWED RATHER THAN FIXED, WITH THE REASON: THE FIX IS A DECISION ABOUT WHAT THE CHECK SHOULD ASSERT - the slowest call
 is not necessarily the suite's own - AND THAT BELONGS WITH A RUN, NOT WITH A GUESS.**
+
+---
+
+## 37. The last call-cost check: the PARSER is proven correct in isolation, so the failure is at RUNTIME
+
+*** THE ONE REMAINING FAILURE IS `the slowest call is NAMED, with a timestamp`, AND THE PARSER IT DEPENDS ON IS
+PROVEN CORRECT BY DIRECT MEASUREMENT. ***
+
+I extracted `section_text` from the suite and fed it the tool's OWN OUTPUT SHAPE:
+
+    --- MOST EXPENSIVE BY TOKENS -> type str
+    'none of the 33 considered call(s) recorded a token estimate above zero.\nTHIS IS NOT ZERO COST. Use ...'
+    --- SLOWEST BY DURATION -> type str
+    '2026-10-11T01:16:10.493Z | (top-level).call_tool | 9.8ms | 0 chars | 0 token estimate\n'
+    --- TOTALS PER TOOL -> type str
+    'a | b'
+
+**AND THE CHECK'S OWN PREDICATE - `slowest_line.strip().startswith("2026") and "ms" in slowest_line` - IS TRUE OF THE
+REAL CONTENT SHOWN ABOVE.** So the parser is right, the predicate is right, and **THE FAILURE IS SOMETHING THE
+ISOLATED TEST DOES NOT REPRODUCE.**
+
+WHAT THAT LEAVES, AND THE FIRST CANDIDATE IS THE SHAPE THIS PROJECT HAS RECORDED TEN TIMES: **the live log's slowest
+entry at the moment the suite runs may not begin with `2026` at all.** The tool ranks 33 entries and the slowest is
+`9.8ms` from `(top-level).call_tool` - **AND EVERY PROCESS ON THIS MACHINE WRITES TO THAT LOG**, so the winning row is
+whichever call happened to be slowest, not the suite's. **AN ASSERTION ABOUT WHICH ROW IS SLOWEST, ON A LOG THAT EVERY
+RUN AND EVERY HARNESS ADDS TO, IS AN ASSERTION ON SHARED MUTABLE STATE** - the exact defect recorded ten times here,
+and the reason a hard-coded count was removed from `test-material.py` two rounds ago.
+
+**SO THE FIX IS A DECISION ABOUT WHAT THE CHECK SHOULD ASSERT, AND THERE ARE TWO HONEST CHOICES:**
+1. **Assert the STRUCTURE** - that the slowest section names ONE entry, with a timestamp and a duration in
+   milliseconds, whatever that entry is. **This is what the tool actually promises**, and it cannot fail on a correct
+   tool because of what another process logged.
+2. **Assert that the suite's OWN call appears** - which requires identifying it by name in the log, **and is a
+   stronger claim about the suite rather than about the tool.**
+
+**I DID NOT CHOOSE, BECAUSE THE CHOICE IS ABOUT WHAT THE ACCEPTANCE ROW `T-HELP-6` MEANS BY "the slowest": a claim
+about the TOOL or a claim about the SESSION.** *Deciding it with a guess and calling it a fix is the mistake this
+record has paid for most often.*
+
+**AND THE CHEAPER MEASUREMENT THAT WOULD SETTLE IT IS ONE RUN: print the `slowest_section` THE SUITE ACTUALLY RECEIVED
+at the moment it failed.** The check already passes `section=[...]` as its detail - **so the detail string in a failing
+run contains the answer, and the run I made did not show it because the harness prints only the verdict line.**
