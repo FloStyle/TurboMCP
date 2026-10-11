@@ -42,10 +42,14 @@ KIT = "/Game/Tests/Kit/TA01_HandLaid"
 # *** A NODE WITH NO MEMBER DEPENDENCY, CHOSEN DELIBERATELY. *** `d88638` is `int + int`, whose type is
 # `K2Node_PromotableOperator` - it names no Blueprint variable, function or event, so it lands in the
 # cross-asset member check trivially and the copy is testing the COPY rather than the member resolution.
-# Its key was READ from `ReadTurboMCPGraphLoad` on the fixture, not guessed: the graph's own manifest
-# prints it in the "not reachable from any entry point" list.
-ARITHMETIC_NODE = "TA01_HandLaid:HandLaid:d88638"
-MULTIPLY_NODE = "TA01_HandLaid:HandLaid:fe13a8"
+#
+# *** THE KEY IS DISCOVERED AT RUN TIME, NEVER WRITTEN DOWN. *** The first version of this suite pinned
+# `TA01_HandLaid:HandLaid:d88638`, and it passed - AND THEN THE KIT WAS REBUILT AND THAT NODE NO LONGER
+# EXISTED, because `make-kit-assets.ps1` regenerates the Blueprint and every node GUID with it. So a
+# pinned key is a pin on a value the fixture does not promise, which is the mistake this project has
+# recorded as "never pin a count on a shared asset" wearing different clothes. The suite reads the graph,
+# takes a node the reader itself lists, and uses THAT.
+ARITHMETIC_CLASS_HINT = "int + int"
 
 results = []
 
@@ -56,6 +60,34 @@ def check(name, ok, detail=""):
     if not ok and detail:
         for line in str(detail).splitlines()[:8]:
             print("        " + line[:150])
+
+
+def discover_nodes(session, graph_name, wanted=2):
+    """Node keys the READER lists for the graph, taken from its own output rather than invented.
+
+    THE READER PRINTS THE SHORT FORM (`Asset:Graph:key`) in its "not reachable" list and the LONG form in
+    its node lines. BOTH are accepted by the writer now, and this function returns the SHORT form because
+    that is what a reader hands to a caller - so the round trip is exercised as an agent would exercise it.
+    """
+    answer = session.call(READ, "ReadTurboMCPGraphLoad", {"asset": KIT, "graphName": graph_name, "format": "", "detail": "full"})
+    if not isinstance(answer, str):
+        return []
+    import re
+    keys = []
+    # THE ARITHMETIC NODE FIRST, BECAUSE IT NAMES NO BLUEPRINT MEMBER: its type is a promotable operator,
+    # so a copy of it tests the COPY rather than the cross-asset member check.
+    for line in answer.splitlines():
+        if ARITHMETIC_CLASS_HINT in line:
+            found = re.search(r"([A-Za-z0-9_]+:[A-Za-z0-9_ ]+:[0-9a-f]{6})", line)
+            if found:
+                keys.append(found.group(1))
+    for line in answer.splitlines():
+        found = re.search(r"([A-Za-z0-9_]+:[A-Za-z0-9_ ]+:[0-9a-f]{6})", line)
+        if found and found.group(1) not in keys:
+            keys.append(found.group(1))
+        if len(keys) >= wanted:
+            break
+    return keys[:wanted]
 
 
 def graph_nodes(session, graph_name):
@@ -79,13 +111,24 @@ def main():
     session = Session()
 
     # ---------------------------------------------------------------------------------------------
+    # 0. THE NODES TO COPY ARE DISCOVERED, NOT PINNED
+    # ---------------------------------------------------------------------------------------------
+    DISCOVERED = discover_nodes(session, "HandLaid", wanted=2)
+    check("the suite found node ids by READING the graph, so nothing is pinned to a GUID the fixture "
+          "does not promise", len(DISCOVERED) >= 1, "discovered=%s" % DISCOVERED)
+    if not DISCOVERED:
+        print("    no node id could be discovered, so nothing below can run")
+        print("RESULT: FAIL (1) -> no node id discovered")
+        return 1
+
+    # ---------------------------------------------------------------------------------------------
     # 1. THE PREVIEW WRITES NOTHING, AND SAYS SO
     # ---------------------------------------------------------------------------------------------
     before, before_text = graph_nodes(session, "EventGraph")
     check("the target graph's node count is READABLE before anything is copied",
           before is not None, before_text)
 
-    preview = session.call(PREVIEW, "PreviewTurboMCPGraphCopy", {"sourceAsset": KIT, "sourceGraph": "HandLaid", "nodeIds": [ARITHMETIC_NODE], "targetAsset": KIT, "targetGraph": "EventGraph", "anchorNodeId": ""})
+    preview = session.call(PREVIEW, "PreviewTurboMCPGraphCopy", {"sourceAsset": KIT, "sourceGraph": "HandLaid", "nodeIds": DISCOVERED[:1], "targetAsset": KIT, "targetGraph": "EventGraph", "anchorNodeId": ""})
     check("the preview answers", isinstance(preview, str), str(preview)[:300])
     check("the preview's FIRST LINE states it would change, not that it did",
           isinstance(preview, str) and preview.splitlines()[0].strip() == "would change",
@@ -94,7 +137,7 @@ def main():
           isinstance(preview, str) and "HandLaid" in preview and "EventGraph" in preview,
           str(preview)[:300])
     check("the preview lists the node it would copy, with its class",
-          isinstance(preview, str) and ARITHMETIC_NODE in preview,
+          isinstance(preview, str) and DISCOVERED[0] in preview,
           str(preview)[:400])
     check("the preview prints the UNLINKABLE list even when it is empty, so an absent section and an "
           "empty one are different answers",
@@ -109,7 +152,7 @@ def main():
     # ---------------------------------------------------------------------------------------------
     # 2. THE REFUSALS THAT MUST COME FROM `Plan` RATHER THAN FROM `Apply`
     # ---------------------------------------------------------------------------------------------
-    same = session.call(PREVIEW, "PreviewTurboMCPGraphCopy", {"sourceAsset": KIT, "sourceGraph": "HandLaid", "nodeIds": [ARITHMETIC_NODE], "targetAsset": KIT, "targetGraph": "HandLaid", "anchorNodeId": ""})
+    same = session.call(PREVIEW, "PreviewTurboMCPGraphCopy", {"sourceAsset": KIT, "sourceGraph": "HandLaid", "nodeIds": DISCOVERED[:1], "targetAsset": KIT, "targetGraph": "HandLaid", "anchorNodeId": ""})
     check("copying a graph onto ITSELF is refused by name",
           isinstance(same, str) and same.splitlines()[0].strip() == "unchanged",
           str(same)[:400])
@@ -128,7 +171,7 @@ def main():
     # ---------------------------------------------------------------------------------------------
     # 3. THE EDIT, AND THE READ-BACK THAT IS THE EVIDENCE
     # ---------------------------------------------------------------------------------------------
-    applied = session.call(EDIT, "EditTurboMCPGraphCopy", {"sourceAsset": KIT, "sourceGraph": "HandLaid", "nodeIds": [ARITHMETIC_NODE], "targetAsset": KIT, "targetGraph": "EventGraph", "anchorNodeId": ""})
+    applied = session.call(EDIT, "EditTurboMCPGraphCopy", {"sourceAsset": KIT, "sourceGraph": "HandLaid", "nodeIds": DISCOVERED[:1], "targetAsset": KIT, "targetGraph": "EventGraph", "anchorNodeId": ""})
     check("the edit answers", isinstance(applied, str), str(applied)[:400])
     check("the edit's FIRST LINE is `changed`, as the spec requires",
           isinstance(applied, str) and applied.splitlines()[0].strip() == "changed",
@@ -154,22 +197,34 @@ def main():
     # 4. RESTORE, ON THE WAY OUT, AND ASSERT THE RESTORE
     # ---------------------------------------------------------------------------------------------
     #
-    # THE COPIED NODE IS REMOVED AGAIN SO THE FIXTURE IS AS IT WAS FOUND. The removal goes through the
-    # project's own graph-replace path rather than a hand-written delete, and the restore is ASSERTED
-    # rather than assumed - a suite that leaves a shared fixture changed is the defect this project has
-    # recorded, and it restores ON THE WAY IN as well as out.
-    restored, restored_text = graph_nodes(session, "EventGraph")
-    check("the restore point is readable", restored is not None, restored_text)
-    if restored is not None and before is not None and restored != before:
-        # THE SUITE SAYS IT COULD NOT RESTORE RATHER THAN PRETENDING IT DID. The kit commandlet rebuilds
-        # this asset, and `Tools/make-kit-assets.ps1` is the documented way back - so a failure here is
-        # reported with the remedy rather than left as a silent difference.
-        check("the fixture is left as it was found - IF THIS FAILS, rebuild with "
-              "`pwsh -NoProfile -File Tools/make-kit-assets.ps1`",
-              False,
-              "the target graph has %s node(s) and had %s before the suite ran" % (restored, before))
+    # *** THE FIRST VERSION OF THIS SUITE DID NOT RESTORE AT ALL, AND THE CHECK CAUGHT IT:
+    # `the target graph has 7 node(s) and had 6 before the suite ran`. THAT IS THE DEFECT THIS PROJECT
+    # HAS RECORDED REPEATEDLY - a suite that leaves a shared fixture changed - and it is caught here
+    # rather than noticed by the next suite. ***
+    #
+    # THE RESTORE GOES THROUGH THE PROJECT'S OWN PATH RATHER THAN A HAND-WRITTEN DELETE, and it is the
+    # SAME PATH `test-graph-replace` USES: `Tools/tmcp_editor.py` owns the editor lifecycle
+    # (`Spec/WORKING_PLAN.md` row 0.1), so this suite does not re-implement the subprocess calls. The Kit
+    # is rebuilt by its own commandlet, which needs the package to itself - so `rebuild_fixture` STOPS the
+    # editor and does not start it again, and the harness brings one back for the next suite.
+    #
+    # THE REBUILD IS OPT-IN BY DEFAULT, exactly as the other suites arranged it, because running it on
+    # every invocation costs an editor start.
+    import tmcp_editor
+    ok, detail = tmcp_editor.rebuild_fixture("make-kit-assets.ps1", ["TURBOMCP_STRUCTURE_REBUILD"])
+    if ok is None:
+        print("    fixture rebuild: not requested (%s) - the restore is REPORTED rather than claimed" % detail)
+        check("the fixture restore was REQUESTED, or the kit is left as this suite found it",
+              after == before,
+              "the target graph has %s node(s) and had %s before the suite ran. Run with "
+              "TURBOMCP_STRUCTURE_REBUILD=1 to rebuild the kit, or "
+              "`pwsh -NoProfile -File Tools/make-kit-assets.ps1` by hand."
+              % (after, before))
     else:
-        check("the fixture is left as it was found", True)
+        print("    fixture rebuild: %s" % detail)
+        # A FAILED RESTORE IS A FAILURE, NOT A NOTE, because the next suite reads what this one left behind.
+        check("the shared kit fixture was GIVEN BACK, so the next suite reads what it expects", bool(ok),
+              str(detail)[-300:])
 
     # ---------------------------------------------------------------------------------------------
     # 5. COLLAPSE: THE PLAN RUNS, AND THE WRITE REFUSES WITH THE MEASUREMENT'S OWN REASON
@@ -180,18 +235,18 @@ def main():
     # `FBlueprintEditor` instance `CollapseNodesIntoGraph` is a member of can be constructed outside an
     # open asset editor. So the plan is verified to work - including its refusals - and the write is
     # verified to refuse WITHOUT WRITING.
-    collapse_preview = session.call(PREVIEW, "PreviewTurboMCPGraphCollapse", {"asset": KIT, "graphName": "HandLaid", "nodeIds": [ARITHMETIC_NODE, MULTIPLY_NODE], "memberName": "TurboMCPCollapseProbe", "memberKind": "function"})
+    collapse_preview = session.call(PREVIEW, "PreviewTurboMCPGraphCollapse", {"asset": KIT, "graphName": "HandLaid", "nodeIds": DISCOVERED[:2], "memberName": "TurboMCPCollapseProbe", "memberKind": "function"})
     check("the collapse preview answers", isinstance(collapse_preview, str),
           str(collapse_preview)[:400])
 
-    bad_kind = session.call(PREVIEW, "PreviewTurboMCPGraphCollapse", {"asset": KIT, "graphName": "HandLaid", "nodeIds": [ARITHMETIC_NODE], "memberName": "TurboMCPBadKind", "memberKind": "widget"})
+    bad_kind = session.call(PREVIEW, "PreviewTurboMCPGraphCollapse", {"asset": KIT, "graphName": "HandLaid", "nodeIds": DISCOVERED[:1], "memberName": "TurboMCPBadKind", "memberKind": "widget"})
     check("a member kind that is neither function nor macro is refused BY NAME",
           isinstance(bad_kind, str) and "widget" in bad_kind
           and bad_kind.splitlines()[0].strip() == "unchanged",
           str(bad_kind)[:400])
 
     node_count_before_collapse, _ = graph_nodes(session, "HandLaid")
-    collapse_edit = session.call(EDIT, "EditTurboMCPGraphCollapse", {"asset": KIT, "graphName": "HandLaid", "nodeIds": [ARITHMETIC_NODE, MULTIPLY_NODE], "memberName": "TurboMCPCollapseProbe", "memberKind": "function"})
+    collapse_edit = session.call(EDIT, "EditTurboMCPGraphCollapse", {"asset": KIT, "graphName": "HandLaid", "nodeIds": DISCOVERED[:2], "memberName": "TurboMCPCollapseProbe", "memberKind": "function"})
     check("the collapse edit REFUSES, and says the capability is not built rather than failing vaguely",
           isinstance(collapse_edit, str) and "NOT YET BUILT" in collapse_edit, str(collapse_edit)[:500])
     check("... and the refusal says NOTHING WAS WRITTEN, which is the spec's rule for a failed write",
@@ -208,6 +263,16 @@ def main():
 
     # ---------------------------------------------------------------------------------------------
     # RESULT
+    #
+    # *** THIS SUITE REPORTED NO VERDICT FOR FOUR ROUNDS, AND THE CAUSE WAS ONE MISSING LINE. *** The block below
+    # computed the count, printed "... N of M check(s) passed", and returned an exit code - AND NEVER PRINTED A
+    # `RESULT:` LINE, WHICH IS THE ONLY THING `run-suites.ps1` CAPTURES. The harness therefore reported
+    # `RESULT: no result line`, which is indistinguishable from a crashed suite, AND EVERY DIAGNOSIS MADE FROM THAT
+    # LINE WAS WRONG - the suite was running and printing the whole time.
+    #
+    # THE HOUSE FORM IS THE SAME IN EVERY OTHER SUITE; `test-asset-cost.py:170` ends with
+    # `print("RESULT: PASS (%d check(s) run)")`. It is reproduced here rather than invented, because the harness
+    # parses this line and a second dialect would be a second thing to keep in step.
     # ---------------------------------------------------------------------------------------------
     failed = [r for r in results if not r[1]]
     print("  ... %d of %d check(s) passed" % (len(results) - len(failed), len(results)))
@@ -217,7 +282,10 @@ def main():
             print("    - %s" % name)
             if detail:
                 print("        %s" % str(detail).splitlines()[0][:150])
+        print("RESULT: FAIL (%d) -> %s" % (
+            len(failed), ", ".join(name for name, _, _ in failed)[:220]))
         return 1
+    print("RESULT: PASS (%d check(s) run)" % len(results))
     return 0
 
 
