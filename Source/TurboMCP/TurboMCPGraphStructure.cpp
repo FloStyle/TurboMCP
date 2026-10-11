@@ -828,11 +828,11 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		UEdGraphNode* ToSource = nullptr;
 		for (const TPair<UEdGraphNode*, UEdGraphNode*>& Pair : MadeFrom)
 		{
-			if (KeyOf(Pair.Key).Equals(Link.InsideNodeKey, ESearchCase::CaseSensitive))
+			if (NodeAnswersToKey(Pair.Key, Link.InsideNodeKey))
 			{
 				FromSource = Pair.Key;
 			}
-			if (KeyOf(Pair.Key).Equals(Link.OutsideNodeKey, ESearchCase::CaseSensitive))
+			if (NodeAnswersToKey(Pair.Key, Link.OutsideNodeKey))
 			{
 				ToSource = Pair.Key;
 			}
@@ -862,7 +862,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		UEdGraphNode* FromSource = nullptr;
 		for (const TPair<UEdGraphNode*, UEdGraphNode*>& Pair : MadeFrom)
 		{
-			if (KeyOf(Pair.Key).Equals(Link.InsideNodeKey, ESearchCase::CaseSensitive))
+			if (NodeAnswersToKey(Pair.Key, Link.InsideNodeKey))
 			{
 				FromSource = Pair.Key;
 				break;
@@ -877,7 +877,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		UEdGraphNode* Outside = nullptr;
 		for (UEdGraphNode* Node : TargetGraph->Nodes)
 		{
-			if (Node != nullptr && KeyOf(Node).Equals(Link.OutsideNodeKey, ESearchCase::CaseSensitive))
+			if (NodeAnswersToKey(Node, Link.OutsideNodeKey))
 			{
 				Outside = Node;
 				break;
