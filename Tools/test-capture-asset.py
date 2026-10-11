@@ -455,6 +455,13 @@ def main():
               "the whole editor tab" in out)
         check("%s: it says the render is the editor widget, not a screen grab" % kind,
               "NOT a grab of the screen" in out)
+        # AND IT NAMES THE KIND IT RESOLVED, which is the other half of "each editor kind
+        # is either supported or refused BY NAME": a success that did not say WHICH kind
+        # it was would leave the caller to infer it.
+        # FAILS ON: the `kind:` line being dropped, or the wrong kind being printed.
+        check("%s: the result names the kind it resolved" % kind,
+              "\nkind: %s" % kind in out,
+              next((l for l in out.splitlines() if l.startswith("kind:")), "(no kind line)"))
         measured[kind] = ("CAPTURED", colours, full)
         if fewest[0] is None or colours < fewest[0]:
             fewest = (colours, full)

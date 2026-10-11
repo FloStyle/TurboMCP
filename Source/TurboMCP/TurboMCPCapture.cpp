@@ -133,7 +133,13 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
 	if (bAssetEditor)
 	{
-		FString Out = TEXT("look: capture of an asset editor");
+		// STARTED EMPTY ON PURPOSE. The `look:` banner is prepended at the END, once the
+		// capture has succeeded, so that a refusal can begin with `error:` instead. Seeding
+		// this with the banner AND prepending it printed it TWICE - MEASURED, verbatim:
+		// `look: capture of an asset editorlook: capture of an asset editor` - and the
+		// suite did not catch it because no check read the first line of a SUCCESS. A
+		// check for that is now in the suite.
+		FString Out;
 
 		// FORWARD DECLARED IN THE HEADER, so `TurboMCPCaptureAsset.h` is the only include
 		// this file gains and neither suite's measured picture can move.
@@ -226,7 +232,18 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		// plain string beginning `error:` and carrying no banner at all.
 		if (!TurboMCPCaptureAsset::CaptureAssetEditor(Asset, Out, ImagePath, Error))
 		{
-			FString Refusal = FString::Printf(TEXT("error: %s"), *Error);
+			// *** THE PREFIX IS ADDED ONLY WHEN IT IS NOT ALREADY THERE. ***
+			//
+			// MEASURED, verbatim, before this guard existed:
+			//     `error: error: no asset named '/Game/...'`
+			// The resolver returns its reasons ALREADY PREFIXED - `TurboMCPAssetResolver.cpp:108`
+			// builds `error: no asset named '%s'. ` and `:43`, `:86` do the same - so
+			// prepending unconditionally doubled it. The double is not cosmetic: a caller
+			// that strips one prefix to read the reason gets the word `error` as the reason.
+			const FString Prefix = TEXT("error: ");
+			FString Refusal = Error.StartsWith(Prefix, ESearchCase::CaseSensitive)
+				? Error
+				: Prefix + Error;
 			Refusal += FString::Printf(TEXT("\nasset: %s"), *Asset);
 			if (!Named.Name.IsEmpty())
 			{
