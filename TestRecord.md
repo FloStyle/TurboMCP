@@ -6392,3 +6392,41 @@ does.***
 **THE PREVIOUS WORKSTREAM ON THIS ROW GOT AS FAR AS THE DESIGN AND NO CODE. THIS ONE HAS COMMITTED EVERY INTERMEDIATE
 STATE, INCLUDING TWO SUITE REVISIONS AND AN IMPLEMENTATION FIX - so if it stops now, the next attempt starts at 1014
 lines of compiling code and a named open question rather than at a blank page.**
+
+---
+
+## 52. Round 94: dormant, and the dormancy itself is the finding
+
+**MEASURED:** `main` = `origin/main` = `f5f3760`; **85 tools**; audit **PASS**, `uncalled: (none)`; build green; 225-line
+suite; **working tree clean, NO EDITOR RUNNING, NO BUILD RUNNING, and nothing written to any row in this round.**
+
+*** SO THE GRAPH WORKSTREAM HAS STOPPED - AFTER 9 SAFETY COMMITS, 4 WORKSTREAMS ON THE ROW, AND ZERO WORK DESTROYED - AND
+WHAT IT LEFT IS THE MOST COMPLETE STATE THIS ROW HAS EVER REACHED: 1014 lines of compiling, linked, declared and
+AUDIT-NAMED code, plus a 225-line suite that does not print a verdict. ***
+
+### Why a dormant round is worth a line rather than silence
+
+**A RECORD THAT ONLY CONTAINS THE ROUNDS WHERE SOMETHING MOVED IS A RECORD THAT CANNOT BE USED TO TELL "STILL WORKING"
+FROM "STOPPED".** *The next attempt needs to know that `f5f3760` is where the row went quiet, WHICH OPEN QUESTION was
+live when it did, and that nothing was half-written when it stopped - because "nothing was half-written" is the one
+property that makes a restart cheap, and it was bought with nine commits.*
+
+### The open questions, unchanged and precisely stated for the next attempt
+
+    OWED   the suite reaches no RESULT line
+    OWED   which T-STRUCT-11 is proved - two graphs of ONE blueprint (what TA-2 actually is, because
+           TurboMCPKitCommandlet.cpp:939-940 sets Ta2.Name to TA01_HandLaid) or two ASSETS
+           (BP_TowerArray and TA07_Card exist for the cross-asset case)
+    OWED   for each check, the input that makes it fail
+
+**AND THE THIRD IS THE ONE THAT WILL DECIDE WHETHER THE SUITE IS WORTH ANYTHING, BECAUSE IT IS THE MECHANISM FOUR
+CONSECUTIVE WORKSTREAMS FOUND BY BREAKING THEIR OWN CODE AND WATCHING THE SUITE STAY GREEN: A CHECK OVER A RELATIONSHIP
+INHERITS THE VACUITY OF ITS INPUT - and a copy suite's natural checks are ALL relations, every one of which passes on
+an empty copy.**
+
+### And the one thing that has NOT gone wrong on this row, which is the actual result
+
+**FIVE WORKSTREAMS HAVE TOUCHED THIS ROW AND NOT ONE STEP WAS REDONE AND NO WORK WAS DESTROYED.** *Section 30 records
+the round where a revert destroyed a verified capability on a row in this exact state. **THE MECHANISM THAT PREVENTED A
+REPEAT WAS NOT CARE - it was that the briefs say COMMIT, that the tree is never reverted while a workstream lives, and
+that a filename is checked before it is written to.** Nine commits on one row is what that looks like from the outside.*
