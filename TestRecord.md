@@ -8949,3 +8949,69 @@ AGENT, AND THERE IS NOTHING TO DECIDE. ***
 ANSWERED RATHER THAN APPROACHED.** *Sections 123, 131, 140 and 141 each built a better inference; section 173 found the direct
 answer; and this round USES it instead of rebuilding it. **That is the whole difference between a lesson recorded and a lesson
 applied, which this project has documented eleven times in its own source comments.***
+
+---
+
+## 129. *** ROW 1.3 MEASURED: SOURCE CONTROL PER PROVIDER, MEASURED AT RUNTIME RATHER THAN READ, AND THE ANSWER NARROWS AGAIN ***
+
+    COMMITS 1afad45 (the measurement) and e2d83fd (the two brief premises the tree contradicts)
+    DELIVERABLE Spec/WORKING_SCROW.md, 631 LINES, NEW FILE - Source/TurboMCP/ UNTOUCHED, no build, no suite
+    RUNTIME COLUMNS MEASURED, NOT READ, through the engine's own `-run=PythonScriptCommandlet`, which wraps the
+    script in `FScopedSourceControl` (PythonScriptCommandlet.cpp:57); the raw probe output is EMBEDDED IN THE
+    COMMITTED FILE because `.agent/` is gitignored ***
+
+| Provider | verdict | the deciding line |
+|---|---|---|
+| **None** (default) | **NOT AVAILABLE** - and it is what you get unconfigured | `SourceControlModule.cpp:255-258` fallback; `DefaultSourceControlProvider.cpp:41-44` both false, `:52-55`/`:77-80` `Failed` |
+| **Git** | **AVAILABLE in a commandlet** | `GitSourceControlProvider.cpp:141-150` = `bGitRepositoryFound` <- `:60-85` <- `:32-58` <- `Init :21-30`, which runs REGARDLESS of `bForceConnection` |
+| **Perforce** | **NEEDS A SETTING** (server + workspace + login) | `:232-235` `IsEnabled` true; `:237-240` `IsAvailable`; `:99-104` `Init(false)`->`None`, connection only at `:310-330` |
+| **Plastic SCM** | NOT AVAILABLE here - `cm` not on PATH | `:283-292`; `:89-109` |
+| **Subversion** | NOT AVAILABLE here - `svn` not on PATH | `:79-88`; `:26-29` |
+
+*** AND THE GEDITOR/SLATE ANSWER IS THE SAME NARROWING AS SECTION 123: A SOURCE CONTROL PROVIDER NEEDS AN EDITOR PROCESS, NOT AN
+OPEN EDITOR AND NOT SLATE. The only `GEditor` read in the four plugins is GUARDED AND OFF THE PROVIDER PATH (Plastic
+`PackageUtils.cpp:19` inside `GetCurrentWorld`, reached only from `ListPackagesToReload` from widgets); every
+`FSlateApplication` use is widget code; where the plugins mention the commandlet it is to SUPPRESS UI. AND IT WAS MEASURED:
+Git returned `is_available=True` from a `-nullrhi -unattended` commandlet WITH NO SLATE AT ALL. ***
+
+**AND IT FOUND THE UNGUARDED `GEditor->` SOMEWHERE ELSE ENTIRELY - THE EDITOR SAVE DIALOG:** *`FileHelpers.cpp:2150` loads
+`FPackagesDialogModule` unconditionally -> `:2218 ShowPackagesDialog` -> **`PackagesDialog.cpp:118 GEditor->EditorAddModalWindow(...)`** ` - the same shape as `BlueprintEditorModule.cpp:214`. **AND THAT NARROWS A RECORDED FACT: with no provider, `IsEnabled()` is False, so `FileHelpers.cpp:5925` SKIPS checkout entirely and `FEditorFileUtils::CheckoutPackages` is never reached - the headless failure is A READ-ONLY FILE PLUS A SLATE DIALOG, not a provider refusing.** *It says it narrowed rather than falsified, because the save was not re-run.*
+
+### 129.1 *** AND THE PRE-FLIGHT CHECK FOUND A FIFTH MISSING FIXTURE, OUTSIDE SOURCE CONTROL ***
+
+    `T-VCS-1` NAMES NO `TA-` FIXTURE AT ALL ("per asset", "with source control off / on"), so it CANNOT be a fifth -
+    THE FOUR STAND AT FOUR, AND IT SAYS SO RATHER THAN STRETCHING ONE TO MAKE A PATTERN.
+    *** BUT `T-DATA-5` -> `TA-17` (curve float + curve table, 06_ACCEPTANCE.md:213): no asset carries it, `Tools/*.py`
+    has ZERO matches for CurveFloat|CurveTable|curve, and row 7.3 which needs it is STILL todo AT WORKING_PLAN.md:145.
+    AND A SIXTH CANDIDATE, REPORTED AS A CANDIDATE RATHER THAN A FINDING: `T-BP-8` -> `TA-9` ("card alt"), whose wording
+    MAY mean an in-session class swap rather than a stored asset. ***
+    AND TWO LABEL FINDINGS OFFERED FOR ME TO FOLD IN RATHER THAN EDITED INTO THE SPEC:
+      `TA-5` IS A LABEL COLLISION - the table calls it a 60-expression Material while the kit uses that label for
+      the BackwardProbe graph (make-kit-assets.ps1:139, test-graph-fix-backward.py:416)
+      the recorded `T-MAT-10` -> `TA-6` note is NARROWER THAN THE RECORD SAYS, because a real material instance
+      EXISTS as `MI_TurboMCPFixture` (TurboMCPMaterialFixtureCommandlet.cpp:609) - MISSING UNDER THE TABLE'S NAME,
+      NOT ABSENT FROM THE PROJECT ***
+
+### 129.2 What a tool must do with no provider, and it reproduced the engine's own refusals
+
+    provider None      -> False ; "Revision control is not enabled."                      (SourceControlHelpers.cpp:67)
+    provider Perforce  -> False ; "Revision control server is currently not available."   (:76)
+    THE PATTERN IS `VerifySourceControl` (:61-85), WHICH ASKS **BOTH** IsEnabled() AND IsAvailable() FIRST -
+    REQUIRED, because Perforce/Plastic/SVN return IsEnabled()==true UNCONDITIONALLY while IsAvailable() is false.
+    SO: ASK BOTH, REFUSE BY NAME PER ASSET, PUT THE REFUSAL IN `Plan` SO PREVIEW AND EDIT REFUSE IDENTICALLY, AND
+    NEVER REACH A PROVIDER CALL TO FIND OUT - with None, `GetState` returns Failed and a NULL state a reader can
+    mistake for "not under source control" (CommandletSourceControlUtils.cpp:184-194 shows the cost).
+    AND THE PROJECT'S ABSENT-MEASUREMENT PATTERN IS `P1`, IN THE READER IT NAMES: TurboMCPAssetCost.cpp:22-23,
+    :101-105 ("OWN SIZE: unknown - %s"), :129-135, :223.
+    HAZARD: `SetProvider(FName)` IS **FATAL** ON AN UNMATCHED NAME (SourceControlModule.cpp:404-417) - validate with
+    `GetProviderNames` (:266-276) or use `CreateProvider` (:384-397, returns null).
+
+### 129.3 And two premises OF MINE that the tree contradicts
+
+*** `.agent/list_engine_plugins.py:36-41` AND `list_plugin_sources.py:42-45` ENUMERATE ONLY `ToolsetRegistry` AND
+`ModelContextProtocol` OVER THE GITHUB API - SO THEY CANNOT SEE A SOURCE CONTROL PROVIDER AT ALL.*** *I put those scripts in a brief as the way to enumerate plugins; **they enumerate two specific plugins, not the engine's plugin set.** The workstream enumerated `C:\UnrealEngine` directly instead. **AND: the providers are ALL PLUGINS** - `Engine/Source/Developer/SourceControl` is only the framework plus the default provider.*
+
+**AND FOR THE PLAN, WHICH IS THE POINT OF THE ROW: 10.1 IS BUILDABLE AND `Q-20` CAN BE CLOSED - GIT FIRST (the only provider
+available here with nothing but the setting), PERFORCE SECOND (the reason the capability exists, and `p4 set` points at
+`ssl:example.invalid:1666` which DOES NOT ANSWER - the run logged "Connect to server failed; check $P4PORT" and exited 1 with the
+probe output intact).** *And a trap for 10.1: `-SCCProvider=Plastic SCM` CONTAINS A SPACE and needs quoting.*
