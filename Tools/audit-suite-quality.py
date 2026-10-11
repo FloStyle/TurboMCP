@@ -50,17 +50,34 @@ def audit(path):
     findings = []
 
     # 1. Does it have a failure list at all?
-    has_failures = re.search(r"failures\s*=\s*\[", text) is not None
+    #
+    # *** A SUITE NEED NOT CALL IT `failures`. *** The first version looked only for `failures = []` and so
+    # reported `test-graph-structure.py` as having NO WAY TO RECORD A FAILURE - a suite that keeps
+    # `results = []` of `(name, bool(ok), detail)` tuples and prints `FAIL` per row and a `RESULT: FAIL (n)`
+    # line. THAT IS A FALSE POSITIVE, and a false positive in an audit that is about to BLOCK is worse than
+    # no audit: it teaches the reader to ignore the warning, which is exactly "an invisible refusal reads as
+    # a capability" turned round. The list is recognised by the SHAPE - a list literal that failures are
+    # appended to - rather than by one preferred name.
+    list_names = set(re.findall(r"(\w+)\s*=\s*\[\s*\]", text))
+    appended_to = set(re.findall(r"(\w+)\.append\(", text))
+    failure_lists = sorted(list_names & appended_to)
+    has_failures = bool(failure_lists)
     if not has_failures:
         findings.append(("NO-ASSERT", 0,
-                         "no `failures = []` list, so nothing can be recorded as a failure"))
+                         "no list is built and appended to, so nothing can be recorded as a failure"))
 
     # 2. Does anything ever go into it?
-    appends = len(re.findall(r"failures\.append\(", text))
-    # A helper named `check` that appends counts, and most suites use one.
-    helper_appends = len(re.findall(r"def check\(.*?\n(?:.*?\n)*?.*?failures\.append", text))
-    if has_failures and appends == 0 and helper_appends == 0:
-        findings.append(("NO-ASSERT", 0, "a failures list exists but NOTHING is ever appended to it"))
+    #
+    # THE SAME WIDENING AS ABOVE, FOR THE SAME REASON: the first version hard-coded the name `failures` here
+    # too, so after the list check was widened this one still reported `test-graph-structure.py` as having a
+    # list nothing is ever appended to - while the file appends to `results` on every row.
+    appends = 0
+    for list_name in failure_lists:
+        appends += len(re.findall(re.escape(list_name) + r"\.append\(", text))
+    if has_failures and appends == 0:
+        findings.append(("NO-ASSERT", 0,
+                         "the list(s) %s exist but NOTHING is ever appended to them"
+                         % ", ".join("`%s`" % n for n in failure_lists)))
 
     # 3. Constant comparisons that cannot fail.
     for index, raw in enumerate(lines, start=1):
