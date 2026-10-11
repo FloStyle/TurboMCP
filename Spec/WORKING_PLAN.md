@@ -106,14 +106,14 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 | 3.2 | Material reader at `full` detail: node type ids, pin indexes, function inputs distinguished from parameters | `04_FORMATS.md` section 2.5 | `D-14`, `D-15` | T-WRITE-6 | todo |
 | 3.3 | `P-MAT-CHECK`, then `P/E-MAT-APPEND` | `03_TOOLS.md` section 9 | `D-28`, `D-29`, `D-30` | T-WRITE-6 | todo |
 | 3.4 | `P/E-MAT-REPLACE`, then `P/E-MAT-PATCH` | `03_TOOLS.md` section 9 | `D-28`, `D-45` | T-WRITE-6 | todo |
-| 3.5 | `R-MAT-INST-LOAD` and `P/E-MAT-INST-SET` | `03_TOOLS.md` section 9 | `D-43` | T-MAT-10, T-MAT-11 | todo |
+| 3.5 | `R-MAT-INST-LOAD` and `P/E-MAT-INST-SET` | `03_TOOLS.md` section 9 | `D-43` | T-MAT-10, T-MAT-11 | done |
 | 3.6 | `R-MAT-ARGS` and `P/E-MAT-ARGS-SET`, with the index shift stated and the removal refused by default | `03_TOOLS.md` section 9 | `D-44` | T-MAT-12, T-MAT-13 | todo |
 
 ### Step 4 — data table rows
 
 | # | Work | Spec | Decisions | Test | State |
 |---|---|---|---|---|---|
-| 4.1 | `P/E-DATATABLE-ROWS`: add, change and remove rows, values through the row struct's own text import | `P/E-DATATABLE-ROWS` | `P4`, `D-45` | T-DATA-1 | todo |
+| 4.1 | `P/E-DATATABLE-ROWS`: add, change and remove rows, values through the row struct's own text import | `P/E-DATATABLE-ROWS` | `P4`, `D-45` | T-DATA-1 | done |
 
 ### Step 5 — widget authoring
 
@@ -141,7 +141,7 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 | # | Work | Spec | Decisions | Test | State |
 |---|---|---|---|---|---|
 | 7.1 | `P/E-STRUCT-NEW` and `P/E-STRUCT-FIELDS`, **editor-only**, and saying so | `03_TOOLS.md` section 12 | `D-51` | T-DATA-2 **SATISFIED**, T-DATA-3 blocked on a missing fixture | `3732b17`; build Succeeded, `test-struct` PASS, audit `uncalled: (none)`, full run **53/53**. **THE "EDITOR-ONLY" PREMISE WAS WRONG AND THE SPEC'S REASON WAS WRONG:** `StructureEditorUtils.cpp:42-64` shows `CreateUserDefinedStruct` installing the `EditorData` at `:49-50` and THEN calling `AddVariable` at `:59` - so the function `D-51` calls unavailable installs the very data it says only the editor factory installs, and the recorded crash was `NewObject` + a hand-built field list, **one call short of the public static**. It needs an EDITOR PROCESS, not an OPEN EDITOR: `AddVariable` reads only `Struct->EditorData`, `GetVarDesc` is one `CastChecked`, `CompileStructure` goes via KismetCompiler - **no `GEditor`, so the `check(GEditor)` limits do not bind.** AND THE ROW **DOES** NEED A `UUserDefinedStruct`: `TurboMCPKitRow.h` is right that a native `USTRUCT` is project-owned, **and a native struct is compiled C++ source so no runtime tool can add a field** - two true statements about two different rows, with the native struct now refused by name. **T-DATA-3 NAMES `TA-21`, WHICH DOES NOT EXIST** (4th such row after `TA-6`, `TA-15/16`, `TA-8`), so the suite builds what it edits. **Four defects found by RUNNING it:** `RemoveVariable` refuses to empty a struct; `AddVariable` cannot name a field (empty base -> literal `MemberVar`); *** `GetBasicTypeByName` SILENTLY SUBSTITUTES `int` for any non-`PC_*` name (`BlueprintEditorLibrary.cpp:2118-2122`), so `Alpha: double` created an int field WHILE REPORTING SUCCESS ***; `ChangeVariableType` returns `false` for a no-op. | done |
-| 7.2 | `P/E-ENUM-EDIT`, with reordering reported as affecting saved data | `P/E-ENUM-EDIT` | `D-45` | T-DATA-4 | todo |
+| 7.2 | `P/E-ENUM-EDIT`, with reordering reported as affecting saved data | `P/E-ENUM-EDIT` | `D-45` | T-DATA-4 | done |
 | 7.3 | `R-CURVE-LOAD` and `P/E-CURVE-SET` | `03_TOOLS.md` section 12 | `P1` | T-DATA-5, T-DATA-6 | todo |
 | 7.4 | `R-ASSET-COST`, split by provenance | `R-ASSET-COST` | `D-52` | T-ASSET-3 | done |
 | 7.5 | `P-ASSET-DIFF`, naming what it did not compare | `P-ASSET-DIFF` | `D-53` | T-ASSET-4 | open (Q-21) |
