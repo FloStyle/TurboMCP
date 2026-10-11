@@ -10447,3 +10447,30 @@ ATTEMPTS BECAUSE THE FIRST ONE LIED, NOT BECAUSE THE PROBLEM WAS HARD. ***
     *** AND IT REPORTS THE TWO `NOTE ... STILL dirty` LINES IT STILL PRINTS RATHER THAN REMOVING THEM FOR
     LOOKING BAD. The verdicts are green regardless, so the residual is NOT what the failing check reads - but the
     note says what it sees, and the next attempt at this should find out WHICH path it is. ***
+
+---
+
+## 172. *** ROUND 236: THE HARNESS FIX HOLDS IN A FULL RUN, AND A SECOND SUITE FAILS ALONE - WHICH MAKES IT A REAL DEFECT ***
+
+    FULL RUN WITH THE FIX:   passed 57, failed 1, blocked 0, of 58
+    THE ONE FAILURE:         test-material-tidy  RESULT: FAIL (1) -> the expression count is UNCHANGED
+    *** AND IT FAILS **ALONE** TOO (`-Suites test-material-tidy` -> passed 3, failed 1, of 4), SO IT IS NOT
+    CONTENTION AND NOT MY CHANGE. ***
+    AND THE SEQUENCE I FIXED, RE-VERIFIED:  PASS test-graph-fix-backward then PASS test-vcs (55 check(s) run,
+    no check skipped) -> passed 5, failed 0, blocked 0, of 5
+
+*** SO TWO THINGS ARE NOW SEPARATED THAT WERE PREVIOUSLY ONE: THE CONFLICT I FIXED IS FIXED, AND A DIFFERENT SUITE HAS A REAL FAILURE
+THAT SURVIVES ISOLATION. ***
+
+**AND `test-material-tidy` IS THE SUITE THIS RECORD ALREADY KNOWS ABOUT, IN THE OPPOSITE DIRECTION.** *The old note says it "failed
+in the full run and passed alone" and that a shared fixture left dirty was the suspected cause - **AND THAT CAUSAL LINK WAS EXPLICITLY
+WITHDRAWN** because it was never proven. **NOW IT FAILS BOTH WAYS**, which is NEW evidence: whatever is wrong is not the run's order.
+
+**AND THE FAILING CHECK IS THE ONE THAT MATTERS MOST IN A WRITER'S SUITE:** *`the expression count is UNCHANGED` means the tool
+reported a tidy that did not change how many expressions the material has - **the exact "an invisible refusal reads as a capability"
+shape, in a material writer, caught by its own suite.*** *** So the suite is doing its job and the TOOL has a defect, which is the
+opposite of the usual finding and worth saying plainly: a red suite can be the suite working. ***
+
+**AND I HAVE NOT INVESTIGATED IT.** *I have the failing check's name and the fact that it survives isolation, and **that is not enough to
+name a cause** - this record has withdrawn exactly that kind of inference before. It is recorded as an open defect with the evidence that
+exists and nothing more.*
