@@ -6842,3 +6842,24 @@ NOTE WHAT THAT SENTENCE IS WORTH: IT IS A SNAPSHOT, NOT A GUARANTEE. If you ever
 - a file changing between two reads, an `edit` refused with 'file changed since it was read', a baseline that does not
 match - STOP AND ASK AND SAY WHAT YOU MEASURED."* **That is the mechanism that prevented a second data loss last round,
 and it only works if the brief admits it might be stale rather than asserting a state it cannot guarantee.**
+
+---
+
+## 61. Round 102: dormant on the surface, and the two deliverables are still being measured
+
+**MEASURED:** `main` = `origin/main` = `9c7b592`; **85 tools**; **45 suites**; working tree clean; **no build running and no
+editor running**; nothing written to any row in this round.
+
+**THE WORKSTREAM LAUNCHED LAST ROUND IS STILL WORKING ON THE TWO MEASURED DELIVERABLES - row 1.4's yes/no per editor kind
+for Niagara and an Anim Blueprint, and row 0.2's restore-on-the-way-in for `test-override-add` and `test-comment-boxes`.**
+*Neither has produced a commit yet, and that is the correct state rather than a problem: row 1.4 is a MEASUREMENT whose
+honest outcome may be a refusal, and row 0.2 needs the full suite set re-run TWICE - once to confirm the failure
+reproduces and once to confirm the fix - which is the expensive half of that deliverable.*
+
+*** AND THE THING WORTH RECORDING IS THAT THIS ROUND DID NOT INVENT A SECOND WORKSTREAM TO FILL THE IDLE MACHINE. LAST
+TIME I DID THAT, I LAUNCHED AN AGENT ONTO A LIVE ROW AND IT HAD TO STOP ME (section 55). THE MACHINE BEING FREE IS NOT
+EVIDENCE THAT A ROW IS FREE, AND THE ONLY THING THAT DISTINGUISHES THEM IS ASKING. ***
+
+**OPEN, UNCHANGED: the four decisions that row 1.4's answer feeds - `TA-19`/`TA-18`'s fixtures, the `FScopedCall`
+instrumentation for `T-HELP-6`, `E-GRAPH-COLLAPSE`'s `FBlueprintEditor` instance question, and the cross-asset
+`T-STRUCT-11` - plus `test-material-tidy`'s full-run failure, which row 0.2 exists to explain.**
