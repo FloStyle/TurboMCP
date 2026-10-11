@@ -5560,3 +5560,56 @@ shape the breakpoint group used and it is the shape that works.
 **`TA-18` (AnimBP) NEEDS A MEASUREMENT BEFORE IT IS BUILT** - `UAnimBlueprint` normally needs a skeleton and an editor
 factory, *"the same shape as the user-struct block"*, **and `TA-14` is the proof that this shape is answerable by
 measurement rather than by assumption: the project had recorded `TA-14` as impossible and it was buildable.**
+
+---
+
+## 36. R-CALL-COST's tool WORKS, read verbatim from a live editor, and the suite is ONE check from green
+
+*** THE CAPABILITY I DESTROYED ONE ROUND AGO IS NOW PRESERVED, VERIFIED WORKING, AND ONE CHECK FROM GREEN. ***
+
+FROM `ReadTurboMCPCallCost {"since":"1h","filter":"","cap":"10"}` ON A LIVE EDITOR:
+
+    counts: 33 in the log, 33 considered, 0 skipped before 1h, 0 did not match the filter
+    ranked 33 entries of 33, 33 recording a duration and 0 recording a token estimate; 8 failed
+
+    MOST EXPENSIVE BY TOKENS
+    none of the 33 considered call(s) recorded a token estimate above zero.
+    THIS IS NOT ZERO COST. A token estimate is written by this plugin's own tools,
+    and the engine's event carries no result text - so a log of engine calls cannot
+    be ranked by tokens at all. Use SLOWEST below, which every entry can answer.
+
+    SLOWEST BY DURATION
+    2026-10-11T01:16:10.493Z | (top-level).call_tool | 9.8ms | 0 chars | 0 token estimate
+
+    TOTALS PER TOOL (9 row(s), each with its call count)
+    TurboMCPReadToolset.ReadTurboMCPCallLog | 2 call(s) | 0 error(s) | 0 tokens | 0 chars | 0.4ms ...
+
+    TOTALS PER ASSET: none can be computed. ... that is an absent measurement, not zero cost.
+
+### 36.1 BOTH of the lost workstream's measured findings are HONOURED, which is why its work was worth recovering
+
+**(1) THE DOUBLY-QUALIFIED TOOLSET IS COLLAPSED.** The rows read `TurboMCPReadToolset.ReadTurboMCPCallLog` - **ONE KEY,
+NOT TWO** - where the analytics provider writes `TurboMCP.TurboMCPReadToolset` and `FScopedCall` writes the bare
+`TurboMCPReadToolset`. **A per-tool total that did not collapse them would have reported one toolset as two rows with a
+denominator each, WHICH IS EXACTLY THE "TOTALS PER TOOL" `T-HELP-6` ASKS FOR, REPORTED WRONG.**
+
+**(2) THE ZERO-TOKEN CASE IS NAMED RATHER THAN RANKED, WITH THE REASON ATTACHED.** *"THIS IS NOT ZERO COST ... a log of
+engine calls cannot be ranked by tokens at all. Use SLOWEST below, which every entry can answer."* **THE LOST
+WORKSTREAM SAID A REDO MUST KEEP THAT - "a report that silently ranks all-zero rows IMPLIES A RANKING EXISTS" - AND IT
+WAS KEPT.** The tool also distinguishes **"an absent measurement, not zero cost"** for the asset section: **`P1`'s rule
+- an empty result must be distinguishable from a result of zero - applied TWICE in one output.**
+
+### 36.2 The suite's progression, every step a measurement
+
+    BEFORE:  FAIL  RESULT: no result line      (AttributeError: 'list' object has no attribute 'splitlines')
+    THEN:    FAIL (4) -> with no token estimate recorded, it says so rather than naming a winner, it explains ...
+    NOW:     FAIL (1) -> the slowest call is NAMED, with a timestamp
+
+**0 -> 4 -> 1 NAMED FAILURES.** The four went to one **because the tool DOES say the four things - verified by READING
+ITS OUTPUT directly rather than through the suite.** The remaining one is that the suite wants **its own slowest call**
+to appear, and on this log the slowest entry is `(top-level).call_tool` at 9.8ms **BECAUSE THE SUITE'S OWN CALLS WERE
+FASTER THAN THE HARNESS'S.** *That is the shared-mutable-state shape this project has recorded ten times: an assertion
+about WHICH ROW IS SLOWEST, on a log every process writes to.*
+
+**OWED RATHER THAN FIXED, WITH THE REASON: THE FIX IS A DECISION ABOUT WHAT THE CHECK SHOULD ASSERT - the slowest call
+is not necessarily the suite's own - AND THAT BELONGS WITH A RUN, NOT WITH A GUESS.**
