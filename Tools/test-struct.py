@@ -68,26 +68,38 @@ TESTS = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "TestProject", "Content", "Tests")
 
-# Every package this suite touches. They are DELETED at the start, so a rerun
-# starts from a known state rather than meeting the previous run's asset - which
-# is what makes the "an existing path is refused" check meaningful.
-PACKAGE = "/Game/Tests/TA21_KitStruct"
-OBJECT = PACKAGE + ".TA21_KitStruct"
-FILE = os.path.join(TESTS, "TA21_KitStruct.uasset")
+# WHY EVERY PACKAGE THIS SUITE TOUCHES IS UNIQUE PER RUN, AND WHY THAT IS NOT A
+# COSMETIC CHOICE.
+#
+# `E-STRUCT-NEW` REFUSES AN EXISTING PATH - correctly, and that refusal is one of
+# the things this suite tests. But a package that exists in the RUNNING EDITOR is
+# not removed by deleting its `.uasset`: the tool checks `FindObject` as well as
+# the file, so a second run in the same editor session meets its own previous
+# asset and is refused. A suite whose fixture collides with itself on the second
+# run fails for the wrong reason, once, and then looks like a flake.
+#
+# `_RunId` is the process id, which is unique among live processes and gives a
+# name that is a legal package name. The result is that every assertion below is
+# about THIS run's asset and never about a previous one's.
+_RUN_ID = "%d" % (os.getpid() % 100000)
+
+PACKAGE = "/Game/Tests/TA21_KitStruct_Run" + _RUN_ID
+OBJECT = PACKAGE + ".TA21_KitStruct_Run" + _RUN_ID
+FILE = os.path.join(TESTS, os.path.basename(OBJECT) + ".uasset")
 
 # T-DATA-2's shape: 4 fields, ONE OF THEM OF A STRUCT TYPE.
 FIELDS = "Weight: float, Label: name, Count: int, Nested: Vector"
 
 # A second struct, for the field editing half.
-PACKAGE_EDIT = "/Game/Tests/TA21_FieldEdit"
-OBJECT_EDIT = PACKAGE_EDIT + ".TA21_FieldEdit"
-FILE_EDIT = os.path.join(TESTS, "TA21_FieldEdit.uasset")
+PACKAGE_EDIT = "/Game/Tests/TA21_FieldEdit_Run" + _RUN_ID
+OBJECT_EDIT = PACKAGE_EDIT + ".TA21_FieldEdit_Run" + _RUN_ID
+FILE_EDIT = os.path.join(TESTS, os.path.basename(OBJECT_EDIT) + ".uasset")
 
 # A third struct, which a Blueprint variable reads. That reader is what the
 # removal guard is measured against.
-PACKAGE_READ = "/Game/Tests/TA21_WithReader"
-OBJECT_READ = PACKAGE_READ + ".TA21_WithReader"
-FILE_READ = os.path.join(TESTS, "TA21_WithReader.uasset")
+PACKAGE_READ = "/Game/Tests/TA21_WithReader_Run" + _RUN_ID
+OBJECT_READ = PACKAGE_READ + ".TA21_WithReader_Run" + _RUN_ID
+FILE_READ = os.path.join(TESTS, os.path.basename(OBJECT_READ) + ".uasset")
 
 failures = []
 
@@ -128,10 +140,20 @@ def reader_counts(text):
 
 
 def remove_files():
+    """Delete this run's assets and any this suite left behind on an earlier run.
+
+    The files are only half the state - the running editor caches the objects -
+    which is exactly why the package names carry a run id above. This is belt and
+    braces for the file check at the end.
+    """
     for path in (FILE, FILE_EDIT, FILE_READ):
         if os.path.isfile(path):
             os.remove(path)
-            print("    (removed %s from a previous run)" % os.path.basename(path))
+            print("    (removed a leftover %s)" % os.path.basename(path))
+    for name in os.listdir(TESTS) if os.path.isdir(TESTS) else []:
+        if name.startswith("TA21_") and name.endswith(".uasset"):
+            os.remove(os.path.join(TESTS, name))
+            print("    (removed a previous run's %s)" % name)
 
 
 def main():
