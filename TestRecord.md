@@ -5974,3 +5974,76 @@ printed on every run rather than buried.**
 ASSUMES ONE SHAPE IS INDISTINGUISHABLE FROM A REAL ABSENCE. THE DIFFERENCE IS THAT IT WAS FOUND BY MEASURING FOUR
 INPUTS RATHER THAN BY READING THE REGEX AND REASONING ABOUT IT - AND READING IT AND REASONING IS EXACTLY WHAT I DID
 FIRST, AND IT PRODUCED A MECHANISM THAT WAS NOT TRUE. ***
+
+---
+
+## 42. A relationship check cannot fail when the relationship has no members - and a brief's filename would have clobbered a tracked suite
+
+*** THE WIDGET WORKSTREAM DELIVERED `R-WIDGET-TREE` (PASS, 14 checks) AND REFUSED THE THREE WRITE VERBS RATHER THAN
+HALF-BUILDING THEM, AND IT FOUND THREE THINGS BIGGER THAN ITS OWN ROW. ***
+
+### 42.1 The break test BIT, and WHICH checks went red is the lesson
+
+It zeroed the loop bound so the walk flattened the tree to its root - **the exact failure `D-48` rejected the graph text
+for** - and got:
+
+    ok   every child's path extends its parent's path
+    FAIL the card's children were present, so the order check had something to check
+    FAIL every widget the flat list names is also in the tree
+         flat list only: ['CardTitle'] ; tree has ['CanvasPanel_0']
+
+*** THE PATH-EXTENSION CHECK - WRITTEN SPECIFICALLY TO CATCH FLATTENING - PASSED, BECAUSE WITH NO CHILDREN THERE IS
+NOTHING WHOSE PATH CAN FAIL TO EXTEND ITS PARENT. A CHECK ABOUT A RELATIONSHIP CANNOT FAIL WHEN THE RELATIONSHIP HAS
+NO MEMBERS. *** The two that caught it were **an existence check and `R-BP-LOAD`, AN INDEPENDENT WITNESS.**
+
+*** AND THIS IS A SHARPER FORM OF THE OLDEST LESSON THAN THE ONE ON RECORD. "A TOOL'S OWN REPORT IS NOT EVIDENCE" IS
+USUALLY ABOUT A TOOL LYING; HERE THE TOOL WAS HONEST AND STILL WRONG, AND ONLY A DIFFERENT TOOL COULD TELL. ***
+
+**IT IS THE FOURTH INSTANCE OF THE SAME STRUCTURE IN FOUR ROUNDS** - the others being `R-MAT-INST-LOAD`'s empty orphan
+list, `R-CALL-COST`'s unqualified name, `R-ASSET-COST`'s missing registry row - **AND THIS ONE NAMES THE MECHANISM: A
+CHECK OVER A RELATIONSHIP INHERITS THE VACUITY OF ITS INPUT.**
+
+### 42.2 The brief's filename would have destroyed a PASSING suite
+
+**I TOLD IT TO CREATE `Tools/test-widget-tree.py`. THAT FILE ALREADY EXISTED AND WAS TRACKED** (`5b7e646`), testing
+**`R-BP-LOAD`'s widget section** - a different, older capability. **The runner globs `test-*.py`, so following my brief
+would have SILENTLY OVERWRITTEN A PASSING SUITE THE WORKSTREAM DOES NOT OWN.** It named its own file after the class it
+tests and said so.
+
+*** SECOND TIME THIS ROUND THAT "DOES THIS NAME ALREADY EXIST" WAS THE WHOLE ISSUE - the first being the audit's
+`uncalled`, where a name that DID exist was reported as absent. BOTH ARE THE SAME DEFECT FROM OPPOSITE SIDES: A NAME IS
+NOT EVIDENCE OF ANYTHING UNTIL SOMETHING CHECKS WHAT IS CURRENTLY AT IT. *** **CHECK THE TARGET BEFORE WRITING TO IT,
+whether the target is a file or a claim.**
+
+### 42.3 A fixture defect it reported and CORRECTLY did not touch
+
+**THE CARD'S TREE HOLDS ONLY ITS ROOT AND `CardTitle`**, while `TurboMCPKitCommandlet.cpp:1574-1586` adds **FOUR**
+children at indices 0..3, and `make-kit-assets.ps1` reported `FAILED (exit -1): the commandlet reported no summary` on
+one run while a later run succeeded. **SO EITHER THE FIXTURE IS INTERMITTENTLY INCOMPLETE OR `AddWidget` FAILS FOR
+THREE OF FOUR ADDS.** It did not edit the commandlet - **not its file** - and its suite **reads one child rather than
+hard-coding four**, which is the correct response to a fixture you do not own.
+
+**AND `TA-8` DOES NOT EXIST ON DISK WHILE `T-WIDGET-4` NAMES "TA-7 and TA-8"** - so it ran the TA-7 half only and said
+so. *** THIRD ACCEPTANCE ROW FOUND TO NAME A FIXTURE THAT DOES NOT EXIST, after `T-MAT-10` naming `TA-6` and
+`T-LEVEL-1/2` naming `TA-15`/`TA-16`. THE PRE-FLIGHT RULE THAT CATCHES IT - CHECK THE ROW'S FIXTURE EXISTS BEFORE
+ASSIGNING THE CAPABILITY - WAS WRITTEN AFTER THE SECOND AND APPLIED TO NEITHER. ***
+
+### 42.4 Two API mistakes worth propagating
+
+- *** `session.rpc` IS NOT HOW A TOOL IS CALLED. A tool name is not an MCP method; the server answers `HTTP 400`. Use
+  `session.call(TOOLSET, TOOL, args)`, which wraps the name in the engine's `call_tool` dispatcher. ***
+- **IT COPIED THE WITNESS'S ARGUMENT SET FROM A WORKING SUITE RATHER THAN DERIVING IT**, and
+  `ReadTurboMCPBlueprintLoad` **REQUIRES `detail` AND `graphFilter`**; sending only `assets` returned
+  `input param "detail" is required`. *** ELEVEN RECALLED-FORMAT ERRORS ARE RECORDED AND THE WORKSTREAM CALLED ITS OWN
+  "NEAREST THE TWELFTH" - THE FIRST TIME A WORKSTREAM HAS PREDICTED THE CLASS RATHER THAN MERELY SUFFERED IT. ***
+
+### 42.5 What is NOT claimed, stated plainly
+
+**`T-WIDGET-1/2/3` ARE NOT CLAIMED**, because the three write verbs are not built. **No `(slot ...)` assignment has been
+OBSERVED on a real tree, because the card has no padding** - `TurboMCPKitCommandlet.cpp:1588-1595` and `UPanelSlot`'s
+own declaration: it declares only `Content` and `Parent`. **So a slot clause in the dialect has no fixture that can
+exercise it yet, and the plan types are designed in the header for whoever picks the writers up.**
+
+**AND THE WRITE VERBS NOW HAVE A NAMED BLOCKER RATHER THAN A VAGUE ONE:** the walk exists and is verified, the dialect
+and parser exist (871 lines), **and what is missing is a fixture whose tree is DEEP ENOUGH AND WIDE ENOUGH to exercise
+`append`/`replace`/`patch` - the same class as `TA-15`/`TA-16`/`TA-17` in the kit's measured table.**
