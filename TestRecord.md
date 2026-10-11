@@ -5083,3 +5083,87 @@ deviation spelled out underneath.
 
 **THE GENERAL FORM, WHICH IS WORTH KEEPING: AN ACCEPTANCE ROW IS A CLAIM ABOUT A FIXTURE AS WELL AS ABOUT A TOOL.
 CHECKING THE FIXTURE HALF BEFORE STARTING IS ONE COMMAND, AND NOT CHECKING IT HAS COST A FULL WORKSTREAM.**
+
+---
+
+## 28. Three parallel workstreams: a fixture blocker, a working tool, and a REGRESSION - all made visible by the harness fix
+
+*** THE INSTRUMENT PAID FOR ITSELF ON ITS FIRST USE. WITHOUT THE FIX, THREE SUITES WOULD HAVE READ `RESULT: no result
+line` AND I WOULD HAVE HAD NO IDEA WHY. WITH IT, THE FIRST RUN SAID `the suite's last lines were:` AND THE CAUSES WERE
+IMMEDIATELY READABLE: `URLError WinError 10061` (no connection) for one, `the editor could not be started` for the
+other. ***
+
+### 28.1 THE REGRESSION, AND IT IS MINE TO OWN
+
+    start-editor.ps1 -LowPriority   ->  FAIL  the editor process (PID 42552) exited after 5s
+    DLL: 02:02:59   newest source: 02:02:12 (TurboMCPCallCost.cpp)   ->  DLL IS NEWER, SO THE BINARY IS CURRENT
+
+**THE EDITOR EXITS AFTER FIVE SECONDS WITH A BINARY THAT CONTAINS THIS ROUND'S CODE.** The last verified state was
+`46 of 46` with `start-editor.ps1` reaching `RESULT: PASS` in 14 to 16 seconds, **SO THE THREE WORKSTREAMS' NEW CODE
+PREVENTS THE EDITOR FROM STARTING AND NOTHING IN THIS ROUND CAN BE VERIFIED UNTIL THAT IS FOUND.** The likely places
+are `StartupModule`-adjacent code in one of the three new files, or a static initialiser.
+
+### 28.2 Workstream A: no capability, a measured fixture blocker, and an engine measurement that GATES a capability
+
+**IT DID NOT LAND A CAPABILITY AND SAID SO.** It landed a compiled foundation - `CountVariableReferences` with PER-KIND
+counts across all four graph arrays, `IsNameTaken` returning THE HOLDER BY NAME because `D-46` says the refusal must
+name what holds it - and **ZERO declarations**, so the audit is untouched.
+
+*** `T-STRUCT-9` CANNOT PASS AS WRITTEN, MEASURED FROM THE KIT COMMANDLET RATHER THAN ASSUMED. *** It asks to rename
+*"a variable of TA-1 that has getters, setters and a widget binding"*:
+- **`TA01_HandLaid` HAS NO MEMBER VARIABLES AT ALL.** The kit's only `AddMemberVariable` is
+  `TurboMCPKitCommandlet.cpp:1666`, on `Card` = **`TA07_Card`**.
+- **AND THE ONE VARIABLE THAT EXISTS HAS ZERO REFERENCES.** `Caption` appears at exactly three lines: `:1656`
+  (comment), `:1665` (name), `:1667` (default).
+- **THE KIT'S GETTERS ARE LOCAL** - `MakeLocalGetter` calls `SetLocalMember` (`:266`) - **and the counter deliberately
+  SKIPS them, because counting local scopes would OVERSTATE the blast radius.**
+
+**AND `T-STRUCT-11` READS WIDER THAN IT IS:** `TA-2` is NOT a second asset - `:939-940` maps `Ta2.Name = "TA01_HandLaid"`
+- so the row means **copying between two graphs of ONE blueprint**, which does not exercise `E-GRAPH-COPY`'s stated
+*"between graphs and Blueprints"*.
+
+*** AND THE MEASUREMENT THAT SHOULD GATE `E-GRAPH-COLLAPSE`: `CollapseNodesIntoGraph` IS DECLARED ON
+`FBlueprintEditor` (`Editor/Kismet/Public/BlueprintEditor.h:1125`) - AN ASSET-EDITOR UI OBJECT.*** The editor reaches it
+from `CollapseSelectionToFunction` (`BlueprintEditor.cpp:9148-9198`). **Whether it is reachable without an OPEN asset
+editor is the exact shape of `WORKING_PLAN` row 1.1 for the breakpoints**, and the workstream **REFUSED TO BUILD ON AN
+API THAT MIGHT ONLY EXIST INSIDE A UI OBJECT. COLLAPSE IS THEREFORE `gated` ON A MEASUREMENT, NOT `todo`.**
+
+**AND IT CAUGHT THE TENTH RECALLED ENGINE NAME BY READING A HEADER: `DelegateGraphs` DOES NOT EXIST; the member is
+`DelegateSignatureGraphs` (`Blueprint.h:551`). It found `EventGraphs` (`:563`) and deliberately EXCLUDED it** - its own
+comment calls it a transient compile cache - **and named the direction of the risk: *"a count that skips a graph array
+UNDERSTATES the blast radius, the worst direction for this number to be wrong in, because `D-46` exists precisely
+because one leftover reference fails LATER, in a different asset."***
+
+### 28.3 Workstream B: a tool that WORKS, with verbatim runtime evidence, and a suite never run
+
+    read: /Game/Tests/TurboMCPMaterialFixture.MI_TurboMCPFixture
+    self         ...MI_TurboMCPFixture  [MaterialInstanceConstant]
+    parent       ...M_TurboMCPFixture   [Material - the base material, where a declaration lives]
+    ; overridden on THIS instance (1)
+    LazyScalar = 0.5  [scalar, global]
+    ; INHERITED - declared by a parent, NOT overridden here (1)
+    ; THE VALUE SHOWN IS THE PARENT'S, AND CHANGING IT HERE IS NOT POSSIBLE.
+    OuterTint = (0.9, 0.9, 0.9, 1)  [Vector, global, inherited, declared at .../M_TurboMCPFixture]
+    ; looked at 1 level(s) in the chain, each for: scalar, vector, texture, static switch
+
+**THAT IS THE CONTRACT THE SPEC ASKS FOR, INCLUDING THE LIST IT SAYS MATTERS, AND IT GOT THERE BY READING THE ENGINE:**
+`UMaterialInstance::Parent` IS A `UMaterialInterface` (`MaterialInstance.h:647`), **so the walk tests for
+`UMaterialInstance` AT EVERY STEP**; overrides are read from the instance's OWN arrays (`:773-785`) and **NOT via
+`GetScalarParameterValue`, BECAUSE A RESOLVED GETTER RETURNS THE PARENT'S VALUE WHEN THE INSTANCE SETS NONE - WHICH IS
+PRECISELY THE DISTINCTION THIS TOOL EXISTS TO MAKE.** And **`AsVector` DOES NOT EXIST** - the Vector case reads
+`Value.Float[0..3]` rather than inventing an accessor name.
+
+**AND IT FOUND TWO DISPLAY DEFECTS IN ITS OWN OUTPUT: it printed `up 1` for the parent, WHICH IS TRUE AND SAYS NOTHING
+ABOUT THE RELATION; and it printed inherited parameters as `name = value` with no per-line marker, *"AND A LINE THAT
+READS `name = value` IS INDISTINGUISHABLE FROM AN OVERRIDE UNLESS THE READER STILL HAS THE HEADING IN MIND."*** **The
+fix is the one that matters for an agent: the word `inherited` ON EVERY INHERITED LINE, so the distinction SURVIVES
+BEING READ ONE LINE AT A TIME - which is how an agent reads it.**
+
+### 28.4 And the orchestration lesson, which named itself for the third time
+
+**THREE WORKSTREAMS SHARING ONE EDITOR IS NOT PARALLELISM, IT IS A QUEUE WITH NO SCHEDULER.** Workstream B asked for
+serialisation in as many words: *"tell me to serialise - you stop the other two, I take the editor, write and run the
+suite, and hand it back"* - **AND IT WAS RIGHT. I SHOULD HAVE DONE THAT BEFORE SPAWNING THREE AGENTS THAT EACH NEED
+THE SAME SINGLE RESOURCE.** The file boundaries prevented conflicts; **NOTHING PREVENTED THE CONTENTION, BECAUSE THE
+EDITOR IS NOT A FILE.** A broken BUILD blocked two agents in an earlier round; **the EDITOR blocks all of them, every
+round, and THAT is the real serialisation boundary.**
