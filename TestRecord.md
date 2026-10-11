@@ -6969,3 +6969,41 @@ path-extension check that passed on a deliberately flattened walk. AND ONE SUITE
 HAS AN ELSE-BRANCH THAT LITERALLY CHECKS `True`. 51 GREEN SUITES IS A STATEMENT ABOUT THIS RUN, NOT ABOUT THE CHECKS. ***
 *The vacuity work is separate and still owed, and saying so here is what keeps this number from being read as more than
 it is.*
+
+---
+
+## 65. Round 106: 51 of 51 held, the workstream is on a SECOND full run, and the goal is nowhere near complete
+
+**MEASURED:** `main` = `origin/main` = `b463974`; **85 tools**; **45 suites**; working tree clean; **a second full run is
+in progress** (`.agent/fullrun-row02b.log`, started 05:08) - *which is the right instinct: one green run after a fixture
+change is a result, and a second is a result that can be repeated.*
+
+*** AND THE HONEST STATEMENT ABOUT THE OBJECTIVE, WHICH IS THE THING THIS ROUND SHOULD CARRY: TURBOMCP IS NOT NEARLY
+COMPLETE, AND 51 OF 51 IS EASY TO MISREAD AS PROGRESS TOWARD COMPLETION WHEN IT IS PROGRESS TOWARD CORRECTNESS. ***
+
+    STATUS.md's own count:        85 tools
+    Spec/03_TOOLS.md:             57 real capabilities
+    Claimed before this stretch:  36 of 57
+
+**SO THE LAST FEW ROUNDS ADDED CAPABILITIES - `R-CALL-COST`, `R-ASSET-COST`, `R-WIDGET-TREE`, `E-GRAPH-COPY` - AND THE
+PROJECT IS STILL SOMEWHERE AROUND TWO THIRDS OF ITS CAPABILITY LIST, WITH WHOLE GROUPS UNBUILT: the material writers,
+widget authoring, assets and structs, level and actors, session and cost, source control, vision, and build
+portability.** *The green run measures whether what EXISTS works. It says nothing about what does not exist yet.*
+
+### And the four decisions still mine, restated because they are the actual queue
+
+1. **`TA-19` NIAGARA and `TA-18` ANIM BLUEPRINT** - row 1.4 is measuring whether either can be captured headless; `TA-19`
+   was refused because `UNiagaraSystem` is a PLUGIN and enabling it means editing `TurboMCP.Build.cs`, which is MY call.
+2. **`FScopedCall`** - **no plugin tool calls it** (`TurboMCPCallLog.cpp:205`), so every log line is `source=engine`, every
+   `token_estimate` is 0, **and `T-HELP-6`'s "most expensive" cannot be met as written.** Either instrument the dispatch
+   or reword the row.
+3. **`E-GRAPH-COLLAPSE`'s one open question** - can an `FBlueprintEditor` instance be constructed outside an open asset
+   editor? *Everything else about COLLAPSE is measured and its Plan is fully implemented and tested.*
+4. **The cross-asset `T-STRUCT-11`** - `BP_TowerArray` and `TA07_Card` exist; copying `d88638` should be refused by
+   `BlueprintHasFunction` for `Add_IntInt`, **and that refusal is BUILT AND NEVER EXECUTED.**
+
+**AND THE FIFTH THING, WHICH IS NOT A DECISION BUT A DEBT: FOUR CAPABILITIES IN FOUR ROUNDS HAVE REPORTED THAT THEIR
+CHECK COUNT OVERSTATES THEIR COVERAGE, AND NOBODY HAS GONE BACK TO FIX THEM.** *The mechanism is named - a check over a
+relationship inherits the vacuity of its input - and at least one suite's `the fixture is left as it was found` has an
+else-branch that literally checks `True`. That is the difference between a green run and a trustworthy one, and it is
+the next thing worth doing after row 1.4 reports.*
