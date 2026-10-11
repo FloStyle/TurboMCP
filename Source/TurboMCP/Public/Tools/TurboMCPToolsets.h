@@ -1432,6 +1432,11 @@ public:
 	 * the PLAN, THIS PREVIEW REFUSES IT TOO and prints the count to pass - so a caller previews,
 	 * is told the number, and previews again with it. A caller that guesses a wrong number is
 	 * refused with the real one.
+	 *
+	 * IT ALSO PRINTS THE AUTOMATIC CHECKOUT OF ROW 10.2 (D-57), because its Edit twin now performs
+	 * one: the block states, per asset, whether a checkout WOULD be issued and why, so the Preview
+	 * and the Edit cannot disagree about what the write will do. THIS PREVIEW REACHES NO PROVIDER
+	 * WITH A CHECKOUT - it reads the capability flags and the state only.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPStructFields(const FString& Struct, const FString& Changes);
@@ -1521,6 +1526,16 @@ public:
 	 * Each line states saved, had no changes, or failed with the reason. Engine
 	 * log text is counted and attributed to the asset that raised it, never
 	 * pasted (`P6`).
+	 *
+	 * BEFORE ANY FILE IS WRITTEN IT PERFORMS THE AUTOMATIC CHECKOUT OF ROW 10.2 (D-57). The
+	 * project's own provider is asked whether it uses checkout at all, and a checkout is then
+	 * issued through ISourceControlProvider::Execute with the provider's own answer repeated
+	 * verbatim. It NEVER uses USourceControlHelpers::CheckOutFile, whose true on Git means "the
+	 * state says the file is already checked out" rather than "a lock was taken" - the trap row
+	 * 10.1 measured. THE CHECKOUT ANSWER IS A REPORT AND NEVER A GATE, so a provider that cannot
+	 * take a lock cannot fail this call. The appended block names which of the three policies was
+	 * chosen when a provider reports UsesCheckout() == false, and it is (b): attempt the checkout
+	 * and repeat the provider's answer.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPSave(const FString& Assets);
@@ -2114,6 +2129,14 @@ public:
 	 * preview and this call - is REFUSED BY NAME and is not silently skipped, because skipping it
 	 * would make this edit differ from the preview that authorised it (`D-45`). The counts of what
 	 * DID land are printed alongside, so the caller knows the exact state.
+	 *
+	 * BEFORE IT WRITES IT PERFORMS THE AUTOMATIC CHECKOUT OF ROW 10.2 (D-57), and appends what
+	 * happened. The provider is asked whether it uses checkout at all, and a checkout is issued
+	 * through ISourceControlProvider::Execute with the provider's own answer repeated verbatim. It
+	 * NEVER uses USourceControlHelpers::CheckOutFile, whose true on Git means "the state says the
+	 * file is already checked out" rather than "a lock was taken" - the trap row 10.1 measured. THE
+	 * CHECKOUT ANSWER IS A REPORT AND NEVER A GATE, and the block names the policy chosen when a
+	 * provider reports UsesCheckout() == false: (b) attempt it and repeat the provider's answer.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPStructFields(const FString& Struct, const FString& Changes);

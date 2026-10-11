@@ -10,6 +10,7 @@
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPStruct.h"
+#include "TurboMCPSourceControlWrite.h"
 
 /**
  * `P/E-STRUCT-NEW` and `P/E-STRUCT-FIELDS`.
@@ -61,7 +62,23 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPStructFields(
 		return FString::Printf(TEXT("error: %s"), *Error);
 	}
 
-	return FTurboMCPStruct::RenderPreviewFields(Plan);
+	// =============================================================================================
+	// ROW 10.2 / D-57: THE AUTOMATIC CHECKOUT, DECIDED IN ONE PLAN SO THE EDIT TWIN CANNOT DISAGREE.
+	//
+	// *** THE BLOCK IS APPENDED, NEVER PREPENDED, AND EVERY LINE OF IT IS INDENTED BY FOUR SPACES OR
+	// STARTS AT COLUMN 0. *** That is a hard constraint rather than a style choice: the project's own
+	// suite reads this answer, and its field reader takes exactly-two-space-indented lines carrying a
+	// colon as FIELD NAMES. A prepended block would also break the "changed:" / "error:" opening every
+	// caller relies on.
+	// =============================================================================================
+	TArray<FString> Targets;
+	Targets.Add(Plan.ObjectPath);
+	const FTurboMCPWriteCheckoutPlan Checkout = FTurboMCPSourceControlWrite::Plan(Targets);
+
+	FString Out = FTurboMCPStruct::RenderPreviewFields(Plan);
+	Out += TEXT("\n\n");
+	Out += FTurboMCPSourceControlWrite::Render(Checkout, TEXT("P-STRUCT-FIELDS"));
+	return Out;
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPStructFields(
@@ -74,5 +91,21 @@ FString UTurboMCPEditToolset::EditTurboMCPStructFields(
 		return FString::Printf(TEXT("error: %s"), *Error);
 	}
 
-	return FTurboMCPStruct::ApplyFields(Plan);
+	// =============================================================================================
+	// ROW 10.2 / D-57: THE AUTOMATIC CHECKOUT, ISSUED BEFORE THIS TOOL WRITES TO THE ASSET.
+	//
+	// The report is captured FIRST and appended LAST, so the write still opens with "changed:" and the
+	// block can never be read as this tool's own outcome. The same Plan function the Preview called is
+	// called here, so the two decide identically, and the report is never a gate: D-57 warns against
+	// turning a source control problem into a write failure, and on Git it would refuse every write.
+	// =============================================================================================
+	TArray<FString> Targets;
+	Targets.Add(Plan.ObjectPath);
+	const FString CheckoutReport = FTurboMCPSourceControlWrite::EnsureCheckedOut(
+		FTurboMCPSourceControlWrite::Plan(Targets), TEXT("E-STRUCT-FIELDS"));
+
+	FString Out = FTurboMCPStruct::ApplyFields(Plan);
+	Out += TEXT("\n\n");
+	Out += CheckoutReport;
+	return Out;
 }

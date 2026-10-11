@@ -23,6 +23,7 @@
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPLogCapture.h"
+#include "TurboMCPSourceControlWrite.h"
 
 /**
  * The two write tools of phase 1: compile and save.
@@ -314,6 +315,29 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 		return FString::Printf(TEXT("unchanged: %s."), *Refusal);
 	}
 
+	// =============================================================================================
+	// ROW 10.2 / D-57: THE AUTOMATIC CHECKOUT THIS WRITE TOOL PERFORMS BEFORE IT WRITES.
+	//
+	// WHY HERE AND NOT IN THE SAVE LOOP. `E-SAVE` IS THE TOOL THAT ACTUALLY WRITES A FILE, so it is the
+	// one place where taking a lock can matter - and the engine's own save path ALREADY issues a
+	// checkout on every call without reading either fact that says whether one can mean anything:
+	// `UEditorAssetLibrary::SaveLoadedAsset` -> `UEditorLoadingAndSavingUtils::SavePackages` ->
+	// `FileHelpers.cpp:6019-6023` -> `InternalCheckoutAndSavePackages`, whose `:5925-5929` calls
+	// `FEditorFileUtils::CheckoutPackages` whenever `ISourceControlModule::Get().IsEnabled()`, ignoring
+	// the operation's result. THIS DOES THE SAME OPERATION EARLIER, AND RECORDS THE ANSWER. That is why
+	// row 10.2 exists, and it is why the block below is printed rather than acted on silently.
+	//
+	// IT IS PLACED AFTER THE THREE REFUSALS ABOVE, so a call that will not write anything asks no
+	// provider anything, and BEFORE the loop, because every asset the caller named is one the caller
+	// declared an intent to write - the engine's own path checks out every package it is handed too.
+	//
+	// *** THE ANSWER IS A REPORT AND NEVER A GATE. *** D-57's own reason for the ordering is that an
+	// automatic checkout must not turn a source control problem into an "every tool reports failure"
+	// problem. On Git (and on an editor with no provider) a gate would refuse every save in this project.
+	// =============================================================================================
+	const FString CheckoutReport = FTurboMCPSourceControlWrite::EnsureCheckedOut(
+		FTurboMCPSourceControlWrite::Plan(Parts), TEXT("E-SAVE"));
+
 	// Warnings raised during the saves are counted and attributed, never pasted.
 	FTurboMCPLogCapture Capture;
 
@@ -456,6 +480,12 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 		Result += FString::Printf(TEXT("\nengine errors raised during save: %d"),
 			Capture.ErrorCount());
 	}
+
+	// APPENDED, NEVER PREPENDED: this tool's answer opens with "changed:" or "unchanged:", and callers
+	// and suites read that first word. The block also never uses the word "saved", so it cannot be
+	// mistaken for, or confused with, this tool's own "N saved" count.
+	Result += TEXT("\n\n");
+	Result += CheckoutReport;
 
 	return Result;
 }
