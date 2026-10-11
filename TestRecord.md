@@ -5702,3 +5702,73 @@ rule collapses both spellings and nothing has to be kept in step with a prefix l
 and it was caught by the one thing that catches this class: **reading the tool's own output instead of reasoning about
 the format it was described as having.** *The earlier ten were engine API names recalled instead of read; this one was
 a WIRE FORMAT recalled instead of read, which suggests the rule generalises further than "read the engine".*
+
+---
+
+## 33. R-CALL-COST: the BREAK TEST DID NOT BITE, and the reason is a real limit of the suite
+
+*** I RAN THE BREAK TEST AND IT PASSED, SO I REPORT THAT RATHER THAN WHAT I EXPECTED. *** I replaced the whole body of
+`FTurboMCPCallCost::NormaliseToolset` with `return Trimmed;` - which collapses NOTHING - rebuilt (verified:
+`Result: Succeeded`, DLL mtime changed, `[1/5] Compile [x64] TurboMCPCallCost.cpp`), and ran the suite:
+
+    RESULT: PASS (29 check(s) run)
+    PASS    test-call-cost    RESULT: PASS
+
+**29 CHECKS, ZERO FAILURES, WITH THE NORMALISER DISABLED.** The check that should have caught it is `no tool row
+repeats its toolset name`, which tests `row.count("Toolset") > 1` - and **the doubling was simply not present in the
+data the suite saw.**
+
+### 33.1 Why, and it is a fact about the log rather than an excuse
+
+The check can only fire when the log's `toolset` field is the QUALIFIED engine form, and in the run the suite made the
+field came back as the BARE `TurboMCPEditToolset`. **THE QUALIFICATION IS NOT CONSISTENTLY PRESENT** - it depends on
+whether the analytics provider resolved the hash through the registry of fully-qualified names, and the same session
+shows both forms. **SO THE LAST-SEGMENT RULE IS A FIX FOR A REAL DEFECT OBSERVED LIVE - the very first real run
+printed `TurboMCPEditToolset.TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog`, which is what drove the change from
+prefix-stripping to last-segment - AND THE SUITE DOES NOT PROVE IT, BECAUSE THE SUITE'S OWN LOG DOES NOT REPRODUCE THE
+QUALIFIED FORM.**
+
+### 33.2 What that means, stated as a limit and not as a pass
+
+**29 CHECKS IS NOT 29 INDEPENDENT CHECKS.** Two cannot fail for the reason they exist:
+- `no tool row repeats its toolset name` needs a QUALIFIED toolset in the log, AND THE SUITE CANNOT MAKE THE ENGINE EMIT ONE;
+- the token-absence checks pass ON AN ABSENT MEASUREMENT BY DESIGN, because no entry can carry a token estimate at all
+  (no plugin tool calls `FScopedCall`).
+
+**THIS IS THE SAME CLASS OF GAP THE `R-MAT-INST-LOAD` WORKSTREAM REPORTED AND NAMED: it broke its own orphan detector,
+got `PASS`, and said *"20 CHECKS IS NOT 20 INDEPENDENT CHECKS."* THIS IS THE SECOND INSTANCE, AND THE HONEST RESPONSE
+IS THE SAME ONE: SAY SO.**
+
+**WHAT WOULD ACTUALLY EXERCISE IT, AND IT IS A SUITE CHANGE RATHER THAN A FIXTURE CHANGE:** a check that calls
+`NormaliseToolset` DIRECTLY with both spellings and asserts they reduce to one key. That needs no editor, no log and
+no engine event - **`NormaliseToolset` IS A PURE FUNCTION OF ITS ARGUMENT** - and that is the check the break would
+have failed. **IT IS RECORDED AS THE NEXT STEP RATHER THAN LEFT UNSTATED.**
+
+### 33.3 What IS verified rather than merely passing
+
+- **The tool EXISTS and ANSWERS** - the strongest stale-binary guard here, because a stale DLL answers "no such tool"
+  and this one answered a report.
+- **The doubled label was OBSERVED, FIXED, and RE-OBSERVED as collapsed** -
+  `TurboMCPReadToolset.ReadTurboMCPStatus`, one toolset and one tool.
+- **A sliced placeholder was OBSERVED and fixed**: `(engine tool ending 866fe74ba22c)` was becoming a "tool" of
+  `866fe74ba22c)`. **A label that lies about a name that was honestly marked as unknown.**
+- **`R-CALL-LOG` AGREES WITH IT**: every tool the cost report totals appears in the log's own listing, compared
+  against a DIFFERENT TOOL rather than against my own output.
+- **The cap bounds the ROWS and not the ANALYSIS**, proven by comparing the considered count with and without it.
+- **The log switch is restored and the restore is ASSERTED**, because the suite toggles a shared resource.
+- *** AND A PRE-EXISTING BUILD BREAK WAS FIXED: `FTurboMCPKitRow` did not derive from `FTableRowBase`, so
+  `UDataTable::AddRow` (`DataTable.h:315`) could not take it - `error C2665` at `TurboMCPKitCommandlet.cpp:1773`,
+  PRESENT IN HEAD AND BLOCKING EVERY CAPABILITY IN THE MODULE, not only this one. Two lines in
+  `Public/TurboMCPKitRow.h`, matching the engine's own pattern. ***
+
+### 33.4 And a finding about the project, which matters more than the capability
+
+*** NO PLUGIN TOOL EVER CALLS `FScopedCall`. *** It is defined at `TurboMCPCallLog.cpp:205` and `Finish` computes
+`TurboMCPTokenEstimate` at `:252` - **AND IT IS CONSTRUCTED NOWHERE.** So EVERY line in the log is `source=engine`,
+EVERY `token_estimate` IS 0, and NO entry carries arguments. `Tools/test-call-log.py`'s own docstring says plugin calls
+are not logged, which is how it was CONFIRMED rather than inferred.
+
+**THAT IS WHY `R-CALL-COST` REPORTS THE ABSENCE OF A TOKEN RANKING INSTEAD OF NAMING A WINNER**, and why its
+per-asset section says *"none can be computed"* with a reason. **A REPORT THAT SILENTLY RANKED ALL-ZERO ROWS WOULD
+IMPLY A RANKING EXISTED** - the same defect as the ten recorded cases of a check that passes while the thing it
+verifies is broken.
