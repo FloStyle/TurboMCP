@@ -178,9 +178,11 @@ Or une cellule de statut peut contenir de la prose. **Le chiffre changeait entre
 | **§11.1 Le trou structurel** | ✅ **LIVRÉ** — CANNOT-MATCH ajouté et prouvé sur 6 cas, 5 faux positifs retirés, l'audit est **BLOQUANT**, 0 candidat |
 | **§9.1 Éditeur étranger** | ✅ **LIVRÉ** — check-mcp-server.py nomme le projet propriétaire du port, prouvé sur 3 cas |
 | **§9.2 Dépôt source control** | ⏳ *bloqué par l'environnement* |
-| **§9.3 Le kit TA-14→TA-21** | ⏳ *à faire* |
+| **§9.3 Le kit** | 🟡 **PARTIELLEMENT LIVRÉ** — `TA-17` **CONSTRUIT** (2 assets, payload vérifié par le Python du moteur, tangentes prouvées comportementalement) ; `TA-18`/`TA-19` **refusés par nom** avec deux bloqueurs mesurés chacun, et les bloqueurs de `TA-18` ne sont **pas** les contraintes commandlet que je pointais |
 | **§9.4 Vérificateur bloquant** | ✅ **LIVRÉ** (c'était le même item que §11.1) |
 | **§9.5 Les 30 writers** | ⏳ *mécanique* |
+
+**ET UN DÉFAUT PRÉEXISTANT TROUVÉ ET CORRIGÉ EN COURS DE ROUTE, QUI N'ÉTAIT DANS AUCUNE DES CINQ PRIORITÉS :** ***le full run **ne pouvait pas être vert** — 	est-vcs exigeait TA01_HandLaid.uasset propre tandis que 	est-graph-fix-backward, qui tourne avant lui, reconstruit le kit. Prouvé sur deux fichiers identiques octet pour octet à 630300, donc préexistant. CORRIGÉ dans le harnais, là où l'éditeur peut être arrêté : passed 5, failed 0 sur la séquence qui échouait.***
 
 ### 9.1 ✅ **Détecter un éditeur étranger sur le port 8000** — *LIVRÉ le 2026-10-11*
 
