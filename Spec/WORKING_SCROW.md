@@ -598,3 +598,34 @@ SourceControl: Error: OwningSystem=Default, Port=ssl:example.invalid:1666
 
 That is a *reported* failure with the probe output intact - the measurement
 still returned `current_provider='Perforce'`, `is_available=False`.
+
+---
+
+## 6. PREMISES I WAS GIVEN THAT THE TREE CONTRADICTS
+
+1. **"`Tools/list_engine_plugins.py` and `Tools/list_plugin_sources.py` already
+   exist in `.agent/` and may do the enumeration for you."** They cannot, and
+   that is checkable in one read. `.agent/list_engine_plugins.py:36-41` lists
+   exactly four GitHub API paths, all under
+   `Engine/Plugins/Experimental/ToolsetRegistry` and
+   `Engine/Plugins/Experimental/ModelContextProtocol`, and
+   `.agent/list_plugin_sources.py:42-45` walks those same two prefixes. **Neither
+   one touches `Engine/Plugins/Developer/` or `Engine/Source/Developer/`, so
+   neither can see a source control provider at all** - and both need a
+   `GH_TOKEN` and the GitHub `release` ref rather than the local install. The
+   enumeration in section 1 was therefore done directly against
+   `C:\UnrealEngine`, which is where the providers live.
+2. **"BASELINE: `main` = `origin/main` = `7f8b7e4`"** - true when I started, and
+   **HEAD moved while I worked, exactly as the brief predicted.** It is now
+   `07cf757`, and `git diff --stat 7f8b7e4 HEAD` is
+   `TestRecord.md | 68 ++++++++++` - three orchestrator commits
+   (`62da539`, `ce907a3`, `07cf757`) that add record entries and touch **no
+   source file**. Nothing was reverted, nothing collided, and every measurement
+   above is against source that never changed.
+3. **The brief's item 1 says the providers "live under
+   `Engine/Plugins/Developer/` and under `Engine/Source/Developer/`.** The first
+   half is right; the second half holds only the *framework*:
+   `Engine/Source/Developer/SourceControl` holds `ISourceControlModule`, the
+   default provider and the helpers, and `Engine/Source/Developer/UncontrolledChangelists`
+   and `Engine/Source/Developer/SourceControlViewport` are UI/cache consumers,
+   **not** providers. The four real providers are all plugins.
