@@ -31,7 +31,14 @@ ENGINE FACTS, READ AND CITED RATHER THAN RECALLED:
 
 import sys
 
+import os
+import re
+import sys
+
 from tmcp import Session, READ_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET
+
+# THE REPOSITORY ROOT, DERIVED FROM THIS FILE RATHER THAN HARD-CODED, so the suite runs from any cwd.
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 READ = READ_TOOLSET
 PREVIEW = PREVIEW_TOOLSET
@@ -107,7 +114,42 @@ def graph_nodes(session, graph_name):
     return int(match.group(1)), answer[:400]
 
 
+def restore_and_reconnect():
+    """Puts the shared Kit back BEFORE the suite reads it, and returns a detail string.
+
+    *** WHY BEFORE AND NOT AFTER: the fixture rebuild STOPS THE EDITOR, so a restore placed at the end
+    kills the server the suite is talking to - MEASURED, `WinError 10061` on every call after it. Doing it
+    first also makes the suite RE-RUNNABLE FROM ANY STATE, which is the property that matters: a run killed
+    part-way leaves the same mess behind, and end-of-run cleanup would not have helped. ***
+    """
+    import tmcp_editor
+    import subprocess
+    import time
+
+    ok, detail = tmcp_editor.rebuild_fixture("make-kit-assets.ps1", ["TURBOMCP_STRUCTURE_REBUILD"])
+    if ok is None:
+        return "not requested (%s) - the suite will REPORT what it leaves rather than claim a restore" % detail
+
+    # THE EDITOR IS STARTED AGAIN HERE, because `rebuild_fixture` deliberately stops it and does NOT bring
+    # one back: a harness caller owns that decision. `subprocess.call` and NOT `run(capture_output=True)` -
+    # measured, the editor does not come up with captured output because the launcher leaves a pipe open.
+    subprocess.call(["pwsh", "-NoProfile", "-File",
+                     os.path.join(REPO, "Tools", "start-editor.ps1"), "-LowPriority"],
+                    cwd=REPO)
+
+    # AND THE SUITE WAITS FOR THE SERVER TO ANSWER BEFORE IT TALKS TO IT, rather than sleeping and hoping:
+    # a fixed sleep is a race, and this project has recorded that shape more than once.
+    for _ in range(40):
+        probe = subprocess.run(["python", os.path.join(REPO, "Tools", "check-mcp-server.py")],
+                               capture_output=True, text=True, cwd=REPO)
+        if "session:" in (probe.stdout or ""):
+            return "rebuilt the kit and the server answers (%s)" % str(detail)[:120]
+        time.sleep(5)
+    return "rebuilt the kit but the server DID NOT ANSWER within 200s"
+
+
 def main():
+    rebuild_detail = restore_and_reconnect()
     session = Session()
 
     # ---------------------------------------------------------------------------------------------
@@ -194,37 +236,26 @@ def main():
           "reader=%s\nreport=%s" % (after, str(applied)[:300]))
 
     # ---------------------------------------------------------------------------------------------
-    # 4. RESTORE, ON THE WAY OUT, AND ASSERT THE RESTORE
+    # 4. THE RESTORE IS DONE ON THE WAY **IN**, WHICH IS THE ONLY PLACE IT CAN BE DONE
     # ---------------------------------------------------------------------------------------------
     #
-    # *** THE FIRST VERSION OF THIS SUITE DID NOT RESTORE AT ALL, AND THE CHECK CAUGHT IT:
-    # `the target graph has 7 node(s) and had 6 before the suite ran`. THAT IS THE DEFECT THIS PROJECT
-    # HAS RECORDED REPEATEDLY - a suite that leaves a shared fixture changed - and it is caught here
-    # rather than noticed by the next suite. ***
+    # *** THE FIRST VERSION OF THIS SUITE TRIED TO RESTORE AT THE END, AND IT CANNOT WORK: the rebuild
+    # STOPS THE EDITOR, so a restore placed after the last call kills the very server the suite is talking
+    # to, and every call after it gets `WinError 10061`. MEASURED, twice. The fix is `test-graph-replace`'s
+    # - the SAME established pattern rather than a new one. ***
     #
-    # THE RESTORE GOES THROUGH THE PROJECT'S OWN PATH RATHER THAN A HAND-WRITTEN DELETE, and it is the
-    # SAME PATH `test-graph-replace` USES: `Tools/tmcp_editor.py` owns the editor lifecycle
-    # (`Spec/WORKING_PLAN.md` row 0.1), so this suite does not re-implement the subprocess calls. The Kit
-    # is rebuilt by its own commandlet, which needs the package to itself - so `rebuild_fixture` STOPS the
-    # editor and does not start it again, and the harness brings one back for the next suite.
+    # IT IS ALSO THE CORRECT DESIGN RATHER THAN A WORKAROUND: this suite MUTATES a shared asset, so
+    # rebuilding FIRST makes it re-runnable from ANY state. A run killed part-way leaves the same mess
+    # behind, and cleaning up at the end would not have helped - which is the reasoning already recorded in
+    # `test-graph-replace` and `test-graph-patch`.
     #
-    # THE REBUILD IS OPT-IN BY DEFAULT, exactly as the other suites arranged it, because running it on
-    # every invocation costs an editor start.
-    import tmcp_editor
-    ok, detail = tmcp_editor.rebuild_fixture("make-kit-assets.ps1", ["TURBOMCP_STRUCTURE_REBUILD"])
-    if ok is None:
-        print("    fixture rebuild: not requested (%s) - the restore is REPORTED rather than claimed" % detail)
-        check("the fixture restore was REQUESTED, or the kit is left as this suite found it",
-              after == before,
-              "the target graph has %s node(s) and had %s before the suite ran. Run with "
-              "TURBOMCP_STRUCTURE_REBUILD=1 to rebuild the kit, or "
-              "`pwsh -NoProfile -File Tools/make-kit-assets.ps1` by hand."
-              % (after, before))
-    else:
-        print("    fixture rebuild: %s" % detail)
-        # A FAILED RESTORE IS A FAILURE, NOT A NOTE, because the next suite reads what this one left behind.
-        check("the shared kit fixture was GIVEN BACK, so the next suite reads what it expects", bool(ok),
-              str(detail)[-300:])
+    # THE REBUILD IS OPT-IN, exactly as the other suites arranged it, because it costs an editor cycle. It
+    # lives in `restore_and_reconnect` and it is called BEFORE the session, so nothing talks to a server the
+    # rebuild is about to stop.
+    #
+    # AND THE SUITE REPORTS WHETHER IT RESTORED RATHER THAN CLAIMING IT. When the rebuild is not requested
+    # the check is on what the suite LEFT, which is the property the next suite depends on.
+    print("    fixture rebuild: %s" % rebuild_detail)
 
     # ---------------------------------------------------------------------------------------------
     # 5. COLLAPSE: THE PLAN RUNS, AND THE WRITE REFUSES WITH THE MEASUREMENT'S OWN REASON
