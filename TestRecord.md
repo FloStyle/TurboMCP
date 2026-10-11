@@ -9040,3 +9040,19 @@ whose count overstated its coverage, all of which would have been prevented by t
 `IsEnabled()` AND `IsAvailable()`, because Perforce, Plastic and Subversion return the first TRUE unconditionally while the second
 is false - SO A TOOL THAT ASKS ONE QUESTION REPORTS A WORKING PROVIDER WHERE THERE IS NONE.** *That is `P1` at the API level:
 an absent capability that reports itself as present.*
+
+---
+
+## 131. Round 177: row 10.1 is reading 631 lines of someone else's measurement, and that is the state working as designed
+
+    MEASURED   main = origin/main = 505d520   ·   90 declarations   ·   clean tree
+               no `TurboMCPSourceControl.h`, no `Tools/test-vcs.py` - ONE ROUND IN
+
+*** AND THE ROUND IS SHORT BECAUSE THE THING THAT WOULD MAKE IT LONG IS THE THING THAT WOULD BE WRONG TO DO: THE WORKSTREAM HAS 631
+LINES OF MEASUREMENT TO READ, WITH FILE AND LINE FOR EVERY PROVIDER, THE ENGINE'S OWN REFUSAL STRINGS, A FATAL API CALL AND TWO
+HAZARDS. **NO PART OF THAT NEEDS MY INTERPRETATION AND NONE OF IT NEEDS A SECOND MEASUREMENT.** ***
+
+**AND THE CONTRAST WITH ROW 7.1 IS THE ONE WORTH RECORDING: THERE, THE FIRST TWO ROUNDS OF READING PRODUCED A FALSIFICATION THAT
+CORRECTED THE SPEC, `D-51` AND THREE OF MY BRIEFS. HERE, THE READING IS EXPECTED TO PRODUCE CODE RATHER THAN A CORRECTION,
+BECAUSE THE CORRECTION ALREADY HAPPENED IN ROW 1.3 AND IS IN `Spec/WORKING_SCROW.md`.** *A measurement row's cost is one row's
+worth of reading; its return is that the NEXT row does not have to do any.*
