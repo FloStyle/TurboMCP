@@ -9416,3 +9416,71 @@ tool needs a fixture. ***
 **AND THE ONE NUMBER THAT HAS NOT MOVED IS THE INTERESTING ONE: 93 DECLARATIONS, UNCHANGED.** *Row 10.1 moved it 90 -> 93 by adding
 three tools. **Row 10.2 adds NONE** - it wires an existing mechanism into existing writers - **so for the first time the plan can
 advance without the tool count moving, which is precisely what a row that changes BEHAVIOUR rather than SURFACE looks like.***
+
+---
+
+## 144. *** ROW 10.2: test-vcs-write PASS AT 62 CHECKS, AND A FINDING THAT IS THE ENGINE'S RATHER THAN THE ROW'S ***
+
+    BUILD Result: Succeeded WITH `Compile TurboMCPSourceControlWrite.cpp` + `Link UnrealEditor-TurboMCP.dll` VISIBLE in the log
+          - "since `Result: Succeeded` alone is not evidence", i.e. the rule applied by the workstream unprompted
+    test-vcs-write RESULT: PASS (62 check(s) run, no check skipped)
+    AUDIT uncalled: (none), still 93 tools - so the plan advanced WITHOUT the tool count moving, as section 192 predicted
+    ITS COMMITS 2e08d53, 07bb80a, b5bdd9a; HEAD == origin/main == b5bdd9a
+
+### 144.1 *** THE FINDING: `E-SAVE` WITH GIT STAGES A BRAND-NEW ASSET IN THE GIT INDEX ***
+
+    MEASURED WITH THE `git` CLI INSIDE ONE RUN:
+      ?? path        after phase A (no provider)
+      ?? path        STILL, after the write tool's own checkout - Git REFUSES IT BEFORE ANY COMMAND RUNS
+      AM path        AFTER `E-SAVE`
+
+*** AND THE CAUSE IS THE ENGINE'S OWN SAVE PATH, NOT THIS ROW: `FileHelpers.cpp:2483` BUILDS `FinalPackageMarkForAddList` AND
+`:2536-2538` EXECUTES `FMarkForAdd`, WHICH GIT IMPLEMENTS AS A REAL `git add`. ***
+
+**AND IT WAS FOUND BY A SUITE CHECK THAT SAID "NOTHING ELSE MOVED" AND WENT RED - THE CHECK WAS TRUE OF THE TOOL AND FALSE OF THE
+ENGINE.** *That is the project's own rule producing a finding rather than a false alarm, and it is the first time a check has gone
+red on a TRUE statement about the wrong subject.*
+
+**AND THE RELATED FACT THAT MAKES THIS ROW'S OWN OPERATION COST NOTHING NEW:** *the engine's save path ALREADY issues a checkout on
+every save and reads NEITHER `UsesCheckout()` NOR the result (`FileHelpers.cpp:5925-5929`).* **So three different layers of this
+engine mark-for-add and check out on a save, and only the newest one reports what happened.**
+
+### 144.2 And the side effect it had to clean up, which is a real hazard
+
+    A STAGED ENTRY OUTLIVES ITS FILE, so its first runs left `AD ...TA22_VcsWrite_R*.uasset` in the index.
+    IT UNSTAGED THEM, AND THE SUITE NOW UNSTAGES EVERY SUCH ENTRY ON THE WAY **IN** AND OUT AND ASSERTS THE RESTORE.
+
+*** THAT IS THE "RESTORE ON THE WAY IN AS WELL AS OUT, AND ASSERT IT" RULE, WHICH THIS PROJECT WROTE AFTER A RESTORE-ONLY-AT-THE-END
+KILLED THE SERVER THE SUITE WAS TALKING TO - APPLIED TO A GIT INDEX RATHER THAN TO A FIXTURE. ***
+
+### 144.3 The row's answer to its own hard question, and it says the project did not decide it
+
+    WIRED: `E-SAVE` (TurboMCPCompile.cpp) and `P/E-STRUCT-FIELDS` (TurboMCPStructTools.cpp)
+    UNWIRED: 30 of 32 Edit writers, EACH NAMED ONE BY ONE in Spec/WORKING_SCROW.md section 1
+             `E-STRUCT-NEW` is DELIBERATELY unwired - it creates a path with no file, so there is nothing to check out
+    THE TRAP: ZERO `CheckOutFile(` CALLS in the new mechanism, and A SUITE CHECK FAILS ON ANY
+    THE DECISION on `UsesCheckout() == false`: OPTION (b), attempt it and report the provider's own answer
+              (a) skip silently and (c) refuse unless opted in are REJECTED
+    *** AND `D-57` DOES NOT ANSWER THIS QUESTION - AND **THE TOOL SAYS SO IN ITS OWN OUTPUT** RATHER THAN IMPLYING THE
+    PROJECT DECIDED. The checkout answer is A REPORT AND NEVER A GATE, because a gate would refuse every write on Git,
+    which is D-57's own "every tool reports failure" outcome. ***
+
+**AND THE TRAP'S PROOF IS TWO ANSWERS TO ONE QUESTION IN ONE RUN:** *the engine's own helper says `True` with `Text("")` on Git
+while this tool says `ECommandResult::Failed` plus `"Operation 'CheckOut' not supported by revision control provider 'Git'"`.*
+*** That is what the brief asked for in one line and it delivered it as a measurement rather than as a comment. ***
+
+### 144.4 *** AND ITS RED-CHECK RUN FOUND A REAL DEFECT IN ITS OWN CODE, WHICH IS THE STRONGEST FORM OF THE RULE ***
+
+    WITH FOUR DELIBERATE BREAKS, 12 OF 61 CHECKS WENT RED - AND THE SAME RUN EXPOSED
+      `decision: DO NOT ATTEMPT - ` WITH **NOTHING AFTER THE DASH**
+    AN EMPTY DECISION REASON, I.E. *** P1's DEFECT IN A DECISION ***
+    IT FIXED IT, AND ADDED A CHECK THAT NO DECISION LINE IN ANY OF THE SEVEN BLOCKS IS EVER EMPTY.
+
+*** SO THE BREAK TEST FOUND A SECOND, UNRELATED DEFECT - AN ABSENT MEASUREMENT PRESENTED AS A DECISION - AND THE FIX IS A CHECK
+RATHER THAN A CORRECTION. THAT IS THE FIRST TIME IN THIS STRETCH THAT A BREAK TEST PAID FOR ITSELF TWICE. ***
+
+### 144.5 What it claims nothing about
+
+**NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED HERE.** *`p4 set` still points at `ssl:example.invalid:1666`, which does
+not answer; `cm` and `svn` are not on PATH.* *** EVERY CHECKOUT ANSWER IT REPORTS IS THE ANSWER TO A REFUSAL OR TO A NO-OP
+PROVIDER - AND IT SAYS SO RATHER THAN LETTING 62 GREEN CHECKS IMPLY OTHERWISE. ***
