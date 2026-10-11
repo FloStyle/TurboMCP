@@ -64,6 +64,38 @@ def set_log(session, enabled):
     return session.call(EDIT_TOOLSET, "EditTurboMCPCallLog", {"enabled": enabled})
 
 
+def section_text(text, heading):
+    """EVERYTHING between one heading and the next, prose included.
+
+    WHY THERE ARE TWO READERS AND NOT ONE. `section` returns DATA ROWS - the pipe-separated totals -
+    and it deliberately drops prose so an absence MESSAGE cannot be mistaken for a row. But THE
+    ABSENCE MESSAGES ARE THEMSELVES PART OF THE CONTRACT: `MOST EXPENSIVE BY TOKENS` answering
+    "none of the N considered call(s) recorded a token estimate above zero" is the whole of `P1` for
+    that section. So a check about a ROW uses `section`, and a check about the ABSENCE uses this.
+
+    MEASURED, AND THE FIRST VERSION OF THIS SUITE GOT IT WRONG THE OTHER WAY: I tightened `section`
+    to drop prose, which made four checks that look for absence messages fail - ON A CORRECT TOOL.
+    A parser tightened for one caller broke another, WHICH IS WHY THE TWO ARE SEPARATE FUNCTIONS
+    RATHER THAN ONE WITH A FLAG.
+    """
+    lines = text.splitlines()
+    known = ("MOST EXPENSIVE BY TOKENS", "SLOWEST BY DURATION",
+             "TOTALS PER TOOL", "TOTALS PER ASSET")
+    start = None
+    for index, line in enumerate(lines):
+        if heading in line:
+            start = index + 1
+            break
+    if start is None:
+        return ""
+    out = []
+    for line in lines[start:]:
+        if any(k in line for k in known):
+            break
+        out.append(line)
+    return "\n".join(out)
+
+
 def section(text, heading):
     """The DATA lines of one section, from its heading to the next heading.
 
@@ -162,7 +194,8 @@ def main():
     # *** THE HONEST-ABSENCE CHECK, AND IT IS THE POINT OF THE FIXTURE'S REALITY. *** No entry in
     # this log can carry a token estimate, because no plugin tool writes one. A tool that NAMED a
     # winner here would be ranking rows that all read zero.
-    tokens_section = "\n".join(section(text, "MOST EXPENSIVE BY TOKENS"))
+    # PROSE-TOLERANT: the absence messages ARE the contract for this section.
+    tokens_section = section_text(text, "MOST EXPENSIVE BY TOKENS")
     check("with no token estimate recorded, it says so rather than naming a winner",
           "none of the" in tokens_section and "token estimate above zero" in tokens_section,
           tokens_section[:300])
@@ -171,10 +204,16 @@ def main():
     check("it points at the ranking that CAN be answered instead",
           "SLOWEST" in tokens_section, tokens_section[:400])
 
-    slowest_section = "\n".join(section(text, "SLOWEST BY DURATION"))
-    slowest_line = next((l for l in slowest_section if "|" in l), "")
+    slowest_section = section_text(text, "SLOWEST BY DURATION")
+    # `.splitlines()` IS REQUIRED, AND OMITTING IT WAS A REAL BUG IN THIS SUITE: `section_text`
+    # returns a STRING, so iterating it yields CHARACTERS - every one of which fails the `"|" in l`
+    # test - so the generator fell through to its default and the check failed WITH AN EMPTY DETAIL.
+    # A CHECK THAT FAILS ON A CORRECT TOOL AND EXPLAINS ITSELF WITH NOTHING is the shape this project
+    # has recorded ten times, and this instance was mine.
+    slowest_line = next((l for l in slowest_section.splitlines() if "|" in l), "")
     check("the slowest call is NAMED, with a timestamp and a duration",
-          slowest_line.strip().startswith("2026") and "ms" in slowest_line, slowest_section[:300])
+          slowest_line.strip().startswith("2026") and "ms" in slowest_line,
+          "line=[%s] section=[%s]" % (slowest_line.strip(), slowest_section.strip()[:160]))
 
     # ---------------------------------------------------------------------------------------------
     # THE PER-TOOL TOTALS ARE COMPARED AGAINST `R-CALL-LOG`, A DIFFERENT TOOL.
