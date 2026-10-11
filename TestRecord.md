@@ -8906,3 +8906,31 @@ brief; and **two spec premises corrected by asking what they were actually about
 *** AND THE PLAN NOW MOVES FASTER THAN IT LOOKS, BECAUSE TWO OF THE THINGS IT DOES NOT COUNT ARE PREREQUISITES OF THE ROWS IT
 DOES: ROW 1.3's SOURCE-CONTROL TABLE DECIDES WHETHER SEVERAL ROWS ARE BUILDABLE OR GATED, AND ROW 1.4's CLOSED TWO DECISIONS
 WITH ONE TABLE. A MEASUREMENT ROW LOOKS LIKE NO PROGRESS AND IS THE THING WHICH MAKES THREE OTHER ROWS POSSIBLE. ***
+
+---
+
+## 127. Round 173: the agent is RUNNING, and the tool that says so is not the one I have been using
+
+    MEASURED   main = origin/main = 07cf757   ·   90 tools   ·   clean tree
+               NO editor, NO UnrealBuildTool, NO python process
+               the newest log in `.agent/logs` is 07:07:25, TWENTY MINUTES AGO
+               no file under Spec/, Source/ or Tools/ written in twelve minutes except my own WORKING_PLAN edit
+               *** AND `list_agents` REPORTS `427a3626 ... [running] - Row 1.3 source control headless` ***
+
+*** SO FIVE INSTRUMENTS THAT HAVE EARNED THEIR PLACE IN THIS RECORD - SOURCE TIMESTAMPS, LOG TIMESTAMPS, THE PROCESS TABLE, THE
+EDITOR AND THE SEARCH SCOPE - ALL AGREE THAT NOTHING IS HAPPENING, AND THE ONE THAT ACTUALLY KNOWS SAYS THE AGENT IS RUNNING. A
+MEASUREMENT ROW READS FIVE SPECS AND TEN ENGINE HEADERS BEFORE IT WRITES ANYTHING, AND THAT PHASE IS INVISIBLE TO EVERY ONE OF
+THOSE FIVE. ***
+
+### 127.1 And that closes a question this record has now asked five different ways
+
+    SECTION 123   a criterion without its WINDOW nearly produced a false alarm
+    SECTION 131   the SEARCH SCOPE - Source/, Tools/, Content/, logs - was too narrow, then was widened
+    SECTION 140   one SAMPLE cannot distinguish a probe from a lifecycle; the RATE can
+    SECTION 141   the LOG NAME predicts the editor's lifetime
+    SECTION 173   *** AND NONE OF THEM KNOWS WHETHER THE AGENT IS ALIVE, BECAUSE ALL FIVE MEASURE WHAT THE WORKSTREAM HAS
+                  ALREADY PRODUCED AND AN AGENT THAT IS READING HAS PRODUCED NOTHING. `list_agents` MEASURES THE AGENT, NOT
+                  ITS OUTPUT - AND IT IS THE ONLY ONE OF THE SIX THAT CAN ANSWER THE QUESTION THE OTHERS WERE BEING ASKED. ***
+
+*** SO THE HONEST SUMMARY OF FIVE SECTIONS OF INSTRUMENT WORK IS: I BUILT FOUR BETTER WAYS TO INFER A THING I COULD HAVE ASKED
+DIRECTLY. THE INFERENCE WAS NEVER WRONG IN ITS MEASUREMENTS AND IT WAS ALWAYS ONE STEP FROM THE ANSWER. ***
