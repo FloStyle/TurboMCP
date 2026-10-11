@@ -990,3 +990,430 @@ check skipped)`.
 5. **The `GetProvider()`-before-any-provider-registers hazard remains a code fact
    and not a measured failure** (section 4 of this file). Nothing here changed
    that.
+
+---
+
+# ROW 10.2 BUILT AND MEASURED: THE AUTOMATIC CHECKOUT INSIDE A WRITE TOOL
+
+**Row 10.1 built the checkout TOOL and measured the trap. This section is the half
+that WIRES THE CALL INTO A WRITE TOOL, and it obeys the trap rather than repeating
+it.**
+
+*** `D-57` IS SATISFIED AND IS NOW SPENT: `E-VCS-CHECKOUT` WAS BUILT AND TESTED
+(row 10.1), AND TWO WRITE TOOLS NOW CALL AN AUTOMATIC CHECKOUT. ***
+
+## 1. WHAT WAS BUILT, AND WHICH WRITERS ARE WIRED
+
+| File | What it is |
+|---|---|
+| `Source/TurboMCP/TurboMCPSourceControlWrite.h` | `FTurboMCPWriteCheckoutAsset`, `FTurboMCPWriteCheckoutPlan` and `FTurboMCPSourceControlWrite` (`Plan`, `Render`, `EnsureCheckedOut`). **ALL CHECKS ARE IN `Plan`**, so a Preview and its Edit twin cannot decide differently. |
+| `Source/TurboMCP/TurboMCPSourceControlWrite.cpp` | The decision and the operation. `EnsureCheckedOut` is the only function in the row that can reach a provider with a write-intent operation. |
+| `Source/TurboMCP/TurboMCPStructTools.cpp` | `P-STRUCT-FIELDS` renders the decision; `E-STRUCT-FIELDS` renders it and acts on it, BEFORE the write. |
+| `Source/TurboMCP/TurboMCPCompile.cpp` | `E-SAVE`, which is the tool that actually writes a file to disk, acts on the decision before the engine's own save path runs. |
+| `Source/TurboMCP/Public/Tools/TurboMCPToolsets.h` | Three doc comments extended (`P-STRUCT-FIELDS`, `E-STRUCT-FIELDS`, `E-SAVE`) and **NO new tool declared**, so the AICallable count stays at 93. No reformatting; one paragraph each. |
+| `Tools/test-vcs-write.py` | 62 checks, and it OWNS THE EDITOR to reach both branches. |
+
+**WHY THESE TWO, AND WHY NOT EVERY WRITER.** There are **32 Edit tools** in the
+toolset besides the read-only `ReadTurboMCPEditQueue`. Exactly **two of them are
+wired today**, and both are named above:
+
+- **`E-SAVE`** because it is THE tool that writes a file to disk, and because
+  `D-57`'s own recorded failure is about it ("made `E-SAVE` report a failure while
+  nothing had been written"). It is also the tool whose engine path **already
+  issues a checkout without reading anything that says whether one can mean
+  anything** - section 4 measures that.
+- **`P/E-STRUCT-FIELDS`** because it is the NEWEST writer in the project (row 7.1,
+  commit `41a0a02`, 2026-10-11) and because it has a PREVIEW TWIN, so the rule
+  "put the check in `Plan` so the Preview and the Edit twin behave identically" is
+  demonstrable rather than asserted. `P-STRUCT-FIELDS` is its Preview.
+
+**THE WRITERS THAT REMAIN UNWIRED, NAMED ONE BY ONE:**
+`E-COMPILE`, `E-ENUM-ADD`, `E-VARS-ADD`, `E-WIDGETS-AS-VARS`, `E-OVERRIDE-ADD`,
+`E-OVERRIDE-REMOVE`, `E-FUNCTION-ADD`, `E-FUNCTION-REMOVE`, `E-WIDGET-RETARGET`,
+`E-WIDGET-BIND-ADD`, `E-COMMENT`, `E-GRAPH-DEAD`, `E-GRAPH-KNOTS`,
+`E-GRAPH-TIDY`, `E-GRAPH-FIX-BACKWARD`, `E-LOCAL-VARS`, `E-CALL-LOG`,
+`E-CALL-LOG-CLEAR`, `E-TRACE`, `E-GRAPH-APPEND`, `E-GRAPH-REPLACE`,
+`E-GRAPH-PATCH`, `E-MAT-TIDY`, `E-MAT-LABEL-PROMOTE`, `E-MAT-BLOCKS`,
+`E-DATATABLE-ROWS`, `E-GRAPH-COPY`, `E-GRAPH-COLLAPSE`, **`E-STRUCT-NEW`**, and
+**`E-VCS-CHECKOUT` itself** (which is the checkout tool rather than a content
+writer, and is therefore not a writer this row could wire). That is **30 unwired
+write tools out of 32**, two wired.
+`E-STRUCT-NEW` is left unwired ON PURPOSE and the reason is a fact about it rather
+than about this row: it creates a path that **does not exist yet**, so there is no
+file for source control to have an opinion about. The mechanism reports that case
+in words (section 5.1) but no tool calls it from that path today.
+
+**A HALF-WIRED MECHANISM THAT SAYS WHICH HALF IS WIRED** is the deliverable here,
+and this list is the other half.
+
+## 2. THE TRAP, AND WHAT THIS ROW READS INSTEAD
+
+*** `USourceControlHelpers::CheckOutFile` ANSWERS `True` ON GIT AND NEVER ISSUES A
+CHECKOUT *** - `SourceControlHelpers.cpp:456-460` returns early when the state
+says `IsCheckedOut() || IsAdded()`, and Git reports `IsCheckedOut() == true` for
+every tracked file (row 10.1, section 4).
+
+**THIS ROW DOES NOT CALL IT.** `grep -c 'CheckOutFile' Source/TurboMCP/TurboMCPSourceControlWrite.{h,cpp}`
+counts the identifier **only inside prose**, and the suite asserts that with a
+regex over its own source: a `CheckOutFile(` **call** in the mechanism fails
+
+```
+ok   it never CALLS CheckOutFile - the input that fails this is any 'CheckOutFile(' in it
+```
+
+What it reads instead, and both are measured answers rather than a helper opinion:
+
+1. **`ISourceControlProvider::UsesCheckout()`** - whether a checkout can mean
+   anything on this provider at all. `GitSourceControlProvider.cpp:286-289` false,
+   `PerforceSourceControlProvider.cpp:622-625` true.
+2. **`ISourceControlProvider::Execute(FCheckOut)` and the OPERATION's own
+   result** - `Operation->GetResultInfo()`, whose messages are repeated verbatim.
+   On Git that is `ECommandResult::Failed` with
+   `"Operation 'CheckOut' not supported by revision control provider 'Git'"`.
+
+**AND THE PROOF THAT IT IS NOT THE BOOLEAN IS TWO ANSWERS TO ONE QUESTION, TAKEN
+IN ONE RUN FROM TWO CODE PATHS** (section 5.1): the engine's helper answers `True`
+with an EMPTY error text on Git, while this mechanism, on the same provider and the
+same file in the same session, records `Failed` with a message the helper can never
+see because it returns before issuing the operation.
+
+## 3. THE DECISION THIS ROW HAD TO MAKE: WHAT A WRITE TOOL DOES WHEN `UsesCheckout() == false`
+
+*** `D-57` DOES NOT ANSWER THIS QUESTION, AND THAT IS SAID IN THE TOOL'S OWN OUTPUT
+RATHER THAN IMPLIED. *** `Spec/05_DECISIONS.md:382-388` answers the ORDERING
+(`E-VCS-CHECKOUT` is built and tested before any write tool calls it - satisfied by
+row 10.1) and states its REASON ("An automatic checkout wired into every write
+would turn a source control problem into a 'every tool reports failure' problem,
+and the cause would be invisible from any of those results"). **It says nothing
+about a provider on which a checkout can never help.** The choice is this row's,
+and the tool prints it:
+
+```
+    policy, provenance  : D-57 (Spec/05_DECISIONS.md:382-388) answers the ORDERING only -
+    E-VCS-CHECKOUT is built and tested before any write tool calls it - and it does NOT
+    answer what a write tool does when UsesCheckout() == false. That choice is row 10.2's
+    own, and it is (b).
+```
+
+**THE THREE OPTIONS, AND THE ONE CHOSEN:**
+
+| Option | Verdict |
+|---|---|
+| (a) skip it, and say you skipped | **NOT CHOSEN.** A skip is not a measurement, and row 10.1's rule is that an expected no-op is still worth recording. |
+| **(b) attempt it and report the provider's answer** | *** CHOSEN *** |
+| (c) refuse the write unless the caller opts in | **NOT CHOSEN.** On Git, and on a provider-less editor, this refuses EVERY write - which is `D-57`'s "every tool reports failure" outcome arrived at from the other side. |
+
+**WHY (b), IN FOUR MEASURED REASONS:**
+
+1. **It is the same answer `E-VCS-CHECKOUT` already gives.** Row 10.1 issued the
+   operation on a no-op provider and recorded the provider's words rather than
+   predicting a no-op. Two answers about one asset on one provider would give a
+   caller two stories.
+2. **It never claims a lock was taken**, and the block says so in words
+   (section 4.2).
+3. **The answer is a REPORT AND NEVER A GATE.** The write proceeds whether the
+   checkout succeeded, failed or was refused, and the block states that in every
+   answer: `THE CHECKOUT ANSWER NEVER GATES THE WRITE`. This is `D-57` obeyed
+   directly - a source control problem cannot become a write failure here.
+4. **It costs nothing that is not already being paid** - section 4.
+
+**`UsesCheckout() == false` IS NOT THE ONLY REFUSAL THAT DOES NOT GATE.** With NO
+provider the row is refused with the engine's own string and the write still
+happens; the suite asserts both (`the file really was written, so the refusal did
+not gate the save`).
+
+## 4. THE ENGINE ALREADY ISSUES A CHECKOUT ON EVERY SAVE, AND THIS IS WHERE THAT IS
+
+*** MEASURED THIS ROUND, AND IT IS THE REASON `E-SAVE` IS THE RIGHT FIRST WRITER. ***
+`E-SAVE` calls `UEditorAssetLibrary::SaveLoadedAsset`
+(`EditorAssetSubsystem.cpp:1290-1309`), which reaches
+`UEditorLoadingAndSavingUtils::SavePackages` -> `FileHelpers.cpp:6019-6023` ->
+`InternalCheckoutAndSavePackages` (`:5912`). That function **already issues a
+checkout**, at `:5925-5929`:
+
+```
+:5925   if (ISourceControlModule::Get().IsEnabled())
+:5929       FEditorFileUtils::CheckoutPackages(PackagesToCheckout, &PackagesCheckedOut, ...);
+```
+
+**IT READS NEITHER `UsesCheckout()` NOR THE OPERATION'S RESULT** - `CheckoutPackages`
+builds `FinalPackageCheckoutList` / `FinalPackageMarkForAddList` and its return
+value is discarded at `:5929`. So on Git the engine issues an operation that
+provider cannot execute on every single save, and nothing anywhere records that
+answer. Row 10.2's automatic checkout runs EARLIER and records it, which is why the
+cost of option (b) is zero here: **the operation was already being issued.**
+
+## 5. THE TOOL'S OUTPUT, VERBATIM
+
+### 5.1 No provider: the refusal, per asset, and the write that happens anyway
+
+```
+=== automatic checkout before the write (D-57): E-STRUCT-FIELDS ===
+WHAT THIS IS: the source control half of this write tool. D-57 requires the
+checkout tool to be built and tested before any write tool calls it, and it is.
+This is NOT USourceControlHelpers::CheckOutFile: that helper answers true on Git
+without issuing anything (SourceControlHelpers.cpp:456-460). It reads
+UsesCheckout() and the OPERATION's own result instead.
+what this call does: the operation the plan allowed IS ISSUED here, and no file is written by this section.
+
+    policy              : AttemptAndReport - (b) of the three options: a checkout IS issued through the provider and the provider's own answer is repeated verbatim. (a) skip-and-say and (c) refuse-unless-opted-in were both rejected. THIS ANSWER NEVER GATES THE WRITE: it is a report beside the write's own result, so a provider that cannot take a lock cannot turn a working write into a failed one (D-57).
+    policy, provenance  : D-57 (Spec/05_DECISIONS.md:382-388) answers the ORDERING only - E-VCS-CHECKOUT is built and tested before any write tool calls it - and it does NOT answer what a write tool does when UsesCheckout() == false. That choice is row 10.2's own, and it is (b).
+
+    module loaded       : true
+    provider in use     : 'None'
+    registered providers: 5 -> Subversion, Git, Plastic SCM, Perforce, None
+    IsEnabled()         : false
+    IsAvailable()       : NOT ASKED, because IsEnabled() was already false.
+    UsesCheckout()      : NOT READ, because no provider was selected.
+
+    run refusal         : Revision control is not enabled.
+    the string is from  : SourceControlHelpers.cpp:67 (the engine's own gate)
+    NO PROVIDER WAS REACHED, so no state is reported and no zero is printed
+    (P1), and the write itself is NOT gated by this line.
+assets: 1
+
+REFUSED FOR EVERY ASSET, AND NO PROVIDER WAS REACHED: this is the engine's own
+string and the same one the Preview printed, because both read it out of Plan.
+    [1] /Game/Tests/TA22_VcsWrite_R4476.TA22_VcsWrite_R4476
+        package: /Game/Tests/TA22_VcsWrite_R4476
+        file: <REPO>/TestProject/Content/Tests/TA22_VcsWrite_R4476.uasset
+        file found by: FPackageName::DoesPackageExist (PackageName.h:450)
+        decision: DO NOT ATTEMPT - Revision control is not enabled.
+        NOT ATTEMPTED, and no provider call was made for this asset.
+
+    THE CHECKOUT ANSWER NEVER GATES THE WRITE. It is reported beside the write's
+    own result, so a provider that cannot take a lock cannot turn a working write
+    into a failed one - which is the outcome D-57 exists to prevent.
+    NO ASSET FILE WAS WRITTEN BY THIS SECTION. A checkout is a source control
+    operation; the write tool's own result below or above is the file write.
+```
+
+**AND THE THIRD STATE, MEASURED: A WRITE TOOL NAMED AN ASSET THAT HAS NO FILE
+YET.** The very first `E-SAVE` in the suite runs against a struct that exists only
+in memory, and the row says so instead of printing an empty state:
+
+```
+        decision: DO NOT ATTEMPT - '/Game/Tests/TA22_VcsWrite_R32360' resolved to package
+        '/Game/Tests/TA22_VcsWrite_R32360', but NO FILE FOR IT WAS FOUND ON DISK - so there is
+        no file for source control to have an opinion about
+        NOT ATTEMPTED, and no provider call was made for this asset.
+```
+
+### 5.2 Git: the no-op SAID, and the provider's own refusal
+
+```
+    module loaded       : true
+    provider in use     : 'Git'
+    registered providers: 5 -> Subversion, Git, Plastic SCM, Perforce, None
+    IsEnabled()         : true
+    IsAvailable()       : true
+    UsesCheckout()      : false
+    UsesLocalReadOnly() : false
+
+    run refusal         : (none) - both engine questions passed, so each asset below was asked for its state.
+assets: 1
+
+    [1] /Game/Tests/TA22_VcsWrite_R4476.TA22_VcsWrite_R4476
+        package: /Game/Tests/TA22_VcsWrite_R4476
+        file: <REPO>/TestProject/Content/Tests/TA22_VcsWrite_R4476.uasset
+        file found by: FPackageName::DoesPackageExist (PackageName.h:450)
+        the state says: under source control false, checked out here false, open for add false, modified false
+        UsesCheckout() == false: A CHECKOUT IS A NO-OP ON THIS PROVIDER. It has
+        no lock command, so nothing here is a claim that a lock was taken. The
+        operation is issued anyway and the provider's own answer is the record.
+        decision: ATTEMPT - a checkout IS issued through the provider and its own answer is repeated, even though this provider reports UsesCheckout() == false and the operation is therefore expected to be a no-op here.
+        provider answer, verbatim: ECommandResult::Failed
+        provider error: Operation 'CheckOut' not supported by revision control provider 'Git'
+
+    THE CHECKOUT ANSWER NEVER GATES THE WRITE. It is reported beside the write's
+    own result, so a provider that cannot take a lock cannot turn a working write
+    into a failed one - which is the outcome D-57 exists to prevent.
+    NO ASSET FILE WAS WRITTEN BY THIS SECTION. A checkout is a source control
+    operation; the write tool's own result below or above is the file write.
+```
+
+**THE WRITE OPENED WITH `changed:` IN BOTH PHASES.** The block is APPENDED, never
+prepended, so no caller's parser sees a different first word - and the suite fails
+if that changes.
+
+## 6. THE READ-BACK THROUGH DIFFERENT TOOLS, AND THE FINDING THE SUITE EARNED
+
+**A TOOL'S OWN REPORT IS NOT EVIDENCE, so four other instruments answer for it.**
+
+### 6.1 The engine's own helper, a different code path, in the same run
+
+`USourceControlHelpers` is driven through the engine's own `PythonScriptCommandlet`
+with `-SCCProvider=Git` (the probe is embedded in the suite and written to a temp
+file, so the cross-check is part of the run rather than a note):
+
+```
+    git : exit 0, 6 value(s)  {'present': 'True', 'current_provider': "'Git'",
+        'is_enabled': 'True', 'is_available': 'True',
+        'check_out_file_returned': 'True', 'last_error_msg': 'Text("")'}
+```
+
+*** SO IN ONE RUN: THE ENGINE'S HELPER SAYS `True` WITH NO ERROR TEXT, AND THIS
+MECHANISM SAYS `ECommandResult::Failed` WITH THE PROVIDER'S OWN
+`"Operation 'CheckOut' not supported by revision control provider 'Git'"`. ***
+They cannot come from one call: the helper returns at
+`SourceControlHelpers.cpp:456-460` BEFORE issuing the operation it would have to
+issue to see that message. That is the trap, closed by measurement rather than by
+argument.
+
+### 6.2 The filesystem: a hash before and after
+
+`hashlib.sha256` of the fixture file, taken around every call:
+
+- across `P-STRUCT-FIELDS` and across `E-STRUCT-FIELDS`: **UNCHANGED**, so the
+  checkout section writes no file and the struct edit only marks the package dirty;
+- across each `E-SAVE`: **CHANGED**, so the save really wrote, and the edited field
+  name (`VcsProbeGamma`, `VcsProbeDelta`) is found **in the saved `.uasset` bytes**
+  - the check `test-struct.py` uses, and one no report can fake.
+
+### 6.3 The `git` CLI: a third tool, and it FALSIFIED A CHECK OF MINE
+
+**THE SUITE'S OWN "NOTHING ELSE MOVED" CHECK WENT RED ON ITS FIRST RUN, AND IT WAS
+RIGHT TO.** The porcelain status of the fixture was `?? path` after phase A, was
+still `?? path` after the write tool's checkout in phase B - and became
+**`AM path`** after `E-SAVE`. Two staged columns mean the asset had been ADDED TO
+THE GIT INDEX.
+
+*** `E-SAVE` WITH THE GIT PROVIDER STAGES A BRAND-NEW ASSET, AND IT IS THE ENGINE'S
+SAVE PATH RATHER THAN THIS ROW'S OPERATION: `FileHelpers.cpp:2483` builds
+`FinalPackageMarkForAddList` and `:2536-2538` executes `FMarkForAdd` on it, which
+the Git provider implements as a real `git add`. *** The suite now attributes it
+inside one run - the same tool's checkout left the index alone a moment earlier,
+and the `FMarkForAdd` came from the engine - and it prints all three statuses.
+
+**AND IT FOUND A DEFECT IN THIS SUITE RATHER THAN ONLY IN THE TREE:** a staged entry
+OUTLIVES its file, so deleting the fixture left `AD TestProject/...uasset` in the
+index for ever. The suite now unstages every `TA22_VcsWrite_R*` entry on the way IN
+as well as OUT, and **asserts the restore** (`the git INDEX carries no entry for it
+either`).
+
+## 7. THE SUITE: 62 CHECKS, TWO PHASES OF PROVIDER, AND IT OWNS THE EDITOR
+
+`Tools/test-vcs-write.py` is the only suite this row adds.
+
+*** IT RESTARTS THE EDITOR TWICE, AND THAT IS SAID OUT LOUD IN ITS OWN OUTPUT:
+once to reach `-SCCProvider=Git`, once to restore a provider-less editor. *** It
+must, because `SourceControlSettings.cpp:58-65` reads that setting off the command
+line (or an ini that does not exist here) and **`Tools/start-editor.ps1` cannot
+pass it through** - row 10.1's finding, unchanged. The restore is ASSERTED by
+reading `IsEnabled()` back through `E-VCS-CHECKOUT`.
+
+Its phases: **A** no provider (the fixture is built, saved, previewed and edited);
+**B** Git (`UsesCheckout() == false`, the operation issued, the cross-check, the
+index evidence); **C** restore, asserted.
+
+```
+RESULT: PASS (62 check(s) run, no check skipped)
+```
+
+### The checks, and THE INPUT THAT MAKES EACH ONE FAIL
+
+| Check | The input that makes it fail |
+|---|---|
+| E-SAVE still opens with `changed:` | the block being PREPENDED to the answer |
+| and the block never says `saved` | the word appearing in the block (which a prepended block causes) |
+| with no provider it states the ENGINE's own refusal, verbatim | the refusal being paraphrased |
+| and it prints NO provider answer it could not have obtained | `provider answer, verbatim` appearing where nothing was issued |
+| the file really was written, so the refusal did not gate the save | the write being gated by the refusal |
+| the preview / the edit did not write the file - hash unchanged | any of them writing the file |
+| THE PREVIEW AND THE EDIT DECIDE IDENTICALLY | the two reaching different decisions |
+| NO `decision` LINE IS EVER EMPTY | a row whose reason is empty (section 8 - MEASURED) |
+| THE WRITE STILL HAPPENED: a failed checkout did not fail the write | the write being gated by the checkout |
+| it SAYS a checkout is a no-op instead of implying a lock | that sentence going away |
+| AND THE OPERATION WAS STILL ISSUED | the trap: not issuing it |
+| the provider's OWN message is repeated | a paraphrase |
+| THE PREVIEW ISSUED NOTHING EVEN WHERE A CHECKOUT WOULD BE ATTEMPTED | the preview reaching a provider |
+| THE CHECKOUT STAGED NOTHING | the checkout staging anything in the git index |
+| THE ENGINE'S OWN SAVE PATH IS WHAT STAGED IT | `FMarkForAdd` changing, or the tool staging it |
+| THE ENGINE'S OWN `CheckOutFile` ANSWERS TRUE ON GIT | the helper's behaviour changing |
+| so the two answers CANNOT come from one call | the tool's answer collapsing onto the helper's `True` |
+| it never CALLS `CheckOutFile` | a `CheckOutFile(` call appearing in the mechanism |
+| it reads the capability flag / the OPERATION's result | `UsesCheckout()` or `Execute(`/`GetResultInfo()` going away |
+| BOTH wired write tools call it | either `EnsureCheckedOut` call going away |
+| the struct writer's PREVIEW does not reach a provider with a checkout | `EnsureCheckedOut` appearing in the preview body |
+| AND THE RESTORE IS ASSERTED (provider-less) | the restore not happening |
+| AND THE RESTORE IS ASSERTED (git index) | a staged entry left behind |
+
+**NO CHECK DEPENDS ON A SHARED ASSET'S STATE.** The fixture is built per run
+(`TA22_VcsWrite_R<pid>`) and the two `git status` checks compare the fixture's OWN
+status before and after, never against `""` - so somebody else's commit or `git add`
+cannot turn this suite red. That is the defect row 10.1 replaced a check over, and
+this suite was written after reading that note.
+
+## 8. THE CHECKS WERE SHOWN RED, AND A RED RUN FOUND A REAL DEFECT
+
+A build was made with **four deliberate breaks**: (1) the trap's own shape, where a
+provider reporting `UsesCheckout() == false` is treated as already checked out and
+nothing is issued; (2) the policy named `SkipAndSay`; (3) the provenance sentence
+reworded so it no longer says `D-57` is silent on the question; (4) the block
+PREPENDED instead of appended in `E-SAVE`.
+
+**TWELVE OF 61 NAMED CHECKS WENT RED, WITH THE WRONG VALUES VISIBLE:**
+
+```
+  FAIL E-SAVE still opens with changed:, so the block was APPENDED and not prepended  === automatic checkout before the write (D-57): E-SAVE ===
+  FAIL and that block names the policy taken out of the three options  === automatic checkout before the write (D-57): E-SAVE ===
+  FAIL and it says plainly that D-57 does not answer the UsesCheckout() == false question
+  FAIL and the block never says saved, so it cannot be confused with the save count  1] /Game/Tests/TA22_VcsWrite_R52840
+  FAIL the second save opens with changed:
+  FAIL *** THE PREVIEW ISSUED NOTHING EVEN WHERE A CHECKOUT WOULD BE ATTEMPTED ***
+  FAIL AND THE OPERATION WAS STILL ISSUED, with the provider's own answer repeated  ...each asset below was asked for its state.
+  FAIL and the provider's OWN message is repeated, not paraphrased
+  FAIL E-SAVE opens with changed: with Git selected too
+  FAIL and its block carries the provider's own refusal
+  FAIL while THIS project's write tool, on the same provider in the same run, recorded ECommandResult::Failed with the provider's 'not supported' message
+  FAIL so the two answers CANNOT come from one call: ... helper 'True' vs tool False
+RESULT: FAIL (12 of 61) -> ...
+```
+
+**THE LAST LINE IS THE TRAP ITSELF GOING RED, WITH BOTH VALUES IN IT:**
+`helper 'True' vs tool False`. When the mechanism stops issuing the operation, its
+answer collapses toward the helper's boolean and the two become indistinguishable -
+which is exactly the state row 10.2 exists to prevent.
+
+*** AND THE SAME RED RUN FOUND A DEFECT IN THIS ROW'S OWN CODE: AN EMPTY DECISION
+REASON. *** The break made the decision in two steps, and the build printed
+**`decision: DO NOT ATTEMPT - `** with NOTHING after the dash - the decision
+stated, its reason lost. That is `P1`'s defect in a decision: an absent explanation
+reading like a decided one. The reason is now assigned once with a guard, and a new
+check asserts that **no `decision` line in ANY of the seven blocks, in either
+phase, is empty**. That check is one of the 62.
+
+**THEN IT WAS RESTORED, AND THE RESTORE WAS ASSERTED RATHER THAN ASSUMED:**
+`git diff --stat` showed ONLY the intended
+`Source/TurboMCP/TurboMCPSourceControlWrite.cpp` change and nothing else; a `grep`
+confirmed no `DELIBERATE BREAK` marker and no `SkipAndSay` remained; the target was
+rebuilt (`Result: Succeeded`); and the suite returned
+`RESULT: PASS (62 check(s) run, no check skipped)`.
+
+## 9. WHAT COULD NOT BE SETTLED
+
+1. **NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED - NOT BY ROW 10.1,
+   NOT BY THIS ROW, NOT BY ANYONE.** `p4 set` still points at
+   `ssl:example.invalid:1666`, which does not answer; `cm` and `svn` are not on
+   `PATH`. **EVERY CHECKOUT ANSWER IN THIS SECTION IS THE ANSWER TO A REFUSAL OR TO
+   A NO-OP PROVIDER.** The claim this row makes is narrow and measured: *the
+   operation is issued through the provider, and the provider's own answer is what
+   gets reported*. **IT IS NOT A CLAIM THAT AN AUTOMATIC CHECKOUT WORKS.**
+2. **The `UsesCheckout() == true` branch of the ACTING path was never executed.**
+   The only provider on this machine with `UsesCheckout() == true` is Perforce, and
+   it is `IsAvailable() == false`, so the mechanism refuses before reaching it - by
+   design, and the refusal is measured. **What a successful `FCheckOut` looks like
+   is unmeasured**, and the sentence that would have to change when a depot exists
+   is the "ALREADY checked out here" branch of `NotAttemptedReason`.
+3. **Whether option (b) is CORRECT for a live Perforce cannot be settled here.** It
+   is chosen for the four reasons in section 3, and reason 3 - that the answer never
+   gates the write - is the one a live depot might argue with: on Perforce a failed
+   checkout very probably means the save will fail anyway, and this row does not
+   pre-empt that, because a gate that cannot be measured is exactly what `D-57`
+   warns against. **That is the first thing a reachable depot should be used to
+   test.**
+4. **The 30 unwired writers are unwired.** Section 1 lists them. Nothing here says
+   they are wrong to be unwired yet.
+5. **The `FMarkForAdd` staging on Git is reported, not judged.** It is the engine's
+   behaviour, it is not this row's, and this row neither prevents nor endorses it.
+   What this row does is stop its own fixture from leaving an index entry behind.
