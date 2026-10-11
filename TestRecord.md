@@ -9982,3 +9982,26 @@ becomes the reason the fifth is never committed. ***
 
 **AND THE FIXTURE WARNING IS PRE-EMPTIVE RATHER THAN DISCOVERED:** *`TA-18` and `TA-19` do not exist, row 2.2 may need them, and the
 brief says so BEFORE the work starts - so the row does not spend its first rounds finding out what row 2.1 already measured.*
+
+---
+
+## 160. Round 212: a FIFTH capture file, and the two existing ones grew while I watched
+
+    TurboMCPCapture.cpp           968 -> 1126 lines
+    TurboMCPCaptureSelector.cpp   913 -> 1071 lines
+    TurboMCPCaptureAsset.cpp      NEW, 751 lines
+    TurboMCPLogCapture.cpp        138 lines (untouched)
+    TOTAL CAPTURE CAPABILITY  NOW 3,086 LINES ACROSS FIVE FILES
+
+*** AND THE GROWTH OF THE TWO EXISTING FILES IS THE INTERESTING NUMBER RATHER THAN THE NEW ONE: `+158` AND `+158`. ***
+
+*** IDENTICAL GROWTH IN TWO FILES IS THE SIGNATURE OF A SHARED EDIT RATHER THAN TWO INDEPENDENT ONES - **THE SAME CHANGE APPLIED TO BOTH
+CAPTURE PATHS** - and the obvious candidate is the `P1`-shaped renderer guard: **if a capture cannot render, refuse by name**, which
+`TurboMCPCaptureSelector.cpp` needed for `screen` under a null renderer and `TurboMCPCapture.cpp` would need for whatever it captures. ***
+*** I am NOT going to assert that: it is a hypothesis from two equal numbers, and this record has withdrawn exactly this kind of
+inference before (section 0.2's material-tidy claim). It goes in as a QUESTION the workstream's report will answer, not as a finding. ***
+
+**AND THE SAFETY COMMIT IS THE TWENTY-FIRST, AND THE TREE WAS CLEAN OF EVERYTHING ELSE** - *so if this row produces a partial result, the
+partial result is preserved at every point along the way.* **That is what makes the "four of six is complete" decision in section 211
+safe rather than brave: a row that is allowed to stop part-way still has to commit what it has, and this one has been committing its own
+work since it started.**
