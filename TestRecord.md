@@ -5928,3 +5928,49 @@ than a missing suite - WHICH IS A DIFFERENT FIX.**
 NOT `EDependencyProperty`** (`Misc/AssetRegistryInterface.h:53`) - **which has no `Soft` and no `EditorOnly`; those
 live on `EDependencyQuery` (`:108`) and its constructor (`:248`) translates them, AND THAT EXACT MISTAKE COST THE LINT
 WORKSTREAM A BUILD.** *A comment recording a mistake is worth more than the fix that produced it.*
+
+---
+
+## 41. The audit now names the state it used to hide - and measuring it corrected MY OWN claim from the previous round
+
+*** ONE SMALL CHANGE, AND THE MEASUREMENT THAT PRECEDED IT FALSIFIED SOMETHING I HAD WRITTEN ONE ROUND EARLIER. ***
+
+I recorded that `audit-tool-coverage.py:96`'s regex "wants the call on one line" and inferred that a SPLIT call was
+therefore mis-reported. **THEN I MEASURED THE FOUR SHAPES INSTEAD OF ARGUING ABOUT THE REGEX:**
+
+    session.call(TOOLSET, "Name", {...})       strict=True   bare-name=True     <- credited
+    session.call( TOOLSET, "Name", {...})      strict=FALSE  bare-name=True     <- STILL CREDITED
+    session.call(TOOLSET, "Name", args)        strict=FALSE  bare-name=FALSE    <- NOT credited
+    session.call(TOOLSET, NAME_VAR, {...})     strict=FALSE  bare-name=FALSE    <- NOT credited
+
+*** MY CLAIM WAS WRONG IN ITS REASON AND RIGHT IN ITS SUBJECT: THE SPLIT SHAPE **IS** CREDITED, BY THE BARE-NAME
+PASS, AND WHAT IS NOT CREDITED IS AN ARGUMENT VARIABLE INSTEAD OF A LITERAL `{...}`. *** *The instinct was right, the
+mechanism was INVENTED rather than measured, and the mechanism is what a later reader would have acted on.*
+
+### 41.1 One word was covering two states
+
+**`uncalled` MEANT BOTH "no suite names this tool" AND "a suite names it in a shape I cannot read", AND THE TWO HAVE
+DIFFERENT FIXES** - write a suite, or go and look. The audit now prints them as two lists.
+
+**AND IT IMMEDIATELY FOUND A FALSE POSITIVE OF ITS OWN: ELEVEN TOOLS, ALL ORDINARY CALLS WHOSE ARGUMENTS ARE
+ASSEMBLED FIRST AND PASSED BY NAME** - `session.call(PREVIEW_TOOLSET, "PreviewTurboMCPComment", args)`. **A LIST LONG
+ENOUGH TO LOOK LIKE NOISE IS THE ONE FAILURE MODE AN AUDIT MUST NOT HAVE, BECAUSE A FALSE POSITIVE MAKES A REAL
+FINDING LOOK LIKE NOISE.** Accepting a literal name regardless of the argument expression cleared five, and
+accepting a **quoted toolset string** as the first argument cleared `ReadTurboMCPNodeFind`, **split across lines in
+`build-test-graph.py:81` and called with a string toolset in `test-capture.py:239`.**
+
+### 41.2 Six remain, DECLARED rather than papered over
+
+**THE THREE MATERIAL SUITES DISPATCH THROUGH A VARIABLE:**
+
+    PREVIEW = "PreviewTurboMCPMaterialBlocks"
+    preview = session.call(PREVIEW_TOOLSET, PREVIEW, {"asset": ASSET})
+
+**NO REGEX CAN RESOLVE THAT, and inventing one that pretends to would be the same defect one level down.** The
+honest fix is a resolver or a naming convention - **and the standard here is that a limit gets NAMED, so the six are
+printed on every run rather than buried.**
+
+*** AND THE GENERAL FORM IS THE ONE RECORDED TEN TIMES, NOW POINTED AT THE PROJECT'S OWN TOOLING: A REGEX THAT
+ASSUMES ONE SHAPE IS INDISTINGUISHABLE FROM A REAL ABSENCE. THE DIFFERENCE IS THAT IT WAS FOUND BY MEASURING FOUR
+INPUTS RATHER THAN BY READING THE REGEX AND REASONING ABOUT IT - AND READING IT AND REASONING IS EXACTLY WHAT I DID
+FIRST, AND IT PRODUCED A MECHANISM THAT WAS NOT TRUE. ***
