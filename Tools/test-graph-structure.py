@@ -77,7 +77,6 @@ def graph_nodes(session, graph_name):
 
 def main():
     session = Session()
-    session.describe()
 
     # ---------------------------------------------------------------------------------------------
     # 1. THE PREVIEW WRITES NOTHING, AND SAYS SO
