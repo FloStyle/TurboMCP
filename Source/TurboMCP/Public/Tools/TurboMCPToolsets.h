@@ -631,6 +631,35 @@ public:
 	static FString ReadTurboMCPAssetCost(
 		const FString& Asset,
 		int32 Cap);
+
+	/**
+	 * Read a Widget Blueprint's tree as the text dialect of `04_FORMATS.md` section 8. READS ONLY.
+	 *
+	 * THE CHILDREN COME OUT IN SLOT ORDER, which is the whole reason this dialect exists: `R-BP-LOAD`'s widget
+	 * section lists the same widgets but FLATTENS THE ORDER AWAY, and a tree's child order is its DRAW ORDER -
+	 * dialect rule 8.2.3. So an agent that needs to know what draws on top of what reads the tree from here
+	 * rather than from the flat list.
+	 *
+	 * CHILDREN ARE TAKEN THROUGH `UPanelWidget::GetChildrenCount` AND `GetChildAt`
+	 * (`Components/PanelWidget.h:28,36`) IN INDEX ORDER, because THAT INDEX IS THE SLOT ORDER. The widget
+	 * tree's own flat `AllWidgets` array is deliberately not used: it is the flattening this tool exists to
+	 * undo.
+	 *
+	 * WHAT IT PRINTS IS EXACTLY WHAT `P/E-WIDGET-TREE` ACCEPTS, because the reader and the writer share one
+	 * code path (`D-15`): `FTurboMCPWidgetTreeText::Render` is the only printer, and `append`, `replace` and
+	 * `patch` all parse the same dialect. A round trip of this text is therefore IDENTITY, and
+	 * `test-widget-tree` proves that by walking a live tree, rendering it, parsing it back and comparing -
+	 * a comparison that needs no write at all.
+	 *
+	 * EVERY WIDGET CARRIES ITS PATH (`Root/Overlay/Card/PriceText`), which is the same form the writers
+	 * address widgets by, so an agent never invents a name.
+	 *
+	 * A WIDGET BLUEPRINT WITH NO ROOT SAYS SO rather than printing nothing, because an absent tree and an
+	 * empty one are different answers (`P1`). An asset that is not a Widget Blueprint is refused by name.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPWidgetTree(
+		const FString& Asset);
 };
 
 /**
