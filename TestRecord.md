@@ -7733,3 +7733,64 @@ ITS WINDOW** - and the window was implicit, which is exactly how it got dropped.
 **SO THE ROUND IS RECORDED AS: NOTHING IS WRONG, NOTHING HAS BEEN WRITTEN, AND THE ONLY THING THAT CHANGED IS THAT MY OWN
 INSTRUMENT WAS SHOWN TO BE ONE WORD SHORT.** *A workstream two minutes into reading a header is exactly on schedule, and
 the cheapest way to have got this right was to write the window down where I would read it.*
+
+---
+
+## 83. *** THE WORKSTREAM FALSIFIED THE CENTRAL PREMISE OF MY BRIEF, AND ITS EARLY REPORT IS WORTH MORE THAN THE TOOL ***
+
+**WHAT I WROTE:** *"the check needs the log to carry a QUALIFIED engine form, AND THE SUITE CANNOT MAKE THE ENGINE EMIT
+ONE."* **WHAT IT MEASURED:** *the log `TestProject/Saved/Logs/TurboMCPCalls.jsonl` has 252 lines and its toolset values are*
+
+    (top-level) x134                          TurboMCP.TurboMCPEditToolset x40
+    TurboMCP.TurboMCPPreviewToolset x34       TurboMCP.TurboMCPReadToolset x28
+    TurboMCP.TurboMCPLookToolset x14          (engine tool ending ...) x2
+
+*** SO THE LOG ALREADY CARRIES THE QUALIFIED FORM, THE SUITE'S OWN CALLS PRODUCE IT - every `call_tool` emits a second
+inner event whose toolset is already qualified - AND THERE IS NO BARE SPELLING IN THE LOG AT ALL. MY PREMISE WAS FALSE AND
+I HAD BUILT A BRIEF ON TOP OF IT. ***
+
+### 83.1 And the more important half: THE BREAK TEST BIT, WHICH TURNS A REPORTED LIMIT INTO A FALSIFIED ONE
+
+**THE AUTHOR OF `test-call-cost` REPORTED *"29 checks is not 29 independent checks"*, AND I TOOK THAT SENTENCE AS A FACT
+AND RE-DESCRIBED IT IN THREE SEPARATE BRIEFS.** *This workstream applied the exact break that the author said did not bite
+- `NormaliseToolset`'s body reduced to `return Trimmed;` - AND IT BIT:*
+
+    Tools/test-call-cost.py  -> exit 1
+    RESULT: FAIL (1) -> no tool row contains the engine's qualification path
+
+*** AND IT PROVED THE BINARY CHANGED RATHER THAN TRUSTING THE RESULT LINE: `[1/5] Compile [x64] TurboMCPCallCost.cpp` IN
+THE BUILD LOG, AND THE DLL 2,860,032 -> 2,859,008 BYTES. THAT IS THE GUARD THIS PROJECT HAS BEEN ASKING FOR SINCE THE
+SEVENTH FIRING OF THE STALE-BINARY TRAP, APPLIED PROPERLY AND UNPROMPTED. ***
+
+**SO `PASS (29 checks)` WAS NOT REPRODUCIBLE - THE STALE-BINARY TRAP, EIGHTH FIRING.** *And the workstream was careful
+about what that means: it did NOT say the author lied, it said **the measurement does not survive a build that
+demonstrably compiled the broken file. THE AUTHOR HAD REPORTED ITS OWN BREAK TEST AS NOT BITING, WHICH WAS HONEST; THE
+DIFFERENCE IS THAT ITS RUN WAS AGAINST A DLL THAT PROBABLY DID NOT CONTAIN THE BREAK.***
+
+### 83.2 And what it preserved is the half that is REALLY vacuous - which is a stronger justification than mine
+
+**`AssetFromArguments` IS GENUINELY UNREACHABLE OVER THE LOG:** every entry is `source=engine` and **an engine event
+carries no `arguments` field at all**, so no suite can hand that function a non-empty input. *The engine's own sentence -
+"an engine event carries NO ARGUMENTS AT ALL" - is the only thing watching it.*
+
+*** A LITERAL-INPUT CHECK CANNOT GO VACUOUS WHEN THE ENGINE'S RESOLVER BEHAVIOUR CHANGES; A LOG-DEPENDENT ONE CAN. THAT IS
+THE JUSTIFICATION, AND IT IS TRUE, WHERE MINE WAS NOT. ***
+
+### 83.3 What I told it, and what is verified rather than assumed
+
+    PROCEED, COMMIT, PUSH - WITH THE NARROWER JUSTIFICATION IN THE SOURCE COMMENTS
+    AND I ASKED IT TO RUN `git diff --stat` AND CONFIRM THE FILE IT BROKE IS RESTORED, BECAUSE THE BREAK WAS IN
+    ANOTHER WORKSTREAM'S VERIFIED CAPABILITY AND A RESTORE THAT LEAVES IT DIFFERENT FROM HEAD IS THE `error C2059`
+    FAILURE THIS RECORD ALREADY HAS
+
+**VERIFIED MYSELF, NOT TAKEN ON TRUST: `git diff --stat -- Source/TurboMCP/TurboMCPCallCost.cpp` IS EMPTY, so the
+foreign file is IDENTICAL TO HEAD.** *Its 05:39:46 modification timestamp was the restore, and the restore is clean.*
+
+**AND THE TOOL IS REAL: `ReadTurboMCPPureChecks` IS DECLARED AT `TurboMCPToolsets.h:700`, the tool count moved 85 -> 86,
+and `TurboMCPPureChecksTools.cpp` is 69 lines.** *The full run and the audit are still owed from it, and it says it will
+not push until the run is green.*
+
+*** AND I ASKED IT THE QUESTION I SAID I WOULD, WITH AN INSTRUCTION NOT TO COMPROMISE: DOES EXPOSING THE FUNCTION THROUGH A
+TOOL CLOSE THE VACUITY GAP OR ONLY MOVE IT? IT HAS NOW MEASURED BOTH SIDES - it knows the normaliser half is already
+covered by the log and the `AssetFromArguments` half is not, and it knows a tool reporting on its own literal inputs is
+still a producer reporting on itself. I WANT ITS ANSWER. ***
