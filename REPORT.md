@@ -258,7 +258,23 @@ Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un 
 | **Restaurer la fixture à l'ALLER aussi bien qu'au retour, et l'asserter** | *restaurer seulement à la fin a tué le serveur que la suite interrogeait* | ✅ *pratiqué, et row 2.2 l'a étendu à un index git* |
 | **Un break test doit montrer la VALEUR FAUSSE, pas seulement une ligne rouge** | *un check qui assertait un préfixe passait contre un build cassé* | ✅ *cinq fois, et quatre fois il a trouvé un second défaut* |
 
-### 11.1 **Et le trou structurel que je nommerais en premier dans une revue**
+### 11.1 **Le trou structurel — FERMÉ le 2026-10-11 (était la première de mes cinq priorités)**
+
+> ***MISE À JOUR : CE TROU EST MAINTENANT FERMÉ. Il est conservé ici tel qu'il a été diagnostiqué, suivi de ce qui a été fait.***
+
+**Le diagnostic initial :** *trois des neuf invariants étaient tenus par convention et par revue, pas par la machine — refuse-by-name, la règle `P1`, et nommer l'input qui fait échouer chaque check — **et ce sont exactement les trois qui ont produit les cinq capacités à couverture surestimée.***
+
+**Ce qui a été fait :**
+
+| | |
+|---|---|
+| **1** | ***Un 6ᵉ finding, `CANNOT-MATCH`, ajouté à `audit-suite-quality.py`*** — *le **miroir** des cinq autres : il cherche une assertion qui ne peut pas **PASSER**, la classe que row 2.2 a trouvée (`^` sans `re.MULTILINE` → 16 des 18 échecs d'une seule fonction). Prouvé sur **six cas** : trois qui doivent tirer, trois qui ne doivent pas.* |
+| **2** | ***L'audit est passé de **ADVISORY à BLOQUANT**.*** *Il rapportait **cinq** candidats et **tous les cinq étaient des faux positifs** — un gate qui échoue du code sain n'est pas un gate, c'est une raison de le contourner. Les cinq ont été lus, quatre faux positifs retirés, **et le seul vrai trouvé (`test-widget-preview.py:175`, `"4096" in huge`) CORRIGÉ plutôt que toléré.*** |
+| **3** | ***Prouvé dans les deux sens : 0 candidat → PASS exit 0 · 1 candidat → FAIL exit 1 · sonde retirée → PASS exit 0.*** |
+
+**Et il a immédiatement attrapé quelque chose dès son premier full run** — *non pas un candidat, mais la contention : `test-vcs` a échoué sur un check portant sur l'**arbre de travail git**, et **repasse seule à 55 checks**.*
+
+### 11.2 Le diagnostic initial, conservé
 
 > ***TROIS DES NEUF INVARIANTS SONT TENUS PAR CONVENTION ET PAR REVUE, PAS PAR LA MACHINE — et ce sont exactement les trois qui ont produit les cinq capacités à couverture surestimée.***
 >
