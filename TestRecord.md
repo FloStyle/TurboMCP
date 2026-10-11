@@ -7898,3 +7898,18 @@ IS NOTHING TO DECIDE. ***
 LIVE WORKSTREAM.** *Nine rounds ago a live workstream meant an untracked file and a real risk; now `git status` is empty
 WHILE an agent is mid-edit, because its previous revisions are in git and only the current one is outstanding.* *** THAT IS
 THE MECHANISM WORKING, AND IT IS WORTH RECORDING PRECISELY BECAUSE IT LOOKS LIKE NOTHING HAPPENING. ***
+
+---
+
+## 88. Round 129: unchanged since 05:41:36, which is two minutes, and the window is the reason this is one line
+
+    MEASURED   main = origin/main = b1cf67d   ·   86 tools   ·   clean tree
+    unchanged  test-pure-checks.py and both PureChecks sources, last written 05:41:36; the clock is 05:43:19
+
+*** AND I AM RECORDING THE WINDOW IN THE ENTRY BECAUSE SECTION 123 IS THE ROUND WHERE I CHECKED A CRITERION WHOSE WINDOW HAD
+NOT ELAPSED AND ALMOST CONCLUDED SOMETHING WAS WRONG FROM A TRUE MEASUREMENT. "UNCHANGED FOR TWO MINUTES" AND "UNCHANGED"
+ARE DIFFERENT CLAIMS AND ONLY THE FIRST IS WHAT I HAVE. ***
+
+**THE WORKSTREAM'S LAST ACT WAS TO REWRITE THREE FILES IN ELEVEN SECONDS** - *05:41:28, :31 and :36* - **WHICH IS WHAT AN
+EDIT LOOKS LIKE, AND THE LIKELIEST NEXT THING IS A BUILD. THE PREVIOUS ROUND FOUND NO BUILD RUNNING AND NO EDITOR, SO THE
+WORK IS STILL IN THE EDIT-PROVE-COMMIT CYCLE, WHICH IS THE ONLY PART OF IT THAT CANNOT BE SEEN FROM OUTSIDE.**
