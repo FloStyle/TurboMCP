@@ -8745,3 +8745,22 @@ PREVIOUS SUITE'S VERDICT, WHICH SEVENTEEN ROUNDS HAD NOT PRODUCED, WAS ONE SUITE
 *** SO THE NEXT ACTION IS NOT ANOTHER CHECK OF THE MILESTONES - IT IS TO RUN `test-struct` MYSELF AGAINST A FREE EDITOR AND
 READ WHAT IT SAYS. THE SUITE IS COMMITTED AT 465 LINES, THE TOOL IS COMMITTED AND AUDIT-GREEN AT 90 DECLARATIONS, AND NOBODY
 HOLDS THE EDITOR. ***
+
+---
+
+## 122. Round 168: the workstream is rebuilding fixtures for its suite run, and the tree is clean so there is nothing to secure
+
+    main = origin/main = e728b97   ·   90 declarations   ·   CLEAN TREE
+    make-material-asset.log 07:04:56 · make-acceptance-asset.log 07:04:06 · make-kit-assets.log 07:00:21
+    no editor at the check; no RESULT line yet
+
+*** AND THIS IS THE FIRST TIME IN THIS STRETCH THAT A FIXTURE-REBUILD SEQUENCE HAS A STATED PURPOSE RATHER THAN AN INFERRED
+ONE: ROW 7.1's SUITE **CREATES THE STRUCT IT THEN EDITS**, PRECISELY BECAUSE `TA-21` DOES NOT EXIST - so a struct that survives
+a rebuild, or a fixture the suite needs regenerated, is the prerequisite of the verdict rather than a detour from it. ***
+
+**THE CONTRAST WITH SECTIONS 140 TO 146 IS WORTH THE LINE, AND IT IS THE WHOLE LESSON OF THOSE ROUNDS IN ONE PLACE:** *there I
+watched three fixture rebuilds and INFERRED that a full run would follow, twice, wrongly. **Here the suite's own source says it
+creates what it tests, so a rebuild is the suite's own prerequisite and not a hypothesis about someone's intentions.***
+
+**AND THE STATE IS THE ONE SECTION 167 RECORDED AS ACTIONABLE - CLEAN TREE, NOTHING IN FLIGHT - WHICH MEANS THE VERDICT IS NOW
+ONE SUITE RUN AWAY AND NOTHING BLOCKS IT EXCEPT THAT THE WORKSTREAM IS MID-CYCLE AND IS THE ONE THAT OWES IT.**
