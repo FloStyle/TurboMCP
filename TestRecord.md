@@ -9930,3 +9930,26 @@ SOMEONE MEASURED THE DIFFERENCE RATHER THAN ATTRIBUTING IT. ***
     `T-LOOK-1..3` use `BP_NodeTest`, which exists
     *** AND ROWS 2.2-2.4 NEED `TA-18`/`TA-19` (`06_ACCEPTANCE.md:33-34`), WHICH **DO NOT EXIST** - FLAGGED NOW SO 2.2 DOES NOT
     DISCOVER IT LATE. ***
+
+---
+
+## 158. Round 209: I VERIFIED MY OWN FALSE PREMISE AGAINST THE SCRIPTS, AND IT IS WORSE THAN THE BRIEF SAID
+
+    `start-editor.ps1:296`  "IT REPLACES `-Offscreen`, WHICH WAS MEASURED AND REMOVED: `-Offscreen` implied `-nullrhi`..."
+    `start-editor.ps1:298`  *** "`-nullrhi` IS NOT AN OPTION FOR THIS PROJECT, and the script's own check list s..." ***
+    `start-editor.ps1:261`  "`-Offscreen` IS WHAT THE SUITES USE, AND IT IS `-nullrhi -unattended` WITH A HIDDEN WI..."  <- A STALE COMMENT
+    `run-suites.ps1:195`    CALLS `start-editor.ps1 -LowPriority` - NEITHER `-Offscreen` NOR `-nullrhi`
+
+*** SO `start-editor.ps1` CONTAINS BOTH THE TRUTH ("`-nullrhi` IS NOT AN OPTION FOR THIS PROJECT") AND A STALE COMMENT SAYING THE
+OPPOSITE ("`-Offscreen` IS WHAT THE SUITES USE"), AND **THE STALE ONE AT `:261` IS ALMOST CERTAINLY WHERE MY FALSE PREMISE CAME FROM
+-** *I read the script's comment rather than the caller's argument, and the comment had been left behind when `-Offscreen` was
+removed.* ***
+
+**AND THAT IS THE PROJECT'S OWN OLDEST RULE COMMITTED BY ME FOR THE FOURTH TIME IN THIS STRETCH: I PARSED A SENTENCE INSTEAD OF THE
+FIELD.** *The field is `run-suites.ps1:195`'s argument list, which says `-LowPriority` and nothing else. **The sentence is a comment at
+`start-editor.ps1:261` that a previous change made false and did not delete.***
+
+*** AND THE CORRECTION IS WORTH MORE THAN THE ERROR, WHICH IS WHY IT GOES INTO THE RECORD RATHER THAN BEING QUIETLY DROPPED: THE SUITES
+RUN WITH A REAL RHI AND A REAL WINDOW, SO `screen` WAS NEVER IMPOSSIBLE HERE - AND `-nullrhi` INSTALLS `SlateNullRenderer` RATHER THAN
+OMITTING SLATE (`LaunchEngineLoop.cpp:3343` -> `:3345-3347` -> `:3354`), SO THE REFUSAL IS A RENDERER QUESTION RATHER THAN A SLATE
+ONE. BOTH FACTS CHANGE WHAT ROWS 2.2 TO 2.4 CAN DO. ***
