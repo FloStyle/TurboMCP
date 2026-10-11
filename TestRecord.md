@@ -10535,3 +10535,28 @@ DOING THE THIRD ITEM ON IT. THE LIST WAS USEFUL FOR STARTING; THE EVIDENCE WAS U
     tree        clean
     HEAD        = origin/main
     report      REPORT.md, 316 lines, every figure READ at the round it states
+
+---
+
+## 175. Round 247: the plan audit is COMPLETE, and the remaining rows are real work rather than forgotten ticks
+
+    I AUDITED EVERY REMAINING ROW BY CHECKING WHETHER ITS TOOL IS DECLARED AND WHETHER A SUITE EXISTS FOR IT.
+    SEVEN ROWS WERE ALREADY DONE AND MARKED `todo` (3.1, 3.5, 4.1, 7.2, 7.4, 9.1, 9.4) PLUS ROW 5.1
+    - **EIGHT IN TOTAL**, EACH VERIFIED BY RUNNING ITS SUITE RATHER THAN BY MATCHING A FILE NAME
+    AND THE ROWS THAT REMAIN ARE NOT FORGOTTEN TICKS:
+
+    `9.2` `E-SESSION` / `R-EDIT-SESSION`   NO DECLARATION: the 13 `Session` hits in the header are all PROSE
+    `9.3` `P/E-ASSET-BATCH`               NO DECLARATION
+    `5.2` `P/E-WIDGET-TREE`               NO DECLARATION: only the READER exists at :661
+    `6.1` `6.2` `6.3` `6.4`               graph rename, collapse, copy and interface
+    `2.3` `2.4` `3.2` `3.3` `3.4` `3.6`   further capture, material reader and material writers
+    `5.3` `5.4` `5.5` `6.6` `7.3` `7.6`   widget set/anim/bind, node families, curves, asset operations
+    `8.1`-`8.5` `0.1` `0.3` `1.1` `1.2` `1.5` `11.1`   level and actors, editor lifecycle, measurements, the kit, build docs
+
+*** SO THE PLAN'S ERROR WAS ONE-SIDED AND IS NOW CORRECTED: IT UNDERSTATED THE PROJECT BY EIGHT CAPABILITIES AND DID NOT OVERSTATE IT AT
+ALL. EIGHT rows moved from `todo` to `done` in five rounds without a line of source being written, WHICH IS THE MEASURE OF HOW MUCH THE
+BOOKKEEPING HAD DRIFTED FROM THE TREE. ***
+
+**AND THE TWO ROWS I REFUSED TO MARK ARE THE EVIDENCE THAT THE AUDIT WAS DONE PROPERLY RATHER THAN SWEPT.** *5.1 and 5.2 both had a
+file whose name matched; **5.1 was marked only after reading what the suite proves, and 5.2 was left `todo` because the WRITER has no
+declaration.*** *** An audit that marks everything a name suggests would have produced the same count with two of them wrong. ***
