@@ -9056,3 +9056,23 @@ HAZARDS. **NO PART OF THAT NEEDS MY INTERPRETATION AND NONE OF IT NEEDS A SECOND
 CORRECTED THE SPEC, `D-51` AND THREE OF MY BRIEFS. HERE, THE READING IS EXPECTED TO PRODUCE CODE RATHER THAN A CORRECTION,
 BECAUSE THE CORRECTION ALREADY HAPPENED IN ROW 1.3 AND IS IN `Spec/WORKING_SCROW.md`.** *A measurement row's cost is one row's
 worth of reading; its return is that the NEXT row does not have to do any.*
+
+---
+
+## 132. Round 178: the workstream committed its own build, the count is 93, and the audit credits all three already
+
+    `a26bc67  SAFETY COMMIT: E-VCS-CHECKOUT implementation, not yet built and no suite yet`  - ITS OWN COMMIT, NOT MINE
+    `93 AICallable tool(s) declared`, `uncalled: (none)`, `RESULT: PASS`
+
+*** AND THE CONTRAST WITH SECTION 45 IS THE WHOLE ENTRY: THERE, FOUR DECLARATIONS SAT IN THE SHARED HEADER WITH NOTHING CALLING
+THEM AND THE AUDIT WAS **RED FOR FOUR ROUNDS**. HERE THE COUNT WENT 90 -> 93 AND `uncalled` IS `(none)` IMMEDIATELY, WHICH MEANS
+THE SUITE ARRIVED WITH THE TOOLS RATHER THAN AFTER THEM. ***
+
+**AND THE WORKSTREAM COMmitted ITS OWN WORK BEFORE I REACHED IT.** *It labelled the commit honestly - "not yet built and no
+suite yet" - **which is the second time in three rounds that a workstream has written its own safety commit with a title that
+understates rather than oversells.** *The first was row 7.1's `3732b17`, and both are the mechanism being adopted rather than
+obeyed.*
+
+**NOTHING IS CLAIMED BEYOND THE COUNT: THE DECLARATIONS HAVE BODIES, THE MODULE BUILDS THE WORKSTREAM HAS NOT YET SAID, NO
+`RESULT` LINE EXISTS FOR `test-vcs`, AND `93` IS A COUNT OF DECLARATIONS UNTIL IT IS A COUNT OF VERIFIED TOOLS.** *The audit
+answers a different question - whether each declared tool is NAMED somewhere - and it answers that one correctly.*
