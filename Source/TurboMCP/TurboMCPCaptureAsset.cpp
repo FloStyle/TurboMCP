@@ -590,8 +590,8 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 
 	// *** THE ONE PATH THAT REACHES EVERY KIND: THE TOOLKIT HOST'S OWN WIDGET. ***
 	//
-	// Every asset editor is an FAssetEditorToolkit (Toolkits/AssetEditorToolkit.h:115),
-	// and `IToolkitHost::GetParentWidget()` (Toolkits/IToolkitHost.h:25) is the host's
+	// Every asset editor is an FAssetEditorToolkit
+	// (Toolkits/AssetEditorToolkit.h:115), and `IToolkitHost::GetParentWidget()` (Toolkits/IToolkitHost.h:25) is the host's
 	// own widget: for a STANDALONE asset editor that is
 	// SStandaloneAssetEditorToolkitHost, whose own implementation is `return AsShared()`
 	// (SStandaloneAssetEditorToolkitHost.cpp:359-362), so it IS that editor's content.
