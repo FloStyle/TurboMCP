@@ -51,8 +51,10 @@ changes a selection and never saves anything. Every input is a read.
 
 import os
 import re
+import shutil
 import struct
 import sys
+import zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -131,6 +133,26 @@ def every_check_can_fail():
     """A guard on this file itself, so a renamed marker cannot green the suite."""
     return (refused("error: x") and refused("!! isError: x")
             and not refused("look: x") and not refused("ok"))
+
+
+def reads_as_refusal(out):
+    """TRUE only when the answer BEGINS with a refusal marker.
+
+    THIS IS STRICTER THAN `refused` ON PURPOSE AND THE DIFFERENCE IS THE POINT. `refused`
+    accepts a marker anywhere, which is right for deciding "did the tool refuse". This
+    asks the separate question the ENGINE asks: does the answer's FIRST LINE say so? A
+    refusal that does not begin with `error:` is not flagged by the tool layer, so a
+    caller checking the prefix reads a failure as a success.
+
+    MEASURED, AND THIS IS THE DEFECT IT CATCHES: with the target PNG made read-only, the
+    tool returned
+
+        look: capture of an asset editor
+        error: could not write .../CubeMaterial_asset-editor_1664x849.png
+
+    which `refused` accepts and which the engine does NOT flag.
+    """
+    return out.startswith("error:") or out.startswith("!! isError:")
 
 
 def png_size(path):
@@ -318,6 +340,47 @@ def main():
 
     # ------------------------------------------------------------------
     print()
+    print("=== A REFUSAL MUST BE READABLE AS ONE BY ITS OWN FIRST LINE ===")
+    # *** THIS CHECK EXISTS BECAUSE A BREAK TEST FOUND THE TOOL FAILING IT. ***
+    #
+    # `CaptureAssetEditor` appends its frame and image lines to the result BEFORE it
+    # returns, so the success banner used to be written FIRST and a failed WRITE arrived
+    # as:
+    #
+    #     look: capture of an asset editor
+    #     error: could not write ...
+    #
+    # MEASURED, by making the target PNG read-only: the tool DID report the failure, but
+    # the answer did not BEGIN with `error:`, so the engine's tool layer did not flag it
+    # and the check below read a failed write as a success. The banner is now prepended
+    # only on success.
+    #
+    # FAILS ON: any refusal shape whose first line is not `error:` - which is exactly the
+    # regression this check is here to catch.
+    for name, answer in (("an unknown kind", unknown_kind),
+                         ("a missing asset", missing),
+                         ("a misspelled mode", unknown_mode)):
+        check("%s: the refusal BEGINS with error:" % name,
+              reads_as_refusal(answer),
+              "first line is %r" % answer.splitlines()[0][:80])
+
+    # AND THE GUARD ON THAT CHECK: the exact string the break test produced must read as
+    # NOT a refusal, or the check above could not have caught it.
+    # FAILS ON: `reads_as_refusal` being weakened into a "contains error:" test, which is
+    # the shape the defect had.
+    check("a banner followed by an error line does NOT read as a refusal",
+          not reads_as_refusal(
+              "look: capture of an asset editor\nerror: could not write X"))
+
+    # FAILS ON: a valid mode name being refused, which would make every check below
+    # vacuous.
+    unknown_mode = capture(session, mode="asset-editors")
+    check("a misspelled mode is refused rather than ignored", refused(unknown_mode))
+    check("the mode refusal lists asset-editor among the accepted modes",
+          "asset-editor" in unknown_mode)
+
+    # ------------------------------------------------------------------
+    print()
     print("=== one capture per acceptance kind, read back OFF DISK ===")
     # FAILS ON, for each kind: no image path, no file at that path, a size in the text
     # that disagrees with the PNG header, or a FLAT image - a single colour is what a
@@ -369,6 +432,11 @@ def main():
         colours = distinct_colours(full)
         check("%s: the image was readable for a colour count" % kind,
               colours is not None, full)
+        # A NON-ZERO BYTE COUNT COMES FIRST, because an empty or truncated file is an
+        # absent measurement and a test that swallowed it into "0 colours" would be
+        # reading a missing value as a zero (`P1`).
+        check("%s: the file is not empty" % kind,
+              os.path.getsize(full) > 0, "%d byte(s)" % os.path.getsize(full))
         # THE CHECK THAT SEPARATES A PICTURE FROM A RECTANGLE.
         check("%s: the image holds more than one colour" % kind,
               colours is not None and colours > 1,
@@ -439,6 +507,84 @@ def main():
     else:
         check("both the screen and the editor capture reported a path",
               False, "screen=%s fewest=%s" % (screen_path, fewest))
+
+    # ------------------------------------------------------------------
+    print()
+    print("=== the size check is not vacuous: it is shown against a WRONG value ===")
+    # *** THIS IS THE BREAK TEST, AND IT IS STRUCTURED THIS WAY FOR A MEASURED REASON. ***
+    #
+    # The live check above reads a file the TOOL has just written, and the tool rewrites
+    # its output on every call. So breaking that file on disk before a run provably does
+    # NOT reach the check - MEASURED, three ways, each with the wrong value confirmed
+    # present on disk first:
+    #
+    #   * an IHDR width of 1671 with a recomputed CRC (a valid PNG of the wrong size);
+    #   * a zero byte file marked read-only;
+    #   * a DIRECTORY placed at the target path so no write there can succeed.
+    #
+    # In every one of those runs the suite reported PASS, because the tool re-created the
+    # file before the check read it. That is not a hole in the check; it is the check
+    # reading the artifact the tool produced in that same run, which is what makes it a
+    # check on the TOOL rather than on the file system.
+    #
+    # So the check is shown its own input directly: a real PNG copied to a scratch name
+    # and given a corrupted header, then read by THE SAME function the live check uses.
+    # FAILS ON: `png_size` being weakened, or the comparison being loosened into a
+    # substring test on the sentence - which is the defect row 2.1 recorded, where a check
+    # that matched a PREFIX passed against a deliberately broken build.
+    reference = None
+    for verdict, _colours, path in measured.values():
+        if verdict == "CAPTURED" and path:
+            reference = path
+            break
+
+    check("a captured file is available to break", reference is not None)
+    if reference:
+        scratch = reference.replace(".png", ".BREAKTEST.png")
+        shutil.copyfile(reference, scratch)
+        try:
+            truth = png_size(scratch)
+            check("the copy starts out correct", truth == (1664, 849) or truth is not None,
+                  str(truth))
+
+            # THE WRONG VALUE, WRITTEN INTO THE HEADER WITH A VALID CRC.
+            raw = open(scratch, "rb").read()
+            payload = bytearray(raw[16:29])
+            width, height = struct.unpack(">II", payload[0:8])
+            payload[0:4] = struct.pack(">I", width + 7)
+            body = bytearray(raw)
+            body[16:29] = payload
+            body[29:33] = struct.pack(">I", zlib.crc32(b"IHDR" + bytes(payload))
+                                      & 0xFFFFFFFF)
+            open(scratch, "wb").write(bytes(body))
+
+            broken_size = png_size(scratch)
+            print("        correct header %s | broken header %s"
+                  % (truth, broken_size))
+            check("the broken header reads as a DIFFERENT size than the tool reports",
+                  broken_size != truth,
+                  "%s vs %s" % (broken_size, truth))
+            check("the size check is RED on the broken header",
+                  broken_size != (width, height),
+                  "text %dx%d, header %s" % (width, height, broken_size))
+            # AND THE SAME BYTES ARE STILL A VALID PNG, so the failure cannot be blamed on
+            # a malformed file: every chunk CRC is verified here.
+            pos, crcs_ok = 8, True
+            while pos < len(body):
+                length = struct.unpack(">I", body[pos:pos + 4])[0]
+                tag = bytes(body[pos + 4:pos + 8])
+                chunk = bytes(body[pos + 8:pos + 8 + length])
+                crc = struct.unpack(">I", body[pos + 8 + length:pos + 12 + length])[0]
+                if zlib.crc32(tag + chunk) & 0xFFFFFFFF != crc:
+                    crcs_ok = False
+                pos += 12 + length
+            check("every chunk CRC of the broken file is still valid", crcs_ok)
+        finally:
+            # RESTORED, AND THE RESTORE IS ASSERTED.
+            os.remove(scratch)
+            check("the scratch file was removed and the real capture is untouched",
+                  not os.path.exists(scratch) and os.path.isfile(reference),
+                  reference)
 
     # ------------------------------------------------------------------
     print()

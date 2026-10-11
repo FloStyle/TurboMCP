@@ -796,6 +796,23 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 
 	InOutDescription += FString::Printf(
 		TEXT("\nframed: %s"), *WhichWidget);
+
+	// *** WHICH KIND THIS ASSET RESOLVED TO, SO A CALLER NEVER HAS TO GUESS. ***
+	//
+	// `03_TOOLS.md` section 18 requires each editor kind to be "either supported or
+	// REFUSED BY NAME, listed in the tool's own answer, so 'which editors can this
+	// capture' is never a guess". A refusal covers one half of that; the other half is
+	// that a SUCCESSFUL capture says which kind it was, which is what this line is for. A
+	// class that is not one of the named kinds says so instead of being folded into one
+	// that would be wrong.
+	const FString ResolvedKind = KindNameForObject(Loaded);
+	InOutDescription += ResolvedKind.IsEmpty()
+		? FString::Printf(
+			TEXT("\nkind: none of the named kinds. The asset is a %s, which no row of the ")
+			TEXT("support table names, so it was captured through the generic editor-tab ")
+			TEXT("path without being classified."),
+			*Loaded->GetClass()->GetName())
+		: FString::Printf(TEXT("\nkind: %s"), *ResolvedKind);
 	InOutDescription += FString::Printf(TEXT("\nwidget: %s"),
 		*WidgetSummary(Widget, WidgetSize));
 	InOutDescription += FString::Printf(TEXT("\nsize: %dx%d"), Width, Height);

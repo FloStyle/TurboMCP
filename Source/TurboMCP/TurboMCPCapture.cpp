@@ -205,13 +205,27 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
 		FString ImagePath;
 		FString Error;
+
+		// *** THE BANNER IS PUT ON ONLY ONCE THE CAPTURE HAS SUCCEEDED, AND THAT IS A
+		// DEFECT FIXED BY A BREAK TEST RATHER THAN BY READING. ***
+		//
+		// `CaptureAssetEditor` has already appended its frame, geometry and image lines to
+		// `Out` by the time it returns, so the banner used to be written FIRST and a
+		// refusal therefore arrived as:
+		//
+		//     look: capture of an asset editor
+		//     error: could not write ...
+		//
+		// MEASURED, WITH THE TARGET FILE MADE READ-ONLY: the tool DID report the failure,
+		// but the answer did not begin with `error:`, so the engine's tool layer did not
+		// flag it and a caller testing the prefix - which is the convention this tool
+		// documents and row 2.1 measured - READ A FAILED WRITE AS A SUCCESS. That is the
+		// same defect row 2.1 found on the `select-nodes` probe, one layer down.
+		//
+		// So the label is prepended to the SUCCESS text here, and every refusal below is a
+		// plain string beginning `error:` and carrying no banner at all.
 		if (!TurboMCPCaptureAsset::CaptureAssetEditor(Asset, Out, ImagePath, Error))
 		{
-			// A PLAIN STRING BEGINNING `error:` AND NOTHING ELSE, which is the convention
-			// every other mode on this tool uses. Row 2.1 measured that the engine's tool
-			// layer flags the WHOLE answer as an error while a success banner first makes
-			// a caller testing for the `error:` prefix see a success, so the reason is
-			// returned alone and the support table follows it.
 			FString Refusal = FString::Printf(TEXT("error: %s"), *Error);
 			Refusal += FString::Printf(TEXT("\nasset: %s"), *Asset);
 			if (!Named.Name.IsEmpty())
@@ -223,6 +237,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			return Refusal;
 		}
 
+		Out = FString::Printf(TEXT("look: capture of an asset editor%s"), *Out);
 		if (!Named.Name.IsEmpty())
 		{
 			Out += FString::Printf(TEXT("\nkind asked for: %s"), *Named.Name);
