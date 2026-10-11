@@ -1053,9 +1053,12 @@ CHECKOUT *** - `SourceControlHelpers.cpp:456-460` returns early when the state
 says `IsCheckedOut() || IsAdded()`, and Git reports `IsCheckedOut() == true` for
 every tracked file (row 10.1, section 4).
 
-**THIS ROW DOES NOT CALL IT.** `grep -c 'CheckOutFile' Source/TurboMCP/TurboMCPSourceControlWrite.{h,cpp}`
-counts the identifier **only inside prose**, and the suite asserts that with a
-regex over its own source: a `CheckOutFile(` **call** in the mechanism fails
+**THIS ROW DOES NOT CALL IT.** The identifier appears **four times in the whole
+mechanism and every one of them is prose** - two lines of the header's comment, one
+line of the block the tool prints, and one line of a decision reason - and
+`CheckOutFile(` **with a parenthesis appears ZERO times**, which is what a call
+would need. The suite asserts that over its own source rather than trusting this
+paragraph, and a single `CheckOutFile(` in the mechanism fails
 
 ```
 ok   it never CALLS CheckOutFile - the input that fails this is any 'CheckOutFile(' in it
@@ -1072,7 +1075,7 @@ What it reads instead, and both are measured answers rather than a helper opinio
    `"Operation 'CheckOut' not supported by revision control provider 'Git'"`.
 
 **AND THE PROOF THAT IT IS NOT THE BOOLEAN IS TWO ANSWERS TO ONE QUESTION, TAKEN
-IN ONE RUN FROM TWO CODE PATHS** (section 5.1): the engine's helper answers `True`
+IN ONE RUN FROM TWO CODE PATHS** (section 6.1): the engine's helper answers `True`
 with an EMPTY error text on Git, while this mechanism, on the same provider and the
 same file in the same session, records `Failed` with a message the helper can never
 see because it returns before issuing the operation.
@@ -1110,7 +1113,7 @@ and the tool prints it:
    predicting a no-op. Two answers about one asset on one provider would give a
    caller two stories.
 2. **It never claims a lock was taken**, and the block says so in words
-   (section 4.2).
+   (section 5.2).
 3. **The answer is a REPORT AND NEVER A GATE.** The write proceeds whether the
    checkout succeeded, failed or was refused, and the block states that in every
    answer: `THE CHECKOUT ANSWER NEVER GATES THE WRITE`. This is `D-57` obeyed
@@ -1309,6 +1312,14 @@ index evidence); **C** restore, asserted.
 ```
 RESULT: PASS (62 check(s) run, no check skipped)
 ```
+
+**AND THE WHOLE SET, RUN AFTER THE WIRING LANDED: `passed 55, failed 0, blocked 0, of 55`** -
+the 54 suites row 10.1 left green plus this one. The two suites this row could have
+broken are both in it and both green: `test-struct` (`RESULT: PASS`, because the
+block is APPENDED and no line of it is a two-space-indented `name: value` line) and
+`test-vcs` (`RESULT: PASS (55 check(s) run, no check skipped)`, because the
+mechanism reuses row 10.1's `Plan` rather than re-deriving the two engine
+questions).
 
 ### The checks, and THE INPUT THAT MAKES EACH ONE FAIL
 
