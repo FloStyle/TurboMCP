@@ -10005,3 +10005,28 @@ inference before (section 0.2's material-tidy claim). It goes in as a QUESTION t
 partial result is preserved at every point along the way.* **That is what makes the "four of six is complete" decision in section 211
 safe rather than brave: a row that is allowed to stop part-way still has to commit what it has, and this one has been committing its own
 work since it started.**
+
+---
+
+## 161. Round 213: the hypothesis I refused to assert last round is answered BY THE CODE, and the code says why it exists
+
+    TurboMCPCaptureAsset.cpp:66  * `FApp::CanEverRender()` and the `-nullrhi` flag are the two signals this plugin has
+    TurboMCPCaptureAsset.cpp:70  * decides at `LaunchEngineLoop.cpp:3343`, which tests `GUsingNullRHI`
+    *** :76  * that NEITHER FILE'S REFUSAL TEXT CAN DRIFT FROM THE LINE THAT DECIDES IT. ***
+    :80  if (FParse::Param(FCommandLine::Get(), TEXT("nullrhi")))
+    :82  OutWhyNot = TEXT("-nullrhi is on the command line, so LaunchEngineLoop.cpp:3343 ")
+
+*** SO THE +158 LINE CHANGE IN BOTH EXISTING FILES WAS THE RENDERER GUARD, AND THE COMMENT AT :76 SAYS THE REASON IS TO STOP THE TWO
+FILES' REFUSAL TEXT FROM DRIFTING APART. THAT IS MY HYPOTHESIS CONFIRMED - AND IT WAS CONFIRMED BY READING THE CODE ONE ROUND AFTER I
+DECLINED TO ASSERT IT, WHICH IS THE OUTCOME THE REFUSAL WAS FOR. ***
+
+**AND THE GUARD ITSELF IS THE PROJECT'S OWN `P1` RULE, APPLIED TO PIXELS:** *`nullrhi` on the command line, or `FApp::CanEverRender()`
+false -> **`OutWhyNot` NAMED**, pointing AT the engine line that decides it (`LaunchEngineLoop.cpp:3343`).* *** So a capture that cannot
+render does not return a black image and does not return an error code; **it returns the sentence that explains itself, with the engine
+line in it** - which is the same shape as row 10.1's `IsAvailable() : NOT ASKED` and row 10.2's non-empty decision reason. ***
+
+**AND THE THING WORTH RECORDING IS THE SEQUENCE RATHER THAN THE ANSWER: I SAW TWO EQUAL NUMBERS, NAMED A HYPOTHESIS, REFUSED TO WRITE
+IT AS A FINDING, WROTE IT AS A QUESTION, AND THE NEXT ROUND READ THE CODE THAT ANSWERED IT.** *The record has withdrawn an inference of
+exactly this shape before (section 0.2's material-tidy claim), **and the difference between then and now is not that I was more careful
+with the numbers - it is that I wrote down WHICH OBSERVATION WOULD SETTLE IT.*** *** An unasserted hypothesis with a named resolver costs
+one round; an asserted one that is wrong costs a correction to a document that other workstreams read. ***
