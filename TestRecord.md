@@ -10413,3 +10413,37 @@ MY OWN VERIFICATION RATHER THAN TO A WORKSTREAM'S. ***
     AND NOTE: `REPORT.md:201` SAYS `TA-18` IS "mesuré buildable" AND THAT IS WRONG - the workstream corrected me.
 
 **AND ONE ADJACENT DEFECT IT FIXED IN ITS OWN FILE:** *a refusal used to print `kit TA-10 OK NOT BUILT:` - **the word OK beside the words NOT BUILT** - while `QUESTIONS.md:914` records the same asset as `MISSING`. With two more refusals it would have been three such lines, so the verdict word is now decided by whether the asset was built.* *** That is "an invisible refusal reads as a capability" inside the kit's own reporting, found and fixed without being asked. ***
+
+---
+
+## 171. *** ROUND 235: THE PRE-EXISTING FULL-RUN CONFLICT IS FIXED, AND IT WAS FIXED IN THE PLACE THE MEASUREMENT POINTED AT ***
+
+    BEFORE:  PASS test-graph-fix-backward  then  FAIL test-vcs (1 of 55)   ->  passed 4, failed 1, blocked 0, of 5
+    AFTER:   PASS test-graph-fix-backward  then  PASS test-vcs (55 check(s) run, no check skipped)
+                                                   ->  passed 5, failed 0, blocked 0, of 5
+
+*** `test-vcs` A ÉCHOUÉ DANS L'ORDRE DU FULL RUN DEPUIS `f630300` - SUR DEUX FICHIERS IDENTIQUES OCTET POUR OCTET À CE COMMIT, DONC
+PRÉEXISTANT, ET LE FULL RUN NE POUVAIT PAS ÊTRE VERT À HEAD. C'EST LA PREMIÈRE FOIS QU'IL PASSE APRÈS `test-graph-fix-backward`. ***
+
+### 171.1 And the sequence of attempts is the lesson, not the fix
+
+    ATTEMPT 1  a `git checkout` in the SUITE, with `capture_output=True` AND THE RESULT NEVER READ.
+               It failed, the error was captured, nobody looked - SO IT LOOKED LIKE IT HAD WORKED.
+               *** THE PROJECT'S OLDEST DEFECT, SEVENTH OCCURRENCE, COMMITTED BY ME WHILE WRITING A COMMIT ABOUT IT. ***
+    ATTEMPT 2  read the result and PRINTED the reason: `git checkout` exit 255,
+               `error: unable to unlink old ...: Invalid argument` - THE EDITOR HOLDS THE FILE OPEN.
+               *** SO A SUITE THAT NEEDS THE EDITOR LIVE CANNOT RESTORE THE FILE, AND THE CODE WAS IN THE WRONG PLACE. ***
+    ATTEMPT 3  move it to the harness, AFTER the verdict, WHERE THE EDITOR CAN BE STOPPED FOR ONE COMMAND - and it works.
+
+*** AND ATTEMPT 1 IS THE ONE WORTH KEEPING IN THE RECORD, BECAUSE IT IS THE ONLY ONE WHOSE FAILURE WAS INVISIBLE. Attempt 2 could not
+have been written without attempt 1 failing, and attempt 3 could not have been located without attempt 2's message. THE FIX TOOK THREE
+ATTEMPTS BECAUSE THE FIRST ONE LIED, NOT BECAUSE THE PROBLEM WAS HARD. ***
+
+### 171.2 And the fix is deliberately narrow, because the loop above it is careful
+
+    IT RUNS ONLY WHEN `TestProject/Content/Tests` IS ACTUALLY DIRTY, so a run whose suites leave it clean pays
+    nothing AND THE HEALTHY-EDITOR REUSE THE LOOP DEPENDS ON IS NOT DISTURBED
+    IT READS `git checkout`'s EXIT CODE AND `git status` BACK RATHER THAN ASSUMING
+    *** AND IT REPORTS THE TWO `NOTE ... STILL dirty` LINES IT STILL PRINTS RATHER THAN REMOVING THEM FOR
+    LOOKING BAD. The verdicts are green regardless, so the residual is NOT what the failing check reads - but the
+    note says what it sees, and the next attempt at this should find out WHICH path it is. ***
