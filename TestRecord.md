@@ -7210,3 +7210,28 @@ whether both land without a collision, and that is what the next rounds will sho
 PROJECT HAS MOST OFTEN GOT WRONG.** *Four previous workstreams produced their vacuity analysis as PROSE INSIDE A SUITE
 HEADER - which is why the debt is still open and had to be re-described in this round's brief from five separate files.
 An audit that lives in one place is the difference between a lesson and five anecdotes.*
+
+---
+
+## 70. Round 111: both workstreams are in their READING phase, which produces no log and no commit
+
+**MEASURED:** `main` = `origin/main` = `d7735fe`; **85 tools**; working tree clean; **no build, no suite run, no commit**
+from either workstream.
+
+*** AND THE DISTINCTION THIS ROUND SHOULD RECORD IS ONE I GOT WRONG ONCE ALREADY: "NOTHING IN THE LOGS" IS NOT "NOTHING IS
+HAPPENING". The only logs this project gets are BUILD and FIXTURE-REBUILD logs, and both workstreams are in the phase
+that produces neither: A is auditing five suites and reading their authors' vacuity claims, B is reading
+`03_TOOLS.md`, the acceptance rows, `TurboMCPKitCommandlet.cpp:1400-1460` and `TurboMCPMaterialBlocks.{h,cpp}` before
+writing a line. ***
+
+**AND THE LAST TIME I READ SILENCE AS DORMANCY I LAUNCHED AN AGENT ONTO A LIVE ROW (section 55).** *The time before that,
+the silence was real work too - `make-material-asset.log` moved two minutes after I checked, and the two-round wait was
+vindicated.* **TWO OUT OF TWO, SO THE ABSENCE OF A LOG IS NOW EVIDENCE OF NOTHING AT ALL, AND THE ROUND IS RECORDED AS
+IDLE BECAUSE THAT IS WHAT IT IS.**
+
+**AND THE ONE MEASURED FACT WORTH ADDING WHILE NOTHING MOVES: `Tools/audit-tool-coverage.py` READS CALL SITES BY REGEX,
+SO WORKSTREAM A'S CHANGES COULD MOVE A TOOL INTO ITS `NAMED BUT NOT PARSED` LIST WITHOUT ANYTHING BEING WRONG - six
+material-suite calls are already there for exactly that reason.** *Its brief says to write call sites with a LITERAL dict
+or a LITERAL name, which is the documented way to stay out of that list; and if A ever rewrites a call into a helper
+that takes the tool name as a variable, the audit will say `NAMED BUT NOT PARSED` and BOTH of us will have to remember
+that this is a reading limit rather than a missing suite.*
