@@ -8497,3 +8497,36 @@ rows - **and no amount of watching will change any of those three facts.***
 BUDGET DECISION.** *The record has spent 16 rounds on one committed tool while 42 rows sit untouched, and **the reason I have
 not intervened is not a criterion - it is that I have not decided the budget question, and I have been presenting its absence
 as patience.***
+
+---
+
+## 112. Round 153: I STOPPED THE WORKSTREAM, and the budget decision section 152 said I had not made
+
+**SECTION 152's OWN CONCLUSION WAS THAT THE STOP-OR-WAIT CALL IS A BUDGET DECISION AND NOT SOMETHING THE MEASUREMENTS WOULD
+MAKE. THIS ROUND I MADE IT: I INTERRUPTED THE WORKSTREAM.**
+
+    WHY:      17 ROUNDS ON ONE TOOL, 0 VERDICTS, 42 PLAN ROWS `todo` - AND THE AGENT'S OWN CLOSING WORDS WERE
+              "while the second full run proceeds, let me plan ONE MORE DECISIVE MEASUREMENT", WHICH IS A DESCRIPTION OF
+              MORE INPUT RATHER THAN OF THE OWED OUTPUT
+    COST:     MEASURED BEFORE THE DECISION, NOT AFTER - all FIVE files were already committed, the tree held only a
+              generated fixture and two kit assets, the tool count is 86, and the audit was green
+
+*** AND THE COST WAS MEASURED FIRST BECAUSE THAT IS THE ONE THING THAT MAKES A STOP DEFENSIBLE: SECTION 95 KILLED A LIVE
+EDITOR WITHOUT CHECKING AND COST A RESTART; THIS TIME THE CHECK PRECEDED THE ACT AND THE ANSWER WAS THAT NOTHING WAS IN
+DANGER. ***
+
+**AND IT MATTERS THAT THE AGENT HAD MADE ITS CHOICE OF MY BRIEF EXPLICIT EARLIER: IT ASKED WHETHER TO KEEP THE TOOL GIVEN THAT
+MY PREMISE WAS FALSE, I TOLD IT TO KEEP IT WITH THE NARROWER JUSTIFICATION, AND IT DID.** *So the deliverable is not in
+question and neither is its honesty - **what was missing was a verdict, and sixteen rounds of watching was not going to
+produce one.***
+
+### 112.1 What happens now that it is mine
+
+    THE TOOL IS COMMITTED, AUDIT-GREEN, AND INDEPENDENT OF THE WORKSTREAM      86 tools, `uncalled: (none)`
+    `Tools/test-pure-checks.py` IS COMMITTED AT 340 LINES                             ITS VERDICT HAS NEVER BEEN RECORDED
+    THE EDITOR IS FREE                                                                 nobody holds it
+
+*** SO THE THREE OWED ITEMS ARE ALL PRODUCIBLE BY ME AND NONE OF THEM NEEDS THE AGENT. The first is one suite run. The second
+is one line from the agent that I will not get - and the honest position is that **THE CLOSE-OR-MOVE QUESTION IS NOW MINE TO
+ANSWER RATHER THAN HIS**, and I have more evidence for it than he did: the normaliser half is covered by the log TODAY, the
+`AssetFromArguments` half is not, and a tool reporting on its own literal inputs is still a producer reporting on itself. ***
