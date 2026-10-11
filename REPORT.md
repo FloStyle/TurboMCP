@@ -22,7 +22,7 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 
 ---
 
-## 2. Le plan : **33 `todo`, 13 `done`** sur 48 lignes
+## 2. Le plan : **32 `todo`, 14 `done`** sur 48 lignes
 
 *Compté **par champ** — la dernière cellule de la ligne. Voir §7 : une regex sur la ligne donne un chiffre faux.*
 
@@ -182,6 +182,8 @@ Or une cellule de statut peut contenir de la prose. **Le chiffre changeait entre
 | **§9.4 Vérificateur bloquant** | ✅ **LIVRÉ** (c'était le même item que §11.1) |
 | **§9.5 Les 30 writers** | ⏳ *mécanique* |
 
+**ET L'AUDIT DU PLAN LUI-MÊME, QUI A RÉVÉLÉ SEPT CAPABILITIES DÉJÀ CONSTRUITES QUE SA COLONNE DE STATUT APPELAIT 	odo :** ***R-BP-LINT (37 checks), R-CALL-COST (29), R-ASSET-COST (10), P/E-DATATABLE-ROWS (26), R-MAT-INST-LOAD (20), P/E-ENUM-EDIT, P/E-MAT-BLOCKS (24) — toutes vérifiées en les exécutant. LE PLAN SOUS-ESTIMAIT LE PROJET DE SEPT CAPACITÉS, et c'est la même erreur que les sept rows consécutives de §150, commise par le plan sur lui-même.***
+
 **ET UN DÉFAUT PRÉEXISTANT TROUVÉ ET CORRIGÉ EN COURS DE ROUTE, QUI N'ÉTAIT DANS AUCUNE DES CINQ PRIORITÉS :** ***le full run **ne pouvait pas être vert** — 	est-vcs exigeait TA01_HandLaid.uasset propre tandis que 	est-graph-fix-backward, qui tourne avant lui, reconstruit le kit. Prouvé sur deux fichiers identiques octet pour octet à 630300, donc préexistant. CORRIGÉ dans le harnais, là où l'éditeur peut être arrêté : passed 5, failed 0 sur la séquence qui échouait.***
 
 ### 9.1 ✅ **Détecter un éditeur étranger sur le port 8000** — *LIVRÉ le 2026-10-11*
@@ -311,6 +313,6 @@ Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un 
 
 ## 12. En une ligne
 
-> **93 outils, `passed 58, failed 0, blocked 0, of 58` — LE FULL RUN EST ENTIÈREMENT VERT — 33 rows de plan restantes, et une machine de vérification qui produit maintenant des résultats corrects sans que j'aie à intervenir.**
+> **93 outils, `passed 58, failed 0, blocked 0, of 58` — LE FULL RUN EST ENTIÈREMENT VERT — 32 rows de plan restantes, et une machine de vérification qui produit maintenant des résultats corrects sans que j'aie à intervenir.**
 >
 > ***Ce qui reste n'est pas bloqué par des inconnues : c'est borné par du temps, par cinq fixtures qui n'existent pas, et par un serveur source control que cette machine n'a jamais eu.***
