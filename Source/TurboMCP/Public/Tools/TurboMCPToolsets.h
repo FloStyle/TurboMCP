@@ -424,6 +424,45 @@ public:
 		const FString& Since);
 
 	/**
+	 * What the calls COST: which were most expensive, which were slowest, which failed, and the
+	 * totals per tool and per asset.
+	 *
+	 * `R-CALL-LOG` answers "what was called". This answers "what did it cost", and it is a SECOND
+	 * VIEW OVER THE SAME DATA RATHER THAN A SECOND PARSER: it reads the very object `R-CALL-LOG`
+	 * reads, so the two cannot disagree about what a line says.
+	 *
+	 * **THE MOST EXPENSIVE AND THE SLOWEST ARE TWO SEPARATE ANSWERS, AND THAT IS DELIBERATE.** A
+	 * call that returns a huge payload and a call that blocks the game thread are different problems
+	 * with different fixes, so each is reported under its own heading with the basis it ranked by.
+	 *
+	 * **EVERY TOTAL CARRIES ITS DENOMINATOR** - the call count it was computed from. A total without
+	 * one is a number nobody can judge, and a zero-finding answer with no denominator cannot be told
+	 * apart from a scan that examined nothing.
+	 *
+	 * **AN EMPTY ANSWER NAMES WHICH EMPTINESS IT IS**, per `P1`: logging OFF, on with no entries, or
+	 * on with entries the filter did not match. Reporting zeros for those would say the tools are
+	 * cheap when in fact nothing was recorded. The same rule applies inside the answer: a ranking
+	 * over rows that ALL read zero says so rather than naming a winner, because naming one implies a
+	 * ranking existed.
+	 *
+	 * `toolset` NAMES ARE NORMALISED BEFORE TOTALLING. MEASURED: the log's two writers spell the same
+	 * toolset two ways - the engine's resolved name arrives already qualified
+	 * (`TurboMCP.TurboMCPReadToolset`) while this plugin writes it bare (`TurboMCPReadToolset`) - so
+	 * without collapsing them ONE TOOLSET IS REPORTED AS TWO ROWS WITH TWO DENOMINATORS.
+	 *
+	 * `since` is an ISO-8601 timestamp taken from a previous answer; `filter` matches the toolset,
+	 * the tool or the source; `cap` bounds the number of ROWS SHOWN, not the analysis, so a truncated
+	 * list never makes a total wrong.
+	 *
+	 * This is a READ tool: it never writes, and it never clears.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPCallCost(
+		const FString& Since,
+		const FString& Filter,
+		const FString& Cap);
+
+	/**
 	 * The exact schema of one tool: its signature, one row per parameter, and its trap notes.
 	 *
 	 * Pass a toolset name and an empty tool to get one line per tool in it. The toolset is accepted in
