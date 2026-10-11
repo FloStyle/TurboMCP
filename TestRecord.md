@@ -10742,3 +10742,51 @@ would all say the work was finished — and four of the thirty-one rows are in a
 
 **SO IT CLOSES ACTIVE, VERIFIABLE, AND HONEST ABOUT WHICH HALF IS WHICH.** ***The report is delivered. The plugin is not finished. Both of those are
 true at the same time, and the only way to keep them both true is to say so.***
+
+---
+
+## 181. Round 256 — THE LAST ROUND OF THE BUDGET, AND THE OBJECTIVE CLOSES **ACTIVE**
+
+    HEAD = origin/main = `c85dae2`      ARBRE PROPRE     502 COMMITS
+    93 AICallable, audit `uncalled: (none)`, suite quality PASS at 0 candidates AND IT BLOCKS
+    PLAN 31 todo, 15 done
+    DOCUMENTS  REPORT.md 350 l. · HANDOVER.md 100 l. · STATUS.md 227 l. · TestRecord.md 10,744 l.
+
+### 181.1 *** WHAT THE OBJECTIVE ASKED FOR, AND WHAT IT GOT ***
+
+    "Make me an extensive report on where you at, what's left and what take your time"
+       *** DELIVERED, AND VERIFIABLE RATHER THAN ASSERTED. *** `REPORT.md` is 350 lines across 13 sections
+       with every figure read at the round it states. It answers all three questions and adds the two a
+       reader needs and did not ask for: WHAT CHANGED AND WHY, and WHAT I DO NOT KNOW. `HANDOVER.md`
+       reduces the state to four commands any reader can run and orders the 31 remaining rows by what I
+       would do first. `STATUS.md` was refreshed from a headline three revisions stale.
+
+    "until TurboMCP is complete"
+       *** NOT DELIVERED. 31 ROWS OF 48 REMAIN. *** Three cannot be done on this machine at all; the rest
+       are volume rather than insight.
+
+### 181.2 *** AND THE OBJECTIVE CLOSES ACTIVE, WHICH IS THE ONLY HONEST CHOICE AVAILABLE ***
+
+**MARKING IT COMPLETE IS REJECTED, AND THE REASON IS THE WHOLE STRETCH IN ONE SENTENCE: AN INVISIBLE FAILURE READ AS A SUCCESS IS THE DEFECT THIS
+PROJECT HAS SPENT 256 ROUNDS FINDING - TEN TIMES IN THIS STRETCH ALONE, INCLUDING INSIDE THE SUITE THAT EXISTS TO CATCH IT - AND MY OWN OBJECTIVE IS
+THE LARGEST PLACE LEFT TO COMMIT IT.** *Mark it complete and the record, the report and the status would all agree that the work was finished, with
+four rows in a phase never started and thirty-one of forty-eight untouched. **A green tick in the only place nobody re-checks.***
+
+**MARKING IT BLOCKED IS ALSO REJECTED, AND FOR A NARROWER REASON.** *The word has a specific meaning in this project - the same condition persisting
+across rounds with nothing I can do - and **that is not what thirty-one rows are**: `TA-17` was BUILT here by following an existing pattern, rows 6.1
+to 6.4 and 8.1 to 8.5 are precedents to follow, and `9.2`/`9.3` are multipliers that would make the thirty unwired writers safe rather than merely
+numerous. **The row I could pick up immediately needs no decision from anyone.***
+
+### 181.3 *** WHAT I WOULD SAY TO WHOEVER CONTINUES ***
+
+**FIRST, READ THE LAST RUN BEFORE THE PLAN.** *The two defects that blocked the project's own green signal were in NONE of the five priorities I
+wrote. They were found by a workstream doing a fixture row and by me following its evidence. **The list was useful for starting; the evidence was
+useful for finishing.***
+
+**SECOND, THE METHOD IS ONE SENTENCE AND IT IS THE ONLY THING HERE WORTH CARRYING FORWARD: RUN IT AND READ WHAT IT PRINTED.** *Every one of the ten
+invisible failures was found that way and none by reasoning about what the code ought to do. The four commands in `HANDOVER.md` are that sentence
+applied to the state, and the break-test rule in every brief is that sentence applied to a check.*
+
+*** AND THIRD, THE PROJECT IS IN A STATE SOMEONE CAN PICK UP: 93 tools, a full run at 58 of 58 with exit code 0, two audits that pass with one of them
+BLOCKING, 502 commits on `origin/main`, a clean tree, four documents that say what is true, and a list of 31 rows with the three impossible ones named
+and the order I would do the rest in. ***
