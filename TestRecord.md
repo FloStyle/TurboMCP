@@ -9124,3 +9124,57 @@ SAY SO" - AND IT MEASURED IT. ***
 **AND IT IS ALSO REVISING `Spec/WORKING_SCROW.md`**, which is the measurement file - *so if the first pass measured something the
 second disagreed with, the file will say so rather than the suite being quietly adjusted. **I cannot yet tell which, and the next
 round reads the file rather than assuming.***
+
+---
+
+## 135. *** ROW 10.1: test-vcs PASS AT 55 CHECKS, AND ONE FINDING THAT CHANGES WHAT ROW 10.2 MUST DO ***
+
+    `c0ad1a6` and `cc0aadf`, `test-vcs` PASS, `uncalled: (none)`, 93 declarations, full 54-suite run in flight
+    THE GIT CHECKOUT ANSWER IS MEASURED - `ECommandResult::Failed` + "Operation 'CheckOut' not supported by
+    revision control provider 'Git'" - AND THE PREDICTION AND THE MEASUREMENT AGREE
+
+### 135.1 *** AND THE FINDING IS NOT THE PREDICTED ONE: `CheckOutFile` LIES ON GIT, AND IT LIES BY RETURNING TRUE ***
+
+    `USourceControlHelpers::CheckOutFile` ANSWERS `True` ON GIT AND NEVER ISSUES A CHECKOUT.
+    measured through the engine's own helper (SourceControlHelpers.h:244, ScriptName="SourceControl")
+
+      git : current_provider 'Git'  is_enabled True  is_available True
+            check_out_file_returned **True**  last_error_msg Text("")
+
+*** THE CAUSE HAS LINES AND IS NOT A BUG: `CheckOutFile` RETURNS TRUE EARLY AT `SourceControlHelpers.cpp:456-460` WHEN THE
+STATE SAYS `IsCheckedOut() || IsAdded()`, AND **GIT REPORTS `IsCheckedOut() == true` FOR EVERY TRACKED FILE** - the tool prints
+exactly that for the same asset (`checked out here: true`). SO ON GIT THE HELPER'S `true` MEANS "THE STATE SAYS IT IS ALREADY
+CHECKED OUT", NOT "A LOCK WAS TAKEN". ***
+
+**AND THE TOOL GOES THROUGH `ISourceControlProvider::Execute` INSTEAD AND RECORDS THE OPERATION'S REAL ANSWER:** *`ECommandResult::Failed`
+plus the provider's own error, `Operation 'CheckOut' not supported by revision control provider 'Git'`.* *** THAT IS THE DIFFERENCE
+BETWEEN A BOOLEAN THAT MEANS "THE STATE LOOKS FINE" AND A RESULT THAT MEANS "THE OPERATION HAPPENED", AND IT IS THE WHOLE REASON
+THIS ROW EXISTS. ***
+
+**CONSEQUENCE FOR 10.2, WHICH IS THE POINT: DO NOT WIRE AUTOMATIC CHECKOUT TO `CheckOutFile`'s BOOLEAN.** *On Git it returns
+`true` on every tracked file, so a write tool would read "checked out, safe to write" on a provider whose `UsesCheckout() == false`
+- **which is precisely "git will not [refuse], and will happily leave a modified file for someone else to find" from
+`03_TOOLS.md:1348-1351`.*** *** Use `P/E-VCS-CHECKOUT` and read `UsesCheckout()` and the operation result. ***
+
+### 135.2 And two more measured results, both new
+
+1. **THE GIT ANSWER SECTION 5 ITEM 6 LEFT OPEN IS NOW MEASURED** - the previous workstream deliberately did not run it. *And
+   `git status --porcelain` on the fixture is EMPTY BEFORE AND AFTER, so A THIRD TOOL CONFIRMS NOTHING WAS TOUCHED. That is the
+   read-back-through-a-different-tool rule applied to the filesystem itself.*
+2. *** PERFORCE IS REACHABLE ENOUGH TO BE DECISIVE: an editor launched with `-SCCProvider=Perforce` COMES UP AND ANSWERS IN 32s,
+   and the tool reports `IsEnabled() : true` / `IsAvailable() : false` / `UsesCheckout() : true` - THE MEASURED PROOF THAT A TOOL
+   ASKING ONLY `IsEnabled()` WOULD REPORT A WORKING PROVIDER WHERE THERE IS NONE - then refuses per asset with "Revision control
+   server is currently not available." (`SourceControlHelpers.cpp:76`). NO PROVIDER CALL IS MADE, WHICH IS WHY THE EDITOR
+   SURVIVES. ***
+
+**AND NOTHING IN `TurboMCP.Build.cs` NEEDED CHANGING, WITH THE REASON: `UnrealEd` publicly depends on `SourceControl`
+(`UnrealEd.Build.cs:68`) and `SOURCE_CONTROL_WITH_SLATE=1` is a `PublicDefinitions` entry, so both reached this module
+transitively.** *That answers the question my brief told it to STOP AND ASK about - and it answered it by reading the build graph
+rather than by asking, which is better.*
+
+**ITS SUITE OWNS THE EDITOR AND MEASURES ALL FOUR BRANCHES** - no provider, Git, Perforce, and the cross-check - **then restores
+the provider-less editor and ASSERTS THE RESTORE by reading `IsEnabled()` back.** *125 seconds, no check skipped.*
+
+**AND IT READ HEAD MOVING AS WHAT IT WAS:** *"HEAD moved under me at `85baadb`/`fe9647f` - I read that as you preserving my work,
+and I kept going."* *** The correction in the brief worked: the previous workstream spent a whole section warning about a
+concurrent process that was its own orchestrator, and this one recognised it in one clause. ***
