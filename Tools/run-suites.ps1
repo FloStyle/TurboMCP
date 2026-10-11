@@ -363,6 +363,40 @@ foreach ($name in $NeedsEditor) {
         $Results[$name] = $result
         Write-Output ("  " + $result.Trim())
     }
+
+    # ---------------------------------------------------------------------------------------------
+    # *** THE FIXTURE IS RESTORED HERE, BY THE HARNESS, BECAUSE **THIS** IS WHERE THE EDITOR CAN BE STOPPED. ***
+    #
+    # FOUND BY A WORKSTREAM AND MEASURED TWICE, THEN ROOT-CAUSED BY ME: `Tools/test-vcs.py:596-598` requires
+    # `TA01_HandLaid.uasset` to be CLEAN, and `Tools/test-graph-fix-backward.py` REBUILDS THE KIT and runs
+    # BEFORE it - so `test-vcs` failed on a HEALTHY tree with a check that was TRUE OF ITS OWN TOOL AND FALSE OF
+    # THE SUITE THAT RAN BEFORE IT. `test-vcs` passes ALONE at 55 checks and failed in the full run's order, on
+    # two byte-identical files, so THE FULL RUN COULD NOT BE GREEN AT HEAD.
+    #
+    # *** AND THE FIRST FIX WAS IN THE WRONG PLACE, WITH THE REASON NOW MEASURED: A SUITE CANNOT DO THIS ITSELF.
+    # `git checkout` ANSWERS `error: unable to unlink old ...: Invalid argument` (exit 255) FOR AS LONG AS THE
+    # EDITOR HOLDS THE FILE OPEN, AND THAT SUITE NEEDS THE EDITOR LIVE TO RUN ITS CHECKS. So it ends in exactly
+    # the state where the file cannot be replaced, and its own restore reported the failure honestly while being
+    # unable to do anything about it. ***
+    #
+    # THE HARNESS, BY CONTRAST, OWNS THE LIFECYCLE AND CAN STOP THE EDITOR FOR ONE COMMAND. It does so ONLY
+    # when the fixture is actually dirty, because `Stop-Editor` costs a restart and the loop above is careful to
+    # reuse a healthy editor rather than churn one - and it reads `git checkout`'s EXIT CODE rather than assuming,
+    # which is the mistake that made the first attempt look like it had worked.
+    # ---------------------------------------------------------------------------------------------
+    $fixtureDir = Join-Path (Split-Path $PSScriptRoot -Parent) 'TestProject\Content\Tests'
+    $dirty = (& git status --porcelain -- $fixtureDir 2>&1 | Out-String).Trim()
+    if ($dirty) {
+        Stop-Editor
+        & git checkout -- $fixtureDir 2>&1 | Out-Null
+        $stillDirty = (& git status --porcelain -- $fixtureDir 2>&1 | Out-String).Trim()
+        if ($stillDirty) {
+            Write-Output "  NOTE the shared fixture is STILL dirty after the harness restore attempt:"
+            ($stillDirty -split "`n" | Select-Object -First 3) | ForEach-Object { Write-Output ("        " + $_.Trim()) }
+        } else {
+            Write-Output "  the shared fixture is restored on the way out, so the next suite starts clean"
+        }
+    }
 }
 
 Stop-Editor
