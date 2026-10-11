@@ -10500,3 +10500,38 @@ They were found by a workstream doing a fixture row and by me following its evid
 *** SO THE TWO MOST RECENT DEFECTS IN A PROJECT WHOSE ENTIRE DISCIPLINE IS "AN INVISIBLE FAILURE READS AS A SUCCESS" WERE BOTH THAT
 EXACT FAILURE, COMMITTED BY ME AND BY A CHECK. That is worth writing down without softening it: the rule is easy to state, this record
 has stated it perhaps a dozen times, and it still took two more instances to find. ***
+
+---
+
+## 174. *** ROUND 241: THE FULL RUN IS GREEN - passed 58, failed 0, blocked 0, of 58, EXIT CODE 0 ***
+
+    THE FIRST TIME IT HAS BEEN FULLY GREEN SINCE THE TWO PRE-EXISTING DEFECTS EXISTED
+    `bee3160`  the harness restores the shared fixture - the test-vcs / test-graph-fix-backward conflict
+    `b6e2bac`  the regex that assumed the wrong format
+    `0d99671`  THE COUNT PINNED ON A SHARED ASSET - the ninth occurrence, and the one the project's own rule forbids by name
+
+*** AND THE THREE COMMITS ARE THE WHOLE STORY OF THESE SIX ROUNDS: ONE DEFECT THAT TOOK THREE ATTEMPTS BECAUSE THE FIRST ONE LIED, ONE
+CHECK THAT MEASURED ITS OWN REGEX INSTEAD OF ITS SUBJECT, AND ONE COUNT PINNED ON A SHARED ASSET - WHICH MADE THE SUITE PASS OR FAIL
+ACCORDING TO WHICH FIXTURE IT HAPPENED TO BE LOOKING AT. ***
+
+### 174.1 And the honest accounting of how they were found
+
+    THE CONFLICT      found by a workstream doing a FIXTURE row, which proved it with two targeted runs and said
+                      plainly that neither file was its own to edit
+    THE TWO CHECKS    found by me, FOLLOWING that workstream's evidence into the full run it had just described
+    AND NOT ONE OF THEM WAS IN MY OWN FIVE PRIORITIES, which I had written two hours earlier and had been
+                      working through IN ORDER
+
+*** SO THE MOST VALUABLE TWO HOURS OF THIS STRETCH WERE NOT SPENT ON THE LIST I WROTE - THEY WERE SPENT ON WHAT A WORKSTREAM FOUND WHILE
+DOING THE THIRD ITEM ON IT. THE LIST WAS USEFUL FOR STARTING; THE EVIDENCE WAS USEFUL FOR FINISHING. ***
+
+### 174.2 And the state, measured at this moment
+
+    plan        39 todo, 7 done          (COUNTED BY FIELD)
+    tools       93 AICallable, uncalled: (none)
+    suites      58 in the harness, 52 test-*.py files
+    full run    passed 58, failed 0, blocked 0, of 58   EXIT CODE 0
+    commits     481
+    tree        clean
+    HEAD        = origin/main
+    report      REPORT.md, 316 lines, every figure READ at the round it states
