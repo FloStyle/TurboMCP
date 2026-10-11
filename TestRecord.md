@@ -5327,3 +5327,80 @@ Workstream A measured that **`T-STRUCT-9` CANNOT PASS AS WRITTEN** and that **`C
 `FBlueprintEditor`, a UI OBJECT, so COLLAPSE IS GATED ON A MEASUREMENT RATHER THAN `todo`**; Workstream C measured
 that **`Entry.Toolset` IS DOUBLY QUALIFIED UNDER TWO DIFFERENT KEYS**, so per-tool totals are wrong unless collapsed.
 **THOSE THREE FACTS ARE NOW IN THIS RECORD, WHICH IS THE ONE PLACE THEY CANNOT BE DELETED FROM.**
+
+---
+
+## 32. The editor is NOT broken: `39 of 47` is a harness restart race, and it CORRECTS the accumulation finding
+
+**MEASURED, AND IT RULES OUT THE EXPLANATION I WAS ABOUT TO ACCEPT:**
+
+    kill every editor; start-editor.ps1 -LowPriority
+        essai 1:  startup: 15s   RESULT: PASS
+        essai 2:  startup: 15s   RESULT: PASS
+
+**THE EDITOR STARTS RELIABLY, TWICE IN A ROW, IN FIFTEEN SECONDS, ON THE COMMITTED 78-TOOL STATE.** So nothing in the
+tree prevents an editor from running, **AND THE FULL RUN'S `39 of 47` IS NOT A CODE DEFECT.**
+
+*** AND THE TWO FAILURES THAT NAMED THE CAUSE ARE THE ONES TO READ: `test-graph-knots` reported "the editor could not be
+started" AND `test-graph-replace` reported "the editor could not be started, so nothing ran". *** Both are suites that
+REBUILD A FIXTURE, **AND A FIXTURE REBUILD IS A `-run=` COMMANDLET THAT STOPS THE EDITOR.** So the sequence is: a
+rebuilding suite stops the editor, the harness's next `Start-EditorAndWait` cannot get one up, and every suite after
+that inherits the absence - **WHICH IS WHY THE FAILING SET DIFFERS BETWEEN RUNS WHILE `main` MOVED BY ONE CAPABILITY:
+THE NAMES MOVE BECAUSE THE RACE MOVES.**
+
+### 32.1 And this CORRECTS what I recorded two rounds ago
+
+**LAST ROUND I RULED OUT CONTENTION AND CONCLUDED `38 of 46` WAS ACCUMULATION ACROSS A LONG RUN. THE HARNESS FIX THEN
+REMOVED THE SYMPTOM, AND THIS ROUND SHOWS THE UNDERLYING SEQUENCE IS STILL THERE: A REBUILD SUITE STOPS THE EDITOR,
+AND THE RESTART IS NOT ROBUST.** **THE CORRECTION MATTERS, BECAUSE "ACCUMULATION" IS NOT ACTIONABLE AND "A REBUILDING
+SUITE STOPS THE EDITOR AND THE RESTART FAILS" IS.**
+
+### 32.2 Why the reuse path is fragile, and what it already fixed
+
+The harness has a deliberate design here and it is a good one: `Start-EditorAndWait` **REUSES A HEALTHY EDITOR** rather
+than replacing it, and that reuse is the fix for the fifth of the six recorded harness defects - the harness used to
+kill an editor a previous suite had healthily started. **AND THE PREVIOUS ROUND FOUND THE HOLE IN IT: AN EDITOR ALIVE
+ACROSS A DLL REBUILD PASSES THE HEALTH CHECK AND THEN CANNOT SERVE.** **SO THE REUSE PATH ASKS "DOES THE SERVER
+ANSWER", WHICH IS NOT "IS IT RUNNING THE CODE ON DISK" - and a fixture rebuild changes neither the DLL nor the server.
+It changes WHETHER THERE IS AN EDITOR AT ALL.**
+
+**THE MEASUREMENT THAT DECIDES IT IS ONE RUN: instrument `Start-EditorAndWait` to PRINT whether it reused, started or
+failed, and how long it waited.** The failing names then either cluster immediately after a rebuilding suite - which
+confirms the race - **or they do not, and the reuse path is at fault instead.**
+
+### 32.3 And the finding that matters more than the number
+
+**`R-MAT-INST-LOAD` IS VERIFIED: `PASS (20 checks)`, audit 78 tools, `uncalled: (none)`**, and its output is the
+contract the spec asks for INCLUDING THE LIST THE SPEC SAYS MATTERS - the one nothing printed before, because
+`RenderTree` printed the overrides and not their inverse.
+
+*** AND ITS SUITE HAS A REPORTED GAP THAT IS THE MOST IMPORTANT THING IT PRODUCED, BECAUSE IT IS A CHECK THAT CANNOT
+FAIL FOR THE REASON IT EXISTS. *** The workstream BROKE ITS OWN ORPHAN DETECTOR - making every override look
+declared-by-an-ancestor, which is exactly what would empty the orphan list - rebuilt, and got **`RESULT: PASS (20
+check(s) run)`**. **THE ORPHAN CHECKS ARE CONDITIONAL ON A NON-EMPTY ORPHAN LIST, AND `MI_TurboMCPFixture` HAS NO
+ORPHAN, BECAUSE EVERY PARAMETER IT SETS IS DECLARED BY ITS PARENT.**
+
+**IT REPORTED THAT RATHER THAN HIDING IT, AND ITS OWN SENTENCE IS THE ONE TO KEEP: "20 CHECKS IS NOT 20 INDEPENDENT
+CHECKS."** The same limit applies to three more paths it named - the vector, texture and static-switch override paths
+are built and unexercised because the fixture has ONE overridden scalar and ONE inherited vector, and the chain is one
+level deep so `parent xN` is built and unexercised. **AN ORPHAN WOULD NEED A FIXTURE CHANGE IN
+`TurboMCPMaterialFixtureCommandlet.cpp`, OUTSIDE ITS BOUNDARIES AND SHARED WITH OTHER CAPABILITIES - so the honest
+outcome is a stated limit plus a decision, which is what it delivered.**
+
+### 32.4 Its four test defects, each a check that failed on a CORRECT tool
+
+1. **It asserted that `R-MAT-LOAD` on the parent lists `LazyScalar`. IT CANNOT.** `TurboMCPMaterialFixtureCommandlet.cpp:122`
+   says `LazyScalar <- reaches NO output`, **AND A GRAPH READER WALKS FROM THE OUTPUTS, SO A PARAMETER THAT REACHES NO
+   OUTPUT IS INVISIBLE TO IT BY CONSTRUCTION.** Three checks failed on a tool that was RIGHT. The suite now proves the
+   inherited/overridden distinction **BY THE TWO LISTS BEING DISJOINT IN BOTH DIRECTIONS** - the assertion that can
+   actually fail.
+2. **It assumed the ARITY of `ReadTurboMCPMaterialLoad`** and passed two arguments where it takes three; the server
+   answered `was not found with the provided arguments` - **A REFUSAL ABOUT THE REQUEST, NOT THE TARGET**, the ordering
+   lesson the datatable workstream recorded.
+3. **Its section parser stopped at the first comment after a heading, and the tool puts explanatory comments THERE ON
+   PURPOSE** - so it returned zero lines for a section whose heading said one. **AND ITS FIRST FIX WAS A LIST OF MAGIC
+   PHRASES, WHICH IS A PARSER THAT ASSUMES A FORMAT.** The final rule is structural: a section runs from its heading to
+   the next heading.
+4. **The tool prints `none` under a heading whose count is 0, deliberately, because an empty list rendered as nothing
+   is indistinguishable from a section never printed** - so the suite had to learn that `none` is a statement about the
+   list rather than a member of it.
