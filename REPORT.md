@@ -11,10 +11,10 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 
 | Métrique | Valeur mesurée |
 |---|---|
-| Commits sur `main` | **480** |
+| Commits sur `main` | **481** |
 | Outils `AICallable` | **93** (audit : `uncalled: (none)`, PASS) |
 | Suites (`Tools/test-*.py`) | **52** fichiers (58 suites au total dans le harnais) |
-| **Full run** | **`passed 57, failed 0, blocked 0, of 57`** |
+| **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — EXIT CODE 0, VERT ENTIÈREMENT*** |
 | C++ du plugin | **61 455 lignes** dans **185** fichiers |
 | Spec | **7 738 lignes** dans **17** fichiers |
 | `TestRecord.md` | **10 502 lignes** (le journal de bord) |
@@ -311,6 +311,6 @@ Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un 
 
 ## 12. En une ligne
 
-> **93 outils, 57/57 suites vertes, 39 rows de plan restantes — et une machine de vérification qui, sur les trois dernières rows, a produit des résultats corrects sans que j'aie à intervenir.**
+> **93 outils, `passed 58, failed 0, blocked 0, of 58` — LE FULL RUN EST ENTIÈREMENT VERT — 39 rows de plan restantes, et une machine de vérification qui produit maintenant des résultats corrects sans que j'aie à intervenir.**
 >
 > ***Ce qui reste n'est pas bloqué par des inconnues : c'est borné par du temps, par cinq fixtures qui n'existent pas, et par un serveur source control que cette machine n'a jamais eu.***
