@@ -7704,3 +7704,32 @@ long silence on a row that needed engine archaeology.***
 **SO THE NEXT ROUND APPLIES ITS OWN CRITERION RATHER THAN MY PATIENCE: IF NO FILE HAS MOVED BY THEN, SOMETHING IS WRONG
 AND I WILL SAY SO RATHER THAN WAIT A FOURTH TIME.** *Section 113's lesson was not "wait less" - it was "use the
 discriminator you already have".*
+
+---
+
+## 82. Round 123: I CHECKED MY OWN CRITERION TOO EARLY, AND THAT IS THE FINDING
+
+**LAST ROUND I WROTE: "IF NO FILE HAS MOVED BY THEN, SOMETHING IS WRONG AND I WILL SAY SO RATHER THAN WAIT A FOURTH TIME."**
+
+*** AND THIS ROUND I CHECKED IT AND FOUND NO FILE MODIFIED IN TEN MINUTES - BUT THE WORKSTREAM WAS LAUNCHED AT 05:29 AND THE
+CHECK RAN AT 05:30:33. TWO MINUTES HAD PASSED, NOT TEN, AND MY OWN CRITERION SAID "BY THEN" MEANING THE NEXT ROUND OF
+WORK - NOT THE NEXT MINUTE. I VERY NEARLY CONCLUDED "SOMETHING IS WRONG" FROM A MEASUREMENT WHOSE WINDOW HAD NOT
+ELAPSED. ***
+
+**AND THAT IS THE SAME DEFECT AS EVERY OTHER ONE IN THIS RECORD, IN ITS CLEANEST FORM YET: I MEASURED SOMETHING TRUE - "no
+file modified in ten minutes" - AND ALMOST READ IT AS THE ANSWER TO A QUESTION IT WAS NOT ABOUT.** *The question was "has
+the workstream gone quiet"; the measurement was "has anything changed since a baseline two minutes ago".* **A CRITERION
+WITHOUT ITS TIME WINDOW IS NOT A CRITERION, IT IS A SENTENCE THAT SOUNDS LIKE ONE.**
+
+### 82.1 And the fix is one word in the criterion, not more patience
+
+    BEFORE   "if no file has moved by then"
+    AFTER    "if no file has moved BY A ROUND THAT IS AT LEAST TEN MINUTES AFTER THE LAUNCH"
+
+**THE WINDOW BELONGS IN THE CRITERION BECAUSE THE CRITERION IS WHAT I WILL ACT ON.** *This project has recorded that a
+check over a relationship inherits the vacuity of its input; **THIS IS A CHECK OVER A DURATION INHERITING THE VACUITY OF
+ITS WINDOW** - and the window was implicit, which is exactly how it got dropped.*
+
+**SO THE ROUND IS RECORDED AS: NOTHING IS WRONG, NOTHING HAS BEEN WRITTEN, AND THE ONLY THING THAT CHANGED IS THAT MY OWN
+INSTRUMENT WAS SHOWN TO BE ONE WORD SHORT.** *A workstream two minutes into reading a header is exactly on schedule, and
+the cheapest way to have got this right was to write the window down where I would read it.*
