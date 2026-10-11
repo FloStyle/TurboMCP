@@ -10560,3 +10560,40 @@ BOOKKEEPING HAD DRIFTED FROM THE TREE. ***
 **AND THE TWO ROWS I REFUSED TO MARK ARE THE EVIDENCE THAT THE AUDIT WAS DONE PROPERLY RATHER THAN SWEPT.** *5.1 and 5.2 both had a
 file whose name matched; **5.1 was marked only after reading what the suite proves, and 5.2 was left `todo` because the WRITER has no
 declaration.*** *** An audit that marks everything a name suggests would have produced the same count with two of them wrong. ***
+
+---
+
+## 176. Round 249: the objective's two halves, assessed honestly
+
+    THE OWNER ASKED FOR TWO THINGS IN ONE SENTENCE: "an extensive report on where you at, what's left and what
+    take your time", AND "until TurboMCP is complete".
+
+    HALF ONE - THE REPORT - IS DELIVERED, AND HAS BEEN TWICE OVER:
+      `REPORT.md`  350 lines, 13 sections, every figure READ at the round it states
+      `STATUS.md`  227 lines, HEADLINE REFRESHED from a three-revision-stale 79 tools / 51-of-51 to 93 / 58-of-58
+      and the report now carries WHAT CHANGED since its first version AND WHY, which is section 12
+
+    HALF TWO - COMPLETE - IS NOT DONE: 31 rows remain out of 48.
+
+*** AND THE HONEST READING OF WHERE THOSE 31 ROWS STAND IS THAT THEY ARE BOUNDED BY THREE DIFFERENT THINGS, AND ONLY ONE OF THEM IS
+TIME. ***
+
+    BOUNDED BY THE ENVIRONMENT, AND NO AMOUNT OF WORK HERE CHANGES IT:
+      10.2's remaining writers need a SOURCE CONTROL SERVER THAT ANSWERS. `p4` points at an address that does
+      not, `cm` and `svn` are not on PATH, and Git's checkout answer is a REFUSAL. Every answer this project
+      has is an answer to a refusal, measured twice by two workstreams.
+      THE KIT'S TA-18 AND TA-19 need `AnimGraph` and `Niagara` in `TurboMCP.Build.cs` - which the owner has
+      APPROVED and nobody has done yet, and TA-18 ADDITIONALLY needs a USkeleton bone whose every route is
+      closed (`Skeleton.h:365-369` returns the reference skeleton CONST on purpose).
+
+    BOUNDED BY VOLUME RATHER THAN INSIGHT:
+      the 30 unwired writers, and the ROWS 6.1-6.4, 8.1-8.5, 5.3-5.5 - capability after capability, each a
+      precedent to follow rather than a question to answer.
+
+    BOUNDED BY TIME, WHICH IS NOW EIGHT ROUNDS.
+
+**SO THE STATE AT ROUND 249 IS: 93 tools, `passed 58, failed 0, blocked 0, of 58`, 494 commits, a clean tree at
+`origin/main`, both audits PASS, the report delivered, and 31 rows of work that this machine and this budget cannot
+finish.** *The objective's second half is not blocked in the sense this project uses the word - nothing is stuck
+waiting on a decision - **it is simply larger than what remains, and the honest thing is to say so rather than to mark
+complete a sentence whose second half is not true.**
