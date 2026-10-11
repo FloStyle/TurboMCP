@@ -7180,3 +7180,33 @@ MERELY A STRUCT?** *`TA-14` was recorded as IMPOSSIBLE and was buildable, becaus
 **AND IT IS TOLD TO CHECK ITS ACCEPTANCE ROWS' FIXTURES EXIST BEFORE WRITING ANYTHING**, with the three known failures
 named - `T-MAT-10` -> `TA-6`, `T-LEVEL-1/2` -> `TA-15`/`TA-16`, `T-WIDGET-4` -> `TA-8` - **and the admission that the
 pre-flight rule catching this was written after the second and applied to neither.**
+
+---
+
+## 69. Round 110: two workstreams in their opening moves, and the second one's file set is the interesting part
+
+**MEASURED:** `main` = `origin/main` = `71c7cc1`; **85 tools**; working tree clean; nothing written by either workstream
+yet.
+
+*** NEITHER HAS COMMITTED, WHICH IS EXPECTED AT THIS POINT AND IS THE STATE I SHOULD NOT FILL WITH A THIRD WORKSTREAM.
+THE MACHINE IS NOT IDLE - TWO BUILD MUTEX HOLDERS EXIST - AND THE LESSON FROM SECTION 55 IS THAT "THE MACHINE LOOKS
+AVAILABLE" IS A CLAIM ABOUT THE MACHINE, NOT ABOUT THE ROWS. ***
+
+### And the thing worth recording while nothing moves
+
+**THE TWO FILE SETS ARE THE FIRST GENUINELY DISJOINT PAIR THIS PROJECT HAS SCHEDULED, AND THE DISJOINTNESS IS BY
+CONSTRUCTION RATHER THAN BY HOPE:**
+
+    A  OWNS   Tools/test-{mat-inst-load,call-cost,asset-cost,widget-tree-sync,graph-structure}.py  and NO Source/
+    B  OWNS   a NEW Source/TurboMCP/TurboMCPStruct*  and ONE new Tools/test-struct.py
+
+**EVERY PREVIOUS PARALLEL GROUP SHARED A FILE THAT MATTERED.** *The first group of three shared `TurboMCPToolsets.h` AND
+the editor AND the DLL, and one workstream's broken file blocked the other two - the workaround was `-SingleFile`, which
+was honoured only for ATTRIBUTION before one of those same workstreams found it can return a false green.* **THIS PAIR
+SHARES THE HEADER AND THE MUTEX AND NOTHING ELSE, AND BOTH BRIEFS SAY SO.** *The test of whether that is enough is
+whether both land without a collision, and that is what the next rounds will show.*
+
+**AND THE DEBT WORKSTREAM'S FIRST DELIVERABLE IS AN AUDIT RATHER THAN A FIX, WHICH IS THE RIGHT ORDER AND THE ONE THIS
+PROJECT HAS MOST OFTEN GOT WRONG.** *Four previous workstreams produced their vacuity analysis as PROSE INSIDE A SUITE
+HEADER - which is why the debt is still open and had to be re-described in this round's brief from five separate files.
+An audit that lives in one place is the difference between a lesson and five anecdotes.*
