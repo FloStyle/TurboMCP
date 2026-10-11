@@ -190,9 +190,9 @@ Measured end to end: **24 seconds**.
 # 1. stop the editor, or the plugin DLL is locked
 Get-Process UnrealEditor -EA SilentlyContinue | Stop-Process -Force
 # 2. build just the module (5 to 30 seconds once the engine exists)
-& cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"<REPO>\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
+& cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"<REPO>\TurboMCP\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
 # 3. start it headless, which also starts the MCP server on 8000
-Start-Process 'C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor.exe' -ArgumentList @('<REPO>\TestProject\TurboMCPTest.uproject','-nullrhi','-unattended','-nosplash','-nosound') -WindowStyle Hidden
+Start-Process 'C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor.exe' -ArgumentList @('<REPO>\TurboMCP\TestProject\TurboMCPTest.uproject','-nullrhi','-unattended','-nosplash','-nosound') -WindowStyle Hidden
 # 4. verify on the wire
 python Tools\test-agent-help.py
 ```

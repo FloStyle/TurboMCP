@@ -26,14 +26,36 @@ import os
 import re
 import sys
 
-REPO = r"<REPO>"
-ENGINE = r"C:\UnrealEngine"
+# *** NOTHING HERE NAMES A PATH OF ANYONE'S MACHINE. ***
+#
+# `REPO` and `ENGINE` used to be absolute literals, so this check - which compares the plugin's
+# declarations against what UHT actually generated - only ran on the machine they were written on.
+# The repository is derived from this file; the engine is found by the same two routes a user has:
+# the TURBOMCP_ENGINE / UE_ROOT environment variables, then the conventional source-build location.
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _find_engine_root():
+    candidates = []
+    for var in ("TURBOMCP_ENGINE", "UE_ROOT"):
+        value = os.environ.get(var)
+        if value:
+            candidates.append(value)
+    candidates.extend([r"C:\UnrealEngine", r"D:\UnrealEngine"])
+    for candidate in candidates:
+        if os.path.isdir(os.path.join(candidate, "Engine", "Build")):
+            return candidate
+    return None
+
+
+REPO = _REPO
+ENGINE = _find_engine_root()
 PLUGIN_SRC = os.path.join(REPO, "Source", "TurboMCP")
 UHT_OUT = os.path.join(
     REPO, "Intermediate", "Build", "Win64", "UnrealEditor", "Inc", "TurboMCP", "UHT"
 )
-MOUNT = os.path.join(ENGINE, "Engine", "Plugins", "Marketplace", "TurboMCP")
-BUILD_VERSION = os.path.join(ENGINE, "Engine", "Build", "Build.version")
+MOUNT = os.path.join(ENGINE, "Engine", "Plugins", "Marketplace", "TurboMCP") if ENGINE else None
+BUILD_VERSION = os.path.join(ENGINE, "Engine", "Build", "Build.version") if ENGINE else None
 
 EXPECTED_VERSION = (5, 8, 3)
 

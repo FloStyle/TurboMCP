@@ -38,11 +38,22 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$EditorExe = 'C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor-Cmd.exe',
-    [string]$Project = '<REPO>\TestProject\TurboMCPTest.uproject'
+    # EMPTY ON PURPOSE: $repo, $Project and $EditorExe are DERIVED below by Tools/common.ps1, so a
+    # clone on any machine works without editing this file. See that file for the resolution order.
+    [string]$EditorExe = '',
+    [string]$Project = ''
 )
 
 $ErrorActionPreference = 'Stop'
+
+# ---------------------------------------------------------------------------------------------
+# THE PATHS ARE DERIVED, NOT HARD-CODED. A clone on any machine has to work without editing this
+# file, and an absolute default only ever worked on the machine it was written on.
+# ---------------------------------------------------------------------------------------------
+. (Join-Path $PSScriptRoot 'common.ps1')
+if (-not $Project)   { $Project   = Get-TurboMCPProject }
+$repo = Get-TurboMCPRepoRoot
+if (-not $EditorExe) { $EditorExe = Join-Path (Resolve-TurboMCPEngine -Project $Project) 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe' }
 
 if (-not (Test-Path $EditorExe)) { throw "the editor is not at $EditorExe" }
 if (-not (Test-Path $Project))   { throw "the project is not at $Project" }

@@ -103,7 +103,9 @@
 [CmdletBinding()]
 param(
     [string] $Project = "$PSScriptRoot\..\TestProject\TurboMCPTest.uproject",
-    [string] $Engine   = 'C:\UnrealEngine',
+    # EMPTY ON PURPOSE: resolved below by Tools/common.ps1, which prefers an engine whose
+    # Engine/Build/Build.version matches the version this project targets. See that file.
+    [string] $Engine  = '',
     [int]    $TimeoutSeconds = 420,
     [string] $Culture = 'en',
     [switch] $NullRHI,
@@ -115,6 +117,15 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# ---------------------------------------------------------------------------------------------
+# THE ENGINE IS DERIVED, NOT HARD-CODED. `C:\UnrealEngine` used to be the default, which is one
+# machine's layout; and resolving it by DISCOVERY alone is not enough either, because a machine can
+# have SEVERAL engines and only one of them is the version this project is built against. This
+# machine has 5.8.3 at C:\UnrealEngine and an Epic 5.6 install, and pure discovery picked 5.6.
+# ---------------------------------------------------------------------------------------------
+. (Join-Path $PSScriptRoot 'common.ps1')
+if (-not $Engine) { $Engine = Resolve-TurboMCPEngine -Project $Project }
 
 # Resolve to a real absolute path, so log lines and log paths do not print `..`.
 $Project = [System.IO.Path]::GetFullPath($Project)

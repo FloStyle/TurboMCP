@@ -54,7 +54,9 @@ from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session  # noqa: E
 import tmcp_editor  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ENGINE = "C:\\UnrealEngine"
+import tmcp_paths  # noqa: E402
+
+ENGINE = tmcp_paths.find_engine()
 PROJECT = os.path.join(REPO, "TestProject", "TurboMCPTest.uproject")
 CMD_EXE = os.path.join(ENGINE, "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")
 CHECK_SERVER = os.path.join(REPO, "Tools", "check-mcp-server.py")

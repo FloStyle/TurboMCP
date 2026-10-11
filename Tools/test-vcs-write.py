@@ -41,7 +41,7 @@ MEASURED HERE
 
 NOT MEASURED HERE, AND IT IS AN ENVIRONMENT FACT RATHER THAN AN OVERSIGHT
   - **NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED, BY ANYONE, IN THIS PROJECT.** `p4 set` points
-    at `ssl:example.invalid:1666`, which does not answer; `cm` and `svn` are not on `PATH`. So every checkout
+    at `ssl:<p4-host>:1666`, which does not answer; `cm` and `svn` are not on `PATH`. So every checkout
     answer below is the answer to a REFUSAL or to a no-op provider. The claim this suite makes is
     "the operation is issued, and the provider's own answer is what is reported" - NOT "an automatic checkout
     works".
@@ -72,7 +72,9 @@ from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session  # noqa: E
 import tmcp_editor  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ENGINE = "C:\\UnrealEngine"
+import tmcp_paths  # noqa: E402
+
+ENGINE = tmcp_paths.find_engine()
 PROJECT = os.path.join(REPO, "TestProject", "TurboMCPTest.uproject")
 CMD_EXE = os.path.join(ENGINE, "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")
 CHECK_SERVER = os.path.join(REPO, "Tools", "check-mcp-server.py")
@@ -726,7 +728,7 @@ def main():
     print()
     print("NOT MEASURED BY THIS SUITE, AND IT IS AN ENVIRONMENT FACT RATHER THAN AN OVERSIGHT:")
     print("  - A CHECKOUT AGAINST A LIVE DEPOT: no provider on this machine has a server that answers")
-    print("    (`p4 set` points at ssl:example.invalid:1666, which does not answer; `cm` and `svn` are not")
+    print("    (`p4 set` points at ssl:<p4-host>:1666, which does not answer; `cm` and `svn` are not")
     print("    on PATH). Every answer above is the answer to a REFUSAL or to a no-op provider, and NO")
     print("    CLAIM IS MADE THAT AN AUTOMATIC CHECKOUT WORKS.")
     print("  - E-STRUCT-NEW IS NOT WIRED: it creates a path that does not exist yet, so there is nothing")

@@ -44,7 +44,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, f
 
 | Row | Ce qui manque |
 |---|---|
-| **10.x** *(writers source-control restants)* | ***UN SERVEUR QUI RÉPOND*** — `p4` pointe sur `ssl:example.invalid:1666` qui ne répond pas, `cm` et `svn` sont absents du PATH, et la réponse de Git est un **refus**. Mesuré deux fois par deux workstreams. |
+| **10.x** *(writers source-control restants)* | ***UN SERVEUR QUI RÉPOND*** — `p4` pointe sur `ssl:<p4-host>:1666` qui ne répond pas, `cm` et `svn` sont absents du PATH, et la réponse de Git est un **refus**. Mesuré deux fois par deux workstreams. |
 | **1.5 / `TA-18`** | *un os de `USkeleton` — `Skeleton.h:365-369` retourne le skeleton de référence **`const` à dessein**, `ReferenceSkeleton` est `protected` (`:301/:317`), les fonctions d'ajout d'os prennent un `USkinnedAsset` (`:797/:809/:820`) et **il n'y a aucun skeletal mesh ici**. La dernière route est `FEditableSkeleton`, un header **privé**. **Les dépendances `AnimGraph`/`Niagara`/`NiagaraEditor` sont maintenant dans `Build.cs` (`de1c408`), donc le blocker de module est RETIRÉ pour `TA-18` et `TA-19` — ce qui reste est de l'authoring, pas une permission.*** |
 
 ### 🟡 Volume plutôt qu'intuition — *des précédents à suivre*

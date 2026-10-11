@@ -105,7 +105,7 @@ Ces quatre-là bornent ce que le plugin peut promettre :
 
 **Et une frontière de données, énoncée deux fois par deux workstreams indépendants :**
 
-> **AUCUN CHECKOUT CONTRE UN DÉPÔT SOURCE CONTROL VIVANT N'A JAMAIS ÉTÉ EFFECTUÉ ICI.** `p4` pointe sur `ssl:example.invalid:1666` (ne répond pas) ; `cm` et `svn` ne sont pas dans le PATH ; et la réponse de Git est un **refus**.
+> **AUCUN CHECKOUT CONTRE UN DÉPÔT SOURCE CONTROL VIVANT N'A JAMAIS ÉTÉ EFFECTUÉ ICI.** `p4` pointe sur `ssl:<p4-host>:1666` (ne répond pas) ; `cm` et `svn` ne sont pas dans le PATH ; et la réponse de Git est un **refus**.
 
 ---
 

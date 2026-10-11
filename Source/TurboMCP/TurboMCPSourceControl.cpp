@@ -42,7 +42,7 @@ namespace
 	 *
 	 * TWO ROUTES, AND THE SECOND ONE EXISTS BECAUSE OF A MEASURED FAILURE IN THIS PROJECT.
 	 * `TurboMCPAcceptanceAssetCommandlet.cpp:1114-1118` records it: `FPackageName::LongPackageNameToFilename`
-	 * answered `../../../..<REPO>/TestProject/Content/...`, a path RELATIVE TO THE
+	 * answered `../../../../(repo)/TestProject/Content/...`, a path RELATIVE TO THE
 	 * ENGINE DIRECTORY, and the save that used it failed while the package was complete in memory.
 	 * `TurboMCPTestMapCommandlet.cpp:325-334` records the same thing for the map path.
 	 *

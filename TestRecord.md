@@ -9013,7 +9013,7 @@ Git returned `is_available=True` from a `-nullrhi -unattended` commandlet WITH N
 
 **AND FOR THE PLAN, WHICH IS THE POINT OF THE ROW: 10.1 IS BUILDABLE AND `Q-20` CAN BE CLOSED - GIT FIRST (the only provider
 available here with nothing but the setting), PERFORCE SECOND (the reason the capability exists, and `p4 set` points at
-`ssl:example.invalid:1666` which DOES NOT ANSWER - the run logged "Connect to server failed; check $P4PORT" and exited 1 with the
+`ssl:<p4-host>:1666` which DOES NOT ANSWER - the run logged "Connect to server failed; check $P4PORT" and exited 1 with the
 probe output intact).** *And a trap for 10.1: `-SCCProvider=Plastic SCM` CONTAINS A SPACE and needs quoting.*
 
 ---
@@ -9481,7 +9481,7 @@ RATHER THAN A CORRECTION. THAT IS THE FIRST TIME IN THIS STRETCH THAT A BREAK TE
 
 ### 144.5 What it claims nothing about
 
-**NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED HERE.** *`p4 set` still points at `ssl:example.invalid:1666`, which does
+**NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED HERE.** *`p4 set` still points at `ssl:<p4-host>:1666`, which does
 not answer; `cm` and `svn` are not on PATH.* *** EVERY CHECKOUT ANSWER IT REPORTS IS THE ANSWER TO A REFUSAL OR TO A NO-OP
 PROVIDER - AND IT SAYS SO RATHER THAN LETTING 62 GREEN CHECKS IMPLY OTHERWISE. ***
 
@@ -9552,7 +9552,7 @@ replaced a check over, one row earlier, and row 10.2 did not reproduce it.*
 ### 145.6 What it claims nothing about, and the branch that never ran
 
     *** NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED - NOT BY ROW 10.1, NOT BY ROW 10.2, NOT BY ANYONE.
-    `p4 set` STILL POINTS AT ssl:example.invalid:1666 (DOES NOT ANSWER); `cm` AND `svn` ARE NOT ON PATH.
+    `p4 set` STILL POINTS AT ssl:<p4-host>:1666 (DOES NOT ANSWER); `cm` AND `svn` ARE NOT ON PATH.
     "EVERY CHECKOUT ANSWER I REPORT IS THE ANSWER TO A REFUSAL OR TO A NO-OP PROVIDER. I DO NOT CLAIM AN AUTOMATIC
     CHECKOUT WORKS - I CLAIM THE OPERATION IS ISSUED THROUGH THE PROVIDER AND THE PROVIDER'S OWN ANSWER IS WHAT GETS
     REPORTED." ***

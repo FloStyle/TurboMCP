@@ -1112,7 +1112,7 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 	// THE ABSOLUTE PATH IS BUILT BY HAND, BECAUSE THE ENGINE'S CONVERSION GOES RELATIVE HERE.
 	//
 	// MEASURED FAILURE: `FPackageName::LongPackageNameToFilename` answered
-	// `../../../..<REPO>/TestProject/Content/Tests/TurboMCPAcceptance.uasset`,
+	// `../../../../(repo)/TestProject/Content/Tests/TurboMCPAcceptance.uasset`,
 	// a path RELATIVE TO THE ENGINE DIRECTORY, and `UPackage::SavePackage` reported
 	// "could not save". The package was in memory and every probe graph had built — the write was the
 	// only thing that failed, which is the shape of failure this project keeps having to look for.

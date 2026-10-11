@@ -330,7 +330,7 @@ Two candidate explanations for the break test, neither confirmed:
   `def check_uht_freshness` appears exactly once.
 - The generated header the check reads and the one the break test writes may not be the
   same file, despite both naming
-  `<REPO>\Intermediate\Build\Win64\UnrealEditor\Inc\TurboMCP\UHT\TurboMCPToolsets.generated.h`.
+  `<REPO>\TurboMCP\Intermediate\Build\Win64\UnrealEditor\Inc\TurboMCP\UHT\TurboMCPToolsets.generated.h`.
 
 Answer: not yet answered. The timestamp check stands, and its failure message now tells the
 reader to confirm before acting.

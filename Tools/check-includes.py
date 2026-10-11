@@ -14,10 +14,44 @@ import os
 import re
 import sys
 
-PLUGIN_ROOT = r"<REPO>\Source"
+# *** NOTHING HERE NAMES A PATH OF ANYONE'S MACHINE. ***
+#
+# `PLUGIN_ROOT` and `ENGINE_ROOTS` used to be absolute literals, so this check only ever ran on the
+# machine they were written on - and it is a check that finds a wrong include in SECONDS instead of
+# hours into a build, which is exactly the check a new contributor needs to be able to run.
+#
+# The plugin root is derived from this file's own location. The engine is found by the same two routes
+# a user already has: the TURBOMCP_ENGINE / UE_ROOT environment variables, then the conventional
+# source-build location. AND WHEN NONE OF THEM RESOLVES IT SAYS SO AND EXITS NON-ZERO rather than
+# silently checking a smaller tree than it claims to - a check that searched nothing would report
+# "every include resolves" about no includes at all.
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PLUGIN_ROOT = os.path.join(_REPO, "Source")
+
+
+def _find_engine_root():
+    candidates = []
+    for var in ("TURBOMCP_ENGINE", "UE_ROOT"):
+        value = os.environ.get(var)
+        if value:
+            candidates.append(value)
+    candidates.extend([r"C:\UnrealEngine", r"D:\UnrealEngine"])
+    for candidate in candidates:
+        if os.path.isdir(os.path.join(candidate, "Engine", "Source")):
+            return candidate
+    return None
+
+
+_ENGINE = _find_engine_root()
+if _ENGINE is None:
+    print("FAIL  no Unreal Engine source tree could be found, so NO include was verified.")
+    print("      Set TURBOMCP_ENGINE to the engine root, or pass -Engine to the calling script.")
+    print("      A run that searched nothing must not report that every include resolves.")
+    sys.exit(2)
+
 ENGINE_ROOTS = [
-    r"C:\ExampleUnrealengine\Engine\Source",
-    r"C:\ExampleUnrealengine\Engine\Plugins",
+    os.path.join(_ENGINE, "Engine", "Source"),
+    os.path.join(_ENGINE, "Engine", "Plugins"),
 ]
 
 INCLUDE_RE = re.compile(r'^\s*#include\s+"([^"]+)"', re.MULTILINE)

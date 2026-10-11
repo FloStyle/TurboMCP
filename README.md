@@ -80,13 +80,28 @@ It refuses to start a second editor.
 To rebuild after a code change:
 
 ```powershell
-Tools\start-editor.ps1 -Stop    # releases the plugin DLL lock
-& cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"$PWD\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
-Tools\start-editor.ps1
+Tools\build.ps1
 ```
+
+`Tools/build.ps1` **stops a running editor first** (it holds the plugin DLL open, and `LNK1104` reads like a build error when it is a file lock), **finds the engine itself**, and prints the DLL's timestamp beside its verdict — because `Result: Succeeded` alone is not evidence the binary changed, which this project measured the hard way.
 
 That whole loop takes about 24 seconds. The plugin's own panel is under
 **Window > TurboMCP**, and it calls the same code path the MCP does (`P9`).
+
+## Where the engine is found
+
+**Nothing in this repository names a path of anyone's machine.** Every script derives the repository root from its own location and resolves the engine the same way, in this order:
+
+1. an explicit `-Engine <path>` argument, which is never overridden;
+2. the `TURBOMCP_ENGINE` environment variable;
+3. the `UE_ROOT` environment variable;
+4. `EngineAssociation` in the `.uproject`;
+5. the Epic launcher registry;
+6. `C:\UnrealEngine` and `D:\UnrealEngine`.
+
+**And the version decides, not the order of discovery.** This machine has UnrealEngine **5.8.3** at `C:\UnrealEngine` *and* an Epic launcher install of **5.6**; resolving by discovery alone returned **5.6**, which would have failed inside the engine's own headers and read as a defect in this plugin. A candidate whose `Engine/Build/Build.version` does not match **5.8.3** is reported as a near miss rather than silently used, and when nothing matches the resolver **says what it tried and stops** instead of guessing.
+
+`Tools/common.ps1` (PowerShell) and `Tools/tmcp_paths.py` (Python) are the two implementations, and they resolve the same way.
 
 ## Working on a feature
 

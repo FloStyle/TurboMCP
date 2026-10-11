@@ -377,11 +377,11 @@ empty state that reads as "not under source control".
    provider", `TestRecord.md:139-143`) is **narrowed, not falsified.**
 2. **No provider was ever given a reachable server**, so "what does Perforce
    *do* when it is available headless" is still unmeasured. `p4 set` on this
-   machine (`P4PORT=ssl:example.invalid:1666`, `P4USER=exampleuser`,
+   machine (`P4PORT=ssl:<p4-host>:1666`, `P4USER=<user>`,
    `P4CHARSET=winansi`, `P4EDITOR`, `P4IGNORE`) points at a host that does not
    answer, and the run logged the engine's own
    `SourceControl: Error: Connect to server failed; check $P4PORT.` /
-   `OwningSystem=Default, Port=ssl:example.invalid:1666` (and that commandlet run
+   `OwningSystem=Default, Port=ssl:<p4-host>:1666` (and that commandlet run
    exited `1`). A real checkout against a live depot remains untested - which is
    consistent with `03_TOOLS.md:1365-1366` ("no automatic checkout happens
    anywhere until this tool's own tests pass").
@@ -583,8 +583,8 @@ svn NOT FOUND on PATH
 P4CHARSET=winansi (set)
 P4EDITOR=C:\Windows\system32\Notepad.exe (set)
 P4IGNORE=.p4ignore (set)
-P4PORT=ssl:example.invalid:1666 (set)
-P4USER=exampleuser (set)
+P4PORT=ssl:<p4-host>:1666 (set)
+P4USER=<user> (set)
 ```
 
 **A `-SCCProvider=Perforce` run exits 1**, and the reason is in its own log
@@ -593,7 +593,7 @@ P4USER=exampleuser (set)
 ```
 SourceControl: Error: P4ERROR: Failed to connect to revision control server.
 SourceControl: Error: Connect to server failed; check $P4PORT.
-SourceControl: Error: OwningSystem=Default, Port=ssl:example.invalid:1666
+SourceControl: Error: OwningSystem=Default, Port=ssl:<p4-host>:1666
 ```
 
 That is a *reported* failure with the probe output intact - the measurement
@@ -970,7 +970,7 @@ check skipped)`.
 2. **NO CHECKOUT AGAINST A LIVE DEPOT WAS EVER PERFORMED BY ANYONE.** Git's answer
    is now measured but it is a **refusal**, and Perforce's `AVAILABLE` branch
    needs a server that answers (`p4 set` still points at
-   `ssl:example.invalid:1666`). So *"what Perforce does when it is available
+   `ssl:<p4-host>:1666`). So *"what Perforce does when it is available
    headless"* - section 5 item 2 of this file - **is still unmeasured**, and it is
    the single most important thing row 10.2 needs before it wires automatic
    checkout into a write tool.
@@ -1405,7 +1405,7 @@ rebuilt (`Result: Succeeded`); and the suite returned
 
 1. **NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED - NOT BY ROW 10.1,
    NOT BY THIS ROW, NOT BY ANYONE.** `p4 set` still points at
-   `ssl:example.invalid:1666`, which does not answer; `cm` and `svn` are not on
+   `ssl:<p4-host>:1666`, which does not answer; `cm` and `svn` are not on
    `PATH`. **EVERY CHECKOUT ANSWER IN THIS SECTION IS THE ANSWER TO A REFUSAL OR TO
    A NO-OP PROVIDER.** The claim this row makes is narrow and measured: *the
    operation is issued through the provider, and the provider's own answer is what

@@ -114,7 +114,7 @@ against:
 
 ```powershell
 Tools\start-editor.ps1 -Stop
-& cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"<REPO>\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
+& cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"<REPO>\TurboMCP\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
 Tools\start-editor.ps1
 ```
 
