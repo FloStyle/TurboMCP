@@ -9712,3 +9712,24 @@ output has to be consistent with 792 lines of decisions rather than with a spec"
 yet", "SAFETY COMMIT ... not yet built and no suite yet". NONE OVERSTATED. *** **That is the mechanism that was written into the
 briefs after I destroyed a verified capability by reverting a shared tree, and it has now been adopted by five workstreams
 independently - which is the difference between an instruction obeyed and a practice held.**
+
+---
+
+## 151. Round 202: row 2.1's suite PASSES, the 378-line suite beside it still passes, and the audit does not move
+
+    `54332da  Row 2.1: test-capture-selectors PASSES, and test-capture still passes beside it`
+    `d82c1ad  Row 2.1: the four selectors build and answer; the suite is written but not yet run`
+    AUDIT: 93 AICallable tools, uncalled: (none), RESULT: PASS
+    SUITES: test-capture-selectors.py 465 lines (NEW) + test-capture.py 378 lines (PRE-EXISTING, STILL GREEN)
+
+*** AND IT WROTE A NEW SUITE RATHER THAN OVERWRITING THE EXISTING ONE - WHICH IS EXACTLY WHAT THE BRIEF'S PRE-FLIGHT CHECK WAS FOR,
+AND THE CHECK FOUND A TRACKED 378-LINE SUITE THAT THE BRIEF'S ORIGINAL INSTRUCTION WOULD HAVE OVERWRITTEN. ***
+
+**AND THE TOOL COUNT IS STILL 93, SO THE SELECTORS ARE NOT NEW TOOLS.** *They extend `L-CAPTURE`, which means: **the plan advanced
+twice in a row without the tool count moving** (row 10.2 wired behaviour, row 2.1 extends a selector set).* *** The counter that
+served this project for 90 tools is now the wrong instrument for the phase it has entered, and the honest note is that **`93` has
+stopped being a progress signal** - which is worth recording before it gets mistaken for a stalled plan.*
+
+**AND THE SECOND COMMIT'S TITLE IS AGAIN THE HONEST FORM:** *`d82c1ad the four selectors build and answer; the suite is written
+but not yet run`* **and then `54332da` says it passes.** *Two commits, two states, neither overstated - **the fifth workstream to
+report its own progress in the order it actually happened.***
