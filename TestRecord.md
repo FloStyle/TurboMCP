@@ -10597,3 +10597,39 @@ TIME. ***
 finish.** *The objective's second half is not blocked in the sense this project uses the word - nothing is stuck
 waiting on a decision - **it is simply larger than what remains, and the honest thing is to say so rather than to mark
 complete a sentence whose second half is not true.**
+
+---
+
+## 177. Round 250-251: the dependencies are in, the refusal that lied about them is fixed, and the honest closing accounting
+
+    `de1c408`  `AnimGraph`, `Niagara` and `NiagaraEditor` added to `TurboMCP.Build.cs` BY THE OWNER'S DECISION,
+               and `TA-18`'s refusal text corrected because it still said "TurboMCP.Build.cs lists AnimGraph
+               nowhere" AFTER the line existed. THE TENTH OCCURRENCE of a statement describing a state that
+               no longer exists.
+    BUILD      274 s, then `Compile [x64] TurboMCPKitCommandlet.cpp` in the log - a real change, and the
+               compile line is the evidence rather than `Result: Succeeded`
+    SUITES     `test-kit-ta17-ta19` 40 checks, `test-capture-asset` PASS, `test-material-blocks` 24 -> 6 of 6
+
+### 177.1 *** AND THE FINAL ACCOUNTING, HONESTLY, AT ROUND 251 OF 256 ***
+
+    DELIVERED
+      93 AICallable tools, audit `uncalled: (none)`
+      `passed 58, failed 0, blocked 0, of 58` - THE FULL RUN GREEN, exit code 0
+      an audit that BLOCKS on checks that cannot fail or cannot pass, at 0 candidates
+      a foreign-editor check that names the owner of port 8000 instead of measuring someone else's project
+      `REPORT.md` 350 lines / 13 sections, `STATUS.md` 227 lines, `TestRecord.md` over 10 500 lines
+      EIGHT rows the plan called `todo` that were already built, found and verified by running their suites
+      TWO PRE-EXISTING DEFECTS that made the green signal impossible, root-caused and fixed
+      `TA-17` BUILT, `TA-18`/`TA-19`'s module blockers removed, and `TA-18`'s remaining blocker named
+
+    NOT DELIVERED
+      "until TurboMCP is complete" - 31 rows of 48 remain, and they are bounded by THREE different things:
+        the ENVIRONMENT (the remaining source-control work needs a server that answers, which this machine
+          has never had; `TA-18` still needs a `USkeleton` bone whose every route is closed)
+        VOLUME rather than insight (the 30 unwired writers and rows 6.1-6.4, 8.1-8.5, 5.3-5.5)
+        TIME - which is now five rounds
+
+*** SO THE OBJECTIVE'S FIRST HALF IS DELIVERED AND ITS SECOND HALF IS NOT, AND THE SECOND HALF IS NOT BLOCKED IN THE SENSE THIS PROJECT
+USES THE WORD: NOTHING IS WAITING ON A DECISION. IT IS LARGER THAN WHAT REMAINS. THE HONEST CHOICE IS TO LEAVE THE OBJECTIVE ACTIVE AND SAY
+SO, RATHER THAN MARK COMPLETE A SENTENCE WHOSE SECOND HALF IS NOT TRUE - WHICH IS THE ONE THING THIS PROJECT HAS SPENT TWO HUNDRED AND
+FIFTY ROUNDS REFUSING TO DO. ***
