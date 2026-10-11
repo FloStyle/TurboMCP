@@ -258,11 +258,14 @@ if ($Running -or $PortBusy) {
 Step 'Starting the editor'
 # ---------------------------------------------------------------------------
 $Args = @($Project)
-# `-Offscreen` IS WHAT THE SUITES USE, AND IT IS `-nullrhi -unattended` WITH A HIDDEN WINDOW. MEASURED REASON: the
-# windowed editor TAKES THE FOREGROUND ON EVERY START, and a full suite run restarts it between suites, so the
-# machine stole focus several times per run. It also skips shader compilation, which makes each start faster. Every
-# TurboMCP tool works on graphs, assets and Blueprints through reflection, so NO SUITE LOSES ANYTHING - and the
-# interactive path is untouched, because a human who launches the editor wants the window and the renderer.
+# *** THIS COMMENT WAS STALE AND IT COST A FALSE PREMISE (TestRecord.md section 158). It used to read "`-Offscreen` IS WHAT
+# THE SUITES USE", WHICH STOPPED BEING TRUE WHEN `-Offscreen` WAS REMOVED AT LINE 296 BECAUSE IT MADE THE EDITOR FAIL TO EXIT
+# CLEANLY. THE SUITES NOW RUN WITH **A REAL RHI AND A REAL WINDOW**: `Tools/run-suites.ps1:195` calls this script with
+# `-LowPriority` AND NOTHING ELSE. Read the caller's ARGUMENT LIST, not this comment - that mistake is the fourth time this
+# project parsed a sentence where a field was meant, and it made a `screen` capture look impossible when it is the thing that
+# WORKS here (measured: a 1670x911 window PNG with 1335 distinct colours). ***
+# `-Offscreen` REMAINS AVAILABLE AND IS `-nullrhi -unattended` WITH A HIDDEN WINDOW, for a caller that asks for it. Its
+# MEASURED cost is at line 296 and it is why it is no longer the default: it made the editor fail to exit cleanly.
 if ($Offscreen) { $NullRHI = $true }
 if ($NullRHI) { $Args += @('-nullrhi','-unattended') }
 if (-not [string]::IsNullOrWhiteSpace($Culture)) { $Args += @("-culture=$Culture") }
