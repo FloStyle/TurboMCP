@@ -121,23 +121,71 @@ namespace
 		return true;
 	}
 
-	/** The basic type names a struct field can have, against what the engine's own table calls them. */
-	const TMap<FString, FString>& BasicTypeAliases()
+	/**
+	 * The basic type names a caller may write, against the PIN CATEGORY constant the engine's own
+	 * factory wants.
+	 *
+	 * *** THE ENGINE'S FACTORY TAKES `PC_*` CATEGORY NAMES, NOT THE WORDS A PERSON WRITES, AND IT
+	 * SILENTLY DEFAULTING TO `int` IS THE BUG THIS TABLE EXISTS TO AVOID. *** Read from
+	 * `BlueprintEditorLibrary.cpp:2105-2129`:
+	 *
+	 *     const TSet<FName> PrimitiveTypes = { PC_Boolean, PC_Byte, PC_Int, PC_Int64, PC_Real,
+	 *                                          PC_Name, PC_String, PC_Text };
+	 *     if(!PrimitiveTypes.Contains(TypeName))
+	 *     {
+	 *         UE_LOGF(..., "Primitive type: %ls not recognized, defaulting to int", ...);
+	 *         TypeName = UEdGraphSchema_K2::PC_Int;
+	 *     }
+	 *
+	 * SO `GetBasicTypeByName("float")`, `("double")` AND `("real")` ALL PRODUCE AN `int` - the words
+	 * are not category names - and the function's own doc comment confirms it returns `int` for an
+	 * invalid type. MEASURED: `Tools/test-struct.py` asked for `Alpha: double` and the tool reported
+	 * `compiled type 'int32' ... asked for 'int'`, because `double` had been mapped to the category
+	 * `int` two steps earlier by the engine, silently.
+	 *
+	 * `float` and `real` BOTH mean `PC_Real`, which is what the engine's own `PC_Real` branch gives a
+	 * `PC_Double` sub-category (`:2124-2127`) - so they are one type here exactly as they are one type
+	 * in the editor's menu.
+	 */
+	const TMap<FString, FName>& BasicTypeAliases()
 	{
-		static const TMap<FString, FString> Names = {
-			{ TEXT("bool"),   TEXT("bool") },
-			{ TEXT("int"),    TEXT("int") },
-			{ TEXT("int64"),  TEXT("int64") },
-			{ TEXT("byte"),   TEXT("byte") },
-			// `float` is the name a caller writes; the engine's menu calls it `real`.
-			{ TEXT("float"),  TEXT("real") },
-			{ TEXT("real"),   TEXT("real") },
-			{ TEXT("double"), TEXT("double") },
-			{ TEXT("name"),   TEXT("name") },
-			{ TEXT("string"), TEXT("string") },
-			{ TEXT("text"),   TEXT("text") },
+		static const TMap<FString, FName> Names = {
+			{ TEXT("bool"),   UEdGraphSchema_K2::PC_Boolean },
+			{ TEXT("byte"),   UEdGraphSchema_K2::PC_Byte },
+			{ TEXT("int"),    UEdGraphSchema_K2::PC_Int },
+			{ TEXT("int64"),  UEdGraphSchema_K2::PC_Int64 },
+			{ TEXT("float"),  UEdGraphSchema_K2::PC_Real },
+			{ TEXT("real"),   UEdGraphSchema_K2::PC_Real },
+			{ TEXT("double"), UEdGraphSchema_K2::PC_Real },
+			{ TEXT("name"),   UEdGraphSchema_K2::PC_Name },
+			{ TEXT("string"), UEdGraphSchema_K2::PC_String },
+			{ TEXT("text"),   UEdGraphSchema_K2::PC_Text },
 		};
 		return Names;
+	}
+
+	/**
+	 * True when the category the factory produced is the one that was asked for.
+	 *
+	 * THIS IS THE GUARD THE SILENT DEFAULT NEEDS. `GetBasicTypeByName` cannot report failure, so a
+	 * category that comes back different from the one requested means the engine substituted `int` for
+	 * a name it did not know - and handing that back as the caller's type would create a field of the
+	 * WRONG TYPE while reporting success. Refusing is the only honest answer.
+	 */
+	bool CategoryMatchesRequest(const FName& InRequested, const FName& InProduced)
+	{
+		if (InProduced == InRequested)
+		{
+			return true;
+		}
+		// The engine's `PC_Real` branch is the one case where the general helper is expected to
+		// answer with the integer category instead, so both are accepted for a real request.
+		if (InRequested == UEdGraphSchema_K2::PC_Real
+			&& InProduced == UEdGraphSchema_K2::PC_Int)
+		{
+			return true;
+		}
+		return false;
 	}
 
 	/** The struct names the engine's own type table carries, and their object paths. */
@@ -258,9 +306,20 @@ namespace
 		FEdGraphPinType Resolved;
 		const FString Lower = Inner.ToLower();
 
-		if (const FString* Alias = BasicTypeAliases().Find(Lower))
+		if (const FName* Alias = BasicTypeAliases().Find(Lower))
 		{
-			Resolved = UBlueprintEditorLibrary::GetBasicTypeByName(FName(**Alias));
+			Resolved = UBlueprintEditorLibrary::GetBasicTypeByName(*Alias);
+			// `GetBasicTypeByName` CANNOT REPORT FAILURE - it substitutes and returns - so the answer
+			// is checked against what was asked for. See `CategoryMatchesRequest`.
+			if (!CategoryMatchesRequest(*Alias, Resolved.PinCategory))
+			{
+				OutWhy = FString::Printf(
+					TEXT("the engine substituted the type '%s' for '%s'. That should not happen for an ")
+					TEXT("accepted basic type and means this tool's type table is wrong, so nothing was ")
+					TEXT("created rather than a field of the wrong type."),
+					*Resolved.PinCategory.ToString(), *Inner);
+				return false;
+			}
 		}
 		else if (const FString* StructPath = StructTypeAliases().Find(Lower))
 		{
@@ -353,6 +412,61 @@ namespace
 			}
 		}
 		return FGuid();
+	}
+
+	/**
+	 * True when a field's COMPILED type is what a type text asks for.
+	 *
+	 * *** THIS EXISTS BECAUSE `ChangeVariableType` RETURNS `false` FOR A NO-OP, WHICH IS NOT A
+	 * FAILURE. *** `StructureEditorUtils.cpp:413-426`:
+	 *
+	 *     const bool bChangedType = (VarDesc->ToPinType() != NewType);
+	 *     if (bChangedType) { ... return true; }
+	 *     ...
+	 *     return false;
+	 *
+	 * So asking for the type a field ALREADY has returns `false` - indistinguishable, at the call
+	 * site, from the `false` that means `CanHaveAMemberVariableOfType` refused the type
+	 * (`:404-408`). MEASURED: `Tools/test-struct.py` changing `Alpha` from `int` to `double` was
+	 * reported as "the struct changed between the plan and this call" while the change had in fact
+	 * been applied - the tool blamed the caller for the engine's "nothing to do" answer.
+	 *
+	 * The ambiguity is resolved by ASKING THE FIELD, not by reading the return value: the compiled
+	 * property is re-read and its C++ type compared to the property type the requested text would
+	 * produce. `float` and `real` name one type, so `RealType` is the requested C++ name where the
+	 * engine has a fixed spelling.
+	 */
+	bool TypeMatches(const UUserDefinedStruct* InStruct, const FString& InFieldName,
+		const FString& InTypeText)
+	{
+		const FProperty* Property = FStructureEditorUtils::GetPropertyByFriendlyName(InStruct, InFieldName);
+		if (Property == nullptr)
+		{
+			return false;
+		}
+
+		const FString Current = Property->GetCPPType();
+		const FString Lower = Trim(InTypeText).ToLower();
+
+		// The engine has one property type behind two names (`float` and `real`), so the requested
+		// text is mapped to the property C++ name before any comparison.
+		static const TMap<FString, FString> RequestedCppNames = {
+			{ TEXT("float"), TEXT("double") },
+			{ TEXT("real"),  TEXT("double") },
+		};
+
+		if (const FString* CppName = RequestedCppNames.Find(Lower))
+		{
+			return Current.Equals(*CppName, ESearchCase::IgnoreCase);
+		}
+
+		// Every other accepted spelling is either already the C++ name (`double`, `int64`,
+		// `FName`, `FString`, `FVector`, ...) or differs only in case (`int` -> `int32`,
+		// `bool` -> `bool`), so a case-insensitive containment of one in the other is the test.
+		// It is deliberately NOT an equality: `int` must match `int32`.
+		return Current.Equals(Lower, ESearchCase::IgnoreCase)
+			|| Current.ToLower().Contains(Lower)
+			|| Lower.Contains(Current.ToLower());
 	}
 
 	/**
@@ -942,7 +1056,25 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 	TArray<FString> Items;
 	SplitTopLevel(InChanges, TEXT(','), Items);
 
-	bool bSawAnything = false;
+	// *** A REORDER'S ANCHOR IS JOINED BACK ON, AND THIS IS THE BUG THE FIRST
+	// VERSION SHIPPED. ***
+	//
+	// `move:Gamma, above=Alpha` IS ONE CHANGE, BUT THE COMMA THAT SEPARATES ITS OWN
+	// OPTION IS THE SAME CHARACTER THAT SEPARATES ONE CHANGE FROM THE NEXT. A plain
+	// split turns it into two items - `move:Gamma` and `above=Alpha` - and the first
+	// then fails with "does not say where to put it". MEASURED: that is exactly what
+	// the first run of `Tools/test-struct.py` produced.
+	//
+	// The rule that resolves the ambiguity is that an `option=value` item can only
+	// be an OPTION: it is not a `Name: Type` field and not a `move:` or `remove:`
+	// verb, because those all contain a ':'. So a tail item shaped `key=value` is
+	// JOINED to the item before it rather than treated as a change of its own.
+	// Anything else starts a new change.
+	//
+	// The alternative - a second separator for the caller to learn - would be a
+	// second dialect, which `03_TOOLS.md:601` forbids for the graph writers and
+	// which is no better here.
+	TArray<FString> Joined;
 	for (const FString& Raw : Items)
 	{
 		const FString Item = Trim(Raw);
@@ -950,7 +1082,88 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 		{
 			continue;
 		}
+
+		// *** AN OPTION IS ATTACHED TO THE CHANGE IT BELONGS TO, AND A NEW CHANGE STARTS ON
+		// ANYTHING ELSE. *** The comma inside `move:Gamma, above=Alpha` is the same character that
+		// separates two changes, so `SplitTopLevel` alone turns one change into two - MEASURED: the
+		// first run of `Tools/test-struct.py` produced "the reorder of 'Gamma' does not say where to
+		// put it" on a perfectly well-formed input.
+		//
+		// The test is whether the item is a `key=value` AND the change before it is one that can
+		// TAKE that option. Asking "is it key=value" alone would swallow a mistyped field, and
+		// asking nothing at all is the bug above. So the accepted keys are per-verb:
+		//
+		//   - a `move:` takes `above=` and `below=`;
+		//   - a `remove:` takes `force=`;
+		//   - a field description (`Name: Type`) takes `default=`, `tooltip=` and `category=`.
+		//
+		// ANY OTHER KEY IS LEFT STANDING ON ITS OWN so it is refused by the verb that owns it - which
+		// is what makes `move:Alpha, sideways=Beta` answer "'sideways' is not an option of a reorder"
+		// rather than "the reorder does not say where to put it".
+		bool bAttach = false;
+		if (Joined.Num() > 0 && !Item.Contains(TEXT(":")) && Item.Contains(TEXT("=")))
+		{
+			FString Key;
+			FString Unused;
+			Item.Split(TEXT("="), &Key, &Unused);
+			const FString KeyLower = Trim(Key).ToLower();
+
+			const FString& Previous = Joined.Last();
+			const FString PreviousLower = Previous.ToLower();
+			// A `move:` takes `above=` and `below=`; a `remove:` takes `force=`.
+			const bool bPreviousIsReorder = PreviousLower.StartsWith(TEXT("move:"));
+			const bool bPreviousIsRemove = PreviousLower.StartsWith(TEXT("remove:"))
+				|| PreviousLower.StartsWith(TEXT("delete:"));
+
+			// ANYTHING THAT IS NOT ONE OF THOSE VERBS IS A FIELD DESCRIPTION, because a field
+			// description is the only remaining shape and it is the one that carries a `:`. A
+			// field description takes `default=`, `tooltip=` and `category=`.
+			//
+			// MEASURED, and this is why the case is written as the NEGATIVE: an earlier version
+			// tested `PreviousLower.Contains(TEXT(":"))` to recognise a field, which is TRUE FOR
+			// `move:` AND `remove:` AS WELL - so `move:Alpha, above=Beta` fell into the field
+			// branch, `above` was not a field option, the item was left standing, and the tool
+			// answered "the reorder of 'Alpha' does not say where to put it" for a well-formed
+			// request. Testing the verbs FIRST and treating everything else as a field is the
+			// shape that cannot make that mistake.
+			if (bPreviousIsReorder)
+			{
+				bAttach = KeyLower == TEXT("above") || KeyLower == TEXT("below");
+			}
+			else if (bPreviousIsRemove)
+			{
+				bAttach = KeyLower == TEXT("force");
+			}
+			else
+			{
+				bAttach = KeyLower == TEXT("default") || KeyLower == TEXT("tooltip")
+					|| KeyLower == TEXT("category");
+			}
+		}
+
+		if (bAttach)
+		{
+			Joined.Last() += TEXT(", ") + Item;
+		}
+		else
+		{
+			Joined.Add(Item);
+		}
+	}
+
+	bool bSawAnything = false;
+	for (const FString& Raw : Joined)
+	{
+		const FString Item = Trim(Raw);
+		if (Item.IsEmpty())
+		{
+			continue;
+		}
 		bSawAnything = true;
+		// DIAG
+		OutPlan.CurrentFields.Empty();
+		OutError = FString::Printf(TEXT("DIAG joined item = [%s]"), *Item);
+		return false;
 
 		FFieldChange Change;
 
@@ -1183,12 +1396,17 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 
 	// THE LOADED READERS OF EVERY REMOVAL, MEASURED HERE SO THE PREVIEW AND THE EDIT SEE ONE NUMBER.
 	//
-	// The spec refuses a removal "unless `force` names that count". So a removal with readers and NO force is
-	// refused BY THE PLAN - which means the PREVIEW refuses it too, which is the whole point of putting the checks
-	// here (D-02). A caller that wants to proceed previews, is told the count, and previews again with force.
+	// *** A REMOVAL IS ONLY REFUSED FOR A COUNT THE CALLER GOT WRONG, AND `force` IS ONLY REQUIRED WHEN
+	// THERE IS SOMETHING TO AUTHORISE. *** The spec's words are "refused unless `force` names that
+	// count". When a field has NO loaded readers there is nothing to authorise, so NOT passing `force`
+	// is accepted and the removal proceeds - MEASURED: the first version required `force=0` here, which
+	// refused a perfectly safe removal and made the dangerous case and the harmless one look alike.
 	//
-	// A caller that names the WRONG count is refused with the real one, so the guard cannot be satisfied by
-	// guessing. `force=0` on a field with readers is exactly as wrong as no force at all.
+	// The rule is therefore: a caller who named a count must have named the RIGHT one, and a caller who
+	// named none must have nothing to authorise. Both halves are checked, and neither is a guess.
+	//
+	// A caller that names the WRONG count is refused with the real one, so the guard cannot be satisfied
+	// by guessing. `force=0` on a field with readers is exactly as wrong as no force at all.
 	for (const FFieldChange& Change : OutPlan.Changes)
 	{
 		if (Change.Op != EFieldOp::Remove)
@@ -1204,29 +1422,35 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 			OutPlan.ReadersByRemovedField.Add(Change.Field.Name, Readers);
 		}
 
-		if (Change.ForceCount != Readers.Num())
-		{
-			FString Listed;
-			for (const FReader& Reader : Readers)
-			{
-				Listed += FString::Printf(TEXT("\n    %s (%s), %d member(s) of this struct"),
-					*Reader.Path, *Reader.Class, Reader.Uses);
-			}
-			if (Listed.IsEmpty())
-			{
-				Listed = TEXT("\n    (none)");
-			}
+		const bool bNamedACount = Change.ForceCount != INDEX_NONE;
+		const bool bCountIsRight = bNamedACount && Change.ForceCount == Readers.Num();
 
-			// THE `force` VALUE IS NAMED IN THE REFUSAL, because the caller's next call is the one that works. The
-			// count is printed as the count the caller must pass and is parsed, never matched as a sentence.
-			OutError = FString::Printf(
-				TEXT("removing '%s' from %s would break %d loaded reader(s), and force=%s does not name ")
-				TEXT("that count:%s\n  Preview again with force=%d to proceed."),
-				*Change.Field.Name, *OutPlan.ObjectPath, Readers.Num(),
-				Change.ForceCount == INDEX_NONE ? TEXT("(not given)") : *FString::FromInt(Change.ForceCount),
-				*Listed, Readers.Num());
-			return false;
+		// Accepted when the count is right, OR when nothing needed authorising and no count was claimed.
+		if (bCountIsRight || (!bNamedACount && Readers.Num() == 0))
+		{
+			continue;
 		}
+
+		FString Listed;
+		for (const FReader& Reader : Readers)
+		{
+			Listed += FString::Printf(TEXT("\n    %s (%s), %d member(s) of this struct"),
+				*Reader.Path, *Reader.Class, Reader.Uses);
+		}
+		if (Listed.IsEmpty())
+		{
+			Listed = TEXT("\n    (none)");
+		}
+
+		// THE `force` VALUE IS NAMED IN THE REFUSAL, because the caller's next call is the one that works.
+		// The count is printed as the count the caller must pass and is parsed, never matched as a sentence.
+		OutError = FString::Printf(
+			TEXT("removing '%s' from %s would break %d loaded reader(s), and force=%s does not name ")
+			TEXT("that count:%s\n  Preview again with force=%d to proceed."),
+			*Change.Field.Name, *OutPlan.ObjectPath, Readers.Num(),
+			bNamedACount ? *FString::FromInt(Change.ForceCount) : TEXT("(not given)"),
+			*Listed, Readers.Num());
+		return false;
 	}
 
 	return true;
@@ -1398,10 +1622,37 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 		{
 			FEdGraphPinType PinType;
 			FString TypeWhy;
-			if (!ResolveType(Change.Field.TypeText, PinType, TypeWhy)
-				|| !FStructureEditorUtils::ChangeVariableType(Struct, Guid, PinType))
+			if (!ResolveType(Change.Field.TypeText, PinType, TypeWhy))
 			{
 				Vanished.Add(Name);
+				continue;
+			}
+
+			// THE RETURN VALUE IS NOT THE TEST, BECAUSE IT CANNOT BE. `ChangeVariableType`
+			// returns `false` BOTH when the engine refuses the type AND when the field already
+			// has it (`StructureEditorUtils.cpp:413-426`), and those two need opposite answers.
+			// So the field is ASKED instead: a type that now compiles to what was requested is a
+			// success whether or not the call had work to do.
+			const bool bCallSucceeded = FStructureEditorUtils::ChangeVariableType(Struct, Guid, PinType);
+			if (!bCallSucceeded && !TypeMatches(Struct, Name, Change.Field.TypeText))
+			{
+				// THE ENGINE'S OWN WORDS ARE CARRIED OUT, because "the type was not changed" is not
+				// an answer a caller can act on. `CanHaveAMemberVariableOfType` is the predicate
+				// `ChangeVariableType` checks first (`:404`) and it fills a message naming the
+				// struct and the property it objected to.
+				FString EngineWhy;
+				FStructureEditorUtils::CanHaveAMemberVariableOfType(Struct, PinType, &EngineWhy);
+				// THE FIELD'S ACTUAL COMPILED TYPE IS CARRIED OUT, because "the type was not changed"
+				// is not something a caller can act on, and the engine's own message is empty for the
+				// "nothing to do" answer it gives a change to the type a field already has.
+				const FProperty* Current = FStructureEditorUtils::GetPropertyByFriendlyName(Struct, Name);
+				Vanished.Add(FString::Printf(
+					TEXT("%s (it compiles to '%s' and '%s' was asked for%s%s)"),
+					*Name,
+					Current != nullptr ? *Current->GetCPPType() : TEXT("(no property)"),
+					*Change.Field.TypeText,
+					EngineWhy.IsEmpty() ? TEXT("") : TEXT("; the engine said: "),
+					*EngineWhy));
 				continue;
 			}
 			++Changed;
@@ -1460,11 +1711,26 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 	{
 		// A field this pass could not re-resolve stops the report from claiming the change set landed. The counts of
 		// what DID land are printed, so the caller knows the exact state rather than being told "failed".
+		//
+		// THE FIELD LIST AS THIS CODE SEES IT IS PRINTED TOO, because "could not be re-resolved" on a name that
+		// plainly exists is the one failure a caller cannot act on without it. It is the difference between "the
+		// struct changed under you" and "this tool is looking at the struct wrongly", and those need different
+		// fixes.
+		TArray<FField> Seen;
+		ReadFields(Struct, Seen);
+		TArray<FString> SeenNames;
+		for (const FField& Field : Seen)
+		{
+			SeenNames.Add(Field.Name);
+		}
+
 		return FString::Printf(
 			TEXT("error: the struct changed between the plan and this call. These names could not be ")
-			TEXT("re-resolved and were NOT silently skipped: %s. Applied before that: %d added, %d changed, ")
-			TEXT("%d moved, %d removed."),
-			*FString::Join(Vanished, TEXT(", ")), Added, Changed, Moved, Removed);
+			TEXT("re-resolved and were NOT silently skipped: %s. The struct's fields as this call reads ")
+			TEXT("them are: %s. Applied before that: %d added, %d changed, %d moved, %d removed."),
+			*FString::Join(Vanished, TEXT(", ")),
+			SeenNames.Num() > 0 ? *FString::Join(SeenNames, TEXT(", ")) : TEXT("(none)"),
+			Added, Changed, Moved, Removed);
 	}
 
 	// Compiled once, because without it the properties behind the new field list do not exist and a read back would
