@@ -148,7 +148,8 @@ namespace
 			if (!InPlan.bUsesCheckout)
 			{
 				Out.Add(FString::Printf(
-					TEXT("        the provider '%s' reports UsesCheckout() == false, so a checkout is a"));
+					TEXT("        the provider '%s' reports UsesCheckout() == false, so a checkout is a"),
+					*InPlan.ProviderName));
 				Out.Add(TEXT("        NO-OP on it: every tracked file in the working copy is already checked out"));
 				Out.Add(TEXT("        (GitSourceControlModule.cpp:21). The provider is still asked and its own"));
 				Out.Add(TEXT("        answer is repeated, because an expected no-op is not a measurement."));
