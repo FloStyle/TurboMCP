@@ -6178,3 +6178,42 @@ entirely.*
 
 1. **THE SUITE MUST STATE WHICH `T-STRUCT-11` IT PROVED** - copying between two **GRAPHS of one blueprint** (which is what `TA-2` actually is, since `TurboMCPKitCommandlet.cpp:939-940` sets `Ta2.Name = "TA01_HandLaid"`) **or between two ASSETS**. **THE ROW SAYS "between graphs and Blueprints" AND THE FIXTURE CANNOT DO THE SECOND HALF.**
 2. **AND IT MUST SATISFY THE CHECK RULE FOUR ROUNDS PRODUCED: NAME THE INPUT THAT MAKES EACH CHECK FAIL.** *A copy suite's natural checks are relations - the link count matches, the destination grew by N nodes, each crossing link is reported - **AND EVERY ONE PASSES ON AN EMPTY COPY.***
+
+---
+
+## 46. Regression check after 81 -> 85 tools: the three recently delivered capabilities still pass
+
+**RUN AFTER THE FOUR GRAPH TOOLS WERE WIRED INTO THE MODULE, WHICH IS THE MOMENT A SHARED HEADER CHANGE COULD POSSIBLY
+HAVE BROKEN SOMETHING ELSE:**
+
+    PASS  test-asset-cost        RESULT: PASS (10 check(s) run)
+    PASS  test-call-cost         RESULT: PASS (29 check(s) run)
+    PASS  test-widget-tree-sync  RESULT: PASS (14 check(s) run)
+    passed 5, failed 1, blocked 0, of 6
+
+*** AND THE ONE FAILURE IS `audit-tool-coverage`, ON EXACTLY THE FOUR NAMES THAT HAVE NO SUITE YET - WHICH IS THE RED
+STATE RECORDED DELIBERATELY IN SECTION 45 RATHER THAN A REGRESSION. ***
+
+### Why this check is worth its own entry rather than being folded into a status line
+
+**THE FOUR NEW DECLARATIONS WENT INTO `TurboMCPToolsets.h`, WHICH IS THE ONE FILE EVERY WORKSTREAM TOUCHES**, and this
+project has already recorded what a shared-file change can do: **a peer's broken file blocked THREE workstreams, and a
+`git checkout` of the shared tree destroyed a VERIFIED capability.** So the question after adding four names to the
+shared header is not "does the new thing build" - **the full module build already answered that - but "does the OLD
+thing still work", and only a suite run answers it.**
+
+**AND IT IS THE CHEAPEST FORM OF THE PROJECT'S OWN RULE, POINTED AT THE ORCHESTRATOR RATHER THAN AT A TOOL: A TOOL'S
+OWN REPORT IS NOT EVIDENCE.** *A green build says the module compiles; it says nothing about whether the capabilities
+that were passing before still pass. **The build was already green when `test-graph-dead` was failing in the full run,
+and it was green through the entire stale-binary episode that masked a whole regression - the seventh firing of that
+trap.***
+
+### The state this leaves, stated plainly
+
+    85 AICallable tools      81 before the graph pair
+    FULL MODULE BUILD        Result: Succeeded
+    3 recent capabilities    PASS (53 checks between them)
+    audit-tool-coverage      FAIL on the 4 graph names, because test-graph-structure.py does not exist yet
+    test-graph-structure.py  OWED
+
+**SO THE ONE RED THING IN THIS TREE IS THE ONE THING I EXPECT TO BE RED, AND IT NAMES ITSELF WHEN IT IS READ.**
