@@ -104,6 +104,84 @@ def audit(path):
             findings.append(("TAUTOLOGY", index + 1,
                              "%s is asserted after being assigned in the same block" % assignment.group(1)))
 
+    # 6. *** A REGEX THAT CANNOT MATCH THE TEXT IT IS GIVEN. ***
+    #
+    # THIS IS THE MIRROR OF EVERY OTHER CHECK IN THIS FILE. The five above look for assertions that cannot
+    # FAIL; this one looks for an assertion that cannot PASS, and it is here because row 2.2 found one the
+    # hard way: `re.search(r"^size: (\d+)x", out)` WITHOUT `re.MULTILINE` matched only the start of the
+    # WHOLE string, so the size check could never pass and 16 of 18 failures came from one function.
+    #
+    # A check that cannot pass is as useless as one that cannot fail, and this project had spent five
+    # sections on the second and never once on the first.
+    #
+    # THE RULE IS NARROW ON PURPOSE, because a broad version is a false-positive machine. It fires ONLY on:
+    #   * an anchored pattern - one containing `^`
+    #   * used WITHOUT `re.MULTILINE`
+    #   * on a call whose SUBJECT is a variable that the suite has already built by joining or splitting
+    #     lines, or has read from a file - i.e. a value that is very likely to contain newlines.
+    # A single-line subject with an anchor is CORRECT usage and is not reported.
+    # *** THE ASSIGNMENT IS RECOGNISED BY THE CALL THAT BUILDS IT, NOT BY THE DELIMITER. ***
+    # The first version tried to spell the join delimiter and got it wrong: the source says `"\\n".join(` (an
+    # ESCAPED backslash inside a string literal in the suite's own source), and the alternative written for it
+    # matched a LITERAL newline instead - so the name was never collected, and the check below could not fire
+    # even when its other two conditions were satisfied. Any `x = ...join(` / `.splitlines()` / `.read()` /
+    # `.readlines()` produces a value built from LINES, and that is the only thing this needs to know.
+    multiline_hint = re.compile(
+        r"(\w+)\s*=\s*[^\n]*?\.(?:join|splitlines|read|readlines)\(")
+    multiline_names = set(multiline_hint.findall(text))
+
+    # *** AND A CALL IS A LOGICAL STATEMENT, NOT A LINE. ***
+    # The second version ran the detection per line and produced TWO FALSE POSITIVES on the first real corpus
+    # it saw, both in `check-plugin.py`:
+    #   * `re.finditer(r"^FString...", handle.read(),` / `re.MULTILINE):` - THE FLAG IS ON THE NEXT LINE, so a
+    #     per-line search cannot see it and reported a correct call as broken.
+    #   * a pattern containing `\)` - the closing-delimiter search stopped at the ESCAPED parenthesis, took the
+    #     wrong closing quote, and captured the tail of the line as if it were the pattern.
+    # BOTH ARE THE DEFECT THIS CHECK EXISTS TO FIND, COMMITTED BY THE CHECK. So statements are joined by
+    # parenthesis balance first, and the pattern's closing quote is the first quote NOT preceded by a backslash.
+    statements = []
+    buffer_text = ""
+    depth = 0
+    start_line = 1
+    for index, raw in enumerate(lines, start=1):
+        if not buffer_text:
+            start_line = index
+        buffer_text += raw
+        scan = strip_strings(raw)
+        depth += scan.count("(") - scan.count(")")
+        if depth <= 0:
+            statements.append((start_line, buffer_text))
+            buffer_text = ""
+            depth = 0
+    if buffer_text.strip():
+        statements.append((start_line, buffer_text))
+
+    for start_line, statement in statements:
+        if "re." not in statement:
+            continue
+        for match in re.finditer(r"re\.(?:search|match|findall|finditer|fullmatch)\(\s*r?([\"'])((?:\\.|(?!\1).)*)\1",
+                                 statement, re.DOTALL):
+            pattern = match.group(2)
+            # *** A `^` INSIDE A CHARACTER CLASS IS A NEGATION, NOT AN ANCHOR. ***
+            # The third version of this check reported `UFUNCTION\s*\([^)]*\)` as anchored because of the `^`
+            # in `[^)]`. That is a NEGATED CLASS and the pattern matches anywhere - so the check accused a
+            # perfectly good call of a defect it did not have. THE CHECK WAS MATCHING SOMETHING OTHER THAN
+            # WHAT IT MEANT TO, WHICH IS THE EXACT DISEASE IT EXISTS TO FIND, COMMITTED BY THE CHECK ITSELF
+            # FOR THE FOURTH TIME. Character classes are removed before the anchor test.
+            without_classes = re.sub(r"\[(?:\\.|[^\]\\])*\]", "", pattern)
+            if "^" not in without_classes:
+                continue
+            if "re.MULTILINE" in statement or "re.M" in statement:
+                continue
+            tail = statement[match.end():]
+            subject = re.search(r"\s*,\s*([A-Za-z_]\w*)", tail)
+            if subject and subject.group(1) in multiline_names:
+                findings.append(("CANNOT-MATCH", start_line,
+                                 "pattern r'%s' is anchored with ^ but its statement has no re.MULTILINE, and "
+                                 "its subject `%s` is built from LINES: ^ will match only the start of the whole "
+                                 "string, so this check can never pass on a later line"
+                                 % (pattern, subject.group(1))))
+
     return findings
 
 
