@@ -912,6 +912,24 @@ rule as `D-15`: what the reader prints is what the writer accepts.
   crash that proved this is recorded in Q-15 (TA-10). They are therefore
   EDITOR-ONLY, and their tests run against a live editor. A commandlet that
   needs a user struct imports it rather than building it.
+- **CORRECTED, MEASURED, AND THE CORRECTION IS NARROWER THAN IT LOOKS.** The
+  crash is real and the commandlet limit stands. But the line above names the
+  wrong cause, and it was read that way for long enough to be written into
+  `D-51`. `FStructureEditorUtils::CreateUserDefinedStruct()`
+  (`Engine/Source/Editor/UnrealEd/Private/Kismet2/StructureEditorUtils.cpp:42-64`)
+  is a PUBLIC STATIC that INSTALLS the `UUserDefinedStructEditorData` itself at
+  its **line 49-50**, and then calls `AddVariable` on it at its own **line 59**.
+  The commandlet's crash came from calling `NewObject<UUserDefinedStruct>`
+  directly and then reaching for the field list - it stopped ONE CALL SHORT of
+  the API that works.
+  What that means for this spec: **these tools need an EDITOR PROCESS, not an
+  OPEN ASSET EDITOR.** Nothing in `CreateUserDefinedStruct`, `AddVariable`,
+  `RemoveVariable`, `RenameVariable`, `ChangeVariableType`, `MoveVariable` or
+  `CompileStructure` reads `GEditor` or an editor tab. So they are not
+  EDITOR-ONLY in the sense the paragraph above implies; they are
+  LIVE-EDITOR-ONLY, which is a different and much weaker limit - the same one
+  every other tool in this plugin already has. The prohibition that matters is
+  unchanged: a COMMANDLET still cannot make one, and still imports it instead.
 - Tests: T-DATA-2, T-DATA-3.
 
 ### P/E-ENUM-EDIT: change an existing enum

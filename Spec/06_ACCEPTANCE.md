@@ -35,6 +35,25 @@ testing.
 | TA-20 | Material parameter collection | 5 parameters: 2 scalar, 2 vector, one read by no material |
 | TA-21 | User struct asset | 4 fields, built by hand, because `AddVariable` needs an editor factory (Q-15) |
 
+**TA-21 DOES NOT EXIST, MEASURED.** There is no `TA21_*` asset under
+`TestProject/Content` and no `UserDefinedStruct` asset anywhere in the
+repository - the kit holds `TA01_HandLaid`, `TA07_Card`, `TA11_KitEnum`,
+`TA11_TestEnum`, `TA13_KitPath`, `TA14_KitDataTable`, `TA18_ColourSuite`,
+`TA20_KitParameters` and no struct. `T-DATA-3` ("Add, reorder and remove a field
+of TA-21") therefore names a fixture that does not exist, which makes this the
+FOURTH row in this project to do so, after `T-MAT-10`->`TA-6`,
+`T-LEVEL-1/2`->`TA-15`/`TA-16` and `T-WIDGET-4`->`TA-8`.
+
+`T-DATA-3` IS SATISFIED WITHOUT IT ANYWAY, and that is the honest reading rather
+than a workaround: `T-DATA-2` creates a struct through the tool, and `T-DATA-3`
+edits one. `Tools/test-struct.py` BUILDS the struct it then edits, through this
+plugin's own new tools, and asserts every change against the struct's own
+compiled field list and against the saved `.uasset`. So the missing fixture is
+recorded rather than required. The note on this row's reason is also out of
+date: a struct CAN now be built from a live editor (`03_TOOLS.md`, the
+`P/E-STRUCT-*` correction, and `D-51`'s correction); only a COMMANDLET cannot,
+and TA-21 was never needed by one.
+
 Two things are made during the tests, not stored:
 
 - TA-NEW: a widget created in the session and not saved.

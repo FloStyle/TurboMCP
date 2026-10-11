@@ -578,7 +578,7 @@ void FTurboMCPStruct::ReadFields(const UUserDefinedStruct* InStruct, TArray<FFie
 	}
 }
 
-void FTurboMCPStruct::FindReaders(const UUserDefinedStruct* InStruct, const FString& InFieldName,
+void FTurboMCPStruct::FindReaders(const UUserDefinedStruct* InStruct,
 	TArray<FReader>& OutReaders)
 {
 	OutReaders.Reset();
@@ -593,9 +593,15 @@ void FTurboMCPStruct::FindReaders(const UUserDefinedStruct* InStruct, const FStr
 	// `D-45` says a writer that removes anything "lists each removal by key with its class and title, never a
 	// count" - "a count says how much is gone and a list says what".
 	//
-	// IT IS DELIBERATELY CONSERVATIVE. It counts assets that would be STRUCTURALLY broken, which is the harm the
-	// spec's refusal clause exists for. It does NOT claim to count every graph that reads a field by name, and it
-	// says so in the preview rather than presenting its number as a total.
+	// *** THE COUNT IS PER STRUCT AND NOT PER FIELD, AND THAT IS STATED RATHER THAN HIDDEN. *** An earlier
+	// version of this function took the field name as a parameter and NEVER READ IT - a silently unused argument
+	// that made the signature claim a per-field count the body did not compute. Every field of a struct shares
+	// one shape and one set of readers, so the honest signature has no field name in it, and a caller cannot be
+	// misled into thinking a removal of field A is safer than a removal of field B.
+	//
+	// IT IS ALSO DELIBERATELY CONSERVATIVE. It counts assets that would be STRUCTURALLY broken, which is the harm
+	// the spec's refusal clause exists for. It does NOT claim to count every graph that reads a field by name, and
+	// `RenderPreviewFields` says so rather than presenting its number as a total.
 	for (TObjectIterator<UObject> It; It; ++It)
 	{
 		UObject* Object = *It;
@@ -1373,7 +1379,7 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 		}
 
 		TArray<FReader> Readers;
-		FindReaders(Struct, Change.Field.Name, Readers);
+		FindReaders(Struct, Readers);
 
 		if (Readers.Num() > 0)
 		{

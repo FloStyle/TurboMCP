@@ -319,6 +319,23 @@ editor. Rejected: finding a commandlet-safe path first. Why: the crash was
 measured, twice, and a tool that works in the editor and crashes headless is
 better than no tool as long as the limit is written down.
 
+**D-51 CORRECTION, MEASURED WHEN ROW 7.1 WAS BUILT - THE DECISION STANDS AND ITS
+REASON DOES NOT.** The crash is real and a commandlet still cannot make a user
+struct. But "only the editor factory installs it" is FALSE, and it is the reason
+this decision gives. `FStructureEditorUtils::CreateUserDefinedStruct()`
+(`StructureEditorUtils.cpp:42-64`) is the PUBLIC STATIC that installs the
+`UUserDefinedStructEditorData` itself, at its **lines 49-50**, and then calls
+`AddVariable` at its own **line 59**; the commandlet's crash came from using
+`NewObject<UUserDefinedStruct>` directly and stopping one call short of it.
+Nothing on the path - `CreateUserDefinedStruct`, `AddVariable`,
+`RemoveVariable`, `RenameVariable`, `ChangeVariableType`, `MoveVariable`,
+`CompileStructure` - reads `GEditor` or an open asset editor. So the limit is
+**LIVE-EDITOR-ONLY, not "needs an open struct editor"**, and the tools build and
+pass against the same live editor every other suite in `Tools/` uses. Rejected:
+leaving the reason as it was. Why: a decision whose reason is wrong gets cited
+for the next thing it does not cover, and this one was already one row away from
+refusing a capability that works.
+
 **D-52 A size is reported with its provenance.** `R-ASSET-COST` splits its
 answer into the asset's own size, what it pulls in, and whether each reference
 is hard, soft or editor-only. Rejected: one total size. Why: the total names no

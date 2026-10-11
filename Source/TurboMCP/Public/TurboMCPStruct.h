@@ -205,14 +205,17 @@ public:
 	static FString ApplyFields(const FPlanFields& InPlan);
 
 	/**
-	 * The loaded readers of one field of one struct, listed by path and class.
+	 * The loaded readers of a struct, listed by path and class.
 	 *
 	 * PUBLIC BECAUSE IT IS THE FACT THE REFUSAL IS BUILT ON, and a caller that wants to know why a removal was
 	 * refused should be able to ask without attempting the removal. A count on its own is not an answer: `D-45`
 	 * says a writer that removes anything *"lists each removal by key with its class and title, never a count"*.
+	 *
+	 * THE COUNT IS PER STRUCT AND NOT PER FIELD. Every field of a struct shares one shape and one set of
+	 * readers, so there is no field name in this signature - and that is deliberate: an earlier version took one
+	 * and never read it, which made the signature claim a per-field count the body did not compute.
 	 */
-	static void FindReaders(const UUserDefinedStruct* InStruct, const FString& InFieldName,
-		TArray<FReader>& OutReaders);
+	static void FindReaders(const UUserDefinedStruct* InStruct, TArray<FReader>& OutReaders);
 
 	/** The fields a user struct currently declares, in order, read from its editor data. */
 	static void ReadFields(const UUserDefinedStruct* InStruct, TArray<FField>& OutFields);
