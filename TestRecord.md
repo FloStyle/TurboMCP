@@ -6294,3 +6294,48 @@ section 45 and in the round-87 brief:*
    matches, the destination grew by N nodes, each crossing link is reported - AND EVERY ONE PASSES ON AN EMPTY COPY.
    That is the mechanism four consecutive workstreams discovered by breaking their own code and watching the suite stay
    green.*
+
+---
+
+## 49. Round 91: the graph suite ARRIVED, the audit went GREEN, and the suite itself does not yet report a verdict
+
+**THE FIFTH PIECE LANDED.** `Tools/test-graph-structure.py`, 258 lines, committed in `346e1f0` **BEFORE it was verified** -
+deliberately, because seven safety commits have preserved work on this row and none of that was luck.
+
+*** AND THE RED STATE RECORDED IN SECTIONS 45 AND 49 IS CLEARED: `python Tools/audit-tool-coverage.py` NOW REPORTS
+`uncalled: (none)` AFTER REPORTING THOSE FOUR NAMES AS UNCALLED FOR FOUR ROUNDS. ***
+
+    BUILD   full module, Result: Succeeded   (85 AICallable tools)
+    AUDIT   uncalled: (none), RESULT: PASS
+    SUITE   test-graph-structure  RESULT: no result line  -> the suite does not yet print a verdict
+
+### 49.1 What "no result line" means here, and why it is not a repeat of the earlier trap
+
+**THE HARNESS'S TAIL EXISTS PRECISELY FOR THIS, AND WHAT IT SHOWED IS THE SUITE'S OWN DIFF-STYLE NARRATION RATHER THAN A
+TRACEBACK:** lines reading `unchanged`, and *"- ... and it names the ONE question the measurement left open, rather than
+the whole probl"*. **SO THE SUITE IS RUNNING AND PRINTING, AND DOES NOT REACH A `RESULT:` LINE - which is a DIFFERENT
+STATE from the four earlier `no result line` cases, where the tail showed a Python `AttributeError` or a
+`URLError WinError 10061`.** *A diagnostic that shows you WHAT the suite did manage to say is worth more than a verdict,
+and this is the third time the tail has paid.*
+
+**AND IT IS NOT THE STALE-BINARY TRAP:** a stale DLL would refuse the call with "no such tool", **and the audit's
+`uncalled: (none)` is only possible because the suite's call sites name the four tools** - *so the binary and the source
+agree about the names.*
+
+### 49.2 The two debts are STILL OWED, and a green audit does not settle either
+
+**A GREEN AUDIT IS NOT EVIDENCE THAT A SUITE VERIFIES ANYTHING - IT IS EVIDENCE THAT THE SUITE MENTIONS THE TOOLS.** *The
+audit reads calls by regex, and six material-suite calls sit in its `NAMED BUT NOT PARSED` list right now precisely
+because a regex cannot resolve a variable.*
+
+1. **WHICH `T-STRUCT-11` IS PROVED** - two graphs of one blueprint, which is what `TA-2` actually is because
+   `TurboMCPKitCommandlet.cpp:939-940` sets `Ta2.Name = "TA01_HandLaid"`, **or two ASSETS.** **THE ROW SAYS "between
+   graphs and Blueprints" AND THE FIXTURE CANNOT CURRENTLY DO THE SECOND HALF.**
+2. **FOR EACH CHECK, THE INPUT THAT MAKES IT FAIL** - *a copy suite's natural checks are relations, and every one passes
+   on an EMPTY copy. That is the mechanism four consecutive workstreams found by breaking their own code and watching
+   the suite stay green.*
+
+**AND THE STATE OF THIS ROW ACROSS FIVE WORKSTREAMS IS NOW ITSELF A FINDING:** one produced the design and no code; one
+resolved the reachability question without building; one produced implementation, declarations and tool bodies; one
+produced the suite. **EVERY STEP IS COMMITTED AND NONE WAS REDONE - which is what the safety-commit mechanism was for,
+and it has now paid on a single row four times.**
