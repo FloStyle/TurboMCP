@@ -9653,3 +9653,34 @@ guessed that `-nullrhi` would be the obstacle and pointed at `LaunchEngineLoop.c
 IRRELEVANT - the file's stated reason for not using `Screenshot` is that it does not FRAME, which is a DESIGN reason that would
 hold on a real RHI too.*** *** So the brief's named obstacle may not be the operative one, and the operative one is written in the
 file the row is extending. That is the fourth premise correction in four rounds and the SECOND in this row alone. ***
+
+---
+
+## 149. Round 200: `Tools/test-capture.py` ALREADY EXISTED, TRACKED, 378 LINES - AND THE CHECK THAT CAUGHT IT WAS WRITTEN INTO THE BRIEF
+
+    Tools/test-capture.py   TRACKED BY GIT   ·   378 lines   ·   mtime 10-09 18:45:21   ·   parses
+    HEAD = origin/main = 5ce5bff   ·   93 declarations   ·   clean tree   ·   the workstream is READING
+
+*** AND THIS IS THE FIRST TIME THE PROJECT HAS CAUGHT THIS TRAP BEFORE IT FIRED RATHER THAN AFTER. THE BRIEF SAID: ***
+
+    "BEFORE CREATING `Tools/test-capture.py`, CHECK IT DOES NOT EXIST. A previous brief named
+     `Tools/test-widget-tree.py`, WHICH ALREADY EXISTED AND WAS TRACKED testing a different capability -
+     following that brief would have SILENTLY OVERWRITTEN A PASSING SUITE."
+
+*** AND IT EXISTS, IT IS TRACKED, AND IT IS 378 LINES OF A PASSING SUITE. ***
+
+### 149.1 And the count is now THREE capabilities this row has found already built
+
+    `L-CAPTURE`           792 lines, WITH FIVE FRAMINGS AND AN EXISTING REFUSAL PATTERN     (section 148, 149)
+    `Tools/test-capture.py`  378 lines, TRACKED, testing something                          (THIS SECTION)
+    AND `L-WIDGET-PREVIEW`   NAMED BY THE CAPTURE FILE AS THE MECHANISM IT PROVED
+
+*** SO ROW 2.1 IS NOT "ADD FOUR SELECTORS TO A CAPABILITY" - IT IS "ADD FOUR SELECTORS TO A CAPABILITY THAT ALREADY HAS FIVE
+FRAMINGS, A REFUSAL PATTERN, A PROVEN RENDER MECHANISM, AND A 378-LINE SUITE." THAT IS A DIFFERENT AND MUCH BETTER STARTING
+POSITION, AND NONE OF IT WAS IN THE ROW'S OWN DESCRIPTION. ***
+
+**AND THE PATTERN ACROSS THE LAST FOUR ROWS IS NOW CLEAR ENOUGH TO NAME: EVERY ROW'S PREMISE HAS BEEN WRONG IN THE DIRECTION OF
+UNDERSTATING WHAT EXISTS.** *Row 7.1's "editor-only" was too strict; row 1.3's plugin list was too narrow; row 10.2's
+"`CheckOutFile` is the way" was a trap; and row 2.1's "add four selectors" is really "extend five framings, a refusal pattern and a
+tracked suite."* *** THE PLAN WAS WRITTEN BEFORE THE WORK, AND THE WORK HAS BEEN FINDING THAT THE PROJECT IS FURTHER ALONG THAN
+THE PLAN SAYS - WHICH IS THE OPPOSITE OF THE USUAL FAILURE MODE AND WORTH RECORDING AS SUCH. ***
