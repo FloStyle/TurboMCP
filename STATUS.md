@@ -14,7 +14,7 @@
 | **Vision (`L-`)** | **3 of 3 — COMPLETE** |
 | **Preview (`P-`)** | **4 of 4 — COMPLETE** |
 | **Edit (`E-`)** | **21 of 23** |
-| Test suites | 41 files · **full run `46/46`, 0 failed, 0 blocked** — §26 of the record: the previous `38/46` was the HARNESS discarding its own diagnosis |
+| Test suites | 48 files · **full run `47/48`** — one failure, `test-graph-dead`, on a REAL check about the MCP server after a fixture rebuild |
 | Documentation | `TestRecord.md` 3668 l. · `QUESTIONS.md` 1193 l. · `Spec/` · `PLAN.md` · `DOCS.md` |
 
 **The two capabilities you asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
