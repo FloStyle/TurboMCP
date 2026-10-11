@@ -8866,3 +8866,21 @@ that is your orchestrator preserving work - keep going.* ***
 provider is available" is answered by `P/E-STRUCT-FIELDS`, which refuses a native struct BY NAME with the reason attached -
 `Only a UUserDefinedStruct has the editor data FStructureEditorUtils edits; a native USTRUCT is compiled C++ source and no
 runtime tool can add a field to it` - and that refusal is produced by the PLAN, so the Preview and the Edit refuse identically.*
+
+---
+
+## 125. Round 171: the previous workstream's SPEC corrections are committed, and row 1.3 is one round in
+
+    MEASURED   main = origin/main = 62da539   ·   90 tools   ·   CLEAN TREE
+               Spec/03_TOOLS.md, 05_DECISIONS.md and 06_ACCEPTANCE.md carry 07:07 timestamps - FROM `3732b17`,
+               THE PREVIOUS WORKSTREAM'S OWN COMMIT, NOT FROM AN UNCOMMITTED EDIT
+               no `Spec/WORKING_SCROW.md` and no `TurboMCPSourceControl.h` yet - ROW 1.3 IS ONE ROUND IN
+
+*** SO THE SPEC EDITS I SAID IN SECTION 170 THAT I WOULD REVIEW RATHER THAN HAVE MADE SILENTLY ARE IN FACT COMMITTED, BY THE
+WORKSTREAM, IN ITS OWN COMMIT, WITH ITS OWN MESSAGE - which is the right shape: **I can read them in `git show` and disagree
+with them in a later commit if I need to, and nothing was made invisible.** *The three files are `03_TOOLS.md` (the
+`P/E-STRUCT-*` correction), `05_DECISIONS.md` (`D-51`'s correction) and `06_ACCEPTANCE.md` (the `TA-21` absence) - exactly the
+three I asked it to name, and it named them.* ***
+
+**AND THE ROUND IS ONE LINE BECAUSE ROW 1.3 IS ONE ROUND IN AND A MEASUREMENT ROW PRODUCES NOTHING UNTIL IT PRODUCES THE TABLE.**
+*Its brief asks for a table with file and line per provider, and the honest state is that the table does not exist yet.*
