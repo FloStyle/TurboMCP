@@ -14,7 +14,7 @@
 | **Vision (`L-`)** | **3 of 3 — COMPLETE** |
 | **Preview (`P-`)** | **4 of 4 — COMPLETE** |
 | **Edit (`E-`)** | **21 of 23** |
-| Test suites | 44 files (`Tools/test-*.py`) · **full run `47/48`** — the one failure, `test-graph-dead`, PASSES IN ISOLATION (measured), so it is documented flakiness and not a defect |
+| Test suites | 45 files (`Tools/test-*.py`) · **full run `51/51`, ZERO FAILURES** — the last red suite was a fixture left dirty by a preceding one (row 0.2) |
 | Documentation | `TestRecord.md` 3668 l. · `QUESTIONS.md` 1193 l. · `Spec/` · `PLAN.md` · `DOCS.md` |
 
 **The two capabilities you asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
