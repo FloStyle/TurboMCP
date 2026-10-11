@@ -60,6 +60,38 @@ class UObject;
  */
 namespace TurboMCPCaptureAsset
 {
+	/**
+	 * The three answers a kind can get, and why there are three rather than a boolean.
+	 *
+	 * A tool that collapsed these into true and false could not say WHICH TOOL to use
+	 * instead, which `03_TOOLS.md` section 18 requires of a refused kind.
+	 *
+	 * THIS IS DECLARED OUTSIDE `FKind` ON PURPOSE: a nested type used as the type of a
+	 * member of its own enclosing class is an incomplete type at that point, and MSVC
+	 * rejects it. Measured rather than recalled - the first version nested it and would
+	 * not have compiled.
+	 */
+	enum class EStatus : uint8
+	{
+		/**
+		 * The editor module is LOADED in this process, so the editor tab can be rendered.
+		 * This is measured, by loading the module, not declared.
+		 */
+		BuiltHere,
+
+		/**
+		 * This tool cannot, but another tool in this plugin can, and `AlternativeTool`
+		 * names it.
+		 */
+		CapturedByAnotherTool,
+
+		/**
+		 * The editor module could not be loaded in this process, so there is no editor to
+		 * render.
+		 */
+		Refused
+	};
+
 	/** One editor kind this tool knows about, and what was decided about it. */
 	struct FKind
 	{
@@ -78,10 +110,20 @@ namespace TurboMCPCaptureAsset
 		/**
 		 * The editor module whose `AssetTypeActions` publishes this kind's editor.
 		 *
-		 * Empty for a kind that is not an asset editor at all, or for one whose editor is
-		 * published by a module this plugin already links.
+		 * Empty for a kind that is not an asset editor at all, or for a kind whose editor
+		 * is published by a module this plugin already links and has already loaded.
 		 */
 		FString OwnerModule;
+
+		/**
+		 * Whether this kind's editor really can be captured HERE, and why.
+		 *
+		 * Taken from `Reachability`, which is measured, and never from a guess.
+		 */
+		EStatus Status = EStatus::Refused;
+
+		/** MEASURED: the module that publishes this kind's editor, and how it answered. */
+		FString Reachability;
 
 		/**
 		 * The tool that CAN capture this kind when this one cannot, or empty.

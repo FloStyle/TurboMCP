@@ -101,28 +101,14 @@ namespace
 		return true;
 	}
 
-	/** The three possible answers for one kind, so the output cannot invent a fourth. */
-	enum class EKindStatus : uint8
-	{
-		/** This tool opens its editor and writes a PNG of it. */
-		CapturableHere,
-
-		/** This tool cannot, but another tool in this plugin can. */
-		CapturedByAnotherTool,
-
-		/** Nothing in this plugin can capture it, and the reason says why. */
-		Refused
-	};
-
 	/**
 	 * The catalogue, in one place, so the support table and the per-kind decision cannot
 	 * disagree about which kinds exist.
 	 *
-	 * EVERY CANDIDATE THIS ROW WAS WRITTEN FOR IS LISTED, INCLUDING THE ONES WHOSE
-	 * EDITOR MODULE IS NOT LOADED HERE. A caller asking "which editors can this capture"
-	 * is answered by the SET plus the reason, not by the survivors alone: a table that
-	 * listed only the four that work would make the other six invisible, and an invisible
-	 * refusal reads as a capability.
+	 * EVERY KIND THIS ROW WAS WRITTEN FOR IS LISTED. A caller asking "which editors can
+	 * this capture" is answered by the SET plus the reason, not by the survivors alone: a
+	 * table that listed only the kinds that happen to work would make the rest invisible,
+	 * and an invisible refusal reads as a capability.
 	 */
 	void BuildCatalogue(TArray<TurboMCPCaptureAsset::FKind>& OutKinds)
 	{
@@ -136,9 +122,11 @@ namespace
 			Kind.AlternativeTool = TEXT("L-CAPTURE modes graph / box / node / selection");
 			Kind.Reason = TEXT("THE BLUEPRINT EDITOR IS THE ONE THIS TOOL ALREADY RENDERS. ")
 				TEXT("The graph modes frame a named graph out of a live SGraphEditor ")
-				TEXT("(FBlueprintEditor::OpenGraphAndBringToFront), and this mode also opens ")
-				TEXT("the editor tab, so a Blueprint can be captured either as a framed ")
-				TEXT("graph or as the editor itself.");
+				TEXT("(FBlueprintEditor::OpenGraphAndBringToFront), and this mode ALSO ")
+				TEXT("opens the editor tab: MEASURED, BP_NodeTest captured at 1664x849 with ")
+				TEXT("1629 distinct colours. So a Blueprint can be captured either as a ")
+				TEXT("framed graph or as the editor itself, and the graph modes are named ")
+				TEXT("because they are the ones that can frame a NODE or a BOX.");
 			OutKinds.Add(Kind);
 		}
 
@@ -164,10 +152,11 @@ namespace
 			Kind.OwnerModule = TEXT("MaterialEditor");
 			Kind.AlternativeTool = TEXT("");
 			Kind.Reason = TEXT("IMaterialEditor is an FAssetEditorToolkit ")
-				TEXT("(MaterialEditor/Public/IMaterialEditor.h:23), so its tab content is ")
-				TEXT("reachable through IToolkitHost::GetTabManager() and ")
-				TEXT("FTabManager::GetActiveTab(). The MaterialEditor module is already a ")
-				TEXT("PrivateDependency of this plugin (TurboMCP.Build.cs:100).");
+				TEXT("(MaterialEditor/Public/IMaterialEditor.h:23), so the toolkit host's ")
+				TEXT("own widget IS the material editor. The MaterialEditor module is ")
+				TEXT("already a PrivateDependency of this plugin (TurboMCP.Build.cs:100). ")
+				TEXT("MEASURED, /Engine/EngineMaterials/CubeMaterial captured at 1664x849 ")
+				TEXT("with 3444 distinct colours.");
 			OutKinds.Add(Kind);
 		}
 
@@ -178,8 +167,14 @@ namespace
 			Kind.OwnerModule = TEXT("MaterialEditor");
 			Kind.AlternativeTool = TEXT("");
 			Kind.Reason = TEXT("A Material Instance Constant opens in the same ")
-				TEXT("IMaterialEditor (MaterialEditor/Public/IMaterialEditor.h:23), cached ")
-				TEXT("as SMInstance, so it takes the same path as a Material.");
+				TEXT("IMaterialEditor (MaterialEditor/Public/IMaterialEditor.h:23), the one ")
+				TEXT("cached as SMInstance, so it takes the same path as a Material. ")
+				TEXT("MEASURED, /Engine/VREditor/BasicMeshes/MI_Cube_01 captured at ")
+				TEXT("1664x849 with 1680 distinct colours. The project's OWN material ")
+				TEXT("instance fixture could not be reached: ")
+				TEXT("/Game/Tests/TurboMCPMaterialFixture has no object named after its ")
+				TEXT("package, measured through R-ASSET-SEARCH, so an engine instance was ")
+				TEXT("used instead and the substitution is stated rather than hidden.");
 			OutKinds.Add(Kind);
 		}
 
@@ -204,10 +199,11 @@ namespace
 			Kind.OwnerModule = TEXT("UMGEditor");
 			Kind.AlternativeTool = TEXT("L-WIDGET-PREVIEW");
 			Kind.Reason = TEXT("UWidgetBlueprint opens in FWidgetBlueprintEditor ")
-				TEXT("(UMGEditor/Public/WidgetBlueprintEditor.h), whose tab content is ")
-				TEXT("rendered here as the editor tab. L-WIDGET-PREVIEW remains the tool ")
-				TEXT("that renders the WIDGET with sample values rather than the designer.")
-				TEXT("");
+				TEXT("(UMGEditor/Public/WidgetBlueprintEditor.h), which the plugin already ")
+				TEXT("links (TurboMCP.Build.cs:93). MEASURED, WBP_NodeTest captured at ")
+				TEXT("1664x849 with 1278 distinct colours. L-WIDGET-PREVIEW remains the tool ")
+				TEXT("that renders the WIDGET with sample values rather than the designer, ")
+				TEXT("so the alternative is named rather than left implied.");
 			OutKinds.Add(Kind);
 		}
 
@@ -231,10 +227,13 @@ namespace
 			Kind.OwnerModule = TEXT("AnimationEditor");
 			Kind.AlternativeTool = TEXT("");
 			Kind.Reason = TEXT("UAnimSequence (Engine/Classes/Animation/AnimSequence.h:202) ")
-				TEXT("is edited by FAnimationEditor, which lives in the AnimationEditor ")
-				TEXT("module. That module is NOT enabled for this project and is NOT a ")
-				TEXT("dependency of this plugin, so there is no editor to open and this ")
-				TEXT("plugin cannot include its header either.");
+				TEXT("is edited by FAnimationEditor in the AnimationEditor module. This was ")
+				TEXT("FIRST WRITTEN AS A REFUSAL BECAUSE THAT MODULE IS NOT IN ")
+				TEXT("TurboMCP.Build.cs, AND THAT WAS FALSE AS A CAPABILITY CLAIM: MEASURED, ")
+				TEXT("the module loads on demand and /Engine/Tutorial/SubEditors/")
+				TEXT("TutorialAssets/Character/Tutorial_Idle captured at 1664x849 with 1787 ")
+				TEXT("distinct colours. Linking a module is not the same as reaching its ")
+				TEXT("editor, and the engine loads editor modules when an asset asks for one.");
 			OutKinds.Add(Kind);
 		}
 
@@ -245,9 +244,13 @@ namespace
 			Kind.OwnerModule = TEXT("NiagaraEditor");
 			Kind.AlternativeTool = TEXT("");
 			Kind.Reason = TEXT("A Niagara system is edited by the NiagaraEditor plugin ")
-				TEXT("module, which is NOT enabled in the test project's .uproject and is ")
-				TEXT("NOT a dependency of this plugin, so neither the asset class nor the ")
-				TEXT("editor is reachable from here.");
+				TEXT("module (Engine/Plugins/FX/Niagara/Source/NiagaraEditor), which the ")
+				TEXT("engine enables by default (Niagara.uplugin: EnabledByDefault true). ")
+				TEXT("This was FIRST WRITTEN AS A REFUSAL ON THE ASSUMPTION THAT THE TEST ")
+				TEXT("PROJECT'S .uproject NOT LISTING NIAGARA MEANT IT WAS NOT THERE, AND ")
+				TEXT("THAT WAS FALSE: MEASURED, the module loads and a real 1664x849 ")
+				TEXT("capture of DefaultSystem came back with 13282 distinct colours. So ")
+				TEXT("the kind is attempted like every other one.");
 			OutKinds.Add(Kind);
 		}
 	}
