@@ -98,6 +98,8 @@ def read_calls():
             blob = match.group(2)
             keys = set(re.findall(r'"(\w+)"\s*:', blob))
             calls.setdefault(tool, {"files": set(), "keys": set()})
+            # Recorded so the verdict can tell a real call from a name that was merely mentioned.
+            calls[tool]["parsed"] = True
             calls[tool]["files"].add(entry)
             calls[tool]["keys"] |= keys
 
@@ -109,8 +111,22 @@ def read_calls():
         # (`UTurboMCPLookToolset`) as uncalled tools - two false positives that made the audit look
         # like it had found more than it had.
         for name in re.findall(r'"((?:Read|Look|Preview|Edit)TurboMCP\w+)"', text):
-            calls.setdefault(name, {"files": set(), "keys": set()})
-            calls[name]["files"].add(entry)
+            entry_info = calls.setdefault(name, {"files": set(), "keys": set()})
+            entry_info["files"].add(entry)
+            entry_info.setdefault("named", set()).add(entry)
+
+        # *** AND `.call(` WITH A LITERAL NAME IS PROOF ENOUGH, WHATEVER THE ARGUMENTS ARE. *** The strict
+        # pattern above requires a LITERAL `{...}`, so it MISSES the perfectly ordinary shape where the
+        # arguments are assembled first and passed by name - `session.call(PREVIEW_TOOLSET,
+        # "PreviewTurboMCPComment", args)` - WHICH IS HOW ELEVEN TOOLS ACROSS FIVE SUITES ARE ACTUALLY CALLED.
+        # MEASURED BEFORE THIS LINE EXISTED: all eleven were reported as "named but not parsed", a list long
+        # enough to look like noise, WHICH IS THE ONE FAILURE MODE AN AUDIT MUST NOT HAVE - a false positive
+        # makes a real finding look like noise.
+        for match in re.finditer(r'\.call\(\s*(?:[A-Z_]+|"[^"]*")\s*,\s*"((?:Read|Look|Preview|Edit)TurboMCP\w+)"', text):
+            call_name = match.group(1)
+            call_info = calls.setdefault(call_name, {"files": set(), "keys": set()})
+            call_info["files"].add(entry)
+            call_info["in_call"] = True
 
     return calls
 
@@ -152,11 +168,30 @@ def main():
 
     print()
     print("=== every tool is CALLED by some suite ===")
+    # *** THREE STATES, SEPARATED AT LAST, BECAUSE "uncalled" WAS CONFLATING TWO OF THEM. ***
+    #
+    # UNCALLED means no suite names the tool at all: the fix is to WRITE A SUITE.
+    # NAMED-BUT-NOT-PARSED means a suite names it but in a shape NEITHER pass could read: THE FIX IS TO LOOK,
+    # because it may well be called. Measured on four shapes: same-line -> parsed by the strict pass; SPLIT
+    # ACROSS LINES -> strict fails but the bare-name pass credits it; named arguments through a helper ->
+    # BOTH FAIL; a name built rather than written -> BOTH FAIL.
+    #
+    # AND THE MIDDLE STATE HAS ALREADY BEEN OBSERVED FROM BOTH SIDES IN ONE ROUND: `R-ASSET-COST`'s tool was
+    # called TWICE through a helper named `check()` and reported uncalled until the helper was renamed, while
+    # a widget workstream's tool genuinely had no suite yet. BOTH PRINTED THE SAME LINE. A REGEX THAT ASSUMES
+    # ONE SHAPE IS INDISTINGUISHABLE FROM A REAL ABSENCE - this project's oldest recorded failure, and it had
+    # never been applied to the audit itself.
     uncalled = []
+    seen_unparsed = []
     for name in sorted(tools):
-        if name not in calls:
+        info = calls.get(name)
+        if not info:
             uncalled.append(name)
+        elif info.get("named") and not info.get("parsed") and not info.get("in_call"):
+            seen_unparsed.append(name)
     print("    uncalled: %s" % (", ".join(uncalled) if uncalled else "(none)"))
+    if seen_unparsed:
+        print("    NAMED BUT NOT PARSED AS A CALL (look at these by hand): %s" % ", ".join(seen_unparsed))
     # THIS IS THE CHECK THE USER'S REQUIREMENT TURNS INTO. A tool no suite calls has never been run,
     # which is how a registered tool that answers nothing survives.
     check("no AICallable tool is left uncalled by every suite",
