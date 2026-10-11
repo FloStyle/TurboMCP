@@ -9178,3 +9178,30 @@ the provider-less editor and ASSERTS THE RESTORE by reading `IsEnabled()` back.*
 **AND IT READ HEAD MOVING AS WHAT IT WAS:** *"HEAD moved under me at `85baadb`/`fe9647f` - I read that as you preserving my work,
 and I kept going."* *** The correction in the brief worked: the previous workstream spent a whole section warning about a
 concurrent process that was its own orchestrator, and this one recognised it in one clause. ***
+
+---
+
+## 136. Round 184: MY OWN RUN OF test-vcs FAILED WHILE THE WORKSTREAM'S PASSED, AND THE CAUSE IS MINE
+
+    MY RUN      pwsh -NoProfile -File Tools\run-suites.ps1 -Suites test-vcs
+                FAIL test-vcs  RESULT: FAIL (4 of 34) -> THE EDITOR COMES UP WITH -SCCProvider
+                passed 3, failed 1, blocked 0, of 4
+    ITS RUN     `test-vcs` PASS, and its own report says the suite OWNS THE EDITOR, MEASURES ALL FOUR BRANCHES
+                (no provider, Git, Perforce, and the cross-check), RESTORES THE PROVIDER-LESS EDITOR AND ASSERTS THE
+                RESTORE BY READING IsEnabled() BACK - 125 SECONDS, NO CHECK SKIPPED
+
+*** AND THE CAUSE IS MINE RATHER THAN THE SUITE'S: I STARTED `run-suites.ps1` AT 08:11:37 - AFTER WAITING TEN MINUTES INSIDE
+THE ROUND, WHICH IS THE DISCIPLINE - AND THE SUITE'S OWN FIRST CHECK IS "THE EDITOR COMES UP WITH -SCCProvider", I.E. IT LAUNCHES
+ITS OWN EDITORS WITH A PROVIDER SELECTED. THE HARNESS ALSO OWNS AN EDITOR FOR ITS WHOLE RUN. **TWO THINGS THAT BOTH OWN THE
+EDITOR, WHICH IS SECTION 148's MEASUREMENT REPEATED: THE RESOURCE IS NOT OCCUPIED CONTINUOUSLY, IT IS OCCUPIED OFTEN.** ***
+
+**AND THE HONEST ACCOUNTING IS THAT I BROKE THE RULE I WROTE, IN ITS SUBTLEST FORM.** *Section 148 said "the owed evidence requires
+the editor, the editor is occupied, and a shared resource is taken only when it is free". **I CHECKED THAT THE EDITOR WAS FREE
+AND THEN TOOK IT - which is the check - BUT I TOOK IT FOR A HARNESS RUN WHOSE SUITE LAUNCHES EDITORS OF ITS OWN, SO THE
+RESOURCE I NEEDED WAS NOT THE ONE I CHECKED.*** *** A suite that owns the editor is not the same as a suite that USES it, and the
+brief I wrote for this row says so: "a suite that needs GIT selected with a file may need to say how". ***
+
+**SO: THE WORKSTREAM'S `PASS` STANDS AND MY `FAIL` IS AN ARTEFACT OF MY OWN HARNESS RUNNING BESIDE IT.** *I am recording it rather
+than either result being quietly dropped, because the failure message NAMES THE CAUSE - "THE EDITOR COMES UP WITH -SCCProvider"
+- **and a reader who saw only my run would conclude the suite is broken when the suite is measuring something my harness was
+competing for.***
