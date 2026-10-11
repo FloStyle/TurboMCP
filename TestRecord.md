@@ -10700,3 +10700,45 @@ to be made between reading the plan again and reading what the last run actually
 **SECOND: THE MOST RECURRENT DEFECT IN THIS PROJECT IS AN INVISIBLE FAILURE, AND IT HAS BEEN FOUND TEN TIMES IN THIS STRETCH - INCLUDING INSIDE
 THE SUITE THAT EXISTS TO CATCH IT AND INSIDE A COMMENT I READ MYSELF.** *Every one of the ten was found by running something and reading what it
 printed rather than by reasoning about what it should do. **That is the method, and it is the only thing here worth carrying forward.***
+
+---
+
+## 180. Round 255: CLOSING. The objective is left ACTIVE, and the four commands that establish why are the last thing written
+
+    1. HEAD = origin/main        TRUE
+    2. arbre propre              OUI
+    3. outils                    93 AICallable, audit `uncalled: (none)`, suite-quality PASS at 0 candidates (AND IT BLOCKS)
+    4. full run                  58 of 58, exit code 0
+    COMMITS 501
+    PASSATION  HANDOVER.md 100 l. · REPORT.md 350 l. · STATUS.md 227 l. · TestRecord.md 10,702 l.
+
+*** THE OBJECTIVE IS `Manage and orchestrate the tasks until TurboMCP is complete. Make me an extensive report on where you at, what's left and what
+take your time.` ***
+
+### 180.1 The report half, delivered
+
+**`REPORT.md` — 350 LINES, 13 SECTIONS, EVERY FIGURE READ AT THE ROUND IT STATES.** *It says where the project is, what remains, **what changed since
+its first version and why**, **what I do not know and do not present as known**, and the **five things I would spend time on with the state of
+each** — two delivered, one partly delivered, two bounded by this machine. `HANDOVER.md` reduces the state to **four commands any reader can run** and
+orders the remaining 31 rows by what I would do first. `STATUS.md` was refreshed from a headline **three revisions stale**. `TestRecord.md` holds the
+10,702-line record, including the ten defects and the reasoning behind every correction.*
+
+### 180.2 The completion half, not delivered
+
+**31 ROWS OF 48 REMAIN.** *Three cannot be done on this machine at all — the remaining source-control writers need a server that answers, and `TA-18`
+needs a `USkeleton` bone whose every route is closed at `Skeleton.h:365-369`. The rest are **volume rather than insight**: the 30 unwired writers,
+rows 6.1 to 6.4, 8.1 to 8.5, 5.3 to 5.5, 3.2 to 3.6, 2.3 to 2.4, 7.3, 9.2, 9.3 and a handful of small ones.*
+
+### 180.3 *** And the reason it is left ACTIVE rather than COMPLETE, which is the last thing this record needs to say ***
+
+**BECAUSE MARKING IT COMPLETE WOULD BE THE EXACT DEFECT THIS PROJECT HAS SPENT 255 ROUNDS FINDING.** *An invisible failure read as a success. A refusal
+read as a capability. A regex read as a measurement. A count pinned on a shared asset. A refusal text describing a `Build.cs` that no longer exists.*
+
+*** TEN TIMES IN THIS STRETCH SOMETHING FAILED IN SILENCE AND WAS READ AS A SUCCESS - AND EVERY SINGLE ONE WAS FOUND BY RUNNING SOMETHING AND READING
+WHAT IT PRINTED RATHER THAN BY REASONING ABOUT WHAT IT OUGHT TO DO. ***
+
+**AND THE ONE PLACE I COULD COMMIT THAT DEFECT AT THE LARGEST SCALE IS MY OWN OBJECTIVE.** *Mark it complete and the record, the report and the status
+would all say the work was finished — and four of the thirty-one rows are in a phase that has never been started at all.*
+
+**SO IT CLOSES ACTIVE, VERIFIABLE, AND HONEST ABOUT WHICH HALF IS WHICH.** ***The report is delivered. The plugin is not finished. Both of those are
+true at the same time, and the only way to keep them both true is to say so.***
