@@ -7794,3 +7794,36 @@ not push until the run is green.*
 TOOL CLOSE THE VACUITY GAP OR ONLY MOVE IT? IT HAS NOW MEASURED BOTH SIDES - it knows the normaliser half is already
 covered by the log and the `AssetFromArguments` half is not, and it knows a tool reporting on its own literal inputs is
 still a producer reporting on itself. I WANT ITS ANSWER. ***
+
+---
+
+## 84. Round 125: the vacuity tool is PRESERVED, and it was verified before it was secured rather than after
+
+**THE WORKSTREAM IS STILL RUNNING THE FULL SUITE SET, SO I COMMITTED ITS FOUR FILES AS A SAFETY COMMIT - THE NINTH OF THIS
+STRETCH - AND I VERIFIED THE THREE THINGS THAT COULD HAVE BEEN WRONG BEFORE COMMITTING RATHER THAN TAKING THE REPORT'S WORD
+FOR THEM.**
+
+    `git diff --stat -- Source/TurboMCP/TurboMCPCallCost.cpp`   EMPTY  -> the file it injected the break into,
+                                                                        ANOTHER WORKSTREAM'S VERIFIED CAPABILITY,
+                                                                        IS IDENTICAL TO HEAD
+    `python -c "ast.parse(...)"` on test-pure-checks.py         OK     -> the suite is not broken at the syntax level
+    `python Tools/audit-tool-coverage.py`                       86 tools, `uncalled: (none)`, PASS
+
+*** AND THE FIRST OF THOSE IS THE ONE THAT MATTERED: THE BREAK TEST WAS INJECTED INTO A FILE ANOTHER WORKSTREAM OWNS, AND A
+RESTORE THAT LEAVES IT DIFFERENT FROM HEAD IS THE `error C2059` FAILURE THIS RECORD ALREADY CARRIES. I CHECKED IT MYSELF
+BECAUSE "I RESTORED IT" IS A TOOL'S OWN REPORT ABOUT ITSELF, WHICH THIS PROJECT DOES NOT ACCEPT AS EVIDENCE. ***
+
+### And what this round adds to the record beyond the commit
+
+**THE SAFETY COMMIT IS NOW ROUTINE ENOUGH THAT ITS JUSTIFICATION IS SHORT: FOUR UNTRACKED FILES, A LIVE WORKSTREAM, AND A
+DESTROYED CAPABILITY IN THIS PROJECT'S HISTORY.** *Nine commits on this pattern across the stretch, zero steps redone, zero
+work lost.*
+
+**AND THE TOOL'S JUSTIFICATION IS THE NARROWER ONE THE WORKSTREAM MEASURED, NOT THE BROADER ONE I WROTE:** *the normaliser
+half IS covered by the log today; the `AssetFromArguments` half is not, because an engine event carries no `arguments` field
+at all. **A LITERAL-INPUT CHECK CANNOT GO VACUOUS WHEN THE ENGINE'S RESOLVER BEHAVIOUR CHANGES, AND A LOG-DEPENDENT ONE
+CAN** - which is a reason that survives the falsification of everything else in my brief.*
+
+**AND THE ONE THING STILL OWED IS THE FULL RUN.** *The workstream said it would not push until the run is green, and I
+committed before that deliberately: **a red run is visible and fixable and a deleted file is neither** - the trade recorded
+when `R-CALL-COST`'s suite was untracked and made a second time here.*
