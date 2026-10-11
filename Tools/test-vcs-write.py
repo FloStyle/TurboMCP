@@ -211,18 +211,79 @@ def read_source(path):
         return ""
 
 
+def porcelain_code(text):
+    """The TWO-COLUMN status code of a `git status --porcelain` line, PARSED rather than searched.
+
+    A substring search for `A` would be satisfied by the path itself (`Tests`, `TA22_...`), which is the
+    exact defect this project records as "a number or letter matched beside the value it belongs to".
+    """
+    return (text or "")[:2]
+
+
+def git_unstage(path):
+    """Remove one path from the git INDEX.
+
+    *** MEASURED REASON THIS EXISTS, AND IT WAS FOUND BY THE CHECK THAT USED TO SAY "NOTHING ELSE MOVED". ***
+    `E-SAVE` WITH THE GIT PROVIDER STAGES A BRAND-NEW ASSET THROUGH THE ENGINE'S OWN MARK-FOR-ADD:
+    `FEditorFileUtils::CheckoutPackages` builds `FinalPackageMarkForAddList` (`FileHelpers.cpp:2483`) and
+    executes `FMarkForAdd` on it (`:2536-2538`). That is `git add`, it happens in the ENGINE's save path and
+    not in this row's checkout, and it means DELETING the fixture is not enough: the index keeps an `AD`
+    entry and the next `git status` shows this suite's asset for ever. So the entry is removed here, and the
+    removal is ASSERTED at the end of the suite rather than assumed.
+    """
+    rel = os.path.relpath(path, REPO).replace("\\", "/")
+    try:
+        subprocess.run(["git", "reset", "-q", "--", rel], capture_output=True, text=True, cwd=REPO)
+    except OSError:
+        pass
+
+
+def unstage_leftovers():
+    """Unstage every entry this suite could have staged, from THIS or ANY earlier run.
+
+    *** A STAGED ENTRY OUTLIVES ITS FILE, SO THE WALK OVER THE DIRECTORY CANNOT FIND IT, AND THE GIT INDEX
+    IS ASKED INSTEAD. *** Without this, a run whose new fixture was staged by the engine's save path and
+    then deleted would leave the repository showing
+    `AD TestProject/Content/Tests/TA22_VcsWrite_R....uasset` for ever.
+    """
+    try:
+        done = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=REPO)
+    except OSError:
+        return []
+    found = []
+    for line in (done.stdout or "").splitlines():
+        code = line[:2]
+        path = line[3:].strip()
+        # `??` is untracked and ` M` is an unstaged modification: neither is an INDEX entry.
+        if "TA22_VcsWrite_R" in path and code and code[0] not in ("?", " "):
+            git_unstage(os.path.join(REPO, path))
+            found.append(path)
+    return found
+
+
 def cleanup_fixtures():
-    """Remove this suite's leftovers from THIS and any earlier run, on the way IN as well as out."""
+    """Remove this suite's leftovers from THIS and any earlier run, IN the index as well as on disk.
+
+    It runs on the way IN as well as on the way out, and it unstages before it deletes, because a staged
+    entry outlives its file.
+    """
     removed = []
+    unstaged = unstage_leftovers()
     if not os.path.isdir(TESTS_DIR):
         return removed
     for name in sorted(os.listdir(TESTS_DIR)):
         if name.startswith("TA22_VcsWrite_R"):
+            full = os.path.join(TESTS_DIR, name)
+            git_unstage(full)
             try:
-                os.remove(os.path.join(TESTS_DIR, name))
+                os.remove(full)
                 removed.append(name)
             except OSError:
                 pass
+    # ALSO THIS RUN'S OWN PATH, whose file may already be gone by now.
+    git_unstage(FILE)
+    if unstaged:
+        print("    (unstaged %d leftover index entr(ies) from an earlier run)" % len(unstaged))
     return removed
 
 
@@ -384,8 +445,8 @@ def main():
     preview_a_block = block_of(preview_a, "P-STRUCT-FIELDS")
     check("P-STRUCT-FIELDS prints the block and names itself",
           preview_a_block != "", preview_a[-600:])
-    check("and the preview says it reached no provider with a checkout",
-          "THIS PREVIEW REACHED NO PROVIDER WITH A CHECKOUT" in preview_a_block,
+    check("and with no provider the preview issues nothing either, per asset",
+          "NOT ATTEMPTED, and no provider call was made for this asset" in preview_a_block,
           preview_a_block[-900:])
     check("and the preview did not write the file - the hash is unchanged",
           file_hash(FILE) == hash_before_preview, "%s vs %s" % (file_hash(FILE), hash_before_preview))
@@ -428,6 +489,9 @@ def main():
     git_before, git_before_detail = git_porcelain(FILE)
     check("the git CLI really answered for the fixture, so the comparison in phase B is not vacuous",
           git_before is not None, git_before_detail)
+    check("*** AND THE FIXTURE IS UNTRACKED, so a later index change is attributable rather than ambient ***",
+          porcelain_code(git_before) == "??",
+          "%r (%s)" % (git_before, git_before_detail))
     print("    git status --porcelain for the fixture after phase A: %r (%s)"
           % (git_before, git_before_detail))
 
@@ -466,6 +530,9 @@ def main():
     check("the preview's block reports the provider it actually found",
           field(preview_g_block, "provider in use") == "'Git'",
           repr(field(preview_g_block, "provider in use")))
+    check("*** THE PREVIEW ISSUED NOTHING EVEN WHERE A CHECKOUT WOULD BE ATTEMPTED ***",
+          "THIS PREVIEW REACHED NO PROVIDER WITH A CHECKOUT" in preview_g_block,
+          preview_g_block[-900:])
     check("and the preview ISSUED NO checkout: the file hash is unchanged",
           file_hash(FILE) == hash_before_git_edit,
           "%s vs %s" % (file_hash(FILE), hash_before_git_edit))
@@ -495,6 +562,18 @@ def main():
     check("and the checkout section wrote no file: the hash is unchanged across it",
           file_hash(FILE) == hash_before_git_edit,
           "%s vs %s" % (file_hash(FILE), hash_before_git_edit))
+
+    # -------------------------------------------------------------------------------------------------
+    # *** THE GIT INDEX IS A THIRD TOOL, AND IT ANSWERS A QUESTION NEITHER THE TOOL NOR THE FILE CAN:
+    # DID THE CHECKOUT THIS WRITE TOOL ISSUED CHANGE ANYTHING OUTSIDE THE WORKING TREE? ***
+    # -------------------------------------------------------------------------------------------------
+    git_after_edit, git_after_edit_detail = git_porcelain(FILE)
+    print("    git status --porcelain after the checkout-only call: %r (%s)"
+          % (git_after_edit, git_after_edit_detail))
+    check("*** THE CHECKOUT THIS WRITE TOOL ISSUED STAGED NOTHING: the git CLI still reports the fixture "
+          "untracked after it, because the operation was refused before any command ran ***",
+          porcelain_code(git_after_edit) == "??",
+          "%r vs %r (%s)" % (git_after_edit, git_before, git_after_edit_detail))
 
     print()
     print("--- phase B: E-SAVE, and the file write that follows the failed checkout ---")
@@ -539,10 +618,13 @@ def main():
               "helper %r vs tool %r" % (git_values.get("check_out_file_returned"),
                                         "not supported" in git_block))
 
-    git_after, git_after_detail = git_porcelain(FILE)
-    check("NOTHING ELSE MOVED: the git CLI reports the same thing for the fixture after phase B",
-          git_after is not None and git_after == git_before,
-          "%r vs %r (%s)" % (git_after, git_before, git_after_detail))
+    git_after_save, git_after_save_detail = git_porcelain(FILE)
+    print("    git status --porcelain after that save: %r (%s)" % (git_after_save, git_after_save_detail))
+    check("*** AND THE ENGINE'S OWN SAVE PATH IS WHAT STAGED IT: after E-SAVE the git CLI reports the "
+          "fixture ADDED, which is FileHelpers.cpp:2536-2538's FMarkForAdd in the engine's save path and "
+          "NOT this row's checkout - the same call left the index alone a moment ago ***",
+          porcelain_code(git_after_save).startswith("A"),
+          "%r vs %r (%s)" % (git_after_save, git_after_edit, git_after_save_detail))
 
     # -------------------------------------------------------------------------------------------------
     # AND THE MECHANISM ITSELF, CHECKED STATICALLY SO THE TRAP CANNOT COME BACK UNNOTICED.
@@ -596,6 +678,10 @@ def main():
     print("    (removed %d fixture file(s) on the way out)" % len(removed))
     check("this suite's fixture is gone, so the next run meets a clean path",
           not os.path.isfile(FILE), FILE)
+    code_after_cleanup, cleanup_detail = git_porcelain(FILE)
+    check("AND THE RESTORE IS ASSERTED: the git INDEX carries no entry for it either, so the engine's "
+          "mark-for-add left nothing behind",
+          code_after_cleanup == "", "%r (%s)" % (code_after_cleanup, cleanup_detail))
 
     print()
     print("NOT MEASURED BY THIS SUITE, AND IT IS AN ENVIRONMENT FACT RATHER THAN AN OVERSIGHT:")
