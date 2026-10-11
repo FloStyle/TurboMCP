@@ -8664,3 +8664,23 @@ when the log belonged to something else.*
 
 **SO THE HONEST STATE IS: ONE ROUND IN, NOTHING NAMED HAS APPEARED, AND THE ONLY EVIDENCE OF ACTIVITY WOULD BE A FILE.** *No
 inference, no theory, and the next round repeats the same one-command check.*
+
+---
+
+## 118. Round 159: twenty-one seconds after round 158, and the round says so rather than repeating the check as news
+
+    MEASURED   main = origin/main = cda8078   ·   86 tools   ·   all four milestones still absent
+               clock 06:23:36; round 158 read 06:23:15 - TWENTY-ONE SECONDS EARLIER
+
+*** AND THE USEFUL THING TO RECORD IS NOT THE ABSENCE, WHICH IS UNCHANGED, BUT THAT A ROUND IS NOT A UNIT OF TIME THIS
+PROJECT CONTROLS. Twenty-one seconds have passed and I have written an entry; that says nothing about the workstream and
+everything about how round boundaries relate to wall-clock. ***
+
+**IT IS THE MIRROR OF SECTION 123, WHERE I CHECKED A CRITERION WHOSE WINDOW HAD NOT ELAPSED AND ALMOST CONCLUDED FAILURE.**
+*There the instrument was one word short; here the instrument is fine and **THE SAMPLING INTERVAL IS SHORTER THAN ANYTHING
+THE WORK CAN DO.** *A workstream that must read `03_TOOLS.md`, the acceptance rows, `TurboMCPKitCommandlet.cpp:1400-1460`,
+`TurboMCPKitRow.h` and `TurboMCPMaterialBlocks.{h,cpp}` before writing a line **cannot produce a milestone in twenty-one
+seconds, and checking does not make it faster.***
+
+**SO THE ENTRY IS: NOTHING NEW, THE CHECK IS CHEAP, AND THE INTERVAL IS THE THING TO NOTICE.** *The next round runs the same
+command; if several rounds pass with no milestone, **that** is the signal - not one.*
