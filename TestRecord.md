@@ -6096,3 +6096,47 @@ mechanism**:
 FAIL.** A check that cannot state its failing input will pass for the wrong reason - **and the way all four found out
 was BY BREAKING THE CODE AND WATCHING THE SUITE STAY GREEN, which is why "show a check can fail" is not a formality
 but the only test of the test.**
+
+---
+
+## 44. The graph implementation COMPILES - verified independently, before its own workstream has wired it up
+
+**MEASURED WITH THE `-SingleFile` TRICK A WORKSTREAM CONTRIBUTED WHEN A THIRD PARTY'S FILE BLOCKED ALL THREE OF US:**
+
+    Build.bat ... -SingleFile="...\TurboMCP\Source\TurboMCP\TurboMCPGraphStructure.cpp"
+    Result: Succeeded
+
+*** SO 983 LINES OF GRAPH CODE COMPILE, AND THAT WAS CHECKED BY ME RATHER THAN REPORTED BY THE WORKSTREAM - which matters
+because its own report does not exist yet.*** *This is the same discipline the project applies to tools, turned on a
+workstream's intermediate product: read the artefact, not the intention.*
+
+### What EXISTS and what does NOT, measured rather than assumed
+
+    TurboMCPGraphStructure.h            210 lines   EXISTS, committed in 6b3455a
+    TurboMCPGraphStructure.cpp          983 lines   EXISTS, committed in d677a45, COMPILES
+    TurboMCPGraphStructureTools.cpp     DOES NOT EXIST YET
+    Tools/test-graph-structure.py       DOES NOT EXIST YET
+    declarations in the shared header   0           the tool count is unchanged at 81
+
+**AND THESE ARE THE FOUR THINGS A CAPABILITY HERE NEEDS, IN THE ORDER EVERY SUCCESSFUL ONE HAS FOLLOWED IT.** The two
+that remain are the two that make it a capability rather than a file: **the declarations are what the registry serves,
+and the suite is what proves it.** *Nothing links against the implementation, so a failure in it would currently be
+silent - which is why the compile check is worth having even though it is not the goal.*
+
+### And the shape of the remaining work is known rather than hoped for
+
+**FOUR DECLARATIONS:** `PreviewTurboMCPGraphCopy`, `EditTurboMCPGraphCopy`, `PreviewTurboMCPGraphCollapse`,
+`EditTurboMCPGraphCollapse` - the Preview/Edit pairing the project uses so **every check lives in `Plan` and the two
+twins refuse the SAME input.**
+
+**AND THE SUITE OWES ONE SENTENCE IN ITS OWN HEADER THAT THE ACCEPTANCE ROW CANNOT GIVE IT:** whether it proved
+**copying between two GRAPHS of one blueprint** - which is what `TA-2` actually is, since
+`TurboMCPKitCommandlet.cpp:939-940` sets `Ta2.Name = "TA01_HandLaid"` - **or between two ASSETS**, for which
+`BP_TowerArray` and `TA07_Card` exist on disk. **`T-STRUCT-11` SAYS "between graphs and Blueprints" AND THE FIXTURE
+CANNOT CURRENTLY DO THE SECOND HALF, so the row must be reported at the width it was actually tested.**
+
+**AND THE CHECK RULE THE LAST FOUR ROUNDS PRODUCED APPLIES TO IT DIRECTLY: FOR EACH CHECK, NAME THE INPUT THAT MAKES IT
+FAIL.** Four workstreams reported that their count overstated their coverage, **and the fourth named the mechanism -
+a check over a relationship inherits the vacuity of its input.** *A copy suite's most natural checks are relationships
+(the link count matches, the destination grew by N nodes, every crossing link is reported) AND EVERY ONE OF THOSE
+PASSES ON AN EMPTY COPY.*
