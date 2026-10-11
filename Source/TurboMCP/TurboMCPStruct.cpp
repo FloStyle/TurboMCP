@@ -497,6 +497,56 @@ namespace
 		}
 		return FString();
 	}
+
+	/**
+	 * Split a comma-separated list, ATTACHING each `key=value` OPTION to the item before it.
+	 *
+	 * *** THE COMMA INSIDE AN OPTION IS THE SAME CHARACTER THAT SEPARATES TWO ITEMS, AND THIS
+	 * FUNCTION IS THE ONE PLACE THAT RESOLVES THAT. ***
+	 *
+	 * `move:Gamma, above=Alpha` and `Good: int, default=1` are each ONE item with ONE option, but a
+	 * plain `SplitTopLevel` turns each into two. Writing the join twice - once in the field parser and
+	 * once in the change parser - is what let this file ship the SAME defect in two opposite
+	 * directions: the first version parsed `move:Gamma` alone ("the reorder of 'Gamma' does not say
+	 * where to put it"), and the second parsed `Good: int, default=1` alone ("'default=1' has no ':'").
+	 * One rule, one place, so it cannot happen a third time.
+	 *
+	 * THE RULE, and it is deliberately the simplest one that works: an item with NO ':' and SOME '=' is
+	 * an OPTION of the item before it, whatever its key is called; anything else starts a new item.
+	 *
+	 * Attaching a key the verb does not accept - `sideways=Beta`, `banana=3` - is INTENTIONAL rather
+	 * than a hole: it lets the item's own option loop refuse it, which answers "'sideways' is not an
+	 * option of a reorder. The options are above= and below=" instead of a message about the wrong item.
+	 *
+	 * The one shape this reads differently from a person is a field written `Vector amount=3`, where
+	 * the OPTION is written before the '='. That is refused rather than guessed at - the key
+	 * `Vector amount` is not an option - so the failure is loud and the fix is `Vector: amount=3`.
+	 */
+	void SplitItemsWithOptions(const FString& In, TArray<FString>& Out)
+	{
+		TArray<FString> Parts;
+		SplitTopLevel(In, TEXT(','), Parts);
+
+		Out.Reset();
+		for (const FString& Raw : Parts)
+		{
+			const FString Item = Trim(Raw);
+			if (Item.IsEmpty())
+			{
+				continue;
+			}
+
+			const bool bIsOption = !Item.Contains(TEXT(":")) && Item.Contains(TEXT("="));
+			if (bIsOption && Out.Num() > 0)
+			{
+				Out.Last() += TEXT(", ") + Item;
+			}
+			else
+			{
+				Out.Add(Item);
+			}
+		}
+	}
 }
 
 void FTurboMCPStruct::ReadFields(const UUserDefinedStruct* InStruct, TArray<FField>& OutFields)
@@ -602,7 +652,7 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 	OutFields.Reset();
 
 	TArray<FString> Parts;
-	SplitTopLevel(InFields, TEXT(','), Parts);
+	SplitItemsWithOptions(InFields, Parts);
 
 	TSet<FString> Seen;
 	for (const FString& Raw : Parts)
@@ -1051,105 +1101,17 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 	OutPlan.ObjectPath = Struct->GetPathName();
 	ReadFields(Struct, OutPlan.CurrentFields);
 
-	// The changes, split on top-level commas. Each item is `Name: Type` for an add or a change, `remove:Name` to
-	// remove, or `move:Name` with `above=` or `below=` to reorder.
-	TArray<FString> Items;
-	SplitTopLevel(InChanges, TEXT(','), Items);
-
-	// *** A REORDER'S ANCHOR IS JOINED BACK ON, AND THIS IS THE BUG THE FIRST
-	// VERSION SHIPPED. ***
+	// The changes, split on top-level commas WITH EACH `key=value` OPTION ATTACHED TO THE CHANGE IT
+	// BELONGS TO. Each change is `Name: Type` for an add or a change, `remove:Name` to remove, or
+	// `move:Name` with `above=` or `below=` to reorder.
 	//
-	// `move:Gamma, above=Alpha` IS ONE CHANGE, BUT THE COMMA THAT SEPARATES ITS OWN
-	// OPTION IS THE SAME CHARACTER THAT SEPARATES ONE CHANGE FROM THE NEXT. A plain
-	// split turns it into two items - `move:Gamma` and `above=Alpha` - and the first
-	// then fails with "does not say where to put it". MEASURED: that is exactly what
-	// the first run of `Tools/test-struct.py` produced.
-	//
-	// The rule that resolves the ambiguity is that an `option=value` item can only
-	// be an OPTION: it is not a `Name: Type` field and not a `move:` or `remove:`
-	// verb, because those all contain a ':'. So a tail item shaped `key=value` is
-	// JOINED to the item before it rather than treated as a change of its own.
-	// Anything else starts a new change.
-	//
-	// The alternative - a second separator for the caller to learn - would be a
-	// second dialect, which `03_TOOLS.md:601` forbids for the graph writers and
-	// which is no better here.
+	// THE ATTACHMENT RULE LIVES IN `SplitItemsWithOptions` AND IS SHARED WITH THE FIELD PARSER.
+	// Writing it twice is what let this file ship the SAME defect in two opposite directions: the
+	// first version parsed `move:Gamma, above=Alpha` as two changes ("the reorder of 'Gamma' does not
+	// say where to put it"), and the second parsed `Good: int, default=1` as two fields ("'default=1'
+	// has no ':'"). One rule, one place.
 	TArray<FString> Joined;
-	for (const FString& Raw : Items)
-	{
-		const FString Item = Trim(Raw);
-		if (Item.IsEmpty())
-		{
-			continue;
-		}
-
-		// *** AN OPTION IS ATTACHED TO THE CHANGE IT BELONGS TO, AND A NEW CHANGE STARTS ON
-		// ANYTHING ELSE. *** The comma inside `move:Gamma, above=Alpha` is the same character that
-		// separates two changes, so `SplitTopLevel` alone turns one change into two - MEASURED: the
-		// first run of `Tools/test-struct.py` produced "the reorder of 'Gamma' does not say where to
-		// put it" on a perfectly well-formed input.
-		//
-		// The test is whether the item is a `key=value` AND the change before it is one that can
-		// TAKE that option. Asking "is it key=value" alone would swallow a mistyped field, and
-		// asking nothing at all is the bug above. So the accepted keys are per-verb:
-		//
-		//   - a `move:` takes `above=` and `below=`;
-		//   - a `remove:` takes `force=`;
-		//   - a field description (`Name: Type`) takes `default=`, `tooltip=` and `category=`.
-		//
-		// ANY OTHER KEY IS LEFT STANDING ON ITS OWN so it is refused by the verb that owns it - which
-		// is what makes `move:Alpha, sideways=Beta` answer "'sideways' is not an option of a reorder"
-		// rather than "the reorder does not say where to put it".
-		bool bAttach = false;
-		if (Joined.Num() > 0 && !Item.Contains(TEXT(":")) && Item.Contains(TEXT("=")))
-		{
-			FString Key;
-			FString Unused;
-			Item.Split(TEXT("="), &Key, &Unused);
-			const FString KeyLower = Trim(Key).ToLower();
-
-			const FString& Previous = Joined.Last();
-			const FString PreviousLower = Previous.ToLower();
-			// A `move:` takes `above=` and `below=`; a `remove:` takes `force=`.
-			const bool bPreviousIsReorder = PreviousLower.StartsWith(TEXT("move:"));
-			const bool bPreviousIsRemove = PreviousLower.StartsWith(TEXT("remove:"))
-				|| PreviousLower.StartsWith(TEXT("delete:"));
-
-			// ANYTHING THAT IS NOT ONE OF THOSE VERBS IS A FIELD DESCRIPTION, because a field
-			// description is the only remaining shape and it is the one that carries a `:`. A
-			// field description takes `default=`, `tooltip=` and `category=`.
-			//
-			// MEASURED, and this is why the case is written as the NEGATIVE: an earlier version
-			// tested `PreviousLower.Contains(TEXT(":"))` to recognise a field, which is TRUE FOR
-			// `move:` AND `remove:` AS WELL - so `move:Alpha, above=Beta` fell into the field
-			// branch, `above` was not a field option, the item was left standing, and the tool
-			// answered "the reorder of 'Alpha' does not say where to put it" for a well-formed
-			// request. Testing the verbs FIRST and treating everything else as a field is the
-			// shape that cannot make that mistake.
-			if (bPreviousIsReorder)
-			{
-				bAttach = KeyLower == TEXT("above") || KeyLower == TEXT("below");
-			}
-			else if (bPreviousIsRemove)
-			{
-				bAttach = KeyLower == TEXT("force");
-			}
-			else
-			{
-				bAttach = KeyLower == TEXT("default") || KeyLower == TEXT("tooltip")
-					|| KeyLower == TEXT("category");
-			}
-		}
-
-		if (bAttach)
-		{
-			Joined.Last() += TEXT(", ") + Item;
-		}
-		else
-		{
-			Joined.Add(Item);
-		}
-	}
+	SplitItemsWithOptions(InChanges, Joined);
 
 	bool bSawAnything = false;
 	for (const FString& Raw : Joined)
@@ -1160,10 +1122,6 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 			continue;
 		}
 		bSawAnything = true;
-		// DIAG
-		OutPlan.CurrentFields.Empty();
-		OutError = FString::Printf(TEXT("DIAG joined item = [%s]"), *Item);
-		return false;
 
 		FFieldChange Change;
 

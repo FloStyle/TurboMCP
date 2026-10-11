@@ -185,6 +185,43 @@ def cleanup():
             print("    (removed %s)" % name)
 
 
+def ensure_reader_fixture(session):
+    """Make sure the shared reader struct exists AND still has the field to remove.
+
+    *** THIS IS SELF-HEALING ON PURPOSE, AND IT IS NOT COSMETIC. *** The guard
+    section's last act is to REMOVE `Drop` with the measured `force` - which is
+    the whole point, because a guard that cannot be satisfied is not a guard. But
+    `E-STRUCT-NEW` REFUSES an existing path, so on the next run the struct is
+    already there WITHOUT `Drop`, the preview is refused for the wrong reason
+    ("'Drop' is not a field"), and the suite fails on its own correct behaviour.
+    MEASURED: that is exactly what a second run produced.
+
+    So the field is PUT BACK first when it is missing. The name is stable because
+    a Blueprint variable is a USE of the type and `E-VARS-ADD` has no removal
+    twin: a run-named struct could never be re-created for the variable to read.
+    """
+    built = session.call(EDIT_TOOLSET, "EditTurboMCPStructNew",
+                         {"path": PACKAGE_READ, "fields": "Keep: int, Drop: int"})
+    print(built)
+    if built.startswith("changed:"):
+        return True, built
+
+    # Already there. Ask what it holds and put `Drop` back if a previous run
+    # removed it.
+    probe = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPStructFields",
+                         {"struct": OBJECT_READ, "changes": "Keep: int"})
+    print(probe)
+    if "Drop:" in probe:
+        print("    (%s already holds Keep and Drop; reusing it)" % OBJECT_READ)
+        return True, built
+
+    print("    (a previous run removed Drop; putting it back so the guard can be measured)")
+    restored = session.call(EDIT_TOOLSET, "EditTurboMCPStructFields",
+                            {"struct": OBJECT_READ, "changes": "Drop: int"})
+    print(restored)
+    return restored.startswith("changed:"), restored
+
+
 def main():
     session = Session()
     session.connect()
@@ -359,20 +396,11 @@ def main():
     # field changes the shape of a member that Blueprint holds. `E-VARS-ADD`
     # creates one, so the guard is measured against a reader the ENGINE built
     # rather than against a number this suite made up.
-    built = session.call(EDIT_TOOLSET, "EditTurboMCPStructNew",
-                         {"path": PACKAGE_READ, "fields": "Keep: int, Drop: int"})
-    print(built)
-    # `unchanged:` IS A PASS HERE, AND IT IS SAID SO RATHER THAN HIDDEN. The name
-    # is stable because a Blueprint variable can only ever be added once, so on a
-    # second run in one editor session the struct is already there and the tool is
-    # right to refuse to overwrite it. The reader below is what this section
-    # needs, and it is checked directly.
-    if built.startswith("unchanged:"):
-        print("    (%s already exists in this editor and is REUSED; it is stable "
-              "because a Blueprint variable of it can never be re-created)"
-              % OBJECT_READ)
-    check("the reader fixture exists (created, or already there)",
-          built.startswith("changed:") or built.startswith("unchanged:"), built[:120])
+    # `ensure_reader_fixture` CREATES THE STRUCT OR PUTS `Drop` BACK, because a
+    # previous run's successful forced removal is otherwise what breaks this run.
+    # See its docstring.
+    ok, built = ensure_reader_fixture(session)
+    check("the reader fixture exists and still has the field to remove", ok, built[:200])
 
     reader = session.call(EDIT_TOOLSET, "EditTurboMCPVarsAdd",
                           {"asset": READER_HOST,
@@ -495,12 +523,12 @@ def main():
          "is given twice"),
         ("an unknown option on a NEW field", PREVIEW_TOOLSET, "PreviewTurboMCPStructNew",
          {"path": "/Game/Tests/ZZZ_Opt_R" + _RUN, "fields": "Good: int, banana=3"},
-         "has no ':'"),
+         "not a field option"),
         ("an unknown option on a field description", PREVIEW_TOOLSET,
          "PreviewTurboMCPStructNew",
          {"path": "/Game/Tests/ZZZ_Opt2_R" + _RUN,
           "fields": "Good: int, normal=3"},
-         "has no ':'"),
+         "not a field option"),
         ("an unknown option attached to a real field", PREVIEW_TOOLSET,
          "PreviewTurboMCPStructNew",
          {"path": "/Game/Tests/ZZZ_Opt3_R" + _RUN,
