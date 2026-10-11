@@ -6339,3 +6339,28 @@ because a regex cannot resolve a variable.*
 resolved the reachability question without building; one produced implementation, declarations and tool bodies; one
 produced the suite. **EVERY STEP IS COMMITTED AND NONE WAS REDONE - which is what the safety-commit mechanism was for,
 and it has now paid on a single row four times.**
+
+---
+
+## 50. Round 92: the graph suite is being REVISED IN PLACE, and every revision is committed
+
+**MEASURED:** `main` = `origin/main` = `06937fd`; **85 tools**; audit **PASS**, `uncalled: (none)`; full module build
+`Succeeded`; `Tools/test-graph-structure.py` went **258 -> 225 lines** and is committed at both sizes.
+
+*** THE EIGHTH SAFETY COMMIT ON THIS ROW, AND IT IS THE ONE THAT SHOWS WHY THE MECHANISM IS NOT CEREMONY. A suite being
+revised in place by a live workstream is the exact shape of work that a revert destroys: it is UNTRACKED-OR-MODIFIED at
+every moment, it has no other copy, and its intermediate states look wrong by definition. COMMITTING AT 258 AND AGAIN
+AT 225 COSTS TWO COMMITS AND MAKES BOTH STATES RECOVERABLE. ***
+
+### What is settled and what is not
+
+    SETTLED    the four tools exist, compile, link, are declared, and are NAMED by a suite
+               (audit: uncalled: (none) - a state that was RED for four rounds)
+    SETTLED    the full module build is green at 85 tools
+    OPEN       the suite reaches no RESULT line yet
+    OPEN       which T-STRUCT-11 is proved - two graphs of one blueprint, or two assets
+    OPEN       for each check, the input that makes it fail
+
+**AND THE LAST TWO ARE THE ONES THAT MATTER, WHICH IS WHY THEY KEEP BEING RESTATED: A SUITE THAT NAMES FOUR TOOLS AND
+PRINTS NO VERDICT HAS MOVED THE AUDIT AND NOT THE EVIDENCE.** *The audit counts MENTIONS; only a `RESULT:` line is a
+claim, and only a check with a NAMED FAILING INPUT is a check.*
