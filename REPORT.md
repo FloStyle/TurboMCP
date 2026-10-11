@@ -194,7 +194,54 @@ Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un 
 
 ---
 
-## 10. En une ligne
+## 10. La dépendance et la projection — mesurées, pas estimées
+
+### 10.1 **Les 40 rows restantes n'ont AUCUNE dépendance déclarée entre elles**
+
+**Vérifié : la colonne de dépendance des 40 rows `todo` ne contient ni `gated`, ni `unblocked`, ni de renvoi à une autre row.** *Les seules mentions de blocage dans le plan sont sur des rows **déjà faites** (`10.1` était gatée sur `1.3`, `10.2` était « gated on 10.1 »), et les dépendances en question sont levées.*
+
+> ***Ce qui veut dire que CE QUI RESTE EST PARALLÉLISABLE EN ENTIER — pas « en principe », mais par la structure du plan lui-même. La contrainte n'est pas l'ordonnancement, c'est le nombre de workstreams et la disponibilité de l'éditeur.***
+
+**Et deux goulots d'étranglement partagés expliquent pourquoi le parallélisme n'est pas illimité :**
+
+| Ressource | Qui la veut |
+|---|---|
+| **L'éditeur** | *toute suite qui n'est pas statique — et une suite qui POSSÈDE l'éditeur ne peut pas coexister avec une autre* |
+| **`TurboMCPToolsets.h`** | *toute row qui ajoute un outil — un seul éditeur à la fois, ré-lecture obligatoire avant édition* |
+
+### 10.2 La vélocité, et pourquoi les six rows ne sont pas réparties uniformément
+
+| Fenêtre | Rows `done` |
+|---|---|
+| rounds 1 → 150 | **2** *(0.2, 1.4)* |
+| rounds 150 → 190 | **2** *(1.3 or 7.1 — les deux arrivent ici)* |
+| **rounds 190 → 218** | **4** *(7.1, 10.1, 10.2, 2.1)* |
+
+> ***QUATRE DES SIX ROWS FAITES LE SONT DANS LES 28 DERNIERS ROUNDS. Ce n'est pas de l'accélération rhétorique : les sections 79 à 150 ont construit la machine — briefs, commits de sécurité, checks de pré-vol, règle `P1`, break tests — et la machine produit maintenant.***
+
+**Mais la projection honnête est moins bonne que la vélocité récente ne le suggère, pour trois raisons mesurables :**
+
+1. **Les quatre rows récentes étaient les MIEUX SPÉCIFIÉES du plan** — *chacune avait déjà sa mesure faite (1.3 pour 10.1/10.2, 7.1 préparée par 1.4, 2.1 préparée par 1.4 et par la capacité existante).*
+2. **Les 40 restantes incluent le bloc graphes (phase 6, six rows) et la phase 8 (matériaux)** — *les plus grosses du plan, et celles dont les prémisses n'ont pas encore été testées.*
+3. **Le budget de rounds restant est 38.** *Quatre rows en 28 rounds, appliqué uniformément à 40 rows, donne 280 rounds — **donc le plan tel qu'écrit NE SERA PAS FINI dans le budget.***
+
+> ***Et c'est la chose la plus importante de ce rapport : LE PLAN N'A PAS ÉTÉ RE-SCOPÉ POUR TENIR DANS LE BUDGET, ET JE LE DIS PLUTÔT QUE DE LAISSER LE CHIFFRE PARLER TOUT SEUL.***
+
+### 10.3 Ce que je ferais du budget restant, si c'était ma décision
+
+**Trois stratégies, et je dis celle que je choisirais :**
+
+| | Stratégie | Coût | Ce qu'on obtient |
+|---|---|---|---|
+| **A** | *Faire les 40 rows dans l'ordre* | *~280 rounds* | *Rien avant longtemps, et des rows à moitié faites à la fin* |
+| **B** | ***Finir les phases à fort effet de levier (2, 9, 10), refuser le reste PAR ÉCRIT*** | ***~25 rounds*** | ***Le plugin le plus utile, et un plan qui dit ce qu'il n'a pas fait*** |
+| **C** | *Maximiser le nombre de rows faites* | *~38 rounds* | *~8 rows de plus, dispersées, sans qu'aucune phase soit complète* |
+
+> ***JE CHOISIRAIS B — parce que c'est la même décision que ce projet a déjà prise trois fois et qui a marché : row 10.2 a câblé 2 writers sur 32 ET NOMMÉ LES 30 ; row 2.2 a construit 9 types sur 9 mais AURAIT PU en refuser ; le kit a été mesuré buildable pour 4 assets et 2 refusés. À CHAQUE FOIS, LE RÉSULTAT PARTIEL MESURÉ ET NOMMÉ A ÉTÉ ACCEPTÉ COMME COMPLET — et c'est ce qui permet au plan d'être FINI un jour.***
+
+---
+
+## 11. En une ligne
 
 > **93 outils, 56/56 suites vertes, 447 commits, 61 137 lignes de C++, 40 rows de plan restantes — et une machine de vérification qui, sur les trois dernières rows, a produit des résultats corrects sans que j'aie à intervenir.**
 >
