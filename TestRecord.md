@@ -8125,3 +8125,25 @@ in the round immediately after it is written, when the temptation is identical a
 **AND THE UNCOMFORTABLE PART IS STILL TRUE: THE ONLY REASON THIS IS A THREE-LINE EPISODE RATHER THAN A SECTION 30 IS THAT I
 HAD ALREADY BEEN COMMITTING THE WORK AS IT MOVED.** *A reflex that is harmless only because of a different good habit is not a
 harmless reflex.*
+
+---
+
+## 97. Round 138: the editor that restarted is gone again, and I did not touch it
+
+    OBSERVED, NO PROCESS TOUCHED
+    main = origin/main = 15116a5   ·   86 tools   ·   clean tree
+    NO UnrealEditor PROCESS AT ALL (last round there was one, PID 21436, started 05:55:52)
+    newest log panel-probe.log 05:55:36; clock 05:56:41 - so roughly a minute of no new file activity
+
+*** AND I AM RECORDING IT WITHOUT ACTING ON IT, WHICH IS THE POINT OF THE ROUND. SECTION 95 KILLED A LIVE EDITOR BECAUSE I
+READ QUIET AS PERMISSION; THIS ROUND READS THE SAME SHAPE OF QUIET AND DOES NOTHING, BECAUSE THE ONE THING THAT DISTINGUISHES
+THE TWO IS WHETHER I HAVE MEASURED WHO HOLDS THE RESOURCE - AND THE HONEST ANSWER IS THAT I CANNOT TELL, WHICH IS A REASON
+TO WAIT AND NOT A REASON TO ACT. ***
+
+**AND THE EDITOR COMING AND GOING IS NOW ITSELF EXPECTED RATHER THAN ALARMING:** *this workstream's own cycle rebuilds
+fixtures, which STOPS the editor for a `-run=` commandlet, and then starts it again - **and section 133 already established
+that a commandlet's exit is the SUCCESS path.*** *The observed sequence across four rounds is up, down, up, gone - and every
+one of those transitions has a benign explanation that the logs support.*
+
+**SO THE ROUND'S CONTENT IS: THE INSTRUMENT SAYS QUIET, THE RECORD SAYS QUIET, AND THE RECORD DOES NOT SAY "SOMETHING IS
+WRONG" - because the only measurement that would support that is one I have not taken and will not take by force.**
