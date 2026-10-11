@@ -8838,3 +8838,31 @@ disk: yes`) and `R-TYPE-FIND` (the tool `T-DATA-2` NAMES, which searches the obj
     rather than presenting its number as a total
     `T-DATA-3` NAMES `TA-21`, WHICH DOES NOT EXIST - no `TA21_*` asset and NO `UserDefinedStruct` ANYWHERE IN THE REPO.
     *** FOURTH SUCH ROW, AFTER TA-6, TA-15/16 AND TA-8 - AND ITS SUITE BUILDS THE STRUCT IT EDITS RATHER THAN DEPENDING ON IT ***
+
+---
+
+## 124. Round 170: row 7.1 is marked DONE in the plan, and row 1.3 is launched as a measurement
+
+    Spec/WORKING_PLAN.md: 42 todo -> 41 todo, 3 done      (commit 7f8b7e4)
+
+*** AND THE ROW CARRIES THE CORRECTED PREMISE RATHER THAN A GREEN TICK, WHICH IS THE DECISION WORTH RECORDING: THE SPEC,
+`D-51` AND THREE OF MY OWN BRIEFS ALL REPEATED A CLAIM THAT TURNED OUT TO BE FALSE, AND A LATER READER WOULD RE-INHERIT IT FROM
+ANY OF THE FOUR. So the row now states that `StructureEditorUtils.cpp:42-64` INSTALLS the EditorData itself at `:49-50` and
+THEN calls `AddVariable` at `:59`; that the recorded crash was one call short of the public static; that the answer is an
+EDITOR PROCESS and not an OPEN EDITOR; AND that the row DOES need a `UUserDefinedStruct` while `TurboMCPKitRow.h` is STILL RIGHT
+about native structs - because a native struct is compiled C++ source. ***
+
+**LAUNCHED: ROW 1.3, "what does a source control provider do headless - Perforce, git and off are three different things". A
+MEASUREMENT ROW, LIKE ROW 1.4 WHICH PRODUCED A CLEAN TABLE AND CLOSED TWO DECISIONS.** *Its brief asks for a table with file and
+line per provider, names the four missing-fixture rows so it does not add a fifth, and carries the lesson of section 156.*
+
+**AND ITS BRIEF CARRIES A CORRECTION TO A DIFFERENT KIND OF STATEMENT - THE ONE ABOUT OTHER WORKSTREAMS.** *The previous
+workstream's entire first section was a warning that a concurrent process was pushing to `main`, and it was worth raising:
+**AND THE PROCESS WAS ME.** Its brief said "no other workstream is live" and its measurement of the TREE was right while its
+identification of the CAUSE was wrong.* *** So the briefs now say the true version: if HEAD moves for reasons you did not cause,
+that is your orchestrator preserving work - keep going.* ***
+
+**AND THE PROJECT'S OWN PATTERN IS NOW THE BRIEF'S MODEL FOR THE HARDEST QUESTION IT ASKS:** *"what must a tool do when no
+provider is available" is answered by `P/E-STRUCT-FIELDS`, which refuses a native struct BY NAME with the reason attached -
+`Only a UUserDefinedStruct has the editor data FStructureEditorUtils edits; a native USTRUCT is compiled C++ source and no
+runtime tool can add a field to it` - and that refusal is produced by the PLAN, so the Preview and the Edit refuse identically.*
