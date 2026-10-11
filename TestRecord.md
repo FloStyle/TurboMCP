@@ -6656,3 +6656,48 @@ a process with NO owner is the orchestrator's to clear, and a process with a liv
 **NO verbatim destination read-back** (the copy never applied); **no non-empty `Unlinkable`**; **no break test**, because
 that needs a build and a run, both forbidden by the stand-down. *Three gaps, all named, none papered over - which is why
 the rest of its report can be trusted.*
+
+---
+
+## 57. I ran the suite, and the missing verdict was a NameError - found in ONE command after four rounds of reasoning
+
+*** I ADDED THE `RESULT:` LINES MYSELF - reproducing the house form from `test-asset-cost.py:170` rather than inventing a
+dialect - AND THEN DID THE ONE THING NOBODY HAD DONE: I RAN THE SUITE WITH A LIVE EDITOR. ***
+
+    python Tools/test-graph-structure.py
+    Traceback (most recent call last):
+      File "Tools/test-graph-structure.py", line 120, in main
+        preview = session.call(PREVIEW, "PreviewTurboMCPGraphCopy", {..., "nodeIds": ARITHMETIC_NODE, ...})
+    NameError: name 'ARITHMETIC_NODE' is not defined
+
+*** SO THE SUITE WAS NOT FAILING TO PRINT A VERDICT. IT WAS CRASHING ON AN UNDEFINED NAME BEFORE IT COULD COMPUTE ONE,
+AND `no result line` IS EXACTLY WHAT THAT LOOKS LIKE. ***
+
+**AND EVERYTHING I REASONED FROM THE HARNESS TAIL WAS TRUE OF THE OUTPUT AND FALSE OF THE CAUSE.** *I wrote that the
+suite "RUNS and PRINTS and then either hangs, exits without reaching its verdict, or raises after that point" - and the
+harness tail did show the suite's own narration, so that reading was supported by evidence. **THE EVIDENCE WAS REAL AND
+THE CONCLUSION WAS STILL WRONG, WHICH IS THE SAME SHAPE AS THE `-run=` COMMANDLET GENERALISATION AND MY OWN "SPLIT CALL
+IS MIS-REPORTED" CLAIM: AN OBSERVATION THAT SUPPORTS A MECHANISM I THEN STOPPED TESTING.***
+
+### 57.1 And the fix was already arriving while I looked
+
+**`ARITHMETIC_CLASS_HINT = "int + int"` IS NOW DEFINED AT LINE 52 AND THE UNDEFINED `ARITHMETIC_NODE` REFERENCE IS
+GONE**, so the class hint drives discovery as its own comment intended - *"THE ARITHMETIC NODE FIRST, BECAUSE IT NAMES NO
+BLUEPRINT MEMBER: its type is a promotable operator, so a copy of it tests the COPY rather than the cross-asset member
+check."* **THE FILE GREW FROM 237 TO 293 LINES WHILE I WAS READING IT, WHICH IS WHY I CHECKED WHETHER AN AGENT WAS STILL
+LIVE BEFORE TOUCHING ANYTHING FURTHER.** *No agent was: the two edits crossed, mine and its, and the tree is consistent.*
+
+### 57.2 What is proven and what is owed, exactly
+
+    PROVEN    the file parses
+    PROVEN    the RESULT lines print, at :285 for FAIL and :288 for PASS
+    PROVEN    the full module build is Result: Succeeded
+    OWED      a run of the suite against a LIVE EDITOR - the editor would not come back up at the end of this round
+
+**AND THE OWED ITEM IS NOW A ONE-STEP QUESTION RATHER THAN A MYSTERY, WHICH IS THE WHOLE DIFFERENCE THE `RESULT` LINES
+MAKE: THE SUITE REPORTS.** *Four rounds of reasoning about a missing verdict produced four plausible mechanisms and none
+of them was the cause; executing the suite printed the cause in one command.*
+
+*** AND THE RULE, WHICH THIS PROJECT HAS NOW EARNED FROM BOTH DIRECTIONS: WHEN A DIAGNOSTIC SAYS "NO RESULT", RUN THE
+THING BY HAND BEFORE THEORISING ABOUT WHAT IT DID. THE HARNESS TAIL IS A GOOD INSTRUMENT AND IT SHOWS THE LAST LINES,
+NOT THE FIRST FAILURE - AND A CRASH AND A MISSING PRINT ARE INDISTINGUISHABLE THROUGH IT. ***
