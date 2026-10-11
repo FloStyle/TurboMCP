@@ -6047,3 +6047,52 @@ exercise it yet, and the plan types are designed in the header for whoever picks
 **AND THE WRITE VERBS NOW HAVE A NAMED BLOCKER RATHER THAN A VAGUE ONE:** the walk exists and is verified, the dialect
 and parser exist (871 lines), **and what is missing is a fixture whose tree is DEEP ENOUGH AND WIDE ENOUGH to exercise
 `append`/`replace`/`patch` - the same class as `TA-15`/`TA-16`/`TA-17` in the kit's measured table.**
+
+---
+
+## 43. Round 82: the graph workstream is mid-flight and the right action was to LEAVE IT ALONE
+
+*** THIS ROUND'S HONEST RESULT IS A STATE CHECK AND A DELIBERATE NON-ACTION, RECORDED BECAUSE THE ALTERNATIVE WAS
+MEASURED AND REJECTED RATHER THAN NOT CONSIDERED. ***
+
+    main = origin/main = 6b3455a, WORKING TREE CLEAN
+    81 AICallable tools          (unchanged - no declaration added yet)
+    44 suites
+    TurboMCPGraphStructure.h     EXISTS, 210 lines, COMMITTED in 6b3455a
+    TurboMCPGraphStructure.cpp   EXISTS, UNTRACKED
+    Tools/test-graph-structure.py  DOES NOT EXIST YET
+
+*** SO THE WORKSTREAM HAS WRITTEN ITS IMPLEMENTATION AND NOT YET ITS SUITE - the order every successful capability here
+has followed - AND IT HAS NOT ADDED ITS FOUR DECLARATIONS TO THE SHARED HEADER, WHICH MEANS THE TOOL COUNT HAS NOT
+MOVED AND NOTHING CAN LINK AGAINST A MISSING DEFINITION. ***
+
+### 43.1 And the decision NOT to start a second workstream
+
+The machine is idle and the kit's measured table says `TA-15` and `TA-17` are BUILDABLE. **STARTING ONE NOW WOULD PUT
+A SECOND AGENT INTO THE SAME BUILD MUTEX AND THE SAME EDITOR, WHICH IS THE CONDITION THAT HAS ALREADY COST THIS PROJECT
+TWICE:** one workstream's broken file (`TurboMCPWidgetTreeSync.cpp(242,5): error C2100`) **blocked THREE others** and
+had to be worked around with `Build.bat -SingleFile=`, **and the reason I reverted a shared tree and destroyed a
+VERIFIED capability in section 30 was a diagnosis made while workstreams were live.**
+
+**THE PROJECT'S OWN PRIORITY ORDER SETTLES IT: "DON'T FORGET TO PARALLELIZE ... BUT CODE SAFETY STILL COMES FIRST." A
+WORKSTREAM ONE FILE FROM DONE, WITH THE MACHINE TO ITSELF, IS WORTH MORE THAN TWO SHARING A MUTEX - AND THE
+COUNTERFACTUAL IS NOT HYPOTHETICAL, IT IS SECTION 30.**
+
+### 43.2 The suite rule, now complete enough to state for the next workstream
+
+*** A CHECK OVER A RELATIONSHIP INHERITS THE VACUITY OF ITS INPUT. ***
+
+FOUR workstreams in FOUR rounds reported that their check count overstated their coverage, and **the fourth named the
+mechanism**:
+
+    R-MAT-INST-LOAD   its orphan list is empty on the fixture
+    R-CALL-COST       it cannot make the engine emit a qualified name
+    R-ASSET-COST      its asset HAS a registry row, so the unknown branch never runs
+    R-WIDGET-TREE     its path-extension check - WRITTEN TO CATCH A FLATTENED WALK - PASSED ON A DELIBERATELY
+                      BROKEN WALK, because with no children there is nothing whose path can fail to extend
+                      its parent. THE TWO THAT CAUGHT IT WERE AN EXISTENCE CHECK AND AN INDEPENDENT WITNESS.
+
+**SO THE RULE A NEW SUITE MUST SATISFY IS NOT "HAVE MANY CHECKS" BUT: FOR EACH CHECK, NAME THE INPUT THAT MAKES IT
+FAIL.** A check that cannot state its failing input will pass for the wrong reason - **and the way all four found out
+was BY BREAKING THE CODE AND WATCHING THE SUITE STAY GREEN, which is why "show a check can fail" is not a formality
+but the only test of the test.**
