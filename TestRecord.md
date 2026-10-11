@@ -9100,3 +9100,27 @@ WHICH DOES NOT EXIST YET.**
 specified for BUILDING - Git first because it is the only one available here, Perforce second because `UsesCheckout()==true` is
 why the capability exists - and the probe order is running the unavailable default first as a CONTROL, which is what a careful
 measurement does and what the brief did not ask for explicitly.*
+
+---
+
+## 134. Round 182: the commit says the Git checkout ANSWER is measured, which is the one thing the brief said was missing
+
+    `cc0aadf  E-VCS-CHECKOUT: the suite measures every branch, Git and Perforce included`
+
+*** AND THAT SENTENCE ANSWERS THE SINGLE HONEST LIMIT THE PREVIOUS WORKSTREAM HANDED FORWARD: "A Git checkout was deliberately NOT
+run, so Git's checkout ANSWER is unmeasured - only `is_available=True`. `GitSourceControlProvider.cpp:257-260` and `:286-289`
+PREDICT a no-op, AND A PREDICTION IS NOT A MEASUREMENT." THE BRIEF SAID "if your suite can measure it, measure it; if it cannot,
+SAY SO" - AND IT MEASURED IT. ***
+
+**AND TWO THINGS ABOUT HOW IT GOT THERE ARE WORTH RECORDING:**
+
+    IT RAN THE PROBES **THREE TIMES** - vcs-run-none 07:50:12, git 07:50:20, perforce 07:50:49, then none 07:51:17,
+    git 07:51:26, perforce 07:51:55 - TWO FULL PASSES SO THE SECOND CONFIRMS THE FIRST RATHER THAN REPLACING IT
+    IT PUT `none` FIRST IN BOTH PASSES, WHICH IS A CONTROL RATHER THAN THE ORDER THE BRIEF ASKED FOR (Git first,
+    because Git is the only one available here) - *** SO THE SUITE ESTABLISHES THAT THE UNAVAILABLE CASE IS REFUSED
+    BEFORE IT ESTABLISHES THAT THE AVAILABLE ONE WORKS, WHICH IS THE ORDER `P1` IMPLIES: AN ABSENT MEASUREMENT MUST BE
+    DISTINGUISHABLE FROM A ZERO, AND THE ONLY WAY TO SHOW THAT IS TO PRODUCE THE ABSENCE FIRST. ***
+
+**AND IT IS ALSO REVISING `Spec/WORKING_SCROW.md`**, which is the measurement file - *so if the first pass measured something the
+second disagreed with, the file will say so rather than the suite being quietly adjusted. **I cannot yet tell which, and the next
+round reads the file rather than assuming.***
