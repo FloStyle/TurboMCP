@@ -271,6 +271,10 @@ def main():
     check("with no asset it answers instead of refusing", not refused(table))
     check("it says no editor was opened",
           "no editor was opened" in table, "the table must not open a tab")
+    check("the table's first line is the banner exactly once",
+          table.splitlines()[0] == "look: capture of an asset editor"
+          and table.count("look: capture of an asset editor") == 1,
+          repr(table.splitlines()[0][:90]))
     for kind in NAMED_KINDS:
         check("kind named in the table: %s" % kind, kind in table)
     check("it says every kind's editor module was asked for",
@@ -330,6 +334,15 @@ def main():
     check("an asset that does not exist is refused", refused(missing))
     check("the refusal says the asset was not found",
           "no asset named" in missing.lower() or "not found" in missing.lower())
+    # *** THE PREFIX IS NOT DOUBLED. *** MEASURED before the guard existed, verbatim:
+    # `error: error: no asset named '/Game/...'`. The resolver returns its reason ALREADY
+    # prefixed (`TurboMCPAssetResolver.cpp:108`), so the caller must add the prefix only
+    # when it is missing. A doubled prefix is not cosmetic: a caller stripping one prefix
+    # reads the word `error` as the reason.
+    # FAILS ON: any refusal opening with `error: error:`.
+    check("the refusal does not double the error prefix",
+          not missing.startswith("error: error:"),
+          repr(missing.splitlines()[0][:80]))
 
     # FAILS ON: a valid mode name being refused, which would make every check below
     # vacuous.
@@ -412,6 +425,27 @@ def main():
         if path is None:
             measured[kind] = ("NO PATH", None, None)
             continue
+
+        # *** THE BANNER IS PRINTED EXACTLY ONCE, AND THE FIRST LINE IS ASSERTED WHOLE. ***
+        #
+        # MEASURED, AND THIS CHECK EXISTS BECAUSE THE DEFECT WAS FOUND BY READING THE RAW
+        # MCP RESPONSE RATHER THAN THE SUITE: the accumulator was seeded with the banner
+        # AND the banner was prepended on success, so the answer began
+        #
+        #     look: capture of an asset editorlook: capture of an asset editor
+        #
+        # and EVERY CHECK IN THIS SUITE STILL PASSED, because none of them read the first
+        # line of a SUCCESS. This asserts the WHOLE first line and the count, which is the
+        # rule row 2.1 recorded: a check that matches a prefix cannot detect a change after
+        # the prefix.
+        # FAILS ON: the banner being doubled, changed, or prefixed by anything.
+        first_line = out.splitlines()[0]
+        check("%s: the first line is EXACTLY the capture banner" % kind,
+              first_line == "look: capture of an asset editor",
+              repr(first_line[:90]))
+        check("%s: the banner appears exactly once" % kind,
+              out.count("look: capture of an asset editor") == 1,
+              "%d time(s)" % out.count("look: capture of an asset editor"))
 
         full = resolve_printed_path(path)
         check("%s: the file exists on disk" % kind, os.path.isfile(full), full)

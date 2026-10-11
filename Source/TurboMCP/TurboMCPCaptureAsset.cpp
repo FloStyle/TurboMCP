@@ -545,6 +545,11 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InAsset, Resolved);
 	if (!ResolveError.IsEmpty())
 	{
+		// THE RESOLVER RETURNS ITS REASON ALREADY PREFIXED - `TurboMCPAssetResolver.cpp:108`
+		// builds `error: no asset named '%s'. ` and `:43` and `:86` do the same - so it is
+		// passed THROUGH here rather than prefixed again. The caller adds the prefix only
+		// if it is missing, and doing it in both places is what produced the measured
+		// `error: error: no asset named ...`.
 		OutError = ResolveError;
 		return false;
 	}
