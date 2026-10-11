@@ -2193,10 +2193,24 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			++Short;
 		}
 
+		// *** A REFUSAL PRINTS `MISSING`, AND THE VERDICT WORD IS DECIDED BY WHETHER THE ASSET WAS BUILT. ***
+		//
+		// MEASURED CONTRADICTION, AND IT IS WHY THIS LINE CHANGED. The verdict used to be
+		// `bMeasured ? OK : (bBuilt ? PARTIAL : MISSING)`, but a declared-unbuildable asset is
+		// `bMeasured == true` with `bBuilt == false`, so the log printed
+		// `kit TA-10 OK NOT BUILT: needs 3 rows and 4 fields` - THE WORD `OK` BESIDE THE WORDS `NOT BUILT` -
+		// while `QUESTIONS.md:914` records that same asset from a run as `TA-10 MISSING  NOT BUILT: ...`.
+		// A report whose verdict contradicts its own detail is the defect this project records most often,
+		// and it got worse rather than better when TA-18 and TA-19 were declared: THREE such lines.
+		//
+		// `bMeasured` KEEPS DOING THE JOB IT WAS ADDED FOR. It is still what separates a SHORT asset (built
+		// and wrong) from an absent one, and the counters below are untouched - so this changes the WORD and
+		// not one number. `make-kit-assets.ps1` reads `short`, `missing` and `assets`, never this word.
+		const TCHAR* const Verdict = !Result.bBuilt
+			? TEXT("MISSING")
+			: (Result.bMeasured ? TEXT("OK") : TEXT("PARTIAL"));
 		UE_LOG(LogTurboMCP, Display, TEXT("TurboMCP: kit %s %s %s"),
-			*Result.Id,
-			Result.bMeasured ? TEXT("OK") : (Result.bBuilt ? TEXT("PARTIAL") : TEXT("MISSING")),
-			*Result.Detail);
+			*Result.Id, Verdict, *Result.Detail);
 		for (const FString& Finding : Result.Findings)
 		{
 			UE_LOG(LogTurboMCP, Error, TEXT("TurboMCP: kit %s SHORT: %s"), *Result.Id, *Finding);
