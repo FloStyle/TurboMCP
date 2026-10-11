@@ -518,6 +518,32 @@ def main():
     print("  A skip is not a pass. The negative cases ran for real, and so did the TA-4 and TA-5 cases.")
 
     print()
+    # *** AND THE SUITE RESTORES THE SHARED FIXTURE ON THE WAY OUT TOO, WHICH IT DID NOT DO BEFORE. ***
+    #
+    # The header above says the rule - "a suite that owns a shared resource must restore it ON THE WAY IN as
+    # well as THE WAY OUT" - and only the way IN was implemented. THE CONSEQUENCE WAS FOUND BY A DIFFERENT
+    # WORKSTREAM AND MEASURED TWICE: `Tools/test-vcs.py:596-598` requires `TA01_HandLaid.uasset` to be CLEAN,
+    # and this suite runs BEFORE it and leaves the rebuild in the tree, so `test-vcs` FAILS ON A HEALTHY TREE
+    # with "NEITHER call touched the working tree" - a check that is TRUE of its own tool and FALSE of the
+    # suite that ran before it.
+    #
+    # *** SO THE FULL RUN COULD NOT BE GREEN AT HEAD, AND BOTH FILES WERE BYTE-IDENTICAL TO AN EARLIER COMMIT,
+    # WHICH IS WHY IT WAS PRE-EXISTING RATHER THAN A REGRESSION. *** A suite that repairs itself on the way in
+    # still hands its damage to the next suite; the way out is what makes the ORDER of the run stop mattering.
+    #
+    # IT IS A `git checkout` OF THE GENERATED FIXTURE DIRECTORY AND NOTHING ELSE - the same restore every other
+    # suite here uses - and it is asserted by reading `git status --porcelain` back, because a restore that is
+    # not checked is a restore that can silently stop happening.
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    fixture_dir = os.path.join("TestProject", "Content", "Tests")
+    subprocess.run(["git", "checkout", "--", fixture_dir], capture_output=True, text=True, cwd=repo)
+    left = subprocess.run(["git", "status", "--porcelain", "--", fixture_dir],
+                          capture_output=True, text=True, cwd=repo).stdout.strip()
+    if left:
+        print("  NOTE the fixture directory is still dirty after the restore: %r" % left.splitlines()[:3])
+    else:
+        print("  the shared fixture is restored on the way out, so the next suite starts clean")
+
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1
