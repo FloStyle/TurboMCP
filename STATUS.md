@@ -197,3 +197,23 @@ Recorded in full in `TestRecord.md`; the ones worth knowing:
 ---
 
 *This report describes a plugin that reads Blueprint graphs, widgets and materials faithfully and can now write into them. The engineering discipline that produced it — no claim without a measurement, a check shown to fail before it is believed, and a defect recorded rather than papered over — is the reason the nine recorded cases of "a check that passes while the thing it verifies is broken" were caught rather than shipped.*
+
+---
+
+## Plan counter, and the correction of my own instrument (section 141)
+
+**THE COUNT MUST BE TAKEN BY FIELD - READ FROM THE LAST CELL OF THE ROW - AND NOT BY A REGEX OVER THE LINE.** *A row's status
+cell in `Spec/WORKING_PLAN.md` may contain prose, so a pattern that looks for the word `todo` or `done` followed by a pipe
+matches **prose inside a multi-line cell** as well as a status. It produced `41 todo, 4-5 done` and **changed between two runs of
+the same command**; the field-based count is `42 todo, 4 done` over 46 rows.*
+
+**THE FIELD-BASED COUNT IS ALSO THE AUTHORITATIVE ONE FOR ANY FUTURE ROUND**, and it is the project's oldest rule applied to its
+own bookkeeping: **parse the field, never match a sentence beside it.**
+
+| | |
+|---|---|
+| `todo` | **42** |
+| `done` | **4** |
+| **Tools** | **93** AICallable, audit `uncalled: (none)` |
+| **Suites** | **54**, full run **54/54**, zero failures |
+| **Rows done, last five** | *`0.2`, `1.4`, `1.3`, `7.1`, `10.1`* |
