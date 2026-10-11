@@ -14,7 +14,7 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 | Commits sur `main` | **447** |
 | Outils `AICallable` | **93** (audit : `uncalled: (none)`, PASS) |
 | Suites (`Tools/test-*.py`) | **51** fichiers |
-| **Full run** | **`passed 56, failed 0, blocked 0, of 56`** |
+| **Full run** | **`passed 57, failed 0, blocked 0, of 57`** |
 | C++ du plugin | **61 137 lignes** dans **185** fichiers |
 | Spec | **7 738 lignes** dans **17** fichiers |
 | `TestRecord.md` | **10 178 lignes** (le journal de bord) |
@@ -22,7 +22,7 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 
 ---
 
-## 2. Le plan : **40 `todo`, 6 `done`** sur 48 lignes
+## 2. Le plan : **40 `todo`, 6 `done`** sur 48 lignes (la row 2.2 vient de finir et va y passer)
 
 *Compté **par champ** — la dernière cellule de la ligne. Voir §7 : une regex sur la ligne donne un chiffre faux.*
 
@@ -31,6 +31,7 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 | **0.2** | `test-override-add` / `test-comment-boxes` restaurent leurs fixtures à l'aller comme au retour |
 | **1.4** | Un Niagara et un Anim Blueprint peuvent-ils être capturés headless ? — **mesuré** |
 | **2.1** | `selection`, `neighbours`, `box-neighbours`, `screen` ajoutés à `L-CAPTURE` |
+| **2.2** | L-CAPTURE-ASSET : **9 types d'éditeurs capturés, aucun refusé**, via un seul chemin de rendu |
 | **7.1** | `P/E-STRUCT-NEW` + `P/E-STRUCT-FIELDS` — le writer de structs |
 | **10.1** | `E-VCS-CHECKOUT` via `ISourceControlModule`, comportement headless mesuré |
 | **10.2** | Checkout automatique câblé dans les outils d'écriture (2 writers sur 32) |
@@ -41,7 +42,7 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 |---|---|
 | **0 — Fondations** | 3 rows `todo` : propriétaire unique du cycle de vie de l'éditeur, re-vérification de `07_ENGINE_NOTES.md` |
 | **1 — Mesures bloquantes** | 3 `todo` : breakpoint Blueprint, tests d'automation, kit `TA-14`→`TA-21` |
-| **2 — Vision** | **2.1 faite.** 2.2 en cours (9 types d'éditeurs capturés). 2.3 (level/viewport/PIE), 2.4 (diff d'images) restent |
+| **2 — Vision** | **2.1 et 2.2 faites.** 2.2 capture **9 types d'éditeurs, aucun refusé**. 2.3 (level/viewport/PIE) et 2.4 (diff d'images) restent |
 | **3 — Look** | layout-report, capture, widget-preview : largement bâti, rows de finition |
 | **4 — Data** | `P/E-DATATABLE-ROWS` fait ; courbes (`T-DATA-5` → **`TA-17` manquant**) |
 | **5 — Widgets** | writers d'override/bind/retarget ; **`T-WIDGET-4` → `TA-8` manquant** |
@@ -57,7 +58,7 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 
 ### 3.1 La machine de vérification fonctionne
 
-**Six rows d'affilée ont fini avec un full run propre : `53/53` → `54/54` → `55/55` → `56/56`.** *Chacune avec une suite nouvellement écrite dedans et zéro échec.*
+**Sept rows d'affilée ont fini avec un full run propre : `53/53` → `54/54` → `55/55` → `56/56` → `57/57`.** *Chacune avec une suite nouvellement écrite dedans et zéro échec.*
 
 Et la mesure qui compte : **les trois dernières rows ont eu besoin de presque aucune intervention de ma part.** Les briefs, les commits de sécurité, les checks de pré-vol et la règle `P1` ont été construits sur trente rounds, et ils produisent maintenant des résultats sans surveillance constante.
 
@@ -277,6 +278,6 @@ Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un 
 
 ## 12. En une ligne
 
-> **93 outils, 56/56 suites vertes, 447 commits, 61 137 lignes de C++, 40 rows de plan restantes — et une machine de vérification qui, sur les trois dernières rows, a produit des résultats corrects sans que j'aie à intervenir.**
+> **93 outils, 57/57 suites vertes, 40 rows de plan restantes — et une machine de vérification qui, sur les trois dernières rows, a produit des résultats corrects sans que j'aie à intervenir.**
 >
 > ***Ce qui reste n'est pas bloqué par des inconnues : c'est borné par du temps, par cinq fixtures qui n'existent pas, et par un serveur source control que cette machine n'a jamais eu.***
