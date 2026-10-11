@@ -9852,3 +9852,81 @@ THAT SURVIVES CONTACT. ***
 **AND IT IS WORTH NOTING WHAT THE BOUND DOES NOT DEPEND ON: NOT THE NUMBER OF CYCLES, NOT THE TIMESTAMPS, AND NOT MY PATIENCE.** *It
 depends on **two facts I can read** - whether a full run appears while the tree stays clean, and what the next commit message says -
 **and both are things this row has been reliable about.***
+
+---
+
+## 157. *** ROW 2.1 COMPLETE: 56 OF 56, ALL FOUR SELECTORS BUILT, AND THREE BRIEF PREMISES FALSIFIED - INCLUDING ONE I REPEATED IN FOUR BRIEFS ***
+
+    FULL RUN passed 56, failed 0, blocked 0, of 56   (55 -> 56; the new suite is the 56th)
+    AUDIT 93 AICallable tools, uncalled: (none), parsed 93 of 93
+    BUILD with `Compile TurboMCPCaptureSelector.cpp`, `Compile TurboMCPCapture.cpp`, `Link .lib`, `Link .dll` ALL in the log
+    COMMITS e228eed, d82c1ad, 54332da, a6c5524 - and `git push` answered "Everything up-to-date" because I HAD ALREADY PUSHED THEM
+    AND IT VERIFIED MY HEAD MOVEMENT WITH `git rev-list --parents` RATHER THAN ASSUMING: `066a22d` sits ON TOP OF its `e228eed`
+    and EXTENDED its three files - "your HEAD movement was PRESERVATION, not a collision"
+
+### 157.1 *** THE THIRD PREMISE IS MINE AND IT WAS IN EVERY CAPTURE BRIEF: "-nullrhi IS WHAT EVERY SUITE HERE USES" ***
+
+    `run-suites.ps1:195`  CALLS `start-editor.ps1 -LowPriority` - NO `-Offscreen`, NO `-nullrhi`
+    `start-editor.ps1:296-299`  RECORDS THAT `-Offscreen` WAS MEASURED AND REMOVED BECAUSE IT MADE THE EDITOR FAIL TO EXIT CLEANLY
+    SO THE EDITOR HERE RUNS WITH A REAL RHI AND A REAL WINDOW (`MainWindowHandle` NON-ZERO)
+
+*** AND I WROTE THAT SENTENCE INTO FOUR BRIEFS - 2.1's, AND THE ONE FOR 2.2/2.3/2.4 THAT I WAS ABOUT TO WRITE. IT IS THE FIRST TIME
+ON THIS PROJECT THAT A FALSE PREMISE WAS MINE RATHER THAN THE SPEC'S, AND IT WAS FALSE IN THE DIRECTION THAT MADE A ROW LOOK
+IMPOSSIBLE WHEN IT WAS NOT. ***
+
+**AND ITS CORRECTION OF `-nullrhi` IS MORE USEFUL THAN MY ERROR WAS HARMFUL: `RHIGlobals.h:894` IS WHAT `LaunchEngineLoop.cpp:3343`
+TESTS, AND `:3345-3347` THEN PICKS `SlateNullRenderer` INSTEAD OF `SlateRHIRenderer`, WHICH `:3354` INSTALLS. SO UNDER `-nullrhi`
+**SLATE IS INITIALIZED - WITH A NULL RENDERER** - not absent, and there is simply no pixel to read.** *Row 10.1 established "an editor process, not an open editor" for source control; **this establishes the same shape for rendering, and it means the `screen`
+refusal is a RENDERER question rather than a SLATE question.***
+
+### 157.2 And `screen` WORKS HERE, MEASURED RATHER THAN ARGUED
+
+    `window: 1670x911, rendered at 1670x911` · the PNG on disk IS 1670x911 · **1335 DISTINCT COLOURS** (not a black image)
+    through `FWidgetRenderer::DrawWindow` - the same call `debug-window` ALREADY USES (`Slate/WidgetRenderer.h:92-99`)
+
+**AND THE LIMIT IS STATED RATHER THAN HIDDEN: `GUsingNullRHI` DOES NOT LINK FROM THIS PLUGIN** - `error LNK2019: unresolved external
+symbol GRHIGlobals`, because `RHI` is not in `TurboMCP.Build.cs` and `RenderCore` lists it as a public dependency
+(`RenderCore.Build.cs:12`) without re-exporting the symbol. *** IT DID NOT EDIT `Build.cs` - IT TOOK THE DECISION FROM `-nullrhi` ON THE
+COMMAND LINE AND `FApp::CanEverRender()` (`App.h:400-408`) AND **MADE THE OUTPUT SAY IT IS A PROXY RATHER THAN THE ENGINE'S OWN FLAG**,
+which is `P1` applied to a signal rather than to a number. ***
+
+### 157.3 `selection` AND THE HONEST DEVIATION
+
+    `SGraphEditor::GetSelectedNodes` (`GraphEditor.h:394-406`), `FGraphPanelSelectionSet` = `TSet<UObject*>` (`GraphEditor.h:54`)
+    *** WHAT IT MEANS: THE NODES SELECTED ON THE GRAPH CANVAS OF THE OPEN GRAPH EDITOR. ***
+    *** WHAT IT DOES NOT MEAN: the level actor selection (`GetSelectedActors`, `Editor/EditorEngine.h:1969`), the COMPONENT
+        selection (`GetSelectedComponents`, `:2000`), OR the Content Browser asset selection. ***
+    AND: THERE IS NO `IsSelected` ON `UEdGraphNode` - the engine keeps node selection in the SLATE PANEL, so this mode NEEDS a
+    live panel. Nothing selected => REFUSED, NEVER A FALLBACK (`D-41`).
+    *** AND THE DEVIATION IT NAMED RATHER THAN HID: `P3` (`02_PRINCIPLES.md:29-33`) FORBIDS A LOOK CREATING A SELECTION, so the
+    positive path is proved through an UNDOCUMENTED `mode=select-nodes` probe that reports the BEFORE selection, selects, reads
+    back through `SGraphEditor::GetBoundsForNode` (`GraphEditor.h:479`), CLEARS, AND ASSERTS EMPTY. *** SO THE SHIPPED FRAME PATH IS
+    NOT SEPARATELY EXERCISED BY A REAL USER SELECTION - the same class of deviation as the pre-existing `debug-window`.
+
+### 157.4 *** AND ITS BREAK TEST FOUND A DEFECT IN ITS SUITE FOR THE SECOND TIME IN TWO ROWS ***
+
+    FOUR CHECKS RED WITH THE WRONG VALUE VISIBLE:
+      "some nodes are selected in the graph canvas ... so there is nothing to frame"   (broken: `nothing is selected`)
+      "a plain reroute knot is therefore TWO hops and not one"                          (broken: `ONE hop and not two`)
+      "framed: the whole editor window, cropped to the graph, at its current size"      (broken: uncropped)
+      "selection still refuses after the probe cleared the selection"
+    *** AND THE SECOND FINDING: ITS `screen` CHECK ASSERTED ONLY THE PREFIX `framed: the whole editor window` AND **PASSED
+    AGAINST THE BROKEN BUILD**. A PREFIX CANNOT TELL AN UNCROPPED WINDOW FROM A FRAME CUT OUT OF IT. It now asserts the whole
+    sentence. *** **That is the `else`-branch-that-checks-`True` defect class, found by the author, twice in two rows, and the
+    general form is now nameable: A CHECK THAT MATCHES A PREFIX OR A SUBSTRING CANNOT DETECT A CHANGE AFTER THE PREFIX.**
+
+### 157.5 And it separated CONTENTION from DEFECT rather than reporting either
+
+**ONE FULL RUN READ `passed 54, failed 2` - `test-vcs` AND `test-vcs-write` - WHILE MY COMMITS LANDED MID-RUN.** *Its diff contains
+**zero** occurrences of `Vcs`/`SourceControl`/`CheckOut` (measured with `git diff f5153db..HEAD -- Source/ | Select-String ...` = 0),
+both pass in isolation at full counts (`55` and `62`, no check skipped), and the clean full run is `56/56`.* *** SO A CONCURRENT COMMIT
+IS ENOUGH TO REDDEN `test-vcs` - WHICH IS THE THIRD INDEPENDENT CONFIRMATION OF THE EDITOR-CONTENTION HAZARD AND THE FIRST ONE WHERE
+SOMEONE MEASURED THE DIFFERENCE RATHER THAN ATTRIBUTING IT. ***
+
+### 157.6 And the acceptance-row audit, done ahead of the next row
+
+    `T-LOOK-7` NAMES NO `TA-` FIXTURE - self-contained, SO THE FIVE MISSING-FIXTURE ROWS STAY AT FIVE
+    `T-LOOK-4` and `T-LOOK-5` NAME `TA-7` - and `TA07_Card.uasset` EXISTS
+    `T-LOOK-1..3` use `BP_NodeTest`, which exists
+    *** AND ROWS 2.2-2.4 NEED `TA-18`/`TA-19` (`06_ACCEPTANCE.md:33-34`), WHICH **DO NOT EXIST** - FLAGGED NOW SO 2.2 DOES NOT
+    DISCOVER IT LATE. ***
