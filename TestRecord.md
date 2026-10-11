@@ -9242,3 +9242,26 @@ exactly what failed in section 184.*
 THREE TIMESTAMPS. THE RECORD'S OWN CORRECTIONS - THE WINDOW, THE SCOPE, THE RATE, THE LOG NAME, AND FINALLY `list_agents` -
 HAVE TURNED THAT INTO ONE SENTENCE.** *That is not a saving of effort; it is the difference between watching a process and
 knowing one.*
+
+---
+
+## 139. Round 187: a FOURTH rebuild pass in twenty-five minutes, and the honest note is that "normal" has a limit
+
+    make-kit-assets.log 08:29:41  ·  make-acceptance-asset.log 08:33:27  ·  make-material-asset.log 08:34:16
+    HEAD = origin/main = dae9ae1   ·   93 declarations   ·   clean tree   ·   no editor at the sample
+
+*** SECTION 186 CALLED A REBUILD SEQUENCE NORMAL, AND IT IS - ONCE. FOUR PASSES IN TWENTY-FIVE MINUTES IS A DIFFERENT
+OBSERVATION, AND THE DIFFERENCE IS NOT THE REBUILDS THEMSELVES BUT THAT NO FULL RUN HAS APPEARED BETWEEN THEM. ***
+
+**AND THE HONEST ACCOUNTING IS THAT I HAVE NOW WATCHED THIS EXACT SHAPE TWICE, WITH OPPOSITE OUTCOMES AND NO WAY TO TELL THEM
+APART FROM OUTSIDE:**
+
+    ROW 10.1   four rebuild passes, then a full run follows and the row completes - OR NOT, AND I CANNOT TELL YET
+    PRIOR ROW  three passes and a full run did NOT follow for seventeen rounds, and I eventually stopped the workstream
+
+*** SO THE DISCRIMINATOR IS STILL THE SAME ONE AND IT IS STILL THE ONLY ONE THAT WORKS: ASK THE AGENT, NOT ITS OUTPUT. THE
+REBUILDS ARE EVIDENCE THAT SOMETHING IS HAPPENING AND THEY ARE NOT EVIDENCE ABOUT WHAT WILL HAPPEN NEXT. ***
+
+**WHAT I WILL NOT DO IS CHANGE THE PLAN OR THE BRIEF BECAUSE OF A TIMESTAMP PATTERN.** *The row owes a full run, the workstream
+says it is in flight, its suite has already passed at 55 checks, and the tree holds nothing uncommitted - **so every fact I have is
+either satisfied or pending, and none of them is a reason to act.***
