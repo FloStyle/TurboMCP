@@ -5836,3 +5836,95 @@ OBSERVATIONS IS A HYPOTHESIS, AND THIS ONE CONTRADICTED A COMPONENT THAT HAD PAS
 5. **AND THE SAME RUN PROVED THE KIT IS REPRODUCIBLE:** `TA-14` and `TA-20` were rebuilt from the commandlet just
    now, which is the property the project's fixture rule requires, **since generated assets are restored rather than
    committed.**
+
+---
+
+## 40. E-GRAPH-COLLAPSE is REACHABLE (un-gated by measurement), and a THIRD capability reports its check count overstates its coverage
+
+    R-ASSET-COST     test-asset-cost     PASS (10 checks)   commits ccbbee3, 3a0e80e
+    P/E-WIDGET-TREE  test-widget-tree    PASS               (ReadTurboMCPWidgetTree still uncalled - in flight)
+    build            Result: Succeeded   81 AICallable tools
+
+### 40.1 E-GRAPH-COLLAPSE: the gate is ANSWERED, and it says REACHABLE
+
+A PREVIOUS WORKSTREAM CORRECTLY REFUSED TO BUILD ON `CollapseNodesIntoGraph` BECAUSE IT IS DECLARED ON
+`FBlueprintEditor`, AN ASSET-EDITOR UI OBJECT. THIS ROUND SETTLED IT BY ENUMERATION:
+
+    FBlueprintEditor::CollapseNodesIntoGraph   BlueprintEditor.h:1125     UE_API
+    FBlueprintEditorUtils::CreateNewGraph      BlueprintEditorUtils.h:338 static UNREALED_API
+    AddFunctionGraph / AddMacroGraph           :399 static / :430 static UNREALED_API
+    FindUniqueKismetName                       :1561 static UNREALED_API
+    FEdGraphSchemaAction_K2NewNode::SpawnNode<> EdGraphSchema_K2_Actions.h:106,125  static
+
+*** AND THE HALF IN DOUBT IS ALREADY PROVEN BY WORKING CODE HERE: a COMMANDLET builds function graphs with an entry and
+a result node at `TurboMCPAcceptanceAssetCommandlet.cpp:522-541` - `CreateNewGraph` -> `AddFunctionGraph<UFunction>` ->
+`GetNodesOfClass<UK2Node_FunctionEntry>` + `UK2Node_FunctionResult`. SO THOSE CLASSES ARE CREATABLE OUTSIDE AN OPEN
+ASSET EDITOR, MEASURED BY EXISTING CODE RATHER THAN BY READING. ***
+
+**AND THE KEY FINDING IS NARROW ENOUGH TO ACT ON: THE ONLY EDITOR MEMBER THE 290-LINE BODY NEEDS IS
+`GetBlueprintObj()`, IN TWO PLACES - `BlueprintEditor.cpp:8856` and `:9066`, plus `ExtractEventTemplateForFunction`
+at `:8854` - ALL THREE INSIDE THE `UK2Node_CallFunction` / `UK2Node_CustomEvent` BRANCHES.** Every other call is a
+`UEdGraph`/node/pin/schema member, or the FREE function `SortPinsByConnectionPosition` (`:8767`, `static`).
+
+**WHAT REMAINS UNKNOWN, STATED RATHER THAN DRESSED UP: whether the `FBlueprintEditor` INSTANCE can be CONSTRUCTED
+outside an asset editor**, since these are non-virtual members and `this` must be valid even when no member is
+dereferenced. **THE RECOMMENDATION SIDESTEPS IT: REPRODUCE THE SEQUENCE rather than call the member.** So
+**`E-GRAPH-COLLAPSE` IS `todo`, NOT `gated`** - and the distinction matters because `gated` was the honest label
+before this measurement and is the wrong label after it.
+
+### 40.2 And the design for E-GRAPH-COPY is written down, which is the expensive half
+
+**ITS WORKSTREAM IMPLEMENTED NOTHING AND SAID SO, AND IT ADDED ZERO DECLARATIONS TO THE SHARED HEADER - *"A
+HALF-WRITTEN SHARED HEADER IS WORSE THAN AN ABSENT ONE."* THAT IS THE RIGHT CALL AND IT IS WHAT KEPT THREE
+WORKSTREAMS FROM COLLIDING.**
+
+*** `FTurboMCPNodeType::SpawnNodeOfType` DOES NOT FIT A COPY - it resolves a TYPE ID through the action database, and a
+copy HAS a class and PROPERTY VALUES. The mechanism that fits is
+`FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate<NodeType>(ParentGraph, InTemplateNode, Location,
+bSelectNewNode)` (`EdGraphSchema_K2_Actions.h:95`, STATIC), WHICH CARRIES THE TEMPLATE'S OWN PROPERTY VALUES - THE
+SOURCE NODE *IS* THE TEMPLATE, so a `UK2Node_CallFunction` keeps the function it calls and a `UK2Node_VariableGet`
+keeps its variable WITH NO PER-CLASS COPY CODE. THE ENGINE USES IT FOR EXACTLY THIS AT `EdGraphSchema_K2.cpp:2916`.***
+
+**AND THE FIXTURE CAVEAT CHANGES WHAT `T-STRUCT-11` PROVES: `TA-2` IS NOT A SECOND ASSET.**
+`TurboMCPKitCommandlet.cpp:939-940` sets `Ta2.Id = "TA-2"` and `Ta2.Name = "TA01_HandLaid"` - THE SAME BLUEPRINT - so
+the row as written tests copying between two graphs of ONE blueprint, NOT *"between graphs and Blueprints"*.
+**`BP_TowerArray` and `TA07_Card` exist on disk for a true cross-asset case, and any suite must state which it proved.**
+
+### 40.3 THE THIRD CAPABILITY IN THREE ROUNDS TO REPORT ITS CHECK COUNT OVERSTATES ITS COVERAGE
+
+    R-MAT-INST-LOAD  "20 checks is not 20 independent checks"   (its orphan list is empty on the fixture)
+    R-CALL-COST      "29 checks is not 29 independent checks"   (the suite cannot make the engine emit a qualified name)
+    R-ASSET-COST     "10 checks is not 10 independent checks"   (its asset HAS a registry row, so the unknown branch never runs)
+
+*** THREE IN A ROW IS NO LONGER COINCIDENCE - IT IS A PROPERTY OF HOW THESE SUITES ARE WRITTEN, AND WORTH NAMING: A
+SUITE DRIVEN THROUGH THE MCP SERVER CAN ONLY EXERCISE THE PATHS THE FIXTURE HAPPENS TO REACH, AND EACH WORKSTREAM
+FOUND ITS UNEXERCISED BRANCH BY BREAKING THE CODE AND WATCHING THE SUITE STAY GREEN. ***
+
+**AND EACH HANDLED IT THE SAME WAY, WHICH IS NOW THE STANDARD: REPORT IT, AND ASSERT WHAT IS REACHABLE ON EVERY RUN
+INSTEAD OF FAKING THE UNREACHABLE BRANCH.** `R-ASSET-COST`'s version is the sharpest: it asserts `P1` **on the REFUSAL
+path** - an asset that does not resolve must be refused by name AND must not report a zero size - *"which needs no
+control over the registry's contents"*, where faking the unknown path would have meant editing shared state, **the
+defect this project has recorded ten times.**
+
+### 40.4 AN AUDIT THAT READS CALLS BY REGEX IS A CONSUMER THAT CAN MATCH NOTHING
+
+**`R-ASSET-COST`'s tool WAS uncalled in the audit while being called TWICE.** `audit-tool-coverage.py:96` detects
+`session.call(TOOLSET, "Name", {...})` **ON ONE LINE**, and its helper was named `check()` with calls split across
+lines - **EITHER ONE ALONE MADE THE TOOL LOOK UNCALLED.** *This is the project's oldest shape - a consumer that
+silently matches nothing makes a working producer look broken - and it had not been recorded against the AUDIT itself
+until now.* **`ReadTurboMCPWidgetTree` IS STILL REPORTED UNCALLED, and given this it may be a MATCHING FAILURE rather
+than a missing suite - WHICH IS A DIFFERENT FIX.**
+
+### 40.5 Two corrections from R-ASSET-COST that came from reading a header BEFORE any build
+
+1. **`FTurboMCPAssetResolver::Resolve` RETURNS AN EMPTY STRING ON SUCCESS AND AN ERROR LINE ON FAILURE** - the
+   OPPOSITE of a bool convention (`TurboMCPAssetResolver.h:61-72`), which is what the workstream wrote first.
+2. **It ALREADY RETURNS `ObjectPath` AND `PackagePath`**, so a hand-written path slice was *"a second, weaker
+   implementation of something the project has"* - the same economy the graph side settled with ONE lexer.
+
+**AND TWO ENGINE FACTS WERE COPIED FROM `R-BP-LINT` RATHER THAN RECALLED, WITH ITS COMMENT DOING THE WORK:**
+`FAssetPackageData::DiskSize` (`AssetRegistry/AssetData.h:968`) via `GetAssetPackageDataCopy`, **which returns a
+`TOptional` so "no registry row" is a DISTINGUISHABLE STATE**, and **the query MUST come from `EDependencyQuery` and
+NOT `EDependencyProperty`** (`Misc/AssetRegistryInterface.h:53`) - **which has no `Soft` and no `EditorOnly`; those
+live on `EDependencyQuery` (`:108`) and its constructor (`:248`) translates them, AND THAT EXACT MISTAKE COST THE LINT
+WORKSTREAM A BUILD.** *A comment recording a mistake is worth more than the fix that produced it.*
