@@ -241,7 +241,41 @@ Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un 
 
 ---
 
-## 11. En une ligne
+## 11. Les invariants qui font tenir les 93 outils — ce que je défendrais dans une revue
+
+***Ce ne sont pas des conventions de style. Chacun a été payé par un défaut réel, et chacun est vérifiable mécaniquement.***
+
+| Invariant | Pourquoi il existe | Est-il vérifié ? |
+|---|---|---|
+| **Les lecteurs sont dans `Read`/`Look`, les écrivains dans `Preview`/`Edit`** | *un lecteur est **structurellement** incapable d'écrire — ce n'est pas une discipline, c'est un type* | ✅ *par la répartition des toolsets* |
+| **Chaque écrivain a un jumeau `Preview` qui partage le MÊME `Plan`** | *donc Preview et Edit refusent **exactement** le même input, et toute vérification peut vivre dans `Plan` une seule fois* | ✅ *`D-02`, et 26 Preview / 33 Edit* |
+| **Un outil qui ne peut pas faire une chose la REFUSE PAR SON NOM, avec la ligne moteur qui le décide** | *« un refus invisible se lit comme une capacité »* | ⚠️ *par convention et par revue — **pas mécaniquement*** |
+| **Une mesure absente n'imprime JAMAIS `false` ni zéro (`P1`)** | *`NOT ASKED` plutôt que `false` ; un motif de décision jamais vide ; un enum à trois états* | ⚠️ *trois formes, chacune trouvée après coup* |
+| **Le rapport d'un outil n'est pas une preuve : relire par un AUTRE outil** | *un producteur qui se rapporte lui-même ne prouve rien* | ✅ *pratiqué dans chaque row, jamais automatisé* |
+| **Pour chaque check, nommer l'INPUT qui le fait échouer** | *cinq capacités ont surestimé leur couverture* | ⚠️ ***`audit-suite-quality.py` est advisory — c'est le trou le plus large du projet*** |
+| **Un check ne dépend pas d'un état mutable partagé** | *un check dépendait d'un fichier restant non suivi ; un `git add` étranger l'aurait rendu rouge* | ⚠️ *trouvé deux fois, corrigé deux fois, non vérifié* |
+| **Restaurer la fixture à l'ALLER aussi bien qu'au retour, et l'asserter** | *restaurer seulement à la fin a tué le serveur que la suite interrogeait* | ✅ *pratiqué, et row 2.2 l'a étendu à un index git* |
+| **Un break test doit montrer la VALEUR FAUSSE, pas seulement une ligne rouge** | *un check qui assertait un préfixe passait contre un build cassé* | ✅ *cinq fois, et quatre fois il a trouvé un second défaut* |
+
+### 11.1 **Et le trou structurel que je nommerais en premier dans une revue**
+
+> ***TROIS DES NEUF INVARIANTS SONT TENUS PAR CONVENTION ET PAR REVUE, PAS PAR LA MACHINE — et ce sont exactement les trois qui ont produit les cinq capacités à couverture surestimée.***
+>
+> *Les invariants vérifiés mécaniquement n'ont **jamais** régressé ici. Les trois qui reposent sur la discipline humaine ont régressé **cinq fois**, et chaque fois ça a été trouvé par un humain ou un workstream ultérieur.*
+>
+> **LE CORRECTIF EST IDENTIFIÉ ET PAS FAIT : `audit-suite-quality.py` doit BLOQUER plutôt que conseiller.** *C'est l'item 9.4, et c'est le seul du rapport qui soit à la fois peu coûteux et de portée générale.*
+
+### 11.2 Et l'invariant le plus fort du projet n'est écrit nulle part comme un invariant
+
+**C'est le break test.** *Il n'est pas dans `D-01` à `D-57` comme une décision architecturale — il est dans les briefs, répété à chaque row.*
+
+> ***ET C'EST CELUI QUI A LE MEILLEUR RATIO : cinq fois exécuté, cinq fois il a prouvé que le check mord, et QUATRE FOIS il a trouvé un DÉFAUT SUPPLÉMENTAIRE que personne ne cherchait — deux dans le code livré, deux dans la suite elle-même.***
+>
+> **Si je devais garder une seule pratique de tout ce projet, ce serait celle-là — et si je devais en ajouter une, ce serait de la rendre mécaniquement obligatoire plutôt que de la redemander dans chaque brief.**
+
+---
+
+## 12. En une ligne
 
 > **93 outils, 56/56 suites vertes, 447 commits, 61 137 lignes de C++, 40 rows de plan restantes — et une machine de vérification qui, sur les trois dernières rows, a produit des résultats corrects sans que j'aie à intervenir.**
 >
