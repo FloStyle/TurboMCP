@@ -8390,3 +8390,23 @@ the workstream's own next step would fail against a resource that vanished under
 THE EDITOR IS OCCUPIED, AND THE PROJECT'S OWN RULE IS THAT A SHARED RESOURCE IS TAKEN ONLY WHEN IT IS FREE.** *The alternative
 is to stop the workstream and take it, which costs whatever it is in the middle of - and I have already cost this row one
 editor restart by not asking.*
+
+---
+
+## 108. Round 149: seven editors in five minutes, no new verdict, and the record stops adding theory
+
+    OBSERVED, NO PROCESS TOUCHED
+    make-acceptance-asset.log 06:01:04 - TEN SECONDS BEFORE THE CLOCK READ 06:01:14
+    the only 51-of-51 in any recent log is fullrun-row02b, written 05:12:50 - FORTY-NINE MINUTES AGO
+    editor present at the moments it has been sampled; no RESULT line written since
+
+*** AND THE ROUND SHOULD NOT INVENT A NINTH EXPLANATION. WHAT IS ESTABLISHED IS: A WORKSTREAM IS RUNNING SOMETHING THAT
+REPEATEDLY TAKES AND RELEASES THE EDITOR, NOTHING HAS PRINTED A SUITE VERDICT IN FORTY-NINE MINUTES, AND THE ONE PIECE OF
+CONTENT I READ - THE PROBE - SAID `Success - 0 error(s), 0 warning(s)` FOR A COMMANDLET THAT TOOK 0.35 SECONDS. ***
+
+**SO THE STATE IS: HEALTHY BY THE ONE DIRECT MEASUREMENT AVAILABLE, UNPRODUCTIVE BY THE ONLY MEASUREMENT THAT MATTERS, AND
+OCCUPYING THE RESOURCE THE NEXT USEFUL STEP NEEDS.** *Those three are not contradictory and none of them is a theory.*
+
+**WHAT I AM DOING ABOUT IT IS NOTHING NEW, AND THE REASON IS WORTH THE LINE: THE OWED EVIDENCE IS A SUITE RUN, WHICH NEEDS THE
+EDITOR, WHICH IS TAKEN. THE TWO ALTERNATIVES - TAKE IT BY FORCE (section 95) OR ADD A SECOND ROW (section 55) - ARE BOTH
+RECORDED MISTAKES.** *A third round of the same observation is cheaper than either, and saying so is the whole entry.*
