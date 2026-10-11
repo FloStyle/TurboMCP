@@ -6474,3 +6474,84 @@ distinguishes them is whether the change is in git.*
 
 **OPEN, UNCHANGED: the suite reaches no `RESULT:` line; which `T-STRUCT-11` is proved; and for each check, the input
 that makes it fail.**
+
+---
+
+## 55. I LAUNCHED A SECOND AGENT ONTO A LIVE ROW, AND THE AGENT STOPPED ME
+
+*** THIS IS THE SECOND TIME IN THIS PROJECT THAT I HAVE ACTED ON A BELIEF ABOUT A WORKSTREAM'S STATE THAT WAS NOT
+MEASURED, AND IT IS THE SAME SHAPE AS SECTION 30. THE FIRST TIME I REVERTED A SHARED TREE BECAUSE I JUDGED A REGRESSION
+WAS IN A WORKSTREAM'S CODE WITHOUT CHECKING. THIS TIME I LAUNCHED A NEW WORKSTREAM BECAUSE I JUDGED THE EXISTING ONE HAD
+GONE DORMANT - THE MACHINE WAS IDLE, THE EDITOR WAS DOWN, AND `git status` HAD BEEN CLEAN FOR ROUNDS - AND IT HAD NOT
+GONE DORMANT AT ALL. ***
+
+**WHAT THE SECOND AGENT DID, AND IT IS THE CORRECT THING:** it wrote to me BEFORE EDITING ANYTHING, and its message is
+a model of how to handle a contradiction between a brief and the world.
+
+    "My brief named the baseline main = origin/main = dd9c6e4. THAT IS 9 COMMITS STALE."
+    "Source/TurboMCP/TurboMCPGraphStructure.cpp IS MODIFIED IN THE WORKTREE RIGHT NOW.
+     I watched it change between two reads (1014 -> 1032 lines)."
+    "My `edit` call was refused with 'file changed since it was read'."
+    "ANOTHER AGENT IS MID-EDIT ON THE EXACT FILE MY BRIEF TOLD ME TO FIX."
+    "I HAVE MADE NO EDITS. PLEASE CONFIRM BEFORE I CONTINUE."
+
+*** IT DETECTED A STALE BASELINE, WATCHED THE FILE CHANGE BETWEEN TWO READS, HAD ITS EDIT REFUSED, AND READ THE
+REFUSAL AS INFORMATION RATHER THAN AS AN OBSTACLE. THE TOOLING PROTECTED THE TREE AND THE AGENT LET IT. ***
+
+### 55.1 THE BUG IT DIAGNOSED, AND IT IS THE ANSWER TO A ROW THAT HAS BURNED FIVE WORKSTREAMS
+
+**`KeyOf(node)` BUILDS THE LONG FORM; EVERY READER PRINTS THE SHORT FORM.**
+
+    KeyOf(node) = MakeForNode(node, bLongForm = TRUE)
+        -> /Game/Tests/Kit/TA01_HandLaid.TA01_HandLaid:HandLaid:d88638
+    Every reader prints (TurboMCPGraphText.cpp:365, TurboMCPNodeResolve.cpp:396):
+        -> TA01_HandLaid:HandLaid:d88638
+
+**VERBATIM, ON THE REAL FIXTURE, WHERE `R-NODE-RESOLVE` RESOLVES THE SAME NODE OUT OF THE SAME GRAPH:**
+
+    read: resolving 2 node ID(s): 2 resolved, 0 refused
+    ...TA01_HandLaid:HandLaid:d88638 ... title: int + int
+    PreviewTurboMCPGraphCopy -> unchanged ... REFUSED (1 reason(s)):
+      no node with id 'TA01_HandLaid:HandLaid:d88638' in graph 'HandLaid'
+
+*** SO EVERY COPY AND EVERY COLLAPSE WAS REFUSED, WHICH IS WHY NO SUITE HAD EVER PASSED ONE - AND IT WAS NEVER A SUITE
+PROBLEM. THE SUITE WAS RIGHT AND THE PRODUCER WAS WRONG, WHICH IS THE OPPOSITE OF THE FAILURE MODE THIS PROJECT RECORDS
+MOST OFTEN. ***
+
+### 55.2 AND THE MOST IMPORTANT SENTENCE IN ITS REPORT IS ABOUT THE PROJECT'S OWN MEMORY
+
+**"The house pattern for this exact defect is already recorded at `TurboMCPGraphAppend.cpp:285-289` + `:314-321`: 'this
+used to keep InName while Apply compared against `MakeForNode(true)`'."**
+
+*** THIS IS THE SECOND OCCURRENCE OF A DEFECT THE PROJECT HAD ALREADY WRITTEN DOWN, IN A COMMENT, WITH LINE NUMBERS.
+A RECORDED LESSON THAT A LATER WORKSTREAM RE-DERIVES FROM SCRATCH IS A LESSON THE RECORD DID NOT DELIVER - and the
+reason it did not deliver is that the note lives in ONE source file's comment and the new row was built in a DIFFERENT
+source file by a workstream that was told to start from a spec. *** *This project has eleven recalled-format errors and
+four vacuous-check reports; this is the first recorded instance of a LESSON being re-learned, and it is worth more than
+either because the lesson WAS written down.*
+
+### 55.3 Its three residual defects, none of which the in-flight fix covers
+
+1. **THE REFUSAL SAMPLE STILL PRINTS THE LONG FORM** as *"the graph's own ids look like:"* (`Samples.Add(KeyOf(Node))`
+   was not updated), **so the tool still tells a caller to write ids no reader prints.**
+2. **`NodeAnswersToKey` COMPARES `ESearchCase::CaseSensitive`, BUT `MakeKey` PRINTS LOWER-CASE HEX** - **so a caller
+   pasting UPPER-case hex is still refused.**
+3. **`NodeAnswersToKey` IS A PER-NODE LINEAR RESCAN**, compared inside nested loops over `MadeFrom`.
+
+### 55.4 Fixture facts, so nobody re-measures them
+
+    TA01_HandLaid / HandLaid   = 70 nodes, 1 entry (fn HandLaid)
+    TA01_HandLaid / EventGraph =  6 nodes, 3 events (BeginOverlap, BeginPlay, Tick)
+    d88638 = "int + int";  fe13a8 / 039991 / 971fa8 = "int * int";  all K2Node_CallFunction
+    61 OF HandLaid's 70 NODES ARE UNREACHABLE FROM ANY ENTRY POINT
+    BP_TowerArray and TA07_Card exist for the true cross-asset T-STRUCT-11 case
+    TA-2 is NOT a second asset (TurboMCPKitCommandlet.cpp:939-940 sets Ta2.Name = TA01_HandLaid)
+
+### 55.5 And the outcome, which is the one thing that went right
+
+**I INTERRUPTED THE OTHER AGENT, THE SECOND AGENT MADE NO EDIT, AND THE TREE IS CLEAN WITH EVERY STEP OF ELEVEN COMMITS
+INTACT.** *The second agent also warned: "the teammate's work is UNCOMMITTED in the shared tree. Per section 30/52 that
+is exactly the state a revert destroys. DO NOT REVERT THE TREE."*
+
+**AND THE RULE THIS PRODUCES IS NOT "CHECK HARDER". IT IS: A WORKSTREAM THAT OBSERVES ITS OWN BRIEF CONTRADICTING THE
+TREE MUST STOP AND ASK, AND MUST SAY WHAT IT MEASURED. THAT IS A MECHANISM, AND IT WORKED.**
