@@ -188,7 +188,11 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 				Out += FString::Printf(TEXT("\n  why: %s"), *Named.Reason);
 			}
 			TurboMCPCaptureAsset::DescribeKinds(Out);
-			return Out;
+
+			// THE BANNER GOES ON HERE, at the one point in this branch that ANSWERS, so a
+			// refusal above can still begin with `error:` and this success still opens with
+			// the banner exactly once.
+			return FString::Printf(TEXT("look: capture of an asset editor%s"), *Out);
 		}
 
 		if (!GraphName.TrimStartAndEnd().IsEmpty()
