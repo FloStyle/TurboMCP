@@ -10324,3 +10324,30 @@ as five equivalent items until you notice that two of them were finishable today
 *** SO THE THING THAT MADE BOTH OF THEM POSSIBLE WAS READING THEIR OWN OUTPUT ON HEALTHY INPUT BEFORE TRUSTING THEM ON UNHEALTHY INPUT.
 A gate that fires on correct code is not a gate, and a diagnostic that names the wrong cause is worse than a vague one - the same
 sentence in two subsystems, found in the same stretch. ***
+
+---
+
+## 169. Round 231: the kit row launched, and it is the THIRD priority - the first one that needs something built rather than tested
+
+    LAUNCHED  `TA-17` (curve float + curve table), `TA-18` (Anim Sequence), `TA-19` (Niagara System)
+    THE PATTERN IS ALREADY IN THE TREE: `TurboMCPKitCommandlet.cpp:1730-1810` built `TA-14` and `:1814-1882`
+    built `TA-20`, each with an `Id`, a `Name`, a comment saying what it does NOT need, and a
+    `Builder.SaveContainer(<Object>, TEXT("TA-<n>"), <Name>)`
+
+*** SO THE BRIEF FOR THIS ROW IS UNUSUALLY CONCRETE FOR A ROW THAT HAS NOT BEEN STARTED: THERE ARE TWO WORKING EXAMPLES
+IN THE FILE THE WORKSTREAM WILL EDIT, AND THE MECHANISM, THE NAMING CONVENTION AND THE VERIFICATION LINE ARE ALL
+MEASURED RATHER THAN DESCRIBED. ***
+
+**AND THE THREE ASSETS ARE EACH NAMED BY AN ACCEPTANCE ROW THAT CANNOT RUN WITHOUT THEM** - `TA-17` by `T-DATA-5`
+(`06_ACCEPTANCE.md:213`, needed by plan row 7.3) and `TA-18`/`TA-19` by `06_ACCEPTANCE.md:33-34`, needed by rows 2.2-2.4.
+*** The brief also says NOT TO TAKE MY WORD for their types: row 2.1 measured that nothing of either type exists under
+`/Game`, and the ROW says what type it wants - so the workstream reads `06_ACCEPTANCE.md` rather than my summary. ***
+
+**AND IT CARRIES THE NEW GATE THE PROJECT DID NOT HAVE LAST WEEK:** *`audit-suite-quality.py` **BLOCKS** now, at 0 candidates,
+so a suite this row writes must have a named failing input for every check - **and the brief warns specifically that
+`strip_strings` removes string literals, which is the trap that made my own check fire zero times.***
+
+**AND IT NAMES THE ONE THING THAT MUST BE PROVEN FOR ANY FIXTURE WORK: THE ASSETS ARE NOT COMMITTED.** *`TestProject/Content/Tests/`
+is restored rather than tracked, so **the code must be committed and the asset must be reproducible from it** - and the brief
+requires that proven by deleting one and rebuilding it.* *** A fixture that exists only on this machine is not a fixture; it is a
+coincidence that will be gone at the next clean checkout. ***
