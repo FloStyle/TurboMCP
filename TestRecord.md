@@ -7094,3 +7094,45 @@ CAPTURE fixture - though it may still be worth building for other rows, with two
 
 **AND IT DID NOT EDIT `WORKING_PLAN.md` OR `TestRecord.md` BECAUSE BOTH WERE OUTSIDE ITS BOUNDARIES, SO ROWS 1.4 AND 0.2
 STILL READ `todo` - WHICH IS MINE TO FIX.**
+
+---
+
+## 67. Round 108: rows 1.4 and 0.2 are recorded DONE, and run B's verdict lifts the contamination
+
+**WHAT I OWED AND PAID THIS ROUND.** *Rows 1.4 and 0.2 were outside the workstream's boundaries, so they still read `todo`
+in the plan even though both were answered and one was committed. Both now read `done`, WITH THE DECIDING FACT IN THE ROW
+RATHER THAN ONLY IN THIS RECORD.*
+
+    row 0.2   done   80f2756, plus its VACUOUS-CHECK FINDING recorded in the row itself
+    row 1.4   done   NO for every kind, WITH THE ONE ENGINE LINE THAT DECIDES IT
+
+**AND THE SECOND IS THE IMPORTANT ONE: A BARE `NO` WOULD BE RE-LITIGATED, SO THE ROW CARRIES THE GUARD.**
+`LaunchEngineLoop.cpp:3343` wraps `FSlateApplication::Get().InitializeRenderer(...)` in
+`if (!IsRunningDedicatedServer() && !IsRunningCommandlet())` - **so a later reader who wants to retry headless capture
+can see in one line that the question is about `IsInitialized()` being false for the WHOLE process, not about the asset
+kind.** *A decision recorded with its reason is a decision that stays decided; the project has four examples of the
+opposite.*
+
+### 67.1 AND RUN B'S FULL VERDICT LIFTS THE CONTAMINATION THE WORKSTREAM COULD NOT RULE OUT
+
+**IT ASKED ME TO TREAT ITS TWO 51/51 RESULTS AS POSSIBLY CONTAMINATED, BECAUSE MY COMMITS LANDED DURING ITS RUN B WHILE
+`run-suites.ps1` OWNED THE EDITOR. THAT WAS THE RIGHT THING TO SAY AND THE LOG SETTLES IT:**
+
+    .agent/logs/fullrun-row02b.log
+    --- test-material-tidy ---
+    PASS    test-material-tidy           RESULT: PASS (19 check(s) run)
+    passed 51, failed 0, blocked 0, of 51
+
+**A CONTENDED EDITOR WHOSE HARNESS WAS STARVED WOULD HAVE PRODUCED A BLOCKED OR FAILING SUITE RATHER THAN A CLEAN SWEEP,
+AND NOTHING WAS BLOCKED.** *** SO 51 OF 51 STANDS - WITH THE CAVEAT RECORDED RATHER THAN ERASED. THE PART I MUST NOT
+CLAIM IS THE CAUSAL LINK, AND I HAVE WITHDRAWN IT IN THE RECORD RATHER THAN SOFTENING IT. ***
+
+### 67.2 The number that matters for the objective
+
+    Spec/WORKING_PLAN.md: 42 rows still read `todo`
+
+*** SO THE HONEST ANSWER TO "IS TURBOMCP COMPLETE" IS NO, AND THE PLAN ITSELF SAYS BY HOW MUCH. 85 TOOLS AND 51 GREEN
+SUITES AGAINST 42 UNSTARTED PLAN ROWS AND 57 CAPABILITIES OF WHICH THE REPORT CLAIMED 36 - AND THE LAST FEW ROUNDS
+MOVED TWO OF THOSE 42 ROWS AND FOUR CAPABILITIES. THE RATE IS THE THING TO BE HONEST ABOUT: AT FOUR CAPABILITIES PER TEN
+ROUNDS, THE REMAINING GROUPS - MATERIAL WRITERS, WIDGET AUTHORING, ASSETS AND STRUCTS, LEVEL AND ACTORS, SESSION AND
+COST, SOURCE CONTROL, VISION, BUILD PORTABILITY - ARE NOT A FINISHING SPRINT. ***
