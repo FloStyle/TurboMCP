@@ -613,6 +613,24 @@ public:
 		const FString& Assets,
 		const FString& Checks,
 		const FString& TokenBudget);
+
+	/**
+	 * The size map and hard references of one asset, SPLIT BY PROVENANCE.
+	 *
+	 * `D-52`: *"A size is reported with its provenance. Rejected: one total size. Why: the total names no cause and
+	 * cannot be acted on. The check that matters is 'a heavy hard reference where a soft one would do', and that fact
+	 * does not exist inside a total."* SO THIS PRINTS THE ASSET'S OWN SIZE, THEN WHAT IT PULLS IN SPLIT INTO HARD,
+	 * SOFT AND EDITOR-ONLY, THEN THE LARGEST CONTRIBUTORS EACH WITH ITS SIZE AND WHY IT IS REFERENCED.
+	 *
+	 * `Asset` takes any accepted path form. `Cap` bounds the contributor list and defaults when not positive.
+	 *
+	 * AND `P1` GOVERNS EVERY FIGURE: a size that cannot be read is reported as UNKNOWN WITH THE REASON, NEVER AS
+	 * ZERO - because a zero reads as "free", and an unread package is not a free one.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPAssetCost(
+		const FString& Asset,
+		int32 Cap);
 };
 
 /**
