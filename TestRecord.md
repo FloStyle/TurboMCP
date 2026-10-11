@@ -9349,3 +9349,27 @@ RECORDED CASE FROM EACH SIDE. ***
     NOT DETECT A FOREIGN EDITOR ON PORT 8000. If a second harness is running, check-mcp-server.py CAN PASS AGAINST
     SOMEONE ELSE'S EDITOR and my provider checks then fail with 'the provider is not Git' RATHER THAN 'ANOTHER PROCESS
     OWNS THE PROJECT'." ***
+
+---
+
+## 141. Round 189: row 10.1 marked DONE, and my own plan counter was WRONG in the same way this project keeps finding
+
+    BY FIELD, READ FROM THE LAST CELL:   todo=42   done=4   rows=46
+    BY MY REGEX `\| todo \|\s*$`:        todo=41   done=4-5  (AND IT CHANGED BETWEEN TWO RUNS OF THE SAME COMMAND)
+
+*** SO THE NUMBER I HAVE BEEN QUOTING - "42 todo, 3 done" THEN "41 todo, 4 done" - WAS PRODUCED BY A REGEX THAT MATCHES **PROSE**
+INSIDE A MULTI-LINE CELL AS WELL AS A STATUS FIELD. THE ROW I EDITED FOR 10.1 ENDS `... were shown red WITH THE WRONG VALUE
+VISIBLE, then restored. **UNMEASURED:** ... | done |` - AND A CELL CONTAINING THE WORDS "todo" OR "done" ANYWHERE **FOLLOWED BY A
+PIPE** IS COUNTED TWICE. ***
+
+**AND IT IS THE PROJECT'S OWN OLDEST RULE, COMMITTED BY ME RATHER THAN BY AN AGENT: PARSE THE FIELD, NEVER MATCH A SENTENCE BESIDE
+IT.** *The counter that answers "how much is left" was a string match over cells that contain sentences.*
+
+**AND THE HONEST READING OF THE PLAN IS THEREFORE BETTER THAN I HAD BEEN REPORTING, WHICH IS NOT THE DIRECTION I EXPECTED THE
+CORRECTION TO GO:** *42 rows `todo` and 4 `done` by field, against the 41/4 I last quoted - **so the plan has one MORE row than I
+said, not fewer.*** *** The correction goes against my own narrative, which is the only kind worth recording. ***
+
+**AND ROW 10.2 IS NOW ANNOTATED RATHER THAN MERELY UNBLOCKED**, because 10.1's finding is the difference between building it right
+and building it wrong: *`USourceControlHelpers::CheckOutFile` answers `True` on Git and never issues a checkout, so a write tool
+wired to that boolean would read "checked out, safe to write" on a provider whose `UsesCheckout() == false` - the "git will not
+refuse, and will happily leave a modified file for someone else to find" of `03_TOOLS.md:1348-1351`.*
