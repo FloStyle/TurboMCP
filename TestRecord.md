@@ -9565,3 +9565,34 @@ replaced a check over, one row earlier, and row 10.2 did not reproduce it.*
 THAT ANSWERS, AND THIS MACHINE HAS NEVER HAD ONE.** *That is not a gap in the work - it is a **measured boundary of the
 environment**, stated twice by two independent workstreams, and it is the honest reason the plan's remaining source-control work
 is bounded rather than unfinished.*
+
+---
+
+## 146. Round 197: row 2.1 launched - the FIRST row of the VISION phase, which is the owner's standing priority
+
+    LAUNCHED  `selection`, `neighbours`, `box-neighbours`, `screen` on `L-CAPTURE` (row 2.1)
+    THE MACHINE IS FREE: previous workstream finished, committed at `04386e0`, and is gone
+
+*** AND THE BRIEF ASKS FIRST WHETHER THE CAPABILITY EXISTS AT ALL, BECAUSE I DO NOT KNOW THAT IT DOES. *** "There is no `TurboMCPCapture*`
+file that I know of - IF THE CAPABILITY DOES NOT EXIST YET, SAY SO AND START IT RATHER THAN ASSUMING A SHAPE." *The plan carries
+rows 2.1 to 2.4 as extensions of `L-CAPTURE`, and the brief tells the workstream to walk the source with `grep -rn "LCapture"
+Source/` rather than trust the row's premise - **which is the correction that has now fired on three separate rows** (`TA-14`'s
+native struct, row 7.1's `UUserDefinedStruct`, row 1.3's plugin list).*
+
+**AND THE ROW MOST LIKELY TO BE IMPOSSIBLE IS NAMED AS SUCH IN ADVANCE.** *`screen` needs a real viewport, every suite here runs
+`-nullrhi`, and `LaunchEngineLoop.cpp:3343` guards `FSlateApplication::Get().InitializeRenderer(...)` with `!IsRunningCommandlet()`
+so **SLATE IS NEVER INITIALIZED IN A COMMANDLET.*** *** The brief says: if it cannot work, REFUSE IT BY NAME WITH THE FILE AND LINE -
+"THAT IS A COMPLETE DELIVERABLE AND A HALF-WORKING SELECTOR THAT RETURNS A BLACK IMAGE IS NOT." ***
+
+**AND IT POINTS AT A MEASUREMENT THAT ALREADY EXISTS RATHER THAN LETTING THE WORK REDO IT:** *`TestRecord.md` has a **headless
+capture** section from an earlier workstream ("Headless capture measurement + fixture restore"). **It may already say whether a
+viewport can be read with `-nullrhi` - in which case `screen`'s answer is partly measured before the row starts.***
+
+**AND `selection` GETS THE WARNING THIS PROJECT KEEPS EARNING:** *"Which selection? `GEditor->GetSelectedActors()` covers actors;
+a component selection and an asset-browser selection are different things, AND A SELECTOR THAT SILENTLY MEANS ONE OF THEM IS THE
+DEFECT THIS PROJECT KEEPS FINDING."* *Same for `neighbours`: **a selector whose definition is not in its own output is a selector a
+caller cannot verify**, so the definition goes INTO the output, as `P/E-STRUCT-FIELDS` writes its provenance.*
+
+**AND THE BRIEF CARRIES THE TWO NEWEST MEASURED RULES, BOTH OF WHICH COST A PREVIOUS WORKSTREAM REAL WORK:** *`P1` - an absent
+measurement must never print as `false` or a zero, and a decision reason is never allowed to be empty (that was a real defect found
+by a break test); and a check must not depend on shared mutable state (that was a real defect a workstream replaced a check over).*
