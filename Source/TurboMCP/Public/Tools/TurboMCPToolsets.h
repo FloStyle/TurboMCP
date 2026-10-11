@@ -1348,6 +1348,58 @@ public:
 		const TArray<FString>& NodeIds,
 		const FString& MemberName,
 		const FString& MemberKind);
+
+	/**
+	 * Work out what creating a user struct asset would do, without creating it.
+	 *
+	 * Pass a package path such as `/Game/Tests/MyStruct` and the fields. Each field is
+	 * `Name: Type`, followed by any of `default=`, `tooltip=` and `category=`. Fields are
+	 * separated by commas at the top level, so a type with a comma in it such as
+	 * `Map<String, Int>` stays one field.
+	 *
+	 * Basic types are bool, int, int64, byte, real, float, double, name, string and text.
+	 * Struct names are Vector, Rotator, Transform, Vector2D, LinearColor and Color. For an
+	 * enum or a struct asset, pass its path. Containers are `Array<T>`, `Set<T>` and
+	 * `Map<K, V>`.
+	 *
+	 * A path that is not absolute, a field name that is not a usable identifier, a duplicate
+	 * field name, an unknown field option, an unbalanced container type and a type that
+	 * resolves to nothing are each refused BY NAME. These checks and the ones below are in the
+	 * PLAN, so this Preview and its Edit twin refuse exactly the same input (`D-02`), and this
+	 * writes nothing.
+	 *
+	 * It also says whether the asset already exists, because that fact is what decides whether
+	 * the Edit will refuse rather than overwrite.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPStructNew(const FString& Path, const FString& Fields);
+
+	/**
+	 * Work out what editing a user struct's fields would do, without changing any.
+	 *
+	 * Pass a user struct asset and one or more changes, separated by commas at the top level.
+	 * A change is one of:
+	 *
+	 *   - `Name: Type` - ADDS the field, or CHANGES its type when the struct already has that
+	 *     name. Which one it is follows from the struct, not from the caller's guess, so the
+	 *     Preview and the Edit cannot disagree about it.
+	 *   - `move:Name, above=Other` or `move:Name, below=Other` - REORDERS.
+	 *   - `remove:Name` - REMOVES, and is refused unless it carries `force=<count>`.
+	 *
+	 * A field is addressed BY ITS DISPLAY NAME, and that is the key. `FStructureEditorUtils`
+	 * addresses a member by `FGuid`, but a GUID is generated inside the engine and a caller can
+	 * never name one, so the display name is the only key the caller has. Every name is
+	 * RE-RESOLVED at apply time, and a name that has gone is REFUSED rather than skipped (`D-45`).
+	 *
+	 * *** THE REMOVAL RULE IS THE ONE THAT MATTERS. *** A removal breaks every asset that reads
+	 * the struct, so it is reported with the LOADED READERS by path and class, never as a bare
+	 * count, and it is REFUSED unless `force` names that count exactly. Because the check is in
+	 * the PLAN, THIS PREVIEW REFUSES IT TOO and prints the count to pass - so a caller previews,
+	 * is told the number, and previews again with it. A caller that guesses a wrong number is
+	 * refused with the real one.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPStructFields(const FString& Struct, const FString& Changes);
 };
 
 /**
@@ -1962,6 +2014,50 @@ public:
 		const TArray<FString>& NodeIds,
 		const FString& MemberName,
 		const FString& MemberKind);
+
+	/**
+	 * Create a user struct asset, with its fields in one call.
+	 *
+	 * The same inputs, parsed and validated the same way, as `P-STRUCT-NEW`, because the two
+	 * share one code path up to the write (`D-02`).
+	 *
+	 * REFUSES an existing path rather than overwriting it: a name someone else chose is not this
+	 * tool's to replace. The refusal opens with `unchanged:` so a caller can tell it from a
+	 * failure (`P4`).
+	 *
+	 * *** THE STRUCT IS CREATED THROUGH THE EDITOR'S OWN `FStructureEditorUtils::CreateUserDefinedStruct`,
+	 * AND THAT IS A MEASURED CLAIM RATHER THAN A STYLE CHOICE. *** `AddVariable` reaches for the
+	 * struct's `UUserDefinedStructEditorData`, and that ONE call installs it
+	 * (`StructureEditorUtils.cpp:49-50`) - which is why a `NewObject<UUserDefinedStruct>` built by
+	 * hand crashes at `StructureEditorUtils.cpp:256` and this does not. Going through the engine's
+	 * creator is also what keeps the asset editable in the struct editor instead of producing a
+	 * hand-built asset the editor cannot open.
+	 *
+	 * THE RESULT PRINTS WHAT WAS ASKED FOR, WHAT WAS ADDED AND WHAT READS BACK from the struct
+	 * itself, because a tool reporting its own intention is not evidence that it succeeded. It also
+	 * says plainly that the asset is NOT yet saved: an unsaved asset dies with the editor, which has
+	 * cost this project three times.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPStructNew(const FString& Path, const FString& Fields);
+
+	/**
+	 * Add, change, reorder and remove fields on an existing user struct.
+	 *
+	 * The same inputs, checked the same way, as `P-STRUCT-FIELDS`, because the two share one code
+	 * path up to the write (`D-02`).
+	 *
+	 * One transaction, then it RE-READS the field list from the struct and prints it, so the answer
+	 * is what the struct holds rather than what this code intended. The report also says the asset
+	 * is not saved yet.
+	 *
+	 * A field that cannot be re-resolved at apply time - because the struct changed between the
+	 * preview and this call - is REFUSED BY NAME and is not silently skipped, because skipping it
+	 * would make this edit differ from the preview that authorised it (`D-45`). The counts of what
+	 * DID land are printed alongside, so the caller knows the exact state.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPStructFields(const FString& Struct, const FString& Changes);
 };
 
 /**
