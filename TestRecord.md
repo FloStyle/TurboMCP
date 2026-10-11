@@ -9015,3 +9015,28 @@ Git returned `is_available=True` from a `-nullrhi -unattended` commandlet WITH N
 available here with nothing but the setting), PERFORCE SECOND (the reason the capability exists, and `p4 set` points at
 `ssl:example.invalid:1666` which DOES NOT ANSWER - the run logged "Connect to server failed; check $P4PORT" and exited 1 with the
 probe output intact).** *And a trap for 10.1: `-SCCProvider=Plastic SCM` CONTAINS A SPACE and needs quoting.*
+
+---
+
+## 130. Round 176: row 10.1 launched, and it is buildable BECAUSE a measurement closed the question rather than a guess
+
+    LAUNCHED   E-VCS-CHECKOUT (row 10.1), NEW `TurboMCPSourceControl*` prefix + `Tools/test-vcs.py`
+    THE ORDER IS THE MEASUREMENT'S: GIT FIRST (the only provider AVAILABLE here with nothing but the setting),
+    PERFORCE SECOND (the one whose UsesCheckout()==true is why the capability exists, and unreachable here)
+
+*** AND THE BRIEF IS THE FIRST ONE THIS PROJECT HAS ISSUED WHERE THE HARD PART WAS ALREADY DONE BY A DIFFERENT WORKSTREAM RATHER
+THAN BY THE SPEC. `Spec/WORKING_SCROW.md` IS 631 LINES WITH THE WHOLE TABLE, THE DECIDING LINES, THE ENGINE'S OWN REFUSAL
+STRINGS, THE `SetProvider` FATALITY, THE SPACE IN `-SCCProvider=Plastic SCM`, AND THE TWO HAZARDS. THE BRIEF TELLS THE NEW
+WORKSTREAM TO READ IT AND NOT RE-DERIVE ANY OF IT. ***
+
+**AND THE BRIEF CARRIES THE MEASUREMENT'S OWN HONEST LIMIT FORWARD RATHER THAN DROPPING IT, WHICH IS THE PART WORTH RECORDING:**
+*"A Git checkout was deliberately NOT run by the previous workstream, so Git's checkout ANSWER is unmeasured - only
+`is_available=True`. `GitSourceControlProvider.cpp:257-260` and `:286-289` PREDICT a no-op, AND A PREDICTION IS NOT A
+MEASUREMENT. If your suite can measure it, measure it; if it cannot, SAY SO."* *** That sentence is the difference between a
+measurement that gets inherited and a measurement that gets overread - and this project has five recorded instances of a check
+whose count overstated its coverage, all of which would have been prevented by that sentence. ***
+
+**AND THE FIRST OF THE FIVE THINGS THE TOOL MUST DO IS THE ONE THAT MAKES THE WHOLE ROW WORTH BUILDING: ASK **BOTH**
+`IsEnabled()` AND `IsAvailable()`, because Perforce, Plastic and Subversion return the first TRUE unconditionally while the second
+is false - SO A TOOL THAT ASKS ONE QUESTION REPORTS A WORKING PROVIDER WHERE THERE IS NONE.** *That is `P1` at the API level:
+an absent capability that reports itself as present.*
