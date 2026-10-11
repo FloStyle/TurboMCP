@@ -10633,3 +10633,34 @@ complete a sentence whose second half is not true.**
 USES THE WORD: NOTHING IS WAITING ON A DECISION. IT IS LARGER THAN WHAT REMAINS. THE HONEST CHOICE IS TO LEAVE THE OBJECTIVE ACTIVE AND SAY
 SO, RATHER THAN MARK COMPLETE A SENTENCE WHOSE SECOND HALF IS NOT TRUE - WHICH IS THE ONE THING THIS PROJECT HAS SPENT TWO HUNDRED AND
 FIFTY ROUNDS REFUSING TO DO. ***
+
+---
+
+## 178. Round 252: FINAL STATE, MEASURED — AND WHY THE OBJECTIVE IS LEFT ACTIVE RATHER THAN MARKED COMPLETE
+
+    HEAD = origin/main = `ca96c60`       ARBRE PROPRE       COMMITS 498
+    OUTILS      93 AICallable, audit `uncalled: (none)`
+    FULL RUN    `passed 58, failed 0, blocked 0, of 58`   EXIT CODE 0
+    AUDITS      tool coverage PASS · suite quality PASS at **0 candidates** (and it BLOCKS)
+    PLAN        31 todo, 15 done   (COUNTED BY FIELD)
+    SUITES      52 files · 58 in the harness
+    DOCUMENTS   REPORT.md 350 l. · STATUS.md 227 l. · TestRecord.md 10,635 l.
+
+### 178.1 *** THE DECISION, STATED PLAINLY ***
+
+**THE OBJECTIVE HAS TWO HALVES AND THEY HAVE OPPOSITE OUTCOMES:**
+
+    "Make me an extensive report on where you at, what's left and what take your time"
+       DELIVERED. `REPORT.md` is 350 lines across 13 sections with every figure read at the round it
+       states; it says where the project is, what remains, what has CHANGED and why, what I do NOT know,
+       and the five things I would spend time on with the state of each. `STATUS.md` was refreshed from a
+       headline three revisions stale, and `TestRecord.md` is the 10,635-line record behind both.
+
+    "until TurboMCP is complete"
+       NOT DELIVERED. 31 rows of 48 remain. THREE OF THEM CANNOT BE DONE ON THIS MACHINE AT ALL - the
+       remaining source-control writers need a server that answers, and `TA-18` needs a `USkeleton` bone
+       whose every route is closed at `Skeleton.h:365-369`. THE REST ARE VOLUME RATHER THAN INSIGHT.
+
+*** SO I AM NOT MARKING IT COMPLETE, AND THE REASON IS NOT MODESTY. **MARKING COMPLETE A SENTENCE WHOSE SECOND HALF IS FALSE IS EXACTLY THE DEFECT THIS PROJECT HAS SPENT 252 ROUNDS FINDING** - an invisible failure read as a success, a refusal read as a capability, a regex read as a measurement. Doing it to my own objective, in the last four rounds, would be the same mistake with a bigger blast radius: the record, the report and the status would all say the work was finished. ***
+
+**AND IT IS NOT MARKED BLOCKED EITHER.** *The word has a specific meaning here - the same condition persisting across rounds with nothing I can do - and **thirty-one rows are not that: rows 6.1 to 6.4, 8.1 to 8.5 and 5.3 to 5.5 are precedents to follow, and the kit's `TA-17` is the proof that this machine can build fixtures.*** *** So the objective stays ACTIVE, carrying the honest state, for whoever picks it up: 93 tools, a green full run, an audit that blocks, a foreign-editor check, a 350-line report, and a list of 31 rows where three are impossible here and the rest are work. ***
