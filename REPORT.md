@@ -1,0 +1,201 @@
+# TurboMCP — Rapport extensif
+
+**Mesuré le 2026-10-11 à 11:35. Tous les chiffres de ce rapport sont lus, pas rappelés.**
+**`HEAD` = `99719c4` = `origin/main`. Arbre propre.**
+
+---
+
+## 1. Ce qu'est TurboMCP, en trois phrases
+
+Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par IA** à travers le Model Context Protocol, répartis en **4 toolsets** : Read (30), Look (4), Preview (26), Edit (33). Les lectures vivent dans Read/Look — **structurellement incapables d'écrire** — et chaque écriture a un jumeau Preview qui partage le même `Plan`, donc Preview et Edit refusent **exactement** le même input.
+
+| Métrique | Valeur mesurée |
+|---|---|
+| Commits sur `main` | **447** |
+| Outils `AICallable` | **93** (audit : `uncalled: (none)`, PASS) |
+| Suites (`Tools/test-*.py`) | **51** fichiers |
+| **Full run** | **`passed 56, failed 0, blocked 0, of 56`** |
+| C++ du plugin | **61 137 lignes** dans **185** fichiers |
+| Spec | **7 738 lignes** dans **17** fichiers |
+| `TestRecord.md` | **10 178 lignes** (le journal de bord) |
+| Licence | **MPL-2.0** sur chaque fichier, `Copyright (c) 2026 Florian ESCHALIER (FloStyle)` |
+
+---
+
+## 2. Le plan : **40 `todo`, 6 `done`** sur 48 lignes
+
+*Compté **par champ** — la dernière cellule de la ligne. Voir §7 : une regex sur la ligne donne un chiffre faux.*
+
+| Row | Ce qui est fait |
+|---|---|
+| **0.2** | `test-override-add` / `test-comment-boxes` restaurent leurs fixtures à l'aller comme au retour |
+| **1.4** | Un Niagara et un Anim Blueprint peuvent-ils être capturés headless ? — **mesuré** |
+| **2.1** | `selection`, `neighbours`, `box-neighbours`, `screen` ajoutés à `L-CAPTURE` |
+| **7.1** | `P/E-STRUCT-NEW` + `P/E-STRUCT-FIELDS` — le writer de structs |
+| **10.1** | `E-VCS-CHECKOUT` via `ISourceControlModule`, comportement headless mesuré |
+| **10.2** | Checkout automatique câblé dans les outils d'écriture (2 writers sur 32) |
+
+### Ce qui reste, par phase
+
+| Phase | État |
+|---|---|
+| **0 — Fondations** | 3 rows `todo` : propriétaire unique du cycle de vie de l'éditeur, re-vérification de `07_ENGINE_NOTES.md` |
+| **1 — Mesures bloquantes** | 3 `todo` : breakpoint Blueprint, tests d'automation, kit `TA-14`→`TA-21` |
+| **2 — Vision** | **2.1 faite.** 2.2 en cours (9 types d'éditeurs capturés). 2.3 (level/viewport/PIE), 2.4 (diff d'images) restent |
+| **3 — Look** | layout-report, capture, widget-preview : largement bâti, rows de finition |
+| **4 — Data** | `P/E-DATATABLE-ROWS` fait ; courbes (`T-DATA-5` → **`TA-17` manquant**) |
+| **5 — Widgets** | writers d'override/bind/retarget ; **`T-WIDGET-4` → `TA-8` manquant** |
+| **6 — Blueprints** | le plus gros bloc : graph append/replace/patch/knots/tidy |
+| **7 — Structs/enums** | 7.1 faite ; 7.3 courbes |
+| **8 — Matériaux** | écriture de blocs, promote de label |
+| **9-10** | session/coût, source control |
+| **11-15** | niveau & acteurs, build, vision, qualité |
+
+---
+
+## 3. Les trois choses dont je suis le plus sûr, et **comment** je le sais
+
+### 3.1 La machine de vérification fonctionne
+
+**Six rows d'affilée ont fini avec un full run propre : `53/53` → `54/54` → `55/55` → `56/56`.** *Chacune avec une suite nouvellement écrite dedans et zéro échec.*
+
+Et la mesure qui compte : **les trois dernières rows ont eu besoin de presque aucune intervention de ma part.** Les briefs, les commits de sécurité, les checks de pré-vol et la règle `P1` ont été construits sur trente rounds, et ils produisent maintenant des résultats sans surveillance constante.
+
+### 3.2 Le break test est le détecteur de défauts le moins cher du projet
+
+**Trois fois sur trois, un break test a payé au-delà de son but :**
+
+| Row | La seconde trouvaille |
+|---|---|
+| **7.1** | *quatre échecs avec les noms de champs manglés visibles* |
+| **10.2** | ***un défaut `P1` dans le code : un motif de décision vide*** |
+| **2.1** | ***un défaut dans la suite : un check qui assertait un préfixe et passait contre un build cassé*** |
+
+**Row 2.2 en a trouvé un quatrième : une écriture échouée qui arrivait comme `look: ... error: ...` — donc un appelant testant le préfixe `error:` lisait un ÉCHEC COMME UN SUCCÈS.**
+
+> **La forme générale est maintenant nommable : UN CHECK QUI MATCHE UN PRÉFIXE NE PEUT PAS DÉTECTER UN CHANGEMENT APRÈS LE PRÉFIXE. Un refus invisible se lit comme une capacité.**
+
+### 3.3 Le projet corrige ses propres prémisses, et c'est le motif dominant
+
+**Cinq rows consécutives ont trouvé que leur prémisse était fausse — toujours dans le sens qui SOUS-ESTIME ce qui existe :**
+
+| Row | Prémisse | Réalité |
+|---|---|---|
+| **7.1** | *« editor-only »* | *trop strict — `CreateUserDefinedStruct` installe lui-même l'`EditorData` (`StructureEditorUtils.cpp:42-64`)* |
+| **1.3** | *liste de plugins via `.agent/*.py`* | *ces scripts n'énumèrent que 2 plugins, pas le moteur* |
+| **10.2** | *« `CheckOutFile` est la voie »* | *il répond `True` sur Git **sans jamais émettre de checkout*** |
+| **2.1** | *« ajouter 4 sélecteurs »* | *la capacité faisait déjà 2 062 lignes sur 3 fichiers + une suite suivie de 378 lignes* |
+| **2.2** | *« six types d'éditeurs »* | *le plan en nomme **huit**, et **neuf** marchent* |
+
+---
+
+## 4. Les contraintes d'environnement **mesurées** — la frontière du possible ici
+
+Ces quatre-là bornent ce que le plugin peut promettre :
+
+| Contrainte | Ligne qui décide |
+|---|---|
+| **Slate n'est jamais initialisé dans un commandlet** | `LaunchEngineLoop.cpp:3343` garde l'init avec `!IsRunningCommandlet()` |
+| **`FBlueprintEditorModule::StartupModule()` a un `check(GEditor)` inconditionnel** | `BlueprintEditorModule.cpp:214` — **deux commandlets du plugin ne peuvent pas tourner du tout** |
+| **Sous `-nullrhi`, Slate EST initialisé — avec `SlateNullRenderer`** | `RHIGlobals.h:894` → `LaunchEngineLoop.cpp:3345-3347` → `:3354` |
+| **Les suites tournent avec un VRAI RHI et une VRAIE fenêtre** | `run-suites.ps1:195` passe seulement `-LowPriority` |
+
+> ***La quatrième ligne est une prémisse FAUSSE que j'avais écrite dans quatre briefs. Elle venait d'un commentaire périmé à `start-editor.ps1:261` que j'ai lu à la place de la liste d'arguments. J'ai corrigé le commentaire.***
+
+**Et une frontière de données, énoncée deux fois par deux workstreams indépendants :**
+
+> **AUCUN CHECKOUT CONTRE UN DÉPÔT SOURCE CONTROL VIVANT N'A JAMAIS ÉTÉ EFFECTUÉ ICI.** `p4` pointe sur `ssl:example.invalid:1666` (ne répond pas) ; `cm` et `svn` ne sont pas dans le PATH ; et la réponse de Git est un **refus**.
+
+---
+
+## 5. Les fixtures fantômes — **cinq rows d'acceptation nomment des assets qui n'existent pas**
+
+| Row d'acceptation | Fixture nommée | Statut |
+|---|---|---|
+| `T-MAT-10` | `TA-6` | *l'instance existe comme `MI_TurboMCPFixture` — manquante **sous le nom de la table*** |
+| `T-LEVEL-1/2` | `TA-15`, `TA-16` | absents |
+| `T-WIDGET-4` | `TA-8` | absent |
+| `T-DATA-3` | `TA-21` | **aucun `UserDefinedStruct` nulle part dans le repo** |
+| `T-DATA-5` | `TA-17` | **zéro match pour `CurveFloat\|CurveTable\|curve` dans `Tools/`** |
+| *candidat* | `T-BP-8` → `TA-9` | *le libellé peut signifier un échange de classe en session* |
+| **rows 2.2-2.4** | `TA-18`, `TA-19` | **absents — signalé AVANT que 2.2 ne commence** |
+
+**Et une collision de labels : `TA-5` est appelé « Material 60 expressions » par la table, tandis que le kit utilise ce label pour le graphe `BackwardProbe`.**
+
+> ***La règle de pré-vol qui attrape ça a été écrite après la DEUXIÈME de ces rows et appliquée à aucune des deux premières. Depuis, elle a été écrite dans chaque brief — et row 2.1 a attrapé le piège `test-capture.py` AVANT qu'il ne tire, pour la première fois.***
+
+---
+
+## 6. La dette de vacuité
+
+**Cinq capacités ont rapporté que leur compte de checks surestimait leur couverture.** *Une suite avait une branche `else` qui vérifiait littéralement `True`.*
+
+**Trois mécanismes différents ont été trouvés pour la même maladie, chacun nommé :**
+
+| Niveau | Le défaut | Le correctif |
+|---|---|---|
+| **Chaîne** | *`IsAvailable()` imprimait `false` pour une question jamais posée* | *imprime **`NOT ASKED`*** |
+| **Chaîne** | *un motif de décision vide après le tiret* | *un check qu'aucune ligne de décision n'est vide* |
+| **Type** | *un booléen ne peut pas distinguer « refusé » de « un autre outil peut »* | ***un **enum à trois états** + un **catalogue de TOUS les cas*** |
+
+> ***« UN REFUS INVISIBLE SE LIT COMME UNE CAPACITÉ » — c'est le plus vieux défaut du projet, énoncé en sept mots, et il est arrivé sous six mécanismes différents.***
+
+---
+
+## 7. Ma propre erreur la plus instructive
+
+**Pendant vingt rounds j'ai compté l'avancement du plan avec `Select-String '\| todo \|'` — une regex sur la LIGNE.**
+
+Or une cellule de statut peut contenir de la prose. **Le chiffre changeait entre deux exécutions de la même commande** (`41 todo, 4-5 done`). Le compte **par champ** est `40 todo, 6 done`.
+
+> ***C'est la plus vieille règle du projet, commise par moi : PARSER LE CHAMP, JAMAIS MATCHER UNE PHRASE À CÔTÉ. Le compteur qui répond « combien reste-t-il » était une recherche de chaîne sur des cellules qui contiennent des phrases.***
+
+**Et j'ai fait la même erreur sous une autre forme cette semaine** : j'ai lu un **commentaire** (`start-editor.ps1:261`) au lieu d'une **liste d'arguments** (`run-suites.ps1:195`), et j'en ai tiré une prémisse fausse mise dans quatre briefs.
+
+---
+
+## 8. Ce que je ne sais pas, et que je ne présente pas comme su
+
+| | |
+|---|---|
+| **Aucun checkout contre un dépôt vivant** | *toute réponse de checkout rapportée est la réponse à un refus ou à un no-op* |
+| **La branche `UsesCheckout() == true` n'a jamais tourné** | *Perforce est `IsAvailable() == false`, donc le mécanisme refuse avant* |
+| **Plastic et Subversion injoignables** | *`cm` et `svn` absents du PATH — leur branche AVAILABLE n'a jamais été vue* |
+| **Aucun run `-nullrhi` n'a jamais été effectué** | *le refus de `screen` est prouvé par construction à partir de deux gardes* |
+| **Le chemin positif de `selection`** | *prouvé par une sonde interne auto-nettoyante, parce que `P3` interdit à un Look de créer une sélection* |
+| **`FindReaders` compte les assets qui DÉTIENNENT la struct** | *pas chaque graphe qui lit un champ par nom — et l'aperçu le DIT* |
+| **Aucun run `-nullrhi`** | *une commande le fermerait : `start-editor.ps1 -NullRHI` puis `mode screen`* |
+
+---
+
+## 9. Ce que je prendrais le temps de faire, si le temps n'était pas compté
+
+**Dans cet ordre, parce que chaque item débloque le suivant :**
+
+### 9.1 **Détecter un éditeur étranger sur le port 8000** — *le durcissement le plus rentable*
+
+Trois workstreams indépendants ont payé cette collision, dont moi. **`check-mcp-server.py` peut passer contre l'éditeur de quelqu'un d'autre, et la suite échoue alors avec « the provider is not Git » au lieu de « un autre processus possède le projet ».** *C'est un faux échec qui coûte un round à diagnostiquer chaque fois, et le correctif est un check d'identité du processus.*
+
+### 9.2 **Un dépôt source control qui répond** — *une seule commande fermerait la plus grande frontière du projet*
+
+`p4` pointe sur un hôte mort et `cm`/`svn` sont absents. **Avec un serveur joignable, les deux rows source control passeraient de « mesuré contre un refus » à « mesuré contre un succès »** — et `UsesCheckout() == true` exécuterait enfin sa branche agissante.
+
+### 9.3 **Le kit `TA-14` à `TA-21`** — *six rows d'acceptation dépendent de fixtures qui n'existent pas*
+
+`TA-17`, `TA-18`, `TA-19`, `TA-16` sont **mesurés buildables** mais non construits. *Les construire débloque les rows 2.2-2.4, 4.x et 7.3 sans que chacune ait à réinventer un substitut.*
+
+### 9.4 **Un vérificateur de format pour les suites** — *l'instrument qui manque encore*
+
+Cinq capacités ont surestimé leur couverture et **chaque fois ça a été trouvé par un humain ou un workstream ultérieur**. *Un audit qui exige, pour chaque check, un input nommé qui le fait échouer **mécaniquement** — pas par convention — est ce qui manque. `audit-suite-quality.py` en est une version advisory ; il est temps qu'il bloque.*
+
+### 9.5 **Les 30 writers non câblés** — *un travail mécanique, une fois 10.2 prouvée*
+
+Le mécanisme existe, 2 des 32 writers l'utilisent, et les 30 sont **nommés un par un**. *C'est du travail répétitif sans inconnue — le bon candidat pour du parallélisme massif, dès que le format est figé.*
+
+---
+
+## 10. En une ligne
+
+> **93 outils, 56/56 suites vertes, 447 commits, 61 137 lignes de C++, 40 rows de plan restantes — et une machine de vérification qui, sur les trois dernières rows, a produit des résultats corrects sans que j'aie à intervenir.**
+>
+> ***Ce qui reste n'est pas bloqué par des inconnues : c'est borné par du temps, par cinq fixtures qui n'existent pas, et par un serveur source control que cette machine n'a jamais eu.***
