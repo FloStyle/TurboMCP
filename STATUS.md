@@ -56,7 +56,7 @@ annotated because the shape of the gap was wrong, not just its size.
 | 8 | Graph writing (the bulk writer) | 1/1 | **COMPLETE** |
 | 9 | Materials writing | 5/8 | `E-MAT-BLOCKS` **DONE**; `R-MAT-INST-LOAD` **DONE** (20 checks) |
 | 4 | Data tables | 1/1 | `P/E-DATATABLE-ROWS` **DONE** (26 checks) |
-| — | Kit (plan row 1.5) | 2/8 | `TA-14` and `TA-20` **BUILT and read back**; `TA-15`/`TA-17` buildable; `TA-16` needs work; `TA-18` needs a measurement; `TA-19` and `TA-21` REFUSED |
+| — | Kit (plan row 1.5) | 2/8 built | `TA-14`/`TA-20` **BUILT and read back**; `TA-15`/`TA-17` buildable; `TA-16` needs work; `TA-18` needs a measurement; `TA-19`/`TA-21` REFUSED with citations |
 | 15 | Quality and maintenance | 1/1 | `R-BP-LINT` **DONE** (37 checks, six named checks each reporting its denominator) |
 | 10 | Graph structure | 0/3 | `E-GRAPH-RENAME`, `E-GRAPH-COLLAPSE`, `E-GRAPH-COPY` |
 | 11 | Widget authoring | 0/5 | needs the widget text dialect first |
