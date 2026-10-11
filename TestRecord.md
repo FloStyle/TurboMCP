@@ -5516,3 +5516,47 @@ defect.**
    `uncalled: (none)`.** So the workstream HAD written its suite before it stopped, **AND MY COMMIT MESSAGE CONTAINS A
    PREDICTION I DID NOT CHECK. THE CORRECTION IS RECORDED BECAUSE A PREDICTION IN A COMMIT MESSAGE READS AS A
    MEASUREMENT TO EVERYONE WHO COMES AFTER - this project's oldest lesson, broken while writing about it.**
+
+---
+
+## 35. The harness fix paid for itself a THIRD time: `test-call-cost` dies from a one-line Python bug, READABLE
+
+**VERBATIM, FROM THE HARNESS'S OWN TAIL - WHICH EXISTS ONLY BECAUSE THE DEFECT THAT DISCARDED IT WAS FIXED:**
+
+    FAIL    test-call-cost               RESULT: no result line
+        the suite's last lines were:
+        capped_rows = [l for l in section(capped, "TOTALS PER TOOL").splitlines() if "call(s)" in l]
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        AttributeError: 'list' object has no attribute 'splitlines'
+
+*** SO THE SUITE IS NOT WRONG ABOUT THE CAPABILITY - IT IS A ONE-LINE PYTHON DEFECT: `section()` RETURNS A LIST AND THE
+CALLER TREATS IT AS TEXT. AND WITHOUT THE TAIL THE REPORT WOULD HAVE BEEN `no result line` WITH NO CAUSE, WHICH IS
+EXACTLY WHAT FOUR SUITES LOOKED LIKE FOR THREE ROUNDS. ***
+
+**AND IT IS THE THIRD TIME THE TAIL HAS PAID:** it turned `no result line` into `URLError WinError 10061` and
+`the editor could not be started` last round, and into a Python traceback this round. **A DIAGNOSTIC IS WORTH MORE THAN
+THE FIX THAT PRODUCED IT, BECAUSE IT KEEPS PAYING.**
+
+### 35.1 What is preserved, and what is owed
+
+    COMMITTED AND SAFE:    TurboMCPCallCost.{h,cpp}, TurboMCPCallCostTools.cpp, Tools/test-call-cost.py
+    AUDIT:                 79 tools, uncalled: (none), PASS
+    OWED:                  the one-line fix in the suite, and then a real run of it
+
+**`R-CALL-COST` IS THE CAPABILITY I DESTROYED ONE ROUND AGO, AND IT IS NOW FULLY PRESERVED IN GIT.** The difference
+between this round and that one is not care - it is that **the brief now says COMMIT**, and the workstream's files
+were committed by me when it stopped without doing so. **A PROTECTION THAT LIVES IN A MECHANISM RATHER THAN AN
+INSTRUCTION IS THE ONLY KIND THAT HOLDS**, and this is the first round where that sentence has a measured result
+behind it rather than a lesson.
+
+### 35.2 And the round's other delivery: the kit's two decisions
+
+**`TA-19` (Niagara) IS REFUSED STRUCTURALLY** - `UNiagaraSystem` is not in the engine source tree, it is a plugin, and
+adding it means editing `TurboMCP.Build.cs`, which the row's brief forbade. **THE DECISION IS THE ORCHESTRATOR'S, AND
+IT IS NOW DUE: add the dependency deliberately, or refuse `TA-19` and the two `T-LOOK-8` clauses that name it, BY
+DECISION, and write the refusal into the descriptions of the tools an agent would reach for instead.** That is the
+shape the breakpoint group used and it is the shape that works.
+
+**`TA-18` (AnimBP) NEEDS A MEASUREMENT BEFORE IT IS BUILT** - `UAnimBlueprint` normally needs a skeleton and an editor
+factory, *"the same shape as the user-struct block"*, **and `TA-14` is the proof that this shape is answerable by
+measurement rather than by assumption: the project had recorded `TA-14` as impossible and it was buildable.**
