@@ -6927,3 +6927,45 @@ on it. THE LOGS SETTLED IT: `make-material-asset.log` moved 2 minutes before the
 - THE WORKSTREAM WAS MID-MEASUREMENT THE WHOLE TIME.** *Section 55 is the counterfactual: the same appearance, acted on,
 produced a launched agent on a live row and a stop-and-confirm. **THE DIFFERENCE BETWEEN THE TWO ROUNDS WAS NOT BETTER
 JUDGEMENT, IT WAS ASKING THE MACHINE INSTEAD OF READING ITS SILENCE.***
+
+---
+
+## 64. *** 51 OF 51 - ZERO FAILURES. THE FIXTURE-RESTORE THEORY WAS RIGHT, AND THE LAST RED SUITE IS GREEN. ***
+
+    passed 51, failed 0, blocked 0, of 51
+
+**MEASURED BY ROW 0.2's OWN FULL RUN, AFTER `test-override-add` AND `test-comment-boxes` WERE CHANGED TO GIVE THEIR
+FIXTURE BACK ON THE WAY IN AND ASSERT IT.**
+
+*** AND I HAD WRITTEN THE FALSIFICATION CRITERION BEFORE THE RUN FINISHED, WHICH IS WHY THIS RESULT CARRIES WEIGHT: "IF
+IT STILL FAILS, THE FIXTURE-RESTORE THEORY IS WRONG FOR IT AND THAT MUST BE RECORDED AS A FALSIFICATION RATHER THAN A
+PARTIAL WIN." IT DID NOT FAIL. THE THEORY WAS TESTABLE AND IT HELD. ***
+
+### The arc, and the two corrections that moved it
+
+    39 of 47   I attributed it to a harness restart race AND STOPPED LOOKING
+    47 of 48   it was CODE - two capabilities landing and a pre-existing C2665 build break
+    50 of 51   four capabilities and a measured root cause, with one suite failing in the run and passing alone
+    51 of 51   that last suite explained: A FIXTURE LEFT DIRTY BY A PRECEDING SUITE
+
+*** AND THE LAST STEP IS THE ONE THE PROJECT HAD BEEN DESCRIBING FOR ROUNDS WITHOUT APPLYING TO ITSELF. "A SUITE THAT
+FAILS IN A FULL RUN AND PASSES ALONE" APPEARED FOUR TIMES IN THIS RECORD AND WAS TREATED AS AN ENVIRONMENTAL
+ANNOYANCE EACH TIME. IT WAS A SHARED-FIXTURE DEFECT, AND ROW 0.2 - A ONE-LINE-INTENTION ROW ABOUT RESTORING ON THE WAY
+IN - WAS THE WHOLE CAUSE. ***
+
+**AND THE ROW WAS DONE THE WAY THIS PROJECT NOW REQUIRES: THE FAILURE WAS REPRODUCED FIRST.** *`ReceiveActorOnClicked`
+was overridden by hand and saved, **the editor was stopped and started**, and the residue survived (5 overridden -> 6);
+the old suite then failed twice identically. **"A restore nobody reproduced is a guess"** - and the reproduction is what
+made the fix provable rather than plausible.*
+
+### What 51 of 51 IS and IS NOT
+
+    IS        every suite in the runner passes, on this tree, in one run
+    IS NOT    a statement that every capability's checks can fail for their own reason
+
+*** FOUR CAPABILITIES IN FOUR ROUNDS HAVE REPORTED THAT THEIR CHECK COUNT OVERSTATES THEIR COVERAGE - `R-MAT-INST-LOAD`'s
+empty orphan list, `R-CALL-COST`'s unqualified name, `R-ASSET-COST`'s missing registry row, `R-WIDGET-TREE`'s
+path-extension check that passed on a deliberately flattened walk. AND ONE SUITE'S `the fixture is left as it was found`
+HAS AN ELSE-BRANCH THAT LITERALLY CHECKS `True`. 51 GREEN SUITES IS A STATEMENT ABOUT THIS RUN, NOT ABOUT THE CHECKS. ***
+*The vacuity work is separate and still owed, and saying so here is what keeps this number from being read as more than
+it is.*
