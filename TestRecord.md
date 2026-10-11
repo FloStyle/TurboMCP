@@ -7932,3 +7932,37 @@ cost this project has already paid twice.*
 
 **SO THE ENTRY IS: NOTHING HAPPENED, THE INSTRUMENT WAS READ WITH ITS WINDOW ATTACHED, AND THE DECISION NOT TO
 PARALLELISE IS THE DECISION OF THIS ROUND.**
+
+---
+
+## 90. Round 131: the criterion, applied WITH ITS WINDOW, is answered - and the answer is that the workstream is mid-cycle
+
+**I WAITED FOR THE WINDOW RATHER THAN CHECKING EARLY, WHICH IS THE DISCIPLINE SECTION 123 PRODUCED, AND THE MEASUREMENT IS
+UNAMBIGUOUS:**
+
+    Clock 05:53:29, last source write 05:41:36 -> THE WINDOW HAS ELAPSED
+    make-material-asset.log      05:53:05   <- 24 SECONDS AGO
+    make-acceptance-asset.log    05:52:13
+    make-kit-assets.log          05:48:18
+    THE EDITOR IS RUNNING
+
+*** SO THE WORKSTREAM IS NOT STOPPED AND NOT READING: IT IS REBUILDING THE FIXTURES, WHICH IS THE PREREQUISITE OF A FULL RUN
+AND THE MOST EXPENSIVE PART OF WHAT IT OWES. THE SOURCE FILES HAVE NOT MOVED FOR TWELVE MINUTES BECAUSE THE WORK MOVED FROM
+EDITING TO REBUILDING - AND A SEARCH FOR RECENTLY MODIFIED `Source/` OR `Tools/` FILES WOULD HAVE SAID "NOTHING IS
+HAPPENING" WHILE THREE FIXTURE REBUILDS RAN. ***
+
+### 90.1 And that is the sharpest form of the discriminator yet
+
+    "HAS A SOURCE FILE MOVED"        -> NO, for twelve minutes
+    "HAS A LOG MOVED"                -> YES, 24 seconds ago
+    "IS THE EDITOR RUNNING"          -> YES
+
+*** THE FIRST QUESTION WOULD HAVE BEEN ENOUGH TO RAISE A FALSE ALARM, AND IT IS THE QUESTION I WOULD HAVE ASKED IF I HAD
+NOT WIDENED THE SEARCH TO INCLUDE `.agent/logs` AFTER SECTION 113 NAMED THE DISCRIMINATOR. THE PROJECT'S WORK IS NOT
+CONFINED TO `Source/` AND `Tools/`: FIXTURE REBUILDS ARE FILESYSTEM ACTIVITY IN `TestProject/Content/`, THEY LOG TO
+`.agent/`, AND THEY HOLD THE EDITOR - AND ALL THREE OF THOSE ARE INVISIBLE TO A `git status` AND TO A SOURCE-TREE TIMESTAMP
+SEARCH. ***
+
+**AND THE REBUILD ORDER IS ITSELF INFORMATIVE: kit, then acceptance, then material.** *That is a deliberate sequence rather
+than three parallel ones, which is consistent with `run-suites.ps1` owning the editor and the fixtures being shared - and it
+means the full run is plausibly the NEXT thing rather than something still being prepared for.*
