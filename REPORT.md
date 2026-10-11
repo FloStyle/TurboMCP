@@ -11,7 +11,7 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 
 | Métrique | Valeur mesurée |
 |---|---|
-| Commits sur `main` | **486** |
+| Commits sur `main` | **497** |
 | Outils `AICallable` | **93** (audit : `uncalled: (none)`, PASS) |
 | Suites (`Tools/test-*.py`) | **52** fichiers (58 suites au total dans le harnais) |
 | **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — EXIT CODE 0, VERT ENTIÈREMENT*** |
