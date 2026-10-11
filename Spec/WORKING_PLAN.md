@@ -119,7 +119,7 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 
 | # | Work | Spec | Decisions | Test | State |
 |---|---|---|---|---|---|
-| 5.1 | The widget tree text dialect, reader and lexer, sharing the graph text lexer | `04_FORMATS.md` section 8 | `D-15`, `D-48` | T-WIDGET-4 | todo |
+| 5.1 | The widget tree text dialect, reader and lexer, sharing the graph text lexer | `04_FORMATS.md` section 8 | `D-15`, `D-48` | T-WIDGET-4 | done |
 | 5.2 | `P/E-WIDGET-TREE` with `append`, `replace`, `patch`; a rename in the text is REFUSED | `P/E-WIDGET-TREE` | `D-45`, `D-48`, `D-49` | T-WIDGET-1 to T-WIDGET-4 | todo |
 | 5.3 | `P/E-WIDGET-SET`: widget property, slot layout and style, each named, plus the rename with its references | `P/E-WIDGET-SET` | `D-49`, `D-50` | T-WIDGET-5 | todo |
 | 5.4 | `R-WIDGET-ANIM` and `P/E-WIDGET-ANIM`, with a broken track named rather than dropped | `03_TOOLS.md` section 11 | `P1`, `D-05` | T-WIDGET-6, T-WIDGET-7 | todo |
