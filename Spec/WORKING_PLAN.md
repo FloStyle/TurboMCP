@@ -76,7 +76,7 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 | # | Work | Spec | Decisions | Test | State |
 |---|---|---|---|---|---|
 | 0.1 | **One owner of the editor lifecycle.** Start, wait, health check, stop, in one place; a suite asks it for an editor and never starts or stops one itself | `08_ROADMAP.md` section 3 | — | the full run stops producing failures whose names move | todo |
-| 0.2 | Make `test-override-add` and `test-comment-boxes` restore their fixture **on the way in** | `../STATUS.md` section 7 | `P8` | recorded in `../TestRecord.md` | todo |
+| 0.2 | Make `test-override-add` and `test-comment-boxes` restore their fixture **on the way in** | `../STATUS.md` section 7 | `P8` | `80f2756`; residue reproduced across an editor stop/start first (5 overridden -> 6). **It also found and fixed a VACUOUS check**: `test-comment-boxes`' `box_keys()` read keys from the `fit` listing, **which prints no keys at all**, so it returned `[]` every run and the closing check was true even on a run that left boxes behind. | done |
 | 0.3 | Re-verify every fact in `07_ENGINE_NOTES.md` sections 1 to 4 and 6 against 5.8.3 and change its marker | `07_ENGINE_NOTES.md` | `D-38`, `D-40` | each marker says what was run | todo |
 
 ### Step 1 — measurements that gate whole groups
@@ -86,7 +86,7 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 | 1.1 | **Does the MCP server answer while the editor is stopped at a Blueprint breakpoint?** Record one of the three outcomes with its evidence | `03_TOOLS.md` section 14 | `D-36`, `D-54`, `D-55` | T-MEASURE-1 | todo |
 | 1.2 | **Can an automation test be run from a tool call without blocking the game thread?** | `03_TOOLS.md` `R-AUTOMATION-RUN` | `D-54` | T-MEASURE-2 | todo |
 | 1.3 | **What does a source control provider do headless?** Perforce, git, and off are three different answers | `03_TOOLS.md` section 17 | `D-57` | T-VCS-1 | todo |
-| 1.4 | **Can a Niagara system and an Anim Blueprint be captured headless?** A yes or no per editor kind | `03_TOOLS.md` section 18 | `D-41` | T-LOOK-8 | todo |
+| 1.4 | **Can a Niagara system and an Anim Blueprint be captured headless?** A yes or no per editor kind | `03_TOOLS.md` section 18 | `D-41` | T-LOOK-8 | **ANSWERED: NO for every kind.** `LaunchEngineLoop.cpp:3343` guards `FSlateApplication::Get().InitializeRenderer(...)` with `!IsRunningCommandlet()`, **so Slate is never initialized in a commandlet and every PNG path needing a widget window fails by construction.** The plugin has exactly two PNG paths and both need Slate; it never initializes Slate itself. Niagara is a plugin and IS enabled (`Niagara.uplugin:13`), so `TA-19` needs a `Build.cs` dependency **and is uncapturable anyway**; `AnimBlueprint.h:81` is engine-side so `TA-18` needs no dependency but is still not a capture fixture. | done |
 | 1.5 | Build the new kit assets TA-14 to TA-21 by hand | `06_ACCEPTANCE.md` section 1 | `D-51` | baseline numbers recorded | todo |
 
 ### Step 2 — vision
