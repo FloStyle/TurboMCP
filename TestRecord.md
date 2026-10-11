@@ -8329,3 +8329,42 @@ REAL LIMIT OF MY INSTRUMENT THAT THIS ROUND EXPOSES: five timestamps can show a 
 
 **SO THE ONE USEFUL THING AVAILABLE TO ME IS TO READ WHAT THE PROBE ACTUALLY SAID**, and that is a read-only action on a
 file the workstream owns, which the record already permits.
+
+---
+
+## 106. Round 147: reading the CONTENT answers it, and the answer is that nothing was ever wrong
+
+    .agent/logs/panel-probe.log, verbatim
+      TurboMCP: panel-livecall-value: look: editing window
+      TurboMCP: panel-summary: registry=available toolsets
+      LogInit: Display: Success - 0 error(s), 0 warning(s)
+      Execution of commandlet took:  0.35 seconds, PeakPhysMemoryMB=1599 MB
+
+*** SO THE FIVE EDITORS IN FOUR MINUTES WERE NOT A LOOP AND NOT AN ANOMALY: THEY WERE A COMMANDLET THAT TAKES 0.35 SECONDS
+AND EXITS ZERO, INVOKED SEVERAL TIMES. AND THE ONE INSTRUMENT I HAD BEEN USING - NAMES AND MODIFICATION TIMES - COULD NOT
+HAVE SHOWN THAT, BECAUSE 0.35 SECONDS OF CONTENT IS INVISIBLE FROM A FILE LISTING. ***
+
+### 106.1 And the round is worth more than its answer, because the answer was one command away for eight rounds
+
+    ROUNDS 140-146   five timestamps, four theories, and one near-action on a live process
+    ROUND 147        one `Get-Content`, and the thing was healthy the whole time
+
+*** I BUILT A FOUR-SIGNAL INSTRUMENT, CORRECTED ITS WINDOW, CORRECTED ITS SCOPE, ADDED ITS RATE AND ADDED ITS LOG NAMES - AND
+NONE OF THOSE FOUR CORRECTIONS COULD DISTINGUISH "A FAST COMMANDLET RUNNING REPEATEDLY" FROM "A WORKSTREAM IN TROUBLE",
+BECAUSE ALL FOUR ARE MEASUREMENTS OF ACTIVITY RATHER THAN OF OUTCOME. THE FILE SAID `Success - 0 error(s), 0 warning(s)` THE
+WHOLE TIME. ***
+
+**AND THAT IS THE SAME SHAPE AS EVERY OTHER ERROR IN THIS RECORD, IN A NEW COAT: I KEPT IMPROVING THE INSTRUMENT FOR
+MEASURING THAT SOMETHING WAS HAPPENING INSTEAD OF READING WHAT HAD HAPPENED.** *Section 123's window, 131's scope, 140's rate
+and 141's log names were four real corrections and all four answered the wrong question - "is it alive" - when the answer I
+needed was in the log's own verdict line, which is the same line this project requires every suite to print.*
+
+### 106.2 What is actually owed, and it has not changed
+
+    full run against the new tool     never recorded
+    the close-or-move answer          never given
+    `Tools/test-pure-checks.py`       340 lines, committed twice while iterating, NEVER RUN BY ME
+
+**AND THE LAST OF THOSE IS THE ONE I CAN NOW DO WITHOUT TOUCHING ANY SHARED RESOURCE, WHICH IS WHAT SECTION 140 AND 141 WERE
+TRYING TO PRODUCE.** *The suite is in git, the editor need only be free when I choose to run it, and the workstream's own
+probe has exited zero - so the machine is as available as it is going to get.*
