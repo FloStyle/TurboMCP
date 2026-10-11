@@ -10260,3 +10260,40 @@ THE CRC IS THE PART THAT MAKES IT HONEST. ***
 ### 166.7 Its answer on the spec edit, and the decision is mine to make
 
 **IT NOTES THE COLOUR COUNTS IN THE SPEC TEXT NOW PREDATE THE FINAL BUILD AND ARE SLIGHTLY STALE, AND OFFERS TO REFRESH THEM.** *And it asks again about the do-not-edit list colliding with the append instruction.* **My answer stands: KEEP THE EDIT** - the diff is `+78/-0`, verified additive - **AND THE STALE COUNTS SHOULD BE REFRESHED, because a spec that carries a slightly wrong measurement is worse than one that carries none.** *That is a follow-up, not a condition of this row.*
+
+---
+
+## 167. Round 228: THE STRUCTURAL HOLE IS CLOSED, AND THE GATE PROVED ITSELF BOTH WAYS ON ITS FIRST FULL RUN
+
+    `d64ee2b` THE AUDIT NOW BLOCKS. 53 suites, 0 candidates, and the gate is live in the harness.
+    PROVEN BOTH WAYS: 0 candidates -> PASS exit 0 · 1 candidate -> FAIL exit 1 · probe removed -> PASS exit 0
+
+*** AND IT COULD NOT SIMPLY BE SWITCHED ON, WHICH IS THE PART WORTH KEEPING: IT REPORTED FIVE CANDIDATES AND ALL FIVE WERE FALSE
+POSITIVES. A GATE THAT FAILS HEALTHY CODE IS NOT A GATE, IT IS A REASON TO BYPASS THE GATE. ***
+
+    FOUR were a rule whose PATTERN CONTRADICTED ITS OWN MESSAGE - "a number matched as a substring" against
+    `==\s*\d+` - so it accused `cover_count == 2`, `len(bodies) == 1` twice and `again.count(...) == 2`:
+    COMPUTED VALUES compared to a literal, which no neighbouring number can satisfy.
+    NARROWING IT PRODUCED TEN NEW FALSE POSITIVES, because `"2 binding(s)" in preview` is a LABELLED PHRASE
+    and matching a LABEL is the CORRECT use of a substring test.
+    ONE was `test-graph-structure.py` reported as having NO WAY TO RECORD A FAILURE - it has `results = []`
+    of `(name, bool(ok), detail)` tuples and a `RESULT: FAIL (n)` line. Recognised BY SHAPE now, not by name.
+    *** AND ONE CANDIDATE WAS REAL, SO IT WAS FIXED RATHER THAN TOLERATED: test-widget-preview.py:175 asserted
+    `"4096" in huge`, where ANY 4096 on the line satisfied it. The tool's own message is
+    `error: %dx%d is larger than the %d limit.` (TurboMCPCapture.cpp:434), so the assertion now names THE WHOLE
+    SENTENCE - the sentence is what makes it about a limit. ***
+
+### 167.1 *** AND THE GATE IMMEDIATELY CAUGHT SOMETHING - NOT A CANDIDATE, BUT THE CONTENTION IT WAS BUILT BESIDE ***
+
+    FULL RUN, FIRST TIME WITH THE GATE ACTIVE:  passed 56, failed 1, blocked 0, of 57
+      FAIL test-vcs  RESULT: FAIL (1 of 55) -> NEITHER call touched the wo[rking tree]
+    RE-RUN ALONE: test-vcs RESULT: PASS (55 check(s) run, no check skipped)
+
+*** SO THE ONLY FAILURE IN THE FULL RUN PASSES ALONE AT FULL COUNT, WHICH IS THE FOURTH INDEPENDENT CONFIRMATION OF THE
+EDITOR-CONTENTION HAZARD - AND THE FIRST WHERE THE FAILING CHECK IS ABOUT THE GIT WORKING TREE, WHICH IS EXACTLY THE STATE ANOTHER
+PROCESS CAN MOVE. *** **It is not a regression: `test-vcs` does not read the audit, and the audit's own suite passed inside the same
+run.**
+
+**AND THE HONEST READING OF THIS ROUND IS THAT THE PROJECT'S STRUCTURAL HOLE - THE ONE `REPORT.md` §11.1 NAMED AS THE FIRST THING I
+WOULD SPEND TIME ON - IS NOW CLOSED IN BOTH HALVES: A CHECK FOR CHECKS THAT CANNOT PASS WAS ADDED AND PROVEN ON SIX CASES, AND THE
+EXISTING FIVE FINDINGS WERE DRIVEN TO ZERO AND THE AUDIT MADE TO BLOCK.**
