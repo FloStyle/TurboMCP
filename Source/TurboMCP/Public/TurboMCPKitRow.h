@@ -8,6 +8,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataTable.h"
 #include "UObject/ObjectMacros.h"
 
 #include "TurboMCPKitRow.generated.h"
@@ -56,7 +57,7 @@ struct FTurboMCPKitNested
  * type" the acceptance row requires.
  */
 USTRUCT(BlueprintType)
-struct FTurboMCPKitRow
+struct FTurboMCPKitRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
