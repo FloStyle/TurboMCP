@@ -9620,3 +9620,36 @@ uncertainty - which is the only reason it is worth writing uncertainty into a br
 shape of the work: an extension must match an existing output format it did not choose, and **a selector bolted onto a 792-line
 tool's output has to be consistent with 792 lines of decisions rather than with a spec.*** **The brief's requirement - that
 `neighbours` write its own definition into its output - is the thing that makes that consistency checkable.**
+
+---
+
+## 148. Round 199: L-CAPTURE ALREADY HAS FIVE FRAMINGS, AND THE ROW ASKS FOR FOUR MORE - SO THE ROW IS ADDITIVE, NOT FOUNDATIONAL
+
+    TurboMCPCapture.cpp:43-57, ITS OWN HEADER COMMENT:
+      "L-CAPTURE: picture of an asset editor.
+       `03_TOOLS.md` asks for an asset's editor opened on a tab, FRAMED ONE OF FIVE WAYS, and saved as a PNG.
+       ... the spec lists FIVE FRAMINGS and requires that one which cannot be done is an ERROR RATHER THAN A
+       SILENT FALLBACK to the whole graph.
+       ... the graph editor widget is rendered directly with `FWidgetRenderer`, at the size asked for, after the
+       view is moved to the target. That gives an exact size and an exact frame, and it is the same mechanism
+       `L-WIDGET-PREVIEW` already proved works."
+
+*** SO THREE THINGS ARE NOW MEASURED RATHER THAN ASSUMED, AND ALL THREE CHANGE THE SHAPE OF ROW 2.1: ***
+
+    (1) L-CAPTURE EXISTS AND ALREADY RENDERS, with `FWidgetRenderer` - a mechanism ALREADY PROVED by `L-WIDGET-PREVIEW`
+    (2) IT ALREADY REFUSES an impossible framing BY NAME RATHER THAN FALLING BACK - WHICH IS THE PROJECT'S OWN RULE
+        ALREADY IMPLEMENTED IN THE FILE THE ROW WANTS TO EXTEND
+    (3) `screen` IS ALREADY NAMED AS A THING THIS FILE DELIBERATELY DOES NOT DO: "The engine's
+        `USlateInspectorToolset::Screenshot` captures **what is on screen**. It does not frame, AND FRAMING IS THIS TOOL'S
+        ENTIRE JOB" - SO THE `screen` SELECTOR THE ROW ASKS FOR IS THE ONE MECHANISM THE FILE ALREADY EXPLAINED WHY IT
+        DOES NOT USE
+
+*** (2) IS THE MOST USEFUL OF THE THREE AND IT IS NOT IN THE ROW'S DESCRIPTION: THE FILE ALREADY HAS THE EXACT BEHAVIOUR THE
+BRIEF DEMANDS FOR `screen` - "one which cannot be done is an error rather than a silent fallback" - SO THE WORKSTREAM DOES NOT NEED
+TO INVENT A REFUSAL PATTERN, IT NEEDS TO MATCH ONE THAT IS 792 LINES OLD AND ALREADY TESTED. ***
+
+**AND (3) MEANS THE `screen` ANSWER IS LIKELY ALREADY DECIDED BY THE FILE'S OWN DESIGN RATHER THAN BY `-nullrhi`.** *My brief
+guessed that `-nullrhi` would be the obstacle and pointed at `LaunchEngineLoop.cpp:3343`. **THAT MAY BE TRUE AND IT MAY BE
+IRRELEVANT - the file's stated reason for not using `Screenshot` is that it does not FRAME, which is a DESIGN reason that would
+hold on a real RHI too.*** *** So the brief's named obstacle may not be the operative one, and the operative one is written in the
+file the row is extending. That is the fourth premise correction in four rounds and the SECOND in this row alone. ***
