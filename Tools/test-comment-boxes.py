@@ -39,6 +39,11 @@ GRAPH = "EventGraph"
 # mistake this project has had to fix five times.
 BOX_TEXT = "T-LAY-12 probe"
 
+# A SENTINEL ABOVE THE KEY SPACE. A box key is six hex digits, as the create path prints
+# (`refer to it later as 5acf55`), so a longer key cannot name a box the tool made. It is
+# passed to `delete` to make the tool NAME THE REAL KEYS in its refusal - see `box_keys`.
+MISSING_KEY = "ffffffff"
+
 failures = []
 
 
@@ -78,9 +83,84 @@ def comment_edit(session, action, **kwargs):
 
 
 def box_keys(session):
-    """Every box key in the graph, from the preview that lists them."""
-    out = comment(session, "fit")
-    return re.findall(r"^\s+(\w{6})\s+\"", out, re.MULTILINE), out
+    """Every box key in the graph.
+
+    *** THE FIRST VERSION OF THIS FUNCTION COULD NEVER RETURN A KEY, AND ITS CHECK
+    THEREFORE COULD NEVER FAIL. *** It asked the `fit` action for its listing and
+    matched `^\\s+(\\w{6})\\s+"`. MEASURED: `fit` DOES NOT PRINT KEYS AT ALL - its
+    whole answer is three lines,
+
+        preview: fit in /Game/Tests/BP_NodeTest.BP_NodeTest : EventGraph
+        1 comment box(es) in the graph
+        would fit 1 box(es) to their contents, leaving 40 units of padding
+
+    so the regex matched nothing, `box_keys` returned `[]` ALWAYS, and the suite's
+    closing check `len(final) <= 0` was TRUE ON EVERY RUN INCLUDING ONE THAT LEFT
+    THREE BOXES BEHIND. That is the vacuity this project has now recorded five times:
+    a check over a relationship inherits the vacuity of its input.
+
+    THE ENUMERATION COMES FROM THE TOOL'S OWN REFUSAL, WHICH IS THE ONLY PATH THAT
+    NAMES KEYS. A `delete` for a key that does not exist answers with the real ones:
+
+        error: 'ffffff' is not a comment box in EventGraph. Its boxes are: 5acf55
+
+    The sentinel above the key space is used so this cannot collide with a real key,
+    and the keys are parsed out of that one sentence.
+    """
+    missing = comment(session, "delete", box=MISSING_KEY)
+    listed = re.search(r"Its boxes are: ([^.]*)", missing)
+    if listed is None:
+        return [], missing
+    return re.findall(r"\b([0-9a-f]{6})\b", listed.group(1)), missing
+
+
+def restore_fixture(session):
+    """GIVE THE FIXTURE BACK ON THE WAY IN, AND ASSERT THAT IT WAS GIVEN BACK.
+
+    `Spec/WORKING_PLAN.md` ROW 0.2. This suite removes every box it makes at the end,
+    so it leaves the graph as it found it - ON A RUN THAT REACHES THE END. A run
+    killed part-way does not, and `BP_NodeTest:EventGraph` IS BUILT WITH NO COMMENT
+    BOXES AT ALL (`Spec/06_ACCEPTANCE.md` TA-1, measured: `0 comment box(es) in the
+    graph`). So a leftover box is distinguishable from the built state, and the
+    restore is "this graph holds no box".
+
+    WHY HERE RATHER THAN AT THE END: restoring at the end cannot help the run that
+    crashed, which is the run that caused the problem, and it kills the server the
+    suite is talking to (`WinError 10061`, measured twice on the graph row). This is
+    IN-PROCESS and needs no editor restart.
+
+    RETURNS (ok, detail). `ok` IS FALSE ONLY WHEN A LEFTOVER WAS FOUND AND THE DELETE
+    DID NOT TAKE - a claim about THIS SUITE's own behaviour, which is the only kind of
+    claim a shared fixture permits. A graph that was already box-free is NOT a failure.
+    """
+    keys, _ = box_keys(session)
+    if not keys:
+        return True, "the graph already held no comment box, so nothing was given back"
+
+    print("  the graph held %d comment box(es) this suite did not make: %s"
+          % (len(keys), ", ".join(keys)))
+    print("  a previous run was killed before its own cleanup, so they are removed now.")
+
+    left = []
+    for key in keys:
+        result = comment_edit(session, "delete", box=key)
+        print("  remove %s: %s" % (key, result.strip().splitlines()[0]))
+        if not result.startswith("changed:"):
+            left.append(key)
+
+    # READ BACK THROUGH THE ENUMERATION, because the delete's own sentence is not evidence.
+    remaining, _ = box_keys(session)
+    if remaining or left:
+        return False, ("the restore left %s behind" % ", ".join(left or remaining))
+
+    # The deletes only change the in-memory asset. A repair that is not written back is
+    # undone by the next editor restart, which is what makes residue durable - measured
+    # on the override fixture, where a saved leftover survived a stop and a start.
+    saved = session.call(EDIT_TOOLSET, "EditTurboMCPSave", {"assets": ASSET})
+    if "1 saved" not in saved and "0 failed" not in saved:
+        return False, "the repaired fixture could not be saved: %s" % saved.strip()[:120]
+
+    return True, "the graph was given back with no comment box left in it"
 
 
 def main():
@@ -95,6 +175,18 @@ def main():
     # reads the boxes on the same asset and expects none. Cleaning up by a marker is a guess about
     # what was made; a key is the thing itself.
     created = []
+
+    # THE FIXTURE IS GIVEN BACK BEFORE ANYTHING IS TESTED, AND THE GIVING BACK IS
+    # ASSERTED - `Spec/WORKING_PLAN.md` row 0.2. See `restore_fixture` for why this
+    # belongs on the way in and why the closing cleanup alone could never have fixed a
+    # run that was killed part-way.
+    restored, detail = restore_fixture(session)
+    check("the fixture was restored on the way in", restored, detail)
+    if not restored:
+        print()
+        print("RESULT: FAIL (the graph could not be given back, so nothing below "
+              "could be tested on a known fixture)")
+        return 1
 
     keys, text = node_keys(session)
     print("=== the graph has node keys: %s ===" % ", ".join(keys))

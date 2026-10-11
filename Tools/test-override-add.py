@@ -64,23 +64,113 @@ def override_counts(session):
     return None, text
 
 
+def reads_as_overridden(session, name):
+    """True when R-OVERRIDES reports `name` as overridden in THIS Blueprint.
+
+    THE WITNESS IS A DIFFERENT TOOL FROM THE ONE THAT DID THE REMOVAL, which is this
+    project's rule: a tool's own report of what it removed is not evidence.
+
+    PARSED BY WALKING THE LINES, AND THAT SHAPE WAS MEASURED RATHER THAN ASSUMED. The
+    first version split the answer on a blank line and looked for the name's own
+    block. MEASURED: THE ANSWER HAS NO BLANK LINES AT ALL - it is 24 entries in a row,
+    each a name line followed by indented `state:`/`from:` lines:
+
+        ReceiveActorOnClicked : (FKey ButtonPressed)  [event]
+            state: overridden here
+            from: /Script/Engine.Actor
+        ReceiveActorOnInputTouchBegin : (...)  [event]
+            state: available
+
+    so `split("\\n\\n")` returned ONE block, the name never matched a block start, and
+    the check answered "not overridden" EVERY TIME - A CHECK THAT COULD NEVER FAIL in
+    the direction that mattered. It reported the dirty fixture as clean and the suite
+    then failed six checks later, on the tool rather than on the fixture.
+
+    A NAME LINE IS ONE THAT DOES NOT START WITH WHITESPACE, so the indentation is what
+    separates an entry from its own state - not a separator character this would have
+    to guess.
+    """
+    text = session.call(READ_TOOLSET, "ReadTurboMCPOverrides",
+                        {"asset": ASSET, "filter": "", "include": "", "limit": ""})
+    in_block = False
+    for line in text.splitlines():
+        if line[:1] not in (" ", "\t", "") and not line.startswith("read:"):
+            # A new entry. Only an exact name match counts, so `ReceiveActorOnClicked`
+            # is never confused with a longer neighbour that starts the same way.
+            in_block = line.split(":", 1)[0].strip() == name
+            continue
+        if in_block and line.strip() == "state: overridden here":
+            return True
+    return False
+
+
+def restore_fixture(session):
+    """GIVE THE FIXTURE BACK ON THE WAY IN, AND ASSERT THAT IT WAS GIVEN BACK.
+
+    `Spec/WORKING_PLAN.md` ROW 0.2. This suite owns ONE event and removes its own
+    override at the end, so it leaves the asset as it found it - ON A RUN THAT
+    REACHES THE END. A run killed part-way does not, and the residue is DURABLE:
+    MEASURED, an override added here and saved with E-SAVE was still present after
+    the editor was stopped and started again (5 overridden -> 6).
+
+    WHAT THE FIRST VERSION DID, AND WHY THAT IS NOT A RESTORE. It DETECTED the
+    residue and then FAILED, with `RESULT: FAIL (ReceiveActorOnClicked was left
+    overridden by an earlier run)`. That is a suite that REPORTS a dirty fixture, not
+    one that RECOVERS from it - so a single interrupted run made every later run red
+    until a human cleaned up by hand. MEASURED TWICE on the dirty fixture before this
+    change, both runs failing on the same line.
+
+    WHY THE RESTORE BELONGS HERE RATHER THAN AT THE END. Restoring at the end cannot
+    help the run that crashed, which is the run that caused the problem; and it kills
+    the server the suite is talking to (`WinError 10061`, measured twice on the graph
+    row). This is IN-PROCESS and needs no editor restart: `E-OVERRIDE-REMOVE` is the
+    suite's own tool and it works against the live editor.
+
+    RETURNS (ok, detail). `ok` IS FALSE ONLY WHEN THE RESTORE WAS NEEDED AND DID NOT
+    TAKE - a claim about THIS SUITE's own behaviour, which is the only kind of claim
+    a shared fixture permits. A fixture that was already clean is NOT a failure.
+    """
+    if not reads_as_overridden(session, OWNED):
+        return True, "%s was already free, so nothing had to be given back" % OWNED
+
+    print("  %s is ALREADY overridden. A previous run was killed before its own" % OWNED)
+    print("  cleanup, so this suite gives the fixture back BEFORE testing anything.")
+
+    removal = session.call(EDIT_TOOLSET, "EditTurboMCPOverrideRemove",
+                           {"asset": ASSET, "functionOrEvent": OWNED})
+    print("  remove: %s" % removal.strip().splitlines()[0])
+
+    # READ BACK THROUGH R-OVERRIDES, because the removal's own sentence is not evidence.
+    if reads_as_overridden(session, OWNED):
+        return False, ("E-OVERRIDE-REMOVE ran and R-OVERRIDES still reports %s as "
+                       "overridden here" % OWNED)
+
+    # The removal only changes the in-memory asset, and the residue this repairs was
+    # SAVED - so the repair is saved too. A repair that is not written back is undone
+    # by the next editor restart, which is precisely how the residue became durable.
+    saved = session.call(EDIT_TOOLSET, "EditTurboMCPSave", {"assets": ASSET})
+    if "1 saved" not in saved and "0 failed" not in saved:
+        return False, "the repaired fixture could not be saved: %s" % saved.strip()[:120]
+
+    return True, "%s was overridden by an earlier run and has been given back" % OWNED
+
+
 def main():
     session = Session()
     session.connect()
 
-    # The suite owns one event and gives it back. If a previous run left it behind — which it can
-    # if that run crashed after the edit — the leftover is reported rather than silently reused,
-    # and the already-overridden case below is where it shows up.
+    # The suite owns one event and gives it back. THE GIVING BACK HAPPENS HERE, ON THE
+    # WAY IN, AND IT IS ASSERTED - see `restore_fixture` for why the first version's
+    # detect-and-fail was a report rather than a restore.
     FREE = OWNED
-    _, text = override_counts(session)
-    if FREE in text:
-        tail = text.split(FREE, 1)[-1].split("\n")
-        if any("state: overridden here" in line for line in tail[:2]):
-            print("  %s is ALREADY overridden, which a previous run must have left behind."
-                  % FREE)
-            print("  The suite owns this event and gives it back; that run did not finish.")
-            print("RESULT: FAIL (%s was left overridden by an earlier run)" % FREE)
-            return 1
+    restored, detail = restore_fixture(session)
+    check("the fixture was restored on the way in", restored, detail)
+    if not restored:
+        print()
+        print("RESULT: FAIL (%s could not be given back, so nothing below could be "
+              "tested on a known fixture)" % FREE)
+        return 1
+
     print("=== the suite owns %s, and will remove its override at the end ===" % FREE)
 
     print()
