@@ -1267,6 +1267,47 @@ public:
 	static FString PreviewTurboMCPDataTableRows(
 		const FString& Asset,
 		const TArray<FString>& Rows);
+
+	/**
+	 * Plan copying a block of nodes from one graph to another, and write nothing.
+	 *
+	 * The boundary comes from the links that CROSS the selection rather than from a pin list
+	 * (`D-47`), and there are THREE outcomes rather than two: a crossing link whose far end is
+	 * reachable in the target is re-linked, one whose far end is not is REPORTED BY NAME and left
+	 * unconnected, and a member the target asset does not declare REFUSES the whole copy and names
+	 * every missing one - because half a block is worse than none.
+	 *
+	 * IT IS IN THIS TOOLSET, WHICH HOLDS NO TOOL THAT CAN CHANGE AN ASSET, so the plan cannot write
+	 * even by accident. Its Edit twin reaches the same plan, so everything refused here is refused
+	 * there in the same words.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphCopy(
+		const FString& SourceAsset,
+		const FString& SourceGraph,
+		const TArray<FString>& NodeIds,
+		const FString& TargetAsset,
+		const FString& TargetGraph,
+		const FString& AnchorNodeId);
+
+	/**
+	 * Plan extracting a selection into a function or a macro, and write nothing.
+	 *
+	 * `E-GRAPH-COLLAPSE` IS MEASURED REACHABLE BUT NOT YET BUILT, and this half says so rather than
+	 * refusing vaguely: the engine's own `FBlueprintEditor::CollapseNodesIntoGraph` is a member of an
+	 * ASSET-EDITOR UI OBJECT (`BlueprintEditor.h:1125`), and whether that instance can be constructed
+	 * outside an open asset editor is the ONE question the measurement left open. Everything the plan
+	 * checks - the boundary, the refusal of an entry, event or result node by name, and the refusal of
+	 * a selection with no exec boundary - is decided here, so the Preview and a future Edit twin
+	 * cannot disagree about what is acceptable.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphCollapse(
+		const FString& Asset,
+		const FString& GraphName,
+		const TArray<FString>& NodeIds,
+		const FString& MemberName,
+		const FString& MemberKind);
 };
 
 /**

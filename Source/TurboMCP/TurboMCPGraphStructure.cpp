@@ -15,6 +15,7 @@
 #include "EdGraph/EdGraphSchema.h"
 #include "EdGraphSchema_K2_Actions.h"
 #include "Engine/Blueprint.h"
+#include "K2Node.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
@@ -748,9 +749,26 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		// `UK2Node_CallFunction` keeps the function it calls. It also allocates the default pins, which is
 		// mandatory on any node created outside the editor - this project has had one crash and one silent
 		// corruption from omitting that step.
+		//
+		// *** IT TAKES A `UK2Node*`, NOT A `UEdGraphNode*`, AND THAT IS AN ENGINE CONSTRAINT RATHER THAN A
+		// CHOICE: its `CreateNode` overload (`EdGraphSchema_K2_Actions.h:130`) declares the template parameter
+		// as `UK2Node*`, so instantiating with `UEdGraphNode` does NOT COMPILE - measured, `error C2665` at
+		// `EdGraphSchema_K2_Actions.h(102,25)`. A graph can hold nodes that are not K2 nodes, so the cast is
+		// CHECKED and a non-K2 node is REFUSED BY NAME rather than silently skipped, because a copy that
+		// quietly left a node behind is the worst outcome this function can produce. ***
+		UK2Node* Template = Cast<UK2Node>(Source);
+		if (Template == nullptr)
+		{
+			Transaction.Cancel();
+			OutError = FString::Printf(
+				TEXT("'%s' (%s) is not a K2 node, so this tool cannot copy it. NOTHING was written."),
+				*KeyOf(Source), *Source->GetClass()->GetName());
+			return false;
+		}
+
 		const FVector2D Location(Source->NodePosX + 40.0f, Source->NodePosY + 40.0f);
-		UEdGraphNode* Made = FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate<UEdGraphNode>(
-			TargetGraph, Source, Location, /*bSelectNewNode=*/false);
+		UEdGraphNode* Made = FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate<UK2Node>(
+			TargetGraph, Template, Location, /*bSelectNewNode=*/false);
 
 		if (Made == nullptr)
 		{
