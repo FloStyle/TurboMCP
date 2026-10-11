@@ -700,6 +700,41 @@ public:
 	static FString ReadTurboMCPPureChecks(
 		const FString& Toolsets,
 		const FString& Arguments);
+
+	/**
+	 * Read what source control holds for each asset, and refuse by name when it holds nothing.
+	 *
+	 * Pass assets separated by commas or pipes, in any path form; pass nothing to read only whether the
+	 * project has source control on and which provider is selected.
+	 *
+	 * BOTH OF THE ENGINE OWN QUESTIONS ARE ASKED, IN ITS OWN ORDER, BEFORE ANYTHING ELSE IS TOUCHED:
+	 * whether a provider is selected at all, and whether that provider is available. `SourceControlHelpers.cpp:61-85`
+	 * is the engine own gate and it asks exactly these two. BOTH ARE REQUIRED, and that is measured rather than
+	 * defensive: Perforce (`PerforceSourceControlProvider.cpp:232-235`), Plastic
+	 * (`PlasticSourceControlProvider.cpp:283-286`) and Subversion (`SubversionSourceControlProvider.cpp:79-82`)
+	 * answer the FIRST with true UNCONDITIONALLY while the second is false without a server - so a tool that
+	 * asked only the first would report a working provider where there is none, which is the one answer this
+	 * tool must never give.
+	 *
+	 * WHEN EITHER ANSWER IS NO, EVERY ASSET IS REFUSED BY NAME, with the engine own wording reproduced
+	 * verbatim: `"Revision control is not enabled."` (`SourceControlHelpers.cpp:67`) or
+	 * `"Revision control server is currently not available."` (`:76`). NO PROVIDER CALL IS MADE AT ALL,
+	 * because with the default provider `GetState` returns Failed with a NULL state
+	 * (`DefaultSourceControlProvider.cpp:52-60`) that a reader can mistake for "not under source control".
+	 * No state is printed and no zero is printed, for the same reason (`P1`).
+	 *
+	 * WHEN BOTH PASS, each asset reports: whether it is under source control, whether it is checked out here,
+	 * whether it is out of date with respect to the depot, whether it is modified, and the provider own text
+	 * for its state. A provider that hands back NO state even so is reported as UNKNOWN WITH THE REASON
+	 * rather than as "not under source control", because an absent measurement is not a measured absence.
+	 *
+	 * ITS EDIT TWIN IS `EditTurboMCPVcsCheckout` and its preview is `PreviewTurboMCPVcsCheckout`; all three
+	 * read one plan, so they refuse the same input in the same words.
+	 *
+	 * THIS IS A READ TOOL. It never checks anything out and it never writes a file.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPVcsState(const FString& Assets);
 };
 
 /**
@@ -1400,6 +1435,30 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPStructFields(const FString& Struct, const FString& Changes);
+
+	/**
+	 * Work out what a checkout would do, per asset, without checking anything out.
+	 *
+	 * Pass assets separated by commas or pipes, or nothing to read only the provider facts.
+	 *
+	 * IT RUNS THE SAME PLAN AS ITS EDIT TWIN, so every refusal here is the identical refusal there:
+	 * with no usable provider, each asset is refused by name with the engine own string and no provider
+	 * call is made at all (`SourceControlHelpers.cpp:67`, `:76`). The two questions - is a provider
+	 * selected, and is it available - are asked in that order and both are required, because Perforce,
+	 * Plastic and Subversion all answer the first with true unconditionally.
+	 *
+	 * AND IT STATES WHAT A CHECKOUT WOULD MEAN, WHICH IS NOT THE SAME ON EVERY PROVIDER. Where the
+	 * provider reports `UsesCheckout() == false`, a checkout is a NO-OP BY CONSTRUCTION: that provider has
+	 * no lock command, so every tracked file in the working copy is already checked out
+	 * (`GitSourceControlModule.cpp:21`). The preview says so rather than implying a lock would be taken.
+	 * Where it reports true - Perforce `:622-625`, Subversion `:239-242`, Plastic `:498-501` - a real lock
+	 * is the point of the call.
+	 *
+	 * WRITES NOTHING AND CANNOT: it is in this toolset, which holds no tool that can change an asset, and
+	 * a checkout is issued only by the Edit twin.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPVcsCheckout(const FString& Assets);
 };
 
 /**
@@ -2058,6 +2117,36 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPStructFields(const FString& Struct, const FString& Changes);
+
+	/**
+	 * Take the lock before a write: check one or more assets out through the project own provider.
+	 *
+	 * `03_TOOLS.md` section 17 is the requirement and `D-57` the ordering decision: this capability is
+	 * built and tested BEFORE any write tool calls it, and no automatic checkout happens anywhere until
+	 * this tool own tests pass.
+	 *
+	 * IT GOES THROUGH `ISourceControlModule` OWN PROVIDER rather than shelling out to `p4` or `git`,
+	 * exactly as the spec asks. With assets given, its Edit half issues an `FCheckOut` operation through
+	 * that provider and repeats the provider own answer verbatim, including the messages the provider
+	 * attached to the operation. With no assets it only reads, and nothing is issued.
+	 *
+	 * IT REFUSES EXACTLY WHAT `PreviewTurboMCPVcsCheckout` REFUSES, because both read one plan: the two
+	 * engine questions are asked first, both are required, and with no usable provider every asset is
+	 * refused by name with the engine own string while NO PROVIDER IS REACHED - the refusal is not a
+	 * failure of a call, it is a decision not to make one.
+	 *
+	 * *** AND IT SAYS WHEN A CHECKOUT CANNOT MEAN ANYTHING. *** Where the provider reports
+	 * `UsesCheckout() == false` the answer states plainly that a checkout is a NO-OP on it, because that
+	 * provider has no lock command (`GitSourceControlModule.cpp:21`, `GitSourceControlProvider.cpp:286-289`),
+	 * and then records what the provider actually answered rather than predicting one. A tool that implied
+	 * it had taken a lock on a provider that has none would be lying about the one thing this capability
+	 * exists to guarantee.
+	 *
+	 * THIS TOOL WRITES NO FILE. A checkout is a source control operation; the asset contents are untouched,
+	 * and no save happens here.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPVcsCheckout(const FString& Assets);
 };
 
 /**
