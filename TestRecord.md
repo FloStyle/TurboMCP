@@ -7361,3 +7361,51 @@ shape this record has now recorded against four other workstreams and twice agai
 WHETHER THE PURE COMMANDLET'S "DELIBERATELY NO STATIC INITIALISER" COMMENT IS DESCRIBING A CONSTRAINT OR A CHOICE. If it
 is a choice, adding the load is a two-line fix and the vacuity debt's most concrete item becomes provable. If it is a
 constraint, the file's whole reason for existing is unreachable and THAT belongs in the record rather than in a comment. ***
+
+---
+
+## 74. The inquiry resolved: THE PURE COMMANDLET IS STRUCTURALLY UNREACHABLE, and the fix is a relocation rather than a repair
+
+**SECTION 73 ASKED ONE QUESTION: does the pure commandlet's "deliberately NO static initialiser" comment describe a
+CONSTRAINT or a CHOICE? IT IS ANSWERED, AND THE ANSWER IS BOTH - a choice made BECAUSE OF a constraint.**
+
+### The three measurements that settle it
+
+    make-kit-assets.ps1:57   -run=TurboMCP.TurboMCPKitCommandlet   <- THE SAME SHAPE I USED, WITH THE MODULE PREFIX
+    TurboMCPKitCommandlet.cpp  grep for a static initialiser / LoadModule  -> ZERO MATCHES
+    TurboMCPCallCostCommandlet.h:30-33
+        "HOW IT IS INVOKED. `-run=TurboMCP.TurboMCPCallCostCommandlet`, WITH THE MODULE PREFIX, because the engine
+         calls `LoadModule` only when the token contains a period. There is deliberately NO static initialiser
+         calling `LoadModule`: `TurboMCPKitCommandlet.h` records that THIS WAS TRIED AND CRASHED WITH AN ACCESS
+         VIOLATION."
+
+*** SO THE KIT HAS NO STATIC INITIALISER EITHER, IS INVOKED WITH THE MODULE PREFIX EXACTLY AS I INVOKED THE PURE ONE,
+AND WORKS - WHILE THE PURE ONE CRASHES WITH `InModuleName != NAME_None` THEN `IsValid()`. AND THE ALTERNATIVE PATH WAS
+ALREADY TRIED BY A PREVIOUS WORKSTREAM AND CRASHED DIFFERENTLY. BOTH ROUTES TO RUNNING A PURE COMMANDLET IN THIS TREE ARE
+CLOSED, AND ONE OF THEM WAS CLOSED BY MEASUREMENT BEFORE I GOT HERE. ***
+
+### 74.1 WHAT THIS MEANS FOR THE VACUITY DEBT, AND THE FIX IS NOT A REPAIR
+
+**THE COMMANDLET CANNOT BE MADE TO RUN, SO ITS ASSERTIONS CANNOT BE MADE TO EXECUTE WHERE THEY ARE.** *But the thing it
+tests - `NormaliseToolset` as a pure function with LITERAL inputs, which the MCP suite STRUCTURALLY CANNOT test because
+it cannot make the engine emit a qualified toolset name - is still worth testing.*
+
+*** AND THE PROJECT ALREADY HAS A COMMANDLET THAT RUNS, IS INVOKED WITH THE MODULE PREFIX, WRITES ASSETS, VERIFIES ITS OWN
+STRUCTURE AND EXITS ZERO: `TurboMCPKitCommandlet`, HARNESSED BY `make-kit-assets.ps1`. SO THE FIX IS A RELOCATION - PUT
+THE PURE ASSERTIONS SOMEWHERE THAT IS ALREADY PROVEN TO RUN - RATHER THAN A REPAIR OF THE THING THAT DOES NOT. ***
+
+**AND IT IS THE SAME LESSON THE PROJECT LEARNED ABOUT `R-ASSET-COST`'s path slicing AND ABOUT THE GRAPH LEXER: when a
+second, weaker implementation of something the project already has appears, the answer is to use the one that WORKS
+rather than to perfect the one that does not.**
+
+### 74.2 What is now recorded that was not before this round pair
+
+    BEFORE   "TurboMCPCallCostCommandlet compiles and cannot be run here"  - AN ASSERTION, NEVER TESTED
+    AFTER    IT COMPILES AND CANNOT BE RUN: exit 3, `InModuleName != NAME_None`, then `IsValid()` in FModuleManager.
+             The bare name gives "looked like a commandlet, but was not found" - THE MODULE PREFIX IS REQUIRED AND IS
+             WHAT I FIRST OMITTED. AND THE STATIC-INITIALISER ALTERNATIVE WAS ALREADY TRIED AND CRASHED WITH AN
+             ACCESS VIOLATION.
+
+*** SO THERE ARE NOW FOUR ROUTES ON RECORD AND TWO OF THEM ARE CLOSED BY MEASUREMENT: BARE NAME (not found), MODULE
+PREFIX (crashes), STATIC INITIALISER (crashed for a previous workstream), AND RELOCATION INTO A COMMANDLET THAT IS
+PROVEN TO RUN (untried, and the only one of the four that can produce the assertions the file exists for). ***
