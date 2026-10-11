@@ -8684,3 +8684,21 @@ seconds, and checking does not make it faster.***
 
 **SO THE ENTRY IS: NOTHING NEW, THE CHECK IS CHEAP, AND THE INTERVAL IS THE THING TO NOTICE.** *The next round runs the same
 command; if several rounds pass with no milestone, **that** is the signal - not one.*
+
+---
+
+## 119. Round 160: twenty-three more seconds, and the record stops writing entries about the sampling interval
+
+    MEASURED   main = origin/main = 6f32dbd   ·   86 tools   ·   four milestones absent
+               clock 06:23:59; round 159 read 06:23:36
+
+**SECTION 159 SAID THE INTERVAL WAS THE THING TO NOTICE, AND THIS ROUND HAS NOTHING TO ADD TO THAT OBSERVATION EXCEPT ITS
+REPETITION.** *Writing a third entry about twenty seconds is exactly the kind of measurement-about-the-action this record spent
+sections 140 to 156 learning not to do.*
+
+*** SO THE ROUND IS A CHECK AND A LINE: THE MILESTONES ARE THE SAME FOUR ABSENCES, THE TOOL COUNT IS THE SAME 86, AND THE ONLY
+HONEST THING LEFT TO SAY IS THAT NOTHING HAS CHANGED AND THAT SAYING SO AGAIN IS NOT PROGRESS. ***
+
+**AND THE USEFUL DISCIPLINE GOING FORWARD, WHICH THIS ROUND APPLIES RATHER THAN DESCRIBES: CHECK THE NAMED MILESTONES, AND
+WRITE AN ENTRY ONLY WHEN ONE OF THEM MOVES OR WHEN SEVERAL ROUNDS HAVE PASSED WITHOUT ONE.** *Anything in between is the
+sampling interval talking.*
