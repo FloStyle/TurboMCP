@@ -9265,3 +9265,87 @@ REBUILDS ARE EVIDENCE THAT SOMETHING IS HAPPENING AND THEY ARE NOT EVIDENCE ABOU
 **WHAT I WILL NOT DO IS CHANGE THE PLAN OR THE BRIEF BECAUSE OF A TIMESTAMP PATTERN.** *The row owes a full run, the workstream
 says it is in flight, its suite has already passed at 55 checks, and the tree holds nothing uncommitted - **so every fact I have is
 either satisfied or pending, and none of them is a reason to act.***
+
+---
+
+## 140. *** ROW 10.1 COMPLETE: test-vcs PASS AT 55 CHECKS, FULL RUN 54 OF 54, AND THE PREVIOUS ROW'S OPEN ITEM CLOSED ***
+
+    BUILD Result: Succeeded · test-vcs RESULT: PASS (55 check(s) run, no check skipped)
+    AUDIT PASS, uncalled: (none), 93 AICallable tools (was 90, +3), parsed 93 of 93
+    FULL RUN passed 54, failed 0, blocked 0, of 54   (was 53; +test-vcs)
+    COMMITS a26bc67, cc0aadf, c0ad1a6 - and it checked its own baseline FIRST (test-vcs.py did not exist)
+    THREE TOOLS IN ONE `Plan`: ReadTurboMCPVcsState, PreviewTurboMCPVcsCheckout, EditTurboMCPVcsCheckout
+
+### 140.1 The honest limit the PREVIOUS row left open is closed by MEASUREMENT
+
+    `Spec/WORKING_SCROW.md` section 5 item 6: "a Git checkout was deliberately NOT run, so Git's checkout ANSWER is
+    unmeasured - GitSourceControlProvider.cpp:257-260/:286-289 PREDICT a no-op, AND A PREDICTION IS NOT A MEASUREMENT."
+    NOW RUN: `ECommandResult::Failed` plus the provider's own
+      "Operation 'CheckOut' not supported by revision control provider 'Git'"
+    produced at the worker lookup (`GitSourceControlProvider.cpp:225-238`) BEFORE ANY COMMAND RUNS.
+    AND `git status --porcelain` ON THE FIXTURE IS EMPTY BEFORE AND AFTER - A THIRD TOOL CONFIRMS NOTHING WAS TOUCHED.
+
+### 140.2 *** AND THE `P1` REFUSAL IS NOW A MEASUREMENT RATHER THAN AN ARGUMENT ***
+
+    NO PROVIDER:  IsEnabled() : false
+                  IsAvailable() : NOT ASKED, because IsEnabled() was already false
+                  UsesCheckout() : NOT READ, because no provider was selected
+                  REFUSED per asset: "Revision control is not enabled."   (SourceControlHelpers.cpp:67)
+                  NOTHING WAS ASKED OF ANY PROVIDER FOR THIS ASSET.
+    PERFORCE:     IsEnabled() : true
+                  IsAvailable() : false
+                  UsesCheckout() : true
+                  REFUSED: "Revision control server is currently not available."  (SourceControlHelpers.cpp:76)
+
+*** `IsAvailable()` IS PRINTED AS `NOT ASKED` RATHER THAN `false`, AND THAT IS `P1` IN ONE LINE - `false` WOULD READ AS A
+MEASURED "THE SERVER IS DOWN". AND PERFORCE ANSWERING `IsEnabled() true` WITH `IsAvailable() false` IS THE MEASURED PROOF, ON
+THE PROVIDER WHOSE `UsesCheckout() == true` IS WHY THE CAPABILITY EXISTS, THAT A TOOL ASKING ONLY THE FIRST WOULD REPORT A
+WORKING PROVIDER WHERE THERE IS NONE. ***
+
+**AND `SetProvider` WAS NEVER CALLED ANYWHERE - THE FATAL PATH (`SourceControlModule.cpp:404-417`) - WITH `GetProviderNames` USED
+ONLY TO PRINT THE REGISTRY'S OWN LIST.** *No provider call is made on a refusal, which is why the Perforce editor survives.*
+
+### 140.3 Its cross-tool read-back found a TRAP rather than a confirmation, and it is the finding that changes row 10.2
+
+**`USourceControlHelpers::CheckOutFile` ANSWERS `True` ON GIT AND NEVER ISSUES A CHECKOUT** - it returns early at
+`SourceControlHelpers.cpp:456-460` because Git reports `IsCheckedOut() == true` **for every tracked file**, which is the very
+line this tool prints for the same asset. *So the helper's `true` means "the state says it is already checked out", NOT "a lock
+was taken".* *** THE TOOL GOES THROUGH `Execute` AND RECORDS THE OPERATION'S REAL ANSWER; THE TWO ARE NOT IN CONFLICT, THEY
+ANSWER DIFFERENT QUESTIONS, AND THE SUITE ASSERTS BOTH SO NEITHER CAN BE MISTAKEN FOR THE OTHER. FOR 10.2: DO NOT WIRE
+AUTOMATIC CHECKOUT TO THAT BOOLEAN. ***
+
+### 140.4 And it replaced a check whose failing input was somebody ELSE's `git add`
+
+**The Git phase first asserted the two real assets got DIFFERENT states. They do - but that made the suite depend on a file
+staying untracked, so SOMEBODY ELSE'S `git add` WOULD HAVE TURNED A GREEN SUITE RED FOR A REASON UNRELATED TO THIS CAPABILITY.**
+*It now asserts the per-asset decision from the CALLER'S argument and **PRINTS** the tracked/untracked observation:
+`the two real assets read as: ['true', 'false']  (printed, NOT asserted - it depends on the git index)`.* *** That is the same
+defect class this project has recorded five times, caught by its author before it shipped. ***
+
+### 140.5 The proof, and the six checks it reddened with the WRONG VALUE VISIBLE
+
+**Four deliberate breaks built into `TurboMCPSourceControl.cpp`** - the refusal literal paraphrased, `under source control: false`
+added to the refusal branch, and both no-op sentences reworded away - and **SIX named checks went red**, the third being *`P1`
+itself*: `FAIL and NO state is reported for any of them, so no false 'not under source control' can be read` with the offending
+line shown. *Then restored: `git checkout`, `git diff --stat` clean under `Source/`, the broken literals absent by grep, rebuilt,
+`RESULT: PASS (55 check(s) run, no check skipped)`.*
+
+### 140.6 And it updated my own section-184 record with the same collision from the other side
+
+**ITS FIRST FULL RUN GAVE `53 of 54` - `test-json`, `no result line`, tail `URLError WinError 10061` with the harness printing
+`[editor] *** COULD NOT BE STARTED after the full timeout ***`.** *And it established that this is not its suite's fault:
+**`test-json` RUNS BEFORE `test-vcs` ALPHABETICALLY.*** It re-ran `test-json` alone - PASS - then re-ran clean and got **54 of 54**.
+*** SO THE SAME TWO-EDITOR-OWNERS COLLISION APPEARED AS MY `test-vcs` FAILURE AND AS ITS `test-json` FAILURE, AND THERE IS NOW A
+RECORDED CASE FROM EACH SIDE. ***
+
+### 140.7 What is still unmeasured, stated by its own author
+
+    PLASTIC and SUBVERSION remain unreachable (`cm`, `svn` not on PATH); their AVAILABLE branch was NEVER SEEN
+    NO CHECKOUT AGAINST A LIVE DEPOT WAS EVER PERFORMED - "what Perforce does when it is available headless is STILL
+    unmeasured and it is the thing 10.2 needs most"
+    `Tools/start-editor.ps1` CANNOT PASS `-SCCProvider=` (no pass-through arguments), so the suite launches the editor
+    directly for the two provider phases - A FINDING ABOUT THE HARNESS RATHER THAN THE CAPABILITY
+    *** AND THE ONE HARDENING IT WOULD DO NEXT, WHICH IS THE COLUMN THIS WHOLE RECORD HAS BEEN FILLING: "MY SUITE DOES
+    NOT DETECT A FOREIGN EDITOR ON PORT 8000. If a second harness is running, check-mcp-server.py CAN PASS AGAINST
+    SOMEONE ELSE'S EDITOR and my provider checks then fail with 'the provider is not Git' RATHER THAN 'ANOTHER PROCESS
+    OWNS THE PROJECT'." ***
