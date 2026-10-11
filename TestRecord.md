@@ -10297,3 +10297,30 @@ run.**
 **AND THE HONEST READING OF THIS ROUND IS THAT THE PROJECT'S STRUCTURAL HOLE - THE ONE `REPORT.md` §11.1 NAMED AS THE FIRST THING I
 WOULD SPEND TIME ON - IS NOW CLOSED IN BOTH HALVES: A CHECK FOR CHECKS THAT CANNOT PASS WAS ADDED AND PROVEN ON SIX CASES, AND THE
 EXISTING FIVE FINDINGS WERE DRIVEN TO ZERO AND THE AUDIT MADE TO BLOCK.**
+
+---
+
+## 168. Round 230: TWO OF THE FIVE PRIORITIES ARE DELIVERED, AND THE TWO ARE THE ONES THAT NEEDED NOTHING THIS MACHINE LACKS
+
+    `1bb1e5e` check-mcp-server.py names the foreign editor - proven on three cases, exit 3, editor stopped after
+    `d64ee2b` the suite-quality audit BLOCKS - 0 candidates, proven both ways
+    `REPORT.md` now carries a table saying which of the five are done
+
+*** AND THE PATTERN IN WHICH TWO GOT DONE IS THE USEFUL PART: THE STRUCTURAL HOLE AND THE FOREIGN-EDITOR CHECK ARE THE TWO THAT
+REQUIRED NO RESOURCE THIS ENVIRONMENT CANNOT SUPPLY. The three that remain are bounded by things I cannot change from here - a source
+control server that answers, a kit of assets that do not exist, and thirty writers that are VOLUME rather than discovery. ***
+
+**SO THE REMAINING LIST IS NOT A BACKLOG OF THINGS I HAVE BEEN AVOIDING. IT IS A LIST OF THINGS THIS MACHINE CANNOT SUPPLY OR THAT NEED
+REPETITION RATHER THAN INSIGHT** - and that distinction is worth writing down precisely because "five things I would take time on" reads
+as five equivalent items until you notice that two of them were finishable today and three were not.
+
+### 168.1 And both of the delivered ones needed THREE CORRECTIONS, each a false positive or a wrong message
+
+    THE AUDIT:    five candidates, ALL FIVE FALSE POSITIVES, from a rule whose pattern contradicted its own
+                  message and from assuming a suite must name its failure list `failures`
+    THE OWNER:    `os` not imported; "no editor process" treated as "a foreign project owns the port" - THE SAME
+                  FALSE-POSITIVE CLASS; and a generic RESULT line that named the wrong cause
+
+*** SO THE THING THAT MADE BOTH OF THEM POSSIBLE WAS READING THEIR OWN OUTPUT ON HEALTHY INPUT BEFORE TRUSTING THEM ON UNHEALTHY INPUT.
+A gate that fires on correct code is not a gate, and a diagnostic that names the wrong cause is worse than a vague one - the same
+sentence in two subsystems, found in the same stretch. ***
