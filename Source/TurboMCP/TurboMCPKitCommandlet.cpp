@@ -16,6 +16,13 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Engine/DataTable.h"
+
+// TA-17. `UCurveFloat` carries a PUBLIC `FRichCurve`, and `UCurveTable` is built through its own
+// public `AddRichCurve`, so both halves are Data-only and need no factory. Both headers belong to the
+// Engine module, which `TurboMCP.Build.cs` already lists, so this adds no dependency.
+#include "Curves/CurveFloat.h"
+#include "Engine/CurveTable.h"
+
 #include "Materials/MaterialParameterCollection.h"
 #include "TurboMCPKitRow.h"
 #include "Engine/UserDefinedEnum.h"
@@ -1881,6 +1888,277 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 		{
 			Builder.SaveContainer(Collection, TEXT("TA-20"), Ta20.Name);
 		}
+	}
+
+	// ---------------------------------------------------------------------------------------------
+	// TA-17: A CURVE FLOAT WITH FIVE KEYS AND NON-ZERO TANGENTS, AND A CURVE TABLE WITH THREE ROWS.
+	//
+	// `Spec/06_ACCEPTANCE.md:32` asks for *"Curve float and a curve table | A curve with 5 keys and
+	// non-zero tangents; a curve table with 3 rows"*, and `T-DATA-5` (`:213`) reads it back as
+	// *"TA-17 curve prints its 5 keys with times and values and its interpolation; its table prints
+	// its 3 row names"*. `Spec/WORKING_PLAN.md:145` needs it for `R-CURVE-LOAD` and `P/E-CURVE-SET`.
+	//
+	// TWO ASSETS ANSWER ONE ROW, AND THAT IS HOW THE ROW IS WRITTEN: no single `.uasset` is both a
+	// curve float and a curve table, so the row is answered by two files, each measured and saved on
+	// its own. Both entries carry the SAME `Id`, and this is NOT the duplicate that the note above
+	// `SaveContainer` warns about: that defect was ONE asset reported twice, and here two DIFFERENT
+	// assets were written. The `Detail` names which one, so the two log lines cannot be confused.
+	//
+	// NEITHER HALF NEEDS AN EDITOR OBJECT, AND BOTH ENTRY POINTS BELONG TO THE ENGINE:
+	//   - `UCurveFloat::FloatCurve` is a PUBLIC `FRichCurve` (`Curves/CurveFloat.h:36`); `AddKey`
+	//     returns a stable `FKeyHandle` (`Curves/RichCurve.h:232`) and `GetKey` returns a MUTABLE
+	//     `FRichCurveKey&` (`:215`), so times, values, interpolation and BOTH tangents are plain data.
+	//   - `UCurveTable::AddRichCurve(FName)` is a public `ENGINE_API` method (`Engine/CurveTable.h:61`)
+	//     that ALSO sets `CurveTableMode = RichCurves`. A hand-filled `RowMap` would leave that field
+	//     at `Empty`, and `GetRichCurveRowMap` then `check`-fails on it (`:51-52`).
+	//
+	// AND THE TWO COMMANDLET LIMITS DO NOT BIND ON THIS PATH: nothing here touches Slate
+	// (`LaunchEngineLoop.cpp:3343` never runs inside a commandlet) and nothing reads `GEditor`
+	// (`Editor/Kismet/Private/BlueprintEditorModule.cpp:214`). The reason this row is buildable where
+	// the user-struct rows are not is that a curve is DATA, and the struct path needed a factory.
+	// ---------------------------------------------------------------------------------------------
+	{
+		FKitResult Ta17Curve;
+		Ta17Curve.Id = TEXT("TA-17");
+		Ta17Curve.Name = TEXT("TA17_KitCurveFloat");
+
+		const FString PackagePath = FString::Printf(TEXT("%s/%s"), KitFolder, *Ta17Curve.Name);
+		UPackage* Package = CreatePackage(*PackagePath);
+		UCurveFloat* Curve = NewObject<UCurveFloat>(Package, *Ta17Curve.Name, RF_Public | RF_Standalone);
+
+		// FIVE KEYS OVER ONE SECOND, WITH A DIFFERENT NON-ZERO TANGENT PAIR ON EACH, so a reader that
+		// prints the tangents cannot be reading a single repeated value.
+		const float KeyTimes[5] = { 0.0f, 0.25f, 0.5f, 0.75f, 1.0f };
+		const float KeyValues[5] = { 0.0f, 2.0f, -1.0f, 3.0f, 0.5f };
+		const float KeyTangents[5] = { 0.5f, -1.5f, 2.0f, -0.75f, 1.25f };
+
+		int32 KeyCount = 0;
+		int32 NonZeroTangentKeys = 0;
+		FString FirstInterp = TEXT("none");
+
+		if (Curve != nullptr)
+		{
+			TArray<FKeyHandle> Handles;
+			for (int32 Index = 0; Index < 5; ++Index)
+			{
+				Handles.Add(Curve->FloatCurve.AddKey(KeyTimes[Index], KeyValues[Index]));
+			}
+
+			// THE TANGENTS ARE WRITTEN AFTER EVERY KEY EXISTS, AND `bAutoSetTangents` IS FALSE ON BOTH
+			// CALLS. `AutoSetTangents` recomputes any key whose mode is `RCTM_Auto`, so a tangent
+			// written onto an auto key survives only until the next recompute. `RCTM_User` plus an
+			// explicit arrive/leave pair is what makes the stored number the number this fixture
+			// claims, which is the difference between a fixture and a claim about one.
+			for (int32 Index = 0; Index < Handles.Num(); ++Index)
+			{
+				const FKeyHandle Handle = Handles[Index];
+				Curve->FloatCurve.SetKeyInterpMode(Handle, RCIM_Cubic, /*bAutoSetTangents=*/false);
+				Curve->FloatCurve.SetKeyTangentMode(Handle, RCTM_User, /*bAutoSetTangents=*/false);
+
+				FRichCurveKey& Key = Curve->FloatCurve.GetKey(Handle);
+				Key.ArriveTangent = KeyTangents[Index];
+				Key.LeaveTangent = KeyTangents[Index];
+
+				if (Key.ArriveTangent != 0.0f || Key.LeaveTangent != 0.0f)
+				{
+					++NonZeroTangentKeys;
+				}
+			}
+
+			// MEASURED BACK FROM THE CURVE, not from the arrays that were written into it.
+			const TArray<FRichCurveKey>& Keys = Curve->FloatCurve.GetConstRefOfKeys();
+			KeyCount = Keys.Num();
+			if (KeyCount > 0)
+			{
+				const UEnum* InterpEnum = StaticEnum<ERichCurveInterpMode>();
+				FirstInterp = InterpEnum != nullptr
+					? InterpEnum->GetNameStringByValue(static_cast<int64>(Keys[0].InterpMode))
+					: TEXT("unknown");
+			}
+		}
+
+		Ta17Curve.bBuilt = (Curve != nullptr) && (KeyCount == 5) && (NonZeroTangentKeys == 5);
+		Ta17Curve.Detail = FString::Printf(
+			TEXT("curve float: keys=%d (needs 5) nonZeroTangentKeys=%d (needs 5) firstKeyInterp=%s"),
+			KeyCount, NonZeroTangentKeys, *FirstInterp);
+		Ta17Curve.Why = TEXT("A curve is DATA: the curve float carries a public FRichCurve and the curve "
+			"table is filled through the public AddRichCurve, so neither half needs a factory, Slate or "
+			"GEditor. Two assets answer this one row because no single asset is both a curve float and a "
+			"curve table.");
+		if (Curve == nullptr)
+		{
+			Ta17Curve.Findings.Add(TEXT("the curve float object could not be created"));
+		}
+		if (KeyCount != 5)
+		{
+			Ta17Curve.Findings.Add(FString::Printf(TEXT("curve float: expected 5 keys, found %d"), KeyCount));
+		}
+		if (NonZeroTangentKeys != 5)
+		{
+			Ta17Curve.Findings.Add(FString::Printf(
+				TEXT("curve float: expected 5 keys with a non-zero tangent, found %d - the row asks for "
+					"non-zero tangents and an auto-set tangent would answer zero"),
+				NonZeroTangentKeys));
+		}
+		// `bMeasured` IS THE FINDINGS TEST RATHER THAN `true`, WHICH IS THE DISCIPLINE TA-7 AND TA-11
+		// USE. It is what makes a built-but-wrong fixture report SHORT and fail the script instead of
+		// printing OK, and the summary comment further down defines SHORT in exactly those words.
+		Ta17Curve.bMeasured = Ta17Curve.Findings.Num() == 0;
+		Builder.Results.Add(Ta17Curve);
+		if (Ta17Curve.bBuilt)
+		{
+			Builder.SaveContainer(Curve, TEXT("TA-17"), Ta17Curve.Name);
+		}
+	}
+
+	{
+		FKitResult Ta17Table;
+		Ta17Table.Id = TEXT("TA-17");
+		Ta17Table.Name = TEXT("TA17_KitCurveTable");
+
+		const FString PackagePath = FString::Printf(TEXT("%s/%s"), KitFolder, *Ta17Table.Name);
+		UPackage* Package = CreatePackage(*PackagePath);
+		UCurveTable* Table = NewObject<UCurveTable>(Package, *Ta17Table.Name, RF_Public | RF_Standalone);
+
+		// THREE ROWS OF DIFFERENT LENGTHS, so `T-DATA-6` can replace the keys of ONE row and read back
+		// keys that are not shared with its neighbours.
+		int32 TotalKeys = 0;
+		if (Table != nullptr)
+		{
+			auto AddRow = [Table, &TotalKeys](const TCHAR* RowName, float FirstValue, int32 Keys)
+			{
+				FRichCurve& Row = Table->AddRichCurve(FName(RowName));
+				for (int32 Index = 0; Index < Keys; ++Index)
+				{
+					Row.AddKey(0.25f * static_cast<float>(Index), FirstValue + static_cast<float>(Index));
+				}
+				TotalKeys += Keys;
+			};
+
+			AddRow(TEXT("Row_A"), 1.0f, 3);
+			AddRow(TEXT("Row_B"), 5.0f, 2);
+			AddRow(TEXT("Row_C"), 9.0f, 4);
+		}
+
+		const int32 RowCount = Table != nullptr ? Table->GetRowMap().Num() : 0;
+		const int32 RichRowCount = Table != nullptr ? Table->GetRichCurveRowMap().Num() : 0;
+		const ECurveTableMode Mode = Table != nullptr ? Table->GetCurveTableMode() : ECurveTableMode::Empty;
+		FString ModeName = TEXT("unknown");
+		if (const UEnum* ModeEnum = StaticEnum<ECurveTableMode>())
+		{
+			ModeName = ModeEnum->GetNameStringByValue(static_cast<int64>(Mode));
+		}
+
+		Ta17Table.bBuilt = (RowCount == 3) && (RichRowCount == 3)
+			&& (Mode == ECurveTableMode::RichCurves);
+		Ta17Table.Detail = FString::Printf(
+			TEXT("curve table: rows=%d (needs 3) richRows=%d totalKeys=%d mode=%s"),
+			RowCount, RichRowCount, TotalKeys, *ModeName);
+		Ta17Table.Why = TEXT("Built through AddRichCurve, which sets CurveTableMode to RichCurves as "
+			"well as inserting the row. The mode is printed rather than assumed, because a table left "
+			"at Empty would still report three rows through GetRowMap and fail in the reader instead.");
+		if (Table == nullptr)
+		{
+			Ta17Table.Findings.Add(TEXT("the curve table object could not be created"));
+		}
+		if (RowCount != 3)
+		{
+			Ta17Table.Findings.Add(FString::Printf(TEXT("curve table: expected 3 rows, found %d"), RowCount));
+		}
+		if (RichRowCount != 3)
+		{
+			Ta17Table.Findings.Add(FString::Printf(
+				TEXT("curve table: %d of 3 rows are reachable as rich curves"), RichRowCount));
+		}
+		if (Mode != ECurveTableMode::RichCurves)
+		{
+			Ta17Table.Findings.Add(FString::Printf(
+				TEXT("curve table: CurveTableMode is %s and the row asks for rich curves"), *ModeName));
+		}
+		Ta17Table.bMeasured = Ta17Table.Findings.Num() == 0;
+		Builder.Results.Add(Ta17Table);
+		if (Ta17Table.bBuilt)
+		{
+			Builder.SaveContainer(Table, TEXT("TA-17"), Ta17Table.Name);
+		}
+	}
+
+	// TA-18: AN ANIMATION BLUEPRINT WITH A STATE MACHINE AND AN ANIM SEQUENCE. NOT BUILT, AND THE
+	// REASON IS A MODULE DEPENDENCY - WHICH IS A QUESTION FOR THE OWNER OF `TurboMCP.Build.cs` RATHER
+	// THAN A LIMIT OF THE COMMANDLET.
+	//
+	// THE ROW ASKS FOR TWO THINGS, AND EACH HAS ITS OWN DECIDING LINE:
+	//
+	//   "A state machine with two states and one transition" IS NOT AN ENGINE OBJECT. The state
+	//   machine of an Animation Blueprint is authored with `UAnimGraphNode_StateMachine`
+	//   (`Engine/Source/Editor/AnimGraph/Public/AnimGraphNode_StateMachine.h`) and
+	//   `UAnimStateTransitionNode` (`Engine/Source/Editor/AnimGraph/Public/AnimStateTransitionNode.h`),
+	//   and BOTH live in the `AnimGraph` module. `Source/TurboMCP/TurboMCP.Build.cs` lists `AnimGraph`
+	//   nowhere, so those headers are not on this module include path and no state machine can be
+	//   referenced, let alone saved.
+	//
+	//   "A sequence of 1 second with 3 keys on one bone" NEEDS A SKELETON THAT HAS A BONE, AND THERE IS
+	//   NO REACHABLE WAY TO GIVE ONE A BONE. `USkeleton::GetReferenceSkeleton` returns a CONST
+	//   reference and says so - *"Accessor to Reference Skeleton to make data read only"*
+	//   (`Engine/Source/Runtime/Engine/Classes/Animation/Skeleton.h:365-369`) - while `ReferenceSkeleton`
+	//   itself is `protected` (`:301`, `:317`). Every engine function that adds bones takes a
+	//   `USkinnedAsset` (`:797` `MergeBonesToBoneTree`, `:809` `MergeAllBonesToBoneTree`, `:820`
+	//   `RecreateBoneTree`), and this project holds NO skeletal mesh at all. The one remaining route is
+	//   `FEditableSkeleton`, whose header is `Engine/Source/Editor/SkeletonEditor/Private/EditableSkeleton.h`
+	//   - a PRIVATE header of a module that is not a dependency, so it is not even on an include path.
+	//
+	// SO IT IS REPORTED MISSING RATHER THAN APPROXIMATED. A skeletonless sequence can carry a track
+	// NAME, and that name would be a bone no skeleton declares - which is a fixture that does not
+	// answer its row, the one outcome this kit exists to prevent.
+	{
+		FKitResult Ta18;
+		Ta18.Id = TEXT("TA-18");
+		Ta18.Name = TEXT("TA18_KitAnim (animation Blueprint + Anim Sequence)");
+		Ta18.bBuilt = false;
+		// `bMeasured` IS TRUE BECAUSE THE MEASUREMENT IS THE ABSENCE ITSELF, DECLARED - the same
+		// reading TA-10 uses. Nothing was built, so nothing can be short.
+		Ta18.bMeasured = true;
+		Ta18.Detail = TEXT("NOT BUILT: needs a state machine with two states and a sequence with 3 keys "
+			"on one bone");
+		Ta18.Why = TEXT("Two blockers, each named. (1) The state machine needs the AnimGraph module: "
+			"UAnimGraphNode_StateMachine and UAnimStateTransitionNode are AnimGraph classes, and "
+			"TurboMCP.Build.cs lists AnimGraph nowhere. (2) The 3 keys on ONE BONE need a USkeleton with "
+			"a bone: Skeleton.h:365-369 returns the reference skeleton as CONST on purpose, "
+			"ReferenceSkeleton is protected at :301/:317, the bone-adding engine functions at :797/:809/"
+			":820 all take a USkinnedAsset and this project has no skeletal mesh, and the only other "
+			"route is FEditableSkeleton, a PRIVATE header of the SkeletonEditor module. Both are "
+			"Build.cs questions and that file is not mine to edit, so this is a refusal by name.");
+		Builder.Results.Add(Ta18);
+	}
+
+	// TA-19: A NIAGARA SYSTEM WITH ONE EMITTER. NOT BUILT, AND THIS ONE IS A `TurboMCP.Build.cs`
+	// QUESTION RATHER THAN A LIMIT OF THE COMMANDLET.
+	//
+	// `UNiagaraSystem` is `Engine/Plugins/FX/Niagara/Source/Niagara/Classes/NiagaraSystem.h:237`, a
+	// PLUGIN module. `Source/TurboMCP/TurboMCP.Build.cs` lists `Niagara` NOWHERE, so no Niagara header
+	// is on the include path and no Niagara object can be named in this module. The plugin itself IS
+	// enabled - `Engine/Plugins/FX/Niagara/Niagara.uplugin:13` is `"EnabledByDefault" : true` - so the
+	// gap is the module dependency and NOT the plugin, which is the distinction `WORKING_PLAN.md:89`
+	// records and `TurboMCPCaptureAsset.cpp:242-250` had to correct in the other direction.
+	//
+	// AND AUTHORING IS A SECOND MODULE: the editor creates one through `UNiagaraSystemFactoryNew`
+	// (`Engine/Plugins/FX/Niagara/Source/NiagaraEditor/Public/NiagaraSystemFactoryNew.h:16`), so
+	// `NiagaraEditor` would be needed as well.
+	{
+		FKitResult Ta19;
+		Ta19.Id = TEXT("TA-19");
+		Ta19.Name = TEXT("TA19_KitNiagara (Niagara system, one emitter)");
+		Ta19.bBuilt = false;
+		Ta19.bMeasured = true;
+		Ta19.Detail = TEXT("NOT BUILT: needs one emitter and a NiagaraSystem object");
+		Ta19.Why = TEXT("UNiagaraSystem is a plugin class "
+			"(Engine/Plugins/FX/Niagara/Source/Niagara/Classes/NiagaraSystem.h:237) and TurboMCP.Build.cs "
+			"lists the Niagara module nowhere, so its header is not on the include path. The plugin is "
+			"enabled (Niagara.uplugin:13, EnabledByDefault true), so the missing piece is the module "
+			"dependency, and authoring one would need NiagaraEditor too "
+			"(NiagaraEditor/Public/NiagaraSystemFactoryNew.h:16). TurboMCP.Build.cs is not mine to edit, "
+			"so the question is recorded instead of answered by a change to a shared build file.");
+		Builder.Results.Add(Ta19);
 	}
 
 	// ---------------------------------------------------------------------------------------------
