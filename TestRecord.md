@@ -8599,3 +8599,30 @@ MEASURED instead of EXERCISED.***
 
 *** SO THE VACUITY DEBT'S MOST CONCRETE ITEM IS PAID, THE FULL RUN IS GREEN, AND THE PLAN IS STILL 42 ROWS. THE THREE
 NUMBERS THAT MATTER AT ROUND 155 ARE 86, 52 AND 42 - AND THE THIRD ONE IS THE ONLY ONE THAT HAS NOT MOVED. ***
+
+---
+
+## 115. Round 156: row 7.1 launched, and the brief is built from the lessons rather than from the spec alone
+
+**LAUNCHED: `P/E-STRUCT-NEW` and `P/E-STRUCT-FIELDS` (row 7.1), on a NEW `TurboMCPStruct*` prefix, with the machine free and
+no other workstream live.** *The plan is the only number that has not moved - 86 tools, 52 suites green, **42 rows `todo`** - and
+this is the row most likely to move it, because it is the one whose measurement has already been half-taken.*
+
+**AND THE BRIEF CARRIES SIX THINGS THAT WERE PAID FOR BY OTHER ROWS, WHICH IS THE PART THAT MAKES IT DIFFERENT FROM A BRIEF
+WRITTEN FROM THE SPEC:**
+
+    (1) THE UUserDefinedStruct CRASH, WITH ITS FILE AND LINE, AND THE `USTRUCT` DISTINCTION THAT REVERSED IT
+    (2) THE COMMANDLET CONSTRAINT - `check(GEditor)` at BlueprintEditorModule.cpp:214 AND `!IsRunningCommandlet()`
+        at LaunchEngineLoop.cpp:3343 - SO "EDITOR-ONLY" IS A MEASURED CLAIM AND A REFUSAL IS A COMPLETE OUTCOME
+    (3) THE PRE-FLIGHT RULE, WITH THE THREE ACCEPTANCE ROWS THAT ALREADY NAME MISSING FIXTURES NAMED
+    (4) THE FIVE FAILURE MODES NOT TO REPRODUCE, INCLUDING `session.rpc` AND A VARIABLE-DISPATCHED CALL NAME
+    (5) THE CHECK RULE: FOR EACH CHECK, NAME THE INPUT THAT MAKES IT FAIL - because five capabilities have reported
+        that their count overstates their coverage
+    (6) *** AND THE LESSON OF THE LAST TWENTY ROUNDS: "THE THING THAT SETTLES A QUESTION IS ALMOST ALWAYS ONE
+        ACTION. A missing verdict was a `NameError`; an unrunnable commandlet was one `check(GEditor)`; a 'dead'
+        workstream was one `Get-Process`. WHEN A SUITE PRINTS NO VERDICT OR A TOOL REFUSES, READ THE ACTUAL OUTPUT
+        BEFORE THEORISING - AND IF YOU CAN RUN SOMETHING DIRECTLY, RUN IT." ***
+
+*** THE SIXTH IS THE ONE I MOST WANT IT TO HAVE, BECAUSE IT IS THE ONE I EARNED THE HARD WAY AND IT WAS NOT IN ANY BRIEF
+BEFORE SECTION 156. TWENTY ROUNDS WERE SPENT MEASURING A QUESTION INSTEAD OF EXERCISING IT, AND TWO COMMANDS THEN SETTLED
+BOTH OF ITS HALVES. ***
