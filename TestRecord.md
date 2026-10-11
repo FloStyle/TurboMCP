@@ -10053,3 +10053,31 @@ is better than one that claims six and renders four" - **and assumed the answer 
 the one that matters most here: five capabilities in this project already do something adjacent to capture (`L-WIDGET-PREVIEW` renders a
 widget, `L-LAYOUT-REPORT` measures a graph), and a row that reported those as REFUSED would be telling the agent to stop when it should
 be telling it where to go.*** *** The enum is not a nicety; it is the difference between a refusal and a redirect. ***
+
+---
+
+## 163. Round 215-in-advance: the catalogue's own comment names the failure mode a support table has, and it is this project's oldest one
+
+    TurboMCPCaptureAsset.cpp, `BuildCatalogue`:
+      "The catalogue, in one place, so the support table and the per-kind decision cannot
+       disagree about which kinds exist.
+       EVERY KIND THIS ROW WAS WRITTEN FOR IS LISTED. A caller asking 'which editors can this
+       capture' is answered by the SET PLUS THE REASON, not by the survivors alone: a table
+       that listed only the kinds that happen to work would make the rest invisible,
+       *** AND AN INVISIBLE REFUSAL READS AS A CAPABILITY. ***"
+
+*** AND THAT LAST CLAUSE IS THIS PROJECT'S OLDEST DEFECT STATED IN SEVEN WORDS. *** *It is the same thing as the `else` branch that
+checks `True`, as `IsAvailable()` printing `false` for a question never asked, as a decision reason that is empty after a dash, as a check
+that matches a prefix, and as `CheckOutFile` answering `True` while issuing nothing - **six different mechanisms, one sentence: AN INVISIBLE
+REFUSAL READS AS A CAPABILITY.***
+
+**AND THE FIX IS THE SHAPE THE PROJECT HAS BEEN CONVERGING ON WITHOUT NAMING IT: THE SET OF ALL CASES PLUS A REASON PER CASE.** *Not the
+survivors. **A table of the four that work is a table that says the other two do not exist** - and the agent reading it will conclude the
+capability is narrower than it is just as confidently as it would conclude it is wider.* *** The project's rule for absence has been "print
+why, not zero"; this row's rule is one step further: **PRINT THE CASE YOU CANNOT DO, SO IT CANNOT BE MISTAKEN FOR A CASE THAT DOES NOT
+EXIST.***
+
+**AND IT IS THE THIRD FORM OF `P1` IN THREE ROUNDS, EACH STRONGER THAN THE LAST:** *row 10.1 printed `NOT ASKED` in a string; row 10.2 fixed
+an empty decision reason; row 2.2 makes the missing case **unrepresentable in an enum** AND **enumerated in a catalogue** so a reader sees
+every kind the row was written for.* *** A string can be forgotten, a type cannot be collapsed, and a catalogue cannot be narrowed by
+accident - which is what a defence looks like when it has been rebuilt three times by people who each found a way through the last one. ***
