@@ -6804,3 +6804,41 @@ producer defect that refused every copy. THREE LAYERS OF "THE DIAGNOSTIC WAS WOR
 **SIX WORKSTREAMS TOUCHED THIS ROW. NOT ONE STEP WAS REDONE AND NO WORK WAS DESTROYED** - fifteen commits on the row,
 and the mechanism that made that possible was three rules: **the brief says COMMIT, the tree is never reverted while a
 workstream lives, and a workstream that finds its brief contradicting the tree STOPS AND ASKS.**
+
+---
+
+## 60. Round 101: two small measured deliverables launched, and a file I nearly deleted was IN USE
+
+**LAUNCHED, ONE WORKSTREAM, NO OTHER LIVE:** `WORKING_PLAN` row **1.4** (can Niagara and an Anim Blueprint be captured
+headless - **a yes/no per editor kind, which decides `TA-19` and `TA-18`, the two decisions I owe**) and row **0.2**
+(make `test-override-add` and `test-comment-boxes` restore their fixture ON THE WAY IN and assert it - **the most likely
+cause of the one failing suite in the full run, since `test-material-tidy` fails in the run and passes alone**).
+
+### 60.1 And I nearly deleted a file that is IN USE
+
+`TurboMCPGraphStructureNotes.h` (76 lines, comment-only, zero declarations) was reported by the graph workstream as
+**duplicated** because its own headers now carry the same findings. **THE OBVIOUS CLEANUP WAS TO DELETE IT. MEASURED
+FIRST, AND IT IS `#include`d BY `TurboMCPGraphStructure.cpp:706`** - so deleting it would have been a build break in a
+file whose author had just finished and gone.
+
+*** THIS IS THE THIRD TIME IN THIS STRETCH THAT "DOES ANYTHING USE THIS" WAS THE WHOLE QUESTION, AND THE FIRST TWO WERE
+BOTH NAMES RATHER THAN FILES: the audit reported a tool UNCALLED while it was called twice, and a brief's filename
+already existed as a TRACKED SUITE that following the brief would have overwritten. THE RULE THE RECORD NOW STATES -
+"CHECK THE TARGET BEFORE WRITING TO IT, WHETHER THE TARGET IS A FILE OR A CLAIM" - WAS WRITTEN AFTER THOSE TWO AND IT
+JUST CAUGHT A THIRD. ***
+
+### 60.2 And the hazard section of every brief changed last round
+
+**EVERY BRIEF NOW CARRIES THIS, AND IT IS A CORRECTION TO ADVICE I HAD BEEN GIVING FOR ROUNDS:**
+
+    Build.bat ... -SingleFile="<one .cpp>"  RETURNED `Result: Succeeded` WHILE THE OBJECT WAS 2 HOURS OLD AND
+    THE SOURCE 17 SECONDS OLD - IT COMPILED NOTHING. A FULL BUILD THEN FAILED IMMEDIATELY WITH A REAL ERROR THE
+    FLAG HAD HIDDEN. THE FLAG IS FOR ATTRIBUTION ONLY: "does MY file compile while the module is red".
+    ITS GREEN IS NOT EVIDENCE, AND THE STRONGEST GUARD REMAINS A COMMAND OR TOOL THAT DID NOT EXIST BEFORE
+    ANSWERING AT ALL.
+
+**AND EVERY BRIEF NOW ALSO CARRIES A CORRECTION ABOUT WHAT A BRIEF IS WORTH:** *"You are the only workstream - BUT
+NOTE WHAT THAT SENTENCE IS WORTH: IT IS A SNAPSHOT, NOT A GUARANTEE. If you ever find the tree contradicting this brief
+- a file changing between two reads, an `edit` refused with 'file changed since it was read', a baseline that does not
+match - STOP AND ASK AND SAY WHAT YOU MEASURED."* **That is the mechanism that prevented a second data loss last round,
+and it only works if the brief admits it might be stale rather than asserting a state it cannot guarantee.**
