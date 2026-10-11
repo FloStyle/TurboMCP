@@ -169,6 +169,46 @@ namespace TurboMCPCaptureSelector
 	void DescribeScreenAvailability(FString& InOutDescription);
 
 	/**
+	 * AN INTERNAL PROBE, NOT PART OF THE `L-CAPTURE` CONTRACT, AND IT IS THE ONE THING
+	 * IN THIS FILE THAT CHANGES THE EDITOR.
+	 *
+	 * `selection` cannot be tested without a selection, and `P3` says a Look must not
+	 * create one: "not the editor selection that the user can see"
+	 * (`02_PRINCIPLES.md:29-33`). This probe exists so the positive branch can be
+	 * measured AT ALL, and it is written so that the invariant `P3` protects still holds
+	 * when it returns:
+	 *
+	 *   1. it reads the selection that is ALREADY there and reports it, so a caller can
+	 *      see what it changed from;
+	 *   2. it selects the named nodes through the engine's own
+	 *      `SGraphEditor::SetNodeSelection` (`GraphEditor.h:418-424`);
+	 *   3. it reads back what the engine now holds, so the caller is not told what was
+	 *      asked for but what happened;
+	 *   4. IT CLEARS THE SELECTION AND ASSERTS THAT IT IS EMPTY, so no user visible
+	 *      selection is left behind, and the report says so;
+	 *   5. it is reachable ONLY as an undocumented mode on the tool that already
+	 *      exists, and it is NOT an `AICallable` tool of its own.
+	 *
+	 * A mode that changes the editor is exactly as much of a contract deviation as
+	 * `debug-window`, which returns the whole window while the exported contract says it
+	 * frames the graph. It is named here rather than hidden.
+	 *
+	 * @param InPanel   The live graph panel. Null is a refusal, not an empty answer.
+	 * @param InGraph   The graph, for resolving keys.
+	 * @param InKeys    Comma separated node keys, the same keys `R-NODE-FIND` prints.
+	 * @param InAsset   The asset path, for the report.
+	 * @param InOutDescription  The report, appended to.
+	 * @param OutWhy    Why the probe refused. Set only when the result is FALSE.
+	 */
+	bool ProbeSelection(
+		SGraphEditor* InPanel,
+		UEdGraph* InGraph,
+		const FString& InKeys,
+		const FString& InAsset,
+		FString& InOutDescription,
+		FString& OutWhy);
+
+	/**
 	 * The measured rendering state of this process, in one block.
 	 *
 	 * `GUsingNullRHI` (`RHIGlobals.h:894`) and `FSlateApplication::IsInitialized()`

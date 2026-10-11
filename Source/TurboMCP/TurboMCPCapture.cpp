@@ -131,12 +131,13 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// function still owns the frame arithmetic and the picture.
 	const bool bScreen = WantedMode == TEXT("screen");
 	const bool bRhiState = WantedMode == TEXT("rhi-state");
+	const bool bSelectProbe = WantedMode == TEXT("select-nodes");
 	const bool bNewSelector = WantedMode == TEXT("selection")
 		|| WantedMode == TEXT("neighbours")
 		|| WantedMode == TEXT("box-neighbours");
 
 	if (!bWholeGraph && !bOneBox && !bOneNode && !bDebugWindow
-		&& !bScreen && !bNewSelector && !bRhiState)
+		&& !bScreen && !bNewSelector && !bRhiState && !bSelectProbe)
 	{
 		// `debug-window` and `rhi-state` are the two diagnostic modes and are NOT
 		// listed: an agent reading this refusal is being told what it may pass, and a
@@ -263,21 +264,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		}
 	}
 
-	if (bNewSelector && !Size.TrimStartAndEnd().IsEmpty())
-	{
-		// THE HOP COUNT IS `Width` HERE, and this mode deliberately reuses the size
-		// path so a malformed value is refused by the code that already refuses one.
-		// It is NOT a picture size for these modes: the size of the picture is
-		// computed from the frame, exactly as `mode node` and `mode box` already do.
-		NeighbourHops = Width;
-		if (Height != 0)
-		{
-			return FString::Printf(
-				TEXT("error: mode '%s' reads Size as a whole number of hops, and '%s' ")
-				TEXT("carries two numbers. Pass 0 for the target alone, or a count such ")
-				TEXT("as 3."), *WantedMode, *Size);
-		}
-	}
+	// The hop count was read into NeighbourHops above, and only for the selectors.
 
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
@@ -331,6 +318,59 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// resolved here with it so all three selectors take ONE code path and cannot
 	// disagree about a mode name, a target or a hop count.
 	FString SelectorDefinition;
+
+	// `select-nodes` IS THE INTERNAL PROBE THAT MAKES `selection` TESTABLE, and it is the
+	// only mode on this tool that changes the editor. It exists because `P3` forbids a
+	// Look creating a selection (`02_PRINCIPLES.md:29-33`), so without a probe the
+	// positive branch of `selection` could never be measured here. It resolves the keys
+	// BEFORE touching anything, and it clears the selection and asserts that it is empty
+	// before returning. It is not an AICallable tool and it is not part of the contract.
+	if (bSelectProbe)
+	{
+		UAssetEditorSubsystem* ProbeEditors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+		if (ProbeEditors == nullptr)
+		{
+			return TEXT("error: the asset editor subsystem is not available, so no editor ")
+				TEXT("tab can be opened and no selection can be probed.");
+		}
+
+		IAssetEditorInstance* ProbeInstance =
+			ProbeEditors->FindEditorForAsset(Blueprint, /*bFocusIfOpen=*/false);
+		if (ProbeInstance == nullptr)
+		{
+			ProbeEditors->OpenEditorForAsset(Blueprint);
+			ProbeInstance = ProbeEditors->FindEditorForAsset(Blueprint, /*bFocusIfOpen=*/false);
+		}
+
+		FBlueprintEditor* ProbeBlueprintEditor =
+			ProbeInstance != nullptr ? static_cast<FBlueprintEditor*>(ProbeInstance) : nullptr;
+		if (ProbeBlueprintEditor == nullptr)
+		{
+			return FString::Printf(
+				TEXT("error: %s did not open a Blueprint editor, so there is no graph panel ")
+				TEXT("to probe."), *Resolved.ObjectPath);
+		}
+
+		TSharedPtr<SGraphEditor> ProbePanel =
+			ProbeBlueprintEditor->OpenGraphAndBringToFront(Graph);
+		if (!ProbePanel.IsValid())
+		{
+			return FString::Printf(
+				TEXT("error: the editor opened %s but gave no graph panel for graph %s."),
+				*Resolved.ObjectPath, *Graph->GetName());
+		}
+
+		FString Out = FString::Printf(TEXT("look: selection probe on %s"), *Resolved.ObjectPath);
+		Out += FString::Printf(TEXT("\ngraph: %s"), *Graph->GetName());
+		FString ProbeWhy;
+		if (!TurboMCPCaptureSelector::ProbeSelection(ProbePanel.Get(), Graph, Target,
+				Resolved.ObjectPath, Out, ProbeWhy))
+		{
+			return FString::Printf(TEXT("%s\nerror: %s"), *Out, *ProbeWhy);
+		}
+		return Out;
+	}
+
 	if (bNewSelector)
 	{
 		UAssetEditorSubsystem* SelectorEditors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();

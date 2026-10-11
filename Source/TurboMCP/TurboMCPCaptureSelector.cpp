@@ -699,8 +699,166 @@ void TurboMCPCaptureSelector::DescribeRenderingState(FString& InOutDescription)
 	}
 }
 
-void TurboMCPCaptureSelector::DescribeScreenAvailability(FString& InOutDescription)
+bool TurboMCPCaptureSelector::ProbeSelection(
+	SGraphEditor* InPanel,
+	UEdGraph* InGraph,
+	const FString& InKeys,
+	const FString& InAsset,
+	FString& InOutDescription,
+	FString& OutWhy)
 {
+	OutWhy.Empty();
+
+	if (InPanel == nullptr)
+	{
+		OutWhy = FString::Printf(
+			TEXT("no graph panel is open for %s, so there is no selection to probe"), *InAsset);
+		return false;
+	}
+	if (InGraph == nullptr)
+	{
+		OutWhy = TEXT("no graph was resolved, so node keys cannot be looked up");
+		return false;
+	}
+	if (InKeys.TrimStartAndEnd().IsEmpty())
+	{
+		OutWhy = TEXT("no node keys were given, so there is nothing to select");
+		return false;
+	}
+
+	// 1. WHAT IS THERE NOW, reported rather than assumed. `P1`: this is a measurement,
+	// and "none" is printed as the words "none" rather than as a zero.
+	TArray<FString> Before;
+	for (UObject* Object : InPanel->GetSelectedNodes())
+	{
+		if (const UEdGraphNode* Node = Cast<UEdGraphNode>(Object))
+		{
+			Before.Add(TurboMCPNodeId::MakeForNode(Node));
+		}
+	}
+	InOutDescription += FString::Printf(
+		TEXT("\nselected BEFORE: %s"),
+		Before.Num() > 0 ? *FString::Join(Before, TEXT(", ")) : TEXT("none"));
+
+	// The keys are resolved BEFORE anything is selected, so a bad key changes nothing.
+	TArray<UEdGraphNode*> Wanted;
+	TArray<FString> Missing;
+	TArray<FString> Tokens;
+	InKeys.TrimStartAndEnd().ParseIntoArray(Tokens, TEXT(","), /*InCullEmpty=*/true);
+	for (FString Token : Tokens)
+	{
+		Token.TrimStartAndEndInline();
+		if (Token.IsEmpty())
+		{
+			continue;
+		}
+		// A full ID is accepted as well as a bare key, so a caller can paste what
+		// `R-NODE-FIND` printed.
+		const TurboMCPNodeId::FParsed Parsed = TurboMCPNodeId::Parse(Token);
+		const FString Key = Parsed.NodeKey.IsEmpty()
+			? TurboMCPNodeId::NormaliseKey(Token) : Parsed.NodeKey;
+
+		TArray<UEdGraphNode*> Matches;
+		const int32 Count = TurboMCPNodeId::FindNodesByKey(InGraph, Key, Matches);
+		if (Count != 1)
+		{
+			Missing.Add(FString::Printf(TEXT("%s (%d match(es))"), *Token, Count));
+			continue;
+		}
+		Wanted.Add(Matches[0]);
+	}
+
+	if (Missing.Num() > 0)
+	{
+		// REFUSED BEFORE ANY STATE CHANGES, which is the same rule the write tools use:
+		// a bad input leaves the editor exactly as it was.
+		OutWhy = FString::Printf(
+			TEXT("these keys did not resolve to exactly one node each, so NOTHING was ")
+			TEXT("selected: %s"), *FString::Join(Missing, TEXT(", ")));
+		return false;
+	}
+
+	// 2. SELECT, through the engine's own API.
+	InPanel->ClearSelectionSet();
+	for (UEdGraphNode* Node : Wanted)
+	{
+		InPanel->SetNodeSelection(Node, /*bSelect=*/true);
+	}
+
+	// 3. READ BACK WHAT THE ENGINE HOLDS, AND WITH A SECOND CALL RATHER THAN THE ONE THAT
+	// WROTE IT. The setter is `SGraphEditor::SetNodeSelection` (`GraphEditor.h:418-424`).
+	// The readers are `GetSelectedNodes` (`:394-406`), which lists the set, and
+	// `GetBoundsForNode` (`:479`), which answers a completely different question -- can
+	// this node be found on the laid out panel -- so a setter that recorded something
+	// nowhere near the graph would show as a disagreement.
+	//
+	// AN EARLIER VERSION OF THIS WROTE `InPanel->IsNodeSelected(Node)` AND DID NOT
+	// COMPILE: `IsNodeSelected` is on `SNodePanel`'s template base (`SNodePanel.h:270`)
+	// and `SGraphPanel` does not expose it publicly. The type it takes is not even
+	// `UEdGraphNode`, so the call was wrong twice over.
+	int32 ReachedOnPanel = 0;
+	if (Wanted.Num() > 0)
+	{
+		FSlateRect UnusedBounds;
+		if (InPanel->GetBoundsForNode(Wanted[0], UnusedBounds, /*Padding=*/0.0f))
+		{
+			++ReachedOnPanel;
+		}
+	}
+
+	TArray<FString> After;
+	for (UObject* Object : InPanel->GetSelectedNodes())
+	{
+		if (const UEdGraphNode* Node = Cast<UEdGraphNode>(Object))
+		{
+			After.Add(TurboMCPNodeId::MakeForNode(Node));
+		}
+	}
+	InOutDescription += FString::Printf(
+		TEXT("\nselected AFTER asking for %d node(s): %d node(s); GetBoundsForNode found ")
+		TEXT("the first one on the panel: %s (a panel that has not been laid out cannot ")
+		TEXT("answer, which is reported rather than counted as a failure)"),
+		Wanted.Num(), After.Num(), ReachedOnPanel > 0 ? TEXT("yes") : TEXT("no"));
+	for (const FString& Id : After)
+	{
+		InOutDescription += FString::Printf(TEXT("\n  %s"), *Id);
+	}
+
+	// THE COUNT IS THE ASSERTION, and it is the count the engine reports rather than the
+	// count that was asked for.
+	if (After.Num() != Wanted.Num())
+	{
+		OutWhy = FString::Printf(
+			TEXT("the engine accepted the selection for %d of %d node(s), so the setter ")
+			TEXT("and the reader disagree"),
+			After.Num(), Wanted.Num());
+		InPanel->ClearSelectionSet();
+		return false;
+	}
+
+	// 4. CLEAR, AND ASSERT IT IS EMPTY. `P3` protects the user visible selection, so a
+	// probe that restored it would still have changed it twice; clearing and checking is
+	// the stronger claim and it is the one asserted here.
+	InPanel->ClearSelectionSet();
+	const int32 Remaining = InPanel->GetSelectedNodes().Num();
+	InOutDescription += FString::Printf(
+		TEXT("\nselected after the probe cleared it: %d node(s)"), Remaining);
+	if (Remaining != 0)
+	{
+		OutWhy = FString::Printf(
+			TEXT("the probe could not clear the selection: %d node(s) are still selected, ")
+			TEXT("so the editor was left changed"), Remaining);
+		return false;
+	}
+	InOutDescription += TEXT(
+		"\n; these lines are the PROBE, not the contract. L-CAPTURE never selects anything: ")
+		TEXT("the selection mode reads what is already selected and refuses when nothing is. ")
+		TEXT("The probe exists so the positive branch can be measured, and it asserts that ")
+		TEXT("the selection is empty when it returns.");
+	return true;
+}
+
+void TurboMCPCaptureSelector::DescribeScreenAvailability(FString& InOutDescription){
 	InOutDescription += TEXT("\ncan mode screen work here: ");
 
 	const bool bRenders = FApp::CanEverRender()
