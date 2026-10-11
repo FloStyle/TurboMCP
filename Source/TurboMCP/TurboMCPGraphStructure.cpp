@@ -84,6 +84,24 @@ namespace
 	}
 
 	/**
+	 * Whether a node answers to a key a caller wrote, in EITHER of the two forms the project prints.
+	 *
+	 * THE PROJECT'S READERS PRINT THE SHORT FORM AND THIS WRITER MADE THE LONG ONE, which is a real
+	 * interface gap rather than a detail: an agent that reads a graph and passes a key straight back would
+	 * be refused BY A TOOL THAT WAS RIGHT AND AN ID THAT WAS REAL. Measured on the first run of this suite.
+	 * Accepting both is what makes the round trip work without asking a caller to know which it holds.
+	 */
+	bool NodeAnswersToKey(const UEdGraphNode* InNode, const FString& InKey)
+	{
+		if (InNode == nullptr)
+		{
+			return false;
+		}
+		return KeyOf(InNode).Equals(InKey, ESearchCase::CaseSensitive)
+			|| TurboMCPNodeId::MakeForNode(InNode, /*bLongForm=*/false).Equals(InKey, ESearchCase::CaseSensitive);
+	}
+
+	/**
 	 * Whether a node's class is one a collapse must REFUSE to move.
 	 *
 	 * THE SPEC REFUSES THE WHOLE SELECTION RATHER THAN SKIPPING THESE, because collapsing an event into a
@@ -263,7 +281,7 @@ namespace
 			UEdGraphNode* Found = nullptr;
 			for (UEdGraphNode* Node : InGraph->Nodes)
 			{
-				if (Node != nullptr && KeyOf(Node).Equals(Key, ESearchCase::CaseSensitive))
+				if (NodeAnswersToKey(Node, Key))
 				{
 					Found = Node;
 					break;
