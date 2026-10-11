@@ -7007,3 +7007,90 @@ CHECK COUNT OVERSTATES THEIR COVERAGE, AND NOBODY HAS GONE BACK TO FIX THEM.** *
 relationship inherits the vacuity of its input - and at least one suite's `the fixture is left as it was found` has an
 else-branch that literally checks `True`. That is the difference between a green run and a trustworthy one, and it is
 the next thing worth doing after row 1.4 reports.*
+
+---
+
+## 66. *** THE ROW 0.2 WORKSTREAM REFUSED THE CREDIT I GAVE IT, AND IT IS RIGHT. MY SECTION 64 CLAIM WAS UNSUPPORTED. ***
+
+**IN SECTION 64 I WROTE: "51 OF 51 - THE FIXTURE-RESTORE THEORY WAS RIGHT." I HAD NO MECHANISM FOR THAT CLAIM AND I DID
+NOT LOOK FOR ONE.** The workstream did, and its answer is:
+
+    Everything I changed operates on BP_NodeTest.
+    test-material-tidy operates on TestProject/Content/Tests/TurboMCPMaterialFixture.uasset.
+    MY CHANGE DOES NOT TOUCH THAT ASSET, SO I HAVE NO MECHANISM BY WHICH IT FIXED THAT SUITE.
+
+*** AND IT FLAGGED SOMETHING WORSE, WHICH IS MINE: MY COMMITS `4683f72` (05:07:46) AND `b463974` (05:07:56) LANDED
+DURING ITS RUN B (04:58 - 05:12:50), AND `09d910f` SAYS "the workstream is on a SECOND full run", SO FROM ITS SIDE I WAS
+ACTIVE IN THE REPO WHILE `run-suites.ps1` OWNED THE EDITOR.** *"TREAT MY TWO 51/51 RESULTS AS POSSIBLY CONTAMINATED, not
+as a clean measurement."*
+
+*** SO THE CORRECT STATEMENT IS NARROWER THAN THE ONE I MADE: 51 OF 51 WAS OBSERVED TWICE, THE CAUSE OF THE LAST SUITE'S
+TURNAROUND IS UNEXPLAINED, AND THE ONE THING THAT IS SUPPORTED IS THAT ROW 0.2 IS DURABLE AND VERIFIED END-TO-END -
+because the workstream re-dirtied both fixtures and watched the residue that had survived an editor restart get detected
+and given back. ***
+
+**AND THE REASON THIS MATTERS MORE THAN THE NUMBER: I HAVE NOW TWICE WRITTEN A CONCLUSION THAT THE EVIDENCE DID NOT
+SUPPORT, BOTH TIMES IN THE DIRECTION OF A TIDIER STORY.** *The first was "38/46 is accumulation across a long run",
+which closed an investigation that was not finished. This is the second, and it was closed in a commit message where
+the next reader would take it as measured.*
+
+### 66.1 AND THE WORKSTREAM FOUND A VACUOUS CHECK - THE FIFTH, AND THIS ONE WAS FIXED
+
+**`test-comment-boxes.py`'s `box_keys()` MATCHED BOX KEYS IN THE `fit` ACTION'S LISTING. MEASURED: `fit` PRINTS NO KEYS
+AT ALL** - its entire answer is three lines and none of them is a key:
+
+    preview: fit in /Game/Tests/BP_NodeTest.BP_NodeTest : EventGraph
+    1 comment box(es) in the graph
+    would fit 1 box(es) to their contents, leaving 40 units of padding
+
+**SO THE REGEX MATCHED NOTHING, `box_keys` RETURNED `[]` ON EVERY RUN, AND THE CLOSING CHECK `len(final) <= 0` WAS TRUE
+EVEN ON A RUN THAT LEFT BOXES BEHIND.** *Keys now come from the only path that names them - the tool's own refusal
+(`error: 'ffffff' is not a comment box in EventGraph. Its boxes are: 5e8447`) - and the empty state is confirmed as
+`(none)`.*
+
+*** AND ITS RED PROOF IS THE STRONGEST PIECE OF EVIDENCE IN THIS WHOLE STRETCH: WITH THE ENUMERATION BLINDED BY AN
+INJECTED PATTERN, THE SUITE REPORTED `RESULT: PASS` WHILE A BOX WAS STILL IN THE GRAPH. THAT IS CONCLUSIVE, BECAUSE THE
+ONLY WAY A SUITE CAN PASS ON A RUN THAT LEFT A BOX BEHIND IS IF THE CHECK READING IT IS VACUOUS - and it proves the
+RESIDUE and the VACUITY at once, from one state. ***
+
+**AND IT PROVED THE CORRECTION BOTH WAYS ON ONE STATE: with a real box present, the old regex gives `[]` and the
+corrected enumeration gives `['5e8447']`.** *That is the comparison this project's five previous vacuity reports never
+made: not "the check passed when it should have failed" but "the old and new readers DISAGREE ON THE SAME INPUT".*
+
+### 66.2 ROW 1.4 IS ANSWERED: NO KIND CAN BE CAPTURED HEADLESS, AND THE REASON IS ONE ENGINE GUARD
+
+| Editor kind | Capture | Fixture | The line that decides it |
+|---|---|---|---|
+| **Niagara system** | **NO** | NEEDS A DEPENDENCY | `TurboMCPCapture.cpp:394-400` + `LaunchEngineLoop.cpp:3343` |
+| **Anim Blueprint** | **NO** | NO dependency needed | `AnimBlueprint.h:81` (`class UAnimBlueprint : public UBlueprint`) |
+| **Anim Sequence** | **NO** | NO dependency needed for the type | `AnimSequence.h:202` |
+
+*** THE DECISIVE LINE IS `LaunchEngineLoop.cpp:3343`: `if (!IsRunningDedicatedServer() && !IsRunningCommandlet())`
+GUARDS `FSlateApplication::Get().InitializeRenderer(...)`. SLATE IS NEVER INITIALIZED IN A COMMANDLET, SO
+`FSlateApplication::IsInitialized()` IS FALSE FOR THE WHOLE PROCESS AND EVERY PNG PATH THAT NEEDS A WIDGET WINDOW FAILS
+BY CONSTRUCTION. *** *The plugin has exactly TWO PNG-writing paths and both need Slate; it never initializes Slate
+itself; and `TurboMCPKitCommandlet.cpp:106` already recorded this as measured fact - "The editor fills these in from Slate
+when the graph is displayed, WHICH A COMMANDLET NEVER DOES."*
+
+**AND THAT SETTLES MY `TA-19` DECISION WITHOUT NEEDING IT: the previous workstream's refusal STANDS, and for a STRONGER
+reason than it gave.** *Not only is `UNiagaraSystem` outside the engine tree, its capture is impossible headless
+REGARDLESS of the dependency.* **AND IT SETTLES `TA-18` THE OTHER WAY: no dependency needed, but not worth building as a
+CAPTURE fixture - though it may still be worth building for other rows, with two caveats named (`USkeleton` required;
+`UAnimationBlueprintLibrary` is a SEPARATE editor module TurboMCP does not link).**
+
+### 66.3 Three things it flagged that I would have got wrong
+
+1. *** `Engine/Config/BaseEngine.ini:3093` SAYS `EnableNiagara=false` UNDER A `[Niagara]` SECTION, AND THAT IS NOT PLUGIN
+   ENABLEMENT - THE KEY IS READ NOWHERE IN THE ENGINE SOURCE. *** *Reading that line as "Niagara is off" would have been
+   wrong, and it is exactly the shape of the ten recalled-API errors: a name that looks authoritative and decides
+   nothing.*
+2. **IT VALIDATED ITS OWN INSTRUMENT AND REPORTED THE FAILURE.** It tried `dumpbin /exports` to prove the linkage
+   requirement, **found the method contains `StaticEnum` entries but NOT `UNiagaraSystem::StaticClass` NOR
+   `UAnimBlueprint::StaticClass` FOR A CLASS IT KNOWS IS USABLE** - so the method fails on the known-good case and
+   cannot decide the unknown one. *** A TOOL VALIDATED AGAINST A KNOWN CASE, FOUND WANTING, AND DISCARDED RATHER THAN
+   LEANED ON. ***
+3. **IT CORRECTED MY BRIEF AND SAID SO FIRST**, in the first paragraph, with the six commit shas and the proof that none
+   of them touched its files. *"NO WORK WAS LOST, AND I CHECKED RATHER THAN ASSUMED."*
+
+**AND IT DID NOT EDIT `WORKING_PLAN.md` OR `TestRecord.md` BECAUSE BOTH WERE OUTSIDE ITS BOUNDARIES, SO ROWS 1.4 AND 0.2
+STILL READ `todo` - WHICH IS MINE TO FIX.**
