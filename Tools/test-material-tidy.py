@@ -277,9 +277,26 @@ def main():
     print("=== ONE COMMENT BOX PER BLOCK, seen by the reader ===")
     after_blocks = session.call(READ_TOOLSET, "ReadTurboMCPMaterialBlocks",
                                 {"asset": ASSET, "tokenBudget": 4000})
-    boxes_after = number_before(r"blocks: (\d+) comment box", after_blocks)
-    expressions_after = number_before(r"comment box\(es\), (\d+) expression", after_blocks)
+    # *** BOTH NUMBERS COME OUT OF THE SAME LINE, AND THE LINE IS PARSED AS A WHOLE. ***
+    #
+    # THE CHECK BELOW USED TO READ ITS SUBJECT WITH A PATTERN THAT COULD NOT MATCH IT, AND IT WAS THE
+    # PROJECT'S OLDEST RULE BROKEN BY THE CHECK THAT EXISTS TO ENFORCE IT. `TurboMCPMaterial.cpp:1619`
+    # prints `blocks: %d comment box(es), %d expression(s)`, so the EXPRESSION count is the SECOND number on
+    # that line - and the old pattern was `comment box\(es\), (\d+) expression`, which requires `blocks: <n> `
+    # to be IMMEDIATELY before it. IT NEVER MATCHED, `number_before` returned its default of `-1`, and the
+    # check reported "the reader counted 12 expression(s)" - A WRONG NUMBER THAT LOOKED LIKE A MEASUREMENT
+    # while the fixture builds 16 and the trace reader had just agreed on all sixteen by name.
+    #
+    # *** SO THE CHECK WAS NOT MEASURING THE READER; IT WAS MEASURING WHETHER A REGEX ASSUMED THE RIGHT
+    # FORMAT. *** The line is now found ONCE and both numbers are read from THAT match, which is the same
+    # discipline `number_before` uses for the box count and makes it impossible to match a different line.
+    boxes_line = re.search(r"blocks:\s*(\d+)\s*comment box\(es\),\s*(\d+)\s*expression", after_blocks)
+    boxes_after = int(boxes_line.group(1)) if boxes_line else None
+    expressions_after = int(boxes_line.group(2)) if boxes_line else None
 
+    check("the reader printed the blocks line, so both numbers below are a measurement",
+          boxes_line is not None,
+          "no 'blocks: N comment box(es), N expression(s)' line was found in the reader's answer")
     check("the box count GREW, so the layout actually boxed the blocks",
           boxes_after is not None and boxes_before is not None and boxes_after > boxes_before,
           "boxes went from %s to %s" % (boxes_before, boxes_after))
