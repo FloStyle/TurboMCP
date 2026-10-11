@@ -5404,3 +5404,48 @@ outcome is a stated limit plus a decision, which is what it delivered.**
 4. **The tool prints `none` under a heading whose count is 0, deliberately, because an empty list rendered as nothing
    is indistinguishable from a section never printed** - so the suite had to learn that `none` is a statement about the
    list rather than a member of it.
+
+---
+
+## 33. TA-14 IS BUILDABLE: the recorded refusal was TRUE BUT NARROWER than the record made it sound
+
+*** A WORKSTREAM MEASURED ITS WAY PAST A REFUSAL THIS PROJECT HAD RECORDED AS ABSOLUTE, AND THE CORRECTION IS TO THE
+RECORD RATHER THAN TO THE CODE. ***
+
+WHAT THE RECORD SAID, AND IT WAS RIGHT: `Tools/test-datatable.py:11-31` records THREE REFUSED ATTEMPTS at a
+project-owned DataTable, decisive line *"`RowStruct` is read-only once the asset exists"*. And
+`TurboMCPKitCommandlet.cpp:1425-1447` records the crash: `FStructureEditorUtils::AddVariable()` ->
+`FMemberVariableNameHelper::Generate()` -> `CastChecked<UUserDefinedStructEditorData>` **CRASHES, because a
+`NewObject<UUserDefinedStruct>` DOES NOT CREATE ITS `EditorData` - THE EDITOR FACTORY INSTALLS IT.**
+
+*** THE FINDING IS THAT THOSE TWO FACTS PROVE A LIMIT ON `UUserDefinedStruct`, NOT ON A PROJECT-OWNED ROW STRUCT -
+AND THOSE ARE NOT THE SAME THING. *** `Spec/06_ACCEPTANCE.md` asks for *"a data table asset with a PROJECT-OWNED row
+struct"*. **A NATIVE `USTRUCT` DECLARED IN THE MODULE IS REFLECTED, IS A `UScriptStruct`, AND IS EXACTLY WHAT A
+DATATABLE'S `RowStruct` MUST BE - PROJECT-OWNED BY CONSTRUCTION.** A `UUserDefinedStruct` is ONE WAY to obtain one,
+**AND IT IS THE ONLY WAY THAT IS BLOCKED.** So `TA-10` STAYS REFUSED and `TA-14` IS BUILDABLE, and the two are not in
+conflict.
+
+**THE GENERAL FORM, WHICH IS THE PART WORTH KEEPING: A MEASURED REFUSAL RECORDS WHAT FAILED, NOT THE BOUNDARY OF WHAT
+IS POSSIBLE.** This project has now had two of these in OPPOSITE directions: `T-MAT-10` NAMED `TA-6`, WHICH DOES NOT
+EXIST, and this recorded refusal was read as blocking more than it did. *A refusal that a later reader treats as
+broader than the measurement is a refusal that costs capabilities.*
+
+**AND IT DOES NOT UNBLOCK `T-DATA-1`, WHICH IS ALREADY SATISFIED BY DECISION AGAINST
+`/DatasmithContent/DatasmiAreaLightsTable`** - so `TA-14`'s value is now as a FIXTURE for anything wanting a
+project-owned row struct later, **A SMALLER PRIZE THAN IT LOOKED, AND STATED THAT WAY RATHER THAN SOLD.**
+
+### 33.1 And TA-20 landed, with a finding about the SPEC rather than the builder
+
+`06_ACCEPTANCE.md` says *"5 parameters: 2 scalar, 2 vector, one read by no material"* - **WHICH NAMES FOUR AND SAYS
+FIVE, AND THE FIFTH IS THE POINT.** `T-MAT-12` and `T-MAT-13` need **a collection parameter that NOTHING reads**,
+because *"that is the case where an index shift is invisible until much later, in a different asset"* - **AND A
+COLLECTION WHERE EVERY PARAMETER IS USED CANNOT TEST THE THING THOSE ROWS EXIST FOR.** The workstream BUILT the fifth
+rather than resolving the arithmetic in the spec's favour, **which is the right call: the count was wrong and the
+intent was clear, and building to the INTENT is what makes the acceptance rows passable.** The public parameter arrays
+are at `MaterialParameterCollection.h:91` (scalar) and `:94` (vector).
+
+### 33.2 And both landed AS COMMITS while the work was still in flight
+
+`f8b5b14` and `87c2853` - **WHICH IS THE NEW RULE BEING FOLLOWED, AND IT IS THE RULE THAT EXISTS BECAUSE I DESTROYED A
+VERIFIED CAPABILITY BY REVERTING THE TREE WHILE WORKSTREAMS WERE LIVE.** *A protection that lives in a mechanism
+rather than an instruction is the only kind that holds.*
