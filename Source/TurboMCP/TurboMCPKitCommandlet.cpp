@@ -2120,14 +2120,15 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 		Ta18.bMeasured = true;
 		Ta18.Detail = TEXT("NOT BUILT: needs a state machine with two states and a sequence with 3 keys "
 			"on one bone");
-		Ta18.Why = TEXT("Two blockers, each named. (1) The state machine needs the AnimGraph module: "
-			"UAnimGraphNode_StateMachine and UAnimStateTransitionNode are AnimGraph classes, and "
-			"TurboMCP.Build.cs lists AnimGraph nowhere. (2) The 3 keys on ONE BONE need a USkeleton with "
+		Ta18.Why = TEXT("Two blockers, each named. (1) *** THE AnimGraph MODULE IS NOW LINKED - "
+			"TurboMCP.Build.cs lists `AnimGraph` - SO THE STATE MACHINE IS NO LONGER BLOCKED BY A "
+			"DEPENDENCY; what remains for it is AUTHORING, not a permission. (2) *** The 3 keys on ONE BONE need a USkeleton with "
 			"a bone: Skeleton.h:365-369 returns the reference skeleton as CONST on purpose, "
 			"ReferenceSkeleton is protected at :301/:317, the bone-adding engine functions at :797/:809/"
 			":820 all take a USkinnedAsset and this project has no skeletal mesh, and the only other "
-			"route is FEditableSkeleton, a PRIVATE header of the SkeletonEditor module. Both are "
-			"Build.cs questions and that file is not mine to edit, so this is a refusal by name.");
+			"route is FEditableSkeleton, a PRIVATE header of the SkeletonEditor module. *** SO ONE OF THE TWO "
+			"BLOCKERS HAS BEEN REMOVED SINCE THIS TEXT WAS WRITTEN AND THE OTHER ONE HAS NOT: THIS REFUSAL NOW "
+			"NAMES ONE REAL BLOCKER, NOT TWO. ***");
 		Builder.Results.Add(Ta18);
 	}
 

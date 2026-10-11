@@ -110,6 +110,33 @@ public class TurboMCP : ModuleRules
 				// writing a second capture path that could disagree with it.
 				"SlateInspectorToolset",
 
+				// *** THE TWO DEPENDENCIES THE KIT REFUSED `TA-18` AND `TA-19` FOR, ADDED BY THE OWNER'S DECISION. ***
+				//
+				// `Tools/make-kit-assets.ps1` COULD NOT BUILD EITHER FIXTURE, AND IT SAID SO BY NAME RATHER THAN
+				// BUILDING SOMETHING WRONG. Its refusal named these exact modules, and the workstream that wrote it
+				// stopped there because `TurboMCP.Build.cs` was outside its boundaries and the brief told it to ask.
+				//
+				// `TA-18` - an Animation Blueprint with a state machine - needs `AnimGraph`: the state machine is
+				// authored with `UAnimGraphNode_StateMachine` and `UAnimStateTransitionNode`, both under
+				// `Engine/Source/Editor/AnimGraph/Public/`, and this module could not name either type.
+				// *** AND IT NEEDS A SECOND THING THAT A DEPENDENCY CANNOT SUPPLY, WHICH IS RECORDED HERE SO THE NEXT
+				// READER DOES NOT EXPECT THIS LINE TO BE ENOUGH: "3 keys on ONE BONE" needs a `USkeleton` bone, and
+				// every route is closed - `Animation/Skeleton.h:365-369` returns the reference skeleton CONST ON
+				// PURPOSE ("to make data read only"), `ReferenceSkeleton` is protected at :301/:317, the bone-adding
+				// engine functions at :797/:809/:820 all take a `USkinnedAsset` and this project holds no skeletal
+				// mesh, and the last route is `FEditableSkeleton`, a PRIVATE header of a module that is not a
+				// dependency. SO `TA-18` IS HALF UNBLOCKED BY THIS LINE AND STILL REFUSED BY NAMED. ***
+				//
+				// `TA-19` - a Niagara system with one emitter - needs `Niagara` for `UNiagaraSystem`
+				// (`Niagara/Classes/NiagaraSystem.h:237`), and `NiagaraEditor` to AUTHOR one
+				// (`NiagaraEditor/Public/NiagaraSystemFactoryNew.h:16`). *** AND THE PLUGIN ITSELF WAS NEVER THE
+				// PROBLEM: `Engine/Plugins/FX/Niagara/Niagara.uplugin:13` IS `"EnabledByDefault" : true`, so the
+				// gap was always the module dependency - which is the distinction `WORKING_PLAN.md:89` records and
+				// `TurboMCPCaptureAsset.cpp:242-250` had to correct in the other direction. ***
+				"AnimGraph",
+				"Niagara",
+				"NiagaraEditor",
+
 				// `IPythonScriptPlugin::ExecPythonCommand`, USED BY THE TEST-MAP COMMANDLET FOR ONE REASON.
 				//
 				// The PIE test map needs a BLUEPRINT actor, because only the Blueprint VM raises
