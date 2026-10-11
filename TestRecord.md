@@ -8097,3 +8097,31 @@ IMpatient ONE.** *The critique of waiting was correct and it produced a wrong ac
 *** AND THE RULE FOR THE NEXT TIME IS ONE PHRASE: BEFORE TOUCHING A SHARED RESOURCE, MEASURE WHO HOLDS IT - AND THE MEASURE
 IS THE SAME ONE THIS RECORD ALREADY USES FOR COMMITS, WHICH IS THAT `git status` BEING CLEAN SAYS NOTHING ABOUT WHETHER A
 PROCESS IS MID-EDIT. ***
+
+---
+
+## 96. Round 137: the workstream restarted its own editor, and the damage from section 95 is measured rather than assumed
+
+    MEASURED, BY OBSERVATION ONLY - NO PROCESS TOUCHED
+    editor PID 21436, STARTED 05:55:52 - which is SIXTEEN SECONDS AFTER I KILLED THE PREVIOUS ONE at ~05:55:36
+    panel-probe.log 05:55:36   make-material-asset.log 05:55:03
+    tree CLEAN, 86 tools, HEAD = origin/main
+
+*** SO THE COST OF SECTION 95 IS NOW A NUMBER RATHER THAN A WORRY: SIXTEEN SECONDS AND ONE EDITOR RESTART. NOTHING WAS
+LOST, NOTHING WAS REDONE, AND THE WORKSTREAM DID NOT NEED ME TO FIX IT - IT RESTARTED ITS OWN EDITOR THE WAY ITS OWN BRIEF
+TOLD IT TO. ***
+
+**AND THE ROUND DID NOT TOUCH A PROCESS, WHICH IS THE ONLY THING THIS ROUND HAD TO GET RIGHT.** *Section 95 produced the rule
+("before touching a shared resource, measure who holds it") and the test of whether a rule is real is whether it is followed
+in the round immediately after it is written, when the temptation is identical and the record is fresh. **IT WAS FOLLOWED:
+`Get-Process` WITHOUT `Stop-Process`, and the two are one token apart in the same pipeline.***
+
+### And the honest accounting of the whole episode, in three lines
+
+    WHAT I DID      killed a live workstream's editor while trying to check its work
+    WHAT IT COST    16 seconds and one restart - measured, not estimated
+    WHAT SAVED IT   the safety commits, which are a MECHANISM and not a defence of the action
+
+**AND THE UNCOMFORTABLE PART IS STILL TRUE: THE ONLY REASON THIS IS A THREE-LINE EPISODE RATHER THAN A SECTION 30 IS THAT I
+HAD ALREADY BEEN COMMITTING THE WORK AS IT MOVED.** *A reflex that is harmless only because of a different good habit is not a
+harmless reflex.*
