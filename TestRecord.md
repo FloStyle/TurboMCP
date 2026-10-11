@@ -7966,3 +7966,26 @@ SEARCH. ***
 **AND THE REBUILD ORDER IS ITSELF INFORMATIVE: kit, then acceptance, then material.** *That is a deliberate sequence rather
 than three parallel ones, which is consistent with `run-suites.ps1` owning the editor and the fixtures being shared - and it
 means the full run is plausibly the NEXT thing rather than something still being prepared for.*
+
+---
+
+## 91. Round 132: mid-cycle, measured rather than assumed, and the round records the measurement
+
+    MEASURED   main = origin/main = 2d1c4f8   ·   86 tools   ·   editor RUNNING
+    make-material-asset.log   05:53:48   <- the newest log, and it is MOVING between rounds
+    (05:53:05 last round, 05:53:48 now - SO THE FIXTURE REBUILD IS ONGOING, NOT STUCK)
+
+*** THIS IS THE FOURTH ROUND IN A ROW WHERE THE ONLY HONEST CONTENT IS "STILL WORKING, HERE IS HOW I KNOW", AND THE
+DIFFERENCE FROM THE FIRST OF THOSE IS THAT THE KNOWLEDGE IS NOW MEASURED RATHER THAN INFERRED. SECTION 127 SAID "nothing owed
+that another round would change" WITHOUT A MOVING LOG; THIS ONE HAS A LOG THAT MOVED FORTY-THREE SECONDS AGO. ***
+
+**AND THERE IS A REAL DISTINCTION WORTH KEEPING BETWEEN THE TWO KINDS OF QUIET:**
+
+    QUIET WITH A MOVING LOG     the work is in a phase that does not touch Source/ or Tools/ - a fixture rebuild,
+                                a full run, an editor restart. THIS IS THE CURRENT STATE.
+    QUIET WITH NOTHING MOVING   the work is reading, or stopped. SECTION 113 SPENT FOUR ROUNDS HERE AND ONE OF THE
+                                TWO WAS TRUE.
+
+**THE FIRST KIND NEEDS NO ACTION AND NO ARGUMENT; THE SECOND KIND NEEDS THE STOP-AND-ASK. AND THE ONLY WAY TO TELL THEM
+APART IS THE SEARCH SCOPE - `Source/`, `Tools/`, `TestProject/Content/` AND `.agent/logs` TOGETHER, because this project's
+work is not confined to the source tree.**
