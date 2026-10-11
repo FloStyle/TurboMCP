@@ -13,14 +13,17 @@
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphNode_Comment.h"
+#include "Engine/TextureRenderTarget2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GraphEditor.h"
 #include "ImageUtils.h"
 #include "Input/HittestGrid.h"
 #include "K2Node_Knot.h"
+#include "Misc/App.h"
+#include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
-#include "RHIGlobals.h"
 #include "Slate/WidgetRenderer.h"
 #include "TurboMCPLayoutReport.h"
 #include "TurboMCPNodeId.h"
@@ -181,7 +184,7 @@ namespace
 	}
 
 	/** True when A sits inside B, with no tolerance: a box owns what it covers. */
-	bool Contains(const TurboMCPCaptureSelector::FBox& InOuter, const TurboMCPLayoutReport::FRect& InInner)
+	bool Contains(const TurboMCPCaptureSelector::FBox& InOuter, const FTurboMCPLayoutReport::FRect& InInner)
 	{
 		return InInner.MinX >= InOuter.MinX && InInner.MaxX <= InOuter.MaxX
 			&& InInner.MinY >= InOuter.MinY && InInner.MaxY <= InOuter.MaxY;
@@ -190,7 +193,7 @@ namespace
 	/** The box a node belongs to, or `INDEX_NONE` when it is in no box. */
 	int32 OwningBox(
 		const TArray<TurboMCPCaptureSelector::FBox>& InBoxes,
-		const TurboMCPLayoutReport::FRect& InNode)
+		const FTurboMCPLayoutReport::FRect& InNode)
 	{
 		int32 Best = INDEX_NONE;
 		double BestArea = 0.0;
@@ -616,24 +619,71 @@ bool TurboMCPCaptureSelector::Resolve(
 
 void TurboMCPCaptureSelector::DescribeRenderingState(FString& InOutDescription)
 {
+	// *** WHY THE `-nullrhi` TEST IS NOT `GUsingNullRHI`, MEASURED. ***
+	//
+	// `GUsingNullRHI` is `GRHIGlobals.UsingNullRHI` (`RHIGlobals.h:894`), and it is the
+	// exact flag `LaunchEngineLoop.cpp:3343` tests before choosing the Slate NULL
+	// renderer at `:3345-3347`. READING IT FROM HERE DOES NOT LINK:
+	//
+	//     error LNK2019: unresolved external symbol
+	//     "__declspec(dllimport) struct FRHIGlobals GRHIGlobals"
+	//     referenced in function DescribeRenderingState
+	//
+	// `TurboMCP.Build.cs` does not list the `RHI` module. `RenderCore` lists it as a
+	// PUBLIC dependency (`RenderCore.Build.cs:12`), which makes the HEADER visible
+	// through `RenderCore` but does NOT export the symbol through `RenderCore`.
+	//
+	// So the answer is taken from flags that ARE reachable, and each one is printed as
+	// the thing it actually is rather than relabelled:
+	//
+	//   `-nullrhi` on the command line  - `FParse::Param`, which is the same call the
+	//                                     engine itself makes (`App.h:405`).
+	//   FApp::CanEverRender()           - `App.h:400-408`, which returns false when
+	//                                     that flag is set, in a commandlet and on a
+	//                                     dedicated server.
+	//   FSlateApplication::IsInitialized()
+	//
+	// NO DEPENDENCY WAS ADDED for this, and the limit is stated in the output because a
+	// reader who wants the engine's own flag deserves to know this is not it.
+	const bool bNullRhiFlag = FParse::Param(FCommandLine::Get(), TEXT("nullrhi"));
+	const bool bAppRendering = FApp::CanEverRender();
+	const bool bSlate = FSlateApplication::IsInitialized();
+
+	// THE THREE LABELS ARE COMPUTED INTO LOCALS RATHER THAN WRITTEN AS A TERNARY OF TWO
+	// `TEXT` LITERALS INSIDE THE VARIADIC CALL. That form is rejected by the engine's
+	// compile time format checker with `error C7595` on this project's UE 5.8.3, which is
+	// a trap the brief names and which has now fired twice in this file.
+	const TCHAR* const NullRhiLabel = bNullRhiFlag ? TEXT("true") : TEXT("false");
+	const TCHAR* const AppRenderingLabel = bAppRendering ? TEXT("true") : TEXT("false");
+	const TCHAR* const SlateLabel = bSlate ? TEXT("true") : TEXT("false");
+
+	InOutDescription += TEXT("\nrendering state, measured in this process rather than assumed:");
 	InOutDescription += FString::Printf(
-		TEXT("\nrendering state, measured in this process rather than assumed:"));
+		TEXT("\n-nullrhi on the command line: %s  (FParse::Param, the call App.h:405 makes)"),
+		NullRhiLabel);
 	InOutDescription += FString::Printf(
-		TEXT("\nGUsingNullRHI: %s  (RHIGlobals.h:894, GRHIGlobals.UsingNullRHI)"),
-		GUsingNullRHI ? TEXT("true") : TEXT("false"));
+		TEXT("\nFApp::CanEverRender(): %s  (App.h:400-408)"),
+		AppRenderingLabel);
 	InOutDescription += FString::Printf(
 		TEXT("\nSlate initialized: %s  (LaunchEngineLoop.cpp:3343 installs the renderer)"),
-		FSlateApplication::IsInitialized() ? TEXT("true") : TEXT("false"));
+		SlateLabel);
+	InOutDescription += TEXT(
+		"\n; GUsingNullRHI (RHIGlobals.h:894) is the engine flag LaunchEngineLoop.cpp:3343 ")
+		TEXT("tests, and this plugin CANNOT read it: the RHI module is not in TurboMCP.Build.cs ")
+		TEXT("and RenderCore does not re-export the symbol. The three lines above are what ")
+		TEXT("was measured instead, so this is a measured proxy and NOT the engine's own ")
+		TEXT("flag. No dependency was added for it.");
 
-	if (GUsingNullRHI)
+	if (bNullRhiFlag || !bAppRendering)
 	{
 		InOutDescription += TEXT(
-			"\n; the Slate NULL renderer is in use (LaunchEngineLoop.cpp:3345-3347 chose ")
-			TEXT("it because GUsingNullRHI was set), so no PNG path that needs a rendered ")
-			TEXT("frame can work: mode screen is REFUSED rather than returning a black ")
-			TEXT("image. This is the state every -nullrhi run is in.");
+			"\n; this process does not render, so the engine installs the Slate NULL ")
+			TEXT("renderer (LaunchEngineLoop.cpp:3345-3347 chose it because the null RHI path ")
+			TEXT("was taken). There is no rendered pixel to read: mode screen is REFUSED ")
+			TEXT("rather than returning a black image. This is the state every -nullrhi run ")
+			TEXT("is in.");
 	}
-	else if (!FSlateApplication::IsInitialized())
+	else if (!bSlate)
 	{
 		InOutDescription += TEXT(
 			"\n; the RHI is the real one but Slate is not initialized, which is the state ")
@@ -653,7 +703,9 @@ void TurboMCPCaptureSelector::DescribeScreenAvailability(FString& InOutDescripti
 {
 	InOutDescription += TEXT("\ncan mode screen work here: ");
 
-	if (GUsingNullRHI)
+	const bool bRenders = FApp::CanEverRender()
+		&& !FParse::Param(FCommandLine::Get(), TEXT("nullrhi"));
+	if (!bRenders)
 	{
 		InOutDescription += TEXT("NO, and the reason is the renderer rather than the window");
 	}
@@ -685,23 +737,38 @@ bool TurboMCPCaptureSelector::RenderScreen(
 	OutImagePath.Empty();
 	OutError.Empty();
 
-	// *** THE -nullrhi REFUSAL, WITH THE LINE THAT DECIDES IT. ***
+	// *** THE NO-RENDER REFUSAL, WITH THE LINE THAT DECIDES IT. ***
 	//
-	// `GUsingNullRHI` is `GRHIGlobals.UsingNullRHI` (`RHIGlobals.h:894`). It is what
-	// the engine tests at `LaunchEngineLoop.cpp:3343` before choosing the Slate NULL
-	// renderer at `:3345-3347` instead of the RHI one, and `:3354` is where that
-	// renderer is installed. WITH NO RENDERER THERE IS NO PIXEL TO READ: a screen
-	// capture under `-nullrhi` would either fail or hand back a black rectangle, and
-	// a black rectangle looks exactly like a successful capture of a dark window.
-	// So it is REFUSED BY NAME, here, before any render target is created.
-	if (GUsingNullRHI)
+	// `LaunchEngineLoop.cpp:3343` tests `GUsingNullRHI` and `:3345-3347` installs the
+	// Slate NULL renderer when it is set, so `:3354` initializes a renderer that draws
+	// nothing. WITH NO RENDERED PIXEL THERE IS NOTHING TO READ: a screen capture in that
+	// state would hand back a black rectangle, and a black rectangle looks exactly like
+	// a successful capture of a dark window. So it is REFUSED BY NAME, here, before any
+	// render target is created.
+	//
+	// The flag is read from the command line rather than from `GUsingNullRHI` for the
+	// reason stated at length in `DescribeRenderingState`: the RHI module is not linked,
+	// so that symbol does not resolve. The limit is printed by `mode rhi-state`, and the
+	// refusal below says which signal it used.
+	const bool bNullRhiFlag = FParse::Param(FCommandLine::Get(), TEXT("nullrhi"));
+	if (bNullRhiFlag || !FApp::CanEverRender())
 	{
-		OutError = TEXT("the editor is running with -nullrhi, so Slate has the NULL ")
-			TEXT("renderer and there is no rendered pixel to read. The line that decides ")
-			TEXT("it is LaunchEngineLoop.cpp:3343, which chooses the null renderer at ")
-			TEXT(":3345-3347 when GUsingNullRHI is set (RHIGlobals.h:894). mode screen ")
-			TEXT("is REFUSED rather than returning a black image. Start the editor ")
-			TEXT("WITHOUT -nullrhi to capture the screen.");
+		// Computed into a local: a ternary of two `TEXT` literals in a variadic
+		// argument is the `error C7595` trap.
+		const TCHAR* const WhichSignal = bNullRhiFlag
+			? TEXT("-nullrhi is on the command line")
+			: TEXT("FApp::CanEverRender() is false");
+
+		OutError = FString::Printf(
+			TEXT("the editor is not rendering (%s), so Slate has the NULL renderer and ")
+			TEXT("there is no rendered pixel to read. The engine line that decides it is ")
+			TEXT("LaunchEngineLoop.cpp:3343, which installs the null Slate renderer at ")
+			TEXT(":3345-3347 when the null RHI path is taken (GUsingNullRHI, ")
+			TEXT("RHIGlobals.h:894; this plugin reads the -nullrhi command line flag and ")
+			TEXT("FApp::CanEverRender instead, because the RHI module is not linked). mode ")
+			TEXT("screen is REFUSED rather than returning a black image. Start the editor ")
+			TEXT("WITHOUT -nullrhi to capture the screen."),
+			WhichSignal);
 		return false;
 	}
 
@@ -719,11 +786,9 @@ bool TurboMCPCaptureSelector::RenderScreen(
 	{
 		// SAID PLAINLY rather than rendering something else. An absent window is an
 		// absent measurement, not a zero and not a false (`P1`).
-		OutError = FString::Printf(
-			TEXT("no top level editor window is open, so there is nothing on screen to ")
-			TEXT("capture. Slate is initialized (%s) and the RHI is the real one, so the ")
-			TEXT("window is the missing piece."),
-			FSlateApplication::IsInitialized() ? TEXT("yes") : TEXT("no"));
+		OutError = TEXT("no top level editor window is open, so there is nothing on screen ")
+			TEXT("to capture. Slate is initialized and the RHI is the real one, so the ")
+			TEXT("window is the missing piece.");
 		return false;
 	}
 
@@ -770,12 +835,13 @@ bool TurboMCPCaptureSelector::RenderScreen(
 	FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/false);
 	FHittestGrid HitTestGrid;
 
-	// VertexColor is white so the picture is the window's own colours and not a
-	// darkened copy: the default is FLinearColor::Transparent, which multiplies the
-	// whole render to zero in its alpha.
+	// The overload takes NO vertex colour: the signature is the one
+	// `TurboMCPCapture.cpp` already calls (`Slate/WidgetRenderer.h:92-99`), so the two
+	// window renders cannot drift apart. The base vertex colour is
+	// `FSlateColor::UseForeground()`, which is what the proven path already uses.
 	Renderer->DrawWindow(RenderTarget, HitTestGrid, Window.ToSharedRef(),
 		/*Scale=*/1.0f, FVector2D(Width, Height), /*DeltaTime=*/0.0f,
-		/*bDeferRenderTargetUpdate=*/false, FLinearColor::White);
+		/*bDeferRenderTargetUpdate=*/false);
 
 	TArray<FColor> Pixels;
 	FReadSurfaceDataFlags ReadFlags(RCM_UNorm, CubeFace_MAX);
@@ -827,9 +893,17 @@ bool TurboMCPCaptureSelector::RenderScreen(
 	InOutDescription += FString::Printf(
 		TEXT("\nwindow: %dx%d, rendered at %dx%d"), WindowWidth, WindowHeight, Width, Height);
 	InOutDescription += FString::Printf(TEXT("\nsize: %dx%d"), Width, Height);
+	// A TERNARY OF TWO `TEXT` LITERALS INSIDE A VARIADIC ARGUMENT IS REJECTED BY THE
+	// ENGINE'S COMPILE TIME FORMAT CHECKER (`error C7595` on this project's UE 5.8.3),
+	// so each label is computed into a local first. The same trap is recorded in the
+	// brief and has now fired twice here.
+	const TCHAR* const RenderLabel =
+		FApp::CanEverRender() ? TEXT("rendering") : TEXT("not rendering");
+	const TCHAR* const SlateLabel =
+		FSlateApplication::IsInitialized() ? TEXT("yes") : TEXT("no");
+
 	InOutDescription += FString::Printf(
-		TEXT("\nrenderer: the real RHI (GUsingNullRHI is false, RHIGlobals.h:894), Slate ")
-		TEXT("initialized %s"), FSlateApplication::IsInitialized() ? TEXT("yes") : TEXT("no"));
+		TEXT("\nrenderer state: %s, Slate initialized %s"), RenderLabel, SlateLabel);
 	InOutDescription += FString::Printf(TEXT("\nimage: %s"), *OutImagePath);
 	InOutDescription += TEXT("\n; screen is the whole editor window composited by the ")
 		TEXT("Slate renderer, NOT the level viewport frame. The level viewport needs rows ")

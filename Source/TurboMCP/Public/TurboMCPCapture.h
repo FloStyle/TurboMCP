@@ -9,7 +9,6 @@
 
 #include "Containers/UnrealString.h"
 #include "CoreTypes.h"
-#include "Templates/Array.h"
 
 class SGraphEditor;
 class UEdGraph;
@@ -46,10 +45,15 @@ class UEdGraphNode;
  * definition is PRINTED IN THE OUTPUT, because a selector whose definition is not
  * in its own result is a selector a caller cannot verify.
  *
- * `screen` is the whole editor window, and it REFUSES under `-nullrhi` BY NAME
- * instead of writing a black image. The engine line that decides it is
+ * `screen` is the whole editor window, and it REFUSES when the process does not
+ * render instead of writing a black image. The engine line that decides it is
  * `RHIGlobals.h:894` (`GUsingNullRHI`), which is what `LaunchEngineLoop.cpp:3343`
- * tests before it chooses the Slate NULL renderer at `:3345-3347`.
+ * tests before it installs the Slate NULL renderer at `:3345-3347`. THE PLUGIN CANNOT
+ * READ THAT SYMBOL: the `RHI` module is not in `TurboMCP.Build.cs` and the link fails
+ * with `unresolved external symbol GRHIGlobals`, so the decision is taken from the
+ * `-nullrhi` command line flag (`App.h:405` parses it) and `FApp::IsRendering()`
+ * (`App.h:406`). The output says which signal was used rather than implying the
+ * engine's own flag was read.
  */
 namespace TurboMCPCaptureSelector
 {

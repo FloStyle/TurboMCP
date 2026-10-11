@@ -5,6 +5,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+#include "TurboMCPCapture.h"
+
 #include "Tools/TurboMCPToolsets.h"
 
 #include "AssetRegistry/AssetData.h"
@@ -202,7 +204,34 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
 	int32 Width = DefaultWidth;
 	int32 Height = DefaultHeight;
-	if (!Size.TrimStartAndEnd().IsEmpty())
+	if (bNewSelector)
+	{
+		// THE HOP COUNT IS `Size` FOR THE TWO NEIGHBOURHOOD SELECTORS, and it is a plain
+		// whole number rather than a `WxH` pair, because those modes COMPUTE their own
+		// picture size from the frame exactly as `node` and `box` already do. `0` is a
+		// meaningful value (the target alone), so a bare `0` must be accepted here even
+		// though the size parser below would reject it for every other mode.
+		const FString HopText = Size.TrimStartAndEnd();
+		if (!HopText.IsEmpty())
+		{
+			if (!HopText.IsNumeric())
+			{
+				return FString::Printf(
+					TEXT("error: mode '%s' reads Size as a whole number of hops, and '%s' ")
+					TEXT("is not one. Pass 0 for the target alone, or a count such as 3."),
+					*WantedMode, *Size);
+			}
+			NeighbourHops = FCString::Atoi(*HopText);
+			if (NeighbourHops > MaxEdge)
+			{
+				return FString::Printf(
+					TEXT("error: %d hops is more than the %d limit this tool accepts. A ")
+					TEXT("neighbourhood that wide is the whole graph, so ask for the ")
+					TEXT("whole graph as it is."), NeighbourHops, MaxEdge);
+			}
+		}
+	}
+	else if (!Size.TrimStartAndEnd().IsEmpty())
 	{
 		FString Left;
 		FString Right;
