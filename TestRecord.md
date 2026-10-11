@@ -9596,3 +9596,27 @@ caller cannot verify**, so the definition goes INTO the output, as `P/E-STRUCT-F
 **AND THE BRIEF CARRIES THE TWO NEWEST MEASURED RULES, BOTH OF WHICH COST A PREVIOUS WORKSTREAM REAL WORK:** *`P1` - an absent
 measurement must never print as `false` or a zero, and a decision reason is never allowed to be empty (that was a real defect found
 by a break test); and a check must not depend on shared mutable state (that was a real defect a workstream replaced a check over).*
+
+---
+
+## 147. Round 198: L-CAPTURE EXISTS, 792 LINES OF IT, AND THE ROW'S PREMISE IS THEREFORE THE THING TO CHECK RATHER THAN ASSUME
+
+    Source/TurboMCP/TurboMCPCapture.cpp        792 lines, LAST TOUCHED 10-10 00:43 - NOT BY THIS ROW
+    Source/TurboMCP/TurboMCPLogCapture.cpp     138 lines, same timestamp
+    TurboMCPCapture.cpp:43   `* L-CAPTURE: picture of an asset editor.`
+    TurboMCPToolsets.h:743   `* Phase 3 fills this class with L-LAYOUT-REPORT, L-CAPTURE and ...`
+
+*** SO THE CAPABILITY IS REAL AND SUBSTANTIAL, AND THE HEADER SAYS `L-CAPTURE` IS **PHASE 3**'s WHILE `Spec/WORKING_PLAN.md` PUTS THESE
+SELECTORS IN **PHASE 2**. THAT IS NOT A CONTRADICTION I CAN SETTLE FROM OUTSIDE - it is exactly the kind of premise the brief told
+this workstream to CHECK RATHER THAN ASSUME, AND IT IS THE FOURTH ROW IN A ROW WHERE THE PREMISE TURNED OUT TO NEED CHECKING. ***
+
+**AND THE USEFUL PART IS THAT THE BRIEF ALREADY ANTICIPATED BOTH ANSWERS WITHOUT KNOWING WHICH.** *It says "there is no
+`TurboMCPCapture*` file that I know of - IF THE CAPABILITY DOES NOT EXIST YET, SAY SO AND START IT RATHER THAN ASSUMING A SHAPE",
+which is the wrong guess; **and it also says to walk the source with `grep` rather than trust the row, which is the instruction that
+finds the right one.*** *** A brief that names its own uncertainty AND the command that resolves it survives being wrong about the
+uncertainty - which is the only reason it is worth writing uncertainty into a brief at all. ***
+
+**AND `L-CAPTURE` BEING 792 LINES MEANS THE FOUR SELECTORS ARE MORE LIKELY AN EXTENSION THAN A NEW CAPABILITY**, *which changes the
+shape of the work: an extension must match an existing output format it did not choose, and **a selector bolted onto a 792-line
+tool's output has to be consistent with 792 lines of decisions rather than with a spec.*** **The brief's requirement - that
+`neighbours` write its own definition into its output - is the thing that makes that consistency checkable.**
