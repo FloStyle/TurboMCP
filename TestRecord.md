@@ -6140,3 +6140,41 @@ FAIL.** Four workstreams reported that their count overstated their coverage, **
 a check over a relationship inherits the vacuity of its input.** *A copy suite's most natural checks are relationships
 (the link count matches, the destination grew by N nodes, every crossing link is reported) AND EVERY ONE OF THOSE
 PASSES ON AN EMPTY COPY.*
+
+---
+
+## 45. The graph tools are WIRED UP and the module LINKS - and the audit is RED on exactly the four names it should be
+
+**MEASURED, AND THE STRONGEST GUARD THIS PROJECT HAS AGAINST A STALE BINARY:**
+
+    FULL MODULE BUILD (not `-SingleFile`) WITH THE FOUR DECLARATIONS IN THE SHARED HEADER
+    Result: Succeeded
+
+    Tools/TurboMCPGraphStructureTools.cpp   EXISTS
+    4 declarations                          PreviewTurboMCPGraphCopy, EditTurboMCPGraphCopy,
+                                            PreviewTurboMCPGraphCollapse, EditTurboMCPGraphCollapse
+    85 AICallable tools                     (81 -> 85)
+
+*** AND THE RED AUDIT IS THE POINT RATHER THAN A PROBLEM: ***
+
+    uncalled: EditTurboMCPGraphCollapse, EditTurboMCPGraphCopy, PreviewTurboMCPGraphCollapse, PreviewTurboMCPGraphCopy
+    RESULT: FAIL (1) -> no AICallable tool is left uncalled by every suite
+
+**`Tools/test-graph-structure.py` DOES NOT EXIST - the workstream is still writing it - SO NOTHING CALLS THESE FOUR
+TOOLS, AND THE AUDIT SAYS SO IN THE ONE WAY THAT IS VISIBLE.** *A red audit is visible and fixable; an untracked file
+that a delete would have destroyed is neither.* **This is the trade already recorded when `R-CALL-COST`'s suite was
+untracked, and it is being made deliberately a second time rather than by accident.**
+
+### Why the four names being RED is worth more than a green run would have been
+
+**`d6cb5bd` COMMITTED TWO DECLARATIONS WITH NO BODIES, AND THAT STATE WOULD HAVE BEEN A BUILD BREAK RATHER THAN A
+TOOL** - which is why the tool count was deliberately not read at that commit. **NOW THE FOUR NAMES HAVE BODIES, THE
+MODULE LINKS, AND THE BUILD IS GREEN** - so the next thing to happen is the one the project cares about: **a tool that
+did not exist an hour ago can be CALLED AT ALL, which is the guard that catches a stale DLL.** *A stale binary would
+say "no such tool"; these four answer `uncalled` because nothing calls them YET, which is a different statement
+entirely.*
+
+### And the row's two debts are unchanged and both are named
+
+1. **THE SUITE MUST STATE WHICH `T-STRUCT-11` IT PROVED** - copying between two **GRAPHS of one blueprint** (which is what `TA-2` actually is, since `TurboMCPKitCommandlet.cpp:939-940` sets `Ta2.Name = "TA01_HandLaid"`) **or between two ASSETS**. **THE ROW SAYS "between graphs and Blueprints" AND THE FIXTURE CANNOT DO THE SECOND HALF.**
+2. **AND IT MUST SATISFY THE CHECK RULE FOUR ROUNDS PRODUCED: NAME THE INPUT THAT MAKES EACH CHECK FAIL.** *A copy suite's natural checks are relations - the link count matches, the destination grew by N nodes, each crossing link is reported - **AND EVERY ONE PASSES ON AN EMPTY COPY.***
