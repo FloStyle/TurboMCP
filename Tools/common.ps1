@@ -47,7 +47,22 @@
     Dot-source this file; it defines functions and no state.
 #>
 
-Set-StrictMode -Version Latest
+# ---------------------------------------------------------------------------------------------
+# *** NO `Set-StrictMode` HERE, AND THAT IS DELIBERATE - IT COST TWELVE FAILING SUITES. ***
+#
+# The first version of this file set `Set-StrictMode -Version Latest`. Dot-sourcing does not contain
+# that: IT APPLIES TO THE CALLER'S SCOPE AND EVERY SCOPE THE CALLER CREATES. So a script that
+# legitimately read `$script:Something` set in one place and read in another began throwing
+# "Impossible de récupérer la variable « $script:... » parce qu'elle n'a pas été définie", WHICH IS A
+# MESSAGE ABOUT STRICT MODE AND NOT ABOUT THE VARIABLE.
+#
+# MEASURED: a full run went from `passed 58, failed 0` to `passed 46, failed 12`, and the twelve were
+# fixture rebuilds - `make-acceptance-asset.ps1` was the one that threw, and every suite that needed a
+# fixture it builds then failed for a reason that pointed at the SUITE rather than at this file.
+#
+# A helper that changes the caller's global behaviour is not a helper. Each script keeps whatever strict
+# mode it chooses for itself.
+# ---------------------------------------------------------------------------------------------
 
 <#
 .SYNOPSIS
