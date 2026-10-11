@@ -7409,3 +7409,43 @@ rather than to perfect the one that does not.**
 *** SO THERE ARE NOW FOUR ROUTES ON RECORD AND TWO OF THEM ARE CLOSED BY MEASUREMENT: BARE NAME (not found), MODULE
 PREFIX (crashes), STATIC INITIALISER (crashed for a previous workstream), AND RELOCATION INTO A COMMANDLET THAT IS
 PROVEN TO RUN (untried, and the only one of the four that can produce the assertions the file exists for). ***
+
+---
+
+## 75. Round 116: the relocation is now a PLAN with the symbols named, which is what the next attempt needs
+
+**MEASURED: THE PURE FUNCTIONS ARE CLASS MEMBERS, SO THEY ARE REACHABLE FROM A DIFFERENT `.cpp` - WHICH IS THE ONLY THING
+THAT MADE THE RELOCATION WORTH PROPOSING RATHER THAN ASSERTING.**
+
+    Source/TurboMCP/Public/TurboMCPCallCost.h
+        class FTurboMCPCallCost
+            FString NormaliseToolset(const FString& InToolset)      defined TurboMCPCallCost.cpp:84-120
+            FString AssetFromArguments(const FString& InArguments)   defined TurboMCPCallCost.cpp:122-151
+
+**AND THE OTHER HALF OF THE FILE'S OWN CLAIM CHECKS OUT: `TurboMCPCallCost.cpp:13-82` IS AN ANONYMOUS NAMESPACE, SO THE
+HELPERS ARE PRIVATE - BUT THE TWO FUNCTIONS THE ASSERTIONS NEED ARE NOT IN IT.** *That is the difference between a plan
+that can be executed and one that cannot, and it took one `grep` to establish.*
+
+### THE PLAN, WHICH IS THE DELIVERABLE OF THIS ROUND
+
+    WHAT    put the pure assertions where a commandlet already RUNS
+    WHERE   a commandlet modelled on TurboMCPKitCommandlet, because that one is PROVEN: invoked
+            `-run=TurboMCP.<Name>Commandlet` with the MODULE PREFIX, no static initialiser, writes,
+            verifies its own structure, exits 0, harnessed by make-kit-assets.ps1
+    WHAT IT ASSERTS
+            NormaliseToolset("TurboMCP.TurboMCPReadToolset") == NormaliseToolset("TurboMCPReadToolset")
+              <- the two spellings the log's two writers produce, which MUST collapse to ONE key
+            AssetFromArguments("") and a literal argument blob
+              <- the "no arguments means no asset" distinction
+    WHY IT MATTERS  THE MCP SUITE STRUCTURALLY CANNOT MAKE THIS CHECK: it cannot make the engine emit a
+                    QUALIFIED toolset name, which is why the break test on this exact function DID NOT BITE
+                    (section 38: `return Trimmed;` still gave PASS (29 checks))
+    WHAT TO AVOID    do NOT add a static initialiser calling LoadModule - TurboMCPKitCommandlet.h records that
+                    it was tried and crashed with an ACCESS VIOLATION, and a static initialiser is neither
+                    the kit's design nor the pure commandlet's
+
+*** AND THE ONE THING I AM NOT DOING IS WRITING IT IN THIS ROUND, FOR A REASON THAT IS ITSELF A RECORDED LESSON: A
+BUILD-AND-RUN CYCLE IN THE LAST ROUNDS OF A CONTEXT BUDGET IS HOW THE PROJECT GOT A COMMANDLET THAT COMPILED AND WAS
+NEVER EXECUTED, A SUITE THAT PRINTED NO VERDICT FOR FOUR ROUNDS, AND AN UNRESTORED BREAK TEST THAT PRODUCED `error
+C2059`. THE PLAN IS COMMITTED AND THE NEXT ATTEMPT STARTS FROM A NAMED CLASS, TWO NAMED FUNCTIONS, A NAMED MODEL
+COMMANDLET, A NAMED ENGINE CONSTRAINT AND A NAMED TRAP. ***
