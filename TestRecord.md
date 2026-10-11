@@ -7647,3 +7647,34 @@ two unsupported conclusions I have already had to withdraw: writing the story th
 
 **AND THE RECORD SHOULD SAY PLAINLY WHAT IT HAS EARNED: THE PROJECT IS HONEST, BUILDABLE, AND GREEN, AND IT IS NOT CLOSE
 TO COMPLETE.**
+
+---
+
+## 80. Round 121: the vacuity route is LAUNCHED as an implementation, because the investigation ended in a shape the engine permits
+
+**THE BRIEF IS SMALL AND ITS CONCLUSION WAS ALREADY PAID FOR.** *Sections 73 to 79 established that the two pure
+assertions cannot run in a commandlet - `BlueprintEditorModule.cpp:214` is `check(GEditor)`, unconditional, and
+`TurboMCP.Build.cs:61` depends on `Kismet`, so the process dies in module startup before any commandlet's `Main`.* **SO
+THE WORK IS NOT TO INVENT A THIRD ROUTE: IT IS TO EXPOSE `FTurboMCPCallCost::NormaliseToolset` AND `AssetFromArguments`
+THROUGH A TOOL, SO A SUITE OVER MCP CAN CALL THEM WITH LITERAL INPUTS - WHICH IS HOW EVERY OTHER CHECK IN THIS PROJECT
+RUNS.**
+
+**AND THE ONLY REASON IT IS POSSIBLE AT ALL WAS MEASURED LAST ROUND: THE TWO FUNCTIONS ARE `static` MEMBERS OF A CLASS IN
+A PUBLIC HEADER (`TurboMCPCallCost.h:107,117`), WHILE THE HELPERS AROUND THEM ARE IN AN ANONYMOUS NAMESPACE
+(`TurboMCPCallCost.cpp:13-82`).** *One `grep` separated "reachable" from "private", and without it this task would have
+looked impossible for the same reason the commandlet did.*
+
+### 80.1 And the brief asks the question that decides whether this is worth anything
+
+*** IT ASKS THE WORKSTREAM TO JUDGE WHETHER MAKING THE ASSERTION REACHABLE OVER MCP ACTUALLY CLOSES THE VACUITY GAP, OR
+WHETHER IT ONLY MOVES IT. *** **THAT IS THE RIGHT QUESTION AND I DO NOT KNOW THE ANSWER.** *The original defect was that
+the SUITE could not make the engine emit a qualified toolset name; a tool with LITERAL inputs removes that dependency
+entirely, so the check becomes decidable. **BUT A TOOL THAT REPORTS WHAT A FUNCTION RETURNED FOR AN INPUT I CHOSE IS STILL
+A PRODUCER REPORTING ON ITSELF** - and this project's oldest rule is that a tool's own report is not evidence. **SO THE
+HONEST ANSWER MAY BE "IT CLOSES THE GAP FOR THE NORMALISER AND OPENS ONE FOR THE TOOL", AND I WANT THAT SAID RATHER THAN
+ROUNDED.***
+
+**AND THE BRIEF NAMES FIVE FAILURE MODES THE WORKSTREAM MUST NOT REPRODUCE:** the `session.rpc` mistake, a variable-
+dispatched call name landing in the audit's unparsed list, a copied argument set, a break test left in the tree, and **a
+sixth vacuous check** - *because five capabilities have now reported that their check count overstates their coverage and
+one suite has an `else` branch that literally checks `True`.*
