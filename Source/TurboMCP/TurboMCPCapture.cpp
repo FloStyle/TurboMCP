@@ -362,13 +362,21 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
 		FString Out = FString::Printf(TEXT("look: selection probe on %s"), *Resolved.ObjectPath);
 		Out += FString::Printf(TEXT("\ngraph: %s"), *Graph->GetName());
+		FString ProbeReport = Out;
 		FString ProbeWhy;
 		if (!TurboMCPCaptureSelector::ProbeSelection(ProbePanel.Get(), Graph, Target,
-				Resolved.ObjectPath, Out, ProbeWhy))
+				Resolved.ObjectPath, ProbeReport, ProbeWhy))
 		{
-			return FString::Printf(TEXT("%s\nerror: %s"), *Out, *ProbeWhy);
+			// A PLAIN STRING BEGINNING `error:` AND NOTHING ELSE, which is the convention
+			// every other mode on this tool already uses. The first version returned the
+			// report followed by the error, and the engine's tool layer then flagged the
+			// WHOLE answer as an error while the text began with the success banner, so a
+			// caller testing for the `error:` prefix saw a success. MEASURED: the suite's
+			// `a key that resolves to no node is refused` check was the one red check, and
+			// the tool's own output on that input began `look: selection probe on ...`.
+			return FString::Printf(TEXT("error: %s"), *ProbeWhy);
 		}
-		return Out;
+		return ProbeReport;
 	}
 
 	if (bNewSelector)

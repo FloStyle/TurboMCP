@@ -61,6 +61,38 @@ def check(name, ok, detail=""):
         failures.append(name)
 
 
+def refused(out):
+    """True when the tool answered a refusal, in EITHER of the two shapes it uses.
+
+    MEASURED, AND IT COST A ROUND. A mode that returns a plain string beginning
+    `error:` arrives as that string. A mode that returns a multi-line answer which the
+    engine's tool layer decides is an error arrives PREFIXED with `!! isError: `, so a
+    check written as `out.startswith("error:")` is red even though the tool refused
+    correctly. THE INPUT THAT MADE THIS VISIBLE: the `select-nodes` probe with the key
+    `ffffff,nope`, whose own text began with the probe's success banner while the server
+    had flagged the answer as an error.
+    """
+    return out.startswith("error:") or out.startswith("!! isError:")
+
+
+def reason_of(out):
+    """The refusal text, whichever of the two shapes carried it."""
+    for marker in ("!! isError:", "error:"):
+        if out.startswith(marker):
+            return out.split(marker, 1)[1].strip()
+    return out
+
+
+def every_check_can_fail():
+    """A guard on this file itself: the two shapes above must be recognised.
+
+    FAILS ON: either marker being renamed, which would silently turn every `refused`
+    check into a green one.
+    """
+    return (refused("error: x") and refused("!! isError: x")
+            and not refused("look: x") and not refused("ok"))
+
+
 def png_size(path):
     """The width and height in the PNG header, or None when it is not a PNG."""
     try:
@@ -159,6 +191,16 @@ def main():
     session.connect()
 
     # ------------------------------------------------------------------
+    print("=== this suite's own refusal detector ===")
+    # FAILS ON: either refusal shape being renamed, which would silently turn every
+    # `refused` check in this file green. This is the check ON the checks.
+    check("both refusal shapes are recognised, and a success is not a refusal",
+          every_check_can_fail())
+    print("        'error: x' -> %s | '!! isError: x' -> %s | 'look: x' -> %s"
+          % (refused("error: x"), refused("!! isError: x"), refused("look: x")))
+
+    # ------------------------------------------------------------------
+    print()
     print("=== the measured rendering state, and whether screen can work ===")
     # FAILS ON: the block not being printed (flags is None), any "true"/"false" heading
     # being renamed or removed, or the caveat about GUsingNullRHI being dropped.
@@ -187,7 +229,7 @@ def main():
 
     if not screen_should_work:
         check("refuses when the process does not render",
-              shot.startswith("error:") and "error:" in shot)
+              refused(shot))
         check("the refusal names the engine line",
               "LaunchEngineLoop.cpp:3343" in shot)
         check("the refusal says it will not write a black image",
@@ -195,7 +237,7 @@ def main():
         check("no image path is printed", image_path_of(shot) is None)
     else:
         check("does not refuse when the process does render",
-              not shot.startswith("error:"), shot.splitlines()[0] if shot else "")
+              not refused(shot), shot.splitlines()[0] if shot else "")
         check("says the WHOLE window was framed, not a graph",
               "framed: the whole editor window" in shot)
         check("says it is not the level viewport",
@@ -236,12 +278,12 @@ def main():
     nothing = capture(session, "selection")
     print(nothing)
     print()
-    check("refuses when nothing is selected", nothing.startswith("error:"))
+    check("refuses when nothing is selected", refused(nothing))
     check("says nothing is selected", "nothing is selected" in nothing)
     check("says it is NOT a fallback to the whole graph",
           "not a fallback to the whole graph" in nothing)
     check("prints a reason rather than an empty error",
-          len(nothing.split("error:", 1)[-1].strip()) > 40)
+          len(reason_of(nothing)) > 40)
 
     # ------------------------------------------------------------------
     print()
@@ -311,21 +353,21 @@ def main():
                        size="banana")
     print(bad_size)
     print()
-    check("a non-numeric hop count is refused", bad_size.startswith("error:"))
+    check("a non-numeric hop count is refused", refused(bad_size))
     check("the refusal says what Size means here",
           "whole number of hops" in bad_size)
 
     no_target = capture(session, "neighbours", target="", size="1")
-    check("a missing target is refused", no_target.startswith("error:"))
+    check("a missing target is refused", refused(no_target))
     check("the refusal asks for a node ID", "needs a target node ID" in no_target)
 
     missing = capture(session, "neighbours", target="BP_NodeTest:EventGraph:ffffff", size="1")
-    check("a key that matches nothing is refused", missing.startswith("error:"))
+    check("a key that matches nothing is refused", refused(missing))
     check("the refusal points at R-NODE-FIND", "R-NODE-FIND" in missing)
 
     huge = capture(session, "neighbours", target=root_id or "BP_NodeTest:EventGraph:000000",
                    size="99999")
-    check("an absurd hop count is refused", huge.startswith("error:"))
+    check("an absurd hop count is refused", refused(huge))
     check("the refusal names the limit", "limit" in huge)
 
     # ------------------------------------------------------------------
@@ -336,18 +378,18 @@ def main():
     no_box = capture(session, "box-neighbours", target="9", size="1")
     print(no_box)
     print()
-    check("a box that does not exist is refused", no_box.startswith("error:"))
+    check("a box that does not exist is refused", refused(no_box))
     check("the refusal gives the real box count", "comment box(es)" in no_box)
     check("the refusal names what was asked for", "asked for box 9" in no_box)
     check("it does NOT fall back to a wider frame",
           "framed:" not in no_box)
 
     bad_box = capture(session, "box-neighbours", target="banana", size="1")
-    check("a non-numeric box index is refused", bad_box.startswith("error:"))
+    check("a non-numeric box index is refused", refused(bad_box))
     check("the refusal says an index is wanted", "not a comment box index" in bad_box)
 
     empty_box = capture(session, "box-neighbours", target="", size="1")
-    check("a missing box index is refused", empty_box.startswith("error:"))
+    check("a missing box index is refused", refused(empty_box))
 
     # The refusals this mode documents are asserted as TEXT, because they are the
     # answer to "which combinations do you not support" and a caller reads them.
@@ -355,7 +397,7 @@ def main():
     defined = capture(session, "box-neighbours", target="0", size="0")
     print(defined)
     print()
-    if defined.startswith("error:"):
+    if refused(defined):
         check("with no boxes, box 0 is refused rather than framed",
               "comment box(es)" in defined)
     else:
@@ -392,7 +434,7 @@ def main():
           "selected after the probe cleared it: 0 node(s)" in probe)
     check("the probe says it is not the contract",
           "the PROBE, not the contract" in probe)
-    check("the probe worked", not probe.startswith("error:"))
+    check("the probe worked", not refused(probe))
 
     # A key that resolves to nothing changes NOTHING, which is the write-tool rule the
     # probe borrows: a bad input leaves the editor as it was.
@@ -400,7 +442,7 @@ def main():
     probe_bad = capture(session, "select-nodes", target="ffffff,nope")
     print(probe_bad)
     print()
-    check("a key that resolves to no node is refused", probe_bad.startswith("error:"))
+    check("a key that resolves to no node is refused", refused(probe_bad))
     check("the refusal says NOTHING was selected", "NOTHING was selected" in probe_bad)
     check("the refusal names the bad keys", "ffffff" in probe_bad)
 
@@ -408,7 +450,7 @@ def main():
     # refusal must still be the refusal rather than an empty success.
     after_probe = capture(session, "selection")
     check("selection still refuses after the probe cleared the selection",
-          after_probe.startswith("error:") and "nothing is selected" in after_probe)
+          refused(after_probe) and "nothing is selected" in after_probe)
 
     # ------------------------------------------------------------------
     print()
