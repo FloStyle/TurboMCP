@@ -114,6 +114,12 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	const bool bOneBox = WantedMode == TEXT("box");
 	const bool bOneNode = WantedMode == TEXT("node");
 
+	// `screen` IS READ HERE TOO, AND FOR ONE REASON: the graph name must NOT be demanded
+	// for it, and that guard is taken before the block that handles `screen` below. It is
+	// one constant-folded comparison, so reading it twice costs nothing and keeps the
+	// guard honest.
+	const bool bScreen = WantedMode == TEXT("screen");
+
 	// `asset-editor` IS HANDLED BEFORE THE ASSET AND THE GRAPH ARE DEMANDED, and that is
 	// the point of it: with no asset it answers the capability question - "which editors
 	// can this tool capture" - without opening anything.
@@ -138,33 +144,42 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			// NO ASSET IS NOT A FAILURE: it is the question "which editors can this tool
 			// capture", and it is answered without opening anything. An empty argument
 			// that printed a refusal would make the catalogue unreachable.
+			if (!GraphName.TrimStartAndEnd().IsEmpty()
+				&& !TurboMCPCaptureAsset::FindKind(GraphName, Named))
+			{
+				// *** THE REFUSAL STARTS WITH `error:` AND CARRIES NO BANNER FIRST. ***
+				//
+				// MEASURED, AND IT COST A ROUND. With the banner first, the answer began
+				// `look: capture of an asset editor` and the engine's tool layer did NOT
+				// flag it, so `out.startswith("error:")` was FALSE and a caller reading
+				// the first line saw a SUCCESS - which is the identical defect row 2.1
+				// recorded on the `select-nodes` probe. The refusal is therefore the whole
+				// opening of the answer, and the support table is appended after it.
+				FString Refusal = FString::Printf(
+					TEXT("error: '%s' is not an editor kind this tool knows. Pass one of ")
+					TEXT("the kind names listed below, or leave it empty for the whole ")
+					TEXT("table."), *GraphName);
+				Refusal += TEXT("\nwhich asset editors this tool can capture:");
+				TurboMCPCaptureAsset::DescribeKinds(Refusal);
+				return Refusal;
+			}
+
 			Out += TEXT("\nasset: none given, so this is the support table and no editor ")
 				TEXT("was opened");
-			if (!GraphName.TrimStartAndEnd().IsEmpty())
+			if (!Named.Name.IsEmpty())
 			{
 				// A KIND WITHOUT AN ASSET IS ANSWERED RATHER THAN IGNORED, because a
 				// caller who asked "can you capture a DataTable" deserves that answer and
 				// not the whole table to search.
-				if (TurboMCPCaptureAsset::FindKind(GraphName, Named))
-				{
-					Out += FString::Printf(TEXT("\nkind asked about: %s"), *Named.Name);
-					Out += FString::Printf(TEXT("\n  asset class: %s"), *Named.AssetClass);
-					Out += FString::Printf(TEXT("\n  editor module: %s"),
-						Named.OwnerModule.IsEmpty() ? TEXT("(none)") : *Named.OwnerModule);
-					Out += FString::Printf(TEXT("\n  can capture it instead: %s"),
-						Named.AlternativeTool.IsEmpty()
-							? TEXT("(no other tool)") : *Named.AlternativeTool);
-					Out += FString::Printf(TEXT("\n  why: %s"), *Named.Reason);
-				}
-				else
-				{
-					Out += FString::Printf(
-						TEXT("\nerror: '%s' is not an editor kind this tool knows. Pass one ")
-						TEXT("of the kind names listed below, or leave it empty for the ")
-						TEXT("whole table."), *GraphName);
-					TurboMCPCaptureAsset::DescribeKinds(Out);
-					return Out;
-				}
+				Out += FString::Printf(TEXT("\nkind asked about: %s"), *Named.Name);
+				Out += FString::Printf(TEXT("\n  asset class: %s"), *Named.AssetClass);
+				Out += FString::Printf(TEXT("\n  editor module: %s"),
+					Named.OwnerModule.IsEmpty() ? TEXT("(none)") : *Named.OwnerModule);
+				Out += FString::Printf(
+					TEXT("\n  another tool that also captures this kind, if any: %s"),
+					Named.AlternativeTool.IsEmpty()
+						? TEXT("(no other tool)") : *Named.AlternativeTool);
+				Out += FString::Printf(TEXT("\n  why: %s"), *Named.Reason);
 			}
 			TurboMCPCaptureAsset::DescribeKinds(Out);
 			return Out;
@@ -176,12 +191,16 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			// THE KIND IS CHECKED BEFORE ANY EDITOR IS OPENED, so a typo cannot leave a
 			// tab open behind a refusal. `D-41`: a framing that cannot be done is an
 			// error naming why, and never a silent fallback to a wider one.
-			Out += FString::Printf(
-				TEXT("\nerror: '%s' is not an editor kind this tool knows, so nothing was ")
+			//
+			// AND THE REFUSAL STARTS WITH `error:` FOR THE REASON ABOVE, so a caller
+			// testing the prefix sees the failure rather than the banner.
+			FString Refusal = FString::Printf(
+				TEXT("error: '%s' is not an editor kind this tool knows, so nothing was ")
 				TEXT("opened. Pass one of the kind names listed below, or leave it empty ")
 				TEXT("to capture whichever editor the asset resolves to."), *GraphName);
-			TurboMCPCaptureAsset::DescribeKinds(Out);
-			return Out;
+			Refusal += TEXT("\nwhich asset editors this tool can capture:");
+			TurboMCPCaptureAsset::DescribeKinds(Refusal);
+			return Refusal;
 		}
 
 		FString ImagePath;
@@ -224,7 +243,9 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// here, so there is still exactly ONE `LookTurboMCPCapture` and one PNG contract
 	// (`04_FORMATS.md` section 6). The selectors decide WHICH NODES are framed; this
 	// function still owns the frame arithmetic and the picture.
-	const bool bScreen = WantedMode == TEXT("screen");
+	// `bScreen` WAS ALSO DECLARED AT THE TOP, for the graph-name guard. It is not
+	// redeclared here, because two declarations of one mode flag is how a mode comes to
+	// mean two things.
 	const bool bRhiState = WantedMode == TEXT("rhi-state");
 	const bool bSelectProbe = WantedMode == TEXT("select-nodes");
 	const bool bNewSelector = WantedMode == TEXT("selection")
@@ -249,10 +270,15 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	}
 
 	// THE GRAPH NAME IS DEMANDED ONLY NOW, once the mode is known to be one that needs it.
-	// `asset-editor` is the one mode that does not: it frames an editor tab, and a
-	// Material, a DataTable or a Widget Designer has no graph to name. Every other mode
-	// refuses here rather than guessing which graph the caller meant.
-	if (GraphName.IsEmpty() && !bAssetEditor)
+	// `asset-editor` AND `screen` ARE THE TWO MODES THAT DO NOT. `asset-editor` frames an
+	// editor tab, and a Material, a DataTable or a Widget Designer has no graph to name;
+	// `screen` frames the whole window, which belongs to no asset and no graph at all.
+	//
+	// THIS CHECK WAS `asset-editor` ONLY FOR ONE ROUND, AND THE OMISSION WAS MEASURED: a
+	// suite calling `mode screen` with no graph name got
+	// `error: no graph given ...` instead of a picture, which reads as a defect in the
+	// capture and is a defect in THIS guard.
+	if (GraphName.IsEmpty() && !bAssetEditor && !bScreen)
 	{
 		return TEXT("error: no graph given. Pass a graph name; the tool refuses ")
 			TEXT("rather than guessing which graph you meant.");

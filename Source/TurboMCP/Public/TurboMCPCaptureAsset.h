@@ -152,7 +152,12 @@ namespace TurboMCPCaptureAsset
 	 *
 	 * This is the answer to "which editors can this capture", and it is printed whether
 	 * or not an asset was named, so a caller can ask the question without capturing
-	 * anything. It opens no editor and writes no file.
+	 * anything. IT ASKS THE ENGINE TO LOAD EACH KIND'S EDITOR MODULE, so the answer is a
+	 * measurement of reachability rather than of what happens to be open, and it is the
+	 * same on the first call of a process as on the twentieth.
+	 *
+	 * It opens no ASSET EDITOR and writes no file. Loading a module is not opening an
+	 * editor: nothing is rendered, nothing is shown and nothing is saved.
 	 */
 	void DescribeKinds(FString& InOutDescription);
 

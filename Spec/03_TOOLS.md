@@ -1419,6 +1419,84 @@ once.
   picture.
 - Test: T-LOOK-8.
 
+#### What `L-CAPTURE-ASSET` is, measured: mode `asset-editor`
+
+`asset-editor` is a MODE of `L-CAPTURE`, not a second tool, so there is still one
+PNG contract (`04_FORMATS.md` section 6) and one place the picture is written.
+`asset` names the asset; **`graphName` carries the KIND** for this mode (a kind
+name, case insensitive, or empty to capture whichever editor the asset resolves
+to). That reuse is deliberate: `L-CAPTURE`'s signature is an `AICallable` schema
+every suite and the coverage audit already read, and a sixth parameter would
+change it for every caller to serve one mode. With NO asset, the mode answers the
+CAPABILITY question and opens nothing.
+
+**The render path, and why it is one path instead of nine.** Every asset editor
+in this engine is an `FAssetEditorToolkit` (`Toolkits/AssetEditorToolkit.h:115-118`),
+and `IToolkitHost::GetParentWidget()` (`Toolkits/IToolkitHost.h:25`) is the host's
+own widget: for a standalone asset editor that is
+`SStandaloneAssetEditorToolkitHost`, whose own implementation is `return AsShared()`
+(`SStandaloneAssetEditorToolkitHost.cpp:359-362`). `FWidgetRenderer::DrawWidget`
+then renders it off screen. So one path reaches every kind this process can open,
+and the result prints which widget was rendered.
+
+**MEASURED, one capture per kind, read back off disk**, all at `1664x849` with the
+colour counts below. Every one of them is a real picture, not a flat fill:
+
+| Kind | Asset used | Distinct colours |
+|---|---|---|
+| Material | `/Engine/EngineMaterials/CubeMaterial` | 3444 |
+| Material Instance | `/Engine/VREditor/BasicMeshes/MI_Cube_01` | 1680 |
+| Material Function | `/Engine/Functions/Engine_MaterialFunctions02/Math/Pi` | 2383 |
+| Widget Blueprint (Designer) | `/Game/Tests/WBP_NodeTest` | 1278 |
+| DataTable | `/Game/Tests/Kit/TA14_KitDataTable` | 519 |
+| Anim Sequence | `/Engine/Tutorial/SubEditors/TutorialAssets/Character/Tutorial_Idle` | 1787 |
+| Niagara system | `/Niagara/DefaultAssets/DefaultSystem` | 13282 |
+| Blueprint | `/Game/Tests/BP_NodeTest` | 1629 |
+
+**How a kind is decided, AND THE FALSE PREMISE THIS REPLACED.** The table's
+`BUILT` / `REFUSED` answer is taken by ASKING THE ENGINE FOR the module that
+publishes each kind's editor (`FModuleManager::LoadModuleWithFailureReason`), so
+it measures REACHABILITY rather than history. The first version asked
+`IsModuleLoaded` instead and treated `false` as "cannot be captured". Measured
+against the running editor that was wrong three ways:
+
+- it called DataTable REFUSED while the module was loaded, because the question
+  was asked before that kind's own editor had ever been opened;
+- it called Niagara REFUSED on the reasoning that the test project's `.uproject`
+  does not list Niagara - AND THE CAPTURE SUCCEEDED ANYWAY, 13282 distinct
+  colours, because the engine enables Niagara by default (`Niagara.uplugin`,
+  `EnabledByDefault: true`);
+- the four numbers at the end of the table MOVED BETWEEN TWO CALLS OF THE SAME
+  TOOL IN THE SAME PROCESS (`4/3/2`, then `5/3/1`, then `6/3/0`) as each editor
+  was opened, which is the proof that the flag was measuring something other than
+  the capability it was printed as.
+
+**AND A NAMED ALTERNATIVE IS INFORMATION, NOT A DECISION.** The first version
+short-circuited on `AlternativeTool` and reported Widget Blueprint (Designer) as
+"captured by another tool" WHILE `/Game/Tests/WBP_NodeTest` was capturing at
+`1664x849` with 1278 distinct colours in the same process. So every kind's
+reachability is now measured, and the alternative tool is only printed.
+
+**What the table is NOT.** A module that loads is not a promise that a particular
+asset's editor opens or draws anything. Only the capture attempt proves that, and
+its result is what a caller reads. The table answers the narrower question it is
+for - which editor kinds exist for this process at all - and the output says so.
+
+**An empty frame is REFUSED, not written** (`D-41`, and this section above): the
+render is read back, its distinct colours counted, and an image of one flat colour
+is refused BY NAME with the count, because a blank PNG looks like a successful
+capture of nothing.
+
+**Measured gaps, stated rather than implied.** There is no project-owned material
+instance the resolver can reach: `/Game/Tests/TurboMCPMaterialFixture` has no
+object named after its package (`R-ASSET-SEARCH`), so an engine instance is used
+and the substitution is printed in the kind's own reason. No Anim Blueprint
+fixture exists (`TA-18` does not exist; `TA18_ColourSuite` is a colour asset), so
+that kind is exercised through the CATALOGUE; it is reachable through the same
+`FBlueprintEditor` path the graph modes already use
+(`Engine/Classes/Animation/AnimBlueprint.h:81`).
+
+
 ### L-CAPTURE-LEVEL: capture a level viewport or a play session
 
 - Input: a map, a framing mode and a size, and optionally a position to look

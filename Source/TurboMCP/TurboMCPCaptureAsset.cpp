@@ -119,7 +119,7 @@ namespace
 			Kind.Name = TEXT("Blueprint");
 			Kind.AssetClass = TEXT("UBlueprint");
 			Kind.OwnerModule = TEXT("Kismet");
-			Kind.AlternativeTool = TEXT("L-CAPTURE modes graph / box / node / selection");
+			Kind.AlternativeTool = TEXT("L-CAPTURE modes graph / box / node (frames a NODE or a BOX)");
 			Kind.Reason = TEXT("THE BLUEPRINT EDITOR IS THE ONE THIS TOOL ALREADY RENDERS. ")
 				TEXT("The graph modes frame a named graph out of a live SGraphEditor ")
 				TEXT("(FBlueprintEditor::OpenGraphAndBringToFront), and this mode ALSO ")
@@ -135,7 +135,7 @@ namespace
 			Kind.Name = TEXT("Anim Blueprint");
 			Kind.AssetClass = TEXT("UAnimBlueprint");
 			Kind.OwnerModule = TEXT("AnimationBlueprintEditor");
-			Kind.AlternativeTool = TEXT("L-CAPTURE modes graph / box / node");
+			Kind.AlternativeTool = TEXT("L-CAPTURE modes graph / box / node (frames a NODE or a BOX)");
 			Kind.Reason = TEXT("UAnimBlueprint is a UBlueprint ")
 				TEXT("(Engine/Classes/Animation/AnimBlueprint.h:81), so the editor is an ")
 				TEXT("FBlueprintEditor (IAnimationBlueprintEditor derives from it, ")
@@ -255,47 +255,101 @@ namespace
 		}
 	}
 
-	/** TRUE when the module that publishes this kind's editor is loaded right now. */
-	bool bOwnerModuleLoaded(const TurboMCPCaptureAsset::FKind& InKind, bool& bOutWasChecked)
+	/**
+	 * MEASURES whether this kind's editor is reachable, by LOADING the module that
+	 * publishes it, and returns the answer as text.
+	 *
+	 * *** THIS IS THE CORRECTION THAT COST A ROUND, AND IT IS WORTH THE PARAGRAPH. ***
+	 *
+	 * The first version asked `IsModuleLoaded` and treated a `false` as "this kind cannot
+	 * be captured". MEASURED AGAINST THE RUNNING EDITOR, that was WRONG IN BOTH
+	 * DIRECTIONS:
+	 *
+	 *   - it said DataTable was REFUSED while the module was loaded, because the question
+	 *     was asked before that kind's own editor had ever been opened;
+	 *   - it said Niagara was REFUSED on the reasoning that the test project's .uproject
+	 *     does not list Niagara - AND THE CAPTURE SUCCEEDED ANYWAY, 1664x849 with 13282
+	 *     distinct colours, because the engine enables Niagara by default
+	 *     (`Niagara.uplugin`, `EnabledByDefault: true`);
+	 *   - the four numbers at the end of the table therefore MOVED BETWEEN TWO CALLS OF
+	 *     THE SAME TOOL IN THE SAME PROCESS (4/3/2, then 5/3/1, then 6/3/0) as each
+	 *     editor was opened, which is the clearest possible proof that the flag was
+	 *     measuring something other than the capability it was printed as.
+	 *
+	 * An editor module is loaded on demand. `FModuleManager::QueryModule` with
+	 * `bLoadOnDemand` asks the engine to make it available, which is the same thing
+	 * `OpenEditorForAsset` does when an asset asks for an editor, and it is a much better
+	 * predictor of "can this be captured here" than "has anything loaded it yet".
+	 *
+	 * WHAT IT STILL DOES NOT PROVE, SAID PLAINLY: a module that loads is not a promise
+	 * that this particular asset's editor opens or that it draws anything. The live
+	 * attempt in `CaptureAssetEditor` is the only thing that proves that, and its result
+	 * is what the caller reads. This function answers the narrower question the table is
+	 * FOR - which editor kinds exist for this process at all - and says which module it
+	 * asked.
+	 */
+	TurboMCPCaptureAsset::EStatus ResolveReachability(
+		const TurboMCPCaptureAsset::FKind& InKind, FString& OutReachability)
 	{
+		// *** `AlternativeTool` NO LONGER DECIDES ANYTHING, AND THAT IS A CORRECTION. ***
+		//
+		// The first version short-circuited here: a kind with a named alternative was
+		// reported OTHER-TOOL and its module was NEVER ASKED FOR. MEASURED, that produced a
+		// table saying Widget Blueprint (Designer) was captured by another tool while
+		// `/Game/Tests/WBP_NodeTest` was capturing at 1664x849 with 1278 distinct colours
+		// IN THE SAME PROCESS. The alternative is INFORMATION - "this other tool also
+		// covers this kind" - and it is not evidence about this tool. So the reachability
+		// of every kind is now measured, and `AlternativeTool` is only printed.
 		if (InKind.OwnerModule.IsEmpty())
 		{
-			bOutWasChecked = false;
-			return false;
+			OutReachability = TEXT("not asked: this kind names no owner module");
+			return TurboMCPCaptureAsset::EStatus::Refused;
 		}
-		bOutWasChecked = true;
-		return FModuleManager::Get().IsModuleLoaded(FName(*InKind.OwnerModule));
-	}
 
-	/** What this tool will do about one kind, here, now. */
-	EKindStatus ResolveStatus(const TurboMCPCaptureAsset::FKind& InKind, bool& bOutModuleChecked)
-	{
-		// THE TWO KINDS ANOTHER TOOL ALREADY OWNS ARE DECIDED FIRST AND BY THE ALTERNATIVE
-		// BEING NON-EMPTY, so the catalogue is the single place that says so.
-		if (!InKind.AlternativeTool.IsEmpty())
+		// `bLoadOnDemand = true` ASKS THE ENGINE TO LOAD IT, which is what makes this a
+		// measurement of reachability rather than of history. The FAILURE REASON is taken
+		// as well as the answer, so a refusal can say WHY the module would not load
+		// instead of only that it did not.
+		FModuleManager& Modules = FModuleManager::Get();
+		const bool bWasLoaded = Modules.IsModuleLoaded(FName(*InKind.OwnerModule));
+
+		EModuleLoadResult FailureReason = EModuleLoadResult::Success;
+		IModuleInterface* Module = Modules.LoadModuleWithFailureReason(
+			*InKind.OwnerModule, FailureReason, ELoadModuleFlags::None);
+
+		if (Module == nullptr)
 		{
-			bOutModuleChecked = false;
-			return EKindStatus::CapturedByAnotherTool;
+			OutReachability = FString::Printf(
+				TEXT("NO: the module '%s' could not be loaded in this process (reason ")
+				TEXT("%d), so there is no editor of this kind to open. The engine line ")
+				TEXT("that publishes it is the AssetTypeActions registration in that ")
+				TEXT("module, and an unloaded module registers nothing."),
+				*InKind.OwnerModule, static_cast<int32>(FailureReason));
+			return TurboMCPCaptureAsset::EStatus::Refused;
 		}
 
-		bool bChecked = false;
-		if (bOwnerModuleLoaded(InKind, bChecked) && bChecked)
-		{
-			bOutModuleChecked = true;
-			return EKindStatus::CapturableHere;
-		}
-
-		bOutModuleChecked = bChecked;
-		return EKindStatus::Refused;
+		// THE TWO CASES ARE DISTINGUISHED, because "was already there" and "had to be
+		// loaded" are different measurements, and a caller checking this table against a
+		// fresh process needs to be able to tell them apart.
+		OutReachability = bWasLoaded
+			? FString::Printf(
+				TEXT("YES: the module '%s' was already loaded in this process"),
+				*InKind.OwnerModule)
+			: FString::Printf(
+				TEXT("YES: the module '%s' was NOT loaded yet and loaded on demand, so ")
+				TEXT("this kind is reachable and the answer does not depend on which ")
+				TEXT("editors happened to be open"),
+				*InKind.OwnerModule);
+		return TurboMCPCaptureAsset::EStatus::BuiltHere;
 	}
 
 	/** The status as one word, so no two call sites can spell it differently. */
-	const TCHAR* StatusWord(EKindStatus InStatus)
+	const TCHAR* StatusWord(TurboMCPCaptureAsset::EStatus InStatus)
 	{
 		switch (InStatus)
 		{
-		case EKindStatus::CapturableHere: return TEXT("BUILT");
-		case EKindStatus::CapturedByAnotherTool: return TEXT("OTHER-TOOL");
+		case TurboMCPCaptureAsset::EStatus::BuiltHere: return TEXT("BUILT");
+		case TurboMCPCaptureAsset::EStatus::CapturedByAnotherTool: return TEXT("OTHER-TOOL");
 		default: return TEXT("REFUSED");
 		}
 	}
@@ -303,28 +357,24 @@ namespace
 	/** The one line of the support table for one kind. */
 	FString KindLine(const TurboMCPCaptureAsset::FKind& InKind)
 	{
-		bool bChecked = false;
-		const EKindStatus Status = ResolveStatus(InKind, bChecked);
+		FString Reachability;
+		const TurboMCPCaptureAsset::EStatus Status =
+			ResolveReachability(InKind, Reachability);
 
 		// A TERNARY OF TWO `TEXT` LITERALS INSIDE A VARIADIC ARGUMENT IS REJECTED BY THE
 		// ENGINE'S COMPILE TIME FORMAT CHECKER (`error C7595` on this project's UE
 		// 5.8.3). It has fired twice in this project already, so every label here is
 		// computed into a local first.
-		const TCHAR* const ModuleLabel = InKind.OwnerModule.IsEmpty()
-			? TEXT("(none)") : *InKind.OwnerModule;
-		const TCHAR* const CheckedLabel = bChecked ? TEXT("loaded") : TEXT("NOT CHECKED");
 		const TCHAR* const AlternativeLabel = InKind.AlternativeTool.IsEmpty()
 			? TEXT("(none)") : *InKind.AlternativeTool;
 
 		FString Line = FString::Printf(TEXT("\n  %s  %s"),
 			StatusWord(Status), *InKind.Name);
 		Line += FString::Printf(TEXT("\n      asset class: %s"), *InKind.AssetClass);
-		if (bChecked)
-		{
-			Line += FString::Printf(TEXT("\n      editor module %s: %s"),
-				ModuleLabel, CheckedLabel);
-		}
-		Line += FString::Printf(TEXT("\n      can capture it instead: %s"),
+		Line += FString::Printf(TEXT("\n      editor module reachability: %s"),
+			*Reachability);
+		Line += FString::Printf(
+			TEXT("\n      another tool that also captures this kind, if any: %s"),
 			AlternativeLabel);
 		Line += FString::Printf(TEXT("\n      why: %s"), *InKind.Reason);
 		return Line;
@@ -408,18 +458,19 @@ void TurboMCPCaptureAsset::DescribeKinds(FString& InOutDescription)
 	int32 Refused = 0;
 
 	FString Table = FString::Printf(
-		TEXT("\nwhich asset editors this tool can capture, one line per kind, decided in ")
-		TEXT("this process:"));
+		TEXT("\nwhich asset editors this tool can capture, one line per kind. Every kind's ")
+		TEXT("editor module was ASKED FOR, so this table is the same answer in a fresh ")
+		TEXT("process as in one where editors are already open:"));
 
 	for (const FKind& Kind : Kinds)
 	{
-		bool bChecked = false;
-		const EKindStatus Status = ResolveStatus(Kind, bChecked);
-		if (Status == EKindStatus::CapturableHere)
+		FString Reachability;
+		const EStatus Status = ResolveReachability(Kind, Reachability);
+		if (Status == EStatus::BuiltHere)
 		{
 			++Built;
 		}
-		else if (Status == EKindStatus::CapturedByAnotherTool)
+		else if (Status == EStatus::CapturedByAnotherTool)
 		{
 			++OtherTool;
 		}
@@ -439,8 +490,10 @@ void TurboMCPCaptureAsset::DescribeKinds(FString& InOutDescription)
 
 	InOutDescription += Table;
 	InOutDescription += TEXT("\n; a kind is BUILT when the module that publishes its ")
-		TEXT("editor is LOADED in this editor process, which is the same test that decides ")
-		TEXT("whether OpenEditorForAsset has anything to open. A kind is REFUSED with the ")
+		TEXT("editor LOADED when this table asked for it, which is a measurement taken ")
+		TEXT("here rather than a list written down. It is NOT a promise that a particular ")
+		TEXT("asset's editor opens or draws anything: only the capture attempt proves ")
+		TEXT("that, and its result is what a caller reads. A kind is REFUSED with the ")
 		TEXT("module named rather than silently dropped, so 'which editors can this ")
 		TEXT("capture' is answered by the table and not by which lines are missing.");
 }
@@ -542,8 +595,13 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 	// engine module and could each disagree about the size.
 	FAssetEditorToolkit* Toolkit = static_cast<FAssetEditorToolkit*>(Instance);
 
-	FString WhichWidget =
-		TEXT("the toolkit host's own widget for this editor, uncropped");
+	// A TERNARY OF TWO `TEXT` LITERALS INSIDE A VARIADIC ARGUMENT IS REJECTED BY THE
+	// ENGINE'S COMPILE TIME FORMAT CHECKER (`error C7595` on this project's UE 5.8.3),
+	// AND SO IS THE SAME TERNARY ASSIGNED TO AN `FString`. It has fired twice in this
+	// project already, so this picks between two FStrings built in separate statements
+	// rather than between two literals.
+	FString WhichWidget = TEXT("the toolkit host's own widget for this editor: the whole ")
+		TEXT("editor tab, uncropped");
 	TSharedPtr<SWidget> Content;
 
 	// A TOOLKIT HOST IS REQUIRED, AND ITS ABSENCE IS A REFUSAL. `FBaseToolkit` exposes
@@ -737,7 +795,7 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 	}
 
 	InOutDescription += FString::Printf(
-		TEXT("\nframed: %s, the whole editor tab, uncropped"), *WhichWidget);
+		TEXT("\nframed: %s"), *WhichWidget);
 	InOutDescription += FString::Printf(TEXT("\nwidget: %s"),
 		*WidgetSummary(Widget, WidgetSize));
 	InOutDescription += FString::Printf(TEXT("\nsize: %dx%d"), Width, Height);
