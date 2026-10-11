@@ -7136,3 +7136,47 @@ SUITES AGAINST 42 UNSTARTED PLAN ROWS AND 57 CAPABILITIES OF WHICH THE REPORT CL
 MOVED TWO OF THOSE 42 ROWS AND FOUR CAPABILITIES. THE RATE IS THE THING TO BE HONEST ABOUT: AT FOUR CAPABILITIES PER TEN
 ROUNDS, THE REMAINING GROUPS - MATERIAL WRITERS, WIDGET AUTHORING, ASSETS AND STRUCTS, LEVEL AND ACTORS, SESSION AND
 COST, SOURCE CONTROL, VISION, BUILD PORTABILITY - ARE NOT A FINISHING SPRINT. ***
+
+---
+
+## 68. Round 109: two workstreams launched on genuinely disjoint prefixes, one of them for a DEBT rather than a capability
+
+**LAUNCHED:**
+
+    A   THE VACUITY DEBT   Tools/test-{mat-inst-load,call-cost,asset-cost,widget-tree-sync,graph-structure}.py
+                           + a possible Spec/AUDIT_VACUITY.md. TOUCHES NOTHING UNDER Source/.
+    B   ROW 7.1            P/E-STRUCT-NEW and P/E-STRUCT-FIELDS -> a NEW Source/TurboMCP/TurboMCPStruct*
+                           + a NEW Tools/test-struct.py. TOUCHES NO EXISTING SUITE.
+
+*** DISJOINT BY FILE SET, WHICH IS THE ONLY KIND OF PARALLELISM THIS PROJECT HAS FOUND SAFE: one owns EXISTING SUITES
+and nothing under `Source/`; the other owns a NEW `Source/` prefix and ONE new suite. The overlap is `TurboMCPToolsets.h`
+and the build mutex - and BOTH briefs name the other as possibly live, tell the workstream to RE-READ THE SHARED HEADER
+IMMEDIATELY BEFORE EDITING IT, and instruct it to STOP AND ASK IF THE TREE CONTRADICTS THE BRIEF. ***
+
+### 68.1 Why the vacuity debt is the highest-value work available
+
+**FOUR SUITES HAVE REPORTED THAT THEIR CHECK COUNT OVERSTATES THEIR COVERAGE AND NOBODY HAS GONE BACK TO FIX THEM.** *The
+run is 51 of 51; **the green run measures whether what EXISTS works and says nothing about whether the checks can fail.**
+And the debt compounds: every new suite written before it is paid adds another instance - **a workstream launched this
+round was told explicitly "A NEW SUITE MUST NOT ADD A SIXTH".***
+
+**AND THE AUDIT IS DECLARED AS THE PRIMARY DELIVERABLE IF IT RUNS OUT OF ROOM, WHICH IS THE RIGHT SHAPE FOR THIS TASK:**
+*"EVERY CHECK THAT CANNOT FAIL FOR ITS OWN REASON, WITH THE INPUT IT WOULD NEED" is worth more than a partial fix, because
+it is what the next workstream needs - and it is the artefact four previous workstreams produced only as prose in their
+own suite headers.*
+
+### 68.2 And row 7.1 carries the shape of a row that just went well
+
+**IT IS "EDITOR-ONLY", WHICH IS A MEASURED CLAIM RATHER THAN A LABEL** - *and the brief hands it the two measurements that
+decide it: the `UUserDefinedStruct` crash (`TurboMCPKitCommandlet.cpp:1420-1447`, where `NewObject<UUserDefinedStruct>`
+does not create its `EditorData` and only the editor factory installs it) and row 1.4's proof of WHY the whole class
+behaves that way (`LaunchEngineLoop.cpp:3343` guards `FSlateApplication::Get().InitializeRenderer(...)` with
+`!IsRunningCommandlet()`, so Slate is never initialized in a commandlet at all).*
+
+**AND IT IS TOLD TO ASK THE QUESTION THAT REVERSED A PREVIOUS REFUSAL: DOES THE ROW NEED A `UUserDefinedStruct`, OR
+MERELY A STRUCT?** *`TA-14` was recorded as IMPOSSIBLE and was buildable, because the recorded crash proved a limit on
+`UUserDefinedStruct` and NOT on a project-owned `USTRUCT` - and a native `USTRUCT` is project-owned BY CONSTRUCTION.*
+
+**AND IT IS TOLD TO CHECK ITS ACCEPTANCE ROWS' FIXTURES EXIST BEFORE WRITING ANYTHING**, with the three known failures
+named - `T-MAT-10` -> `TA-6`, `T-LEVEL-1/2` -> `TA-15`/`TA-16`, `T-WIDGET-4` -> `TA-8` - **and the admission that the
+pre-flight rule catching this was written after the second and applied to neither.**
