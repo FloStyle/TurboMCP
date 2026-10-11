@@ -8196,3 +8196,26 @@ is that a rapid start-stop cycle is a PROBE, not a lifecycle.***
 *** AND THE CONCLUSION GENERALISES TO THIS PROJECT'S WHOLE HABIT OF READING PROCESS STATE: ONE EDITOR LIFETIME IS NOT
 EVIDENCE OF ANYTHING, BECAUSE A FIXTURE REBUILD, A SUITE RUN AND A PROBE ALL LOOK DIFFERENT IN DURATION AND IDENTICAL IN A
 SINGLE SAMPLE. WHAT DISTINGUISHES THEM IS THE LOG NAME AND THE RATE, AND NEITHER IS VISIBLE FROM A SNAPSHOT. ***
+
+---
+
+## 100. Round 141: the probe ended and a rebuild is running, read from the log name rather than the process table
+
+    OBSERVED, NO PROCESS TOUCHED
+    NO editor process, AND `make-material-asset.log` written 05:57:50 - TWO SECONDS BEFORE THE CLOCK READ 05:57:52
+    panel-probe.log 05:57:10 (the probe, now quiet)
+
+*** SO SECTION 140's READING WAS RIGHT AND THIS ROUND CONFIRMS IT WITH THE MECHANISM RATHER THAN THE PATTERN: THE RAPID
+START-STOP WAS A PROBE, IT ENDED, AND WHAT REPLACED IT IS A FIXTURE REBUILD - WHICH IS WHY THERE IS NO EDITOR AND STILL
+ACTIVITY. A `-run=` COMMANDLET HOLDS THE EDITOR ONLY WHILE IT RUNS, AND THIS ONE STARTED TWO SECONDS AGO. ***
+
+**AND THAT IS THE THIRD TIME THE LOG NAME HAS BEEN THE DISCRIMINATOR AND THE FIRST TIME IT HAS BEEN USED TO PREDICT RATHER
+THAN TO EXPLAIN:** `panel-probe.log` MEANS A PROBE, `make-*-asset.log` MEANS A REBUILD, AND `fullrun*.log` MEANS A SUITE SET
+- **AND EACH IMPLIES A DIFFERENT EDITOR LIFETIME, WHICH IS WHY A SINGLE SNAPSHOT OF THE PROCESS TABLE COULD NOT DISTINGUISH
+THEM (section 140) AND A LOG NAME CAN.** *The naming convention was never documented as a diagnostic; it became one by being
+read three times in a row.*
+
+**AND THE HONEST NOTE ABOUT WHERE THE ROUND BUDGET IS GOING IS UNCHANGED FROM SECTION 135, AND IT IS NOT GETTING BETTER:**
+*eleven rounds have now been spent observing a workstream whose work is safe because it is committed, and **the observation
+has produced four real corrections to how this project reads its own state** - the window, the search scope, the rate, and
+now the log name. **THOSE ARE WORTH HAVING AND THEY ARE NOT THE 42 ROWS.***
