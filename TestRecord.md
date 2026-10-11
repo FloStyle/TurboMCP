@@ -8286,3 +8286,25 @@ supports a mechanism I then stopped testing.***
 **WHAT REMAINS TRUE WITHOUT ANY INFERENCE: 86 tools, a clean tree, an audit that passes, a full run at 51 of 51 from BEFORE
 the new tool existed, and a suite for that tool whose result has never been recorded.** *Those are five facts and none of them
 predicts the sixth.*
+
+---
+
+## 104. Round 145: the same state as the last three, and the record says so in the same number of words
+
+    OBSERVED, NO PROCESS TOUCHED
+    main = origin/main = ed943e4   ·   86 tools   ·   clean tree   ·   editor UP
+    newest log make-acceptance-asset.log 05:58:59; no RESULT line written since fullrun-row02b at 05:12:50
+
+*** THREE CONSECUTIVE ROUNDS HAVE NOW RECORDED THE SAME FIVE FACTS, AND THE VALUE OF THE FOURTH RECORDING IS THAT IT TURNS
+THREE SAMPLES INTO A PLATEAU. A WORKSTREAM WHOSE VISIBLE OUTPUT HAS NOT CHANGED ACROSS THREE ROUNDS IS NOT "STILL WORKING" IN
+THE SENSE THAT JUSTIFIES ANOTHER THREE - IT IS A WORKSTREAM WHOSE NEXT OBSERVABLE STEP IS THE ONLY THING THAT CAN SETTLE IT.
+***
+
+**AND THE TWO THINGS I COULD DO ABOUT THAT ARE BOTH ALREADY RULED OUT BY THIS RECORD:** *killing its editor is section 95 and
+cost a restart for nothing; starting a second row is section 55 and put two agents on one row. **WHAT IS LEFT IS THE THING I
+HAVE BEEN DOING, WHICH IS TO SAY PLAINLY THAT THE ROUNDS ARE PASSING WITHOUT THE OWED RESULT.***
+
+**SO THE ENTRY IS THE PLATEAU ITSELF, WITH ITS THREE SAMPLES:**
+    05:57:10 panel-probe · 05:57:50 material rebuild · 05:58:59 acceptance rebuild
+    no RESULT line anywhere since 05:12:50
+    and the suite for the new tool has never once recorded a verdict
