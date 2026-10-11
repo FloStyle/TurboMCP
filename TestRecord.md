@@ -6863,3 +6863,29 @@ EVIDENCE THAT A ROW IS FREE, AND THE ONLY THING THAT DISTINGUISHES THEM IS ASKIN
 **OPEN, UNCHANGED: the four decisions that row 1.4's answer feeds - `TA-19`/`TA-18`'s fixtures, the `FScopedCall`
 instrumentation for `T-HELP-6`, `E-GRAPH-COLLAPSE`'s `FBlueprintEditor` instance question, and the cross-asset
 `T-STRUCT-11` - plus `test-material-tidy`'s full-run failure, which row 0.2 exists to explain.**
+
+---
+
+## 62. Round 103: still dormant, and the honest reading of two idle rounds in a row
+
+**MEASURED:** `main` = `origin/main` = `77a9ebf`; **85 tools**; **45 suites**; working tree clean; **no build, no editor,
+nothing written.**
+
+### The two readings, and why I am recording which one I believe
+
+**READING ONE, the charitable one: the workstream is mid-measurement.** Row 1.4 requires reading the engine's plugin
+descriptors and the capture path before it can answer yes or no, and row 0.2 requires the full suite set to be run twice.
+*Both are genuinely slow, and neither commits until it has an answer.*
+
+**READING TWO, the one the record must not let me skip: IT MAY HAVE STOPPED.** *Two rounds with no commit and an idle
+machine is also exactly what the graph workstream looked like from the outside when I wrongly concluded it was dormant
+and launched a second agent onto it (section 55).* **THE DIFFERENCE IS THAT LAST TIME I ACTED ON THE READING; THIS TIME I
+AM NAMING IT AND WAITING ONE MORE ROUND** - because the cost of the two errors is not symmetric. *Waiting costs a round.
+Acting wrongly cost a near-collision and, one section earlier, a destroyed capability.*
+
+### And the thing that makes waiting affordable here rather than wasteful
+
+**NOTHING IS BLOCKED ON THIS ROW THAT THE REST OF THE PROJECT NEEDS THIS ROUND.** *`test-material-tidy`'s full-run cause
+is a nice-to-have explanation of one red suite; row 1.4's answer feeds four decisions that are ALREADY RECORDED AS
+MINE TO MAKE, with their types and citations, so they do not decay by waiting.* **A round spent not disturbing a live
+measurement is cheaper than a round spent recovering from disturbing one - and this project has the receipts for both.**
