@@ -10030,3 +10030,26 @@ IT AS A FINDING, WROTE IT AS A QUESTION, AND THE NEXT ROUND READ THE CODE THAT A
 exactly this shape before (section 0.2's material-tidy claim), **and the difference between then and now is not that I was more careful
 with the numbers - it is that I wrote down WHICH OBSERVATION WOULD SETTLE IT.*** *** An unasserted hypothesis with a named resolver costs
 one round; an asserted one that is wrong costs a correction to a document that other workstreams read. ***
+
+---
+
+## 162. Round 214: the six kinds get THREE answers rather than a boolean, and the reason is written into the enum
+
+    TurboMCPCaptureAsset.cpp:104  /** THE THREE POSSIBLE ANSWERS FOR ONE KIND, SO THE OUTPUT CANNOT INVENT A FOURTH. */
+    :110  /** THIS TOOL CANNOT, BUT ANOTHER TOOL IN THIS PLUGIN CAN. */
+    :114  Refused
+
+*** SO THE ROW'S CENTRAL DATA STRUCTURE IS A THREE-VALUED ENUM, NOT A BOOLEAN, AND THE COMMENT NAMES WHY: **THE OUTPUT CANNOT INVENT A
+FOURTH ANSWER.** *It also distinguishes THE THIRD STATE THAT A BOOLEAN WOULD COLLAPSE: **"this tool cannot, but another tool in this
+plugin can"** - which is neither BUILT nor REFUSED, and which a `bool` would have made indistinguishable from a refusal.* ***
+
+**AND THAT IS `P1` IN A TYPE RATHER THAN IN A SENTENCE, WHICH IS THE STRONGEST FORM IT HAS TAKEN IN THIS PROJECT.** *Section 10.1's
+`NOT ASKED` and section 10.2's non-empty decision reason were BOTH STRING-LEVEL guards: they relied on the code remembering to print the
+right words.* *** A THREE-VALUED ENUM MAKES THE MISSING CASE UNREPRESENTABLE - the compiler will not let a caller treat "another tool can"
+as "refused", and it will not let the code forget to answer.***
+
+**AND IT ANSWERS THE BRIEF'S OWN TENSION BEFORE THE REPORT DOES.** *The brief said "a tool that renders FOUR and NAMES THE TWO IT CANNOT
+is better than one that claims six and renders four" - **and assumed the answer was binary. The workstream found a third case, which is
+the one that matters most here: five capabilities in this project already do something adjacent to capture (`L-WIDGET-PREVIEW` renders a
+widget, `L-LAYOUT-REPORT` measures a graph), and a row that reported those as REFUSED would be telling the agent to stop when it should
+be telling it where to go.*** *** The enum is not a nicety; it is the difference between a refusal and a redirect. ***
