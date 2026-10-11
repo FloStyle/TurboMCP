@@ -7449,3 +7449,51 @@ BUILD-AND-RUN CYCLE IN THE LAST ROUNDS OF A CONTEXT BUDGET IS HOW THE PROJECT GO
 NEVER EXECUTED, A SUITE THAT PRINTED NO VERDICT FOR FOUR ROUNDS, AND AN UNRESTORED BREAK TEST THAT PRODUCED `error
 C2059`. THE PLAN IS COMMITTED AND THE NEXT ATTEMPT STARTS FROM A NAMED CLASS, TWO NAMED FUNCTIONS, A NAMED MODEL
 COMMANDLET, A NAMED ENGINE CONSTRAINT AND A NAMED TRAP. ***
+
+---
+
+## 76. *** I WROTE AND RAN THE RELOCATION, AND IT DID NOT FIX THE PROBLEM - BUT IT TURNED A SINGLE MYSTERY INTO A THREE-LAYER MEASUREMENT. ***
+
+**I BUILT `TurboMCPPureCheckCommandlet` EXACTLY AS SECTION 75 PLANNED IT** - modelled on `TurboMCPKitCommandlet`, which is
+proven to run, invoked with the module prefix, no static initialiser, asserting the two spellings of `NormaliseToolset`
+collapse to ONE key plus the `AssetFromArguments` empty-vs-literal distinction, **and printing its verdict in the house
+form because a suite in this project once reported none for four rounds.** *It builds: `Result: Succeeded`.*
+
+*** AND IT CRASHES. SO THE RELOCATION THEORY IS FALSIFIED BY MY OWN MEASUREMENT - THE PURE COMMANDLET'S PROBLEM IS NOT ITS
+FILE. ***
+
+### 76.1 The three-layer measurement, which is what I actually gained
+
+    INVOCTION                                                        ERROR
+    -run=TurboMCPCallCostCommandlet (bare)                            "looked like a commandlet, but was not found"
+    -run=TurboMCP.XCommandlet, STDOUT CAPTURED BY POWERSHELL          Ensure failed: InModuleName != NAME_None,
+                                                                      then Assertion failed: IsValid() in FModuleManager
+    -run=TurboMCP.XCommandlet, output TO A FILE, NO PIPE              Assertion failed: GEditor
+
+*** SO EACH LAYER WAS A DIFFERENT ARTEFACT AND THE ERROR ADVANCES AS THE ARTEFACTS ARE REMOVED. THE THIRD LAYER IS THE
+REAL ONE: THE MODULE NOW LOADS AND `GEditor` IS NULL, WHICH MEANS SOMETHING IN THE PLUGIN'S OWN LOADING PATH WANTS AN
+EDITOR. ***
+
+**AND MY FIRST TWO RUNS WERE CONTAMINATED BY A TRAP THIS PROJECT HAD ALREADY RECORDED AND I HAD READ:**
+
+    "starting the editor from Python must use subprocess.call and NOT subprocess.run(capture_output=True):
+     MEASURED, the editor does not come up with captured output because the launcher leaves a pipe open."
+
+*** I PIPED STDOUT THROUGH POWERSHELL. `make-kit-assets.ps1:57` DOES NOT - IT REDIRECTS TO A LOG AND READS IT AFTERWARD.
+THE `InModuleName != NAME_None` I REPORTED IN SECTION 73 AS THE COMMANDLET'S FAILURE WAS THEREFORE PARTLY MY OWN
+INVOCATION, AND SECTION 73's CONCLUSION THAT "BOTH ROUTES ARE CLOSED" WAS TOO STRONG: ONE OF THOSE ROUTES WAS BLOCKED BY
+A PIPE, NOT BY THE ENGINE. ***
+
+### 76.2 What is now known, and what the next step is
+
+    KNOWN     the bare name does not load anything - the module prefix is required, as the file's own header says
+    KNOWN     captured stdout creates a failure that looks like the engine refusing the commandlet
+    KNOWN     WITHOUT the pipe, the module loads and `GEditor` is NULL at the point something touches it
+    NEXT      FIND WHAT TOUCHES `GEditor`, BY DIFFERENCE RATHER THAN BY READING: the kit commandlet does not, so
+              the comparison is between two commandlets in the SAME module, invoked the SAME way, one of which
+              reaches `GEditor`. THE DIFFERENCE IS SMALL ENOUGH TO BISECT: my file includes Logging.h and
+              TurboMCPCallCost.h; the kit includes TurboMCPModule.h AND Logging.h.
+
+*** AND I AM STOPPING HERE RATHER THAN BISECTING, FOR THE SAME REASON AS LAST ROUND: A BISECT IS A BUILD-AND-RUN CYCLE
+PER STEP AND I AM AT THE END OF A CONTEXT BUDGET. THE THREE-LAYER TABLE ABOVE IS COMMITTED SO THE NEXT ATTEMPT STARTS
+FROM IT INSTEAD OF FROM "IT CRASHES". ***
