@@ -20,7 +20,7 @@ state, read [`HANDOVER.md`](HANDOVER.md) first; for the plan, [`Spec/WORKING_PLA
 
 | | |
 |---|---|
-| **Tools** | **93** `AICallable`, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
+| **Tools** | **93** `AICallable`, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33. *** THIS SECTION IS A SNAPSHOT OF THE REVISION THIS RECORD ENDS ON, which its own header states: "This is a chronological record, not a summary." THE LIVE FIGURES ARE IN `HANDOVER.md` AND `STATUS.md`, AND THE PER-TOOLSET SPLIT IS KEPT CURRENT IN `TOOLS.md` ONLY. *** |
 | **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0*** |
 | **Coverage audit** | **`uncalled: (none)`** — every declared tool is reached by at least one suite |
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail *or* cannot pass — **0 candidates** |

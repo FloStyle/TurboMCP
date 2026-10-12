@@ -228,7 +228,12 @@ process owns the project"** — a false failure that cost a round to diagnose ev
 rows would move from "measured against a refusal" to "measured against a success"** — and
 `UsesCheckout == true` would finally execute its acting branch.
 
-### 9.3 The kit, `TA-14` to `TA-21` — *six acceptance rows depend on fixtures that do not exist*
+### 9.3 The kit, `TA-14` to `TA-21` — *five acceptance rows depend on fixtures that do not exist*
+
+*** FIVE, NOT SIX, AND THE FIVE ARE NAMED RATHER THAN COUNTED: the four fixtures below unblock rows `2.2`, `2.3`,
+`2.4`, `4.1` and `7.3` - three in phase 2, one in phase 4 (which has exactly one row) and one in phase 7. ***
+*** THE HEADING SAID SIX AND THE PARAGRAPH NAMED FOUR *FIXTURES*: FOUR FIXTURES AND FIVE ROWS ARE DIFFERENT UNITS,
+AND THE HEADING WAS COUNTING NEITHER. ***
 
 `TA-17`, `TA-18`, `TA-19` and `TA-16` were **measured buildable** but not built. *Building them unblocks
 rows 2.2 to 2.4, 4.x and 7.3 without each having to invent a substitute.*
