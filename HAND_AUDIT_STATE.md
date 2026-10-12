@@ -326,3 +326,29 @@ shape, and the suites that lack it are as careful as the ones that have it. `tes
 
 **What is NOT established:** the remaining 40 suites have not been read. Twelve out of fifty-two is a sample, not
 a census, and the standard could differ in a family not yet opened.
+
+---
+
+## 11. THE SUITE LAYER, TESTED AGAINST FAMILIES NOT YET OPENED
+
+Section 10 ended with a caveat: *"the remaining 40 suites have not been read. Twelve out of fifty-two is a sample,
+not a census, and the standard could differ in a family not yet opened."* **That caveat was then tested four times,
+by opening families the earlier rounds had not touched.**
+
+| Family | Suite | What it added |
+|---|---|---|
+| `json` | `test-json.py` (585 l., 79 checks — the densest) | ***"the asset really has facts, SO THE CHECKS BELOW CANNOT PASS VACUOUSLY"*** (`:194`), and the two renderings are compared **in both directions** (`:232-234`) |
+| `capture` | `test-capture-asset.py` (676 l., 57 checks) | the suite tests **its own refusal detector** first (`:253-256`), checks the counts **ADD UP** (`:289`), and verifies the tool's claim **on disk at the size it claimed** (`:25`) |
+| `bp` | `test-bp-lint.py` (360 l.) | ***"AN EMPTY RESULT WITH NO DENOMINATOR IS THE PUREST FORM OF [a check that passes while the thing it verifies is broken]"*** (`:25`), and a single check must return **exactly one** (`:197`) |
+| `refs` | `test-refs.py` (160 l.) | four properties asserted of ONE zero: reported, explained, next step, both directions (`:79-82`) |
+
+*** FOUR FAMILIES, OPENED SPECIFICALLY TO FALSIFY THE CAVEAT, AND THE STANDARD DID NOT DIFFER IN ANY OF THEM. In
+`capture` it is stricter. That is a confirmation by INDEPENDENT REPETITION rather than by repeating one case. ***
+
+**Fifteen suites in nine families.** *The caveat is not withdrawn - 37 suites remain, and this is still a sample -
+but the four tests it was given all came back the same way.*
+
+*** AND THE SHARPEST SINGLE RESULT FROM THESE FOUR IS `test-bp-lint.py:25`, BECAUSE IT NAMES THE DEFECT `C5`
+DESCRIBES IN THE PROJECT'S OWN TERMS: a check that passes while the thing it verifies is broken, whose purest form
+is an empty result with no denominator. That is the same failure the user's acceptance-row card is about, stated
+independently in a test file by someone who was not looking for it.***
