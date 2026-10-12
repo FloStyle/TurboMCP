@@ -58,9 +58,6 @@ private:
 	/** Handle for the module-loading-complete delegate, so it can be removed. */
 	FDelegateHandle LoadingPhasesCompleteHandle;
 
-	/** The analytics provider installed before this plugin loaded, if any. */
-	TSharedPtr<IAnalyticsProviderET> PreviousAnalyticsProvider;
-
 	/** True once our analytics provider is the installed one. */
 	bool bInstalledAnalyticsProvider = false;
 };

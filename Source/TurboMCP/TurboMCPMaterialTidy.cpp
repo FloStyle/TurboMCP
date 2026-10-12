@@ -428,7 +428,6 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 	// ONE TRANSACTION, so the whole layout is a single undo step and a rollback is exact.
 	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "MaterialTidy", "TurboMCP: tidy a material"));
 
-	const int32 MovedBefore = InPlan.Nodes.Num();
 	int32 Moved = 0;
 	int32 BoxesWritten = 0;
 

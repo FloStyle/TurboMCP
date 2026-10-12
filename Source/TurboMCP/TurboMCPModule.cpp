@@ -127,7 +127,6 @@ void FTurboMCPModule::RemoveAnalyticsProvider()
 	}
 
 	bInstalledAnalyticsProvider = false;
-	PreviousAnalyticsProvider.Reset();
 }
 
 #undef LOCTEXT_NAMESPACE
