@@ -1694,14 +1694,8 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			// The engine compiles a Blueprint the first time it is opened, so the asset is not left
 			// broken by this. The measurement below is what proves the tree was populated, and a tree
 			// that was not would fail the check rather than passing quietly.
-
-			// THE STRUCTURE IS COUNTED BACK, because a widget tree that was not populated would
-			// otherwise report success with an empty card.
 			TArray<UWidget*> All;
 			Tree->GetAllWidgets(All);
-			int32 Boxes = 0;
-			int32 Nested = 0;
-			Builder.CountBoxes(nullptr, Boxes, Nested);
 
 			FKitResult Ta7;
 			Ta7.Id = TEXT("TA-7");
@@ -2120,15 +2114,14 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 		Ta18.bMeasured = true;
 		Ta18.Detail = TEXT("NOT BUILT: needs a state machine with two states and a sequence with 3 keys "
 			"on one bone");
-		Ta18.Why = TEXT("Two blockers, each named. (1) *** THE AnimGraph MODULE IS NOW LINKED - "
-			"TurboMCP.Build.cs lists `AnimGraph` - SO THE STATE MACHINE IS NO LONGER BLOCKED BY A "
+		Ta18.Why = TEXT("ONE BLOCKER REMAINS, AND IT IS NAMED. (1) *** THE AnimGraph MODULE IS LINKED - "
+			"TurboMCP.Build.cs lists `AnimGraph` - SO THE STATE MACHINE IS NOT BLOCKED BY A "
 			"DEPENDENCY; what remains for it is AUTHORING, not a permission. (2) *** The 3 keys on ONE BONE need a USkeleton with "
 			"a bone: Skeleton.h:365-369 returns the reference skeleton as CONST on purpose, "
 			"ReferenceSkeleton is protected at :301/:317, the bone-adding engine functions at :797/:809/"
 			":820 all take a USkinnedAsset and this project has no skeletal mesh, and the only other "
-			"route is FEditableSkeleton, a PRIVATE header of the SkeletonEditor module. *** SO ONE OF THE TWO "
-			"BLOCKERS HAS BEEN REMOVED SINCE THIS TEXT WAS WRITTEN AND THE OTHER ONE HAS NOT: THIS REFUSAL NOW "
-			"NAMES ONE REAL BLOCKER, NOT TWO. ***");
+			"route is FEditableSkeleton, a PRIVATE header of the SkeletonEditor module. *** THE FIRST "
+			"IS RESOLVED, SO THIS REFUSAL NAMES ONE REAL BLOCKER, NOT TWO. ***");
 		Builder.Results.Add(Ta18);
 	}
 
