@@ -383,3 +383,24 @@ invent one - and `AsError` in `TurboMCPMaterialTools.cpp:31-38` is the same kind
 *** AND THE ONE THING THE COUNTER-EXAMPLES HAVE IN COMMON IS WORTH STATING: THEY ARE ALL PATHS THAT FIRE WHEN
 SOMETHING ELSE FAILS FIRST - a creation returning `nullptr`, a parameter a caller typed wrong. The happy paths are
 verified everywhere; the unhappy paths are verified in seven places and assumed in seven.***
+
+---
+
+## 13. `Tools/` OUTSIDE THE SUITES IS FULLY COVERED
+
+**Every script in `Tools/` that is not a `test-*.py` suite has been read or screened**, and the last two gaps were
+closed in the final round.
+
+| Group | Method | Result |
+|---|---|---|
+| `Tools/checks/` (9) | read + `X4` screen | every function called; `Report` in `check-plugin.py` is instantiated and its `failures`/`passes` read |
+| `tmcp.py`, `tmcp_paths.py`, `tmcp_editor.py` | read + `X4` | no orphaned symbol; `rebuild_fixture` is called from four suites |
+| `make-*.py` (7) | `X4` | 17 functions, none unused |
+| `*.ps1` (11) | read + `X4` | refusals by named `throw`; `common.ps1` is the reference for derived paths and the `Set-StrictMode` lesson |
+| `build-test-graph.py` (112) | **read in the final round** | ***four steps with four named failures, including "the writer returned success but no PrintString node exists" and "the asset still has unsaved changes" - THE TWO WAYS A WRITE CAN LIE, BOTH TESTED*** |
+| `check-probe-graphs.py` (238) | **read in the final round** | ***"THIS IS A TIMEOUT, NOT A BUILD FAILURE AND NOT A PASSING RUN", with all three sources of delay enumerated. `P1` applied to TIME rather than to a count.*** |
+| `build-test-graph.py` in a card | already recorded | cited as one of the six gates |
+
+*** SO WHAT REMAINS IS 31 SUITES AND NOTHING ELSE IN `Tools/`. ***  *And the suites are the layer this audit
+sampled most heavily - 22 read, across 15 families, of which 11 were opened specifically to try to falsify the
+conclusion that they are consistent.*
