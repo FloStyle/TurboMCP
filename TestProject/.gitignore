@@ -10,3 +10,12 @@ Saved/
 *.sdf
 *.sln
 *.suo
+
+# Kit assets that Tools/make-kit-assets.ps1 REGENERATES. They are outputs, not source: the
+# commandlet rebuilds them from the committed C++, and this project's rule is that a generated
+# fixture is restored rather than tracked. Named one by one rather than by a wildcard, because
+# TA01, TA07, TA11, TA13 and TA22 are hand-made and ARE tracked.
+Content/Tests/Kit/TA14_KitDataTable.uasset
+Content/Tests/Kit/TA17_KitCurveFloat.uasset
+Content/Tests/Kit/TA17_KitCurveTable.uasset
+Content/Tests/Kit/TA20_KitParameters.uasset
