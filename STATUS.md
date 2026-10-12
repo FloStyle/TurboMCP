@@ -19,7 +19,7 @@ for the evidence, [`TestRecord.md`](TestRecord.md); to hand the project on, [`HA
 | **Licence** | **MPL-2.0**, the notice on **193 of 193** first-party C++ files (186 under `Source/`, 7 under `TestProject/Source/`), `LICENSE` verbatim |
 | **Secrets** | **none** — keys, tokens, SSH keys, connection strings, private URLs and paths of anyone's machine were all checked, and one finding was removed from the file **and** the history |
 | **Plan** | **31 `todo` · 15 `done`** of 48 rows, counted **by field** |
-| **Size** | C++ **61 620 lines** in **186** files · Spec **7 740 lines** in **17** · `TestRecord.md` **10 800 lines** |
+| **Size** | C++ **61 620 lines** in **186** files · Spec **7 748 lines** in **17** · `TestRecord.md` **10 800 lines** |
 
 ## 2. What is done
 

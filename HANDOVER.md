@@ -105,7 +105,34 @@ pwsh -NoProfile -File Tools\run-suites.ps1                     # passed 58, fail
 | **Coverage audit** | `uncalled: (none)` — every declared tool is reached by at least one suite |
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail **or cannot pass** — currently 0 candidates |
 | **Plan** | **31 `todo` · 15 `done`** of 48 — *counted **by field**, never by a regex over the line* |
-| **Size** | C++ **61 620 lines** in **186** files · Spec **7 740 lines** in **17** · `TestRecord.md` **10 800 lines** |
+| **Size** | C++ **61 620 lines** in **186** files · Spec **7 748 lines** in **17** · `TestRecord.md` **10 806 lines** |
+
+**Every figure above is produced by a command, and these are those commands.** *A count in prose drifts the
+moment a file is added, which has already happened four times in this project — so the row above is a reading
+rather than a claim, and re-running these is how to check it:*
+
+```powershell
+git grep -c "static FString" Source/TurboMCP/Public/Tools/TurboMCPToolsets.h   # 93
+(Get-ChildItem Tools\test-*.py).Count                                          # 52 files, 58 suites
+git ls-files "Source/*.h" "Source/*.cpp" "Source/*.cs" "Source/**/*.h" "Source/**/*.cpp" "Source/**/*.cs" | Sort-Object -Unique   # 186
+git ls-files "Source/*.h" "Source/*.cpp" "Source/*.cs" "Source/**/*.h" "Source/**/*.cpp" "Source/**/*.cs" | Sort-Object -Unique | Get-Content | Measure-Object   # 61 620
+git ls-files "Spec/*.md" | Get-Content | Measure-Object                       # 7 748
+(Get-Content TestRecord.md | Measure-Object).Count                             # 10 806
+Tools\run-suites.ps1                                                           # the full run
+```
+
+*** THE GLOB HAS TO BE RECURSIVE. `Source/*.h` LOOKS RIGHT AND MISSES `Source/TurboMCP/TurboMCP.Build.cs`,
+which is how this table was "corrected" to 185 files and 61 460 lines during an audit — the correction was
+wrong and the original figures were right. A count that is off by one because of a glob is worse than no
+count, because it reads as a measurement.***
+
+*The suite count is the one figure not derivable from a file count: `run-suites.ps1` reports **3 static and
+55 needing an editor**, and some suite files register more than one suite, which is why **52 files** and
+**58 suites** are both correct.*
+
+*The suite count is the one figure not derivable from a file count: `run-suites.ps1` reports
+**3 static and 55 needing an editor**, and some suite files register more than one suite, which is why
+**52 files** and **58 suites** are both correct.*
 
 ---
 
