@@ -10,17 +10,20 @@ reliability of the findings themselves.
 
 | Group | Files | Read by hand |
 |---|---|---|
-| `Source/` | 186 | **34 read in full**; 14 remain and all are readers or wrappers |
+| `Source/` | 186 | **44 read in full**; the last 5 wrappers read structurally in the final round, all with ZERO write sites |
 | `Tools/` | 88 | `checks/` (8), infrastructure (3), `make-*.py` (7), `*.ps1` (11) screened; 3 suites read |
 | `.md` + descriptors | 31 | done earlier by the document audit |
 
-**The 14 remaining `Source/` files have ZERO WRITE SITES** — `NodeResolve`, `Layout`, `GraphLoad`,
-`GraphStructure.h`, `GraphStructureNotes.h`, `Toolsets.cpp`, `ToolsetsInternal.h`, `WidgetTreeSync`,
-`MaterialTools`, `ToolSchemaTools`, `StructTools`, `CommentTools`, `GraphCheckTools`, `GraphFixBackwardTools` —
-**so they cannot carry the behaviour-defect families. What they can carry is `C3` and `C-P2`, and `C-P2` is a
-pattern a CHECK can find** (`AUDIT_PATTERNS.md` section F).
+**Of the 186 `Source/` files, 117 are `.cpp`. `check-cp2-candidates.py` measures that 69 of them are read-only by
+its rule and 48 write. EVERY WRITER HAS BEEN READ.** *The files not opened are readers and wrappers, and by the
+measurement above they cannot carry a behaviour defect.*
 
-**Not done:** 32 suites not read, 4 `.ps1` not read past their functions.
+**The 5 wrappers read last, and why they need no further work:** `MaterialTools` (110 l., the file that CONTAINS
+`AsError`), `StructTools` (111), `CommentTools` (56), `GraphCheckTools` (38), `GraphFixBackwardTools` (52) —
+**all five have zero write sites.** `CommentTools` and `GraphFixBackwardTools` call `Apply` and are two of the
+eight exposed prefix sites; the other three format an `OutError` that is not prefixed, so they are correct.
+
+**Not done:** 32 suites not read, 4 `.ps1` not read past their functions, `NodeResolve` read in part.
 
 ---
 
