@@ -106,7 +106,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                     # passed 58, fail
 | **Coverage audit** | `uncalled: (none)` — every declared tool is reached by at least one suite |
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail **or cannot pass** — currently 0 candidates |
 | **Plan** | **30 `todo` · 16 `done`** of 48 — *counted **by field**, never by a regex over the line* |
-| **Size** | C++ **61 620 lines** in **186** files · Spec **7 748 lines** in **17** · `TestRecord.md` **10 806 lines** |
+| **Size** | C++ **62 366 lines** in **189** files · Spec **7 748 lines** in **17** · `TestRecord.md` **10 806 lines** |
 
 **Every figure above is produced by a command, and these are those commands.** *A count in prose drifts the
 moment a file is added, which has already happened four times in this project — so the row above is a reading
@@ -117,8 +117,8 @@ git grep -c "static FString" Source/TurboMCP/Public/Tools/TurboMCPToolsets.h   #
 (Get-ChildItem Tools\test-*.py).Count                                          # 52 files
 # 58 suites: every Tools\*.py whose name matches ^(test|check|audit)-
 (Get-ChildItem Tools -Filter '*.py' | Where-Object { $_.BaseName -match '^(test|check|audit)-' }).Count
-git ls-files "Source/*.h" "Source/*.cpp" "Source/*.cs" "Source/**/*.h" "Source/**/*.cpp" "Source/**/*.cs" | Sort-Object -Unique   # 186
-git ls-files "Source/*.h" "Source/*.cpp" "Source/*.cs" "Source/**/*.h" "Source/**/*.cpp" "Source/**/*.cs" | Sort-Object -Unique | Get-Content | Measure-Object   # 61 620
+git ls-files "Source/*.h" "Source/*.cpp" "Source/*.cs" "Source/**/*.h" "Source/**/*.cpp" "Source/**/*.cs" | Sort-Object -Unique   # 189
+git ls-files "Source/*.h" "Source/*.cpp" "Source/*.cs" "Source/**/*.h" "Source/**/*.cpp" "Source/**/*.cs" | Sort-Object -Unique | Get-Content | Measure-Object   # 62 366
 git ls-files "Spec/*.md" | Get-Content | Measure-Object                       # 7 748
 (Get-Content TestRecord.md | Measure-Object).Count                             # 10 806
 Tools\run-suites.ps1                                                           # the full run
