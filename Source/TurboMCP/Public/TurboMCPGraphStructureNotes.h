@@ -1,6 +1,10 @@
 // Copyright (c) 2026 Florian ESCHALIER (FloStyle)
 // SPDX-License-Identifier: MPL-2.0
 //
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+//
 // DOCUMENTATION ONLY - THIS FILE DECLARES NOTHING AND DEFINES NOTHING. It is not compiled into a tool and
 // contains no code; it records the measurement that gates `E-GRAPH-COLLAPSE` and the reuse path found for
 // `E-GRAPH-COPY`, because the workstream that took them ran out of context before it could build either.

@@ -1,7 +1,26 @@
 # TurboMCP — passation
 
-**Mesuré au round 253. `HEAD` = `origin/main` = `2038098`, arbre propre, 499 commits.**
-**Ce fichier existe pour que le prochain lecteur puisse VÉRIFIER plutôt que croire. Chaque commande est donnée.**
+**Version 1.0.0.** Arbre propre. Ce fichier existe pour que le prochain lecteur puisse **VÉRIFIER** plutôt que croire. Chaque commande est donnée.
+
+---
+
+## 0. Sécurité — ce qui a été vérifié avant de publier
+
+| Vérification | Résultat |
+|---|---|
+| Clés, tokens, clés SSH, chaînes de connexion | **aucun** *(scanné : `BEGIN PRIVATE KEY`, `ghp_`/`github_pat_`, `sk-`, `AKIA`, `xox`, `AIza`, `Bearer`, JWT, `AccountKey=`, `ConnectionString`)* |
+| Fichiers `.env`, `.pem`, `.key`, `.pfx`, `id_rsa` | **aucun** |
+| URL privées, hôtes internes, IP RFC1918 | **aucune** |
+| Données client | **aucune** — il n'y a que le kit de test, généré par le commandlet |
+| Dépendances privées | **aucune** — `ModelContextProtocol`, `ToolsetRegistry`, `SlateInspectorToolset` sont tous des plugins du moteur |
+| Workflows Actions, Pages, registres | **aucun** |
+| **Le seul constat** | ***un `SecurityToken` du plugin AndroidFileServer dans `TestProject/Config/DefaultEngine.ini`*** |
+
+**Ce que ce token était, et pourquoi il a été retiré :** *le moteur écrit un token **aléatoire** dans cette clé à la création d'un projet, et celui du dépôt **n'était pas la valeur par défaut du moteur** — donc il avait été **généré**, pas recopié. Un token généré est un secret.* ***Le plugin Android n'est pas activé dans `TurboMCPTest.uproject`, la connexion est `USBOnly` et le serveur de fichiers n'est jamais lancé*** *— le token donnait donc accès à un serveur que ce projet ne fait pas tourner.*
+
+**Il a été retiré de DEUX endroits, parce qu'un seul ne suffit pas :** *le fichier (`SecurityToken=` est maintenant vide, ce qui **désactive** le serveur par la règle du moteur) **et l'historique** (`--replace-text`, vérifié : **0 occurrence** dans tous les arbres de toutes les refs).*
+
+**Et les e-mails ont été retirés de l'historique** *(`--mailmap`) : les 1012 commits portent maintenant `FloStyleHome <FloStyle@users.noreply.github.com>`.* ***Le pseudonyme est conservé, et l'attribution MPL `Florian ESCHALIER (FloStyle)` reste sur les 186 fichiers source, comme la licence l'exige.***
 
 ---
 

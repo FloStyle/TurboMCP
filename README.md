@@ -1,7 +1,14 @@
 # TurboMCP
 
-An editor-only Unreal Engine plugin that registers its own toolsets with the
-MCP server built into the engine, plus one editor window.
+**Version 1.0.0** — An editor-only Unreal Engine 5.8.3 plugin that registers **93 tools** with the MCP
+server built into the engine, plus one editor window.
+
+[![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-blue.svg)](https://www.mozilla.org/MPL/2.0/)
+
+> **Status: 1.0.0, measured.** `passed 58, failed 0, blocked 0, of 58` across 58 suites, `exit code 0`.
+> 93 tools, every one reached by at least one suite, and a quality audit that **blocks the run** when a
+> check cannot fail or cannot pass. The numbers in this file are read from the tree, not recalled.
+> What is built, what is left, and **what I do not know**: [`HANDOVER.md`](HANDOVER.md).
 
 The engine's own MCP tools work. This plugin fills the gaps around them:
 
@@ -13,7 +20,21 @@ The engine's own MCP tools work. This plugin fills the gaps around them:
 - layout reports, captures and widget previews,
 - graph tidying that respects the author's comment boxes.
 
-Nothing here ships in a game build.
+**Nothing here ships in a game build.** The module is `"Type": "Editor"`, so it is not compiled into a
+packaged game, and every tool is a `UFUNCTION` on a toolset the engine's MCP server exposes.
+
+## The four toolsets
+
+| Toolset | Tools | What it does | Writes? |
+|---|---|---|---|
+| `UTurboMCPReadToolset` | **30** | Blueprints, graphs, materials, widgets, data tables, references, costs | **No** |
+| `UTurboMCPLookToolset` | **4** | Captures, layout, widget previews | **No** |
+| `UTurboMCPPreviewToolset` | **26** | `Plan` a change and see what it would touch | **No** |
+| `UTurboMCPEditToolset` | **33** | `Apply`, with one undo and a rollback on a new compile error | **Yes** |
+
+**The readers in `Read` and `Look` are structurally unable to write.** A tool that only reads is
+declared on a toolset whose class holds no editing code, so "this reader cannot modify your project" is
+a property of the type rather than a promise in a comment.
 
 - What to build and why: [`Spec/00_START_HERE.md`](Spec/00_START_HERE.md)
 - The rules every tool follows: [`Spec/02_PRINCIPLES.md`](Spec/02_PRINCIPLES.md)
@@ -23,6 +44,8 @@ Nothing here ships in a game build.
   what is next, which test proves it, and which spec section to read first. It is a
   working document and changes every round.
 - Building against an engine that is not vanilla 5.8.3: [`Spec/09_BUILD.md`](Spec/09_BUILD.md)
+- **Handover: [`HANDOVER.md`](HANDOVER.md)** — the four commands that establish the state, what is
+  finished, what is not, and the state of each of my own priorities.
 
 ## Layout
 
@@ -171,7 +194,7 @@ public:
 The four toolset classes are one per tool kind, so a toolset that holds only
 Read and Look tools cannot change an asset. That is enforced by which class the
 tool is written in, not by care. See
-[`Source/TurboMCP/Tools/TurboMCPToolsets.h`](Source/TurboMCP/Tools/TurboMCPToolsets.h).
+[`Source/TurboMCP/Public/Tools/TurboMCPToolsets.h`](Source/TurboMCP/Public/Tools/TurboMCPToolsets.h).
 
 Registration happens after every module loading phase completes, not in
 `StartupModule`, because the registry does not exist earlier.

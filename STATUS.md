@@ -1,6 +1,7 @@
 # TurboMCP — status report
 
-**Measured on `main` = `origin/main` = `ad0aa2d`.** Every number here was read off the tree, not recalled.
+**Version 1.0.0.** Every number here was read off the tree, not recalled. `Spec/WORKING_PLAN.md` is the
+live plan; this file is the state at the moment it was written.
 
 ---
 
@@ -8,15 +9,19 @@
 
 | | |
 |---|---|
+| **Version** | **1.0.0** — `TurboMCP.uplugin` `VersionName`, no longer experimental |
 | **Tools shipped** | **93** AICallable `UFUNCTION`s, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
 | **The audit** | **`uncalled: (none)`** — every declared tool is named by a suite |
 | **Test suites** | **52 files** (`Tools/test-*.py`), **58 suites** in the harness |
-| **FULL RUN** | ***`passed 58, failed 0, blocked 0, of 58` — EXIT CODE 0. THE FIRST FULLY GREEN RUN SINCE THE TWO PRE-EXISTING DEFECTS BELOW EXISTED.*** |
+| **FULL RUN** | ***`passed 58, failed 0, blocked 0, of 58` — EXIT CODE 0.*** |
 | **The audit that BLOCKS** | `audit-suite-quality.py` **fails the run** if any suite contains a check that cannot fail **or cannot pass** — currently **0 candidates** |
+| **Licence** | **MPL-2.0**, notice on **186 of 186** source files, `LICENSE` present |
+| **Portability** | **No path of anyone's machine.** `Tools/common.ps1` and `Tools/tmcp_paths.py` derive the repo and resolve the engine **by version**, not by location |
+| **Secrets** | **None.** Scanned for keys, tokens, SSH keys, connection strings, private URLs; the one finding was an unused Android file-server token, now empty **and purged from the history** |
 | **C++** | **61 455 lines** in **185** files |
 | **Spec** | **7 738 lines** in **17** files |
-| **The record** | `TestRecord.md` **10 502 lines** · `REPORT.md` **316 lines** · `QUESTIONS.md` |
-| **Plan** | **39 `todo` · 7 `done`** of 48 rows — *COUNTED BY FIELD, never by a regex over the line* |
+| **The record** | `TestRecord.md` **10 744 lines** · `REPORT.md` **350 lines** · `HANDOVER.md` **100 lines** |
+| **Plan** | **31 `todo` · 15 `done`** of 48 rows — *COUNTED BY FIELD, never by a regex over the line* |
 
 ### The two defects that were blocking the green signal, and neither was on the priority list
 
