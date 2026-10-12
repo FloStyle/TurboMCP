@@ -177,7 +177,7 @@ configuration here, and a name chosen for how it reads can change what a harness
 | **7** | *7.3 `CURVE-LOAD` / `CURVE-SET` (**`TA-17` is built**, the fixture is ready), 7.6 the asset operations* |
 | **8** Levels and actors | *8.1 `LEVEL-LOAD`, 8.2 `ACTOR-LOAD`, 8.3 `ACTOR-PLACE`, 8.4 `ACTOR-SET`, 8.5 `COMPONENTS`* |
 | **9** Session | *9.2 `E-SESSION` / `R-EDIT-SESSION`, 9.3 `P/E-ASSET-BATCH` — **no declaration exists*** |
-| **0 / 1 / 11** | *0.1 a single owner of the editor lifecycle, 1.1 breakpoints, 1.2 automation, 11.1 `09_BUILD.md`* — *** 0.3 IS NOT A REMAINING ROW: `WORKING_PLAN.md:83` marks it DONE, "measured into `07_ENGINE_NOTES.md` sections 1 to 4 and 6", and carrying it here is what made this list total 31 instead of 30 *** |
+| **0 / 1 / 11** | *0.1 a single owner of the editor lifecycle, **0.3 re-verify the engine notes**, 1.1 breakpoints, 1.2 automation, 11.1 `09_BUILD.md`* — *** 0.3 STAYS, BECAUSE THE MARK THAT SAYS IT IS DONE IS WRONG. *** `WORKING_PLAN.md:83` records it as "measured into `07_ENGINE_NOTES.md` sections 1 to 4 and 6. Every fact there now cites the engine file and line" — and `07_ENGINE_NOTES.md` carries *** ZERO `file:line` CITATIONS IN ITS 310 LINES *** (`Select-String '\.(h|cpp|cs)\b|:\d'` matches only `Build.cs` used as a subject, and a `localhost` URL). SO THIS LIST WAS RIGHT TO TOTAL 31, AND THE ROW BELONGS HERE UNTIL THE CITATIONS EXIST |
 
 ### The order I would do them in
 
