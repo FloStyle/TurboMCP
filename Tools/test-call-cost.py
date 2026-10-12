@@ -319,6 +319,18 @@ def main():
           "recording: on" in after, after[:200])
 
     print()
+    # *** THE CAP'S TWO REFUSALS, WHICH NO RUN HAD EVER TAKEN. *** Until `4fc7f70` a `cap` of `banana` or `0`
+    # answered 10 and said nothing. THE CLAMP FOR A LARGE NUMBER IS DELIBERATE AND STAYS - a caller asking for
+    # a hundred rows is asking for as much as this tool will give, which is not the same as a typo - so what is
+    # asserted here is only that a TYPO and a ZERO are refused, each in its own words.
+    bad_cap = cost(session, cap="banana")
+    check("refuses a cap that is not a number, and names the parameter",
+          bad_cap.startswith("error:") and "is not a cap" in bad_cap, bad_cap[:200])
+    zero_cap = cost(session, cap="0")
+    check("refuses a cap of zero with its OWN sentence, not the non-number one",
+          zero_cap.startswith("error:") and "is not usable" in zero_cap, zero_cap[:200])
+
+    print()
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1

@@ -574,6 +574,20 @@ def main():
               "visibility=Visible" not in wtext)
 
     print()
+    # *** AND THE TWO `tokenBudget` REFUSALS, WHICH NO RUN HAD EVER TAKEN. *** This reader is the MODEL the
+    # four sites in `4fc7f70` were brought onto, and it is the tool where ZERO IS REFUSED - the opposite of
+    # `ReadTurboMCPBPLint`, whose 0 means "no budget". Both are asserted, because one parameter name carrying
+    # two contracts is only safe while each tool states which one it keeps.
+    word_budget = load(session, ASSET, budget="banana")
+    check("refuses a token budget that is not a number, and names the parameter",
+          word_budget.startswith("error:") and "is not a token budget" in word_budget,
+          word_budget[:200])
+    zero_budget = load(session, ASSET, budget="0")
+    check("refuses a token budget of ZERO here, and says what to pass instead",
+          zero_budget.startswith("error:") and "is not usable" in zero_budget,
+          zero_budget[:200])
+
+    print()
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1

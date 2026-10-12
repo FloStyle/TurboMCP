@@ -349,6 +349,19 @@ def main():
           "changed: %s" % ", ".join(differing))
 
     print()
+    # *** AND THE CONTRACT THIS TOOL HAS FOR `tokenBudget` IS THE OPPOSITE OF THE BLUEPRINT READER'S, WHICH IS
+    # WHY BOTH ARE ASSERTED AND NEITHER IS ASSUMED. *** Here 0 is a VALUE - "no budget", as the code's own
+    # comment says - so the suite must confirm that 0 is ACCEPTED and that only a non-number is refused.
+    # `TurboMCPBlueprintLoad.cpp:107-114` refuses the same parameter name at 0, and a suite that refused 0 here
+    # would be asserting the opposite of this tool's documented contract.
+    zero_budget = lint(session, ASSET, budget="0")
+    check("tokenBudget of 0 is ACCEPTED here, because 0 means NO BUDGET",
+          not zero_budget.startswith("error:"), zero_budget[:200])
+    word_budget = lint(session, ASSET, budget="banana")
+    check("refuses a token budget that is not a number, and names the parameter",
+          word_budget.startswith("error:") and "is not a token budget" in word_budget, word_budget[:200])
+
+    print()
     if failures:
         print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
         return 1
