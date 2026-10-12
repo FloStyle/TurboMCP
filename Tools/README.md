@@ -9,6 +9,12 @@ fails, so it can be used as a gate instead of something a person reads.
 
 ## Why each one exists
 
+*** THE TABLE BELOW IS CURATED, AND THEREFORE INCOMPLETE BY CONSTRUCTION: IT EXPLAINS THE TOOLS WHOSE PURPOSE
+NEEDS EXPLAINING, IN THE ORDER THEY ARE USED. [`INVENTORY.md`](INVENTORY.md) IS THE COMPLETE LIST - EVERY
+SCRIPT IN THIS DIRECTORY, GENERATED FROM THE DIRECTORY, WITH ITS OWN FIRST HEADER LINE BESIDE IT. *** *A
+curator's table is the wrong place to keep seventy-odd files complete: it turns into a list, and then into a
+stale list.*
+
 | Script | Runs against | Job |
 |---|---|---|
 | `setup-engine.ps1` | nothing | Build UE 5.8.3 from source and mount the plugin where UBT can find it |
@@ -41,6 +47,12 @@ fails, so it can be used as a gate instead of something a person reads.
 | `test-local-vars.py` | a running editor | P/E-LOCAL-VARS; the promotion path is unverified, see Q-13 |
 | `make-acceptance-asset.ps1` | nothing else running | rebuilds the acceptance asset from its commandlet |
 | `test-uncovered-tools.py` | a running editor | drives the tools no other suite calls |
+| `audit-suite-quality.py` | nothing, static | **BLOCKS the run.** Reports a check that cannot fail or cannot pass, in six named classes |
+| `check-refs.py` | nothing, static | Every `FILE.md section N` in the documentation, against the headings that file has. **Exits 0 when everything resolves** |
+| `count-plan.py` | nothing, static | Counts `Spec/WORKING_PLAN.md` **by field**, the way the plan demands, and prints the per-state totals |
+| `check-suite-shapes.py` | nothing, static | Checks the quality audit's own detection, because it takes an intersection that could miss a suite |
+| `make-questions-index.py` | nothing, static | Regenerates the status index at the top of `QUESTIONS.md` from the questions' own text |
+| `make-tools-doc.py` | the source tree | Regenerates `TOOLS.md` from the declarations, so the catalogue cannot drift |
 | `audit-tool-coverage.py` | nothing, static | reports every tool no suite calls, and every parameter with no sample |
 | `test-batch-tools.py` | a running editor | R-TOOL-SCHEMA, P-NODE-TYPE, P-NODE-PINS and the four material readers |
 | `test-material.py` | a running editor | the four material readers against their fixture |

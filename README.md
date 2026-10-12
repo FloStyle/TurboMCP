@@ -77,6 +77,7 @@ Tools/                  helper scripts, not part of the plugin
 | [`QUESTIONS.md`](QUESTIONS.md) | Questions put to the owner, with their answers |
 | [`MPL-2.0-SETUP.md`](MPL-2.0-SETUP.md) | Where the license lives: the `LICENSE` text, the per-file notice, and the script that reapplies it |
 | [`Tools/README.md`](Tools/README.md) | What each helper script does and how to run it |
+| [`Tools/INVENTORY.md`](Tools/INVENTORY.md) | **Every script in `Tools/`, generated from the directory** so no tool can be undocumented |
 | [`LICENSE`](LICENSE) | The Mozilla Public License 2.0, verbatim |
 
 The machine facts a contributor needs — the engine version, the toolchain, and every trap hit while
