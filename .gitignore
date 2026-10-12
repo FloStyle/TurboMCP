@@ -40,3 +40,8 @@ __pycache__/
 # The source it is built from is local too; see the note in Tools/README.md.
 GitCredentialHelper*
 *.exe
+
+# Temporary commit-message files. They were written by the agent that made these commits and one
+# of them reached a commit because its name did not match the existing pattern.
+.cmsg*.txt
+*.cmsg.txt
