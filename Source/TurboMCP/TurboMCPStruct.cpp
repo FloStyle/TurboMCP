@@ -1531,14 +1531,25 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 			if (AfterAdd.Num() > 0)
 			{
 				const FGuid AddedGuid = AfterAdd.Last().VarGuid;
+				// *** THE NAME IS FREE BY CONSTRUCTION, SO THIS RETURNS IT UNCHANGED. *** The plan refuses an
+				// Add whose name the struct already carries (`:1315-1321`), and
+				// `IsUniqueVariableFriendlyName` tests the SAME thing with the SAME case-sensitive match on
+				// `FriendlyName` (`StructureEditorUtils.cpp:496`). So there is nothing to suffix here, and
+				// `RenameVariable` - which refuses only a name that is taken (`:352-355`) - accepts the name.
+				// THE RENAME IS STILL NECESSARY, because `AddVariable` cannot name a field at all; see above.
 				const FString Unique = MakeUniqueFriendlyName(Struct, Name);
 				if (Unique.IsEmpty()
 					|| !FStructureEditorUtils::RenameVariable(Struct, AddedGuid, Unique))
 				{
-					// THE FIELD EXISTS BUT CANNOT BE ADDRESSED BY THE NAME THE CALLER USED, so the change did
-					// not do what was asked. It is reported rather than followed by a rename that silently
-					// invented a different name, because a field called something else is a field the caller
-					// cannot use in the next call.
+					// *** DEFENSIVE, AND UNREACHABLE FROM A NAME THE STRUCT ALREADY CARRIES. *** Reaching here
+					// means those two predicates disagreed, or that every suffix up to 999 was taken - and the
+					// second requires the name to be taken, which the plan's refusal already rules out.
+					//
+					// AND THE FIELD IS NOT REMOVED: `AddVariable` has already created it, so it stays in the
+					// struct under the engine's generated `MemberVar_N`. `Vanished.Add(Name)` is therefore a
+					// statement about the CALLER'S REQUEST rather than about the asset, which is why it is
+					// reported rather than counted as added - a field the caller cannot address must not pass
+					// as one it can.
 					Vanished.Add(Name);
 					continue;
 				}
@@ -1546,7 +1557,8 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 			++Added;
 
 			// The options are set straight after the rename, because they live on the description and the name is
-			// now the key to it.
+			// now the key to it. THAT NAME IS `Name`: `Unique` is `Name` on this path, which is what makes this
+			// lookup correct rather than lucky.
 			const FGuid Guid = GuidOfField(Struct, Name);
 			if (Guid.IsValid())
 			{
