@@ -89,7 +89,7 @@ row by row against the tree.
 
 ---
 
-## 1. The state, in four commands
+## 1. The state, in five commands
 
 ```powershell
 git rev-parse --short HEAD                                     # the revision this file describes

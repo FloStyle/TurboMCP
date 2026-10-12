@@ -67,7 +67,7 @@ that was found by auditing the rows against the tree rather than by reading the 
 
 ### 3.1 The verification machine works
 
-**Seven consecutive rows ended with a clean full run: `53/53` → `54/54` → `55/55` → `56/56` → `57/57`.**
+**Five consecutive rows ended with a clean full run: `53/53` → `54/54` → `55/55` → `56/56` → `57/57`.**
 Each with a newly written suite inside it and zero failures.
 
 And the measurement that matters: **the last three rows needed almost no intervention from me.** The

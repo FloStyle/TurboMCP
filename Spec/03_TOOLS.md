@@ -1430,7 +1430,7 @@ every suite and the coverage audit already read, and a sixth parameter would
 change it for every caller to serve one mode. With NO asset, the mode answers the
 CAPABILITY question and opens nothing.
 
-**The render path, and why it is one path instead of nine.** Every asset editor
+**The render path, and why it is one path instead of eight.** Every asset editor
 in this engine is an `FAssetEditorToolkit` (`Toolkits/AssetEditorToolkit.h:115-118`),
 and `IToolkitHost::GetParentWidget()` (`Toolkits/IToolkitHost.h:25`) is the host's
 own widget: for a standalone asset editor that is
