@@ -43,8 +43,13 @@ This is **Exhibit A** of the license itself, which is the form the license asks 
 ```
 
 The `SPDX-License-Identifier` line is added on top of Exhibit A, because it is the machine-readable form and
-lets tooling identify the license without parsing prose. The copyright line is the one the project already
-used, so nothing was renamed.
+lets tooling identify the license without parsing prose.
+
+**The copyright line names the pseudonymous account, `FloStyle`, and nobody else.** The project's first
+notice carried a civil name as well; it was reduced to the pseudonym to keep the published tree from carrying
+an identity that the licence does not require. MPL-2.0 asks for **a** notice whose removal is forbidden
+(Section 3.4) - it does not ask for a legal name, and a pseudonym identifies the holder of the copyright just
+as unambiguously for anyone reading or redistributing the file.
 
 ### Applying it: `Tools/apply-license-header.ps1`
 
@@ -77,10 +82,17 @@ touched:
   is a file nobody reads.
 - **It replaces, not duplicates.** Every file already had a copyright line; the script consumes it and
   writes the full notice in its place, so the count stays one. It also had to be TAUGHT the current spelling:
-  its first pattern required `All Rights Reserved`, which the line
-  `// Copyright (c) 2026 FloStyle` does not end with, so it stopped recognising the line
-  it was supposed to consume and **prepended the notice above it, leaving two copyright lines in two files**.
-  The pattern now matches any `// Copyright` line.
+  its first pattern required `All Rights Reserved`, which a copyright line that does not end with that phrase
+  fails to match, so it stopped recognising the line it was supposed to consume and **prepended the notice
+  above it, leaving two copyright lines in two files**. The pattern now matches any `// Copyright` line.
+- **It decides "already correct" from the COPYRIGHT LINE, not from the SPDX line.** This was the subtler of
+  the two defects, and it went unnoticed for as long as the holder line stayed the same. The script used to
+  look for `SPDX-License-Identifier: MPL-2.0` on the reasoning that the SPDX line is unique to the notice.
+  **IT IS UNIQUE, AND IT IS ALSO IDENTICAL IN EVERY GENERATION OF THE NOTICE** - so when the holder line
+  changed, all 193 files were classified as `already correct`, the script reported `0 replaced`, and `-Check`
+  went on passing while the tree kept the old spelling. *** A CHECK THAT MATCHES A PART OF WHAT IT VERIFIES
+  CANNOT SEE A CHANGE IN THE REST OF IT. *** The marker is now the copyright line exactly as
+  `Tools/license-header.txt` spells it, read from that file so there is one spelling rather than two.
 - **It detects the line ending instead of choosing one.** This repository pins LF in `.gitattributes`. The
   first version hard-coded a CRLF join *and* PowerShell's `-split "\`n"` silently failed to split an LF-only
   file — so each file arrived as one line, no pattern matched the top of it, and the script announced it
@@ -125,7 +137,7 @@ Distributing the plugin as a compiled `.dll` inside a shipped game is **Executab
 allows it under any terms as long as the source stays available as above (Section 3.2). In practice the
 plugin is editor-only and does not ship in a game build at all.
 
-Every source file carries this header, and `Tools/apply-license-header.ps1` reapplies it:
+Every source file carries this notice, and `Tools/apply-license-header.ps1` reapplies it:
 
 ```cpp
 // Copyright (c) 2026 FloStyle
