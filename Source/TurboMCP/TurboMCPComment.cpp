@@ -735,9 +735,10 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			Comment->DestroyNode();
 			Graph->MarkPackageDirty();
 
-			// THE READ-BACK: the box count is taken again, and the nodes are counted, so "its nodes
-			// were kept" is checked rather than asserted. That claim is the one a caller cares
-			// about, and getting it wrong would destroy their work.
+			// THE READ-BACK RE-COUNTS THE BOXES, so "the box is gone" is checked rather than asserted.
+			// *** THE NODES ARE NOT RE-MEASURED: `MemberTotal` is taken before the destroy and states
+			// what the box HELD, so "its nodes were kept" rests on `DestroyNode` removing the comment
+			// and nothing else. WHAT IS VERIFIED HERE IS THE BOX, NOT THE NODES. ***
 			int32 BoxesLeft = 0;
 			for (UEdGraphNode* Check : Graph->Nodes)
 			{
