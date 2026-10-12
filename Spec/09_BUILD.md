@@ -19,7 +19,7 @@ change.
 | Engine | 5.8.3, Windows editor | `01_BRIEF.md`, `D-38` |
 | Target kind | **Editor only.** Nothing here ships in a game build | `TurboMCP.Build.cs` header |
 | Engine plugins | all three enabled: `SlateInspectorToolset`, `ToolsetRegistry`, `ModelContextProtocol` | `TurboMCP.uplugin` |
-| Python | needed for two reasons, both named below | `TurboMCP.Build.cs` |
+| Python | needed for **one** reason, named below in 1.3: the PIE test map's Blueprint actor is built with the engine's own Python graph writer | `TurboMCP.Build.cs` |
 
 **Three** engine plugins are declared in `TurboMCP.uplugin`, and **two of them
 carry the MCP server and the tool registry**: `ModelContextProtocol` and
