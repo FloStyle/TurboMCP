@@ -287,3 +287,37 @@ WHERE THE CODE SUPPOSES.*** *The test layer is not the problem — it tests what
 assert the transaction did not commit. `test-material-tidy.py:374` already describes *"a run was interrupted
 part-way and left the material mid-layout"*, so the fixture for a failure exists; what is missing is the ENGINE
 refusing a creation.
+
+---
+
+## 10. THE SUITE LAYER, MEASURED OVER TWELVE SUITES IN SIX FAMILIES
+
+**Read in full:** `test-uncovered-tools.py` (176), `test-asset-cost.py` (175), `test-graph-check.py` (275),
+`test-widget-tree.py` (109), `test-refs.py` (160), `test-call-log.py` (382), `test-vcs.py` (643), plus the three
+material suites and `test-graph-fix-backward.py` in structure.
+
+**Every one has the same five properties, and none of them is the phrase the template asks for:**
+
+    1  a module docstring saying WHY the suite exists, often naming the acceptance row and the failure it closes
+    2  a `check()` that prints ok/FAIL and accumulates
+    3  EVERY CHECK NAMES WHAT IT PROVES - "it names why that claim would need proof", "each fault is reported on
+       ITS OWN LINE", "the default visibility is not printed", "says nothing about the incoming direction"
+    4  THE WRONG EARLIER VERSIONS RECORDED, WITH WHAT THEY GOT WRONG - `test-graph-check.py:76-80` (the zero case,
+       "an assertion that could not be satisfied by the correct answer") and `:164-168` (the line expectation,
+       "the suite was asserting the tool had misplaced a finding when the suite had misplaced its expectation,
+       WHICH IS THE 'READER FAULT REPORTED AS A SUBJECT FAULT' MISTAKE")
+    5  the strongest PROVE THE NEGATIVE FROM OUTSIDE - `test-graph-check.py:12-14` checks the asset hash, size and
+       mtime before and after plus a read through a DIFFERENT tool, because "A TOOL REPORTING ITS OWN INNOCENCE IS
+       NOT EVIDENCE"
+
+**And the honest empty case is done better in the suites than in the sources.** `test-refs.py:79-82` asserts four
+properties of a single zero: *"a zero is reported, not hidden"*, *"the zero explains itself"*, *"it suggests the
+next step"*, *"both directions are reported"*. `TurboMCPLayout.cpp:141-142` is the source-side counterpart: a zero
+that ENUMERATES the four things it looked for.
+
+*** SO THE 34 "SILENT" SUITES ARE NOT A QUALITY FINDING. The phrase `check-fails-on.py` looks for is a sentence
+shape, and the suites that lack it are as careful as the ones that have it. `test-asset-cost.py` is the proof: no
+`FAILS ON` line, and fourteen checks that each state their own failure condition.***
+
+**What is NOT established:** the remaining 40 suites have not been read. Twelve out of fifty-two is a sample, not
+a census, and the standard could differ in a family not yet opened.
