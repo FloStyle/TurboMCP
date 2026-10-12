@@ -43,19 +43,23 @@ that was found by auditing the rows against the tree rather than by reading the 
 
 ### What is left, by phase
 
-| Phase | State |
-|---|---|
-| **0 — Foundations** | 3 rows `todo`: one owner of the editor lifecycle, re-verification of `07_ENGINE_NOTES.md` |
-| **1 — Blocking measurements** | 3 `todo`: Blueprint breakpoints, automation tests, kit `TA-14` → `TA-21` |
-| **2 — Vision** | **2.1 and 2.2 done.** 2.2 captures **9 editor types, none refused**. 2.3 (level, viewport, PIE) and 2.4 (image diff) remain |
-| **3 — Look** | layout report, capture and widget preview are largely built; finishing rows |
-| **4 — Data** | `P/E-DATATABLE-ROWS` done; curves (`T-DATA-5` → **`TA-17` missing**) |
-| **5 — Widgets** | override, bind and retarget writers; **`T-WIDGET-4` → `TA-8` missing** |
-| **6 — Blueprints** | the largest block: graph append, replace, patch, knots, tidy |
-| **7 — Structs and enums** | 7.1 done; 7.3 curves |
-| **8 — Materials** | block writing, label promotion |
-| **9 to 10** | session and cost, source control |
-| **11 to 15** | level and actors, build, vision, quality |
+*** COUNTED BY `Tools/count-plan.py`, WHICH SPLITS EACH ROW AND READS ITS LAST CELL - the plan's own rule.
+`30 todo · 16 done · 2 open` of 48 numbered rows. ***
+
+| Phase | todo | done | The rows that remain |
+|---|---|---|---|
+| **0 — Foundations** | 1 | 2 | *one owner of the editor lifecycle. **0.3 closed this pass**: its "re-verify and change the marker" was written against markers that no longer exist, and every fact was already measured on 5.8.3* |
+| **1 — Blocking measurements** | 4 | 1 | *Blueprint breakpoints, automation tests, kit `TA-14` → `TA-21`, and 1.3's own write-up being out of date* |
+| **2 — Vision** | 2 | 2 | *2.2 captures **9 editor types, none refused**. 2.3 (level, viewport, PIE) and 2.4 (image diff) remain* |
+| **3 — Materials, end to end** | 4 | 2 | *material block writing, label promotion* |
+| **4 — Data table rows** | 0 | 1 | ***nothing left*** — `P/E-DATATABLE-ROWS` is the phase* |
+| **5 — Widget authoring** | 4 | 1 | *override, bind and retarget writers; **`T-WIDGET-4` → `TA-8` missing*** |
+| **6 — Graph structure** | 5 | 0 | ***the largest block***: graph append, replace, patch, knots, tidy |
+| **7 — Assets and data** | 2 | 3 | *7.3 (curve assets) and 7.6* |
+| **8 — Level and actors** | 5 | 0 | ***nothing done*** — reading a level, placing actors, component hierarchies |
+| **9 — Quality, session and cost** | 2 | 2 | *the lint and cost rows are the two done* |
+| **10 — Source control** | 0 | 2 | ***nothing left*** — and both were measured against a refusal |
+| **11 — Build portability** | 1 | 0 | *the one row* |
 
 ---
 
