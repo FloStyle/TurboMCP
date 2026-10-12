@@ -297,9 +297,9 @@ refusing a creation.
 `test-json.py` (585, 79 checks - the densest read) and `test-capture-asset.py` (676, 57 checks), plus the three
 material suites and `test-graph-fix-backward.py` in structure.
 
-*** FOURTEEN SUITES IN EIGHT FAMILIES: `graph`, `widget`, `call`, `vcs`, `material`, `refs`, `json`, `capture`.
-AND TWO OF THE LAST THREE WERE FAMILIES THE EARLIER ROUNDS HAD NOT OPENED - `json` AND `capture` - WHICH IS THE
-TEST THAT MATTERED: THE STANDARD DID NOT DIFFER, AND IN `capture` IT IS STRICTER. ***
+*** NINETEEN SUITES IN THIRTEEN FAMILIES: `graph`, `widget`, `call`, `vcs`, `material`, `refs`, `json`,
+`capture`, `bp`, `struct`, `enum`, `vars`, `override`. EIGHT OF THOSE FAMILIES WERE OPENED SPECIFICALLY TO FALSIFY
+THIS SECTION'S CAVEAT, AND NONE OF THEM DID: THE STANDARD DID NOT DIFFER, AND IN `capture` IT IS STRICTER. ***
 
 **Every one has the same five properties, and none of them is the phrase the template asks for:**
 
