@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPGraphFixBackward.h"
@@ -32,7 +34,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphFixBackward(
 	FString Error;
 	if (!FTurboMCPGraphFixBackward::Plan(Asset, GraphName, Force, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphFixBackward::RenderPreview(Plan);
@@ -45,7 +47,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphFixBackward(
 	FString Error;
 	if (!FTurboMCPGraphFixBackward::Plan(Asset, GraphName, Force, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphFixBackward::Apply(Plan);

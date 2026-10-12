@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPWidgetRetarget.h"
@@ -27,7 +29,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetRetarget(const FString& As
 	FString Error;
 	if (!FTurboMCPWidgetRetarget::Plan(Asset, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPWidgetRetarget::RenderPreview(Plan);
@@ -39,7 +41,7 @@ FString UTurboMCPEditToolset::EditTurboMCPWidgetRetarget(const FString& Asset)
 	FString Error;
 	if (!FTurboMCPWidgetRetarget::Plan(Asset, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPWidgetRetarget::Apply(Plan);

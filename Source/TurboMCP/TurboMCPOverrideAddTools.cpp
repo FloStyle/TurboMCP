@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPOverrideAdd.h"
@@ -28,7 +30,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPOverrideAdd(
 	FString Error;
 	if (!FTurboMCPOverrideAdd::Plan(Asset, FunctionOrEvent, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPOverrideAdd::RenderPreview(Plan);
@@ -41,7 +43,7 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideAdd(
 	FString Error;
 	if (!FTurboMCPOverrideAdd::Plan(Asset, FunctionOrEvent, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPOverrideAdd::Apply(Plan);

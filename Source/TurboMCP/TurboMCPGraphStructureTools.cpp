@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "TurboMCPGraphStructure.h"
 
 /**
@@ -31,7 +33,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphCopy(
 	if (!FTurboMCPGraphStructure::PlanCopy(SourceAsset, SourceGraph, NodeIds,
 		TargetAsset, TargetGraph, AnchorNodeId, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphStructure::RenderPreview(Plan);
@@ -48,7 +50,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphCopy(
 	if (!FTurboMCPGraphStructure::PlanCopy(SourceAsset, SourceGraph, NodeIds,
 		TargetAsset, TargetGraph, AnchorNodeId, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	if (!Plan.bAcceptable())
@@ -64,7 +66,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphCopy(
 	{
 		// `Apply` reports its own failures with `NOTHING was written`, because the spec requires a failed
 		// write to SAY it failed rather than to look like a success.
-		return FString::Printf(TEXT("error: %s"), *ApplyError);
+		return FTurboMCPToolError::AsError(ApplyError);
 	}
 
 	return Report;
@@ -79,7 +81,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphCollapse(
 	if (!FTurboMCPGraphStructure::PlanCollapse(Asset, GraphName, NodeIds, MemberName, MemberKind,
 		Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphStructure::RenderPreview(Plan);
@@ -94,7 +96,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphCollapse(
 	if (!FTurboMCPGraphStructure::PlanCollapse(Asset, GraphName, NodeIds, MemberName, MemberKind,
 		Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	// THE PLAN RUNS FIRST SO ITS REFUSALS ARE REPORTED, and only an ACCEPTABLE plan reaches `Apply` -
@@ -110,7 +112,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphCollapse(
 	FString ApplyError;
 	if (!FTurboMCPGraphStructure::Apply(Plan, Report, ApplyError))
 	{
-		return FString::Printf(TEXT("error: %s"), *ApplyError);
+		return FTurboMCPToolError::AsError(ApplyError);
 	}
 
 	return Report;

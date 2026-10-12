@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPStruct.h"
@@ -31,7 +33,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPStructNew(
 	FString Error;
 	if (!FTurboMCPStruct::PlanNew(Path, Fields, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPStruct::RenderPreviewNew(Plan);
@@ -46,7 +48,7 @@ FString UTurboMCPEditToolset::EditTurboMCPStructNew(
 	FString Error;
 	if (!FTurboMCPStruct::PlanNew(Path, Fields, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPStruct::ApplyNew(Plan);
@@ -59,7 +61,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPStructFields(
 	FString Error;
 	if (!FTurboMCPStruct::PlanFieldEdits(Struct, Changes, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	// =============================================================================================
@@ -88,7 +90,7 @@ FString UTurboMCPEditToolset::EditTurboMCPStructFields(
 	FString Error;
 	if (!FTurboMCPStruct::PlanFieldEdits(Struct, Changes, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	// =============================================================================================

@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPWidgetsAsVars.h"
@@ -25,7 +27,7 @@ FString UTurboMCPEditToolset::EditTurboMCPWidgetsAsVars(
 	FString Error;
 	if (!FTurboMCPWidgetsAsVars::Plan(Asset, Widgets, bIsVariable, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPWidgetsAsVars::Apply(Plan);

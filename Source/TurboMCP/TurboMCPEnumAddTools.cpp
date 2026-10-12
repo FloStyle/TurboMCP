@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPEnumAdd.h"
@@ -27,7 +29,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPEnumAdd(
 	FString Error;
 	if (!FTurboMCPEnumAdd::Plan(Path, Values, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPEnumAdd::RenderPreview(Plan);
@@ -42,7 +44,7 @@ FString UTurboMCPEditToolset::EditTurboMCPEnumAdd(
 	FString Error;
 	if (!FTurboMCPEnumAdd::Plan(Path, Values, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPEnumAdd::Apply(Plan);

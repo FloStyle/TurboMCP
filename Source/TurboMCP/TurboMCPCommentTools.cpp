@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPComment.h"
@@ -33,7 +35,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPComment(
 	if (!FTurboMCPComment::Plan(Asset, GraphName, Action, Nodes, Box, Text, Color, Size,
 			Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPComment::RenderPreview(Plan);
@@ -49,7 +51,7 @@ FString UTurboMCPEditToolset::EditTurboMCPComment(
 	if (!FTurboMCPComment::Plan(Asset, GraphName, Action, Nodes, Box, Text, Color, Size,
 			Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPComment::Apply(Plan);

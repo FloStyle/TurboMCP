@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPNodeType.h"
@@ -32,7 +34,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPNodeType(
 	FString Error;
 	if (!FTurboMCPNodeType::Plan(Asset, GraphName, Words, Limit, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPNodeType::Render(Plan);
@@ -45,7 +47,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPNodePins(
 	FString Error;
 	if (!FTurboMCPNodePins::Plan(Asset, GraphName, TypeId, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPNodePins::Render(Plan);

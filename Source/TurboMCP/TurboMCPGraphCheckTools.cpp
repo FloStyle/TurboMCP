@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "TurboMCPGraphCheck.h"
 
 /**
@@ -31,7 +33,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphCheck(
 	FString Error;
 	if (!FTurboMCPGraphCheck::Plan(Asset, GraphName, Text, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphCheck::Render(Plan);

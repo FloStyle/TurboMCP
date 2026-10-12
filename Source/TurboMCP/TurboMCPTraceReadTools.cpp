@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "TurboMCPTrace.h"
 
 /**
@@ -44,7 +46,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPTrace(const FString& Action, const FSt
 	FString Error;
 	if (!TurboMCPTrace::Plan(Action.IsEmpty() ? TEXT("status") : Action, NodeId, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return TurboMCPTrace::Status();

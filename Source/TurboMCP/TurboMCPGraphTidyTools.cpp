@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPGraphTidy.h"
@@ -32,7 +34,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(const FString& Asset,
 	FString Error;
 	if (!FTurboMCPGraphTidy::Plan(Asset, GraphName, bForce, /*bInMergeGetters=*/false, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 	return FTurboMCPGraphTidy::RenderPreview(Plan);
 }
@@ -44,7 +46,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphTidy(const FString& Asset,
 	FString Error;
 	if (!FTurboMCPGraphTidy::Plan(Asset, GraphName, bForce, /*bInMergeGetters=*/false, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 	return FTurboMCPGraphTidy::Apply(Plan);
 }

@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPGraphDead.h"
@@ -26,7 +28,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphDead(
 	FString Error;
 	if (!FTurboMCPGraphDead::Plan(Asset, GraphName, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphDead::RenderPreview(Plan);
@@ -39,7 +41,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphDead(
 	FString Error;
 	if (!FTurboMCPGraphDead::Plan(Asset, GraphName, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphDead::Apply(Plan);

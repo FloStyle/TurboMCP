@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPGraphKnots.h"
@@ -30,7 +32,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphKnots(
 	FString Error;
 	if (!FTurboMCPGraphKnots::Plan(Asset, GraphName, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphKnots::RenderPreview(Plan);
@@ -43,7 +45,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphKnots(
 	FString Error;
 	if (!FTurboMCPGraphKnots::Plan(Asset, GraphName, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphKnots::Apply(Plan);

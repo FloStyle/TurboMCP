@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "TurboMCPGraphAppend.h"
 
 /**
@@ -30,7 +32,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
 	FString Error;
 	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPGraphAppend::RenderPreview(Plan);
@@ -45,7 +47,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphAppend(
 	FString Error;
 	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	if (!Plan.bAcceptable())
@@ -62,7 +64,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphAppend(
 		// `Apply` reports its own failures with the first line `unchanged`, because the spec requires a failed
 		// write to SAY it failed rather than to look like a success. Only a failure to even reach the graph
 		// comes back as an `error:` line.
-		return FString::Printf(TEXT("error: %s"), *ApplyError);
+		return FTurboMCPToolError::AsError(ApplyError);
 	}
 
 	return Report;

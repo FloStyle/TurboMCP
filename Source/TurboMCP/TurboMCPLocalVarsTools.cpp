@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPLocalVars.h"
@@ -26,7 +28,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPLocalVars(
 	FString Error;
 	if (!FTurboMCPLocalVars::Plan(Asset, GraphName, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPLocalVars::RenderPreview(Plan);
@@ -39,7 +41,7 @@ FString UTurboMCPEditToolset::EditTurboMCPLocalVars(
 	FString Error;
 	if (!FTurboMCPLocalVars::Plan(Asset, GraphName, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPLocalVars::Apply(Plan);

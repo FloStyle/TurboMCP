@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPToolSchema.h"
@@ -26,7 +28,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolSchema(
 	FString Error;
 	if (!FTurboMCPToolSchema::Plan(Toolset, Tool, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPToolSchema::Render(Plan);

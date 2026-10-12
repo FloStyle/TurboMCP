@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "TurboMCPTrace.h"
 
 /**
@@ -36,7 +38,7 @@ FString UTurboMCPEditToolset::EditTurboMCPTrace(const FString& Action, const FSt
 	FString Error;
 	if (!TurboMCPTrace::Plan(Action, NodeId, Plan, Error))
 	{
-		return FString::Printf(TEXT("error: %s"), *Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	// FORCED REBUILD NOTE: a break test left a stale object in the intermediate directory and the link did
