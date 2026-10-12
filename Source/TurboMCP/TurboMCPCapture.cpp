@@ -1177,17 +1177,19 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
 		delete Renderer;
 	}
+	// *** A FAILED RENDER RETURNS THE ERROR KERNEL AND NOTHING ELSE. This branch used to do
+	// `Out += Printf("\nerror: %s", ...)` and then `return Out`, so the answer BEGAN WITH THE `look:`
+	// BANNER and a caller testing for the `error:` prefix saw a success - the same failure :358 had,
+	// and the rule at :234-235 and :547 says every refusal begins `error:` and carries no banner. ***
 	if (!RenderError.IsEmpty())
 	{
-		Out += FString::Printf(TEXT("\nerror: %s"), *RenderError);
+		return FString::Printf(TEXT("error: %s"), *RenderError);
 	}
-	else
-	{
-		Out += FString::Printf(TEXT("\nimage: %s"), *ImagePath);
-		Out += TEXT("\n; the graph widget is rendered directly rather than grabbing ");
-		Out += TEXT("the screen, so the image is exactly the size asked for and ");
-		Out += TEXT("shows the frame that was set.");
-	}
+
+	Out += FString::Printf(TEXT("\nimage: %s"), *ImagePath);
+	Out += TEXT("\n; the graph widget is rendered directly rather than grabbing ");
+	Out += TEXT("the screen, so the image is exactly the size asked for and ");
+	Out += TEXT("shows the frame that was set.");
 
 	return Out;
 }
