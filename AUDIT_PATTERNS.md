@@ -437,7 +437,48 @@ became a generated file.
 
 ---
 
-## G. TREES THAT ARE ALREADY KNOWN
+## G. THE PATTERN THAT PRODUCES FALSE FINDINGS — `V1`
+
+*** THIS ONE WAS ADDED AFTER TWENTY-FOUR FINDINGS WERE TESTED BY HAND AND FIVE WERE WRONG. ALL FIVE FAILURES
+HAVE THE SAME MECHANISM, AND IT IS NOT THE REASONING. IT IS THE EVIDENCE. ***
+
+### `V1` — A conclusion drawn from a fragment
+
+**Test.** The finding states something about a WHOLE from evidence that covers a PART. The three shapes it takes
+here, each measured:
+
+    A TRUNCATED LINE READ AS THE WHOLE LINE
+        A `Select-String` that cut `"...with arguments as a **JSO"` at 96 characters was read as a rule about a
+        JSON string. *** THE FULL LINE SAYS "JSON object, not a string". THE FINDING WAS FALSE AND SO WAS MINE. ***
+
+    A COUNT OVER A SUBSET PRINTED AS A COUNT OVER EVERYTHING
+        "42 comments narrate the file's own past" - the audit had read 99 files of 186. *** THE UNAMBIGUOUS
+        COUNT IS 81. ***  *Four separate counts in this audit were taken that way.*
+
+    ONE OF TWO NAMED THINGS READ, THE OTHER ASSUMED
+        "the tree holds three engine plugins and the documents say two" - *** THE TREE HOLDS THREE PLUGINS AND
+        FOUR MODULES, AND ONE OF THE FOUR DOCUMENTS WAS ALREADY CORRECT. ***
+
+**WHY IT IS NOT A CARELESSNESS PROBLEM.** In every case the auditor had a real observation. The error is the step
+from the observation to the claim. *** A reader who finds two texts stated differently stops there, because the
+third claim - that they CONFLICT - looks like the easy one. ***
+
+**HOW TO REPORT WITHOUT IT.** State the evidence and the scope in the same sentence:
+
+    "line 175 says X"                          ONE line, ONE claim, checkable by looking
+    "42 sites in the 99 files read"            the scope is part of the number
+    "A says X; B says Y; X and Y disagree"     three claims, so name the line for each of the first two
+
+**HOW A VERIFIER TESTS IT.** Ask one question: *** does the evidence cover everything the claim covers? ***
+If the answer is not visible in the finding, it is not a finding yet.
+
+**WHY IT IS IN THIS FILE.** *The audit is the instrument, and an instrument that reports a fragment as a whole
+is the same defect this whole project exists to find - **an invisible refusal reads as a capability**, and a
+count over a subset reads as a count over everything.*
+
+---
+
+## H. TREES THAT ARE ALREADY KNOWN
 
 **Do not spend time on these. They are recorded and they are queued for repair.**
 
