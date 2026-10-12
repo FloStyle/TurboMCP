@@ -4,8 +4,8 @@ Questions for the owner about anything the specification leaves open, where a
 guess would change how a tool behaves.
 
 Format: a number, the date, the spec file and section, the question, and the
-answer when it arrives. Answers come back as a new spec version, ***REMOVED***
-. (`Spec/00_START_HERE.md` section 3).
+answer when it arrives. Answers come back as a new spec version
+(`Spec/00_START_HERE.md` section 3).
 
 ---
 

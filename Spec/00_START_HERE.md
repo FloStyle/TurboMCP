@@ -14,25 +14,21 @@ these files. HOW to build it is your decision.
 
 ## 1. White room
 
-This specification is self-contained. It is the only description of the
-plugin, and it was written from the engine's own source and public
-documentation.
+This specification is self-contained. It is the only description of the plugin, and it was written
+from the engine's own source and public documentation.
 
 1. Use only these sources:
    - the files in this `Spec/` folder
    - the Unreal Engine source code and public engine documentation
    - public documentation for C++, Slate, the MCP protocol and similar
    - answers you get through `QUESTIONS.md` (see section 3)
-2. Work from the specification and the engine. Every capability here is
-   described by what it must do, with its inputs, its outputs, its
-   refusals and a test that proves it.
-3. Start in a new, empty workspace. Nothing is carried over from anywhere
-   else.
+2. Work from the specification and the engine. Every capability here is described by what it must do,
+   with its inputs, its outputs, its refusals and a test that proves it.
+3. Start in a new, empty workspace. Nothing is carried over from anywhere else.
 4. Choose every name yourself: plugin name, module, classes, files, tools,
    parameters. The spec gives each capability an ID (for example `R-BP-LOAD`).
    These IDs are for this spec only. Do not use them as code names.
-5. If something in the spec looks like it was copied from existing code,
-   stop and ask through `QUESTIONS.md`.
+5. If something in the spec looks underspecified, stop and ask through `QUESTIONS.md`.
 
 ## 2. Reading order
 
@@ -60,7 +56,7 @@ else in this folder is normative (`D-60`).
 Write a question in `../QUESTIONS.md` with a number, the date and the spec
 file and section it is about. Do not guess on a point the spec leaves open
 if the answer changes how a tool behaves. Answers come back as a new spec
-version, .
+version.
 
 In practice the build side writes that new version into this folder and the
 owner reads it (`D-59`), because the build side is the only party that has

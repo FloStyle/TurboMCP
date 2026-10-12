@@ -397,7 +397,7 @@ about the part that is usually wrong.
 
 **D-59 The specification files are written by the build side, and the reading
 order is normative.** `00_START_HERE.md` section 3 says an answer to a question
-arrives as a new spec version, ***REMOVED*** .. In practice
+arrives as a new spec version. In practice
 the build side writes the new version into `Spec/`, and the owner reads it.
 Rejected: waiting for the owner to author each capability. Why: the build side
 is the only party that has measured the engine, and the alternative was that
