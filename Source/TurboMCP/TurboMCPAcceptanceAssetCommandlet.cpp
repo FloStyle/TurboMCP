@@ -560,6 +560,8 @@ namespace
 		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("KnotProbe"), Entry, Result);
 		if (Graph == nullptr || Entry == nullptr)
 		{
+			OutProblems.Add(TEXT("KnotProbe: MakeFunction made no graph or no function entry, so there is ")
+				TEXT("nothing to place the three knots on"));
 			return false;
 		}
 
@@ -576,10 +578,13 @@ namespace
 		Place(Graph, Second, 1600.0, 600.0);
 
 		// The entry's exec output drives the first call.
-		if (Entry->GetThenPin() != nullptr && First->GetExecPin() != nullptr)
+		if (Entry->GetThenPin() == nullptr || First->GetExecPin() == nullptr)
 		{
-			Entry->GetThenPin()->MakeLinkTo(First->GetExecPin());
+			OutProblems.Add(TEXT("KnotProbe: the entry cannot reach the first call, so the chain the three ")
+				TEXT("knots sit on has no beginning"));
+			return false;
 		}
+		Entry->GetThenPin()->MakeLinkTo(First->GetExecPin());
 
 		// THREE KNOTS IN A ROW between the two calls.
 		UEdGraphPin* From = First->GetThenPin();
@@ -623,13 +628,15 @@ namespace
 	 * form's exec chain — so the links here are made and then broken, which is what a user does by
 	 * accident and what the tool has to find.
 	 */
-	bool BuildDeadProbe(UBlueprint* InBlueprint)
+	bool BuildDeadProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
 	{
 		UK2Node_FunctionEntry* Entry = nullptr;
 		UK2Node_FunctionResult* Result = nullptr;
 		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("DeadProbe"), Entry, Result);
-		if (Graph == nullptr)
+		if (Graph == nullptr || Entry == nullptr)
 		{
+			OutProblems.Add(TEXT("DeadProbe: MakeFunction made no graph or no function entry, so there is no ")
+				TEXT("reachable chain to contrast the orphans with"));
 			return false;
 		}
 
@@ -637,10 +644,13 @@ namespace
 		Live->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(
 			TEXT("PrintString")));
 		Place(Graph, Live, 400.0, 0.0);
-		if (Entry != nullptr && Entry->GetThenPin() != nullptr && Live->GetExecPin() != nullptr)
+		if (Entry->GetThenPin() == nullptr || Live->GetExecPin() == nullptr)
 		{
-			Entry->GetThenPin()->MakeLinkTo(Live->GetExecPin());
+			OutProblems.Add(TEXT("DeadProbe: the live chain has no beginning, so the graph holds no reachable ")
+				TEXT("group for P/E-GRAPH-DEAD to leave alone and the probe tests nothing"));
+			return false;
 		}
+		Entry->GetThenPin()->MakeLinkTo(Live->GetExecPin());
 
 		// TWO ORPHANS, wired to each other and to nothing else. After the links below are broken not
 		// even that remains, so each is its own disconnected group.
@@ -654,10 +664,13 @@ namespace
 			TEXT("PrintString")));
 		Place(Graph, OrphanB, 800.0, 900.0);
 
-		if (OrphanA->GetThenPin() != nullptr && OrphanB->GetExecPin() != nullptr)
+		if (OrphanA->GetThenPin() == nullptr || OrphanB->GetExecPin() == nullptr)
 		{
-			OrphanA->GetThenPin()->MakeLinkTo(OrphanB->GetExecPin());
+			OutProblems.Add(TEXT("DeadProbe: the two orphans cannot be joined before they are broken apart, so ")
+				TEXT("the make-then-break step that leaves each one its own group never ran"));
+			return false;
 		}
+		OrphanA->GetThenPin()->MakeLinkTo(OrphanB->GetExecPin());
 
 		// THE LINKS ARE BROKEN, which is the whole point: this is the state a user leaves behind when
 		// they delete the node that used to call a chain.
@@ -678,13 +691,15 @@ namespace
 	 * A second pure node adds a MEMBER VARIABLE to a parameter, which is UNSAFE, so both answers are
 	 * exercised by one asset.
 	 */
-	bool BuildLocalVarProbe(UBlueprint* InBlueprint)
+	bool BuildLocalVarProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
 	{
 		UK2Node_FunctionEntry* Entry = nullptr;
 		UK2Node_FunctionResult* Result = nullptr;
 		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("LocalVarProbe"), Entry, Result);
 		if (Graph == nullptr || Entry == nullptr)
 		{
+			OutProblems.Add(TEXT("LocalVarProbe: MakeFunction made no graph or no function entry, so the ")
+				TEXT("function inputs that make a value SAFE do not exist"));
 			return false;
 		}
 
@@ -707,8 +722,20 @@ namespace
 		UEdGraphPin* BPin = Entry->FindPin(TEXT("B"));
 		UEdGraphPin* SumA = Sum->FindPin(TEXT("A"));
 		UEdGraphPin* SumB = Sum->FindPin(TEXT("B"));
-		if (APin != nullptr && SumA != nullptr) { APin->MakeLinkTo(SumA); }
-		if (BPin != nullptr && SumB != nullptr) { BPin->MakeLinkTo(SumB); }
+		if (APin == nullptr || SumA == nullptr)
+		{
+			OutProblems.Add(TEXT("LocalVarProbe: the function input A does not reach the Add_IntInt, so the ")
+				TEXT("SAFE value that is read twice does not exist"));
+			return false;
+		}
+		APin->MakeLinkTo(SumA);
+		if (BPin == nullptr || SumB == nullptr)
+		{
+			OutProblems.Add(TEXT("LocalVarProbe: the function input B does not reach the Add_IntInt, so the ")
+				TEXT("SAFE value that is read twice does not exist"));
+			return false;
+		}
+		BPin->MakeLinkTo(SumB);
 
 		// TWO CONSUMERS of the same value. This is the structure no DSL expression can produce.
 		for (int32 Index = 0; Index < 2; ++Index)
@@ -718,10 +745,14 @@ namespace
 				TEXT("Multiply_IntInt")));
 			Place(Graph, Consumer, 900.0, Index * 300.0);
 
-			if (Sum->GetReturnValuePin() != nullptr && Consumer->FindPin(TEXT("A")) != nullptr)
+			if (Sum->GetReturnValuePin() == nullptr || Consumer->FindPin(TEXT("A")) == nullptr)
 			{
-				Sum->GetReturnValuePin()->MakeLinkTo(Consumer->FindPin(TEXT("A")));
+				OutProblems.Add(FString::Printf(
+					TEXT("LocalVarProbe: consumer %d cannot read the SAFE value, so the value has fewer than ")
+					TEXT("the two readers this probe exists to present"), Index));
+				return false;
 			}
+			Sum->GetReturnValuePin()->MakeLinkTo(Consumer->FindPin(TEXT("A")));
 		}
 
 		// THE UNSAFE VALUE: a member variable plus an input. It is also read twice, so the tool has to
@@ -731,14 +762,20 @@ namespace
 			TEXT("Add_IntInt")));
 		Place(Graph, Biased, 400.0, 900.0);
 
-		if (APin != nullptr && Biased->FindPin(TEXT("A")) != nullptr)
+		if (APin == nullptr || Biased->FindPin(TEXT("A")) == nullptr)
 		{
-			APin->MakeLinkTo(Biased->FindPin(TEXT("A")));
+			OutProblems.Add(TEXT("LocalVarProbe: the function input A does not reach the second Add_IntInt, so ")
+				TEXT("the UNSAFE value that must be REFUSED does not exist"));
+			return false;
 		}
-		if (BPin != nullptr && Biased->FindPin(TEXT("B")) != nullptr)
+		APin->MakeLinkTo(Biased->FindPin(TEXT("A")));
+		if (BPin == nullptr || Biased->FindPin(TEXT("B")) == nullptr)
 		{
-			BPin->MakeLinkTo(Biased->FindPin(TEXT("B")));
+			OutProblems.Add(TEXT("LocalVarProbe: the function input B does not reach the second Add_IntInt, so ")
+				TEXT("the UNSAFE value that must be REFUSED does not exist"));
+			return false;
 		}
+		BPin->MakeLinkTo(Biased->FindPin(TEXT("B")));
 
 		for (int32 Index = 0; Index < 2; ++Index)
 		{
@@ -746,11 +783,15 @@ namespace
 			Consumer->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(
 				TEXT("Multiply_IntInt")));
 			Place(Graph, Consumer, 900.0, 900.0 + Index * 300.0);
-			if (Biased->GetReturnValuePin() != nullptr
-				&& Consumer->FindPin(TEXT("A")) != nullptr)
+			if (Biased->GetReturnValuePin() == nullptr
+				|| Consumer->FindPin(TEXT("A")) == nullptr)
 			{
-				Biased->GetReturnValuePin()->MakeLinkTo(Consumer->FindPin(TEXT("A")));
+				OutProblems.Add(FString::Printf(
+					TEXT("LocalVarProbe: consumer %d cannot read the UNSAFE value, so the value the tool must ")
+					TEXT("REFUSE has fewer than the two readers that make it a candidate at all"), Index));
+				return false;
 			}
+			Biased->GetReturnValuePin()->MakeLinkTo(Consumer->FindPin(TEXT("A")));
 		}
 
 		// The member variable is added AFTER the graph, so the node that reads it is made here too.
@@ -758,7 +799,12 @@ namespace
 		UK2Node_VariableGet* BiasGet = NewObject<UK2Node_VariableGet>(Graph);
 		BiasGet->VariableReference.SetSelfMember(MemberName);
 		Place(Graph, BiasGet, 100.0, 1200.0);
-		if (BiasGet->GetValuePin() != nullptr && Biased->FindPin(TEXT("A")) != nullptr)
+		if (BiasGet->GetValuePin() == nullptr || Biased->FindPin(TEXT("A")) == nullptr)
+		{
+			OutProblems.Add(TEXT("LocalVarProbe: the member read cannot replace the input on one side of the ")
+				TEXT("second Add_IntInt, so that value stays SAFE and the UNSAFE case is never exercised"));
+			return false;
+		}
 		{
 			// The member read REPLACES the input on one side, which is what makes this value unsafe:
 			// the variable can change during the call.
@@ -790,13 +836,15 @@ namespace
 	 * function FAILS if any of the three structures is absent. A build whose own report says
 	 * "0 crossing" is a FAILED build, not a saved asset.
 	 */
-	bool BuildLayoutProbe(UBlueprint* InBlueprint)
+	bool BuildLayoutProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
 	{
 		UK2Node_FunctionEntry* Entry = nullptr;
 		UK2Node_FunctionResult* Result = nullptr;
 		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("LayoutProbe"), Entry, Result);
 		if (Graph == nullptr || Entry == nullptr)
 		{
+			OutProblems.Add(TEXT("LayoutProbe: MakeFunction made no graph or no function entry, so the ")
+				TEXT("crossing chain has no beginning"));
 			return false;
 		}
 
@@ -819,18 +867,31 @@ namespace
 		UK2Node_CallFunction* B = MakeCall(600.0, 300.0);
 		UK2Node_CallFunction* C = MakeCall(1900.0, 0.0);
 
-		if (Entry->GetThenPin() != nullptr && A->GetExecPin() != nullptr)
+		// EACH LINK IS GUARDED AND NAMED, BECAUSE THE THREE MEASUREMENTS BELOW CANNOT TELL A WIRE THAT WAS
+		// NEVER MADE FROM A WIRE THAT CROSSES NOTHING. `MakeLinkTo` returns `void`, so the guard is the only
+		// place the missing pin can be reported, and the measurement further down would then blame the
+		// COORDINATES for a graph that is missing its chain.
+		if (Entry->GetThenPin() == nullptr || A->GetExecPin() == nullptr)
 		{
-			Entry->GetThenPin()->MakeLinkTo(A->GetExecPin());
+			OutProblems.Add(TEXT("LayoutProbe: the entry cannot reach the crossing chain's first call, so the ")
+				TEXT("wire the crossing measurement is about does not exist"));
+			return false;
 		}
-		if (A->GetThenPin() != nullptr && B->GetExecPin() != nullptr)
+		Entry->GetThenPin()->MakeLinkTo(A->GetExecPin());
+		if (A->GetThenPin() == nullptr || B->GetExecPin() == nullptr)
 		{
-			A->GetThenPin()->MakeLinkTo(B->GetExecPin());
+			OutProblems.Add(TEXT("LayoutProbe: the crossing chain's first link cannot be made, so the ")
+				TEXT("B-to-C wire that crosses the obstacle has nothing to run from"));
+			return false;
 		}
-		if (B->GetThenPin() != nullptr && C->GetExecPin() != nullptr)
+		A->GetThenPin()->MakeLinkTo(B->GetExecPin());
+		if (B->GetThenPin() == nullptr || C->GetExecPin() == nullptr)
 		{
-			B->GetThenPin()->MakeLinkTo(C->GetExecPin());
+			OutProblems.Add(TEXT("LayoutProbe: the crossing chain's second link cannot be made, which is the ")
+				TEXT("wire the crossing case exists for"));
+			return false;
 		}
+		B->GetThenPin()->MakeLinkTo(C->GetExecPin());
 
 		// THE OBSTACLE, placed ON the B -> C wire. It is deliberately NOT wired into the chain: a node
 		// on the route is what a crossing test is about, and wiring it in would make it part of the
@@ -843,10 +904,13 @@ namespace
 		// pass must SKIP a wire between neighbouring columns, so this wire has to exist for that rule to
 		// be testable at all. A capability that only ever skips bad input proves nothing.
 		UK2Node_CallFunction* D = MakeCall(1300.0, 90.0);
-		if (Obstacle->GetThenPin() != nullptr && D->GetExecPin() != nullptr)
+		if (Obstacle->GetThenPin() == nullptr || D->GetExecPin() == nullptr)
 		{
-			Obstacle->GetThenPin()->MakeLinkTo(D->GetExecPin());
+			OutProblems.Add(TEXT("LayoutProbe: no wire between neighbouring columns can be made, so the knot ")
+				TEXT("pass SKIP rule has nothing to skip and the neighbour measurement reads zero"));
+			return false;
 		}
+		Obstacle->GetThenPin()->MakeLinkTo(D->GetExecPin());
 
 		// ---------------------------------------------------------------- the MESSY RUN
 		//
@@ -863,11 +927,15 @@ namespace
 			}
 			for (int32 Index = 0; Index < 3; ++Index)
 			{
-				if (Messy[Index]->GetThenPin() != nullptr
-					&& Messy[Index + 1]->GetExecPin() != nullptr)
+				if (Messy[Index]->GetThenPin() == nullptr
+					|| Messy[Index + 1]->GetExecPin() == nullptr)
 				{
-					Messy[Index]->GetThenPin()->MakeLinkTo(Messy[Index + 1]->GetExecPin());
+					OutProblems.Add(FString::Printf(
+						TEXT("LayoutProbe: link %d of the mess is missing, so the run a tidy pass is meant to ")
+						TEXT("reorder is not a chain and a pass that does nothing would look correct"), Index));
+					return false;
 				}
+				Messy[Index]->GetThenPin()->MakeLinkTo(Messy[Index + 1]->GetExecPin());
 			}
 		}
 
@@ -891,11 +959,15 @@ namespace
 			}
 			for (int32 Index = 0; Index < 3; ++Index)
 			{
-				if (Boxed[Index]->GetThenPin() != nullptr
-					&& Boxed[Index + 1]->GetExecPin() != nullptr)
+				if (Boxed[Index]->GetThenPin() == nullptr
+					|| Boxed[Index + 1]->GetExecPin() == nullptr)
 				{
-					Boxed[Index]->GetThenPin()->MakeLinkTo(Boxed[Index + 1]->GetExecPin());
+					OutProblems.Add(FString::Printf(
+						TEXT("LayoutProbe: link %d of the boxed calls is missing, so the boxes enclose nodes ")
+						TEXT("that are not a chain and the nesting measurement is about the wrong shape"), Index));
+					return false;
 				}
+				Boxed[Index]->GetThenPin()->MakeLinkTo(Boxed[Index + 1]->GetExecPin());
 			}
 		}
 
@@ -1007,15 +1079,24 @@ namespace
 	 *
 	 * A layout pass that measures and rolls back needs a graph where the pass has nothing to improve,
 	 * because that is where a rollback that does not work turns a fine graph into a broken one. This
-	 * graph is already in order: one entry, one call, one result, left to right on one row.
+	 * graph is already in order: an entry and one call, left to right on one row.
+	 *
+	 * *** IT HAS NO RESULT NODE, AND THAT IS THE ENGINE'S SHAPE FOR A VOID FUNCTION RATHER THAN AN OMISSION
+	 * HERE. *** `BlueprintEditorUtils.cpp:2301` states the rule where it builds one - "only create a result
+	 * node if there are out parameters" - so `MakeFunction` finds an entry and no result, and the graph is
+	 * TWO nodes, the count the fixture prints as `SaneProbe: 2 node(s)`. THE CHAIN ENDS AT THE CALL.
+	 * A guard demanding a result node would fail a graph that is exactly the shape this probe is about, and
+	 * adding one to satisfy such a guard would change the fixture every suite measures.
 	 */
-	bool BuildSaneProbe(UBlueprint* InBlueprint)
+	bool BuildSaneProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
 	{
 		UK2Node_FunctionEntry* Entry = nullptr;
 		UK2Node_FunctionResult* Result = nullptr;
 		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("SaneProbe"), Entry, Result);
 		if (Graph == nullptr || Entry == nullptr)
 		{
+			OutProblems.Add(TEXT("SaneProbe: MakeFunction made no graph or no function entry, so there is no ")
+				TEXT("ordered chain for a layout pass to leave alone"));
 			return false;
 		}
 
@@ -1024,13 +1105,34 @@ namespace
 			TEXT("PrintString")));
 		Place(Graph, Call, 450.0, 0.0);
 
-		if (Entry->GetThenPin() != nullptr && Call->GetExecPin() != nullptr)
+		// *** A BROKEN CHAIN HERE IS THE WORST OF THE FIVE TO LEAVE SILENT. This graph is the one that must
+		// come back UNCHANGED from a layout pass, so a hole in it makes the pass look correct on a graph that
+		// was already broken - and "nothing to improve" is exactly the answer the probe is built to elicit. ***
+		if (Entry->GetThenPin() == nullptr || Call->GetExecPin() == nullptr)
 		{
-			Entry->GetThenPin()->MakeLinkTo(Call->GetExecPin());
+			OutProblems.Add(TEXT("SaneProbe: the entry does not reach the call, so the already-ordered chain ")
+				TEXT("this probe exists for does not exist"));
+			return false;
 		}
-		if (Call->GetThenPin() != nullptr && Result != nullptr
-			&& Result->GetExecPin() != nullptr)
+		Entry->GetThenPin()->MakeLinkTo(Call->GetExecPin());
+		if (Call->GetThenPin() == nullptr)
 		{
+			OutProblems.Add(TEXT("SaneProbe: the PrintString call has no exec OUTPUT pin, so the ordered chain ")
+				TEXT("this probe exists for ends at its second node"));
+			return false;
+		}
+		// THE RESULT IS REACHED ONLY WHEN THE FUNCTION HAS ONE, AND A VOID FUNCTION HAS NONE. This is not a
+		// silent skip: the reason is in the doc comment above and in `BlueprintEditorUtils.cpp:2301`, and the
+		// alternative - adding a result node so that a guard can be satisfied - would change the fixture's own
+		// node count to suit the check. A result node that IS present must still be reachable.
+		if (Result != nullptr)
+		{
+			if (Result->GetExecPin() == nullptr)
+			{
+				OutProblems.Add(TEXT("SaneProbe: the function HAS a result node but its exec INPUT pin is ")
+					TEXT("missing, so nothing can reach it and the chain is not ordered end to end"));
+				return false;
+			}
 			Call->GetThenPin()->MakeLinkTo(Result->GetExecPin());
 		}
 		return true;
@@ -1103,18 +1205,21 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 		return 1;
 	}
 
-	// *** A MISSING PIN MAKES A PROBE RETURN `false` WITH A NAMED REASON RATHER THAN SUCCEEDING WITH A
-	// CHAIN IT NEVER MADE. `KnotProbe` IS THE FIRST PROBE PLUMBED THIS WAY; the other four still guard
-	// their links and fall through, which is card `86cb04de` and is NOT finished here. ***
+	// *** A MISSING PIN MAKES ANY OF THE FIVE PROBES RETURN `false` WITH A NAMED REASON RATHER THAN SUCCEED
+	// WITH A CHAIN IT NEVER MADE. *** `MakeLinkTo` RETURNS `void`, so a link that was never made is invisible
+	// in every return value; the pin guards are the only place it can be reported, and `GetExecPin()` or
+	// `GetInputPin()` returning null on a node the factory just created means the factory produced something
+	// it cannot wire. THE ASSET IS SAVED ONLY IF ALL FIVE BUILT, because the suites read this fixture and a
+	// hole in it is a hole in what they measure. ***
 	TArray<FString> ProbeProblems;
 	const bool bKnots = BuildKnotProbe(Blueprint, ProbeProblems);
-	const bool bDead = BuildDeadProbe(Blueprint);
-	const bool bLocals = BuildLocalVarProbe(Blueprint);
-	const bool bSane = BuildSaneProbe(Blueprint);
+	const bool bDead = BuildDeadProbe(Blueprint, ProbeProblems);
+	const bool bLocals = BuildLocalVarProbe(Blueprint, ProbeProblems);
+	const bool bSane = BuildSaneProbe(Blueprint, ProbeProblems);
 	// THE FIFTH PROBE, ADDED BECAUSE TWO INDEPENDENT SPECIFICATIONS FOUND THE SAME HOLE. `KnotProbe`
 	// cannot test the crossing case and the asset had no comment box at all, so `P/E-GRAPH-KNOTS` and
 	// `P/E-GRAPH-TIDY` both had their primary case resting on code review.
-	const bool bLayout = BuildLayoutProbe(Blueprint);
+	const bool bLayout = BuildLayoutProbe(Blueprint, ProbeProblems);
 
 	UE_LOG(LogTurboMCP, Display,
 		TEXT("TurboMCP: KnotProbe=%s DeadProbe=%s LocalVarProbe=%s SaneProbe=%s LayoutProbe=%s"),
