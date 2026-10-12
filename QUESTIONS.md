@@ -964,8 +964,10 @@ TA-10 MISSING NOT BUILT: needs 3 rows and 4 fields
 assets=14 built=13 measured=14 missing=1 short=0
 ```
 
-Five `.uasset` files are on disk: `TA01_HandLaid` (four graphs, 276 KB), `TA11_KitEnum`,
-`BP_TestAlpha`, `BP_TowerArray`, `TA13_KitPath/TA13_KitPath`.
+**Ten** `.uasset` files are on disk under `Tests/Kit/`
+(`Get-ChildItem TestProject\Content\Tests\Kit -Recurse -Filter *.uasset`): `TA01_HandLaid` (four graphs,
+276 KB), `TA07_Card`, `TA11_KitEnum`, `TA13_KitPath/TA13_KitPath`, `TA14_KitDataTable`, `TA17_KitCurveFloat`,
+`TA17_KitCurveTable`, `TA20_KitParameters`, `BP_TestAlpha` and `BP_TowerArray`.
 
 ### TA-10 CANNOT BE BUILT FROM A COMMANDLET, and the reason is measured
 
