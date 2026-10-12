@@ -124,5 +124,11 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialBlocks(const FString& Asset)
 		return BlocksAsError(Error);
 	}
 
-	return FTurboMCPMaterialBlocks::Apply(Plan);
+	// THE ROLLBACK MEASUREMENT IS APPENDED HERE RATHER THAN INSIDE `Apply`, because it is produced in a
+	// destructor there - after the report has already been built - so `Apply` can only hand it back through
+	// this out-parameter. A successful pass leaves it empty.
+	FString RollbackNote;
+	FString Out = FTurboMCPMaterialBlocks::Apply(Plan, RollbackNote);
+	Out += RollbackNote;
+	return Out;
 }

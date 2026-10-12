@@ -264,6 +264,14 @@ public:
 	 * Returns the report. An edit that lost more than it planned, added something unplanned, or
 	 * introduced a compile error is REPORTED AS A FAILURE with the difference named - never as a success
 	 * with a note.
+	 *
+	 * @param OutRollbackNote  WHEN THE EDIT IS ROLLED BACK, this receives the MEASUREMENT that the material
+	 *                         actually came back - or the statement that it did not. It is empty on every
+	 *                         other path. IT IS AN OUT-PARAMETER RATHER THAN PART OF THE RETURN VALUE because
+	 *                         the measurement runs in a destructor, after the returned report has already
+	 *                         been built, and the caller appends it. Nineteen `Cancel()` sites return
+	 *                         nineteen different messages, and `Cancel()` returns `void`, so this is the one
+	 *                         place every cancelled path reaches.
 	 */
-	static FString Apply(const FPlan& InPlan);
+	static FString Apply(const FPlan& InPlan, FString& OutRollbackNote);
 };

@@ -759,10 +759,106 @@ namespace
 		return !OutReaderKey.IsEmpty()
 			&& FDefaultValueHelper::ParseInt(InRef.Mid(Hash + 1), OutInputIndex);
 	}
+
+	/**
+	 * *** MEASURES THE ROLLBACK, WHICH IS THE ONE THING THE NINETEEN `Transaction.Cancel()` SITES NEVER DO. ***
+	 *
+	 * `Cancel()` returns `void`, so there is no result to read - but the transaction is not opaque:
+	 * `Cancel()` calls `GEditor->CancelTransaction(Index)` AND THEN sets `Index = -1`
+	 * (`ScopedTransaction.cpp:42-49`), so `IsOutstanding()` (`:54-57`) answers FALSE afterwards. THE RESTORE
+	 * HAS ALREADY HAPPENED BY THAT POINT, because it happens INSIDE `Cancel()`; the destructor only calls
+	 * `EndTransaction()` while the transaction is STILL outstanding (`:31-37`).
+	 *
+	 * SO A FAILED PASS CAN BE MEASURED ON ITS WAY OUT OF THE SCOPE, WITHOUT TOUCHING ANY OF THE NINETEEN
+	 * RETURN SITES. This object is declared after the transaction and destroyed before it, and its destructor
+	 * is the one place every cancelled path reaches.
+	 *
+	 * THE REFERENCE SET IS `Plan.KeysBefore` - what the plan READ before the edit, and the same set `Apply`
+	 * already compares the post-edit state against. A rollback that does not come back to it is a defect in
+	 * this tool, and the note says so in those words rather than restating the request as "rolled back".
+	 */
+	struct FRollbackMeasurement
+	{
+		FRollbackMeasurement(FScopedTransaction& InTransaction,
+			const FTurboMCPMaterialBlocks::FPlan& InPlan, FString* InOutNote)
+			: Transaction(InTransaction), Plan(InPlan), OutNote(InOutNote)
+		{
+		}
+
+		~FRollbackMeasurement()
+		{
+			// NOTHING TO MEASURE ON A SUCCESSFUL PASS. An outstanding transaction was never cancelled, and
+			// the material is MEANT to hold the new state - so this is not a rollback to verify.
+			if (OutNote == nullptr || Transaction.IsOutstanding())
+			{
+				return;
+			}
+
+			FTurboMCPMaterial::FPlan Reread;
+			FString RereadError;
+			if (!FTurboMCPMaterial::Plan(Plan.Asset, FTurboMCPMaterial::ERead::Blocks, FString(),
+					/*bInIncludeInstanceOverrides=*/false, Reread, RereadError))
+			{
+				// AN UNVERIFIED ROLLBACK IS SAID TO BE UNVERIFIED. Reporting success here would be the
+				// nineteen-claims-with-nothing-behind-them defect this measurement exists to remove.
+				*OutNote = FString::Printf(
+					TEXT("\nROLLBACK NOT VERIFIED: the material could not be re-read after the cancel (%s), so ")
+					TEXT("nothing here says whether it came back."), *RereadError);
+				return;
+			}
+
+			TSet<FString> Now;
+			for (const UMaterialExpression* Expression : Reread.Expressions)
+			{
+				if (Expression != nullptr)
+				{
+					Now.Add(FTurboMCPMaterial::KeyOf(Expression));
+				}
+			}
+
+			TArray<FString> Missing;
+			for (const FString& Key : Plan.KeysBefore)
+			{
+				if (!Now.Contains(Key))
+				{
+					Missing.Add(Key);
+				}
+			}
+			TArray<FString> Extra;
+			for (const FString& Key : Now)
+			{
+				if (!Plan.KeysBefore.Contains(Key))
+				{
+					Extra.Add(Key);
+				}
+			}
+
+			if (Missing.Num() == 0 && Extra.Num() == 0)
+			{
+				*OutNote = FString::Printf(
+					TEXT("\nROLLBACK VERIFIED: the material holds the %d expression(s) the plan read, so the ")
+					TEXT("cancel put it back."), Plan.KeysBefore.Num());
+				return;
+			}
+
+			*OutNote = FString::Printf(
+				TEXT("\n*** THE ROLLBACK DID NOT RESTORE THE MATERIAL: %d of the %d expression(s) the plan ")
+				TEXT("read are gone, and %d are present that it did not read. THIS IS A DEFECT IN THIS TOOL ")
+				TEXT("AND NOT A CLEAN ROLLBACK. First named: %s"),
+				Missing.Num(), Plan.KeysBefore.Num(), Extra.Num(),
+				Missing.Num() > 0 ? *Missing[0] : *Extra[0]);
+		}
+
+		FScopedTransaction& Transaction;
+		const FTurboMCPMaterialBlocks::FPlan& Plan;
+		FString* OutNote;
+	};
 }
 
-FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan)
+FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollbackNote)
 {
+	OutRollbackNote.Empty();
+
 	if (InPlan.bNothingToChange)
 	{
 		return FString::Printf(
@@ -781,6 +877,12 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan)
 		"TurboMCP: make labels follow blocks"));
 
 	UMaterial* const Material = InPlan.Material;
+
+	// *** THE ONE MEASUREMENT EVERY ROLLBACK PATH REACHES, DECLARED HERE SO THAT IT OUTLIVES ALL NINETEEN
+	// `Cancel()` SITES AND IS DESTROYED BEFORE THE TRANSACTION ITSELF. *** See its definition above: it does
+	// nothing on a successful pass, and on a cancelled one it re-reads the material and compares the
+	// expression set with the one the plan read.
+	FRollbackMeasurement Rollback(Transaction, InPlan, &OutRollbackNote);
 
 	// THE MATERIAL IS RE-READ BEFORE ANYTHING IS TOUCHED, which is what makes this an edit of the CURRENT
 	// graph rather than of the one the plan was built from.
