@@ -404,3 +404,51 @@ closed in the final round.
 *** SO WHAT REMAINS IS 31 SUITES AND NOTHING ELSE IN `Tools/`. ***  *And the suites are the layer this audit
 sampled most heavily - 22 read, across 15 families, of which 11 were opened specifically to try to falsify the
 conclusion that they are consistent.*
+
+---
+
+## 14. THE COUNTER THE TWELVE SUITES CITE WITHOUT NAMING
+
+**Twelve suites say, word for word, *"a script over the tree measured 91 of its 122 rows cited by no suite at
+all"* — and no such script was in the tree.** Four attempts to rederive it gave 91, 64, 66 and 56, because none
+of them said what *cited* meant.
+
+`Tools/checks/count-acceptance-citations.py` is that measurement, and it states its criterion:
+
+    rows with an id                  122   (122 distinct)
+    suites searched                   52
+    CITED BY AT LEAST ONE SUITE       58
+    CITED BY NO SUITE                 64
+    THE STRICTER QUESTION - suites that CLAIM a row with
+      "ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE":   15
+
+**It prints both answers on purpose, because they are two different questions.** 64 rows are not *mentioned* by
+any suite; 15 rows are *claimed* by one. A figure like "91" mixes the two.
+
+*** AND THE BUG I HIT WHILE WRITING IT IS RECORDED IN THE FILE, BECAUSE IT IS THE SAME CLASS OF DEFECT THE SCRIPT
+EXISTS TO FIX: the first `ROW` pattern lacked `re.MULTILINE`, so `^` matched only at the start of the whole text,
+and the script reported "0 rows, 0 cited, 0 uncited" **in a document that has 122**. An empty answer with no error
+reads like a document with no rows rather than like a broken pattern. **THE FIRST RUN SAID 0 AND THE DOCUMENT SAYS
+122.***
+
+---
+
+## 15. WHERE THE WORK STANDS
+
+| | |
+|---|---|
+| `Source/` | **every file that writes has been read** — 48 of 48 |
+| `Tools/` outside the suites | **fully covered** — 29 files |
+| `Tools/` suites | **37 of 52 read, across 21 families** |
+| Cards | **53**, each naming the lines it concerns |
+| Tools added | **7** — four screens, two of which print their own limit, plus this counter |
+
+**What is complete:** the behaviour defects, their reference implementations, the invariant across three layers, the
+measured reliability of the method, the method itself, and every non-suite script in `Tools/`.
+
+**What is not:** 15 suites, and the fact that no card has been actioned yet — the audit found the defects, and the
+repairs are described with the pattern to copy, but nothing has been fixed in `Source/`.
+
+*** AND ONE THING THE AUDIT LEARNED ABOUT ITSELF, WORTH KEEPING: FOUR OF THE FIVE TOOLS IT WROTE HAD TO BE
+CORRECTED AFTER THE FIRST RUN, AND THREE OF THOSE FOUR BY THE TOOL'S OWN OUTPUT. The screens are useful, and a
+screen that reports a bare number without its criterion will be read as a fact.***
