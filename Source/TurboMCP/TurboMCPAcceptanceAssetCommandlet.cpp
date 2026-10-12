@@ -112,11 +112,10 @@ namespace
 	 *
 	 *     node K2Node_CallFunction_3 at (1050,90) size (0,0) rect x 1050..1050 y 90..90
 	 *
-	 * An earlier round recorded OPEN-1 - "are node rectangles degenerate in a headless editor?" - as
-	 * SETTLED IN THE NEGATIVE, on the evidence that `L-LAYOUT-REPORT` reported a non-zero wire length
-	 * for `TurboMCPAcceptance:KnotProbe`. THAT REASONING WAS WRONG: the float report was taken with the
-	 * ASSET OPEN IN A RENDERED EDITOR, where Slate had already filled the sizes in. The two states are
-	 * different and both are real:
+	 * OPEN-1 ASKS WHETHER NODE RECTANGLES ARE DEGENERATE IN A HEADLESS EDITOR, AND THE ANSWER IS THAT
+	 * THERE ARE TWO STATES AND BOTH ARE REAL. A non-zero wire length reported by `L-LAYOUT-REPORT` for
+	 * `TurboMCPAcceptance:KnotProbe` does NOT settle it, because such a report can be taken with the asset
+	 * OPEN IN A RENDERED EDITOR, where Slate has already filled the sizes in:
 	 *
 	 *   - a node in an asset OPENED IN THE EDITOR has real sizes, because Slate measured it;
 	 *   - a node freshly built by a COMMANDLET has size 0 until something draws it.
