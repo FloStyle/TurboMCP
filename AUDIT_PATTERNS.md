@@ -523,5 +523,16 @@ only exists in the RELATION between two places, and a file-by-file read sees one
 *** What must not remain is a contract with no counterparty, because the next reader will trust it. ***
 
 **Where to look for the next one.** Each was found by following a symbol rather than reading a file: take a
-parameter name, a guard name or a field name, and count its occurrences across the whole tree. **Two files means
-one writer and one declaration. Three or more means you have found the question.**
+parameter name, a guard name or a field name, and count its occurrences across the whole tree.
+
+*** AND THE COUNT IS ONLY A SCREEN, NOT A VERDICT. I ALMOST FILED A SIXTH INSTANCE ON IT AND IT WAS WRONG. ***
+`OutRoute` in `TurboMCPSourceControl.cpp` appears in **one file, four lines** - declaration, `Reset()`, two
+assignments - which reads exactly like the five above. **BUT THE CALLER IS IN THE SAME FILE**: `:269` passes it as
+`Row.FileRoute`, and `:187` prints it as `file found by: %s`. **So it is written, passed and read, and there is no
+defect.**
+
+    THE SCREEN   a low file count, which says WHERE to look
+    THE VERDICT  the symbol reaches a reader, which the caller at `:269` settles in one line
+
+*** A helper with one caller in its own translation unit looks identical to a contract with no counterparty until
+you follow the CALL SITE. Follow it before writing anything down. ***
