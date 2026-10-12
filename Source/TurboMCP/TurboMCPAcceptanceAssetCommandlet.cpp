@@ -552,7 +552,7 @@ namespace
 	 * this is the only way the capability can be pointed at one. The knots are placed level with the
 	 * wire rather than on top of each other, which is the shape the tool is meant to produce.
 	 */
-	bool BuildKnotProbe(UBlueprint* InBlueprint)
+	bool BuildKnotProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
 	{
 		UK2Node_FunctionEntry* Entry = nullptr;
 		UK2Node_FunctionResult* Result = nullptr;
@@ -586,16 +586,29 @@ namespace
 		{
 			UK2Node_Knot* Knot = NewObject<UK2Node_Knot>(Graph);
 			Place(Graph, Knot, 700.0 + Index * 300.0, 200.0 + Index * 130.0);
-			if (From != nullptr && Knot->GetInputPin() != nullptr)
+			// *** A MISSING PIN IS REPORTED, NOT SKIPPED. `MakeLinkTo` RETURNS `void`, so a link that was
+			// never made is invisible in the return value - and the guard below is what decides it. The
+			// old code fell through with `From` unchanged, so the chain broke and the function still
+			// returned `true`. `GetExecPin()` OR `GetInputPin()` RETURNING NULL ON A NODE THIS FUNCTION
+			// JUST CREATED MEANS THE FACTORY MADE SOMETHING IT CANNOT WIRE, WHICH IS WORTH NAMING. ***
+			if (From == nullptr || Knot->GetInputPin() == nullptr)
 			{
-				From->MakeLinkTo(Knot->GetInputPin());
+				OutProblems.Add(FString::Printf(
+					TEXT("KnotProbe: knot %d has no %s pin, so the three-knot chain is broken and this ")
+					TEXT("probe does not test what P/E-GRAPH-KNOTS needs"),
+					Index, From == nullptr ? TEXT("input") : TEXT("output")));
+				return false;
 			}
+			From->MakeLinkTo(Knot->GetInputPin());
 			From = Knot->GetOutputPin();
 		}
-		if (From != nullptr && Second->GetExecPin() != nullptr)
+		if (From == nullptr || Second->GetExecPin() == nullptr)
 		{
-			From->MakeLinkTo(Second->GetExecPin());
+			OutProblems.Add(TEXT("KnotProbe: the last knot cannot reach the second call, so the chain ")
+				TEXT("ends nowhere"));
+			return false;
 		}
+		From->MakeLinkTo(Second->GetExecPin());
 
 		// The result node is left unlinked on purpose: this graph is about the wire, not the return.
 		return true;
@@ -1092,7 +1105,11 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 		return 1;
 	}
 
-	const bool bKnots = BuildKnotProbe(Blueprint);
+	// *** A MISSING PIN MAKES A PROBE RETURN `false` WITH A NAMED REASON RATHER THAN SUCCEEDING WITH A
+	// CHAIN IT NEVER MADE. `KnotProbe` IS THE FIRST PROBE PLUMBED THIS WAY; the other four still guard
+	// their links and fall through, which is card `86cb04de` and is NOT finished here. ***
+	TArray<FString> ProbeProblems;
+	const bool bKnots = BuildKnotProbe(Blueprint, ProbeProblems);
 	const bool bDead = BuildDeadProbe(Blueprint);
 	const bool bLocals = BuildLocalVarProbe(Blueprint);
 	const bool bSane = BuildSaneProbe(Blueprint);
@@ -1108,6 +1125,13 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 		bLocals ? TEXT("ok") : TEXT("FAILED"),
 		bSane ? TEXT("ok") : TEXT("FAILED"),
 		bLayout ? TEXT("ok") : TEXT("FAILED"));
+
+	// WHY A PROBE FAILED, PRINTED RATHER THAN ONLY COUNTED. Without this the log says `FAILED` and the
+	// reason is discarded - the shape `P1` names.
+	for (const FString& Problem : ProbeProblems)
+	{
+		UE_LOG(LogTurboMCP, Error, TEXT("TurboMCP: %s"), *Problem);
+	}
 
 	if (!bKnots || !bDead || !bLocals || !bSane || !bLayout)
 	{
