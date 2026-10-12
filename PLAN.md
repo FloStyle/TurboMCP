@@ -6,7 +6,7 @@ Everything below was proven this session, not assumed.
 
 | Check | Evidence |
 |---|---|
-| Engine builds from source | UE 5.8.3, commit, `release`, 481 editor DLLs |
+| Engine builds from source | UE 5.8.3 at commit **`396c9f059`** (`git -C C:\UnrealEngine rev-parse --short HEAD`), `release`, 481 editor DLLs |
 | Editor runs **autonomously** | launched headless, no human interaction |
 | MCP server starts automatically | `LogModelContextProtocol: Starting MCP server on port 8000` |
 | Plugin loads | `InternalLoadLibrary: 'TurboMCP'` |
