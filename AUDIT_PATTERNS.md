@@ -493,3 +493,35 @@ count over a subset reads as a count over everything.*
 | `C-P6` | `TurboMCPStruct.cpp:467` |
 | `C-P2` | `TurboMCPKitCommandlet.cpp:1533`, `:1793`, `:1871` |
 | `C3` | 12 sites, listed in the board card *"12 comments that contradict the code beside them"* |
+
+---
+
+## I. THE FINDING THIS AUDIT KEEPS MAKING — `X4`, AN IDEA THAT IS NOT WIRED IN
+
+*** FIVE TIMES, AT FIVE SCALES, THE SAME DEFECT: A CONTRACT, A GUARD, A FIELD, A RULE OR A NOTE EXISTS IN ONE
+PLACE AND IS CONSULTED IN NONE. ***
+
+| # | Where | What exists and is not used |
+|---|---|---|
+| 1 | `TurboMCPTypes.cpp:116-119` | `KindOfType` returns `"function"` for a `UFunction`; `KnownKinds` at `:199` does not accept it, so no caller can ask for it |
+| 2 | `TurboMCPNodeId.cpp:178-208` | `NormaliseKey` filters non-hex and zero-pads; 2 of its 4 callers use it, and `FindNodesByKey` at `:219` does not |
+| 3 | `TurboMCPPanelToolRunner.h:175-178` | the header documents a `mutable` flag; the code at `.cpp:379` uses a `const_cast` |
+| 4 | `Tools/make-tools-doc.py` | the emitted template requires every check to name its failing input; 9 of 52 suites use the phrase |
+| 5 | `TurboMCPNodeType.h:140`, `:180` | `OutNote` is documented "NEVER EMPTY ON FAILURE", assigned 14 times in the `.cpp`, and read by no line in the repository |
+
+**Test.** A name, a field, a parameter or a rule appears in a declaration or a document, and **no consumer
+consults it**. The grep that finds it is on the SYMBOL, not on the file.
+
+**Why it is not caught by reading one file.** Every one of the five is correct where it is written. The defect
+only exists in the RELATION between two places, and a file-by-file read sees one of them.
+
+**The two repairs, and one of them is always right.**
+
+    WIRE IT    the consumer reads the thing, and the contract becomes true
+    DELETE IT  the thing, its documentation and its assignments all go
+
+*** What must not remain is a contract with no counterparty, because the next reader will trust it. ***
+
+**Where to look for the next one.** Each was found by following a symbol rather than reading a file: take a
+parameter name, a guard name or a field name, and count its occurrences across the whole tree. **Two files means
+one writer and one declaration. Three or more means you have found the question.**
