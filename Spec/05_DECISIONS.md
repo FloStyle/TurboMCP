@@ -310,7 +310,10 @@ property the user can see in the details panel.
 
 ### Assets and data
 
-**D-51 A struct editor tool is editor-only, and says so.** Creating and
+**D-51 A struct editor tool is editor-only, and says so.** *** THIS ID CARRIES TWO ENTRIES: THE DECISION HERE, AND
+AN AMENDMENT BELOW THAT KEEPS THE DECISION AND REFUTES THE REASON IT GIVES. A CITATION TO `D-51` MEANS BOTH. It is an
+amendment rather than a new ID because `D-52` TO `D-60` ARE ALREADY TAKEN - measured, and `D-51` is the only
+duplicated ID in this file. *** Creating and
 editing a user struct needs a `UUserDefinedStructEditorData` that only the
 editor factory installs; from a commandlet it crashes (Q-15, TA-10). So
 `P/E-STRUCT-*` are editor-only tools and their tests run against a live

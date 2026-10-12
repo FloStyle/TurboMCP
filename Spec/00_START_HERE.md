@@ -6,7 +6,11 @@ Version 1.1 adds the capabilities of a later round: `03_TOOLS.md` sections 9
 to 19, `05_DECISIONS.md` from `D-38` on, the new test assets and test tables
 in `06_ACCEPTANCE.md`, the reordered `08_ROADMAP.md`, and `09_BUILD.md`. It
 also states the compilation goal as 5.8.3 (`D-38`). Nothing in version 1.0 was
-renumbered, so every existing reference still resolves.
+renumbered, so every existing reference still resolves to an entry. *** ONE ID RESOLVES TO TWO: `05_DECISIONS.md`
+carries `D-51` twice - the decision, and below it an amendment that keeps the decision and refutes the reason it
+gives. It is an amendment rather than a new ID because `D-52` to `D-60` are already taken. Both entries now say so,
+and a reader arriving at either is told the other exists. A REFERENCE THAT RESOLVES IS NOT THE SAME AS A REFERENCE
+THAT RESOLVES TO ONE THING. ***
 
 This folder is the full specification for a new Unreal Engine editor plugin.
 You are the build side. Everything you need to know about WHAT to build is in
