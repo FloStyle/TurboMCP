@@ -215,12 +215,24 @@ visible in the finding, it is not a finding yet.**
 
 ---
 
-## 8. WHAT REMAINS
+## 8. WHAT REMAINS, AND THE ORDER TO DO IT IN
+
+**The order is measured, not chosen.** `check-fails-on.py --list` prints the 34 suites that do not state their
+failure input, grouped by family:
+
+| Family | Silent suites | Why it comes where it does |
+|---|---|---|
+| `graph` | 6 | **These test the writers the `Source/` audit found most defective** — the 28 unchecked cancels, the dead counters |
+| `widget` | 4 | Same: `WidgetRetarget`, `WidgetTreeSync`, `WidgetBindAdd` |
+| `panel`, `override`, `vcs`, `asset` | 2 each | Writers with carded defects |
+| 18 single-suite families | 18 | Independent and small |
 
 | Group | Files |
 |---|---|
-| `Source/` not read | ~19 — `NodeResolve`, `WidgetsAsVars`, `Overrides`, and ~15 `*Tools.cpp` wrappers of 30 to 180 lines |
-| `Tools/` not read | 47 suites, `run-suites.ps1`, the `make-*.py` generators, `tmcp*.py`, `common.ps1` |
+| `Source/` | **done for every file that writes** — 48 of 48 |
+| `Tools/` suites | 34 not read, of which **10 are `graph` and `widget`** |
+| `Tools/` scripts | 4 `.ps1` not read past their functions |
 
-**The task board holds 43 cards**, each naming the file lines it concerns, so a card needs no context beyond
-itself.
+*** SO THE NEXT ROUND SHOULD READ A `graph` OR `widget` SUITE IN FULL, NOT A READER.*** *The `Source/` readers are
+closed by measurement; the suites that exercise the defective writers are not, and they are the ten most likely to
+show whether a carded defect is actually caught.*
