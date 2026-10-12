@@ -44,7 +44,7 @@ that was found by auditing the rows against the tree rather than by reading the 
 ### What is left, by phase
 
 *** COUNTED BY `Tools/checks/count-plan.py`, WHICH SPLITS EACH ROW AND READS ITS LAST CELL - the plan's own rule.
-`30 todo · 16 done · 2 open` of 48 numbered rows. ***
+`31 todo · 15 done · 2 open` of 48 numbered rows. *** AND THE SAME FILE SAID `30 todo · 16 done` AT `:47` WHILE ITS OWN COMPARISON TABLE AT `:356` SAID `31 todo, 15 done` - THE TABLE WAS RIGHT, BECAUSE ROW 0.3 OF THE PLAN WAS MARKED DONE AGAINST AN UNMET CRITERION AND `count-plan.py` WAS COUNTING THAT MARK. *** ***
 
 | Phase | todo | done | The rows that remain |
 |---|---|---|---|

@@ -12,8 +12,8 @@ fails, so it can be used as a gate instead of something a person reads.
 *** THE TABLE BELOW IS CURATED, AND THEREFORE INCOMPLETE BY CONSTRUCTION: IT EXPLAINS THE TOOLS WHOSE PURPOSE
 NEEDS EXPLAINING, IN THE ORDER THEY ARE USED. [`INVENTORY.md`](INVENTORY.md) IS THE COMPLETE LIST - EVERY
 SCRIPT IN THIS DIRECTORY, GENERATED FROM THE DIRECTORY, WITH ITS OWN FIRST HEADER LINE BESIDE IT. *** *A
-curator's table is the wrong place to keep eighty-three files complete (`Get-ChildItem Tools -File`): it turns
-into a list, and then into a
+curator's table is the wrong place to keep every script in this directory complete (`Get-ChildItem Tools -Recurse
+-File` reads 107 files; `INVENTORY.md` lists 86 of them): it turns into a list, and then into a
 stale list.*
 
 | Script | Runs against | Job |

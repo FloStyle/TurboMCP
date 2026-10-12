@@ -101,6 +101,6 @@
 | `run-suites.ps1` | Runs every acceptance suite in sequence, keeping the editor alive per suite. |
 | `setup-engine.ps1` | Set up Unreal Engine 5.8.3 from source and build the TurboMCP editor plugin. |
 | `start-editor.ps1` | Start the TurboMCP test editor and prove it reached a working state. |
-| `test-suite-timeout.ps1` | A PROOF-OF-CONCEPT FOR THE PER-SUITE DEADLINE, TESTED IN ISOLATION BEFORE IT IS WIRED INTO THE HARNESS. |
+| `test-suite-timeout.ps1` | The per-suite deadline, as a standalone script, so it can be exercised without the harness around it. |
 
 *** 86 files, all listed. ***
