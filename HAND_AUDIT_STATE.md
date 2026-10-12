@@ -258,3 +258,32 @@ phrase the template asks for:
 and `widget` (4) - are among the best-written in the tree, and the phrase `check-fails-on.py` looks for is a
 sentence shape, not a property of a test. That card's recommendation stands: DROP THE RULE, OR REWRITE IT TO ASK
 FOR WHAT IT MEANS. ***
+
+---
+
+## 9. THE CROSS-LAYER RESULT: WHY THE ROLLBACK IS BOTH TESTED AND UNTESTED
+
+**The material suites DO assert the rollback.** They contain the exact text the C++ prints:
+
+    `test-material-tidy.py:53`          "FAILED: the layout changed the SET OF EXPRESSIONS, so it was ROLLED BACK."
+    `test-material-label-promote.py:71` "was ROLLED BACK."
+    `test-material-blocks.py:72`        "FAILED: the edit LOST 1 expression(s) it did not list, so it was ROLLED
+                                         BACK."
+    all three: "THE FIXTURE IS RESTORED ON THE WAY IN AND ON THE WAY OUT, AND THE RESTORE IS ASSERTED"
+    `test-material-label-promote.py:52` "AND THE RESTORE IS ASSERTED ON WHAT THIS SUITE DID, NOT ON A COUNT READ
+                                         FROM THE [asset]" -- the `C-P11` rule already applied in the test layer
+
+**And they cannot cover the 28 unchecked sites, for a reason that is not neglect:**
+
+| | |
+|---|---|
+| Paths the code VERIFIES | *"the SET OF EXPRESSIONS changed", "LOST 1 expression(s) it did not list"* — **asserted by the suites** |
+| Paths the code only ASSUMES | *`CreateMaterialExpressionEx` returning `nullptr`; a usage node that cannot be created* — **no suite makes a creation fail, so no suite reaches them** |
+
+*** SO THE PRECISE STATEMENT IS: THE ROLLBACK IS TESTED WHERE THE CODE MEASURES, AND NEITHER TESTED NOR VERIFIED
+WHERE THE CODE SUPPOSES.*** *The test layer is not the problem — it tests what the code lets it test.*
+
+**Which makes the class closable with a case that does not exist yet:** make an expression creation fail, then
+assert the transaction did not commit. `test-material-tidy.py:374` already describes *"a run was interrupted
+part-way and left the material mid-layout"*, so the fixture for a failure exists; what is missing is the ENGINE
+refusing a creation.
