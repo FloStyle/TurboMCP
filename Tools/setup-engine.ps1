@@ -21,7 +21,10 @@
        project, so it cannot be built on its own.
 
 .PARAMETER EngineDir
-    Where the engine source lives. Default C:\UnrealEngine.
+    Where the engine source lives. **Defaults to `C:\UnrealEngine`, which is what this script's own
+    default of creating the engine there means** - it is the one place in `Tools/` that legitimately
+    names a path, because installing an engine is the whole of its job. Every other script in this
+    directory resolves the engine instead, so pass `-EngineDir` and nothing else has to change.
 
 .PARAMETER RepoDir
     The TurboMCP repository. Default is the parent of this script.
@@ -47,18 +50,22 @@
     Just re-mount the plugin and rebuild.
 
 .NOTES
-    MEMORY IS THE LIMITING FACTOR, NOT CPU.
+    MEMORY IS THE LIMITING FACTOR, NOT CPU, AND THIS IS THE ONE PLACE WHERE A MEASUREMENT IS ABOUT THE
+    MACHINE RATHER THAN THE SOFTWARE - so it is stated as a rule rather than as one computer's numbers.
 
-    A UE 5.8 editor build wants roughly 45 GB of commit charge at default
-    parallelism. With 32 GB of RAM and a fixed ~15 GB pagefile the ceiling is
-    about 42 GB, so Unreal Build Accelerator kills compilers:
+    A UE 5.8 editor build wants roughly **1.4 GB of commit charge per parallel action** at default
+    settings, and Unreal Build Accelerator kills compilers rather than waiting when it runs out:
 
         UbaSessionServer - Killed process SharedPCH.Engine.Cpp20.cpp -
-        Low on memory (44.5gb/46.8gb). Kill threshold is 44.4gb
+        Low on memory. Kill threshold is ...
 
-    Capping the action count keeps the build under the ceiling. It runs close to
-    serially and takes hours, but it finishes. Raising the pagefile to 48 GB or
-    adding RAM is the only real fix, and both need an elevated prompt.
+    *** IF THE KILL THRESHOLD IS BELOW THE COMMIT CHARGE THE BUILD NEEDS, LOWER `-MaxParallelActions`
+    UNTIL IT FITS. *** The build then runs close to serially and takes hours, but it finishes. Raising
+    the pagefile or adding RAM is the real fix and both need an elevated prompt.
+
+    The default of **8** is conservative and was chosen against a machine with 32 GB of RAM and a fixed
+    ~15 GB pagefile, where the ceiling was about 42 GB and 8 actions stayed under it. **A machine with
+    more memory can raise it; `Tools/build.ps1` passes the same figure through.**
 
     Unreal resolves config through the settings class's own config file, not the
     one that looks natural. See TestProject/Config/DefaultEditorPerProjectUserSettings.ini.

@@ -76,17 +76,22 @@ exactly the modules the plugin depends on.
 
 **Rejected:** the default, which used 12.
 
-**Why:** the machine has 31.7 GB of RAM and a fixed 14.9 GB pagefile, so the
-commit ceiling is about 42 GB. At default parallelism Unreal Build Accelerator
-killed compilers:
+**Why:** a UE 5.8 editor build wants roughly **1.4 GB of commit charge per parallel action**, and Unreal
+Build Accelerator **kills compilers rather than waiting** when the commit charge runs out:
 
 ```
 UbaSessionServer - Killed process SharedPCH.Engine.Cpp20.cpp -
-Low on memory (44.5gb/46.8gb). Kill threshold is 44.4gb
+Low on memory. Kill threshold is ...
 ```
 
-The build stalled at action 8 of 9005. Capping the action count keeps it under
-the ceiling. It then runs close to serially and is slow, but it finishes.
+The build stalled at action 8 of 9005. *** THE RULE IS THAT THE ACTION COUNT HAS TO FIT UNDER THE COMMIT
+CEILING, WHATEVER THAT CEILING IS ON THE MACHINE DOING THE BUILD *** - 8 was chosen against a machine with
+32 GB of RAM and a fixed ~15 GB pagefile, where the ceiling was about 42 GB, and a machine with more memory
+can raise it. Capping the action count keeps it under the ceiling. It then runs close to serially and is
+slow, but it finishes.
+
+*`Tools/setup-engine.ps1` carries the same rule and passes `-MaxParallelActions` through, so this is stated
+once in code and once here rather than as one computer's numbers twice.*
 
 **Measured consequence:** 18% CPU utilisation, one compiler at a time, and a full
 editor build of 2h13m.
