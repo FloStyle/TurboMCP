@@ -144,9 +144,6 @@ public:
 		FString Text;
 		UEdGraphNode_Comment* Comment = nullptr;
 
-		/** Read from the engine and REPORTED. Never used to decide anything - see `D-LAY-3`. */
-		int32 EngineDepth = 0;
-
 		/** The TIGHTEST box around this one, or `INDEX_NONE`. Resolved geometrically. */
 		int32 ParentIndex = INDEX_NONE;
 

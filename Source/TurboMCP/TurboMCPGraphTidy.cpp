@@ -421,7 +421,6 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			Box.Comment = Comment;
 			Box.Key = OutPlan.Nodes[Index].Key;
 			Box.Text = Comment->NodeComment;
-			Box.EngineDepth = Comment->CommentDepth;
 
 			double BoxX = 0.0;
 			double BoxY = 0.0;
@@ -448,9 +447,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		}
 
 		// PARENTS ARE RESOLVED GEOMETRICALLY, by the SAME containment rule as membership, and the
-		// parent is the SMALLEST box that contains this one (`D-LAY-3`). `CommentDepth` is REPORTED and
-		// never used to decide, because a stored field can disagree with geometry after a hand resize
-		// and geometry cannot disagree with itself.
+		// parent is the SMALLEST box that contains this one (`D-LAY-3`). THE ENGINE'S `CommentDepth`
+		// IS NOT READ HERE AT ALL, because a stored field can disagree with geometry after a hand
+		// resize and geometry cannot disagree with itself.
 		for (int32 Index = 0; Index < OutPlan.Boxes.Num(); ++Index)
 		{
 			int32 BestParent = INDEX_NONE;
