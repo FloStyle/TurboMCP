@@ -1075,9 +1075,8 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 										}
 										++LinkCount;
 										// COMPARED BY KEY, because a node is identified by its key in this
-										// pass and a pointer comparison against an FString does not
-										// compile. The first version of this test was exactly that
-										// mistake, and the compiler caught it.
+										// pass and a pointer comparison against an `FString` does not
+										// compile.
 										if (KeyOf(Owner) == Nodes[ConsumerIndex].Key)
 										{
 											++ToConsumer;
@@ -1096,14 +1095,13 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 
 							const FNode& Consumer = Nodes[ConsumerIndex];
 
-							// THE CARRIED NODE IS ANCHORED TO CLEAR THE SOURCE, NOT ONLY ITS CONSUMER, AND
-							// THAT IS A FIX RATHER THAN A PREFERENCE.
+							// THE CARRIED NODE IS ANCHORED TO CLEAR THE SOURCE, NOT ONLY ITS CONSUMER.
 							//
-							// MEASURED DEFECT: this line used to be
+							// ANCHORING ON THE CONSUMER ALONE IS WRONG, BY SUBSTITUTION. The form
 							//
 							//     PureToX = Consumer.PlannedX - Pure.Width - Gap
 							//
-							// and `Consumer.PlannedX` is the target's FINAL position, which the move below
+							// takes `Consumer.PlannedX` as the target's FINAL position, which the move below
 							// sets to `Source.PlannedX + Source.Width + Gap`. Substituting gives
 							//
 							//     PureToX = Source.PlannedX + Source.Width - Pure.Width
@@ -1320,8 +1318,11 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 		}
 		if (ConsumerNode == nullptr)
 		{
-			// No consumer means no target position, so the getter is LEFT ALONE and counted. Nothing to
-			// say beyond that: a getter nobody reads is E-GRAPH-DEAD's business.
+			// *** NO CONSUMER MEANS NO TARGET POSITION, SO THE GETTER IS LEFT ALONE AND IS NOT COUNTED.
+			// `BackwardGettersFound` is incremented only for a getter that HAS a consumer, and the
+			// report prints that field as "R2 backward getters: %d found", so a getter nobody reads is
+			// absent from the count rather than included in it. *** Nothing to say beyond that: a getter
+			// nobody reads is E-GRAPH-DEAD's business.
 			continue;
 		}
 
