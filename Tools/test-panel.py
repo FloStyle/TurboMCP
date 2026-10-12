@@ -47,6 +47,7 @@ WHAT EACH CHECK PROVES, AND HOW IT COULD FAIL
 - the live call's outcome is REPORTED, whatever it is. See the note on the timeout below.
 """
 
+import tmcp_paths  # noqa: E402  (after the sys.path line above)
 import os
 import re
 import subprocess
@@ -56,7 +57,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HEADER = os.path.join(REPO, "Source", "TurboMCP", "Public", "Tools", "TurboMCPToolsets.h")
 LOG = os.path.join(REPO, ".agent", "logs", "panel-probe.log")
 
-EDITOR_EXE = r"C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
+EDITOR_EXE = os.path.join(tmcp_paths.find_engine(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")
 PROJECT = os.path.join(REPO, "TestProject", "TurboMCPTest.uproject")
 
 # THE TOOLSETS ARE MATCHED BY SUFFIX, because the registry publishes the full name

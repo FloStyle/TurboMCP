@@ -30,6 +30,7 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tmcp_paths  # noqa: E402  (after the sys.path line above)
 
 from tmcp import LOOK_TOOLSET, Session  # noqa: E402
 
@@ -99,7 +100,7 @@ def main():
         # The tool prints a path relative to the engine, so it is resolved the way
         # the editor resolves it.
         absolute = os.path.abspath(os.path.join(
-            r"C:\ExampleUnrealengine\Engine\Binaries\Win64", image_path))
+            os.path.join(tmcp_paths.find_engine(), "Engine", "Binaries", "Win64"), image_path))
         exists = os.path.isfile(absolute)
         check("the image exists on disk", exists, absolute)
         if exists:
@@ -121,7 +122,7 @@ def main():
             small_path = line.split(":", 1)[1].strip()
     if small_path:
         absolute = os.path.abspath(os.path.join(
-            r"C:\ExampleUnrealengine\Engine\Binaries\Win64", small_path))
+            os.path.join(tmcp_paths.find_engine(), "Engine", "Binaries", "Win64"), small_path))
         if os.path.isfile(absolute):
             check("the second image is at the second size",
                   png_size(absolute) == (640, 360), str(png_size(absolute)))

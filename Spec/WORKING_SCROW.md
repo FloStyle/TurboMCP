@@ -568,20 +568,28 @@ PROBE last_error_msg_after = Text("Revision control server is currently not avai
 PROBE done
 ```
 
-### the per-provider client binaries, measured on this machine
+### the per-provider client binaries
+
+*** WHAT MATTERS IS WHICH BINARIES EXIST AT ALL, NOT WHERE THEY LIVE. *** *The paths below are rewritten to
+their install roots on purpose: an absolute install path says nothing about the engine or the plugin, and a
+published measurement should not carry one machine's disk layout.*
 
 ```
-git FOUND: C:\Program Files\Git\cmd\git.exe
-p4 FOUND: C:\Program Files\Perforce\p4.exe
-cm NOT FOUND on PATH (Unity Version Control / Plastic)
-svn NOT FOUND on PATH
+git   present on PATH
+p4    present on PATH
+cm    NOT FOUND on PATH (Unity Version Control / Plastic)
+svn   NOT FOUND on PATH
 ```
 
-`p4 set`, verbatim:
+*An editor with no `cm` and no `svn` cannot reach those providers' `AVAILABLE` branches, and that is the
+part of this measurement that travels. The rest is one machine's disk.*
+
+`p4 set`, with the host and the user replaced by placeholders — **the values are a private endpoint and an
+account name, and neither is needed to read the result:**
 
 ```
 P4CHARSET=winansi (set)
-P4EDITOR=C:\Windows\system32\Notepad.exe (set)
+P4EDITOR=<an editor> (set)
 P4IGNORE=.p4ignore (set)
 P4PORT=ssl:<p4-host>:1666 (set)
 P4USER=<user> (set)

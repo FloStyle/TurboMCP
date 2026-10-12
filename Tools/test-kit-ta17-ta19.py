@@ -48,6 +48,7 @@ owns the lifecycle for the suites, and the editor is started again at the end so
 a standalone run leaves the machine as it found it.
 """
 
+import tmcp_paths  # noqa: E402  (after the sys.path line above)
 import json
 import os
 import re
@@ -61,7 +62,7 @@ import tmcp_editor
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(REPO, "Tools")
 
-EDITOR_CMD = r"C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
+EDITOR_CMD = os.path.join(tmcp_paths.find_engine(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")
 PROJECT = os.path.join(REPO, "TestProject", "TurboMCPTest.uproject")
 KIT_DIR = os.path.join(REPO, "TestProject", "Content", "Tests", "Kit")
 

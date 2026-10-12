@@ -42,6 +42,7 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tmcp_paths  # noqa: E402  (after the sys.path line above)
 
 from tmcp import LOOK_TOOLSET, Session  # noqa: E402
 
@@ -50,7 +51,7 @@ GRAPH = "EventGraph"
 WIDGET = "WBP_NodeTest"
 
 # The folder the tool prints its PNG paths from, as the editor sees it.
-EDITOR_BIN = r"C:\ExampleUnrealengine\Engine\Binaries\Win64"
+EDITOR_BIN = os.path.join(tmcp_paths.find_engine(), "Engine", "Binaries", "Win64")
 
 failures = []
 

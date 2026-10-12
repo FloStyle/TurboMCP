@@ -185,15 +185,21 @@ Measured end to end: **24 seconds**.
 | start the editor and wait for the MCP server | 9.9s |
 
 ```powershell
-# 1. stop the editor, or the plugin DLL is locked
-Get-Process UnrealEditor -EA SilentlyContinue | Stop-Process -Force
-# 2. build just the module (5 to 30 seconds once the engine exists)
-& cmd.exe /c "cd /d C:\UnrealEngine && Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development -Project=`"<REPO>\TurboMCP\TestProject\TurboMCPTest.uproject`" -WaitMutex -MaxParallelActions=8"
-# 3. start it headless, which also starts the MCP server on 8000
-Start-Process 'C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor.exe' -ArgumentList @('<REPO>\TurboMCP\TestProject\TurboMCPTest.uproject','-nullrhi','-unattended','-nosplash','-nosound') -WindowStyle Hidden
-# 4. verify on the wire
-python Tools\test-agent-help.py
+Tools\build.ps1            # stops the editor, finds the engine, builds the module
+Tools\start-editor.ps1     # starts the editor and proves it reached a working state
+python Tools\check-mcp-server.py    # verifies on the wire that the four toolsets answer
 ```
+
+**Each of those three finds the engine itself**, by the order described in
+[`README.md`](README.md): an explicit `-Engine`, then `TURBOMCP_ENGINE`, then `UE_ROOT`, then the
+`.uproject`'s `EngineAssociation`, then the Epic launcher registry, then the conventional source-build
+locations — **and the version decides, not the order of discovery.** Nothing here names a path of one
+machine, so the same three commands work on a clone.
+
+`Tools/build.ps1` also **stops a running editor first**, because the editor holds the plugin DLL open and
+`LNK1104` reads like a build error when it is a file lock. And it prints the DLL's timestamp beside its
+verdict, because `Result: Succeeded` alone is not evidence that the binary changed — a lesson this project
+paid for.
 
 A 24 second loop is fast enough to iterate on a tool interactively, so there is
 no need for Live Coding. See below for why it does not work here anyway.

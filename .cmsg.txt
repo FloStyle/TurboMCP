@@ -1,0 +1,40 @@
+SIX SUITES POINTED AT ONE MACHINE'S DISK LAYOUT, AND NOW THEY ASK THE RESOLVER LIKE EVERYTHING ELSE
+
+*** SIX TEST FILES HELD C:\ExampleUnrealengine\Engine\Binaries\Win64 AS A LITERAL. *** Tools/common.ps1 and
+Tools/tmcp_paths.py were written precisely so that no file in this repository has to know where an engine is
+installed, and these six were the exception - so they worked on one machine and would have failed on every
+other. They are also the suites that check the plugin's OWN BEHAVIOUR, which means a stranger could not run
+them at all.
+
+    test-capture-asset.py        test-capture-selectors.py    test-capture.py
+    test-kit-ta17-ta19.py        test-panel.py                test-widget-preview.py
+
+EACH NOW CALLS 	mcp_paths.find_engine(), the same resolver check-includes.py and check-plugin.py already
+used. It collects every candidate - an explicit path, TURBOMCP_ENGINE, UE_ROOT, the .uproject, the Epic
+registry, the conventional locations - **and prefers the engine whose Engine/Build/Build.version MATCHES THE
+VERSION THIS PROJECT TARGETS**, so a machine with two engines gets the right one rather than the first one
+found. import tmcp_paths is inserted after the sys.path line each suite already had, for the same reason
+that line exists.
+
+*** AND THE FIRST ATTEMPT AT THIS PATCH WAS WRONG IN A WAY WORTH RECORDING: IT PRODUCED
+EDITOR_CMD = <...>\Win64 - THE .exe WAS GONE. *** It replaced the bare directory literal and the
+commandlet literal in sequence, and the directory pattern then matched inside the commandlet replacement and
+truncated it. **The six files were restored from git before the corrected version ran, so the broken state
+never reached a commit** - and the corrected version replaces the FULL commandlet path first, the bare
+directory second, so nothing is rewritten twice. Verified afterwards by reading the assignments rather than
+trusting the patch: 	est-kit-ta17-ta19.py and 	est-panel.py both kept UnrealEditor-Cmd.exe.
+
+ALSO IN THIS PASS:
+
+    PLAN.md          its build-and-run block ran cd /d C:\UnrealEngine && ...Build.bat and started
+                     C:\ExampleUnrealengine\Engine\Binaries\Win64\UnrealEditor.exe by absolute path, AND passed
+                     -nullrhi, which is not how the suites run. It now points at Tools\build.ps1,
+                     Tools\start-editor.ps1 and check-mcp-server.py, and says why each of those finds the
+                     engine itself.
+    WORKING_SCROW.md its "per-provider client binaries" block printed the install paths of git and p4, and its
+                     p4 set output printed a Notepad path. WHAT TRAVELS FROM THAT MEASUREMENT IS WHICH
+                     BINARIES EXIST, NOT WHERE THEY LIVE, so the block now says which are on PATH and the
+                     paths are gone. The host and account were already placeholders.
+
+VERIFIED: the six patched suites PASS - 	est-kit-ta17-ta19 at 40 checks, 	est-panel, 	est-widget-preview
+- and every patched file parses. Zero C:\UnrealEngine literals remain in Tools/test-*.py.

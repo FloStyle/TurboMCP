@@ -26,6 +26,7 @@ import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tmcp_paths  # noqa: E402  (after the sys.path line above)
 
 from tmcp import LOOK_TOOLSET, Session  # noqa: E402
 
@@ -64,7 +65,7 @@ def png_size(path):
 def resolve_printed_path(printed):
     """The tool prints a path relative to the engine, as the editor sees it."""
     return os.path.abspath(os.path.join(
-        r"C:\ExampleUnrealengine\Engine\Binaries\Win64", printed))
+        os.path.join(tmcp_paths.find_engine(), "Engine", "Binaries", "Win64"), printed))
 
 
 def distinct_colours(path, limit=None):

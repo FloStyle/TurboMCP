@@ -57,11 +57,12 @@ import sys
 import zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tmcp_paths  # noqa: E402  (after the sys.path line above)
 
 from tmcp import LOOK_TOOLSET, READ_TOOLSET, Session  # noqa: E402
 
 # The folder the tool prints its PNG paths from, as the editor sees it.
-EDITOR_BIN = r"C:\ExampleUnrealengine\Engine\Binaries\Win64"
+EDITOR_BIN = os.path.join(tmcp_paths.find_engine(), "Engine", "Binaries", "Win64")
 
 # EVERY FIXTURE IS NAMED, AND NOTHING IS PINNED ON A SHARED ASSET. These are paths, not
 # counts and not ids: a count or an id on a shared asset is a check that breaks when
