@@ -18,12 +18,16 @@ change.
 |---|---|---|
 | Engine | 5.8.3, Windows editor | `01_BRIEF.md`, `D-38` |
 | Target kind | **Editor only.** Nothing here ships in a game build | `TurboMCP.Build.cs` header |
-| Engine plugins | `ToolsetRegistry` and `ModelContextProtocol` enabled | `TurboMCP.uplugin` |
+| Engine plugins | all three enabled: `SlateInspectorToolset`, `ToolsetRegistry`, `ModelContextProtocol` | `TurboMCP.uplugin` |
 | Python | needed for two reasons, both named below | `TurboMCP.Build.cs` |
 
-The two engine plugins are the ones that carry the MCP server and the tool
-registry. They are experimental: their names, modules and APIs are the parts
-most likely to move between engine versions.
+**Three** engine plugins are declared in `TurboMCP.uplugin`, and **two of them
+carry the MCP server and the tool registry**: `ModelContextProtocol` and
+`ToolsetRegistry`. The third, `SlateInspectorToolset`, is a dependency like the
+other two and is listed beside them in `Build.cs` (`:85-87`, `:116`), because a
+module dependency needs an entry in both lists (section 1.1). They are
+experimental: their names, modules and APIs are the parts most likely to move
+between engine versions.
 
 ### 1.1 The two dependency lists must agree
 
@@ -115,11 +119,13 @@ DLL was the old one. Two habits fix this:
 The order below is the order that finds the cause fastest. Each step names the
 symptom it explains.
 
-1. **Find the two engine plugins in the new engine.** Look for
-   `ModelContextProtocol` and `ToolsetRegistry`. If either is gone or renamed,
-   nothing else matters until the dependency lists are updated to match
-   (section 1.1). The modules to check are `ModelContextProtocol`,
-   `ModelContextProtocolEngine` and `ToolsetRegistry`.
+1. **Find the three engine plugins in the new engine.** Look for
+   `ModelContextProtocol`, `ToolsetRegistry` and `SlateInspectorToolset`. If one
+   of the first two is gone or renamed, nothing else matters until the
+   dependency lists are updated to match (section 1.1). The modules to check for
+   those two are `ModelContextProtocol`, `ModelContextProtocolEngine` and
+   `ToolsetRegistry`; `SlateInspectorToolset` contributes the module of the same
+   name, listed at `Build.cs:116`.
 2. **Check the module names inside each plugin.** A plugin can survive a
    version while its modules are split or renamed; `ModelContextProtocol`
    already provides two modules.

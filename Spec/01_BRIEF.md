@@ -123,9 +123,9 @@ its refusal is written before its feature is.**
 - Unreal Engine 5.8.3, Windows editor. This is the **compilation goal**
   (`D-38`): it is the engine branch actually built, and it is the only engine
   this project has ever been built or measured on.
-- The engine's `ToolsetRegistry` and `ModelContextProtocol` plugins
-  (experimental, ship with the engine).
+- The engine's `ToolsetRegistry`, `ModelContextProtocol` and
+  `SlateInspectorToolset` plugins (experimental, ship with the engine).
 - Building against an engine that is not vanilla 5.8.3 is supported and
-  documented in `09_BUILD.md`, because those two plugins are experimental
+  documented in `09_BUILD.md`, because those plugins are experimental
   and an engine that renamed one of their modules would fail this plugin's
   build in a way that reads like a bug in the plugin.

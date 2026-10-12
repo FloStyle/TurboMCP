@@ -174,8 +174,8 @@ compiles is a spec whose engine facts are checked against the wrong source, and
 version change is a thing somebody can find rather than a thing somebody assumes.
 
 **D-39 Building against an engine that is not vanilla 5.8.3 is documented,
-not assumed.** The module list, the two engine plugins the plugin depends on
-(`ToolsetRegistry`, `ModelContextProtocol`), the fact that a module
+not assumed.** The module list, the three engine plugins the `.uplugin` depends
+on (`ToolsetRegistry`, `ModelContextProtocol`, `SlateInspectorToolset`), the fact that a module
 dependency needs an entry in `Build.cs` AND in the `.uplugin`, and the
 editor-only build requirement are all written down in `09_BUILD.md` with the
 evidence for each. Rejected: "it builds here, so it builds anywhere". Why:
