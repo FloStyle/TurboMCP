@@ -116,11 +116,41 @@ reader who finds X and Y stated differently stops there, because the third claim
 
 ## 7. THE METHOD, WHICH IS THE SESSION'S MOST REUSABLE RESULT
 
+### A tool whose quoting you do not control is a screen, never a verdict
+
+**`git grep -c '<pattern>' -- 'Tools/*'` inside a PowerShell loop returned ZERO four times when the symbol was in
+fact used.** *`Select-String` on the file returned the right answer every time.* The failures were silent: a
+zero that reads like an absence.
+
+    `rebuild_fixture`     reported unused   -> called from `test-graph-replace.py:88`,
+                                              `test-graph-structure.py:129`, and four suites that wrap it
+    `OutRoute`            reported one file -> the caller is in the SAME file (`:269`) and the value is
+                                              printed at `:187`
+    `function\s+(\w+)`    captured verbs   -> PowerShell function names contain hyphens
+    `Stop-Editor`         counted twice    -> it is a SUFFIX of `Start-EditorAndWait`
+
+*** SO: use a pattern match to find WHERE to look, then open the file to decide. Four false positives were caught
+this way and none of them was written down as a finding.***
+
+### Read one file, then check the family
+
 Read **one file** in a family in full. If it shows a shape, **check the whole family by pattern**, then
 **measure both sides of the call** rather than assuming which side owns the convention.
 
-That is what found the six-file security defect and the 4-of-29 prefix guard. **A finding about one file would
-have been wrong in both cases.**
+That is what found the six-file machine-path defect, the 4-of-29 prefix guard, and the `FAILS ON` convention at
+9 of 52. **A finding about one file would have been wrong in every case.** And for one finding the deciding fact
+was a **function signature** — `bool Apply(..., FString& ApplyError)` against `FString Apply(...)` — which a grep
+for an error string could never have shown.
+
+### `X4`: follow a symbol rather than read a file
+
+Take a parameter name, a guard name or a field name and count its occurrences across the tree.
+
+    TWO FILES    one writer and one declaration   -> look closer
+    THREE OR MORE                                 -> you have probably found the question
+
+**Five real instances were found this way, and it also produced one false positive** (`OutRoute`), which is why
+the count is a screen and the call site is the verdict.
 
 And the pattern that produces FALSE findings is now `V1` in `AUDIT_PATTERNS.md`: a conclusion drawn from a
 fragment. Five findings were wrong on the first pass; **all five** were a conclusion that claimed more than the
