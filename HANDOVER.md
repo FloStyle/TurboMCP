@@ -105,7 +105,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                     # passed 58, fail
 | **Coverage audit** | `uncalled: (none)` — every declared tool is reached by at least one suite |
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail **or cannot pass** — currently 0 candidates |
 | **Plan** | **31 `todo` · 15 `done`** of 48 — *counted **by field**, never by a regex over the line* |
-| **Size** | C++ **61 620 lines** in **186** files · Spec **7 740 lines** in **17** · `TestRecord.md` **10 810 lines** |
+| **Size** | C++ **61 620 lines** in **186** files · Spec **7 740 lines** in **17** · `TestRecord.md` **10 800 lines** |
 
 ---
 
