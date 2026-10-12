@@ -40,10 +40,10 @@ remain attributable to one author, and the author's mailbox is not in them.
 | Where | What it says |
 |---|---|
 | **Every commit's author name** | **`FloStyleHome`** — unchanged by the rewrite. Only the address moved |
-| **The copyright notice on all 193 source files** | **`Copyright (c) 2026 Florian ESCHALIER (FloStyle)`** |
+| **The copyright notice on every first-party C++ file** | **`Copyright (c) 2026 Florian ESCHALIER (FloStyle)`** — **193** files: 186 under `Source/` and 7 under `TestProject/Source/` |
 | **`TurboMCP.uplugin`** | **`"CreatedBy": "Florian ESCHALIER (FloStyle)"`**, with `CreatedByURL` pointing at the GitHub account |
 
-The attribution is **required by MPL-2.0** — Section 3.4 forbids removing a file's licence notice — and it
+The attribution is **required by MPL-2.0** — Section 3.4 forbids removing a file's license notice — and it
 is also what the owner asked for: **the name is public, the address is not.** The second identity in the
 history, `TurboMCP Agent <turbomcp-agent-history@example.invalid>`, was **already anonymous** and was left exactly as it was; a
 blanket rule that rewrote every address would have replaced an identity that needed no change.

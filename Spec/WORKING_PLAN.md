@@ -23,8 +23,7 @@ proves it, and which spec section to read before starting.
 3. **The row is not done when the code compiles.** It is done when its test
  row in `06_ACCEPTANCE.md` passes ON THE KIT ASSET, and its measured values
  are recorded in `../TestRecord.md` with the date.
-4. **Record what was measured, not what was intended.** `../STATUS.md` section 5
- lists nine recorded cases of "a check that passes while the thing it
+4. **Record what was measured, not what was intended.** `../TestRecord.md` lists nine recorded cases of "a check that passes while the thing it
  verifies is broken". The habit that caught them is the one this file
  depends on: a claim without a measurement is not a result.
 5. **A capability that cannot be built as specified does not become a
@@ -219,7 +218,7 @@ Written down because each one has already been broken once in this project.
  re-resolves its targets by key at apply time (`D-45`).
 - **Do not let a check pass while the thing it verifies is broken.** If a
  check cannot fail, it is not a check: show it failing before believing it.
-- **Do not fix a fixture to make a test pass.** `../STATUS.md` section 5 records
+- **Do not fix a fixture to make a test pass.** `../TestRecord.md` section 7a records
  a workstream that diagnosed a rule defect by arithmetic instead of faking a
  fixture, and it was right.
 - **Do not let one capability's test consume a shared asset.** `E-OVERRIDE-REMOVE`
@@ -234,8 +233,8 @@ piece of work (`00_START_HERE.md` section 4). These are stale or about to be:
 
 | File | What is stale | When |
 |---|---|---|
-| `../STATUS.md` | "70 AICallable UFUNCTIONs" in an earlier revision against 72 in the tree, and a capability table that is a nine-section reading of a twenty-section spec | with step 0 |
-| `../STATUS.md` | section 4's blocker, once step 0.1 lands | with step 0.1 |
+| `../STATUS.md` | its capability table, which is a snapshot and has been wrong twice | with each capability |
+| `../STATUS.md` | its section 3, "What is left", once step 0.1 lands | with step 0.1 |
 | `Spec/07_ENGINE_NOTES.md` | every section 1 to 4 and 6 fact carries a `[5.8.1]` marker | with step 0.3 |
 | `README.md`, `DOCS.md` | tool counts and the tool list | with each capability |
 | `../TestRecord.md` | one row per new test with its measured values and its date | with each capability |

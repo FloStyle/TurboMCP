@@ -64,6 +64,7 @@ Tools/                  helper scripts, not part of the plugin
 
 | File | What it is |
 |---|---|
+| **[`TOOLS.md`](TOOLS.md)** | **The 93 tools**, generated from the header: name, toolset, the description an agent receives, and how to call one |
 | **[`HANDOVER.md`](HANDOVER.md)** | **Start here for the state of the project.** The four commands that establish it, what is finished, what is not, what I do not know, and what I would do next |
 | `Spec/` | The specification, at version 1.1. The authority on what to build |
 | `Spec/WORKING_PLAN.md` | The live plan: state of each capability and what to pick up next. Changes every round |
@@ -74,7 +75,7 @@ Tools/                  helper scripts, not part of the plugin
 | [`DOCS.md`](DOCS.md) | Every choice made while building, and why |
 | [`TestRecord.md`](TestRecord.md) | The running record: every measurement, every defect, and the reasoning behind every correction |
 | [`QUESTIONS.md`](QUESTIONS.md) | Questions put to the owner, with their answers |
-| [`MPL-2.0-SETUP.md`](MPL-2.0-SETUP.md) | Where the licence lives: the `LICENSE` text, the per-file notice, and the script that reapplies it |
+| [`MPL-2.0-SETUP.md`](MPL-2.0-SETUP.md) | Where the license lives: the `LICENSE` text, the per-file notice, and the script that reapplies it |
 | [`Tools/README.md`](Tools/README.md) | What each helper script does and how to run it |
 | [`LICENSE`](LICENSE) | The Mozilla Public License 2.0, verbatim |
 
@@ -133,17 +134,69 @@ That whole loop takes about 24 seconds. The plugin's own panel is under
 
 `Tools/common.ps1` (PowerShell) and `Tools/tmcp_paths.py` (Python) are the two implementations, and they resolve the same way.
 
+## Running the tests
+
+`Tools/run-suites.ps1` owns the editor's life cycle, runs every suite, and prints one verdict per suite
+with a total. **It is the signal that matters — not a commit, and not a build.** Every iteration of this
+work is preserved, so an individual commit is sometimes red on purpose:
+
+```powershell
+Tools\run-suites.ps1                                    # all 58 suites, exit 0 when green
+Tools\run-suites.ps1 -Suites test-graph-tidy            # one suite
+Tools\run-suites.ps1 -SkipSlow                          # skip the ones that take minutes
+```
+
+**Three of the 58 need no editor** — `audit-tool-coverage`, `audit-suite-quality` and `check-includes` —
+because they read files rather than drive the plugin. The other **55 need a running editor**, and the
+runner starts and stops one for them. **`check-mcp-server` is deliberately on the editor side**, because it
+asserts that the MCP server answers; classifying it as static would have made it pass against nothing.
+
+Two gates are worth running on their own, because they are fast and they fail loudly:
+
+```powershell
+python Tools\check-plugin.py     # 11 checks: declarations against what UHT generated
+python Tools\check-includes.py   # 1412 includes resolved against the engine, in seconds
+```
+
+## Calling a tool
+
+The server runs **in the editor**, on `http://localhost:8000/mcp`, and `Tools\start-editor.ps1` proves it
+answers before it reports success. With tool search enabled — the engine default, kept here — a client sees
+three meta-tools and reaches everything through the third:
+
+- **`list_toolsets`** — what is registered, including TurboMCP's four;
+- **`describe_toolset`** — one toolset's tools and their input schemas;
+- **`call_tool`** — `toolset_name`, `tool_name`, and `arguments`.
+
+Two details a caller gets wrong first, and both are in [`Spec/07_ENGINE_NOTES.md`](Spec/07_ENGINE_NOTES.md):
+
+- `tool_name` is the **bare** function name. A listing prints the full `Toolset.Function`; `call_tool` wants
+  the part after the dot.
+- `arguments` is a **JSON object, not a string**. Sending it as a string makes the engine answer
+  "input params Json is empty".
+
+**[`TOOLS.md`](TOOLS.md) lists all 93 tools**, generated from the declarations in the header, with the
+description an agent receives for each.
+
 ## Working on a feature
 
-Work happens on a branch, is validated, and is merged only when every check
-passes. `origin` is `https://github.com/FloStyle/TurboMCP`, so a branch is also
-the backup.
+Work happens on a branch, is validated, and is merged only when the whole run passes. **This repository has
+two remotes, and which one you push to matters:**
+
+| Remote | What it holds |
+|---|---|
+| `private` | the full history. **This is where work goes** — it is the default push target |
+| `origin` | `https://github.com/FloStyle/TurboMCP`, the published tree, which carries **a single commit with no history** |
+
+**A plain `git push` goes to `private`**, because `remote.pushDefault` is set to it. Publishing is a separate,
+deliberate act: the public tree is rebuilt from the current tree as one parentless commit, so pushing the
+history to `origin` would undo that.
 
 ```powershell
 git checkout -b feature/<capability>          # for example feature/r-graph-load
 
-# ... build, and validate before merging: all five must pass ...
-python Tools\check-plugin.py                  # 10 pre-build checks
+# ... build, and validate before merging: all six must pass ...
+python Tools\check-plugin.py                  # 11 pre-build checks
 python Tools\check-includes.py                # every include resolves
 python Tools\check-mcp-server.py              # the server and all four toolsets
 python Tools\test-agent-help.py
@@ -151,11 +204,11 @@ python Tools\test-asset-tools.py
 python Tools\build-test-graph.py              # rebuilds the test graph and saves it
 
 git add -A && git commit -m "<what changed and why>"
-git push -u origin feature/<capability>
+git push -u private feature/<capability>
 
 git checkout main
 git merge --no-ff feature/<capability>
-git push origin main
+git push private main
 ```
 
 **A `.uasset` cannot be merged.** Test content changed on two branches once and

@@ -23,35 +23,21 @@ in **4 toolsets**: Read (30), Look (4), Preview (26), Edit (33). The readers liv
 **structurally incapable of writing**, and every writer has a Preview twin that shares the **same `Plan`**,
 so Preview and Edit refuse **exactly** the same input.
 
-| Metric | Measured value |
-|---|---|
-| `AICallable` tools | **93** (audit: `uncalled: (none)`, PASS) |
-| Suites (`Tools/test-*.py`) | **52 files**, **58 suites** in the harness |
-| **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0*** |
-| Plugin C++ | **61 620 lines** in **186** files |
-| Spec | **7 740 lines** in **17** files |
-| `TestRecord.md` | **10 800 lines** |
-| Licence | **MPL-2.0**, the notice on **193 of 193** source files |
+*** THE COUNTS AND THE CAPABILITY TABLE ARE IN [`STATUS.md`](STATUS.md), AND THE 93 TOOLS THEMSELVES ARE IN
+[`TOOLS.md`](TOOLS.md). THEY ARE NOT REPEATED HERE, BECAUSE A NUMBER WRITTEN IN TWO PLACES IS A NUMBER THAT
+WILL EVENTUALLY DISAGREE WITH ITSELF — which this project has already measured four times.*** What follows
+is what those two documents cannot carry: the reasoning, the constraints, and what is not known.
 
 ---
 
 ## 2. The plan: **31 `todo` · 15 `done`** of 48 rows
 
 *Counted **by field** — the last cell of the line. See section 7: a regex over the line returns a wrong
-number.*
+number.* **The rows themselves are in [`Spec/WORKING_PLAN.md`](Spec/WORKING_PLAN.md); what follows is the
+finding that came out of auditing them.**
 
-| Row | What is done |
-|---|---|
-| **0.2** | `test-override-add` and `test-comment-boxes` restore their fixtures on the way **in** as well as out |
-| **1.4** | Can a Niagara system and an Anim Blueprint be captured headless? — **measured** |
-| **2.1** | `selection`, `neighbours`, `box-neighbours` and `screen` added to `L-CAPTURE` |
-| **2.2** | `L-CAPTURE-ASSET`: **9 editor types captured, none refused**, through one render path |
-| **7.1** | `P/E-STRUCT-NEW` and `P/E-STRUCT-FIELDS` — the struct writer |
-| **10.1** | `E-VCS-CHECKOUT` through `ISourceControlModule`, headless behaviour measured |
-| **10.2** | Automatic checkout wired into the write tools (**2 writers of 32**) |
-
-**And eight more rows were already built while their plan column still said `todo`** — `R-BP-LINT` (37
-checks), `R-CALL-COST` (29), `R-ASSET-COST` (10), `P/E-DATATABLE-ROWS` (26), `R-MAT-INST-LOAD` (20),
+**Eight rows were already built while their plan column still said `todo`** — `R-BP-LINT` (37 checks),
+`R-CALL-COST` (29), `R-ASSET-COST` (10), `P/E-DATATABLE-ROWS` (26), `R-MAT-INST-LOAD` (20),
 `P/E-ENUM-EDIT` and `P/E-MAT-BLOCKS` (24). **The plan understated the project by seven capabilities, and
 that was found by auditing the rows against the tree rather than by reading the column.**
 

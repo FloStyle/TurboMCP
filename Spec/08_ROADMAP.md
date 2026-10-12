@@ -32,7 +32,7 @@ is the live version of it and is the file a round updates.
 
 The order is decided by one rule: **a capability that makes other
 capabilities trustworthy comes first.** The verification harness is the
-current bottleneck (`../STATUS.md` section 4), and every capability added
+current bottleneck (`../TestRecord.md` sections 6z and 7a), and every capability added
 inherits its doubt, so it is item 0 and not an afterthought.
 
 | Step | Work | Why here |
@@ -56,7 +56,7 @@ kit's new assets TA-14 to TA-21.
 
 ## 3. The bottleneck, stated as work rather than as a symptom
 
-`../STATUS.md` section 4 records six defects of one shape and five hypotheses
+`../TestRecord.md` sections 6z and 7a records six defects of one shape and five hypotheses
 each falsified by measurement. The one thing never reproduced outside the
 harness is **the state of the editor at the moment the harness hands control
 to a suite**. Two structural notes already hold and they are the shape of the

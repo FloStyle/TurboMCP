@@ -101,7 +101,7 @@ before treating it as broken.**
 
 ### 2.2 `Result: Succeeded` is not evidence the binary changed
 
-Recorded in `../STATUS.md` section 5: a stale binary masqueraded as a passing fix
+Recorded in `../TestRecord.md` section 29: a stale binary masqueraded as a passing fix
 three times. The suite failed while the source was correct because the loaded
 DLL was the old one. Two habits fix this:
 
@@ -155,7 +155,7 @@ The failures that look like plugin bugs and are not:
 ## 4. The test harness
 
 `Tools/run-suites.ps1` owns the editor per suite and waits for both the server
-and the process. `../STATUS.md` section 4 records the failure mode that made it
+and the process. `../TestRecord.md` sections 6z and 7a record the failure mode that made it
 the bottleneck: a hybrid where a suite and the harness both drive the same
 editor produces failures whose names move between runs.
 

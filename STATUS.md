@@ -16,7 +16,7 @@ for the evidence, [`TestRecord.md`](TestRecord.md); to hand the project on, [`HA
 | **Suites** | **52 files** under `Tools/test-*.py`, **58 suites** in the harness |
 | **FULL RUN** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0.*** `pwsh -NoProfile -File Tools\run-suites.ps1` |
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail **or cannot pass** — 0 candidates. `python Tools\audit-suite-quality.py` |
-| **Licence** | **MPL-2.0**, the notice on **193 of 193** source files, `LICENSE` verbatim |
+| **Licence** | **MPL-2.0**, the notice on **193 of 193** first-party C++ files (186 under `Source/`, 7 under `TestProject/Source/`), `LICENSE` verbatim |
 | **Secrets** | **none** — keys, tokens, SSH keys, connection strings, private URLs and paths of anyone's machine were all checked, and one finding was removed from the file **and** the history |
 | **Plan** | **31 `todo` · 15 `done`** of 48 rows, counted **by field** |
 | **Size** | C++ **61 620 lines** in **186** files · Spec **7 740 lines** in **17** · `TestRecord.md` **10 800 lines** |
