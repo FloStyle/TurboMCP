@@ -546,6 +546,13 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 		}
 	}
 
+	// *** THE FAILURES ARE COLLECTED, NOT RETURNED ON, AND THAT IS WHAT MAKES THE COMMENT ABOVE TRUE. *** Until
+	// this change the two refusals below were EARLY EXITS: they returned before `MarkPackageDirty()`, so the
+	// removals and the earlier rows had already been applied to a package that was NOT EVEN FLAGGED as changed,
+	// and the caller received an `error:` line with no way to learn that part of the request had landed. The
+	// sentence "a failure part-way is REPORTED rather than silently leaving half the request applied" was false
+	// as written; it is true now.
+	TArray<FString> Failures;
 	int32 Written = 0;
 	for (const TPair<FName, FString>& Pair : FinalText)
 	{
@@ -558,13 +565,15 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 		}
 		if (Row == nullptr)
 		{
-			return FString::Printf(TEXT("error: the engine refused to add the row '%s'."), *Pair.Key.ToString());
+			Failures.Add(FString::Printf(TEXT("the engine refused to add the row '%s'"), *Pair.Key.ToString()));
+			continue;
 		}
 
 		FString ImportError;
 		if (!ImportRow(Struct, Row, Table, Pair.Value, ImportError))
 		{
-			return FString::Printf(TEXT("error: row '%s': %s"), *Pair.Key.ToString(), *ImportError);
+			Failures.Add(FString::Printf(TEXT("row '%s': %s"), *Pair.Key.ToString(), *ImportError));
+			continue;
 		}
 		++Written;
 	}
@@ -586,6 +595,20 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 		TEXT("written: %d row(s) set, %d removed; the table had %d row(s) and now has %d")
 		TEXT("\nread back from the table:%s"),
 		Written, Removed, RowsBefore, Table->GetRowMap().Num(), *ReadBack);
+
+	// *** AND THE FAILURE, REPORTED WITH THE COUNTS RATHER THAN INSTEAD OF THEM. *** A refusal that says only
+	// "the engine refused to add the row 'X'" leaves the caller unable to tell a request that did NOTHING from
+	// one that applied nine rows and failed on the tenth. The counts and the before/after row count are the
+	// difference, and the package is dirty either way.
+	if (Failures.Num() > 0)
+	{
+		return FString::Printf(
+			TEXT("error: %d row(s) of this request could NOT be applied: %s")
+			TEXT("\n; THE REST WAS APPLIED - written: %d row(s) set, %d removed, and the table had %d row(s) and ")
+			TEXT("now has %d - so THIS IS A PARTIAL WRITE AND NOT A REFUSAL, and the package IS marked dirty."),
+			Failures.Num(), *FString::Join(Failures, TEXT("; ")),
+			Written, Removed, RowsBefore, Table->GetRowMap().Num());
+	}
 
 	return FString();
 }
