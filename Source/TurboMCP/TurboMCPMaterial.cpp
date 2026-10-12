@@ -991,7 +991,6 @@ FString FTurboMCPMaterial::RenderExpression(const UMaterialExpression* InExpress
 	// `FExpressionInputIterator` is built on (`MaterialExpression.h:684-718`) and what the engine
 	// deprecation notice for `GetInputsView` points at since 5.5. Using them rather than the
 	// deprecated view keeps this off a removal path.
-	int32 PrintedInputs = 0;
 	for (int32 Index = 0; ; ++Index)
 	{
 		FExpressionInput* Input = const_cast<UMaterialExpression*>(InExpression)->GetInput(Index);
@@ -1012,13 +1011,12 @@ FString FTurboMCPMaterial::RenderExpression(const UMaterialExpression* InExpress
 		{
 			// `2.1.8`: an input left at its default is not printed, and `2.5` says the constant is
 			// printed when the input keeps one. Empty means neither a link nor a constant, so there
-			// is nothing to say - but the index is still counted so the cap is honest.
-			++PrintedInputs;
+			// is nothing to say. *** NOTHING IS COUNTED HERE: this loop has no cap, and the counter
+			// that used to be incremented on this path and on the printing path was never read. ***
 			continue;
 		}
 
 		Out += FString::Printf(TEXT("\n    %s %s"), *NameText, *Value);
-		++PrintedInputs;
 	}
 
 	InOutState.InProgress.Remove(InExpression);
