@@ -18,9 +18,9 @@ live plan; this file is the state at the moment it was written.
 | **Licence** | **MPL-2.0**, notice on **186 of 186** source files, `LICENSE` present |
 | **Portability** | **No path of anyone's machine.** `Tools/common.ps1` and `Tools/tmcp_paths.py` derive the repo and resolve the engine **by version**, not by location |
 | **Secrets** | **None.** Scanned for keys, tokens, SSH keys, connection strings, private URLs; the one finding was an unused Android file-server token, now empty **and purged from the history** |
-| **C++** | **61 455 lines** in **185** files |
-| **Spec** | **7 738 lines** in **17** files |
-| **The record** | `TestRecord.md` **10 744 lines** · `REPORT.md` **350 lines** · `HANDOVER.md` **100 lines** |
+| **C++** | **61 620 lines** in **186** files |
+| **Spec** | **7 740 lines** in **17** files |
+| **The record** | `TestRecord.md` **10 792 lines** · `REPORT.md` **350 lines** · `HANDOVER.md` **100 lines** |
 | **Plan** | **31 `todo` · 15 `done`** of 48 rows — *COUNTED BY FIELD, never by a regex over the line* |
 
 ### The two defects that were blocking the green signal, and neither was on the priority list

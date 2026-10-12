@@ -15,9 +15,9 @@ Un plugin d'éditeur Unreal Engine 5.8.3 qui expose **93 outils appelables par I
 | Outils `AICallable` | **93** (audit : `uncalled: (none)`, PASS) |
 | Suites (`Tools/test-*.py`) | **52** fichiers (58 suites au total dans le harnais) |
 | **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — EXIT CODE 0, VERT ENTIÈREMENT*** |
-| C++ du plugin | **61 455 lignes** dans **185** fichiers |
-| Spec | **7 738 lignes** dans **17** fichiers |
-| `TestRecord.md` | **10 502 lignes** (le journal de bord) |
+| C++ du plugin | **61 620 lignes** dans **186** fichiers |
+| Spec | **7 740 lignes** dans **17** fichiers |
+| `TestRecord.md` | **10 792 lignes** (le journal de bord) |
 | Licence | **MPL-2.0** sur chaque fichier, `Copyright (c) 2026 Florian ESCHALIER (FloStyle)` |
 
 ---

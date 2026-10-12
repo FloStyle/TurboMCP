@@ -54,18 +54,29 @@ pwsh -File Tools\apply-license-header.ps1 -Check    # fail if a file lacks it (u
 pwsh -File Tools\apply-license-header.ps1 -Root <dir>   # try it on a copy first
 ```
 
-**Applied to all 111 `.h` and `.cpp` files** - the plugin module under `Source/` and the test module under `TestProject/Source`. The diff is the proof it did nothing else:
+**Applied to all 189 `.h`, `.cpp` and `.cs` files** - the plugin module under `Source/` and the test module under `TestProject/Source`. The diff is the proof it did nothing else:
 
 ```
-111 files, one notice and one copyright line each
+189 files, one notice and one copyright line each
 ```
 
 Five added lines per file, **nothing removed**, and **every file carries exactly one notice**.
 
+*** THIS FILE SAID 111 FOR A LONG TIME, AND THE NUMBER HAD STOPPED BEING TRUE. *** *111 was correct when
+`Source/` was the only tree the script walked. `TestProject/Source` was added later, the script grew to cover
+it, and this paragraph was not updated.* **A count written in prose drifts the moment somebody adds a file,
+so the number below is the one the script prints - run it rather than trusting this sentence:**
+
+```powershell
+pwsh -File Tools\apply-license-header.ps1 -Check
+# 189 file(s): 0 prepended, 0 replaced, 189 already correct
+# RESULT: PASS (every source file carries the notice)
+```
+
 Three properties make it safe to run again, each verified on a scratch copy before the real tree was
 touched:
 
-- **Idempotent.** A second run reports `0 prepended, 0 replaced, 111 already correct`, leaves every MD5 identical, and writes nothing.
+- **Idempotent.** A second run reports `0 prepended, 0 replaced, 189 already correct`, leaves every MD5 identical, and writes nothing.
   The natural failure of a header script is to *stack* notices, and a file with three copies of one notice
   is a file nobody reads.
 - **It replaces, not duplicates.** Every file already had a copyright line; the script consumes it and

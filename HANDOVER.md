@@ -51,7 +51,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, f
 | **Audit des outils** | `uncalled: (none)` — chaque outil déclaré est nommé par une suite |
 | **Audit des suites** | **BLOQUANT**, 0 candidat — il fait échouer le run si un check ne peut pas échouer **ou ne peut pas passer** |
 | **Plan** | **31 `todo` · 15 `done`** sur 48 — *compté **par champ**, jamais par une regex sur la ligne* |
-| **C++** | 61 455 lignes / 185 fichiers · **Spec** 7 738 l. / 17 · **`TestRecord.md`** 10 635 l. |
+| **C++** | 61 620 lignes / 186 fichiers · **Spec** 7 740 l. / 17 · **`TestRecord.md`** 10 635 l. |
 
 ---
 

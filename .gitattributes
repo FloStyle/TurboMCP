@@ -37,7 +37,7 @@
 # checkout rather than on the file it reads.
 LICENSE                  text eol=lf
 Tools/license-header.txt text eol=lf
-LICENSE-SETUP.md        text eol=lf
+MPL-2.0-SETUP.md        text eol=lf
 
 # Build scripts the engine ships from elsewhere may need CRLF on Windows.
 *.bat      text eol=crlf

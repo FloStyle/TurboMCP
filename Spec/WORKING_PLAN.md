@@ -45,23 +45,27 @@ proves it, and which spec section to read before starting.
 ## 2. What is already delivered
 
 Measured on the tree, not recalled. The count is the number of
-`meta = (AICallable)` functions registered, in four toolsets.
+`static FString` declarations carrying `meta = (AICallable)`, in four toolsets.
 
-| Toolset | Tools | Notes |
-|---|---|---|
-| `UTurboMCPReadToolset` | 24 | |
-| `UTurboMCPLookToolset` | 4 | one of them, `LookTurboMCPToolset`, is a placeholder that reports which editor windows exist |
-| `UTurboMCPPreviewToolset` | 17 | one of them, `PreviewTurboMCPToolset`, is a placeholder that measures this plugin's own help size |
-| `UTurboMCPEditToolset` | 27 | includes `ReadTurboMCPEditQueue`, which is a read that lives here because it reports whether a write is possible |
-| **Total** | **72** | counted from the `static FString` declarations in `Public/Tools/TurboMCPToolsets.h` |
+| Toolset | Tools | Declared at | Notes |
+|---|---|---|---|
+| `UTurboMCPReadToolset` | **30** | `TurboMCPToolsets.h:55` | readers only; structurally unable to write |
+| `UTurboMCPLookToolset` | **4** | `:747` | captures, layout, widget previews; readers only |
+| `UTurboMCPPreviewToolset` | **26** | `:895` | `Plan` a change; readers only |
+| `UTurboMCPEditToolset` | **33** | `:1500` | `Apply`; includes `ReadTurboMCPEditQueue`, a read that lives here because it reports whether a write is possible |
+| **Total** | **93** | | |
 
-`STATUS.md` at its stated commit says "72 AICallable `UFUNCTION`s", and that
-matches what this count finds in the tree. An earlier version of `STATUS.md`
-said 70; that one is superseded. What IS stale in `STATUS.md` is the
-**capability** table, which is a nine-section reading of a spec that now has
-twenty sections, and `STATUS.md` says so itself in its section 5 ("the
-project's own capability audit was wrong for four rounds"). Both corrections
-are on the list in section 6 below.
+*** THIS TABLE SAID 24 / 4 / 17 / 27 = 72, AND THOSE NUMBERS WERE OLD. *** *72 was true at an earlier round;
+the readers and writers grew and the table did not follow. **The count above is read from the declaration
+line ranges in the header, so it can be re-derived rather than believed:**
+
+```powershell
+Select-String -Path Source\TurboMCP\Public\Tools\TurboMCPToolsets.h -Pattern 'static FString' | Measure-Object
+# Count : 93
+```
+
+*`STATUS.md` carried the same stale figure in prose for the same reason. **A number written in a document
+drifts the moment a tool is added, which is why this one names the file it comes from.***
 
 The first delivery is complete for phases 0 to 8 of `08_ROADMAP.md` except
 the gaps this plan lists below.
