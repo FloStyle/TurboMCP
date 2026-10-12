@@ -309,7 +309,11 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				+ SScrollBox::Slot()
 				[
 					SNew(SMultiLineEditableText)
-					.Text(FText::FromString(CachedStatus))
+					// *** BOUND, NOT CAPTURED. `.Text(this, &GetStatusText)` is re-evaluated by Slate, so
+					// the pane shows whatever `OnRefreshClicked` last put in `CachedStatus`. Writing
+					// `.Text(FText::FromString(CachedStatus))` here evaluated the string ONCE, at build
+					// time, and left the refresh button updating a variable nothing displayed. ***
+					.Text(this, &STurboMCPPanel::GetStatusText)
 					.IsReadOnly(true)
 					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 					.ToolTipText(LOCTEXT("StatusTip",

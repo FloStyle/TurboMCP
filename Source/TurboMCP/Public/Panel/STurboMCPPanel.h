@@ -116,6 +116,12 @@ private:
 	/** One line above the result: what ran, how long it took, how big it was. */
 	FText GetResultHeader() const;
 
+	/** The status pane's text, BOUND RATHER THAN CAPTURED. `OnRefreshClicked` replaces `CachedStatus`,
+	 *  and a bound attribute is what makes the pane show the replacement - the one-time
+	 *  `.Text(FText::FromString(CachedStatus))` it used to carry kept the string the panel was built
+	 *  with, so a refresh could never change what was on screen. */
+	FText GetStatusText() const { return FText::FromString(CachedStatus); }
+
 	/** The toolset combo box's options. */
 	TArray<TSharedPtr<FString>> ToolsetOptions;
 
