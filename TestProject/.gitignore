@@ -19,3 +19,9 @@ Content/Tests/Kit/TA14_KitDataTable.uasset
 Content/Tests/Kit/TA17_KitCurveFloat.uasset
 Content/Tests/Kit/TA17_KitCurveTable.uasset
 Content/Tests/Kit/TA20_KitParameters.uasset
+
+# Fixtures a generated round leaves behind, suffixed with the round number.
+# The suites RESTORE what they touch, but an interrupted or exploratory run can leave one, and a
+# repository that shows them as untracked invites the next person to commit them - which is how
+# four of them reached a commit once already.
+Content/Tests/TA*_R[0-9]*.uasset
