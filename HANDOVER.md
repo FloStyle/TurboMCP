@@ -1,150 +1,187 @@
-# TurboMCP — passation
+# TurboMCP — handover
 
-**Version 1.0.0.** Arbre propre. Ce fichier existe pour que le prochain lecteur puisse **VÉRIFIER** plutôt que croire. Chaque commande est donnée.
+**Version 1.0.0.** The working tree is clean. This file exists so the next reader can **VERIFY** rather than
+believe: every claim below is followed by the command that establishes it.
 
 ---
 
-## 0. Sécurité — ce qui a été vérifié avant de publier
+## 0. Security — what was checked before publishing
 
-| Vérification | Résultat |
+| Check | Result |
 |---|---|
-| Clés, tokens, clés SSH, chaînes de connexion | **aucun** *(scanné: en-têtes de clés privées PEM, jetons GitHub classiques et fins, clés OpenAI, identifiants AWS, jetons Slack, clés Google, jetons Bearer, JWT, clés de compte de stockage, chaînes de connexion)* |
-| Fichiers `.env`, `.pem`, `.key`, `.pfx`, `id_rsa` | **aucun** |
-| URL privées, hôtes internes, IP RFC1918 | **aucune** |
-| Données client | **aucune** — il n'y a que le kit de test, généré par le commandlet |
-| Dépendances privées | **aucune** — `ModelContextProtocol`, `ToolsetRegistry`, `SlateInspectorToolset` sont tous des plugins du moteur |
-| Workflows Actions, Pages, registres | **aucun** |
-| **Le seul constat** | ***un `SecurityToken` du plugin AndroidFileServer dans `TestProject/Config/DefaultEngine.ini`*** |
+| API keys, tokens, SSH keys, connection strings | **none.** Scanned for PEM private-key headers, classic and fine-grained GitHub tokens, OpenAI keys, AWS credentials, Slack tokens, Google keys, Bearer tokens, JWTs, storage-account keys and connection strings |
+| `.env`, `.pem`, `.key`, `.pfx`, `id_rsa` files | **none** |
+| Private URLs, internal hostnames, RFC1918 addresses | **none** |
+| Customer data | **none.** The only assets are the test kit, which the commandlet generates |
+| Private dependencies | **none.** `ModelContextProtocol`, `ToolsetRegistry` and `SlateInspectorToolset` are all engine plugins |
+| Actions workflows, Pages, package registries | **none** |
+| **The one finding** | ***a generated `SecurityToken` in `TestProject/Config/DefaultEngine.ini`*** |
 
-**Ce que ce token était, et pourquoi il a été retiré:** *le moteur écrit un token **aléatoire** dans cette clé à la création d'un projet, et celui du dépôt **n'était pas la valeur par défaut du moteur** — donc il avait été **généré**, pas recopié. Un token généré est un secret.* ***Le plugin Android n'est pas activé dans `TurboMCPTest.uproject`, la connexion est `USBOnly` et le serveur de fichiers n'est jamais lancé*** *— le token donnait donc accès à un serveur que ce projet ne fait pas tourner.*
+**What that token was, and why it is gone.** The engine writes a **random** value into that key when a
+project is created, and the repository's value was **not** the engine's own default — so it had been
+**generated** rather than copied. A generated token is a secret. Nothing here uses it: **the Android plugin
+is not listed in `TurboMCPTest.uproject`, the connection type is `USBOnly`, and the file server is never
+started**, so the token guarded a server this project does not run.
 
-**Il a été retiré de DEUX endroits, parce qu'un seul ne suffit pas:** *le fichier (`SecurityToken=` est maintenant vide, ce qui **désactive** le serveur par la règle du moteur) **et l'historique** (`--replace-text`, vérifié: **0 occurrence** dans tous les arbres de toutes les refs).*
+**It was removed from two places, because one is not enough.** The file now reads `SecurityToken=` with the
+key kept and the reason written above it — an empty value **disables** the server by the engine's own rule
+— **and the value was purged from the history as well**, verified at **zero occurrences** across every tree
+of every ref. Deleting it from the tip would not have been enough: an earlier commit still carried it, and
+`git log -p` would have published it anyway.
 
-**Et les e-mails ont été retirés de l'historique** *(`--mailmap`): les commits portent maintenant `FloStyleHome <FloStyle@users.noreply.github.com>`.* ***Le pseudonyme est conservé, et l'attribution MPL `Florian ESCHALIER (FloStyle)` reste sur les 186 fichiers source, comme la licence l'exige.***
+### 0.1 Author identity — the pseudonym stays, the address does not
 
-### 0.1 White room
+The commit history carried **1012 commits** under one personal e-mail address. **That address has been
+replaced with `FloStyle@users.noreply.github.com`**, which is GitHub's own pseudonymous domain: the commits
+remain attributable to one author, and the author's mailbox is not in them.
 
-**Ce projet est un white room: la spécification se décrit elle-même et rien d'autre.** *Aucune référence à un plugin antérieur, séparé, précédent ou tiers, et aucune référence à un outil ou agent nommé.*
+**The pseudonym is deliberately kept, and it appears in three places on purpose:**
 
-*Les règles de `Spec/00_START_HERE.md` section 1 sont maintenant **positives** — elles disent quoi faire plutôt que quoi ne pas regarder:* **n'utiliser que la spécification, le source du moteur, la documentation publique et les réponses de `QUESTIONS.md`; décrire chaque capacité par ce qu'elle doit faire, avec ses entrées, ses sorties, ses refus et un test qui le prouve; partir d'un espace vide; choisir chaque nom ici; et poser une question plutôt que deviner.**
+| Where | What it says |
+|---|---|
+| **Every commit's author name** | **`FloStyleHome`** — unchanged by the rewrite. Only the address moved |
+| **The copyright notice on all 186 source files** | **`Copyright (c) 2026 Florian ESCHALIER (FloStyle)`** |
+| **`TurboMCP.uplugin`** | **`"CreatedBy": "Florian Eschalier (FloStyle)"`**, with `CreatedByURL` pointing at the GitHub account |
 
-> ***Une règle qui dit « ne regarde pas X » apprend au lecteur que X existe, ce qu'il est, et que cette spécification a été écrite dans son ombre.***
+The attribution is **required by MPL-2.0** — Section 3.4 forbids removing a file's licence notice — and it
+is also what the owner asked for: **the name is public, the address is not.** The second identity in the
+history, `TurboMCP Agent <turbomcp-agent-history@example.invalid>`, was **already anonymous** and was left exactly as it was; a
+blanket rule that rewrote every address would have replaced an identity that needed no change.
 
-**Et la recherche a été faite avec des limites de mots**, *parce qu'une recherche de sous-chaîne a produit **28 faux positifs**: le nom d'un outil apparaissait à l'intérieur du mot anglais « declined » dans trois fichiers, et un autre à l'intérieur d'une **variable locale** dans `TurboMCPCallCost.cpp`. **Une recherche qui ne distingue pas un outil d'un compteur de boucle est le même défaut qu'une regex qui suppose un format — et les motifs de recherche ne sont pas reproduits ici, parce que les écrire les ferait matcher ce fichier.**
+### 0.2 White room
+
+**This project is a white room: the specification describes itself and nothing else.** There is no
+reference to any earlier, separate, previous or third-party plugin, and none to a named tool or agent.
+
+The rules in `Spec/00_START_HERE.md` section 1 are stated **positively** — they say what to do rather than
+what not to look at: **use only the specification, the engine source, public documentation and the answers
+in `QUESTIONS.md`; describe every capability by what it must do, with its inputs, its outputs, its refusals
+and a test that proves it; start from an empty workspace; choose every name here; and ask a question rather
+than guess.**
+
+> ***A rule that says "do not look at X" tells the reader that X exists, what it is, and that this
+> specification was written in its shadow.***
+
+**And the search for those references was done with word boundaries**, because a substring search produced
+**28 false positives**: one tool's name appears inside the English word *declined* in three files, and
+another inside a **local variable** in `TurboMCPCallCost.cpp`. *A search that cannot tell a tool from a loop
+counter is the same defect as a regex that assumes a format.* **The patterns themselves are not written
+here, because writing them would make this file match its own search** — which happened twice while it was
+being prepared.
 
 ---
 
-## 0.5 Quel document répond à quelle question
+## 0.5 Which document answers which question
 
-**Quatre documents décrivent l'état de ce projet, et ils ne sont pas interchangeables.** *Un lecteur qui
-ouvre le mauvais obtient une réponse différente à ce qui ressemble à la même question.*
+**Four documents describe this project's state and they are not interchangeable.** A reader who opens the
+wrong one gets a different answer to what looks like the same question.
 
-| Vous voulez | Lisez | Ce que c'est |
+| You want | Read | What it is |
 |---|---|---|
-| **L'état maintenant, et comment le vérifier** | **ce fichier** | Les quatre commandes qui l'établissent, ce qui est fini, **ce qui ne l'est pas**, et ce que je ne sais pas |
-| **L'analyse: pourquoi, ce qui manque, ce que je ferais ensuite** | [`REPORT.md`](REPORT.md) | Les invariants qui tiennent les 93 outils, les fixtures fantômes, la dette de vacuité, la projection de dépendance |
-| **L'instantané** | [`STATUS.md`](STATUS.md) | Compteurs et tableau de capacités à la révision où il a été écrit |
-| **La preuve** | [`TestRecord.md`](TestRecord.md) | 181 sections chronologiques; chaque affirmation ci-dessus remonte à l'une d'elles |
+| **The state now, and how to verify it** | **this file** | The four commands that establish it, what is finished, **what is not**, and what I do not know |
+| **The analysis: why, what is missing, what to do next** | [`REPORT.md`](REPORT.md) | The invariants that hold the 93 tools together, the phantom fixtures, the vacuity debt, the dependency projection |
+| **The headline snapshot** | [`STATUS.md`](STATUS.md) | Counts and a capability table at the revision it was written |
+| **The evidence** | [`TestRecord.md`](TestRecord.md) | 246 chronological sections; every claim above traces to one of them |
 
-**`Spec/WORKING_PLAN.md` est la liste de travail qui fait autorité** — la seule des cinq auditée ligne par
-ligne contre l'arbre.
-
-*** CE FICHIER EST EN FRANÇAIS ET LE RESTE DU DÉPÔT EST EN ANGLAIS. *** *C'est une incohérence réelle: un
-contributeur anglophone ne peut pas lire le document qui décrit l'état du projet. La traduction n'est pas
-faite ici parce qu'elle toucherait les quatre documents d'un coup; elle est sur la liste.*
+**`Spec/WORKING_PLAN.md` is the authoritative work list** — the only one of the five that has been audited
+row by row against the tree.
 
 ---
 
-## 1. L'état, en quatre commandes
+## 1. The state, in four commands
 
 ```powershell
-git rev-parse --short HEAD; git rev-parse --short origin/main # identiques
-git status --porcelain # propre hors TestProject/Content
-python Tools\audit-tool-coverage.py # 93 AICallable, uncalled: (none)
-python Tools\audit-suite-quality.py # 0 candidat — ET IL BLOQUE
-pwsh -NoProfile -File Tools\run-suites.ps1 # passed 58, failed 0, blocked 0, of 58
+git rev-parse --short HEAD                                     # the revision this file describes
+git status --porcelain                                         # clean apart from generated fixtures
+python Tools\audit-tool-coverage.py                            # 93 AICallable, uncalled: (none)
+python Tools\audit-suite-quality.py                            # 0 candidates — AND IT BLOCKS
+pwsh -NoProfile -File Tools\run-suites.ps1                     # passed 58, failed 0, blocked 0, of 58
 ```
 
 | | |
 |---|---|
-| **Outils** | **93** `AICallable`, 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
+| **Tools** | **93** `AICallable`, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
 | **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0*** |
-| **Audit des outils** | `uncalled: (none)` — chaque outil déclaré est nommé par une suite |
-| **Audit des suites** | **BLOQUANT**, 0 candidat — il fait échouer le run si un check ne peut pas échouer **ou ne peut pas passer** |
-| **Plan** | **31 `todo` · 15 `done`** sur 48 — *compté **par champ**, jamais par une regex sur la ligne* |
-| **C++** | 61 620 lignes / 186 fichiers · **Spec** 7 740 l. / 17 · **`TestRecord.md`** 10 635 l. |
+| **Coverage audit** | `uncalled: (none)` — every declared tool is reached by at least one suite |
+| **Suite-quality audit** | **BLOCKS the run** when a check cannot fail **or cannot pass** — currently 0 candidates |
+| **Plan** | **31 `todo` · 15 `done`** of 48 — *counted **by field**, never by a regex over the line* |
+| **Size** | C++ **61 620 lines** in **186** files · Spec **7 740 lines** in **17** · `TestRecord.md` **10 810 lines** |
 
 ---
 
-## 2. Ce qui est solide, et **comment** le savoir
+## 2. What is solid, and **how** it is known
 
 | | |
 |---|---|
-| ***Le full run est vert et exit 0*** | *pas « Result: Succeeded » — **58 suites, 0 échec**, et c'était impossible avant les deux correctifs de §4* |
-| ***L'audit des suites bloque*** | *prouvé dans les deux sens: 0 candidat → PASS exit 0; 1 candidat → FAIL exit 1* |
-| ***L'éditeur étranger est détecté*** | *prouvé sur trois cas (rien / projet étranger / bon projet), `exit 3`* |
-| ***Le break test mord*** | *cinq fois exécuté, cinq fois le check est devenu rouge **avec la valeur fausse visible**, et **quatre fois** il a trouvé un défaut supplémentaire* |
-| ***Les fixtures sont reproductibles*** | *`TA-17` a été **supprimé et reconstruit**, et le script dit `PASS`* |
+| ***The full run is green, exit 0*** | *not "Result: Succeeded" — **58 suites, 0 failures**, and it was impossible before the two fixes in section 4* |
+| ***The suite-quality audit blocks*** | *proven in both directions: 0 candidates → PASS, exit 0; 1 candidate → FAIL, exit 1* |
+| ***A foreign editor is detected*** | *proven on three cases — nothing running, another project's editor, the right one — `exit 3`* |
+| ***The break test bites*** | *run five times; five times the check went red **with the false value visible**, and **four times** it found an additional defect* |
+| ***The fixtures are reproducible*** | *`TA-17` was **deleted and rebuilt**, and the script reports `PASS`* |
 
 ---
 
-## 3. Les 31 rows restantes — **et les trois qui sont impossibles ici**
+## 3. The 31 remaining rows — and the three that cannot be done here
 
-### ⛔ Impossible sur cette machine
+### Impossible on this machine
 
-| Row | Ce qui manque |
+| Row | What is missing |
 |---|---|
-| **10.x** *(writers source-control restants)* | ***UN SERVEUR QUI RÉPOND*** — `p4` pointe sur `ssl:<p4-host>:1666` qui ne répond pas, `cm` et `svn` sont absents du PATH, et la réponse de Git est un **refus**. Mesuré deux fois par deux workstreams. |
-| **1.5 / `TA-18`** | *un os de `USkeleton` — `Skeleton.h:365-369` retourne le skeleton de référence **`const` à dessein**, `ReferenceSkeleton` est `protected` (`:301/:317`), les fonctions d'ajout d'os prennent un `USkinnedAsset` (`:797/:809/:820`) et **il n'y a aucun skeletal mesh ici**. La dernière route est `FEditableSkeleton`, un header **privé**. **Les dépendances `AnimGraph`/`Niagara`/`NiagaraEditor` sont maintenant dans `Build.cs` , donc le blocker de module est RETIRÉ pour `TA-18` et `TA-19` — ce qui reste est de l'authoring, pas une permission.*** |
+| **10.x** *(the remaining source-control writers)* | ***A SERVER THAT ANSWERS.*** `p4` points at `ssl:<p4-host>:1666`, which does not respond; `cm` and `svn` are not on `PATH`; and Git's answer is a **refusal**. Measured twice by two separate workstreams. |
+| **1.5 / `TA-18`** | *a `USkeleton` bone.* `Skeleton.h:365-369` returns the reference skeleton as **`const` on purpose**, `ReferenceSkeleton` is `protected` (`:301/:317`), the bone-adding functions take a `USkinnedAsset` (`:797/:809/:820`) and **there is no skeletal mesh here**; the last route is `FEditableSkeleton`, a **private** header. **The `AnimGraph`, `Niagara` and `NiagaraEditor` dependencies are now in `Build.cs`, so the module blocker is REMOVED for `TA-18` and `TA-19` — what remains is authoring, not a permission.** |
 
-### 🟡 Volume plutôt qu'intuition — *des précédents à suivre*
+### Volume rather than insight — precedents to follow
 
 | Phase | Rows |
 |---|---|
 | **2** Capture | *2.3 `L-CAPTURE-LEVEL`, 2.4 `P-IMAGE-COMPARE`* |
-| **3** Matériaux | *3.2 reader `full`, 3.3 `MAT-CHECK`+`MAT-APPEND`, 3.4 `MAT-REPLACE`+`MAT-PATCH`, 3.6 `MAT-ARGS`* |
-| **5** Widgets | *5.2 `P/E-WIDGET-TREE` (**le writer n'a AUCUNE déclaration**; seul le lecteur existe à `:661`), 5.3 `WIDGET-SET`, 5.4 `WIDGET-ANIM`, 5.5 `WIDGET-BIND`* |
-| **6** Graphes | *6.1 `GRAPH-RENAME`, 6.2 `GRAPH-COLLAPSE`, 6.3 `GRAPH-COPY`, 6.4 `INTERFACE`, 6.6 familles de nœuds* |
-| **7** | *7.3 `CURVE-LOAD`/`CURVE-SET` (**`TA-17` est construit**, la fixture est prête), 7.6 opérations d'asset* |
-| **8** Niveau & acteurs | *8.1 `LEVEL-LOAD`, 8.2 `ACTOR-LOAD`, 8.3 `ACTOR-PLACE`, 8.4 `ACTOR-SET`, 8.5 `COMPONENTS`* |
-| **9** Session | *9.2 `E-SESSION`/`R-EDIT-SESSION`, 9.3 `P/E-ASSET-BATCH` — **aucune déclaration*** |
-| **0/1/11** | *0.1 propriétaire du cycle de vie éditeur, 0.3 re-vérifier les notes moteur, 1.1 breakpoint, 1.2 automation, 11.1 `09_BUILD.md`* |
+| **3** Materials | *3.2 the `full` reader, 3.3 `MAT-CHECK` + `MAT-APPEND`, 3.4 `MAT-REPLACE` + `MAT-PATCH`, 3.6 `MAT-ARGS`* |
+| **5** Widgets | *5.2 `P/E-WIDGET-TREE` (**the writer has NO declaration**; only the reader exists, at `:661`), 5.3 `WIDGET-SET`, 5.4 `WIDGET-ANIM`, 5.5 `WIDGET-BIND`* |
+| **6** Graphs | *6.1 `GRAPH-RENAME`, 6.2 `GRAPH-COLLAPSE`, 6.3 `GRAPH-COPY`, 6.4 `INTERFACE`, 6.6 the node families* |
+| **7** | *7.3 `CURVE-LOAD` / `CURVE-SET` (**`TA-17` is built**, the fixture is ready), 7.6 the asset operations* |
+| **8** Levels and actors | *8.1 `LEVEL-LOAD`, 8.2 `ACTOR-LOAD`, 8.3 `ACTOR-PLACE`, 8.4 `ACTOR-SET`, 8.5 `COMPONENTS`* |
+| **9** Session | *9.2 `E-SESSION` / `R-EDIT-SESSION`, 9.3 `P/E-ASSET-BATCH` — **no declaration exists*** |
+| **0 / 1 / 11** | *0.1 a single owner of the editor lifecycle, 0.3 re-verify the engine notes, 1.1 breakpoints, 1.2 automation, 11.1 `09_BUILD.md`* |
 
-### 🔴 **Et l'ordre dans lequel je les ferais**
+### The order I would do them in
 
-1. **9.2 / 9.3** — *`e-session` et `asset-batch` sont des **multiplicateurs**: une transaction pour N écritures. Ils rendent les 30 writers non câblés **sûrs** plutôt que seulement nombreux.*
-2. **7.3** — *`TA-17` est **déjà construit** et sa suite passe (40 checks). La row est débloquée et la fixture attend.*
-3. **5.3 / 5.4 / 5.5** — *trois writers de widgets qui réutilisent des chemins existants.*
-4. **8.x** — *le niveau et les acteurs, cinq rows, un domaine entier du plan qui n'a **jamais été commencé**.*
-5. **6.x** — *les graphes: le plus gros bloc, et celui dont les prémisses n'ont pas été testées.*
+1. **9.2 / 9.3** — *`e-session` and `asset-batch` are **multipliers**: one transaction for N writes. They make the thirty unwired writers **safe** rather than merely numerous.*
+2. **7.3** — *`TA-17` is already built and its suite passes (40 checks). The row is unblocked and the fixture is waiting.*
+3. **5.3 / 5.4 / 5.5** — *three widget writers that reuse existing code paths.*
+4. **8.x** — *levels and actors: five rows, an entire domain of the plan that has **never been started**.*
+5. **6.x** — *the graphs: the largest block, and the one whose premises have not been tested.*
 
 ---
 
-## 4. Les deux défauts qui rendaient le vert **impossible**, et leur cause racine
+## 4. The two defects that made green **impossible**, and their root cause
 
 | | |
 |---|---|
-| ***Conflit de full run*** | *`test-vcs` exigeait `TA01_HandLaid.uasset` **propre** tandis que `test-graph-fix-backward`, qui tourne **avant**, reconstruit le kit. Corrigé dans le **harnais**  — **une suite a besoin de l'éditeur vivant pour ses checks et ne peut donc pas restaurer le fichier elle-même: `git checkout` répond `unable to unlink old...: Invalid argument` tant qu'il est tenu ouvert.*** |
-| ***Compte codé en dur*** | *`test-material-tidy` assertait `expressions_after == 16` alors que la fixture valait **12**, donc **la suite passait ou échouait selon la fixture qu'elle regardait** — et rapportait un défaut dans l'outil qui était une propriété de la fixture. Corrigé en comparant `before` à `after`.* |
+| ***The full-run conflict*** | *`test-vcs` required `TA01_HandLaid.uasset` to be **clean**, while `test-graph-fix-backward`, which runs **before** it, rebuilds the kit. Fixed in the **harness**, because **a suite needs the editor alive for its checks and therefore cannot restore the file itself**: `git checkout` answers `unable to unlink old ...: Invalid argument` for as long as the editor holds it open.* |
+| ***A count pinned on a shared asset*** | *`test-material-tidy` asserted `expressions_after == 16` while the fixture held **12**, so **the suite passed or failed according to which fixture it was looking at** — and reported as a defect in the tool what was a property of the fixture. Fixed by comparing `before` against `after` instead of against a literal.* |
 
 ---
 
-## 5. Ce que je **ne sais pas**, et que je ne présente pas comme su
+## 5. What I do **not** know, and do not present as known
 
 | | |
 |---|---|
-| ***Aucun checkout contre un dépôt vivant*** | *toute réponse rapportée est la réponse à un **refus** ou à un **no-op*** |
-| ***La branche `UsesCheckout == true` n'a jamais tourné*** | *Perforce est `IsAvailable == false`, donc le mécanisme refuse avant* |
-| ***Aucun run `-nullrhi`*** | *le refus de `screen` est prouvé par construction depuis deux gardes, pas exécuté* |
-| ***Le chemin positif de `selection`*** | *prouvé par une sonde interne auto-nettoyante, parce que `P3` interdit à un Look de créer une sélection* |
-| ***`TA-19`*** | *le module `Niagara` est lié mais **rien n'a été construit**: l'emitter reste à authorer* |
+| ***No checkout against a live depot*** | *every answer reported is the answer to a **refusal** or to a **no-op*** |
+| ***The `UsesCheckout == true` branch has never run*** | *Perforce is `IsAvailable == false`, so the mechanism refuses before reaching it* |
+| ***No `-nullrhi` run*** | *the `screen` refusal is proven by construction from two engine guards, not executed* |
+| ***The positive path of `selection`*** | *proven by a self-cleaning internal probe, because `P3` forbids a Look from creating a selection* |
+| ***`TA-19`*** | *the `Niagara` module is linked, but **nothing was built**: the emitter still has to be authored* |
 
 ---
 
-## 6. La leçon qui a coûté le plus cher, énoncée **une fois**
+## 6. The lesson that cost the most, stated **once**
 
-> ***DIX FOIS DANS CETTE SÉQUENCE, QUELQUE CHOSE A ÉCHOUÉ EN SILENCE ET A ÉTÉ LU COMME UN SUCCÈS.***
+> ***ELEVEN TIMES IN THIS WORK, SOMETHING FAILED IN SILENCE AND WAS READ AS A SUCCESS.***
 >
-> *Le `git checkout` dont l'erreur a été **capturée et jamais lue** (7ᵉ) · la regex qui supposait le mauvais format (8ᵉ, **dans la suite qui existe pour faire respecter la règle**) · le compte codé en dur (9ᵉ) · le **texte de refus qui décrivait un `Build.cs` sans les dépendances qu'on venait d'y ajouter** (10ᵉ).*
+> *A `git checkout` whose error was **captured and never read** · a regex that assumed the wrong format —
+> **inside the suite that exists to enforce the rule** · a count pinned on a shared asset · **a refusal
+> message that described a `Build.cs` without the dependencies that had just been added to it** · and a
+> `git add` whose output went to `Out-Null`, so a commit that recorded **none** of its intended changes
+> reported success.*
 >
-> ## **C'EST LA MÊME PHRASE QUE « UN REFUS INVISIBLE SE LIT COMME UNE CAPACITÉ » — LE DÉFAUT LE PLUS RÉCURRENT DE CE PROJET, Y COMPRIS DANS LES OUTILS QUI EXISTENT POUR L'ATTRAPER.**
+> ## **IT IS THE SAME SENTENCE AS "AN INVISIBLE REFUSAL READS AS A CAPABILITY" — this project's most recurrent defect, and it has been found inside the tools that exist to catch it.**
