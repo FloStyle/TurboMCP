@@ -111,13 +111,25 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	// The cap bounds the ANSWER, not the analysis: every entry is counted and only the listed rows are
 	// truncated, so a total is never wrong because a list was short. Default 10 and capped at 50,
 	// because a cost report is a summary and a hundred rows of it is not a summary.
-	int32 Wanted = 10;
+	constexpr int32 DefaultShowRows = 10;
+	int32 Wanted = DefaultShowRows;
 	if (!Cap.TrimStartAndEnd().IsEmpty())
 	{
+		// *** THE SPLIT THAT MATTERS: A TYPO IS REFUSED, A NUMBER IS CLAMPED. *** The clamp at 50 below is
+		// deliberate and stays - a caller asking for a hundred rows is asking for as much as this tool will
+		// give. `banana` is not a request, and quietly answering with the default would hide the mistake.
+		if (!Cap.TrimStartAndEnd().IsNumeric())
+		{
+			return FString::Printf(
+				TEXT("error: '%s' is not a cap. Pass a whole number of rows, or leave it empty for the default ")
+				TEXT("of %d."), *Cap, DefaultShowRows);
+		}
 		Wanted = FCString::Atoi(*Cap.TrimStartAndEnd());
 		if (Wanted <= 0)
 		{
-			Wanted = 10;
+			return FString::Printf(
+				TEXT("error: a cap of %d is not usable. Pass a positive number of rows, or leave it empty for ")
+				TEXT("the default of %d."), Wanted, DefaultShowRows);
 		}
 	}
 	const int32 ShowRows = FMath::Min(Wanted, 50);

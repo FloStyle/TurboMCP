@@ -63,11 +63,30 @@ FString UTurboMCPReadToolset::ReadTurboMCPBPLint(
 	}
 
 	// `tokenBudget` of 0 means "no budget", which is how the other readers in this toolset spell it.
+	// *** SO ZERO IS A VALUE HERE AND NOT A MISTAKE, WHICH IS WHY THIS SITE REFUSES ONLY WHAT IS NOT A NUMBER
+	// AND WHAT IS NEGATIVE. *** Turning `banana` into "no budget" answers a question the caller did not ask;
+	// the refusal names the parameter, states the alternative, and uses the shape of
+	// `TurboMCPBlueprintLoad.cpp:100-114`, which does this for the same parameter name.
+	//
+	// `IsNumeric()` is the gate that catches a WORD; the sign test below is the gate that catches a SIGN.
+	// WHICH OF THE TWO REFUSES `-5` DEPENDS ON `IsNumeric`'S OWN RULES RATHER THAN ON THIS FILE'S, so both are
+	// present and either refusal is correct.
 	int32 Budget = 0;
 	if (!TokenBudget.TrimStartAndEnd().IsEmpty())
 	{
+		if (!TokenBudget.TrimStartAndEnd().IsNumeric())
+		{
+			return FString::Printf(
+				TEXT("error: '%s' is not a token budget. Pass a whole number of characters, or 0 for NO ")
+				TEXT("BUDGET."), *TokenBudget);
+		}
 		Budget = FCString::Atoi(*TokenBudget);
-		if (Budget < 0) { Budget = 0; }
+		if (Budget < 0)
+		{
+			return FString::Printf(
+				TEXT("error: a token budget of %d is not usable. Pass a whole number of characters, or 0 for ")
+				TEXT("NO BUDGET."), Budget);
+		}
 	}
 
 	// SEVERAL ASSETS, EACH LINTED SEPARATELY, because a finding is about one asset and merging them would

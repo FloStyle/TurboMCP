@@ -396,10 +396,23 @@ FString UTurboMCPReadToolset::ReadTurboMCPDirtyList(const FString& Limit)
 	int32 WantedLimit = DefaultLimit;
 	if (!Limit.TrimStartAndEnd().IsEmpty())
 	{
-		const int32 Parsed = FCString::Atoi(*Limit);
-		if (Parsed > 0)
+		// *** A LIMIT THAT IS NOT A NUMBER IS REFUSED RATHER THAN REPLACED BY THE DEFAULT. *** The default is
+		// for a caller who LEFT IT EMPTY; a caller who typed `banana` or `0` made a mistake, and answering 50
+		// hides it. The shape is `TurboMCPBlueprintLoad.cpp:100-114`, which does exactly this for the same kind
+		// of parameter - and which refuses the two failures with DIFFERENT sentences, so a caller learns which
+		// mistake they made.
+		if (!Limit.TrimStartAndEnd().IsNumeric())
 		{
-			WantedLimit = Parsed;
+			return FString::Printf(
+				TEXT("error: '%s' is not a limit. Pass a whole number of assets, or leave it empty for the ")
+				TEXT("default of %d."), *Limit, DefaultLimit);
+		}
+		WantedLimit = FCString::Atoi(*Limit);
+		if (WantedLimit <= 0)
+		{
+			return FString::Printf(
+				TEXT("error: a limit of %d is not usable. Pass a positive number of assets, or leave it empty ")
+				TEXT("for the default of %d."), WantedLimit, DefaultLimit);
 		}
 	}
 

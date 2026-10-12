@@ -28,15 +28,26 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
 	const TArray<FTurboMCPCallLog::FEntry> All = Log.GetEntries();
 
-	// The limit is capped rather than refused, because `P6` wants a bounded answer and a caller
-	// asking for a million lines wants "as many as you will give me" rather than an error.
-	int32 Max = 50;
+	// *** A LARGE NUMBER IS CLAMPED, A NON-NUMBER IS REFUSED, AND THOSE ARE NOT THE SAME REQUEST. *** `P6`
+	// wants a bounded answer, so "a million lines" is a caller asking for as much as this tool will give, and
+	// it is clamped at 500 below. `banana` is not a request: turning it into the default would answer a
+	// question nobody asked, so it is refused by name - the shape `TurboMCPBlueprintLoad.cpp:100-114` uses.
+	constexpr int32 DefaultLimit = 50;
+	int32 Max = DefaultLimit;
 	if (!Limit.TrimStartAndEnd().IsEmpty())
 	{
+		if (!Limit.TrimStartAndEnd().IsNumeric())
+		{
+			return FString::Printf(
+				TEXT("error: '%s' is not a limit. Pass a whole number of entries, or leave it empty for the ")
+				TEXT("default of %d."), *Limit, DefaultLimit);
+		}
 		Max = FCString::Atoi(*Limit);
 		if (Max <= 0)
 		{
-			Max = 50;
+			return FString::Printf(
+				TEXT("error: a limit of %d is not usable. Pass a positive number of entries, or leave it empty ")
+				TEXT("for the default of %d."), Max, DefaultLimit);
 		}
 	}
 	const int32 Cap = FMath::Min(Max, 500);
