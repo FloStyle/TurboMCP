@@ -7,6 +7,7 @@
 
 #include "TurboMCPGraphAppend.h"
 
+#include "TurboMCPRollback.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPGraphCheck.h"
 #include "TurboMCPNodeId.h"
@@ -559,7 +560,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		{
 			// THE PLAN SAID THIS WOULD WORK AND IT DID NOT. Rolling back and saying so is the spec's rule:
 			// a failed compare, or a failed creation, is a FAILURE rather than a success with a note.
-			Transaction.Cancel();
+			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted '%s' but the graph refused it at apply time: %s. ")
 				TEXT("NOTHING was written."),
@@ -593,7 +594,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 			if (Target == nullptr)
 			{
-				Transaction.Cancel();
+				FTurboMCPRollback::EndAndUndoActiveTransaction();
 				OutError = FString::Printf(
 					TEXT("line %d: '%s' has no pin named '%s' at apply time. NOTHING was written."),
 					Pin.Line, *Form.TypeId, *Pin.Name);
@@ -646,7 +647,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 		if (FromNode == nullptr || ToNode == nullptr)
 		{
-			Transaction.Cancel();
+			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted a link from '%s' to '%s', but one end was not in the graph ")
 				TEXT("at apply time. NOTHING was written."),
@@ -677,7 +678,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 		if (FromPin == nullptr || ToPin == nullptr)
 		{
-			Transaction.Cancel();
+			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted a link '%s' -> '%s', but a pin was missing at apply time ")
 				TEXT("(%s). NOTHING was written."),
@@ -691,7 +692,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		// the plan checked that the pins EXIST, and existence is not the same as compatibility.
 		if (!Graph->GetSchema()->TryCreateConnection(FromPin, ToPin))
 		{
-			Transaction.Cancel();
+			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(
 				TEXT("line %d: the engine refused the link '%s' -> '%s'. The pins exist but the schema will ")
 				TEXT("not join them, so NOTHING was written."),

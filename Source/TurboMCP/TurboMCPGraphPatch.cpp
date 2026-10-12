@@ -7,6 +7,7 @@
 
 #include "TurboMCPGraphPatch.h"
 
+#include "TurboMCPRollback.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
 
@@ -366,7 +367,7 @@ bool FTurboMCPGraphPatch::Apply(const FPlan& InPlan, FString& OutReport, FString
 			{
 				// THE PLAN CHECKED THIS AND IT HELD THEN. Reaching here means the graph moved underneath, so it
 				// ROLLS BACK rather than writing a partial patch.
-				Transaction.Cancel();
+				FTurboMCPRollback::EndAndUndoActiveTransaction();
 				OutError = FString::Printf(
 					TEXT("line %d: the plan accepted pin '%s' on '%s', but the pin was gone at apply time. ")
 					TEXT("NOTHING was written."),
@@ -413,7 +414,7 @@ bool FTurboMCPGraphPatch::Apply(const FPlan& InPlan, FString& OutReport, FString
 	// silently dropped, so it goes through the code path that already rolls back and checks.
 	if (Missing.Num() > 0)
 	{
-		Transaction.Cancel();
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		OutError = FString::Printf(
 			TEXT("the plan named %d node(s) that are no longer in the graph (%s). NOTHING was written."),
 			Missing.Num(), *FString::Join(Missing, TEXT(", ")));

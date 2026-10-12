@@ -7,6 +7,7 @@
 
 #include "TurboMCPGraphStructure.h"
 
+#include "TurboMCPRollback.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
 #include "EdGraph/EdGraph.h"
@@ -790,7 +791,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		UK2Node* Template = Cast<UK2Node>(Source);
 		if (Template == nullptr)
 		{
-			Transaction.Cancel();
+			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(
 				TEXT("'%s' (%s) is not a K2 node, so this tool cannot copy it. NOTHING was written."),
 				*KeyOf(Source), *Source->GetClass()->GetName());
@@ -805,7 +806,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		{
 			// THE PLAN SAID THIS WOULD WORK AND IT DID NOT. Rolling back and saying so is the spec's rule:
 			// a failed creation is a FAILURE rather than a success with a note.
-			Transaction.Cancel();
+			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(
 				TEXT("the plan accepted '%s' but the graph refused to copy it at apply time. NOTHING was written."),
 				*Source->GetClass()->GetName());

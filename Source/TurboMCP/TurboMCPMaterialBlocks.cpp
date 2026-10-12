@@ -7,6 +7,7 @@
 
 #include "TurboMCPMaterialBlocks.h"
 
+#include "TurboMCPRollback.h"
 #include "Logging.h"
 #include "Public/TurboMCPMaterial.h"
 
@@ -779,10 +780,9 @@ namespace
 	 */
 	struct FRollbackMeasurement
 	{
-		FRollbackMeasurement(FScopedTransaction& InTransaction,
-			const FTurboMCPMaterialBlocks::FPlan& InPlan, FString* InOutNote, bool bInMaterialRegistered,
-			const bool& bInRolledBack)
-			: Transaction(InTransaction), Plan(InPlan), OutNote(InOutNote),
+		FRollbackMeasurement(const FTurboMCPMaterialBlocks::FPlan& InPlan, FString* InOutNote,
+			bool bInMaterialRegistered, const bool& bInRolledBack)
+			: Plan(InPlan), OutNote(InOutNote),
 			  bMaterialRegistered(bInMaterialRegistered), bRolledBack(bInRolledBack)
 		{
 		}
@@ -801,8 +801,9 @@ namespace
 			// PREVIOUS TRANSACTION - SOMEBODY ELSE'S WORK - AND `Cancel()` CANNOT HELP, because it POPS the
 			// record rather than applying it. `bCanRedo == false` then REMOVES the record, so a failed edit
 			// cannot be redone either.
-			GEditor->EndTransaction();
-			GEditor->UndoTransaction(/*bCanRedo=*/false);
+			// *** THE ORDERING ARGUMENT LIVES IN `TurboMCPRollback.h`, BECAUSE FIVE OTHER WRITERS NEED THE SAME
+			// TWO CALLS AND A SECOND COPY OF THEM WOULD AGREE WITH THIS ONE UNTIL ONE OF THEM CHANGED. ***
+			FTurboMCPRollback::EndAndUndoActiveTransaction();
 
 			FTurboMCPMaterial::FPlan Reread;
 			FString RereadError;
@@ -905,7 +906,6 @@ namespace
 				bMaterialRegistered ? TEXT("") : TEXT("NEVER IN "));
 		}
 
-		FScopedTransaction& Transaction;
 		const FTurboMCPMaterialBlocks::FPlan& Plan;
 		FString* OutNote;
 		bool bMaterialRegistered;
@@ -964,7 +964,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	// `Cancel()` SITES AND IS DESTROYED BEFORE THE TRANSACTION ITSELF. *** See its definition above: it does
 	// nothing on a successful pass, and on a cancelled one it re-reads the material and compares the
 	// expression set with the one the plan read.
-	FRollbackMeasurement Rollback(Transaction, InPlan, &OutRollbackNote, bMaterialRegistered, bOutRolledBack);
+	FRollbackMeasurement Rollback(InPlan, &OutRollbackNote, bMaterialRegistered, bOutRolledBack);
 
 	// THE MATERIAL IS RE-READ BEFORE ANYTHING IS TOUCHED, which is what makes this an edit of the CURRENT
 	// graph rather than of the one the plan was built from.

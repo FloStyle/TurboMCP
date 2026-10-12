@@ -7,6 +7,7 @@
 
 #include "TurboMCPMaterialTidy.h"
 
+#include "TurboMCPRollback.h"
 #include "Logging.h"
 #include "Public/TurboMCPMaterial.h"
 #include "TurboMCPAssetResolver.h"
@@ -609,7 +610,7 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 
 	if (NewErrors.Num() > 0)
 	{
-		Transaction.Cancel();
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: the layout introduced %d compile error(s) that were not there before, so it was ")
 			TEXT("ROLLED BACK. A layout cannot legitimately change what a material computes. First: %s"),
@@ -618,7 +619,7 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 
 	if (!bReadBack)
 	{
-		Transaction.Cancel();
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: the material could not be read back after the layout (%s), so the compiled result ")
 			TEXT("could NOT be verified and the layout was ROLLED BACK."), *ReadError);
@@ -626,7 +627,7 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 
 	if (!bSameSet)
 	{
-		Transaction.Cancel();
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: the layout changed the SET OF EXPRESSIONS, so it was ROLLED BACK. ")
 			TEXT("%d lost (%s), %d gained (%s). A layout moves geometry; it does not add or remove ")

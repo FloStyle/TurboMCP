@@ -7,6 +7,7 @@
 
 #include "TurboMCPMaterialLabelsPromote.h"
 
+#include "TurboMCPRollback.h"
 #include "Logging.h"
 #include "Public/TurboMCPMaterial.h"
 
@@ -458,7 +459,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 			Declaration = Cast<UMaterialExpressionNamedRerouteDeclaration>(Created);
 			if (Declaration == nullptr)
 			{
-				Transaction.Cancel();
+				FTurboMCPRollback::EndAndUndoActiveTransaction();
 				return FString::Printf(
 					TEXT("FAILED: the declaration for @%s could not be created, so the whole edit was ")
 					TEXT("ROLLED BACK rather than applied in part."), *Promotion.ProposedName);
@@ -534,7 +535,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 				Usage = Cast<UMaterialExpressionNamedRerouteUsage>(CreatedUsage);
 				if (Usage == nullptr)
 				{
-					Transaction.Cancel();
+					FTurboMCPRollback::EndAndUndoActiveTransaction();
 					return FString::Printf(
 						TEXT("FAILED: the usage node for @%s could not be created, so the whole edit was ")
 						TEXT("ROLLED BACK rather than applied in part."), *Promotion.ProposedName);
@@ -607,7 +608,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 
 	if (!bReadBack)
 	{
-		Transaction.Cancel();
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: the material could not be read back after the edit (%s), so the compiled result ")
 			TEXT("could NOT be verified and the edit was ROLLED BACK."), *ReadError);
@@ -650,7 +651,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 
 	if (NewErrors.Num() > 0)
 	{
-		Transaction.Cancel();
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: promoting labels introduced %d compile error(s) that were not there before, so ")
 			TEXT("the edit was ROLLED BACK. A declaration forwards to its input, so it cannot legitimately ")
@@ -659,7 +660,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 
 	if (Lost.Num() > 0)
 	{
-		Transaction.Cancel();
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: the edit LOST %d expression(s), so it was ROLLED BACK. This pass adds a ")
 			TEXT("declaration and re-points inputs at it; it never removes anything. First lost: %s"),
@@ -668,7 +669,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 
 	if (GainedUnexpected.Num() > 0)
 	{
-		Transaction.Cancel();
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: the edit GAINED %d expression(s) it did not plan, so it was ROLLED BACK. The ")
 			TEXT("only expressions this pass may add are the declarations it lists. First unexpected: %s"),
