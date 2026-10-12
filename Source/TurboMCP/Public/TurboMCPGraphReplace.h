@@ -67,6 +67,24 @@ public:
 		/** The entry/result nodes that are KEPT because the text writes into them. */
 		TArray<FString> ReusedKeys;
 
+		/**
+		 * THE NODES THE TEXT DESCRIBES, which is neither a reuse nor a removal, COUNTED.
+		 *
+		 * Recorded rather than derived, because `NodeCountBefore - Removals.Num()` is NOT this number: that
+		 * quantity also holds the re-used entry and result nodes and the comments. The report prints the four
+		 * buckets separately, so each one has to be counted rather than inferred from the total.
+		 */
+		int32 DescribedKeysKept = 0;
+
+		/**
+		 * THE COMMENTS KEPT, COUNTED RATHER THAN ONLY SKIPPED.
+		 *
+		 * A comment is documentation rather than body, so it is never a removal candidate - but it is still a
+		 * node the text does not describe, so a report that folds it into "described by the text" is wrong by
+		 * exactly this number.
+		 */
+		int32 CommentKeysKept = 0;
+
 		/** How many nodes the graph had before, so the report can state the change. */
 		int32 NodeCountBefore = 0;
 
