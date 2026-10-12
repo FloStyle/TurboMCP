@@ -352,3 +352,32 @@ but the four tests it was given all came back the same way.*
 DESCRIBES IN THE PROJECT'S OWN TERMS: a check that passes while the thing it verifies is broken, whose purest form
 is an empty result with no denominator. That is the same failure the user's acceptance-row card is about, stated
 independently in a test file by someone who was not looking for it.***
+
+---
+
+## 12. ONE INVARIANT ACROSS THREE LAYERS
+
+**The read-back discipline is not a convention of one directory. It appears in the source, in the tests, and in the
+interfaces, independently, and each instance states the same rule.**
+
+| Layer | Site | What it says |
+|---|---|---|
+| **Source, writing** | `DataTableRows.cpp:574-583` | *"THE READ BACK, THROUGH THE TABLE RATHER THAN THROUGH THIS FUNCTION'S OWN VARIABLES, SO THE REPORT IS A MEASUREMENT OF THE RESULT RATHER THAN A RESTATEMENT OF THE REQUEST"*, with `MISSING AFTER WRITE` |
+| **Source, writing** | `WidgetRetarget.cpp:355-384` | *"the bindings are RE-COUNTED FROM THE BLUEPRINT"*, and when they are still there: *"the removal did not take. REPORT THIS RATHER THAN TRUSTING THE COUNT ABOVE."* |
+| **Source, rolling back** | `GraphKnots.cpp:1400-1405` | re-measures after a rollback and reports *"THE ROLLBACK DID NOT RESTORE THE GRAPH"* |
+| **Source, refusing** | `BlueprintLoad.cpp:100-115` | tests `IsNumeric()` **before** converting, and states the default it would have used |
+| **Test** | `test-struct.py:253-257` | *"4 fields were asked for"* → *"4 fields read back"* → *"exactly the 4 requested names"* |
+| **Test** | `test-struct.py:268-272` | ***a SECOND OBSERVER: "the engine's own asset registry agrees about what it is"*** |
+| **Test** | `test-graph-check.py:12-14` | hash, size and mtime before and after **plus** a read through a different tool, because *"A TOOL REPORTING ITS OWN INNOCENCE IS NOT EVIDENCE"* |
+
+*** AND THE COUNTER-EXAMPLES ARE ALL IN ONE PLACE: the three material writers, which cancel a transaction and never
+ask whether it took (`MaterialBlocks` 19 sites, `MaterialLabelsPromote` 6, `MaterialTidy` 3), and the four sites
+that map a bad numeric parameter to a default instead of refusing it.***
+
+**So the project does not lack the discipline. It has the discipline in seven places that a reader can copy, and
+lacks it in three files and four parameter parses. The repair is to move a pattern that already exists, not to
+invent one - and `AsError` in `TurboMCPMaterialTools.cpp:31-38` is the same kind of artifact.**
+
+*** AND THE ONE THING THE COUNTER-EXAMPLES HAVE IN COMMON IS WORTH STATING: THEY ARE ALL PATHS THAT FIRE WHEN
+SOMETHING ELSE FAILS FIRST - a creation returning `nullptr`, a parameter a caller typed wrong. The happy paths are
+verified everywhere; the unhappy paths are verified in seven places and assumed in seven.***
