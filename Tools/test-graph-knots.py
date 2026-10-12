@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LAY-10
 """Drive `P-GRAPH-KNOTS` and `E-GRAPH-KNOTS` against the acceptance asset.
 
 WHY THIS SUITE EXISTS
