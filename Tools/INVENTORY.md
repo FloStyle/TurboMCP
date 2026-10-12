@@ -2,7 +2,7 @@
 
 *** GENERATED FROM THE DIRECTORY BY `Tools/make-tools-inventory.py`, SO NO TOOL CAN BE UNDOCUMENTED. *** The description on each line is the **first line of the script's own header** - what its author wrote, not a summary invented here. [`README.md`](README.md) keeps the prose: why each one exists and the order they are used in.
 
-## Nothing, static (16)
+## Nothing, static (17)
 
 | Tool | What its own header says |
 |---|---|
@@ -17,6 +17,7 @@
 | `check-refs.py` | Check every cross-reference in the documentation against the file it points at. |
 | `check-suite-shapes.py` | Check the quality audit's own detection against the suites, independently. |
 | `count-plan.py` | Count the plan's rows by their LAST FIELD, the way the plan itself says to count them. |
+| `measure-overlap.py` | Measure what two documents actually share, so a claim about overlap is a reading rather than an estimate. |
 | `common.ps1` | Finds the repository root, the test project and the engine install, WITHOUT A PATH OF ANYONE'S MACHINE. |
 | `license-header.txt` | The MPL-2.0 notice itself, as text. `apply-license-header.ps1` reads it, so the notice has one spelling rather than one per script. |
 | `make-questions-index.py` | Build the status index at the top of QUESTIONS.md from the questions' own text. |
@@ -102,4 +103,4 @@
 | `start-editor.ps1` | Start the TurboMCP test editor and prove it reached a working state. |
 | `test-suite-timeout.ps1` | A PROOF-OF-CONCEPT FOR THE PER-SUITE DEADLINE, TESTED IN ISOLATION BEFORE IT IS WIRED INTO THE HARNESS. |
 
-*** 85 files, all listed. ***
+*** 86 files, all listed. ***

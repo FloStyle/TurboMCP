@@ -4,6 +4,11 @@
 tree, and each one names the command that produces it. **For the analysis, read [`REPORT.md`](REPORT.md);
 for the evidence, [`TestRecord.md`](TestRecord.md); to hand the project on, [`HANDOVER.md`](HANDOVER.md).**
 
+*** AND THE TWO DOCUMENTS ARE NOT REDUNDANT, WHICH IS A MEASUREMENT RATHER THAN A CLAIM: ***
+`python Tools/checks/measure-overlap.py STATUS.md REPORT.md` reports **2 shared claims out of 60 sentences -
+3%**. *It was said to be "about 35%" for three rounds, on the strength of reading both files once.* **This
+file owns the readings; `REPORT.md` owns the reasoning; and the split is checked rather than asserted.**
+
 ---
 
 ## 1. The headline
