@@ -79,8 +79,8 @@ Ordered by `08_ROADMAP.md` section 2. `Test` names the acceptance rows;
 | # | Work | Spec | Decisions | Test | State |
 |---|---|---|---|---|---|
 | 0.1 | **One owner of the editor lifecycle.** Start, wait, health check, stop, in one place; a suite asks it for an editor and never starts or stops one itself | `08_ROADMAP.md` section 3 | — | the full run stops producing failures whose names move | todo |
-| 0.2 | Make `test-override-add` and `test-comment-boxes` restore their fixture **on the way in** | `../STATUS.md` section 7 | `P8` |; residue reproduced across an editor stop/start first (5 overridden -> 6). **It also found and fixed a VACUOUS check**: `test-comment-boxes`' `box_keys` read keys from the `fit` listing, **which prints no keys at all**, so it returned `` every run and the closing check was true even on a run that left boxes behind. | done |
-| 0.3 | Re-verify every fact in `07_ENGINE_NOTES.md` sections 1 to 4 and 6 against 5.8.3 and change its marker | `07_ENGINE_NOTES.md` | `D-38`, `D-40` | each marker says what was run | todo |
+| 0.2 | Make `test-override-add` and `test-comment-boxes` restore their fixture **on the way in** | `../TestRecord.md` section 7a | `P8` |; residue reproduced across an editor stop/start first (5 overridden -> 6). **It also found and fixed a VACUOUS check**: `test-comment-boxes`' `box_keys` read keys from the `fit` listing, **which prints no keys at all**, so it returned `` every run and the closing check was true even on a run that left boxes behind. | done |
+| 0.3 | **Measured into `07_ENGINE_NOTES.md` sections 1 to 4 and 6.** Every fact there now cites the engine file and line it came from, and the per-fact version markers are **gone** rather than repointed: the version distinction existed to flag facts learned on an engine this project does not build, **and no such fact was ever present** - every one of them was measured on 5.8.3, which is the only engine this project has been built or measured on. | `07_ENGINE_NOTES.md`, its measured sections | `D-38`, `D-40` | each fact names its engine file and line | **done** |
 
 ### Step 1 — measurements that gate whole groups
 

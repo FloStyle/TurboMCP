@@ -4730,7 +4730,7 @@ mistake this record is built to prevent.
 ### 21.2 Why it matters structurally
 
 The project's own rule is that a capability is done when its test row in `06_ACCEPTANCE.md` passes -
-`WORKING_PLAN.md` section 1.3 says it in those words. **SO THE ACCEPTANCE DOCUMENT IS THE DEFINITION OF DONE, AND
+`Spec/WORKING_PLAN.md` section 1, item 3, says it in those words. **SO THE ACCEPTANCE DOCUMENT IS THE DEFINITION OF DONE, AND
 NOTHING IN THE TREE CAN CURRENTLY ANSWER "IS THIS ROW PASSING?" WITHOUT A HUMAN READING IT.** That is a structural
 gap rather than a missing citation: **the 43-suite green run cannot be mapped onto the 122 rows by any mechanical
 means today.**

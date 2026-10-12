@@ -18,7 +18,7 @@ for the evidence, [`TestRecord.md`](TestRecord.md); to hand the project on, [`HA
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail **or cannot pass** — 0 candidates. `python Tools\audit-suite-quality.py` |
 | **Licence** | **MPL-2.0**, the notice on **193 of 193** first-party C++ files (186 under `Source/`, 7 under `TestProject/Source/`), `LICENSE` verbatim |
 | **Secrets** | **none** — keys, tokens, SSH keys, connection strings, private URLs and paths of anyone's machine were all checked, and one finding was removed from the file **and** the history |
-| **Plan** | **31 `todo` · 15 `done`** of 48 rows, counted **by field** |
+| **Plan** | **30 `todo` · 16 `done`** of 48 rows, counted **by field** |
 | **Size** | C++ **61 620 lines** in **186** files · Spec **7 748 lines** in **17** · `TestRecord.md` **10 800 lines** |
 
 ## 2. What is done
@@ -48,7 +48,7 @@ by row against the tree, and it is the only list that is.
 
 ## 3. What is left
 
-**31 of 48 rows**, and three of them cannot be done in the environment this was built in:
+**30 of 48 rows**, and three of them cannot be done in the environment this was built in:
 
 - the remaining **source-control writers** need a server that answers;
 - **`TA-18`** needs a `USkeleton` bone whose every route is closed in the engine.

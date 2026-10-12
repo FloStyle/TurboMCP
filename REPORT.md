@@ -30,7 +30,7 @@ is what those two documents cannot carry: the reasoning, the constraints, and wh
 
 ---
 
-## 2. The plan: **31 `todo` · 15 `done`** of 48 rows
+## 2. The plan: **30 `todo` · 16 `done`** of 48 rows
 
 *Counted **by field** — the last cell of the line. See section 7: a regex over the line returns a wrong
 number.* **The rows themselves are in [`Spec/WORKING_PLAN.md`](Spec/WORKING_PLAN.md); what follows is the
