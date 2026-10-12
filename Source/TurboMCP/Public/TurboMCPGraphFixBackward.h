@@ -172,8 +172,13 @@ public:
 		/** Why a particular node was not moved, so the report can say rather than omit. */
 		TArray<FString> Refusals;
 
-		/** `backward-data` wires no rule covers, left alone on purpose. */
+		/** `backward-data` wires no rule covers, left alone on purpose. CAPPED, so it can be shorter
+		 *  than the count below and the report has to say so. */
 		TArray<FString> UncoveredDataWires;
+
+		/** How many such wires were found, INCLUDING the ones the cap kept out of the list above.
+		 *  `UncoveredDataWires.Num()` is the listed count, which is a different number. */
+		int32 UncoveredDataWiresTotal = 0;
 
 		/** Nodes no entry point can reach. Left alone; `P/E-GRAPH-DEAD` owns them. */
 		TArray<FString> UnreachableKeys;

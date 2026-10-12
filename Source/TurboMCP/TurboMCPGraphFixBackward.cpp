@@ -87,9 +87,12 @@ namespace
 	 * the same measured reason: refusing was tried there and made the tool useless on every graph it
 	 * exists for. A point is a real answer to "where is this node", which is what the geometry asks.
 	 *
-	 * THE FALLBACK IS NEVER SILENT. `FPlan::bUsedFallbackSizes` is set, every such node is marked, and
-	 * both the preview and the edit SAY SO. A pass may not quietly substitute a size, because then a
-	 * number a caller compares would be built from geometry that does not exist.
+	 * THE FALLBACK IS NEVER SILENT, AND EVERY LAYER CARRIES IT. `FPlan::bUsedFallbackSizes` is set when
+	 * any node has no measured size, `RenderPreview` prints a note that names the substituted extent and
+	 * calls the result CONSERVATIVE rather than exact, and every write site recomputes its geometry
+	 * through `PlannedExtent`, so the substitution is applied rather than re-derived. A pass may not
+	 * quietly substitute a size, because then a number a caller compares would be built from geometry
+	 * that does not exist.
 	 */
 	constexpr double FallbackNodeExtent = 48.0;
 
@@ -111,7 +114,8 @@ namespace
 	/** How many refusals the preview prints before it caps (`P6`). */
 	constexpr int32 MaxListedRefusals = 20;
 
-	/** How many keys a capped list names before it says "and N more". */
+	/** How many keys a capped list NAMES. The count printed beside it is the total, and the report
+	 *  says when the two differ - a capped list printed as though it were complete is a wrong count. */
 	constexpr int32 MaxListedKeys = 12;
 
 	/** True when the two names match, case-insensitively. */
@@ -947,6 +951,9 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 						const FString Description = FString::Printf(TEXT("%s.%s -> %s.%s"),
 							*Nodes[SourceIndex].Key, *Pin->PinName.ToString(),
 							*Nodes[TargetIndex].Key, *Far->PinName.ToString());
+						// THE TOTAL IS COUNTED EVEN WHEN THE LIST IS CAPPED, because the report
+						// prints a count and a capped list cannot supply it.
+						++OutPlan.UncoveredDataWiresTotal;
 						if (OutPlan.UncoveredDataWires.Num() < MaxListedKeys)
 						{
 							OutPlan.UncoveredDataWires.Add(Description);
@@ -1608,12 +1615,21 @@ FString FTurboMCPGraphFixBackward::RenderPreview(const FPlan& InPlan)
 
 	// THE DELIBERATE SHORTFALL, STATED. `P1` prefers an honest count to a silent omission, and a caller
 	// who was not told would reasonably assume every backward wire had been repaired.
-	if (InPlan.UncoveredDataWires.Num() > 0)
+	//
+	// THE COUNT AND THE LIST ARE TWO DIFFERENT NUMBERS. `UncoveredDataWires` is filled only while it is
+	// under `MaxListedKeys`, so printing its length as the total made a graph with twenty uncovered wires
+	// read "left alone: 20" above twelve lines. The total is counted separately and the report says when
+	// the list is capped.
+	if (InPlan.UncoveredDataWiresTotal > 0)
 	{
+		// Built as an `FString` rather than inline, so the type is the same on both sides.
+		const FString CapNote = InPlan.UncoveredDataWiresTotal > InPlan.UncoveredDataWires.Num()
+			? FString::Printf(TEXT("; the first %d are listed"), InPlan.UncoveredDataWires.Num())
+			: FString();
 		Out += FString::Printf(
-			TEXT("\n    left alone: %d backward DATA wire(s) that no rule covers, because R1 repairs exec "
-				 "wires only and a data wire is repaired only through a getter or a pure node:"),
-			InPlan.UncoveredDataWires.Num());
+			TEXT("\n    left alone: %d backward DATA wire(s) that no rule covers, because R1 repairs exec ")
+			TEXT("wires only and a data wire is repaired only through a getter or a pure node%s:"),
+			InPlan.UncoveredDataWiresTotal, *CapNote);
 		for (const FString& Wire : InPlan.UncoveredDataWires)
 		{
 			Out += FString::Printf(TEXT("\n      %s"), *Wire);
