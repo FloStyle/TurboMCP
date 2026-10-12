@@ -297,9 +297,11 @@ refusing a creation.
 `test-json.py` (585, 79 checks - the densest read) and `test-capture-asset.py` (676, 57 checks), plus the three
 material suites and `test-graph-fix-backward.py` in structure.
 
-*** NINETEEN SUITES IN THIRTEEN FAMILIES: `graph`, `widget`, `call`, `vcs`, `material`, `refs`, `json`,
-`capture`, `bp`, `struct`, `enum`, `vars`, `override`. EIGHT OF THOSE FAMILIES WERE OPENED SPECIFICALLY TO FALSIFY
-THIS SECTION'S CAVEAT, AND NONE OF THEM DID: THE STANDARD DID NOT DIFFER, AND IN `capture` IT IS STRICTER. ***
+*** TWENTY-TWO SUITES IN FIFTEEN FAMILIES: `graph`, `widget`, `call`, `vcs`, `material`, `refs`, `json`,
+`capture`, `bp`, `struct`, `enum`, `vars`, `override`, `data`, `comment`. ELEVEN OF THOSE FAMILIES WERE OPENED
+SPECIFICALLY TO FALSIFY THIS SECTION'S CAVEAT, AND NONE OF THEM DID. Two are STRICTER than the rest: `capture`
+verifies a claim ON DISK, and `test-comments.py:99-107` gives EVERY geometric predicate BOTH a positive and a
+negative case. ***
 
 **Every one has the same five properties, and none of them is the phrase the template asks for:**
 
