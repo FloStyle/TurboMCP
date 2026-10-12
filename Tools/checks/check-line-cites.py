@@ -19,7 +19,7 @@ import re
 import subprocess
 import sys
 
-REPO = pathlib.Path(r"C:\Users\Example\Desktop\TurboMCP")
+REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 
 # `Spec/06_ACCEPTANCE.md:100`, `03_TOOLS.md:1348-1351`, `WORKING_PLAN.md:88`
 CITE = re.compile(r"`?([\w./-]*\.md):(\d+)(?:-(\d+))?`?")

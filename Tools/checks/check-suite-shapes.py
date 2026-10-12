@@ -14,7 +14,7 @@ import pathlib
 import re
 import sys
 
-REPO = pathlib.Path(r"C:\Users\Example\Desktop\TurboMCP")
+REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 TOOLS = REPO / "Tools"
 
 LIST = re.compile(r"(\w+)\s*=\s*\[\s*\]")

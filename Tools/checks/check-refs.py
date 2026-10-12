@@ -29,7 +29,7 @@ import re
 import subprocess
 import sys
 
-REPO = pathlib.Path(r"C:\Users\Example\Desktop\TurboMCP")
+REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 STRICT = "--strict" in sys.argv
 
 HEAD_RE = re.compile(r"^#{1,6}\s+(?:Part\s+)?(\d+(?:\.\d+)*)")

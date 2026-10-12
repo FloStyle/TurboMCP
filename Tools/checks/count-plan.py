@@ -13,7 +13,7 @@ import pathlib
 import re
 import sys
 
-REPO = pathlib.Path(r"C:\Users\Example\Desktop\TurboMCP")
+REPO = pathlib.Path(__file__).resolve().parent.parent.parent
 PLAN = REPO / "Spec" / "WORKING_PLAN.md"
 
 STATES = ("done", "built", "todo", "gated", "open")
