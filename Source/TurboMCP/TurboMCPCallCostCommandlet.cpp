@@ -8,6 +8,7 @@
 #include "TurboMCPCallCostCommandlet.h"
 
 #include "Containers/UnrealString.h"
+#include "Logging.h"
 #include "Misc/CommandLine.h"
 #include "TurboMCPCallCost.h"
 
@@ -22,12 +23,12 @@ namespace
 		++ChecksRun;
 		if (bInOk)
 		{
-			UE_LOG(LogTemp, Display, TEXT("  ok   %s"), *InName);
+			UE_LOG(LogTurboMCP, Display, TEXT("  ok   %s"), *InName);
 		}
 		else
 		{
 			++Failures;
-			UE_LOG(LogTemp, Error, TEXT("  FAIL %s%s"), *InName,
+			UE_LOG(LogTurboMCP, Error, TEXT("  FAIL %s%s"), *InName,
 				InDetail.IsEmpty() ? TEXT("") : *FString::Printf(TEXT("  %s"), *InDetail));
 		}
 	}
@@ -76,7 +77,7 @@ int32 UTurboMCPCallCostCommandlet::Main(const FString& Params)
 	Failures = 0;
 	ChecksRun = 0;
 
-	UE_LOG(LogTemp, Display, TEXT("=== R-CALL-COST pure functions, which need no editor ==="));
+	UE_LOG(LogTurboMCP, Display, TEXT("=== R-CALL-COST pure functions, which need no editor ==="));
 
 	// ---------------------------------------------------------------------------------------------
 	// THE DOUBLING, WHICH IS THE DEFECT OBSERVED LIVE. The first real run of the tool printed
@@ -166,12 +167,12 @@ int32 UTurboMCPCallCostCommandlet::Main(const FString& Params)
 			FTurboMCPCallCost::AssetFromArguments(TEXT("{\"myasset\":\"BP_X\"}")));
 	}
 
-	UE_LOG(LogTemp, Display, TEXT(""));
+	UE_LOG(LogTurboMCP, Display, TEXT(""));
 	if (Failures > 0)
 	{
-		UE_LOG(LogTemp, Error, TEXT("RESULT: FAIL (%d) of %d check(s)"), Failures, ChecksRun);
+		UE_LOG(LogTurboMCP, Error, TEXT("RESULT: FAIL (%d) of %d check(s)"), Failures, ChecksRun);
 		return 1;
 	}
-	UE_LOG(LogTemp, Display, TEXT("RESULT: PASS (%d check(s) run)"), ChecksRun);
+	UE_LOG(LogTurboMCP, Display, TEXT("RESULT: PASS (%d check(s) run)"), ChecksRun);
 	return 0;
 }
