@@ -47,7 +47,9 @@ Helper scripts in `Tools/`: `check-plugin.py` (pre-build gate),
 
 ## Scope reality
 
-`Spec/03_TOOLS.md` defines **31 capabilities** across 10 roadmap phases, and each one
+`Spec/03_TOOLS.md` defines **93 tools** (`git grep -c "static FString"
+Source/TurboMCP/Public/Tools/TurboMCPToolsets.h`), and `Spec/WORKING_PLAN.md` tracks **48 capability
+rows** (`python Tools/checks/count-plan.py`), across 10 roadmap phases. Each one
 needs tests on hand-built assets (`06_ACCEPTANCE.md`) before it counts as done. The plan
 is therefore dependency-ordered, and whatever is not reached stays honestly unmarked in
 `TestRecord.md`.
@@ -77,8 +79,8 @@ Highest value per unit of risk, and no graph-writing machinery needed.
 | 8 | `E-COMPILE` | **DONE** - refuses kinds it cannot compile, reports from the compiler log |
 | 9 | `E-SAVE` | **DONE** - three modify-then-save cycles pass |
 
-**Phase 1 is complete: 13 tools, both suites pass.** 9 of the spec's 31
-capabilities are done.
+**Phase 1 is complete: 13 tools were added, both suites pass.** Nine of the
+48 capability rows are done.
 
 Two phase 1 parts still need the kit, and are recorded as gaps rather than
 claims: `E-COMPILE` on a broken Blueprint (the node ID tie-in), and `E-SAVE`'s
@@ -86,7 +88,8 @@ refusal during play.
 
 ### Step 3 - Phase 2, Blueprint reading: COMPLETE
 
-All eight capabilities are done and merged. **21 tools. Six acceptance suites pass**,
+All eight capabilities are done and merged. **Phase 2 added 21 tools; the plugin now publishes 93, and 58
+suites pass** (`pwsh -NoProfile -File Tools\run-suites.ps1`),
 plus the plugin checks, the include check, the server check and the graph rebuild.
 
 | # | Capability | State |
