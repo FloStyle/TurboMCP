@@ -1,7 +1,5 @@
 # TurboMCP plan of action
 
-Deadline: **Monday 12 October 2026**. Written Friday 09 October, ~2.5 days.
-
 ## Verified starting point
 
 Everything below was proven this session, not assumed.
@@ -49,10 +47,10 @@ Helper scripts in `Tools/`: `check-plugin.py` (pre-build gate),
 
 ## Scope reality
 
-`03_TOOLS.md` defines **31 capabilities** across 10 roadmap phases. 2.5 days
-cannot deliver all 31 to the spec's "done" bar (each needs tests on hand-built
-assets, per `06_ACCEPTANCE.md`). The plan is therefore dependency-ordered, and
-whatever is not reached stays honestly unmarked in `TestRecord.md`.
+`Spec/03_TOOLS.md` defines **31 capabilities** across 10 roadmap phases, and each one
+needs tests on hand-built assets (`06_ACCEPTANCE.md`) before it counts as done. The plan
+is therefore dependency-ordered, and whatever is not reached stays honestly unmarked in
+`TestRecord.md`.
 
 Also note `08_ROADMAP.md` lists the **test asset kit** in phase 0. TA-1 to TA-13
 must be built by hand in the editor — that work is the owner's, not the agent's,

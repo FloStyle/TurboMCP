@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Puts the MPL-2.0 notice at the top of every .h and .cpp in the plugin.
+    Puts the MPL-2.0 notice at the top of every .h, .cpp and .cs in the plugin.
 
 .DESCRIPTION
     The notice is Exhibit A of the license, which is the form the license itself asks a file to carry. It
@@ -154,7 +154,7 @@ function Get-FilePlan {
     return [pscustomobject]@{ Path = $Path; State = $state; Text = $text; Ending = $ending }
 }
 
-$files = Get-ChildItem $SourceRoots -Recurse -Include '*.h', '*.cpp' -File |
+$files = Get-ChildItem $SourceRoots -Recurse -Include '*.h', '*.cpp', '*.cs' -File |
     Where-Object { $_.FullName -notmatch '[\\/]Intermediate[\\/]' } |
     Sort-Object FullName
 
