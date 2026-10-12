@@ -349,6 +349,13 @@ void FTurboMCPPanelToolRunner::BeginCall(const FString& InToolsetName, const FSt
 		Result.bIsError = true;
 		Result.bNeverRan = true;
 		Result.Error = Why;
+		// *** AN ERROR PATH MEASURES NOTHING, SO IT MUST NOT INHERIT THE PREVIOUS CALL'S FIGURES. *** `Value` is
+		// empty here - `BeginCall` reset it and nothing wrote it - so these ARE its measurements rather than zeros
+		// chosen for tidiness. Before this, `CharacterCount` and `TokenEstimate` were set ONLY on the success path
+		// (`:445-446`), so a reused runner reported the PREVIOUS call's length and token estimate BESIDE AN EMPTY
+		// VALUE - and `T-PANEL-6` is the acceptance row that asks for exactly those two figures.
+		Result.CharacterCount = Result.Value.Len();
+		Result.TokenEstimate = TurboMCPTokenEstimate(Result.Value);
 		bCallPending = false;
 		AsyncResult.Reset();
 		return;
@@ -474,6 +481,10 @@ FString FTurboMCPPanelToolRunner::CallAndWait(const FString& InToolsetName,
 			TEXT("the registry did not answer within %.1f seconds. The call may still be running; ")
 			TEXT("its result was not read."),
 			InTimeoutSeconds);
+		// *** THE SAME GAP AS THE REGISTRY PATH ABOVE, AND FIXED THE SAME WAY: A TIMEOUT MEASURES NOTHING. ***
+		// `Value` is empty, so these are its true measurements rather than the previous call's.
+		Result.CharacterCount = Result.Value.Len();
+		Result.TokenEstimate = TurboMCPTokenEstimate(Result.Value);
 		bCallPending = false;
 	}
 

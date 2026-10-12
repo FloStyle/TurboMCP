@@ -172,10 +172,12 @@ public:
 	/**
 	 * Reads a pending call's outcome, and returns the current state.
 	 *
-	 * THE PANEL CALLS THIS WHILE IT PAINTS, which is why it is `const` and tracks completion in a
-	 * `mutable` flag: a Slate attribute getter has to be `const`, and the alternative - a
-	 * `const_cast` in the panel - would be a lie about what the call does. It does not start or
-	 * change a call; it only notices that one finished.
+	 * THE PANEL CALLS THIS WHILE IT PAINTS, which is why it is `const`: a Slate attribute getter has to be. It
+	 * tracks the call in a `mutable` flag, AND THE READ ITSELF GOES THROUGH A DELIBERATE `const_cast` ON `this`
+	 * INSIDE THIS CLASS (`PanelToolRunner.cpp`, in this method) - NOT IN THE PANEL. *** THE CAST IS THE POINT
+	 * RATHER THAN A WORKAROUND: it makes it visible IN ONE PLACE that a paint really does read shared state,
+	 * where a `const_cast` in the panel would have hidden that by spreading it across every call site. *** It
+	 * does not start or change a call; it only notices that one finished.
 	 */
 	const FCallResult& RefreshIfPending() const;
 
