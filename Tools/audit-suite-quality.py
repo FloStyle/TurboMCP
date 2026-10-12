@@ -30,6 +30,19 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(REPO, "Tools")
+
+# *** THE AUDIT EXAMINES FEWER FILES THAN THE RUNNER RUNS, AND THE TWO NUMBERS ARE BOTH CORRECT. ***
+#
+# `run-suites.ps1` runs **58** suites; this audits **54**, and the four it leaves out are exactly the four that
+# are not suites in the sense this audit means - `audit-tool-coverage`, `audit-suite-quality`, `check-includes`
+# and `check-mcp-server`. *** TWO OF THE FOUR ARE THIS AUDIT AND ITS NEIGHBOUR, AND AN AUDIT THAT GRADES ITSELF
+# IS MEASURING THE WRONG THING. *** The other two are static checks whose whole body is a pass/fail over files
+# rather than a series of assertions about a running editor, so there is no failure list for this to look for.
+#
+# AND THE LIST IS NOT THE DISCOVERY RULE. This walks `Tools/` with `os.listdir`, which does not descend - so
+# when the documentation checks were moved into `Tools/checks/`, this stopped seeing them **without any change
+# being made here.** That is the behaviour wanted, and it is why a `check-*` script belongs in `Tools/` only if
+# it is genuinely a suite.
 SKIP = {"tmcp.py", "check-includes.py", "check-mcp-server.py", "test-helper.py",
         "audit-tool-coverage.py", "audit-suite-quality.py"}
 
