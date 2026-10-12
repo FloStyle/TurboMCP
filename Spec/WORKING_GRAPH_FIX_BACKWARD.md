@@ -19,7 +19,7 @@ inventing an answer.
 
 > `| T-LAY-9 | Fix backward on TA-4 | The two exec nodes share a row, getters left of consumers, no box moved, shorter wiring |`
 
-`TA-4` is defined at `Spec/06_ACCEPTANCE.md:18`:
+`TA-4` is defined at `Spec/06_ACCEPTANCE.md:19`:
 
 > `| TA-4 | Same Blueprint, function "stacked" | Two exec nodes in sequence with the second placed directly under the first, a getter placed under the setter it feeds, a second copy of it under a branch, one node at the origin linked to nodes far away |`
 
@@ -414,7 +414,7 @@ recursion is bounded by a visited set and a depth cap of `MaxPureChain = 8`, and
 **refuses the whole move for that node** rather than truncating the chain — a half-moved chain is worse
 than an unmoved one.
 
-**THIS IS WHERE `TA-1`'s "pure math chains four nodes long" (`06_ACCEPTANCE.md:16`) is exercised**, and it
+**THIS IS WHERE `TA-1`'s "pure math chains four nodes long" (`06_ACCEPTANCE.md:17`) is exercised**, and it
 is a second reason the kit matters.
 
 ---

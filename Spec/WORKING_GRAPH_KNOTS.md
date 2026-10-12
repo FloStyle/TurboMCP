@@ -300,7 +300,7 @@ it links unconditionally, skipping the schema's compatibility and notification w
 
 ## 4. The rollback
 
-`Spec/03_TOOLS.md:462`: "Counts wires crossing nodes before and after. Rolls back if not better."
+`Spec/03_TOOLS.md:460`: "Counts wires crossing nodes before and after. Rolls back if not better."
 
 **THE ROLLBACK IS PER-PASS, NOT PER-WIRE, AND THAT IS THE DESIGN CHOICE.** A per-wire rollback cannot
 answer "is the graph better", because it has no view of the whole. So:

@@ -311,7 +311,7 @@ WireLengthAfter < WireLengthBefore   -> apply
 WireLengthAfter >= WireLengthBefore  -> roll back, UNLESS bForce
 ```
 
-Strictly-less, not "not worse". `T-LAY-5` in `Spec/06_ACCEPTANCE.md:150` says
+Strictly-less, not "not worse". `T-LAY-5` in `Spec/06_ACCEPTANCE.md:151` says
 *"wire length not worse, or rolled back with numbers"* — which is the acceptance criterion for the
 **outcome**: after tidy runs, the graph's wire length must not be worse. A pass that changes nothing
 and rolls back satisfies that, and so does a pass that improves. A pass that makes it equal but moves

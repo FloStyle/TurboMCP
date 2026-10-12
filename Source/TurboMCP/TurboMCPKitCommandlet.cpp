@@ -1896,7 +1896,7 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 	// `Spec/06_ACCEPTANCE.md:32` asks for *"Curve float and a curve table | A curve with 5 keys and
 	// non-zero tangents; a curve table with 3 rows"*, and `T-DATA-5` (`:213`) reads it back as
 	// *"TA-17 curve prints its 5 keys with times and values and its interpolation; its table prints
-	// its 3 row names"*. `Spec/WORKING_PLAN.md:145` needs it for `R-CURVE-LOAD` and `P/E-CURVE-SET`.
+	// its 3 row names"*. `Spec/WORKING_PLAN.md` **row 7.3** needs it for `R-CURVE-LOAD` and `P/E-CURVE-SET`.
 	//
 	// TWO ASSETS ANSWER ONE ROW, AND THAT IS HOW THE ROW IS WRITTEN: no single `.uasset` is both a
 	// curve float and a curve table, so the row is answered by two files, each measured and saved on
@@ -2200,7 +2200,7 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 		// `bMeasured ? OK : (bBuilt ? PARTIAL : MISSING)`, but a declared-unbuildable asset is
 		// `bMeasured == true` with `bBuilt == false`, so the log printed
 		// `kit TA-10 OK NOT BUILT: needs 3 rows and 4 fields` - THE WORD `OK` BESIDE THE WORDS `NOT BUILT` -
-		// while `QUESTIONS.md:914` records that same asset from a run as `TA-10 MISSING  NOT BUILT: ...`.
+		// while `QUESTIONS.md` Q-15 records that same asset from a run as `TA-10 MISSING  NOT BUILT: ...`.
 		// A report whose verdict contradicts its own detail is the defect this project records most often,
 		// and it got worse rather than better when TA-18 and TA-19 were declared: THREE such lines.
 		//

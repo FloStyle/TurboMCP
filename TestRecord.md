@@ -10424,9 +10424,9 @@ MY OWN VERIFICATION RATHER THAN TO A WORKSTREAM'S. ***
  blockers are NOT the commandlet constraints my brief pointed at: `LaunchEngineLoop.cpp:3343` and
  `BlueprintEditorModule.cpp:212-214` DO NOT BIND on that path. The real ones are the AnimGraph module and a
  `USkeleton` bone, where `Skeleton.h:365-369` returns the reference skeleton CONST **on purpose**.
- AND NOTE: `REPORT.md:201` SAYS `TA-18` IS "mesuré buildable" AND THAT IS WRONG - the workstream corrected me.
+ AND NOTE: `REPORT.md` section 9 SAYS `TA-18` IS "mesuré buildable" AND THAT IS WRONG - the workstream corrected me.
 
-**AND ONE ADJACENT DEFECT IT FIXED IN ITS OWN FILE:** *a refusal used to print `kit TA-10 OK NOT BUILT:` - **the word OK beside the words NOT BUILT** - while `QUESTIONS.md:914` records the same asset as `MISSING`. With two more refusals it would have been three such lines, so the verdict word is now decided by whether the asset was built.* *** That is "an invisible refusal reads as a capability" inside the kit's own reporting, found and fixed without being asked. ***
+**AND ONE ADJACENT DEFECT IT FIXED IN ITS OWN FILE:** *a refusal used to print `kit TA-10 OK NOT BUILT:` - **the word OK beside the words NOT BUILT** - while `QUESTIONS.md` Q-15 records the same asset as `MISSING`. With two more refusals it would have been three such lines, so the verdict word is now decided by whether the asset was built.* *** That is "an invisible refusal reads as a capability" inside the kit's own reporting, found and fixed without being asked. ***
 
 ---
 

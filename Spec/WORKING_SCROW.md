@@ -165,13 +165,20 @@ There is exactly **one** source control acceptance row and **one** capability:
 
 | Where | What it says |
 |---|---|
-| `Spec/03_TOOLS.md:1343-1367` section 17 | `E-VCS-CHECKOUT`. Input: assets or nothing to read state. Before an Edit writes, the file must be writable in the project's SCM - "Perforce will refuse a save that is not checked out; git will not, and will happily leave a modified file for someone else to find" (`:1348-1351`). It reports per asset: on/off and which provider, under source control, checked out here, out of date (`:1352-1355`). It checks out **through `ISourceControlModule`'s own provider rather than by shelling out to `p4` or `git`** (`:1356-1358`). "**The engine's own checkout path fails headless**" (`:1359-1361`). No automatic checkout until this tool's own tests pass (`:1365-1366`). Test: `T-VCS-1` (`:1367`). |
+| `Spec/03_TOOLS.md:1344-1367` section 17 | `E-VCS-CHECKOUT`. Input: assets or nothing to read state. Before an Edit writes, the file must be writable in the project's SCM - "Perforce will refuse a save that is not checked out; git will not, and will happily leave a modified file for someone else to find" (`:1348-1351`). It reports per asset: on/off and which provider, under source control, checked out here, out of date (`:1352-1355`). It checks out **through `ISourceControlModule`'s own provider rather than by shelling out to `p4` or `git`** (`:1356-1358`). "**The engine's own checkout path fails headless**" (`:1359-1361`). No automatic checkout until this tool's own tests pass (`:1365-1366`). Test: `T-VCS-1` (`:1367`). |
 | `Spec/06_ACCEPTANCE.md:265` | `T-VCS-1 Checkout`: "With source control off: the answer says so per asset. With it on: the state is reported per asset, a checkout is attempted through the provider, and the provider's own answer is repeated. A headless run of the same call records what the provider did, because that is the case that already failed once". |
-| `Spec/05_DECISIONS.md:383` | `D-57`: `E-VCS-CHECKOUT` is built and tested before any write tool calls it. |
-| `Spec/07_ENGINE_NOTES.md:292-298` section 5.3 | The open question, as the row inherited it. |
-| `Spec/WORKING_PLAN.md:88`, `:173`, `:174`, `:204` | Row 1.3; row 10.1 (`E-VCS-CHECKOUT`, **gated on 1.3**); row 10.2 (wire automatic checkout, gated on 10.1); `Q-20` "which source control provider comes first" - open. |
-| `Spec/08_ROADMAP.md:41`, `:50`, `:90` | T-VCS-1's headless half is one of the three measurements that gate whole groups; source control is roadmap row 10; `Q-20` again. |
-| `Source/TurboMCP/TurboMCPCompile.cpp:373-383` | Why `E-SAVE` does not use `FEditorFileUtils`. |
+*** THESE ARE CITED BY ROW ID RATHER THAN BY LINE NUMBER. *** *An earlier revision cited four line numbers in that file,
+`:173`, `:174`, `:204` - and by the time anybody followed them, those lines were a table separator, a blank
+line, a header and another separator. **A LINE NUMBER IN A DOCUMENT THAT IS STILL BEING EDITED IS A CITATION
+WITH AN EXPIRY DATE, AND A ROW ID DOES NOT HAVE ONE.***
+
+| Where | Why |
+|---|---|
+| `Spec/05_DECISIONS.md` `D-57` | `E-VCS-CHECKOUT` is built and tested before any write tool calls it. |
+| `Spec/07_ENGINE_NOTES.md` section 5.3 | The open question, as the row inherited it. |
+| `Spec/WORKING_PLAN.md` **row 1.3** | Row 1.3; row **10.1** (`E-VCS-CHECKOUT`, **gated on 1.3**); row **10.2** (wire automatic checkout, gated on 10.1); `Q-20` "which source control provider comes first" - open. |
+| `Spec/08_ROADMAP.md` section 2 | T-VCS-1's headless half is one of the three measurements that gate whole groups; source control is roadmap row 10; `Q-20` again. |
+| `Source/TurboMCP/TurboMCPCompile.cpp:373-383` | Why `E-SAVE` does not use `FEditorFileUtils`. *A source file's line numbers are stable where a plan's are not, so this one stays.* |
 
 **WHAT THOSE ROWS ASSUME, MEASURED AGAINST THIS ENGINE:**
 
@@ -247,7 +254,7 @@ acceptance row against what exists. Assets under `TestProject/Content`:
  `TA-17` in its path exists, and **no file under `Tools/` mentions `TA-17`,
  `TA17` or a curve at all** (`Tools/*.py` has zero matches for
  `CurveFloat|CurveTable|curve`, case-insensitive). The implementation row that
- would need it is still `todo`: `Spec/WORKING_PLAN.md:145` row 7.3
+ would need it is still `todo`: `Spec/WORKING_PLAN.md` row 7.3
  (`R-CURVE-LOAD` and `P/E-CURVE-SET`, "Test: `T-DATA-5`, `T-DATA-6`").
  `T-DATA-6` ("Replace the keys of one curve table row") names the same
  fixture by description. **This is the fifth row naming a missing fixture:
@@ -372,7 +379,7 @@ empty state that reads as "not under source control".
  dialog path reaches (`PackagesDialog.cpp:118`), and that today's kit assets
  are all writable - but the phase-1 asset's read-only state at the time is
  gone, so the recorded cause ("cannot complete with no source control
- provider", `TestRecord.md:139-143`) is **narrowed, not falsified.**
+ provider", `TestRecord.md:140-144`) is **narrowed, not falsified.**
 2. **No provider was ever given a reachable server**, so "what does Perforce
  *do* when it is available headless" is still unmeasured. `p4 set` on this
  machine (`P4PORT=ssl:<p4-host>:1666`, `P4USER=<user>`,
