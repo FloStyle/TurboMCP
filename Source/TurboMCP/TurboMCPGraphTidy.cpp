@@ -1351,6 +1351,13 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 	}
 
+	// *** WHETHER THE PACKAGE WAS ALREADY DIRTY WHEN THE PASS STARTED, READ BEFORE THE PASS CAN SET IT.
+	// This is the same guard `GraphKnots.cpp` gained, and the reasoning is identical: a rollback must
+	// leave the asset as it found it, so the flag may be cleared ONLY when this pass is what set it.
+	// An earlier operation in the same editor session may own unsaved work, and discarding that is not
+	// this pass's decision to make. ***
+	const bool bWasDirtyBefore = Graph->GetOutermost()->IsDirty();
+
 	const bool bBetter = MeasuredAfter < InPlan.WireLengthBefore;
 	if (!bBetter && !InPlan.bForce)
 	{
@@ -1364,6 +1371,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 
 		int32 Undone = 0;
+		int32 RestorationFailed = 0;
 		for (const FGetterCopy& Entry : Created)
 		{
 			if (Entry.Copy == nullptr)
@@ -1379,11 +1387,30 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 					CopyPin->BreakLinkTo(Entry.ConsumerPin);
 				}
 				Entry.OriginalValuePin->MakeLinkTo(Entry.ConsumerPin);
+
+				// *** THE RESTORATION IS READ BACK, BECAUSE `MakeLinkTo` RETURNS `void` AND THEREFORE
+				// CANNOT REPORT A REFUSAL. The consumer's input must point at the ORIGINAL getter again;
+				// when it does not, the rollback left this reader severed and saying "rolled back" would
+				// be a restatement of the request rather than a measurement of the result. This is the
+				// shape `WidgetRetarget.cpp:355` and `DataTableRows.cpp:574` already use. ***
+				if (Entry.ConsumerPin->LinkedTo.Contains(Entry.OriginalValuePin) == false)
+				{
+					++RestorationFailed;
+				}
 			}
 			Entry.Copy->DestroyNode();
 			++Undone;
 		}
 		Graph->MarkPackageDirty();
+
+		// *** THE DIRTY FLAG IS RESTORED TO WHAT IT WAS BEFORE THE PASS, AND ONLY THEN. `MarkPackageDirty`
+		// above runs on a path whose whole purpose is to leave the asset as it was, so a fully rolled-back
+		// pass was leaving the package looking modified and the editor offering to save a change that does
+		// not exist. CLEARED ONLY WHEN THIS PASS IS WHAT SET IT - see `bWasDirtyBefore`. ***
+		if (!bWasDirtyBefore)
+		{
+			Graph->GetOutermost()->SetDirtyFlag(false);
+		}
 
 		double Restored = 0.0;
 		for (const UEdGraphNode* Node : Graph->Nodes)
@@ -1402,7 +1429,20 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			}
 		}
 		const bool bRestored = FMath::IsNearlyEqual(Restored, InPlan.WireLengthBefore, 1.0);
-		return FString::Printf(TEXT("unchanged: %s in %s would be worse (total wire length %.1f -> %.1f), so it was rolled back. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
+		FString Out = FString::Printf(TEXT("unchanged: %s in %s would be worse (total wire length %.1f -> %.1f), so it was rolled back. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
+
+		// *** THE WIRE LENGTH COMING BACK IS NOT THE SAME AS EVERY READER BEING RE-ATTACHED, SO THE
+		// SECOND QUESTION IS ASKED SEPARATELY. `bRestored` compares a total; this reports the consumers
+		// whose original link was NOT re-made. `MakeLinkTo` returns `void`, so the check is a read of the
+		// pin's own link list, taken after the attempt. ***
+		if (RestorationFailed > 0)
+		{
+			Out += FString::Printf(
+				TEXT(" *** %d CONSUMER(S) WERE NOT RE-ATTACHED TO THEIR ORIGINAL GETTER: the total length ")
+				TEXT("came back but those readers were left severed, which is a defect in this tool and not ")
+				TEXT("a clean rollback. ***"), RestorationFailed);
+		}
+		return Out;
 	}
 
 	// -----------------------------------------------------------------------------------------
