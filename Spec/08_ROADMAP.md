@@ -4,9 +4,9 @@ Build in this order. Each phase ends when its tests in `06_ACCEPTANCE.md`
 pass and are recorded. Start each phase only when the one before it is
 done, except where noted.
 
-**The compilation goal is 5.8.3** (`D-38`). The brief's target line is the
-engine actually built, and the engine facts in `07_ENGINE_NOTES.md` carry the
-marker of the version each was checked on.
+**The compilation goal is 5.8.3** (`D-38`). That is the engine branch actually built, and it is the only
+engine this project has ever been built or measured on, so every engine fact in `07_ENGINE_NOTES.md` comes
+from it.
 
 ---
 

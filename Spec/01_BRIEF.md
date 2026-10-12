@@ -2,7 +2,7 @@
 
 ## The problem
 
-Unreal Engine 5.8 ships an MCP server and a set of editor toolsets. An AI
+Unreal Engine 5.8.3 ships an MCP server and a set of editor toolsets. An AI
 agent connected to it can read and edit Blueprints, widgets and materials.
 In real work, agents lose most of their time on five things:
 
@@ -23,7 +23,7 @@ In real work, agents lose most of their time on five things:
 
 ## What the plugin is
 
-An editor-only Unreal Engine 5.8 plugin that registers its own toolsets
+An editor-only Unreal Engine 5.8.3 plugin that registers its own toolsets
 with the MCP server built into the engine, plus one editor window. It does not replace the
 engine's tools. It fills the gaps above and makes the engine's tools easier
 to use correctly.
@@ -121,9 +121,8 @@ its refusal is written before its feature is.**
 ## Target
 
 - Unreal Engine 5.8.3, Windows editor. This is the **compilation goal**
-  (`D-38`): it is the engine branch actually built, and every engine fact in
-  `07_ENGINE_NOTES.md` carries a marker saying which version it was checked
-  on.
+  (`D-38`): it is the engine branch actually built, and it is the only engine
+  this project has ever been built or measured on.
 - The engine's `ToolsetRegistry` and `ModelContextProtocol` plugins
   (experimental, ship with the engine).
 - Building against an engine that is not vanilla 5.8.3 is supported and

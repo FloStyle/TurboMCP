@@ -4663,7 +4663,7 @@ agent that wants a breakpoint is told WHY it cannot have one and what to use ins
 ## 20. Row 0.2 is understood but NOT landed, because the rebuild path is a different KIND of thing
 
 `Spec/WORKING_PLAN.md` row 0.2: *"Make `test-override-add` and `test-comment-boxes` restore their fixture **on the
-way in**"*, citing `STATUS.md` section 7 and `P8`. Both touch the same asset:
+way in**"*, citing `P8`. Both touch the same asset:
 
  Tools/test-override-add.py:27 ASSET = "BP_NodeTest"
  Tools/test-comment-boxes.py:34 ASSET = "BP_NodeTest"

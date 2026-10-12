@@ -76,7 +76,7 @@ exactly the modules the plugin depends on.
 
 **Rejected:** the default, which used 12.
 
-**Why:** a UE 5.8 editor build wants roughly **1.4 GB of commit charge per parallel action**, and Unreal
+**Why:** a **UE 5.8.3** editor build wants roughly **1.4 GB of commit charge per parallel action**, and Unreal
 Build Accelerator **kills compilers rather than waiting** when the commit charge runs out:
 
 ```
