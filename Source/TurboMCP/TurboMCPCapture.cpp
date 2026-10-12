@@ -355,8 +355,13 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			// REFUSED BY NAME. `D-41` forbids a wider frame in place of the one asked
 			// for, and a black rectangle is the wider-frame failure in its worst form:
 			// it looks like a successful capture of a dark window.
-			return FString::Printf(TEXT("%s\nerror: mode screen cannot work here: %s"),
-				*Out, *Error);
+			//
+			// *** `error:` COMES FIRST AND THE BANNER FOLLOWS. This refusal used to be
+			// `"%s\nerror: ..." % Out`, which put the `look:` banner at the front, so a caller
+			// testing for the `error:` prefix saw a SUCCESS - which is the exact failure the probe
+			// branch above records as measured. Every refusal in this file begins `error:`. ***
+			return FString::Printf(TEXT("error: mode screen cannot work here: %s\n%s"),
+				*Error, *Out);
 		}
 		return Out;
 	}
