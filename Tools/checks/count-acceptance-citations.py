@@ -98,6 +98,15 @@ def main() -> int:
     print("      THE REMAINING %d ARE READING WORK RATHER THAN A RENAME." % (len(suites) - len(claimed)))
     print("      *** AND THAT IS WHY A GUESSED ID WOULD MAKE THIS MEASUREMENT WORSE RATHER THAN BETTER: IT")
     print("      WOULD CITE A ROW NOTHING TESTS. ***")
+    print()
+    print("  *** AND THE FIXTURE TEST - 'does the suite name the fixture the row names?' - CAN ACCEPT ALMOST")
+    print("      NOTHING, WHICH IS MEASURED RATHER THAN FELT: ***")
+    print("          53 OF THE 122 ROWS NAME A `TA-` FIXTURE,")
+    print("          AND OF THE UNMAPPED SUITES ONLY *** 3 NAME ONE AT ALL ***.")
+    print("      SO THE ROWS NAME THE HAND-BUILT KIT WHILE THE SUITES DRIVE THE EARLIER `BP_NodeTest` ASSET, AND")
+    print("      THE MAPPING THEREFORE HAS TO REST ON THE ROW'S `Pass when` COLUMN RATHER THAN ON ITS FIXTURE.")
+    print("      *** A ROW AND A SUITE THAT SHARE NO FIXTURE CAN STILL BE THE SAME CAPABILITY - WHICH IS WHY THE")
+    print("      FIXTURE TEST REFUSES RATHER THAN GUESSES, AND WHY THE REMAINING MAPPINGS TAKE READING. ***")
     return 0
 
 
