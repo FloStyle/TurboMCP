@@ -1414,11 +1414,8 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 	// THE OUTPUTS, one top-level form each, which `2.5` requires: "Outputs as top level forms, one per
 	// connected output property."
 	//
-	// `FRenderState` HAS NO `Plan` FIELD, AND THIS LINE WAS LEFT BEHIND WHEN IT WAS REMOVED. The
-	// header explains the removal - the field was assigned once and never read, because every renderer
-	// already takes the plan as its own argument - and this assignment was the one write it had. It
-	// kept compiling until the renderer's signature changed and the class stopped having a member of
-	// that name, which turned a dead assignment into a build error. Removed rather than kept.
+	// `FRenderState` HAS NO `Plan` FIELD. Every renderer takes the plan as its own argument, so a field
+	// holding it would be assigned here and read nowhere. The header records the same absence.
 	FRenderState State;
 
 	TArray<FString> Properties = bTraceOnly
@@ -1633,10 +1630,10 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 	// Blueprint side's cache is filled from RENDERED widgets and is therefore empty headlessly - see the
 	// long note in `TurboMCPComment.cpp` - and a material box has no equivalent accessor at all.
 	//
-	// THE COMPUTATION USED TO BE A LAMBDA RIGHT HERE, AND IT MOVED FOR A MEASURED REASON: `P/E-MAT-BLOCKS`
-	// must decide which values CROSS a block boundary, so it needs exactly this answer - and two copies of
-	// a geometric rule drift the moment either is adjusted. A writer that disagreed with this reader about
-	// which box holds what would move values between blocks this reader does not believe in.
+	// THIS GEOMETRY IS SHARED RATHER THAN DUPLICATED: `P/E-MAT-BLOCKS` must decide which values CROSS a
+	// block boundary, so it needs exactly this answer - and two copies of a geometric rule drift the
+	// moment either is adjusted. A writer that disagreed with this reader about which box holds what
+	// would move values between blocks this reader does not believe in.
 	struct FBox
 	{
 		UMaterialExpressionComment* Comment = nullptr;
@@ -1826,9 +1823,8 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 			const int32* Declared = InPlan.ReaderCountByLabel.Find(Label);
 
 			// THE DECLARATION'S OWN BOX IS COMPARED WITH THIS BOX, so a label whose declaration and
-			// readers share a box is found. An earlier version of this line allocated an int32 to
-			// satisfy the out-parameter and LEAKED it on every usage - a real leak, in a Read tool,
-			// found by reading the line again rather than by any test.
+			// readers share a box is found. `DeclarationBox` IS A LOCAL BY VALUE: satisfying the
+			// out-parameter with a heap `int32` would leak it on every usage, in a Read tool.
 			int32 DeclarationBox = INDEX_NONE;
 			const bool bHasDeclaration = InPlan.DeclarationsByLabel.Contains(Label);
 			if (bHasDeclaration)
