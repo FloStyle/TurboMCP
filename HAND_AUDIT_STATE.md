@@ -35,14 +35,37 @@ than one with three; **the shape of the work removes the opportunities.**
 
 ## 3. THE DEFECTS THAT ARE ALREADY BOUNDED
 
-**`C-P10` is CLOSED in `Source/`.** `git grep 'Transaction\.Cancel()'` over the 39 remaining files returns
-**nothing**. All **28** unchecked cancels are in three files, and all three are audited:
+### `C-P10` is CLOSED, and so is the dead-counter family, for every file that can carry them
+
+`git grep 'Transaction\.Cancel()'` over the 39 remaining files returns **nothing**. All **28** unchecked cancels
+are in three files, and all three are audited:
 
 | File | Sites |
 |---|---|
 | `TurboMCPMaterialBlocks.cpp` | 19 |
 | `TurboMCPMaterialLabelsPromote.cpp` | `:461`, `:537`, `:610`, `:653`, `:662`, `:671` |
 | `TurboMCPMaterialTidy.cpp` | `:612`, `:621`, `:629` |
+
+**And of the sixteen `Source/` files still unread, FIFTEEN HAVE ZERO WRITE SITES** — `NodeResolve`, `Layout`,
+`GraphLoad`, `GraphTextLex`, `GraphStructure.h`, `GraphStructureNotes.h`, `Toolsets.cpp`, `ToolsetsInternal.h`,
+`WidgetTreeSync`, `MaterialTools`, `ToolSchemaTools`, `StructTools`, `CommentTools`, `GraphCheckTools`,
+`GraphFixBackwardTools`. The `C-P10` and dead-counter families **cannot occur in a file that writes nothing.**
+`TurboMCPWidgetRetarget.cpp` was the only one left with a write, and it is clean.
+
+*** SO WHAT REMAINS IN `Source/` CAN CARRY ONLY `C3` AND `C-P2` - defects in WHAT THE TOOL SAYS, NOT IN WHAT IT
+DOES.***
+
+### The correct pattern is already in the repository, three times
+
+| Does it right | Does it wrong |
+|---|---|
+| `GraphKnots.cpp:1400-1405` — re-measures and reports *"THE ROLLBACK DID NOT RESTORE THE GRAPH"* | `MaterialBlocks.cpp` — 19 unchecked `Cancel()` |
+| `DataTableRows.cpp:574-583` — *"a MEASUREMENT OF THE RESULT rather than a RESTATEMENT OF THE REQUEST"*, with `MISSING AFTER WRITE` | `MaterialLabelsPromote.cpp` — 6 unchecked, dead `InputsRetargeted` |
+| `WidgetRetarget.cpp:355-384` — re-counts, compares, and says *"the removal did not take. Report this rather than trusting the count above."* | `MaterialTidy.cpp` — 3 unchecked, dead `MovedBefore` |
+
+**The repair is not an invention.** It is to apply, in three files, a pattern three other files already implement
+and explain. **`AsError` is the same kind of fix**: written once in `TurboMCPMaterialTools.cpp:31-38`, wired into
+4 of 29 wrappers.
 
 `TurboMCPGraphKnots.cpp:1400-1405` re-measures a rollback and reports *"THE ROLLBACK DID NOT RESTORE THE GRAPH"*.
 **The repair pattern exists in the project and is not applied in those three files.**
