@@ -11,9 +11,10 @@ answer when it arrives. Answers come back as a new spec version
 
 ## Q-1 2026-10-07 Spec/01_BRIEF.md target
 
-The brief targets Unreal Engine 5.8.1. The owner chose branch `release`, which is
-5.8.3, for the engine build. Every engine fact in `Spec/07_ENGINE_NOTES.md` was
-checked against 5.8.1.
+The brief named a target, and the owner chose branch `release`, which is 5.8.3, for
+the engine build. **5.8.3 is therefore the only engine this project has ever been
+built or measured on**, and every engine fact in `Spec/07_ENGINE_NOTES.md` comes from
+it.
 
 Question: should `Spec/07_ENGINE_NOTES.md` be re-verified against 5.8.3, and
 should the brief's target line be updated to 5.8.3?

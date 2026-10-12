@@ -1039,8 +1039,8 @@ This matters twice over:
 
 - TurboMCP cannot be tested against the tools it exists to improve unless those
  plugins are on, so `TestProject/TurboMCPTest.uproject` now enables them.
-- It is version drift from the 5.8.1 notes, which is exactly what `QUESTIONS.md`
- Q-1 predicted.
+- It is version drift between the engine notes and the engine actually built,
+  which is exactly what `QUESTIONS.md` Q-1 predicted.
 
 ---
 

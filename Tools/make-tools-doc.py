@@ -181,6 +181,74 @@ def main() -> int:
         "here because they are the two things a caller gets wrong first."
     )
     out.append("")
+    out.append("## Adding a tool")
+    out.append("")
+    out.append(
+        "**Three steps, and the third is the one that is always forgotten.** A tool that exists but that no\n"
+        "suite names is a tool the coverage audit reports as uncalled, and the audit passes only at\n"
+        "`uncalled: (none)`."
+    )
+    out.append("")
+    out.append("### 1. Declare it, in the right toolset class")
+    out.append("")
+    out.append(
+        "Put it in the class that matches what it does — `UTurboMCPReadToolset` for a reader,\n"
+        "`UTurboMCPEditToolset` for a writer — in\n"
+        "[`TurboMCPToolsets.h`](Source/TurboMCP/Public/Tools/TurboMCPToolsets.h). **The class is the safety\n"
+        "property**: a reader declared in Read holds no editing code, so \"this cannot modify your project\" is a\n"
+        "fact about the type rather than a promise. A writer needs a `Preview` twin in\n"
+        "`UTurboMCPPreviewToolset` that shares the same `Plan`, so what the plan reports and what the edit does\n"
+        "cannot drift apart."
+    )
+    out.append("")
+    out.append("```cpp")
+    out.append("/**")
+    out.append(" * One line saying what the tool does. THIS SENTENCE IS WHAT AN AGENT READS, because the")
+    out.append(" * engine builds the tool description from this comment through reflection.")
+    out.append(" *")
+    out.append(" * Then the parameters, and every refusal by name with the engine line that decides it.")
+    out.append(" */")
+    out.append("UFUNCTION(meta = (AICallable))")
+    out.append("static FString ReadTurboMCPYourThing(const FString& Asset);")
+    out.append("```")
+    out.append("")
+    out.append("### 2. Write a suite that calls it **by its literal name**")
+    out.append("")
+    out.append(
+        "Add `Tools/test-<capability>.py`. *** THE CALL SITE MUST SPELL THE TOOL NAME AS A LITERAL, EXACTLY AS\n"
+        "THE DECLARATION DOES, BECAUSE `Tools/audit-tool-coverage.py` FINDS IT BY REGEX OVER THE SUITE FILES.\n"
+        "*** A name built at run time, or interpolated, is a name the audit cannot see, and the audit will\n"
+        "report the tool as uncalled even though the suite exercises it."
+    )
+    out.append("")
+    out.append("```python")
+    out.append("session.call(READ_TOOLSET, \"ReadTurboMCPYourThing\", {\"asset\": \"/Game/Tests/Thing\"})")
+    out.append("```")
+    out.append("")
+    out.append(
+        "**Every check you write must name an input that makes it fail.** `Tools/audit-suite-quality.py`\n"
+        "**blocks the whole run** when a check cannot fail or cannot pass, so a check that only ever passes is\n"
+        "a build failure here, not a stylistic complaint. And run the break test: change the code so the check\n"
+        "should go red, and confirm it does **with the wrong value visible** — a check that matches a prefix\n"
+        "cannot see a change after the prefix."
+    )
+    out.append("")
+    out.append("### 3. Verify, and run the whole thing")
+    out.append("")
+    out.append("```powershell")
+    out.append("python Tools\\audit-tool-coverage.py    # must print: uncalled: (none)")
+    out.append("python Tools\\audit-suite-quality.py    # must print 0 candidates, and it BLOCKS")
+    out.append("python Tools\\make-tools-doc.py         # regenerate this file, so it lists the new tool")
+    out.append("Tools\\build.ps1")
+    out.append("Tools\\run-suites.ps1                   # the signal that matters: passed N, failed 0")
+    out.append("```")
+    out.append("")
+    out.append(
+        "**AND `Tools/make-tools-doc.py` IS STEP 3 FOR A REASON: THIS FILE IS GENERATED FROM THE DECLARATIONS, SO\n"
+        "THE ONLY WAY TO KEEP IT TRUE IS TO RE-RUN THE GENERATOR.** A hand edit here is lost the next time\n"
+        "anybody regenerates, which is the same defect as a hand-kept list of 93 names."
+    )
+    out.append("")
 
     if without:
         out.append("## Tools with no doc comment")

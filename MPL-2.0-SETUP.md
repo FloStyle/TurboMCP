@@ -34,7 +34,7 @@ a line-ending conversion is not the license that was verified.
 This is **Exhibit A** of the license itself, which is the form the license asks a file to carry.
 
 ```cpp
-// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
+// Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -78,7 +78,7 @@ touched:
 - **It replaces, not duplicates.** Every file already had a copyright line; the script consumes it and
   writes the full notice in its place, so the count stays one. It also had to be TAUGHT the current spelling:
   its first pattern required `All Rights Reserved`, which the line
-  `// Copyright (c) 2026 Florian ESCHALIER (FloStyle)` does not end with, so it stopped recognising the line
+  `// Copyright (c) 2026 FloStyle` does not end with, so it stopped recognising the line
   it was supposed to consume and **prepended the notice above it, leaving two copyright lines in two files**.
   The pattern now matches any `// Copyright` line.
 - **It detects the line ending instead of choosing one.** This repository pins LF in `.gitattributes`. The
@@ -128,7 +128,7 @@ plugin is editor-only and does not ship in a game build at all.
 Every source file carries this header, and `Tools/apply-license-header.ps1` reapplies it:
 
 ```cpp
-// Copyright (c) 2026 Florian ESCHALIER (FloStyle)
+// Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 //
 // This Source Code Form is subject to the terms of the Mozilla Public

@@ -5,7 +5,7 @@
 	"FriendlyName": "TurboMCP",
 	"Description": "93 editor tools that fill the gaps in the engine's own MCP tools: Blueprint reading and writing, graph text, widgets, materials, capture, levels and actors.",
 	"Category": "AI",
-	"CreatedBy": "Florian ESCHALIER (FloStyle)",
+	"CreatedBy": "FloStyle",
 	"CreatedByURL": "https://github.com/FloStyle",
 	"DocsURL": "https://github.com/FloStyle/TurboMCP",
 	"MarketplaceURL": "",

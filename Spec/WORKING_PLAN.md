@@ -235,7 +235,7 @@ piece of work (`00_START_HERE.md` section 4). These are stale or about to be:
 |---|---|---|
 | `../STATUS.md` | its capability table, which is a snapshot and has been wrong twice | with each capability |
 | `../STATUS.md` | its section 3, "What is left", once step 0.1 lands | with step 0.1 |
-| `Spec/07_ENGINE_NOTES.md` | every section 1 to 4 and 6 fact carries a `[5.8.1]` marker | with step 0.3 |
+| `Spec/07_ENGINE_NOTES.md` | its section 5 measurements, which have never been taken | with step 0.3 |
 | `README.md`, `DOCS.md` | tool counts and the tool list | with each capability |
 | `../TestRecord.md` | one row per new test with its measured values and its date | with each capability |
 | `../QUESTIONS.md` | Q-19 to Q-22 are added with this plan and need answers | on the owner's next read |

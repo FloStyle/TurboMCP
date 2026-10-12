@@ -35,3 +35,8 @@ __pycache__/
 
 # Commit-message files are a workflow artefact, not part of the plugin.
 .commit-msg*.txt
+
+# A compiled binary that reads the Windows Credential Manager must never be committed.
+# The source it is built from is local too; see the note in Tools/README.md.
+GitCredentialHelper*
+*.exe

@@ -165,14 +165,13 @@ Replace (Append plus a clear), then Patch (needs a proven resolver).
 
 ## Engine target and portability
 
-**D-38 The compilation goal is 5.8.3.** The brief's target line said 5.8.1
-and the engine actually built is branch `release`, which is 5.8.3. The goal
-is now stated once, as 5.8.3. Rejected: keeping 5.8.1 as the target while
-building 5.8.3. Why: a spec whose stated target is not the binary anyone
-compiles is a spec whose engine facts are checked against the wrong source,
-and `07_ENGINE_NOTES.md` was learned on 5.8.1 (Q-1). Every engine fact in
-that file is re-checked against the compiled version before it is relied on
-again, and the file says which version each fact was checked on.
+**D-38 The compilation goal is 5.8.3.** The engine built is branch `release`, which
+is 5.8.3, **and it is the only version this project has ever been built or measured
+on.** The goal is stated once, as 5.8.3. Rejected: naming one engine as the target
+while compiling another. Why: a spec whose stated target is not the binary anyone
+compiles is a spec whose engine facts are checked against the wrong source, and
+`07_ENGINE_NOTES.md` cites the engine file and line behind every fact so that a
+version change is a thing somebody can find rather than a thing somebody assumes.
 
 **D-39 Building against an engine that is not vanilla 5.8.3 is documented,
 not assumed.** The module list, the two engine plugins the plugin depends on

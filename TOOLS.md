@@ -144,3 +144,61 @@ So the tool above named `ReadTurboMCPStatus` is called with `toolset_name` = `Tu
 bare one. Both facts are in [`Spec/07_ENGINE_NOTES.md`](Spec/07_ENGINE_NOTES.md), and they are repeated
 here because they are the two things a caller gets wrong first.
 
+## Adding a tool
+
+**Three steps, and the third is the one that is always forgotten.** A tool that exists but that no
+suite names is a tool the coverage audit reports as uncalled, and the audit passes only at
+`uncalled: (none)`.
+
+### 1. Declare it, in the right toolset class
+
+Put it in the class that matches what it does — `UTurboMCPReadToolset` for a reader,
+`UTurboMCPEditToolset` for a writer — in
+[`TurboMCPToolsets.h`](Source/TurboMCP/Public/Tools/TurboMCPToolsets.h). **The class is the safety
+property**: a reader declared in Read holds no editing code, so "this cannot modify your project" is a
+fact about the type rather than a promise. A writer needs a `Preview` twin in
+`UTurboMCPPreviewToolset` that shares the same `Plan`, so what the plan reports and what the edit does
+cannot drift apart.
+
+```cpp
+/**
+ * One line saying what the tool does. THIS SENTENCE IS WHAT AN AGENT READS, because the
+ * engine builds the tool description from this comment through reflection.
+ *
+ * Then the parameters, and every refusal by name with the engine line that decides it.
+ */
+UFUNCTION(meta = (AICallable))
+static FString ReadTurboMCPYourThing(const FString& Asset);
+```
+
+### 2. Write a suite that calls it **by its literal name**
+
+Add `Tools/test-<capability>.py`. *** THE CALL SITE MUST SPELL THE TOOL NAME AS A LITERAL, EXACTLY AS
+THE DECLARATION DOES, BECAUSE `Tools/audit-tool-coverage.py` FINDS IT BY REGEX OVER THE SUITE FILES.
+*** A name built at run time, or interpolated, is a name the audit cannot see, and the audit will
+report the tool as uncalled even though the suite exercises it.
+
+```python
+session.call(READ_TOOLSET, "ReadTurboMCPYourThing", {"asset": "/Game/Tests/Thing"})
+```
+
+**Every check you write must name an input that makes it fail.** `Tools/audit-suite-quality.py`
+**blocks the whole run** when a check cannot fail or cannot pass, so a check that only ever passes is
+a build failure here, not a stylistic complaint. And run the break test: change the code so the check
+should go red, and confirm it does **with the wrong value visible** — a check that matches a prefix
+cannot see a change after the prefix.
+
+### 3. Verify, and run the whole thing
+
+```powershell
+python Tools\audit-tool-coverage.py    # must print: uncalled: (none)
+python Tools\audit-suite-quality.py    # must print 0 candidates, and it BLOCKS
+python Tools\make-tools-doc.py         # regenerate this file, so it lists the new tool
+Tools\build.ps1
+Tools\run-suites.ps1                   # the signal that matters: passed N, failed 0
+```
+
+**AND `Tools/make-tools-doc.py` IS STEP 3 FOR A REASON: THIS FILE IS GENERATED FROM THE DECLARATIONS, SO
+THE ONLY WAY TO KEEP IT TRUE IS TO RE-RUN THE GENERATOR.** A hand edit here is lost the next time
+anybody regenerates, which is the same defect as a hand-kept list of 93 names.
+

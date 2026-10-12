@@ -76,19 +76,27 @@ $noticeRaw = Get-Content $HeaderFile -Raw
 $noticeRaw = $noticeRaw.Replace($CRLF, $LF).Replace($CR, $LF)
 $NoticeLines = $noticeRaw.TrimEnd([char]10) -split $LF
 
-# A file is recognised as ALREADY DONE by the SPDX identifier, because it is the one line unique to this
-# notice and it cannot appear in an old one.
-$Marker = 'SPDX-License-Identifier: MPL-2.0'
+# *** THE MARKER IS THE COPYRIGHT LINE EXACTLY AS `license-header.txt` SPELLS IT, NOT THE SPDX LINE. ***
+#
+# It used to be `SPDX-License-Identifier: MPL-2.0`, on the reasoning that the SPDX line is unique to this
+# notice and cannot appear in an old one. THAT IS TRUE, AND IT WAS THE WRONG TEST: THE SPDX LINE IS IDENTICAL
+# IN EVERY GENERATION OF THIS NOTICE. So when the holder line changed, the script classified all 193 files as
+# `already correct`, reported `0 replaced`, and the tree kept the old spelling while `-Check` went on passing.
+#
+# A CHECK THAT MATCHES A PART OF WHAT IT VERIFIES CANNOT SEE A CHANGE IN THE REST OF IT - the defect this
+# project has recorded eleven times, here inside the licence gate itself. The expected line is read from
+# `license-header.txt` so there is one spelling, and this script follows it rather than keeping a second copy.
+$ExpectedCopyright = (Get-Content $HeaderFile | Where-Object { $_ -match 'Copyright' } | Select-Object -First 1)
+$Marker = if ($ExpectedCopyright) { $ExpectedCopyright.Trim() } else { 'Copyright (c) 2026 FloStyle' }
 
 # Lines this script may REPLACE rather than duplicate, matched only at the TOP of a file.
 #
 # THE COPYRIGHT PATTERN MUST MATCH ANY COPYRIGHT LINE, AND IT USED TO REQUIRE "All Rights Reserved".
-# Measured consequence of that requirement: when the holder line changed to
-# `// Copyright (c) 2026 Florian ESCHALIER (FloStyle)`, which does NOT end with that phrase, the script no
-# longer recognised it as replaceable and PREPENDED the notice ABOVE it - so two files ended up carrying the
-# copyright line TWICE, once inside the notice and once below it. A pattern that matches one spelling of a
-# line it is supposed to consume will duplicate the others, and a duplicated notice is exactly the failure
-# this script exists to prevent.
+# Measured consequence of that requirement: when the holder line changed to a form that does NOT end with
+# that phrase, the script no longer recognised it as replaceable and PREPENDED the notice ABOVE it - so two
+# files ended up carrying the copyright line TWICE, once inside the notice and once below it. A pattern that
+# matches one spelling of the line it is supposed to consume will duplicate the others, and a duplicated
+# notice is exactly the failure this script exists to prevent.
 $ReplaceablePatterns = @(
     '^// Copyright\b.*$',
     '^// SPDX-License-Identifier:.*$',

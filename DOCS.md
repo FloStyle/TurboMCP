@@ -33,7 +33,7 @@ API, which this one does.
 
 **Rejected:** `ue5-main`, which the request named.
 
-**Why:** `ue5-main` is **5.9.0**, while the specification targets 5.8.1. Building
+**Why:** `ue5-main` is **5.9.0**, while the specification targets 5.8.3. Building
 it would have drifted from every note in `07_ENGINE_NOTES.md`. Raised as Q-1.
 
 ### E-3 Clone with `--filter=blob:none --depth 1`
@@ -413,13 +413,20 @@ Two of them contradict `07_ENGINE_NOTES.md`.
 
 ### W-1 One named credential, so nothing is ever chosen
 
-Windows holds several `github.com` credentials and Git Credential Manager opens a
-**"Select an account"** dialog whenever more than one matches, which made every
-push interactive. The credentials were never the problem: all three `git:` entries
-were checked against the GitHub API and all three authenticate as `FloStyle`. The
-*choosing* was.
+**Recorded because it shaped how pushes are made unattended, and NOT published.** *The helper itself is not
+in this repository — see the note at the end.*
 
-`Tools/credential/` reads one named entry straight out of the Windows Credential
-Manager and hands it to git, so there is nothing to choose. It adds no new secret
-and leaves the machine-wide setup untouched, so every other repository keeps using
-GCM. See `Tools/credential/README.md`.
+Windows can hold several `github.com` credentials, and Git Credential Manager opens a **"Select an account"**
+dialog whenever more than one matches, which makes every push interactive. The credentials were never the
+problem: the entries were checked against the GitHub API and they authenticate to the same account. The
+*choosing* was the problem.
+
+The fix was a small helper that reads **one named entry** out of the Windows Credential Manager and hands it
+to git, so there is nothing to choose. It adds no new secret — it reads a credential that was already stored
+— and it is configured repository-local, so the machine-wide Git Credential Manager is untouched and every
+other repository keeps working as before.
+
+*** IT IS DELIBERATELY NOT IN THIS REPOSITORY. *** A prebuilt binary whose job is to read stored secrets is
+something no reviewer or scanner can verify, which is a supply-chain problem out of all proportion to the
+convenience it buys. The helper lives on the machine that needed it, and what belongs here is the *reason*
+it exists — which is this paragraph — rather than the executable.
