@@ -5,8 +5,8 @@ had moved, `README.md` pointed at a gitignored file, and four sentences describe
 been removed. *** A READER WHO FOLLOWS A REFERENCE INTO NOTHING LEARNS THAT THE DOCUMENTATION CANNOT BE
 TRUSTED, WHICH COSTS MORE THAN THE MISSING PARAGRAPH. ***
 
-USAGE:   python Tools/check-refs.py            report only
-         python Tools/check-refs.py --strict   also fail on a BARE filename reference
+USAGE:   python Tools/checks/check-refs.py            report only
+         python Tools/checks/check-refs.py --strict   also fail on a BARE filename reference
 
 WHAT IT RESOLVES:
 

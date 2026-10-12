@@ -113,7 +113,9 @@ rather than a claim, and re-running these is how to check it:*
 
 ```powershell
 git grep -c "static FString" Source/TurboMCP/Public/Tools/TurboMCPToolsets.h   # 93
-(Get-ChildItem Tools\test-*.py).Count                                          # 52 files, 58 suites
+(Get-ChildItem Tools\test-*.py).Count                                          # 52 files
+# 58 suites: every Tools\*.py whose name matches ^(test|check|audit)-
+(Get-ChildItem Tools -Filter '*.py' | Where-Object { $_.BaseName -match '^(test|check|audit)-' }).Count
 git ls-files "Source/*.h" "Source/*.cpp" "Source/*.cs" "Source/**/*.h" "Source/**/*.cpp" "Source/**/*.cs" | Sort-Object -Unique   # 186
 git ls-files "Source/*.h" "Source/*.cpp" "Source/*.cs" "Source/**/*.h" "Source/**/*.cpp" "Source/**/*.cs" | Sort-Object -Unique | Get-Content | Measure-Object   # 61 620
 git ls-files "Spec/*.md" | Get-Content | Measure-Object                       # 7 748
@@ -126,13 +128,19 @@ which is how this table was "corrected" to 185 files and 61 460 lines during an 
 wrong and the original figures were right. A count that is off by one because of a glob is worse than no
 count, because it reads as a measurement.***
 
-*The suite count is the one figure not derivable from a file count: `run-suites.ps1` reports **3 static and
-55 needing an editor**, and some suite files register more than one suite, which is why **52 files** and
-**58 suites** are both correct.*
+*** THE SUITE COUNT IS NOT DERIVABLE FROM `Tools/test-*.py`, AND THE OBVIOUS EXPLANATION FOR THAT IS WRONG.***
+An earlier revision of this table said *"some suite files register more than one suite"*. **No suite file
+does.** `run-suites.ps1` discovers suites by NAME - `Get-ChildItem Tools -Filter '*.py'` filtered to
+`^(test|check|audit)-` - so the harness is **every script whose name begins that way**, which is **52
+`test-*.py` plus `check-mcp-server.py`, `check-includes.py`, `check-plugin.py`, `check-probe-graphs.py`,
+`audit-tool-coverage.py` and `audit-suite-quality.py`**. `run-suites.ps1` reports **3 static and 55 needing an
+editor**, and that is where **58** comes from.
 
-*The suite count is the one figure not derivable from a file count: `run-suites.ps1` reports
-**3 static and 55 needing an editor**, and some suite files register more than one suite, which is why
-**52 files** and **58 suites** are both correct.*
+*** AND THE PATTERN IS WHY THE DOCUMENTED FIGURE BROKE THIS SESSION. *** Three tools added while auditing the
+documentation - `check-refs.py`, `check-line-cites.py`, `check-suite-shapes.py` - began with `check-`, so **the
+runner silently absorbed them as suites** and the count drifted upward with nothing saying so. **They now live
+in `Tools/checks/`, which the discovery does not walk**, and the count is back to **58**. *A name is a
+configuration here, and a name chosen for how it reads can change what a harness runs.*
 
 ---
 

@@ -43,7 +43,7 @@ that was found by auditing the rows against the tree rather than by reading the 
 
 ### What is left, by phase
 
-*** COUNTED BY `Tools/count-plan.py`, WHICH SPLITS EACH ROW AND READS ITS LAST CELL - the plan's own rule.
+*** COUNTED BY `Tools/checks/count-plan.py`, WHICH SPLITS EACH ROW AND READS ITS LAST CELL - the plan's own rule.
 `30 todo · 16 done · 2 open` of 48 numbered rows. ***
 
 | Phase | todo | done | The rows that remain |

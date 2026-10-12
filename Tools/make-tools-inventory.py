@@ -105,10 +105,15 @@ def needs_of(name: str) -> str:
 
 
 def main() -> int:
+    # *** RECURSIVE, BECAUSE THE TOOLS MOVED. *** `Tools/checks/` holds the documentation checks, and they were
+    # moved there on purpose - the suite runner discovers suites by NAME (`^(test|check|audit)-`) and absorbed
+    # three of them as suites, which silently changed the documented suite count. **A non-recursive listing
+    # then dropped them from the inventory too, so the tools that fix the documentation became the tools the
+    # documentation did not mention.** The listing is now the whole directory.
     scripts = sorted(
-        p for p in TOOLS.iterdir()
+        p for p in TOOLS.rglob("*")
         if p.is_file() and (p.suffix in (".py", ".ps1") or p.name.endswith(".txt"))
-        and p.name != "README.md"
+        and p.name not in ("README.md", "INVENTORY.md")
     )
 
     groups = {}

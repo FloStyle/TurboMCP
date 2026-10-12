@@ -10,8 +10,8 @@ IT DOES NOT NEED THE CITED LINE TO BE QUOTED. It reports what IS at that line, s
 read whether the citation still points at what it claims - which is the only thing a checker can honestly
 offer for prose.
 
-USAGE:   python Tools/check-line-cites.py            report every citation with its target line
-         python Tools/check-line-cites.py --counts   one line per file, counts only
+USAGE:   python Tools/checks/check-line-cites.py            report every citation with its target line
+         python Tools/checks/check-line-cites.py --counts   one line per file, counts only
 """
 
 import pathlib

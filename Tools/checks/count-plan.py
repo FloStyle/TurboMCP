@@ -4,8 +4,8 @@ WHY A SCRIPT: `Spec/WORKING_PLAN.md` states the rule - *"counted BY FIELD, never
 because an earlier round reported a wrong number by matching a state word anywhere in the row. This does what
 the rule says: split each row on `|` and read the last non-empty cell.
 
-USAGE:   python Tools/count-plan.py            summary
-         python Tools/count-plan.py --list     also name every row with its state
+USAGE:   python Tools/checks/count-plan.py            summary
+         python Tools/checks/count-plan.py --list     also name every row with its state
 """
 
 import collections
