@@ -1762,10 +1762,12 @@ public:
 	 * The same inputs, read and validated the same way, as `P-COMMENT`, because the two share one
 	 * code path up to the write (`D-02`).
 	 *
-	 * THE DELETION NEVER TOUCHES THE NODES. A box is a label rather than a container, so removing it
-	 * removes the label and nothing else. The result says how many nodes it held and re-counts the
-	 * boxes afterwards, so the claim is CHECKED rather than asserted — getting that wrong would
-	 * destroy a caller's work, which is why it is the one thing this tool states twice.
+	 * THE DELETION NEVER TOUCHES THE NODES, AND ONLY ONE HALF OF THAT IS MEASURED. A box is a label
+	 * rather than a container, so removing it removes the label and nothing else. THE RE-MEASUREMENT IS
+	 * OF THE BOXES: the result re-counts them afterwards, so what is CHECKED is that the box itself is
+	 * gone. The node count is REPORTED, not verified - it is taken before the destroy and states what
+	 * the box held. That it stays true rests on `DestroyNode` removing the comment and nothing else,
+	 * which is why `Graph->Modify()` runs first and the change can be undone.
 	 *
 	 * `set` captures the old text, colour and size first, so the result reports what CHANGED rather
 	 * than only what the values are now (`P4`), and a `set` that changes nothing opens with
