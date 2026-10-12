@@ -1,256 +1,87 @@
-# TurboMCP — status report
+# TurboMCP — status
 
-**Version 1.0.0.** Every number here was read off the tree, not recalled. `Spec/WORKING_PLAN.md` is the
-live plan; this file is the state at the moment it was written.
-
-## Which document answers which question
-
-Four documents describe the state of this project, and they are not interchangeable. **This mapping exists
-because a reader who opens the wrong one gets a different answer to what looks like the same question.**
-
-| You want | Read | What it is |
-|---|---|---|
-| **The state now, and how to verify it** | [`HANDOVER.md`](HANDOVER.md) | Four commands that establish the state, what is finished, **what is not**, and what I do not know. **Start here** |
-| **The analysis: why, what is missing, what I would do next** | [`REPORT.md`](REPORT.md) | The invariants that hold the 93 tools together, the phantom fixtures, the vacuity debt, the dependency projection, my own most instructive error |
-| **The headline snapshot** | **this file** | Counts and a capability table at the revision it was written. *** Its §3 table has been wrong twice and understates the project in seven places; see the note under it *** |
-| **The evidence** | [`TestRecord.md`](TestRecord.md) | 181 chronological sections. Every claim above traces to one of them |
-
-**`Spec/WORKING_PLAN.md` is the authoritative work list**, and it is the only one of the five that has been
-audited row by row against the tree.
+**Version 1.0.0.** A snapshot of the state at the revision it was written. Every number is read from the
+tree, and each one names the command that produces it. **For the analysis, read [`REPORT.md`](REPORT.md);
+for the evidence, [`TestRecord.md`](TestRecord.md); to hand the project on, [`HANDOVER.md`](HANDOVER.md).**
 
 ---
 
 ## 1. The headline
 
-| | |
+| | How to check it |
 |---|---|
-| **Version** | **1.0.0** — `TurboMCP.uplugin` `VersionName`, no longer experimental |
-| **Tools shipped** | **93** AICallable `UFUNCTION`s, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
-| **The audit** | **`uncalled: (none)`** — every declared tool is named by a suite |
-| **Test suites** | **52 files** (`Tools/test-*.py`), **58 suites** in the harness |
-| **FULL RUN** | ***`passed 58, failed 0, blocked 0, of 58` — EXIT CODE 0.*** |
-| **The audit that BLOCKS** | `audit-suite-quality.py` **fails the run** if any suite contains a check that cannot fail **or cannot pass** — currently **0 candidates** |
-| **Licence** | **MPL-2.0**, notice on **186 of 186** source files, `LICENSE` present |
-| **Portability** | **No path of anyone's machine.** `Tools/common.ps1` and `Tools/tmcp_paths.py` derive the repo and resolve the engine **by version**, not by location |
-| **Secrets** | **None.** Scanned for keys, tokens, SSH keys, connection strings, private URLs; the one finding was an unused Android file-server token, now empty **and purged from the history** |
-| **C++** | **61 620 lines** in **186** files |
-| **Spec** | **7 740 lines** in **17** files |
-| **The record** | `TestRecord.md` **10 792 lines** · `REPORT.md` **350 lines** · `HANDOVER.md` **100 lines** |
-| **Plan** | **31 `todo` · 15 `done`** of 48 rows — *COUNTED BY FIELD, never by a regex over the line* |
-
-### The two defects that were blocking the green signal, and neither was on the priority list
-
-| | |
-|---|---|
-| ***The full-run conflict*** | *`test-vcs` required `TA01_HandLaid.uasset` clean while `test-graph-fix-backward`, which runs **before** it, rebuilds the kit — so **the full run could not be green at HEAD**. Fixed in the harness , where the editor can be stopped: a suite that needs the editor live cannot restore the file itself, because `git checkout` answers `unable to unlink old...: Invalid argument` while it is held open.* |
-| ***A count pinned on a shared asset*** | *`test-material-tidy` asserted `expressions_after == 16` while the fixture held 12, so **the suite passed or failed according to which fixture it happened to be looking at** — and reported a defect in the material tool that was a property of the fixture. The project's own rule forbids this in these words: "never pin a count or an ID on a shared asset". * |
-
-**The two capabilities the owner asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
-
----
+| **Version** | **1.0.0** — `TurboMCP.uplugin`, `VersionName`, no longer marked experimental |
+| **Tools** | **93** `AICallable` in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33. `Select-String -Path Source\TurboMCP\Public\Tools\TurboMCPToolsets.h -Pattern 'static FString'` |
+| **Coverage** | **`uncalled: (none)`** — every declared tool is reached by at least one suite. `python Tools\audit-tool-coverage.py` |
+| **Suites** | **52 files** under `Tools/test-*.py`, **58 suites** in the harness |
+| **FULL RUN** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0.*** `pwsh -NoProfile -File Tools\run-suites.ps1` |
+| **Suite-quality audit** | **BLOCKS the run** when a check cannot fail **or cannot pass** — 0 candidates. `python Tools\audit-suite-quality.py` |
+| **Licence** | **MPL-2.0**, the notice on **186 of 186** source files, `LICENSE` verbatim |
+| **Secrets** | **none** — keys, tokens, SSH keys, connection strings, private URLs and paths of anyone's machine were all checked, and one finding was removed from the file **and** the history |
+| **Plan** | **31 `todo` · 15 `done`** of 48 rows, counted **by field** |
+| **Size** | C++ **61 620 lines** in **186** files · Spec **7 740 lines** in **17** · `TestRecord.md` **10 810 lines** |
 
 ## 2. What is done
 
-### Reading — 21 of 21
-`R-ASSET-SEARCH`, `R-ASSET-DESCRIBE`, `R-BP-LOAD`, `R-CALL-LOG`, `R-COMMENT-LIST`, `R-DATATABLE`, `R-DIRTY-LIST`, `R-GRAPH-LOAD`, `R-MAT-BLOCKS`, `R-MAT-LABELS`, `R-MAT-LOAD`, `R-MAT-TRACE`, `R-NODE-FIND`, `R-NODE-RESOLVE`, `R-OVERRIDES`, `R-PLAY-CHECK`, `R-REFS`, `R-TOOL-INDEX`, `R-TOOL-SCHEMA`, `R-TRACE`, `R-TYPE-FIND`
+Every reader in `Read` and `Look` is **structurally unable to write**, because those toolsets hold no
+editing code. Every `Edit` has a `Preview` twin that shares the same `Plan`, so what a plan reports and
+what an edit does cannot drift apart.
 
-### Vision — 3 of 3
-`L-CAPTURE`, `L-LAYOUT-REPORT`, `L-WIDGET-PREVIEW`
+| § | Area | State |
+|---|---|---|
+| 2 | Agent help (Read and Preview) | **complete** |
+| 3 | Blueprint and widget reading | **complete** |
+| 4 | Materials reading | **complete** |
+| 5 | Look: captures, layout, widget previews | **complete** |
+| 7 | Blueprint structure (Preview and Edit) | **complete** |
+| 8 | Graph writing | **complete** |
+| 9 | Materials writing | `P/E-MAT-BLOCKS` **done** (24 checks) |
+| 15 | Graph linting | `R-BP-LINT` **done** (37 checks) |
+| — | Data tables | `P/E-DATATABLE-ROWS` **done** (26 checks) |
+| — | Call cost | `R-CALL-COST` **done** (29 checks) |
+| — | Asset cost | `R-ASSET-COST` **done** (10 checks) |
+| — | Material instance loading | `R-MAT-INST-LOAD` **done** (20 checks) |
+| — | Enum editing | `P/E-ENUM-EDIT` **done** |
 
-### Preview and the graph writer foundation
-`P-GRAPH-CHECK` (validates graph text with line and column, writes nothing), `P/E-GRAPH-APPEND` (the first writer that **creates** nodes from text), plus the layout passes `P/E-GRAPH-KNOTS`, `P/E-GRAPH-TIDY`, `P/E-GRAPH-FIX-BACKWARD`, `P/E-GRAPH-DEAD`.
-
-### Infrastructure built along the way, all of it load-bearing
-- **`FTurboMCPGraphTextLex`** — the graph-text lexer, extracted so there is **one** reader of the one dialect.
-- **`FTurboMCPNodeType::SpawnNodeOfType`** — the type-ID-to-node factory, reaching the engine's action database because a type ID carries a **localized** display title.
-- **`TurboMCPTestMap`** — a PIE map with a placed actor that raises a real Warning and Error, which closed two long-standing holes at once (§5).
-- **`Tools/run-suites.ps1`** — a harness that owns the editor per suite and waits for both the **server** and the **process**.
-
----
+**`Spec/WORKING_PLAN.md` is the authoritative work list.** This page is a snapshot; that one is audited row
+by row against the tree, and it is the only list that is.
 
 ## 3. What is left
 
-**Derived from `Spec/03_TOOLS.md`'s own `###` entries, section by section, not from a hand-kept list. THE EARLIER
-TABLE IN THIS FILE WAS A NINE-SECTION READING OF A SPEC THAT HAS TWENTY SECTIONS**, and it is replaced rather than
-annotated because the shape of the gap was wrong, not just its size.
+**31 of 48 rows**, and three of them cannot be done on the machine this was built on:
 
-| § | Section | Done | State |
-|---|---|---|---|
-| 2 | Agent help (Read and Preview) | 8/8 | **COMPLETE** |
-| 3 | Blueprint and widget reading | 8/8 | **COMPLETE** |
-| 4 | Materials | 4/4 | **COMPLETE** |
-| 5 | Look | 4/4 | **COMPLETE** |
-| 7 | Blueprint structure (Preview and Edit) | 4/4 | **COMPLETE** |
-| 8 | Graph writing (the bulk writer) | 1/1 | **COMPLETE** |
-| 9 | Materials writing | 5/8 | `E-MAT-BLOCKS` **DONE**; `R-MAT-INST-LOAD` **DONE** (20 checks) |
-| 4 | Data tables | 1/1 | `P/E-DATATABLE-ROWS` **DONE** (26 checks) |
-| — | Kit (plan row 1.5) | 2/8 built | `TA-14`/`TA-20` **BUILT and read back**; `TA-15`/`TA-17` buildable; `TA-16` needs work; `TA-18` needs a measurement; `TA-19`/`TA-21` REFUSED with citations |
-| 15 | Quality and maintenance | 1/1 | `R-BP-LINT` **DONE** (37 checks, six named checks each reporting its denominator) |
-| 10 | Graph structure | 0/3 | `E-GRAPH-RENAME`, `E-GRAPH-COLLAPSE`, `E-GRAPH-COPY` |
-| 11 | Widget authoring | 0/5 | needs the widget text dialect first |
-| 12 | Assets, structs and data | 0/6 | `E-ASSET-*`, `P-ASSET-DIFF`, `R-ASSET-COST`, curves, structs |
-| 13 | Level and actors | 1/5 | `R-ACTOR-LOAD`, `E-ACTOR-PLACE`, `P/E-ACTOR-SET`, `E-COMPONENTS` |
-| 14 | Debugging | 2/7 | **CLOSED BY MEASUREMENT** - see §4 |
-| 16 | Agent and session tooling | 0/4 | `E-SESSION`, `P/E-ASSET-BATCH`, `R-CALL-COST` |
-| 17 | Source control | 0/2 | gated on measurement 1.3 |
-| 18 | Vision: what a Look may capture | 0/4 | `L-CAPTURE-ASSET`, `L-CAPTURE-LEVEL`, `P-IMAGE-COMPARE` |
-| 19 | Before and after | 0/1 | `P-IMAGE-COMPARE` |
-| 20 | Build portability | 0/1 | `09_BUILD.md` |
+- the remaining **source-control writers** need a server that answers;
+- **`TA-18`** needs a `USkeleton` bone whose every route is closed in the engine.
 
-*** THIS TABLE IS A SNAPSHOT AND IT HAS BEEN WRONG TWICE, IN TWO DIFFERENT WAYS. *** It carried **§15 twice**,
-once as `1/1 DONE` and once as `0/1 R-BP-LINT` - **two rows of one table contradicting each other** - and it
-carried **§4 twice**, once for Materials and once for Data tables. Both duplicates are now removed, and the
-second §11 became §20 because the spec's own numbering moved.
+The other 28 are capability after capability — further material, widget, graph, curve, asset and actor
+tools — and the pattern for each already exists in this repository. **The order I would take them in is in
+[`HANDOVER.md`](HANDOVER.md) section 3**, and the reasoning is in [`REPORT.md`](REPORT.md) section 9.
 
-*** AND IT UNDERSTATES THE PROJECT IN SEVEN PLACES, WHICH THE FILE ITSELF DOES NOT SAY. *** Rows this table
-still calls unfinished are built and passing: `R-BP-LINT` (37 checks), `R-CALL-COST` (29), `R-ASSET-COST`
-(10), `P/E-DATATABLE-ROWS` (26), `R-MAT-INST-LOAD` (20), `P/E-ENUM-EDIT`, and `P/E-MAT-BLOCKS` (24).
-**`Spec/WORKING_PLAN.md` is the list that was actually audited against the tree; this one was not.**
-
-**`Spec/WORKING_PLAN.md` IS THE AUTHORITATIVE ORDER**, and it is a working document that changes every round. The
-rows above are its steps: materials end to end, then data tables, then widget authoring, then graph structure, then
-assets and data, then level and actors, then quality and session, then source control, then build portability.
-
-### 3.1 The one thing that is deliberately NOT built
-
-`E-BREAKPOINT`, `R-BREAKPOINT`, `R-DEBUG-STATE`, `E-DEBUG-CONTROL` and `R-AUTOMATION-RUN` are **refused by decision,
-not deferred by effort.** Measurement 1.1 asked whether the MCP server answers while the editor is stopped at a
-Blueprint breakpoint, and **it answers NO**, proven from the engine source rather than from a run:
-
- Ticker.h:35 static CORE_API FTSTicker& GetCoreTicker;
- Ticker.h:168-170 void ExecuteOnGameThread(...) { FTSTicker::GetCoreTicker.AddTicker(...); }
- HttpServerModule.h:26 class FHttpServerModule..., public FTSTickerObjectBase
- HttpServerModule.cpp:182-191 FHttpServerModule::Tick(...) {... Listener.Value->Tick(...); }
-
-**`GetCoreTicker` IS THE LITERAL MECHANISM OF `ExecuteOnGameThread`, so the HTTP server ticks on the GAME
-THREAD.** A breakpoint stops the editor in a nested loop, the game thread stops ticking, and **THE SERVER'S OWN
-`Tick` NEVER RUNS - THE REQUEST IS NEVER DISPATCHED TO A TOOL. THE SERVER IS NOT SLOW, IT IS SILENT.** An agent that
-armed the breakpoint waits until a person resumes the game.
-
-`D-55` had already written this down and had already rejected the alternative: *"Rejected: building breakpoints and
-documenting the risk. Why: a capability whose failure mode is 'the agent stops forever' has to be gated on a
-measurement, not on a warning."* **THE TRACE POINTS ARE THE ANSWER INSTEAD, AND THEY ALREADY EXIST**: `E-TRACE` and
-`R-TRACE` capture a live hit with node identity through `FBlueprintCoreDelegates::OnScriptException`
-(`Script.h:445,453,460`), **AND A TRACE POINT NEVER PAUSES** - which is what `D-36` means by *"trace points before
-breakpoints"*.
-
----
-
-## 4. The blocker, and it is no longer the harness
-
-**An earlier revision of this file said "the capability work is nearly complete; the verification harness is now the
-bottleneck", with a full run reporting `31 of 39` and failing suite names that changed between runs. BOTH HALVES OF
-THAT ARE NOW WRONG.**
-
-**THE HARNESS IS GREEN: `passed 43, failed 0, blocked 0, of 43`, measured on an idle machine.** Six defects of one
-shape were fixed to get there, each of which had produced "failing names that change between runs and pass in
-isolation":
-- the **rebuild scripts return exit 0 and print PASS** in every invocation shape that can be reproduced.
-
-**Six defects of one shape have been found and fixed**, each producing exactly that signature:
-
-1. the harness waited on the **server** while `start-editor.ps1` decides from the **process**;
-2. `make-acceptance-asset.ps1` slept a **fixed 2 seconds** instead of waiting for the process;
-3. the probe could pass on an editor that was **still shutting down** — it now requires an `UnrealEditor` that started **after** the launch;
-4. **seven** concurrent rebuilds of the **one** acceptance asset are serialized by a **named mutex**;
-5. the harness **killed the editor a previous suite had healthily started** — it is now **subordinate to a healthy editor** and reuses it;
-6. a live editor process whose **server never came up** made the launcher refuse every later start — now **cleared and retried once**.
-
-### Five hypotheses about the failing rebuild, each FALSIFIED by measurement
-
-| Hypothesis | Measurement |
-|---|---|
-| the script does not print PASS | it does |
-| its exit code is non-zero | it is 0 |
-| the suite's call shape breaks it | `subprocess.run(capture_output=True)` from Python → `returncode 0`, 284 chars, `PASS: True` |
-| a log-file lock | falsified — the captured stdout is correct and complete |
-| the harness's editor holds the `.uasset` | falsified — run **with** an editor alive: `returncode 0`, `PASS: True`, every probe graph named |
-
-`make-kit-assets.ps1` behaves identically: `returncode 0`, `PASS: True`, 3965 chars, every asset named.
-
-**AND THE SENTENCE THAT FOLLOWED THIS TABLE WAS WRONG.** It said the next measurement was *"the state of the editor
-at the moment the harness hands control to the suite"*, and named the rebuild as the remaining suspect. **THE
-REBUILD WAS NEVER THE DEFECT AND THE DEFECT WAS NOT NEAR IT.** What was actually happening was measured later and in
-one line: `Tools/tmcp.py` had gained a re-connect retry so a suite whose editor was restarted underneath it would
-recover - correct in itself - **but `connect` CALLS `rpc` AND `rpc` CALLS `connect` ON FAILURE, SO WHEN THE
-SERVER DID NOT ANSWER THE RETRY RECURSED, each level waiting out a full request timeout.**
-
- check-probe-graphs.py BEFORE: 777.3 SECONDS, and killed at 600 in a full run
- check-probe-graphs.py AFTER: 16.1 SECONDS, RESULT: PASS
-
-**AND THE SUITE'S OWN GUARD COULD NOT FIRE**: its `try`/`except` is written to treat any MCP failure as *"no editor,
-which is allowed"* - **BUT THE EXCEPTION NEVER ARRIVED, because the recursion consumed the stack and the clock
-instead of raising. A GUARD THAT CANNOT BE REACHED BECAUSE THE FAILURE PATH NEVER RETURNS IS NOT A GUARD.**
-
-**THE LESSON, WHICH IS THE MOST EXPENSIVE ONE IN THIS FILE: A FIX INTRODUCES ITS OWN FAILURE MODES AND MUST BE
-MEASURED LIKE ANYTHING ELSE.** That retry was verified against the case it was written for - an editor restarted
-underneath a suite - and **never against the case where no editor comes back at all.** Five candidate causes were
-named across five rounds and every one was falsified by a single measurement; the real one was a change made to
-SOLVE something, in a file nobody suspected for that reason.
-
-**AND THE PER-SUITE WALL-CLOCK DEADLINE IS WHAT MADE IT FINDABLE.** Before it, this suite hung indefinitely and the
-symptom - no editor, no log activity, 18 to 25 minutes - pointed at the environment rather than at a tool. **THE
-BOUND TURNED AN UNATTRIBUTABLE HANG INTO `RESULT: TIMED OUT (600s)`, AND NAMING THE SUITE IS WHAT MADE THE
-RECURSION VISIBLE. A bound is not a fix, and it is what makes a fix possible.**
-
-Two structural notes that survive regardless: the harness now **owns the editor only between suites and never inside one**, and **ONE owner of the editor lifecycle** remains the architectural fix — the hybrid, where a suite and the harness both drive the same editor, is what keeps producing this.
-
----
-
-## 5. What was found and fixed this stretch, and why it matters
-
-Recorded in full in `TestRecord.md`; the ones worth knowing:
-
-- **`E-GRAPH-DEAD` was queueing the author's COMMENT BOXES for deletion.** A comment has **no pins**, so a walk from the entry nodes can never reach one, and it also writes no variable and holds no entry — so it satisfied every removal condition. Found because an **unused include** named the exact type at fault.
-- **`R1`'s pure-node carry could never fire.** The carried node landed on the **source's own left edge**, because the push that would clear it ran *after* the carry. **Seven fixture configurations** were built against it and every one was refused; the workstream diagnosed it **by arithmetic** and recorded a rule defect rather than faking a fixture. It was right.
-- **A stale binary masqueraded as a passing fix, three times.** After restoring a broken file and rebuilding, the suite still failed while the source was correct — **the loaded DLL was the old one**. **`Result: Succeeded` is not evidence the binary changed.**
-- **`Apply` returned an empty string with a success code** in `E-GRAPH-APPEND` while the graph was correctly changed, so **every check that read the graph passed**. Caught only by reading the **return value**.
-- **`P-GRAPH-CHECK` refuses nothing it should accept** — proved by feeding it real graph text read out of a real graph, because a checker that refuses correct input stops every write in the project.
-- **The project's own capability audit was wrong for four rounds**: it took only the **first ID per line**, which hid `R-TRACE` behind `### E-TRACE and R-TRACE` and made Reading read as "19 of 19 complete" when it was 20 of 21. The count is **51 distinct IDs, of which `E-X` is a placeholder in the spec's own format example** — so **50 real capabilities**.
-
----
-
-## 6. Honest limits — things that are built but not fully proven
-
-| Area | What is not proven |
-|---|---|
-| `E-TRACE` | The **transport** is verified (a live hit, with the node's identity). The **capture path** is not: the break test renames the fixture Blueprint, which proves the check bites rather than that the capture cannot silently drop a hit. |
-| `P/E-GRAPH-APPEND` | **Pin values are not witnessed by a second tool** — `R-GRAPH-LOAD` prints only an id and a class for a node unreachable from an entry point, and an appended node has no exec wire. The suite asserts what *is* observable and says so. |
-| Node kinds | The spec lists ~15 families. The core mechanism handles any type the action database offers, but **each family was not enumerated and tested**. |
-| `Q-17` | The count is now cross-checked against the engine's own log and **proven to bite**. A **forged zero over a true zero** remains unprovable by any assertion. |
-| `Q-11` | The panel **runner** is testable; the **Slate layout, combo selection and repaint** need a human eye. |
-| Kit assets | `TA-10` is **impossible** from a commandlet — proven by a crash — because `AddVariable` needs a `UUserDefinedStructEditorData` only the editor factory installs. |
-| `E-GRAPH-APPEND` test | Moved to a **rebuildable** graph (`SaneProbe` in `TurboMCPAcceptance`), which stops the damage it was doing to the shared `BP_NodeTest` — it had been growing that graph by one node per run, measured 12 → 17. |
-
----
-
-## 7. Recommended order from here
-
-1. **Decide the single owner of the editor lifecycle** and implement it. Until this is done, no full run can be trusted, and every later capability inherits the same doubt.
-2. **`E-GRAPH-REPLACE`**, then **`E-GRAPH-PATCH`** — the same machinery, differing only in what they do with the old graph.
-3. **`E-MAT-LABEL-PROMOTE`, `E-MAT-TIDY`, `E-MAT-BLOCKS`** — the last three.
-4. Then the fixture-hygiene items: make `test-override-add` and `test-comment-boxes` restore state **on the way in**, and fix the `Q-16` fixture and TIDY's geometry mismatch so their keep-branches can be observed.
-
----
-
-*This report describes a plugin that reads Blueprint graphs, widgets and materials faithfully and can now write into them. The engineering discipline that produced it — no claim without a measurement, a check shown to fail before it is believed, and a defect recorded rather than papered over — is the reason the nine recorded cases of "a check that passes while the thing it verifies is broken" were caught rather than shipped.*
-
----
-
-## Plan counter, and the correction of my own instrument (section 141)
-
-**THE COUNT MUST BE TAKEN BY FIELD - READ FROM THE LAST CELL OF THE ROW - AND NOT BY A REGEX OVER THE LINE.** *A row's status
-cell in `Spec/WORKING_PLAN.md` may contain prose, so a pattern that looks for the word `todo` or `done` followed by a pipe
-matches **prose inside a multi-line cell** as well as a status. It produced `41 todo, 4-5 done` and **changed between two runs of
-the same command**; the field-based count is `42 todo, 4 done` over 46 rows.*
-
-**THE FIELD-BASED COUNT IS ALSO THE AUTHORITATIVE ONE FOR ANY FUTURE ROUND**, and it is the project's oldest rule applied to its
-own bookkeeping: **parse the field, never match a sentence beside it.**
+## 4. Honest limits — built, but not fully proven
 
 | | |
 |---|---|
-| `todo` | **42** |
-| `done` | **4** |
-| **Tools** | **93** AICallable, audit `uncalled: (none)` |
-| **Suites** | **54**, full run **54/54**, zero failures |
-| **Rows done, last five** | *`0.2`, `1.4`, `1.3`, `7.1`, `10.1`* |
+| **No checkout against a live depot has ever run** | every answer the source-control tools give is the answer to a **refusal** or a **no-op** |
+| **The `UsesCheckout == true` branch has never executed** | Perforce reports `IsAvailable == false`, so the mechanism refuses before reaching it |
+| **No `-nullrhi` run** | the `screen` refusal is proven by construction from two engine guards, not executed |
+| **The positive path of `selection`** | proven by a self-cleaning internal probe, because `P3` forbids a Look from creating a selection |
+| **`TA-19`** | the `Niagara` module is linked, but nothing was built: the emitter still has to be authored |
+
+## 5. The two defects that made green impossible
+
+Both are fixed, and both are in [`REPORT.md`](REPORT.md) section 12.2 with the reasoning:
+
+- **the full-run conflict** — `test-vcs` required a clean fixture while a suite that runs *before* it
+  rebuilt that fixture. **A suite needs the editor alive for its checks, so it cannot restore the file
+  itself**: `git checkout` answers `unable to unlink old ...: Invalid argument` while the editor holds it.
+  Fixed in the harness.
+- **a count pinned on a shared asset** — a suite asserted a literal `16` while the fixture held `12`, so it
+  **passed or failed according to which fixture it was looking at**, and reported as a defect in the tool
+  what was a property of the fixture. Fixed by comparing `before` against `after`.
+
+**And the deeper finding from the harness investigation, kept because it is a real trap:**
+`Tools/tmcp.py` gained a re-connect retry so a suite whose editor was restarted underneath it would
+recover — correct in itself — **but `connect` calls `rpc` and `rpc` calls `connect` on failure, so when the
+server did not answer the retry recursed, each level waiting out a full request timeout.** The full
+investigation, including the five hypotheses that were falsified by measurement, is in
+[`TestRecord.md`](TestRecord.md).

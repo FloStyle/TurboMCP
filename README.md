@@ -78,10 +78,9 @@ Tools/                  helper scripts, not part of the plugin
 | [`Tools/README.md`](Tools/README.md) | What each helper script does and how to run it |
 | [`LICENSE`](LICENSE) | The Mozilla Public License 2.0, verbatim |
 
-*** `.agent/ENVIRONMENT.md` USED TO BE LISTED HERE AND IT IS NOT IN THE REPOSITORY. *** `.agent/` is in
-`.gitignore` - it holds working logs rather than published material - so a reader of the public tree would
-have followed that link to nothing. **The machine facts a contributor actually needs are in
-[`Spec/09_BUILD.md`](Spec/09_BUILD.md)**, which is tracked.
+The machine facts a contributor needs — the engine version, the toolchain, and every trap hit while
+setting it up — are in [`Spec/09_BUILD.md`](Spec/09_BUILD.md). Working logs are not published; `.agent/` is
+in `.gitignore`.
 
 ## Requirements
 

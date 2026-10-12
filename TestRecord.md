@@ -18,21 +18,17 @@ state, read [`HANDOVER.md`](HANDOVER.md) first; for the plan, [`Spec/WORKING_PLA
 
 ## Status at this revision
 
-*** THIS HEADER SAID "phase 0 builds, loads, and registers" AND "no tool behaviour has been tested" FOR
-MOST OF THE PROJECT'S LIFE. BOTH WERE TRUE WHEN THEY WERE WRITTEN AND NEITHER WAS UPDATED. *** The record
-below had grown to 10 792 lines while its own first paragraph said almost nothing had been tested.
-
 | | |
 |---|---|
 | **Tools** | **93** `AICallable`, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
 | **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0*** |
 | **Coverage audit** | **`uncalled: (none)`** — every declared tool is reached by at least one suite |
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail *or* cannot pass — **0 candidates** |
-| **Test asset kit** | **exists**: 15 fixtures tracked under `TestProject/Content/Tests/`, built by `Tools/make-*.ps1` |
-| **Engine under test** | **5.8.3**, source build, resolved from `Engine/Build/Build.version` |
+| **Test asset kit** | 15 fixtures tracked under `TestProject/Content/Tests/`, built by `Tools/make-*.ps1` |
+| **Engine under test** | **5.8.3**, source build, read from `Engine/Build/Build.version` |
 
-**Every result recorded below must state the engine version it was measured on**, and `06_ACCEPTANCE.md`
-and `07_ENGINE_NOTES.md` were written against an earlier engine (`QUESTIONS.md` Q-1) — which is why the
+**Every result below states the engine version it was measured on**, and `Spec/06_ACCEPTANCE.md` and
+`Spec/07_ENGINE_NOTES.md` were written against an earlier engine (`QUESTIONS.md` Q-1) — which is why the
 version is printed beside each measurement rather than assumed.
 
 ---

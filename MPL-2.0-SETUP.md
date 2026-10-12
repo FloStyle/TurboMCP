@@ -60,12 +60,8 @@ pwsh -File Tools\apply-license-header.ps1 -Root <dir>   # try it on a copy first
 189 files, one notice and one copyright line each
 ```
 
-Five added lines per file, **nothing removed**, and **every file carries exactly one notice**.
-
-*** THIS FILE SAID 111 FOR A LONG TIME, AND THE NUMBER HAD STOPPED BEING TRUE. *** *111 was correct when
-`Source/` was the only tree the script walked. `TestProject/Source` was added later, the script grew to cover
-it, and this paragraph was not updated.* **A count written in prose drifts the moment somebody adds a file,
-so the number below is the one the script prints - run it rather than trusting this sentence:**
+Five added lines per file, **nothing removed**, and **every file carries exactly one notice**. Run the check
+to see that for yourself:
 
 ```powershell
 pwsh -File Tools\apply-license-header.ps1 -Check
