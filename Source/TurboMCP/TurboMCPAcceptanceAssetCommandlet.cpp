@@ -1056,8 +1056,20 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 			{
 				// `Rename` to the transient package takes it out of the asset package's object list
 				// without deleting it, which is the only safe way to free the name here.
-				Old->Rename(nullptr, GetTransientPackage(),
-					REN_DontCreateRedirectors | REN_NonTransactional);
+				//
+				// *** THE RESULT IS CHECKED, BECAUSE A FAILED RENAME LEAVES THE COLLISION IT EXISTS TO
+				// PREVENT. `UObject::Rename` returns `bool` (`Object.h:693`). When it fails the old
+				// object keeps its name inside the package, the `CreateBlueprint` below then makes a
+				// second object of that name, and the save writes a package holding both. ***
+				if (!Old->Rename(nullptr, GetTransientPackage(),
+					REN_DontCreateRedirectors | REN_NonTransactional))
+				{
+					UE_LOG(LogTurboMCP, Error,
+						TEXT("could not move the existing TurboMCPAcceptance out of %s, so the name ")
+						TEXT("is not free and the package would hold two objects of that name"),
+						*PackagePath);
+					return 3;
+				}
 			}
 		}
 	}
