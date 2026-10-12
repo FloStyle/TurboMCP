@@ -3,12 +3,12 @@
 **One row per provider. AVAILABLE / NOT AVAILABLE / NEEDS A SETTING, with the
 file and line that decides it.**
 
-Measured on `main` = `origin/main` = `07cf757` (the row was launched at
-`7f8b7e4`; the only commits between them are the orchestrator's own
-`TestRecord.md` record entries - `git diff --stat 7f8b7e4 HEAD` is
+Measured on `main` = `origin/main` = (the row was launched at
+; the only commits between them are the orchestrator's own
+`TestRecord.md` record entries - `git diff --stat HEAD` is
 `TestRecord.md | 68 +++++`, source untouched), against the engine install at
 `C:\UnrealEngine` (`Engine/Build/Build.version`: `MajorVersion 5`,
-`MinorVersion 8`, `PatchVersion 3`, `CompatibleChangelist 55116800`).
+`MinorVersion 8`, `PatchVersion 3`, `CompatibleChangelist`).
 
 *** THIS IS A MEASUREMENT FILE, NOT AN IMPLEMENTATION. NOTHING UNDER
 `Source/TurboMCP/` WAS TOUCHED, `TurboMCPToolsets.h` WAS NOT TOUCHED, NO
@@ -27,28 +27,28 @@ guaranteed to have source control" scope. The probe is
 `.agent/sc-probe.py`; the raw outputs are `.agent/logs/sc-probe-*.txt` and the
 run logs `.agent/logs/sc-run-*.log`.
 
-| Provider | Selected by `-SCCProvider=` | `current_provider()` | `is_enabled()` | `is_available()` | Verdict | The file and line that decides it |
+| Provider | Selected by `-SCCProvider=` | `current_provider` | `is_enabled` | `is_available` | Verdict | The file and line that decides it |
 |---|---|---|---|---|---|---|
-| **None** (default) | unset, `""`, or `None` | `'None'` | `False` | `False` | **NOT AVAILABLE** - and it is the provider you get when nothing is configured | `SourceControlModule.cpp:255-258` falls back to `&DefaultSourceControlProvider` when the configured name matches nothing; `DefaultSourceControlProvider.cpp:41-44` `IsEnabled()`/`IsAvailable()` both `return false`; `:52-55` `GetState` and `:77-80` `Execute` both `return ECommandResult::Failed` |
+| **None** (default) | unset, `""`, or `None` | `'None'` | `False` | `False` | **NOT AVAILABLE** - and it is the provider you get when nothing is configured | `SourceControlModule.cpp:255-258` falls back to `&DefaultSourceControlProvider` when the configured name matches nothing; `DefaultSourceControlProvider.cpp:41-44` `IsEnabled`/`IsAvailable` both `return false`; `:52-55` `GetState` and `:77-80` `Execute` both `return ECommandResult::Failed` |
 | **Git** | `Git` | `'Git'` | `True` | `True` | **AVAILABLE** in a commandlet, once selected | `GitSourceControlProvider.cpp:141-150` both return `bGitRepositoryFound`, set by `CheckRepositoryStatus` (`:60-85`) from `CheckGitAvailability` (`:32-58`) called by `Init` (`:21-30`) **regardless of `bForceConnection`** - so the repository is found even though `SourceControlModule.cpp:263` calls `Init(false)` |
-| **Perforce** | `Perforce` | `'Perforce'` | `True` | `False` | **NEEDS A SETTING** - a reachable server, a workspace and a login; and note `IsEnabled()` is `true` even when nothing is available | `PerforceSourceControlProvider.cpp:232-235` `IsEnabled()` `return true`; `:237-240` `IsAvailable()` is `bServerAvailable && !IsLoginError() && bIsWorkspaceValidForProject`; `:99-104` `Init(false)` sets `EInitFlags::None` so **no** connection is attempted, and the connection lives at `:310-330` under `EInitFlags::AttemptConnection` |
-| **Plastic SCM** | `Plastic SCM` | `'Plastic SCM'` | `True` | `False` | **NOT AVAILABLE here** - the `cm` client is not installed on this machine, and a connection is still needed | `PlasticSourceControlProvider.cpp:283-286` `IsEnabled()` `return true`; `:289-292` `IsAvailable()` is `bServerAvailable`; `:89-109` `CheckPlasticAvailability()` sets `bPlasticAvailable` from `FindPlasticBinaryPath()` / `PlasticSourceControlShell::Launch()`; `:72-86` the connection needs `bForceConnection` |
-| **Subversion** | `Subversion` | `'Subversion'` | `True` | `False` | **NOT AVAILABLE here** - the `svn` client is not installed on this machine | `SubversionSourceControlProvider.cpp:79-82` `IsEnabled()` `return true`; `:84-88` `IsAvailable()` is `!bWorkingOffline`; `:26-29` `Init` -> `ParseCommandLineSettings(bForceConnection)`, and `bWorkingOffline` is set at `:646` / cleared at `:650` by a command result |
+| **Perforce** | `Perforce` | `'Perforce'` | `True` | `False` | **NEEDS A SETTING** - a reachable server, a workspace and a login; and note `IsEnabled` is `true` even when nothing is available | `PerforceSourceControlProvider.cpp:232-235` `IsEnabled` `return true`; `:237-240` `IsAvailable` is `bServerAvailable && !IsLoginError && bIsWorkspaceValidForProject`; `:99-104` `Init(false)` sets `EInitFlags::None` so **no** connection is attempted, and the connection lives at `:310-330` under `EInitFlags::AttemptConnection` |
+| **Plastic SCM** | `Plastic SCM` | `'Plastic SCM'` | `True` | `False` | **NOT AVAILABLE here** - the `cm` client is not installed on this machine, and a connection is still needed | `PlasticSourceControlProvider.cpp:283-286` `IsEnabled` `return true`; `:289-292` `IsAvailable` is `bServerAvailable`; `:89-109` `CheckPlasticAvailability` sets `bPlasticAvailable` from `FindPlasticBinaryPath` / `PlasticSourceControlShell::Launch`; `:72-86` the connection needs `bForceConnection` |
+| **Subversion** | `Subversion` | `'Subversion'` | `True` | `False` | **NOT AVAILABLE here** - the `svn` client is not installed on this machine | `SubversionSourceControlProvider.cpp:79-82` `IsEnabled` `return true`; `:84-88` `IsAvailable` is `!bWorkingOffline`; `:26-29` `Init` -> `ParseCommandLineSettings(bForceConnection)`, and `bWorkingOffline` is set at `:646` / cleared at `:650` by a command result |
 | *(FileSandbox proxy)* | would be `Sandbox` | - | - | - | **NOT A PROVIDER HERE** - the plugin is **not** enabled by default, so it never registers | `Engine/Plugins/Developer/Sandbox/FileSandbox/FileSandbox.uplugin:13` `"EnabledByDefault": false`; it would register at `SandboxSourceControlProviderProxy.cpp:101` |
 
 **Verbatim probe output, all six runs** (`.agent/logs/sc-probe-*.txt`):
 
 ```
---- none ---            current_provider='None'       is_enabled=False  is_available=False
---- git ---             current_provider='Git'        is_enabled=True   is_available=True
---- perforce ---        current_provider='Perforce'   is_enabled=True   is_available=False
---- plastic ---         current_provider='Plastic SCM' is_enabled=True  is_available=False
---- subversion ---      current_provider='Subversion' is_enabled=True   is_available=False
---- perforce-co ---     current_provider='Perforce'   is_enabled=True   is_available=False
---- plastic-co ---      current_provider='Plastic SCM' is_enabled=True  is_available=False
+--- none --- current_provider='None' is_enabled=False is_available=False
+--- git --- current_provider='Git' is_enabled=True is_available=True
+--- perforce --- current_provider='Perforce' is_enabled=True is_available=False
+--- plastic --- current_provider='Plastic SCM' is_enabled=True is_available=False
+--- subversion --- current_provider='Subversion' is_enabled=True is_available=False
+--- perforce-co --- current_provider='Perforce' is_enabled=True is_available=False
+--- plastic-co --- current_provider='Plastic SCM' is_enabled=True is_available=False
 ```
 
-`is_available()` is `IsEnabled() && GetProvider().IsAvailable()`
+`is_available` is `IsEnabled && GetProvider.IsAvailable`
 (`SourceControlHelpers.cpp:324-329`), so the Perforce/Plastic/Subversion rows
 say exactly what they look like: **selected and enabled, with no server.**
 
@@ -85,15 +85,15 @@ LOG.** `TestProject/Saved/Logs/TurboMCPTest_2.log` is a
 (`:463` is the command line):
 
 ```
-:300  LogPluginManager: Mounting Engine plugin GitSourceControl
-:304  LogPluginManager: Mounting Engine plugin PerforceSourceControl
-:306  LogPluginManager: Mounting Engine plugin PlasticSourceControl
-:313  LogPluginManager: Mounting Engine plugin SubversionSourceControl
-:354  LogModuleManager: InternalLoadLibrary: 'PerforceSourceControl' (...)
-:358  LogModuleManager: InternalLoadLibrary: 'PlasticSourceControl' (...)
+:300 LogPluginManager: Mounting Engine plugin GitSourceControl
+:304 LogPluginManager: Mounting Engine plugin PerforceSourceControl
+:306 LogPluginManager: Mounting Engine plugin PlasticSourceControl
+:313 LogPluginManager: Mounting Engine plugin SubversionSourceControl
+:354 LogModuleManager: InternalLoadLibrary: 'PerforceSourceControl' (...)
+:358 LogModuleManager: InternalLoadLibrary: 'PlasticSourceControl' (...)
 :1440 LogModuleManager: InternalLoadLibrary: 'GitSourceControl' (...)
 :1450 LogModuleManager: InternalLoadLibrary: 'SubversionSourceControl' (...)
-:356,357,359,1441,1451  SourceControl: Revision control is disabled
+:356,357,359,1441,1451 SourceControl: Revision control is disabled
 ```
 
 *** "Revision control is disabled" IS
@@ -115,35 +115,35 @@ selection, `Init`, `GetState`, `Execute`/`CheckOut`, `UsesCheckout`.**
 The evidence is the negative plus the guard lines, and both are specific:
 
 - The four `StartupModule`s register unconditionally, with no editor guard:
-  `GitSourceControlModule.cpp:35`, `PerforceSourceControlModule.cpp:19`,
-  `PlasticSourceControlModule.cpp:20`, `SubversionSourceControlModule.cpp:35`.
+ `GitSourceControlModule.cpp:35`, `PerforceSourceControlModule.cpp:19`,
+ `PlasticSourceControlModule.cpp:20`, `SubversionSourceControlModule.cpp:35`.
 - Where the plugins *do* mention the commandlet, they **suppress UI** rather
-  than require an editor:
-  `GitSourceControlModule.cpp:49` `if (FApp::IsUnattended() || IsRunningCommandlet()) return;`
-  (inside `SaveSettings`),
-  `SubversionSourceControlModule.cpp:54` (same, in `SaveSettings`),
-  `PlasticSourceControlProvider.cpp:584` `if (!IsRunningCommandlet())` (before
-  `FMessageDialog::Open` for version/connection errors),
-  `PerforceSourceControlProvider.cpp:763` `if (PersistentConnection && !IsRunningCommandlet())`
-  (keeps the connection alive in a long-running commandlet).
+ than require an editor:
+ `GitSourceControlModule.cpp:49` `if (FApp::IsUnattended || IsRunningCommandlet) return;`
+ (inside `SaveSettings`),
+ `SubversionSourceControlModule.cpp:54` (same, in `SaveSettings`),
+ `PlasticSourceControlProvider.cpp:584` `if (!IsRunningCommandlet)` (before
+ `FMessageDialog::Open` for version/connection errors),
+ `PerforceSourceControlProvider.cpp:763` `if (PersistentConnection && !IsRunningCommandlet)`
+ (keeps the connection alive in a long-running commandlet).
 - The only `GEditor` read in the four plugins is **guarded and not on the
-  provider path**: `PlasticSourceControl/PackageUtils.cpp:19` `if (GEditor)`,
-  inside `GetCurrentWorld()` (`:17-27`), reached only from
-  `ListPackagesToReload` (`:140`), whose callers are the branch/changeset
-  **widgets** and `PlasticSourceControlMenu.cpp`. A null `GEditor` degrades to
-  `nullptr`, it does not assert.
+ provider path**: `PlasticSourceControl/PackageUtils.cpp:19` `if (GEditor)`,
+ inside `GetCurrentWorld` (`:17-27`), reached only from
+ `ListPackagesToReload` (`:140`), whose callers are the branch/changeset
+ **widgets** and `PlasticSourceControlMenu.cpp`. A null `GEditor` degrades to
+ `nullptr`, it does not assert.
 - The `FSlateApplication` references are all widget code:
-  `SPerforceSourceControlSettings.cpp:233`,
-  `SPlasticSourceControlBranchesWidget.cpp:740,1545`,
-  `SPlasticSourceControlChangesetsWidget.cpp:1035-1698`
-  (the last also dereferences `GEditor` eleven times at `:1037,1650,1653,1656,1663,1668,1674,1692,1698`).
-  These are `MakeSettingsWidget()`/dialog paths, not `ISourceControlProvider`.
+ `SPerforceSourceControlSettings.cpp:233`,
+ `SPlasticSourceControlBranchesWidget.cpp:740,1545`,
+ `SPlasticSourceControlChangesetsWidget.cpp:1035-1698`
+ (the last also dereferences `GEditor` eleven times at `:1037,1650,1653,1656,1663,1668,1674,1692,1698`).
+ These are `MakeSettingsWidget`/dialog paths, not `ISourceControlProvider`.
 
 *** SO THE ANSWER TO ROW 1.3'S CENTRAL QUESTION IS THE **NARROWING** ONE - THE
 SAME SHAPE AS SECTION 123's `FStructureEditorUtils` RESULT: A SOURCE CONTROL
 PROVIDER NEEDS AN **EDITOR PROCESS**, NOT AN OPEN EDITOR, AND NOT SLATE. ***
-`LaunchEngineLoop.cpp:3343`'s `!IsRunningCommandlet()` guard on
-`FSlateApplication::Get().InitializeRenderer(...)` therefore **does not bind
+`LaunchEngineLoop.cpp:3343`'s `!IsRunningCommandlet` guard on
+`FSlateApplication::Get.InitializeRenderer(...)` therefore **does not bind
 here**, and this was measured rather than argued: the Git case returned
 `is_available=True` from a `-nullrhi -unattended` commandlet with no Slate at
 all (the same commandlet run logs
@@ -154,7 +154,7 @@ interactive `FEditorFileUtils` checkout path does need Slate, at lines that are
 *not* guardable by a provider:
 `FileHelpers.cpp:2150` loads `FPackagesDialogModule` unconditionally, `:2161`
 `CreatePackagesDialog`, and `:2218` `ShowPackagesDialog(...)`, which reaches
-*** `PackagesDialog.cpp:118  GEditor->EditorAddModalWindow( EditorPackagesDialogWindowRef );` ***
+*** `PackagesDialog.cpp:118 GEditor->EditorAddModalWindow( EditorPackagesDialogWindowRef );` ***
 - an unguarded `GEditor->` dereference, the same shape as
 `BlueprintEditorModule.cpp:214`. That is the line that decides "not headless"
 for `FEditorFileUtils`, and it is a *dialog* dependency, not a *provider* one.
@@ -178,51 +178,51 @@ There is exactly **one** source control acceptance row and **one** capability:
 **WHAT THOSE ROWS ASSUME, MEASURED AGAINST THIS ENGINE:**
 
 1. "*through `ISourceControlModule`'s own provider rather than by shelling out*"
-   - CORRECT and supported: `CommandletSourceControlUtils.cpp:129,237,395` is the
-   engine's **own commandlet-side** source control, and it does exactly that
-   (`GetState`, `Execute(FCheckOut)`, `Execute(FRevert)`, `Execute(FDelete)`)
-   with **no `GEditor`, no Slate, no asset editor anywhere in its 458 lines.**
-   So the engine already has a headless checkout path; row 10.1 can be built on
-   it.
+ - CORRECT and supported: `CommandletSourceControlUtils.cpp:129,237,395` is the
+ engine's **own commandlet-side** source control, and it does exactly that
+ (`GetState`, `Execute(FCheckOut)`, `Execute(FRevert)`, `Execute(FDelete)`)
+ with **no `GEditor`, no Slate, no asset editor anywhere in its 458 lines.**
+ So the engine already has a headless checkout path; row 10.1 can be built on
+ it.
 2. "*Perforce will refuse a save that is not checked out; git will not*" -
-   CORRECT, and now with line numbers: `PerforceSourceControlProvider.cpp:622-625`
-   `UsesCheckout()` `return true`; `GitSourceControlProvider.cpp:286-289`
-   `UsesCheckout()` `return false`, and `GitSourceControlModule.cpp:21` says so
-   in words ("this provider does not uses the `CheckOut` command, which is a
-   Perforce `lock`, as Git has no lock command"). Subversion `:239-242` and
-   Plastic `:498-501` (a project setting, default on) also `return true`.
+ CORRECT, and now with line numbers: `PerforceSourceControlProvider.cpp:622-625`
+ `UsesCheckout` `return true`; `GitSourceControlProvider.cpp:286-289`
+ `UsesCheckout` `return false`, and `GitSourceControlModule.cpp:21` says so
+ in words ("this provider does not uses the `CheckOut` command, which is a
+ Perforce `lock`, as Git has no lock command"). Subversion `:239-242` and
+ Plastic `:498-501` (a project setting, default on) also `return true`.
 3. "*the state is reported per asset*" - CORRECT but conditional: with `None`,
-   `GetState` cannot report a state at all (`DefaultSourceControlProvider.cpp:52-60`
-   `return ECommandResult::Failed`), so the row's "with source control off the
-   answer says so per asset" **must be a refusal per asset, not a state**.
+ `GetState` cannot report a state at all (`DefaultSourceControlProvider.cpp:52-60`
+ `return ECommandResult::Failed`), so the row's "with source control off the
+ answer says so per asset" **must be a refusal per asset, not a state**.
 4. "**The engine's own checkout path fails headless**, and the consequence is
-   that `FEditorFileUtils` tried to check out during a headless save, failed,
-   and made `E-SAVE` report a failure while nothing had been written" - **THE
-   NARROWING APPLIES HERE AND THE RECORDED CAUSE IS NOT THE ONE THE CODE
-   SHOWS.** With no provider selected, `ISourceControlModule::Get().IsEnabled()`
-   is `False` (`DefaultSourceControlProvider.cpp:41-44`), and the editor's save
-   path **skips checkout entirely** on that value:
-   `FileHelpers.cpp:5925` `if (ISourceControlModule::Get().IsEnabled())` guards
-   the only `CheckoutPackages` call in `InternalCheckoutAndSavePackages`
-   (`:5912-5951`). `FEditorFileUtils::CheckoutPackages` (`:2380`, `:2610`) is
-   never reached. What *is* reached, when a package needs checkout, is the
-   **dialog**: `FileHelpers.cpp:2150/2161/2218` -> `PackagesDialog.cpp:118`
-   `GEditor->EditorAddModalWindow(...)`. The branch that needs checkout with no
-   provider is `FileHelpers.cpp:2061`
-   `else if (bPkgReadOnly && bFoundFile && (IsCheckOutSelectedDisabled() || !bCareAboutReadOnly))`,
-   and `IsCheckOutSelectedDisabled()` (`:1908-1910`) is `true` with no provider.
-   *So the headless failure is a **read-only file plus a Slate dialog**, not a
-   provider refusing.* **Not settled by re-running it**: I did not re-run the
-   `FEditorFileUtils` save headless, and whether the phase-1 asset file was
-   read-only at the time is not recoverable. What I can report is that every
-   kit asset on disk today is writable (`IsReadOnly False` for all fifteen
-   files under `TestProject/Content/Tests`), so today that branch is not taken
-   for them.
+ that `FEditorFileUtils` tried to check out during a headless save, failed,
+ and made `E-SAVE` report a failure while nothing had been written" - **THE
+ NARROWING APPLIES HERE AND THE RECORDED CAUSE IS NOT THE ONE THE CODE
+ SHOWS.** With no provider selected, `ISourceControlModule::Get.IsEnabled`
+ is `False` (`DefaultSourceControlProvider.cpp:41-44`), and the editor's save
+ path **skips checkout entirely** on that value:
+ `FileHelpers.cpp:5925` `if (ISourceControlModule::Get.IsEnabled)` guards
+ the only `CheckoutPackages` call in `InternalCheckoutAndSavePackages`
+ (`:5912-5951`). `FEditorFileUtils::CheckoutPackages` (`:2380`, `:2610`) is
+ never reached. What *is* reached, when a package needs checkout, is the
+ **dialog**: `FileHelpers.cpp:2150/2161/2218` -> `PackagesDialog.cpp:118`
+ `GEditor->EditorAddModalWindow(...)`. The branch that needs checkout with no
+ provider is `FileHelpers.cpp:2061`
+ `else if (bPkgReadOnly && bFoundFile && (IsCheckOutSelectedDisabled || !bCareAboutReadOnly))`,
+ and `IsCheckOutSelectedDisabled` (`:1908-1910`) is `true` with no provider.
+ *So the headless failure is a **read-only file plus a Slate dialog**, not a
+ provider refusing.* **Not settled by re-running it**: I did not re-run the
+ `FEditorFileUtils` save headless, and whether the phase-1 asset file was
+ read-only at the time is not recoverable. What I can report is that every
+ kit asset on disk today is writable (`IsReadOnly False` for all fifteen
+ files under `TestProject/Content/Tests`), so today that branch is not taken
+ for them.
 5. Row 10.1 is **"gated on 1.3"** and `Q-20` asks which provider comes first.
-   **THE MEASUREMENT ANSWERS BOTH: Git is the only provider that is AVAILABLE
-   on this machine with nothing but the `Provider` setting, so Git is the one
-   that can be built and tested first; Perforce is the one whose refusal
-   (`UsesCheckout() == true`) is the reason the capability exists.**
+ **THE MEASUREMENT ANSWERS BOTH: Git is the only provider that is AVAILABLE
+ on this machine with nothing but the `Provider` setting, so Git is the one
+ that can be built and tested first; Perforce is the one whose refusal
+ (`UsesCheckout == true`) is the reason the capability exists.**
 
 ### Do the fixtures T-VCS-1 names exist?
 
@@ -245,36 +245,36 @@ acceptance row against what exists. Assets under `TestProject/Content`:
 `Tests/Kit/TA20_KitParameters`, `Tests/Kit/TA13_KitPath/TA13_KitPath` - sixteen.
 
 - *** `TA-17` ("Curve float and a curve table") IS NAMED BY `T-DATA-5`
-  (`06_ACCEPTANCE.md:213`) AND NOTHING CARRIES IT. *** No asset with `TA17` or
-  `TA-17` in its path exists, and **no file under `Tools/` mentions `TA-17`,
-  `TA17` or a curve at all** (`Tools/*.py` has zero matches for
-  `CurveFloat|CurveTable|curve`, case-insensitive). The implementation row that
-  would need it is still `todo`: `Spec/WORKING_PLAN.md:145` row 7.3
-  (`R-CURVE-LOAD` and `P/E-CURVE-SET`, "Test: `T-DATA-5`, `T-DATA-6`").
-  `T-DATA-6` ("Replace the keys of one curve table row") names the same
-  fixture by description. **This is the fifth row naming a missing fixture:
-  `T-DATA-5` -> `TA-17`** (with `T-DATA-6` behind it).
+ (`06_ACCEPTANCE.md:213`) AND NOTHING CARRIES IT. *** No asset with `TA17` or
+ `TA-17` in its path exists, and **no file under `Tools/` mentions `TA-17`,
+ `TA17` or a curve at all** (`Tools/*.py` has zero matches for
+ `CurveFloat|CurveTable|curve`, case-insensitive). The implementation row that
+ would need it is still `todo`: `Spec/WORKING_PLAN.md:145` row 7.3
+ (`R-CURVE-LOAD` and `P/E-CURVE-SET`, "Test: `T-DATA-5`, `T-DATA-6`").
+ `T-DATA-6` ("Replace the keys of one curve table row") names the same
+ fixture by description. **This is the fifth row naming a missing fixture:
+ `T-DATA-5` -> `TA-17`** (with `T-DATA-6` behind it).
 - `TA-9` ("Widget Blueprint `card alt`") is named by `T-BP-8`
-  (`06_ACCEPTANCE.md:95`, "After replacing `ReturnButton` with TA-9 under the
-  same name") and nothing carries it either - no `TA09`/`card alt` asset and no
-  reference to it anywhere under `Tools/` or `Source/`. **A sixth candidate**,
-  reported as a candidate because the row's wording ("replacing ... under the
-  same name") may be intended as an in-session class swap rather than a stored
-  asset.
+ (`06_ACCEPTANCE.md:95`, "After replacing `ReturnButton` with TA-9 under the
+ same name") and nothing carries it either - no `TA09`/`card alt` asset and no
+ reference to it anywhere under `Tools/` or `Source/`. **A sixth candidate**,
+ reported as a candidate because the row's wording ("replacing... under the
+ same name") may be intended as an in-session class swap rather than a stored
+ asset.
 - `TA-5` is a **label collision, not a missing asset**: the kit table
-  (`06_ACCEPTANCE.md:20`) calls `TA-5` a 60-expression Material, while the kit
-  the project actually builds uses that label for the `BackwardProbe` graph -
-  `Tools/make-kit-assets.ps1:139` "`TA-5` is the `BackwardProbe` graph", and
-  `Tools/test-graph-fix-backward.py:416` "`TA-5` IS THE `BackwardProbe` GRAPH".
-  The material fixture exists under its own name (`TurboMCPMaterialFixture`,
-  built by `TurboMCPMaterialFixtureCommandlet`, `Tools/make-material-asset.ps1:6-7`),
-  and `T-MAT-6`/`T-WRITE-6` are exercised against it.
+ (`06_ACCEPTANCE.md:20`) calls `TA-5` a 60-expression Material, while the kit
+ the project actually builds uses that label for the `BackwardProbe` graph -
+ `Tools/make-kit-assets.ps1:139` "`TA-5` is the `BackwardProbe` graph", and
+ `Tools/test-graph-fix-backward.py:416` "`TA-5` IS THE `BackwardProbe` GRAPH".
+ The material fixture exists under its own name (`TurboMCPMaterialFixture`,
+ built by `TurboMCPMaterialFixtureCommandlet`, `Tools/make-material-asset.ps1:6-7`),
+ and `T-MAT-6`/`T-WRITE-6` are exercised against it.
 - The same drift makes the recorded `T-MAT-10 -> TA-6` note **narrower than the
-  record says**: `TA-6` is "Material instance of TA-5", and a real material
-  instance **does** exist - `MI_TurboMCPFixture`, inside
-  `TurboMCPMaterialFixture.uasset`, `TurboMCPMaterialFixtureCommandlet.cpp:609`
-  per `Tools/test-mat-inst-load.py:14-15`. The fixture is missing **under the
-  name the table gives it**, not absent from the project.
+ record says**: `TA-6` is "Material instance of TA-5", and a real material
+ instance **does** exist - `MI_TurboMCPFixture`, inside
+ `TurboMCPMaterialFixture.uasset`, `TurboMCPMaterialFixtureCommandlet.cpp:609`
+ per `Tools/test-mat-inst-load.py:14-15`. The fixture is missing **under the
+ name the table gives it**, not absent from the project.
 
 *This is offered as a measurement for the owner to fold in, not as a spec edit:
 `Spec/06_ACCEPTANCE.md` is outside this workstream's file boundaries and was
@@ -291,9 +291,9 @@ The engine's own gate is `SourceControlHelpers.cpp:61-85`
 `VerifySourceControl(bool bSilent)`:
 
 ```
-:65   if (!SCModule.IsEnabled())          -> :67 "Revision control is not enabled."
-:74   if (!Provider->IsAvailable())       -> :76 "Revision control server is currently not available."
-:84   return Provider;   (nullptr on either refusal)
+:65 if (!SCModule.IsEnabled) ->:67 "Revision control is not enabled."
+:74 if (!Provider->IsAvailable) ->:76 "Revision control server is currently not available."
+:84 return Provider; (nullptr on either refusal)
 ```
 
 and every entry point starts with it, e.g. `CheckOutFile`
@@ -302,39 +302,39 @@ and every entry point starts with it, e.g. `CheckOutFile`
 verbatim in this tree**, through the Python surface `unreal.SourceControl`
 (the class is `UCLASS(..., meta = (ScriptName = "SourceControl"))`,
 `SourceControlHelpers.h:244`), calling `check_out_file(..., True)` and reading
-`last_error_msg()`:
+`last_error_msg`:
 
 ```
-provider None      -> check_out_file = False ; last_error_msg = Text("Revision control is not enabled.")
-provider Perforce  -> check_out_file = False ; last_error_msg = Text("Revision control server is currently not available.")
-provider Plastic   -> check_out_file = False ; last_error_msg = Text("Revision control server is currently not available.")
+provider None -> check_out_file = False; last_error_msg = Text("Revision control is not enabled.")
+provider Perforce -> check_out_file = False; last_error_msg = Text("Revision control server is currently not available.")
+provider Plastic -> check_out_file = False; last_error_msg = Text("Revision control server is currently not available.")
 ```
 
 **So the required shape is achievable with the engine's own API, and the
 measured answer to "what must a tool do" is a four-part rule:**
 
-1. **Ask both questions, in this order.** `IsEnabled()` alone is not enough,
-   and this is measured: Perforce, Plastic and Subversion all
-   `return true` from `IsEnabled()` unconditionally
-   (`PerforceSourceControlProvider.cpp:232-235`,
-   `PlasticSourceControlProvider.cpp:283-286`,
-   `SubversionSourceControlProvider.cpp:79-82`) while `IsAvailable()` is
-   `False`. `ISourceControlModule.h:193` says as much in its own words:
-   "true if a source control provider is set (regardless of whether the
-   provider is available)".
+1. **Ask both questions, in this order.** `IsEnabled` alone is not enough,
+ and this is measured: Perforce, Plastic and Subversion all
+ `return true` from `IsEnabled` unconditionally
+ (`PerforceSourceControlProvider.cpp:232-235`,
+ `PlasticSourceControlProvider.cpp:283-286`,
+ `SubversionSourceControlProvider.cpp:79-82`) while `IsAvailable` is
+ `False`. `ISourceControlModule.h:193` says as much in its own words:
+ "true if a source control provider is set (regardless of whether the
+ provider is available)".
 2. **Refuse by name, per asset** - the two literal strings above, which is what
-   `T-VCS-1`'s "the answer says so per asset" means once the provider is `None`.
-   Not an empty success, not a zero, not a crash.
+ `T-VCS-1`'s "the answer says so per asset" means once the provider is `None`.
+ Not an empty success, not a zero, not a crash.
 3. **Put the refusal in `Plan`**, so the Preview and its Edit twin refuse the
-   same input - the project's existing shape, demonstrated verbatim by
-   `P/E-STRUCT-FIELDS`.
+ same input - the project's existing shape, demonstrated verbatim by
+ `P/E-STRUCT-FIELDS`.
 4. **Never reach a provider call to find out.** With `None`, `GetState` and
-   `Execute` do not fail loudly - they `return ECommandResult::Failed`
-   (`DefaultSourceControlProvider.cpp:52-55`, `:77-80`) and, for
-   `GetState(UPackage*)`, hand back a **null state**, which a reader can mistake
-   for "not under source control". `CommandletSourceControlUtils.cpp:184-194`
-   and `:350-359` show what that costs when a consumer does not check first: it
-   silently falls through to deleting files from disk.
+ `Execute` do not fail loudly - they `return ECommandResult::Failed`
+ (`DefaultSourceControlProvider.cpp:52-55`, `:77-80`) and, for
+ `GetState(UPackage*)`, hand back a **null state**, which a reader can mistake
+ for "not under source control". `CommandletSourceControlUtils.cpp:184-194`
+ and `:350-359` show what that costs when a consumer does not check first: it
+ silently falls through to deleting files from disk.
 
 **And the project's own pattern for an absent measurement is `P1`, measured in
 the reader it names**: `Source/TurboMCP/TurboMCPAssetCost.cpp:22-23` ("A SIZE
@@ -347,61 +347,61 @@ empty state that reads as "not under source control".
 ### Two hazards a tool must guard, both read out of the code
 
 - **`SetProvider(FName)` is not safe to call with a name you have not
-  validated**: `SourceControlModule.cpp:404-417` runs
-  `UE_LOGF(LogSourceControl, Fatal, "Tried to set unknown revision control
-  provider: ...")` when no registered provider matches. A tool that wants to
-  select a provider must ask `GetProviderNames` first
-  (`ISourceControlModule.h:160`, implemented at `SourceControlModule.cpp:266-276`),
-  or use `CreateProvider` (`:384-397`), which returns a **null**
-  `TUniquePtr` for an unknown name instead of terminating the process.
-- **`GetProvider()` dereferences `CurrentSourceControlProvider`**
-  (`SourceControlModule.cpp:379-382`) and the only thing that ever assigns it is
-  `InitializeSourceControlProviders` (`:237-264`), reached solely from
-  `HandleModularFeatureRegistered` (`:488-494`) - so a tool that runs before any
-  provider has registered would dereference null through
-  `ISourceControlModule::Get()`. **In this tree that cannot be observed**,
-  because `StartupModule` adds that callback at `:74` and then registers the
-  default provider at `:78`, so the first callback sets it. **It is reported as
-  a code fact, not as a measured failure** - no runtime case produced it. A tool
-  can guard it with `GetProviderNames(...).Num() > 0`.
+ validated**: `SourceControlModule.cpp:404-417` runs
+ `UE_LOGF(LogSourceControl, Fatal, "Tried to set unknown revision control
+ provider:...")` when no registered provider matches. A tool that wants to
+ select a provider must ask `GetProviderNames` first
+ (`ISourceControlModule.h:160`, implemented at `SourceControlModule.cpp:266-276`),
+ or use `CreateProvider` (`:384-397`), which returns a **null**
+ `TUniquePtr` for an unknown name instead of terminating the process.
+- **`GetProvider` dereferences `CurrentSourceControlProvider`**
+ (`SourceControlModule.cpp:379-382`) and the only thing that ever assigns it is
+ `InitializeSourceControlProviders` (`:237-264`), reached solely from
+ `HandleModularFeatureRegistered` (`:488-494`) - so a tool that runs before any
+ provider has registered would dereference null through
+ `ISourceControlModule::Get`. **In this tree that cannot be observed**,
+ because `StartupModule` adds that callback at `:74` and then registers the
+ default provider at `:78`, so the first callback sets it. **It is reported as
+ a code fact, not as a measured failure** - no runtime case produced it. A tool
+ can guard it with `GetProviderNames(...).Num > 0`.
 
 ---
 
 ## 5. WHAT I COULD NOT SETTLE
 
 1. **The `FEditorFileUtils` headless failure was not re-run.** I can show which
-   lines a no-provider save skips (`FileHelpers.cpp:5925`) and which line the
-   dialog path reaches (`PackagesDialog.cpp:118`), and that today's kit assets
-   are all writable - but the phase-1 asset's read-only state at the time is
-   gone, so the recorded cause ("cannot complete with no source control
-   provider", `TestRecord.md:139-143`) is **narrowed, not falsified.**
+ lines a no-provider save skips (`FileHelpers.cpp:5925`) and which line the
+ dialog path reaches (`PackagesDialog.cpp:118`), and that today's kit assets
+ are all writable - but the phase-1 asset's read-only state at the time is
+ gone, so the recorded cause ("cannot complete with no source control
+ provider", `TestRecord.md:139-143`) is **narrowed, not falsified.**
 2. **No provider was ever given a reachable server**, so "what does Perforce
-   *do* when it is available headless" is still unmeasured. `p4 set` on this
-   machine (`P4PORT=ssl:<p4-host>:1666`, `P4USER=<user>`,
-   `P4CHARSET=winansi`, `P4EDITOR`, `P4IGNORE`) points at a host that does not
-   answer, and the run logged the engine's own
-   `SourceControl: Error: Connect to server failed; check $P4PORT.` /
-   `OwningSystem=Default, Port=ssl:<p4-host>:1666` (and that commandlet run
-   exited `1`). A real checkout against a live depot remains untested - which is
-   consistent with `03_TOOLS.md:1365-1366` ("no automatic checkout happens
-   anywhere until this tool's own tests pass").
+ *do* when it is available headless" is still unmeasured. `p4 set` on this
+ machine (`P4PORT=ssl:<p4-host>:1666`, `P4USER=<user>`,
+ `P4CHARSET=winansi`, `P4EDITOR`, `P4IGNORE`) points at a host that does not
+ answer, and the run logged the engine's own
+ `SourceControl: Error: Connect to server failed; check $P4PORT.` /
+ `OwningSystem=Default, Port=ssl:<p4-host>:1666` (and that commandlet run
+ exited `1`). A real checkout against a live depot remains untested - which is
+ consistent with `03_TOOLS.md:1365-1366` ("no automatic checkout happens
+ anywhere until this tool's own tests pass").
 3. **`Plastic SCM` and `Subversion` cannot be exercised on this machine at
-   all** - `cm` and `svn` are not on `PATH` (measured with `Get-Command`), so
-   their AVAILABLE branch is unreachable here, not merely untested.
+ all** - `cm` and `svn` are not on `PATH` (measured with `Get-Command`), so
+ their AVAILABLE branch is unreachable here, not merely untested.
 4. **The `-SCCProvider=Plastic SCM` name contains a space**
-   (`PlasticSourceControlProvider.cpp:34`), so the switch needs quoting in any
-   harness; that was done here and reported, but it is a trap for row 10.1.
+ (`PlasticSourceControlProvider.cpp:34`), so the switch needs quoting in any
+ harness; that was done here and reported, but it is a trap for row 10.1.
 5. **`TA-9` as a fixture** is reported as a candidate only: `T-BP-8`'s wording
-   could mean an in-session class swap rather than a stored asset.
+ could mean an in-session class swap rather than a stored asset.
 6. **`check_out_file` was deliberately not called with Git** (where it would
-   pass the gate and run `GetState`/possibly `Execute`), so the *shape of a Git
-   checkout answer* - the half of `T-VCS-1`'s "with it on" that lives on the one
-   provider this machine does have - is measured only as
-   `is_available=True`, not as a checkout result. `GitSourceControlProvider.cpp:286-289`
-   (`UsesCheckout() == false`) and `:257-260`
-   (`CanExecuteOperation` = "a worker is registered", and no `CheckOut` worker
-   is registered - `GitSourceControlModule.cpp:20-29`) predict it is a no-op,
-   but prediction is not this file's standard.
+ pass the gate and run `GetState`/possibly `Execute`), so the *shape of a Git
+ checkout answer* - the half of `T-VCS-1`'s "with it on" that lives on the one
+ provider this machine does have - is measured only as
+ `is_available=True`, not as a checkout result. `GitSourceControlProvider.cpp:286-289`
+ (`UsesCheckout == false`) and `:257-260`
+ (`CanExecuteOperation` = "a worker is registered", and no `CheckOut` worker
+ is registered - `GitSourceControlModule.cpp:20-29`) predict it is a no-op,
+ but prediction is not this file's standard.
 
 ---
 
@@ -418,7 +418,7 @@ files that were written, character for character.
 
 Run by the engine's own PythonScriptCommandlet, which wraps the whole script in
 `FScopedSourceControl` (PythonScriptCommandlet.cpp:57) - the engine's own
-"commandlets are not guaranteed to have source control" scope.  Every line
+"commandlets are not guaranteed to have source control" scope. Every line
 written here is a runtime reading, not a header read.
 
 The CHECKOUT probe is opt-in through the environment variable
@@ -435,28 +435,28 @@ import unreal
 HERE = os.path.dirname(os.path.abspath(__file__))
 TAG = os.environ.get("TMCP_SC_PROBE_TAG", "result")
 RESULT = os.path.join(HERE, "logs", "sc-probe-%s.txt" % TAG)
-LINES = []
+LINES =
 
 
 def emit(text):
-    LINES.append(text)
-    print(text)
-    try:
-        unreal.log(text)
-    except Exception:  # noqa: BLE001
-        pass
+ LINES.append(text)
+ print(text)
+ try:
+ unreal.log(text)
+ except Exception: # noqa: BLE001
+ pass
 
 
-def flush():
-    with open(RESULT, "w") as handle:
-        handle.write("\n".join(LINES) + "\n")
+def flush:
+ with open(RESULT, "w") as handle:
+ handle.write("\n".join(LINES) + "\n")
 
 
 def show(label, fn):
-    try:
-        emit("PROBE %s = %r" % (label, fn()))
-    except Exception as exc:  # noqa: BLE001
-        emit("PROBE %s RAISED: %r" % (label, exc))
+ try:
+ emit("PROBE %s = %r" % (label, fn))
+ except Exception as exc: # noqa: BLE001
+ emit("PROBE %s RAISED: %r" % (label, exc))
 
 
 SC = getattr(unreal, "SourceControl", None)
@@ -464,31 +464,31 @@ emit("PROBE tag = %r" % TAG)
 emit("PROBE unreal.SourceControl present = %r" % (SC is not None))
 
 if SC is not None:
-    show("current_provider", SC.current_provider)
-    show("is_enabled", SC.is_enabled)
-    show("is_available", SC.is_available)
-    show("last_error_msg_before", SC.last_error_msg)
+ show("current_provider", SC.current_provider)
+ show("is_enabled", SC.is_enabled)
+ show("is_available", SC.is_available)
+ show("last_error_msg_before", SC.last_error_msg)
 
-    if os.environ.get("TMCP_SC_PROBE_CHECKOUT") == "1":
-        ASSET = ("<REPO>/TestProject/Content/Tests/Kit/"
-                 "TA14_KitDataTable.uasset")
-        show("check_out_file_returned", lambda: SC.check_out_file(ASSET, True))
-        show("last_error_msg_after", SC.last_error_msg)
-    else:
-        emit("PROBE checkout probe SKIPPED (TMCP_SC_PROBE_CHECKOUT != 1)")
+ if os.environ.get("TMCP_SC_PROBE_CHECKOUT") == "1":
+ ASSET = ("<REPO>/TestProject/Content/Tests/Kit/"
+ "TA14_KitDataTable.uasset")
+ show("check_out_file_returned", lambda: SC.check_out_file(ASSET, True))
+ show("last_error_msg_after", SC.last_error_msg)
+ else:
+ emit("PROBE checkout probe SKIPPED (TMCP_SC_PROBE_CHECKOUT != 1)")
 else:
-    emit("PROBE FAILED: unreal.SourceControl is not exposed to Python")
+ emit("PROBE FAILED: unreal.SourceControl is not exposed to Python")
 
 emit("PROBE done")
-flush()
+flush
 ```
 
 Run as (once per provider, with `TMCP_SC_PROBE_TAG` naming the result file):
 
 ```
 UnrealEditor-Cmd.exe <project> -run=PythonScriptCommandlet ^
-    -Script="<REPO>/.agent/sc-probe.py" ^
-    -unattended -nullrhi -culture=en [-SCCProvider=<name>]
+ -Script="<REPO>/.agent/sc-probe.py" ^
+ -unattended -nullrhi -culture=en [-SCCProvider=<name>]
 ```
 
 ### the raw result files
@@ -572,8 +572,8 @@ PROBE done
 
 ```
 git FOUND: C:\Program Files\Git\cmd\git.exe
-p4  FOUND: C:\Program Files\Perforce\p4.exe
-cm  NOT FOUND on PATH        (Unity Version Control / Plastic)
+p4 FOUND: C:\Program Files\Perforce\p4.exe
+cm NOT FOUND on PATH (Unity Version Control / Plastic)
 svn NOT FOUND on PATH
 ```
 
@@ -604,31 +604,31 @@ still returned `current_provider='Perforce'`, `is_available=False`.
 ## 6. PREMISES I WAS GIVEN THAT THE TREE CONTRADICTS
 
 1. **"`Tools/list_engine_plugins.py` and `Tools/list_plugin_sources.py` already
-   exist in `.agent/` and may do the enumeration for you."** They cannot, and
-   that is checkable in one read. `.agent/list_engine_plugins.py:36-41` lists
-   exactly four GitHub API paths, all under
-   `Engine/Plugins/Experimental/ToolsetRegistry` and
-   `Engine/Plugins/Experimental/ModelContextProtocol`, and
-   `.agent/list_plugin_sources.py:42-45` walks those same two prefixes. **Neither
-   one touches `Engine/Plugins/Developer/` or `Engine/Source/Developer/`, so
-   neither can see a source control provider at all** - and both need a
-   `GH_TOKEN` and the GitHub `release` ref rather than the local install. The
-   enumeration in section 1 was therefore done directly against
-   `C:\UnrealEngine`, which is where the providers live.
-2. **"BASELINE: `main` = `origin/main` = `7f8b7e4`"** - true when I started, and
-   **HEAD moved while I worked, exactly as the brief predicted.** It is now
-   `07cf757`, and `git diff --stat 7f8b7e4 HEAD` is
-   `TestRecord.md | 68 ++++++++++` - three orchestrator commits
-   (`62da539`, `ce907a3`, `07cf757`) that add record entries and touch **no
-   source file**. Nothing was reverted, nothing collided, and every measurement
-   above is against source that never changed.
+ exist in `.agent/` and may do the enumeration for you."** They cannot, and
+ that is checkable in one read. `.agent/list_engine_plugins.py:36-41` lists
+ exactly four GitHub API paths, all under
+ `Engine/Plugins/Experimental/ToolsetRegistry` and
+ `Engine/Plugins/Experimental/ModelContextProtocol`, and
+ `.agent/list_plugin_sources.py:42-45` walks those same two prefixes. **Neither
+ one touches `Engine/Plugins/Developer/` or `Engine/Source/Developer/`, so
+ neither can see a source control provider at all** - and both need a
+ `GH_TOKEN` and the GitHub `release` ref rather than the local install. The
+ enumeration in section 1 was therefore done directly against
+ `C:\UnrealEngine`, which is where the providers live.
+2. **"BASELINE: `main` = `origin/main` = "** - true when I started, and
+ **HEAD moved while I worked, exactly as the brief predicted.** It is now
+, and `git diff --stat HEAD` is
+ `TestRecord.md | 68 ++++++++++` - three orchestrator commits
+ (,, ) that add record entries and touch **no
+ source file**. Nothing was reverted, nothing collided, and every measurement
+ above is against source that never changed.
 3. **The brief's item 1 says the providers "live under
-   `Engine/Plugins/Developer/` and under `Engine/Source/Developer/`.** The first
-   half is right; the second half holds only the *framework*:
-   `Engine/Source/Developer/SourceControl` holds `ISourceControlModule`, the
-   default provider and the helpers, and `Engine/Source/Developer/UncontrolledChangelists`
-   and `Engine/Source/Developer/SourceControlViewport` are UI/cache consumers,
-   **not** providers. The four real providers are all plugins.
+ `Engine/Plugins/Developer/` and under `Engine/Source/Developer/`.** The first
+ half is right; the second half holds only the *framework*:
+ `Engine/Source/Developer/SourceControl` holds `ISourceControlModule`, the
+ default provider and the helpers, and `Engine/Source/Developer/UncontrolledChangelists`
+ and `Engine/Source/Developer/SourceControlViewport` are UI/cache consumers,
+ **not** providers. The four real providers are all plugins.
 
 ---
 
@@ -669,13 +669,13 @@ define. The build linked without a single Build.cs edit.
 ```
 ISourceControlModule* Module = FModuleManager::LoadModulePtr<ISourceControlModule>(TEXT("SourceControl"));
 ...
-Plan.bEnabled = Module->IsEnabled();                       // SourceControlModule.cpp:376
-Plan.ProviderName = Module->GetProvider().GetName().ToString();
-if (!Plan.bEnabled) { RunRefusal = "Revision control is not enabled."; }        // SourceControlHelpers.cpp:67
+Plan.bEnabled = Module->IsEnabled; // SourceControlModule.cpp:376
+Plan.ProviderName = Module->GetProvider.GetName.ToString;
+if (!Plan.bEnabled) { RunRefusal = "Revision control is not enabled."; } // SourceControlHelpers.cpp:67
 else {
-    Plan.bAvailable = Module->GetProvider().IsAvailable(); // asked ONLY when bEnabled - and SAID to have been
-    ...
-    if (!Plan.bAvailable) { RunRefusal = "Revision control server is currently not available."; }  // :76
+ Plan.bAvailable = Module->GetProvider.IsAvailable; // asked ONLY when bEnabled - and SAID to have been
+...
+ if (!Plan.bAvailable) { RunRefusal = "Revision control server is currently not available."; } //:76
 }
 ```
 
@@ -683,14 +683,14 @@ else {
 by relaunching the editor with `-SCCProvider=Perforce`:
 
 ```
-provider in use      : 'Perforce'
-  IsEnabled()        : true
-  IsAvailable()      : false
-  UsesCheckout()     : true
+provider in use: 'Perforce'
+ IsEnabled: true
+ IsAvailable: false
+ UsesCheckout: true
 ```
 
-`IsEnabled()` is **true** and `IsAvailable()` is **false**, on the provider whose
-`UsesCheckout() == true` (`PerforceSourceControlProvider.cpp:622-625`) is the
+`IsEnabled` is **true** and `IsAvailable` is **false**, on the provider whose
+`UsesCheckout == true` (`PerforceSourceControlProvider.cpp:622-625`) is the
 reason the capability exists. A tool that asked only the first would report a
 working provider here. **THIS IS THE PROVIDER THAT CATCHES IT, AND IT IS
 REACHABLE ON THIS MACHINE** - only round-tripping to a depot is not.
@@ -705,74 +705,74 @@ REACHABLE ON THIS MACHINE** - only round-tripping to a depot is not.
 WHAT THIS ANSWER IS: the state source control holds for each asset, or, when there is
 no usable provider, a REFUSAL NAMED PER ASSET. The refusal strings are the ENGINE'S OWN.
 
-module loaded        : true
-provider in use      : 'None'
-registered providers : 5 -> Subversion, Git, Plastic SCM, Perforce, None
-  IsEnabled()        : false
-  IsAvailable()      : NOT ASKED, because IsEnabled() was already false.
-  UsesCheckout()     : NOT READ, because no provider was selected.
+module loaded: true
+provider in use: 'None'
+registered providers: 5 -> Subversion, Git, Plastic SCM, Perforce, None
+ IsEnabled: false
+ IsAvailable: NOT ASKED, because IsEnabled was already false.
+ UsesCheckout: NOT READ, because no provider was selected.
 
 REFUSAL, THE SAME FOR EVERY ASSET BELOW: Revision control is not enabled.
-  the string is the engine's own: SourceControlHelpers.cpp:67 (the engine's own gate)
-  NO PROVIDER WAS REACHED, so no state is reported and no zero is printed (P1).
+ the string is the engine's own: SourceControlHelpers.cpp:67 (the engine's own gate)
+ NO PROVIDER WAS REACHED, so no state is reported and no zero is printed (P1).
 
 assets: 2
 
-  [1] TA01_HandLaid
-      package: /Game/Tests/Kit/TA01_HandLaid
-      file: <REPO>/TestProject/Content/Tests/Kit/TA01_HandLaid.uasset
-      file found by: FPackageName::DoesPackageExist (PackageName.h:450)
-      REFUSED: Revision control is not enabled.
-      NOTHING WAS ASKED OF ANY PROVIDER FOR THIS ASSET.
+ [1] TA01_HandLaid
+ package: /Game/Tests/Kit/TA01_HandLaid
+ file: <REPO>/TestProject/Content/Tests/Kit/TA01_HandLaid.uasset
+ file found by: FPackageName::DoesPackageExist (PackageName.h:450)
+ REFUSED: Revision control is not enabled.
+ NOTHING WAS ASKED OF ANY PROVIDER FOR THIS ASSET.
 
-  [2] TA14_KitDataTable
-      package: /Game/Tests/Kit/TA14_KitDataTable
-      file: <REPO>/TestProject/Content/Tests/Kit/TA14_KitDataTable.uasset
-      file found by: FPackageName::DoesPackageExist (PackageName.h:450)
-      REFUSED: Revision control is not enabled.
-      NOTHING WAS ASKED OF ANY PROVIDER FOR THIS ASSET.
+ [2] TA14_KitDataTable
+ package: /Game/Tests/Kit/TA14_KitDataTable
+ file: <REPO>/TestProject/Content/Tests/Kit/TA14_KitDataTable.uasset
+ file found by: FPackageName::DoesPackageExist (PackageName.h:450)
+ REFUSED: Revision control is not enabled.
+ NOTHING WAS ASKED OF ANY PROVIDER FOR THIS ASSET.
 ```
 
-*** `IsAvailable()` IS `NOT ASKED` RATHER THAN `false`, AND THAT IS `P1` IN ONE
+*** `IsAvailable` IS `NOT ASKED` RATHER THAN `false`, AND THAT IS `P1` IN ONE
 LINE. *** `false` there would read as a measured "the server is down"; the
-measurement did not happen, so the answer says so. `UsesCheckout()` is reported
+measurement did not happen, so the answer says so. `UsesCheckout` is reported
 the same way and for the same reason.
 
 ### 3.2 Git: the state per asset, and the checkout answer
 
 ```
-provider in use      : 'Git'
-  IsEnabled()        : true
-  IsAvailable()      : true
-  UsesCheckout()     : false
-  UsesLocalReadOnly(): false
-  ^ A CHECKOUT ON THIS PROVIDER IS A NO-OP. It has no lock command, so every
-    tracked file in the working copy is already checked out. Say so rather than
-    implying a lock was taken.
+provider in use: 'Git'
+ IsEnabled: true
+ IsAvailable: true
+ UsesCheckout: false
+ UsesLocalReadOnly: false
+ ^ A CHECKOUT ON THIS PROVIDER IS A NO-OP. It has no lock command, so every
+ tracked file in the working copy is already checked out. Say so rather than
+ implying a lock was taken.
 
 assets: 2
 
-  [1] TA01_HandLaid
-      under source control:  true
-      checked out here:      true
-      added (open for add):  false
-      current (up to date):  true
-      out of date:           false
-      modified:              false
-      ignored:               false
-      CanCheckout():         false
-      the provider's own state text: Unchanged
+ [1] TA01_HandLaid
+ under source control: true
+ checked out here: true
+ added (open for add): false
+ current (up to date): true
+ out of date: false
+ modified: false
+ ignored: false
+ CanCheckout: false
+ the provider's own state text: Unchanged
 
-  [2] TA14_KitDataTable
-      under source control:  false
-      checked out here:      false
-      added (open for add):  false
-      current (up to date):  true
-      out of date:           false
-      modified:              false
-      ignored:               false
-      CanCheckout():         false
-      the provider's own state text: Not Under Revision Control
+ [2] TA14_KitDataTable
+ under source control: false
+ checked out here: false
+ added (open for add): false
+ current (up to date): true
+ out of date: false
+ modified: false
+ ignored: false
+ CanCheckout: false
+ the provider's own state text: Not Under Revision Control
 ```
 
 **THE TWO ROWS ARE ANSWERED INDEPENDENTLY** - one tracked asset and one untracked
@@ -784,16 +784,16 @@ asset.
 
 ```
 === checkout (E-VCS-CHECKOUT) ===
-  [1] TA01_HandLaid
-      UsesCheckout() == false: A CHECKOUT IS A NO-OP ON THIS PROVIDER. Nothing is
-      locked, because this provider has no lock command - so this line is NOT a claim
-      that a lock was taken. The operation is issued anyway to record what the
-      provider actually answers.
-      provider answer, verbatim: ECommandResult::Failed
-      ^ AND THAT IS THE MEASURED ANSWER TO A GIT CHECKOUT, not a prediction of one.
-      provider error: Operation 'CheckOut' not supported by revision control provider 'Git'
-      NO FILE WAS WRITTEN BY THIS TOOL. A checkout is a source control operation;
-      the asset's contents are not touched here.
+ [1] TA01_HandLaid
+ UsesCheckout == false: A CHECKOUT IS A NO-OP ON THIS PROVIDER. Nothing is
+ locked, because this provider has no lock command - so this line is NOT a claim
+ that a lock was taken. The operation is issued anyway to record what the
+ provider actually answers.
+ provider answer, verbatim: ECommandResult::Failed
+ ^ AND THAT IS THE MEASURED ANSWER TO A GIT CHECKOUT, not a prediction of one.
+ provider error: Operation 'CheckOut' not supported by revision control provider 'Git'
+ NO FILE WAS WRITTEN BY THIS TOOL. A checkout is a source control operation;
+ the asset's contents are not touched here.
 ```
 
 *** SO THIS FILE'S SECTION 5 ITEM 6 IS NOW CLOSED: A GIT CHECKOUT WAS RUN, AND
@@ -808,15 +808,15 @@ on disk was touched - and that is confirmed below by a third tool.
 ### 3.4 Perforce: refused by name with the SECOND engine string
 
 ```
-provider in use      : 'Perforce'
-  IsEnabled()        : true
-  IsAvailable()      : false
-  UsesCheckout()     : true
-  UsesLocalReadOnly(): true
+provider in use: 'Perforce'
+ IsEnabled: true
+ IsAvailable: false
+ UsesCheckout: true
+ UsesLocalReadOnly: true
 
 REFUSAL, THE SAME FOR EVERY ASSET BELOW: Revision control server is currently not available.
-  the string is the engine's own: SourceControlHelpers.cpp:76 (the engine's own gate)
-  NO PROVIDER WAS REACHED, so no state is reported and no zero is printed (P1).
+ the string is the engine's own: SourceControlHelpers.cpp:76 (the engine's own gate)
+ NO PROVIDER WAS REACHED, so no state is reported and no zero is printed (P1).
 ```
 
 **The second engine string is now measured *through this tool*, per asset.** Row
@@ -831,12 +831,12 @@ WITH `-SCCProvider=`. THE PROBE IS EMBEDDED IN `Tools/test-vcs.py`, WRITTEN TO A
 TEMP FILE AND RUN, SO THE CROSS-CHECK IS PART OF THE SUITE RATHER THAN A NOTE.***
 
 ```
-no provider : exit 0  {'present': 'True', 'current_provider': "'None'", 'is_enabled': 'False',
-                       'is_available': 'False', 'check_out_file_returned': 'False',
-                       'last_error_msg': 'Text("Revision control is not enabled.")'}
-git         : exit 0  {'present': 'True', 'current_provider': "'Git'", 'is_enabled': 'True',
-                       'is_available': 'True', 'check_out_file_returned': 'True',
-                       'last_error_msg': 'Text("")'}
+no provider: exit 0 {'present': 'True', 'current_provider': "'None'", 'is_enabled': 'False',
+ 'is_available': 'False', 'check_out_file_returned': 'False',
+ 'last_error_msg': 'Text("Revision control is not enabled.")'}
+git: exit 0 {'present': 'True', 'current_provider': "'Git'", 'is_enabled': 'True',
+ 'is_available': 'True', 'check_out_file_returned': 'True',
+ 'last_error_msg': 'Text("")'}
 ```
 
 The engine agrees with this tool about the provider and about both questions, and
@@ -845,10 +845,10 @@ it reproduces `"Revision control is not enabled."` verbatim.
 ### AND IT FOUND A TRAP, WHICH IS THE MOST USEFUL THING IN THIS SECTION
 
 *** `USourceControlHelpers::CheckOutFile` ANSWERS `True` ON GIT, WITH AN EMPTY
-`LastErrorMsg()`, AND IT NEVER ISSUES A CHECKOUT AT ALL. ***
+`LastErrorMsg`, AND IT NEVER ISSUES A CHECKOUT AT ALL. ***
 
 `CheckOutFile` returns true at `SourceControlHelpers.cpp:456-460` when the state
-says `IsCheckedOut() || IsAdded()` - **and Git reports `IsCheckedOut() == true`
+says `IsCheckedOut || IsAdded` - **and Git reports `IsCheckedOut == true`
 for every tracked file**, which is the very line this tool prints for
 `TA01_HandLaid` above. So on Git the engine's helper's `true` means
 *"the state says it is already checked out"*, **NOT** *"a lock was taken"*.
@@ -858,7 +858,7 @@ SUITE ASSERTS BOTH SO NEITHER CAN BE MISTAKEN FOR THE OTHER.**
 
 - the engine's helper: `true`, because Git's state says the file is checked out;
 - this tool: `Failed` + `"Operation 'CheckOut' not supported"`, because it goes
-  through `ISourceControlProvider::Execute` and records the **operation's** answer.
+ through `ISourceControlProvider::Execute` and records the **operation's** answer.
 
 **WHY THIS MATTERS FOR `D-57`.** A write tool wired to `CheckOutFile` and reading
 its `true` as "checked out, safe to write" would, on Git, be relying on a lock
@@ -880,7 +880,7 @@ the other two can: did any of this touch a file.** It did not.
 | Hazard (section 4) | How it is handled, and it is a code fact rather than a promise |
 |---|---|
 | `SetProvider(FName)` is **FATAL** on an unmatched name (`SourceControlModule.cpp:404-417`). | **`SetProvider` IS NEVER CALLED.** The tool uses the provider the project selected. `GetProviderNames` is still called - to **print** the registry's own list, so the provider name in the answer is the engine's answer rather than a guess. |
-| `GetProvider()` dereferences `CurrentSourceControlProvider` (`:379-382`). | Guarded by `FModuleManager::LoadModulePtr<ISourceControlModule>` returning non-null, after which the engine's own first callback has already assigned it. Still **not observable here**, as section 4 said: it is a code guard, not a measured case. |
+| `GetProvider` dereferences `CurrentSourceControlProvider` (`:379-382`). | Guarded by `FModuleManager::LoadModulePtr<ISourceControlModule>` returning non-null, after which the engine's own first callback has already assigned it. Still **not observable here**, as section 4 said: it is a code guard, not a measured case. |
 | `GetState` returns a **NULL** state that reads as "not under source control" (`DefaultSourceControlProvider.cpp:52-60`). | `GetState` is called **only after both questions pass**. A null state that arrives anyway is printed as `STATE: unknown - <reason>`, with the explicit line `THIS IS NOT 'not under source control'`. |
 | `-SCCProvider=Plastic SCM` contains a **space** (`PlasticSourceControlProvider.cpp:34`). | The suite passes the switch as **one element of an argv list**, so there is no quoting to get wrong. The launch line is printed, verbatim, in the suite output. |
 | The refusal must be in `Plan` and be **per asset**. | `Plan` writes `RunRefusal` into **every** asset row, and each row also carries its own `Refusal`/resolve error. The suite compares the refusal text of the Read, Preview and Edit tools **string for string**. |
@@ -906,9 +906,9 @@ pass-through arguments.
 |---|---|---|
 | A | "source control off": the refusal, **per asset** | the editor as handed; **if a provider is already selected the suite restarts the editor without one**, so this phase runs in every invocation |
 | B1 | Git: state per asset **and the measured checkout answer** | relaunch with `-SCCProvider=Git` (14s to answer, measured) |
-| B2 | Perforce: `IsEnabled()==true`, `IsAvailable()==false`, both engine refusals | relaunch with `-SCCProvider=Perforce` (32s, measured) |
+| B2 | Perforce: `IsEnabled==true`, `IsAvailable==false`, both engine refusals | relaunch with `-SCCProvider=Perforce` (32s, measured) |
 | B3 | the same answers through the **engine's own helper**, plus the `git` CLI | two `PythonScriptCommandlet` runs and `git status --porcelain` |
-| C | **RESTORE, ASSERTED** | relaunch through `Tools/tmcp_editor.py`, then read `IsEnabled()` back through the tool |
+| C | **RESTORE, ASSERTED** | relaunch through `Tools/tmcp_editor.py`, then read `IsEnabled` back through the tool |
 
 **IT TAKES 125 SECONDS**, well inside the runner's 600-second per-suite deadline.
 
@@ -925,7 +925,7 @@ same call** - and the tracked/untracked observation is **printed rather than
 asserted**:
 
 ```
-    the two real assets read as: ['true', 'false']  (printed, NOT asserted - it depends on the git index)
+ the two real assets read as: ['true', 'false'] (printed, NOT asserted - it depends on the git index)
 ```
 
 **A CHECK WHOSE FAILING INPUT IS SOMEBODY ELSE'S COMMIT IS THE DEFECT THIS
@@ -935,18 +935,18 @@ PROJECT HAS RECORDED REPEATEDLY.**
 
 A build was made with **four deliberate breaks in
 `TurboMCPSourceControl.cpp`** - the `NotEnabledText` literal paraphrased, a
-`under source control:  false` line added to the refusal branch, and both no-op
+`under source control: false` line added to the refusal branch, and both no-op
 sentences reworded away. **SIX named checks went red, with the wrong value
 visible rather than as a bare red line:**
 
 ```
-  FAIL and it names the engine's own refusal for every asset, up front  === source control: E-VCS-CHECKOUT ===
-  FAIL and the refusal is THE ENGINE'S OWN STRING, verbatim  ['Revision control is disabled.', 'Revision control is disabled.']
-  FAIL and NO state is reported for any of them, so no false 'not under source control' can be read  [... '      REFUSED: Revision control is disabled.\n      under source control:  false\n ...']
-  FAIL and it SAYS a checkout is a no-op on this provider instead of implying a lock was taken  === source control: E-VCS-CHECKOUT ===
-  FAIL and the answer says a no-op was expected HERE rather than claiming a lock was taken  ...
-  FAIL and no state is reported, because asking for one would be reaching a provider that has none  === source control: E-VCS-CHECKOUT ===
-RESULT: FAIL (6 of 55) -> and it names the engine's own refusal for every asset, up front, ...
+ FAIL and it names the engine's own refusal for every asset, up front === source control: E-VCS-CHECKOUT ===
+ FAIL and the refusal is THE ENGINE'S OWN STRING, verbatim ['Revision control is disabled.', 'Revision control is disabled.']
+ FAIL and NO state is reported for any of them, so no false 'not under source control' can be read [... ' REFUSED: Revision control is disabled.\n under source control: false\n...']
+ FAIL and it SAYS a checkout is a no-op on this provider instead of implying a lock was taken === source control: E-VCS-CHECKOUT ===
+ FAIL and the answer says a no-op was expected HERE rather than claiming a lock was taken...
+ FAIL and no state is reported, because asking for one would be reaching a provider that has none === source control: E-VCS-CHECKOUT ===
+RESULT: FAIL (6 of 55) -> and it names the engine's own refusal for every asset, up front,...
 ```
 
 Note the **third** one: the deliberately re-introduced `under source control:
@@ -963,33 +963,33 @@ check skipped)`.
 ## 7. WHAT COULD NOT BE SETTLED
 
 1. **PLASTIC SCM AND SUBVERSION CANNOT BE EXERCISED HERE AT ALL**, and this is not
-   new: section 1 measured that `cm` and `svn` are not on `PATH`. Their
-   `AVAILABLE` branch is unreachable, so `IsAvailable() == true` was never seen
-   for either. The suite says so in its own closing lines rather than implying
-   coverage.
+ new: section 1 measured that `cm` and `svn` are not on `PATH`. Their
+ `AVAILABLE` branch is unreachable, so `IsAvailable == true` was never seen
+ for either. The suite says so in its own closing lines rather than implying
+ coverage.
 2. **NO CHECKOUT AGAINST A LIVE DEPOT WAS EVER PERFORMED BY ANYONE.** Git's answer
-   is now measured but it is a **refusal**, and Perforce's `AVAILABLE` branch
-   needs a server that answers (`p4 set` still points at
-   `ssl:<p4-host>:1666`). So *"what Perforce does when it is available
-   headless"* - section 5 item 2 of this file - **is still unmeasured**, and it is
-   the single most important thing row 10.2 needs before it wires automatic
-   checkout into a write tool.
+ is now measured but it is a **refusal**, and Perforce's `AVAILABLE` branch
+ needs a server that answers (`p4 set` still points at
+ `ssl:<p4-host>:1666`). So *"what Perforce does when it is available
+ headless"* - section 5 item 2 of this file - **is still unmeasured**, and it is
+ the single most important thing row 10.2 needs before it wires automatic
+ checkout into a write tool.
 3. **The Perforce `-SCCProvider=Perforce` EDITOR path was measured only as far as
-   the refusal.** The editor came up and answered in 32s, and the tool refused
-   before asking anything, so **no connection attempt was made from this tool** -
-   which is why the editor survived. Whether a `GetState` on Perforce would
-   connect, hang, or fail is **not measured**, because reaching it would require
-   the connection the tool deliberately avoids.
+ the refusal.** The editor came up and answered in 32s, and the tool refused
+ before asking anything, so **no connection attempt was made from this tool** -
+ which is why the editor survived. Whether a `GetState` on Perforce would
+ connect, hang, or fail is **not measured**, because reaching it would require
+ the connection the tool deliberately avoids.
 4. **`Tools/start-editor.ps1` CANNOT PASS `-SCCProvider=`**, and that is a fact
-   about the repository rather than about the engine: it takes no
-   pass-through arguments. The suite therefore launches the editor directly for
-   the two provider phases. **A future harness that wants a provider selected
-   will need either that argument passed through, or a
-   `SourceControlSettings.ini`** - and neither exists today, which is what
-   section 1 already recorded.
-5. **The `GetProvider()`-before-any-provider-registers hazard remains a code fact
-   and not a measured failure** (section 4 of this file). Nothing here changed
-   that.
+ about the repository rather than about the engine: it takes no
+ pass-through arguments. The suite therefore launches the editor directly for
+ the two provider phases. **A future harness that wants a provider selected
+ will need either that argument passed through, or a
+ `SourceControlSettings.ini`** - and neither exists today, which is what
+ section 1 already recorded.
+5. **The `GetProvider`-before-any-provider-registers hazard remains a code fact
+ and not a measured failure** (section 4 of this file). Nothing here changed
+ that.
 
 ---
 
@@ -1018,14 +1018,14 @@ toolset besides the read-only `ReadTurboMCPEditQueue`. Exactly **two of them are
 wired today**, and both are named above:
 
 - **`E-SAVE`** because it is THE tool that writes a file to disk, and because
-  `D-57`'s own recorded failure is about it ("made `E-SAVE` report a failure while
-  nothing had been written"). It is also the tool whose engine path **already
-  issues a checkout without reading anything that says whether one can mean
-  anything** - section 4 measures that.
+ `D-57`'s own recorded failure is about it ("made `E-SAVE` report a failure while
+ nothing had been written"). It is also the tool whose engine path **already
+ issues a checkout without reading anything that says whether one can mean
+ anything** - section 4 measures that.
 - **`P/E-STRUCT-FIELDS`** because it is the NEWEST writer in the project (row 7.1,
-  commit `41a0a02`, 2026-10-11) and because it has a PREVIEW TWIN, so the rule
-  "put the check in `Plan` so the Preview and the Edit twin behave identically" is
-  demonstrable rather than asserted. `P-STRUCT-FIELDS` is its Preview.
+ commit, 2026-10-11) and because it has a PREVIEW TWIN, so the rule
+ "put the check in `Plan` so the Preview and the Edit twin behave identically" is
+ demonstrable rather than asserted. `P-STRUCT-FIELDS` is its Preview.
 
 **THE WRITERS THAT REMAIN UNWIRED, NAMED ONE BY ONE:**
 `E-COMPILE`, `E-ENUM-ADD`, `E-VARS-ADD`, `E-WIDGETS-AS-VARS`, `E-OVERRIDE-ADD`,
@@ -1050,7 +1050,7 @@ and this list is the other half.
 
 *** `USourceControlHelpers::CheckOutFile` ANSWERS `True` ON GIT AND NEVER ISSUES A
 CHECKOUT *** - `SourceControlHelpers.cpp:456-460` returns early when the state
-says `IsCheckedOut() || IsAdded()`, and Git reports `IsCheckedOut() == true` for
+says `IsCheckedOut || IsAdded`, and Git reports `IsCheckedOut == true` for
 every tracked file (row 10.1, section 4).
 
 **THIS ROW DOES NOT CALL IT.** The identifier appears **four times in the whole
@@ -1061,18 +1061,18 @@ would need. The suite asserts that over its own source rather than trusting this
 paragraph, and a single `CheckOutFile(` in the mechanism fails
 
 ```
-ok   it never CALLS CheckOutFile - the input that fails this is any 'CheckOutFile(' in it
+ok it never CALLS CheckOutFile - the input that fails this is any 'CheckOutFile(' in it
 ```
 
 What it reads instead, and both are measured answers rather than a helper opinion:
 
-1. **`ISourceControlProvider::UsesCheckout()`** - whether a checkout can mean
-   anything on this provider at all. `GitSourceControlProvider.cpp:286-289` false,
-   `PerforceSourceControlProvider.cpp:622-625` true.
+1. **`ISourceControlProvider::UsesCheckout`** - whether a checkout can mean
+ anything on this provider at all. `GitSourceControlProvider.cpp:286-289` false,
+ `PerforceSourceControlProvider.cpp:622-625` true.
 2. **`ISourceControlProvider::Execute(FCheckOut)` and the OPERATION's own
-   result** - `Operation->GetResultInfo()`, whose messages are repeated verbatim.
-   On Git that is `ECommandResult::Failed` with
-   `"Operation 'CheckOut' not supported by revision control provider 'Git'"`.
+ result** - `Operation->GetResultInfo`, whose messages are repeated verbatim.
+ On Git that is `ECommandResult::Failed` with
+ `"Operation 'CheckOut' not supported by revision control provider 'Git'"`.
 
 **AND THE PROOF THAT IT IS NOT THE BOOLEAN IS TWO ANSWERS TO ONE QUESTION, TAKEN
 IN ONE RUN FROM TWO CODE PATHS** (section 6.1): the engine's helper answers `True`
@@ -1080,7 +1080,7 @@ with an EMPTY error text on Git, while this mechanism, on the same provider and 
 same file in the same session, records `Failed` with a message the helper can never
 see because it returns before issuing the operation.
 
-## 3. THE DECISION THIS ROW HAD TO MAKE: WHAT A WRITE TOOL DOES WHEN `UsesCheckout() == false`
+## 3. THE DECISION THIS ROW HAD TO MAKE: WHAT A WRITE TOOL DOES WHEN `UsesCheckout == false`
 
 *** `D-57` DOES NOT ANSWER THIS QUESTION, AND THAT IS SAID IN THE TOOL'S OWN OUTPUT
 RATHER THAN IMPLIED. *** `Spec/05_DECISIONS.md:382-388` answers the ORDERING
@@ -1092,10 +1092,10 @@ about a provider on which a checkout can never help.** The choice is this row's,
 and the tool prints it:
 
 ```
-    policy, provenance  : D-57 (Spec/05_DECISIONS.md:382-388) answers the ORDERING only -
-    E-VCS-CHECKOUT is built and tested before any write tool calls it - and it does NOT
-    answer what a write tool does when UsesCheckout() == false. That choice is row 10.2's
-    own, and it is (b).
+ policy, provenance: D-57 (Spec/05_DECISIONS.md:382-388) answers the ORDERING only -
+ E-VCS-CHECKOUT is built and tested before any write tool calls it - and it does NOT
+ answer what a write tool does when UsesCheckout == false. That choice is row 10.2's
+ own, and it is (b).
 ```
 
 **THE THREE OPTIONS, AND THE ONE CHOSEN:**
@@ -1109,18 +1109,18 @@ and the tool prints it:
 **WHY (b), IN FOUR MEASURED REASONS:**
 
 1. **It is the same answer `E-VCS-CHECKOUT` already gives.** Row 10.1 issued the
-   operation on a no-op provider and recorded the provider's words rather than
-   predicting a no-op. Two answers about one asset on one provider would give a
-   caller two stories.
+ operation on a no-op provider and recorded the provider's words rather than
+ predicting a no-op. Two answers about one asset on one provider would give a
+ caller two stories.
 2. **It never claims a lock was taken**, and the block says so in words
-   (section 5.2).
+ (section 5.2).
 3. **The answer is a REPORT AND NEVER A GATE.** The write proceeds whether the
-   checkout succeeded, failed or was refused, and the block states that in every
-   answer: `THE CHECKOUT ANSWER NEVER GATES THE WRITE`. This is `D-57` obeyed
-   directly - a source control problem cannot become a write failure here.
+ checkout succeeded, failed or was refused, and the block states that in every
+ answer: `THE CHECKOUT ANSWER NEVER GATES THE WRITE`. This is `D-57` obeyed
+ directly - a source control problem cannot become a write failure here.
 4. **It costs nothing that is not already being paid** - section 4.
 
-**`UsesCheckout() == false` IS NOT THE ONLY REFUSAL THAT DOES NOT GATE.** With NO
+**`UsesCheckout == false` IS NOT THE ONLY REFUSAL THAT DOES NOT GATE.** With NO
 provider the row is refused with the engine's own string and the write still
 happens; the suite asserts both (`the file really was written, so the refusal did
 not gate the save`).
@@ -1135,11 +1135,11 @@ not gate the save`).
 checkout**, at `:5925-5929`:
 
 ```
-:5925   if (ISourceControlModule::Get().IsEnabled())
-:5929       FEditorFileUtils::CheckoutPackages(PackagesToCheckout, &PackagesCheckedOut, ...);
+:5925 if (ISourceControlModule::Get.IsEnabled)
+:5929 FEditorFileUtils::CheckoutPackages(PackagesToCheckout, &PackagesCheckedOut,...);
 ```
 
-**IT READS NEITHER `UsesCheckout()` NOR THE OPERATION'S RESULT** - `CheckoutPackages`
+**IT READS NEITHER `UsesCheckout` NOR THE OPERATION'S RESULT** - `CheckoutPackages`
 builds `FinalPackageCheckoutList` / `FinalPackageMarkForAddList` and its return
 value is discarded at `:5929`. So on Git the engine issues an operation that
 provider cannot execute on every single save, and nothing anywhere records that
@@ -1156,39 +1156,39 @@ WHAT THIS IS: the source control half of this write tool. D-57 requires the
 checkout tool to be built and tested before any write tool calls it, and it is.
 This is NOT USourceControlHelpers::CheckOutFile: that helper answers true on Git
 without issuing anything (SourceControlHelpers.cpp:456-460). It reads
-UsesCheckout() and the OPERATION's own result instead.
+UsesCheckout and the OPERATION's own result instead.
 what this call does: the operation the plan allowed IS ISSUED here, and no file is written by this section.
 
-    policy              : AttemptAndReport - (b) of the three options: a checkout IS issued through the provider and the provider's own answer is repeated verbatim. (a) skip-and-say and (c) refuse-unless-opted-in were both rejected. THIS ANSWER NEVER GATES THE WRITE: it is a report beside the write's own result, so a provider that cannot take a lock cannot turn a working write into a failed one (D-57).
-    policy, provenance  : D-57 (Spec/05_DECISIONS.md:382-388) answers the ORDERING only - E-VCS-CHECKOUT is built and tested before any write tool calls it - and it does NOT answer what a write tool does when UsesCheckout() == false. That choice is row 10.2's own, and it is (b).
+ policy: AttemptAndReport - (b) of the three options: a checkout IS issued through the provider and the provider's own answer is repeated verbatim. (a) skip-and-say and (c) refuse-unless-opted-in were both rejected. THIS ANSWER NEVER GATES THE WRITE: it is a report beside the write's own result, so a provider that cannot take a lock cannot turn a working write into a failed one (D-57).
+ policy, provenance: D-57 (Spec/05_DECISIONS.md:382-388) answers the ORDERING only - E-VCS-CHECKOUT is built and tested before any write tool calls it - and it does NOT answer what a write tool does when UsesCheckout == false. That choice is row 10.2's own, and it is (b).
 
-    module loaded       : true
-    provider in use     : 'None'
-    registered providers: 5 -> Subversion, Git, Plastic SCM, Perforce, None
-    IsEnabled()         : false
-    IsAvailable()       : NOT ASKED, because IsEnabled() was already false.
-    UsesCheckout()      : NOT READ, because no provider was selected.
+ module loaded: true
+ provider in use: 'None'
+ registered providers: 5 -> Subversion, Git, Plastic SCM, Perforce, None
+ IsEnabled: false
+ IsAvailable: NOT ASKED, because IsEnabled was already false.
+ UsesCheckout: NOT READ, because no provider was selected.
 
-    run refusal         : Revision control is not enabled.
-    the string is from  : SourceControlHelpers.cpp:67 (the engine's own gate)
-    NO PROVIDER WAS REACHED, so no state is reported and no zero is printed
-    (P1), and the write itself is NOT gated by this line.
+ run refusal: Revision control is not enabled.
+ the string is from: SourceControlHelpers.cpp:67 (the engine's own gate)
+ NO PROVIDER WAS REACHED, so no state is reported and no zero is printed
+ (P1), and the write itself is NOT gated by this line.
 assets: 1
 
 REFUSED FOR EVERY ASSET, AND NO PROVIDER WAS REACHED: this is the engine's own
 string and the same one the Preview printed, because both read it out of Plan.
-    [1] /Game/Tests/TA22_VcsWrite_R4476.TA22_VcsWrite_R4476
-        package: /Game/Tests/TA22_VcsWrite_R4476
-        file: <REPO>/TestProject/Content/Tests/TA22_VcsWrite_R4476.uasset
-        file found by: FPackageName::DoesPackageExist (PackageName.h:450)
-        decision: DO NOT ATTEMPT - Revision control is not enabled.
-        NOT ATTEMPTED, and no provider call was made for this asset.
+ [1] /Game/Tests/TA22_VcsWrite_R4476.TA22_VcsWrite_R4476
+ package: /Game/Tests/TA22_VcsWrite_R4476
+ file: <REPO>/TestProject/Content/Tests/TA22_VcsWrite_R4476.uasset
+ file found by: FPackageName::DoesPackageExist (PackageName.h:450)
+ decision: DO NOT ATTEMPT - Revision control is not enabled.
+ NOT ATTEMPTED, and no provider call was made for this asset.
 
-    THE CHECKOUT ANSWER NEVER GATES THE WRITE. It is reported beside the write's
-    own result, so a provider that cannot take a lock cannot turn a working write
-    into a failed one - which is the outcome D-57 exists to prevent.
-    NO ASSET FILE WAS WRITTEN BY THIS SECTION. A checkout is a source control
-    operation; the write tool's own result below or above is the file write.
+ THE CHECKOUT ANSWER NEVER GATES THE WRITE. It is reported beside the write's
+ own result, so a provider that cannot take a lock cannot turn a working write
+ into a failed one - which is the outcome D-57 exists to prevent.
+ NO ASSET FILE WAS WRITTEN BY THIS SECTION. A checkout is a source control
+ operation; the write tool's own result below or above is the file write.
 ```
 
 **AND THE THIRD STATE, MEASURED: A WRITE TOOL NAMED AN ASSET THAT HAS NO FILE
@@ -1196,43 +1196,43 @@ YET.** The very first `E-SAVE` in the suite runs against a struct that exists on
 in memory, and the row says so instead of printing an empty state:
 
 ```
-        decision: DO NOT ATTEMPT - '/Game/Tests/TA22_VcsWrite_R32360' resolved to package
-        '/Game/Tests/TA22_VcsWrite_R32360', but NO FILE FOR IT WAS FOUND ON DISK - so there is
-        no file for source control to have an opinion about
-        NOT ATTEMPTED, and no provider call was made for this asset.
+ decision: DO NOT ATTEMPT - '/Game/Tests/TA22_VcsWrite_R32360' resolved to package
+ '/Game/Tests/TA22_VcsWrite_R32360', but NO FILE FOR IT WAS FOUND ON DISK - so there is
+ no file for source control to have an opinion about
+ NOT ATTEMPTED, and no provider call was made for this asset.
 ```
 
 ### 5.2 Git: the no-op SAID, and the provider's own refusal
 
 ```
-    module loaded       : true
-    provider in use     : 'Git'
-    registered providers: 5 -> Subversion, Git, Plastic SCM, Perforce, None
-    IsEnabled()         : true
-    IsAvailable()       : true
-    UsesCheckout()      : false
-    UsesLocalReadOnly() : false
+ module loaded: true
+ provider in use: 'Git'
+ registered providers: 5 -> Subversion, Git, Plastic SCM, Perforce, None
+ IsEnabled: true
+ IsAvailable: true
+ UsesCheckout: false
+ UsesLocalReadOnly: false
 
-    run refusal         : (none) - both engine questions passed, so each asset below was asked for its state.
+ run refusal: (none) - both engine questions passed, so each asset below was asked for its state.
 assets: 1
 
-    [1] /Game/Tests/TA22_VcsWrite_R4476.TA22_VcsWrite_R4476
-        package: /Game/Tests/TA22_VcsWrite_R4476
-        file: <REPO>/TestProject/Content/Tests/TA22_VcsWrite_R4476.uasset
-        file found by: FPackageName::DoesPackageExist (PackageName.h:450)
-        the state says: under source control false, checked out here false, open for add false, modified false
-        UsesCheckout() == false: A CHECKOUT IS A NO-OP ON THIS PROVIDER. It has
-        no lock command, so nothing here is a claim that a lock was taken. The
-        operation is issued anyway and the provider's own answer is the record.
-        decision: ATTEMPT - a checkout IS issued through the provider and its own answer is repeated, even though this provider reports UsesCheckout() == false and the operation is therefore expected to be a no-op here.
-        provider answer, verbatim: ECommandResult::Failed
-        provider error: Operation 'CheckOut' not supported by revision control provider 'Git'
+ [1] /Game/Tests/TA22_VcsWrite_R4476.TA22_VcsWrite_R4476
+ package: /Game/Tests/TA22_VcsWrite_R4476
+ file: <REPO>/TestProject/Content/Tests/TA22_VcsWrite_R4476.uasset
+ file found by: FPackageName::DoesPackageExist (PackageName.h:450)
+ the state says: under source control false, checked out here false, open for add false, modified false
+ UsesCheckout == false: A CHECKOUT IS A NO-OP ON THIS PROVIDER. It has
+ no lock command, so nothing here is a claim that a lock was taken. The
+ operation is issued anyway and the provider's own answer is the record.
+ decision: ATTEMPT - a checkout IS issued through the provider and its own answer is repeated, even though this provider reports UsesCheckout == false and the operation is therefore expected to be a no-op here.
+ provider answer, verbatim: ECommandResult::Failed
+ provider error: Operation 'CheckOut' not supported by revision control provider 'Git'
 
-    THE CHECKOUT ANSWER NEVER GATES THE WRITE. It is reported beside the write's
-    own result, so a provider that cannot take a lock cannot turn a working write
-    into a failed one - which is the outcome D-57 exists to prevent.
-    NO ASSET FILE WAS WRITTEN BY THIS SECTION. A checkout is a source control
-    operation; the write tool's own result below or above is the file write.
+ THE CHECKOUT ANSWER NEVER GATES THE WRITE. It is reported beside the write's
+ own result, so a provider that cannot take a lock cannot turn a working write
+ into a failed one - which is the outcome D-57 exists to prevent.
+ NO ASSET FILE WAS WRITTEN BY THIS SECTION. A checkout is a source control
+ operation; the write tool's own result below or above is the file write.
 ```
 
 **THE WRITE OPENED WITH `changed:` IN BOTH PHASES.** The block is APPENDED, never
@@ -1250,9 +1250,9 @@ with `-SCCProvider=Git` (the probe is embedded in the suite and written to a tem
 file, so the cross-check is part of the run rather than a note):
 
 ```
-    git : exit 0, 6 value(s)  {'present': 'True', 'current_provider': "'Git'",
-        'is_enabled': 'True', 'is_available': 'True',
-        'check_out_file_returned': 'True', 'last_error_msg': 'Text("")'}
+ git: exit 0, 6 value(s) {'present': 'True', 'current_provider': "'Git'",
+ 'is_enabled': 'True', 'is_available': 'True',
+ 'check_out_file_returned': 'True', 'last_error_msg': 'Text("")'}
 ```
 
 *** SO IN ONE RUN: THE ENGINE'S HELPER SAYS `True` WITH NO ERROR TEXT, AND THIS
@@ -1268,10 +1268,10 @@ argument.
 `hashlib.sha256` of the fixture file, taken around every call:
 
 - across `P-STRUCT-FIELDS` and across `E-STRUCT-FIELDS`: **UNCHANGED**, so the
-  checkout section writes no file and the struct edit only marks the package dirty;
+ checkout section writes no file and the struct edit only marks the package dirty;
 - across each `E-SAVE`: **CHANGED**, so the save really wrote, and the edited field
-  name (`VcsProbeGamma`, `VcsProbeDelta`) is found **in the saved `.uasset` bytes**
-  - the check `test-struct.py` uses, and one no report can fake.
+ name (`VcsProbeGamma`, `VcsProbeDelta`) is found **in the saved `.uasset` bytes**
+ - the check `test-struct.py` uses, and one no report can fake.
 
 ### 6.3 The `git` CLI: a third tool, and it FALSIFIED A CHECK OF MINE
 
@@ -1303,10 +1303,10 @@ once to reach `-SCCProvider=Git`, once to restore a provider-less editor. *** It
 must, because `SourceControlSettings.cpp:58-65` reads that setting off the command
 line (or an ini that does not exist here) and **`Tools/start-editor.ps1` cannot
 pass it through** - row 10.1's finding, unchanged. The restore is ASSERTED by
-reading `IsEnabled()` back through `E-VCS-CHECKOUT`.
+reading `IsEnabled` back through `E-VCS-CHECKOUT`.
 
 Its phases: **A** no provider (the fixture is built, saved, previewed and edited);
-**B** Git (`UsesCheckout() == false`, the operation issued, the cross-check, the
+**B** Git (`UsesCheckout == false`, the operation issued, the cross-check, the
 index evidence); **C** restore, asserted.
 
 ```
@@ -1343,7 +1343,7 @@ questions).
 | THE ENGINE'S OWN `CheckOutFile` ANSWERS TRUE ON GIT | the helper's behaviour changing |
 | so the two answers CANNOT come from one call | the tool's answer collapsing onto the helper's `True` |
 | it never CALLS `CheckOutFile` | a `CheckOutFile(` call appearing in the mechanism |
-| it reads the capability flag / the OPERATION's result | `UsesCheckout()` or `Execute(`/`GetResultInfo()` going away |
+| it reads the capability flag / the OPERATION's result | `UsesCheckout` or `Execute(`/`GetResultInfo` going away |
 | BOTH wired write tools call it | either `EnsureCheckedOut` call going away |
 | the struct writer's PREVIEW does not reach a provider with a checkout | `EnsureCheckedOut` appearing in the preview body |
 | AND THE RESTORE IS ASSERTED (provider-less) | the restore not happening |
@@ -1358,7 +1358,7 @@ this suite was written after reading that note.
 ## 8. THE CHECKS WERE SHOWN RED, AND A RED RUN FOUND A REAL DEFECT
 
 A build was made with **four deliberate breaks**: (1) the trap's own shape, where a
-provider reporting `UsesCheckout() == false` is treated as already checked out and
+provider reporting `UsesCheckout == false` is treated as already checked out and
 nothing is issued; (2) the policy named `SkipAndSay`; (3) the provenance sentence
 reworded so it no longer says `D-57` is silent on the question; (4) the block
 PREPENDED instead of appended in `E-SAVE`.
@@ -1366,19 +1366,19 @@ PREPENDED instead of appended in `E-SAVE`.
 **TWELVE OF 61 NAMED CHECKS WENT RED, WITH THE WRONG VALUES VISIBLE:**
 
 ```
-  FAIL E-SAVE still opens with changed:, so the block was APPENDED and not prepended  === automatic checkout before the write (D-57): E-SAVE ===
-  FAIL and that block names the policy taken out of the three options  === automatic checkout before the write (D-57): E-SAVE ===
-  FAIL and it says plainly that D-57 does not answer the UsesCheckout() == false question
-  FAIL and the block never says saved, so it cannot be confused with the save count  1] /Game/Tests/TA22_VcsWrite_R52840
-  FAIL the second save opens with changed:
-  FAIL *** THE PREVIEW ISSUED NOTHING EVEN WHERE A CHECKOUT WOULD BE ATTEMPTED ***
-  FAIL AND THE OPERATION WAS STILL ISSUED, with the provider's own answer repeated  ...each asset below was asked for its state.
-  FAIL and the provider's OWN message is repeated, not paraphrased
-  FAIL E-SAVE opens with changed: with Git selected too
-  FAIL and its block carries the provider's own refusal
-  FAIL while THIS project's write tool, on the same provider in the same run, recorded ECommandResult::Failed with the provider's 'not supported' message
-  FAIL so the two answers CANNOT come from one call: ... helper 'True' vs tool False
-RESULT: FAIL (12 of 61) -> ...
+ FAIL E-SAVE still opens with changed:, so the block was APPENDED and not prepended === automatic checkout before the write (D-57): E-SAVE ===
+ FAIL and that block names the policy taken out of the three options === automatic checkout before the write (D-57): E-SAVE ===
+ FAIL and it says plainly that D-57 does not answer the UsesCheckout == false question
+ FAIL and the block never says saved, so it cannot be confused with the save count 1] /Game/Tests/TA22_VcsWrite_R52840
+ FAIL the second save opens with changed:
+ FAIL *** THE PREVIEW ISSUED NOTHING EVEN WHERE A CHECKOUT WOULD BE ATTEMPTED ***
+ FAIL AND THE OPERATION WAS STILL ISSUED, with the provider's own answer repeated...each asset below was asked for its state.
+ FAIL and the provider's OWN message is repeated, not paraphrased
+ FAIL E-SAVE opens with changed: with Git selected too
+ FAIL and its block carries the provider's own refusal
+ FAIL while THIS project's write tool, on the same provider in the same run, recorded ECommandResult::Failed with the provider's 'not supported' message
+ FAIL so the two answers CANNOT come from one call:... helper 'True' vs tool False
+RESULT: FAIL (12 of 61) ->...
 ```
 
 **THE LAST LINE IS THE TRAP ITSELF GOING RED, WITH BOTH VALUES IN IT:**
@@ -1404,27 +1404,27 @@ rebuilt (`Result: Succeeded`); and the suite returned
 ## 9. WHAT COULD NOT BE SETTLED
 
 1. **NO CHECKOUT AGAINST A LIVE DEPOT HAS EVER BEEN PERFORMED - NOT BY ROW 10.1,
-   NOT BY THIS ROW, NOT BY ANYONE.** `p4 set` still points at
-   `ssl:<p4-host>:1666`, which does not answer; `cm` and `svn` are not on
-   `PATH`. **EVERY CHECKOUT ANSWER IN THIS SECTION IS THE ANSWER TO A REFUSAL OR TO
-   A NO-OP PROVIDER.** The claim this row makes is narrow and measured: *the
-   operation is issued through the provider, and the provider's own answer is what
-   gets reported*. **IT IS NOT A CLAIM THAT AN AUTOMATIC CHECKOUT WORKS.**
-2. **The `UsesCheckout() == true` branch of the ACTING path was never executed.**
-   The only provider on this machine with `UsesCheckout() == true` is Perforce, and
-   it is `IsAvailable() == false`, so the mechanism refuses before reaching it - by
-   design, and the refusal is measured. **What a successful `FCheckOut` looks like
-   is unmeasured**, and the sentence that would have to change when a depot exists
-   is the "ALREADY checked out here" branch of `NotAttemptedReason`.
+ NOT BY THIS ROW, NOT BY ANYONE.** `p4 set` still points at
+ `ssl:<p4-host>:1666`, which does not answer; `cm` and `svn` are not on
+ `PATH`. **EVERY CHECKOUT ANSWER IN THIS SECTION IS THE ANSWER TO A REFUSAL OR TO
+ A NO-OP PROVIDER.** The claim this row makes is narrow and measured: *the
+ operation is issued through the provider, and the provider's own answer is what
+ gets reported*. **IT IS NOT A CLAIM THAT AN AUTOMATIC CHECKOUT WORKS.**
+2. **The `UsesCheckout == true` branch of the ACTING path was never executed.**
+ The only provider on this machine with `UsesCheckout == true` is Perforce, and
+ it is `IsAvailable == false`, so the mechanism refuses before reaching it - by
+ design, and the refusal is measured. **What a successful `FCheckOut` looks like
+ is unmeasured**, and the sentence that would have to change when a depot exists
+ is the "ALREADY checked out here" branch of `NotAttemptedReason`.
 3. **Whether option (b) is CORRECT for a live Perforce cannot be settled here.** It
-   is chosen for the four reasons in section 3, and reason 3 - that the answer never
-   gates the write - is the one a live depot might argue with: on Perforce a failed
-   checkout very probably means the save will fail anyway, and this row does not
-   pre-empt that, because a gate that cannot be measured is exactly what `D-57`
-   warns against. **That is the first thing a reachable depot should be used to
-   test.**
+ is chosen for the four reasons in section 3, and reason 3 - that the answer never
+ gates the write - is the one a live depot might argue with: on Perforce a failed
+ checkout very probably means the save will fail anyway, and this row does not
+ pre-empt that, because a gate that cannot be measured is exactly what `D-57`
+ warns against. **That is the first thing a reachable depot should be used to
+ test.**
 4. **The 30 unwired writers are unwired.** Section 1 lists them. Nothing here says
-   they are wrong to be unwired yet.
+ they are wrong to be unwired yet.
 5. **The `FMarkForAdd` staging on Git is reported, not judged.** It is the engine's
-   behaviour, it is not this row's, and this row neither prevents nor endorses it.
-   What this row does is stop its own fixture from leaving an index entry behind.
+ behaviour, it is not this row's, and this row neither prevents nor endorses it.
+ What this row does is stop its own fixture from leaving an index entry behind.

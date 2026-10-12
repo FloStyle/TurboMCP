@@ -42,8 +42,8 @@ audited row by row against the tree.
 
 | | |
 |---|---|
-| ***The full-run conflict*** | *`test-vcs` required `TA01_HandLaid.uasset` clean while `test-graph-fix-backward`, which runs **before** it, rebuilds the kit — so **the full run could not be green at HEAD**. Fixed in the harness (`bee3160`), where the editor can be stopped: a suite that needs the editor live cannot restore the file itself, because `git checkout` answers `unable to unlink old ...: Invalid argument` while it is held open.* |
-| ***A count pinned on a shared asset*** | *`test-material-tidy` asserted `expressions_after == 16` while the fixture held 12, so **the suite passed or failed according to which fixture it happened to be looking at** — and reported a defect in the material tool that was a property of the fixture. The project's own rule forbids this in these words: "never pin a count or an ID on a shared asset". (`0d99671`)* |
+| ***The full-run conflict*** | *`test-vcs` required `TA01_HandLaid.uasset` clean while `test-graph-fix-backward`, which runs **before** it, rebuilds the kit — so **the full run could not be green at HEAD**. Fixed in the harness , where the editor can be stopped: a suite that needs the editor live cannot restore the file itself, because `git checkout` answers `unable to unlink old...: Invalid argument` while it is held open.* |
+| ***A count pinned on a shared asset*** | *`test-material-tidy` asserted `expressions_after == 16` while the fixture held 12, so **the suite passed or failed according to which fixture it happened to be looking at** — and reported a defect in the material tool that was a property of the fixture. The project's own rule forbids this in these words: "never pin a count or an ID on a shared asset". * |
 
 **The two capabilities the owner asked to prioritise — Blueprint Reading, then Vision — are complete**, and so is the Preview half of every writer.
 
@@ -117,12 +117,12 @@ assets and data, then level and actors, then quality and session, then source co
 not deferred by effort.** Measurement 1.1 asked whether the MCP server answers while the editor is stopped at a
 Blueprint breakpoint, and **it answers NO**, proven from the engine source rather than from a run:
 
-    Ticker.h:35         static CORE_API FTSTicker& GetCoreTicker();
-    Ticker.h:168-170    void ExecuteOnGameThread(...) { FTSTicker::GetCoreTicker().AddTicker(...); }
-    HttpServerModule.h:26   class FHttpServerModule ... , public FTSTickerObjectBase
-    HttpServerModule.cpp:182-191   FHttpServerModule::Tick(...) { ... Listener.Value->Tick(...); }
+ Ticker.h:35 static CORE_API FTSTicker& GetCoreTicker;
+ Ticker.h:168-170 void ExecuteOnGameThread(...) { FTSTicker::GetCoreTicker.AddTicker(...); }
+ HttpServerModule.h:26 class FHttpServerModule..., public FTSTickerObjectBase
+ HttpServerModule.cpp:182-191 FHttpServerModule::Tick(...) {... Listener.Value->Tick(...); }
 
-**`GetCoreTicker()` IS THE LITERAL MECHANISM OF `ExecuteOnGameThread()`, so the HTTP server ticks on the GAME
+**`GetCoreTicker` IS THE LITERAL MECHANISM OF `ExecuteOnGameThread`, so the HTTP server ticks on the GAME
 THREAD.** A breakpoint stops the editor in a nested loop, the game thread stops ticking, and **THE SERVER'S OWN
 `Tick` NEVER RUNS - THE REQUEST IS NEVER DISPATCHED TO A TOOL. THE SERVER IS NOT SLOW, IT IS SILENT.** An agent that
 armed the breakpoint waits until a person resumes the game.
@@ -172,11 +172,11 @@ isolation":
 at the moment the harness hands control to the suite"*, and named the rebuild as the remaining suspect. **THE
 REBUILD WAS NEVER THE DEFECT AND THE DEFECT WAS NOT NEAR IT.** What was actually happening was measured later and in
 one line: `Tools/tmcp.py` had gained a re-connect retry so a suite whose editor was restarted underneath it would
-recover - correct in itself - **but `connect()` CALLS `rpc()` AND `rpc()` CALLS `connect()` ON FAILURE, SO WHEN THE
+recover - correct in itself - **but `connect` CALLS `rpc` AND `rpc` CALLS `connect` ON FAILURE, SO WHEN THE
 SERVER DID NOT ANSWER THE RETRY RECURSED, each level waiting out a full request timeout.**
 
-    check-probe-graphs.py BEFORE:  777.3 SECONDS, and killed at 600 in a full run
-    check-probe-graphs.py AFTER:    16.1 SECONDS, RESULT: PASS
+ check-probe-graphs.py BEFORE: 777.3 SECONDS, and killed at 600 in a full run
+ check-probe-graphs.py AFTER: 16.1 SECONDS, RESULT: PASS
 
 **AND THE SUITE'S OWN GUARD COULD NOT FIRE**: its `try`/`except` is written to treat any MCP failure as *"no editor,
 which is allowed"* - **BUT THE EXCEPTION NEVER ARRIVED, because the recursion consumed the stack and the clock

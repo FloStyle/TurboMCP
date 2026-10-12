@@ -8,7 +8,7 @@ Everything below was proven this session, not assumed.
 
 | Check | Evidence |
 |---|---|
-| Engine builds from source | UE 5.8.3, commit `396c9f059`, `release`, 481 editor DLLs |
+| Engine builds from source | UE 5.8.3, commit, `release`, 481 editor DLLs |
 | Editor runs **autonomously** | launched headless, no human interaction |
 | MCP server starts automatically | `LogModelContextProtocol: Starting MCP server on port 8000` |
 | Plugin loads | `InternalLoadLibrary: 'TurboMCP'` |
@@ -19,10 +19,10 @@ Everything below was proven this session, not assumed.
 ### The autonomous loop
 
 ```
-build:   Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development ^
-             -Project="<repo>\TestProject\TurboMCPTest.uproject" -WaitMutex -MaxParallelActions=8
-run:     UnrealEditor.exe TestProject\TurboMCPTest.uproject -nullrhi -unattended -nosplash -nosound
-probe:   python Tools\check-mcp-server.py
+build: Engine\Build\BatchFiles\Build.bat TurboMCPTestEditor Win64 Development ^
+ -Project="<repo>\TestProject\TurboMCPTest.uproject" -WaitMutex -MaxParallelActions=8
+run: UnrealEditor.exe TestProject\TurboMCPTest.uproject -nullrhi -unattended -nosplash -nosound
+probe: python Tools\check-mcp-server.py
 ```
 
 Rebuild of just the module and restart takes about 30 seconds plus editor boot, so
@@ -33,15 +33,15 @@ the edit-build-test cycle is fast now that the engine is built.
 This corrected two wrong assumptions:
 
 - Toolset name is `<Module>.<ClassName>` with the leading **`U` stripped**:
-  `TurboMCP.TurboMCPReadToolset`. This comes from the `ScriptName` metadata UHT
-  writes, not from `FFunctionLibraryToolset::GetToolsetClassName`, which keeps
-  the `U`. Our own helper was wrong and has been fixed.
+ `TurboMCP.TurboMCPReadToolset`. This comes from the `ScriptName` metadata UHT
+ writes, not from `FFunctionLibraryToolset::GetToolsetClassName`, which keeps
+ the `U`. Our own helper was wrong and has been fixed.
 - Tool name is `<Toolset>.<Function>`: `TurboMCP.TurboMCPReadToolset.ReadTurboMCPStatus`.
 - Calling any TurboMCP tool goes through `call_tool` with `toolset_name`,
-  `tool_name` (bare) and `arguments` (a JSON **string**).
+ `tool_name` (bare) and `arguments` (a JSON **string**).
 - A tool that returns `FString` arrives as `{"returnValue": "..."}`.
 - Toolset descriptions come from the **class doc comment**; tool descriptions
-  from the **function doc comment**.
+ from the **function doc comment**.
 
 Helper scripts in `Tools/`: `check-plugin.py` (pre-build gate),
 `check-mcp-server.py` (probe), `discover-mcp.py`, `describe-toolsets.py`,
@@ -115,7 +115,7 @@ Three times, reading the engine's own implementation beat writing a rule:
 - the **node type ID** is `<category>|<title>`, not the C++ class name;
 - the **`FText` source string** is reached through `FTextInspector`, not a member;
 - the **overridable set** is `UBlueprintEditorLibrary::ListEvents`/`ListFunctions`,
-  which already covers interfaces including natively-implemented ones.
+ which already covers interfaces including natively-implemented ones.
 
 A hand-rolled rule is a second source of truth for something the editor already
 enforces, and each one was wrong in a way only the comparison revealed.
@@ -232,22 +232,22 @@ change, reflection or not.
 Recorded because each one cost a build cycle:
 
 - `call_tool`'s `arguments` is a **JSON object**, not a JSON string as
-  `07_ENGINE_NOTES.md` section 3.1 says. A string yields "input params Json is
-  empty".
+ `07_ENGINE_NOTES.md` section 3.1 says. A string yields "input params Json is
+ empty".
 - The published tool `name` is the full `Toolset.Function`; `call_tool` wants the
-  bare function name.
+ bare function name.
 - `UFUNCTION` parameter names are exposed **camelCased** (`toolsetName`).
 - An `FString` parameter is **required** in the schema whatever its default, so
-  there is no way to express an optional string. Pass `""` and treat it as "not
-  given". This is exactly the open question `07_ENGINE_NOTES.md` section 2.1
-  raises, now answered.
+ there is no way to express an optional string. Pass `""` and treat it as "not
+ given". This is exactly the open question `07_ENGINE_NOTES.md` section 2.1
+ raises, now answered.
 - The toolset name is the class name with the leading `U` **stripped**
-  (`TurboMCP.TurboMCPReadToolset`). `FFunctionLibraryToolset::GetToolsetClassName`
-  keeps the `U` and is therefore the wrong function to copy.
+ (`TurboMCP.TurboMCPReadToolset`). `FFunctionLibraryToolset::GetToolsetClassName`
+ keeps the `U` and is therefore the wrong function to copy.
 - The engine's Blueprint and widget toolsets are **not registered** in this
-  project; only `AgentSkillToolset` is. The shipped traps target tools that are
-  absent here, so the trap lookup is proven through the project override file
-  instead.
+ project; only `AgentSkillToolset` is. The shipped traps target tools that are
+ absent here, so the trap lookup is proven through the project override file
+ instead.
 
 ### Step 3 — Phase 2, Blueprint reading
 `R-BP-LOAD`, `R-GRAPH-LOAD` (both formats), `R-REFS`, `R-OVERRIDES`,

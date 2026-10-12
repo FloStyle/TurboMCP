@@ -107,10 +107,10 @@ than on anything in this plugin:
 
 - a `UserDefinedEnum` cannot be a row struct, because it is not a `UScriptStruct`;
 - `BlueprintEditorLibrary.add_member_variable` only accepts a **Blueprint**, so a
-  `UserDefinedStruct` cannot be given fields that way;
+ `UserDefinedStruct` cannot be given fields that way;
 - `DataTable::RowStruct` is **read-only** once the asset exists;
 - a CSV import through `AssetImportTask` refuses with "A Data table row type must be
-  specified in the import settings json file for automated import".
+ specified in the import settings json file for automated import".
 
 Question: should a project-owned table be built, and if so how? Two routes are known
 and both cost more than the check is worth right now: an import-settings JSON beside
@@ -140,27 +140,27 @@ exactly what was asked for. The nodes are simply not in it.
 What is already known, so nobody repeats it:
 
 - The view move **is** applied. `GetViewLocation` read back after `SetViewLocation` gives
-  `applied 0.750 at x 980 y 208` against `asked 0.729`. The engine accepted the centre and
-  clamped the zoom to its own limit, which is expected and fine.
+ `applied 0.750 at x 980 y 208` against `asked 0.729`. The engine accepted the centre and
+ clamped the zoom to its own limit, which is expected and fine.
 - `FSlateApplication::ForceRedrawWindow` on the widget's window, to make the node panel
-  recompute which nodes are on screen, **did not change the outcome**.
+ recompute which nodes are on screen, **did not change the outcome**.
 - `FWidgetRenderer::DrawWidget` renders the composed widget as it is. A node panel culls
-  nodes outside its geometry, so an empty canvas is what a panel with no laid-out geometry
-  would produce — but the chrome around it renders at the right size, so the outer widget
-  does have geometry.
+ nodes outside its geometry, so an empty canvas is what a panel with no laid-out geometry
+ would produce — but the chrome around it renders at the right size, so the outer widget
+ does have geometry.
 
 Untried routes, cheapest first:
 
 1. `FWidgetRenderer::DrawWidget` with `bDeferRenderTargetUpdate` and an explicit geometry
-   pass, or feeding `SNodePanel` its own `Tick` and `Paint` with a synthetic `FGeometry` of
-   the requested size, so the panel believes it has the room the render target gives it.
+ pass, or feeding `SNodePanel` its own `Tick` and `Paint` with a synthetic `FGeometry` of
+ the requested size, so the panel believes it has the room the render target gives it.
 2. Render at the panel's **actual** on-screen size rather than the requested size, which
-   removes the mismatch between what the panel thinks it has and what is being drawn, then
-   scale the image.
+ removes the mismatch between what the panel thinks it has and what is being drawn, then
+ scale the image.
 3. Give up on off-screen rendering for this tool and call the engine's own
-   `USlateInspectorToolset::Screenshot`, which captures the on-screen window. That works by
-   construction but loses the framing: the image is whatever is visible, so the frame has
-   to be achieved by moving the view and hoping the window is the right shape.
+ `USlateInspectorToolset::Screenshot`, which captures the on-screen window. That works by
+ construction but loses the framing: the image is whatever is visible, so the frame has
+ to be achieved by moving the view and hoping the window is the right shape.
 
 Question: which of these actually makes the nodes appear, and is the answer the same for
 the widget Designer and for materials?
@@ -187,17 +187,17 @@ move and not in the panel geometry.
 
 NEXT, IN ORDER:
 1. Check whether the render target's content origin matches the window's screen origin at
-   all. `FWidgetRenderer::DrawWindow` derives its geometry from `DrawSize` and `Scale`, and
-   the render thread update it schedules uses `FApp::GetDeltaTime()` rather than the
-   `DeltaTime` argument the caller passes. Verify where widget (0,0) actually lands in the
-   picture by rendering the whole window scaled to the requested size and measuring a known
-   widget's position in the output.
+ all. `FWidgetRenderer::DrawWindow` derives its geometry from `DrawSize` and `Scale`, and
+ the render thread update it schedules uses `FApp::GetDeltaTime` rather than the
+ `DeltaTime` argument the caller passes. Verify where widget (0,0) actually lands in the
+ picture by rendering the whole window scaled to the requested size and measuring a known
+ widget's position in the output.
 2. If the offset is not a constant, crop by SCANNING rather than by arithmetic: render the
-   whole window, and cut the graph canvas out by finding the panel's own background colour
-   instead of computing its position.
+ whole window, and cut the graph canvas out by finding the panel's own background colour
+ instead of computing its position.
 3. Only then decide whether the engine-screenshot fallback is still needed. It works today
-   — it returns a real 1670x911 PNG of the editor window — and the result labels it in
-   words so it can never be mistaken for the frame that was asked for.
+ — it returns a real 1670x911 PNG of the editor window — and the result labels it in
+ words so it can never be mistaken for the frame that was asked for.
 
 THE TEST LESSON, which outlives the bug. Every check in `test-capture.py` passed while the
 canvas was empty: existence, size, PNG header and file name are all true of a picture of
@@ -235,7 +235,7 @@ The vertical difference between the applied view centre and the one the picture 
 with is about **390 pixels**, which is a little over half the panel height (742). A
 half-panel offset is the signature of the panel measuring itself from its own top-left
 while the transform assumes the window's, so the next thing to check is what
-`SGraphEditor::GetTickSpaceGeometry()` and `SNodePanel`'s own view transform each use as
+`SGraphEditor::GetTickSpaceGeometry` and `SNodePanel`'s own view transform each use as
 their origin — not what the frame arithmetic does with them.
 
 What is already ruled out, so it is not retried: the view move itself (read back and
@@ -248,14 +248,14 @@ specifically a vertical origin mismatch, not a general mapping error.
 
 Three further hypotheses were tested and are also ruled out:
 
-- `SWindow::GetSizeInScreen()` differing from the window's display size. They are the same
-  property; the check was a no-op and was removed rather than left in.
+- `SWindow::GetSizeInScreen` differing from the window's display size. They are the same
+ property; the check was a no-op and was removed rather than left in.
 - `FWidgetRenderer::DrawWindow` producing a render target whose size differs from the size
-  asked for. It does not: the target is created at `WindowWidth x WindowHeight` and the read
-  back asserts `Pixels.Num() == WindowWidth * WindowHeight`, which passes.
-- `FGeometry::GetAbsolutePosition()` returning layout space rather than render space. It uses
-  `AccumulatedRenderTransform`, so with a layout scale of 1.00 it returns screen pixels,
-  which is what the mapping assumes.
+ asked for. It does not: the target is created at `WindowWidth x WindowHeight` and the read
+ back asserts `Pixels.Num == WindowWidth * WindowHeight`, which passes.
+- `FGeometry::GetAbsolutePosition` returning layout space rather than render space. It uses
+ `AccumulatedRenderTransform`, so with a layout scale of 1.00 it returns screen pixels,
+ which is what the mapping assumes.
 
 **This has now resisted three successive hypotheses, so it is being left open rather than
 chased further.** The roadmap has nine phases and this is one tool's crop rectangle; every
@@ -269,13 +269,13 @@ arithmetic has been wrong three times.
 RECOMMENDED NEXT ROUTE — measure, do not derive:
 
 1. Put a known node at a known graph position, capture with `debug-window`, and locate that
-   node in the output by its title text. One measurement gives the real transform and
-   replaces every assumption above.
+ node in the output by its title text. One measurement gives the real transform and
+ replaces every assumption above.
 2. If the offset is constant, subtract it and be done.
 3. If it is not constant, do NOT derive it. Crop by SCANNING the picture for the canvas,
-   which needs no window geometry at all and therefore cannot be wrong about it. The canvas
-   is the largest region bounded by the editor's panel gutters, and the frame's position
-   within it follows from the view location and zoom alone, which are known correct.
+ which needs no window geometry at all and therefore cannot be wrong about it. The canvas
+ is the largest region bounded by the editor's panel gutters, and the frame's position
+ within it follows from the view location and zoom alone, which are known correct.
 
 Route 3 is preferred even if route 2 works, because it removes the dependency on window
 geometry entirely.
@@ -327,10 +327,10 @@ generated header, should the content-based version replace the timestamp one?
 Two candidate explanations for the break test, neither confirmed:
 
 - `check_uht_freshness` may not be the function the script actually runs, though
-  `def check_uht_freshness` appears exactly once.
+ `def check_uht_freshness` appears exactly once.
 - The generated header the check reads and the one the break test writes may not be the
-  same file, despite both naming
-  `<REPO>\TurboMCP\Intermediate\Build\Win64\UnrealEditor\Inc\TurboMCP\UHT\TurboMCPToolsets.generated.h`.
+ same file, despite both naming
+ `<REPO>\TurboMCP\Intermediate\Build\Win64\UnrealEditor\Inc\TurboMCP\UHT\TurboMCPToolsets.generated.h`.
 
 Answer: not yet answered. The timestamp check stands, and its failure message now tells the
 reader to confirm before acting.
@@ -349,14 +349,14 @@ indexes". Three of those are now verified against a real Blueprint:
 | node type IDs, long form | **yes** | `full` carries `/Game/Tests/BP_NodeTest.BP_NodeTest:EventGraph:` while `bodies` carries the short form |
 | each node's C++ class | **yes** | 8 occurrences of `; class ` in `full`, 0 in `bodies` |
 | linked outputs | **yes** | 7 occurrences of `; out ` in `full`, 0 in `bodies` |
-| **a knot named on a link** | **NO** | `BP_NodeTest` has no knot node, so the branch that prints `(-> ... ; via knot)` never runs |
+| **a knot named on a link** | **NO** | `BP_NodeTest` has no knot node, so the branch that prints `(->...; via knot)` never runs |
 
 `TurboMCPGraphText.cpp` has the branch:
 
 ```cpp
 if (IsKnot(Target) && bFull)
 {
-    return FString::Printf(TEXT("(-> %s ; via knot)"), *TurboMCPNodeId::MakeForNode(Target));
+ return FString::Printf(TEXT("(-> %s; via knot)"), *TurboMCPNodeId::MakeForNode(Target));
 }
 ```
 
@@ -377,28 +377,28 @@ available.** The pin index half is still open.
 WHAT WAS TRIED, and what each attempt returned:
 
 1. **The engine's DSL cannot create a reroute node.** `blueprint_dsl.py` recognises one — it
-   defines `_REROUTE_NODE = '|RerouteNode'` and has a `_follow_reroutes` function that walks
-   through knots while traversing a graph, and it even raises `Cycle detected in reroute (knot)
-   nodes` on a malformed chain. So the type is known. But **writing** one through
-   `write_graph_dsl` is refused:
+ defines `_REROUTE_NODE = '|RerouteNode'` and has a `_follow_reroutes` function that walks
+ through knots while traversing a graph, and it even raises `Cycle detected in reroute (knot)
+ nodes` on a malformed chain. So the type is known. But **writing** one through
+ `write_graph_dsl` is refused:
 
-   ```
-   AssertionError: The node could not be created / |RerouteNode does not exist
-   in: (|RerouteNode)
-   ```
+ ```
+ AssertionError: The node could not be created / |RerouteNode does not exist
+ in: (|RerouteNode)
+ ```
 
-   The engine's own writer can traverse a knot and cannot make one. The test graph was checked
-   afterwards and is unchanged, so the refusal happens before anything is written.
+ The engine's own writer can traverse a knot and cannot make one. The test graph was checked
+ afterwards and is unchanged, so the refusal happens before anything is written.
 
 2. **A knot is not a menu node type**, so it cannot be written by name the way every other node
-   can. A sweep of `find_node_types` filtered to `Utilities|FlowControl` returns 914 types and
-   none is a knot. That is consistent with the refusal above rather than a second problem.
+ can. A sweep of `find_node_types` filtered to `Utilities|FlowControl` returns 914 types and
+ none is a knot. That is consistent with the refusal above rather than a second problem.
 
 3. **`UK2Node_Knot` is not reachable from Python.** It is declared `UCLASS(MinimalAPI)`, and the
-   programmatic toolset the MCP server exposes permits only `copy`, `re`, `math`, `json`,
-   `datetime` and `time` as imports, so `unreal` is not available to a script at all.
+ programmatic toolset the MCP server exposes permits only `copy`, `re`, `math`, `json`,
+ `datetime` and `time` as imports, so `unreal` is not available to a script at all.
 
-So the branch that prints `(-> <node id> ; via knot)` at `full` is **reachable only from a graph
+So the branch that prints `(-> <node id>; via knot)` at `full` is **reachable only from a graph
 that already contains a knot**, and nothing in this repository's toolchain can put one there.
 
 WHAT THIS MEANS, stated plainly: the branch is **not wrong**, and it is **not verified**. The JSON
@@ -445,7 +445,7 @@ hashing the `TCHAR` buffer would differ for any non-ASCII name — and holds a h
 This plugin's own four TOOLSET names resolve. Measured:
 
 ```
-2026-10-09T17:07:20.229Z  end  engine  TurboMCP.TurboMCPEditToolset...
+2026-10-09T17:07:20.229Z end engine TurboMCP.TurboMCPEditToolset...
 ```
 
 ### What does not, and why
@@ -454,12 +454,12 @@ This plugin's own four TOOLSET names resolve. Measured:
 string it does hash was not pinned down in this round. Measured symptoms:
 
 - With only the toolsets registered, the line read
-  `TurboMCP.TurboMCPReadToolset.(engine tool ending 43b186416e61)` — a name beside a hash.
+ `TurboMCP.TurboMCPReadToolset.(engine tool ending)` — a name beside a hash.
 - With the tool registered as `<Toolset>.<Tool>`, the hash still did not match.
 - With the tool tried against EVERY toolset prefix (a bug), the log showed
-  `TurboMCP.TurboMCPReadToolset.TurboMCP.TurboMCPReadToolset.ReadTurboMCPBlueprintLoad` — the
-  toolset repeated inside the tool name. That is **worse than a hash, because it looks correct**.
-  The pairing is now data rather than a loop, so that wrong answer cannot come back.
+ `TurboMCP.TurboMCPReadToolset.TurboMCP.TurboMCPReadToolset.ReadTurboMCPBlueprintLoad` — the
+ toolset repeated inside the tool name. That is **worse than a hash, because it looks correct**.
+ The pairing is now data rather than a loop, so that wrong answer cannot come back.
 
 ### The honest position
 
@@ -472,14 +472,14 @@ and record full detail for the plugin's own tools from inside those tools."*
 ### The route that would close it
 
 Read the identifier the engine ACTUALLY hashes, from the engine source that builds it, rather than
-inferring it from the call site. `RecordToolCallEvent(SessionId, ToolName, ...)` receives `ToolName`
+inferring it from the call site. `RecordToolCallEvent(SessionId, ToolName,...)` receives `ToolName`
 from the server's dispatch and the string it holds at that point has not been read. One grep of the
 caller, and the registration table would be exact.
 
 ### The other measured fact: two events per call
 
 Every plugin tool call produced **two** log lines with the same duration, one whose toolset resolved
-and one whose toolset hash did not — `(engine tool ending af1349b9f5f9)` appears on the second line
+and one whose toolset hash did not — `(engine tool ending)` appears on the second line
 of every pair. So the server records the event twice, or records it once from the handler and once
 from the transport. Not investigated; recorded rather than guessed at.
 
@@ -502,23 +502,23 @@ the whole answer.
 
 ### The three facts that closed it
 
-1. **`IModelContextProtocolModule::GetTools()`** returns every registered tool with its identifier.
-   The plugin's provider now reads it rather than keeping a hand-written table, so a tool added
-   anywhere resolves without any file being touched.
+1. **`IModelContextProtocolModule::GetTools`** returns every registered tool with its identifier.
+ The plugin's provider now reads it rather than keeping a hand-written table, so a tool added
+ anywhere resolves without any file being touched.
 
 2. **`UE::ModelContextProtocol::Analytics::HashToolIdentifier` and `ParseToolsetName` are exported
-   `UE_API`.** The first version *reimplemented* the hash — UTF-8 through `FBlake3::HashBuffer`,
-   then `LexToString` — and that was a liability: a reimplementation is correct only while it
-   matches, and **nothing would have said so when it stopped.** The engine's own function is now
-   called, which makes the lookup exact by construction.
+ `UE_API`.** The first version *reimplemented* the hash — UTF-8 through `FBlake3::HashBuffer`,
+ then `LexToString` — and that was a liability: a reimplementation is correct only while it
+ matches, and **nothing would have said so when it stopped.** The engine's own function is now
+ called, which makes the lookup exact by construction.
 
-3. **In tool-search mode, `GetTools()` returns exactly THREE identifiers** — `call_tool`,
-   `describe_toolset`, `list_toolsets`, all with an **empty** toolset prefix. Measured, not assumed.
-   The toolset's own tools are *"dispatched through `call_tool` without being registered"*, as
-   `ModelContextProtocolToolsetRegistryAdapter.h` says. So the inner event's toolset hash is over
-   the string the caller passed, and the **tool slot holds the hash of the whole qualified name**:
-   `ModelContextProtocolServer.cpp:904` builds `ResolvedFullName = toolset_name + "." + tool_name`
-   and passes *that*. Registering the bare tool name was not enough.
+3. **In tool-search mode, `GetTools` returns exactly THREE identifiers** — `call_tool`,
+ `describe_toolset`, `list_toolsets`, all with an **empty** toolset prefix. Measured, not assumed.
+ The toolset's own tools are *"dispatched through `call_tool` without being registered"*, as
+ `ModelContextProtocolToolsetRegistryAdapter.h` says. So the inner event's toolset hash is over
+ the string the caller passed, and the **tool slot holds the hash of the whole qualified name**:
+ `ModelContextProtocolServer.cpp:904` builds `ResolvedFullName = toolset_name + "." + tool_name`
+ and passes *that*. Registering the bare tool name was not enough.
 
 ### The two events per call are the engine's own design, not a bug
 
@@ -535,11 +535,11 @@ duplication is **withdrawn**.
 ### A bug the fix exposed: resolved-and-empty is not unresolved
 
 The empty toolset prefix is a **legitimate key** — the engine's own commandlet registers it — so
-`call_tool` resolves to the empty string. The lookup then tested `IsEmpty()` to decide whether
+`call_tool` resolves to the empty string. The lookup then tested `IsEmpty` to decide whether
 resolution had happened, and printed:
 
 ```
-(engine tool ending af1349b9f5f9)  .  call_tool
+(engine tool ending). call_tool
 ```
 
 **a line saying it could not name a toolset it had just named.** Resolution is now tracked by
@@ -549,10 +549,10 @@ whether the key was **found**, not by whether the value is empty, and an empty p
 ### Measured, after the fix
 
 ```
-(top-level)                   .  call_tool
-TurboMCP.TurboMCPEditToolset  .  TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog
-(top-level)                   .  call_tool
-TurboMCP.TurboMCPReadToolset  .  TurboMCP.TurboMCPReadToolset.ReadTurboMCPBlueprintLoad
+(top-level). call_tool
+TurboMCP.TurboMCPEditToolset. TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog
+(top-level). call_tool
+TurboMCP.TurboMCPReadToolset. TurboMCP.TurboMCPReadToolset.ReadTurboMCPBlueprintLoad
 ```
 
 ### The check that would have caught the earlier half-state
@@ -580,9 +580,9 @@ these are unverified:
 - that the checkbox's label reads as intended and is not clipped;
 - that the summary line fits and is readable at the default panel width;
 - that ticking the box actually repaints the summary, rather than showing a stale figure until the
-  next tool call refreshes it. **This one is a real risk**: `GetCallLogSummary` is a bound attribute,
-  which Slate re-evaluates on paint, but paint is not guaranteed to happen just because the setting
-  changed, and no code calls `Invalidate` after a tick.
+ next tool call refreshes it. **This one is a real risk**: `GetCallLogSummary` is a bound attribute,
+ which Slate re-evaluates on paint, but paint is not guaranteed to happen just because the setting
+ changed, and no code calls `Invalidate` after a tick.
 
 **The route that would close it:** a Slate inspection capability over the panel's widget tree, which
 is the same gap the engine's own `SlateInspectorToolset` fills for the editor's other windows. Adding
@@ -610,9 +610,9 @@ or `fn` form, and every node it makes is wired into that form's exec chain by co
 attempts:
 
 - `(Development|PrintString "orphan probe")` alone →
-  `Top-level form must start with "event" or "fn"`.
+ `Top-level form must start with "event" or "fn"`.
 - `(fn OrphanProbe (Development|PrintString "orphan probe"))` →
-  `The node could not be created / AddEvent|OrphanProbe does not exist`.
+ `The node could not be created / AddEvent|OrphanProbe does not exist`.
 
 So the test graph contains **no dead node**, and no dead node could be made. The same wall `Q-9` hit
 with reroute knots.
@@ -635,7 +635,7 @@ call **live** code dead, and that is the failure that destroys a user's work. A 
 
 - that a group IS found when one exists;
 - that the three KEEP rules fire in practice — a group holding an entry, a group whose write is read
-  by live code, and a group that repeats live logic;
+ by live code, and a group that repeats live logic;
 - that removal takes only the intended nodes, and that the node counts before and after agree;
 - that the entry re-check on the node about to go actually protects anything.
 
@@ -666,12 +666,12 @@ exactly one parent. Measured against the DSL's own examples:
 
 ```
 (fn DoubleIt (Value)
-  (return (* Value 2)))
+ (return (* Value 2)))
 
 (fn ClampedScale (Value Multiplier)
-  (return (* (select (< Value 0.0) 0.0
-               (select (> Value 100.0) 100.0 Value))
-             Multiplier)))
+ (return (* (select (< Value 0.0) 0.0
+ (select (> Value 100.0) 100.0 Value))
+ Multiplier)))
 ```
 
 Every value in these is used exactly once. There is no form for "compute this once, read it twice".
@@ -699,10 +699,10 @@ wrong function.
 
 - that a candidate IS found when one exists;
 - that the **transitive safety rule** classifies anything — neither a safe chain nor an unsafe one has
-  ever been walked;
+ ever been walked;
 - that an unsafe value is actually REFUSED by the edit;
 - that promotion works at all: `AddLocalVariable`, the getter node, the pin-by-pin rewire, and the
-  removal of the original last.
+ removal of the original last.
 
 ### The route that would close it
 
@@ -744,8 +744,8 @@ Measured, so nobody tries it again:
 ```
 LogWindows: Error: Fatal error!
 LogWindows: Error: Unhandled Exception: EXCEPTION_ACCESS_VIOLATION reading address 0x0000011e05c975a8
-[Callstack] UnrealEditor-Core.dll!FModuleManager::LoadModuleWithFailureReason()
-            [ModuleManager.cpp:1222]
+[Callstack] UnrealEditor-Core.dll!FModuleManager::LoadModuleWithFailureReason
+ [ModuleManager.cpp:1222]
 ```
 
 A static initialiser inside a module **that is being loaded** runs **during** that load, so asking the
@@ -785,9 +785,9 @@ needs to build, in `/Game/Tests/TurboMCPAcceptance`:
 1. **KnotProbe** — three `K2Node_Knot`s between two distant calls, for `P/E-GRAPH-KNOTS` (Q-9);
 2. **DeadProbe** — a node group with **every link broken**, for `P/E-GRAPH-DEAD` (Q-12);
 3. **LocalVarProbe** — a pure node whose value is read by **two** consumers, one fed by a function
-   input (SAFE) and one by a member variable (UNSAFE), for `P/E-LOCAL-VARS` (Q-13);
+ input (SAFE) and one by a member variable (UNSAFE), for `P/E-LOCAL-VARS` (Q-13);
 4. **SaneProbe** — an ordinary chain that **should not be disturbed**, which is what a rollback test
-   needs.
+ needs.
 
 ### A Python probe failure worth recording
 
@@ -811,16 +811,16 @@ every node into that form's exec chain.
 Measured, and both halves now run:
 
 ```
-preview: dead nodes in ... : DeadProbe
+preview: dead nodes in...: DeadProbe
 4 node(s) in the graph, 2 unreachable group(s)
 
-WOULD REMOVE  1 node(s): K2Node_CallFunction
-    nodes: 939233
-    REPEATS LIVE LOGIC: calls PrintString
+WOULD REMOVE 1 node(s): K2Node_CallFunction
+ nodes: 939233
+ REPEATS LIVE LOGIC: calls PrintString
 
-WOULD REMOVE  1 node(s): K2Node_CallFunction
-    nodes: 9aa718
-    REPEATS LIVE LOGIC: calls PrintString
+WOULD REMOVE 1 node(s): K2Node_CallFunction
+ nodes: 9aa718
+ REPEATS LIVE LOGIC: calls PrintString
 
 the edit would remove 2 group(s) and leave 0, and would then report the node counts before and after
 ```
@@ -858,7 +858,7 @@ Measured on a clean run:
 ```
 panel-registry: available
 panel-toolsets: 27 published
-panel-toolset: present  TurboMCP.TurboMCPReadToolset / LookToolset / PreviewToolset / EditToolset
+panel-toolset: present TurboMCP.TurboMCPReadToolset / LookToolset / PreviewToolset / EditToolset
 panel-toolset-tools: Read 21, Look 4, Preview 10, Edit 17 - 0 partial, 0 with no sample
 panel-tools: 52 total, 0 with a partial sample
 panel-summary: registry=available toolsets=27 missing=0 tools=52 partial=0 failedtoolsets=0
@@ -904,14 +904,14 @@ honours the rule's purpose: the assets a tool is tested against were not shaped 
 ### Measured output
 
 ```
-TA-1 OK   nodes=64 (needs 60..90) boxes=6 (needs 6..8) nested=1 (needs >=1) backward=0 (needs 0)
-TA-2 OK   event graph: boxes=2 nested=1 nodes=4
-TA-3 OK   messy: row=13 row-node(s) (needs ~13) copy=9 (needs 9) boxes=0 (needs 0) dead=9 (needs 9)
-TA-4 OK   stacked: nodes=7 backward=1 (needs >=1) stackedPair=yes originNode=yes
-TA-11 OK  enum: values=4 (needs 4)
-TA-12 OK  BP_TestAlpha: graphs=2 function Setup=yes   (and BP_TowerArray)
-TA-13 OK  path=/Game/Tests/Kit/TA13_KitPath/TA13_KitPath
-TA-10 MISSING  NOT BUILT: needs 3 rows and 4 fields
+TA-1 OK nodes=64 (needs 60..90) boxes=6 (needs 6..8) nested=1 (needs >=1) backward=0 (needs 0)
+TA-2 OK event graph: boxes=2 nested=1 nodes=4
+TA-3 OK messy: row=13 row-node(s) (needs ~13) copy=9 (needs 9) boxes=0 (needs 0) dead=9 (needs 9)
+TA-4 OK stacked: nodes=7 backward=1 (needs >=1) stackedPair=yes originNode=yes
+TA-11 OK enum: values=4 (needs 4)
+TA-12 OK BP_TestAlpha: graphs=2 function Setup=yes (and BP_TowerArray)
+TA-13 OK path=/Game/Tests/Kit/TA13_KitPath/TA13_KitPath
+TA-10 MISSING NOT BUILT: needs 3 rows and 4 fields
 
 assets=14 built=13 measured=14 missing=1 short=0
 ```
@@ -926,10 +926,10 @@ the editor factory installs that.** The first attempt at a handmade
 `NewObject<UUserDefinedStruct>` **crashed the commandlet**, and the callstack names the cause exactly:
 
 ```
-CastChecked<UUserDefinedStructEditorData, UObject>()
-FMemberVariableNameHelper::Generate()   StructureEditorUtils.cpp:256
-FStructureEditorUtils::AddVariable()    StructureEditorUtils.cpp:304
-UTurboMCPKitCommandlet::Main()          TurboMCPKitCommandlet.cpp:890
+CastChecked<UUserDefinedStructEditorData, UObject>
+FMemberVariableNameHelper::Generate StructureEditorUtils.cpp:256
+FStructureEditorUtils::AddVariable StructureEditorUtils.cpp:304
+UTurboMCPKitCommandlet::Main TurboMCPKitCommandlet.cpp:890
 ```
 
 So `TA-10`'s data table and its three rows need a hand in the editor. It is **reported MISSING with its
@@ -948,14 +948,14 @@ different asset rather than in the kit, and they are recorded here rather than c
 ### THREE DEFECTS THE COMMANDLET FOUND IN ITSELF, all by measuring rather than reporting
 
 1. **`TA-3` had every node dead.** Its live row was built from pure math nodes, which have NO exec pin,
-   so nothing was on an exec chain: measured `unreachable=13` of 13. The row is now `PrintString` nodes,
-   which is also what "13 CONNECTED nodes" means, and the deliberate 9-node copy is counted separately.
+ so nothing was on an exec chain: measured `unreachable=13` of 13. The row is now `PrintString` nodes,
+ which is also what "13 CONNECTED nodes" means, and the deliberate 9-node copy is counted separately.
 2. **`TA-4` had zero backward wires**, and the code looked right. It linked
-   `Setter->GetReturnValuePin()` on a **`PrintString`**, which has no return value, so the pin was null
-   and `Link` did nothing. A pure math node is what has a return value; `backward=1` now.
-3. **`TA-12` printed a literal `%s`.** The line read `FString(TEXT("%s: graphs=")) + Name + ...` with no
-   `Printf` to substitute it, so the report said `%s: graphs=BP_TestAlpha`. Found by READING THE
-   COMMANDLET'S OWN REPORT, which is the argument for making a build step report its structure.
+ `Setter->GetReturnValuePin` on a **`PrintString`**, which has no return value, so the pin was null
+ and `Link` did nothing. A pure math node is what has a return value; `backward=1` now.
+3. **`TA-12` printed a literal `%s`.** The line read `FString(TEXT("%s: graphs=")) + Name +...` with no
+ `Printf` to substitute it, so the report said `%s: graphs=BP_TestAlpha`. Found by READING THE
+ COMMANDLET'S OWN REPORT, which is the argument for making a build step report its structure.
 
 A `short` count was also wrong: it was computed as `assets - measured`, which counted an asset the
 commandlet had **declared it cannot build** as short as well as missing, and the summary then read
@@ -965,15 +965,15 @@ and lacks the structure its rows require.
 ### Also measured, and worth keeping
 
 - `FString::Printf` in this engine runs its format string through a **compile-time** checker, and a
-  conditional expression in the ARGUMENT list trips it with `error C7595`. Four attempts to reshape the
-  arguments failed; building the string by concatenation succeeded. `Name + TEXT("...")` also adds two
-  pointers (`error C2110`), so every literal operand is an `FString`.
+ conditional expression in the ARGUMENT list trips it with `error C7595`. Four attempts to reshape the
+ arguments failed; building the string by concatenation succeeded. `Name + TEXT("...")` also adds two
+ pointers (`error C2110`), so every literal operand is an `FString`.
 - `UEnum::SetEnums` takes **five** arguments in 5.8 and `EUnderlyingType` and `EAddMaxKeyIfMissing` are
-  **members of `UEnum`**, not global names. The two-argument form is deprecated.
+ **members of `UEnum`**, not global names. The two-argument form is deprecated.
 - `FBlueprintEditorUtils::FindFunctionGraph` **DOES NOT EXIST**. `BlueprintEditorUtils.h` declares
-  `ValidateAllFunctionGraphs` and nothing that finds one by name.
+ `ValidateAllFunctionGraphs` and nothing that finds one by name.
 - `AllocateDefaultPins` is mandatory on every node placed, as the acceptance commandlet already records;
-  without it `UK2Node_Knot::GetOutputPin` indexes `Pins[1]` of an empty array and the editor crashes.
+ without it `UK2Node_Knot::GetOutputPin` indexes `Pins[1]` of an empty array and the editor crashes.
 
 ---
 
@@ -986,13 +986,13 @@ This is NOT a missing fixture. It is the rule's own geometry, measured with a fi
 `TurboMCPGraphFixBackward.cpp` moves the target of a backward exec wire to
 
 ```
-ToX = Source.PlannedX + PlannedExtent(Source.Width) + HorizontalNodeGap      // line 965, gap = 60
+ToX = Source.PlannedX + PlannedExtent(Source.Width) + HorizontalNodeGap // line 965, gap = 60
 ```
 
 and then, for each pure node used only by that target, carries it to
 
 ```
-PureToX = Consumer.PlannedX - PlannedExtent(Pure.Width) - HorizontalNodeGap  // line 1118
+PureToX = Consumer.PlannedX - PlannedExtent(Pure.Width) - HorizontalNodeGap // line 1118
 ```
 
 Substituting the first into the second cancels the source's own terms:
@@ -1008,7 +1008,7 @@ refuses the move. Making the pure node narrower only shifts the collision: the p
 SOURCE onto the carried node instead.
 
 MEASURED, seven fixture configurations in `/Game/Tests/Kit/TA01_HandLaid:BackwardProbe`, each with a pure
-node that satisfies every STATED condition of the rule - `IsNodePure() == true`, exactly one link, exactly
+node that satisfies every STATED condition of the rule - `IsNodePure == true`, exactly one link, exactly
 one consumer, not a getter:
 
 | configuration | result |
@@ -1031,11 +1031,11 @@ WHAT THIS COSTS: check 16 of the 18 in `Spec/WORKING_GRAPH_FIX_BACKWARD.md` stay
 TWO WAYS OUT, AND THE CHOICE IS THE OWNER'S:
 
 1. **Fix the rule.** The carry should place the pure node somewhere that is not the source's cell - for
-   example at `Source.PlannedX` AFTER the push has run, or by ordering the carry after the push in
-   section 5. Either changes the layout the pass produces, so it is a behaviour change and not a bug fix.
+ example at `Source.PlannedX` AFTER the push has run, or by ordering the carry after the push in
+ section 5. Either changes the layout the pass produces, so it is a behaviour change and not a bug fix.
 2. **Retire it.** If carrying pure nodes was never wanted, both the block and check 16 should go, and
-   `MaxPureChain` with them. Leaving a branch that can never run is the "check that cannot fail" problem
-   in its most expensive form: it reads as working code.
+ `MaxPureChain` with them. Leaving a branch that can never run is the "check that cannot fail" problem
+ in its most expensive form: it reads as working code.
 
 NOT DONE, DELIBERATELY: no fixture was built to make the number non-zero. A pure node narrow enough and a
 pair spaced widely enough might force a single carry through, but the resulting check would assert a
@@ -1049,12 +1049,12 @@ the rule's exclusions, and the fixture reports `pureUsedOnce=0` and says the cou
 
 ### Q-16 ADDENDUM (after the rule was fixed)
 
-The diagnosis above was acted on: commit `2e17f9b` ("Fix R1's pure carry: the carried node was landing on
-the source's own edge", merged as `20f26f0`) changed the carry to
+The diagnosis above was acted on: commit ("Fix R1's pure carry: the carried node was landing on
+the source's own edge", merged as ) changed the carry to
 
 ```
 PureToX = Min(Consumer.PlannedX - Pure.Width - Gap,
-              Source.PlannedX   - Pure.Width - Gap)
+ Source.PlannedX - Pure.Width - Gap)
 ```
 
 which is exactly the anchor the arithmetic called for. The carry predicate itself was already correct -
@@ -1065,7 +1065,7 @@ one node `R1` moves in its own backward exec pair, and the commandlet measures i
 
 ```
 TA-5 OK backwardProbe: nodes=12 backward=4 (needs >=3) getterUnderConsumer=1 (needs >=1)
-                       pureUsedOnce=1 (needs >=1) nodesInBox=1 (needs >=1)
+ pureUsedOnce=1 (needs >=1) nodesInBox=1 (needs >=1)
 ```
 
 `pureUsedOnce` was `0` and reported as "not required" while the rule could not perform a carry; it is now a
@@ -1090,16 +1090,16 @@ workstream, and the fix matches it.
 suite. Two causes, both now fixed as far as they can be without an injection the project cannot yet perform:
 
 1. **A CHECK THAT COULD NOT FAIL WAS REMOVED.** `test-play-check.py` asserted
-   `"no warnings and no errors" in final or "warning(s) and" in final`. The SECOND DISJUNCT IS TRUE FOR EVERY
-   REPORT THE TOOL CAN PRODUCE, because `warning(s) and` is part of the count line itself, so the check passed
-   whether the window was clean, noisy, or rendered by a renderer that had been rewritten to lie. It now
-   demands the tool's own sentence for a clean window and nothing weaker.
+ `"no warnings and no errors" in final or "warning(s) and" in final`. The SECOND DISJUNCT IS TRUE FOR EVERY
+ REPORT THE TOOL CAN PRODUCE, because `warning(s) and` is part of the count line itself, so the check passed
+ whether the window was clean, noisy, or rendered by a renderer that had been rewritten to lie. It now
+ demands the tool's own sentence for a clean window and nothing weaker.
 
 2. **A SELF-CONTRADICTION THE TOOL COULD MAKE IS NOW IMPOSSIBLE.** Measured by break-test: with the count
-   hardcoded non-zero the report answered `5 warning(s) and 0 error(s) in the window` **and**
-   `The session raised no warnings and no errors.` IN THE SAME ANSWER. The number and the sentence come from
-   one computation that is supposed to have a single outcome, so a reader following the sentence was told the
-   run was clean while the number said otherwise. Two checks now fail on that combination.
+ hardcoded non-zero the report answered `5 warning(s) and 0 error(s) in the window` **and**
+ `The session raised no warnings and no errors.` IN THE SAME ANSWER. The number and the sentence come from
+ one computation that is supposed to have a single outcome, so a reader following the sentence was told the
+ run was clean while the number said otherwise. Two checks now fail on that combination.
 
 **WHAT WAS ADDED INSTEAD OF THE INJECTION: A CROSS-CHECK AGAINST THE ENGINE'S OWN LOG.** `UE_LOG` writes to
 `GLog` **and** to the log file, so the file is an INDEPENDENT COUNTER over the same window. The suite records
@@ -1112,10 +1112,10 @@ error(s)` and `tool said 0/0, the log says 0/0`.
 `Answer.WarningCount + 5`:
 
 ```
-    the engine's own log over the same window: 0 warning(s), 0 error(s)
-  FAIL the report's counts AGREE with the engine's own log over the same window  tool said 5/0, the log says 0/0
-  FAIL ...and the second window is clean too, since nothing was injected into it
-  RESULT: FAIL (2) -> the report's counts AGREE with the engine's own log over the same window, ...
+ the engine's own log over the same window: 0 warning(s), 0 error(s)
+ FAIL the report's counts AGREE with the engine's own log over the same window tool said 5/0, the log says 0/0
+ FAIL...and the second window is clean too, since nothing was injected into it
+ RESULT: FAIL (2) -> the report's counts AGREE with the engine's own log over the same window,...
 ```
 
 **THE HOLE THAT REMAINS, STATED PLAINLY.** The cross-check can catch a report that claims a count the log does
@@ -1124,20 +1124,20 @@ nothing to suppress - a forged zero over a true zero is not distinguishable by a
 a KNOWN warning and error INSIDE the window, and **FOUR MECHANISMS WERE INVESTIGATED AND EVERY ONE IS BLOCKED**:
 
 1. **`PrintString` / `LogString` CANNOT EMIT A WARNING AT ALL.** `UKismetSystemLibrary::PrintString` logs
-   `UE_LOGF(LogBlueprintUserMessages, Log, "%ls", ...)` unconditionally - `Log` severity, with no parameter to
-   raise it (KismetSystemLibrary.cpp, the `if (bPrintToLog)` branch). So **no Blueprint node can put a Warning
-   in the window, whatever the fixture** - which rules out the BeginPlay-with-PrintString idea the task
-   suggested. MEASURED against the engine source, not assumed.
+ `UE_LOGF(LogBlueprintUserMessages, Log, "%ls",...)` unconditionally - `Log` severity, with no parameter to
+ raise it (KismetSystemLibrary.cpp, the `if (bPrintToLog)` branch). So **no Blueprint node can put a Warning
+ in the window, whatever the fixture** - which rules out the BeginPlay-with-PrintString idea the task
+ suggested. MEASURED against the engine source, not assumed.
 2. **`unreal.log_warning` / `unreal.log_error` EXIST BUT CANNOT REACH THE WATCHING PROCESS.**
-   (PythonScriptPlugin `PyCore.cpp:2067-2068`.) They log in whatever process runs them, and the tool's device
-   is attached to `GLog` IN THE EDITOR PROCESS. MEASURED: launching a second editor with
-   `-ExecCmds="py <file>"` does NOT reach the running one - the marker appeared ZERO times in the live
-   editor's log, and the spawned process counted from frame `[  0]`.
+ (PythonScriptPlugin `PyCore.cpp:2067-2068`.) They log in whatever process runs them, and the tool's device
+ is attached to `GLog` IN THE EDITOR PROCESS. MEASURED: launching a second editor with
+ `-ExecCmds="py <file>"` does NOT reach the running one - the marker appeared ZERO times in the live
+ editor's log, and the spawned process counted from frame `[ 0]`.
 3. **NO C++ TEST EMITTER IS IN SCOPE.** A `UE_LOG` emitter added to `TurboMCPPlayCheck.cpp` purely so its own
-   test can pass would be a hook in a production tool, not a test, and would make the suite's strength depend
-   on the code it is judging.
+ test can pass would be a hook in a production tool, not a test, and would make the suite's strength depend
+ on the code it is judging.
 4. **PIE RAISES NOTHING ON A CLEAN RUN.** MEASURED 0 and 0, and `PlayLevel.cpp`'s Warning paths are on paths
-   this project cannot reach without breaking the run.
+ this project cannot reach without breaking the run.
 
 **WHAT WOULD CLOSE IT.** An in-process way to execute a statement in the EDITOR during the watch. The cleanest
 one found is `IConsoleCommandExecutor`, which the Python plugin registers as a modular feature
@@ -1166,10 +1166,10 @@ native actor could never make the trace fire however much code it ran.
 **MEASURED, THE FIRST LIVE TRACE HIT IN THIS PROJECT:**
 ```
 8 script exception(s) have reached this module
-  type 1 : 4      type 1 is Tracepoint
-  type 2 : 4      type 2 is WireTracepoint
-  BP_TurboMCPTestLog:EventGraph:914137 : 2 hit(s)
-  16817910.851  BP_TurboMCPTestLog:EventGraph:914137  PrintString  thread 25212
+ type 1: 4 type 1 is Tracepoint
+ type 2: 4 type 2 is WireTracepoint
+ BP_TurboMCPTestLog:EventGraph:914137: 2 hit(s)
+.851 BP_TurboMCPTestLog:EventGraph:914137 PrintString thread 25212
 ```
 
 **AND THE SAME FIXTURE CLOSED Q-17**, which had been blocked for exactly the same reason: nothing executed, so
@@ -1179,7 +1179,7 @@ present. ONE FIXTURE CLOSED TWO OPEN HOLES, and that is worth noting because the
 rounds as if they were separate problems.
 
 **THE MECHANISM, KEPT HERE BECAUSE THE CITATIONS TOOK A WORKSTREAM TO GATHER:** the VM raises a Tracepoint per
-instrumented node (`ScriptCore.cpp:2529-2537`), `IsDebuggingEnabled()` returns `GIsEditor` in an editor build
+instrumented node (`ScriptCore.cpp:2529-2537`), `IsDebuggingEnabled` returns `GIsEditor` in an editor build
 (`:290-297`) so it is ALWAYS ON, the bytecode already carries the opcode
 (`KismetCompilerVMBackend.cpp:1969-1971`, suppressed only by an absent config value), and IT DOES NOT PAUSE,
 which the spec requires (`KismetDebugUtilities.cpp:299-306`: `Breakpoint` sets `bShouldBreakExecution` while
@@ -1279,14 +1279,14 @@ answer:** is that the end of the group, or is there an acceptable variant? Two
 variants exist and neither is obviously right:
 
 - **Arm-only.** The tools set and clear breakpoints and report them, and the
-  agent is told to ask a human to look at what stopped. Nothing in the plugin
-  ever reads a paused state, so nothing can hang.
+ agent is told to ask a human to look at what stopped. Nothing in the plugin
+ ever reads a paused state, so nothing can hang.
 - **Deferred read.** A breakpoint tool call returns immediately with "a
-  breakpoint was hit at time T", written by a hook that does not need the
-  server, and the agent collects the paused state on a LATER call that a human
-  has unblocked. The failure mode becomes a stale answer rather than a hang,
-  which is better, but the answer describes a pause that may already have been
-  resumed.
+ breakpoint was hit at time T", written by a hook that does not need the
+ server, and the agent collects the paused state on a LATER call that a human
+ has unblocked. The failure mode becomes a stale answer rather than a hang,
+ which is better, but the answer describes a pause that may already have been
+ resumed.
 
 **Answer: not yet answered, and deliberately not answered before the
 measurement.** Deciding now would be deciding what to do about a result

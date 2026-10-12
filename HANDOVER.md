@@ -8,7 +8,7 @@
 
 | Vérification | Résultat |
 |---|---|
-| Clés, tokens, clés SSH, chaînes de connexion | **aucun** *(scanné : en-têtes de clés privées PEM, jetons GitHub classiques et fins, clés OpenAI, identifiants AWS, jetons Slack, clés Google, jetons Bearer, JWT, clés de compte de stockage, chaînes de connexion)* |
+| Clés, tokens, clés SSH, chaînes de connexion | **aucun** *(scanné: en-têtes de clés privées PEM, jetons GitHub classiques et fins, clés OpenAI, identifiants AWS, jetons Slack, clés Google, jetons Bearer, JWT, clés de compte de stockage, chaînes de connexion)* |
 | Fichiers `.env`, `.pem`, `.key`, `.pfx`, `id_rsa` | **aucun** |
 | URL privées, hôtes internes, IP RFC1918 | **aucune** |
 | Données client | **aucune** — il n'y a que le kit de test, généré par le commandlet |
@@ -16,21 +16,21 @@
 | Workflows Actions, Pages, registres | **aucun** |
 | **Le seul constat** | ***un `SecurityToken` du plugin AndroidFileServer dans `TestProject/Config/DefaultEngine.ini`*** |
 
-**Ce que ce token était, et pourquoi il a été retiré :** *le moteur écrit un token **aléatoire** dans cette clé à la création d'un projet, et celui du dépôt **n'était pas la valeur par défaut du moteur** — donc il avait été **généré**, pas recopié. Un token généré est un secret.* ***Le plugin Android n'est pas activé dans `TurboMCPTest.uproject`, la connexion est `USBOnly` et le serveur de fichiers n'est jamais lancé*** *— le token donnait donc accès à un serveur que ce projet ne fait pas tourner.*
+**Ce que ce token était, et pourquoi il a été retiré:** *le moteur écrit un token **aléatoire** dans cette clé à la création d'un projet, et celui du dépôt **n'était pas la valeur par défaut du moteur** — donc il avait été **généré**, pas recopié. Un token généré est un secret.* ***Le plugin Android n'est pas activé dans `TurboMCPTest.uproject`, la connexion est `USBOnly` et le serveur de fichiers n'est jamais lancé*** *— le token donnait donc accès à un serveur que ce projet ne fait pas tourner.*
 
-**Il a été retiré de DEUX endroits, parce qu'un seul ne suffit pas :** *le fichier (`SecurityToken=` est maintenant vide, ce qui **désactive** le serveur par la règle du moteur) **et l'historique** (`--replace-text`, vérifié : **0 occurrence** dans tous les arbres de toutes les refs).*
+**Il a été retiré de DEUX endroits, parce qu'un seul ne suffit pas:** *le fichier (`SecurityToken=` est maintenant vide, ce qui **désactive** le serveur par la règle du moteur) **et l'historique** (`--replace-text`, vérifié: **0 occurrence** dans tous les arbres de toutes les refs).*
 
-**Et les e-mails ont été retirés de l'historique** *(`--mailmap`) : les commits portent maintenant `FloStyleHome <FloStyle@users.noreply.github.com>`.* ***Le pseudonyme est conservé, et l'attribution MPL `Florian ESCHALIER (FloStyle)` reste sur les 186 fichiers source, comme la licence l'exige.***
+**Et les e-mails ont été retirés de l'historique** *(`--mailmap`): les commits portent maintenant `FloStyleHome <FloStyle@users.noreply.github.com>`.* ***Le pseudonyme est conservé, et l'attribution MPL `Florian ESCHALIER (FloStyle)` reste sur les 186 fichiers source, comme la licence l'exige.***
 
 ### 0.1 White room
 
-**Ce projet est un white room : la spécification se décrit elle-même et rien d'autre.** *Aucune référence à un plugin antérieur, séparé, précédent ou tiers, et aucune référence à un outil ou agent nommé.*
+**Ce projet est un white room: la spécification se décrit elle-même et rien d'autre.** *Aucune référence à un plugin antérieur, séparé, précédent ou tiers, et aucune référence à un outil ou agent nommé.*
 
-*Les règles de `Spec/00_START_HERE.md` section 1 sont maintenant **positives** — elles disent quoi faire plutôt que quoi ne pas regarder :* **n'utiliser que la spécification, le source du moteur, la documentation publique et les réponses de `QUESTIONS.md` ; décrire chaque capacité par ce qu'elle doit faire, avec ses entrées, ses sorties, ses refus et un test qui le prouve ; partir d'un espace vide ; choisir chaque nom ici ; et poser une question plutôt que deviner.**
+*Les règles de `Spec/00_START_HERE.md` section 1 sont maintenant **positives** — elles disent quoi faire plutôt que quoi ne pas regarder:* **n'utiliser que la spécification, le source du moteur, la documentation publique et les réponses de `QUESTIONS.md`; décrire chaque capacité par ce qu'elle doit faire, avec ses entrées, ses sorties, ses refus et un test qui le prouve; partir d'un espace vide; choisir chaque nom ici; et poser une question plutôt que deviner.**
 
 > ***Une règle qui dit « ne regarde pas X » apprend au lecteur que X existe, ce qu'il est, et que cette spécification a été écrite dans son ombre.***
 
-**Et la recherche a été faite avec des limites de mots**, *parce qu'une recherche de sous-chaîne a produit **28 faux positifs** : le nom d'un outil apparaissait à l'intérieur du mot anglais « declined » dans trois fichiers, et un autre à l'intérieur d'une **variable locale** dans `TurboMCPCallCost.cpp`. **Une recherche qui ne distingue pas un outil d'un compteur de boucle est le même défaut qu'une regex qui suppose un format — et les motifs de recherche ne sont pas reproduits ici, parce que les écrire les ferait matcher ce fichier.**
+**Et la recherche a été faite avec des limites de mots**, *parce qu'une recherche de sous-chaîne a produit **28 faux positifs**: le nom d'un outil apparaissait à l'intérieur du mot anglais « declined » dans trois fichiers, et un autre à l'intérieur d'une **variable locale** dans `TurboMCPCallCost.cpp`. **Une recherche qui ne distingue pas un outil d'un compteur de boucle est le même défaut qu'une regex qui suppose un format — et les motifs de recherche ne sont pas reproduits ici, parce que les écrire les ferait matcher ce fichier.**
 
 ---
 
@@ -42,27 +42,27 @@ ouvre le mauvais obtient une réponse différente à ce qui ressemble à la mêm
 | Vous voulez | Lisez | Ce que c'est |
 |---|---|---|
 | **L'état maintenant, et comment le vérifier** | **ce fichier** | Les quatre commandes qui l'établissent, ce qui est fini, **ce qui ne l'est pas**, et ce que je ne sais pas |
-| **L'analyse : pourquoi, ce qui manque, ce que je ferais ensuite** | [`REPORT.md`](REPORT.md) | Les invariants qui tiennent les 93 outils, les fixtures fantômes, la dette de vacuité, la projection de dépendance |
+| **L'analyse: pourquoi, ce qui manque, ce que je ferais ensuite** | [`REPORT.md`](REPORT.md) | Les invariants qui tiennent les 93 outils, les fixtures fantômes, la dette de vacuité, la projection de dépendance |
 | **L'instantané** | [`STATUS.md`](STATUS.md) | Compteurs et tableau de capacités à la révision où il a été écrit |
-| **La preuve** | [`TestRecord.md`](TestRecord.md) | 181 sections chronologiques ; chaque affirmation ci-dessus remonte à l'une d'elles |
+| **La preuve** | [`TestRecord.md`](TestRecord.md) | 181 sections chronologiques; chaque affirmation ci-dessus remonte à l'une d'elles |
 
 **`Spec/WORKING_PLAN.md` est la liste de travail qui fait autorité** — la seule des cinq auditée ligne par
 ligne contre l'arbre.
 
-*** CE FICHIER EST EN FRANÇAIS ET LE RESTE DU DÉPÔT EST EN ANGLAIS. *** *C'est une incohérence réelle : un
+*** CE FICHIER EST EN FRANÇAIS ET LE RESTE DU DÉPÔT EST EN ANGLAIS. *** *C'est une incohérence réelle: un
 contributeur anglophone ne peut pas lire le document qui décrit l'état du projet. La traduction n'est pas
-faite ici parce qu'elle toucherait les quatre documents d'un coup ; elle est sur la liste.*
+faite ici parce qu'elle toucherait les quatre documents d'un coup; elle est sur la liste.*
 
 ---
 
 ## 1. L'état, en quatre commandes
 
 ```powershell
-git rev-parse --short HEAD; git rev-parse --short origin/main    # identiques
-git status --porcelain                                            # propre hors TestProject/Content
-python Tools\audit-tool-coverage.py                               # 93 AICallable, uncalled: (none)
-python Tools\audit-suite-quality.py                               # 0 candidat — ET IL BLOQUE
-pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, failed 0, blocked 0, of 58
+git rev-parse --short HEAD; git rev-parse --short origin/main # identiques
+git status --porcelain # propre hors TestProject/Content
+python Tools\audit-tool-coverage.py # 93 AICallable, uncalled: (none)
+python Tools\audit-suite-quality.py # 0 candidat — ET IL BLOQUE
+pwsh -NoProfile -File Tools\run-suites.ps1 # passed 58, failed 0, blocked 0, of 58
 ```
 
 | | |
@@ -81,7 +81,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, f
 | | |
 |---|---|
 | ***Le full run est vert et exit 0*** | *pas « Result: Succeeded » — **58 suites, 0 échec**, et c'était impossible avant les deux correctifs de §4* |
-| ***L'audit des suites bloque*** | *prouvé dans les deux sens : 0 candidat → PASS exit 0 ; 1 candidat → FAIL exit 1* |
+| ***L'audit des suites bloque*** | *prouvé dans les deux sens: 0 candidat → PASS exit 0; 1 candidat → FAIL exit 1* |
 | ***L'éditeur étranger est détecté*** | *prouvé sur trois cas (rien / projet étranger / bon projet), `exit 3`* |
 | ***Le break test mord*** | *cinq fois exécuté, cinq fois le check est devenu rouge **avec la valeur fausse visible**, et **quatre fois** il a trouvé un défaut supplémentaire* |
 | ***Les fixtures sont reproductibles*** | *`TA-17` a été **supprimé et reconstruit**, et le script dit `PASS`* |
@@ -95,7 +95,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, f
 | Row | Ce qui manque |
 |---|---|
 | **10.x** *(writers source-control restants)* | ***UN SERVEUR QUI RÉPOND*** — `p4` pointe sur `ssl:<p4-host>:1666` qui ne répond pas, `cm` et `svn` sont absents du PATH, et la réponse de Git est un **refus**. Mesuré deux fois par deux workstreams. |
-| **1.5 / `TA-18`** | *un os de `USkeleton` — `Skeleton.h:365-369` retourne le skeleton de référence **`const` à dessein**, `ReferenceSkeleton` est `protected` (`:301/:317`), les fonctions d'ajout d'os prennent un `USkinnedAsset` (`:797/:809/:820`) et **il n'y a aucun skeletal mesh ici**. La dernière route est `FEditableSkeleton`, un header **privé**. **Les dépendances `AnimGraph`/`Niagara`/`NiagaraEditor` sont maintenant dans `Build.cs` (`de1c408`), donc le blocker de module est RETIRÉ pour `TA-18` et `TA-19` — ce qui reste est de l'authoring, pas une permission.*** |
+| **1.5 / `TA-18`** | *un os de `USkeleton` — `Skeleton.h:365-369` retourne le skeleton de référence **`const` à dessein**, `ReferenceSkeleton` est `protected` (`:301/:317`), les fonctions d'ajout d'os prennent un `USkinnedAsset` (`:797/:809/:820`) et **il n'y a aucun skeletal mesh ici**. La dernière route est `FEditableSkeleton`, un header **privé**. **Les dépendances `AnimGraph`/`Niagara`/`NiagaraEditor` sont maintenant dans `Build.cs` , donc le blocker de module est RETIRÉ pour `TA-18` et `TA-19` — ce qui reste est de l'authoring, pas une permission.*** |
 
 ### 🟡 Volume plutôt qu'intuition — *des précédents à suivre*
 
@@ -103,7 +103,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, f
 |---|---|
 | **2** Capture | *2.3 `L-CAPTURE-LEVEL`, 2.4 `P-IMAGE-COMPARE`* |
 | **3** Matériaux | *3.2 reader `full`, 3.3 `MAT-CHECK`+`MAT-APPEND`, 3.4 `MAT-REPLACE`+`MAT-PATCH`, 3.6 `MAT-ARGS`* |
-| **5** Widgets | *5.2 `P/E-WIDGET-TREE` (**le writer n'a AUCUNE déclaration** ; seul le lecteur existe à `:661`), 5.3 `WIDGET-SET`, 5.4 `WIDGET-ANIM`, 5.5 `WIDGET-BIND`* |
+| **5** Widgets | *5.2 `P/E-WIDGET-TREE` (**le writer n'a AUCUNE déclaration**; seul le lecteur existe à `:661`), 5.3 `WIDGET-SET`, 5.4 `WIDGET-ANIM`, 5.5 `WIDGET-BIND`* |
 | **6** Graphes | *6.1 `GRAPH-RENAME`, 6.2 `GRAPH-COLLAPSE`, 6.3 `GRAPH-COPY`, 6.4 `INTERFACE`, 6.6 familles de nœuds* |
 | **7** | *7.3 `CURVE-LOAD`/`CURVE-SET` (**`TA-17` est construit**, la fixture est prête), 7.6 opérations d'asset* |
 | **8** Niveau & acteurs | *8.1 `LEVEL-LOAD`, 8.2 `ACTOR-LOAD`, 8.3 `ACTOR-PLACE`, 8.4 `ACTOR-SET`, 8.5 `COMPONENTS`* |
@@ -112,11 +112,11 @@ pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, f
 
 ### 🔴 **Et l'ordre dans lequel je les ferais**
 
-1. **9.2 / 9.3** — *`e-session` et `asset-batch` sont des **multiplicateurs** : une transaction pour N écritures. Ils rendent les 30 writers non câblés **sûrs** plutôt que seulement nombreux.*
+1. **9.2 / 9.3** — *`e-session` et `asset-batch` sont des **multiplicateurs**: une transaction pour N écritures. Ils rendent les 30 writers non câblés **sûrs** plutôt que seulement nombreux.*
 2. **7.3** — *`TA-17` est **déjà construit** et sa suite passe (40 checks). La row est débloquée et la fixture attend.*
 3. **5.3 / 5.4 / 5.5** — *trois writers de widgets qui réutilisent des chemins existants.*
 4. **8.x** — *le niveau et les acteurs, cinq rows, un domaine entier du plan qui n'a **jamais été commencé**.*
-5. **6.x** — *les graphes : le plus gros bloc, et celui dont les prémisses n'ont pas été testées.*
+5. **6.x** — *les graphes: le plus gros bloc, et celui dont les prémisses n'ont pas été testées.*
 
 ---
 
@@ -124,8 +124,8 @@ pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, f
 
 | | |
 |---|---|
-| ***Conflit de full run*** | *`test-vcs` exigeait `TA01_HandLaid.uasset` **propre** tandis que `test-graph-fix-backward`, qui tourne **avant**, reconstruit le kit. Corrigé dans le **harnais** (`bee3160`) — **une suite a besoin de l'éditeur vivant pour ses checks et ne peut donc pas restaurer le fichier elle-même : `git checkout` répond `unable to unlink old ...: Invalid argument` tant qu'il est tenu ouvert.*** |
-| ***Compte codé en dur*** | *`test-material-tidy` assertait `expressions_after == 16` alors que la fixture valait **12**, donc **la suite passait ou échouait selon la fixture qu'elle regardait** — et rapportait un défaut dans l'outil qui était une propriété de la fixture. Corrigé (`0d99671`) en comparant `before` à `after`.* |
+| ***Conflit de full run*** | *`test-vcs` exigeait `TA01_HandLaid.uasset` **propre** tandis que `test-graph-fix-backward`, qui tourne **avant**, reconstruit le kit. Corrigé dans le **harnais**  — **une suite a besoin de l'éditeur vivant pour ses checks et ne peut donc pas restaurer le fichier elle-même: `git checkout` répond `unable to unlink old...: Invalid argument` tant qu'il est tenu ouvert.*** |
+| ***Compte codé en dur*** | *`test-material-tidy` assertait `expressions_after == 16` alors que la fixture valait **12**, donc **la suite passait ou échouait selon la fixture qu'elle regardait** — et rapportait un défaut dans l'outil qui était une propriété de la fixture. Corrigé en comparant `before` à `after`.* |
 
 ---
 
@@ -134,10 +134,10 @@ pwsh -NoProfile -File Tools\run-suites.ps1                        # passed 58, f
 | | |
 |---|---|
 | ***Aucun checkout contre un dépôt vivant*** | *toute réponse rapportée est la réponse à un **refus** ou à un **no-op*** |
-| ***La branche `UsesCheckout() == true` n'a jamais tourné*** | *Perforce est `IsAvailable() == false`, donc le mécanisme refuse avant* |
+| ***La branche `UsesCheckout == true` n'a jamais tourné*** | *Perforce est `IsAvailable == false`, donc le mécanisme refuse avant* |
 | ***Aucun run `-nullrhi`*** | *le refus de `screen` est prouvé par construction depuis deux gardes, pas exécuté* |
 | ***Le chemin positif de `selection`*** | *prouvé par une sonde interne auto-nettoyante, parce que `P3` interdit à un Look de créer une sélection* |
-| ***`TA-19`*** | *le module `Niagara` est lié mais **rien n'a été construit** : l'emitter reste à authorer* |
+| ***`TA-19`*** | *le module `Niagara` est lié mais **rien n'a été construit**: l'emitter reste à authorer* |
 
 ---
 
