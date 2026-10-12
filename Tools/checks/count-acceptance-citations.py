@@ -86,6 +86,18 @@ def main() -> int:
     print("      and 56, because none of them said what 'cited' meant. THIS ONE DOES: a literal occurrence of the")
     print("      id in a Tools/test-*.py file. Change the criterion and the number changes, which is why the")
     print("      criterion is part of the answer. ***")
+    print()
+    print("  *** AND HOW TO CLOSE THE GAP, MEASURED RATHER THAN ASSUMED: THE MAPPING IS NOT GREPPABLE. ***")
+    print("      `Spec/06_ACCEPTANCE.md` phrases every row as `id | SUBJECT on FIXTURE | expected behaviour`,")
+    print("      and NONE of the twelve tool names a suite is usually named after appears in it: a grep for")
+    print("      `GRAPH-APPEND`, `GRAPH-REPLACE`, `GRAPH-PATCH`, `GRAPH-KNOTS`, `GRAPH-DEAD`, `COMMENT`,")
+    print("      `VARS-ADD`, `ENUM-ADD`, `LOCAL-VARS`, `OVERRIDE-ADD`, `WIDGET-RETARGET` and `WIDGETS-AS-VARS`")
+    print("      returns ZERO matches - so a suite CANNOT be matched to a row by its name, and the row has to")
+    print("      be READ against the suite's subject instead. That is why only %d of the %d suites claim one:"
+          % (len(claimed), len(suites)))
+    print("      THE REMAINING %d ARE READING WORK RATHER THAN A RENAME." % (len(suites) - len(claimed)))
+    print("      *** AND THAT IS WHY A GUESSED ID WOULD MAKE THIS MEASUREMENT WORSE RATHER THAN BETTER: IT")
+    print("      WOULD CITE A ROW NOTHING TESTS. ***")
     return 0
 
 
