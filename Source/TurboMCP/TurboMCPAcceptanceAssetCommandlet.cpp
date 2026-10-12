@@ -1138,29 +1138,55 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 
 	UE_LOG(LogTurboMCP, Display, TEXT("TurboMCP: saving to %s"), *FileName);
 
-	// THE OLD FILE IS DELETED BEFORE THE SAVE, WHICH IS WHAT MAKES THE COMMANDLET RE-RUNNABLE.
+	// *** THE SAVE GOES TO A TEMPORARY FILE, AND THE ORIGINAL IS REPLACED ONLY ONCE IT SUCCEEDED. ***
 	//
 	// MEASURED: building into a package that still held an object of the same name made
-	// `UPackage::SavePackage` answer "could not save" while every probe graph had built. Moving the
-	// old object to the transient package did NOT settle it — the save still failed — so the file is
-	// removed and the package written into a space that is known empty.
+	// `UPackage::SavePackage` answer "could not save" while every probe graph had built, and moving the old
+	// object to the transient package did NOT settle it. So the file must not be there when the save runs.
+	//
+	// WRITING STRAIGHT TO `FileName` MEANT DELETING IT FIRST, WHICH LEFT A WINDOW: a failed save returned 3
+	// with the original file already gone and nothing to restore it. The temporary file removes the window -
+	// the original is untouched until a complete new file exists, so a failure anywhere before the move
+	// leaves the asset exactly as it was.
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	const FString TempFileName = FileName + TEXT(".writing");
+	if (PlatformFile.FileExists(*TempFileName) && !PlatformFile.DeleteFile(*TempFileName))
 	{
-		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-		if (PlatformFile.FileExists(*FileName) && !PlatformFile.DeleteFile(*FileName))
-		{
-			UE_LOG(LogTurboMCP, Error,
-				TEXT("the existing asset at %s could not be deleted, so the save would collide"),
-				*FileName);
-			return 3;
-		}
+		UE_LOG(LogTurboMCP, Error, TEXT("a stale %s could not be removed"), *TempFileName);
+		return 3;
 	}
 
 	FSavePackageArgs SaveArgs;
 	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
 	SaveArgs.SaveFlags = SAVE_NoError;
-	if (!UPackage::SavePackage(Package, Blueprint, *FileName, SaveArgs))
+	if (!UPackage::SavePackage(Package, Blueprint, *TempFileName, SaveArgs))
 	{
-		UE_LOG(LogTurboMCP, Error, TEXT("could not save %s"), *FileName);
+		// The original is STILL THERE, so the failure costs nothing but the attempt.
+		UE_LOG(LogTurboMCP, Error,
+			TEXT("could not save %s, so the existing asset was left untouched"), *TempFileName);
+		return 3;
+	}
+
+	// THE ONLY DESTRUCTIVE STEP, AND IT RUNS ON A COMPLETE NEW FILE. A failure here leaves the temporary
+	// file behind and the original still in place, which the message says.
+	if (PlatformFile.FileExists(*FileName) && !PlatformFile.DeleteFile(*FileName))
+	{
+		UE_LOG(LogTurboMCP, Error,
+			TEXT("wrote %s but could not replace the existing asset at %s, so BOTH files are now on disk"),
+			*TempFileName, *FileName);
+		return 3;
+	}
+	// *** `MoveFile` TAKES `(To, From)` AND THAT ORDER IS THE WHOLE POINT HERE. *** The declaration reads
+	// `virtual bool MoveFile(const TCHAR* To, const TCHAR* From)` (verified in the engine's platform
+	// headers). So the FIRST argument is the destination the new asset must end up at, and the SECOND is
+	// the temporary file just written. WRITING THEM THE OTHER WAY ROUND WOULD MOVE THE ORIGINAL ONTO THE
+	// `.writing` NAME, DESTROYING THE NEW FILE AND LEAVING THE OLD ASSET IN PLACE - the exact opposite of
+	// the intent, and silent.
+	if (!PlatformFile.MoveFile(*FileName, *TempFileName))
+	{
+		UE_LOG(LogTurboMCP, Error,
+			TEXT("wrote %s but could not move it onto %s, so BOTH files are now on disk"),
+			*TempFileName, *FileName);
 		return 3;
 	}
 
