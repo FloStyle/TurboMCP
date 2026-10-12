@@ -64,16 +64,24 @@ Tools/                  helper scripts, not part of the plugin
 
 | File | What it is |
 |---|---|
+| **[`HANDOVER.md`](HANDOVER.md)** | **Start here for the state of the project.** The four commands that establish it, what is finished, what is not, what I do not know, and what I would do next |
 | `Spec/` | The specification, at version 1.1. The authority on what to build |
 | `Spec/WORKING_PLAN.md` | The live plan: state of each capability and what to pick up next. Changes every round |
 | `Spec/09_BUILD.md` | How to build, and what to change on an engine that is not vanilla 5.8.3 |
-| `PLAN.md` | What is done, what is next, and the build-order reasoning |
-| `DOCS.md` | Every choice made while building, and why |
-| `TestRecord.md` | What has actually been tested, with the measured numbers |
-| `STATUS.md` | The status report at the commit it names. Its capability table predates spec 1.1; `Spec/WORKING_PLAN.md` is the current one |
-| `QUESTIONS.md` | Open questions for the owner |
-| `Tools/README.md` | What each helper script does and how to run it |
-| `.agent/ENVIRONMENT.md` | The machine: engine, toolchain, and every trap hit while setting it up |
+| [`REPORT.md`](REPORT.md) | The measured state, the plan, the environment's constraints, what is missing, and what I would spend time on |
+| [`STATUS.md`](STATUS.md) | The status headline at the revision it was written |
+| [`PLAN.md`](PLAN.md) | What is done, what is next, and the build-order reasoning |
+| [`DOCS.md`](DOCS.md) | Every choice made while building, and why |
+| [`TestRecord.md`](TestRecord.md) | The running record: every measurement, every defect, and the reasoning behind every correction |
+| [`QUESTIONS.md`](QUESTIONS.md) | Questions put to the owner, with their answers |
+| [`MPL-2.0-SETUP.md`](MPL-2.0-SETUP.md) | Where the licence lives: the `LICENSE` text, the per-file notice, and the script that reapplies it |
+| [`Tools/README.md`](Tools/README.md) | What each helper script does and how to run it |
+| [`LICENSE`](LICENSE) | The Mozilla Public License 2.0, verbatim |
+
+*** `.agent/ENVIRONMENT.md` USED TO BE LISTED HERE AND IT IS NOT IN THE REPOSITORY. *** `.agent/` is in
+`.gitignore` - it holds working logs rather than published material - so a reader of the public tree would
+have followed that link to nothing. **The machine facts a contributor actually needs are in
+[`Spec/09_BUILD.md`](Spec/09_BUILD.md)**, which is tracked.
 
 ## Requirements
 
