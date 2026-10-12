@@ -54,9 +54,9 @@ needs tests on hand-built assets (`06_ACCEPTANCE.md`) before it counts as done. 
 is therefore dependency-ordered, and whatever is not reached stays honestly unmarked in
 `TestRecord.md`.
 
-Also note `08_ROADMAP.md` lists the **test asset kit** in phase 0. TA-1 to TA-13
+Also note `08_ROADMAP.md` lists the **test asset kit** in phase 0. TA-1 to TA-21
 must be built by hand in the editor — that work is the owner's, not the agent's,
-because tools tested against tool-made assets prove nothing.
+because tools tested against tool-made assets prove nothing. *** THE KIT IS TWENTY-ONE ASSETS, NOT THIRTEEN: `Spec/06_ACCEPTANCE.md` defines twenty-one distinct `TA-` ids, `TA-1` through `TA-21`. ***
 
 ## Order of work
 
