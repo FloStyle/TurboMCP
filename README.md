@@ -156,7 +156,7 @@ Two gates are worth running on their own, because they are fast and they fail lo
 
 ```powershell
 python Tools\check-plugin.py     # 11 checks: declarations against what UHT generated
-python Tools\check-includes.py   # 1412 includes resolved against the engine, in seconds
+python Tools\check-includes.py   # 1459 includes resolved against the engine, in seconds
 ```
 
 ## Calling a tool

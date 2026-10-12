@@ -31,7 +31,8 @@ of every ref. Deleting it from the tip would not have been enough: an earlier co
 
 ### 0.1 Author identity — the pseudonym stays, the address does not
 
-The commit history carried **1012 commits** under one personal e-mail address. **That address has been
+The commit history carries **612 commits** (`git rev-list --count HEAD`) that were made under one personal
+e-mail address. **That address has been
 replaced with `FloStyle@users.noreply.github.com`**, which is GitHub's own pseudonymous domain: the commits
 remain attributable to one author, and the author's mailbox is not in them.
 
