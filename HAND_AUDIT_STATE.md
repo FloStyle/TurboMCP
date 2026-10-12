@@ -236,3 +236,25 @@ failure input, grouped by family:
 *** SO THE NEXT ROUND SHOULD READ A `graph` OR `widget` SUITE IN FULL, NOT A READER.*** *The `Source/` readers are
 closed by measurement; the suites that exercise the defective writers are not, and they are the ten most likely to
 show whether a carded defect is actually caught.*
+
+### And the suite layer's standard is higher than `check-fails-on.py` can measure
+
+**Five suites read in full, three more in structure.** Every one has the same shape, and the shape is not the
+phrase the template asks for:
+
+    a module docstring saying WHY the suite exists, often citing the acceptance row and the failure it closes
+    a `check()` that prints `ok`/`FAIL` and accumulates
+    each check NAMING WHAT IT PROVES - "it names why that claim would need proof", "each fault is reported on
+      ITS OWN LINE", "the default visibility is not printed"
+    *** the WRONG EARLIER VERSIONS recorded, with what they got wrong: `test-graph-check.py:76-80` (the zero case,
+    "an assertion that could not be satisfied by the correct answer") and `:164-168` (the line expectation, "the
+    suite was asserting the tool had misplaced a finding when the suite had misplaced its expectation, WHICH IS
+    THE 'READER FAULT REPORTED AS A SUBJECT FAULT' MISTAKE") ***
+    *** and the strongest ones PROVE THE NEGATIVE FROM OUTSIDE: `test-graph-check.py:12-14` checks the asset's
+    hash, size and mtime before and after, plus a read through a DIFFERENT tool, because "A TOOL REPORTING ITS OWN
+    INNOCENCE IS NOT EVIDENCE" ***
+
+*** SO THE 34 "SILENT" SUITES ARE NOT A QUALITY MEASURE. The two families the work order points at - `graph` (6)
+and `widget` (4) - are among the best-written in the tree, and the phrase `check-fails-on.py` looks for is a
+sentence shape, not a property of a test. That card's recommendation stands: DROP THE RULE, OR REWRITE IT TO ASK
+FOR WHAT IT MEANS. ***
