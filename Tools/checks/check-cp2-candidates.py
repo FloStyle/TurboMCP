@@ -36,10 +36,28 @@ SRC = REPO / "Source" / "TurboMCP"
 WRITES = re.compile(r"(Modify\(\)|MarkPackageDirty|DestroyNode|NewObject<|::Apply\()")
 
 # Shape 1: a numeric parameter converted and then replaced when the conversion is not usable.
+#
+# *** THIS PATTERN FINDS ONE OF THE TWO STRUCTURES THAT EXPRESS THE SAME DEFECT, AND IT MISSES THE OTHER. ***
+#
+#   STRUCTURE B - the fallback is an ASSIGNMENT inside the failure branch:
+#       `W = Atoi(p); if (W <= 0) { W = 10; }`                     *** MATCHED ***
+#       found at `CallCostTools.cpp:114`, `CallLogTools.cpp:34`, `BPLintTools.cpp:66`
+#
+#   STRUCTURE A - the fallback is the ABSENCE of an assignment, with the default pre-set:
+#       `constexpr int32 DefaultLimit = 50; int32 WantedLimit = DefaultLimit;`
+#       `if (!Limit.IsEmpty()) { const int32 Parsed = Atoi(*Limit); if (Parsed > 0) { WantedLimit = Parsed; } }`
+#       *** NOT MATCHED - and this is `TurboMCPTypes.cpp:395-404`, THE INSTANCE THAT MOTIVATED THIS SCREEN. ***
+#
+# SO THE COUNT BELOW IS A FLOOR. A reviewer must also read each `Atoi` site for structure A, which no pattern
+# here attempts. **The tool prints how many `Atoi` calls it saw so that gap is visible rather than silent.**
 SUBSTITUTED = re.compile(
     r"Atoi\([^)]*\)[^;]*;.{0,200}?(?:\w+\s*=\s*(?:Default|\d+))",
     re.DOTALL,
 )
+
+# Every numeric conversion in a read-only file, so a reader can see how much the SUBSTITUTED pattern above
+# covers. The difference between this count and the matches IS structure A.
+ATOI_ANY = re.compile(r"Atoi\(")
 
 # Shape 2: a refusal in a reader that blames the asset, the graph or the node.
 BLAMES_THE_INPUT = re.compile(
@@ -64,7 +82,11 @@ def main() -> int:
         return 1
 
     readers = [p for p in files if reads_only(p.read_text(encoding="utf-8", errors="replace"))]
+    atoi_total = sum(len(ATOI_ANY.findall(p.read_text(encoding="utf-8", errors="replace"))) for p in readers)
     print("  .cpp files: %d        read-only by this screen: %d" % (len(files), len(readers)))
+    print("  *** `Atoi(` calls seen in those readers: %d - AND THE SUBSTITUTED PATTERN MATCHES ONLY THOSE THAT" % atoi_total)
+    print("      ASSIGN A FALLBACK INSIDE THE FAILURE BRANCH. STRUCTURE A, WHERE THE DEFAULT IS PRE-SET AND THE")
+    print("      ASSIGNMENT IS SIMPLY SKIPPED, IS NOT MATCHED. THE COUNT BELOW IS A FLOOR. ***")
     print()
 
     candidates = []
