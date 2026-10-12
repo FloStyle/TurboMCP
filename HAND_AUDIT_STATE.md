@@ -10,11 +10,17 @@ reliability of the findings themselves.
 
 | Group | Files | Read by hand |
 |---|---|---|
-| `Source/` | 186 | **~30** |
-| `Tools/` | 88 | **2 layer passes** (not file by file) |
+| `Source/` | 186 | **34 read in full**; 14 remain and all are readers or wrappers |
+| `Tools/` | 88 | `checks/` (8), infrastructure (3), `make-*.py` (7), `*.ps1` (11) screened; 3 suites read |
 | `.md` + descriptors | 31 | done earlier by the document audit |
 
-**Not done:** ~19 `Source/` files, and most of the 88 `Tools/` scripts.
+**The 14 remaining `Source/` files have ZERO WRITE SITES** — `NodeResolve`, `Layout`, `GraphLoad`,
+`GraphStructure.h`, `GraphStructureNotes.h`, `Toolsets.cpp`, `ToolsetsInternal.h`, `WidgetTreeSync`,
+`MaterialTools`, `ToolSchemaTools`, `StructTools`, `CommentTools`, `GraphCheckTools`, `GraphFixBackwardTools` —
+**so they cannot carry the behaviour-defect families. What they can carry is `C3` and `C-P2`, and `C-P2` is a
+pattern a CHECK can find** (`AUDIT_PATTERNS.md` section F).
+
+**Not done:** 32 suites not read, 4 `.ps1` not read past their functions.
 
 ---
 
