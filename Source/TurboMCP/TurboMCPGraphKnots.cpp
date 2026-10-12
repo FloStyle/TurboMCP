@@ -1228,6 +1228,12 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 	const FScopedTransaction Transaction(
 		FText::FromString(TEXT("TurboMCP: place reroute knots")));
 
+	// *** WHETHER THE PACKAGE WAS ALREADY DIRTY WHEN THIS PASS STARTED, RECORDED BEFORE THE FIRST WRITE.
+	// A pass that decides to roll back must leave the asset as it found it, AND CLEARING THE FLAG IS ONLY
+	// CORRECT WHEN THIS PASS IS WHAT SET IT: an earlier operation in the same editor session may have
+	// unsaved work of its own, and that fact is not this pass's to discard. ***
+	const bool bWasDirtyBefore = Graph->GetOutermost()->IsDirty();
+
 	TArray<UK2Node_Knot*> Created;
 	TArray<FPending> Completed;
 	TArray<FString> Failed;
@@ -1403,6 +1409,17 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 				TEXT("the graph keeps knots and the wire is relinked. A knot cannot change what the ")
 				TEXT("Blueprint does, so this is cosmetic, but it should be reported.");
 		}
+
+		// *** THE DIRTY FLAG IS RESTORED TO WHAT IT WAS BEFORE THE PASS, AND ONLY THEN. `MarkPackageDirty`
+		// RAN UNCONDITIONALLY ABOVE, BEFORE THIS BRANCH WAS REACHED, so a pass that rolled everything
+		// back still left the package looking modified and the editor offering to save a change that
+		// does not exist. The flag is cleared ONLY when this pass is what set it: if the package was
+		// already dirty, that earlier work is not this pass's to discard. ***
+		if (!bWasDirtyBefore)
+		{
+			Graph->GetOutermost()->SetDirtyFlag(false);
+		}
+
 		return Out;
 	}
 
