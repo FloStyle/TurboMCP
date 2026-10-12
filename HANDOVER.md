@@ -8,7 +8,7 @@
 
 | Vérification | Résultat |
 |---|---|
-| Clés, tokens, clés SSH, chaînes de connexion | **aucun** *(scanné : `BEGIN PRIVATE KEY`, `ghp_`/`github_pat_`, `sk-`, `AKIA`, `xox`, `AIza`, `Bearer`, JWT, `AccountKey=`, `ConnectionString`)* |
+| Clés, tokens, clés SSH, chaînes de connexion | **aucun** *(scanné : en-têtes de clés privées PEM, jetons GitHub classiques et fins, clés OpenAI, identifiants AWS, jetons Slack, clés Google, jetons Bearer, JWT, clés de compte de stockage, chaînes de connexion)* |
 | Fichiers `.env`, `.pem`, `.key`, `.pfx`, `id_rsa` | **aucun** |
 | URL privées, hôtes internes, IP RFC1918 | **aucune** |
 | Données client | **aucune** — il n'y a que le kit de test, généré par le commandlet |
