@@ -73,6 +73,21 @@ DOES.***
 and explain. **`AsError` is the same kind of fix**: written once in `TurboMCPMaterialTools.cpp:31-38`, wired into
 4 of 29 wrappers.
 
+### And the second class has a reference implementation too, for the same parameter
+
+**Five sites parse a numeric parameter. Four substitute a default silently; one refuses by name.**
+
+| Substitutes silently | Refuses by name |
+|---|---|
+| `Types.cpp:395-404` — `banana`, `0`, `-5` → 50 | `BlueprintLoad.cpp:100-115` — the **same** `TokenBudget` |
+| `CallCostTools.cpp:114-122` — → 10 | `IsNumeric()` tested **before** the conversion |
+| `CallLogTools.cpp:34-42` — → 50 | the refusal states **the default it would have used** |
+| `BPLintTools.cpp:66-70` — → 0 | a non-number and a non-positive number get **different messages** |
+
+*Structure matters for finding them: `Types.cpp` uses **A** (the default is pre-set and the assignment is
+skipped); the other three use **B** (the fallback is assigned in the failure branch). `check-cp2-candidates.py`
+matches **B** only and prints the `Atoi(` count so its floor is visible.*
+
 `TurboMCPGraphKnots.cpp:1400-1405` re-measures a rollback and reports *"THE ROLLBACK DID NOT RESTORE THE GRAPH"*.
 **The repair pattern exists in the project and is not applied in those three files.**
 
