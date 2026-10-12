@@ -167,7 +167,9 @@ The editor can run editor Python headlessly:
 UnrealEditor.exe <project> -run=PythonScriptCommandlet -Script=Tools/make-test-assets.py -unattended -nullrhi
 ```
 
-Verified: it created `Content/Tests/TA11_TestEnum.uasset`, exit code 0.
+Verified: it created `TestProject/Content/Tests/TA11_TestEnum.uasset`, exit code 0. *** THE PATH HAS TO CARRY THE
+PROJECT ROOT: `Content/Tests/TA11_TestEnum.uasset` DOES NOT EXIST, and the file is at
+`TestProject/Content/Tests/` - both checked with `Test-Path`. ***
 
 Only **scaffolding** is scripted - an empty asset of the right class, saved, so
 the registry and the path forms have something real to resolve. The **structure**

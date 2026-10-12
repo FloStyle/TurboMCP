@@ -988,11 +988,10 @@ reason** rather than approximated with an empty table, because an empty `UDataTa
 
 ### NOT YET BUILT: TA-5 to TA-9
 
-`TA-5` (a 60-expression material), `TA-6` (its instance), `TA-7` and `TA-9` (widget Blueprints) and
-`TA-8` (a page placing two copies of `TA-7`) are **not attempted** by this commandlet. Materials and
-widget Blueprints need their own builders, and the material fixture commandlet already demonstrates the
-material half: `M_TurboMCPFixture` carries named reroutes, nested boxes and an instance override, which
-is most of what `TA-5` and `TA-6` want. The honest state is that five of the thirteen exist in a
+`TA-6` (the instance of `TA-5`'s material), `TA-9` (a widget Blueprint) and `TA-8` (a page placing two copies
+of `TA-7`) are **not attempted** by this commandlet. *** `TA-5` AND `TA-7` ARE: the commandlet builds both -
+`Ta5.Id = TEXT("TA-5")` at `TurboMCPKitCommandlet.cpp:1330`, and `TA07_Card` at `:1557`/`:1719`, on disk as
+`TestProject/Content/Tests/Kit/TA07_Card.uasset`. *** The honest state is that five of the thirteen exist in a
 different asset rather than in the kit, and they are recorded here rather than claimed.
 
 ### THREE DEFECTS THE COMMANDLET FOUND IN ITSELF, all by measuring rather than reporting
