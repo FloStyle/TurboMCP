@@ -74,7 +74,7 @@ pwsh -File Tools\apply-license-header.ps1 -Check
 # RESULT: PASS (every source file carries the notice)
 ```
 
-Three properties make it safe to run again, each verified on a scratch copy before the real tree was
+Four properties make it safe to run again, each verified on a scratch copy before the real tree was
 touched:
 
 - **Idempotent.** A second run reports `0 prepended, 0 replaced, 193 already correct`, leaves every MD5 identical, and writes nothing.
