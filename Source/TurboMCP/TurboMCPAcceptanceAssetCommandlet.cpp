@@ -28,6 +28,7 @@
 #include "Misc/PackageName.h"
 #include "HAL/PlatformFileManager.h"
 #include "Misc/Paths.h"
+#include "Misc/StringOutputDevice.h"
 #include "Modules/ModuleManager.h"
 // `FTurboMCPComment::TitleBarHeight` is used to decide nesting, and it is REFERENCED RATHER THAN
 // COPIED: the box rectangle starts that far below the node position because the title bar strip sits
@@ -1048,18 +1049,15 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 {
 	UE_LOG(LogTurboMCP, Display, TEXT("TurboMCP: building the acceptance asset"));
 
-	// THE OLD ASSET IS DESTROYED, NOT JUST MARKED, AND THE PACKAGE IS MADE AFTERWARDS.
+	// THE OLD OBJECT IS RENAMED OUT OF ITS PACKAGE, AND THE PACKAGE IS MADE AFTERWARDS.
 	//
-	// MEASURED FAILURE: a re-run reported "TurboMCP: Error: could not save ... TurboMCPAcceptance.uasset"
-	// while all four probe graphs built successfully. The asset already existed on disk, so the package
-	// that `FindPackage` returned still owned the old Blueprint and the save could not take its place.
-	// Building into a package that already holds an object of the same name is the collision, and
-	// `MarkAsGarbage` does not clear it — the object is still in the package's object list until the
-	// garbage is collected, which a commandlet never reaches.
+	// A package holds one object per name, and `MarkAsGarbage` does not free a name: the object stays in the
+	// package's object list until the garbage is collected, which a commandlet never reaches. Renaming it to
+	// the transient package is the step that frees the name, so that the `CreateBlueprint` below can take it.
 	//
-	// So the existing object is REMOVED from its package outright, and the package is then created
-	// fresh. That is what makes this commandlet re-runnable, which is what lets a destructive test use
-	// it to reset the fixture.
+	// AND THE SAVE NEEDS ONE MORE THING, WHICH IS NOT THIS BLOCK'S BUSINESS BUT IS THIS COMMANDLET'S: see
+	// `MarkAsFullyLoaded` at the save. Without it a RE-RUN is refused before a byte is written, so the
+	// repeatability this block provides would not be reachable at all.
 	{
 		UPackage* Existing = FindPackage(nullptr, *PackagePath);
 		if (Existing != nullptr)
@@ -1180,14 +1178,41 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 		return 3;
 	}
 
+	// *** THE PACKAGE MUST BE MARKED FULLY LOADED, OR A RE-RUN IS REFUSED BEFORE A BYTE IS WRITTEN. ***
+	//
+	// `SavePackage2.cpp:239` returns `ESavePackageResult::Error` when `!Package->IsFullyLoaded()`, and
+	// `Package.cpp:359-363` answers false for a package that HAS A FILE ON DISK while its `bHasBeenFullyLoaded`
+	// is false - which is exactly the state `CreatePackage` produces at :1090 once the asset exists from an
+	// earlier run. So the FIRST run finds no file and succeeds, and EVERY RE-RUN IS REFUSED.
+	//
+	// `MarkAsFullyLoaded` is the engine's own API for this (`Package.h:685`), and it is accurate here: this
+	// commandlet built the whole package in memory, so the process holds everything the file must contain.
+	Package->MarkAsFullyLoaded();
+
+	// *** THE REASON A SAVE FAILS IS CAPTURED RATHER THAN SUPPRESSED. ***
+	//
+	// `SAVE_NoError` means "Don't generate errors on save" (`ObjectMacros.h:101`), and every message the engine
+	// would produce is gated on it (`SaveContext.h:833-836`, `IsGenerateSaveError`). With that flag set,
+	// `UPackage::SavePackage` answers `false` and the log holds nothing but this file's own sentence - which is
+	// how a save that could not state its cause came to be explained here by a collision theory.
+	//
+	// The flag is therefore DROPPED, and the engine's message is routed to a collector instead of `GError`, its
+	// default (`SavePackage.h:90`), because `GError` raises `appError` and takes the editor down - which is not
+	// how a commandlet reports a failed save.
+	FStringOutputDevice SaveErrors;
 	FSavePackageArgs SaveArgs;
 	SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
-	SaveArgs.SaveFlags = SAVE_NoError;
+	SaveArgs.Error = &SaveErrors;
 	if (!UPackage::SavePackage(Package, Blueprint, *TempFileName, SaveArgs))
 	{
 		// The original is STILL THERE, so the failure costs nothing but the attempt.
 		UE_LOG(LogTurboMCP, Error,
 			TEXT("could not save %s, so the existing asset was left untouched"), *TempFileName);
+		if (!SaveErrors.IsEmpty())
+		{
+			// THE ENGINE'S OWN SENTENCE, WHICH THE FLAG ABOVE USED TO THROW AWAY.
+			UE_LOG(LogTurboMCP, Error, TEXT("the engine's reason: %s"), *SaveErrors);
+		}
 		return 3;
 	}
 
