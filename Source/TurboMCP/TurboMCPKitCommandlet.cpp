@@ -403,9 +403,16 @@ namespace
 			{
 				// A container that could not be written IS a finding, because every entry inside it is
 				// then unsaved. This is the one case where the write has to raise an error.
+				//
+				// *** `bBuilt` IS SET TRUE AND THAT IS WHAT MAKES THE RUN FAIL. The container WAS
+				// built; what failed is the write. Leaving `bBuilt` at its default `false` put this
+				// entry in the `NotBuilt` count instead of `Short`, and only `Short > 0` returns a
+				// non-zero code at the end - so a shared package that could not be written produced
+				// exit code 0 while every entry inside it was unsaved. ***
 				FKitResult Failure;
 				Failure.Id = InId;
 				Failure.Name = InName;
+				Failure.bBuilt = true;
 				Failure.Detail = TEXT("the shared package could not be written");
 				Failure.Why = Why;
 				Results.Add(Failure);
