@@ -48,7 +48,7 @@ by row against the tree, and it is the only list that is.
 
 ## 3. What is left
 
-**31 of 48 rows**, and three of them cannot be done on the machine this was built on:
+**31 of 48 rows**, and three of them cannot be done in the environment this was built in:
 
 - the remaining **source-control writers** need a server that answers;
 - **`TA-18`** needs a `USkeleton` bone whose every route is closed in the engine.

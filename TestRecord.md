@@ -6069,7 +6069,7 @@ and parser exist (871 lines), **and what is missing is a fixture whose tree is D
 *** THIS ROUND'S HONEST RESULT IS A STATE CHECK AND A DELIBERATE NON-ACTION, RECORDED BECAUSE THE ALTERNATIVE WAS
 MEASURED AND REJECTED RATHER THAN NOT CONSIDERED. ***
 
- main = origin/main =, WORKING TREE CLEAN
+ main = origin/main, WORKING TREE CLEAN
  81 AICallable tools (unchanged - no declaration added yet)
  44 suites
  TurboMCPGraphStructure.h EXISTS, 210 lines, COMMITTED in

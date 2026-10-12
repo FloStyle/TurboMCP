@@ -4,9 +4,9 @@
 **Context:** `QUESTIONS.md` Q-13 records that this half has never run. The `Plan` half is verified
 against the committed asset `TurboMCPAcceptance:LocalVarProbe`, where it correctly reports one SAFE
 and one UNSAFE candidate.
-**Method:** every engine symbol at every call site was matched against its declaration, read from
-`C:\UnrealEngine` (UE 5.8.3, built from source). **No code was run, no editor was started, no build
-was performed** — this is a source-only audit, as instructed.
+**Method:** every engine symbol at every call site was matched against its declaration, read from the
+**Unreal Engine 5.8.3 source tree this project builds against**. **No code was run, no editor was started, no
+build was performed** — this is a source-only audit, as instructed.
 
 **Result: 7 PROVEN defects, 3 UNVERIFIED items.** Two of the defects are severe enough that the
 promotion cannot work as written on the asset the project already has.

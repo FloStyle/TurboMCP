@@ -3,12 +3,10 @@
 **One row per provider. AVAILABLE / NOT AVAILABLE / NEEDS A SETTING, with the
 file and line that decides it.**
 
-Measured on `main` = `origin/main` = (the row was launched at
-; the only commits between them are the orchestrator's own
-`TestRecord.md` record entries - `git diff --stat HEAD` is
-`TestRecord.md | 68 +++++`, source untouched), against the engine install at
-`C:\UnrealEngine` (`Engine/Build/Build.version`: `MajorVersion 5`,
-`MinorVersion 8`, `PatchVersion 3`, `CompatibleChangelist`).
+**Measured against Unreal Engine 5.8.3**, the version this project builds against, as reported by that
+engine's own `Engine/Build/Build.version` (`MajorVersion 5`, `MinorVersion 8`, `PatchVersion 3`,
+`CompatibleChangelist`). *The install path is deliberately not recorded: what a reader needs is which engine
+was measured, and a disk path is one machine's business.*
 
 *** THIS IS A MEASUREMENT FILE, NOT AN IMPLEMENTATION. NOTHING UNDER
 `Source/TurboMCP/` WAS TOUCHED, `TurboMCPToolsets.h` WAS NOT TOUCHED, NO
@@ -32,9 +30,9 @@ run logs `.agent/logs/sc-run-*.log`.
 | **None** (default) | unset, `""`, or `None` | `'None'` | `False` | `False` | **NOT AVAILABLE** - and it is the provider you get when nothing is configured | `SourceControlModule.cpp:255-258` falls back to `&DefaultSourceControlProvider` when the configured name matches nothing; `DefaultSourceControlProvider.cpp:41-44` `IsEnabled`/`IsAvailable` both `return false`; `:52-55` `GetState` and `:77-80` `Execute` both `return ECommandResult::Failed` |
 | **Git** | `Git` | `'Git'` | `True` | `True` | **AVAILABLE** in a commandlet, once selected | `GitSourceControlProvider.cpp:141-150` both return `bGitRepositoryFound`, set by `CheckRepositoryStatus` (`:60-85`) from `CheckGitAvailability` (`:32-58`) called by `Init` (`:21-30`) **regardless of `bForceConnection`** - so the repository is found even though `SourceControlModule.cpp:263` calls `Init(false)` |
 | **Perforce** | `Perforce` | `'Perforce'` | `True` | `False` | **NEEDS A SETTING** - a reachable server, a workspace and a login; and note `IsEnabled` is `true` even when nothing is available | `PerforceSourceControlProvider.cpp:232-235` `IsEnabled` `return true`; `:237-240` `IsAvailable` is `bServerAvailable && !IsLoginError && bIsWorkspaceValidForProject`; `:99-104` `Init(false)` sets `EInitFlags::None` so **no** connection is attempted, and the connection lives at `:310-330` under `EInitFlags::AttemptConnection` |
-| **Plastic SCM** | `Plastic SCM` | `'Plastic SCM'` | `True` | `False` | **NOT AVAILABLE here** - the `cm` client is not installed on this machine, and a connection is still needed | `PlasticSourceControlProvider.cpp:283-286` `IsEnabled` `return true`; `:289-292` `IsAvailable` is `bServerAvailable`; `:89-109` `CheckPlasticAvailability` sets `bPlasticAvailable` from `FindPlasticBinaryPath` / `PlasticSourceControlShell::Launch`; `:72-86` the connection needs `bForceConnection` |
-| **Subversion** | `Subversion` | `'Subversion'` | `True` | `False` | **NOT AVAILABLE here** - the `svn` client is not installed on this machine | `SubversionSourceControlProvider.cpp:79-82` `IsEnabled` `return true`; `:84-88` `IsAvailable` is `!bWorkingOffline`; `:26-29` `Init` -> `ParseCommandLineSettings(bForceConnection)`, and `bWorkingOffline` is set at `:646` / cleared at `:650` by a command result |
-| *(FileSandbox proxy)* | would be `Sandbox` | - | - | - | **NOT A PROVIDER HERE** - the plugin is **not** enabled by default, so it never registers | `Engine/Plugins/Developer/Sandbox/FileSandbox/FileSandbox.uplugin:13` `"EnabledByDefault": false`; it would register at `SandboxSourceControlProviderProxy.cpp:101` |
+| **Plastic SCM** | `Plastic SCM` | `'Plastic SCM'` | `True` | `False` | **NOT AVAILABLE - the client is not installed** - the `cm` client is not installed on this machine, and a connection is still needed | `PlasticSourceControlProvider.cpp:283-286` `IsEnabled` `return true`; `:289-292` `IsAvailable` is `bServerAvailable`; `:89-109` `CheckPlasticAvailability` sets `bPlasticAvailable` from `FindPlasticBinaryPath` / `PlasticSourceControlShell::Launch`; `:72-86` the connection needs `bForceConnection` |
+| **Subversion** | `Subversion` | `'Subversion'` | `True` | `False` | **NOT AVAILABLE - the client is not installed** - the `svn` client is not installed on this machine | `SubversionSourceControlProvider.cpp:79-82` `IsEnabled` `return true`; `:84-88` `IsAvailable` is `!bWorkingOffline`; `:26-29` `Init` -> `ParseCommandLineSettings(bForceConnection)`, and `bWorkingOffline` is set at `:646` / cleared at `:650` by a command result |
+| *(FileSandbox proxy)* | would be `Sandbox` | - | - | - | **NOT A PROVIDER** - the plugin is **not** enabled by default, so it never registers | `Engine/Plugins/Developer/Sandbox/FileSandbox/FileSandbox.uplugin:13` `"EnabledByDefault": false`; it would register at `SandboxSourceControlProviderProxy.cpp:101` |
 
 **Verbatim probe output, all six runs** (`.agent/logs/sc-probe-*.txt`):
 
@@ -385,9 +383,9 @@ empty state that reads as "not under source control".
  exited `1`). A real checkout against a live depot remains untested - which is
  consistent with `03_TOOLS.md:1365-1366` ("no automatic checkout happens
  anywhere until this tool's own tests pass").
-3. **`Plastic SCM` and `Subversion` cannot be exercised on this machine at
+3. **`Plastic SCM` and `Subversion` cannot be exercised in this environment at
  all** - `cm` and `svn` are not on `PATH` (measured with `Get-Command`), so
- their AVAILABLE branch is unreachable here, not merely untested.
+ their AVAILABLE branch is unreachable, not merely untested.
 4. **The `-SCCProvider=Plastic SCM` name contains a space**
  (`PlasticSourceControlProvider.cpp:34`), so the switch needs quoting in any
  harness; that was done here and reported, but it is a trap for row 10.1.
@@ -396,7 +394,7 @@ empty state that reads as "not under source control".
 6. **`check_out_file` was deliberately not called with Git** (where it would
  pass the gate and run `GetState`/possibly `Execute`), so the *shape of a Git
  checkout answer* - the half of `T-VCS-1`'s "with it on" that lives on the one
- provider this machine does have - is measured only as
+ provider this environment does have - is measured only as
  `is_available=True`, not as a checkout result. `GitSourceControlProvider.cpp:286-289`
  (`UsesCheckout == false`) and `:257-260`
  (`CanExecuteOperation` = "a worker is registered", and no `CheckOut` worker
@@ -621,13 +619,13 @@ still returned `current_provider='Perforce'`, `is_available=False`.
  one touches `Engine/Plugins/Developer/` or `Engine/Source/Developer/`, so
  neither can see a source control provider at all** - and both need a
  `GH_TOKEN` and the GitHub `release` ref rather than the local install. The
- enumeration in section 1 was therefore done directly against
- `C:\UnrealEngine`, which is where the providers live.
-2. **"BASELINE: `main` = `origin/main` = "** - true when I started, and
- **HEAD moved while I worked, exactly as the brief predicted.** It is now
-, and `git diff --stat HEAD` is
+ enumeration in section 1 was therefore done directly against the engine source tree,
+ which is where the providers live.
+2. **"BASELINE: `main` = `origin/main`"** - true when I started, and
+ **HEAD moved while I worked, exactly as the brief predicted.** By the time I finished it had
+ advanced by three commits, and `git diff --stat HEAD` was
  `TestRecord.md | 68 ++++++++++` - three orchestrator commits
- (,, ) that add record entries and touch **no
+ that add record entries and touch **no
  source file**. Nothing was reverted, nothing collided, and every measurement
  above is against source that never changed.
 3. **The brief's item 1 says the providers "live under
@@ -1419,7 +1417,7 @@ rebuilt (`Result: Succeeded`); and the suite returned
  operation is issued through the provider, and the provider's own answer is what
  gets reported*. **IT IS NOT A CLAIM THAT AN AUTOMATIC CHECKOUT WORKS.**
 2. **The `UsesCheckout == true` branch of the ACTING path was never executed.**
- The only provider on this machine with `UsesCheckout == true` is Perforce, and
+ The only provider installed here with `UsesCheckout == true` is Perforce, and
  it is `IsAvailable == false`, so the mechanism refuses before reaching it - by
  design, and the refusal is measured. **What a successful `FCheckOut` looks like
  is unmeasured**, and the sentence that would have to change when a depot exists

@@ -123,7 +123,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                     # passed 58, fail
 
 ## 3. The 31 remaining rows — and the three that cannot be done here
 
-### Impossible on this machine
+### Bounded by the environment this was built in
 
 | Row | What is missing |
 |---|---|

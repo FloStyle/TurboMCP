@@ -1,6 +1,7 @@
 # Working spec: `P/E-GRAPH-FIX-BACKWARD`
 
-**Status:** specification, not implemented. Written against UE 5.8.3 at `C:\UnrealEngine`.
+**Status:** specification, not implemented. Written against **Unreal Engine 5.8.3**, the version this project
+builds against.
 **Sibling documents:** `Spec/WORKING_GRAPH_TIDY.md` (the closest relative), `Spec/WORKING_GRAPH_KNOTS.md`
 (the other measure-and-roll-back capability), `Spec/AUDIT_LOCAL_VARS_PROMOTION.md`.
 
