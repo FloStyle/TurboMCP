@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPMaterialBlocks.h"
@@ -33,18 +35,6 @@
  * boundary between blocks, and a material with one block has no boundary: the refusal says so and names
  * `P/E-MAT-TIDY` as the tool that would create the blocks first.
  */
-namespace
-{
-	/** `error: <what failed>`, with the prefix added exactly once. */
-	FString BlocksAsError(const FString& InError)
-	{
-		if (InError.StartsWith(TEXT("error:")))
-		{
-			return InError;
-		}
-		return FString::Printf(TEXT("error: %s"), *InError);
-	}
-}
 
 /**
  * List what would make a material's labels follow its blocks, and change nothing.
@@ -76,7 +66,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPMaterialBlocks(const FString& As
 	FString Error;
 	if (!FTurboMCPMaterialBlocks::Plan(Asset, Plan, Error))
 	{
-		return BlocksAsError(Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	// A MATERIAL THAT ALREADY FOLLOWS D-17 IS AN ANSWER RATHER THAN A REFUSAL, and it is the answer this
@@ -121,7 +111,7 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialBlocks(const FString& Asset)
 	FString Error;
 	if (!FTurboMCPMaterialBlocks::Plan(Asset, Plan, Error))
 	{
-		return BlocksAsError(Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	// THE ROLLBACK MEASUREMENT IS APPENDED HERE RATHER THAN INSIDE `Apply`, because it is produced in a

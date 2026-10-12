@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPMaterial.h"
@@ -29,16 +31,6 @@
  */
 namespace
 {
-	/** `error: <what failed>`, with the prefix added exactly once. */
-	FString AsError(const FString& InError)
-	{
-		if (InError.StartsWith(TEXT("error:")))
-		{
-			return InError;
-		}
-		return FString::Printf(TEXT("error: %s"), *InError);
-	}
-
 	/**
 	 * Reads the asset once and renders it for the given kind, so the four tools share one path.
 	 *
@@ -55,7 +47,7 @@ namespace
 		if (!FTurboMCPMaterial::Plan(InAsset, InKind, InOutputProperty,
 				bInIncludeInstanceOverrides, Plan, Error))
 		{
-			return AsError(Error);
+			return FTurboMCPToolError::AsError(Error);
 		}
 
 		switch (InKind)

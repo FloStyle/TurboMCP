@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPMaterialLabelsPromote.h"
@@ -29,18 +31,6 @@
  * it and the Edit answers `unchanged`. Treating "nothing to do" as an error would make the tool look
  * broken on exactly the materials it should leave alone.
  */
-namespace
-{
-	/** `error: <what failed>`, with the prefix added exactly once. */
-	FString LabelPromoteAsError(const FString& InError)
-	{
-		if (InError.StartsWith(TEXT("error:")))
-		{
-			return InError;
-		}
-		return FString::Printf(TEXT("error: %s"), *InError);
-	}
-}
 
 /**
  * List the values in a material worth a name, and change nothing.
@@ -69,7 +59,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPMaterialLabelPromote(const FStri
 	FString Error;
 	if (!FTurboMCPMaterialLabelsPromote::Plan(Asset, Plan, Error))
 	{
-		return LabelPromoteAsError(Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	// A MATERIAL WITH NOTHING TO PROMOTE IS AN ANSWER RATHER THAN A REFUSAL, and it is the answer this
@@ -107,7 +97,7 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialLabelPromote(const FString& As
 	FString Error;
 	if (!FTurboMCPMaterialLabelsPromote::Plan(Asset, Plan, Error))
 	{
-		return LabelPromoteAsError(Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	return FTurboMCPMaterialLabelsPromote::Apply(Plan);

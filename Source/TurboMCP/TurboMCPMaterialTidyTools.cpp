@@ -7,6 +7,8 @@
 
 #include "Tools/TurboMCPToolsets.h"
 
+#include "TurboMCPToolError.h"
+
 #include "Containers/UnrealString.h"
 
 #include "TurboMCPMaterialTidy.h"
@@ -23,18 +25,6 @@
  * use, because two layers each assuming the other leaves the prefix off is how a result ends up reading
  * `error: error: ...`.
  */
-namespace
-{
-	/** `error: <what failed>`, with the prefix added exactly once. */
-	FString AsError(const FString& InError)
-	{
-		if (InError.StartsWith(TEXT("error:")))
-		{
-			return InError;
-		}
-		return FString::Printf(TEXT("error: %s"), *InError);
-	}
-}
 
 /**
  * Lay out a material, one comment box per block, and change nothing.
@@ -68,7 +58,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPMaterialTidy(const FString& Asse
 	FString Error;
 	if (!FTurboMCPMaterialTidy::Plan(Asset, bForce, Plan, Error))
 	{
-		return AsError(Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	if (Plan.Refusals.Num() > 0)
@@ -116,7 +106,7 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialTidy(const FString& Asset, con
 	FString Error;
 	if (!FTurboMCPMaterialTidy::Plan(Asset, bForce, Plan, Error))
 	{
-		return AsError(Error);
+		return FTurboMCPToolError::AsError(Error);
 	}
 
 	if (Plan.Refusals.Num() > 0)
