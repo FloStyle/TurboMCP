@@ -26,9 +26,8 @@ FString TurboMCPDescribe::VariableFlags(const FBPVariableDescription& InVariable
 
 	// `CPF_Edit` means "user-settable in the editor", and EVERY Blueprint variable carries
 	// it, so it is not evidence of anything. Printing it as "InstanceEditable" made the
-	// list say `InstanceEditable, NotInstanceEditable` at the same time, which is how the
-	// first version of this was wrong. The per-instance question is answered by
-	// `CPF_DisableEditOnInstance` alone.
+	// list say `InstanceEditable, NotInstanceEditable` at the same time. The per-instance
+	// question is answered by `CPF_DisableEditOnInstance` alone.
 	Flags.Add((F & CPF_DisableEditOnInstance)
 		? TEXT("NotInstanceEditable") : TEXT("InstanceEditable"));
 

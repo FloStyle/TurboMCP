@@ -545,12 +545,11 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 				Resolved.ObjectPath, ProbeReport, ProbeWhy))
 		{
 			// A PLAIN STRING BEGINNING `error:` AND NOTHING ELSE, which is the convention
-			// every other mode on this tool already uses. The first version returned the
-			// report followed by the error, and the engine's tool layer then flagged the
-			// WHOLE answer as an error while the text began with the success banner, so a
-			// caller testing for the `error:` prefix saw a success. MEASURED: the suite's
-			// `a key that resolves to no node is refused` check was the one red check, and
-			// the tool's own output on that input began `look: selection probe on ...`.
+			// every other mode on this tool already uses. RETURNING THE REPORT FOLLOWED BY THE
+			// ERROR MAKES THE ENGINE'S TOOL LAYER FLAG THE WHOLE ANSWER AS AN ERROR while the
+			// text begins with the success banner, so a caller testing for the `error:` prefix
+			// reads a success. The suite's `a key that resolves to no node is refused` check is
+			// what catches it.
 			return FString::Printf(TEXT("error: %s"), *ProbeWhy);
 		}
 		return ProbeReport;
@@ -808,11 +807,10 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// The one place in the plugin that pumps Slate. It exists only so the newly opened
 	// tab measures itself and comes to the front.
 	//
-	// ONE TICK WAS NOT ENOUGH. The first version ran a single tick and the graph panel
-	// still reported a size of 0x0, with its tab drawn greyed out in the window rather
-	// than active. A tab that has just been requested needs the layout pass AND the
-	// activation pass, so several ticks are pumped with a real delta time, and the loop
-	// stops early as soon as the panel reports a size.
+	// ONE TICK IS NOT ENOUGH. A tab that has just been requested needs the layout pass AND the
+	// activation pass: after a single tick the graph panel still reports a size of 0x0, with its tab
+	// drawn greyed out in the window rather than active. So several ticks are pumped with a real
+	// delta time, and the loop stops early as soon as the panel reports a size.
 	if (FSlateApplication::IsInitialized())
 	{
 		for (int32 Attempt = 0; Attempt < 8; ++Attempt)

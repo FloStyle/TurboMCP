@@ -49,10 +49,10 @@ namespace
 		// `UWidgetBlueprint::Bindings` is where the designer writes a binding, so it is the
 		// source of truth rather than a reconstruction.
 		//
-		// An earlier version walked the generated class's multicast delegate properties and
-		// matched them by name prefix. That is a reconstruction of the same fact from a
-		// less direct source, and it only sees a binding once the Blueprint has been
-		// compiled. This list exists before compilation and names the widget exactly.
+		// WALKING THE GENERATED CLASS'S multicast delegate properties and matching them by name
+		// prefix WOULD BE A RECONSTRUCTION of the same fact from a less direct source, and it only
+		// sees a binding once the Blueprint has been compiled. This list exists before compilation and
+		// names the widget exactly.
 		const FString WidgetName = InWidget->GetFName().ToString();
 
 		for (const FDelegateEditorBinding& Binding : InWidgetBlueprint->Bindings)
@@ -132,8 +132,8 @@ namespace
 
 			// BOTH SIDES ARE SHOWN, because one side is not enough to see what changed.
 			//
-			// The first version printed only this widget's value, so a difference read as
-			// `Text="Text Block"` and looked like no difference at all. The value that
+			// Printing only this widget's value makes a difference read as
+			// `Text="Text Block"`, which looks like no difference at all. The value that
 			// matters is the PAIR: this copy says this, the class default says that.
 			//
 			// `FText` is compared with its own operator and not by exported string. The

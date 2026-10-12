@@ -236,9 +236,9 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName)
 	//
 	// `AddFunctionGraph` does not use the name it was given: it UNIQUES it against the objects
 	// already in the package, so asking for `ComputeScore` when something still held that name
-	// created a graph called `ComputeScore_0`. The first version of this tool reported
-	// "added function 'ComputeScore'" and was WRONG — the caller would then call
-	// `ComputeScore`, find nothing, and have no idea why.
+	// created a graph called `ComputeScore_0`. REPORTING "added function 'ComputeScore'" ON THAT
+	// ANSWER WOULD BE WRONG — the caller would then call `ComputeScore`, find nothing, and have no
+	// idea why.
 	//
 	// This was found by REMOVING a function, re-ADDING the same name, and reading the functions
 	// back: the list said `ComputeScore_0`. Nothing in the add's own report showed it.
@@ -354,8 +354,8 @@ FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
 		// objects still in the package, and that set is not something a `CheckName` over the
 		// Blueprint's graphs can see.
 		//
-		// The first version claimed "the name is free again: yes" on that weaker check and was
-		// WRONG: the next add created `ComputeScore_0` instead of `ComputeScore`.
+		// CLAIMING "the name is free again: yes" ON THAT WEAKER CHECK IS WRONG: the next add creates
+		// `ComputeScore_0` instead of `ComputeScore`.
 		const FNameCheck AfterCheck = CheckName(Blueprint, Wanted);
 
 		FString Out = FString::Printf(TEXT("changed: removed function '%s' from %s"),

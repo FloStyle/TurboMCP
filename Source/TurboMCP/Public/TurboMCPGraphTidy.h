@@ -69,9 +69,9 @@ public:
 	 * `UEdGraphNode_Documentation::ResizeNode` and `::SetBounds`. So a node in an asset that has never
 	 * been rendered has a ZERO rectangle, and a zero rectangle cannot carry a pin position.
 	 *
-	 * THE SPEC SAID TO REFUSE IN THAT CASE, AND REFUSING WAS TRIED AND IS WRONG. It was measured on the
-	 * sibling capability `P/E-GRAPH-KNOTS`: refusing made the tool useless on every graph it exists
-	 * for. So a node with no measured size is given a square of this size centred on its position, and
+	 * REFUSING IN THAT CASE IS WRONG, HOWEVER DEFENSIBLE IT READS: it makes the tool useless on every
+	 * graph it exists for, which is the shape `P/E-GRAPH-KNOTS` demonstrates on the same condition. So a
+	 * node with no measured size is given a square of this size centred on its position, and
 	 * `FPlan::bUsedFallbackGeometry` is set so EVERY REPORT CAN STATE WHICH GEOMETRY IT USED. That is
 	 * what makes the fallback honest rather than a guess dressed as a measurement.
 	 *
@@ -108,9 +108,9 @@ public:
 		 *  - the PLANNED layout must be computable even when a size is missing, which is where the
 		 *    fallback belongs.
 		 *
-		 * The first version stored only the substituted size, so on a graph built by a commandlet the two
-		 * numbers were computed from different rectangles and the cross-tool check could never have
-		 * passed. The bug was invisible from the output: the rollback looked like a considered decision.
+		 * STORING ONLY THE SUBSTITUTED SIZE WOULD COMPUTE THE TWO NUMBERS FROM DIFFERENT RECTANGLES on a
+		 * graph built by a commandlet, so the cross-tool check could never pass - and the failure is
+		 * invisible from the output, because the rollback reads as a considered decision.
 		 */
 		double MeasuredWidth = 0.0;
 		double MeasuredHeight = 0.0;

@@ -87,9 +87,9 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 
 			// THE NODE IS REMOVED, NOT THE GRAPH THAT HOLDS IT.
 			//
-			// The first version called `RemoveGraph` on the event's graph, which for an event
-			// override is the EVENT GRAPH — the one holding every other event and the whole
-			// body of the Blueprint. Removing one override that way destroyed the other three
+			// CALLING `RemoveGraph` ON THE EVENT'S GRAPH WOULD BE WRONG, because for an event
+			// override that is the EVENT GRAPH — the one holding every other event and the whole
+			// body of the Blueprint. Removing one override that way destroys the other three
 			// and the graph with them, taking the overridden count from 4 to 1. That is the
 			// loss `P8` forbids, and it was caught only because the count after the removal was
 			// read back and compared with the count before.

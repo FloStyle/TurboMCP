@@ -37,9 +37,8 @@
  * this file would otherwise have got wrong: a natively-implemented interface, whose
  * members are not in `UBlueprint::ImplementedInterfaces` at all.
  *
- * An earlier version of this file walked the parent chain with
- * `TFieldIterator<UFunction>` and filtered on `FUNC_Event`. It worked for a plain
- * Actor Blueprint and could not have seen interface members, and it needed a
+ * WALKING THE PARENT CHAIN WITH `TFieldIterator<UFunction>` AND FILTERING ON `FUNC_Event` WOULD BE
+ * WRONG: it works for a plain Actor Blueprint and cannot see interface members, and it needs a
  * special case to drop `UObject::ExecuteUbergraph`, which carries `FUNC_Event` and
  * is not an override target. All of that is the engine's job.
  *

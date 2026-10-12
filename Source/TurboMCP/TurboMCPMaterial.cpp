@@ -1479,8 +1479,8 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 	// that reach no output are flagged."
 	//
 	// REACHABILITY IS COMPUTED FROM THE OUTPUTS, not from "has a consumer", and the two differ: a
-	// value that feeds only another unreached value has a consumer and still reaches nothing. The
-	// first version of this used `HasAnyConsumer` and would have missed exactly that case.
+	// value that feeds only another unreached value has a consumer and still reaches nothing.
+	// `HasAnyConsumer` WOULD MISS EXACTLY THAT CASE.
 	TArray<FString> Unreached;
 	for (UMaterialExpression* Expression : InPlan.Expressions)
 	{

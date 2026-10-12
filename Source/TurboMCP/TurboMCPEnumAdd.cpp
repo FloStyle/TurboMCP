@@ -232,11 +232,10 @@ FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 
 	// THE NAMES ARE SET THROUGH `UEnum::SetEnums`, WHICH IS THE ENGINE'S OWN API.
 	//
-	// The first version of this tried to write the private `Names` array by reflection and
-	// could not: `UEnum::Names` is a private UNION of a `const FName*` used by compiled-in
-	// enums and a `TArray` used by user-defined ones, and it carries no `UPROPERTY`, so
-	// `FindFProperty` does not see it. The tool detected that and said so rather than
-	// writing a wrong name, which is how the mistake was caught.
+	// WRITING THE PRIVATE `Names` ARRAY BY REFLECTION IS NOT POSSIBLE: `UEnum::Names` is a private UNION of a
+	// `const FName*` used by compiled-in enums and a `TArray` used by user-defined ones, and it carries no
+	// `UPROPERTY`, so `FindFProperty` does not see it. A tool that tries is told so rather than writing a
+	// wrong name.
 	//
 	// `SetEnums` is what `FEnumEditorUtils` itself calls, so this is the same path the enum
 	// editor takes. It rebuilds the name list in one step, which is also why it is safer

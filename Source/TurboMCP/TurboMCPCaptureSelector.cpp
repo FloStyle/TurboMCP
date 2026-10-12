@@ -792,10 +792,10 @@ bool TurboMCPCaptureSelector::ProbeSelection(
 	// this node be found on the laid out panel -- so a setter that recorded something
 	// nowhere near the graph would show as a disagreement.
 	//
-	// AN EARLIER VERSION OF THIS WROTE `InPanel->IsNodeSelected(Node)` AND DID NOT
-	// COMPILE: `IsNodeSelected` is on `SNodePanel`'s template base (`SNodePanel.h:270`)
-	// and `SGraphPanel` does not expose it publicly. The type it takes is not even
-	// `UEdGraphNode`, so the call was wrong twice over.
+	// `InPanel->IsNodeSelected(Node)` DOES NOT COMPILE, AND IS WRONG FOR TWO REASONS:
+	// `IsNodeSelected` is on `SNodePanel`'s template base (`SNodePanel.h:270`) and
+	// `SGraphPanel` does not expose it publicly, and the type it takes is not even
+	// `UEdGraphNode`.
 	int32 ReachedOnPanel = 0;
 	if (Wanted.Num() > 0)
 	{

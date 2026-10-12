@@ -40,8 +40,8 @@ namespace
 	/**
 	 * The absolute file on disk for one package path, or an empty string.
 	 *
-	 * TWO ROUTES, AND THE SECOND ONE EXISTS BECAUSE OF A MEASURED FAILURE IN THIS PROJECT.
-	 * `TurboMCPAcceptanceAssetCommandlet.cpp:1114-1118` records it: `FPackageName::LongPackageNameToFilename`
+	 * TWO ROUTES, AND THE SECOND ONE EXISTS BECAUSE THE FIRST IS NOT ENOUGH ON ITS OWN.
+	 * `TurboMCPAcceptanceAssetCommandlet.cpp:1114-1118` records why: `FPackageName::LongPackageNameToFilename`
 	 * answered `../../../../(repo)/TestProject/Content/...`, a path RELATIVE TO THE
 	 * ENGINE DIRECTORY, and the save that used it failed while the package was complete in memory.
 	 * `TurboMCPTestMapCommandlet.cpp:325-334` records the same thing for the map path.

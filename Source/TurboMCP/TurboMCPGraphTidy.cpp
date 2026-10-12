@@ -379,8 +379,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		Entry.Height = Extent.Height;
 		// THE ENGINE'S OWN NUMBERS ARE KEPT SEPARATELY, so the before-measure can reproduce
 		// `L-LAYOUT-REPORT` exactly while the planned layout still has a size to work with. See the field's
-		// comment: the first version stored only the substituted size, and the two numbers were then
-		// computed from different rectangles with nothing in the output to show it.
+		// comment: STORING ONLY THE SUBSTITUTED SIZE COMPUTES THE TWO NUMBERS FROM DIFFERENT RECTANGLES,
+		// with nothing in the output to show it.
 		Entry.MeasuredWidth = static_cast<double>(Node->NodeWidth);
 		Entry.MeasuredHeight = static_cast<double>(Node->NodeHeight);
 		if (Node->NodeWidth <= 0 || Node->NodeHeight <= 0)

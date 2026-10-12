@@ -278,8 +278,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 				Reader.bWasSearched = true;
 
 				// The graphs themselves, in one list, rather than names looked up
-				// again per node. The first version searched by name inside the node
-				// loop, which did the same work once per node.
+				// again per node: searching by name inside the node loop does the
+				// same work once per node.
 				TArray<UEdGraph*> Graphs;
 				auto AddGraph = [&Graphs](const TArray<TObjectPtr<UEdGraph>>& InGraphs)
 				{

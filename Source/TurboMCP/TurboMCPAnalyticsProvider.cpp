@@ -49,18 +49,18 @@ void FTurboMCPAnalyticsProvider::RegisterKnownName(const FString& InName)
 {
 	// AN EMPTY NAME IS A REAL KEY, not a mistake to skip. `ParseToolsetName` returns the empty
 	// string for a tool with no dot in its name, and the engine's own mapping commandlet registers
-	// that empty entry so rows for top-level tools decode. The first version returned early on an
-	// empty name, which would have left every top-level tool unresolved.
+	// that empty entry so rows for top-level tools decode. RETURNING EARLY ON AN EMPTY NAME WOULD
+	// LEAVE EVERY TOP-LEVEL TOOL UNRESOLVED.
 	FScopeLock Lock(&RegistryMutex);
 	Registry().Add(HashToolIdentifier(InName), InName);
 }
 
 void FTurboMCPAnalyticsProvider::RegisterServedToolsetsAndTools()
 {
-	// THE ENGINE'S OWN LIST, WHICH REMOVES THE LIMITATION THE FIRST VERSION HAD AND CLOSES Q-10.
+	// THE ENGINE'S OWN LIST, WHICH IS THE ONLY SOURCE THAT CAN NAME AN ENGINE TOOL, AND IT CLOSES Q-10.
 	//
-	// The first version listed this plugin's tool names BY HAND and could not name an engine tool
-	// at all, because `UToolsetRegistry` exposes no list of served toolsets or tools. That is still
+	// A HAND-KEPT TABLE OF THIS PLUGIN'S TOOL NAMES CANNOT NAME AN ENGINE TOOL AT ALL, because
+	// `UToolsetRegistry` exposes no list of served toolsets or tools. That is still
 	// true of `UToolsetRegistry` — but it was the wrong place to look. `IModelContextProtocolModule
 	// ::GetTools()` returns every registered tool with its identifier, and it is exactly what the
 	// engine's own `ModelContextProtocolToolHashMappingCommandlet` uses to build the very mapping

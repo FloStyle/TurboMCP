@@ -459,7 +459,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 			// checker that runs first.
 			//
 			// THE TEST IS `IsLatentForMacros()`, WHICH IS THE ENGINE'S OWN ANSWER and not a class list
-			// written here. See the include comment: the first version tested against a class that does
+			// written here. See the include comment: a class list here would name a class that does
 			// not exist in this engine version.
 			const UK2Node* AsK2 = Cast<UK2Node>(NodeForType);
 			if (bInsideFunction && AsK2 != nullptr && AsK2->IsLatentForMacros())
@@ -504,10 +504,10 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 		{
 			// A PIN UNDER AN UNRESOLVED NODE HEAD IS NOT REPORTED AGAIN, AND THE REASON IS COUNTING.
 			//
-			// MEASURED: the first version reported the unknown node type AND then reported its pins as
-			// "no node form is open above it", so ONE wrong node type produced TWO findings. A caller
-			// fixing the type ID would have seen a finding disappear that was never about anything they
-			// wrote - and `T-WRITE-1` requires that a text with three faults give EXACTLY THREE
+			// REPORTING THE UNKNOWN NODE TYPE AND THEN ITS PINS AS "no node form is open above it" MAKES
+			// ONE wrong node type produce TWO findings. A caller fixing the type ID would then see a
+			// finding disappear that was never about anything they wrote - and `T-WRITE-1` requires that
+			// a text with three faults give EXACTLY THREE
 			// findings. The type ID was already named on the line above; saying it twice is noise, and
 			// noise is what makes a checker's count useless.
 			//

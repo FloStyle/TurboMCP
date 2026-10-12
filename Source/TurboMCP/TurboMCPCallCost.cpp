@@ -95,8 +95,8 @@ FString FTurboMCPCallCost::NormaliseToolset(const FString& InToolset)
 
 	// *** THE LAST DOTTED SEGMENT, AND THE REASON IS MEASURED RATHER THAN ASSUMED. ***
 	//
-	// The first version of this function STRIPPED A LEADING `TurboMCP.`, which is the shape the brief
-	// described. IT WAS WRONG, AND THE TOOL'S OWN OUTPUT SAID SO ON ITS FIRST REAL RUN:
+	// STRIPPING A LEADING `TurboMCP.` IS WRONG, ALTHOUGH IT IS THE SHAPE THE BRIEF DESCRIBES.
+	// THE TOOL'S OWN OUTPUT SHOWS IT:
 	//
 	//     TOTALS PER TOOL (3 row(s), each with its call count)
 	//       TurboMCPEditToolset.TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog | 1 call(s) | ...

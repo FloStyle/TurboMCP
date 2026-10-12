@@ -143,11 +143,11 @@ namespace
 	/**
 	 * Every entry the action database offers for this graph, after the engine's own filter.
 	 *
-	 * ONE SCAN, AND THE FILTER IS BUILT ONCE. An earlier version of this re-scanned the whole
-	 * database for every match to recover the owner class, which is quadratic over an action
-	 * registry that holds thousands of entries; and it built an empty `FBlueprintActionFilter`
-	 * for the `GetUiSpec` call, which is not the same context the id was produced under. Both
-	 * are fixed here by collecting everything in the single pass that already had it.
+	 * ONE SCAN, AND THE FILTER IS BUILT ONCE. RE-SCANNING THE WHOLE DATABASE FOR EVERY MATCH TO RECOVER
+	 * THE OWNER CLASS IS QUADRATIC over an action registry that holds thousands of entries, and building
+	 * an empty `FBlueprintActionFilter` for the `GetUiSpec` call is not the same context the id was
+	 * produced under. Both are avoided here by collecting everything in the single pass that already
+	 * has it.
 	 */
 	void CollectEntries(UBlueprint* InBlueprint, UEdGraph* InGraph, TArray<FEntry>& OutEntries)
 	{

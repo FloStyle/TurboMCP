@@ -426,7 +426,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 	int32 InputsRetargeted = 0;
 	// COUNTED SO THE REPORT CANNOT CLAIM A LABEL NOBODY READS. The usage nodes are what the reader
 	// counts as "places this label is read", so a promotion whose usage count came back zero would be a
-	// label that names a value and is read nowhere - the defect the first version of this pass had.
+	// label that names a value and is read nowhere.
 	int32 UsagesCreated = 0;
 
 	TArray<FString> PlannedDeclarations;
@@ -500,11 +500,11 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 		PlannedDeclarations.Add(FTurboMCPMaterial::KeyOf(Declaration));
 
 		// THE REWIRING. *** EACH READER GETS ITS OWN USAGE NODE, AND THAT IS THE ENGINE'S CONVENTION
-		// RATHER THAN A PREFERENCE. *** The first version of this pass pointed every reader's input
-		// straight at the declaration. It compiled, it preserved the value, and `R-MAT-LABELS` then
-		// answered `read in 0 place(s)` ABOUT THE LABEL IT HAD JUST CREATED - because A LABEL IS READ
-		// THROUGH `UMaterialExpressionNamedRerouteUsage`, and the reader counts those. So the edit made
-		// a label nothing read and reported success for it. The engine's own editor creates ONE USAGE
+		// RATHER THAN A PREFERENCE. *** POINTING EVERY READER'S INPUT STRAIGHT AT THE DECLARATION COMPILES,
+		// PRESERVES THE VALUE, AND LEAVES `R-MAT-LABELS` ANSWERING `read in 0 place(s)` ABOUT THE LABEL IT
+		// HAS JUST CREATED - because A LABEL IS READ THROUGH `UMaterialExpressionNamedRerouteUsage`, and
+		// the reader counts those. That makes a label nothing reads and reports success for it. The
+		// engine's own editor creates ONE USAGE
 		// PER READER (`Editor/MaterialEditor/Private/MaterialEditor.cpp:4633-4643`), and this does the
 		// same: the usage carries the label, and the reader's input points at the usage.
 		//

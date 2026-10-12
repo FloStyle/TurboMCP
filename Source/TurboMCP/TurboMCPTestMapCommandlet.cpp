@@ -95,11 +95,10 @@ int32 UTurboMCPTestMapCommandlet::Main(const FString& Params)
 
 		// THE BLUEPRINT'S FILE IS DELETED HERE FIRST, AND THAT IS WHAT MAKES THE REBUILD WORK.
 		//
-		// MEASURED FAILURE: `BlueprintTools.create` answered nothing on the SECOND run while the first run
-		// succeeded. The Python step tried to delete the old asset through the asset registry and
-		// `does_asset_exist` answered FALSE while the `.uasset` was plainly on disk - because the registry had
-		// not discovered it in that run - so the delete was skipped and the factory then collided with the
-		// asset it could not see. A FIXTURE THAT CAN ONLY BE BUILT ONCE IS NOT A FIXTURE.
+		// THE ASSET REGISTRY IS NOT A RELIABLE ANSWER ON A SECOND RUN: `does_asset_exist` answers FALSE
+		// while the `.uasset` is plainly on disk, because the registry has not discovered it in that run - so
+		// a delete routed through it is skipped, and `BlueprintTools.create` then collides with the asset it
+		// cannot see and answers nothing. A FIXTURE THAT CAN ONLY BE BUILT ONCE IS NOT A FIXTURE.
 		//
 		// Removing the FILE is deterministic in a way that asking the registry is not, and it is the same
 		// approach the save below already uses for the map: delete, then write into a space known to be empty.
@@ -125,9 +124,9 @@ int32 UTurboMCPTestMapCommandlet::Main(const FString& Params)
 		{
 			// THE FILE'S CONTENTS ARE PASSED AS THE COMMAND, NOT ITS PATH.
 			//
-			// MEASURED FAILURE: passing `py "<path>"` made Python parse the PATH ITSELF as source and answer
-			// `SyntaxError: invalid syntax (<string>, line 1)` pointing at the `C:` of the filename. The `py`
-			// command takes Python SOURCE, so the file is read here and handed over as text.
+			// THE `py` COMMAND TAKES PYTHON SOURCE, NOT A PATH: passing `py "<path>"` makes Python parse the
+			// PATH ITSELF and answer `SyntaxError: invalid syntax (<string>, line 1)` pointing at the `C:` of
+			// the filename. So the file is read here and handed over as text.
 			//
 			// The script sets `__name__` by itself only when run as a module, so the guard is stripped and the
 			// entry point is called explicitly. That keeps the script runnable BOTH ways - through the engine's
@@ -175,8 +174,7 @@ int32 UTurboMCPTestMapCommandlet::Main(const FString& Params)
 	// THE INITIALIZATION VALUES ARE BUILT EXPLICITLY, FOLLOWING `WorldFactory.cpp:38-46`, AND WORLD PARTITION
 	// IS OFF ON PURPOSE.
 	//
-	// MEASURED FAILURE WITHOUT THEM: creating the world with the DEFAULT values turned World Partition ON, and
-	// the process then reported
+	// THE DEFAULT VALUES TURN WORLD PARTITION ON, and the process then reports
 	//
 	//     Ensure condition failed: !bInitialized  [WorldSubsystem.cpp:118]
 	//     Tickable subsystem WorldPartitionSubsystem /Game/Tests/TurboMCPTestMap... was destroyed while still
@@ -351,8 +349,8 @@ int32 UTurboMCPTestMapCommandlet::Main(const FString& Params)
 
 	// THE FLAGS ARE SET ON THE ASSET, NOT ONLY ON THE PACKAGE, AND THE SAVE REFUSES WITHOUT THEM.
 	//
-	// MEASURED FAILURE: the first version set `RF_Public | RF_Standalone` on the PACKAGE and left the world
-	// alone. `UPackage::SavePackage` then reported
+	// SETTING `RF_Public | RF_Standalone` ON THE PACKAGE AND LEAVING THE WORLD ALONE IS REFUSED:
+	// `UPackage::SavePackage` reports
 	//
 	//     Warning: The Asset /Game/Tests/TurboMCPTestMap.TurboMCPTestMap being saved does not have any of
 	//     the provided object flags (0x10000003); saving the package would cause data loss.

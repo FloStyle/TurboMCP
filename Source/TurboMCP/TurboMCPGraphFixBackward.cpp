@@ -1040,11 +1040,10 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 
 							// "USED ONLY BY IT": every link out of every pin lands on the consumer.
 							//
-							// THE NODE IS FOUND THROUGH THE CACHE, not by scanning the graph again. The
-							// first version scanned `Graph->Nodes` here for every candidate considered by
-							// every consumer in the chain, which is cubic on a graph with a pure chain -
-							// and the first symptom of that on a real Blueprint would be a tool that
-							// appears to hang rather than one that answers wrongly.
+							// THE NODE IS FOUND THROUGH THE CACHE, not by scanning the graph again. SCANNING
+							// `Graph->Nodes` HERE FOR EVERY CANDIDATE CONSIDERED BY EVERY CONSUMER IS CUBIC
+							// on a graph with a pure chain, and the first symptom of that on a real
+							// Blueprint is a tool that appears to hang rather than one that answers wrongly.
 							bool bUsedOnlyByConsumer = false;
 							bool bHasAnyLink = false;
 							if (UEdGraphNode* PureNode = Cache.Find(Pure.Key))

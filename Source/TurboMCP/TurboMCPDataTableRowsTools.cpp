@@ -107,10 +107,10 @@ namespace
 	/** Shared by both entry points, so the preview and the edit cannot disagree about validity. */
 	FString Run(const FString& Asset, const TArray<FString>& Lines, bool bWrite, FString& OutReport)
 	{
-		// *** THE OPERATION TEXT IS PARSED BEFORE THE ASSET IS LOADED, AND THAT ORDER IS A MEASURED FIX. ***
-		// The first version loaded the table first, so EVERY malformed line came back as "the asset did not
-		// resolve" and the parser's own refusals were unreachable - which made a suite assert on syntax it could
-		// never see, and TEN CHECKS FAILED FROM ONE ORDERING MISTAKE. **A REFUSAL ABOUT THE REQUEST MUST NOT BE
+		// *** THE OPERATION TEXT IS PARSED BEFORE THE ASSET IS LOADED, AND THAT ORDER IS THE FIX. ***
+		// Loading the table first makes EVERY malformed line come back as "the asset did not resolve", so the
+		// parser's own refusals are unreachable: a suite then asserts on syntax it can never see, and TEN
+		// CHECKS FAIL FROM ONE ORDERING MISTAKE. **A REFUSAL ABOUT THE REQUEST MUST NOT BE
 		// MASKED BY A REFUSAL ABOUT THE TARGET.** It is also the reader's own idiom: `TurboMCPDataTable.cpp`
 		// validates its `include` filter *before anything loads, so a typo costs nothing*.
 		if (Asset.IsEmpty())

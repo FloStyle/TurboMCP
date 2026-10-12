@@ -417,9 +417,9 @@ void FTurboMCPPanelToolRunner::ReadResultIfComplete()
 		// carries it WITH ESCAPED NEWLINES. A human in the panel would have read a JSON blob instead
 		// of the answer, which is the whole thing the pane exists to show.
 		//
-		// The first version called `GetValueAsJsonString()`, which does not compile. The second read
-		// `Value` directly, which compiles and leaves the wrapper on - one wrong decoding replaced by
-		// another. THIS is the correct one: parse the field and take `returnValue` out of it.
+		// `GetValueAsJsonString()` DOES NOT COMPILE. Reading `Value` directly compiles and leaves the
+		// wrapper on, which is one wrong decoding replaced by another. THIS is the correct one: parse
+		// the field and take `returnValue` out of it.
 		//
 		// The fallback matters as much as the fix. A result that is not an object, or an object with
 		// no `returnValue`, is shown RAW rather than as an empty pane: a caller must be able to see

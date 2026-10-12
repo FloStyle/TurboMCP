@@ -90,8 +90,8 @@ namespace
 	 * `FallbackKnotExtent`: the knot footprint used when no knot has ever been measured.
 	 *
 	 * Same reasoning as `MinimumNodeExtent`. A knot made by `NewObject` has size zero because Slate
-	 * has never drawn it; MEASURED, the first version of this file refused the entire capability for
-	 * that reason, which made the tool useless on every graph it exists for.
+	 * has never drawn it, and REFUSING THE WHOLE CAPABILITY FOR THAT REASON WOULD MAKE THE TOOL USELESS
+	 * ON EVERY GRAPH IT EXISTS FOR.
 	 */
 	constexpr double FallbackKnotExtent = 32.0;
 
@@ -370,10 +370,9 @@ namespace
 	 *
 	 *  - a knot that came out of a SAVED PACKAGE carries the size Slate measured when it was last
 	 *    rendered, which is why the probe graph's wire lengths are meaningful;
-	 *  - a knot made by `NewObject` right now has ZERO, because Slate has never drawn it. MEASURED:
-	 *    the first version of this function built a throwaway knot, read its size, got zero, and the
-	 *    whole capability REFUSED. Refusing on unknown clearance is the correct behaviour, but it
-	 *    made the tool useless on any graph that has no knot yet, which is every graph it is for.
+	 *  - a knot made by `NewObject` right now has ZERO, because Slate has never drawn it. READING THAT
+	 *    ZERO AS "CLEARANCE UNKNOWN" AND REFUSING IS CORRECT AND UNUSABLE AT ONCE: it refuses every
+	 *    graph that has no knot yet, which is every graph this capability is for.
 	 *
 	 * So the size comes from an EXISTING knot when the graph has one, and otherwise from a throwaway
 	 * object built here. There is no path that invents a number.
@@ -1248,8 +1247,8 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 		// Pins[0];` and `GetOutputPin` is `return Pins[1];`, BOTH UNGUARDED
 		// (`K2Node_Knot.h:54-62`). `NewObject` does not allocate a node's pins and
 		// `UEdGraph::AddNode` does not either: the editor allocates them when the node is
-		// RECONSTRUCTED FOR DISPLAY, which never happens in a commandlet. The measured failure in
-		// this project was `Array index out of bounds: 1 into an array of size 0`.
+		// RECONSTRUCTED FOR DISPLAY, which never happens in a commandlet. READING THOSE PINS WITHOUT
+		// ALLOCATING THEM FIRST IS `Array index out of bounds: 1 into an array of size 0`.
 		UK2Node_Knot* Knot = NewObject<UK2Node_Knot>(Graph);
 		if (Knot == nullptr)
 		{
@@ -1344,9 +1343,9 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 		bRolledBack = true;
 
 		// THE ROLLBACK UNDOES THE WIRES IN REVERSE ORDER, using the very knot objects the pass
-		// created. An earlier version looked a knot up again by its position, which is a guess: two
-		// wires can be planned at the same coordinates when they share one, and a position is not an
-		// identity. Holding the pointer is exact.
+		// created. LOOKING A KNOT UP AGAIN BY ITS POSITION WOULD BE A GUESS: two wires can be planned
+		// at the same coordinates when they share one, and a position is not an identity. Holding the
+		// pointer is exact.
 		// `Created` AND `Completed` ARE APPENDED IN LOCKSTEP, so they always have the same length and
 		// the same index means the same wire. They are kept separate because one holds the undo
 		// handle and the other holds the information needed to re-link the original wire.

@@ -385,9 +385,8 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 		const bool bIsInput = Pin->Direction == EGPD_Input;
 		// THE INDEX IS COUNTED PER DIRECTION, which is what the engine does: an input's index is its
 		// place among the INPUTS, not its place in `Pins`. `Spec/03_TOOLS.md:172` lists "pin indexes"
-		// among what the `full` level adds, and the first version advanced the counter for OUTPUTS
-		// too while printing -1 for them, so the index it did print for an input was already wrong
-		// once an output had been walked.
+		// among what the `full` level adds, and ADVANCING THE COUNTER FOR OUTPUTS WHILE PRINTING -1 FOR
+		// THEM MAKES the index printed for an input already wrong once an output has been walked.
 		const int32 Index = bIsInput ? InputIndex++ : OutputIndex++;
 
 		if (!bIsInput)

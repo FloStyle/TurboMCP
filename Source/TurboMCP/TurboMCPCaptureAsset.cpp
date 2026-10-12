@@ -261,9 +261,8 @@ namespace
 	 *
 	 * *** THIS IS THE CORRECTION THAT COST A ROUND, AND IT IS WORTH THE PARAGRAPH. ***
 	 *
-	 * The first version asked `IsModuleLoaded` and treated a `false` as "this kind cannot
-	 * be captured". MEASURED AGAINST THE RUNNING EDITOR, that was WRONG IN BOTH
-	 * DIRECTIONS:
+	 * ASKING `IsModuleLoaded` AND TREATING A `false` AS "this kind cannot be captured" IS
+	 * WRONG IN BOTH DIRECTIONS AGAINST A RUNNING EDITOR:
 	 *
 	 *   - it said DataTable was REFUSED while the module was loaded, because the question
 	 *     was asked before that kind's own editor had ever been opened;
@@ -293,9 +292,9 @@ namespace
 	{
 		// *** `AlternativeTool` NO LONGER DECIDES ANYTHING, AND THAT IS A CORRECTION. ***
 		//
-		// The first version short-circuited here: a kind with a named alternative was
-		// reported OTHER-TOOL and its module was NEVER ASKED FOR. MEASURED, that produced a
-		// table saying Widget Blueprint (Designer) was captured by another tool while
+		// SHORT-CIRCUITING HERE REPORTS A KIND WITH A NAMED ALTERNATIVE AS OTHER-TOOL AND NEVER
+		// ASKS FOR ITS MODULE, which produces a table saying Widget Blueprint (Designer) was
+		// captured by another tool while
 		// `/Game/Tests/WBP_NodeTest` was capturing at 1664x849 with 1278 distinct colours
 		// IN THE SAME PROCESS. The alternative is INFORMATION - "this other tool also
 		// covers this kind" - and it is not evidence about this tool. So the reachability

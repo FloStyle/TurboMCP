@@ -68,8 +68,7 @@ namespace TurboMCPCaptureAsset
 	 *
 	 * THIS IS DECLARED OUTSIDE `FKind` ON PURPOSE: a nested type used as the type of a
 	 * member of its own enclosing class is an incomplete type at that point, and MSVC
-	 * rejects it. Measured rather than recalled - the first version nested it and would
-	 * not have compiled.
+	 * rejects it. THAT IS A COMPILER RULE ABOUT INCOMPLETE TYPES, NOT A PREFERENCE.
 	 */
 	enum class EStatus : uint8
 	{

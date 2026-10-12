@@ -658,9 +658,9 @@ static void RunUnconnectedPins(const UBlueprint* InBlueprint, const TArray<UEdGr
 			{
 				if (Pin != nullptr && Pin->LinkedTo.Num() > 0) { bHasAnyLink = true; break; }
 			}
-			// *** AN ORPHAN IS ABOUT REACHABILITY, NOT ABOUT HAVING NO LINKS, AND THE FIRST VERSION GOT THAT
-			// WRONG IN A WAY ONLY A MEASUREMENT COULD SHOW. *** It reported a node only when `bHasAnyLink`
-			// was false, and measured against TA-4's `Stacked` graph it produced `Stacked: 0` - while
+			// *** AN ORPHAN IS ABOUT REACHABILITY, NOT ABOUT HAVING NO LINKS, AND THE TWO PREDICATES DIVERGE
+			// IN A WAY ONLY A MEASUREMENT SHOWS. *** Reporting a node only when `bHasAnyLink` is false gives
+			// `Stacked: 0` on TA-4's `Stacked` graph - while
 			// `T-QUAL-1` says "the node at the origin" IS reported there. THE KIT ROW SAYS WHY: TA-4 has
 			// "one node at the origin linked to nodes far away", SO THE NODE IS LINKED AND STILL UNREACHED.
 			// "Has no links" and "nothing reaches it" are DIFFERENT PREDICATES, and the narrower one answers

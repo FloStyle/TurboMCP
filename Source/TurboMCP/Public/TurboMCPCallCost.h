@@ -83,8 +83,8 @@ public:
 	/**
 	 * The toolset name reduced to the toolset's own name, so two spellings become one key.
 	 *
-	 * *** THE RULE IS "LAST DOTTED SEGMENT", AND THE FIRST VERSION'S RULE WAS WRONG - THE TOOL'S OWN
-	 * OUTPUT SAID SO ON ITS FIRST REAL RUN: ***
+	 * *** THE RULE IS "LAST DOTTED SEGMENT", BECAUSE THE QUALIFICATION IS NOT A PREFIX. THE TOOL'S OWN
+	 * OUTPUT SHOWS THE SHAPE: ***
 	 *
 	 *     TOTALS PER TOOL (3 row(s), each with its call count)
 	 *       TurboMCPEditToolset.TurboMCP.TurboMCPEditToolset.EditTurboMCPCallLog | 1 call(s) | ...

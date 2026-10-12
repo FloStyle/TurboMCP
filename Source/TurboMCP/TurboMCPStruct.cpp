@@ -506,10 +506,10 @@ namespace
 	 *
 	 * `move:Gamma, above=Alpha` and `Good: int, default=1` are each ONE item with ONE option, but a
 	 * plain `SplitTopLevel` turns each into two. Writing the join twice - once in the field parser and
-	 * once in the change parser - is what let this file ship the SAME defect in two opposite
-	 * directions: the first version parsed `move:Gamma` alone ("the reorder of 'Gamma' does not say
-	 * where to put it"), and the second parsed `Good: int, default=1` alone ("'default=1' has no ':'").
-	 * One rule, one place, so it cannot happen a third time.
+	 * once in the change parser - is what ships the SAME defect in two opposite directions: a parser
+	 * that splits first reads `move:Gamma` alone ("the reorder of 'Gamma' does not say where to put
+	 * it"), and one that attaches first reads `Good: int, default=1` alone ("'default=1' has no ':'").
+	 * One rule, one place, so neither direction is available.
 	 *
 	 * THE RULE, and it is deliberately the simplest one that works: an item with NO ':' and SOME '=' is
 	 * an OPTION of the item before it, whatever its key is called; anything else starts a new item.
@@ -898,8 +898,8 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 	}
 
 	// *** THE CREATOR ADDS ONE BOOLEAN FIELD OF ITS OWN, AND TWO ENGINE FACTS DECIDE THE ORDER OF WHAT
-	// FOLLOWS. BOTH WERE MEASURED THE HARD WAY - THE FIRST VERSION OF THIS FUNCTION READ BACK FIVE FIELDS
-	// ALL CALLED `MemberVar_N`, NAMELY THE BOOL PLUS THE FOUR ASKED FOR AND NOT ONE OF THEM NAMED. ***
+	// FOLLOWS. READING BACK WITHOUT ALLOWING FOR THEM GIVES FIVE FIELDS ALL CALLED `MemberVar_N` - THE BOOL
+	// PLUS THE FOUR ASKED FOR, AND NOT ONE OF THEM NAMED. ***
 	//
 	//   1. `RemoveVariable` REFUSES TO EMPTY A STRUCT: `StructureEditorUtils.cpp:326-327` reads
 	//      `const bool bAllowToMakeEmpty = false; if (bAllowToMakeEmpty || (OldNum > 1))`. So the creator's
@@ -1112,10 +1112,10 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 	// `move:Name` with `above=` or `below=` to reorder.
 	//
 	// THE ATTACHMENT RULE LIVES IN `SplitItemsWithOptions` AND IS SHARED WITH THE FIELD PARSER.
-	// Writing it twice is what let this file ship the SAME defect in two opposite directions: the
-	// first version parsed `move:Gamma, above=Alpha` as two changes ("the reorder of 'Gamma' does not
-	// say where to put it"), and the second parsed `Good: int, default=1` as two fields ("'default=1'
-	// has no ':'"). One rule, one place.
+	// Writing it twice ships the SAME defect in two opposite directions: splitting first reads
+	// `move:Gamma, above=Alpha` as two changes ("the reorder of 'Gamma' does not say where to put
+	// it"), and attaching first reads `Good: int, default=1` as two fields ("'default=1' has no ':'").
+	// One rule, one place.
 	TArray<FString> Joined;
 	SplitItemsWithOptions(InChanges, Joined);
 
@@ -1363,8 +1363,8 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 	// *** A REMOVAL IS ONLY REFUSED FOR A COUNT THE CALLER GOT WRONG, AND `force` IS ONLY REQUIRED WHEN
 	// THERE IS SOMETHING TO AUTHORISE. *** The spec's words are "refused unless `force` names that
 	// count". When a field has NO loaded readers there is nothing to authorise, so NOT passing `force`
-	// is accepted and the removal proceeds - MEASURED: the first version required `force=0` here, which
-	// refused a perfectly safe removal and made the dangerous case and the harmless one look alike.
+	// is accepted and the removal proceeds. REQUIRING `force=0` HERE WOULD REFUSE A PERFECTLY SAFE
+	// REMOVAL AND MAKE THE DANGEROUS CASE AND THE HARMLESS ONE LOOK ALIKE.
 	//
 	// The rule is therefore: a caller who named a count must have named the RIGHT one, and a caller who
 	// named none must have nothing to authorise. Both halves are checked, and neither is a guess.

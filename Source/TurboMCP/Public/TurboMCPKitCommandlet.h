@@ -39,8 +39,8 @@
  *
  * HOW IT IS INVOKED. `-run=TurboMCP.TurboMCPKitCommandlet`, WITH THE MODULE PREFIX, because the engine
  * calls `LoadModule` only when the token contains a period (`LaunchEngineLoop.cpp:4100`). There is
- * deliberately NO static initialiser calling `LoadModule`: that was tried and crashed with an access
- * violation in `FModuleManager::LoadModuleWithFailureReason`.
+ * deliberately NO static initialiser calling `LoadModule`: it crashes with an access violation in
+ * `FModuleManager::LoadModuleWithFailureReason`.
  *
  * `Tools/make-kit-assets.ps1` runs it and parses the structure it reports.
  */

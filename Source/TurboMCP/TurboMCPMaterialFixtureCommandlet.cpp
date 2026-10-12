@@ -353,8 +353,8 @@ namespace
 	 * Builds the two comment boxes, one geometrically INSIDE the other.
 	 *
 	 * A COMMENT IS NOT CREATED LIKE AN EXPRESSION, AND USING THE EXPRESSION HELPER SILENTLY PUTS IT IN
-	 * THE WRONG ARRAY. MEASURED: the first version used `CreateMaterialExpressionEx` with
-	 * `UMaterialExpressionComment::StaticClass()`, and `R-MAT-BLOCKS` answered
+	 * THE WRONG ARRAY. `CreateMaterialExpressionEx` WITH `UMaterialExpressionComment::StaticClass()`
+	 * makes `R-MAT-BLOCKS` answer
 	 * "blocks: 0 comment box(es), 14 expression(s)" against a material that HAD two boxes. The helper
 	 * calls `AddExpression`, and a comment belongs in `EditorComments` - a different array, and the
 	 * only one `FTurboMCPMaterial::Plan` scans:
@@ -590,11 +590,11 @@ int32 UTurboMCPMaterialFixtureCommandlet::Main(const FString& Params)
 	// A FIXTURE THAT BUILT NOTHING MUST NOT BE SAVED. The counts are the only evidence this commandlet
 	// has, and a save that succeeded on an empty material would look identical to a good one.
 	//
-	// THE FUNCTION'S COUNTS ARE SEPARATE AND ARE CHECKED AFTER IT IS BUILT. The first version of this
-	// guard demanded 3 labels and 3 usages from the MATERIAL, and went red on a fixture that was
-	// right: the third label lives in the **material function**, which is a different asset and is
-	// counted into its own `FCounts`. The guard was wrong, not the structure - which is worth
-	// recording, because a wrong guard that fires looks exactly like a wrong fixture.
+	// THE FUNCTION'S COUNTS ARE SEPARATE AND ARE CHECKED AFTER IT IS BUILT. A guard here that demanded
+	// 3 labels and 3 usages from the MATERIAL would go red on a fixture that is RIGHT: the third label
+	// lives in the **material function**, which is a different asset and is counted into its own
+	// `FCounts`. A guard that demands the wrong total looks exactly like a wrong fixture, which is why
+	// the split is stated here rather than left to the reader.
 	if (Counts.Expressions == 0 || Counts.Comments != 2 || Counts.Labels != 2 || Counts.LabelUsages != 2)
 	{
 		UE_LOG(LogTurboMCP, Error,

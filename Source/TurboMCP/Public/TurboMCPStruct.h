@@ -212,8 +212,8 @@ public:
 	 * says a writer that removes anything *"lists each removal by key with its class and title, never a count"*.
 	 *
 	 * THE COUNT IS PER STRUCT AND NOT PER FIELD. Every field of a struct shares one shape and one set of
-	 * readers, so there is no field name in this signature - and that is deliberate: an earlier version took one
-	 * and never read it, which made the signature claim a per-field count the body did not compute.
+	 * readers, so there is no field name in this signature - and that is deliberate: a field name here would make
+	 * the signature claim a per-field count the body does not compute.
 	 */
 	static void FindReaders(const UUserDefinedStruct* InStruct, TArray<FReader>& OutReaders);
 

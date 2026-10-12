@@ -325,7 +325,7 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 	// Signatures are read from the real `UFunction`, not from the node.
 	//
 	// `GetSignatureFunction` does not exist on `UK2Node_CustomEvent`, `UK2Node_Event` or
-	// `UK2Node_FunctionEntry`; the first version of this file assumed it did. The function
+	// `UK2Node_FunctionEntry`. The function
 	// a node stands for lives on a class: an event or a custom event on the Blueprint's
 	// skeleton class, or the parent's for an inherited event, and a function-entry graph
 	// on the Blueprint too. Reading the reflected `UFunction` also means the signature is
@@ -336,9 +336,8 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 	// A real function graph is one the Blueprint holds in `FunctionGraphs`. It is NOT
 	// enough to look for a `UK2Node_FunctionEntry` node: the event graph has one too, for
 	// the ubergraph function the engine generates, and `ReceiveBeginPlay` is also the name
-	// of a function graph. The first version of this used the node alone, so every event
-	// was listed as both an event and a function, and then reported as a function nothing
-	// calls.
+	// of a function graph. USING THE NODE ALONE LISTS EVERY EVENT as both an event and a
+	// function, and then reports it as a function nothing calls.
 	TSet<const UEdGraph*> RealFunctionGraphs;
 	for (const TObjectPtr<UEdGraph>& Graph : InBlueprint->FunctionGraphs)
 	{

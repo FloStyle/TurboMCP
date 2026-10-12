@@ -29,8 +29,8 @@
  *
  * HOW IT IS INVOKED. `-run=TurboMCP.TurboMCPCallCostCommandlet`, WITH THE MODULE PREFIX, because the
  * engine calls `LoadModule` only when the token contains a period (`LaunchEngineLoop.cpp:4100`).
- * There is deliberately NO static initialiser calling `LoadModule`: `TurboMCPKitCommandlet.h`
- * records that this was tried and crashed with an access violation.
+ * There is deliberately NO static initialiser calling `LoadModule`: it crashes with an access
+ * violation, recorded at `TurboMCPKitCommandlet.h:42`.
  *
  * IT NEEDS NO EDITOR, WHICH IS THE POINT: a `-run=` commandlet that only computes strings cannot be
  * affected by the editor restarts that have made this project's suites move their failing names.

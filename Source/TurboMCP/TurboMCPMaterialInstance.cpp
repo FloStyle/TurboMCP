@@ -293,8 +293,8 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 	Out += TEXT("\n\n; the parent chain, nearest first, up to the base material");
 	for (int32 Index = 0; Index < InResult.Chain.Num(); ++Index)
 	{
-		// self AND parent, parent xN, RATHER THAN ORDINALS. The first version printed self and up 1, which is true
-		// and says nothing about the RELATION - and the relation is the whole point of a chain: a reader has to
+		// self AND parent, parent xN, RATHER THAN ORDINALS. Printing self and up 1 would be true and would
+		// say nothing about the RELATION - and the relation is the whole point of a chain: a reader has to
 		// know that the second level is the asset it would edit.
 		FString Label;
 		if (Index == 0)
@@ -336,8 +336,8 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 	}
 	for (const FParameter& Parameter : InResult.Inherited)
 	{
-		// THE WORD inherited IS ON EVERY LINE RATHER THAN ONLY IN THE HEADING. Measured reason: the first version
-		// printed name = value with no per-line marker, AND A LINE THAT READS name = value IS INDISTINGUISHABLE
+		// THE WORD inherited IS ON EVERY LINE RATHER THAN ONLY IN THE HEADING. Printing name = value with no
+		// per-line marker makes A LINE THAT READS name = value INDISTINGUISHABLE
 		// FROM AN OVERRIDE unless the reader still has the heading in mind. THE SPEC SAYS THIS LIST MATTERS BECAUSE
 		// AN AGENT MUST TELL WHETHER A VALUE IS REALLY ON THIS INSTANCE - SO THE DISTINCTION HAS TO SURVIVE BEING
 		// READ ONE LINE AT A TIME, which is how an agent reads it.

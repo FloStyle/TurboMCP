@@ -114,10 +114,10 @@ namespace
 	 *
 	 * WHY THIS IS A SEPARATE STEP, CALLED BY THE PLAN
 	 * -----------------------------------------------
-	 * The first version checked the type in `Apply`, which meant the PREVIEW happily printed a
-	 * plan for `X: banana` and only the Edit refused it. A preview that shows a plan the edit
-	 * will not carry out is worse than no preview, which is exactly what `D-02` exists to
-	 * prevent. So the type is resolved while planning, and both tools refuse the same input.
+	 * CHECKING THE TYPE IN `Apply` WOULD LET THE PREVIEW PRINT A PLAN FOR `X: banana` AND LEAVE ONLY
+	 * THE EDIT TO REFUSE IT. A preview that shows a plan the edit will not carry out is worse than no
+	 * preview, which is exactly what `D-02` exists to prevent. So the type is resolved while planning,
+	 * and both tools refuse the same input.
 	 */
 	bool ResolveTypeName(const FString& InType, FString& OutWhy)
 	{

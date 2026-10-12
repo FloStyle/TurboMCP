@@ -56,7 +56,7 @@ namespace
 	 * "looked like a commandlet, but we could not find the class" — it does not know to load THIS
 	 * plugin, and the `.uplugin`'s `PostEngineInit` phase is later than the lookup.
 	 *
-	 * A STATIC INITIALISER THAT CALLS `LoadModule` WAS TRIED AND CRASHED. Measured:
+	 * A STATIC INITIALISER THAT CALLS `LoadModule` CRASHES:
 	 *
 	 *     Fatal error! Unhandled Exception: EXCEPTION_ACCESS_VIOLATION
 	 *     FModuleManager::LoadModuleWithFailureReason() ModuleManager.cpp:1222
@@ -1249,11 +1249,11 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 
 	// THE ABSOLUTE PATH IS BUILT BY HAND, BECAUSE THE ENGINE'S CONVERSION GOES RELATIVE HERE.
 	//
-	// MEASURED FAILURE: `FPackageName::LongPackageNameToFilename` answered
+	// `FPackageName::LongPackageNameToFilename` ANSWERS
 	// `../../../../(repo)/TestProject/Content/Tests/TurboMCPAcceptance.uasset`,
-	// a path RELATIVE TO THE ENGINE DIRECTORY, and `UPackage::SavePackage` reported
-	// "could not save". The package was in memory and every probe graph had built — the write was the
-	// only thing that failed, which is the shape of failure this project keeps having to look for.
+	// a path RELATIVE TO THE ENGINE DIRECTORY, and `UPackage::SavePackage` then reports
+	// "could not save". The package is in memory and every probe graph has built — the write is the
+	// only thing that fails, which is the shape of failure this project keeps having to look for.
 	//
 	// The package path is a compile-time constant and the engine remaps `/Game` to the PROJECT content
 	// directory, so the absolute path is that constant without its `/Game` prefix, under

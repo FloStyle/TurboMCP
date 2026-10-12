@@ -262,8 +262,8 @@ FString FTurboMCPGraphPatch::RenderPreview(const FPlan& InPlan)
 	//
 	// MEASURED, and it is the failure this comment exists to prevent: a text writing `NoSuchPin "x"` is refused
 	// by `APPEND`'s plan - IT DOES VALIDATE THE PINS OF A FORM THAT NAMES AN EXISTING NODE - and `Plan` returns
-	// EARLY, before this class has looked at the graph at all. The first version of this render printed only
-	// `InPlan.Refusals`, which at that point is EMPTY, so the caller saw a preview with NO REFUSAL AND NO COUNT:
+	// EARLY, before this class has looked at the graph at all. PRINTING ONLY `InPlan.Refusals` HERE SHOWS THE
+	// CALLER A PREVIEW WITH NO REFUSAL AND NO COUNT, because that list is EMPTY at this point:
 	// `0 node(s) in the graph now, 0 named by the text`. A refusal that is never printed is a preview that says
 	// nothing is wrong, which is strictly worse than no preview.
 	//

@@ -39,12 +39,12 @@ struct FExpressionInput;
  * the check must confirm, because if the retarget missed an input or landed on the wrong one the
  * compiled result would differ and nothing else would notice.
  *
- * *** A LABEL'S READERS ARE USAGE NODES, AND GETTING THAT WRONG IS A SILENT FAILURE THAT WAS MEASURED
- * WHILE BUILDING THIS PASS. *** THE FIRST VERSION RETARGETED EACH READER'S INPUT STRAIGHT AT THE
- * DECLARATION. It compiled, it preserved the value, and every expression survived - and `R-MAT-LABELS`
- * then answered `read in 0 place(s)` ABOUT THE LABEL IT HAD JUST CREATED, BECAUSE THE READER COUNTS
- * `UMaterialExpressionNamedRerouteUsage` NODES, WHICH IS WHAT A MATERIAL LABEL IS. The edit produced a
- * label NOTHING READ and a naming story that was a lie, and NOTHING IN ITS OWN REPORT SAID SO. The
+ * *** A LABEL'S READERS ARE USAGE NODES, AND GETTING THAT WRONG IS A SILENT FAILURE. *** RETARGETING EACH
+ * READER'S INPUT STRAIGHT AT THE DECLARATION COMPILES, PRESERVES THE VALUE, AND LEAVES EVERY EXPRESSION
+ * ALIVE - and `R-MAT-LABELS` then answers `read in 0 place(s)` ABOUT THE LABEL IT HAS JUST CREATED,
+ * BECAUSE THE READER COUNTS `UMaterialExpressionNamedRerouteUsage` NODES, WHICH IS WHAT A MATERIAL LABEL
+ * IS. That yields a label NOTHING READS and a naming story that is a lie, WITH NOTHING IN THE PASS'S OWN
+ * REPORT SAYING SO. The
  * engine's own editor shows the shape: ONE USAGE PER READER, linked to the consumer
  * (`Editor/MaterialEditor/Private/MaterialEditor.cpp:4633-4643`). This pass does the same, and the
  * suite that tests it asks `R-MAT-LABELS` HOW MANY PLACES READ THE LABEL - which is the question that

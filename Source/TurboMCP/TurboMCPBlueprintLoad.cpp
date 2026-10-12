@@ -119,10 +119,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 	Request.TokenBudgetChars = BudgetChars;
 	Request.GraphFilter = FTurboMCPAssetResolver::SplitList(GraphFilter);
 
-	// The counts go at the END, not in the opening line. The first version built
-	// the opening line with the counts in it before the loop had run, so it read
-	// `read: 1 asset(s): 1 read, 0 refused` followed by the body, which puts the
-	// conclusion before the evidence and is wrong on its face.
+	// The counts go at the END, not in the opening line. Building the opening line with
+	// the counts in it before the loop has run reads `read: 1 asset(s): 1 read, 0 refused`
+	// followed by the body, which puts the conclusion before the evidence and is wrong on
+	// its face.
 	FString Result;
 
 	int32 ReadCount = 0;

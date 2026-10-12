@@ -35,9 +35,9 @@ namespace
 		/**
 		 * The thread that raised it.
 		 *
-		 * KEPT BECAUSE THE SESSION IS NOT ONE THREAD. Measured: the tool call created its log device on
-		 * thread 31392 while PIE's own start-up lines arrived on a DIFFERENT thread, which is exactly what
-		 * an earlier version of this device got wrong - see the note where the thread filter used to be.
+		 * KEPT BECAUSE THE SESSION IS NOT ONE THREAD: the tool call creates its log device on one thread
+		 * while PIE's own start-up lines arrive on a DIFFERENT one, so FILTERING ON A SINGLE THREAD ID
+		 * WOULD DISCARD HALF THE SESSION.
 		 */
 		uint32 ThreadId = 0;
 	};
