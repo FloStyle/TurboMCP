@@ -1,7 +1,25 @@
 # TurboMCP — Rapport extensif
 
-**Mesuré le 2026-10-11 à 11:35. Tous les chiffres de ce rapport sont lus, pas rappelés.**
-**`HEAD` = `99719c4` = `origin/main`. Arbre propre.**
+**Mesuré le 2026-10-11. Tous les chiffres de ce rapport sont lus, pas rappelés.**
+**`HEAD` au moment de la dernière mise à jour = `7f12044`. Arbre propre.**
+
+*** LA LIGNE CI-DESSUS DISAIT `99719c4`, ET CE COMMIT N'EXISTE PLUS. *** *L'historique a été réécrit depuis
+- les références non-white-room purgées, les e-mails remplacés, un token retiré - donc **tout SHA antérieur
+est mort**. Le rapport lui-même a été corrigé depuis (les compteurs, la §12) ; **ce qui suit est à jour, mais
+la référence de commit ne peut plus servir à vérifier quoi que ce soit.** Utilisez les quatre commandes de
+[`HANDOVER.md`](HANDOVER.md) pour établir l'état, pas un SHA de ce fichier.*
+
+## Quel document répond à quelle question
+
+| Vous voulez | Lisez | Ce que c'est |
+|---|---|---|
+| **L'état maintenant, et comment le vérifier** | [`HANDOVER.md`](HANDOVER.md) | Les quatre commandes qui établissent l'état, ce qui est fini, **ce qui ne l'est pas**, et ce que je ne sais pas. **Commencez là** |
+| **L'analyse : pourquoi, ce qui manque, ce que je ferais ensuite** | **ce fichier** | Les invariants qui tiennent les 93 outils, les fixtures fantômes, la dette de vacuité, la projection de dépendance, ma propre erreur la plus instructive |
+| **L'instantané** | [`STATUS.md`](STATUS.md) | Compteurs et tableau de capacités à la révision où il a été écrit |
+| **La preuve** | [`TestRecord.md`](TestRecord.md) | 181 sections chronologiques. Chaque affirmation ci-dessus remonte à l'une d'elles |
+
+**`Spec/WORKING_PLAN.md` est la liste de travail qui fait autorité**, et c'est la seule des cinq qui a été
+auditée ligne par ligne contre l'arbre.
 
 ---
 

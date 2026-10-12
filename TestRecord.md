@@ -1,21 +1,39 @@
 # TurboMCP test record
 
-Required by `00_START_HERE.md` section 5 and `06_ACCEPTANCE.md`: every capability
-is done only when its tests have been run on the test assets and the numbers are
-recorded here.
+Required by `Spec/00_START_HERE.md` section 5 and `Spec/06_ACCEPTANCE.md`: every capability is done only
+when its tests have been run on the test assets and the numbers are recorded here.
 
-Status: **phase 0 builds, loads, and registers.** Confirmed twice from the
-editor's own log against the built DLL: the module loads and all four toolsets
-register with no failure line. The editor window was not opened by a person, so
-its layout is unverified. The test asset kit does not exist yet, so no tool
-behaviour has been tested. Nothing below claims otherwise.
+**This is a chronological record, not a summary.** It runs from the first engine build to the final round,
+in 181 numbered sections, and it is meant to be **searched rather than read end to end**. For the current
+state, read [`HANDOVER.md`](HANDOVER.md) first; for the plan, [`Spec/WORKING_PLAN.md`](Spec/WORKING_PLAN.md).
 
-Engine under test: **5.8.3**, source build at `C:\UnrealEngine`, commit
-`396c9f059903aed5fec78ecd3d437a40c6415368`.
+| | |
+|---|---|
+| **Sections** | **181**, chronological. Each records what was measured and what it cost |
+| **What it is for** | the **evidence** behind every claim in `HANDOVER.md`, `REPORT.md` and `STATUS.md` |
+| **The part worth reading first** | the entries that record a **defect**, because each one names the failure it stops |
+| **How to search it** | `Select-String -Path TestRecord.md -Pattern '<what you want>'` |
 
-Note on version: `06_ACCEPTANCE.md` and `07_ENGINE_NOTES.md` were written against
-5.8.1. See `QUESTIONS.md` Q-1. Every result recorded below must state the engine
-version it was measured on.
+---
+
+## Status at this revision
+
+*** THIS HEADER SAID "phase 0 builds, loads, and registers" AND "no tool behaviour has been tested" FOR
+MOST OF THE PROJECT'S LIFE. BOTH WERE TRUE WHEN THEY WERE WRITTEN AND NEITHER WAS UPDATED. *** The record
+below had grown to 10 792 lines while its own first paragraph said almost nothing had been tested.
+
+| | |
+|---|---|
+| **Tools** | **93** `AICallable`, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
+| **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0*** |
+| **Coverage audit** | **`uncalled: (none)`** — every declared tool is reached by at least one suite |
+| **Suite-quality audit** | **BLOCKS the run** when a check cannot fail *or* cannot pass — **0 candidates** |
+| **Test asset kit** | **exists**: 15 fixtures tracked under `TestProject/Content/Tests/`, built by `Tools/make-*.ps1` |
+| **Engine under test** | **5.8.3**, source build, resolved from `Engine/Build/Build.version` |
+
+**Every result recorded below must state the engine version it was measured on**, and `06_ACCEPTANCE.md`
+and `07_ENGINE_NOTES.md` were written against an earlier engine (`QUESTIONS.md` Q-1) — which is why the
+version is printed beside each measurement rather than assumed.
 
 ---
 

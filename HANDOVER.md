@@ -34,6 +34,27 @@
 
 ---
 
+## 0.5 Quel document répond à quelle question
+
+**Quatre documents décrivent l'état de ce projet, et ils ne sont pas interchangeables.** *Un lecteur qui
+ouvre le mauvais obtient une réponse différente à ce qui ressemble à la même question.*
+
+| Vous voulez | Lisez | Ce que c'est |
+|---|---|---|
+| **L'état maintenant, et comment le vérifier** | **ce fichier** | Les quatre commandes qui l'établissent, ce qui est fini, **ce qui ne l'est pas**, et ce que je ne sais pas |
+| **L'analyse : pourquoi, ce qui manque, ce que je ferais ensuite** | [`REPORT.md`](REPORT.md) | Les invariants qui tiennent les 93 outils, les fixtures fantômes, la dette de vacuité, la projection de dépendance |
+| **L'instantané** | [`STATUS.md`](STATUS.md) | Compteurs et tableau de capacités à la révision où il a été écrit |
+| **La preuve** | [`TestRecord.md`](TestRecord.md) | 181 sections chronologiques ; chaque affirmation ci-dessus remonte à l'une d'elles |
+
+**`Spec/WORKING_PLAN.md` est la liste de travail qui fait autorité** — la seule des cinq auditée ligne par
+ligne contre l'arbre.
+
+*** CE FICHIER EST EN FRANÇAIS ET LE RESTE DU DÉPÔT EST EN ANGLAIS. *** *C'est une incohérence réelle : un
+contributeur anglophone ne peut pas lire le document qui décrit l'état du projet. La traduction n'est pas
+faite ici parce qu'elle toucherait les quatre documents d'un coup ; elle est sur la liste.*
+
+---
+
 ## 1. L'état, en quatre commandes
 
 ```powershell

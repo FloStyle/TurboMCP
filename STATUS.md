@@ -3,6 +3,21 @@
 **Version 1.0.0.** Every number here was read off the tree, not recalled. `Spec/WORKING_PLAN.md` is the
 live plan; this file is the state at the moment it was written.
 
+## Which document answers which question
+
+Four documents describe the state of this project, and they are not interchangeable. **This mapping exists
+because a reader who opens the wrong one gets a different answer to what looks like the same question.**
+
+| You want | Read | What it is |
+|---|---|---|
+| **The state now, and how to verify it** | [`HANDOVER.md`](HANDOVER.md) | Four commands that establish the state, what is finished, **what is not**, and what I do not know. **Start here** |
+| **The analysis: why, what is missing, what I would do next** | [`REPORT.md`](REPORT.md) | The invariants that hold the 93 tools together, the phantom fixtures, the vacuity debt, the dependency projection, my own most instructive error |
+| **The headline snapshot** | **this file** | Counts and a capability table at the revision it was written. *** Its §3 table has been wrong twice and understates the project in seven places; see the note under it *** |
+| **The evidence** | [`TestRecord.md`](TestRecord.md) | 181 chronological sections. Every claim above traces to one of them |
+
+**`Spec/WORKING_PLAN.md` is the authoritative work list**, and it is the only one of the five that has been
+audited row by row against the tree.
+
 ---
 
 ## 1. The headline
@@ -76,12 +91,21 @@ annotated because the shape of the gap was wrong, not just its size.
 | 12 | Assets, structs and data | 0/6 | `E-ASSET-*`, `P-ASSET-DIFF`, `R-ASSET-COST`, curves, structs |
 | 13 | Level and actors | 1/5 | `R-ACTOR-LOAD`, `E-ACTOR-PLACE`, `P/E-ACTOR-SET`, `E-COMPONENTS` |
 | 14 | Debugging | 2/7 | **CLOSED BY MEASUREMENT** - see §4 |
-| 15 | Quality and maintenance | 0/1 | `R-BP-LINT` |
 | 16 | Agent and session tooling | 0/4 | `E-SESSION`, `P/E-ASSET-BATCH`, `R-CALL-COST` |
 | 17 | Source control | 0/2 | gated on measurement 1.3 |
 | 18 | Vision: what a Look may capture | 0/4 | `L-CAPTURE-ASSET`, `L-CAPTURE-LEVEL`, `P-IMAGE-COMPARE` |
 | 19 | Before and after | 0/1 | `P-IMAGE-COMPARE` |
-| 11 | Build portability | 0/1 | `09_BUILD.md` |
+| 20 | Build portability | 0/1 | `09_BUILD.md` |
+
+*** THIS TABLE IS A SNAPSHOT AND IT HAS BEEN WRONG TWICE, IN TWO DIFFERENT WAYS. *** It carried **§15 twice**,
+once as `1/1 DONE` and once as `0/1 R-BP-LINT` - **two rows of one table contradicting each other** - and it
+carried **§4 twice**, once for Materials and once for Data tables. Both duplicates are now removed, and the
+second §11 became §20 because the spec's own numbering moved.
+
+*** AND IT UNDERSTATES THE PROJECT IN SEVEN PLACES, WHICH THE FILE ITSELF DOES NOT SAY. *** Rows this table
+still calls unfinished are built and passing: `R-BP-LINT` (37 checks), `R-CALL-COST` (29), `R-ASSET-COST`
+(10), `P/E-DATATABLE-ROWS` (26), `R-MAT-INST-LOAD` (20), `P/E-ENUM-EDIT`, and `P/E-MAT-BLOCKS` (24).
+**`Spec/WORKING_PLAN.md` is the list that was actually audited against the tree; this one was not.**
 
 **`Spec/WORKING_PLAN.md` IS THE AUTHORITATIVE ORDER**, and it is a working document that changes every round. The
 rows above are its steps: materials end to end, then data tables, then widget authoring, then graph structure, then
