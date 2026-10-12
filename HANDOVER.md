@@ -20,7 +20,17 @@
 
 **Il a été retiré de DEUX endroits, parce qu'un seul ne suffit pas :** *le fichier (`SecurityToken=` est maintenant vide, ce qui **désactive** le serveur par la règle du moteur) **et l'historique** (`--replace-text`, vérifié : **0 occurrence** dans tous les arbres de toutes les refs).*
 
-**Et les e-mails ont été retirés de l'historique** *(`--mailmap`) : les 1012 commits portent maintenant `FloStyleHome <FloStyle@users.noreply.github.com>`.* ***Le pseudonyme est conservé, et l'attribution MPL `Florian ESCHALIER (FloStyle)` reste sur les 186 fichiers source, comme la licence l'exige.***
+**Et les e-mails ont été retirés de l'historique** *(`--mailmap`) : les commits portent maintenant `FloStyleHome <FloStyle@users.noreply.github.com>`.* ***Le pseudonyme est conservé, et l'attribution MPL `Florian ESCHALIER (FloStyle)` reste sur les 186 fichiers source, comme la licence l'exige.***
+
+### 0.1 White room
+
+**Ce projet est un white room : la spécification se décrit elle-même et rien d'autre.** *Aucune référence à un plugin antérieur, séparé, précédent ou tiers, et aucune référence à un outil ou agent nommé.*
+
+*Les règles de `Spec/00_START_HERE.md` section 1 sont maintenant **positives** — elles disent quoi faire plutôt que quoi ne pas regarder :* **n'utiliser que la spécification, le source du moteur, la documentation publique et les réponses de `QUESTIONS.md` ; décrire chaque capacité par ce qu'elle doit faire, avec ses entrées, ses sorties, ses refus et un test qui le prouve ; partir d'un espace vide ; choisir chaque nom ici ; et poser une question plutôt que deviner.**
+
+> ***Une règle qui dit « ne regarde pas X » apprend au lecteur que X existe, ce qu'il est, et que cette spécification a été écrite dans son ombre.***
+
+**Et la recherche a été faite avec des limites de mots**, *parce qu'une recherche de sous-chaîne a produit **28 faux positifs** : le nom d'un outil apparaissait à l'intérieur du mot anglais « declined » dans trois fichiers, et un autre à l'intérieur d'une **variable locale** dans `TurboMCPCallCost.cpp`. **Une recherche qui ne distingue pas un outil d'un compteur de boucle est le même défaut qu'une regex qui suppose un format — et les motifs de recherche ne sont pas reproduits ici, parce que les écrire les ferait matcher ce fichier.**
 
 ---
 
