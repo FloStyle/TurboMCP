@@ -780,8 +780,9 @@ namespace
 	struct FRollbackMeasurement
 	{
 		FRollbackMeasurement(FScopedTransaction& InTransaction,
-			const FTurboMCPMaterialBlocks::FPlan& InPlan, FString* InOutNote)
-			: Transaction(InTransaction), Plan(InPlan), OutNote(InOutNote)
+			const FTurboMCPMaterialBlocks::FPlan& InPlan, FString* InOutNote, bool bInMaterialRegistered)
+			: Transaction(InTransaction), Plan(InPlan), OutNote(InOutNote),
+			  bMaterialRegistered(bInMaterialRegistered)
 		{
 		}
 
@@ -841,17 +842,64 @@ namespace
 				return;
 			}
 
+			// *** A SECOND AND RAWER LOOK, BECAUSE "GONE" HAS TWO DIFFERENT REPAIRS. *** The keys above come
+			// from the same reader the pass itself uses. If the material's collection STILL HOLDS THE
+			// POINTER, the array came back and something else is hiding the node from the reader - a
+			// `MarkAsGarbage` flag is not a serialized property, so no transaction can restore it. If the
+			// collection does NOT hold it, the array was never in the transaction's buffer at all, and the
+			// repair is a `Modify()` that is missing or too late.
+			//
+			// WITHOUT THIS LINE THE TWO READ THE SAME, which is why the first repair attempted here -
+			// `Material->Modify()` - could be added, built, and measured WITHOUT SETTLING ANYTHING.
+			int32 RawLength = 0;
+			int32 RawLive = 0;
+			int32 RawHoldsMissing = 0;
+			if (Plan.Material != nullptr)
+			{
+				const auto& RawExpressions = Plan.Material->GetExpressionCollection().Expressions;
+				// THE LENGTH IS COUNTED SEPARATELY FROM THE LIVE ENTRIES, AND THE TWO ARE NOT THE SAME
+				// ANSWER. An array restored with a NULL or destroyed pointer in the freed slot has the same
+				// LENGTH as before and one fewer live entry - and that reads identically to an array that
+				// was never restored at all, unless both numbers are printed.
+				RawLength = RawExpressions.Num();
+				for (const UMaterialExpression* Expression : RawExpressions)
+				{
+					if (Expression == nullptr)
+					{
+						continue;
+					}
+					++RawLive;
+					if (Missing.Num() > 0 && FTurboMCPMaterial::KeyOf(Expression) == Missing[0])
+					{
+						++RawHoldsMissing;
+					}
+				}
+			}
+
 			*OutNote = FString::Printf(
 				TEXT("\n*** THE ROLLBACK DID NOT RESTORE THE MATERIAL: %d of the %d expression(s) the plan ")
 				TEXT("read are gone, and %d are present that it did not read. THIS IS A DEFECT IN THIS TOOL ")
-				TEXT("AND NOT A CLEAN ROLLBACK. First named: %s"),
+				TEXT("AND NOT A CLEAN ROLLBACK. First named: %s")
+				TEXT("\n    THE RAW COLLECTION IS %d ENTRIES LONG, OF WHICH %d ARE LIVE, AND IT %s THE FIRST ")
+				TEXT("MISSING KEY. %s")
+				TEXT("\n    AND THE MATERIAL'S OWN `Modify()` ANSWERED %s BEFORE ANY MUTATION, so the ")
+				TEXT("collection was %sTHE TRANSACTION'S BUFFER."),
 				Missing.Num(), Plan.KeysBefore.Num(), Extra.Num(),
-				Missing.Num() > 0 ? *Missing[0] : *Extra[0]);
+				Missing.Num() > 0 ? *Missing[0] : *Extra[0],
+				RawLength, RawLive, RawHoldsMissing > 0 ? TEXT("holds") : TEXT("does not hold"),
+				RawHoldsMissing > 0
+					? TEXT("So the array came back WITH the node, and something is hiding it from the reader - look for state that is not a serialized property.")
+					: (RawLength > RawLive
+						? TEXT("So the array came back and the slot is EMPTY: the node was removed from the collection AND destroyed, and a destroyed object is not something a property snapshot can put back.")
+						: TEXT("So the array itself did not come back: the removal was never in the transaction's buffer.")),
+				bMaterialRegistered ? TEXT("YES") : TEXT("NO"),
+				bMaterialRegistered ? TEXT("") : TEXT("NEVER IN "));
 		}
 
 		FScopedTransaction& Transaction;
 		const FTurboMCPMaterialBlocks::FPlan& Plan;
 		FString* OutNote;
+		bool bMaterialRegistered;
 	};
 }
 
@@ -878,11 +926,27 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 	UMaterial* const Material = InPlan.Material;
 
+	// *** THE MATERIAL IS REGISTERED WITH THE TRANSACTION BEFORE ANYTHING IS MUTATED, AND THE ANSWER IS KEPT
+	// BECAUSE IT DECIDES WHETHER A ROLLBACK CAN RESTORE THE MATERIAL AT ALL. ***
+	//
+	// `UMaterialEditingLibrary::DeleteMaterialExpression` - the only remover this pass has, used at the two
+	// sites below - runs `Material->GetExpressionCollection().RemoveExpression(...)`,
+	// `Expression->MarkAsGarbage()` and `Material->MarkPackageDirty()`, AND NEVER CALLS `Modify()`
+	// (`MaterialEditingLibrary.cpp:590-617`). IT RELIES ON ITS CALLER, AND THIS PASS WAS NOT CALLING IT.
+	//
+	// BUT `Modify()` IS NOT UNCONDITIONAL EITHER. It reaches `SaveToTransactionBuffer`, which saves the
+	// object ONLY when `GUndo` is set AND `Object->HasAnyFlags(RF_Transactional)`
+	// (`UObjectGlobals.cpp:3215-3218`), and `Obj.cpp:1664-1665` says the same thing in its own words - the
+	// save "will fail if ... the object isn't transactional". `RF_Transactional` is GRANTED BY THE PROPERTY
+	// EDITOR PATHS rather than by loading (`Obj.cpp:587-595`, `:775-778`), so a plain loaded asset may not
+	// carry it. THIS RETURN VALUE IS THEREFORE PART OF THE MEASUREMENT AND NOT A DETAIL.
+	const bool bMaterialRegistered = Material->Modify();
+
 	// *** THE ONE MEASUREMENT EVERY ROLLBACK PATH REACHES, DECLARED HERE SO THAT IT OUTLIVES ALL NINETEEN
 	// `Cancel()` SITES AND IS DESTROYED BEFORE THE TRANSACTION ITSELF. *** See its definition above: it does
 	// nothing on a successful pass, and on a cancelled one it re-reads the material and compares the
 	// expression set with the one the plan read.
-	FRollbackMeasurement Rollback(Transaction, InPlan, &OutRollbackNote);
+	FRollbackMeasurement Rollback(Transaction, InPlan, &OutRollbackNote, bMaterialRegistered);
 
 	// THE MATERIAL IS RE-READ BEFORE ANYTHING IS TOUCHED, which is what makes this an edit of the CURRENT
 	// graph rather than of the one the plan was built from.
