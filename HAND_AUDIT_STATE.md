@@ -80,8 +80,14 @@ Each was found once and then measured across the layer.
 
 **Six tracked scripts carried this machine's absolute path**, including the user name:
 `Tools/checks/check-line-cites.py`, `check-refs.py`, `check-suite-shapes.py`, `count-plan.py`,
-`Tools/make-questions-index.py`, `make-tools-inventory.py`. Fixed in `452ddb4` by deriving the root from
-`pathlib.Path(__file__).resolve().parent.parent.parent`. `git grep -F 'Users\flost'` now returns nothing.
+`Tools/make-questions-index.py`, `make-tools-inventory.py`. Each read
+`REPO = pathlib.Path(<a literal absolute path under a user profile>)`. Fixed in `452ddb4` by deriving the root
+from `pathlib.Path(__file__).resolve().parent.parent.parent`, which serves both depths because `Tools/x.py` and
+`Tools/checks/x.py` each climb three levels to the repository root.
+
+**The literal string is deliberately not repeated here.** *A checkpoint that carries the path in order to
+describe its removal reintroduces it, and the next `S3` sweep will find this file and have to decide whether it
+is a defect.* **A grep for the pattern now returns nothing in the tree.**
 
 **And `flost` alone is not a leak:** it is `FloStyle`, the author name in the MPL-2.0 header on every source
 file.
