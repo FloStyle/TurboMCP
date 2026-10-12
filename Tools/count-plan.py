@@ -37,6 +37,13 @@ def main() -> int:
         state = re.sub(r"\s*\(.*?\)\s*$", "", state).strip()
         if state not in STATES:
             continue                      # a section's index table, not a capability row
+        # *** A CAPABILITY ROW IS NUMBERED. *** The dependency section ends four of its rows with the word
+        # `open` - `Q-19: a push-driven ... | open` - and those are QUESTIONS the plan depends on, not rows of
+        # work. Counting them added four to `open` in the summary while `--list` showed only two, because the
+        # list printed the row id and the ids clearly were not rows. **A COUNT THAT DISAGREES WITH ITS OWN
+        # LISTING IS WORSE THAN EITHER ALONE.**
+        if not re.match(r"^\d+\.\d+$", cells[0].strip("*` ")):
+            continue
         rows.append((cells[0].strip("*` "), state, i))
 
     counts = collections.Counter(s for _, s, _ in rows)
