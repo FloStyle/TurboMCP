@@ -16,7 +16,7 @@ file owns the readings; `REPORT.md` owns the reasoning; and the split is checked
 | | How to check it |
 |---|---|
 | **Version** | **1.0.0** — `TurboMCP.uplugin`, `VersionName`, no longer marked experimental |
-| **Tools** | **93** `AICallable` in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33. `Select-String -Path Source\TurboMCP\Public\Tools\TurboMCPToolsets.h -Pattern 'static FString'` |
+| **Tools** | **93** `AICallable` in 4 toolsets. The per-toolset split is in `TOOLS.md`, which is its only copy. `Select-String -Path Source\TurboMCP\Public\Tools\TurboMCPToolsets.h -Pattern 'static FString'` |
 | **Coverage** | **`uncalled: (none)`** — every declared tool is reached by at least one suite. `python Tools\audit-tool-coverage.py` |
 | **Suites** | **52 files** under `Tools/test-*.py`, **58 suites** in the harness |
 | **FULL RUN** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0.*** `pwsh -NoProfile -File Tools\run-suites.ps1` |

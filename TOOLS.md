@@ -14,6 +14,13 @@ description an agent receives** - that is why the summaries below are extracted 
 | `UTurboMCPEditToolset` | Edit | **Yes** | **33** |
 | **Total** | | | **93** |
 
+*** THIS TABLE IS THE ONLY PLACE THE PER-TOOLSET SPLIT IS RECORDED. *** It is a reading of ONE command -
+`Select-String -Path Source\TurboMCP\Public\Tools\TurboMCPToolsets.h -Pattern 'static FString'` - which prints
+one line per tool IN CLASS ORDER, so the split can be recounted from its output at any time. `HANDOVER.md` and
+`STATUS.md` carry the TOTAL and point here rather than repeating the split, BECAUSE THREE COPIES OF ONE NUMBER
+AGREE UNTIL ONE OF THEM IS CHANGED - which is the failure this project records as two implementations of one rule,
+applied to a figure instead of to code.
+
 **A reader in `Read` or `Look` cannot write**, because those classes hold no editing code - it is a
 property of the type, not a convention.
 

@@ -101,7 +101,7 @@ pwsh -NoProfile -File Tools\run-suites.ps1                     # passed 58, fail
 
 | | |
 |---|---|
-| **Tools** | **93** `AICallable`, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33 |
+| **Tools** | **93** `AICallable` in 4 toolsets - `git grep -c "static FString" Source/TurboMCP/Public/Tools/TurboMCPToolsets.h`. The per-toolset split is in `TOOLS.md`, which is its only copy |
 | **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0*** |
 | **Coverage audit** | `uncalled: (none)` — every declared tool is reached by at least one suite |
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail **or cannot pass** — currently 0 candidates |
