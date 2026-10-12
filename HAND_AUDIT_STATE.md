@@ -101,13 +101,19 @@ kind of claim the finding makes.**
 
 | Kind of finding | Tested | Wrong |
 |---|---|---|
-| **Cites a line** | 12 | **0** |
+| **Cites a line** | 13 | **0** |
 | **Asserts a relation** ("A contradicts B") | 7 | **3** |
 | **Asserts a count** | 5 | **2** |
 
-**So:** a finding that names a file and a line can be acted on. A finding that says two documents differ must
-have both opened. **A count must be re-derived** — four counts on the task board were taken over a subset and
-printed as totals, including one of mine.
+**This table mixes two sources and that is deliberate: twelve of the line-citations and all of the relation and
+count claims came from the earlier subagent audit, and they were tested against the tree in this session.**
+*The thirteenth is the first subagent citation tested since, and it held: `TurboMCPGraphTidy.cpp:36` cites
+`TurboMCPLayoutReport.cpp:26` for `PinRowSpacing = 24.0`, and the constant is at **`:31`**.* **So the earlier
+audit's citations are as reliable as this session's, and its relations and counts are not.**
+
+**So:** a finding that names a file and a line can be acted on — **from either source**. A finding that says two
+documents differ must have both opened. **A count must be re-derived** — four counts on the task board were taken
+over a subset and printed as totals, including one of mine.
 
 **Why relations fail:** they assert three things — that A says X, that B says Y, and that X and Y conflict. A
 reader who finds X and Y stated differently stops there, because the third claim looks like the easy one.
