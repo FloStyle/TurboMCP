@@ -780,20 +780,29 @@ namespace
 	struct FRollbackMeasurement
 	{
 		FRollbackMeasurement(FScopedTransaction& InTransaction,
-			const FTurboMCPMaterialBlocks::FPlan& InPlan, FString* InOutNote, bool bInMaterialRegistered)
+			const FTurboMCPMaterialBlocks::FPlan& InPlan, FString* InOutNote, bool bInMaterialRegistered,
+			const bool& bInRolledBack)
 			: Transaction(InTransaction), Plan(InPlan), OutNote(InOutNote),
-			  bMaterialRegistered(bInMaterialRegistered)
+			  bMaterialRegistered(bInMaterialRegistered), bRolledBack(bInRolledBack)
 		{
 		}
 
 		~FRollbackMeasurement()
 		{
-			// NOTHING TO MEASURE ON A SUCCESSFUL PASS. An outstanding transaction was never cancelled, and
-			// the material is MEANT to hold the new state - so this is not a rollback to verify.
-			if (OutNote == nullptr || Transaction.IsOutstanding())
+			// NOTHING TO DO ON A SUCCESSFUL PASS: the material is then MEANT to hold the new state.
+			if (OutNote == nullptr || !bRolledBack)
 			{
 				return;
 			}
+
+			// *** THE REVERT, AND ITS ORDER IS THE WHOLE POINT - THIS IS WHAT `Cancel()` NEVER DID. ***
+			// `UTransBuffer::Undo` reads the UNDO BUFFER (`EditorTransaction.cpp:1638`), and the ACTIVE
+			// transaction is not on it until `EndTransaction` pushes it. UNDOING FIRST WOULD REVERT THE
+			// PREVIOUS TRANSACTION - SOMEBODY ELSE'S WORK - AND `Cancel()` CANNOT HELP, because it POPS the
+			// record rather than applying it. `bCanRedo == false` then REMOVES the record, so a failed edit
+			// cannot be redone either.
+			GEditor->EndTransaction();
+			GEditor->UndoTransaction(/*bCanRedo=*/false);
 
 			FTurboMCPMaterial::FPlan Reread;
 			FString RereadError;
@@ -838,7 +847,7 @@ namespace
 			{
 				*OutNote = FString::Printf(
 					TEXT("\nROLLBACK VERIFIED: the material holds the %d expression(s) the plan read, so the ")
-					TEXT("cancel put it back."), Plan.KeysBefore.Num());
+					TEXT("undo put it back."), Plan.KeysBefore.Num());
 				return;
 			}
 
@@ -900,12 +909,21 @@ namespace
 		const FTurboMCPMaterialBlocks::FPlan& Plan;
 		FString* OutNote;
 		bool bMaterialRegistered;
+		/** SET BY THE FAILING PATH BEFORE IT RETURNS. The transaction is no longer the signal: nothing cancels
+		 * it any more, because `Cancel()` is what made the "rollback" a no-op. */
+		const bool& bRolledBack;
 	};
 }
 
 FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollbackNote)
 {
 	OutRollbackNote.Empty();
+
+	// *** SET BY EVERY FAILING PATH, AND IT IS WHAT REPLACES `Cancel()` AS THE SIGNAL. *** The nineteen sites
+	// used to call `Transaction.Cancel()`, which discards the undo record WITHOUT reverting anything - so the
+	// "rollback" they announced never happened. They set this instead, and the guard below performs a REAL
+	// revert once the transaction has been ended.
+	bool bOutRolledBack = false;
 
 	if (InPlan.bNothingToChange)
 	{
@@ -946,7 +964,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	// `Cancel()` SITES AND IS DESTROYED BEFORE THE TRANSACTION ITSELF. *** See its definition above: it does
 	// nothing on a successful pass, and on a cancelled one it re-reads the material and compares the
 	// expression set with the one the plan read.
-	FRollbackMeasurement Rollback(Transaction, InPlan, &OutRollbackNote, bMaterialRegistered);
+	FRollbackMeasurement Rollback(Transaction, InPlan, &OutRollbackNote, bMaterialRegistered, bOutRolledBack);
 
 	// THE MATERIAL IS RE-READ BEFORE ANYTHING IS TOUCHED, which is what makes this an edit of the CURRENT
 	// graph rather than of the one the plan was built from.
@@ -955,7 +973,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	if (!FTurboMCPMaterial::Plan(InPlan.Asset, FTurboMCPMaterial::ERead::Blocks, FString(),
 		/*bInIncludeInstanceOverrides=*/false, Read, ReadError))
 	{
-		Transaction.Cancel();
+		bOutRolledBack = true;
 		return FString::Printf(
 			TEXT("FAILED: the material could not be re-read at apply time (%s), so the edit was NOT ")
 			TEXT("applied rather than applied against a stale plan."), *ReadError);
@@ -986,7 +1004,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		UMaterialExpression* const Source = ByKey.FindRef(Crossing.SourceKey);
 		if (Source == nullptr)
 		{
-			Transaction.Cancel();
+			bOutRolledBack = true;
 			return FString::Printf(
 				TEXT("FAILED: the value %s this plan would name no longer exists, so the edit was ROLLED ")
 				TEXT("BACK rather than applied in part."), *Crossing.SourceKey);
@@ -1004,7 +1022,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			Cast<UMaterialExpressionNamedRerouteDeclaration>(Created);
 		if (Declaration == nullptr)
 		{
-			Transaction.Cancel();
+			bOutRolledBack = true;
 			return FString::Printf(
 				TEXT("FAILED: the declaration for @%s could not be created, so the whole edit was ROLLED ")
 				TEXT("BACK rather than applied in part."), *Crossing.ProposedName);
@@ -1032,7 +1050,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			int32 InputIndex = INDEX_NONE;
 			if (!ParseConsumerRef(Ref, ReaderKey, InputIndex))
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the plan carried a consumer reference this pass cannot parse (%s), so the ")
 					TEXT("edit was ROLLED BACK rather than applied against a reference it does not ")
@@ -1042,7 +1060,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			UMaterialExpression* const Reader = ByKey.FindRef(ReaderKey);
 			if (Reader == nullptr)
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this plan would retarget no longer exists, so the edit was ")
 					TEXT("ROLLED BACK rather than applied in part."), *ReaderKey);
@@ -1062,7 +1080,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				Usage = Cast<UMaterialExpressionNamedRerouteUsage>(CreatedUsage);
 				if (Usage == nullptr)
 				{
-					Transaction.Cancel();
+					bOutRolledBack = true;
 					return FString::Printf(
 						TEXT("FAILED: the usage node for @%s could not be created, so the whole edit was ")
 						TEXT("ROLLED BACK rather than applied in part."), *Crossing.ProposedName);
@@ -1080,7 +1098,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			// THE EXPECTED OLD VALUE IS THE SOURCE, because a crossing is measured on the RESOLVED source.
 			if (!RetargetInput(Reader, InputIndex, Source, Usage))
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: %s no longer points at %s, so the material changed between the Preview ")
 					TEXT("and this call and the edit was ROLLED BACK rather than rewired on the wrong ")
@@ -1100,7 +1118,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		UMaterialExpression* const Keep = ByKey.FindRef(Merge.KeepKey);
 		if (Keep == nullptr)
 		{
-			Transaction.Cancel();
+			bOutRolledBack = true;
 			return FString::Printf(
 				TEXT("FAILED: the usage node to keep (%s) for @%s no longer exists, so the edit was ROLLED ")
 				TEXT("BACK rather than applied in part."), *Merge.KeepKey, *Merge.Label);
@@ -1112,7 +1130,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			int32 InputIndex = INDEX_NONE;
 			if (!ParseConsumerRef(Ref, ReaderKey, InputIndex))
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the plan carried a consumer reference this pass cannot parse (%s)."), *Ref);
 			}
@@ -1120,7 +1138,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			UMaterialExpression* const Reader = ByKey.FindRef(ReaderKey);
 			if (Reader == nullptr)
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this merge would retarget no longer exists, so the edit was ")
 					TEXT("ROLLED BACK rather than applied in part."), *ReaderKey);
@@ -1140,7 +1158,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 			if (!RetargetInput(Reader, InputIndex, OldTarget, Keep))
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: %s could not be moved onto the kept usage node for @%s, so the edit was ")
 					TEXT("ROLLED BACK rather than applied in part."), *Ref, *Merge.Label);
@@ -1176,7 +1194,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		UMaterialExpression* const Source = ByKey.FindRef(Removal.SourceKey);
 		if (Reroute == nullptr || Source == nullptr)
 		{
-			Transaction.Cancel();
+			bOutRolledBack = true;
 			return FString::Printf(
 				TEXT("FAILED: the in-block reroute %s or the value it passes (%s) no longer exists, so the ")
 				TEXT("edit was ROLLED BACK rather than applied in part."),
@@ -1189,7 +1207,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			int32 InputIndex = INDEX_NONE;
 			if (!ParseConsumerRef(Ref, ReaderKey, InputIndex))
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the plan carried a consumer reference this pass cannot parse (%s)."), *Ref);
 			}
@@ -1197,7 +1215,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			UMaterialExpression* const Reader = ByKey.FindRef(ReaderKey);
 			if (Reader == nullptr)
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this removal would retarget no longer exists, so the edit ")
 					TEXT("was ROLLED BACK rather than applied in part."), *ReaderKey);
@@ -1207,7 +1225,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			// input is expected to hold.
 			if (!RetargetInput(Reader, InputIndex, Reroute, Source))
 			{
-				Transaction.Cancel();
+				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: %s no longer points at the reroute %s, so the edit was ROLLED BACK ")
 					TEXT("rather than rewired on the wrong seam."), *Ref, *Removal.RerouteKey);
@@ -1254,7 +1272,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 	if (!bReadBack)
 	{
-		Transaction.Cancel();
+		bOutRolledBack = true;
 		return FString::Printf(
 			TEXT("FAILED: the material could not be read back after the edit (%s), so the compiled result ")
 			TEXT("could NOT be verified and the edit was ROLLED BACK."), *ReadError);
@@ -1297,7 +1315,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 	if (NewErrors.Num() > 0)
 	{
-		Transaction.Cancel();
+		bOutRolledBack = true;
 		return FString::Printf(
 			TEXT("FAILED: making labels follow blocks introduced %d compile error(s) that were not there ")
 			TEXT("before, so the edit was ROLLED BACK. A named reroute forwards to its input and a plain ")
@@ -1307,7 +1325,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 	if (Lost.Num() > 0)
 	{
-		Transaction.Cancel();
+		bOutRolledBack = true;
 		return FString::Printf(
 			TEXT("FAILED: the edit LOST %d expression(s) it did not list, so it was ROLLED BACK. This pass ")
 			TEXT("lists every removal by key; a node gone that was not on that list means it removed more ")
@@ -1316,7 +1334,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 	if (GainedUnexpected.Num() > 0)
 	{
-		Transaction.Cancel();
+		bOutRolledBack = true;
 		return FString::Printf(
 			TEXT("FAILED: the edit GAINED %d expression(s) it did not plan, so it was ROLLED BACK. First ")
 			TEXT("unexpected: %s"), GainedUnexpected.Num(), *GainedUnexpected[0]);
