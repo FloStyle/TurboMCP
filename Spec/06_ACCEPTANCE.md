@@ -4,7 +4,10 @@
 
 Create these assets in a test content folder of the plugin (for example a
 `Content/Tests/` folder inside the plugin), so the tests run in any
-project. Build them by hand in the editor, not with the plugin's own tools,
+project. *** THE KIT WAS BUILT IN `TestProject/Content/Tests/` INSTEAD, AND THE REASON IS IN THE VIRTUAL
+PATHS: every suite addresses an asset as `/Game/Tests/<name>`, and `/Game/` is mounted from the project, so
+the assets have to live where the project sees them. Which of the two folders holds them is a detail the
+requirement below does not turn on. *** Build them by hand in the editor, not with the plugin's own tools,
 so the tools are tested against human-made assets. Record each asset's
 baseline numbers (node count, comment boxes, total wire length) in the
 plugin's test record once it is built, and check them before every test
