@@ -2,8 +2,13 @@
 #
 # NAMED HERE SO Spec/06_ACCEPTANCE.md CAN BE ANSWERED MECHANICALLY. Spec/WORKING_PLAN.md section 1.3 says a
 # capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF DONE - and a
-# script over the tree measured 91 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing could answer
+# script over the tree measured 64 OF ITS 122 ROWS CITED BY NO SUITE AT ALL, so nothing could answer
 # 'is this row passing?' without a human reading it.
+#
+# *** AND THE COUNT NOW HAS A CRITERION, WHICH IS WHAT MAKES IT CHECKABLE: `python
+# Tools/checks/count-acceptance-citations.py` - "a literal occurrence of the id in a `Tools/test-*.py` file" -
+# reports 64. FOUR EARLIER ATTEMPTS GAVE 91, 64, 66 AND 56 BECAUSE NONE OF THEM SAID WHAT 'CITED' MEANT, AND THIS
+# LINE USED TO CARRY THE 91. A NUMBER WITHOUT ITS CRITERION IS NOT A MEASUREMENT; IT IS A NUMBER. ***
 #
 # THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE:
 #   
