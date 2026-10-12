@@ -559,8 +559,9 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 		FInBlockReroute Removal;
 		Removal.Reroute = Reroute;
 		Removal.RerouteKey = FTurboMCPMaterial::KeyOf(Reroute);
-		// D-45 REQUIRES A CLASS AND A TITLE BESIDE EVERY REMOVAL, so both are taken from the engine
-		// rather than left for the report to invent.
+		// *** THE CLASS IS TAKEN FROM THE ENGINE RATHER THAN LEFT FOR THE REPORT TO INVENT. THERE IS NO
+		// TITLE: `FInBlockReroute` HAS NO TITLE FIELD, so `D-45`'s "class and title" is satisfied for
+		// the class only and every report line below prints the key and the class. ***
 		Removal.RerouteClass = Reroute->GetClass()->GetName();
 		Removal.Source = Source;
 		Removal.SourceKey = FTurboMCPMaterial::KeyOf(Source);
@@ -658,7 +659,8 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 		Out += TEXT("block, which D-17 says they never do:");
 		for (const FInBlockReroute& Removal : InPlan.InBlockReroutes)
 		{
-			// D-45: a removal is listed BY KEY WITH ITS CLASS AND TITLE, never as a count.
+			// D-45: a removal is listed BY KEY WITH ITS CLASS, never as a count. There is no title to
+			// print, because the plan carries none.
 			Out += FString::Printf(TEXT("\n  - %s  (%s) in block %d  -> readers move to %s"),
 				*Removal.RerouteKey, *Removal.RerouteClass, Removal.BlockIndex, *Removal.SourceKey);
 			for (const FString& Ref : Removal.ConsumerRefs)
@@ -705,11 +707,16 @@ namespace
 	}
 
 	/**
-	 * Re-points one reader input, HAVING FIRST CHECKED IT STILL POINTS WHERE THE PLAN SAID.
+	 * Re-points one reader input, refusing unless the reader, the new target and the pin are all real.
 	 *
-	 * THE CHECK IS THE POINT. Retargeting by index alone would write to whatever that pin now holds, and
-	 * a material that changed between the two calls would be silently rewired on the wrong seam. Refusing
-	 * is the only honest answer.
+	 * *** WHAT THIS REFUSES, STATED EXACTLY, BECAUSE THE NAME PROMISES MORE: it refuses a null reader, a
+	 * null new target, an input index the reader does not have, and a null pin at that index. IT DOES NOT
+	 * DETECT A MATERIAL THAT CHANGED BETWEEN THE TWO CALLS, because the caller recomputes
+	 * `InExpectedOld` FROM THE READER ITSELF and hands that value in - so `It.Input->Expression !=
+	 * InExpectedOld` compares the pin with the value just read off it and cannot fail. The parameter is
+	 * kept because the comparison is correct if a caller ever supplies a value the plan carried. ***
+	 * Refusing on the four real conditions is still better than retargeting by index alone, which would
+	 * write to whatever that pin now holds.
 	 */
 	bool RetargetInput(UMaterialExpression* InReader, int32 InInputIndex,
 		UMaterialExpression* InExpectedOld, UMaterialExpression* InNew)
@@ -985,7 +992,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan)
 				continue;
 			}
 
-			// D-45: the removal is recorded BY KEY AND CLASS, which is what the report lists.
+			// THE REMOVAL IS RECORDED BY KEY ALONE. This set is the before/after comparison's subject,
+			// not an entry of the report, so no class is recorded beside the key here.
 			PlannedRemovals.Add(RemoveKey);
 			UMaterialEditingLibrary::DeleteMaterialExpression(Material, Doomed);
 			++UsagesRemoved;
@@ -1164,7 +1172,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan)
 		Out += FString::Printf(TEXT("\n@%s: %d usage node(s) merged in block %d"),
 			*Merge.Label, Merge.RemoveKeys.Num(), Merge.BlockIndex);
 	}
-	// D-45: EVERY REMOVAL LISTED BY KEY, WITH ITS CLASS, RATHER THAN COUNTED.
+	// EVERY REMOVAL IS LISTED BY KEY RATHER THAN COUNTED. `PlannedRemovals` holds keys and nothing else,
+	// so no class can be printed beside them here.
 	for (const FString& Key : PlannedRemovals)
 	{
 		Out += FString::Printf(TEXT("\nremoved %s"), *Key);
