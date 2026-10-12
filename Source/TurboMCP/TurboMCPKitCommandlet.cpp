@@ -304,11 +304,11 @@ namespace
 		/**
 		 * Saves an object into `/Game/Tests/Kit/<InName>` WITHOUT recording an entry.
 		 *
-		 * WHY THIS EXISTS SEPARATELY FROM `Save`. The first version had one method that both wrote the
-		 * file and appended a result, so a Blueprint holding FOUR acceptance entries was reported once
-		 * per entry AND once more by the write - the log showed `TA-11` twice, `TA-12` twice and
-		 * `TA-13` twice, and `assets=14` counted duplicated lines rather than assets. A save is an
-		 * ACTION and an entry is a FINDING; one method doing both cannot report either accurately.
+		 * WHY A SAVE IS SEPARATE FROM AN ENTRY. A save is an ACTION and an entry is a FINDING, so one
+		 * method doing both cannot report either accurately: a Blueprint holding FOUR acceptance
+		 * entries would be reported once per entry AND once more by the write, and the asset count
+		 * would then total duplicated lines rather than assets. `Save` records the entry; this method
+		 * writes the file and refuses to touch `Results`.
 		 */
 		bool WritePackage(UObject* InObject, const FString& InId, const FString& InName,
 			FString& OutWhy)
@@ -503,11 +503,10 @@ namespace
 		/**
 		 * PURE, NON-GETTER NODES WHOSE EVERY LINK LANDS ON ONE CONSUMER: `R1`'s carry precondition.
 		 *
-		 * GETTERS ARE EXCLUDED, AND THAT IS A MEASURED CORRECTION. The first version counted any pure node,
-		 * and a variable getter IS pure with one link to one consumer - so this counter read **2** while the
-		 * pass's own `R1 pure nodes carried` read **0**. `R1` skips getters because `R2` owns them, so
-		 * counting one here claimed a carry the rule refuses: exactly the "a check that passes without the
-		 * shape proves nothing" failure. The counter now mirrors the rule's own exclusions.
+		 * GETTERS ARE EXCLUDED. A variable getter IS pure and has one link to one consumer, but `R1`
+		 * skips getters because `R2` owns them - so counting one here would claim a carry the rule
+		 * refuses, which is the "a check that passes without the shape proves nothing" failure. THIS
+		 * COUNTER MIRRORS THE RULE'S OWN EXCLUSIONS, so it measures nothing the rule will not act on.
 		 */
 		int32 CountPureNodesUsedOnlyByOneConsumer(const UEdGraph* InGraph)
 		{
@@ -971,12 +970,12 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			int32 Built = 0;
 			for (int32 Index = 0; Index < 13; ++Index)
 			{
-				// `Add_IntInt` IS PURE, SO IT HAS NO EXEC PIN AT ALL. The first version linked the
-				// entry to nothing, because `Link(Previous, A)` is never called here and the node's
-				// `GetThenPin()` is null on a pure function. Measured: the graph reported
-				// `unreachable=13` out of 13 - every node dead, because none of them was on an exec
-				// chain. `PrintString` is what makes a RUN of exec nodes, and it is also what
-				// `06_ACCEPTANCE.md` means by "13 CONNECTED nodes".
+				// `PrintString` AND NOT A PURE NODE, BECAUSE ONLY AN EXEC CHAIN CONNECTS NODES. A pure
+				// call such as `Add_IntInt` has no exec pin at all - `Link(Previous, A)` has nothing
+				// to attach to here and the node's `GetThenPin()` is null - so a run of pure calls is
+				// 13 DEAD nodes and the graph reports `unreachable=13` out of 13. `PrintString` is
+				// what makes a RUN of exec nodes, and it is what `06_ACCEPTANCE.md` means by
+				// "13 CONNECTED nodes".
 				UK2Node_CallFunction* Call = MakeCall(Messy, UKismetSystemLibrary::StaticClass(),
 					TEXT("PrintString"), Row, 0.0);
 				if (Call == nullptr)
@@ -1036,9 +1035,8 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			{
 				Ta3.Findings.Add(FString::Printf(TEXT("the copy has %d node(s) and needs 9"), Copied));
 			}
-			// THE MEASUREMENT IS THE PROOF THAT THE DEAD COPY EXISTS, and it is checked rather than
-			// declared. The first version left the copy unbuilt and said so; the measurement now
-			// counts it, so the asset either carries the defect the rows need or the build fails.
+			// THE MEASUREMENT IS THE PROOF THAT THE DEAD COPY EXISTS, AND IT IS CHECKED RATHER THAN
+			// DECLARED: the asset either carries the defect the rows need or the build fails.
 			if (Unreachable < 9)
 			{
 				Ta3.Findings.Add(FString::Printf(
@@ -1070,10 +1068,10 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			// to travel backwards. `T-LAY-2` and `T-LAY-9` both name this defect, so it is placed
 			// deliberately and then COUNTED.
 			//
-			// MEASURED MISTAKE IN THE FIRST VERSION: it used `PrintString` for both ends and linked
-			// `Setter->GetReturnValuePin()`. A PRINT NODE HAS NO RETURN VALUE, so that pin is null,
-			// `Link` did nothing, and the graph reported `backward=0` while the code looked correct.
-			// A pure math node is what has a return value, so the wire is real.
+			// THE SOURCE END MUST BE A PURE MATH NODE, BECAUSE A PRINT NODE HAS NO RETURN VALUE.
+			// `Setter->GetReturnValuePin()` on a `PrintString` is null, so `Link` does nothing and the
+			// graph reports `backward=0` while the code looks correct. A pure math node is what has a
+			// return value, so the wire is real.
 			UK2Node_CallFunction* Setter = MakeCall(Stacked, UKismetMathLibrary::StaticClass(),
 				TEXT("Add_IntInt"), 1400.0, 100.0);
 			UK2Node_CallFunction* GetterUse = MakeCall(Stacked, UKismetMathLibrary::StaticClass(),
@@ -1254,11 +1252,11 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			// is held at 3600 while the rule's planned position is 3660, so the move is REFUSED and the
 			// refusal must NAME the box.
 			//
-			// THE LARGER BOX IS ALSO A MEASUREMENT RESULT. The first version was `300x160`, and
-			// `nodesInBox` came back **0**: a member has to fit VERTICALLY as well, and `MakeBox` gives a
-			// rectangle of `y+TitleBarHeight .. y+height`, so a box 160 tall left only 130 of usable
-			// height against a node 150 tall. The box is now generous in `Y` and still TIGHT IN `X`,
-			// because it is the `X` edge that the guard is about.
+			// THE BOX MUST BE GENEROUS IN `Y` AND TIGHT IN `X`, AND IT IS THE VERTICAL MEMBERSHIP THAT
+			// MAKES THAT NECESSARY: a member has to fit VERTICALLY as well, and `MakeBox` gives a
+			// rectangle of `y+TitleBarHeight .. y+height`, so a box 160 tall leaves only 130 of usable
+			// height against a node 150 tall and `nodesInBox` comes back **0**. `Y` is generous here
+			// while `X` stays tight, because it is the `X` edge the guard is about.
 			//
 			//   the box         3300 .. 3600 wide, 1390 .. 1650 tall
 			//   BoxedSecond     3400 .. 3620 wide, 1400 .. 1552 tall   -> ENTIRELY INSIDE
@@ -1272,9 +1270,9 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			Link(BoxedFirst != nullptr ? BoxedFirst->GetThenPin() : nullptr,
 				BoxedSecond != nullptr ? BoxedSecond->GetExecPin() : nullptr);
 
-			// THE BOX MUST CONTAIN ITS MEMBER **ENTIRELY** AND STILL BE NARROWER THAN THE PLANNED MOVE, and
-			// the first version satisfied NEITHER - while a comment above it claimed "ENTIRELY INSIDE".
-			// MEASURED, from the commandlet's own diagnostic:
+			// THE BOX MUST CONTAIN ITS MEMBER **ENTIRELY** AND STILL BE NARROWER THAN THE PLANNED MOVE.
+			// Both halves have to hold at once, and a box that satisfies one and not the other tests
+			// nothing. MEASURED, from the commandlet's own diagnostic:
 			//
 			//   the box         3300 .. 3600 wide, 1372 .. 1992 tall
 			//   BoxedSecond     3400 .. 3620 wide, 1400 .. 1608 tall   -> 3620 > 3600, so NOT a member
@@ -1425,7 +1423,7 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 	// TA-10: a data table with a user struct. NOT BUILT, AND THIS IS A MEASURED ENGINE LIMIT RATHER
 	// THAN A LACK OF EFFORT.
 	//
-	// THE FIRST VERSION CRASHED THE WHOLE COMMANDLET, and the callstack says exactly why:
+	// THE CRASH IS AN ENGINE LIMIT AND NOT AN ARGUMENT ABOUT EFFORT. The callstack says exactly why:
 	//
 	//     CastChecked<UUserDefinedStructEditorData, UObject>()
 	//     FMemberVariableNameHelper::Generate()   StructureEditorUtils.cpp:256
@@ -1487,11 +1485,11 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			// Three attempts to satisfy it by reshaping the arguments all failed; building the string
 			// without `Printf` cannot fail, and a compile-time format check has nothing to check
 			// against a concatenation.
-			// THE LINE IS ASSEMBLED BY CONCATENATION, WITH NO `%s` IN IT AT ALL. The first version
-			// wrote `FString(TEXT("%s: graphs=")) + Name + ...`, which is a MANGLED FORMAT STRING -
-			// there is no `Printf` to substitute the `%s`, so the output literally read
-			// `%s: graphs=BP_TestAlpha`. Measured in the commandlet's own report, which is what the
-			// report is for: a wrong line is visible in it. `TEXT("...") + Name` also does not compile
+			// THE LINE IS ASSEMBLED BY CONCATENATION, WITH NO `%s` IN IT AT ALL. Writing
+			// `FString(TEXT("%s: graphs=")) + Name + ...` would produce a MANGLED FORMAT STRING -
+			// there is no `Printf` to substitute the `%s`, so the output would literally read
+			// `%s: graphs=BP_TestAlpha`, and the commandlet's own report is where such a line becomes
+			// visible. `TEXT("...") + Name` also does not compile
 			// (`error C2110: cannot add two pointers`), so the left operand is an `FString`.
 			// EVERY OPERAND EXCEPT THE FIRST IS WRAPPED, because `Name + TEXT("...") + TEXT("...")`
 			// still adds a POINTER once the left side is an `FString` and the next is a literal:
@@ -1595,7 +1593,7 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 				// THE SLOT PADDING IS NOT SET HERE, AND THAT IS A MEASURED LIMIT RATHER THAN AN
 				// OMISSION. `UPanelSlot` (`Runtime/UMG/Public/Components/PanelSlot.h`) declares ONLY
 				// its `Content` and `Parent` UPROPERTYs - there is NO `Padding` member and no
-				// `SetPadding`, which is the `error C2039` the first version produced - so padding
+				// `SetPadding` to call, so naming one is `error C2039` - so padding
 				// belongs to the SLOT SUBCLASS, and a canvas positions by layout rather than padding.
 				//
 				// `T-BP-7`'s "hidden text with non-zero slot padding" therefore has its HIDDEN half
@@ -1614,9 +1612,9 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 			//       [WidgetBlueprintCompiler.cpp:781]
 			//     Widget [CardImage] was added but did not get a GUID
 			//
-			// The map is filled by `ToggleWidgetAsVariable`, so a widget that is never toggled has NO
-			// GUID and the WIDGET COMPILER asserts. The first version toggled only Title, Action and
-			// InnerSpacer, leaving Picture and Hidden without one.
+			// The map is filled by `ToggleWidgetAsVariable`, so EVERY widget needs the toggle: one that
+			// is never toggled has NO GUID and the WIDGET COMPILER asserts. Leaving Picture and Hidden
+			// out is exactly the failure above.
 			//
 			// `T-BP-7` READS THE VARIABLE FLAG, so the two states must both exist: `InnerSpacer` is
 			// the widget WITHOUT the flag that still has a bound event, and the others are variables.
@@ -1657,10 +1655,9 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 
 			// AN INSTANCE EDITABLE TEXT VARIABLE, which `TA-8` overrides on one copy only.
 			//
-			// `SetBlueprintVariableInstanceEditable` IS THE ENGINE'S OWN CALL FOR THIS, and reaching
-			// for a metadata key instead was a MEASURED MISTAKE. The first version set
-			// `FBlueprintMetadata::MD_ExposeOnSpawn`, which is a DIFFERENT flag, and the compiler then
-			// refused the Blueprint:
+			// `SetBlueprintVariableInstanceEditable` IS THE ENGINE'S OWN CALL FOR THIS. Reaching
+			// for a metadata key instead makes the compiler refuse the Blueprint, because
+			// `FBlueprintMetadata::MD_ExposeOnSpawn` is a DIFFERENT flag:
 			//
 			//     [Compiler] Variable Caption is marked as 'Expose on Spawn' but not
 			//     'Instance Editable'; please make it 'Instance Editable'
@@ -2162,11 +2159,10 @@ int32 UTurboMCPKitCommandlet::Main(const FString& Params)
 	int32 Built = 0;
 	int32 Measured = 0;
 	int32 NotBuilt = 0;
-	// `SHORT` IS A THIRD STATE AND NOT THE COMPLEMENT OF `measured`. The first version reported
-	// `assets - measured` as short, which counted an asset this commandlet CANNOT BUILD as short as
-	// well as missing: two findings for one cause, and the summary then read `short=1` on a run whose
-	// only problem was the declared limit. An asset is SHORT when it WAS built and does not carry the
-	// structure its rows require - a different thing from not existing.
+	// `SHORT` IS A THIRD STATE AND NOT THE COMPLEMENT OF `measured`. Reporting `assets - measured` as
+	// short counts an asset this commandlet CANNOT BUILD as short as well as missing: two findings for
+	// one cause. An asset is SHORT when it WAS built and does not carry the structure its rows require
+	// - a different thing from not existing.
 	int32 Short = 0;
 	for (const FKitResult& Result : Builder.Results)
 	{
