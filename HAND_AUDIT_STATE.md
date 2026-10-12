@@ -452,3 +452,29 @@ repairs are described with the pattern to copy, but nothing has been fixed in `S
 *** AND ONE THING THE AUDIT LEARNED ABOUT ITSELF, WORTH KEEPING: FOUR OF THE FIVE TOOLS IT WROTE HAD TO BE
 CORRECTED AFTER THE FIRST RUN, AND THREE OF THOSE FOUR BY THE TOOL'S OWN OUTPUT. The screens are useful, and a
 screen that reports a bare number without its criterion will be read as a fact.***
+
+---
+
+## 16. THE SUITE SET IS CLOSED, AND HOW EACH FILE WAS READ
+
+**53 suites. 38 read in full; 15 read in structure** - size, check count, negative assertions, and read-back or
+refusal occurrences. **No suite is now unexamined.**
+
+| Read in full (38) | Read in structure (15) |
+|---|---|
+| the material suites, graph suites, widget suites, json, capture-asset, bp-lint, struct, enum, vars, override, refs, call-log, vcs, vcs-write, panel-reach, local-vars, play-check, dead, tree, datatable-rows, comment-boxes, comments, pure-..., asset-cost, uncovered-tools, graph-check | `test-agent-help` (152 l., 26 checks), `test-asset-tools` (177, 31), `test-batch-tools` (203, 20), `test-call-cost` (330, 29), `test-capture-selectors` (472, **69**), `test-capture` (379, 49), `test-datatable` (190, 23), `test-function` (233, 30), `test-kit-ta17-ta19` (365, 33), `test-layout` (147, 21), `test-mat-inst-load` (303, 22), `test-overrides` (200, 25), `test-panel` (276, 15), `test-pure-checks` (340, 22), `test-trace` (333, 26) |
+
+*** AND THE DIFFERENCE MATTERS AND IS STATED RATHER THAN GLOSSED: a structural read establishes the standard, the
+SHAPE, and the absence of an anomaly - it does NOT establish what each of the 441 checks in those 15 files
+proves. A card written from a structural read would be a conclusion from a fragment, which is `V1`. ***
+
+**What the structural read DID establish, on all 53:**
+
+    the check count ranges from 15 (`test-panel`) to 69 (`test-capture-selectors`) - AN EFFECT OF TOOL SIZE, not
+    of quality, since every one of them names its acceptance row and prints ok/FAIL with an accumulating list
+    6 of the 15 show no NEGATIVE assertion by my pattern, and the pattern has been wrong four times this session
+    `test-trace` shows 7 read-back or refusal occurrences against 0 negatives by the same pattern, WHICH IS THE
+    PATTERN FAILING, NOT THE SUITE
+
+*** SO THE HONEST SUMMARY OF THE SUITE LAYER IS: 38 suites read, 15 measured, AND NO ANOMALY FOUND IN ANY OF THE
+53. The audit did not run them - running them is a separate act and the user asked for no tests for now. ***
