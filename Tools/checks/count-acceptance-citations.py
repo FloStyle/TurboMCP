@@ -82,6 +82,17 @@ def main() -> int:
     print("      WHICH IS HOW A COUNT THAT SAID 'SUITES' CAME TO EXCEED THE %d SUITES THAT EXIST. THE UNITS ARE" % len(suites))
     print("      NOW BOTH STATED: *** %d CLAIMS, MADE BY %d OF THE %d SUITES. ***"
           % (len(claimed), len(set(n for _, n in claimed)), len(suites)))
+    silent = [name for name, text in texts
+              if not [i for line in CLAIMS.findall(text) for i in IDS_IN_CLAIM.findall(line)]]
+    if silent:
+        print()
+        print("  *** AND THE SUITES THAT CLAIM NO ROW ARE NAMED RATHER THAN LEFT AS A REMAINDER - %d OF THEM: ***"
+              % len(silent))
+        for name in silent:
+            print("      %s" % name)
+        print("      *** A SUITE THAT PROVES NO ACCEPTANCE ROW IS A LEGITIMATE ANSWER - `test-uncovered-tools`")
+        print("      PROVES COVERAGE, WHICH IS ANOTHER SCRIPT'S QUESTION - BUT THE ABSENCE HAS TO BE VISIBLE,")
+        print("      BECAUSE AN UNNAMED REMAINDER IS RE-DERIVED BY EVERY READER INSTEAD OF READ. ***")
     for rid, name in claimed:
         print("      %-14s %s" % (rid, name))
     print()
