@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-WIDGET-4
 """Exercise `R-WIDGET-TREE`, the slot-ordered tree reader behind `P/E-WIDGET-TREE`.
 
   T-WIDGET-4  a widget tree read back reads back identical, animations included.
