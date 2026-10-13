@@ -40,7 +40,16 @@
 [CmdletBinding()]
 param(
     [string[]] $Suites = @('all'),
-    [switch] $SkipSlow
+    [switch] $SkipSlow,
+    # *** -Fast: DO NOT RESTORE THE FIXTURE BETWEEN SUITES. The restore below is what makes a full run green, and it is
+    # also what stops the editor: `git checkout` answers `unable to unlink old ...: Invalid argument` while the editor
+    # holds the file open, so the harness must stop it first. A SUITE THAT SAVES AN ASSET ALWAYS MAKES THE FIXTURE
+    # DIRTY, SO A SAVE-HEAVY RUN RESTARTS THE EDITOR AGAIN AND AGAIN - AND THAT, NOT THE SUITES, IS WHERE THE MINUTES
+    # GO. WITH -Fast THE RESTORE HAPPENS ONCE, AFTER THE LOOP. ***
+    # *** AND IT IS NOT THE DEFAULT, BECAUSE A DEFERRED RESTORE LETS A LATER SUITE SEE AN EARLIER SUITE'S FIXTURE -
+    # WHICH IS EXACTLY THE `test-vcs` FAILURE THE RESTORE WAS ADDED TO FIX. ANY SUITE THAT FAILS IN THE FAST PASS IS
+    # THEREFORE RE-RUN ALONE, AND BOTH VERDICTS ARE REPORTED. ***
+    [switch] $Fast
 )
 
 $ErrorActionPreference = 'Stop'
@@ -386,7 +395,13 @@ foreach ($name in $NeedsEditor) {
     # ---------------------------------------------------------------------------------------------
     $fixtureDir = Join-Path (Split-Path $PSScriptRoot -Parent) 'TestProject\Content\Tests'
     $dirty = (& git status --porcelain -- $fixtureDir 2>&1 | Out-String).Trim()
-    if ($dirty) {
+    # *** WITH -Fast THE RESTORE IS DEFERRED TO AFTER THE LOOP, SO NEITHER THE EDITOR NOR THE FIXTURE IS TOUCHED HERE.
+    # `$script:FastDeferredRestore` RECORDS THAT SOMETHING WAS LEFT DIRTY, SO THE END-OF-RUN PASS KNOWS IT MUST RESTORE
+    # EVEN IF THE LAST SUITE HAPPENED TO LEAVE THE TREE CLEAN. ***
+    if ($dirty -and $Fast) {
+        $script:FastDeferredRestore = $true
+    }
+    if ($dirty -and -not $Fast) {
         Stop-Editor
         & git checkout -- $fixtureDir 2>&1 | Out-Null
         $stillDirty = (& git status --porcelain -- $fixtureDir 2>&1 | Out-String).Trim()
@@ -395,6 +410,62 @@ foreach ($name in $NeedsEditor) {
             ($stillDirty -split "`n" | Select-Object -First 3) | ForEach-Object { Write-Output ("        " + $_.Trim()) }
         } else {
             Write-Output "  the shared fixture is restored on the way out, so the next suite starts clean"
+        }
+    }
+}
+
+# =============================================================================================
+# *** -Fast: ONE RESTORE, THEN EVERY FAILURE RE-RUN ALONE. ***
+#
+# THE RESTORE IS DEFERRED TO HERE BECAUSE THE PER-SUITE ONE IS WHAT COST THE EDITOR RESTART: `git checkout` cannot
+# replace a file the editor holds open (`unable to unlink old ...: Invalid argument`), so the harness has to stop the
+# editor first - and a suite that saves an asset makes the fixture dirty every time. ONE `Stop-Editor` AT THE END
+# REPLACES ONE PER DIRTY SUITE.
+#
+# AND THE RE-RUN IS WHAT MAKES `-Fast` BELIEVABLE. A DEFERRED RESTORE LETS A LATER SUITE SEE AN EARLIER SUITE'S
+# FIXTURE, WHICH IS EXACTLY THE `test-vcs` FAILURE THE PER-SUITE RESTORE WAS ADDED TO FIX. SO A FAILURE IN THE FAST
+# PASS CANNOT BE READ AS A CAPABILITY RESULT UNTIL IT HAS BEEN RE-RUN AGAINST A CLEAN EDITOR AND A RESTORED FIXTURE.
+# *** "FAILED IN THE PASS, PASSED ALONE" IS A FIXTURE-ORDER RESULT, AND IT NAMES A SUITE THAT IS NOT HERMETIC. ***
+# =============================================================================================
+if ($Fast) {
+    if ($script:FastDeferredRestore) {
+        Write-Output ""
+        Write-Output "--- -Fast: restoring the shared fixture ONCE, at the end of the pass ---"
+        Stop-Editor
+        & git checkout -- $fixtureDir 2>&1 | Out-Null
+        $stillDirty = (& git status --porcelain -- $fixtureDir 2>&1 | Out-String).Trim()
+        if ($stillDirty) {
+            Write-Output "  NOTE the fixture is STILL dirty after the deferred restore:"
+            ($stillDirty -split "`n" | Select-Object -First 3) | ForEach-Object { Write-Output ("        " + $_.Trim()) }
+        } else {
+            Write-Output "  restored: the tree is clean, so the isolated re-runs below start from the same state a normal run would"
+        }
+    }
+
+    $failedInPass = @($NeedsEditor | Where-Object {
+        $Results.ContainsKey($_) -and $Results[$_] -notmatch 'RESULT: PASS|^PASS ' -and $Results[$_] -notmatch 'BLOCKED'
+    })
+    if ($failedInPass.Count -gt 0) {
+        Write-Output ""
+        Write-Output ("=== -Fast: RE-RUNNING {0} FAILURE(S) ALONE, against a clean editor and a restored fixture ===" -f $failedInPass.Count)
+        Write-Output "  A SUITE THAT FAILS IN THE PASS AND PASSES ALONE IS NOT HERMETIC: it depends on a fixture an earlier"
+        Write-Output "  suite left behind. That is a FIXTURE-ORDER result and NOT a capability one."
+        foreach ($name in $failedInPass) {
+            $inPass = $Results[$name]
+            if (-not (Start-EditorAndWait)) {
+                Write-Output ("  {0}: the editor would not start for the isolated re-run, so this stays a pass failure" -f $name)
+                continue
+            }
+            $alone = Invoke-SuiteProcess -SuiteName $name
+            $aloneLine = ($alone.Output | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
+            if (-not $aloneLine) { $aloneLine = 'RESULT: no result line' }
+            Write-Output ("  {0}:" -f $name)
+            Write-Output ("      in the pass -> {0}" -f $inPass)
+            Write-Output ("      ALONE       -> {0}" -f $aloneLine.Trim())
+            $Results[$name] = "{0}   *** ALONE: {1} ***" -f $inPass, $aloneLine.Trim()
+            if ($aloneLine -match 'RESULT: PASS|^PASS ') {
+                Write-Output "      *** NOT HERMETIC: it passes alone and failed in the pass, so the pass failure was the fixture. ***"
+            }
         }
     }
 }
