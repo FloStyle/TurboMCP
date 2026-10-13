@@ -612,7 +612,13 @@ def main():
 
     print()
     if failures:
-        print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
+        # *** THE SAVE'S OWN REPLY GOES IN THE SUMMARY LINE, BECAUSE THAT IS THE ONLY LINE THE RUNNER PASSES THROUGH.
+        # AN INTERMEDIATE `RESULT:` PRINT IS DISCARDED - MEASURED, NOT ASSUMED - AND WITHOUT THE REPLY EVERY THEORY
+        # ABOUT THIS FAILURE COSTS A WHOLE RUN. `dir()` IS THE GUARD: IT LISTS LOCALS INSIDE A FUNCTION AND GLOBALS AT
+        # MODULE LEVEL, SO THIS CANNOT RAISE A `NameError` AND LOSE THE `RESULT:` LINE ENTIRELY. ***
+        _reply = " ".join(saved.split())[:260] if "saved" in dir() else "(the save was never reached)"
+        print("RESULT: FAIL (%d) -> %s | the save answered: [%s]"
+              % (len(failures), ", ".join(failures), _reply))
         return 1
     print("RESULT: PASS")
     return 0
