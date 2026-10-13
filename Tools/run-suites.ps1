@@ -342,7 +342,10 @@ foreach ($name in $NeedsEditor) {
             Write-Output "  NOT A CAPABILITY ONE: the editor will not come up, so no tool was exercised."
             Write-Output "  The remaining suites are recorded as NOT RUN rather than reported as failures."
             foreach ($remaining in $NeedsEditor) {
-                if (-not $Results.ContainsKey($remaining)) {
+                # *** `Contains`, NOT `ContainsKey`: the same `OrderedDictionary` mistake as the `-Fast` re-run below.
+                # THIS PATH HAD NEVER RUN, SO THE BUG SAT HERE UNNOTICED - and it is on the ABORT path, which is exactly
+                # where a second failure must not be able to hide the first. ***
+                if (-not $Results.Contains($remaining)) {
                     $Results[$remaining] = 'RESULT: NOT RUN (aborted: the editor would not start)'
                 }
             }
@@ -442,8 +445,13 @@ if ($Fast) {
         }
     }
 
+    # *** `$Results` IS AN `OrderedDictionary`, AND `OrderedDictionary` HAS NO `ContainsKey` - IT HAS `Contains`. The
+    # first version of this line called `ContainsKey` and THREW INSIDE THE `Where-Object`, SO `$failedInPass` STAYED
+    # EMPTY AND THE ISOLATED RE-RUN NEVER RAN. A `-Fast` pass then reported a failure with no isolated verdict beside it,
+    # which looks exactly like a suite that fails in isolation too. *** *** THE EXCEPTION WAS IN THE LOG AND INVISIBLE IN
+    # THE SUMMARY, BECAUSE THE SUMMARY FILTERS FOR `FAIL` AND `PASS` LINES - WHICH IS WHY THE LOG IS READ BACK. ***
     $failedInPass = @($NeedsEditor | Where-Object {
-        $Results.ContainsKey($_) -and $Results[$_] -notmatch 'RESULT: PASS|^PASS ' -and $Results[$_] -notmatch 'BLOCKED'
+        $Results.Contains($_) -and $Results[$_] -notmatch 'RESULT: PASS|^PASS ' -and $Results[$_] -notmatch 'BLOCKED'
     })
     if ($failedInPass.Count -gt 0) {
         Write-Output ""
