@@ -163,6 +163,16 @@ private:
 	TArray<FEntry> Entries;
 
 	/** The cap, from `02_PRINCIPLES.md` `P6`: a list must not grow without bound. */
+	/**
+	 * One line per call, oldest first: IN from the `start` record and OUT from the `end` record that follows it.
+	 *
+	 * *** A `start` WITH NO `end` IS PRINTED AS `running` RATHER THAN DROPPED, BECAUSE THAT IS THE CALL THAT WAS IN
+	 * FLIGHT WHEN SOMETHING WENT WRONG - WHICH IS THE CASE THE START RECORD EXISTS FOR. *** A record with an `end` and
+	 * no `start` (the engine's own events arrive that way) is a row of its own.
+	 * *** TEXT RATHER THAN WIDGETS SO A SUITE CAN ASSERT ON IT; THE PANEL RENDERS THIS AND ADDS NOTHING OF ITS OWN. ***
+	 */
+	FString RenderTimeline() const;
+
 	static constexpr int32 MaxEntries = 1000;
 
 	/**

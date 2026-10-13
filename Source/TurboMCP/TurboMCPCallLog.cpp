@@ -113,6 +113,75 @@ FString FTurboMCPCallLog::ToJsonLine(const FEntry& InEntry)
 	return Out;
 }
 
+FString FTurboMCPCallLog::RenderTimeline() const
+{
+	const TArray<FEntry> Records = GetEntries();
+	if (Entries.Num() == 0)
+	{
+		return TEXT("; no calls recorded yet this session");
+	}
+
+	/** The shared row shape, so a running call and a finished one differ in one field rather than in layout. */
+	auto Row = [](const FEntry& InCall, const FString& InStartStamp, const FEntry* InEnd) -> FString
+	{
+		FString ShortArgs = InCall.Arguments;
+		ShortArgs.ReplaceInline(TEXT("\n"), TEXT(" "));
+		ShortArgs.ReplaceInline(TEXT("\r"), TEXT(" "));
+		if (ShortArgs.Len() > 60)
+		{
+			ShortArgs = ShortArgs.Left(60) + TEXT("...");
+		}
+
+		FString Out = FString::Printf(TEXT("\n  %s  %s.%s  %s"), *InStartStamp, *InCall.Toolset, *InCall.Tool,
+			ShortArgs.IsEmpty() ? TEXT("(no arguments)") : *ShortArgs);
+		if (InEnd == nullptr)
+		{
+			return Out + TEXT("  -> running");
+		}
+
+		// NAMED LOCALS: `Printf`'s format checker refuses a `%s` whose argument is a temporary (`error C7595`).
+		const FString Chars = FEntry::DescribeSize(InEnd->ResultChars);
+		const FString Tokens = FEntry::DescribeSize(InEnd->TokenEstimate);
+		return Out + FString::Printf(TEXT("  -> %s  %.1fms  %s chars  ~%s tokens%s%s"),
+			InEnd->bError ? TEXT("ERROR") : TEXT("ok"), InEnd->DurationMs, *Chars, *Tokens,
+			InEnd->IsSlow() ? TEXT("  SLOW") : TEXT(""), InEnd->IsLarge() ? TEXT("  LARGE") : TEXT(""));
+	};
+
+	FString Out = FString::Printf(
+		TEXT("; %d record(s), oldest first. A call with no OUT yet reads `running`."), Records.Num());
+
+	// A call is identified by what it called, which is what the start and the end of one call have in common.
+	TMap<FString, int32> OpenIndex;
+	for (int32 Index = 0; Index < Records.Num(); ++Index)
+	{
+		const FEntry& Entry = Records[Index];
+		const FString Key = Entry.Toolset + TEXT("|") + Entry.Tool;
+		if (Entry.Phase == TEXT("start"))
+		{
+			OpenIndex.Add(Key, Index);
+			continue;
+		}
+		if (const int32* Started = OpenIndex.Find(Key))
+		{
+			Out += Row(Records[*Started], Records[*Started].Timestamp, &Entry);
+			OpenIndex.Remove(Key);
+		}
+		else
+		{
+			// An `end` with no `start`: the engine's own events arrive this way, so it is a row by itself.
+			Out += Row(Entry, Entry.Timestamp, &Entry);
+		}
+	}
+
+	// Whatever is still open never got its end. Printed last, because it is the most recent thing that happened.
+	for (const TPair<FString, int32>& Pair : OpenIndex)
+	{
+		const FEntry& Started = Records[Pair.Value];
+		Out += Row(Started, Started.Timestamp, nullptr);
+	}
+
+	return Out;
+}
 void FTurboMCPCallLog::AppendToFile(const FString& InLine) const
 {
 	const FString Path = GetLogFilePath();
