@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: NONE - it proves that R-BP-LOAD's JSON carries the same facts as its text, which is a PARITY rule from 04_FORMATS.md. NO ACCEPTANCE ROW MENTIONS JSON: grep '^\| T-[A-Z]+-\d+ \|.*(JSON|json)' over 06_ACCEPTANCE.md returns nothing, and the row for reading a Blueprint asks for the facts rather than for the format they are printed in.
 """Check that R-BP-LOAD's JSON carries the same facts as its text.
 
 `04_FORMATS.md` warns that most bugs in this project came from two tools disagreeing about

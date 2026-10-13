@@ -69,7 +69,8 @@ def main() -> int:
         else:
             uncited.append(rid)
         for name, text in texts:
-            if rid in [i for line in CLAIMS.findall(text) for i in IDS_IN_CLAIM.findall(line)]:
+            if rid in [i for line in CLAIMS.findall(text)
+                               for i in IDS_IN_CLAIM.findall(re.split(r"\s+-\s+|\.\s", line)[0])]:
                 claimed.append((rid, name))
 
     print("  document            : %s" % DOC.name)

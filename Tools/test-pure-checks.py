@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-HELP-6 - it exercises the two PURE functions BEHIND R-CALL-COST with literal inputs, which is the same capability T-HELP-6 names, proved a level down. A row may be claimed by MORE THAN ONE SUITE, and one already is.
 """Exercise the two PURE functions behind `R-CALL-COST`, with LITERAL inputs.
 
 WHY THIS SUITE EXISTS, AND ONE HALF OF THE GAP IS MEASURED RATHER THAN ASSUMED
