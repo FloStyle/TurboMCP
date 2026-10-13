@@ -68,7 +68,10 @@ than guess.**
 another inside a **local variable** in `TurboMCPCallCost.cpp`. *A search that cannot tell a tool from a loop
 counter is the same defect as a regex that assumes a format.* **The patterns themselves are not written
 here, because writing them would make this file match its own search** — which happened twice while it was
-being prepared.
+being prepared. *** AND THEY ARE IN [`AUDIT_PATTERNS.md`](AUDIT_PATTERNS.md), WHICH IS WHERE THIS SENTENCE SHOULD
+HAVE POINTED ALL ALONG: THAT DOCUMENT HOLDS THE PATTERNS, AND UNTIL THIS LINE IT WAS CITED BY EXACTLY ONE FILE IN
+THE REPOSITORY (`HAND_AUDIT_STATE.md:208`) - SO A READER TOLD THE PATTERNS WERE ELSEWHERE HAD NO WAY TO REACH THEM.
+A SENTENCE THAT SAYS "NOT HERE" OWES THE READER A "BUT THERE". ***
 
 ---
 
