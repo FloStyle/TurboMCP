@@ -17,18 +17,18 @@ promotion cannot work as written on the asset the project already has.
 
 | # | Call site | Engine declaration read | Verdict |
 |---|---|---|---|
-| 1 | `LocalVars.cpp:488` `DoesSupportLocalVariables(Graph)` | `Kismet2/BlueprintEditorUtils.h:682` `static UNREALED_API bool DoesSupportLocalVariables(UEdGraph const* InGraph);` | **OK** |
+| 1 | `LocalVars.cpp:493` `DoesSupportLocalVariables(Graph)` | `Kismet2/BlueprintEditorUtils.h:682` `static UNREALED_API bool DoesSupportLocalVariables(UEdGraph const* InGraph);` | **OK** |
 | 2 | `LocalVars.cpp:543` `FindUniqueKismetName(Blueprint, *Candidate.ProposedName)` | `BlueprintEditorUtils.h:2317` `static UNREALED_API FName FindUniqueKismetName(UBlueprint* Blueprint, const FString& BaseName, UStruct* InScope = nullptr, bool bFunctionScope = false);` | **OK**, returns `FName`, matches the local `FName VarName` with no dereference |
 | 3 | `LocalVars.cpp:546` `AddLocalVariable(Blueprint, Graph, VarName, NewType, Outputs[0]->DefaultValue)` | `BlueprintEditorUtils.h:976` `static UNREALED_API bool AddLocalVariable(UBlueprint* Blueprint, UEdGraph* InTargetGraph, const FName InNewVarName, const FEdGraphPinType& InNewVarType, const FString& DefaultValue = FString());` | **OK**, 5 args, 5 params |
-| 4 | `LocalVars.cpp:557` `NewObject<UK2Node_VariableGet>(Graph)` | `K2Node_VariableGet.h`, `UCLASS` subclass of `UK2Node_Variable` | **OK** |
-| 5 | `LocalVars.cpp:558` `Getter->CreateNewGuid()` | `EdGraphNode.h` `void CreateNewGuid();` | **OK** |
+| 4 | `LocalVars.cpp:617` `NewObject<UK2Node_VariableGet>(Graph)` | `K2Node_VariableGet.h`, `UCLASS` subclass of `UK2Node_Variable` | **OK** |
+| 5 | `LocalVars.cpp:618` `Getter->CreateNewGuid()` | `EdGraphNode.h` `void CreateNewGuid();` | **OK** |
 | 6 | `LocalVars.cpp:559-560` `VariableReference.SetLocalMember(VarName, Graph->GetName(), FindLocalVariableGuidByName(...))` | `Engine/MemberReference.h:194` `ENGINE_API void SetLocalMember(FName InMemberName, FString InScopeName, const FGuid InMemberGuid);` **and** `:191` `SetLocalMember(FName, UStruct*, const FGuid)` | **OK**, the `FString` overload is selected by `Graph->GetName()` |
-| 7 | `LocalVars.cpp:560` `FindLocalVariableGuidByName(Blueprint, Graph, VarName)` | `BlueprintEditorUtils.h:1036` `static UNREALED_API FGuid FindLocalVariableGuidByName(const UBlueprint* InBlueprint, const UEdGraph* InScopeGraph, const FName InVariableName);` | **OK**, 3 args |
+| 7 | `LocalVars.cpp:620` `FindLocalVariableGuidByName(Blueprint, Graph, VarName)` | `BlueprintEditorUtils.h:1036` `static UNREALED_API FGuid FindLocalVariableGuidByName(const UBlueprint* InBlueprint, const UEdGraph* InScopeGraph, const FName InVariableName);` | **OK**, 3 args |
 | 8 | `LocalVars.cpp:564` `Graph->AddNode(Getter, true, false)` | `EdGraph.h` `void AddNode(UEdGraphNode* NodeToAdd, bool bUserAction = false, bool bSelectNewNode = true);` | **OK**, 3 args |
 | 9 | `LocalVars.cpp:568,581` `Getter->GetValuePin()` | `K2Node_Variable.h:183` `UE_API UEdGraphPin* GetValuePin() const;` → `K2Node_Variable.cpp:547` `FindPin(GetVarName())` | **OK as a call**, but see Defect 2 — it returns `nullptr` in the state `Apply` leaves the node in |
-| 10 | `LocalVars.cpp:580` `Output->BreakLinkTo(Consumer)` | `EdGraphPin.h:434` `ENGINE_API void BreakLinkTo(UEdGraphPin* ToPin, bool bAlwaysMarkDirty = true);` → `EdGraphPin.cpp:661` | **OK**, and it removes from `LinkedTo` on both sides, so the copy at line 573 is necessary and sufficient |
-| 11 | `LocalVars.cpp:581` `MakeLinkTo(Consumer)` | `EdGraphPin.h` `ENGINE_API void MakeLinkTo(UEdGraphPin* ToPin);` | **OK** |
-| 12 | `LocalVars.cpp:589` `Node->DestroyNode()` | `EdGraphNode.h` → `EdGraphNode.cpp:554` `void UEdGraphNode::DestroyNode()` = `ParentGraph->RemoveNode(this);` | **OK**, and the engine's own comment confirms *"Remove the node - this will break all links."* |
+| 10 | `LocalVars.cpp:668` `Output->BreakLinkTo(Consumer)` | `EdGraphPin.h:434` `ENGINE_API void BreakLinkTo(UEdGraphPin* ToPin, bool bAlwaysMarkDirty = true);` → `EdGraphPin.cpp:661` | **OK**, and it removes from `LinkedTo` on both sides, so the copy at line 573 is necessary and sufficient |
+| 11 | `LocalVars.cpp:669` `MakeLinkTo(Consumer)` | `EdGraphPin.h` `ENGINE_API void MakeLinkTo(UEdGraphPin* ToPin);` | **OK** |
+| 12 | `LocalVars.cpp:676` `Node->DestroyNode()` | `EdGraphNode.h` → `EdGraphNode.cpp:554` `void UEdGraphNode::DestroyNode()` = `ParentGraph->RemoveNode(this);` | **OK**, and the engine's own comment confirms *"Remove the node - this will break all links."* |
 
 **No signature mismatch was found.** Unlike the five guessed names that failed earlier in this project
 (`GetEdGraphPinTypeFromSimpleType`, `GetEnumType`, `CPF_Private`, `CPF_BlueprintReadWrite`,
