@@ -71,7 +71,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 			const bool bMatch =
 				Entry.Toolset.Contains(FilterText, ESearchCase::IgnoreCase)
 				|| Entry.Tool.Contains(FilterText, ESearchCase::IgnoreCase)
-				|| Entry.Source.Contains(FilterText, ESearchCase::IgnoreCase);
+				|| Entry.Source.Contains(FilterText, ESearchCase::IgnoreCase)
+			// *** THE ASSET AND THE STATUS TOO, WHICH `03_TOOLS.md` ASKS FOR AND WHICH THE FILTER DID NOT REACH: an
+			// asset only ever appears inside the arguments, and a status is `bError` rather than a text field, so
+			// neither could be found by the three fields above. ONE WORD STILL FINDS EITHER. ***
+			|| Entry.Arguments.Contains(FilterText, ESearchCase::IgnoreCase)
+			|| FString(Entry.bError ? TEXT("error") : TEXT("ok")).Contains(FilterText, ESearchCase::IgnoreCase);
 			if (!bMatch)
 			{
 				continue;
