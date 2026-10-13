@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LAY-6
 """Exercise R-COMMENT-LIST against the running editor.
 
 Checks the rules the spec states, and exits non-zero on failure.

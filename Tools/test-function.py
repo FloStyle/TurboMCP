@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-STRUCT-5
 """Exercise E-FUNCTION-ADD and E-FUNCTION-REMOVE against the running editor.
 
   T-STRUCT-5  add and remove a function

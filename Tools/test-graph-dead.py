@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LAY-11
 """Exercise P-GRAPH-DEAD and E-GRAPH-DEAD against the running editor.
 
   T-LAY-11  remove dead copies

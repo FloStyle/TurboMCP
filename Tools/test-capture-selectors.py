@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LOOK-7
 """Exercise the four framing selectors added to L-CAPTURE by WORKING_PLAN row 2.1.
 
   selection, neighbours, box-neighbours, screen   -- 03_TOOLS.md section 18 table

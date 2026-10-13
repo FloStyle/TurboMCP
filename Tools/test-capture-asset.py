@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LOOK-8
 """Exercise L-CAPTURE-ASSET: capture an ASSET EDITOR, not just a graph.
 
   WORKING_PLAN.md row 2.2   `L-CAPTURE-ASSET` = material, instance, function,

@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-STRUCT-4
 """Exercise the P/E-OVERRIDE-ADD pair against the running editor.
 
   T-STRUCT-4  create an override on purpose

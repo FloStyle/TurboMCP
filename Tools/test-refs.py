@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-BP-11
 """Exercise R-REFS against the running editor.
 
 Checks the rules the spec states, and exits non-zero on failure.

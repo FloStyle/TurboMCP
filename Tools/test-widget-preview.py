@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LOOK-5
 """Exercise L-WIDGET-PREVIEW against the running editor.
 
 Checks the rules the spec states, and exits non-zero on failure.

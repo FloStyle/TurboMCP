@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-STRUCT-3
 """Exercise E-WIDGETS-AS-VARS against the running editor.
 
   T-STRUCT-3  mark widgets as variables

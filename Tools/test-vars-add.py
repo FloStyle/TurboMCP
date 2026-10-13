@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-STRUCT-1
 """Exercise the P/E-VARS-ADD pair against the running editor.
 
   T-STRUCT-1  add variables in bulk

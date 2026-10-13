@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-BP-15
 """Exercise R-DATATABLE against the running editor.
 
 Checks the rules the spec states, and exits non-zero on failure.

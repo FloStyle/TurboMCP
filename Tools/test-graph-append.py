@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-WRITE-2
 #!/usr/bin/env python3
 """`P/E-GRAPH-APPEND` (`T-WRITE-2`): a text block is added to a graph, and nothing is removed.
 

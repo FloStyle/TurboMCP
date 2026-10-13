@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-WRITE-1
 """
 `P-GRAPH-CHECK` (`T-WRITE-1`): graph text is checked, and NOTHING is written.
 

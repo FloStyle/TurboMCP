@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-STRUCT-2
 """Exercise the P/E-ENUM-ADD pair against the running editor.
 
   T-STRUCT-2  create an enum asset

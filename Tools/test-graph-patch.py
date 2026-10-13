@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-WRITE-5
 """
 `P/E-GRAPH-PATCH` (`T-WRITE-5`): changing two lines changes exactly two nodes.
 

@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-STRUCT-6
 """Exercise P/E-WIDGET-RETARGET against the running editor.
 
   T-STRUCT-6  fix bound events after a class swap

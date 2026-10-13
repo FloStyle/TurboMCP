@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LAY-13
 """Exercise P-LOCAL-VARS and E-LOCAL-VARS against the running editor.
 
   T-LAY-13  promote safe values to local variables

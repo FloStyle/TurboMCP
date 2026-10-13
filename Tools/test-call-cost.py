@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-HELP-6
 """Exercise `R-CALL-COST`.
 
   T-HELP-6  with the log on, the most expensive call, the slowest and the totals per tool
