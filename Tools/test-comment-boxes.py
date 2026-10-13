@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LAY-12
 """Exercise P-COMMENT and E-COMMENT against the running editor.
 
   T-LAY-12  comment boxes
