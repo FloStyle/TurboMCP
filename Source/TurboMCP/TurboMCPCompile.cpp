@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "Tools/TurboMCPToolsets.h"
+#include "UObject/SavePackage.h"
 
 #include "Containers/UnrealString.h"
 #include "Editor.h"
@@ -294,7 +295,7 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 	return Result;
 }
 
-FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
+FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets, const FString& WithoutThumbnail)
 {
 	const TArray<FString> Parts = FTurboMCPAssetResolver::SplitList(Assets);
 	if (Parts.Num() == 0)
@@ -404,7 +405,33 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 			// One asset at a time, so a failure cannot be blamed on its
 			// neighbour: D-33 records that saving several at once silently saved
 			// only some of them.
-			bSaved = UEditorAssetLibrary::SaveLoadedAsset(AssetObject, /*bOnlyIfIsDirty=*/false);
+			// *** THE MECHANISM, CHOSEN ONCE AND USED BY BOTH ATTEMPTS ABOVE AND BELOW. The editor's save draws a
+			// thumbnail, AND A THUMBNAIL DRAW RUNS THE WIDGET'S DESIGN-TIME CODE - which is where a save that wrote the
+			// file came back carrying widget warnings, and where the package was marked dirty again seconds later.
+			// `UPackage::SavePackage` writes the package and renders NOTHING. ***
+			auto SaveOnce = [&]() -> bool
+			{
+				if (WithoutThumbnail.IsEmpty())
+				{
+					return UEditorAssetLibrary::SaveLoadedAsset(AssetObject, /*bOnlyIfIsDirty=*/false);
+				}
+				// *** THE OBJECT MUST CARRY THESE FLAGS BEFORE THE CALL, OR THE ENGINE REFUSES AND REPORTS DATA LOSS -
+				// `TurboMCPTestMapCommandlet.cpp:355-361` records that exact warning and the silent non-write that
+				// followed it. ***
+				AssetObject->SetFlags(RF_Public | RF_Standalone);
+				FSavePackageArgs SaveArgs;
+				SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+				// *** THE NAME IS BUILT FROM THE CONTENT DIRECTORY AND NOT FROM
+				// `FPackageName::LongPackageNameToFilename`, WHICH THIS PROJECT MEASURED AS ANSWERING A PATH RELATIVE TO
+				// THE ENGINE DIRECTORY - `TurboMCPTestMapCommandlet.cpp:325-332`, and `SavePackage` then said "could not
+				// save" while the asset was complete in memory. ***
+				const FString ContentDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+				const FString FileName = ContentDir
+					+ Package->GetName().RightChop(FCString::Strlen(TEXT("/Game")))
+					+ FPackageName::GetAssetPackageExtension();
+				return UPackage::SavePackage(Package, AssetObject, *FileName, SaveArgs);
+			};
+			bSaved = SaveOnce();
 
 			// The unsaved flag decides the result, never the call's return value.
 			// D-33: an engine save once returned an error when it had worked.
@@ -412,8 +439,9 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 			{
 				// Retry once, which the spec asks for, in case the first attempt
 				// lost a race with a background writer.
-				bSaved = UEditorAssetLibrary::SaveLoadedAsset(
-					AssetObject, /*bOnlyIfIsDirty=*/false);
+				// *** THE SAME MECHANISM AS THE FIRST ATTEMPT: a retry that quietly went back to the thumbnail path
+				// would defeat the option the caller asked for, and the caller would have no way to see it. ***
+				bSaved = SaveOnce();
 			}
 		}
 
@@ -425,6 +453,12 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 		{
 			Lines += FString::Printf(TEXT("\n%s  saved"), *Resolved.ObjectPath);
 			++SavedCount;
+			// *** WHICH MECHANISM RAN, WHEN IT WAS ASKED FOR: a caller who chose to skip the thumbnail draw and is not
+			// told that it was skipped cannot tell the two saves apart in a log. ***
+			if (!WithoutThumbnail.IsEmpty())
+			{
+				Lines += TEXT("  (written without the thumbnail draw)");
+			}
 		}
 		else
 		{
