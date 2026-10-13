@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-ASSET-1, T-ASSET-2, T-HELP-5
 """Exercise the phase 1 asset and type tools against the running editor.
 
 Checks the rules the spec states, and exits non-zero on failure.

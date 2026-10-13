@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-HELP-1, T-HELP-2, T-HELP-3, T-HELP-5
 """Exercise the Phase 1 agent-help tools against the running server.
 
 Run after the editor is up. Checks the rules the spec actually states, rather

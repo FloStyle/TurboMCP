@@ -36,7 +36,13 @@ TOOLS = REPO / "Tools"
 ROW = re.compile(r"^\|\s*(T-[A-Z0-9-]+)", re.MULTILINE)
 
 # A suite proving a row says so in a header line, and the id there is the CLAIM rather than a mention.
-CLAIMS = re.compile(r"ACCEPTANCE\s+ROW\s+THIS\s+SUITE\s+CLAIMS\s+TO\s+PROVE:\s*(T-[A-Z0-9-]+)", re.IGNORECASE)
+#
+# *** THE LINE HOLDS A LIST, AND IT USED TO HOLD ONLY ONE ID WITHOUT SAYING SO: the old pattern was
+# `PROVE:\s*(T-[A-Z0-9-]+)`, WHICH CAPTURES THE FIRST ID AND SILENTLY DROPS EVERY LATER ONE - so a suite naming
+# two rows was CREDITED WITH ONE AND REPORTED AS IF THAT WERE ALL IT SAID. *** Six suites name several, and one
+# names a RANGE ("T-LOOK-1 to T-LOOK-4"), which is now written out as the four rows it means.
+CLAIMS = re.compile(r"ACCEPTANCE\s+ROW\s+THIS\s+SUITE\s+CLAIMS\s+TO\s+PROVE:[^\n]*", re.IGNORECASE)
+IDS_IN_CLAIM = re.compile(r"T-[A-Z0-9-]+")
 
 
 def main() -> int:
@@ -60,7 +66,7 @@ def main() -> int:
         else:
             uncited.append(rid)
         for name, text in texts:
-            if rid in CLAIMS.findall(text):
+            if rid in [i for line in CLAIMS.findall(text) for i in IDS_IN_CLAIM.findall(line)]:
                 claimed.append((rid, name))
 
     print("  document            : %s" % DOC.name)
@@ -72,6 +78,10 @@ def main() -> int:
     print()
     print("  *** AND THE STRICTER QUESTION, WHICH IS NOT THE SAME ONE: suites that CLAIM a row with")
     print("      'ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE':                 %d ***" % len(claimed))
+    print("      *** AND THAT NUMBER IS (row, suite) CLAIMS RATHER THAN SUITES - a suite naming four rows makes four,")
+    print("      WHICH IS HOW A COUNT THAT SAID 'SUITES' CAME TO EXCEED THE %d SUITES THAT EXIST. THE UNITS ARE" % len(suites))
+    print("      NOW BOTH STATED: *** %d CLAIMS, MADE BY %d OF THE %d SUITES. ***"
+          % (len(claimed), len(set(n for _, n in claimed)), len(suites)))
     for rid, name in claimed:
         print("      %-14s %s" % (rid, name))
     print()

@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LOOK-1, T-LOOK-2, T-LOOK-3, T-LOOK-4
 """Exercise L-CAPTURE against the running editor.
 
 Checks the rules the spec states, and exits non-zero on failure.

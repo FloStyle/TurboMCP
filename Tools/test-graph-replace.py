@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-WRITE-3, T-WRITE-4
 """
 `P/E-GRAPH-REPLACE` (`T-WRITE-3`, `T-WRITE-4`): a body is rewritten, the entry is REUSED, and what was
 removed is LISTED.

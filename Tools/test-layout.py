@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LAY-1, T-LAY-4
 """Exercise L-LAYOUT-REPORT against the running editor.
 
 Checks the rules the spec states, and exits non-zero on failure.
