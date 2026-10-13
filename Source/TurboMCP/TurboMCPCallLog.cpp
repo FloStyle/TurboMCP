@@ -106,8 +106,8 @@ FString FTurboMCPCallLog::ToJsonLine(const FEntry& InEntry)
 		Out += TEXT(",\"result\":\"") + JsonString(InEntry.Result) + TEXT("\"");
 	}
 	Out += FString::Printf(TEXT(",\"duration_ms\":%.3f"), InEntry.DurationMs);
-	Out += FString::Printf(TEXT(",\"result_chars\":%d"), InEntry.ResultChars);
-	Out += FString::Printf(TEXT(",\"token_estimate\":%d"), InEntry.TokenEstimate);
+	Out += InEntry.ResultChars == FEntry::NotMeasured ? FString(TEXT(",\"result_chars\":null")) : FString::Printf(TEXT(",\"result_chars\":%d"), InEntry.ResultChars);
+	Out += InEntry.TokenEstimate == FEntry::NotMeasured ? FString(TEXT(",\"token_estimate\":null")) : FString::Printf(TEXT(",\"token_estimate\":%d"), InEntry.TokenEstimate);
 	Out += FString::Printf(TEXT(",\"error\":%s"), InEntry.bError ? TEXT("true") : TEXT("false"));
 	Out += TEXT("}");
 	return Out;

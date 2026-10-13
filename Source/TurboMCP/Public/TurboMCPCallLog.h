@@ -71,10 +71,22 @@ public:
 		double DurationMs = 0.0;
 
 		/** Characters in the result. Zero on a start record. */
-		int32 ResultChars = 0;
+		/** A size that was never measured. *** NOT ZERO: 0 IS A MEASUREMENT - "the result was empty" - AND AN UNMEASURED SIZE
+	 * THAT READS AS 0 MAKES AN EMPTY RESULT AND AN UNKNOWN ONE INDISTINGUISHABLE. The engine's event carries no result
+	 * text at all, so every agent-side call arrives with no size to report. *** */
+	static constexpr int32 NotMeasured = -1;
+
+	/** The size for a SUM: an unmeasured entry adds nothing, so a total is never corrupted by the sentinel. */
+	int32 MeasuredChars() const { return ResultChars == NotMeasured ? 0 : ResultChars; }
+	int32 MeasuredTokens() const { return TokenEstimate == NotMeasured ? 0 : TokenEstimate; }
+
+	/** The size as text, for a report that must say `unknown` rather than a number it does not have. */
+	static FString DescribeSize(int32 InValue) { return InValue == NotMeasured ? TEXT("unknown") : FString::FromInt(InValue); }
+
+	int32 ResultChars = NotMeasured;
 
 		/** The token estimate for the result. Zero on a start record. */
-		int32 TokenEstimate = 0;
+		int32 TokenEstimate = NotMeasured;
 
 		/** True when the call reported an error. */
 		bool bError = false;

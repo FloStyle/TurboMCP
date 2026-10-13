@@ -241,10 +241,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	Out += TEXT("\n\nMOST EXPENSIVE BY TOKENS");
 	if (Priciest != nullptr)
 	{
-		Out += FString::Printf(TEXT("\n  %s | %s | %d token estimate | %d chars | %.1fms"),
+		Out += FString::Printf(TEXT("\n  %s | %s | %s token estimate | %s chars | %.1fms"),
 			*Priciest->Timestamp,
 			*ToolLabel(*Priciest),
-			Priciest->TokenEstimate, Priciest->ResultChars, Priciest->DurationMs);
+			*FTurboMCPCallLog::FEntry::DescribeSize(Priciest->TokenEstimate), *FTurboMCPCallLog::FEntry::DescribeSize(Priciest->ResultChars), Priciest->DurationMs);
 	}
 	else
 	{
@@ -261,10 +261,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	Out += TEXT("\n\nSLOWEST BY DURATION");
 	if (Slowest != nullptr)
 	{
-		Out += FString::Printf(TEXT("\n  %s | %s | %.1fms | %d chars | %d token estimate"),
+		Out += FString::Printf(TEXT("\n  %s | %s | %.1fms | %s chars | %s token estimate"),
 			*Slowest->Timestamp,
 			*ToolLabel(*Slowest),
-			Slowest->DurationMs, Slowest->ResultChars, Slowest->TokenEstimate);
+			Slowest->DurationMs, *FTurboMCPCallLog::FEntry::DescribeSize(Slowest->ResultChars), *FTurboMCPCallLog::FEntry::DescribeSize(Slowest->TokenEstimate));
 	}
 	else
 	{
@@ -295,8 +295,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 		// end, is what the duration line above reports.
 		++Row.Calls;
 		Row.TotalMs += Entry.DurationMs;
-		Row.TotalChars += Entry.ResultChars;
-		Row.TotalTokens += Entry.TokenEstimate;
+		Row.TotalChars += Entry.MeasuredChars();
+		Row.TotalTokens += Entry.MeasuredTokens();
 		if (Entry.bError)
 		{
 			++Row.Errors;
@@ -323,8 +323,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 			AssetRow.Key = Asset;
 			++AssetRow.Calls;
 			AssetRow.TotalMs += Entry.DurationMs;
-			AssetRow.TotalChars += Entry.ResultChars;
-			AssetRow.TotalTokens += Entry.TokenEstimate;
+			AssetRow.TotalChars += Entry.MeasuredChars();
+			AssetRow.TotalTokens += Entry.MeasuredTokens();
 			if (Entry.bError)
 			{
 				++AssetRow.Errors;

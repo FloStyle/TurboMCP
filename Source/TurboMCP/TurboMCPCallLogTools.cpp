@@ -123,8 +123,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 
 		if (Entry.DurationMs > 0.0)
 		{
-			Out += FString::Printf(TEXT("  %.1fms  %d chars  ~%d tokens"),
-				Entry.DurationMs, Entry.ResultChars, Entry.TokenEstimate);
+			Out += FString::Printf(TEXT("  %.1fms  "), Entry.DurationMs)
+			+ FTurboMCPCallLog::FEntry::DescribeSize(Entry.ResultChars) + TEXT(" chars  ~")
+			+ FTurboMCPCallLog::FEntry::DescribeSize(Entry.TokenEstimate) + TEXT(" tokens");
+				
 		}
 		if (Entry.bError)
 		{

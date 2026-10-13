@@ -376,8 +376,8 @@ FText STurboMCPPanel::GetCallLogSummary() const
 		if (Entry.Phase == TEXT("end"))
 		{
 			++EndRecords;
-			Tokens += Entry.TokenEstimate;
-			Chars += Entry.ResultChars;
+			Tokens += Entry.MeasuredTokens();
+			Chars += Entry.MeasuredChars();
 		}
 	}
 
