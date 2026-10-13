@@ -574,7 +574,14 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	// still matched the same way, so a near miss still finds something.
 	OutPlan.bLooksLikeTypeId = OutPlan.Guess.Contains(TEXT("|"));
 
-	if (OutPlan.Guess.IsEmpty())
+	// *** A FINDER WITH NO WORDS IS A REQUEST FOR EVERYTHING, WHICH IS HUNDREDS OF IDS. IT IS REFUSED WITH THE COUNT
+	// AND A WAY TO NARROW IT, RATHER THAN PRINTING THE LOT (`P1`). *** *** BUT A CALLER WHO PASSED A `limit` HAS ALREADY
+	// SAID HOW MANY THEY WANT: IT IS IN `OutPlan.Limit`, PARSED AND CLAMPED AT 200 ABOVE, AND REFUSING THEM IS THE TOOL
+	// DECIDING FOR THEM. *** *** WITH A LIMIT THE MATCH RUNS WITH NO WORDS, WHICH MATCHES EVERYTHING, AND `Render`
+	// (`:761-762`) ALREADY SAYS `%d of %d match(es), showing %d` - SO THE LIST ARRIVES CAPPED BY EXACTLY WHAT WAS ASKED
+	// FOR, AND NO RENDERER CHANGE IS NEEDED TO DELIVER IT. *** *** AND THE REFUSAL STAYS FOR THE CALLER WHO ASKED FOR
+	// NOTHING AT ALL, WHICH IS THE CASE IT WAS WRITTEN FOR. ***
+	if (OutPlan.Guess.IsEmpty() && InLimit.TrimStartAndEnd().IsEmpty())
 	{
 		// A finder with no words is a request for everything, which is hundreds of ids. It is
 		// refused with the count and a way to narrow it, rather than printing the lot (`P1`).
