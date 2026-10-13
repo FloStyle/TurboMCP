@@ -153,6 +153,33 @@ def main():
           nothing.startswith("error:") or "closest" in nothing.lower() or "no " in nothing.lower(),
           nothing[:200])
 
+    # *** T05: EVERY TYPE THE FINDER OFFERS MUST BE BUILT OR REFUSED BY NAME. The comparison is the point, because a
+    # tool that accepts a subset and says nothing about the rest is indistinguishable from one that accepted
+    # everything - and `TurboMCPGraphAppend.cpp:98` says the refusals are written so they "would not drift from" the
+    # one source. This is where that claim is checked rather than trusted. ***
+    # *** AND A `limit` WITHOUT WORDS IS WHAT MAKES THE LISTING POSSIBLE: `TurboMCPNodeType.cpp:577` used to refuse that
+    # call with the count alone, and now it matches every type and lets `Render` cap the display. ***
+    print()
+    print("=== T05: every offered type is built or refused by name ===")
+    every = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPNodeType",
+                         {"asset": ASSET, "graphName": GRAPH, "words": "", "limit": "40"})
+    offered = re.findall(r"\b(K2Node_\w+)\b", every)
+    print("    the finder offered %d type(s): %s" % (len(offered), offered[:4]))
+    # *** THE NON-VACUOUS GUARD FIRST: IF THE FINDER OFFERS NOTHING, THE COMPARISON BELOW WOULD PASS BY HAVING NOTHING
+    # TO COMPARE - WHICH IS THE PASS THIS CHECK MUST NOT BE ABLE TO GET. IT FAILED EXACTLY THAT WAY BEFORE THE LISTING
+    # EXISTED, WHICH IS HOW THE MISSING LISTING WAS FOUND. ***
+    check("the finder offered types to compare", len(offered) > 0, every[:200])
+    silent = []
+    for type_id in offered[:20]:
+        answer = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPNodePins",
+                              {"asset": ASSET, "graphName": GRAPH, "typeId": type_id})
+        if not answer.strip():
+            silent.append(type_id + " (empty answer)")
+        elif answer.startswith("error:") and type_id not in answer:
+            silent.append(type_id + " (refused without naming itself)")
+    check("every offered type is built or refused BY NAME, none silently skipped", not silent,
+          "; ".join(silent[:4]))
+
     print()
     print("=== the four material readers, against an asset that is NOT a material ===")
     # THERE IS NO MATERIAL IN THE TEST PROJECT YET, so this proves the REFUSAL and not the reading.
