@@ -44,7 +44,9 @@ namespace
 		/** The exact path a pin or variable needs. */
 		FString Path;
 
-		/** `struct`, `enum`, `class`, `interface`, `function` or `delegate`. */
+		/** `struct`, `enum`, `class` or `interface`. *** THE KINDS THE CODE CAN ACTUALLY PRODUCE: `function` AND
+		 * `delegate` WERE NAMED HERE, AND NEITHER EXISTS ANYWHERE - `KindOfType` IS ONLY CALLED ON TYPES THAT
+		 * PASSED THE `UClass`/`UScriptStruct`/`UEnum` FILTER, AND `KnownKinds[]` LISTS FIVE. *** */
 		FString Kind;
 
 		/** The module for a native type, or the asset path for a user-made one. */
@@ -113,10 +115,10 @@ namespace
 		{
 			return TEXT("enum");
 		}
-		if (InType->IsA<UFunction>())
-		{
-			return TEXT("function");
-		}
+		// NO `UFunction` BRANCH: the caller filters to `UClass`, `UScriptStruct` and `UEnum` before calling this,
+		// so a function can never arrive. *** IT WAS HERE, WITH A `"type"` FALLBACK BELOW THAT IS ALSO UNREACHABLE
+		// FOR THE SAME REASON - AND THE COMMENT ON `FTypeHit::Kind` NAMED BOTH `function` AND `delegate`, WHICH A
+		// CALLER COULD NOT ASK FOR EITHER. ***
 		return TEXT("type");
 	}
 
