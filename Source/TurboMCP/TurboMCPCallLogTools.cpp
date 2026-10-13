@@ -120,8 +120,24 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 		return Out;
 	}
 
+	// ONE GROUP PER BATCH SCRIPT: the session id is the same for every call of one script, so a change of id starts a
+	// new group and is stated once, ahead of its rows.
+	FString PreviousSession;
+	bool bFirstGroup = true;
+
 	for (const FTurboMCPCallLog::FEntry& Entry : Selected)
 	{
+		// *** GROUPED BY BATCH, WHICH `03_TOOLS.md` ASKS FOR: THE CALLS OF ONE SCRIPT SHARE A SESSION ID, SO A CHANGE
+		// OF ID IS THE START OF A NEW GROUP AND IS STATED ONCE, AHEAD OF ITS ROWS. A COLUMN WOULD REPEAT IT ON EVERY
+		// LINE, WHICH IS THE ONE THING A GROUPING IS FOR. ***
+		if (bFirstGroup || Entry.SessionId != PreviousSession)
+		{
+			bFirstGroup = false;
+			PreviousSession = Entry.SessionId;
+			Out += FString::Printf(TEXT("\n; session %s"),
+				Entry.SessionId.IsEmpty() ? TEXT("(none)") : *Entry.SessionId);
+		}
+
 		Out += FString::Printf(TEXT("\n%s  %-5s  %-6s  %s"),
 			*Entry.Timestamp, *Entry.Phase, *Entry.Source,
 			*FString::Printf(TEXT("%s.%s"), *Entry.Toolset, *Entry.Tool));
