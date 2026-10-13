@@ -45,3 +45,6 @@ GitCredentialHelper*
 # of them reached a commit because its name did not match the existing pattern.
 .cmsg*.txt
 *.cmsg.txt
+
+# Local feedback notes: not part of the plugin, never pushed.
+Feedbacks/
