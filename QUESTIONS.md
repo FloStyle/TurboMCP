@@ -1099,7 +1099,7 @@ the rule's exclusions, and the fixture reports `pureUsedOnce=0` and says the cou
 ### Q-16 ADDENDUM (after the rule was fixed)
 
 The diagnosis above was acted on: commit ("Fix R1's pure carry: the carried node was landing on
-the source's own edge", merged as ) changed the carry to
+the source's own edge" as `4b17842`, merged as `160b3eb`) changed the carry to
 
 ```
 PureToX = Min(Consumer.PlannedX - Pure.Width - Gap,
