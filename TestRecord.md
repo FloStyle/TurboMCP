@@ -10804,3 +10804,95 @@ applied to the state, and the break-test rule in every brief is that sentence ap
 *** AND THIRD, THE PROJECT IS IN A STATE SOMEONE CAN PICK UP: 93 tools, a full run at 58 of 58 with exit code 0, two audits that pass with one of them
 BLOCKING, 502 commits on `origin/main`, a clean tree, four documents that say what is true, and a list of 31 rows with the three impossible ones named
 and the order I would do the rest in. ***
+
+---
+
+## 182. Round 257 — T02's PRICE WAS MEASURED IN THE WRONG PLACE, AND FOUR SUBSTITUTIONS REPLACE SIXTY-EIGHT
+
+ HEAD `ea0e873` · build `Result: Succeeded` · 15 suites PASSED, 0 FAILED across the two runs quoted below
+
+### 182.1 *** THE CARD SAID 68 INDIVIDUALLY-ANCHORED EDITS. THE NUMBER WAS RIGHT. THE LAYER WAS WRONG. ***
+
+ The frozen card (`17f17de0`) measured 68 tool bodies in `*Tools.cpp` with 59 distinct first statements and
+ concluded there was no pattern to sweep. **That is a true measurement of the cost of writing the start record
+ INSIDE THE TOOLS, and no agent call is served from inside a tool: the MCP server dispatches every one of them
+ through a single engine call, and this plugin owns four toolsets.**
+
+ READ OUT OF THE ENGINE, NOT GUESSED:
+
+     `ModelContextProtocolToolsetRegistryAdapter.cpp:66` and `:258`
+         the server's own adapter calls `FToolsetRegistry::ExecuteTool(Descriptor, Json)`
+     `ToolsetRegistry/Toolset.cpp:32-47`
+         `FToolset::ExecuteTool` is PUBLIC AND NOT VIRTUAL, and reaches the engine's dispatch through the
+         virtual `ExecuteToolInternal` (`Toolset.h:72`)
+     `ToolsetRegistry.cpp:122-160`
+         `UnregisterToolset` + `RegisterToolset` swaps a handler and re-broadcasts `OnToolsetRegistered`
+
+ *** SO A HANDLER CAN BE WRAPPED RATHER THAN REPLACED, AND THE START RECORD COSTS FOUR SUBSTITUTIONS. ***
+ `FTurboMCPRecordingToolset` (`TurboMCPCallRecorder.cpp`) writes the `start` and flushes it before the call,
+ writes the `end` from the future's own continuation, and forwards through the wrapped handler's public door -
+ so the enable checks, the tool filters and the reflection dispatch still happen exactly once.
+
+### 182.2 *** MEASURED LIVE, WITH A CONTROL THAT IS NOT OURS ***
+
+ `.agent/verify-recorder.py`, four agent calls and one top-level engine call:
+
+     start  plugin  TurboMCPReadToolset   ReadTurboMCPStatus     args: yes
+     end    plugin  TurboMCPReadToolset   ReadTurboMCPStatus     336 chars     111 tokens
+     end    plugin  TurboMCPReadToolset   ReadTurboMCPToolIndex  41617 chars   12977 tokens
+     end    engine  (top-level)           call_tool              null          null
+     end    engine  (top-level)           list_toolsets          null          null
+
+ *** `list_toolsets` IS NOT OURS, IS NOT WRAPPED, AND KEEPS `source=engine` - WHICH IS WHAT MAKES THE FOUR
+ `plugin` RECORDS EVIDENCE RATHER THAN AN EFFECT OF THE LOG BEING ON. ***
+
+### 182.3 *** VERIFY 2, WHICH THIS CAPABILITY COULD NOT ANSWER BEFORE ***
+
+ `.agent/verify-crash.py` waits for the `start` record to reach the file and THEN kills the editor, so the kill
+ is triggered by the measurement rather than by a stopwatch. The editor died with `LookTurboMCPCapture` in
+ flight and the last line of the log is:
+
+     TurboMCPLookToolset.LookTurboMCPCapture (start, plugin)
+
+ *** AND THE FIRST VERSION OF THAT SCRIPT SLEPT THREE SECONDS, THE CALL HAD ALREADY ANSWERED, AND IT REPORTED
+ `RESULT: FAIL` FOR THE RIGHT REASON - A CRASH TEST THAT DOES NOT CRASH PROVES NOTHING. ***
+
+### 182.4 *** THE BUG THE CHANGE CREATED: ONE CALL IS NOT ONE RECORD ANY MORE ***
+
+ One call now leaves up to four records, and three readers that counted records as calls went wrong at once:
+
+     `R-CALL-COST`   counted each call TWICE and printed `2 call(s)` per asset for one call, because BOTH
+                     records of one plugin pair carry the arguments
+     the timeline    printed a plugin `start` as `running` for the rest of the session, because the engine's
+                     records do not carry the plugin's spelling of the key
+     `R-CALL-LOG`    split one batch script into `; session (none)` groups, because the plugin's records carry
+                     no session id at all - the registry seam is BELOW the MCP session
+
+ `FTurboMCPCallTimeline` assembles the records into calls ONCE and the cost tool, the timeline and the panel all
+ go through it. *** AND `RenderTimeline()` HAD NO CALLER AND WAS `private`, so item 3 was recorded as done while
+ nothing could reach it: it is public now and rendered in the panel. ***
+
+ FOUR SUITE ASSUMPTIONS WERE FALSIFIED AND CORRECTED TO THE NEW MEASUREMENT RATHER THAN WEAKENED:
+ `test-call-cost` (asserted the absence of token estimates; now asserts the winner, the non-zero count and
+ `| 1 call(s) |` per asset), `test-call-log` (the emptiness message is reached through `since`, because a
+ nonsense `filter` now finds the reader's own start record - asserted, not hidden), `test-call-log-file` (a
+ startless `end` is the engine's path or `EditTurboMCPCallLog` switching recording on mid-call), and
+ `test-pure-checks` (`AssetFromArguments` is no longer unreachable).
+
+### 182.5 *** A BUILD BLOCKED BY POLICY THAT READS AS A BROKEN ENGINE ***
+
+ UnrealBuildTool must write its log, its trace and the engine's intermediate files under `C:\UnrealEngine`,
+ outside the session workspace. Under `workspace-write` it died with
+ `System.UnauthorizedAccessException: ... Trace-backup-*.uba is denied`. `RunUBT` reports that as
+ `UnrealBuildTool failed to check dependencies`, `dotnet msbuild` reports it as ZERO ERRORS in two seconds, and
+ `Tools/build.ps1` exits 999 - three messages that all read as a broken engine and none of which names the
+ policy. `GetFileHash` works in the workspace and fails in the engine tree, which is how it was isolated.
+
+### 182.6 *** WHAT IS STILL OPEN, AND IT IS ONE ITEM ***
+
+ `done when` 3's item 4b: a row that expands to the full arguments and the first lines of the result, and rows
+ filtered by toolset, tool, asset and status. The timeline gives one row per call, `running`, the session
+ grouping and the SLOW/LARGE marks already. *** AND ITS STATED REASON FOR BEING UNVERIFIABLE IS FALSE: the
+ panel's probe commandlet reaches plain C++ from a commandlet, so the filter and expand logic belongs in
+ `FTurboMCPCallTimeline` and can be asserted there - and `LookTurboMCPCapture` frames a live Slate window, so
+ the widget itself can be looked at rather than hoped for. ***
