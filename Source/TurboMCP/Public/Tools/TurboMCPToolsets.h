@@ -1563,8 +1563,7 @@ public:
 	 * and repeat the provider's answer.
 	 */
 	UFUNCTION(meta = (AICallable))
-	static FString EditTurboMCPSave(const FString& Assets,
-		const FString& WithoutThumbnail = FString());
+	static FString EditTurboMCPSave(const FString& Assets);
 
 	/**
 	 * Create an enum asset from a list of values.
