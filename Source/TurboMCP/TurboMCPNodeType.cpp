@@ -873,6 +873,20 @@ bool FTurboMCPNodePins::Plan(const FString& InAsset, const FString& InGraphName,
 
 	UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Blueprint, OutPlan.GraphName);
 
+	// *** THE GRAPH IS CHECKED BEFORE ANY PROBE IS BUILT. `BuildProbeNode` ASKS THE ENGINE TO OWN THE NEW NODE, AND
+	// WHEN `FindGraphByName` FOUND NOTHING THAT REQUEST REACHED THE ENGINE WITH A NULL OWNER AND THE ASSERTION TOOK
+	// THE EDITOR DOWN. A REFUSAL THAT NAMES THE GRAPH COSTS ONE TOOL CALL; THE ASSERTION COST THE SESSION. ***
+	// And a batch caller keeps going: this returns false for THIS type, and the next type is planned the same way.
+	if (Graph == nullptr)
+	{
+		OutError = FString::Printf(
+			TEXT("'%s' has no graph named '%s', so there is no owner for a probe node and this type is ")
+			TEXT("refused. A graph name is matched exactly; the graph list of this Blueprint names the ones ")
+			TEXT("it has."),
+			*OutPlan.Asset, *OutPlan.GraphName);
+		return false;
+	}
+
 	// THE NODE GOES INTO A THROWAWAY GRAPH, WHICH IS THE WHOLE POINT OF `BuildProbeNode`.
 	// `03_TOOLS.md` states the requirement as "graph node count must not change (P3)", and the
 	// engine's own reader adds a probe to the REAL graph and leaves it there - which
