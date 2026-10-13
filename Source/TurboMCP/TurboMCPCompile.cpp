@@ -211,12 +211,22 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 			continue;
 		}
 
+		// *** THE MARK IS TAKEN BEFORE THE COMPILE SO THE CAPTURE CAN ATTRIBUTE WHAT FOLLOWS TO THIS ASSET. ***
+		const int32 CompileMark = Capture.Mark();
+
 		FCompilerResultsLog CompileLog;
 		CompileLog.bLogInfoOnly = false;
 		FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::None, &CompileLog);
 
 		const bool bHasErrors = CompileLog.NumErrors > 0;
-		const bool bHasWarnings = CompileLog.NumWarnings > 0;
+		// *** THE SENTENCE BELOW WAS DECIDED BY `CompileLog` ALONE, AND `FCompilerResultsLog` CARRIES ONLY WHAT THE
+		// COMPILER REPORTED. AN ENSURE IS NOT A COMPILER MESSAGE: THE ENGINE LOGS IT TO THE OUTPUT LOG AT `Error` OR
+		// `Warning` (`AssertionMacros.cpp:679` AND `:683`), WHICH IS WHY A COMPILE THAT RAISED ONE WAS STILL ANSWERED
+		// `clean, 0 warnings`. *** *** THE CAPTURE IS ALREADY HERE AND ALREADY READ LATER FOR THE SAVE'S WARNINGS
+		// (`:285`), SO THE VERDICT CONSULTS IT TOO - AND `Capture.WarningCountSince(CompileMark)` IS WHAT ATTRIBUTES
+		// THE ENGINE'S MESSAGES TO THIS ASSET RATHER THAN TO ANOTHER. ***
+		const int32 CapturedWarnings = Capture.WarningCountSince(CompileMark);
+		const bool bHasWarnings = CompileLog.NumWarnings > 0 || CapturedWarnings > 0;
 
 		if (bHasErrors)
 		{
@@ -234,7 +244,7 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 		const FString Status = bHasErrors
 			? FString::Printf(TEXT("error (%d errors, %d warnings)"), CompileLog.NumErrors, CompileLog.NumWarnings)
 			: bHasWarnings
-				? FString::Printf(TEXT("clean with %d warning(s)"), CompileLog.NumWarnings)
+				? FString::Printf(TEXT("clean with %d warning(s)"), CompileLog.NumWarnings + CapturedWarnings)
 				: TEXT("clean");
 
 		// T-STRUCT-7: an unsaved asset must say it compiled but is not saved, so
