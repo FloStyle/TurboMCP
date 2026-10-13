@@ -82,6 +82,30 @@ public:
 	 */
 	FString SummariseSince(int32 InMark, int32 InMax = 3) const;
 
+	/**
+	 * How many errors arrived while a labelled span was running.
+	 *
+	 * `T04`: an ensure that fires while `GEnsuresAreErrors` is set is logged at
+	 * `Error` rather than at `Warning` (`AssertionMacros.cpp:679`), so a span
+	 * that can only answer for warnings is blind to exactly the case that task
+	 * exists for. `Mark()` is not index-compatible with this count: marks index
+	 * the warning store, while this is a running error total read as a pair.
+	 */
+	int32 ErrorCountSince(int32 InMarkErrorTotal) const;
+
+	/**
+	 * The first errors logged since an error mark, each on its own line.
+	 *
+	 * A compile that logged an engine error must list it rather than only
+	 * counting it, which is what `T04`'s "lists each ensure and each error"
+	 * asks for. Bounded by InMax and trimmed to one line each, as the warning
+	 * summary is, so `P6` still holds.
+	 */
+	FString SummariseErrorsSince(int32 InMarkErrorTotal, int32 InMax = 3) const;
+
+	/** The current error total, to pass back into the two methods above. */
+	int32 ErrorMark() const { return ErrorCountValue; }
+
 private:
 	/** Detaches from GLog. Called by the destructor and safe to call twice. */
 	void Detach();
@@ -93,6 +117,15 @@ private:
 	 * sharing one name does not compile.
 	 */
 	TArray<FEntry> WarningEntries;
+
+	/**
+	 * The stored errors, capped exactly as the warnings are.
+	 *
+	 * Stored as well as counted because `T04` asks a compile to LIST each error
+	 * the engine logged. The count stays exact past the cap, so a caller is
+	 * never told a smaller number than was raised.
+	 */
+	TArray<FEntry> ErrorEntries;
 
 	int32 ErrorCountValue = 0;
 

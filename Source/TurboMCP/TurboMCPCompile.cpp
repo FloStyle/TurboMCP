@@ -211,7 +211,10 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 		}
 
 		// *** THE MARK IS TAKEN BEFORE THE COMPILE SO THE CAPTURE CAN ATTRIBUTE WHAT FOLLOWS TO THIS ASSET. ***
+		// TWO MARKS, BECAUSE THEY INDEX TWO DIFFERENT STORES: `Mark()` counts warnings, `ErrorMark()` counts
+		// errors, and reading one as the other would attribute the wrong messages to this asset.
 		const int32 CompileMark = Capture.Mark();
+		const int32 CompileErrorMark = Capture.ErrorMark();
 
 		FCompilerResultsLog CompileLog;
 		CompileLog.bLogInfoOnly = false;
@@ -224,14 +227,20 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 		// `clean, 0 warnings`. *** *** THE CAPTURE IS ALREADY HERE AND ALREADY READ LATER FOR THE SAVE'S WARNINGS
 		// (`:285`), SO THE VERDICT CONSULTS IT TOO - AND `Capture.WarningCountSince(CompileMark)` IS WHAT ATTRIBUTES
 		// THE ENGINE'S MESSAGES TO THIS ASSET RATHER THAN TO ANOTHER. ***
+		// BOTH SEVERITIES ARE READ, NOT JUST THE WARNINGS: `GEnsuresAreErrors` logs an ensure at `Error`, so a
+		// capture read for warnings alone answers `clean` for exactly the compile this task names.
 		const int32 CapturedWarnings = Capture.WarningCountSince(CompileMark);
+		const int32 CapturedErrors = Capture.ErrorCountSince(CompileErrorMark);
 		const bool bHasWarnings = CompileLog.NumWarnings > 0 || CapturedWarnings > 0;
+		// AN ENGINE ERROR ALONE IS NOT A COMPILER ERROR, SO IT DOES NOT MAKE THE COMPILE FAIL - BUT IT IS NOT
+		// `clean` EITHER, WHICH IS THE ONE THING `T04` FORBIDS.
+		const bool bEngineLoggedSomething = CapturedWarnings > 0 || CapturedErrors > 0;
 
 		if (bHasErrors)
 		{
 			++ErrorCount;
 		}
-		else if (bHasWarnings)
+		else if (bHasWarnings || bEngineLoggedSomething)
 		{
 			++WarningCount;
 		}
@@ -240,11 +249,21 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 			++CleanCount;
 		}
 
+		// THE SENTENCE NAMES THE SOURCE OF EACH NUMBER, because "3 warnings" cannot be told apart from a
+		// capture that counted three lines it never read, and this task exists exactly because a verdict
+		// that reads one source reported nothing about another.
+		const FString EngineNote = bEngineLoggedSomething
+			? FString::Printf(TEXT(", %d warning(s)/%d error(s) from the engine log"),
+				CapturedWarnings, CapturedErrors)
+			: FString();
+
 		const FString Status = bHasErrors
 			? FString::Printf(TEXT("error (%d errors, %d warnings)"), CompileLog.NumErrors, CompileLog.NumWarnings)
 			: bHasWarnings
-				? FString::Printf(TEXT("clean with %d warning(s)"), CompileLog.NumWarnings + CapturedWarnings)
-				: TEXT("clean");
+				? FString::Printf(TEXT("clean with %d warning(s)"), CompileLog.NumWarnings + CapturedWarnings) + EngineNote
+				: bEngineLoggedSomething
+					? FString::Printf(TEXT("not clean, the compiler reported nothing but the engine log did%s"), *EngineNote)
+					: TEXT("clean");
 
 		// T-STRUCT-7: an unsaved asset must say it compiled but is not saved, so
 		// the caller does not believe a compile put the work on disk.
@@ -253,9 +272,25 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 		Lines += FString::Printf(TEXT("\n%s  [%s]"), *Resolved.ObjectPath, *Status);
 		Lines += bDirty ? TEXT("  not saved yet") : TEXT("  saved");
 
+		// THE COMPILER'S OWN MESSAGES ARE TIED TO THEIR NODE IDS; THE ENGINE'S ARE TIED TO THEIR SPAN.
+		// Both are listed, because a count with no text cannot be acted on and `T04` asks for each one.
 		if (bHasErrors || bHasWarnings)
 		{
 			Lines += DescribeCompileMessages(CompileLog, /*InMaxMessages=*/6);
+		}
+
+		if (CapturedWarnings > 0)
+		{
+			Lines += FString::Printf(TEXT("\n    the engine logged %d warning(s) during this compile:"),
+				CapturedWarnings);
+			Lines += Capture.SummariseSince(CompileMark);
+		}
+
+		if (CapturedErrors > 0)
+		{
+			Lines += FString::Printf(TEXT("\n    the engine logged %d error(s) during this compile:"),
+				CapturedErrors);
+			Lines += Capture.SummariseErrorsSince(CompileErrorMark);
 		}
 	}
 
@@ -297,6 +332,14 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 		// warning was raised.
 		Result += FString::Printf(TEXT("\nengine warnings raised during compile: %d"),
 			Capture.WarningCount());
+	}
+
+	// THE ERRORS GET A LINE OF THEIR OWN, AND THEY HAVE TO: a compile that logged an engine error and no
+	// compiler message has no other place to say so, and `T04` requires that it never reads as clean.
+	if (Capture.ErrorCount() > 0)
+	{
+		Result += FString::Printf(TEXT("\nengine errors raised during compile: %d"),
+			Capture.ErrorCount());
 	}
 
 	Result += Errors;

@@ -1528,8 +1528,17 @@ public:
 	 * value, because the engine's compile tool can answer null for success and
 	 * for failure alike.
 	 *
-	 * Warnings raised by the compile pass are counted and named, never pasted,
-	 * because engine log text does not belong in a result (`P6`).
+	 * THE COMPILER'S LOG IS NOT THE WHOLE ANSWER. An engine ensure raised during
+	 * the compile reaches the output log and never `FCompilerResultsLog`, so the
+	 * log is captured alongside it and both the warnings and the errors the
+	 * engine logged are counted and listed per asset. A compile that logged an
+	 * engine error is reported as not clean even when the compiler reported
+	 * nothing.
+	 *
+	 * Warnings raised by the compile pass are counted and attributed to the asset
+	 * that raised them, and each engine message is listed as its category and its
+	 * first line, bounded and trimmed, because a bare count cannot be acted on
+	 * and full engine log text does not belong in a result (`P6`).
 	 *
 	 * An asset kind that cannot compile is refused with the reason (`P2`).
 	 */
