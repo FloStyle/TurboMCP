@@ -394,9 +394,11 @@ namespace TurboMCPTrace
 		return Out;
 	}
 
-	const TArray<FHit>& Hits()
+	TArray<FHit> Hits()
 	{
-		return GHits;
+		// A COPY TAKEN UNDER THE LOCK: the caller cannot be reading the ring while the callback moves it.
+	FScopeLock Lock(&GMutex);
+	return GHits;
 	}
 
 	int32 HitCount()

@@ -112,7 +112,16 @@ namespace TurboMCPTrace
 	FString Status();
 
 	/** Every hit observed so far, newest last. */
-	const TArray<FHit>& Hits();
+	/**
+	 * The recorded hits, AS A COPY TAKEN UNDER THE LOCK.
+	 *
+	 * *** THIS RETURNED `const TArray<FHit>&` AND TOOK NO LOCK, WHILE THE CALLBACK MUTATES `GHits` UNDER `GMutex`
+	 * (`RemoveAt(0)` when the ring is full) - SO THE ONE ACCESSOR THAT HANDED OUT THE ARRAY ITSELF WAS THE ONE
+	 * THAT DID NOT GUARD IT, ALONGSIDE `HitCount()`, `Status()` AND `ClearAll()` WHICH ALL DO. *** *** A CALLER
+	 * HOLDING THAT REFERENCE WOULD HAVE BEEN READING A BUFFER ANOTHER THREAD COULD REALLOCATE. ***
+	 * *** NOTHING CALLS THIS TODAY, SO THE COPY COSTS NOTHING AND MAKES THE FIRST CALLER SAFE RATHER THAN LUCKY. ***
+	 */
+	TArray<FHit> Hits();
 
 	/** How many hits have been recorded since the registry was last cleared. */
 	int32 HitCount();
