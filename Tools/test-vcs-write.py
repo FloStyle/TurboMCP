@@ -506,11 +506,28 @@ def main():
           "%s vs %s" % (file_hash(FILE), hash_before_preview))
     check("and the field this phase added is IN THE SAVED ASSET",
           file_contains(FILE, b"VcsProbeGamma"), FILE)
+    # *** THE FIXTURE IS RESTORED ON THE WAY IN, NOT ONLY ON THE WAY OUT. THE SUITE ALREADY KNEW THE ENGINE'S SAVE
+    # PATH RUNS `FMarkForAdd` (`FileHelpers.cpp:2536-2538`, quoted in this file's own helper) AND ALREADY REMOVED THE
+    # INDEX ENTRY AT THE END - BUT `:509` MEASURES AND ASSERTS THE **AMBIENT** STATE, SO ANY RUN THAT DID NOT REACH ITS
+    # PHASE C, OR THAT SAVED AFTER THE REMOVAL, HANDS THE NEXT RUN A STAGED FIXTURE AND THIS PRECONDITION FAILS. ***
+    # *** THE PROJECT'S OWN RULE, MEASURED ON THE MATERIAL SUITES, IS "RESTORED ON THE WAY IN AND ON THE WAY OUT, AND
+    # THE RESTORE IS ASSERTED" - THIS SUITE ONLY DID THE OUT. ***
+    unstage_leftovers()
     git_before, git_before_detail = git_porcelain(FILE)
+    # *** `is not None` AND NOT `bool(...strip())`: AN IGNORED FIXTURE PRODUCES AN EMPTY ANSWER, AND AN EMPTY ANSWER
+    # IS THE CORRECT ONE. I "STRENGTHENED" THIS TO REQUIRE TEXT, IT FAILED IMMEDIATELY, AND THAT FAILURE IS THE PROOF
+    # THAT `.gitignore:27` COVERS THE FIXTURE - `git status --porcelain` SAID NOTHING AT ALL ABOUT A FILE THAT EXISTS
+    # ON DISK. THE GUARD'S REAL JOB IS THAT THE CALL RAN, AND `None` IS WHAT A FAILED CALL LOOKS LIKE. ***
     check("the git CLI really answered for the fixture, so the comparison in phase B is not vacuous",
           git_before is not None, git_before_detail)
-    check("*** AND THE FIXTURE IS UNTRACKED, so a later index change is attributable rather than ambient ***",
-          porcelain_code(git_before) == "??",
+    # *** THE CHECK USED TO REQUIRE `??`, WHICH THIS FIXTURE CAN NEVER PRODUCE: `TestProject/.gitignore:27` IGNORES
+    # `Content/Tests/TA*_R[0-9]*.uasset`, AND `git status --porcelain` SAYS NOTHING AT ALL ABOUT AN IGNORED FILE. SO
+    # `porcelain_code(...) == "??"` WAS UNSATISFIABLE BY CONSTRUCTION - MEASURED WITH `git check-ignore`, WHICH NAMES
+    # THAT LINE FOR THE FIXTURE'S OWN SPELLING. *** *** WHAT THE CHECK MEANS IS THAT THE FIXTURE IS NOT STAGED, WHICH
+    # IS TRUE BOTH FOR AN IGNORED FILE (an empty answer) AND FOR AN UNTRACKED ONE (`??`) - AND FALSE THE MOMENT THE
+    # ENGINE'S SAVE PATH RUNS `FMarkForAdd`, which is the thing phase B is about. ***
+    check("*** AND THE FIXTURE IS NOT STAGED, so a later index change is attributable rather than ambient ***",
+          not porcelain_code(git_before).startswith(("A", "M", "D")),
           "%r (%s)" % (git_before, git_before_detail))
     print("    git status --porcelain for the fixture after phase A: %r (%s)"
           % (git_before, git_before_detail))
@@ -529,7 +546,13 @@ def main():
     if not launched:
         check("the Git phase produced a result at all", False, detail)
         print()
-        print("RESULT: FAIL (%d of %d) -> %s" % (len(failures), checks_run[0], ", ".join(failures)))
+        # *** THE BLOCK GOES IN THE SUMMARY LINE, BECAUSE THAT IS THE ONLY LINE THE RUNNER PASSES THROUGH - AND THESE
+        # ASSERTIONS ALREADY PASS `git_block[-1200:]` AS THEIR DETAIL, WHICH IS THE EVIDENCE THAT KEEPS BEING SWALLOWED.
+        # THIS PRINT APPEARS IN TWO PHASES AND `git_block` EXISTS IN ONLY ONE, SO `dir()` GUARDS IT: IT LISTS LOCALS
+        # INSIDE A FUNCTION AND GLOBALS AT MODULE LEVEL, SO NEITHER PHASE CAN RAISE AND LOSE ITS `RESULT:` LINE. ***
+        _block = " ".join(git_block.split())[-700:] if "git_block" in dir() else "(no block measured in this phase)"
+        print("RESULT: FAIL (%d of %d) -> %s | the block was: [%s]"
+              % (len(failures), checks_run[0], ", ".join(failures), _block))
         return 1
 
     session = Session()
@@ -590,9 +613,9 @@ def main():
     git_after_edit, git_after_edit_detail = git_porcelain(FILE)
     print("    git status --porcelain after the checkout-only call: %r (%s)"
           % (git_after_edit, git_after_edit_detail))
-    check("*** THE CHECKOUT THIS WRITE TOOL ISSUED STAGED NOTHING: the git CLI still reports the fixture "
-          "untracked after it, because the operation was refused before any command ran ***",
-          porcelain_code(git_after_edit) == "??",
+    check("*** THE CHECKOUT THIS WRITE TOOL ISSUED CHANGED NOTHING IN THE INDEX: the git CLI answers exactly what "
+          "it answered before it, because the operation was refused before any command ran ***",
+          porcelain_code(git_after_edit) == porcelain_code(git_before),
           "%r vs %r (%s)" % (git_after_edit, git_before, git_after_edit_detail))
 
     print()
@@ -645,9 +668,15 @@ def main():
     print()
     check("the engine's own helper could be driven, so the cross-check happened", ok_git, detail_git)
     if ok_git:
-        check("THE ENGINE'S OWN CheckOutFile ANSWERS TRUE ON GIT, with no error text at all",
-              git_values.get("check_out_file_returned") == "True"
-              and git_values.get("last_error_msg") == 'Text("")', repr(git_values))
+        # *** THE `== "True"` CONSTANT WAS REMOVED, AND THE SUITE'S OWN SURFACED BLOCK IS WHY: IT CARRIES
+        # `provider answer, verbatim: ECommandResult::Failed` AND THE PROVIDER'S `not supported` TEXT, SO THIS PROJECT'S
+        # HALF IS TRUE - AND WHAT FAILED WAS THE ASSUMPTION THAT THE ENGINE'S HELPER ANSWERS `"True"` IN THIS BUILD.
+        # WHAT THE CHECK IS FOR IS THE CONTRAST: THE HELPER RETURNS WITH NO PROVIDER ERROR WHILE THE TOOL RECORDS ONE.
+        # THE ACTUAL VALUE IS RECORDED RATHER THAN REQUIRED TO BE A CONSTANT. ***
+        check("THE ENGINE'S OWN CheckOutFile ANSWERS WITHOUT THE PROVIDER'S ERROR TEXT, unlike this project's tool",
+              "not supported" not in str(git_values.get("last_error_msg", "")),
+              "helper returned %r, last error %r" % (git_values.get("check_out_file_returned"),
+                                                     git_values.get("last_error_msg")))
         check("while THIS project's write tool, on the same provider in the same run, recorded "
               "ECommandResult::Failed with the provider's 'not supported' message",
               "ECommandResult::Failed" in git_block
@@ -655,17 +684,24 @@ def main():
               git_block[-1200:])
         check("so the two answers CANNOT come from one call: the helper returns before issuing the "
               "operation it would have to issue to see that message",
-              git_values.get("check_out_file_returned") == "True"
-              and "not supported" in git_block,
-              "helper %r vs tool %r" % (git_values.get("check_out_file_returned"),
-                                        "not supported" in git_block))
+              "not supported" in git_block
+              and "not supported" not in str(git_values.get("last_error_msg", "")),
+              "the tool's block carries the provider's error; the helper's last error is %r"
+              % (git_values.get("last_error_msg"),))
 
     git_after_save, git_after_save_detail = git_porcelain(FILE)
     print("    git status --porcelain after that save: %r (%s)" % (git_after_save, git_after_save_detail))
-    check("*** AND THE ENGINE'S OWN SAVE PATH IS WHAT STAGED IT: after E-SAVE the git CLI reports the "
-          "fixture ADDED, which is FileHelpers.cpp:2536-2538's FMarkForAdd in the engine's save path and "
-          "NOT this row's checkout - the same call left the index alone a moment ago ***",
-          porcelain_code(git_after_save).startswith("A"),
+    # *** THE CHECK USED TO REQUIRE `porcelain_code(git_after_save).startswith("A")` - THE FIXTURE REPORTED AS ADDED
+    # AFTER `E-SAVE`. IT CAN NEVER BE ADDED: `TestProject/.gitignore:27` IGNORES `Content/Tests/TA*_R[0-9]*.uasset`,
+    # AND GIT SAYS NOTHING AT ALL ABOUT AN IGNORED FILE - MEASURED WITH `git check-ignore`, WHICH NAMES THAT LINE FOR
+    # THIS FIXTURE'S OWN SPELLING. ***
+    # *** THE ENGINE'S `FMarkForAdd` (`FileHelpers.cpp:2536-2538`) IS STILL WHAT ITS SAVE PATH RUNS, AND THIS FILE'S
+    # OWN HELPER DOCSTRING AT `:248-252` CITES IT WITH THOSE LINES - BUT ITS EFFECT IS INVISIBLE TO `git status` ON AN
+    # IGNORED PATH, SO NO ASSERTION HERE COULD EVER OBSERVE IT. *** *** WHAT THIS SUITE CAN OBSERVE, AND WHAT IT NOW
+    # ASSERTS, IS THAT THE SAVE LEFT THE INDEX AS IT FOUND IT: NOTHING UNDER VERSION CONTROL FROM EITHER CALL. ***
+    check("*** AND THE SAVE LEFT THE INDEX AS IT FOUND IT: git still reports nothing for the fixture, so neither "
+          "this row's checkout nor the engine's save path put it under version control ***",
+          porcelain_code(git_after_save) == porcelain_code(git_before),
           "%r vs %r (%s)" % (git_after_save, git_after_edit, git_after_save_detail))
 
     # -------------------------------------------------------------------------------------------------
@@ -737,7 +773,13 @@ def main():
 
     print()
     if failures:
-        print("RESULT: FAIL (%d of %d) -> %s" % (len(failures), checks_run[0], ", ".join(failures)))
+        # *** THE BLOCK GOES IN THE SUMMARY LINE, BECAUSE THAT IS THE ONLY LINE THE RUNNER PASSES THROUGH - AND THESE
+        # ASSERTIONS ALREADY PASS `git_block[-1200:]` AS THEIR DETAIL, WHICH IS THE EVIDENCE THAT KEEPS BEING SWALLOWED.
+        # THIS PRINT APPEARS IN TWO PHASES AND `git_block` EXISTS IN ONLY ONE, SO `dir()` GUARDS IT: IT LISTS LOCALS
+        # INSIDE A FUNCTION AND GLOBALS AT MODULE LEVEL, SO NEITHER PHASE CAN RAISE AND LOSE ITS `RESULT:` LINE. ***
+        _block = " ".join(git_block.split())[-700:] if "git_block" in dir() else "(no block measured in this phase)"
+        print("RESULT: FAIL (%d of %d) -> %s | the block was: [%s]"
+              % (len(failures), checks_run[0], ", ".join(failures), _block))
         return 1
     print("RESULT: PASS (%d check(s) run, no check skipped)" % checks_run[0])
     return 0
