@@ -216,7 +216,8 @@ process owns the project"** — a false failure that cost a round to diagnose ev
 
 > ***`check-mcp-server.py` now asks the PROCESS, not the protocol.** The MCP handshake reports nothing that
 > identifies a project, so a session id cannot tell two editors apart; **what can is the command line** —
-> `start-editor.ps1:260` builds `$Args = @($Project)` with the **absolute path**.*
+> `start-editor.ps1:271` builds `$Args = @($Project)` with the **absolute path**.* *** THE CITATION READ `:260`,
+WHICH IS A `Write-Host` LINE; THE ASSIGNMENT IS AT `:271` - CHECKED BY READING BOTH LINES, NOT BY TRUSTING EITHER. ***
 >
 > **Proven on three executed cases:** *nothing running → `NOTHING IS RUNNING` · **a foreign project →
 > `RUNNING BUT NONE HAS project.uproject IN ITS COMMAND LINE — belongs to ANOTHER PROJECT`, exit 3** · the
