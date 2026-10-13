@@ -116,7 +116,8 @@ def main() -> int:
     print("      returns ZERO matches - so a suite CANNOT be matched to a row by its name, and the row has to")
     print("      be READ against the suite's subject instead. That is why only %d of the %d suites claim one:"
           % (len(claimed), len(suites)))
-    print("      THE REMAINING %d ARE READING WORK RATHER THAN A RENAME." % (len(suites) - len(claimed)))
+    print("      THE REMAINING %d ARE READING WORK RATHER THAN A RENAME."
+          % (len(suites) - len(set(n for _, n in claimed))))
     print("      *** AND THAT IS WHY A GUESSED ID WOULD MAKE THIS MEASUREMENT WORSE RATHER THAN BETTER: IT")
     print("      WOULD CITE A ROW NOTHING TESTS. ***")
     print()
