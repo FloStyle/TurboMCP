@@ -54,7 +54,13 @@ def main():
     if failures:
         print("RESULT: FAIL (%d check(s) failed: %s)" % (len(failures), ", ".join(failures)))
         return 1
-    print("RESULT: PASS (the thumbnail option is reachable by name, and the schema says which name)")
+    # *** THE SPELLING IS PUT IN THE RESULT LINE ON PURPOSE: THE SUITE RUNNER PASSES `RESULT:` LINES THROUGH AND
+    # SWALLOWS THE REST OF THE SUITE'S STDOUT, AND THE ARGUMENT NAME IS THE ONE THING THIS SUITE EXISTS TO READ. A
+    # MEASUREMENT THAT CANNOT LEAVE THE RUNNER IS NOT A MEASUREMENT. ***
+    flat = " ".join(schema.split())
+    thumb_at = flat.lower().find("thumb")
+    around = flat[max(0, thumb_at - 90):thumb_at + 40] if thumb_at >= 0 else flat[:160]
+    print("RESULT: PASS (the option is reachable; the schema says: ...%s...)" % around)
     return 0
 
 
