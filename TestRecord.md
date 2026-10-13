@@ -10896,3 +10896,54 @@ and the order I would do the rest in. ***
  panel's probe commandlet reaches plain C++ from a commandlet, so the filter and expand logic belongs in
  `FTurboMCPCallTimeline` and can be asserted there - and `LookTurboMCPCapture` frames a live Slate window, so
  the widget itself can be looked at rather than hoped for. ***
+
+---
+
+## 183. Round 258 — ITEM 4b CLOSES, AND THE WINDOW IS PHOTOGRAPHED FOR THE FIRST TIME
+
+ HEAD `e5117be` · build `Result: Succeeded` · 11 suites PASSED, 0 FAILED · T02 `done when` 1-4 and BOTH verifies PASS
+
+### 183.1 *** THE HALF THAT COULD BE ASSERTED WAS BUILT FIRST ***
+
+ `QUESTIONS.md` Q-11 says a widget tree cannot be READ. It does not say the logic behind it cannot be
+ asserted, and it does not say the widget cannot be BUILT. `FTurboMCPCallTimeline` gained the four
+ filters (each against its own column - toolset, tool, the ARGUMENTS for asset, `bError` for status),
+ the session-heading rows, the row renderer the panel and the text timeline share, and the expansion.
+
+ THE PROBE DRIVES THEM ON LITERAL RECORDS, so every expected number is arithmetic rather than whatever
+ happened to be recorded: five records assemble into **3 calls, 5 list entries, 2 headings**, and the
+ four filters keep **1, 1, 2 and 1**. `test-panel.py` asserts all of it, plus a check that the widget
+ line EXISTS and names why when it skips.
+
+### 183.2 *** AND THE WINDOW ITSELF, LOOKED AT ***
+
+ `TurboMCP.OpenPanel` is a console command - the file's own comment already justified the menu entry by
+ "reachable without typing a console command", and there was none to type. With it, the harness starts
+ the editor on `-ExecCmds="TurboMCP.OpenPanel"` and `LookTurboMCPCapture` in `screen` mode frames the
+ result. Two captures were READ, not assumed:
+
+     screen_1006x606.png (empty)    four filter fields, status `any`, `0 of 0 call(s)`, and
+                                    `; no calls recorded yet this session` as the empty state
+     screen_1006x606.png (10 calls) TWO `; session <id>` headings, one row per call with its size and
+                                    token estimate, one `LARGE` mark, and the engine-only rows reading
+                                    `unknown chars ~unknown tokens (engine-only: this path writes no
+                                    start record)`
+
+### 183.3 *** LOOKING AT IT FOUND WHAT NO SUITE COULD: TWO NUMBERS, ONE WORD ***
+
+ The summary counted `end` RECORDS and printed `15 calls`; the timeline under it printed
+ `11 of 11 call(s)`. *** BOTH WERE RIGHT, WHICH IS THE WORST KIND: the same word on two different
+ questions, and a reader with no way to choose. *** The summary now counts through the same assembly and
+ prints `20 records, 11 calls`, so the difference is stated rather than smoothed over. Twelve green
+ suites had said nothing about it.
+
+### 183.4 *** WHAT REMAINS UNVERIFIED, SAID PLAINLY ***
+
+ THE EXPANDED ROW WAS NOT PHOTOGRAPHED. `Expand` is asserted on literal input (arguments, two result
+ lines, and the count of what was cut), and the widget branch that renders it is ten lines - but opening
+ a row needs a CLICK, and nothing in this session can click. A human opens it in one click; the honest
+ statement is "asserted in the logic, not seen in the window".
+
+ AND THE ONE-FRAME LAG: the summary is a bound attribute and is live, while the list is rebuilt when the
+ log's entry count changes - so at the instant of a capture the summary can name one more call than the
+ list is showing, and it says `1 still running` when that is what happened.
