@@ -1,6 +1,6 @@
 # Audit: the never-executed `E-LOCAL-VARS` promotion path
 
-**Subject:** `FTurboMCPLocalVars::Apply` in `Source/TurboMCP/TurboMCPLocalVars.cpp`, lines 458-626.
+**Subject:** `FTurboMCPLocalVars::Apply` in `Source/TurboMCP/TurboMCPLocalVars.cpp`, lines 463-713.
 **Context:** `QUESTIONS.md` Q-13 records that this half has never run. The `Plan` half is verified
 against the committed asset `TurboMCPAcceptance:LocalVarProbe`, where it correctly reports one SAFE
 and one UNSAFE candidate.
