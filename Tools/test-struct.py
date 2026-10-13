@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-DATA-2
 """Exercise P/E-STRUCT-NEW and P/E-STRUCT-FIELDS against the running editor.
 
   T-DATA-2    create a struct with 4 fields including one struct-typed field
