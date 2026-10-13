@@ -837,7 +837,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 					Without.Text.Len() - InRequest.TokenBudgetChars));
 			}
 		}
-		else
+		else if (InRequest.Detail != EDetail::Manifest)
 		{
 			// Already at or below signatures, so the only lever left is the
 			// manifest.
@@ -850,6 +850,23 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 				TEXT("everything above the manifest was dropped to fit the ")
 				TEXT("%d character budget (the full read was %d characters)."),
 				InRequest.TokenBudgetChars, OriginalLength));
+		}
+		else
+		{
+			// *** THE FLOOR OF THE LADDER, AND THE END OF THE RECURSION. THIS BRANCH USED TO SET `Lower.Detail =
+			// Manifest` AND CALL `Read` AGAIN - FROM A CALL THAT WAS ALREADY AT `Manifest`. NOTHING CHANGED BETWEEN
+			// ONE CALL AND THE NEXT, SO A MANIFEST THAT EXCEEDED THE BUDGET RECURSED UNTIL THE STACK DIED. That is
+			// the reported crash, and the report's own words fit it: a read AT `manifest` DETAIL, with a graph
+			// filter, on a Blueprint with 38 graphs and about 960 nodes. ***
+			// *** THERE IS NO LEVER LEFT AT THE FLOOR, SO THE ANSWER SAYS SO AND NAMES THE ASSET AND THE TWO NUMBERS.
+			// A BOUNDED ANSWER THAT STATES ITS LIMIT IS A RESULT; THE RECURSION WAS A DEAD SESSION. ***
+			Result.Reductions.Add(FString::Printf(
+				TEXT("the budget cannot be met: this read is already at manifest detail, which is the smallest ")
+				TEXT("thing this reader can print, and %s prints %d characters against a budget of %d. Nothing ")
+				TEXT("further can be dropped without dropping the manifest itself. Raise the budget, or read one ")
+				TEXT("graph at a time."),
+				InBlueprint != nullptr ? *BlueprintPath(InBlueprint) : TEXT("(no asset)"),
+				Result.Text.Len(), InRequest.TokenBudgetChars));
 		}
 	}
 
