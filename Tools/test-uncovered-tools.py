@@ -1,3 +1,4 @@
+# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: NONE - it exercises the tools that NOTHING has ever called, which is COVERAGE, and coverage is Tools/audit-tool-coverage.py's question rather than any acceptance row's.
 """Exercise the tools that NOTHING has ever called.
 
 WHY THIS SUITE EXISTS

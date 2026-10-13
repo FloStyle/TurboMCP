@@ -44,6 +44,9 @@ ROW = re.compile(r"^\|\s*(T-[A-Z0-9-]+)", re.MULTILINE)
 CLAIMS = re.compile(r"ACCEPTANCE\s+ROW\s+THIS\s+SUITE\s+CLAIMS\s+TO\s+PROVE:[^\n]*", re.IGNORECASE)
 IDS_IN_CLAIM = re.compile(r"T-[A-Z0-9-]+")
 
+# *** A SUITE THAT PROVES NO ROW DECLARES IT, SO THE ABSENCE IS A STATEMENT RATHER THAN A SILENCE. ***
+NONE_MARK = re.compile(r"ACCEPTANCE\s+ROW\s+THIS\s+SUITE\s+CLAIMS\s+TO\s+PROVE:\s*NONE\b", re.IGNORECASE)
+
 
 def main() -> int:
     want_list = "--list" in sys.argv
@@ -93,6 +96,21 @@ def main() -> int:
         print("      *** A SUITE THAT PROVES NO ACCEPTANCE ROW IS A LEGITIMATE ANSWER - `test-uncovered-tools`")
         print("      PROVES COVERAGE, WHICH IS ANOTHER SCRIPT'S QUESTION - BUT THE ABSENCE HAS TO BE VISIBLE,")
         print("      BECAUSE AN UNNAMED REMAINDER IS RE-DERIVED BY EVERY READER INSTEAD OF READ. ***")
+        print("      *** AND IT IS NOW A DECLARATION RATHER THAN A SILENCE: A SUITE SAYING SO WRITES")
+        print("      `ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: NONE` AND GIVES ITS REASON, WHICH THIS SCRIPT")
+        print("      RECOGNISES BELOW. ANYTHING STILL UNSTATED IS LISTED AS UNSTATED. ***")
+    declared_none = [name for name, text in texts if NONE_MARK.search(text)]
+    unstated = [name for name in silent if name not in declared_none]
+    if declared_none:
+        print()
+        print("  *** DECLARED: `... CLAIMS TO PROVE: NONE`, with the reason in the line - %d: ***" % len(declared_none))
+        for name in declared_none:
+            print("      %s" % name)
+    if unstated:
+        print()
+        print("  *** AND STILL UNSTATED - neither a row nor a declared NONE - %d: ***" % len(unstated))
+        for name in unstated:
+            print("      %s" % name)
     bogus = [(rid, name) for rid, name in claimed if rid not in unique]
     if bogus:
         print()
