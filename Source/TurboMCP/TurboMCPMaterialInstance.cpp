@@ -23,11 +23,9 @@ namespace
 	/**
 	 * A parameter association, as a word, so the text is stable.
 	 *
-	 * LOCAL RATHER THAN SHARED: TurboMCPMaterial.cpp has its own AssociationName, IT IS IN AN ANONYMOUS NAMESPACE
-	 * THERE, and this workstream is not permitted to edit that file - so making it public is a change for the
-	 * orchestration to decide, not one to make by reaching into a file other capabilities own. The function is
-	 * eleven lines and its OUTPUT IS ASSERTED BY A SUITE, so a drift between two copies would be a CHECK FAILURE
-	 * rather than a silent divergence.
+	 * DUPLICATED DELIBERATELY: the other copy is in an anonymous namespace in `TurboMCPMaterial.cpp`, SO IT CANNOT
+	 * BE SHARED WITHOUT CHANGING THAT FILE. *** THE FUNCTION IS ELEVEN LINES AND BOTH OUTPUTS ARE ASSERTED BY A
+	 * SUITE, so a drift between the two copies is a CHECK FAILURE rather than a silent divergence. ***
 	 */
 	FString AssociationName(EMaterialParameterAssociation InAssociation)
 	{
@@ -237,8 +235,11 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 		for (const EMaterialParameterType Type : { EMaterialParameterType::Scalar, EMaterialParameterType::Vector,
 			EMaterialParameterType::Texture, EMaterialParameterType::StaticSwitch })
 		{
-			// CLEARED PER TYPE AND MERGED, because the engine own signature takes ONE type at a time
-			// (MaterialInterface.h:950) and reusing a single map across four calls would be four chances to forget.
+			// A FRESH MAP PER TYPE, declared inside the loop, SO THE HAZARD OF REUSING ONE ACROSS FOUR CALLS
+			// CANNOT ARISE - nothing has to be cleared. The engine's own signature takes ONE type at a time
+			// (MaterialInterface.h:950). *** THE COMMENT USED TO READ "CLEARED PER TYPE", WHICH DESCRIBED A VERSION
+			// THAT REUSED ONE MAP: A READER TRUSTING IT WOULD LOOK FOR A CLEAR THAT DOES NOT EXIST AND MISS THAT
+			// THE HAZARD WAS DESIGNED AWAY. ***
 			TMap<FMaterialParameterInfo, FMaterialParameterMetadata> ForType;
 			Level->GetAllParametersOfType(Type, ForType);
 			for (const TPair<FMaterialParameterInfo, FMaterialParameterMetadata>& Pair : ForType)
