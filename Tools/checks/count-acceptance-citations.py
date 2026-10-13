@@ -93,6 +93,18 @@ def main() -> int:
         print("      *** A SUITE THAT PROVES NO ACCEPTANCE ROW IS A LEGITIMATE ANSWER - `test-uncovered-tools`")
         print("      PROVES COVERAGE, WHICH IS ANOTHER SCRIPT'S QUESTION - BUT THE ABSENCE HAS TO BE VISIBLE,")
         print("      BECAUSE AN UNNAMED REMAINDER IS RE-DERIVED BY EVERY READER INSTEAD OF READ. ***")
+    bogus = [(rid, name) for rid, name in claimed if rid not in unique]
+    if bogus:
+        print()
+        print("  *** AND THESE CLAIMS NAME SOMETHING THAT IS NOT A ROW IN THE DOCUMENT - WHICH IS THE ONE ERROR")
+        print("      THIS CONVENTION EXISTS TO PREVENT, SO IT IS REPORTED RATHER THAN COUNTED: ***")
+        for rid, name in bogus:
+            print("      %-14s %s   *** NOT A ROW ***" % (rid, name))
+    else:
+        print()
+        print("  *** AND EVERY CLAIMED ID IS A ROW THAT EXISTS IN `06_ACCEPTANCE.md`. *** *** THIS CHECK IS HERE")
+        print("      BECAUSE A SUITE ONCE CLAIMED THREE IDS THAT WERE NOT ROWS AT ALL, AND THE ONLY SIGN OF IT WAS")
+        print("      THAT THE REMAINDER COUNT AND THE NAMED REMAINDER DISAGREED BY ONE. ***")
     for rid, name in claimed:
         print("      %-14s %s" % (rid, name))
     print()

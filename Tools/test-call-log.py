@@ -1,4 +1,3 @@
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LOG-1, T-LOG-2, T-LOG-3
 """Exercise E-CALL-LOG, R-CALL-LOG and E-CALL-LOG-CLEAR against the running editor.
 
   T-LOG-1  every tool call is recorded
