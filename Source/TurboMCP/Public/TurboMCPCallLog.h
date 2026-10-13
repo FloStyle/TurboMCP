@@ -83,6 +83,18 @@ public:
 	/** The size as text, for a report that must say `unknown` rather than a number it does not have. */
 	static FString DescribeSize(int32 InValue) { return InValue == NotMeasured ? TEXT("unknown") : FString::FromInt(InValue); }
 
+	/** A call at or above this duration is marked slow in the timeline. */
+	static constexpr double SlowCallMs = 1000.0;
+
+	/** A call at or above this many characters is marked large in the timeline. */
+	static constexpr int32 LargeCallChars = 20000;
+
+	bool IsSlow() const { return DurationMs >= SlowCallMs; }
+
+	/** *** AN UNMEASURED SIZE IS NOT LARGE: `NotMeasured` IS NEGATIVE, SO THE COMPARISON WOULD BE FALSE ANYWAY, BUT IT
+	 * IS STATED SO THAT A READER DOES NOT HAVE TO KNOW THE SENTINEL'S VALUE TO TRUST THE MARK. *** */
+	bool IsLarge() const { return ResultChars != NotMeasured && ResultChars >= LargeCallChars; }
+
 	int32 ResultChars = NotMeasured;
 
 		/** The token estimate for the result. Zero on a start record. */

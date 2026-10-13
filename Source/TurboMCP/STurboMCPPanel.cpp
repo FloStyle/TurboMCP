@@ -371,6 +371,8 @@ FText STurboMCPPanel::GetCallLogSummary() const
 	int32 EndRecords = 0;
 	int32 Tokens = 0;
 	int32 Chars = 0;
+	int32 SlowCalls = 0;
+	int32 LargeCalls = 0;
 	for (const FTurboMCPCallLog::FEntry& Entry : Entries)
 	{
 		if (Entry.Phase == TEXT("end"))
@@ -378,6 +380,9 @@ FText STurboMCPPanel::GetCallLogSummary() const
 			++EndRecords;
 			Tokens += Entry.MeasuredTokens();
 			Chars += Entry.MeasuredChars();
+			// MARKED HERE SO THE SUMMARY CAN SAY HOW MANY, RATHER THAN LEAVING A READER TO SCAN THE TIMELINE FOR THEM. ***
+			if (Entry.IsSlow()) { ++SlowCalls; }
+			if (Entry.IsLarge()) { ++LargeCalls; }
 		}
 	}
 
@@ -396,10 +401,10 @@ FText STurboMCPPanel::GetCallLogSummary() const
 	}
 
 	return FText::FromString(FString::Printf(
-		TEXT("on  |  %d record%s, %d call%s, %d characters, ~%d tokens (estimate)"),
+		TEXT("on  |  %d record%s, %d call%s, %d characters, ~%d tokens (estimate), %d slow, %d large"),
 		Entries.Num(), Entries.Num() == 1 ? TEXT("") : TEXT("s"),
 		EndRecords, EndRecords == 1 ? TEXT("") : TEXT("s"),
-		Chars, Tokens));
+		Chars, Tokens, SlowCalls, LargeCalls));
 }
 
 FSlateColor STurboMCPPanel::GetCallLogSummaryColor() const
