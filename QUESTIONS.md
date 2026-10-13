@@ -1035,7 +1035,7 @@ This is NOT a missing fixture. It is the rule's own geometry, measured with a fi
 `TurboMCPGraphFixBackward.cpp` moves the target of a backward exec wire to
 
 ```
-ToX = Source.PlannedX + PlannedExtent(Source.Width) + HorizontalNodeGap // line 965, gap = 60
+ToX = Source.PlannedX + PlannedExtent(Source.Width) + HorizontalNodeGap // line 970, gap = 60
 ```
 
 and then, for each pure node used only by that target, carries it to

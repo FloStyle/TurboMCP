@@ -32,7 +32,7 @@ namespace
 	 * THE PIN ROW PITCH, COPIED FROM THE READER AND NOT REDEFINED.
 	 *
 	 * `FTurboMCPLayoutReport` uses a private `PinRowSpacing = 24.0`
-	 * (`TurboMCPLayoutReport.cpp:26`) and its `PinPosition` is not parameterised on it. Tidy has to
+	 * (`TurboMCPLayoutReport.cpp:31`) and its `PinPosition` is not parameterised on it. Tidy has to
 	 * compute a wire length on PLANNED positions, which the reader cannot do, so it has to reproduce
 	 * the arithmetic - and the reader's total is the number tidy's before-value must equal.
 	 *
