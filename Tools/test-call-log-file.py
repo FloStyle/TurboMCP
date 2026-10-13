@@ -106,15 +106,48 @@ def main():
     check("every start is followed by an end, or is the last record", not orphans,
           "%d orphaned start(s) at %s" % (len(orphans), orphans[:4]))
     check("the suite's own calls left records", len(records) >= 5, "%d record(s)" % len(records))
-    # *** THE DESIGN, MEASURED: THE PLUGIN PATH WRITES A `start` AND THE AGENT PATH CANNOT - the engine's event
-    # carries the duration after the call and nothing before it. So a record with no start is NOT a lost start, it is
-    # the other path, AND `RenderTimeline()` NOW SAYS SO ON THE ROW. THIS CHECK ASSERTS THE STATED DESIGN; THE ONE IT
-    # REPLACED ASSERTED FIVE STARTS, WHICH THE MEASUREMENT SAYS CANNOT HAPPEN. ***
+    # *** THE DESIGN, MEASURED - AND IT CHANGED ON 2026-10-14, WHICH IS WHY THIS COMMENT NAMES BOTH
+    # STATES. *** Until `FTurboMCPRecordingToolset` landed, THE PLUGIN PATH WAS THE ONLY ONE THAT
+    # COULD WRITE A `start` AND NO PLUGIN TOOL CALLED IT, so every startless `end` was the engine's
+    # path and the check below asserted exactly that. The recorder now wraps each of the plugin's four
+    # toolset handlers, so an AGENT call writes a start too, and the plugin start records are no
+    # longer hypothetical: the check above counts them.
+    # *** AND THE RULE IS NOW NARROWER, BECAUSE A THIRD CASE EXISTS AND IT IS MEASURED RATHER THAN
+    # IMAGINED: A PLUGIN END WHOSE START WAS WRITTEN WHILE RECORDING WAS OFF. *** `EditTurboMCPCallLog`
+    # turns recording ON inside its own body, so its own start record is dropped - the switch was off
+    # when it was written - and its end record lands, because by then the switch is on. Measured: this
+    # check failed on exactly that one record after the recorder landed, and the record is CORRECT.
+    # Everything else with no start must be the engine's, and anything else is a genuinely lost start.
     startless = [r for i, r in enumerate(records)
                  if r.get("phase") == "end" and not any(s < i for s in starts)]
-    check("every record with no start is the engine's path, not a lost one",
-          all(r.get("source") == "engine" for r in startless),
-          "%d start(s), %d start-less end(s)" % (len(starts), len(startless)))
+    unexplained = [r for r in startless
+                   if r.get("source") != "engine"
+                   and r.get("tool") != "EditTurboMCPCallLog"]
+    check("every record with no start is the engine's path, or the call that switched recording on",
+          not unexplained,
+          "%d start(s), %d start-less end(s), %d unexplained: %s"
+          % (len(starts), len(startless), len(unexplained),
+             "; ".join("%s.%s" % (r.get("toolset"), r.get("tool")) for r in unexplained[:3])))
+
+    # *** AND THE RECORD THE AGENT'S PATH COULD NOT PRODUCE BEFORE THIS ROUND. *** A start record with
+    # the arguments is the whole of `T02`'s `done when` 1, and asserting its PRESENCE is what stops
+    # this suite passing on a build where the recorder silently did not install - the failure mode a
+    # purely conditional check cannot see.
+    plugin_starts = [r for i, r in enumerate(records)
+                     if r.get("phase") == "start" and r.get("source") == "plugin"]
+    check("a plugin start record exists, which is what the agent's path now writes",
+          len(plugin_starts) > 0, "%d plugin start(s)" % len(plugin_starts))
+    check("and it carries the arguments, which is what the record is for",
+          all(r.get("arguments") for r in plugin_starts),
+          "%d of %d with arguments" % (sum(1 for r in plugin_starts if r.get("arguments")),
+                                       len(plugin_starts)))
+    # The plugin's own end record carries a REAL size, where the engine's carries `null` - that
+    # difference is `done when` 2, measured at the tool boundary.
+    plugin_ends = [r for i, r in enumerate(records)
+                   if r.get("phase") == "end" and r.get("source") == "plugin"]
+    check("a plugin end record carries a measured size rather than null",
+          len(plugin_ends) > 0 and all(r.get("result_chars") is not None for r in plugin_ends),
+          "%d plugin end(s)" % len(plugin_ends))
 
     print("")
     if failures:

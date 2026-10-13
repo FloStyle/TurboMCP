@@ -39,8 +39,21 @@
  *    names by reproducing the engine's own `FBlake3` hash over the known names, and forwards the
  *    event to whichever provider was installed before it — never replacing a hook without passing
  *    its events on.
- *  - `FTurboMCPCallLog::ScopedCall` is used inside this plugin's own tools, where the arguments are
+ *  - `FTurboMCPCallLog::FScopedCall` is used for this plugin's own tools, where the arguments are
  *    known, and writes the same line shape with full detail.
+ *
+ * *** AND "THIS PLUGIN'S OWN TOOLS" IS NOW TRUE OF THE CODE AND NOT ONLY OF THE DESIGN, WHICH IS A
+ * CORRECTION RATHER THAN A DESCRIPTION. *** Nothing called `FScopedCall` for a long time - it was
+ * defined and constructed nowhere - so every record in the log was `source=engine`, no result size
+ * was ever measured, and `T02`'s start record did not exist on the agent's path. It is called now, by
+ * `FTurboMCPRecordingToolset` (`TurboMCPCallRecorder.h`), which wraps each of the four toolset
+ * handlers the engine's registry holds. THAT PLACEMENT IS THE POINT: the same capability written
+ * inside the tools would have been 68 individually anchored insertions, and at the registry's door it
+ * is four substitutions of one handler each.
+ *
+ * *** ONE CALL THEREFORE LEAVES MORE THAN ONE RECORD, AND THAT IS WHAT `FTurboMCPCallTimeline`
+ * EXISTS FOR: it assembles the records back into calls, so a reader counting calls does not count the
+ * plugin's start, the plugin's end and the engine's event as three of them.
  */
 class FTurboMCPCallLog
 {
@@ -95,7 +108,7 @@ public:
 	 * IS STATED SO THAT A READER DOES NOT HAVE TO KNOW THE SENTINEL'S VALUE TO TRUST THE MARK. *** */
 	bool IsLarge() const { return ResultChars != NotMeasured && ResultChars >= LargeCallChars; }
 
-	int32 ResultChars = NotMeasured;
+		int32 ResultChars = NotMeasured;
 
 		/** The token estimate for the result. Zero on a start record. */
 		int32 TokenEstimate = NotMeasured;
@@ -130,6 +143,23 @@ public:
 	/** The file the log is written to. */
 	FString GetLogFilePath() const;
 
+	/**
+	 * One line per call, oldest first: IN from the `start` record and OUT from the `end` record that follows it.
+	 *
+	 * *** A `start` WITH NO `end` IS PRINTED AS `running` RATHER THAN DROPPED, BECAUSE THAT IS THE CALL THAT WAS IN
+	 * FLIGHT WHEN SOMETHING WENT WRONG - WHICH IS THE CASE THE START RECORD EXISTS FOR. *** A record with an `end` and
+	 * no `start` (the engine's own events arrive that way) is a row of its own.
+	 * *** TEXT RATHER THAN WIDGETS SO THE PANEL CAN RENDER IT AND A READER CAN DIFF IT; THE CALL IS ASSEMBLED BY
+	 * `FTurboMCPCallTimeline`, WHICH IS ALSO WHAT `R-CALL-COST` COUNTS, SO THE ROW AND THE TOTAL CANNOT DISAGREE
+	 * ABOUT WHAT ONE CALL IS. ***
+	 *
+	 * *** PUBLIC, AND THAT IS A CORRECTION RATHER THAN A CONVENIENCE: this method was written for the panel and left
+	 * PRIVATE WITH NO CALLER AT ALL, so `T02`'s item 3 was recorded as done while the code that implements it could
+	 * not be reached by anything. A reader of the card could not tell that from the card, which is the shape this
+	 * project keeps having to look for. ***
+	 */
+	FString RenderTimeline() const;
+
 	/** Turns one production of entries into a delta and back, for `ScopedCall`. */
 	struct FScopedCall
 	{
@@ -163,16 +193,6 @@ private:
 	TArray<FEntry> Entries;
 
 	/** The cap, from `02_PRINCIPLES.md` `P6`: a list must not grow without bound. */
-	/**
-	 * One line per call, oldest first: IN from the `start` record and OUT from the `end` record that follows it.
-	 *
-	 * *** A `start` WITH NO `end` IS PRINTED AS `running` RATHER THAN DROPPED, BECAUSE THAT IS THE CALL THAT WAS IN
-	 * FLIGHT WHEN SOMETHING WENT WRONG - WHICH IS THE CASE THE START RECORD EXISTS FOR. *** A record with an `end` and
-	 * no `start` (the engine's own events arrive that way) is a row of its own.
-	 * *** TEXT RATHER THAN WIDGETS SO A SUITE CAN ASSERT ON IT; THE PANEL RENDERS THIS AND ADDS NOTHING OF ITS OWN. ***
-	 */
-	FString RenderTimeline() const;
-
 	static constexpr int32 MaxEntries = 1000;
 
 	/**

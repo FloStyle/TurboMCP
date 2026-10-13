@@ -20,6 +20,7 @@
 #include "Widgets/SWindow.h"
 
 #include "Logging.h"
+#include "TurboMCPCallRecorder.h"
 
 /**
  * Toolset name an agent and the panel use, in the engine's own format.
@@ -371,6 +372,12 @@ void RegisterTurboMCPToolsets()
 				*TurboMCPToolsets::GetToolsetName(Class.Get()));
 		}
 	}
+
+	// *** AND THE RECORDING IS INSTALLED AFTER ALL FOUR ARE IN, WHICH IS THE ONE PLACE IT BELONGS. ***
+	// The handler the engine builds for a class is replaced by a wrapper that writes the `start` record
+	// before the call and the `end` record after it, so `T02`'s `done when` 1 holds on the agent's path
+	// without an edit in any of the 68 tool bodies. See `TurboMCPCallRecorder.h`.
+	InstallTurboMCPCallRecording();
 }
 
 void UnregisterTurboMCPToolsets()
@@ -379,4 +386,8 @@ void UnregisterTurboMCPToolsets()
 	{
 		UToolsetRegistry::UnregisterToolsetClass(Class);
 	}
+
+	// After the registry has let them go, so nothing is left holding an engine handler across a
+	// module unload.
+	RemoveTurboMCPCallRecording();
 }

@@ -12,6 +12,7 @@
 #include "Misc/Paths.h"
 
 #include "TurboMCPCallLog.h"
+#include "TurboMCPCallTimeline.h"
 #include "TurboMCPTokenEstimate.h"
 
 /**
@@ -20,13 +21,28 @@
  * The log is written by two sources — the analytics provider for engine tool calls and
  * `FTurboMCPCallLog::FScopedCall` inside this plugin's own tools — and read through one tool, so a
  * reader does not have to know which source a line came from. The `source` field says it.
+ *
+ * *** AND THE OBSERVER IS PART OF THE LOG, WHICH NOW INCLUDES THE FILTER ITSELF. *** Every call to one
+ * of this plugin's own tools writes a `start` record carrying its arguments BEFORE the tool body runs,
+ * so this tool's own `start` record is in memory while it reads - and a `filter` matches
+ * `Arguments` (which `T02`'s item 4c asks for, so an agent can find a call by the asset it touched).
+ * MEASURED CONSEQUENCE: `filter=zzz_no_such_tool` answers `showing 1 newest of 1 matching`, and the one
+ * row is this call. A caller who wants the emptiness message uses `since` instead, and the suite
+ * asserts both, because a surprise that is only in a comment is a surprise again next time.
  */
 
 FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	const FString& Filter, const FString& Limit, const FString& Since)
 {
 	FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
-	const TArray<FTurboMCPCallLog::FEntry> All = Log.GetEntries();
+
+	// *** THE SESSION IN EFFECT, SO ONE CALL CANNOT SPLIT A BATCH SCRIPT'S GROUP IN TWO. *** This
+	// plugin's own records carry no session id - the seam they are written at is the engine's toolset
+	// registry, which is below the MCP session and knows nothing about it - so without this fill a
+	// plugin tool's `start` and `end` would each print `; session (none)` between the engine's own two
+	// events for the same call. `FTurboMCPCallTimeline` owns the rule and the timeline uses it too.
+	const TArray<FTurboMCPCallLog::FEntry> All =
+		FTurboMCPCallTimeline::WithSessionsInEffect(Log.GetEntries());
 
 	// *** A LARGE NUMBER IS CLAMPED, A NON-NUMBER IS REFUSED, AND THOSE ARE NOT THE SAME REQUEST. *** `P6`
 	// wants a bounded answer, so "a million lines" is a caller asking for as much as this tool will give, and
@@ -174,6 +190,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	}
 
 	Out += TEXT("\n; the token estimate is an estimate, per 04_FORMATS.md section 5.");
+	// *** A COUNT OF RECORDS IS NOT A COUNT OF CALLS, AND SAYING SO IS THE WHOLE POINT. *** A call to
+	// one of this plugin's own tools writes a `plugin start`, a `plugin end` AND the engine's own event
+	// for the same call, so the list below is longer than the number of calls made. `R-CALL-COST` and
+	// the panel's timeline both assemble those records into calls; this tool is the raw log.
+	Out += TEXT("\n; one call can leave several records: this plugin writes a start and an end, and ");
+	Out += TEXT("the engine writes its own event for the same call. `source` says which wrote a line.");
 	return Out;
 }
 

@@ -13,6 +13,7 @@
 
 #include "TurboMCPCallCost.h"
 #include "TurboMCPCallLog.h"
+#include "TurboMCPCallTimeline.h"
 
 namespace
 {
@@ -82,7 +83,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	const FString& Cap)
 {
 	FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
-	const TArray<FTurboMCPCallLog::FEntry> All = Log.GetEntries();
+	const TArray<FTurboMCPCallLog::FEntry> Records = Log.GetEntries();
+
+	// *** ONE RECORD PER CALL, WHICH IS A CORRECTION THIS TOOL NEEDED THE MOMENT THE PLUGIN'S OWN TOOLS
+	// BEGAN RECORDING. *** Every total below counts ENTRIES, and while every entry was an engine `end`
+	// record an entry WAS a call. Now one call leaves up to four records - the plugin's `start` and
+	// `end` and the engine's two events - so counting entries would have doubled every total, counted
+	// the `call_tool` dispatch as a second call, and reported `2 call(s)` per asset because BOTH
+	// records of one plugin pair carry the arguments. `FTurboMCPCallTimeline` merges them, and
+	// `RenderTimeline` uses the same assembly, so the list and the total cannot disagree.
+	const TArray<FTurboMCPCallLog::FEntry> All = FTurboMCPCallTimeline::RepresentativeRecords(Records);
 
 	// ---------------------------------------------------------------------------------------------
 	// `P1` FIRST, BEFORE ANY NUMBER IS COMPUTED: an empty answer must say WHICH emptiness it is.
@@ -177,8 +187,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	Out += FString::Printf(TEXT("\nrecording: %s"),
 		Log.IsEnabled() ? TEXT("on") : TEXT("OFF"));
 	Out += FString::Printf(
-		TEXT("\ncounts: %d in the log, %d considered, %d skipped before %s, %d did not match the filter"),
-		All.Num(), Selected.Num(), SkippedBySince,
+		TEXT("\ncounts: %d call(s) from %d record(s) in the log, %d considered, %d skipped before %s, ")
+		TEXT("%d did not match the filter"),
+		All.Num(), Records.Num(), Selected.Num(), SkippedBySince,
 		SinceText.IsEmpty() ? TEXT("(no bound given)") : *SinceText, SkippedByFilter);
 
 	if (Selected.Num() == 0)
@@ -186,8 +197,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 		Out += TEXT("\n\nNO COST CAN BE REPORTED, AND THE REASON IS NOT THAT ANYTHING WAS CHEAP:");
 		Out += FString::Printf(TEXT("\n  %s"), *FTurboMCPCallCost::DescribeEmptiness(
 			FTurboMCPCallCost::EEmptiness::FilterMatchedNothing));
-		Out += FString::Printf(TEXT("\n  %d entr%s in the log, none matching '%s'."),
-			All.Num(), All.Num() == 1 ? TEXT("y is") : TEXT("ies are"), *FilterText);
+		Out += FString::Printf(TEXT("\n  %d call%s in the log, none matching '%s'."),
+			All.Num(), All.Num() == 1 ? TEXT(" is") : TEXT("s are"), *FilterText);
 		return Out;
 	}
 
@@ -234,9 +245,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	// cannot be split back apart. The lost work on this capability paid for that lesson - it changed
 	// the OUTPUT rather than writing a cleverer regex, which is the right direction for the fix.
 	Out += FString::Printf(
-		TEXT("\n\nranked %d entr%s of %d, %d recording a duration and %d recording a token estimate; %d failed"),
-		Selected.Num(), Selected.Num() == 1 ? TEXT("y") : TEXT("ies"),
-		All.Num(), WithDuration, WithTokens, Errors);
+		TEXT("\n\nranked %d call(s) of %d, %d recording a duration and %d recording a token estimate; %d failed"),
+		Selected.Num(), All.Num(), WithDuration, WithTokens, Errors);
 
 	Out += TEXT("\n\nMOST EXPENSIVE BY TOKENS");
 	if (Priciest != nullptr)
@@ -253,9 +263,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 		Out += FString::Printf(
 			TEXT("\n  none of the %d considered call(s) recorded a token estimate above zero."),
 			Selected.Num());
-		Out += TEXT("\n  THIS IS NOT ZERO COST. A token estimate is written by this plugin's own tools,");
-		Out += TEXT("\n  and the engine's event carries no result text - so a log of engine calls cannot");
-		Out += TEXT("\n  be ranked by tokens at all. Use SLOWEST below, which every entry can answer.");
+		// *** AND THE REASON IS NOW A NARROW ONE, WHICH IS A CORRECTION RATHER THAN A REWORDING. ***
+		// This branch used to say a token estimate "is written by this plugin's own tools", which was
+		// TRUE OF THE DESIGN AND FALSE OF THE CODE: nothing called `FScopedCall`, so no plugin record
+		// existed and every estimate really was absent. The tools now record, so the only way to reach
+		// this branch is a considered set made entirely of ENGINE-ONLY calls - an engine tool, or the
+		// `call_tool` meta-tool - whose event carries no result text to estimate from.
+		Out += TEXT("\n  THIS IS NOT ZERO COST. A token estimate is written at this plugin's tool boundary,");
+		Out += TEXT("\n  which only this plugin's own tools pass through; an engine tool's call arrives");
+		Out += TEXT("\n  through the engine's event, which carries no result text at all. Use SLOWEST below,");
+		Out += TEXT("\n  which a call can answer from its duration alone.");
 	}
 
 	Out += TEXT("\n\nSLOWEST BY DURATION");
@@ -376,13 +393,18 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	if (AssetRows.Num() == 0)
 	{
 		// `P1` AGAIN: the section's absence is stated with its reason, because an empty per-asset
-		// section would otherwise read as "no asset cost anything" instead of "no entry named one".
+		// section would otherwise read as "no asset cost anything" instead of "no call named one".
 		Out += TEXT("\n\nTOTALS PER ASSET: none can be computed.");
 		Out += FString::Printf(
-			TEXT("\n  %d considered entr%s name no asset in its arguments."),
-			Unattributed, Unattributed == 1 ? TEXT("y") : TEXT("ies"));
-		Out += TEXT("\n  An engine event carries NO ARGUMENTS AT ALL, so this section can only fill from");
-		Out += TEXT("\n  this plugin's own tools - and that is an absent measurement, not zero cost.");
+			TEXT("\n  %d considered call(s) name no asset in their arguments."),
+			Unattributed);
+		// *** THE SECOND SENTENCE IS NOW FALSE AND IS CORRECTED RATHER THAN KEPT. *** It said this
+		// section "can only fill from this plugin's own tools", which was true while nothing recorded
+		// arguments. The plugin's tools record now, so the section fills from every call that passed
+		// through the boundary - and the only calls that cannot name an asset are the engine-only
+		// ones, whose event carries no arguments at all.
+		Out += TEXT("\n  An engine tool's call carries NO ARGUMENTS AT ALL, so only a call that passed");
+		Out += TEXT("\n  through this plugin's own boundary can name one - an absent measurement, not zero cost.");
 	}
 	else
 	{
@@ -403,8 +425,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 			// NAMED RATHER THAN DROPPED: silently omitting these would make the per-asset totals look
 			// complete when they are missing part of the log.
 			Out += FString::Printf(
-				TEXT("\n  ; %d further entr%s name no asset and are NOT in these totals."),
-				Unattributed, Unattributed == 1 ? TEXT("y") : TEXT("ies"));
+				TEXT("\n  ; %d further call(s) name no asset and are NOT in these totals."),
+				Unattributed);
 		}
 	}
 

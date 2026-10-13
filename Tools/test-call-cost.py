@@ -13,17 +13,25 @@ own report is not evidence of anything except what it decided to say.
 
 *** AND THE SHARPEST CONSTRAINTS ARE MEASURED RATHER THAN ASSUMED, FROM THE REAL LOG: ***
 
-1. EVERY ENTRY IN THE LOG IS `source=engine`, because NO PLUGIN TOOL CALLS `FScopedCall` - it is
-   defined in `TurboMCPCallLog.cpp:205` and constructed nowhere. So `token_estimate` IS 0 FOR EVERY
-   LINE, and a check demanding a non-zero "most expensive by tokens" would fail on a CORRECT tool.
-   THIS SUITE THEREFORE ASSERTS THE ABSENCE HONESTLY: it requires the answer to SAY that no token
-   estimate was recorded, which is the difference between an absent measurement and a real zero.
+1. THIS PLUGIN'S OWN TOOLS NOW RECORD, so a call through one of them carries a real `result_chars`
+   and `token_estimate`, and `MOST EXPENSIVE BY TOKENS` HAS A WINNER. *** THE THREE CHECKS THIS
+   REPLACED ASSERTED THE ABSENCE AND WERE CORRECT UNTIL `FTurboMCPRecordingToolset` LANDED: measured
+   then, every entry in the log was `source=engine` because nothing called `FScopedCall`, so every
+   estimate was absent by construction. The absence is now a MEASUREMENT THAT CAN FAIL, which is the
+   stronger check: a tool that printed "none of the N considered call(s) recorded a token estimate"
+   while the log holds measured ones is reporting an absence that is not there. ***
 
-2. THE LOG'S CLOCK IS THE EDITOR'S, AND AN ENGINE ENTRY CARRIES NO ARGUMENTS. So the per-asset
-   section cannot fill from engine lines, and the suite requires the answer to SAY SO rather than
-   printing an empty list that reads like "no asset cost anything".
+2. ONE CALL IS ONE CALL, WHICH IS THE PAIRING THIS SUITE NOW PROVES. A call to this plugin's own
+   tools leaves a `plugin start`, a `plugin end` AND the engine's own event for the same call, so a
+   reader that counted RECORDS would report two or three calls where one was made - and `2 call(s)`
+   per asset, because both records of one pair carry the arguments. So the per-asset row for the
+   asset this suite calls is asserted to read exactly one call.
 
-3. THE LOG GROWS BETWEEN TWO READS, BECAUSE READING IS ITSELF LOGGED. `Tools/test-call-log.py`
+3. THE LOG'S CLOCK IS THE EDITOR'S, AND AN ENGINE-ONLY CALL CARRIES NO ARGUMENTS. So a per-asset
+   total fills only from calls that passed this plugin's boundary, and the suite asserts the asset it
+   used is named rather than that the section is empty.
+
+4. THE LOG GROWS BETWEEN TWO READS, BECAUSE READING IS ITSELF LOGGED. `Tools/test-call-log.py`
    records this as "an observer of the log is part of the log". SO NO CHECK COMPARES TWO ABSOLUTE
    COUNTS. Each compares an answer against the log lines THAT ANSWER'S OWN COST REPORT named, and
    the caller's own call is accounted for explicitly where a count is asserted at all.
@@ -179,11 +187,20 @@ def main():
 
     check("the recording line now says the log is on",
           "recording: on" in text, text[:200])
-    check("the answer carries a denominator - how many entries it considered",
-          re.search(r"counts:\s*\d+ in the log,\s*\d+ considered", text) is not None, text[:300])
+    check("the answer carries a denominator - how many calls it considered",
+          re.search(r"counts:\s*\d+ call\(s\) from \d+ record\(s\) in the log,\s*\d+ considered",
+                    text) is not None, text[:300])
     check("it says how many entries recorded a duration and how many a token estimate",
           re.search(r"\d+ recording a duration and \d+ recording a token estimate", text) is not None,
           text[:400])
+    # *** AND THE TOKEN COUNT IS NON-ZERO, WHICH IS THE MEASUREMENT THIS SUITE WAS BLIND TO. *** The
+    # calls above all go through this plugin's own toolsets, so they pass the boundary the recorder
+    # wraps. A zero here would mean the recorder did not run - the exact condition the old checks
+    # could not distinguish from a log of engine calls.
+    recorded = re.search(r"(\d+) recording a duration and (\d+) recording a token estimate", text)
+    check("this plugin's own calls recorded a token estimate, so the count is not zero",
+          recorded is not None and int(recorded.group(2)) > 0,
+          "matched %s" % (recorded.group(0) if recorded else "nothing"))
 
     # ---------------------------------------------------------------------------------------------
     # THE TWO RANKINGS ARE DIFFERENT QUESTIONS, AND THE SUITE CHECKS THEY ARE REPORTED SEPARATELY
@@ -192,18 +209,20 @@ def main():
     check("the MOST EXPENSIVE and the SLOWEST have their own headings",
           "MOST EXPENSIVE BY TOKENS" in text and "SLOWEST BY DURATION" in text, text[:200])
 
-    # *** THE HONEST-ABSENCE CHECK, AND IT IS THE POINT OF THE FIXTURE'S REALITY. *** No entry in
-    # this log can carry a token estimate, because no plugin tool writes one. A tool that NAMED a
-    # winner here would be ranking rows that all read zero.
-    # PROSE-TOLERANT: the absence messages ARE the contract for this section.
+    # *** THE HONEST-PRESENCE CHECK, AND IT IS THE POINT OF THE FIXTURE'S REALITY. *** These calls go
+    # through `TurboMCP.TurboMCPReadToolset` and `TurboMCP.TurboMCPEditToolset`, which the recorder
+    # wraps, so they DO carry a measured token estimate. A tool that answered with the absence message
+    # here would be printing an absence that is not there - and the message itself is still asserted,
+    # from the branch's own text, so removing it from the tool would fail this suite too.
     tokens_section = section_text(text, "MOST EXPENSIVE BY TOKENS")
-    check("with no token estimate recorded, it says so rather than naming a winner",
-          "none of the" in tokens_section and "token estimate above zero" in tokens_section,
+    check("a measured token estimate exists, so the ranking names a winner",
+          "token estimate |" in tokens_section, tokens_section[:300])
+    check("the winner is one of the calls this suite made",
+          any(name in tokens_section for name in
+              ("ReadTurboMCPStatus", "ReadTurboMCPDescribe", "ReadTurboMCPMaterialTrace")),
           tokens_section[:300])
-    check("it explains that this is NOT zero cost, so an agent does not read it as cheap",
-          "THIS IS NOT ZERO COST" in tokens_section, tokens_section[:400])
-    check("it points at the ranking that CAN be answered instead",
-          "SLOWEST" in tokens_section, tokens_section[:400])
+    check("and the absence message is NOT printed beside it, because it would be false",
+          "none of the" not in tokens_section, tokens_section[:300])
 
     slowest_section = section_text(text, "SLOWEST BY DURATION")
     # `.splitlines()` IS REQUIRED, AND OMITTING IT WAS A REAL BUG IN THIS SUITE: `section_text`
@@ -258,20 +277,20 @@ def main():
           "\n".join(sorted(cost_tools)))
 
     # ---------------------------------------------------------------------------------------------
-    # THE PER-ASSET SECTION NAMES ITS OWN ABSENCE. An empty list there would read as "no asset cost
-    # anything" instead of "no entry named one", and those need different actions.
+    # THE PER-ASSET SECTION, WHICH NOW FILLS. A call through this plugin's boundary carries its
+    # arguments, so the asset the suite asked about is named - AND THE COUNT IS THE PAIRING CHECK:
+    # one call must read one call, not two. Before the timeline paired the records, this row read
+    # `2 call(s)` for a single call, because both records of one plugin pair carry the arguments.
     # ---------------------------------------------------------------------------------------------
-    # The absence statement is PROSE rather than a data row, so it is looked for in the whole answer
-    # - `section` deliberately drops non-row lines, which is what makes it usable for the totals.
-    check("the per-asset section is present even when it cannot fill",
+    check("the per-asset section is present",
           "TOTALS PER ASSET" in text, text[:200])
-    check("when no entry names an asset, it says so rather than printing nothing",
-          "none can be computed" in text, text[-600:])
-    if "none can be computed" in text:
-        check("it says WHY the per-asset totals cannot be computed",
-              "NO ARGUMENTS" in text or "name no asset" in text, text[-600:])
-        check("it distinguishes an absent measurement from zero cost",
-              "not zero" in text.lower(), text[-600:])
+    check("a call that named an asset fills the per-asset totals",
+          "TOTALS PER ASSET (" in text, text[-600:])
+    check("the asset this suite asked about is NAMED, not silently absent",
+          "no_such_asset" in text, text[-600:])
+    asset_line = next((l for l in text.splitlines() if l.strip().startswith("no_such_asset")), "")
+    check("ONE call is counted ONCE - a start and an end are one call, not two",
+          "| 1 call(s) |" in asset_line, "line=[%s]" % asset_line.strip())
 
     # ---------------------------------------------------------------------------------------------
     # THE FILTER, WHICH IS THE THIRD EMPTINESS `P1` NAMES.
@@ -285,8 +304,8 @@ def main():
           "recording: on" in nothing, nothing[:200])
     check("it says the entries are there but NONE matched, which is its own answer",
           "NONE matched the filter" in nothing or "none matching" in nothing, nothing[:400])
-    check("it says how many entries DID exist, so the zero is given a denominator",
-          re.search(r"\d+ entr", nothing) is not None, nothing[:400])
+    check("it says how many calls DID exist, so the zero is given a denominator",
+          re.search(r"\d+ call", nothing) is not None, nothing[:400])
 
     print()
     print("=== the filter finds a real tool, and the cap bounds the rows rather than the analysis ===")
@@ -303,8 +322,10 @@ def main():
     capped_rows = [l for l in cap_section if "call(s)" in l]
     check("the cap bounds the rows SHOWN", len(capped_rows) == 1, "\n".join(capped_rows))
     # THE POINT OF THE CAP: it must not change a total, only how many rows are listed.
-    total_in_cap = re.search(r"counts:\s*\d+ in the log,\s*(\d+) considered", capped)
-    total_in_full = re.search(r"counts:\s*\d+ in the log,\s*(\d+) considered", text)
+    total_in_cap = re.search(
+        r"counts:\s*\d+ call\(s\) from \d+ record\(s\) in the log,\s*(\d+) considered", capped)
+    total_in_full = re.search(
+        r"counts:\s*\d+ call\(s\) from \d+ record\(s\) in the log,\s*(\d+) considered", text)
     check("the cap does NOT reduce how many entries were considered",
           total_in_cap is not None and total_in_full is not None,
           "cap=%s full=%s" % (total_in_cap and total_in_cap.group(1),

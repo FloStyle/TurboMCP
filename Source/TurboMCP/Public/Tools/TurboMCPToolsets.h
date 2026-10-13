@@ -8,6 +8,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Templates/SubclassOf.h"
 #include "ToolsetRegistry/ToolsetDefinition.h"
 
 #include "TurboMCPToolsets.generated.h"
@@ -2200,11 +2201,32 @@ public:
 };
 
 /**
+ * The identities of the four toolsets, for code that has to find one of them.
+ *
+ * DECLARED HERE BECAUSE TWO FILES NOW NEED THEM. `TurboMCPCallRecorder.cpp` walks the engine's
+ * registry looking for the handler that belongs to one of these classes, and the alternative was a
+ * second copy of the list - which is the failure mode `check-mcp-server.py` exists to catch for the
+ * analytics provider's hand-kept list.
+ */
+namespace TurboMCPToolsets
+{
+	/** Every toolset class this plugin owns, in kind order: Read, Look, Preview, Edit. */
+	const TArray<TSubclassOf<UToolsetDefinition>>& GetToolsetClasses();
+
+	/** The `<Module>.<ClassName>` name the engine registers this class under. */
+	FString GetToolsetName(const UClass* InClass);
+}
+
+/**
  * Registers all four toolsets with the engine's toolset registry.
  *
  * Must be called after every module loading phase is complete
  * (`FCoreDelegates::OnAllModuleLoadingPhasesComplete`), because the registry
  * subsystem may not exist before that. See TurboMCPModule.cpp.
+ *
+ * It also installs the call recording, so a toolset is registered and recorded by one code path:
+ * see `TurboMCPCallRecorder.h` for why the record belongs at the registry's door rather than in 68
+ * tool bodies.
  */
 void RegisterTurboMCPToolsets();
 

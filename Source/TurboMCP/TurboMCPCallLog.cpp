@@ -19,6 +19,7 @@
 #include "Dom/JsonValue.h"
 
 #include "TurboMCPSettings.h"
+#include "TurboMCPCallTimeline.h"
 #include "TurboMCPTokenEstimate.h"
 
 namespace
@@ -116,13 +117,22 @@ FString FTurboMCPCallLog::ToJsonLine(const FEntry& InEntry)
 FString FTurboMCPCallLog::RenderTimeline() const
 {
 	const TArray<FEntry> Records = GetEntries();
-	if (Entries.Num() == 0)
+	if (Records.Num() == 0)
 	{
 		return TEXT("; no calls recorded yet this session");
 	}
 
+	// ONE ROW PER CALL, NOT PER RECORD. Since the plugin's own tools began writing a `start` and an
+	// `end` around every call, one call leaves up to four records in the log, and a renderer that
+	// walked the records would print the plugin's `end` and the engine's event for the same call as
+	// two calls - and would print the plugin's `start` as `running` for the rest of the session
+	// because the engine's records do not carry the plugin's spelling of the key.
+	// `FTurboMCPCallTimeline` is where that assembly lives, and `R-CALL-COST` counts the same way.
+	const TArray<FEntry> Calls = FTurboMCPCallTimeline::WithSessionsInEffect(
+		FTurboMCPCallTimeline::RepresentativeRecords(Records));
+
 	/** The shared row shape, so a running call and a finished one differ in one field rather than in layout. */
-	auto Row = [](const FEntry& InCall, const FString& InStartStamp, const FEntry* InEnd) -> FString
+	auto Row = [](const FEntry& InCall) -> FString
 	{
 		FString ShortArgs = InCall.Arguments;
 		ShortArgs.ReplaceInline(TEXT("\n"), TEXT(" "));
@@ -132,57 +142,53 @@ FString FTurboMCPCallLog::RenderTimeline() const
 			ShortArgs = ShortArgs.Left(60) + TEXT("...");
 		}
 
-		FString Out = FString::Printf(TEXT("\n  %s  %s.%s  %s"), *InStartStamp, *InCall.Toolset, *InCall.Tool,
+		FString Out = FString::Printf(TEXT("\n  %s  %s.%s  %s"), *InCall.Timestamp, *InCall.Toolset, *InCall.Tool,
 			ShortArgs.IsEmpty() ? TEXT("(no arguments)") : *ShortArgs);
-		if (InEnd == nullptr)
+
+		if (InCall.Phase == TEXT("start"))
 		{
 			return Out + TEXT("  -> running");
 		}
 
 		// NAMED LOCALS: `Printf`'s format checker refuses a `%s` whose argument is a temporary (`error C7595`).
-		const FString Chars = FEntry::DescribeSize(InEnd->ResultChars);
-		const FString Tokens = FEntry::DescribeSize(InEnd->TokenEstimate);
-		return Out + FString::Printf(TEXT("  -> %s  %.1fms  %s chars  ~%s tokens%s%s"),
-			InEnd->bError ? TEXT("ERROR") : TEXT("ok"), InEnd->DurationMs, *Chars, *Tokens,
-			InEnd->IsSlow() ? TEXT("  SLOW") : TEXT(""), InEnd->IsLarge() ? TEXT("  LARGE") : TEXT(""));
+		const FString Chars = FEntry::DescribeSize(InCall.ResultChars);
+		const FString Tokens = FEntry::DescribeSize(InCall.TokenEstimate);
+		Out += FString::Printf(TEXT("  -> %s  %.1fms  %s chars  ~%s tokens%s%s"),
+			InCall.bError ? TEXT("ERROR") : TEXT("ok"), InCall.DurationMs, *Chars, *Tokens,
+			InCall.IsSlow() ? TEXT("  SLOW") : TEXT(""), InCall.IsLarge() ? TEXT("  LARGE") : TEXT(""));
+
+		// *** THE ADMISSION, PLACED WHERE A READER MEETS IT AND NARROWED TO WHERE IT IS STILL TRUE. *** An
+		// ENGINE-ONLY row is one the engine's event is the only record of: an engine tool, or the
+		// `call_tool` meta-tool. Its event carries the duration AFTER the call and nothing before it, so
+		// that row really has no start. A PLUGIN tool's call is no longer one of these - it has a start
+		// record now - and saying otherwise on its row would be the caption contradicting the code.
+		if (InCall.Source == TEXT("engine"))
+		{
+			Out += TEXT("  (engine-only: this path writes no start record)");
+		}
+		return Out;
 	};
 
 	FString Out = FString::Printf(
-		TEXT("; %d record(s), oldest first. A call with no OUT yet reads `running`."), Records.Num());
+		TEXT("; %d call(s) from %d record(s), oldest first. A call with no OUT yet reads `running`."),
+		Calls.Num(), Records.Num());
 
-	// A call is identified by what it called, which is what the start and the end of one call have in common.
-	TMap<FString, int32> OpenIndex;
-	for (int32 Index = 0; Index < Records.Num(); ++Index)
-	{
-		const FEntry& Entry = Records[Index];
-		const FString Key = Entry.Toolset + TEXT("|") + Entry.Tool;
-		if (Entry.Phase == TEXT("start"))
-		{
-			OpenIndex.Add(Key, Index);
-			continue;
-		}
-		if (const int32* Started = OpenIndex.Find(Key))
-		{
-			Out += Row(Records[*Started], Records[*Started].Timestamp, &Entry);
-			OpenIndex.Remove(Key);
-		}
-		else
-		{
-			// An `end` with no `start`: the engine's own events arrive this way, so it is a row by itself.
-			Out += Row(Entry, Entry.Timestamp, &Entry);
-			// *** THE ADMISSION, PLACED WHERE A READER MEETS IT: an agent's call arrives through the engine's event,
-			// which carries the duration AFTER the call and nothing before it, so THIS PATH HAS NO START RECORD. A
-			// plugin call that crashes leaves a `running` line; an agent call that crashes leaves NO LINE AT ALL, and
-			// the only way a reader learns that is if the row says so. ***
-			Out += TEXT("  (no start record: the engine's event arrives after the call)");
-		}
-	}
+	// CALLS OF ONE BATCH SCRIPT ARE GROUPED, which is a requirement of the timeline rather than a
+	// decoration: a session id is the same for every call of one script, so a change of id is a new
+	// group and is stated once, ahead of its rows.
+	FString PreviousSession;
+	bool bFirstGroup = true;
 
-	// Whatever is still open never got its end. Printed last, because it is the most recent thing that happened.
-	for (const TPair<FString, int32>& Pair : OpenIndex)
+	for (const FEntry& Call : Calls)
 	{
-		const FEntry& Started = Records[Pair.Value];
-		Out += Row(Started, Started.Timestamp, nullptr);
+		if (bFirstGroup || Call.SessionId != PreviousSession)
+		{
+			bFirstGroup = false;
+			PreviousSession = Call.SessionId;
+			Out += FString::Printf(TEXT("\n; session %s"),
+				Call.SessionId.IsEmpty() ? TEXT("(none)") : *Call.SessionId);
+		}
+		Out += Row(Call);
 	}
 
 	return Out;

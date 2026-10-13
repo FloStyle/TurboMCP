@@ -237,11 +237,26 @@ def main():
 
     print()
     print("=== an empty result still says why, per P1 ===")
-    nomatch = read_log(session, filter_text="NoSuchToolNameAtAll")
-    check("a filter matching nothing explains itself",
+    # *** THE EMPTINESS IS NOW REACHED WITH `since`, NOT WITH A NONSENSE FILTER, AND THAT IS A
+    # MEASUREMENT RATHER THAN A WORKAROUND. *** Every call to this plugin's own tools writes a `start`
+    # record holding its arguments before the tool body runs, and `filter` matches `Arguments` - so
+    # THIS CALL'S OWN START RECORD contains the filter text and answers itself. Measured: a nonsense
+    # filter answered `showing 1 newest of 1 matching`, and the one row was the reader. A time bound
+    # still reaches the empty state, because the reader's own record is written before the call, never
+    # after it.
+    future = "9999-01-01T00:00:00.000Z"
+    nomatch = read_log(session, filter_text="", since=future)
+    check("a bound past every record explains itself",
           "none match" in nomatch or "showing 0" in nomatch, nomatch[:300])
     check("it still reports the file and the state",
           "log file:" in nomatch and "recording:" in nomatch)
+
+    # AND THE SURPRISE IS ASSERTED RATHER THAN LEFT TO BE DISCOVERED: a filter DOES find the reader's
+    # own start record, because the observer of the log is part of the log.
+    selfmatch = read_log(session, filter_text="zzz_self_match_probe")
+    check("a filter finds the reader's own start record, because the observer is in the log",
+          "showing 1 newest of 1 matching" in selfmatch and "start" in selfmatch,
+          selfmatch[:300])
 
     print()
     print("=== since= pages forward instead of re-reading ===")
@@ -251,8 +266,18 @@ def main():
     if after:
         newest_time = after[-1].get("time", "")
         paged = read_log(session, filter_text="", since=newest_time)
+        # *** THE COUNT, NOT THE ABSENCE OF A STRING. *** The bound is a MILLISECOND-resolution
+        # timestamp and one agent call now writes four records within about a millisecond, so a record
+        # that shares the boundary's own stamp is not evidence that paging failed - and the check this
+        # replaced (`newest_time not in paged`) failed on exactly that. What the bound must do is
+        # EXCLUDE what came before it, so the denominator is what is compared.
+        counted_paged = _re.search(r"showing \d+ newest of (\d+) matching", paged)
+        counted_all = _re.search(r"showing \d+ newest of (\d+) matching", page)
         check("since= excludes what was already seen",
-              "showing 0" in paged or newest_time not in paged, paged[:200])
+              counted_paged is not None and counted_all is not None
+              and int(counted_paged.group(1)) < int(counted_all.group(1)),
+              "paged=%s of all=%s" % (counted_paged and counted_paged.group(1),
+                                      counted_all and counted_all.group(1)))
 
     print()
     print("=== E-CALL-LOG-CLEAR needs confirmation and leaves the FILE alone ===")

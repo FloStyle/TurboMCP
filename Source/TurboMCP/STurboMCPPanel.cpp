@@ -47,6 +47,15 @@ namespace
 
 	/** Text size for the window's body, in slate units. */
 	constexpr int32 BodyTextSize = 9;
+
+	/**
+	 * Height of the live call timeline, in slate units.
+	 *
+	 * BOUNDED ON PURPOSE, per `P6`: the log holds up to 1000 records and the timeline grows with it, so
+	 * a pane that grew with its content would push the tool-calling widgets off the window. It scrolls
+	 * instead.
+	 */
+	constexpr float TimelineHeight = 150.0f;
 }
 
 void STurboMCPPanel::Construct(const FArguments& InArgs)
@@ -156,6 +165,42 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 					.ToolTipText(LOCTEXT("CallLogSummaryTip",
 						"Read from the call log itself, so it cannot disagree with what was written."))
+				]
+			]
+
+			// *** THE LIVE CALL TIMELINE, WHICH IS THE OTHER HALF OF `T02`'s ITEM 3. *** `RenderTimeline`
+			// was written for this pane and then left PRIVATE WITH NO CALLER, so the capability was
+			// recorded as done while nothing could reach it. It is rendered here, and the comment on
+			// the reader's own read tool says the same thing in the other place a reader looks.
+			//
+			// ONE ROW PER CALL, RENDERED FROM THE LOG ITSELF rather than from state kept here, so what
+			// is on screen and what `R-CALL-LOG` answers cannot drift apart. The pairing that turns the
+			// records into calls lives in `FTurboMCPCallTimeline`, which `R-CALL-COST` also counts, so
+			// the pane, the listing and the totals agree about what one call is.
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
+			[
+				SNew(SBorder)
+				.Padding(4.0f)
+				[
+					SNew(SBox)
+					.HeightOverride(TimelineHeight)
+					[
+						SNew(SScrollBox)
+
+						+ SScrollBox::Slot()
+						[
+							SNew(SMultiLineEditableText)
+							.Text(this, &STurboMCPPanel::GetCallTimelineText)
+							.IsReadOnly(true)
+							.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
+							.ToolTipText(LOCTEXT("CallTimelineTip",
+								"One row per call, oldest first, from the same records the log file holds. "
+								"`running` means a call was started and no end record followed it - which is "
+								"what a crash leaves. SLOW and LARGE mark the two costs that need action."))
+						]
+					]
 				]
 			]
 
@@ -414,6 +459,14 @@ FSlateColor STurboMCPPanel::GetCallLogSummaryColor() const
 	return FTurboMCPCallLog::Get().IsEnabled()
 		? FSlateColor(FLinearColor(0.1f, 0.8f, 0.1f))
 		: FSlateColor(FLinearColor(0.6f, 0.6f, 0.6f));
+}
+
+FText STurboMCPPanel::GetCallTimelineText() const
+{
+	// BOUND RATHER THAN CAPTURED, for the reason the result and status panes record: Slate re-evaluates
+	// a bound attribute, so a call made a moment ago appears without the window being rebuilt. The
+	// read is bounded by the log's own `MaxEntries`, which is the same bound the summary above pays.
+	return FText::FromString(FTurboMCPCallLog::Get().RenderTimeline());
 }
 
 void STurboMCPPanel::ReloadToolLists()

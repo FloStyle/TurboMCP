@@ -78,6 +78,14 @@ private:
 	/** Colour for the summary: the accent when recording, muted when not. */
 	FSlateColor GetCallLogSummaryColor() const;
 
+	/**
+	 * The live call timeline: one row per call, from the log itself.
+	 *
+	 * `T02`'s item 3. It calls `FTurboMCPCallLog::RenderTimeline` rather than formatting rows here, so
+	 * the pane and `R-CALL-LOG` cannot disagree about what a call is or how one is shown.
+	 */
+	FText GetCallTimelineText() const;
+
 	// ---------------------------------------------------------------------------------------
 	// The tool-call section. Every one of these is a thin binding over `ToolRunner`, which is
 	// where the work and the testability live.

@@ -6,11 +6,16 @@ WHY THIS SUITE EXISTS, AND ONE HALF OF THE GAP IS MEASURED RATHER THAN ASSUMED
 `R-CALL-COST` totals calls by `FTurboMCPCallCost::NormaliseToolset` and attributes them by
 `FTurboMCPCallCost::AssetFromArguments`.
 
-THE HALF THAT IS GENUINELY UNREACHABLE IS `AssetFromArguments`. Measured on 2026-10-11 from the log
-itself (`TestProject/Saved/Logs/TurboMCPCalls.jsonl`, 252 lines): EVERY entry is `source=engine`, and
-an engine event carries NO `arguments` field at all. So no suite can hand that function a non-empty
-input, and the only thing watching it is the sentence `R-CALL-COST` prints when the per-asset section
-cannot fill. That is this suite's first job.
+*** THE HALF THAT WAS UNREACHABLE IS `AssetFromArguments`, AND IT IS NO LONGER - WHICH IS WHY THE
+LITERAL INPUTS BELOW STILL MATTER. *** Measured on 2026-10-11 from the log itself
+(`TestProject/Saved/Logs/TurboMCPCalls.jsonl`, 252 lines): every entry was `source=engine`, and an
+engine event carries NO `arguments` field at all, so no suite could hand that function a non-empty
+input and the only thing watching it was the sentence `R-CALL-COST` prints when the per-asset section
+cannot fill. *** THAT SENTENCE IS NOW REACHED ONLY BY AN ENGINE-ONLY CALL: the plugin's own tools
+record their arguments at the registry boundary (`TurboMCPCallRecorder.h`), so `test-call-cost.py` now
+asserts the per-asset totals FILL and name the asset it asked about. A live check that bites is
+better than a literal one, and it is also the check that would go vacuous the day the recorder stops
+running - a literal input cannot drift, which is what this suite is for.
 
 THE OTHER HALF IS REACHABLE, AND SAYING SO CORRECTS AN EARLIER RECORD RATHER THAN FLATTERING THIS
 SUITE. `NormaliseToolset` IS watched by `Tools/test-call-cost.py`: against a build that demonstrably
