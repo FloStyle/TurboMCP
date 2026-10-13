@@ -137,6 +137,15 @@ public:
 	/** The entries in memory, oldest first. */
 	TArray<FEntry> GetEntries() const;
 
+	/**
+	 * How many entries are in memory, WITHOUT COPYING THEM.
+	 *
+	 * The panel polls this on every tick to notice that a call completed, and `GetEntries` copies up to
+	 * 1000 structs under a lock - once per frame, for a count it already has. A cheap accessor is the
+	 * difference between a live timeline and a frame-time cost nobody asked for.
+	 */
+	int32 NumEntries() const;
+
 	/** Drops the in-memory entries. The file on disk is left alone. */
 	void Clear();
 

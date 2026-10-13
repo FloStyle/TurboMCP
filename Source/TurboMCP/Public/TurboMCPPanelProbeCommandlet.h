@@ -85,4 +85,26 @@ private:
 
 	/** Runs one real call and reports what the registry did. */
 	void ProbeLiveCall();
+
+	/**
+	 * Exercises the call timeline's rows, its four filters and its expansion ON LITERAL RECORDS.
+	 *
+	 * *** LITERAL, FOR THE REASON `R-CALL-COST`'s PURE CHECKS ARE LITERAL. *** A commandlet cannot
+	 * switch the call log on without writing the editor's settings, and a check that reads whatever
+	 * happened to be recorded goes VACUOUS in a quiet session - it would pass by finding nothing. The
+	 * records below are written here, so every count is arithmetic rather than a coincidence, and the
+	 * widget above them is the thin part: rows, filter fields and a click, with no logic of its own.
+	 */
+	void ProbeCallTimeline();
+
+	/**
+	 * CONSTRUCTS the panel window, so that the widget code runs somewhere other than a human's screen.
+	 *
+	 * `QUESTIONS.md` Q-11 says the widget tree cannot be read. It does not say it cannot be BUILT, and
+	 * the difference is this method: every widget, every lambda binding and every attribute in
+	 * `STurboMCPPanel::Construct` executes here, and the count the timeline shows is read back. What
+	 * remains unverifiable is only what the window LOOKS like - which is a smaller claim than "the
+	 * panel is untested", and the one the card was right to be uneasy about.
+	 */
+	void ProbeTimelineWidget();
 };

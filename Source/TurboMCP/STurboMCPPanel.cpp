@@ -9,6 +9,7 @@
 
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Docking/TabManager.h"
+#include "HAL/IConsoleManager.h"
 #include "IModelContextProtocolModule.h"
 #include "ModelContextProtocolServer.h"
 #include "Styling/CoreStyle.h"
@@ -16,6 +17,7 @@
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Input/SComboBox.h"
+#include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -23,9 +25,12 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Text/SMultiLineEditableText.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Widgets/Views/SListView.h"
+#include "Widgets/Views/STableRow.h"
 
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPCallLog.h"
+#include "TurboMCPCallTimeline.h"
 #include "TurboMCPPanelToolRunner.h"
 #include "TurboMCPTokenEstimate.h"
 
@@ -66,6 +71,13 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 	// The tool lists come from the registry, so a tool registered by anyone appears here. Done before
 	// the widgets are built, because a combo box needs its options to exist when it is constructed.
 	ReloadToolLists();
+
+	// The status filter's three options, and "any" selected, so a fresh window hides nothing.
+	TimelineStatusOptions.Add(MakeShared<FString>(TEXT("any")));
+	TimelineStatusOptions.Add(MakeShared<FString>(TEXT("ok")));
+	TimelineStatusOptions.Add(MakeShared<FString>(TEXT("error")));
+	SelectedTimelineStatus = TimelineStatusOptions[0];
+	RebuildTimelineRows();
 
 	ChildSlot
 	[
@@ -168,15 +180,100 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				]
 			]
 
-			// *** THE LIVE CALL TIMELINE, WHICH IS THE OTHER HALF OF `T02`'s ITEM 3. *** `RenderTimeline`
-			// was written for this pane and then left PRIVATE WITH NO CALLER, so the capability was
-			// recorded as done while nothing could reach it. It is rendered here, and the comment on
-			// the reader's own read tool says the same thing in the other place a reader looks.
+			// *** THE LIVE CALL TIMELINE, WHICH IS THE OTHER HALF OF `T02`'s ITEM 3 AND ALL OF ITEM 4b. ***
+			// `RenderTimeline` was written for this pane and then left PRIVATE WITH NO CALLER, so the
+			// capability was recorded as done while nothing could reach it.
 			//
-			// ONE ROW PER CALL, RENDERED FROM THE LOG ITSELF rather than from state kept here, so what
-			// is on screen and what `R-CALL-LOG` answers cannot drift apart. The pairing that turns the
-			// records into calls lives in `FTurboMCPCallTimeline`, which `R-CALL-COST` also counts, so
-			// the pane, the listing and the totals agree about what one call is.
+			// ONE ROW PER CALL, FILTERED BY TOOLSET, TOOL, ASSET AND STATUS, AND A ROW EXPANDS TO ITS
+			// ARGUMENTS AND THE FIRST LINES OF ITS RESULT. The rows, the filter and the expansion text
+			// all come from `FTurboMCPCallTimeline` - plain C++, exercised by the panel probe commandlet
+			// on literal records - so what is here is only which rows are shown and which are open.
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0f, 0.0f, 0.0f, 2.0f)
+			[
+				SNew(SHorizontalBox)
+
+				// THE FOUR FILTERS, ONE FIELD EACH, matched against their own column. A single blob
+				// matched against everything cannot answer "which calls touched THIS asset".
+				+ SHorizontalBox::Slot()
+				.FillWidth(0.22f)
+				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				[
+					SNew(SEditableTextBox)
+					.HintText(LOCTEXT("TimelineFilterToolset", "toolset"))
+					.ToolTipText(LOCTEXT("TimelineFilterToolsetTip",
+						"Keep the calls whose toolset contains this text."))
+					.OnTextChanged_Lambda([this](const FText& InText)
+					{
+						OnTimelineFilterChanged(InText, &TimelineToolsetFilter);
+					})
+				]
+
+				+ SHorizontalBox::Slot()
+				.FillWidth(0.22f)
+				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				[
+					SNew(SEditableTextBox)
+					.HintText(LOCTEXT("TimelineFilterTool", "tool"))
+					.ToolTipText(LOCTEXT("TimelineFilterToolTip",
+						"Keep the calls whose tool name contains this text."))
+					.OnTextChanged_Lambda([this](const FText& InText)
+					{
+						OnTimelineFilterChanged(InText, &TimelineToolFilter);
+					})
+				]
+
+				+ SHorizontalBox::Slot()
+				.FillWidth(0.22f)
+				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				[
+					SNew(SEditableTextBox)
+					.HintText(LOCTEXT("TimelineFilterAsset", "asset"))
+					.ToolTipText(LOCTEXT("TimelineFilterAssetTip",
+						"Keep the calls whose ARGUMENTS name this asset. The engine's own event carries "
+						"no arguments, so this narrows to the calls that passed this plugin's boundary."))
+					.OnTextChanged_Lambda([this](const FText& InText)
+					{
+						OnTimelineFilterChanged(InText, &TimelineAssetFilter);
+					})
+				]
+
+				+ SHorizontalBox::Slot()
+				.FillWidth(0.16f)
+				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				[
+					SNew(SComboBox<TSharedPtr<FString>>)
+					.OptionsSource(&TimelineStatusOptions)
+					.InitiallySelectedItem(SelectedTimelineStatus)
+					.OnSelectionChanged_Lambda([this](TSharedPtr<FString> InItem, ESelectInfo::Type)
+					{
+						SelectedTimelineStatus = InItem;
+						RebuildTimelineRows();
+					})
+					.OnGenerateWidget_Lambda([](TSharedPtr<FString> InItem)
+					{
+						return SNew(STextBlock).Text(InItem.IsValid()
+							? FText::FromString(*InItem) : FText::GetEmpty());
+					})
+					.ToolTipText(LOCTEXT("TimelineFilterStatusTip",
+						"Keep every call, only the ones that reported an error, or only the ones that did not."))
+					[
+						SNew(STextBlock)
+						.Text(this, &STurboMCPPanel::GetSelectedTimelineStatusText)
+					]
+				]
+
+				+ SHorizontalBox::Slot()
+				.FillWidth(0.18f)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(this, &STurboMCPPanel::GetTimelineCountText)
+					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
+				]
+			]
+
 			+ SVerticalBox::Slot()
 			.AutoHeight()
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
@@ -187,18 +284,29 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 					SNew(SBox)
 					.HeightOverride(TimelineHeight)
 					[
-						SNew(SScrollBox)
+						SNew(SVerticalBox)
 
-						+ SScrollBox::Slot()
+						+ SVerticalBox::Slot()
+						.FillHeight(1.0f)
 						[
-							SNew(SMultiLineEditableText)
+							SAssignNew(TimelineListView, SListView<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>)
+							.ListItemsSource(&TimelineRows)
+							.OnGenerateRow(this, &STurboMCPPanel::MakeTimelineRow)
+							// NO SELECTION: a row is opened by clicking it, and a highlight that means
+							// nothing would be a second kind of state to explain.
+							.SelectionMode(ESelectionMode::None)
+						]
+
+						// THE EMPTY STATE, AND ONLY THAT: when the log holds nothing at all, the text
+						// timeline says so in its own words - which is also what keeps
+						// `RenderTimeline` reachable rather than dead code again.
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						[
+							SNew(STextBlock)
 							.Text(this, &STurboMCPPanel::GetCallTimelineText)
-							.IsReadOnly(true)
+							.Visibility(this, &STurboMCPPanel::GetTimelineTextVisibility)
 							.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
-							.ToolTipText(LOCTEXT("CallTimelineTip",
-								"One row per call, oldest first, from the same records the log file holds. "
-								"`running` means a call was started and no end record followed it - which is "
-								"what a crash leaves. SLOW and LARGE mark the two costs that need action."))
 						]
 					]
 				]
@@ -411,24 +519,35 @@ FText STurboMCPPanel::GetCallLogSummary() const
 	const FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
 	const TArray<FTurboMCPCallLog::FEntry> Entries = Log.GetEntries();
 
-	// The figures come from the entries themselves rather than from a running counter, so a number
-	// shown here is a number that was written.
-	int32 EndRecords = 0;
+	// *** TWO NUMBERS CALLED "CALLS" IS THE DEFECT THIS METHOD HAD, AND THE CAPTURE SHOWED IT: the
+	// summary counted `end` RECORDS and printed `15 calls` while the timeline below it printed `11 of
+	// 11 call(s)`, because one call now leaves up to four records. *** A reader had no way to tell which
+	// was right, and BOTH were - they were answers to different questions with the same word on them.
+	// The assembly in `FTurboMCPCallTimeline` is the one definition, so the summary uses it too.
+	const TArray<FTurboMCPCallLog::FEntry> Calls = FTurboMCPCallTimeline::RepresentativeRecords(Entries);
+	// The figures come from the calls themselves rather than from a running counter, so a number shown
+	// here is a number that was measured.
+	int32 FinishedCalls = 0;
+	int32 RunningCalls = 0;
 	int32 Tokens = 0;
 	int32 Chars = 0;
 	int32 SlowCalls = 0;
 	int32 LargeCalls = 0;
-	for (const FTurboMCPCallLog::FEntry& Entry : Entries)
+	for (const FTurboMCPCallLog::FEntry& Call : Calls)
 	{
-		if (Entry.Phase == TEXT("end"))
+		// A `start` WITH NO `end` IS THE CALL IN FLIGHT - or the one a crash took with it - so it is
+		// COUNTED and kept out of the size sums, which have nothing to add for it.
+		if (Call.Phase == TEXT("start"))
 		{
-			++EndRecords;
-			Tokens += Entry.MeasuredTokens();
-			Chars += Entry.MeasuredChars();
-			// MARKED HERE SO THE SUMMARY CAN SAY HOW MANY, RATHER THAN LEAVING A READER TO SCAN THE TIMELINE FOR THEM. ***
-			if (Entry.IsSlow()) { ++SlowCalls; }
-			if (Entry.IsLarge()) { ++LargeCalls; }
+			++RunningCalls;
+			continue;
 		}
+		++FinishedCalls;
+		Tokens += Call.MeasuredTokens();
+		Chars += Call.MeasuredChars();
+		// MARKED HERE SO THE SUMMARY CAN SAY HOW MANY, RATHER THAN LEAVING A READER TO SCAN THE TIMELINE FOR THEM.
+		if (Call.IsSlow()) { ++SlowCalls; }
+		if (Call.IsLarge()) { ++LargeCalls; }
 	}
 
 	// `P1`: never show nothing. A window that says only "0" leaves a reader unsure whether the log
@@ -445,11 +564,19 @@ FText STurboMCPPanel::GetCallLogSummary() const
 		return FText::FromString(TEXT("on  |  no calls recorded yet this session"));
 	}
 
-	return FText::FromString(FString::Printf(
+	// THE RECORD COUNT IS PRINTED BESIDE THE CALL COUNT, because that difference is a fact about how
+	// the log is written - two writers, up to four records a call - and hiding it would make the file's
+	// own line count look wrong to whoever opens it next.
+	FString Out = FString::Printf(
 		TEXT("on  |  %d record%s, %d call%s, %d characters, ~%d tokens (estimate), %d slow, %d large"),
 		Entries.Num(), Entries.Num() == 1 ? TEXT("") : TEXT("s"),
-		EndRecords, EndRecords == 1 ? TEXT("") : TEXT("s"),
-		Chars, Tokens, SlowCalls, LargeCalls));
+		Calls.Num(), Calls.Num() == 1 ? TEXT("") : TEXT("s"),
+		Chars, Tokens, SlowCalls, LargeCalls);
+	if (RunningCalls > 0)
+	{
+		Out += FString::Printf(TEXT(", %d still running"), RunningCalls);
+	}
+	return FText::FromString(Out);
 }
 
 FSlateColor STurboMCPPanel::GetCallLogSummaryColor() const
@@ -466,7 +593,216 @@ FText STurboMCPPanel::GetCallTimelineText() const
 	// BOUND RATHER THAN CAPTURED, for the reason the result and status panes record: Slate re-evaluates
 	// a bound attribute, so a call made a moment ago appears without the window being rebuilt. The
 	// read is bounded by the log's own `MaxEntries`, which is the same bound the summary above pays.
+	//
+	// *** IT IS THE PANE'S EMPTY STATE NOW THAT THE ROWS ARE A LIST, AND THAT KEEPS IT REACHABLE. ***
 	return FText::FromString(FTurboMCPCallLog::Get().RenderTimeline());
+}
+
+EVisibility STurboMCPPanel::GetTimelineTextVisibility() const
+{
+	// ONLY WHEN THE LOG HOLDS NOTHING. If the filter matched nothing there ARE calls, and the count
+	// line says so; printing the whole timeline there would show rows the filter had just removed.
+	return TimelineCallCountBeforeFilter == 0 ? EVisibility::Visible : EVisibility::Collapsed;
+}
+
+void STurboMCPPanel::Tick(const FGeometry& InAllottedGeometry, const double InCurrentTime,
+	const float InDeltaTime)
+{
+	SCompoundWidget::Tick(InAllottedGeometry, InCurrentTime, InDeltaTime);
+
+	// A CALL THAT FINISHED WROTE AN END RECORD, so the count moving is the signal. `NumEntries` is the
+	// cheap accessor on purpose: copying up to 1000 structs once a frame to look at their number is a
+	// cost nobody asked for.
+	const int32 Count = FTurboMCPCallLog::Get().NumEntries();
+	if (Count != LastTimelineRecordCount)
+	{
+		LastTimelineRecordCount = Count;
+		RebuildTimelineRows();
+	}
+}
+
+void STurboMCPPanel::OnTimelineFilterChanged(const FText& InText, FString* InField)
+{
+	if (InField == nullptr)
+	{
+		return;
+	}
+	*InField = InText.ToString();
+	RebuildTimelineRows();
+}
+
+void STurboMCPPanel::RebuildTimelineRows()
+{
+	const TArray<FTurboMCPCallLog::FEntry> Records = FTurboMCPCallLog::Get().GetEntries();
+
+	// THE DENOMINATOR FIRST, because a list that is short looks the same whether the filter removed the
+	// rows or nothing was recorded - and those two need different actions from a reader.
+	TimelineCallCountBeforeFilter = FTurboMCPCallTimeline::Select(Records,
+		FTurboMCPCallTimeline::FFilter()).Num();
+
+	FTurboMCPCallTimeline::FFilter Filter;
+	Filter.Toolset = TimelineToolsetFilter;
+	Filter.Tool = TimelineToolFilter;
+	Filter.Asset = TimelineAssetFilter;
+	Filter.Status = SelectedTimelineStatus.IsValid() ? *SelectedTimelineStatus : FString();
+
+	// ONE ENTRY PER SESSION HEADING AND ONE PER CALL, from the timeline rather than assembled here: the
+	// grouping rule is part of what `T02` asks for, so it is asserted by the probe beside the filters.
+	const TArray<FTurboMCPCallTimeline::FListEntry> Entries =
+		FTurboMCPCallTimeline::ListEntries(Records, Filter);
+
+	TimelineRows.Reset();
+	TimelineRows.Reserve(Entries.Num());
+	for (const FTurboMCPCallTimeline::FListEntry& Entry : Entries)
+	{
+		// A shared pointer per row because that is what `SListView` hands back to `OnGenerateRow`, and
+		// the identity it hands back is what an expansion is keyed by.
+		TimelineRows.Add(MakeShared<FTurboMCPCallTimeline::FListEntry>(Entry));
+	}
+
+	if (TimelineListView.IsValid())
+	{
+		TimelineListView->RequestListRefresh();
+	}
+}
+
+FString STurboMCPPanel::TimelineRowKey(const FTurboMCPCallTimeline::FListEntry& InRow)
+{
+	if (InRow.bHeading)
+	{
+		return TEXT("heading|") + InRow.SessionId;
+	}
+	// THE STAMP AND THE NAME, which is what identifies one call in a list where the same tool can be
+	// called twice in the same millisecond... in which case this collides, and the honest fix would be
+	// a record index. A collision costs one row that opens with another, not a wrong answer.
+	return InRow.Call.Timestamp + TEXT("|") + InRow.Call.Toolset + TEXT(".") + InRow.Call.Tool;
+}
+
+bool STurboMCPPanel::IsTimelineRowExpanded(
+	const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem) const
+{
+	return InItem.IsValid() && !InItem->bHeading && ExpandedTimelineRows.Contains(TimelineRowKey(*InItem));
+}
+
+void STurboMCPPanel::ToggleTimelineRow(const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem)
+{
+	// A HEADING IS NOT A CALL AND HAS NOTHING TO OPEN, so clicking one does nothing rather than
+	// expanding an empty row.
+	if (!InItem.IsValid() || InItem->bHeading)
+	{
+		return;
+	}
+	const FString Key = TimelineRowKey(*InItem);
+	if (ExpandedTimelineRows.Contains(Key))
+	{
+		ExpandedTimelineRows.Remove(Key);
+	}
+	else
+	{
+		ExpandedTimelineRows.Add(Key);
+	}
+	if (TimelineListView.IsValid())
+	{
+		// THE LIST HAS TO BE TOLD. The row is taller now, and a list view caches its rows rather than
+		// re-asking for them - which is exactly why the timeline is a list and not a bound text block.
+		TimelineListView->RequestListRefresh();
+	}
+}
+
+TSharedRef<ITableRow> STurboMCPPanel::MakeTimelineRow(
+	TSharedPtr<FTurboMCPCallTimeline::FListEntry> InItem, const TSharedRef<STableViewBase>& InOwnerTable)
+{
+	if (!InItem.IsValid())
+	{
+		return SNew(STableRow<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>, InOwnerTable)
+			[ SNew(STextBlock).Text(LOCTEXT("TimelineBadRow", "(a row with no record)")) ];
+	}
+
+	// *** THE SESSION HEADING: "the calls of one batch script are grouped", WHICH IS A ROW RATHER THAN A
+	// COLUMN. *** It appears once per batch, so a reader sees where one script ended without comparing
+	// twenty session strings, and it is not clickable because there is nothing to open.
+	if (InItem->bHeading)
+	{
+		return SNew(STableRow<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>, InOwnerTable)
+			[
+				SNew(STextBlock)
+				.Text(FText::FromString(FString::Printf(TEXT("; session %s"),
+					InItem->SessionId.IsEmpty() ? TEXT("(none)") : *InItem->SessionId)))
+				.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
+				.ColorAndOpacity(FSlateColor(FLinearColor(0.45f, 0.75f, 0.45f)))
+			];
+	}
+
+	const bool bExpanded = IsTimelineRowExpanded(InItem);
+
+	// ONE LINE ALWAYS, PLUS THE DETAIL WHEN THE ROW IS OPEN. The line is
+	// `FTurboMCPCallTimeline::RenderRow`, the same text the timeline prints, so a reader who copies a
+	// row out of the window and one who reads it through the log are looking at one rendering.
+	TSharedRef<SVerticalBox> Body = SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(FTurboMCPCallTimeline::RenderRow(InItem->Call)))
+			.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
+		];
+
+	if (bExpanded)
+	{
+		Body->AddSlot()
+		.AutoHeight()
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(FTurboMCPCallTimeline::Expand(InItem->Call)))
+			.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
+			.ColorAndOpacity(FSlateColor(FLinearColor(0.75f, 0.75f, 0.75f)))
+		];
+	}
+
+	return SNew(STableRow<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>, InOwnerTable)
+		[
+			// A BORDERLESS BUTTON IS HOW A ROW IS MADE CLICKABLE, rather than a `SButton` that looks
+			// like a button: the row already reads as a row, and what the click does is open it.
+			SNew(SButton)
+			.ButtonStyle(FCoreStyle::Get(), "NoBorder")
+			.ContentPadding(FMargin(2.0f, 1.0f))
+			.HAlign(HAlign_Left)
+			.ToolTipText(bExpanded
+				? LOCTEXT("TimelineCollapseTip", "Click to close this call's arguments and result.")
+				: LOCTEXT("TimelineExpandTip",
+					"Click to open this call's full arguments and the first lines of its result."))
+			.OnClicked_Lambda([this, InItem]()
+			{
+				ToggleTimelineRow(InItem);
+				return FReply::Handled();
+			})
+			[
+				Body
+			]
+		];
+}
+
+FText STurboMCPPanel::GetTimelineCountText() const
+{
+	// `P1`: the count carries its denominator, so "0 rows" is never ambiguous between "nothing was
+	// recorded" and "the filter removed everything". HEADINGS ARE NOT CALLS, so they are not counted.
+	int32 Calls = 0;
+	for (const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& Row : TimelineRows)
+	{
+		if (Row.IsValid() && !Row->bHeading)
+		{
+			++Calls;
+		}
+	}
+	return FText::FromString(FString::Printf(TEXT("%d of %d call(s)"), Calls,
+		TimelineCallCountBeforeFilter));
+}
+
+FText STurboMCPPanel::GetSelectedTimelineStatusText() const
+{
+	return SelectedTimelineStatus.IsValid()
+		? FText::FromString(*SelectedTimelineStatus)
+		: FText::FromString(TEXT("any"));
 }
 
 void STurboMCPPanel::ReloadToolLists()
@@ -758,6 +1094,39 @@ void UnregisterTurboMCPPanel()
 	{
 		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TurboMCPTabId);
 	}
+}
+
+namespace
+{
+	/** Opens the window. See the command below for why this exists at all. */
+	void OpenTurboMCPPanel()
+	{
+		if (FSlateApplication::IsInitialized())
+		{
+			FGlobalTabmanager::Get()->TryInvokeTab(TurboMCPTabId);
+		}
+	}
+
+	/**
+	 * `TurboMCP.OpenPanel` - opens the window, so a SCRIPT can open it and photograph it.
+	 *
+	 * *** THE FILE ALREADY EXPECTED THIS COMMAND TO EXIST: `RegisterTurboMCPPanel`'s own comment
+	 * justifies the menu entry by "the window reachable without typing a console command", and until
+	 * now there was none to type. *** It is added for a measured reason rather than for symmetry:
+	 * THE PANEL IS THE ONE PART OF THIS PLUGIN THAT RUNS ONLY WHEN A HUMAN OPENS IT, so a mistake in
+	 * its widgets - a bad lambda binding, a list reading from an array that no longer exists - survives
+	 * every suite, every build and every commandlet until somebody clicks the menu. With this command a
+	 * harness can start the editor with `-ExecCmds="TurboMCP.OpenPanel"`, after which
+	 * `LookTurboMCPCapture` in `screen` mode can frame the window and a reader can LOOK at it.
+	 *
+	 * A CONSOLE COMMAND AND NOT AN `AICallable` TOOL, for the reason `UTurboMCPPanelProbeCommandlet` is
+	 * not one either: `P9` says the panel and the MCP share a code path, and it does not say a widget
+	 * concern belongs in the surface an agent reads.
+	 */
+	FAutoConsoleCommand GTurboMCPOpenPanelCommand(
+		TEXT("TurboMCP.OpenPanel"),
+		TEXT("Opens the TurboMCP window, so a harness can photograph it."),
+		FConsoleCommandDelegate::CreateStatic(&OpenTurboMCPPanel));
 }
 
 #undef LOCTEXT_NAMESPACE

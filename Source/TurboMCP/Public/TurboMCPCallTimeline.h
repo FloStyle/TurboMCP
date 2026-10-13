@@ -89,4 +89,92 @@ public:
 	 */
 	static TArray<FTurboMCPCallLog::FEntry> WithSessionsInEffect(
 		const TArray<FTurboMCPCallLog::FEntry>& InRecords);
+
+	/**
+	 * What a reader narrows the timeline down by, one field per thing the row shows.
+	 *
+	 * *** FOUR CRITERIA AND NOT ONE BLOB, WHICH IS A CORRECTION RATHER THAN A PREFERENCE. *** `T02`'s
+	 * item 4b asks for rows "filtered by toolset, tool, asset and status", and one substring matched
+	 * against everything cannot answer "which calls touched THIS asset" without also returning every
+	 * call whose ARGUMENTS happen to mention it for another reason. Each field is matched against its
+	 * own column, case-insensitively:
+	 *
+	 *     Toolset / Tool   the two name columns
+	 *     Asset            the ARGUMENTS, which is the only place an asset is ever named - the engine's
+	 *                      event carries no arguments at all, which is what `R-CALL-COST`'s per-asset
+	 *                      section has always said
+	 *     Status           `error` or `ok`, from the record's own `bError`
+	 *
+	 * An empty field is no constraint, so the default filter keeps every call.
+	 */
+	struct FFilter
+	{
+		FString Toolset;
+		FString Tool;
+		FString Asset;
+		FString Status;
+
+		bool IsEmpty() const
+		{
+			return Toolset.IsEmpty() && Tool.IsEmpty() && Asset.IsEmpty() && Status.IsEmpty();
+		}
+	};
+
+	/**
+	 * One row's text: the summary line the timeline prints for a call.
+	 *
+	 * *** IT LIVES HERE SO THE PANEL'S ROWS AND THE TIMELINE'S TEXT ARE ONE RENDERING. *** The panel
+	 * renders a list of these and the text timeline prints them; a second formatter in the panel would
+	 * be a second answer to "what does one row look like", which is the shape this project keeps
+	 * finding - two places that agree until one of them changes.
+	 */
+	static FString RenderRow(const FTurboMCPCallLog::FEntry& InCall);
+
+	/**
+	 * One record per call, oldest first, KEEPING only the calls `InFilter` accepts.
+	 *
+	 * The pairing is `RepresentativeRecords`, so the filter is applied to CALLS and the count a caller
+	 * shows beside its rows is a count of calls.
+	 */
+	static TArray<FTurboMCPCallLog::FEntry> Select(const TArray<FTurboMCPCallLog::FEntry>& InRecords,
+		const FFilter& InFilter);
+
+	/**
+	 * One entry in the panel's list: a session HEADING, or a call.
+	 *
+	 * *** THE GROUPING IS A ROW RATHER THAN A COLUMN, WHICH IS WHAT `T02` ASKS FOR. *** "The calls of one
+	 * batch script are grouped" is not satisfied by printing the session id on every row - that is a
+	 * column, and it makes a reader compare twenty strings to find where one script ended. A heading
+	 * appears once, when the session changes, exactly as the text timeline prints `; session <id>`.
+	 */
+	struct FListEntry
+	{
+		/** True on a heading row, which carries no call. */
+		bool bHeading = false;
+
+		/** The session the heading names, or the session the call belongs to. */
+		FString SessionId;
+
+		/** The call. Default on a heading row. */
+		FTurboMCPCallLog::FEntry Call;
+	};
+
+	/**
+	 * The rows a list should show: the filtered calls, with a heading before each new session.
+	 *
+	 * The heading is emitted only for the sessions the FILTER kept, so narrowing to one toolset does not
+	 * leave a heading over an empty group.
+	 */
+	static TArray<FListEntry> ListEntries(const TArray<FTurboMCPCallLog::FEntry>& InRecords,
+		const FFilter& InFilter);
+
+	/**
+	 * The expanded row: the FULL arguments and the first lines of the result.
+	 *
+	 * *** BOUNDED, PER `P6`, AND IT SAYS WHAT IT DROPPED. *** The unexpanded row shortens the arguments
+	 * to 60 characters, which is enough to recognise a call and not enough to check one; this is what
+	 * a reader opens the row for. The result is cut at a line boundary and the count of what is not
+	 * shown is printed, so an expansion cannot read as a complete answer that happens to be short.
+	 */
+	static FString Expand(const FTurboMCPCallLog::FEntry& InCall, int32 InResultLines = 8);
 };

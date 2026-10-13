@@ -262,6 +262,109 @@ def main():
             print("    NOTE: %s. The probe still verified discovery, counts and samples; only the "
                   "live call is limited." % outcome)
 
+    # ---------------------------------------------------------------------------------------------
+    # THE CALL TIMELINE'S ROWS, FILTERS AND EXPANSION - `T02`'s item 4b, ON LITERAL RECORDS.
+    #
+    # *** THIS IS THE HALF OF ITEM 4b THAT CAN BE PROVED, AND IT IS THE LARGER HALF. *** Q-11 says the
+    # widget tree cannot be read, so the rows, the four filters and the expansion text live in
+    # `FTurboMCPCallTimeline` - plain C++, no Slate - and the commandlet drives them with records it
+    # writes itself. What is left in the widget is which rows are shown, which are open, and the four
+    # boxes; the arithmetic is all here, and every expected number below is COUNTABLE BY HAND from the
+    # five literal records the probe builds. A check whose expected value cannot be derived is a check
+    # that will be "fixed" to match whatever the code does.
+    # ---------------------------------------------------------------------------------------------
+    print()
+    print("=== T02 item 4b: the timeline's rows, its four filters and its expansion ===")
+
+    tl = {}
+    for line in text.splitlines():
+        if "panel-timeline" not in line:
+            continue
+        body = line.split("LogTurboMCP:")[-1].strip().lstrip("Display: ").strip()
+        body = body[len("TurboMCP: "):] if body.startswith("TurboMCP: ") else body
+        if ":" in body:
+            key, value = body.split(":", 1)
+            tl.setdefault(key.strip(), []).append(value.strip())
+
+    rows = tl.get("panel-timeline-row", [])
+    summary = tl.get("panel-timeline", [""])[0]
+    print("    %s" % summary)
+    for row in rows:
+        print("      %s" % row)
+
+    # FIVE RECORDS, THREE CALLS. The pairing is the whole point: the plugin's start and end AND the
+    # engine's own event for one call must be one row, or `R-CALL-COST` counts every call twice - which
+    # is exactly what it did before `FTurboMCPCallTimeline` existed.
+    check("five literal records assemble into THREE calls",
+          "3 call(s) from 5 record(s)" in summary, summary)
+    check("one row per call", len(rows) == 3, "%d row(s)" % len(rows))
+    check("the merged call keeps the START's stamp and the end's measurement",
+          any("00:00:01.000Z" in r and "336 chars" in r and "111 tokens" in r for r in rows),
+          "; ".join(rows[:1]))
+    check("an engine-only call says so rather than pretending to have a start",
+          any("engine-only" in r and "call_tool" in r for r in rows),
+          "; ".join(r[:70] for r in rows))
+    check("a start with no end reads `running`, which is the shape a crash leaves",
+          any(r.endswith("running") for r in rows) and tl.get("panel-timeline-running") == ["1"],
+          str(tl.get("panel-timeline-running")))
+
+    # THE FOUR FILTERS, EACH WITH AN EXPECTED COUNT DERIVED FROM THE LITERAL RECORDS:
+    #   toolset  "ReadToolset"      -> the one merged Read call
+    #   tool     "EditTurboMCPSave" -> the one Edit call
+    #   asset    "BP_NodeTest"      -> TWO, because both plugin records name it in their arguments
+    #   status   "error"            -> the engine-only `call_tool`, which is the one that failed
+    for name, want in (("toolset", 1), ("tool", 1), ("asset", 2), ("status", 1)):
+        lines = tl.get("panel-timeline-filter-%s" % name, [])
+        got = None
+        if lines:
+            match = re.search(r"kept=(\d+) of (\d+)", lines[0])
+            if match:
+                got = int(match.group(1))
+        check("the %s filter keeps exactly %d of the 3 calls" % (name, want),
+              got == want, "%s -> %s" % (name, lines[0] if lines else "(no line)"))
+    # A FILTER THAT KEEPS EVERYTHING IS NOT A FILTER. Asserted separately, because the counts above
+    # would all still pass if `Select` ignored its filter and the expected values were all 3.
+    check("no filter keeps all three, so each one actually narrowed",
+          all(re.search(r"kept=3 of 3", l[0]) is None
+              for l in (tl.get("panel-timeline-filter-%s" % n, []) for n in
+                        ("toolset", "tool", "asset", "status")) if l),
+          str({n: tl.get("panel-timeline-filter-%s" % n) for n in ("toolset", "asset")}))
+
+    expansion = tl.get("panel-timeline-expand", [""])[0]
+    print("    %s" % expansion)
+    check("the expansion carries the FULL arguments, not the 60-character summary",
+          "arguments=yes" in expansion, expansion)
+    check("and the first lines of the result", "result_lines=2" in expansion, expansion)
+    check("and it says what it left out, so a short expansion cannot read as a short answer",
+          "truncated=yes" in expansion, expansion)
+
+    # THE GROUPING, WHICH IS A ROW AND NOT A COLUMN: two sessions in the literal records, so five
+    # entries - heading, call, heading, call, call. A reader who is handed the session id on every row
+    # has to compare twenty strings to find where one batch script ended; that is not grouping.
+    grouping = tl.get("panel-timeline-list", [""])[0]
+    print("    %s" % grouping)
+    check("the list groups by session with ONE heading per batch, not a session on every row",
+          "5 entries, 2 heading(s), 3 call(s)" in grouping, grouping)
+
+    # THE WIDGET ITSELF. `QUESTIONS.md` Q-11 says the widget tree cannot be READ; it does not say it
+    # cannot be BUILT, and the probe builds it whenever the process has Slate. *** WHAT IS CHECKED HERE
+    # IS THAT THE PROBE SAID WHICH OF THE TWO HAPPENED. *** A silent skip is the vacuous pass this
+    # project blocks suites for, so the line must exist and, when it reports a skip, must name the
+    # reason - which is what makes "the panel was not built here" a measurement rather than a shrug.
+    print()
+    widget = [l for l in text.splitlines() if "panel-widget:" in l]
+    state = widget[0].split("panel-widget:")[-1].strip().lstrip("Display: ").strip() if widget else ""
+    print("    panel-widget: %s" % (state or "(no line)"))
+    check("the probe reported whether it could build the window", bool(widget))
+    if state.startswith("SKIPPED"):
+        check("and said WHY it could not, rather than skipping quietly",
+              "Slate" in state or "slate" in state, state)
+    elif state.startswith("BUILT"):
+        check("the built window reports its row count and its count text",
+              re.search(r"timeline_rows=\d+", state) is not None
+              and re.search(r'count_text="\d+ of \d+ call\(s\)"', state) is not None,
+              state)
+
     print()
     check("the commandlet exited zero", exit_code == 0, "exit %s" % exit_code)
 

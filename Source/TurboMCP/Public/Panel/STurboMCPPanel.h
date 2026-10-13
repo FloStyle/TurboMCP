@@ -8,10 +8,15 @@
 #pragma once
 
 #include "Containers/Array.h"
+#include "Containers/Set.h"
 #include "Containers/UnrealString.h"
+#include "TurboMCPCallLog.h"
+#include "TurboMCPCallTimeline.h"
 #include "TurboMCPPanelToolRunner.h"
 #include "Types/SlateEnums.h"
 #include "Widgets/SCompoundWidget.h"
+
+template <typename ItemType> class SListView;
 
 /**
  * The TurboMCP editor window.
@@ -45,8 +50,49 @@ public:
 
 	void Construct(const FArguments& InArgs);
 
+	/**
+	 * Notices a completed call and repaints the timeline.
+	 *
+	 * *** A LIST VIEW DOES NOT RE-READ ITS SOURCE, WHICH IS THE ONE THING A BOUND TEXT ATTRIBUTE DOES
+	 * FOR FREE. *** The summary line above it is bound, so it updates by itself; a list needs to be told,
+	 * and the cheapest honest trigger is the log's own entry count - a call that finished wrote an end
+	 * record, so the count moved.
+	 */
+	virtual void Tick(const FGeometry& InAllottedGeometry, const double InCurrentTime,
+		const float InDeltaTime) override;
+
 	/** The runner the panel renders. Public so a test can reach the same state. */
 	FTurboMCPPanelToolRunner& GetToolRunner() { return ToolRunner; }
+
+	// ---------------------------------------------------------------------------------------
+	// THE CALL TIMELINE: ITS TEXT, ITS LIST, ITS FOUR FILTERS AND ITS EXPANDING ROWS.
+	//
+	// *** THE LOGIC IS NOT HERE, AND THESE ARE PUBLIC FOR THE SAME REASON `GetToolRunner` IS. ***
+	// `QUESTIONS.md` Q-11 records that the widget tree cannot be inspected. The answers this project
+	// uses are (a) leave as little as possible inside the widget - the one-row-per-call assembly, the
+	// four filters and the expansion text all live in `FTurboMCPCallTimeline`, plain C++ - and (b) let
+	// the probe commandlet CONSTRUCT this widget and read back what it renders, so the window is not
+	// the one part of the plugin that never runs until a human opens it.
+	// ---------------------------------------------------------------------------------------
+
+	/** Rebuilds the rows from the log through the current filter. */
+	void RebuildTimelineRows();
+
+	/** One row: the call's line, plus its detail when the row is expanded. */
+	TSharedRef<ITableRow> MakeTimelineRow(TSharedPtr<FTurboMCPCallTimeline::FListEntry> InItem,
+		const TSharedRef<STableViewBase>& InOwnerTable);
+
+	/** Expands or collapses one row and repaints the list. */
+	void ToggleTimelineRow(const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem);
+
+	/** True when that row is expanded. */
+	bool IsTimelineRowExpanded(const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem) const;
+
+	/** How many calls the filter kept, out of how many there are - the denominator `P1` asks for. */
+	FText GetTimelineCountText() const;
+
+	/** The rows the list currently shows. Read by the probe so the count has a witness. */
+	int32 GetTimelineRowCount() const { return TimelineRows.Num(); }
 
 private:
 	/** Colour of the server dot: green when the server is running, else red. */
@@ -79,12 +125,52 @@ private:
 	FSlateColor GetCallLogSummaryColor() const;
 
 	/**
-	 * The live call timeline: one row per call, from the log itself.
+	 * The live call timeline's TEXT, which the pane shows only when the log holds nothing at all.
 	 *
 	 * `T02`'s item 3. It calls `FTurboMCPCallLog::RenderTimeline` rather than formatting rows here, so
 	 * the pane and `R-CALL-LOG` cannot disagree about what a call is or how one is shown.
 	 */
 	FText GetCallTimelineText() const;
+
+	/**
+	 * What identifies one call in the list, for the expansion set.
+	 *
+	 * The stamp and the name. Two calls to one tool inside the same millisecond would collide, and the
+	 * honest fix would be a record index; a collision costs one row that opens with another's detail,
+	 * which is a smaller defect than an index that has to be kept in step with a filtered list.
+	 */
+	static FString TimelineRowKey(const FTurboMCPCallTimeline::FListEntry& InRow);
+
+	/** The status combo's face. */
+	FText GetSelectedTimelineStatusText() const;
+
+	/** Shown only when the log holds NOTHING, so an empty list says why rather than looking broken. */
+	EVisibility GetTimelineTextVisibility() const;
+
+	/** One filter changed: the rows are rebuilt from the log, not filtered in place. */
+	void OnTimelineFilterChanged(const FText& InText, FString* InField);
+
+	/** The status combo's options and its selection. */
+	TArray<TSharedPtr<FString>> TimelineStatusOptions;
+	TSharedPtr<FString> SelectedTimelineStatus;
+
+	/** The rows the list shows, and the list itself so a rebuild can ask it to repaint. */
+	TArray<TSharedPtr<FTurboMCPCallTimeline::FListEntry>> TimelineRows;
+	TSharedPtr<SListView<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>> TimelineListView;
+
+	/** The keys of the expanded rows. A key is a call's identity, which is its stamp and its name. */
+	TSet<FString> ExpandedTimelineRows;
+
+	/** The three text filters, as typed. */
+	FString TimelineToolsetFilter;
+	FString TimelineToolFilter;
+	FString TimelineAssetFilter;
+
+	/** The log's entry count at the last rebuild, so a new record can be noticed without copying it. */
+	int32 LastTimelineRecordCount = -1;
+
+	/** How many calls there are altogether, so the count line can carry its denominator. */
+	int32 TimelineCallCountBeforeFilter = 0;
 
 	// ---------------------------------------------------------------------------------------
 	// The tool-call section. Every one of these is a thin binding over `ToolRunner`, which is

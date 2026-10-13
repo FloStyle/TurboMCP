@@ -131,44 +131,7 @@ FString FTurboMCPCallLog::RenderTimeline() const
 	const TArray<FEntry> Calls = FTurboMCPCallTimeline::WithSessionsInEffect(
 		FTurboMCPCallTimeline::RepresentativeRecords(Records));
 
-	/** The shared row shape, so a running call and a finished one differ in one field rather than in layout. */
-	auto Row = [](const FEntry& InCall) -> FString
-	{
-		FString ShortArgs = InCall.Arguments;
-		ShortArgs.ReplaceInline(TEXT("\n"), TEXT(" "));
-		ShortArgs.ReplaceInline(TEXT("\r"), TEXT(" "));
-		if (ShortArgs.Len() > 60)
-		{
-			ShortArgs = ShortArgs.Left(60) + TEXT("...");
-		}
-
-		FString Out = FString::Printf(TEXT("\n  %s  %s.%s  %s"), *InCall.Timestamp, *InCall.Toolset, *InCall.Tool,
-			ShortArgs.IsEmpty() ? TEXT("(no arguments)") : *ShortArgs);
-
-		if (InCall.Phase == TEXT("start"))
-		{
-			return Out + TEXT("  -> running");
-		}
-
-		// NAMED LOCALS: `Printf`'s format checker refuses a `%s` whose argument is a temporary (`error C7595`).
-		const FString Chars = FEntry::DescribeSize(InCall.ResultChars);
-		const FString Tokens = FEntry::DescribeSize(InCall.TokenEstimate);
-		Out += FString::Printf(TEXT("  -> %s  %.1fms  %s chars  ~%s tokens%s%s"),
-			InCall.bError ? TEXT("ERROR") : TEXT("ok"), InCall.DurationMs, *Chars, *Tokens,
-			InCall.IsSlow() ? TEXT("  SLOW") : TEXT(""), InCall.IsLarge() ? TEXT("  LARGE") : TEXT(""));
-
-		// *** THE ADMISSION, PLACED WHERE A READER MEETS IT AND NARROWED TO WHERE IT IS STILL TRUE. *** An
-		// ENGINE-ONLY row is one the engine's event is the only record of: an engine tool, or the
-		// `call_tool` meta-tool. Its event carries the duration AFTER the call and nothing before it, so
-		// that row really has no start. A PLUGIN tool's call is no longer one of these - it has a start
-		// record now - and saying otherwise on its row would be the caption contradicting the code.
-		if (InCall.Source == TEXT("engine"))
-		{
-			Out += TEXT("  (engine-only: this path writes no start record)");
-		}
-		return Out;
-	};
-
+	/** The row text comes from the timeline, so the panel's list and this text are one rendering. */
 	FString Out = FString::Printf(
 		TEXT("; %d call(s) from %d record(s), oldest first. A call with no OUT yet reads `running`."),
 		Calls.Num(), Records.Num());
@@ -188,7 +151,7 @@ FString FTurboMCPCallLog::RenderTimeline() const
 			Out += FString::Printf(TEXT("\n; session %s"),
 				Call.SessionId.IsEmpty() ? TEXT("(none)") : *Call.SessionId);
 		}
-		Out += Row(Call);
+		Out += TEXT("\n  ") + FTurboMCPCallTimeline::RenderRow(Call);
 	}
 
 	return Out;
@@ -274,6 +237,12 @@ TArray<FTurboMCPCallLog::FEntry> FTurboMCPCallLog::GetEntries() const
 {
 	FScopeLock Lock(&Mutex);
 	return Entries;
+}
+
+int32 FTurboMCPCallLog::NumEntries() const
+{
+	FScopeLock Lock(&Mutex);
+	return Entries.Num();
 }
 
 void FTurboMCPCallLog::Clear()

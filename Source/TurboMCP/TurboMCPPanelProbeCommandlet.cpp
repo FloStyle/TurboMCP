@@ -30,6 +30,11 @@
 #include "ToolsetRegistry/ToolCallAsyncResultString.h"
 
 #include "Logging.h"
+#include "TurboMCPCallTimeline.h"
+
+// THE PANEL ITSELF, so the probe can build the window rather than only the logic behind it.
+#include "Framework/Application/SlateApplication.h"
+#include "Panel/STurboMCPPanel.h"
 
 #define LOCTEXT_NAMESPACE "TurboMCPPanelProbe"
 
@@ -181,6 +186,11 @@ int32 UTurboMCPPanelProbeCommandlet::Main(const FString& Params)
 	ProbeLiveCall();
 
 	// ---------------------------------------------------------------------------------------------
+	// 6. THE CALL TIMELINE'S ROWS, FILTERS AND EXPANSION, ON LITERAL RECORDS
+	// ---------------------------------------------------------------------------------------------
+	ProbeCallTimeline();
+
+	// ---------------------------------------------------------------------------------------------
 	// THE SUMMARY LINE A SCRIPT PARSES
 	// ---------------------------------------------------------------------------------------------
 	Line(FString::Printf(
@@ -321,6 +331,175 @@ void UTurboMCPPanelProbeCommandlet::ProbeLiveCall()
 			Line(TEXT("panel-livecall-note: the tool answered NOTHING, which P1 forbids"));
 		}
 	}
+}
+
+void UTurboMCPPanelProbeCommandlet::ProbeCallTimeline()
+{
+	// *** A TYPE ALIAS AND NOT A `using FTurboMCPCallLog::FEntry;` DECLARATION, WHICH MSVC REFUSES AT
+	// FUNCTION SCOPE: `error C2885: invalid using-declaration at a scope that is not a class`. *** The
+	// alias is the same type by another name and is legal here.
+	using FEntry = FTurboMCPCallLog::FEntry;
+
+	// LITERAL RECORDS, WRITTEN HERE RATHER THAN READ FROM THE LOG. See the header for why: a check
+	// that reads whatever happened to be recorded passes by finding nothing in a quiet session.
+	//
+	// THE SHAPE IS ONE OF EACH THING THE TIMELINE HAS TO GET RIGHT:
+	//   call 1  a plugin start and end, PLUS the engine's own event for the same call - four records
+	//           that must collapse to ONE row, or every total in `R-CALL-COST` doubles
+	//   call 2  an engine-only call: the `call_tool` meta-tool, which has no start record of its own
+	//   call 3  a plugin start with NO end: the crash shape, which must render as `running`
+	FEntry Start1;
+	Start1.Timestamp = TEXT("2026-01-01T00:00:01.000Z");
+	Start1.Phase = TEXT("start");
+	Start1.Source = TEXT("plugin");
+	Start1.Toolset = TEXT("TurboMCPReadToolset");
+	Start1.Tool = TEXT("ReadTurboMCPStatus");
+	Start1.Arguments = TEXT("{\"asset\":\"BP_NodeTest\"}");
+
+	FEntry End1;
+	End1.Timestamp = TEXT("2026-01-01T00:00:01.100Z");
+	End1.Phase = TEXT("end");
+	End1.Source = TEXT("plugin");
+	End1.Toolset = TEXT("TurboMCPReadToolset");
+	End1.Tool = TEXT("ReadTurboMCPStatus");
+	End1.Arguments = TEXT("{\"asset\":\"BP_NodeTest\"}");
+	End1.DurationMs = 100.0;
+	End1.ResultChars = 336;
+	End1.TokenEstimate = 111;
+	End1.Result = TEXT("read: the status\nline two\nline three");
+
+	FEntry EngineInner;
+	EngineInner.Timestamp = TEXT("2026-01-01T00:00:01.200Z");
+	EngineInner.Phase = TEXT("end");
+	EngineInner.Source = TEXT("engine");
+	EngineInner.SessionId = TEXT("session-a");
+	EngineInner.Toolset = TEXT("TurboMCP.TurboMCPReadToolset");
+	EngineInner.Tool = TEXT("TurboMCP.TurboMCPReadToolset.ReadTurboMCPStatus");
+	EngineInner.DurationMs = 120.0;
+
+	FEntry EngineOnly;
+	EngineOnly.Timestamp = TEXT("2026-01-01T00:00:02.000Z");
+	EngineOnly.Phase = TEXT("end");
+	EngineOnly.Source = TEXT("engine");
+	EngineOnly.SessionId = TEXT("session-b");
+	EngineOnly.Toolset = TEXT("(top-level)");
+	EngineOnly.Tool = TEXT("call_tool");
+	EngineOnly.DurationMs = 2.0;
+	EngineOnly.bError = true;
+
+	FEntry LostStart;
+	LostStart.Timestamp = TEXT("2026-01-01T00:00:03.000Z");
+	LostStart.Phase = TEXT("start");
+	LostStart.Source = TEXT("plugin");
+	LostStart.Toolset = TEXT("TurboMCPEditToolset");
+	LostStart.Tool = TEXT("EditTurboMCPSave");
+	LostStart.Arguments = TEXT("{\"assets\":\"/Game/Tests/BP_NodeTest\"}");
+
+	TArray<FEntry> Records;
+	Records.Add(Start1);
+	Records.Add(End1);
+	Records.Add(EngineInner);
+	Records.Add(EngineOnly);
+	Records.Add(LostStart);
+
+	const TArray<FEntry> Calls = FTurboMCPCallTimeline::Select(Records,
+		FTurboMCPCallTimeline::FFilter());
+
+	// *** FIVE RECORDS, THREE CALLS: THE ENGINE'S EVENT FOR A PLUGIN CALL IS MERGED, NOT COUNTED. ***
+	Line(FString::Printf(TEXT("panel-timeline: %d call(s) from %d record(s)"),
+		Calls.Num(), Records.Num()));
+
+	// THE ROW TEXT COMES FROM THE SAME RENDERER THE PANEL'S ROWS USE.
+	for (const FEntry& Call : Calls)
+	{
+		Line(FString::Printf(TEXT("panel-timeline-row: %s"), *FTurboMCPCallTimeline::RenderRow(Call)));
+	}
+
+	// THE CRASH SHAPE: a start with no end reads `running` rather than being dropped.
+	int32 Running = 0;
+	for (const FEntry& Call : Calls)
+	{
+		if (Call.Phase == TEXT("start"))
+		{
+			++Running;
+		}
+	}
+	Line(FString::Printf(TEXT("panel-timeline-running: %d"), Running));
+
+	// THE FOUR FILTERS, EACH AGAINST ITS OWN COLUMN - and each one's kept count is arithmetic, so a
+	// filter that matched everything by accident is visible as `kept=3` where 1 was expected.
+	auto ReportFilter = [&Calls, &Records](const TCHAR* InName, const FTurboMCPCallTimeline::FFilter& InFilter)
+	{
+		const int32 Kept = FTurboMCPCallTimeline::Select(Records, InFilter).Num();
+		Line(FString::Printf(TEXT("panel-timeline-filter-%s: kept=%d of %d"),
+			InName, Kept, Calls.Num()));
+	};
+
+	FTurboMCPCallTimeline::FFilter ByToolset;
+	ByToolset.Toolset = TEXT("ReadToolset");
+	ReportFilter(TEXT("toolset"), ByToolset);
+
+	FTurboMCPCallTimeline::FFilter ByTool;
+	ByTool.Tool = TEXT("EditTurboMCPSave");
+	ReportFilter(TEXT("tool"), ByTool);
+
+	FTurboMCPCallTimeline::FFilter ByAsset;
+	ByAsset.Asset = TEXT("BP_NodeTest");
+	ReportFilter(TEXT("asset"), ByAsset);
+
+	FTurboMCPCallTimeline::FFilter ByStatus;
+	ByStatus.Status = TEXT("error");
+	ReportFilter(TEXT("status"), ByStatus);
+
+	// THE GROUPING: a heading row per session rather than the session repeated on every row. Two
+	// sessions in the literal records above - the plugin call carries `session-a` through the engine's
+	// own event for it, and the engine-only call carries `session-b` - so the list is five entries:
+	// heading, call, heading, call, call.
+	const TArray<FTurboMCPCallTimeline::FListEntry> List =
+		FTurboMCPCallTimeline::ListEntries(Records, FTurboMCPCallTimeline::FFilter());
+	int32 Headings = 0;
+	for (const FTurboMCPCallTimeline::FListEntry& Entry : List)
+	{
+		if (Entry.bHeading)
+		{
+			++Headings;
+		}
+	}
+	Line(FString::Printf(TEXT("panel-timeline-list: %d entries, %d heading(s), %d call(s)"),
+		List.Num(), Headings, List.Num() - Headings));
+
+	// THE EXPANSION: the full arguments and the first lines of the result, with what it left out said
+	// out loud rather than left to look complete.
+	const FString Expanded = FTurboMCPCallTimeline::Expand(End1, /*InResultLines=*/2);
+	Line(FString::Printf(TEXT("panel-timeline-expand: arguments=%s result_lines=%d truncated=%s"),
+		Expanded.Contains(TEXT("{\"asset\"")) ? TEXT("yes") : TEXT("no"),
+		Expanded.Contains(TEXT("line two")) ? 2 : 0,
+		Expanded.Contains(TEXT("more line(s)")) ? TEXT("yes") : TEXT("no")));
+
+	ProbeTimelineWidget();
+}
+
+void UTurboMCPPanelProbeCommandlet::ProbeTimelineWidget()
+{
+	// *** THE WIDGET ITSELF, WHICH UNTIL NOW HAD NEVER BEEN BUILT BY ANYTHING BUT A HUMAN OPENING THE
+	// WINDOW. *** `QUESTIONS.md` Q-11 says the widget tree cannot be read, and that is still true - but
+	// "cannot be inspected" is not "cannot be EXECUTED", and the difference is the whole of this
+	// method: `STurboMCPPanel::Construct` builds the filter row, the list and the empty-state text, and
+	// a mistake in any of those - a bad lambda, a list reading from a dead array - only appears the day
+	// a human opens the window, which is the worst time to find it.
+	//
+	// A PROCESS WITH NO SLATE IS REPORTED RATHER THAN SILENT: a commandlet run with `-nullrhi` may have
+	// no Slate application at all, and a skip that says so is a measurement while a skip that says
+	// nothing is the vacuous pass this project blocks suites for.
+	if (!FSlateApplication::IsInitialized())
+	{
+		Line(TEXT("panel-widget: SKIPPED (this process has no Slate application, so the window cannot be built here)"));
+		return;
+	}
+
+	TSharedRef<STurboMCPPanel> Panel = SNew(STurboMCPPanel);
+	Line(FString::Printf(TEXT("panel-widget: BUILT  timeline_rows=%d  count_text=\"%s\""),
+		Panel->GetTimelineRowCount(), *Panel->GetTimelineCountText().ToString()));
 }
 
 #undef LOCTEXT_NAMESPACE

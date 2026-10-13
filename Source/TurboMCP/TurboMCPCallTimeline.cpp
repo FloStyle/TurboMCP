@@ -142,8 +142,7 @@ TArray<FTurboMCPCallLog::FEntry> FTurboMCPCallTimeline::RepresentativeRecords(
 }
 
 TArray<FTurboMCPCallLog::FEntry> FTurboMCPCallTimeline::WithSessionsInEffect(
-	const TArray<FTurboMCPCallLog::FEntry>& InRecords)
-{
+	const TArray<FTurboMCPCallLog::FEntry>& InRecords){
 	TArray<FTurboMCPCallLog::FEntry> Out = InRecords;
 	if (Out.Num() == 0)
 	{
@@ -186,4 +185,149 @@ TArray<FTurboMCPCallLog::FEntry> FTurboMCPCallTimeline::WithSessionsInEffect(
 	}
 
 	return Out;
+}
+
+FString FTurboMCPCallTimeline::RenderRow(const FTurboMCPCallLog::FEntry& InCall)
+{
+	FString ShortArgs = InCall.Arguments;
+	ShortArgs.ReplaceInline(TEXT("\n"), TEXT(" "));
+	ShortArgs.ReplaceInline(TEXT("\r"), TEXT(" "));
+	if (ShortArgs.Len() > 60)
+	{
+		ShortArgs = ShortArgs.Left(60) + TEXT("...");
+	}
+
+	FString Out = FString::Printf(TEXT("%s  %s.%s  %s"), *InCall.Timestamp, *InCall.Toolset, *InCall.Tool,
+		ShortArgs.IsEmpty() ? TEXT("(no arguments)") : *ShortArgs);
+
+	if (InCall.Phase == TEXT("start"))
+	{
+		return Out + TEXT("  -> running");
+	}
+
+	// NAMED LOCALS: `Printf`'s format checker refuses a `%s` whose argument is a temporary (`error C7595`).
+	const FString Chars = FTurboMCPCallLog::FEntry::DescribeSize(InCall.ResultChars);
+	const FString Tokens = FTurboMCPCallLog::FEntry::DescribeSize(InCall.TokenEstimate);
+	Out += FString::Printf(TEXT("  -> %s  %.1fms  %s chars  ~%s tokens%s%s"),
+		InCall.bError ? TEXT("ERROR") : TEXT("ok"), InCall.DurationMs, *Chars, *Tokens,
+		InCall.IsSlow() ? TEXT("  SLOW") : TEXT(""), InCall.IsLarge() ? TEXT("  LARGE") : TEXT(""));
+
+	// *** THE ADMISSION, NARROWED TO WHERE IT IS STILL TRUE. *** An ENGINE-ONLY call is one the engine's
+	// event is the only record of: an engine tool, or the `call_tool` meta-tool. Its event carries the
+	// duration AFTER the call and nothing before it, so that row really has no start. A call to this
+	// plugin's own tools has one now, and saying otherwise on its row would be the caption
+	// contradicting the code.
+	if (InCall.Source == TEXT("engine"))
+	{
+		Out += TEXT("  (engine-only: this path writes no start record)");
+	}
+	return Out;
+}
+
+TArray<FTurboMCPCallLog::FEntry> FTurboMCPCallTimeline::Select(
+	const TArray<FTurboMCPCallLog::FEntry>& InRecords, const FFilter& InFilter)
+{
+	const TArray<FTurboMCPCallLog::FEntry> Calls = RepresentativeRecords(InRecords);
+	if (InFilter.IsEmpty())
+	{
+		return Calls;
+	}
+
+	// THE STATUS WORDS ARE ACCEPTED IN THE SPELLINGS A PERSON TYPES, and an unrecognised one is
+	// treated as NO CONSTRAINT rather than as "nothing matches": a filter that silently matched nothing
+	// would read as "no call failed", which is a different and much worse answer. The panel's combo box
+	// cannot produce one, so this is about a caller arriving through some other door.
+	const FString Status = InFilter.Status.TrimStartAndEnd().ToLower();
+	const bool bWantError = Status == TEXT("error") || Status == TEXT("errors")
+		|| Status == TEXT("failed") || Status == TEXT("fail");
+	const bool bWantOk = Status == TEXT("ok") || Status == TEXT("clean") || Status == TEXT("succeeded");
+
+	TArray<FTurboMCPCallLog::FEntry> Kept;
+	for (const FTurboMCPCallLog::FEntry& Call : Calls)
+	{
+		if (!InFilter.Toolset.IsEmpty()
+			&& !Call.Toolset.Contains(InFilter.Toolset, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		if (!InFilter.Tool.IsEmpty() && !Call.Tool.Contains(InFilter.Tool, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		// THE ASSET LIVES IN THE ARGUMENTS, so that is what this criterion reads - see the header.
+		if (!InFilter.Asset.IsEmpty()
+			&& !Call.Arguments.Contains(InFilter.Asset, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		if (bWantError && !Call.bError)
+		{
+			continue;
+		}
+		if (bWantOk && Call.bError)
+		{
+			continue;
+		}
+		Kept.Add(Call);
+	}
+	return Kept;
+}
+
+FString FTurboMCPCallTimeline::Expand(const FTurboMCPCallLog::FEntry& InCall, int32 InResultLines){
+	FString Out = FString::Printf(TEXT("arguments: %s"),
+		InCall.Arguments.IsEmpty() ? TEXT("(none recorded)") : *InCall.Arguments);
+
+	Out += TEXT("\nresult:");
+	if (InCall.Result.IsEmpty())
+	{
+		Out += TEXT(" (none recorded)");
+		return Out;
+	}
+
+	// LINE BY LINE, because a result is text a human reads and cutting it mid-line produces a fragment
+	// that looks like the tool's own wording. The count of what was NOT shown is printed, so a short
+	// expansion cannot be mistaken for a short answer.
+	TArray<FString> Lines;
+	InCall.Result.ParseIntoArrayLines(Lines, /*bCullEmpty=*/false);
+	const int32 Shown = FMath::Min(InResultLines, Lines.Num());
+	for (int32 Index = 0; Index < Shown; ++Index)
+	{
+		Out += FString::Printf(TEXT("\n  %s"), *Lines[Index]);
+	}
+	if (Lines.Num() > Shown)
+	{
+		Out += FString::Printf(TEXT("\n  ... and %d more line(s)"), Lines.Num() - Shown);
+	}
+	return Out;
+}
+
+TArray<FTurboMCPCallTimeline::FListEntry> FTurboMCPCallTimeline::ListEntries(
+	const TArray<FTurboMCPCallLog::FEntry>& InRecords, const FFilter& InFilter)
+{
+	// THE SESSION IS ALREADY IN EFFECT ON EVERY CALL, so a plugin call whose own record carries no
+	// session id still belongs to the batch it was made in - which is the same fill `R-CALL-LOG` uses.
+	const TArray<FTurboMCPCallLog::FEntry> Calls = WithSessionsInEffect(Select(InRecords, InFilter));
+
+	TArray<FListEntry> Entries;
+	FString PreviousSession;
+	bool bFirst = true;
+	for (const FTurboMCPCallLog::FEntry& Call : Calls)
+	{
+		if (bFirst || Call.SessionId != PreviousSession)
+		{
+			bFirst = false;
+			PreviousSession = Call.SessionId;
+
+			FListEntry Heading;
+			Heading.bHeading = true;
+			Heading.SessionId = Call.SessionId;
+			Entries.Add(Heading);
+		}
+
+		FListEntry Row;
+		Row.SessionId = Call.SessionId;
+		Row.Call = Call;
+		Entries.Add(Row);
+	}
+	return Entries;
 }
