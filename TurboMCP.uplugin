@@ -3,6 +3,7 @@
 	"Version": 1,
 	"VersionName": "1.0.0",
 	"FriendlyName": "TurboMCP",
+	"Icon": "Resources/Icon128.png",
 	"Description": "93 editor tools that fill the gaps in the engine's own MCP tools: Blueprint reading and writing, graph text, widgets, materials, capture, levels and actors.",
 	"Category": "AI",
 	"CreatedBy": "FloStyle",
