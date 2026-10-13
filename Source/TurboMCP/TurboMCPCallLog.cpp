@@ -170,6 +170,11 @@ FString FTurboMCPCallLog::RenderTimeline() const
 		{
 			// An `end` with no `start`: the engine's own events arrive this way, so it is a row by itself.
 			Out += Row(Entry, Entry.Timestamp, &Entry);
+			// *** THE ADMISSION, PLACED WHERE A READER MEETS IT: an agent's call arrives through the engine's event,
+			// which carries the duration AFTER the call and nothing before it, so THIS PATH HAS NO START RECORD. A
+			// plugin call that crashes leaves a `running` line; an agent call that crashes leaves NO LINE AT ALL, and
+			// the only way a reader learns that is if the row says so. ***
+			Out += TEXT("  (no start record: the engine's event arrives after the call)");
 		}
 	}
 
