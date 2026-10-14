@@ -20,6 +20,7 @@
 #include "K2Node_Self.h"
 #include "UObject/UObjectGlobals.h"
 
+#include "TurboMCPGraphReachability.h"
 #include "TurboMCPNodeId.h"
 
 namespace
@@ -185,9 +186,14 @@ bool FTurboMCPGraphText::IsImplicitPin(const UEdGraphPin* InPin)
 		return false;
 	}
 
-	// The self pin and the world context pin are implicit when they carry their
-	// automatic default, which is what `2.1.8` means by "not printed when they
-	// are implicit".
+	// These pins are implicit only while they retain their automatic default. A
+	// connection makes the source explicit and must be printed; otherwise a
+	// connected Target/self pin hides the getter that supplies it.
+	if (InPin->LinkedTo.Num() > 0)
+	{
+		return false;
+	}
+
 	const FName PinName = InPin->PinName;
 	if (PinName == UEdGraphSchema_K2::PN_Self)
 	{
@@ -770,6 +776,11 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 		Out += Head + Body + TEXT(")");
 	}
 
+	// Use the same all-wire reachability walk as the dead-node preview. Exec
+	// traversal alone would call a getter feeding a live target pin disconnected.
+	TSet<const UEdGraphNode*> Reachable;
+	TurboMCPGraphReachability::MarkReachable(InGraph, Reachable);
+
 	// `2.1.11`: disconnected groups are printed after the entry point forms, in
 	// their own section, each group once, with a count.
 	TArray<const UEdGraphNode*> Disconnected;
@@ -780,7 +791,7 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 		{
 			continue;
 		}
-		if (!Printed.Contains(Node))
+		if (!Reachable.Contains(Node))
 		{
 			Disconnected.Add(Node);
 		}

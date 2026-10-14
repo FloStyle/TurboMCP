@@ -63,8 +63,21 @@ namespace TurboMCPGraphTextLex
 		const int32 Open = Index;
 		++Index;
 		const int32 Start = Index;
-		while (Index < InLine.Len() && InLine[Index] != TEXT(')') && InLine[Index] != TEXT(' '))
+		int32 ParenthesisDepth = 1;
+		while (Index < InLine.Len() && !FChar::IsWhitespace(InLine[Index]))
 		{
+			if (InLine[Index] == TEXT('('))
+			{
+				++ParenthesisDepth;
+			}
+			else if (InLine[Index] == TEXT(')'))
+			{
+				--ParenthesisDepth;
+				if (ParenthesisDepth == 0)
+				{
+					break;
+				}
+			}
 			++Index;
 		}
 

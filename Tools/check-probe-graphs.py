@@ -52,7 +52,8 @@ ASSET = "TurboMCPAcceptance"
 # The graphs every build must produce. LayoutProbe is the one this round added.
 REQUIRED_GRAPHS = [
     "KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe",
-    "ValueCycleProbe", "SelfLinkProbe", "DepthLimitProbe", "LargeGraphProbe",
+    "ValueCycleProbe", "SelfLinkProbe", "DepthLimitProbe", "TargetPinRoundTripProbe",
+    "LargeGraphProbe",
 ]
 # The graph added to close the two specifications' holes, and the one with structures to assert.
 LAYOUT = "LayoutProbe"
@@ -193,10 +194,11 @@ def main():
     summary = re.search(
         r"KnotProbe=(\w+) DeadProbe=(\w+) LocalVarProbe=(\w+) SaneProbe=(\w+) "
         r"LayoutProbe=(\w+) ValueCycleProbe=(\w+) SelfLinkProbe=(\w+) "
-        r"DepthLimitProbe=(\w+) LargeGraphProbe=(\w+)",
+        r"DepthLimitProbe=(\w+) TargetPinRoundTripProbe=(\w+) LargeGraphProbe=(\w+)",
         report.log_text() + report.text)
     summary_names = ["KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe",
-                     "ValueCycleProbe", "SelfLinkProbe", "DepthLimitProbe", "LargeGraphProbe"]
+                     "ValueCycleProbe", "SelfLinkProbe", "DepthLimitProbe",
+                     "TargetPinRoundTripProbe", "LargeGraphProbe"]
     check("the summary names every probe graph", summary is not None,
           "the commandlet summary is incomplete")
     if summary:

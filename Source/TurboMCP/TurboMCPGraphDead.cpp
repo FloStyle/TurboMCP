@@ -28,6 +28,7 @@
 #include "UObject/UObjectGlobals.h"
 
 #include "TurboMCPAssetResolver.h"
+#include "TurboMCPGraphReachability.h"
 #include "TurboMCPNodeId.h"
 
 namespace
@@ -96,52 +97,6 @@ namespace
 	}
 
 	/**
-	 * Walks out from the entry nodes and marks everything reachable, across EXEC AND DATA wires.
-	 *
-	 * Both directions are followed: an exec wire runs forward, and a data wire is followed forward
-	 * because the node that consumes a value is what makes the producer live. Following only
-	 * forward from entries on EVERY pin kind is what this does, and it is deliberately generous.
-	 */
-	void MarkReachable(UEdGraph* InGraph, TSet<UEdGraphNode*>& OutReachable)
-	{
-		TArray<UEdGraphNode*> Stack;
-
-		for (UEdGraphNode* Node : InGraph->Nodes)
-		{
-			if (Node != nullptr && IsEntryNode(Node))
-			{
-				OutReachable.Add(Node);
-				Stack.Add(Node);
-			}
-		}
-
-		while (Stack.Num() > 0)
-		{
-			UEdGraphNode* Node = Stack.Pop();
-			for (UEdGraphPin* Pin : Node->Pins)
-			{
-				if (Pin == nullptr)
-				{
-					continue;
-				}
-				for (UEdGraphPin* Linked : Pin->LinkedTo)
-				{
-					if (Linked == nullptr || Linked->GetOwningNode() == nullptr)
-					{
-						continue;
-					}
-					UEdGraphNode* Next = Linked->GetOwningNode();
-					if (!OutReachable.Contains(Next))
-					{
-						OutReachable.Add(Next);
-						Stack.Add(Next);
-					}
-				}
-			}
-		}
-	}
-
-	/**
 	 * Groups the nodes that are not reachable, by which ones are wired to each other.
 	 *
 	 * A COMMENT NODE IS NEVER A GROUP, AND ITS INCLUDE AT THE TOP OF THIS FILE USED TO BE UNUSED - WHICH WAS
@@ -161,10 +116,10 @@ namespace
 	 * contribute to those answers either way. Excluding them at the point where a group is FORMED is the
 	 * smallest change that cannot make another answer disagree.
 	 */
-	void CollectUnreachableGroups(UEdGraph* InGraph, const TSet<UEdGraphNode*>& InReachable,
+	void CollectUnreachableGroups(UEdGraph* InGraph, const TSet<const UEdGraphNode*>& InReachable,
 		TArray<TArray<UEdGraphNode*>>& OutGroups)
 	{
-		TSet<UEdGraphNode*> Seen;
+		TSet<const UEdGraphNode*> Seen;
 		for (UEdGraphNode* Seed : InGraph->Nodes)
 		{
 			if (Seed == nullptr || InReachable.Contains(Seed) || Seen.Contains(Seed))
@@ -216,7 +171,7 @@ namespace
 	}
 
 	/** Every variable any REACHABLE node in the whole Blueprint reads. */
-	void CollectLiveReads(UBlueprint* InBlueprint, const TSet<UEdGraphNode*>& InReachableThisGraph,
+	void CollectLiveReads(UBlueprint* InBlueprint, const TSet<const UEdGraphNode*>& InReachableThisGraph,
 		UEdGraph* InThisGraph, TSet<FName>& OutReads)
 	{
 		TArray<UEdGraph*> Graphs;
@@ -228,10 +183,18 @@ namespace
 		{
 			if (Graph != nullptr) { Graphs.Add(Graph); }
 		}
+		for (UEdGraph* Graph : InBlueprint->MacroGraphs)
+		{
+			if (Graph != nullptr) { Graphs.Add(Graph); }
+		}
+		for (UEdGraph* Graph : InBlueprint->EventGraphs)
+		{
+			if (Graph != nullptr) { Graphs.Add(Graph); }
+		}
 
 		for (UEdGraph* Graph : Graphs)
 		{
-			TSet<UEdGraphNode*> Reachable;
+			TSet<const UEdGraphNode*> Reachable;
 			if (Graph == InThisGraph)
 			{
 				// The graph being examined already has its own answer, so it is reused rather than
@@ -240,10 +203,10 @@ namespace
 			}
 			else
 			{
-				MarkReachable(Graph, Reachable);
+				TurboMCPGraphReachability::MarkReachable(Graph, Reachable);
 			}
 
-			for (UEdGraphNode* Node : Reachable)
+			for (const UEdGraphNode* Node : Reachable)
 			{
 				// A read OR a write counts: another graph writing a variable is also a use of it,
 				// because the value this group would have written is what that graph would see.
@@ -256,7 +219,7 @@ namespace
 	}
 
 	/** Every function name called by live code anywhere in the Blueprint. */
-	void CollectLiveCalls(UBlueprint* InBlueprint, const TSet<UEdGraphNode*>& InReachableThisGraph,
+	void CollectLiveCalls(UBlueprint* InBlueprint, const TSet<const UEdGraphNode*>& InReachableThisGraph,
 		UEdGraph* InThisGraph, TSet<FName>& OutCalls)
 	{
 		TArray<UEdGraph*> Graphs;
@@ -268,20 +231,28 @@ namespace
 		{
 			if (Graph != nullptr) { Graphs.Add(Graph); }
 		}
+		for (UEdGraph* Graph : InBlueprint->MacroGraphs)
+		{
+			if (Graph != nullptr) { Graphs.Add(Graph); }
+		}
+		for (UEdGraph* Graph : InBlueprint->EventGraphs)
+		{
+			if (Graph != nullptr) { Graphs.Add(Graph); }
+		}
 
 		for (UEdGraph* Graph : Graphs)
 		{
-			TSet<UEdGraphNode*> Reachable;
+			TSet<const UEdGraphNode*> Reachable;
 			if (Graph == InThisGraph)
 			{
 				Reachable = InReachableThisGraph;
 			}
 			else
 			{
-				MarkReachable(Graph, Reachable);
+				TurboMCPGraphReachability::MarkReachable(Graph, Reachable);
 			}
 
-			for (UEdGraphNode* Node : Reachable)
+			for (const UEdGraphNode* Node : Reachable)
 			{
 				const FName Call = CallOf(Node);
 				if (!Call.IsNone())
@@ -333,6 +304,14 @@ bool FTurboMCPGraphDead::Plan(const FString& InAsset, const FString& InGraphName
 	{
 		if (Graph != nullptr) { Graphs.Add(Graph); }
 	}
+	for (UEdGraph* Graph : Blueprint->MacroGraphs)
+	{
+		if (Graph != nullptr) { Graphs.Add(Graph); }
+	}
+	for (UEdGraph* Graph : Blueprint->EventGraphs)
+	{
+		if (Graph != nullptr) { Graphs.Add(Graph); }
+	}
 	if (Graphs.Num() == 0)
 	{
 		OutError = TEXT("the Blueprint has no graphs.");
@@ -381,8 +360,8 @@ bool FTurboMCPGraphDead::Plan(const FString& InAsset, const FString& InGraphName
 	OutPlan.Asset = Resolved.ObjectPath;
 	OutPlan.NodeCountBefore = Graph->Nodes.Num();
 
-	TSet<UEdGraphNode*> Reachable;
-	MarkReachable(Graph, Reachable);
+	TSet<const UEdGraphNode*> Reachable;
+	TurboMCPGraphReachability::MarkReachable(Graph, Reachable);
 
 	TSet<FName> LiveReads;
 	CollectLiveReads(Blueprint, Reachable, Graph, LiveReads);
@@ -569,26 +548,9 @@ FString FTurboMCPGraphDead::Apply(const FPlan& InPlan)
 		return FString::Printf(TEXT("error: %s is not a Blueprint."), *Resolved.ObjectPath);
 	}
 
-	UEdGraph* Graph = nullptr;
-	for (UEdGraph* Candidate : Blueprint->UbergraphPages)
-	{
-		if (Candidate != nullptr && NameMatches(Candidate->GetFName(), InPlan.GraphName))
-		{
-			Graph = Candidate;
-			break;
-		}
-	}
-	if (Graph == nullptr)
-	{
-		for (UEdGraph* Candidate : Blueprint->FunctionGraphs)
-		{
-			if (Candidate != nullptr && NameMatches(Candidate->GetFName(), InPlan.GraphName))
-			{
-				Graph = Candidate;
-				break;
-			}
-		}
-	}
+	// Keep apply's graph resolution identical to the reader and planning phase:
+	// all graph arrays are eligible and names are case-insensitive.
+	UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Blueprint, InPlan.GraphName);
 	if (Graph == nullptr)
 	{
 		return FString::Printf(TEXT("error: graph '%s' is no longer in %s."),

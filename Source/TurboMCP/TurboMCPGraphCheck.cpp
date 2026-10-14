@@ -324,6 +324,10 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 	{
 		if (Graph != nullptr) { Graphs.Add(Graph); }
 	}
+	for (UEdGraph* Graph : Blueprint->EventGraphs)
+	{
+		if (Graph != nullptr) { Graphs.Add(Graph); }
+	}
 
 	UEdGraph* Graph = nullptr;
 	if (OutPlan.GraphName.IsEmpty())
@@ -342,7 +346,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 
 	for (UEdGraph* Candidate : Graphs)
 	{
-		if (Candidate->GetName() == OutPlan.GraphName)
+		if (Candidate->GetName().Equals(OutPlan.GraphName, ESearchCase::IgnoreCase))
 		{
 			Graph = Candidate;
 			break;
@@ -399,6 +403,13 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 
 	for (const FLine& Line : Lines)
 	{
+		// R-GRAPH-LOAD prefixes its otherwise round-trippable graph text with this
+		// result envelope. It describes the read, not a graph pin, so ignore it
+		// when the exact reader output is supplied to this checker.
+		if (Line.Text.TrimStartAndEnd().StartsWith(TEXT("read: ")))
+		{
+			continue;
+		}
 		if (IsCommentLine(Line))
 		{
 			continue;
@@ -409,6 +420,14 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 		int32 AfterTypeId = 0;
 		if (ExtractHeadTypeId(Line.Text, TypeId, Column, AfterTypeId))
 		{
+			// The reader's entry form opens a body but is not an engine node form.
+			if (TypeId == TEXT("fn") || TypeId == TEXT("event"))
+			{
+				CurrentNode = nullptr;
+				bLastHeadUnresolved = false;
+				continue;
+			}
+
 			++OutPlan.NodeFormsFound;
 
 			// NAMED `NodeForType` RATHER THAN `Resolved`, BECAUSE `Resolved` IS ALREADY THE ASSET above.

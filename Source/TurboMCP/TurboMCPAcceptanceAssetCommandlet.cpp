@@ -26,6 +26,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "Components/TextBlock.h"
 #include "Misc/PackageName.h"
 #include "HAL/PlatformFileManager.h"
 #include "Misc/Paths.h"
@@ -990,6 +991,50 @@ namespace
 		return true;
 	}
 
+	/**
+	 * A SetText-style call whose real `self` pin is displayed as Target. The
+	 * connected object getter must remain visible in reader text and must pass
+	 * unchanged through P-GRAPH-CHECK.
+	 */
+	bool BuildTargetPinRoundTripProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* Result = nullptr;
+		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("TargetPinRoundTripProbe"), Entry, Result);
+		if (Graph == nullptr || Entry == nullptr)
+		{
+			OutProblems.Add(TEXT("TargetPinRoundTripProbe: no function entry was created"));
+			return false;
+		}
+
+		FEdGraphPinType WidgetType;
+		WidgetType.PinCategory = UEdGraphSchema_K2::PC_Object;
+		WidgetType.PinSubCategoryObject = UTextBlock::StaticClass();
+		const FName VariableName = FBlueprintEditorUtils::FindUniqueKismetName(
+			InBlueprint, TEXT("RoundTripTextTarget"));
+		FBlueprintEditorUtils::AddMemberVariable(InBlueprint, VariableName, WidgetType, TEXT("None"));
+
+		UK2Node_VariableGet* Getter = NewObject<UK2Node_VariableGet>(Graph);
+		Getter->VariableReference.SetSelfMember(VariableName);
+		Place(Graph, Getter, 300.0, 160.0);
+
+		UK2Node_CallFunction* SetText = NewObject<UK2Node_CallFunction>(Graph);
+		SetText->SetFromFunction(UTextBlock::StaticClass()->FindFunctionByName(TEXT("SetText")));
+		Place(Graph, SetText, 650.0, 0.0);
+
+		UEdGraphPin* Target = SetText->FindPin(UEdGraphSchema_K2::PN_Self);
+		if (Entry->GetThenPin() == nullptr || SetText->GetExecPin() == nullptr
+			|| Getter->GetValuePin() == nullptr || Target == nullptr)
+		{
+			OutProblems.Add(TEXT("TargetPinRoundTripProbe: SetText target or getter pins are missing"));
+			return false;
+		}
+
+		Entry->GetThenPin()->MakeLinkTo(SetText->GetExecPin());
+		Getter->GetValuePin()->MakeLinkTo(Target);
+		return true;
+	}
+
 	/** A genuinely large straight event body. The read result cap, not fixture size, bounds the answer. */
 	bool BuildLargeGraphProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
 	{
@@ -1431,11 +1476,12 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 	const bool bValueCycle = BuildValueCycleProbe(Blueprint, ProbeProblems);
 	const bool bSelfLink = BuildSelfLinkProbe(Blueprint, ProbeProblems);
 	const bool bDepthLimit = BuildDepthLimitProbe(Blueprint, ProbeProblems);
+	const bool bTargetPinRoundTrip = BuildTargetPinRoundTripProbe(Blueprint, ProbeProblems);
 	const bool bLargeGraph = BuildLargeGraphProbe(Blueprint, ProbeProblems);
 
 	UE_LOG(LogTurboMCP, Display,
 		TEXT("TurboMCP: KnotProbe=%s DeadProbe=%s LocalVarProbe=%s SaneProbe=%s LayoutProbe=%s "
-			"ValueCycleProbe=%s SelfLinkProbe=%s DepthLimitProbe=%s LargeGraphProbe=%s"),
+			"ValueCycleProbe=%s SelfLinkProbe=%s DepthLimitProbe=%s TargetPinRoundTripProbe=%s LargeGraphProbe=%s"),
 		bKnots ? TEXT("ok") : TEXT("FAILED"),
 		bDead ? TEXT("ok") : TEXT("FAILED"),
 		bLocals ? TEXT("ok") : TEXT("FAILED"),
@@ -1444,6 +1490,7 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 		bValueCycle ? TEXT("ok") : TEXT("FAILED"),
 		bSelfLink ? TEXT("ok") : TEXT("FAILED"),
 		bDepthLimit ? TEXT("ok") : TEXT("FAILED"),
+		bTargetPinRoundTrip ? TEXT("ok") : TEXT("FAILED"),
 		bLargeGraph ? TEXT("ok") : TEXT("FAILED"));
 
 	// WHY A PROBE FAILED, PRINTED RATHER THAN ONLY COUNTED. Without this the log says `FAILED` and the
@@ -1454,7 +1501,7 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 	}
 
 	if (!bKnots || !bDead || !bLocals || !bSane || !bLayout
-		|| !bValueCycle || !bSelfLink || !bDepthLimit || !bLargeGraph)
+		|| !bValueCycle || !bSelfLink || !bDepthLimit || !bTargetPinRoundTrip || !bLargeGraph)
 	{
 		UE_LOG(LogTurboMCP, Error, TEXT("one or more probe graphs could not be built"));
 		return 2;
