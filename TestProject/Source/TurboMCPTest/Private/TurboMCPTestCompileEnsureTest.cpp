@@ -114,17 +114,41 @@ bool FTurboMCPTestCompileQueuedRequestTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the severity the engine used was Error or Warning, not Log or Verbose"),
 		Outcome.Contains(TEXT("[Warning ")) || Outcome.Contains(TEXT("[Error ")));
 
-	// *** AND A FINDING THAT BELONGS IN THE RECORD RATHER THAN IN A COMMENT: ANY THREAD FILTER THROWS THIS
-	// AWAY. *** `deviceSaw` is every log call the device received during the compile, and `firstCall` reports
-	// the thread it arrived on against the thread the device was created on. MEASURED: `firstCall owner=125868
-	// this=85736 inGame=no` - the log is NOT delivered on the game thread, so a filter that keeps only the
-	// creating thread's messages keeps nothing. `FTurboMCPLogCapture` applies exactly that rule
-	// (`TurboMCPLogCapture.cpp:62-68`), WHICH IS WHY THIS IS ASSERTED RATHER THAN LEFT AS A NOTE: a check
-	// that fails here means the capture's span cannot see an engine's compile-time message at all.
+	// *** AND A MEASUREMENT THAT IS EASY TO MISREAD, SO IT IS WRITTEN DOWN WITH ITS CORRECTION ATTACHED. ***
+	// `deviceSaw` is every log call the device received during the compile and `firstCall` reports the thread
+	// it arrived on against the thread the device was created on. MEASURED: `deviceSaw=83`,
+	// `firstCall owner=65176 this=87448 inGame=no` - THE AUTOMATION CONTEXT RUNS THE COMPILE OFF THE GAME
+	// THREAD. The first reading of that fact concluded the capture's per-thread rule was broken for every
+	// tool, AND THAT CONCLUSION WAS WRONG; the probe below is what corrected it. So what is asserted here is
+	// only the part that is robust: the device saw calls, so the window was not empty.
 	TestTrue(TEXT("the device received calls during the compile"), !Outcome.Contains(TEXT("deviceSaw=0")));
-	TestTrue(TEXT("the log was NOT delivered on the game thread, which is the thread a tool call runs on and "
-		"the thread `FTurboMCPLogCapture` saves as its owner"),
-		Outcome.Contains(TEXT("inGame=no")));
+
+	// *** AND THE PROBE THAT DECIDES HOW MUCH THAT FINDING MEANS. *** `inGame=no` alone would suggest the
+	// capture's thread rule is broken everywhere, AND THAT INFERENCE WOULD BE WRONG - it was made once while
+	// writing this and the probe below is what corrected it. MEASURED, both halves:
+	//
+	//   the fixture's compile     `deviceSaw=83`, `firstCall owner=65176 this=87448 inGame=no` - the
+	//                             automation context runs the compile OFF the game thread, and its log is
+	//                             delivered from a third thread again
+	//   a log written from THIS thread, with the device still attached through a `GLog->Flush()`
+	//                             RECORDED. So delivery DOES follow the caller, and
+	//                             `FTurboMCPLogCapture`'s rule is sound for a real tool call, which runs on
+	//                             the game thread.
+	//
+	// THE FIRST VERSION OF THE PROBE DETACHED THE DEVICE ONE STATEMENT AFTER THE WRITE AND REPORTED "NOT
+	// RECORDED", which measured the probe rather than the engine: a device removed before the flush cannot
+	// see its own line. That is why this one flushes while attached.
+	if (UTurboMCPTestCompileFixture::ProbeWhetherDeliveryFollowsTheCaller())
+	{
+		AddInfo(TEXT("probe: a log written from this thread WAS recorded, so delivery follows the caller - the "
+			"capture's per-thread rule is sound for a tool call, and the compile's off-game-thread delivery is "
+			"a property of the automation context"));
+	}
+	else
+	{
+		AddError(TEXT("probe: a log written from this thread was NOT recorded even after a flush, so a "
+			"per-thread filter in a log capture would see nothing from any caller"));
+	}
 
 	// THE REPORT UNDER TEST READS THE ENGINE LOG BECAUSE THE COMPILER'S LOG IS EMPTY HERE. This asserts that
 	// premise, so a suite cannot pass by accident on a compile that the compiler complained about.

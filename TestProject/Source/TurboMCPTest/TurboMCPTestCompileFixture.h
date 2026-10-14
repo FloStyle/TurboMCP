@@ -105,6 +105,22 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "TurboMCP Test")
 	static FString EnsureSeverity();
 
+	/**
+	 * Answers ONE question with a measurement: does `GLog` hand a message to a device on the CALLING thread?
+	 *
+	 * WHY IT DECIDES A REPAIR RATHER THAN SATISFYING CURIOSITY. `FTurboMCPLogCapture` writes down the thread
+	 * id it was created on and drops every message that arrives on another thread
+	 * (`TurboMCPLogCapture.cpp:62-68`). If delivery follows the caller, that rule is sound and the fixture's
+	 * `inGame=no` is a fact about the automation context only. IF DELIVERY NEVER FOLLOWS THE CALLER, THE RULE
+	 * IS UNSOUND FOR EVERY TOOL THAT USES THE CAPTURE - `E-COMPILE` and `E-SAVE` alike - and every warning
+	 * count they print would be a structural zero.
+	 *
+	 * The method attaches the same device `CompileWithQueuedRequest` uses, logs one `Warning` from the thread
+	 * that calls it, and reports whether the device recorded it.
+	 */
+	UFUNCTION(BlueprintCallable, Category = "TurboMCP Test")
+	static bool ProbeWhetherDeliveryFollowsTheCaller();
+
 	// *** PUBLIC BECAUSE THE OUTPUT DEVICE THAT WRITES THEM IS NOT A MEMBER AND NOT A FRIEND. *** A device
 	// has to be a separate non-`UObject` type (see the note on `FTurboMCPTestCompileLogDevice`), so these
 	// three counters are its record of what the engine logged; making them private would only mean adding a

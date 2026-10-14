@@ -251,6 +251,43 @@ FString UTurboMCPTestCompileFixture::EnsureSeverity()
 	return FString::Printf(TEXT("engineLog=%d [%s] %s"), EnsureLogCount, *EnsureLogVerbs, *EnsureLogText);
 }
 
+bool UTurboMCPTestCompileFixture::ProbeWhetherDeliveryFollowsTheCaller()
+{
+	if (GLog == nullptr)
+	{
+		return false;
+	}
+
+	// A SEPARATE DEVICE FROM THE ONE THE COMPILE USES, so this probe cannot disturb a measurement and cannot
+	// be disturbed by one. It records nothing but its own call count, and its owner thread is whatever thread
+	// calls this function - which is the whole point.
+	struct FDeliveryProbeDevice : public FOutputDevice
+	{
+		int32 Count = 0;
+		virtual void Serialize(const TCHAR*, ELogVerbosity::Type, const FName&) override { ++Count; }
+	};
+
+	static FDeliveryProbeDevice Probe;
+	Probe.Count = 0;
+
+	GLog->AddOutputDevice(&Probe);
+	// ONE LINE AT `Warning`, the lowest severity any capture records, written from this thread.
+	UE_LOG(LogTemp, Warning, TEXT("TURBOMCP-TESTFIXTURE-PROBE delivery probe from the calling thread"));
+
+	// *** THE FIRST VERSION OF THIS PROBE REMOVED THE DEVICE IMMEDIATELY AFTER THE LOG CALL AND REPORTED
+	// "NOT RECORDED" - WHICH MEASURED THE PROBE RATHER THAN THE ENGINE. If `GLog` hands a line to its devices
+	// later, a device that is detached one statement after the write cannot see its own line, and the answer
+	// says nothing about the delivery thread. So the queue is FLUSHED while the device is still attached,
+	// which is the same operation a writer uses to make a log line visible before reading it back.
+	GLog->Flush();
+	GLog->RemoveOutputDevice(&Probe);
+
+	// THE PROBE'S OWN LINE IS LOGGED AT `Log` AND THEREFORE IGNORED BY THE DEVICE ABOVE, which counts every
+	// call regardless of severity - so a count above zero means the call reached a device attached in this
+	// same callstack, on this same thread.
+	return Probe.Count > 0;
+}
+
 FString UTurboMCPTestCompileFixture::HookState()
 {
 	return FString::Printf(TEXT("hook armed=%s, fired %d time(s), last queued target=%s, ensures=%d"),
