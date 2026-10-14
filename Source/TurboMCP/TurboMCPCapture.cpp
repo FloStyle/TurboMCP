@@ -818,8 +818,8 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			FSlateApplication::Get().Tick(ESlateTickType::All);
 			Window->SlatePrepass(1.0f);
 
-			const FVector2D Size = GraphEditor->GetTickSpaceGeometry().GetAbsoluteSize();
-			if (Size.X > 0.0 && Size.Y > 0.0)
+			const FVector2D GraphSize = GraphEditor->GetTickSpaceGeometry().GetAbsoluteSize();
+			if (GraphSize.X > 0.0 && GraphSize.Y > 0.0)
 			{
 				break;
 			}
@@ -828,13 +828,13 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
 	// The view is moved only now, with real geometry in place, so the panel keeps the
 	// transform instead of discarding it during its first layout.
-	GraphEditor->SetViewLocation(Centre, Zoom);
+	GraphEditor->SetViewLocation(FVector2f(Centre), Zoom);
 
 	// The zoom the engine actually applied is read back, because the request and the
 	// result are not the same thing: the panel clamps the zoom to its own limits, and a
 	// panel that has not been laid out can refuse the move entirely. Reading it back means
 	// the result reports what happened rather than what was asked for.
-	FVector2D AppliedLocation = FVector2D::ZeroVector;
+	FVector2f AppliedLocation = FVector2f::ZeroVector;
 	float AppliedZoom = 0.0f;
 	GraphEditor->GetViewLocation(AppliedLocation, AppliedZoom);
 
