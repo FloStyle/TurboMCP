@@ -144,8 +144,13 @@ work is preserved, so an individual commit is sometimes red on purpose:
 ```powershell
 Tools\run-suites.ps1                                    # all 58 suites, exit 0 when green
 Tools\run-suites.ps1 -Suites test-graph-tidy            # one suite
+Tools\run-suites.ps1 -Suites test-graph-tidy -Fast      # fast edit/test loop; restore once after the pass
 Tools\run-suites.ps1 -SkipSlow                          # skip the ones that take minutes
 ```
+
+Use `-Fast` while fixing: it keeps one healthy editor for the pass and restores the shared fixture once at
+the end. It is not the default because a later suite can observe an earlier suite's fixture changes; any
+failure from the fast pass is therefore re-run alone against the restored fixture, and both verdicts are shown.
 
 **Three of the 58 need no editor** — `audit-tool-coverage`, `audit-suite-quality` and `check-includes` —
 because they read files rather than drive the plugin. The other **55 need a running editor**, and the
