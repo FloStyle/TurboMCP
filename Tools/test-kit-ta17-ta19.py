@@ -155,14 +155,24 @@ def number(text, pattern, group=1):
 
 
 def run_commandlet(argv, env=None):
-    """Run one `-run=` commandlet and return (exit_code, combined_output)."""
+    """Run one `-run=` commandlet and return (exit_code, combined_output).
+
+    Unreal commandlets can keep inherited stdout/stderr handles open. A captured
+    subprocess pipe then makes a completed commandlet look hung or lose its log;
+    use a real file, like the suite runner does.
+    """
     merged = dict(os.environ)
     merged.update(env or {})
     try:
-        done = subprocess.run(argv, capture_output=True, text=True, cwd=REPO, env=merged, timeout=300)
+        with tempfile.TemporaryFile(mode="w+b") as output:
+            done = subprocess.run(
+                argv, stdout=output, stderr=subprocess.STDOUT, cwd=REPO,
+                env=merged, timeout=300)
+            output.seek(0)
+            text = output.read().decode("utf-8", "replace")
     except (OSError, subprocess.TimeoutExpired) as error:
         return None, "the commandlet could not be run: %s" % error
-    return done.returncode, (done.stdout or "") + (done.stderr or "")
+    return done.returncode, text
 
 
 def main():
@@ -181,7 +191,7 @@ def main():
     started = time.time()
     exit_code, log = run_commandlet([
         EDITOR_CMD, PROJECT, "-run=TurboMCP.TurboMCPKitCommandlet",
-        "-unattended", "-nullrhi", "-culture=en",
+        "-unattended", "-nullrhi", "-culture=en", "-MaxParallelActions=8",
     ])
     print("    the kit commandlet returned %s after %ds" % (exit_code, int(time.time() - started)))
 
@@ -350,9 +360,13 @@ def main():
           b"FloatCurve" in names.get(CURVE_ASSET, set()),
           sorted(names.get(CURVE_ASSET, set()))[:20])
 
-    # The editor is started again so the harness - and a human - find the machine as this suite found it.
-    ok, detail = tmcp_editor.ensure_editor()
-    check("the editor answers again after the rebuild", ok, detail)
+    # In the suite runner this is an editor-free commandlet phase. Do not start an interactive
+    # editor here; the runner starts its single kept-alive editor only after all such suites finish.
+    if os.environ.get("TURBOMCP_NO_EDITOR") == "1":
+        print("    editor restart deferred to run-suites")
+    else:
+        ok, detail = tmcp_editor.ensure_editor()
+        check("the editor answers again after the rebuild", ok, detail)
 
     print()
     if failures:

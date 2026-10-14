@@ -32,9 +32,13 @@ half that the suites can adopt today, and it is written so the harness can call 
 it.** Claiming the whole row would be claiming something this does not do.
 """
 
+import hashlib
+import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
@@ -46,16 +50,20 @@ REBUILD_ENV = "TURBOMCP_REBUILD_FIXTURE"
 
 
 def _run(script, args=()):
-    """Run a Tools/ PowerShell script and return (ok, first_line_of_output, full_output)."""
+    """Run a Tools/ PowerShell script without captured child-process pipes."""
     path = os.path.join(TOOLS, script)
     try:
-        done = subprocess.run(
-            ["pwsh", "-NoProfile", "-File", path, *args],
-            capture_output=True, text=True, cwd=REPO)
+        # The editor launcher can inherit a pipe and wait forever for its reader. Use a real temporary
+        # file instead of subprocess capture pipes; this is also the shape used by the suite runner.
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output:
+            done = subprocess.run(
+                ["pwsh", "-NoProfile", "-File", path, *args],
+                stdout=output, stderr=subprocess.STDOUT, text=True, cwd=REPO)
+            output.seek(0)
+            text = output.read()
     except OSError as error:
         return False, "could not run %s: %s" % (script, error), ""
 
-    text = (done.stdout or "") + (done.stderr or "")
     first = next((line.strip() for line in text.splitlines() if line.strip()), "no output")
     # `-Stop` ANSWERS NON-ZERO WHEN NOTHING WAS RUNNING, WHICH IS NOT A FAILURE - so a stop is judged by the
     # ABSENCE of an error rather than by its exit code.
@@ -70,6 +78,8 @@ def stop_editor():
     ITSELF when one is running. A suite that rebuilds WITHOUT stopping first is therefore asking two processes to
     own one project, WHICH IS THE HYBRID THIS MODULE EXISTS TO REMOVE.
     """
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        return True, "runner owns the editor; stop skipped"
     ok, first, _ = _run("start-editor.ps1", ("-Stop",))
     time.sleep(3)
     return ok, first
@@ -96,6 +106,11 @@ def rebuild_fixture(script, env=None):
     unknown shape. `Tools/test-graph-replace.py` already did this correctly and this function is its shape made
     shared. `(None, reason)` means the rebuild was NOT REQUESTED, which is not a failure.
     """
+    # The PowerShell runner is the lifecycle owner. A legacy suite may opt in to its old
+    # rebuild spelling, but it must never stop the editor that the runner keeps alive.
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        return restore_runner_fixture()
+
     names = [n for n in (list(env or []) + [REBUILD_ENV]) if n]
     if not any(os.environ.get(name) == "1" for name in names):
         # NAME EVERY VARIABLE THAT WOULD HAVE WORKED, because a message naming the wrong one sends the reader to
@@ -111,6 +126,72 @@ def rebuild_fixture(script, env=None):
     return ok, first
 
 
+def _fixture_manifest(root):
+    """Return a byte manifest for a fixture tree, including untracked sidecars."""
+    result = {}
+    for base, _, names in os.walk(root):
+        for name in names:
+            path = os.path.join(base, name)
+            relative = os.path.relpath(path, root).replace("\\", "/")
+            digest = hashlib.sha256()
+            with open(path, "rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            result[relative] = digest.hexdigest()
+    return result
+
+
+def restore_runner_fixture():
+    """Restore the runner's snapshot without stopping its kept-alive editor.
+
+    Returns ``(None, reason)`` outside run-suites, or ``(ok, detail)`` inside it.
+    The byte manifest is checked here as well as by the runner, because suites can
+    request a restore from inside their own process.
+    """
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") != "1":
+        return None, "the suite runner does not own fixtures"
+
+    fixture = os.environ.get("TURBOMCP_FIXTURE_DIR", "")
+    snapshot = os.environ.get("TURBOMCP_FIXTURE_SNAPSHOT", "")
+    temp_root = os.environ.get("TURBOMCP_FIXTURE_TEMP", "")
+    if not all((fixture, snapshot, temp_root)):
+        return False, "the suite runner did not publish its fixture paths"
+
+    baseline = _fixture_manifest(snapshot)
+    if not baseline:
+        return False, "the suite runner published an empty fixture snapshot"
+
+    plan = os.path.join(temp_root, "fixture-plan-in-suite.json")
+    helper = os.path.join(TOOLS, "fixture-isolation.py")
+    prepared = subprocess.call([
+        sys.executable, helper, "prepare", "--fixture", fixture,
+        "--snapshot", snapshot, "--plan", plan,
+    ], cwd=REPO)
+    if prepared != 0:
+        return False, "the editor could not prepare an in-suite fixture restore"
+
+    with open(plan, encoding="utf-8") as stream:
+        restore_plan = json.load(stream)
+    for relative in restore_plan.get("changed", []):
+        target = os.path.join(fixture, relative.replace("/", os.sep))
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        shutil.copy2(os.path.join(snapshot, relative.replace("/", os.sep)), target)
+    for relative in restore_plan.get("extras", []):
+        target = os.path.join(fixture, relative.replace("/", os.sep))
+        if os.path.exists(target):
+            os.remove(target)
+
+    reloaded = subprocess.call([
+        sys.executable, helper, "reload", "--plan", plan,
+    ], cwd=REPO)
+    if reloaded != 0:
+        return False, "the editor could not reload an in-suite fixture restore"
+    actual = _fixture_manifest(fixture)
+    if actual != baseline:
+        return False, "in-suite fixture restore is not byte-exact"
+    return True, "runner snapshot restored inside the kept-alive editor (byte-exact)"
+
+
 def ensure_editor():
     """Make sure an editor is up and its MCP server answers, and return (ok, detail).
 
@@ -121,8 +202,13 @@ def ensure_editor():
     """
     check = os.path.join(TOOLS, "check-mcp-server.py")
     try:
-        done = subprocess.run([sys.executable, check], capture_output=True, text=True, cwd=REPO)
-        if "PASS" in (done.stdout or ""):
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output:
+            done = subprocess.run(
+                [sys.executable, check], stdout=output, stderr=subprocess.STDOUT,
+                text=True, cwd=REPO)
+            output.seek(0)
+            probe_text = output.read()
+        if "PASS" in probe_text:
             return True, "an editor is already answering"
     except OSError:
         pass

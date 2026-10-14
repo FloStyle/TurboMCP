@@ -115,11 +115,21 @@ private:
 		TSet<const UEdGraphNode*>& InOutPrinted,
 		TArray<FString>& OutNotes) const;
 
-	/** One node as an S-expression, with its pin values. */
+	/**
+	 * One node as an S-expression, with its pin values.
+	 *
+	 * @param InInlineDepth Number of value nodes already expanded on this inline
+	 *        path. An exec-chain call starts at zero; a target is not expanded
+	 *        when this reaches the declared MaxInlineDepth.
+	 * @param InOutInlineNodes Active inline recursion path only. The target is
+	 *        added immediately before recursive RenderNode and removed on return.
+	 *        It must remain separate from Printed and SharedValues.
+	 */
 	FString RenderNode(const UEdGraphNode* InNode, EDetail InDetail,
-		const FString& InAssetPath,
+		const FString& InAssetPath, int32 InInlineDepth,
 		TSet<const UEdGraphNode*>& InOutPrinted,
 		TSet<const UEdGraphNode*>& InOutSharedValues,
+		TSet<const UEdGraphNode*>& InOutInlineNodes,
 		TArray<FString>& OutNotes) const;
 
 	/**
@@ -127,11 +137,14 @@ private:
 	 *
 	 * `2.1.8` says a pin left at its default is not printed, and the `self` pin
 	 * and the world context pin are never printed when they are implicit.
+	 * InInlineDepth and InOutInlineNodes carry the bounded inline path described
+	 * for RenderNode; they are not aliases for the printed/shared sets.
 	 */
 	FString RenderPinValue(const UEdGraphPin* InPin, EDetail InDetail,
-		const FString& InAssetPath,
+		const FString& InAssetPath, int32 InInlineDepth,
 		TSet<const UEdGraphNode*>& InOutPrinted,
 		TSet<const UEdGraphNode*>& InOutSharedValues,
+		TSet<const UEdGraphNode*>& InOutInlineNodes,
 		TArray<FString>& OutNotes) const;
 
 	/** True when this pin is one the format hides when it is at its default. */

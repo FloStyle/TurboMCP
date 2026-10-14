@@ -142,20 +142,20 @@ with a total. **It is the signal that matters — not a commit, and not a build.
 work is preserved, so an individual commit is sometimes red on purpose:
 
 ```powershell
-Tools\run-suites.ps1                                    # all 58 suites, exit 0 when green
-Tools\run-suites.ps1 -Suites test-graph-tidy            # one suite
-Tools\run-suites.ps1 -Suites test-graph-tidy -Fast      # fast edit/test loop; restore once after the pass
+Tools\run-suites.ps1                                    # all 65 suites, exit 0 when green
+Tools\run-suites.ps1 -Suites test-graph-tidy            # one suite, reusing a healthy editor
+Tools\run-suites.ps1 -Suites test-graph-tidy -Fast      # focused loop; restore once after the pass
 Tools\run-suites.ps1 -SkipSlow                          # skip the ones that take minutes
 ```
 
-Use `-Fast` while fixing: it keeps one healthy editor for the pass and restores the shared fixture once at
-the end. It is not the default because a later suite can observe an earlier suite's fixture changes; any
-failure from the fast pass is therefore re-run alone against the restored fixture, and both verdicts are shown.
+Use `-Fast` for one focused suite while fixing: it reuses one healthy editor and restores the shared
+fixture once at the end. The default path restores exact run-start bytes and reloads changed packages inside
+the kept-alive editor after every suite. That default is the isolation proof; a multi-suite `-Fast` pass can
+still let a later suite observe an earlier suite's state, so failures are re-run alone and reported both ways.
 
-**Three of the 58 need no editor** — `audit-tool-coverage`, `audit-suite-quality` and `check-includes` —
-because they read files rather than drive the plugin. The other **55 need a running editor**, and the
-runner starts and stops one for them. **`check-mcp-server` is deliberately on the editor side**, because it
-asserts that the MCP server answers; classifying it as static would have made it pass against nothing.
+**Eight of the 65 need no interactive editor** — static readers and true commandlet suites run first, before
+the runner starts the one editor used by the other **57**. **`check-mcp-server` is deliberately on the editor
+side**, because it asserts that the MCP server answers; classifying it as static would test nothing.
 
 Two gates are worth running on their own, because they are fast and they fail loudly:
 

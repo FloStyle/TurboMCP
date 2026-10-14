@@ -49,6 +49,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# The suite runner snapshots and restores exact fixture bytes between suites. Rebuilding here would
+# stop that runner's kept-alive editor for a commandlet and recreate the original performance defect.
+# Standalone calls still perform the real reproducible rebuild.
+if ($env:TURBOMCP_RUNNER_OWNS_FIXTURES -eq '1') {
+    Write-Output 'PASS  fixture rebuild skipped: run-suites owns the clean baseline and restore'
+    exit 0
+}
+
 # ---------------------------------------------------------------------------------------------
 # THE PATHS ARE DERIVED, NOT HARD-CODED. A clone on any machine has to work without editing this
 # file, and an absolute default only ever worked on the machine it was written on.

@@ -39,6 +39,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import tmcp_editor  # noqa: E402
 from tmcp import EDIT_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -117,6 +118,14 @@ def rebuild_kit_and_reconnect(timeout=180):
     that reaches disk. Stopping the editor makes the commandlet work on a package it loaded itself, so the
     write is the one that was measured.
     """
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        ok, detail = tmcp_editor.restore_runner_fixture()
+        print("    kit restore: %s" % detail)
+        check("the kit fixture was regenerated, so this suite is re-runnable", ok, detail)
+        if not ok:
+            return None
+        return ensure_editor([])
+
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     stop = subprocess.run(
         ["pwsh", "-NoProfile", "-File", os.path.join(repo, "Tools", "start-editor.ps1"), "-Stop"],

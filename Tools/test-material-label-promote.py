@@ -88,6 +88,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import tmcp_editor
 from tmcp import (  # noqa: E402
     EDIT_TOOLSET,
     PREVIEW_TOOLSET,
@@ -127,7 +128,7 @@ def number_before(pattern, text, default=-1):
     return int(match.group(1)) if match else default
 
 
-def rebuild_fixture():
+def rebuild_fixture(restore=True):
     """
     Regenerates the shared fixture so the suite is re-runnable from ANY state.
 
@@ -137,6 +138,12 @@ def rebuild_fixture():
     with a live session first produced `URLError: [WinError 10061] no connection could be made` -
     the session was talking to an editor that had just been shut down.
     """
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        if not restore:
+            return True
+        ok, detail = tmcp_editor.restore_runner_fixture()
+        print("    runner fixture restore: %s" % detail)
+        return bool(ok)
     completed = subprocess.run(
         ["pwsh", "-NoProfile", "-File", os.path.join(TOOLS, "make-material-asset.ps1")],
         capture_output=True, text=True, cwd=REPO)
@@ -159,8 +166,14 @@ def connect():
     THAN A PREFERENCE, recorded in this project before: THE EDITOR DOES NOT COME UP WHEN ITS OUTPUT
     IS CAPTURED, because the launcher leaves a pipe open. So the output goes to the console.
     """
-    subprocess.call(
-        ["pwsh", "-NoProfile", "-File", os.path.join(TOOLS, "start-editor.ps1")], cwd=REPO)
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        ok, detail = tmcp_editor.ensure_editor()
+        print("    runner editor: %s" % detail)
+        if not ok:
+            return None
+    else:
+        subprocess.call(
+            ["pwsh", "-NoProfile", "-File", os.path.join(TOOLS, "start-editor.ps1")], cwd=REPO)
 
     deadline = time.time() + 180
     while time.time() < deadline:
@@ -486,7 +499,8 @@ def main():
     print()
     print("=== giving the shared fixture back ===")
     del session
-    restored = rebuild_fixture()
+    # run-suites performs the single post-suite restore for a kept-alive editor.
+    restored = rebuild_fixture(restore=os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") != "1")
     check("the shared fixture was GIVEN BACK, so the next suite reads what it expects",
           restored,
           "a suite that mutates a shared asset must give it back")

@@ -118,6 +118,27 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# During a suite run the PowerShell runner is the sole editor owner. Legacy suites still
+# call this launcher directly; make those calls observe the kept-alive editor instead of
+# stopping it or attempting a second start. The runner sets STARTING/ALLOW_STOP around its
+# own lifecycle operations so this guard cannot suppress legitimate recovery or cleanup.
+if ($env:TURBOMCP_RUNNER_OWNS_FIXTURES -eq '1' -and $env:TURBOMCP_RUNNER_STARTING_EDITOR -ne '1' -and
+    $env:TURBOMCP_RUNNER_ALLOW_STOP -ne '1') {
+    if ($Stop) {
+        Write-Host '  runner owns the editor; suite stop request was intentionally skipped'
+        Write-Host 'RESULT: PASS'
+        exit 0
+    }
+    $runnerProbe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
+    if ($runnerProbe -match '^PASS') {
+        Write-Host '  runner owns a healthy editor; suite start request was intentionally reused'
+        Write-Host 'RESULT: PASS'
+        exit 0
+    }
+    Write-Host '  runner owns the editor, but it is not healthy; the runner must recover it'
+    exit 6
+}
+
 # ---------------------------------------------------------------------------------------------
 # THE ENGINE IS DERIVED, NOT HARD-CODED. `C:\UnrealEngine` used to be the default, which is one
 # machine's layout; and resolving it by DISCOVERY alone is not enough either, because a machine can
@@ -356,7 +377,17 @@ while ((Get-Date) -lt $Deadline) {
         Ok "window up after $([int]((Get-Date) - $StartTime).TotalSeconds)s: $($Proc.MainWindowTitle)"
     }
 
-    if (Get-NetTCPConnection -LocalPort $McpPort -State Listen -ErrorAction SilentlyContinue) {
+    # Get-NetTCPConnection returns no rows in a confined DSH session even while
+    # localhost:8000 answers. Probe the protocol itself; this is both portable
+    # across that boundary and stronger than observing a listening socket.
+    if (Test-Path $ProbeScript) {
+        $ProbeOut = & python $ProbeScript 2>&1
+        $ProbeCode = $LASTEXITCODE
+        if ($ProbeCode -eq 0) {
+            $ServerUp = $true
+            break
+        }
+    } elseif (Get-NetTCPConnection -LocalPort $McpPort -State Listen -ErrorAction SilentlyContinue) {
         $ServerUp = $true
         break
     }
@@ -378,9 +409,12 @@ Ok "MCP server listening on port $McpPort"
 Step 'Proving the plugin works'
 # ---------------------------------------------------------------------------
 if (Test-Path $ProbeScript) {
-    Start-Sleep -Seconds 3
-    $ProbeOut = & python $ProbeScript 2>&1
-    $ProbeCode = $LASTEXITCODE
+    # The startup loop already ran the complete probe that established readiness.
+    # Reuse it instead of adding another sleep and network round trip.
+    if (-not $ProbeOut) {
+        $ProbeOut = & python $ProbeScript 2>&1
+        $ProbeCode = $LASTEXITCODE
+    }
     $ProbeOut | ForEach-Object { "  $_" }
     if ($ProbeCode -ne 0) {
         Fail 'the server answered but the plugin check failed'

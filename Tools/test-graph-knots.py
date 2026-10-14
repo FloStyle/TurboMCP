@@ -36,6 +36,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import tmcp_editor
 from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session  # noqa: E402
 
 ASSET = "TurboMCPAcceptance"
@@ -65,7 +66,13 @@ def repo_root():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def rebuild_fixture():
+def rebuild_fixture(restore=True):
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        if not restore:
+            return 0
+        ok, detail = tmcp_editor.restore_runner_fixture()
+        print("    runner fixture restore: %s" % detail)
+        return 0 if ok else 1
     return subprocess.call(
         ["pwsh", "-NoProfile", "-File", os.path.join(repo_root(), "Tools",
                                                      "make-acceptance-asset.ps1")],
@@ -73,7 +80,11 @@ def rebuild_fixture():
 
 
 def start_editor():
-    """Starts the editor. `subprocess.call` AND NOT `run(capture_output=True)`, measured."""
+    """Use the runner's editor when it owns the fixture; otherwise start one standalone."""
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        ok, detail = tmcp_editor.ensure_editor()
+        print("    runner editor: %s" % detail)
+        return 0 if ok else 1
     return subprocess.call(
         ["pwsh", "-NoProfile", "-File", os.path.join(repo_root(), "Tools", "start-editor.ps1")],
         cwd=repo_root())
@@ -290,7 +301,7 @@ def main():
 
     print()
     print("=== 7. the fixture is restored for the next suite ===")
-    if rebuild_fixture() != 0:
+    if rebuild_fixture(restore=os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") != "1") != 0:
         check("the acceptance asset was rebuilt at the end", False)
     else:
         check("the acceptance asset was rebuilt at the end", True)

@@ -14,11 +14,11 @@ WHAT IT CHECKS
     3. a fixture directory holding the same lookup with a guard: exit 0.
 """
 
+import os
 import pathlib
 import shutil
 import subprocess
 import sys
-import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CHECKER = ROOT / "Tools" / "checks" / "check-lookup-guards.py"
@@ -68,10 +68,13 @@ def main():
             print("  {0}".format(line))
 
     # 2 and 3. The failure path and the pass path, on fixtures this suite writes.
-    work = pathlib.Path(tempfile.mkdtemp(prefix="lookup-guards-"))
+    # DSH gives temporary child directories owner-only ACLs that block their own
+    # grandchildren. Use two direct workspace directories instead of nesting fixtures.
+    suffix = str(os.getpid())
+    unguarded_dir = ROOT / (".lookup-guards-unguarded-" + suffix)
+    guarded_dir = ROOT / (".lookup-guards-guarded-" + suffix)
+    work = (unguarded_dir, guarded_dir)
     try:
-        unguarded_dir = work / "unguarded"
-        guarded_dir = work / "guarded"
         unguarded_dir.mkdir()
         guarded_dir.mkdir()
         (unguarded_dir / "Fixture.cpp").write_text(UNGUARDED, encoding="utf-8")
@@ -89,7 +92,8 @@ def main():
         if code != 0:
             failures.append("a guarded lookup was reported as unguarded:\n{0}".format(out))
     finally:
-        shutil.rmtree(work, ignore_errors=True)
+        for directory in work:
+            shutil.rmtree(directory, ignore_errors=True)
 
     if failures:
         print("")

@@ -63,6 +63,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import tmcp_editor
 from tmcp import EDIT_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, Session  # noqa: E402
 
 ASSET = "TurboMCPAcceptance"
@@ -83,12 +84,18 @@ def check(name, ok, detail=""):
         failures.append(name)
 
 
-def rebuild_fixture(attempts=3):
+def rebuild_fixture(attempts=3, restore=True):
     """
     Rebuilds the acceptance asset, RETRYING because this project has other workstreams building the same
     plugin at the same time. A build in flight holds the DLL and the commandlet fails with a message that
     has nothing to do with the fixture, which would otherwise be reported as a fixture fault.
     """
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        if not restore:
+            return True
+        ok, detail = tmcp_editor.restore_runner_fixture()
+        print("    runner fixture restore: %s" % detail)
+        return bool(ok)
     for attempt in range(attempts):
         if subprocess.call(
                 ["pwsh", "-NoProfile", "-File",
@@ -109,6 +116,10 @@ def start_editor(attempts=3):
     failure and then went on to drive the running editor successfully for every later check - so it failed a
     check while proving the opposite. The only question that matters is whether the server ANSWERS.
     """
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        ok, detail = tmcp_editor.ensure_editor()
+        print("    runner editor: %s" % detail)
+        return bool(ok)
     for attempt in range(attempts):
         subprocess.call(
             ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1")],
@@ -346,7 +357,10 @@ def main():
 
     print()
     print("=== the fixture is rebuilt last, so the next suite sees a clean asset ===")
-    check("the acceptance asset was regenerated at the end", rebuild_fixture())
+    # run-suites owns the post-suite restore; calling the editor-side unload/reload a
+    # second time here can race the runner's isolation check.
+    check("the acceptance asset was regenerated at the end",
+          rebuild_fixture(restore=os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") != "1"))
 
     print()
     if failures:

@@ -21,6 +21,7 @@
 #include "K2Node_FunctionResult.h"
 #include "K2Node_Knot.h"
 #include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -815,6 +816,213 @@ namespace
 		return true;
 	}
 
+	/** Make a normal bidirectional value link in a fixture. */
+	void LinkFixturePins(UEdGraphPin* InSource, UEdGraphPin* InTarget)
+	{
+		if (InSource != nullptr && InTarget != nullptr)
+		{
+			InSource->MakeLinkTo(InTarget);
+		}
+	}
+
+	/** Find a VariableSet's value input without calling its checked accessor. */
+	UEdGraphPin* FindVariableSetValuePin(UK2Node_VariableSet* InNode)
+	{
+		if (InNode == nullptr)
+		{
+			return nullptr;
+		}
+		for (UEdGraphPin* Pin : InNode->Pins)
+		{
+			if (Pin != nullptr && Pin->Direction == EGPD_Input
+				&& Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
+			{
+				return Pin;
+			}
+		}
+		return nullptr;
+	}
+
+	/**
+	 * `ValueCycleProbe` and `SelfLinkProbe`: pure-value cycles that used to recurse
+	 * through RenderPinValue -> RenderNode until the editor stack was exhausted.
+	 *
+	 * They are valid serialized pin links. The reader must identify the cycle before
+	 * the shared-value shortcut hides it, and must return a bounded diagnostic.
+	 */
+	bool BuildValueCycleProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* Result = nullptr;
+		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("ValueCycleProbe"), Entry, Result);
+		if (Graph == nullptr || Entry == nullptr)
+		{
+			OutProblems.Add(TEXT("ValueCycleProbe: no function entry was created"));
+			return false;
+		}
+
+		FEdGraphPinType IntType;
+		IntType.PinCategory = UEdGraphSchema_K2::PC_Int;
+		const FName VariableName = FBlueprintEditorUtils::FindUniqueKismetName(
+			InBlueprint, TEXT("CycleValue"));
+		FBlueprintEditorUtils::AddMemberVariable(InBlueprint, VariableName, IntType, TEXT("0"));
+
+		UK2Node_CallFunction* A = NewObject<UK2Node_CallFunction>(Graph);
+		UK2Node_CallFunction* B = NewObject<UK2Node_CallFunction>(Graph);
+		A->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
+		B->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
+		Place(Graph, A, 400.0, 0.0);
+		Place(Graph, B, 700.0, 120.0);
+
+		UK2Node_VariableSet* Consumer = NewObject<UK2Node_VariableSet>(Graph);
+		Consumer->VariableReference.SetSelfMember(VariableName);
+		Place(Graph, Consumer, 1050.0, 0.0);
+
+		UEdGraphPin* AOutput = A->GetReturnValuePin();
+		UEdGraphPin* BOutput = B->GetReturnValuePin();
+		UEdGraphPin* AInput = A->FindPin(TEXT("A"));
+		UEdGraphPin* BInput = B->FindPin(TEXT("A"));
+		UEdGraphPin* ConsumerValue = FindVariableSetValuePin(Consumer);
+		if (Entry->GetThenPin() == nullptr || Consumer->GetExecPin() == nullptr
+			|| AOutput == nullptr || BOutput == nullptr || AInput == nullptr
+			|| BInput == nullptr || ConsumerValue == nullptr)
+		{
+			OutProblems.Add(TEXT("ValueCycleProbe: one of the cycle or consumer pins is missing"));
+			return false;
+		}
+
+		Entry->GetThenPin()->MakeLinkTo(Consumer->GetExecPin());
+		LinkFixturePins(AOutput, BInput);
+		LinkFixturePins(BOutput, AInput);
+		// The one-way edge is enough for the reader to enter the value cycle while
+		// preserving one output consumer on A, which keeps it inline.
+		AOutput->MakeLinkTo(ConsumerValue);
+		return true;
+	}
+
+	bool BuildSelfLinkProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* Result = nullptr;
+		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("SelfLinkProbe"), Entry, Result);
+		if (Graph == nullptr || Entry == nullptr)
+		{
+			OutProblems.Add(TEXT("SelfLinkProbe: no function entry was created"));
+			return false;
+		}
+
+		FEdGraphPinType IntType;
+		IntType.PinCategory = UEdGraphSchema_K2::PC_Int;
+		const FName VariableName = FBlueprintEditorUtils::FindUniqueKismetName(
+			InBlueprint, TEXT("SelfValue"));
+		FBlueprintEditorUtils::AddMemberVariable(InBlueprint, VariableName, IntType, TEXT("0"));
+
+		UK2Node_CallFunction* Self = NewObject<UK2Node_CallFunction>(Graph);
+		Self->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
+		Place(Graph, Self, 450.0, 0.0);
+
+		UK2Node_VariableSet* Consumer = NewObject<UK2Node_VariableSet>(Graph);
+		Consumer->VariableReference.SetSelfMember(VariableName);
+		Place(Graph, Consumer, 900.0, 0.0);
+
+		UEdGraphPin* SelfOutput = Self->GetReturnValuePin();
+		UEdGraphPin* SelfInput = Self->FindPin(TEXT("A"));
+		UEdGraphPin* ConsumerValue = FindVariableSetValuePin(Consumer);
+		if (Entry->GetThenPin() == nullptr || Consumer->GetExecPin() == nullptr
+			|| SelfOutput == nullptr || SelfInput == nullptr || ConsumerValue == nullptr)
+		{
+			OutProblems.Add(TEXT("SelfLinkProbe: one of the self-link or consumer pins is missing"));
+			return false;
+		}
+
+		Entry->GetThenPin()->MakeLinkTo(Consumer->GetExecPin());
+		LinkFixturePins(SelfOutput, SelfInput);
+		SelfOutput->MakeLinkTo(ConsumerValue);
+		return true;
+	}
+
+	/** A pure chain longer than MaxInlineDepth, reached through a normal consumer edge. */
+	bool BuildDepthLimitProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* Result = nullptr;
+		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("DepthLimitProbe"), Entry, Result);
+		if (Graph == nullptr || Entry == nullptr)
+		{
+			OutProblems.Add(TEXT("DepthLimitProbe: no function entry was created"));
+			return false;
+		}
+
+		FEdGraphPinType IntType;
+		IntType.PinCategory = UEdGraphSchema_K2::PC_Int;
+		const FName VariableName = FBlueprintEditorUtils::FindUniqueKismetName(
+			InBlueprint, TEXT("DepthValue"));
+		FBlueprintEditorUtils::AddMemberVariable(InBlueprint, VariableName, IntType, TEXT("0"));
+
+		constexpr int32 PureNodeCount = 24;
+		TArray<UK2Node_CallFunction*> Values;
+		Values.Reserve(PureNodeCount);
+		for (int32 Index = 0; Index < PureNodeCount; ++Index)
+		{
+			UK2Node_CallFunction* Value = NewObject<UK2Node_CallFunction>(Graph);
+			Value->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
+			Place(Graph, Value, 350.0 + Index * 260.0, 0.0);
+			Values.Add(Value);
+		}
+
+		UK2Node_VariableSet* Consumer = NewObject<UK2Node_VariableSet>(Graph);
+		Consumer->VariableReference.SetSelfMember(VariableName);
+		Place(Graph, Consumer, 350.0, 300.0);
+		if (Entry->GetThenPin() == nullptr || Consumer->GetExecPin() == nullptr
+			|| FindVariableSetValuePin(Consumer) == nullptr || Values.Num() != PureNodeCount)
+		{
+			OutProblems.Add(TEXT("DepthLimitProbe: the chain or consumer pins are missing"));
+			return false;
+		}
+		Entry->GetThenPin()->MakeLinkTo(Consumer->GetExecPin());
+
+		for (int32 Index = 0; Index + 1 < Values.Num(); ++Index)
+		{
+			LinkFixturePins(Values[Index]->GetReturnValuePin(),
+				Values[Index + 1]->FindPin(TEXT("A")));
+		}
+		Values.Last()->GetReturnValuePin()->MakeLinkTo(FindVariableSetValuePin(Consumer));
+		return true;
+	}
+
+	/** A genuinely large straight event body. The read result cap, not fixture size, bounds the answer. */
+	bool BuildLargeGraphProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* Result = nullptr;
+		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("LargeGraphProbe"), Entry, Result);
+		if (Graph == nullptr || Entry == nullptr)
+		{
+			OutProblems.Add(TEXT("LargeGraphProbe: no function entry was created"));
+			return false;
+		}
+
+		constexpr int32 LargeNodeCount = 1200;
+		UEdGraphPin* PreviousExec = Entry->GetThenPin();
+		for (int32 Index = 0; Index < LargeNodeCount; ++Index)
+		{
+			UK2Node_CallFunction* Call = NewObject<UK2Node_CallFunction>(Graph);
+			Call->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+			Place(Graph, Call, 300.0 + (Index % 20) * 260.0,
+				static_cast<double>(Index / 20) * 140.0);
+			UEdGraphPin* Exec = Call->GetExecPin();
+			if (PreviousExec == nullptr || Exec == nullptr)
+			{
+				OutProblems.Add(FString::Printf(
+					TEXT("LargeGraphProbe: chain link %d has a missing exec pin"), Index));
+				return false;
+			}
+			PreviousExec->MakeLinkTo(Exec);
+			PreviousExec = Call->GetThenPin();
+		}
+		return true;
+	}
+
 	/**
 	 * `LayoutProbe`: THE GRAPH TWO INDEPENDENT SPECIFICATIONS ASKED FOR, and neither capability could
 	 * be exercised without it.
@@ -1220,14 +1428,23 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 	// cannot test the crossing case and the asset had no comment box at all, so `P/E-GRAPH-KNOTS` and
 	// `P/E-GRAPH-TIDY` both had their primary case resting on code review.
 	const bool bLayout = BuildLayoutProbe(Blueprint, ProbeProblems);
+	const bool bValueCycle = BuildValueCycleProbe(Blueprint, ProbeProblems);
+	const bool bSelfLink = BuildSelfLinkProbe(Blueprint, ProbeProblems);
+	const bool bDepthLimit = BuildDepthLimitProbe(Blueprint, ProbeProblems);
+	const bool bLargeGraph = BuildLargeGraphProbe(Blueprint, ProbeProblems);
 
 	UE_LOG(LogTurboMCP, Display,
-		TEXT("TurboMCP: KnotProbe=%s DeadProbe=%s LocalVarProbe=%s SaneProbe=%s LayoutProbe=%s"),
+		TEXT("TurboMCP: KnotProbe=%s DeadProbe=%s LocalVarProbe=%s SaneProbe=%s LayoutProbe=%s "
+			"ValueCycleProbe=%s SelfLinkProbe=%s DepthLimitProbe=%s LargeGraphProbe=%s"),
 		bKnots ? TEXT("ok") : TEXT("FAILED"),
 		bDead ? TEXT("ok") : TEXT("FAILED"),
 		bLocals ? TEXT("ok") : TEXT("FAILED"),
 		bSane ? TEXT("ok") : TEXT("FAILED"),
-		bLayout ? TEXT("ok") : TEXT("FAILED"));
+		bLayout ? TEXT("ok") : TEXT("FAILED"),
+		bValueCycle ? TEXT("ok") : TEXT("FAILED"),
+		bSelfLink ? TEXT("ok") : TEXT("FAILED"),
+		bDepthLimit ? TEXT("ok") : TEXT("FAILED"),
+		bLargeGraph ? TEXT("ok") : TEXT("FAILED"));
 
 	// WHY A PROBE FAILED, PRINTED RATHER THAN ONLY COUNTED. Without this the log says `FAILED` and the
 	// reason is discarded - the shape `P1` names.
@@ -1236,7 +1453,8 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 		UE_LOG(LogTurboMCP, Error, TEXT("TurboMCP: %s"), *Problem);
 	}
 
-	if (!bKnots || !bDead || !bLocals || !bSane || !bLayout)
+	if (!bKnots || !bDead || !bLocals || !bSane || !bLayout
+		|| !bValueCycle || !bSelfLink || !bDepthLimit || !bLargeGraph)
 	{
 		UE_LOG(LogTurboMCP, Error, TEXT("one or more probe graphs could not be built"));
 		return 2;

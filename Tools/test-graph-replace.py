@@ -318,20 +318,25 @@ def main():
     # than a destructive one. `start-editor.ps1 -Stop` first, because the commandlet needs the package to itself.
     print()
     print("=== giving the shared fixture back ===")
-    stop = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1"), "-Stop"],
-        capture_output=True, text=True, cwd=REPO)
-    _ = stop
-    time.sleep(3)
-    restore = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "make-acceptance-asset.ps1")],
-        capture_output=True, text=True, cwd=REPO)
-    restored_ok = restore.returncode == 0 and "PASS" in (restore.stdout or "")
-    print("    fixture restore: %s"
-          % ((restore.stdout or restore.stderr).strip().splitlines() or ["no output"])[0])
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        restored_ok, restore_detail = tmcp_editor.restore_runner_fixture()
+        print("    fixture restore: %s" % restore_detail)
+    else:
+        stop = subprocess.run(
+            ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1"), "-Stop"],
+            capture_output=True, text=True, cwd=REPO)
+        _ = stop
+        time.sleep(3)
+        restore = subprocess.run(
+            ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "make-acceptance-asset.ps1")],
+            capture_output=True, text=True, cwd=REPO)
+        restored_ok = restore.returncode == 0 and "PASS" in (restore.stdout or "")
+        restore_detail = (restore.stdout or restore.stderr)[-300:]
+        print("    fixture restore: %s"
+              % ((restore.stdout or restore.stderr).strip().splitlines() or ["no output"])[0])
     # A FAILED RESTORE IS A FAILURE, NOT A NOTE, because the next suite reads what this one left behind.
     check("the shared fixture was GIVEN BACK, so the next suite reads what it expects", restored_ok,
-          (restore.stdout or restore.stderr)[-300:])
+          restore_detail)
 
     print()
     if failures:

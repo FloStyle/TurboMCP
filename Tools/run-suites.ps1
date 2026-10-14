@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Runs every acceptance suite in sequence, keeping the editor alive per suite.
+    Runs acceptance suites with one kept-alive editor and isolated fixtures.
 
 .DESCRIPTION
     WHY THIS EXISTS. Verification has been the binding constraint on this project for several rounds, not
@@ -15,14 +15,10 @@
     started" or "the MCP server never answered" - NOT because of a defect in them, and that distinction
     matters, because a failure that is really an environment problem reads as a failing capability.
 
-    So this script OWNS THE EDITOR for its whole run. For each suite it:
-      1. ensures no editor is running, so a stale DLL handle cannot make a save fail;
-      2. starts the editor and WAITS FOR THE MCP SERVER TO ANSWER, rather than assuming a fixed delay;
-      3. runs the one suite, capturing its RESULT line;
-      4. stops the editor again, so the next suite starts from a clean process.
-
-    A SUITE THAT KILLS THE EDITOR (a fixture rebuild) is handled: the script detects that the server has
-    gone and restarts it before the next suite.
+    Source-only, pure-Python and commandlet suites run first without an interactive editor. The runner then starts
+    one editor and reuses it. Between normal suites, the editor releases package handles, the runner restores exact
+    run-start bytes, and the editor reloads those packages. This proves both disk and in-memory fixture isolation
+    without a per-suite stop/start. A suite that kills the editor is detected and recovered before the next suite.
 
     IT DOES NOT BUILD. A build takes a mutex and replaces the DLL; doing it here would reintroduce exactly
     the collision this script exists to remove. Run the build FIRST, then this.
@@ -41,27 +37,14 @@
 param(
     [string[]] $Suites = @('all'),
     [switch] $SkipSlow,
-    # *** -Fast: DO NOT RESTORE THE FIXTURE BETWEEN SUITES. The restore below is what makes a full run green, and it is
-    # also what stops the editor: `git checkout` answers `unable to unlink old ...: Invalid argument` while the editor
-    # holds the file open, so the harness must stop it first. A SUITE THAT SAVES AN ASSET ALWAYS MAKES THE FIXTURE
-    # DIRTY, SO A SAVE-HEAVY RUN RESTARTS THE EDITOR AGAIN AND AGAIN - AND THAT, NOT THE SUITES, IS WHERE THE MINUTES
-    # GO. WITH -Fast THE RESTORE HAPPENS ONCE, AFTER THE LOOP. ***
-    # *** AND IT IS NOT THE DEFAULT, BECAUSE A DEFERRED RESTORE LETS A LATER SUITE SEE AN EARLIER SUITE'S FIXTURE -
-    # WHICH IS EXACTLY THE `test-vcs` FAILURE THE RESTORE WAS ADDED TO FIX. ANY SUITE THAT FAILS IN THE FAST PASS IS
-    # THEREFORE RE-RUN ALONE, AND BOTH VERDICTS ARE REPORTED. ***
+    # -Fast defers the editor-side fixture reload until the end. It is for focused timing only; the default path
+    # restores disk bytes and loaded packages after every suite, and is the fixture-isolation proof.
     [switch] $Fast
 )
 
 $ErrorActionPreference = 'Stop'
 $Repo = Split-Path -Parent $PSScriptRoot
 $StartEditor = Join-Path $PSScriptRoot 'start-editor.ps1'
-
-# Suites that need no editor: they are static readers and running them through a restart would waste a
-# minute each for no benefit.
-$StaticSuites = @('audit-tool-coverage', 'audit-suite-quality', 'check-includes')
-# check-mcp-server NEEDS the editor: it asserts the MCP server answers. Listing it as static made the
-# runner report a FAILING suite on a machine where no editor was up, which is an environment fact rather
-# than a defect - the same misreading as above, one level up.
 
 # A suite that is slow and whose value does not change per run.
 $SlowSuites = @('test-capture')
@@ -164,7 +147,12 @@ function Start-EditorAndWait {
     # needs the project to itself), so the harness has to bring one back; if it cannot, EVERY SUITE AFTER IT inherits
     # the absence and the failure set moves with the race rather than with the code. ONE LINE OF OUTPUT DECIDES
     # BETWEEN "the restart failed" AND "the reuse path is at fault".
-    if ($healthy -match '^PASS') { Write-Host "  [editor] REUSED a healthy editor"; return $true }
+    if ($healthy -match '^PASS') {
+        $script:EditorPid = @(Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
+            Sort-Object StartTime -Descending | Select-Object -First 1 | ForEach-Object { $_.Id })[0]
+        Write-Host "  [editor] REUSED a healthy editor (PID $script:EditorPid)"
+        return $true
+    }
 
     # ---------------------------------------------------------------------------------------------
     # THE CAUSE OF THE WHOLE CLASS, MEASURED AT LAST, AND IT IS NOT THE FIXTURE REBUILD.
@@ -186,7 +174,7 @@ function Start-EditorAndWait {
     # failed, so the process in the way is not merely slow - it is not coming. Killing it and starting once
     # more is the recovery, and ONE retry is deliberate: a loop would turn a genuinely broken editor into a run
     # that appears to hang, which is the failure mode this project keeps having to undo.
-    Write-Output "  the editor in the way answers nothing; clearing it and retrying ONCE"
+    Write-Host "  the editor in the way answers nothing; clearing it and retrying ONCE"
     Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
         Stop-Process -Force -ErrorAction SilentlyContinue
     Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue |
@@ -201,14 +189,21 @@ function Start-EditorAndWait {
     # EQUAL TERMS with whatever the machine's owner was doing - MEASURED as a game hitching for the whole run. The
     # Windows scheduler gives BelowNormal threads the CPU only when nothing at Normal wants it, so the suites slow
     # down and the foreground work does not notice. An interactive launch does not have to pass either switch.
-    & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null
+    $oldStartingEditor = $env:TURBOMCP_RUNNER_STARTING_EDITOR
+    $env:TURBOMCP_RUNNER_STARTING_EDITOR = '1'
+    try { & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null }
+    finally { $env:TURBOMCP_RUNNER_STARTING_EDITOR = $oldStartingEditor }
     $retryDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $retryDeadline) {
         $fresh = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
             Where-Object { $_.StartTime -ge $launchTime.AddSeconds(-2) }
         if ($fresh) {
             $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
-    if ($probe -match '^PASS') { Write-Host "  [editor] STARTED a fresh editor"; return $true }
+    if ($probe -match '^PASS') {
+        $script:EditorPid = $fresh.Id
+        Write-Host "  [editor] STARTED a fresh editor (PID $script:EditorPid)"
+        return $true
+    }
         }
         Start-Sleep -Seconds 3
     }
@@ -220,287 +215,404 @@ function Start-EditorAndWait {
 
 
 function Stop-Editor {
-    & pwsh -NoProfile -File $StartEditor -Stop 2>&1 | Out-Null
-    # A killed process can hold the DLL for a moment; the wait is for the handle, not for tidiness.
+    $oldAllowStop = $env:TURBOMCP_RUNNER_ALLOW_STOP
+    $env:TURBOMCP_RUNNER_ALLOW_STOP = '1'
+    try { & pwsh -NoProfile -File $StartEditor -Stop 2>&1 | Out-Null }
+    finally { $env:TURBOMCP_RUNNER_ALLOW_STOP = $oldAllowStop }
+    # A commandlet or trace server can outlive UnrealEditor and still hold package
+    # handles. Clear those descendants before any disk-only restore.
+    Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue |
+        Stop-Process -Force -ErrorAction SilentlyContinue
     $deadline = (Get-Date).AddSeconds(30)
     while ((Get-Date) -lt $deadline) {
-        if (-not (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue)) { return }
-        Start-Sleep -Seconds 2
+        $left = Get-Process -Name UnrealEditor, UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue
+        if (-not $left) { return }
+        Start-Sleep -Seconds 1
     }
+    throw 'editor-related process(es) still alive after 30s'
+}
+# ---------------------------------------------------------------------------------------------
+# Fixture isolation without editor churn
+# ---------------------------------------------------------------------------------------------
+# The old implementation restored with `git checkout`. Windows cannot unlink a package while the
+# editor owns its handle, so that route forced a stop/start around every mutating suite. The restore
+# routes are deliberately ordered and each one is verified:
+#   1. ask the live editor tools to release and reload the package;
+#   2. if that is unavailable, restore bytes before the next editor opens the fixture;
+#   3. use a direct file copy as the final disk-only fallback (only with no editor open).
+# A green run is not accepted from hashes alone: the live route must also resolve the packages again.
+function Get-RelativeFixtureFiles {
+    param([string] $Root)
+    if (-not (Test-Path $Root)) { return @() }
+    return @(Get-ChildItem $Root -File -Recurse | ForEach-Object {
+        $_.FullName.Substring($Root.Length).TrimStart('\', '/')
+    })
 }
 
-# ---------------------------------------------------------------------------------------------
-# The suite list
-# ---------------------------------------------------------------------------------------------
-$All = Get-ChildItem $PSScriptRoot -Filter '*.py' |
-    Where-Object { $_.BaseName -match '^(test|check|audit)-' } |
-    ForEach-Object { $_.BaseName } | Sort-Object
-
-$Static = $All | Where-Object { $StaticSuites -contains $_ }
-$NeedsEditor = $All | Where-Object { $StaticSuites -notcontains $_ }
-if ($SkipSlow) { $NeedsEditor = $NeedsEditor | Where-Object { $SlowSuites -notcontains $_ } }
-
-# `-contains` RATHER THAN `-in`, AND THAT IS A MEASURED FIX. Called as `-Suites 'a,b,c'` PowerShell binds the
-# WHOLE STRING as one element, so `$_ -in $Suites` compared a bare name against a single long string and
-# matched nothing - the runner then reported "3 static, 0 needing an editor" and ran no capability suite at
-# all WHILE PRINTING A SUMMARY THAT LOOKED FINE. A filter that silently selects nothing is the same failure
-# as a check that cannot fail, one level up.
-if ($Suites -notcontains 'all' -and $Suites.Count -gt 0) {
-    # A COMMA-SEPARATED STRING IS SPLIT HERE, so both call styles work and neither silently selects nothing.
-    $Wanted = @()
-    foreach ($entry in $Suites) { $Wanted += ($entry -split ',') }
-    $Wanted = $Wanted | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() }
-    $NeedsEditor = $NeedsEditor | Where-Object { $Wanted -contains $_ }
-    if ($NeedsEditor.Count -eq 0) {
-        Write-Output "WARNING: -Suites matched no suite that needs an editor. Requested: $($Wanted -join ', ')"
+function New-FixtureSnapshot {
+    param([string] $FixtureDir, [string] $TempRoot, [string] $Name = 'fixture-start')
+    $files = @(Get-RelativeFixtureFiles $FixtureDir)
+    if ($files.Count -eq 0) { throw "fixture snapshot refused: $FixtureDir is empty" }
+    $snapshot = Join-Path $TempRoot $Name
+    # A reused temp root must not contribute files from an older snapshot. The manifest
+    # is the isolation contract, so recreate the destination before copying it.
+    Remove-Item $snapshot -Recurse -Force -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Path $snapshot -Force | Out-Null
+    Copy-Item (Join-Path $FixtureDir '*') $snapshot -Recurse -Force
+    $copied = @(Get-RelativeFixtureFiles $snapshot)
+    if ($copied.Count -ne $files.Count) {
+        throw "fixture snapshot incomplete: expected $($files.Count) file(s), copied $($copied.Count)"
     }
+    return $snapshot
 }
 
-# ---------------------------------------------------------------------------------------------
-# Run
-# ---------------------------------------------------------------------------------------------
-Write-Output "=== TurboMCP suite runner: $($Static.Count) static, $($NeedsEditor.Count) needing an editor ==="
-Write-Output ""
+function Restore-FixtureSnapshot {
+    param(
+        [string] $FixtureDir,
+        [string] $SnapshotDir,
+        [string] $TempRoot,
+        [switch] $EditorLive
+    )
 
-$Results = [ordered]@{}
-
-Write-Output "--- static suites, which need no editor ---"
-foreach ($name in $Static) {
-    $run = Invoke-SuiteProcess -SuiteName $name
-    $out = $run.Output
-    # TWO SUITES REPORT THEIR VERDICT WITHOUT A `RESULT:` LINE - `check-includes` and `check-mcp-server`
-    # print `PASS <what>` or `FAIL <what>`. The first version of this runner looked only for `^RESULT`,
-    # found nothing, and reported them as FAILING when they had both passed. A runner that MISREADS a
-    # passing suite as a failing one is worse than no runner: it sends someone to fix working code.
-    $result = ($out | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
-    if (-not $result) { $result = 'RESULT: no result line' }
-    $Results[$name] = $result
-    Write-Output ("  {0,-26} {1}" -f $name, $result.Trim())
-}
-
-Write-Output ""
-Write-Output "--- suites that need an editor, run ONE AT A TIME with the editor restarted between ---"
-
-$script:EditorFailures = 0
-
-foreach ($name in $NeedsEditor) {
-    Write-Output ""
-    Write-Output "--- $name ---"
-
-    # ---------------------------------------------------------------------------------------------
-    # ONE OWNER OF THE EDITOR, AND IT IS NOT ALWAYS THE HARNESS. THIS IS THE FIX FOR THE CLASS OF
-    # FAILURE THAT HAS COST FOUR ROUNDS.
-    #
-    # MEASURED: a full run reported `31 of 39` while EVERY failing suite passed in isolation and
-    # `make-acceptance-asset.ps1` run by hand returned exit 0. Four defects of ONE shape were found and
-    # fixed - the harness waiting on the SERVER while the launcher decides from the PROCESS, a fixed
-    # 2-second sleep, a probe that could pass on an editor still shutting down, and seven concurrent
-    # rebuilds of one asset - AND THE FAILURES PERSISTED. The reason is that THE HARNESS AND THE SUITE WERE
-    # BOTH DRIVING ONE EDITOR AND ONE `.uasset`: several suites STOP the editor to rebuild a fixture and
-    # then START one and connect to it, while this loop ALSO stopped the editor before every suite -
-    # KILLING THE VERY EDITOR THE PREVIOUS SUITE HAD JUST HEALTHILY STARTED, then racing a fresh start
-    # against the next suite's expectations.
-    #
-    # SO THE HARNESS IS SUBORDINATE TO A HEALTHY EDITOR INSTEAD OF THE OWNER OF ONE. If a server already
-    # answers, that editor is REUSED and NOTHING is stopped or started. That is strictly less work, and a
-    # suite that manages its own editor is left alone instead of being sabotaged mid-flight.
-    #
-    # THE GUARD IS THE HEALTH PROBE RATHER THAN AN ASSUMPTION: an editor left WEDGED by a suite - alive,
-    # port open, game thread not servicing requests - would make every later suite fail, so a probe that
-    # does not answer triggers a full stop of everything and one clean start.
-    # ---------------------------------------------------------------------------------------------
-    $healthy = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
-    if ($healthy -match '^PASS') {
-        Write-Output "  an editor is already answering; reusing it rather than restarting one under the suite"
-    }
-    # `Start-EditorAndWait` ITSELF DECIDES: it reuses a healthy server and only stops and starts when none
-    # answers. The decision lives in ONE place rather than being made twice and disagreeing.
-    if (-not (Start-EditorAndWait)) {
-        # RECORDED AS AN ENVIRONMENT FAILURE RATHER THAN A CAPABILITY ONE. This distinction is the whole
-        # reason the script exists: "the editor could not be started" is not a statement about the tool.
-        $Results[$name] = 'RESULT: BLOCKED (the editor would not start)'
-        Write-Output "  BLOCKED: the editor would not start, so this suite was NOT run"
-
-        # ---------------------------------------------------------------------------------------------
-        # THREE IN A ROW ABORTS THE RUN, BECAUSE A LATE FAILURE AND A SILENT HANG LOOK IDENTICAL.
-        #
-        # MEASURED, TWICE: a full run was left for 18 and 25 minutes with NO EDITOR ALIVE AND NO LOG
-        # ACTIVITY, and it turned out to be `Start-EditorAndWait` spending its FULL 240-SECOND TIMEOUT on
-        # every suite in turn. Thirty-six suites at four minutes each is TWO AND A HALF HOURS of output that
-        # says nothing, and from outside it is indistinguishable from a hang. A runner that can spend hours
-        # failing invisibly is worse than one that stops and says so.
-        #
-        # THE THRESHOLD IS THREE rather than one deliberately: a single editor that will not start can be a
-        # transient, and this project has SEEN that - runs that stalled and then worked on the next attempt.
-        # Three consecutive failures is no longer transient, and the message names the real cause so the
-        # remaining suites are reported as NOT RUN rather than quietly missing from the summary.
-        # ---------------------------------------------------------------------------------------------
-        $script:EditorFailures++
-        if ($script:EditorFailures -ge 3) {
-            Write-Output ""
-            Write-Output ("  ABORTING after {0} consecutive editor start failures. THIS IS AN ENVIRONMENT FAILURE," -f $script:EditorFailures)
-            Write-Output "  NOT A CAPABILITY ONE: the editor will not come up, so no tool was exercised."
-            Write-Output "  The remaining suites are recorded as NOT RUN rather than reported as failures."
-            foreach ($remaining in $NeedsEditor) {
-                # *** `Contains`, NOT `ContainsKey`: the same `OrderedDictionary` mistake as the `-Fast` re-run below.
-                # THIS PATH HAD NEVER RUN, SO THE BUG SAT HERE UNNOTICED - and it is on the ABORT path, which is exactly
-                # where a second failure must not be able to hide the first. ***
-                if (-not $Results.Contains($remaining)) {
-                    $Results[$remaining] = 'RESULT: NOT RUN (aborted: the editor would not start)'
-                }
-            }
-            break
+    $baseline = @(Get-RelativeFixtureFiles $SnapshotDir)
+    $current = @(Get-RelativeFixtureFiles $FixtureDir)
+    $baselineSet = @{}; foreach ($relative in $baseline) { $baselineSet[$relative] = $true }
+    $changed = @()
+    foreach ($relative in $baseline) {
+        $source = Join-Path $SnapshotDir $relative
+        $target = Join-Path $FixtureDir $relative
+        if (-not (Test-Path $target) -or
+            (Get-FileHash $source -Algorithm SHA256).Hash -ne (Get-FileHash $target -Algorithm SHA256).Hash) {
+            $changed += $relative
         }
+    }
+    $extras = @($current | Where-Object { -not $baselineSet.ContainsKey($_) })
+    if (-not $EditorLive -and $changed.Count -eq 0 -and $extras.Count -eq 0) { return 0 }
+    $restoredCount = $changed.Count + $extras.Count
+
+    if ($EditorLive) {
+        # Route 1: project fixture tools release package handles before the copy, then reload the
+        # restored package. This is the only live-editor route that proves in-memory isolation.
+        $plan = Join-Path $TempRoot 'fixture-plan.json'
+        $prepareOutput = @(& python (Join-Path $PSScriptRoot 'fixture-isolation.py') prepare `
+            --fixture $FixtureDir --snapshot $SnapshotDir --plan $plan 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            throw "the editor could not prepare the fixture restore: $($prepareOutput -join ' | ')"
+        }
+
+        foreach ($relative in $changed) {
+            $target = Join-Path $FixtureDir $relative
+            New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force | Out-Null
+            Copy-Item (Join-Path $SnapshotDir $relative) $target -Force
+        }
+        # The editor tool removes package extras. Sidecars are not packages, so remove them only
+        # after prepare released the live handles and before reload verifies the fixture.
+        foreach ($relative in $extras | Where-Object { $_ -notmatch '\.(uasset|umap)$' }) {
+            Remove-Item (Join-Path $FixtureDir $relative) -Force
+        }
+        $reloadOutput = @(& python (Join-Path $PSScriptRoot 'fixture-isolation.py') reload --plan $plan 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            throw "the editor could not reload the restored fixture packages: $($reloadOutput -join ' | ')"
+        }
+        $restorePlan = Get-Content $plan -Raw | ConvertFrom-Json
+        $restoredCount = @($restorePlan.asset_paths).Count + $extras.Count
+    } else {
+        # Route 2: before an editor opens any package, ordinary replacement is safe.
+        foreach ($relative in $changed) {
+            $target = Join-Path $FixtureDir $relative
+            New-Item -ItemType Directory -Path (Split-Path $target -Parent) -Force | Out-Null
+            Copy-Item (Join-Path $SnapshotDir $relative) $target -Force
+        }
+        foreach ($relative in $extras) { Remove-Item (Join-Path $FixtureDir $relative) -Force }
+    }
+
+    # The editor-side helper proves the in-memory half. This proves the disk half byte-for-byte.
+    $after = @(Get-RelativeFixtureFiles $FixtureDir)
+    if ($after.Count -ne $baseline.Count) { throw 'fixture isolation failed: file count differs from run start' }
+    foreach ($relative in $baseline) {
+        $source = Join-Path $SnapshotDir $relative
+        $target = Join-Path $FixtureDir $relative
+        if (-not (Test-Path $target) -or
+            (Get-FileHash $source -Algorithm SHA256).Hash -ne (Get-FileHash $target -Algorithm SHA256).Hash) {
+            throw "fixture isolation failed: $relative differs from run start"
+        }
+    }
+    return $restoredCount
+}
+
+function Get-Verdict {
+    param([string[]] $Output)
+    $line = ($Output | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
+    if ($line) { return $line.Trim() }
+    $tail = @($Output | Select-Object -Last 4) -join ' | '
+    if ($tail) { return "RESULT: no result line ($tail)" }
+    return 'RESULT: no result line and no output'
+}
+
+function Test-VerdictPassed {
+    param([string] $Verdict)
+    # A -Fast failure may carry an isolated PASS after the primary verdict. Count the
+    # primary result only; otherwise a non-hermetic suite is reported as green.
+    $primary = ($Verdict -split '\s+\*\*\* ALONE:')[0].Trim()
+    return $primary -match 'RESULT:\s*PASS|^PASS '
+}
+
+$script:RunnerCleanupDone = $false
+function Invoke-RunnerCleanup {
+    if ($script:RunnerCleanupDone) { return }
+    $script:RunnerCleanupDone = $true
+    # An interrupted suite must not leave a mutated fixture or a runner-owned editor behind.
+    # Cleanup is best-effort here; the original exception remains the verdict.
+    try {
+        if ($runStartSnapshot -and (Test-Path $runStartSnapshot) -and (Test-Path $fixtureDir)) {
+            Restore-FixtureSnapshot $fixtureDir $runStartSnapshot $tempRoot -EditorLive:$editorReady
+        }
+    } catch { }
+    try {
+        if ($replacementOwned -and $NeedsEditor.Count -gt 0) { Stop-Editor }
+    } catch { }
+    try {
+        if ($tempRoot -and (Test-Path $tempRoot)) { Remove-Item $tempRoot -Recurse -Force -ErrorAction SilentlyContinue }
+    } catch { }
+}
+trap {
+    Invoke-RunnerCleanup
+    throw
+}
+
+# ---------------------------------------------------------------------------------------------
+# Select suites. Source-only, pure-Python and true commandlet suites run before any interactive editor.
+# ---------------------------------------------------------------------------------------------
+$NoEditorSuites = @(
+    'audit-tool-coverage', 'audit-suite-quality', 'check-includes', 'check-plugin',
+    'check-probe-graphs', 'test-kit-ta17-ta19', 'test-lookup-guards', 'test-panel'
+)
+$All = @(Get-ChildItem $PSScriptRoot -Filter '*.py' |
+    Where-Object { $_.BaseName -match '^(test|check|audit)-' } |
+    ForEach-Object { $_.BaseName } | Sort-Object)
+$Selected = @($All)
+if ($Suites -notcontains 'all' -and $Suites.Count -gt 0) {
+    $wanted = @()
+    foreach ($entry in $Suites) { $wanted += ($entry -split ',') }
+    $wanted = @($wanted | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $Selected = @($All | Where-Object { $wanted -contains $_ })
+    if ($Selected.Count -eq 0) { Write-Output "WARNING: no suite matched: $($wanted -join ', ')" }
+}
+if ($SkipSlow) { $Selected = @($Selected | Where-Object { $SlowSuites -notcontains $_ }) }
+$Static = @($Selected | Where-Object { $NoEditorSuites -contains $_ })
+$NeedsEditor = @($Selected | Where-Object { $NoEditorSuites -notcontains $_ })
+
+$fullClock = [Diagnostics.Stopwatch]::StartNew()
+$tempRoot = Join-Path $Repo ('.agent\tmp\run-suites-' + $PID)
+New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
+# Do not redirect TEMP into the workspace. Python's tempfile module gives each child directory an
+# explicit owner-only ACL; under DSH confinement that strips the sandbox grant from grandchildren.
+# The platform temporary directory is writable and avoids that false test failure.
+$workspaceDdc = Join-Path $Repo '.agent\ddc'
+New-Item -ItemType Directory -Path $workspaceDdc -Force | Out-Null
+Set-Item 'Env:UE-LocalDataCachePath' $workspaceDdc
+$fixtureDir = Join-Path $Repo 'TestProject\Content\Tests'
+$runStartSnapshot = New-FixtureSnapshot $fixtureDir $tempRoot 'fixture-run-start'
+$fixtureSnapshot = $runStartSnapshot
+$Results = [ordered]@{}
+$startupSeconds = 0.0; $testSeconds = 0.0; $restoreSeconds = 0.0; $healthSeconds = 0.0
+$shutdownSeconds = 0.0; $restoreCount = 0
+$script:EditorPid = 0
+
+# Record ownership BEFORE a commandlet is allowed to stop an existing editor.
+$ownershipClock = [Diagnostics.Stopwatch]::StartNew()
+$initialHealth = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') 2>&1
+$ownershipClock.Stop()
+$startupSeconds += $ownershipClock.Elapsed.TotalSeconds
+$initialEditorHealthy = [bool]($initialHealth | Select-String -Pattern '^PASS')
+$replacementOwned = $false
+
+Write-Output "=== TurboMCP suite runner: $($Static.Count) editor-free, $($NeedsEditor.Count) needing an editor ==="
+Write-Output '--- pure, static, and commandlet suites; no interactive editor ---'
+if ($Static.Count -gt 0 -and $initialEditorHealthy) {
+    $clock = [Diagnostics.Stopwatch]::StartNew(); Stop-Editor; $clock.Stop()
+    $shutdownSeconds += $clock.Elapsed.TotalSeconds
+}
+$env:TURBOMCP_NO_EDITOR = '1'
+foreach ($name in $Static) {
+    $clock = [Diagnostics.Stopwatch]::StartNew(); $run = Invoke-SuiteProcess $name; $clock.Stop()
+    $testSeconds += $clock.Elapsed.TotalSeconds
+    $Results[$name] = Get-Verdict $run.Output
+    Write-Output ("  {0,-28} {1}" -f $name, $Results[$name])
+}
+$env:TURBOMCP_NO_EDITOR = $null
+
+# Commandlet suites deliberately regenerate canonical fixtures. Snapshot that result for every live suite,
+# while keeping the separate run-start snapshot so the caller receives its exact original bytes at the end.
+$fixtureSnapshot = New-FixtureSnapshot $fixtureDir $tempRoot 'fixture-editor-baseline'
+
+Write-Output '--- editor suites; one healthy editor is reused ---'
+# Destructive suites historically called make-*.ps1 before and after their test. Those commandlets stop
+# the interactive editor. The runner's exact snapshot now owns that responsibility, so inherited child
+# processes skip redundant rebuilds while standalone suite runs keep their original hygiene.
+$env:TURBOMCP_RUNNER_OWNS_FIXTURES = '1'
+$env:TURBOMCP_FIXTURE_DIR = $fixtureDir
+$env:TURBOMCP_FIXTURE_SNAPSHOT = $fixtureSnapshot
+$env:TURBOMCP_FIXTURE_TEMP = $tempRoot
+$editorReady = $false
+if ($NeedsEditor.Count -gt 0) {
+    if ($initialEditorHealthy -and $Static.Count -eq 0) {
+        $script:EditorPid = @(Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
+            Sort-Object StartTime -Descending | Select-Object -First 1 | ForEach-Object { $_.Id })[0]
+        Write-Host "  [editor] REUSED a healthy editor (PID $script:EditorPid)"
+        $editorReady = $true
+    } else {
+        $clock = [Diagnostics.Stopwatch]::StartNew(); $editorReady = Start-EditorAndWait; $clock.Stop()
+        $startupSeconds += $clock.Elapsed.TotalSeconds
+        $replacementOwned = $true
+    }
+}
+if ($NeedsEditor.Count -gt 0 -and $editorReady) {
+    # A runner may attach to an editor left by an earlier invocation. Restore once before
+    # the first suite so a focused -Fast run starts from the exact fixture baseline,
+    # including dirty in-memory packages whose disk bytes still match.
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    $n = Restore-FixtureSnapshot $fixtureDir $fixtureSnapshot $tempRoot -EditorLive
+    $clock.Stop(); $restoreSeconds += $clock.Elapsed.TotalSeconds; $restoreCount += $n
+    $initialProbeArgs = @()
+    if ($script:EditorPid -gt 0) { $initialProbeArgs += @('--editor-pid', [string]$script:EditorPid) }
+    $initialProbe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') @initialProbeArgs 2>&1
+    if ($initialProbe -notmatch '^PASS') {
+        Write-Output '  initial live restore left no healthy editor; recovering before the first suite'
+        $clock = [Diagnostics.Stopwatch]::StartNew(); $editorReady = Start-EditorAndWait; $clock.Stop()
+        $startupSeconds += $clock.Elapsed.TotalSeconds
+        $replacementOwned = $true
+    }
+    Write-Output "  initial fixture isolation: kept-alive editor restored ($n file(s))"
+}
+foreach ($name in $NeedsEditor) {
+    Write-Output "--- $name ---"
+    if (-not $editorReady) {
+        $Results[$name] = 'RESULT: BLOCKED (the editor would not start)'
         continue
     }
-    $script:EditorFailures = 0
-    $run = Invoke-SuiteProcess -SuiteName $name
-    $out = $run.Output
-    $result = ($out | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
-    if (-not $result) {
-        # *** A SUITE THAT DIES WITHOUT A RESULT LINE IS WORTH SEEING, AND THIS USED TO PRINT ITS TAIL AND THEN
-        # THROW IT AWAY. *** MEASURED REASON: it printed `no RESULT line; last lines:` and the four following
-        # lines, AND THE RUN'S SUMMARY FILTERS OUTPUT DOWN TO LINES MATCHING `FAIL`, SO THE TAIL NEVER REACHED
-        # ANYONE READING THE SUMMARY. THREE ROUNDS WERE SPENT ASKING WHY FOUR SUITES REPORTED NOTHING WHILE PASSING
-        # INDIVIDUALLY, AND THE ANSWER WAS BEING COLLECTED AND DISCARDED AT THE LAST STEP.
-        #
-        # SO THE TAIL IS PART OF THE VERDICT STRING ITSELF rather than a line beside it. A verdict is what the
-        # summary carries, and a diagnosis attached to it cannot be filtered away.
-        #
-        # IT ALSO ANSWERS A QUESTION THE PER-SUITE DEADLINE CANNOT ASK: the deadline catches a suite that never
-        # returns, AND THIS CATCHES ONE THAT RETURNED EMPTY - a different failure that was invisible.
-        $Tail = @($out | Select-Object -Last 4 | ForEach-Object { "        " + $_ }) -join "`n"
-        $Results[$name] = "RESULT: no result line" + $(if ($Tail.Trim()) { "`n      the suite's last lines were:`n$Tail" } else { " and it produced NO OUTPUT AT ALL" })
-    } else {
-        $Results[$name] = $result
-        Write-Output ("  " + $result.Trim())
+    $clock = [Diagnostics.Stopwatch]::StartNew(); $run = Invoke-SuiteProcess $name; $clock.Stop()
+    $testSeconds += $clock.Elapsed.TotalSeconds
+    $Results[$name] = Get-Verdict $run.Output
+    Write-Output ("  " + $Results[$name])
+
+    # One post-suite probe detects a suite that stopped or wedged the editor. A
+    # successful editor-side restore is itself the second health proof, so probing
+    # again after it only adds another network round trip to every suite.
+    $probeClock = [Diagnostics.Stopwatch]::StartNew()
+    # Keep the owner check here. A foreign editor on port 8000 must never be treated as
+    # permission to unload or reload this project's fixture. When we own a PID, verify that
+    # exact process still exists even on hosts where CIM command-line queries are unavailable.
+    $probeArgs = @()
+    if ($script:EditorPid -gt 0) { $probeArgs += @('--editor-pid', [string]$script:EditorPid) }
+    $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') @probeArgs 2>&1
+    $probeClock.Stop(); $healthSeconds += $probeClock.Elapsed.TotalSeconds
+    $editorReady = [bool]($probe | Select-String -Pattern '^PASS')
+
+    if (-not $Fast) {
+        # A dead or wedged editor must not remain holding package handles while the disk route runs.
+        if (-not $editorReady -and (Get-Process -Name UnrealEditor, UnrealEditor-Cmd -ErrorAction SilentlyContinue)) {
+            $clock = [Diagnostics.Stopwatch]::StartNew(); Stop-Editor; $clock.Stop()
+            $shutdownSeconds += $clock.Elapsed.TotalSeconds
+        }
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        try {
+            # Route 1: release and reload through the live editor tools.
+            $n = Restore-FixtureSnapshot $fixtureDir $fixtureSnapshot $tempRoot -EditorLive:$editorReady
+            $mode = if ($editorReady) { 'disk and kept-alive editor' } else { 'disk after editor stop' }
+        } catch {
+            if (-not $editorReady -or -not $replacementOwned) { throw }
+            # Route 2: the runner owns this editor, so stop it before the next editor can open the
+            # fixture. Route 3 is the direct copy inside Restore-FixtureSnapshot's disk branch.
+            Write-Output "  live fixture tools unavailable; restoring before editor reopen: $($_.Exception.Message)"
+            $stopClock = [Diagnostics.Stopwatch]::StartNew(); Stop-Editor; $stopClock.Stop()
+            $shutdownSeconds += $stopClock.Elapsed.TotalSeconds
+            $editorReady = $false
+            $n = Restore-FixtureSnapshot $fixtureDir $fixtureSnapshot $tempRoot
+            $mode = 'disk before editor reopen'
+        }
+        $clock.Stop(); $restoreSeconds += $clock.Elapsed.TotalSeconds; $restoreCount += $n
+        Write-Output "  fixture isolation: $mode restored ($n file(s))"
     }
 
-    # ---------------------------------------------------------------------------------------------
-    # *** THE FIXTURE IS RESTORED HERE, BY THE HARNESS, BECAUSE **THIS** IS WHERE THE EDITOR CAN BE STOPPED. ***
-    #
-    # FOUND BY A WORKSTREAM AND MEASURED TWICE, THEN ROOT-CAUSED BY ME: `Tools/test-vcs.py:596-598` requires
-    # `TA01_HandLaid.uasset` to be CLEAN, and `Tools/test-graph-fix-backward.py` REBUILDS THE KIT and runs
-    # BEFORE it - so `test-vcs` failed on a HEALTHY tree with a check that was TRUE OF ITS OWN TOOL AND FALSE OF
-    # THE SUITE THAT RAN BEFORE IT. `test-vcs` passes ALONE at 55 checks and failed in the full run's order, on
-    # two byte-identical files, so THE FULL RUN COULD NOT BE GREEN AT HEAD.
-    #
-    # *** AND THE FIRST FIX WAS IN THE WRONG PLACE, WITH THE REASON NOW MEASURED: A SUITE CANNOT DO THIS ITSELF.
-    # `git checkout` ANSWERS `error: unable to unlink old ...: Invalid argument` (exit 255) FOR AS LONG AS THE
-    # EDITOR HOLDS THE FILE OPEN, AND THAT SUITE NEEDS THE EDITOR LIVE TO RUN ITS CHECKS. So it ends in exactly
-    # the state where the file cannot be replaced, and its own restore reported the failure honestly while being
-    # unable to do anything about it. ***
-    #
-    # THE HARNESS, BY CONTRAST, OWNS THE LIFECYCLE AND CAN STOP THE EDITOR FOR ONE COMMAND. It does so ONLY
-    # when the fixture is actually dirty, because `Stop-Editor` costs a restart and the loop above is careful to
-    # reuse a healthy editor rather than churn one - and it reads `git checkout`'s EXIT CODE rather than assuming,
-    # which is the mistake that made the first attempt look like it had worked.
-    # ---------------------------------------------------------------------------------------------
-    $fixtureDir = Join-Path (Split-Path $PSScriptRoot -Parent) 'TestProject\Content\Tests'
-    $dirty = (& git status --porcelain -- $fixtureDir 2>&1 | Out-String).Trim()
-    # *** WITH -Fast THE RESTORE IS DEFERRED TO AFTER THE LOOP, SO NEITHER THE EDITOR NOR THE FIXTURE IS TOUCHED HERE.
-    # `$script:FastDeferredRestore` RECORDS THAT SOMETHING WAS LEFT DIRTY, SO THE END-OF-RUN PASS KNOWS IT MUST RESTORE
-    # EVEN IF THE LAST SUITE HAPPENED TO LEAVE THE TREE CLEAN. ***
-    if ($dirty -and $Fast) {
-        $script:FastDeferredRestore = $true
-    }
-    if ($dirty -and -not $Fast) {
-        Stop-Editor
-        & git checkout -- $fixtureDir 2>&1 | Out-Null
-        $stillDirty = (& git status --porcelain -- $fixtureDir 2>&1 | Out-String).Trim()
-        if ($stillDirty) {
-            Write-Output "  NOTE the shared fixture is STILL dirty after the harness restore attempt:"
-            ($stillDirty -split "`n" | Select-Object -First 3) | ForEach-Object { Write-Output ("        " + $_.Trim()) }
-        } else {
-            Write-Output "  the shared fixture is restored on the way out, so the next suite starts clean"
-        }
+    if (-not $editorReady) {
+        $clock = [Diagnostics.Stopwatch]::StartNew(); $editorReady = Start-EditorAndWait; $clock.Stop()
+        $healthSeconds += $clock.Elapsed.TotalSeconds
+        $replacementOwned = $true
     }
 }
 
-# =============================================================================================
-# *** -Fast: ONE RESTORE, THEN EVERY FAILURE RE-RUN ALONE. ***
-#
-# THE RESTORE IS DEFERRED TO HERE BECAUSE THE PER-SUITE ONE IS WHAT COST THE EDITOR RESTART: `git checkout` cannot
-# replace a file the editor holds open (`unable to unlink old ...: Invalid argument`), so the harness has to stop the
-# editor first - and a suite that saves an asset makes the fixture dirty every time. ONE `Stop-Editor` AT THE END
-# REPLACES ONE PER DIRTY SUITE.
-#
-# AND THE RE-RUN IS WHAT MAKES `-Fast` BELIEVABLE. A DEFERRED RESTORE LETS A LATER SUITE SEE AN EARLIER SUITE'S
-# FIXTURE, WHICH IS EXACTLY THE `test-vcs` FAILURE THE PER-SUITE RESTORE WAS ADDED TO FIX. SO A FAILURE IN THE FAST
-# PASS CANNOT BE READ AS A CAPABILITY RESULT UNTIL IT HAS BEEN RE-RUN AGAINST A CLEAN EDITOR AND A RESTORED FIXTURE.
-# *** "FAILED IN THE PASS, PASSED ALONE" IS A FIXTURE-ORDER RESULT, AND IT NAMES A SUITE THAT IS NOT HERMETIC. ***
-# =============================================================================================
-if ($Fast) {
-    if ($script:FastDeferredRestore) {
-        Write-Output ""
-        Write-Output "--- -Fast: restoring the shared fixture ONCE, at the end of the pass ---"
-        Stop-Editor
-        & git checkout -- $fixtureDir 2>&1 | Out-Null
-        $stillDirty = (& git status --porcelain -- $fixtureDir 2>&1 | Out-String).Trim()
-        if ($stillDirty) {
-            Write-Output "  NOTE the fixture is STILL dirty after the deferred restore:"
-            ($stillDirty -split "`n" | Select-Object -First 3) | ForEach-Object { Write-Output ("        " + $_.Trim()) }
-        } else {
-            Write-Output "  restored: the tree is clean, so the isolated re-runs below start from the same state a normal run would"
-        }
+if ($Fast -and $NeedsEditor.Count -gt 0) {
+    if (-not $editorReady -and (Get-Process -Name UnrealEditor, UnrealEditor-Cmd -ErrorAction SilentlyContinue)) {
+        $clock = [Diagnostics.Stopwatch]::StartNew(); Stop-Editor; $clock.Stop()
+        $shutdownSeconds += $clock.Elapsed.TotalSeconds
     }
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    $n = Restore-FixtureSnapshot $fixtureDir $fixtureSnapshot $tempRoot -EditorLive:$editorReady
+    $clock.Stop(); $restoreSeconds += $clock.Elapsed.TotalSeconds; $restoreCount += $n
+    Write-Output "  -Fast deferred restore: $n file(s)"
 
-    # *** `$Results` IS AN `OrderedDictionary`, AND `OrderedDictionary` HAS NO `ContainsKey` - IT HAS `Contains`. The
-    # first version of this line called `ContainsKey` and THREW INSIDE THE `Where-Object`, SO `$failedInPass` STAYED
-    # EMPTY AND THE ISOLATED RE-RUN NEVER RAN. A `-Fast` pass then reported a failure with no isolated verdict beside it,
-    # which looks exactly like a suite that fails in isolation too. *** *** THE EXCEPTION WAS IN THE LOG AND INVISIBLE IN
-    # THE SUMMARY, BECAUSE THE SUMMARY FILTERS FOR `FAIL` AND `PASS` LINES - WHICH IS WHY THE LOG IS READ BACK. ***
     $failedInPass = @($NeedsEditor | Where-Object {
         $Results.Contains($_) -and $Results[$_] -notmatch 'RESULT: PASS|^PASS ' -and $Results[$_] -notmatch 'BLOCKED'
     })
-    if ($failedInPass.Count -gt 0) {
-        Write-Output ""
-        Write-Output ("=== -Fast: RE-RUNNING {0} FAILURE(S) ALONE, against a clean editor and a restored fixture ===" -f $failedInPass.Count)
-        Write-Output "  A SUITE THAT FAILS IN THE PASS AND PASSES ALONE IS NOT HERMETIC: it depends on a fixture an earlier"
-        Write-Output "  suite left behind. That is a FIXTURE-ORDER result and NOT a capability one."
-        foreach ($name in $failedInPass) {
-            $inPass = $Results[$name]
-            if (-not (Start-EditorAndWait)) {
-                Write-Output ("  {0}: the editor would not start for the isolated re-run, so this stays a pass failure" -f $name)
-                continue
-            }
-            $alone = Invoke-SuiteProcess -SuiteName $name
-            $aloneLine = ($alone.Output | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
-            if (-not $aloneLine) { $aloneLine = 'RESULT: no result line' }
-            Write-Output ("  {0}:" -f $name)
-            Write-Output ("      in the pass -> {0}" -f $inPass)
-            Write-Output ("      ALONE       -> {0}" -f $aloneLine.Trim())
-            $Results[$name] = "{0}   *** ALONE: {1} ***" -f $inPass, $aloneLine.Trim()
-            if ($aloneLine -match 'RESULT: PASS|^PASS ') {
-                Write-Output "      *** NOT HERMETIC: it passes alone and failed in the pass, so the pass failure was the fixture. ***"
-            }
-        }
+    foreach ($name in $failedInPass) {
+        $clock = [Diagnostics.Stopwatch]::StartNew(); $editorReady = Start-EditorAndWait; $clock.Stop()
+        $healthSeconds += $clock.Elapsed.TotalSeconds
+        if (-not $editorReady) { continue }
+        $clock = [Diagnostics.Stopwatch]::StartNew(); $alone = Invoke-SuiteProcess $name; $clock.Stop()
+        $testSeconds += $clock.Elapsed.TotalSeconds
+        $aloneLine = Get-Verdict $alone.Output
+        Write-Output "  isolated $name -> $aloneLine"
+        $Results[$name] = "$($Results[$name]) *** ALONE: $aloneLine ***"
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        $n = Restore-FixtureSnapshot $fixtureDir $fixtureSnapshot $tempRoot -EditorLive
+        $clock.Stop(); $restoreSeconds += $clock.Elapsed.TotalSeconds; $restoreCount += $n
     }
 }
 
-Stop-Editor
+# Restore the caller's exact tree. Prefer the live editor route while it is healthy; only
+# fall back to a disk restore after stopping an editor owned by this runner.
+try {
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    $n = Restore-FixtureSnapshot $fixtureDir $runStartSnapshot $tempRoot -EditorLive:$editorReady
+    $clock.Stop(); $restoreSeconds += $clock.Elapsed.TotalSeconds; $restoreCount += $n
+} catch {
+    Write-Output ("  final live fixture restore failed: " + $_.Exception.Message)
+    if ($replacementOwned -and $NeedsEditor.Count -gt 0) {
+        $clock = [Diagnostics.Stopwatch]::StartNew(); Stop-Editor; $clock.Stop()
+        $shutdownSeconds += $clock.Elapsed.TotalSeconds
+        $editorReady = $false
+        $clock = [Diagnostics.Stopwatch]::StartNew()
+        $n = Restore-FixtureSnapshot $fixtureDir $runStartSnapshot $tempRoot
+        $clock.Stop(); $restoreSeconds += $clock.Elapsed.TotalSeconds; $restoreCount += $n
+    } else {
+        throw
+    }
+}
+if ($replacementOwned -and $NeedsEditor.Count -gt 0) {
+    $clock = [Diagnostics.Stopwatch]::StartNew(); Stop-Editor; $clock.Stop()
+    $shutdownSeconds += $clock.Elapsed.TotalSeconds
+}
+Remove-Item $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
+$fullClock.Stop()
 
-# ---------------------------------------------------------------------------------------------
-# Summary
-# ---------------------------------------------------------------------------------------------
-Write-Output ""
-Write-Output "=== SUMMARY ==="
+Write-Output '=== SUMMARY ==='
 $passed = 0; $failed = 0; $blocked = 0
 foreach ($name in $Results.Keys) {
     $r = $Results[$name]
-    if ($r -match 'RESULT: PASS|^PASS ') { $passed++ }
+    if (Test-VerdictPassed $r) { $passed++ }
     elseif ($r -match 'BLOCKED') { $blocked++ }
     else { $failed++ }
+    $mark = if (Test-VerdictPassed $r) { 'PASS' } elseif ($r -match 'BLOCKED') { 'BLOCKED' } else { 'FAIL' }
+    Write-Output ("  {0,-7} {1,-28} {2}" -f $mark, $name, $r)
 }
-foreach ($name in $Results.Keys) {
-    $r = $Results[$name]
-    $mark = if ($r -match 'RESULT: PASS|^PASS ') { 'PASS   ' } elseif ($r -match 'BLOCKED') { 'BLOCKED' } else { 'FAIL   ' }
-    Write-Output ("  {0} {1,-28} {2}" -f $mark, $name, $r.Trim())
-}
-Write-Output ""
 Write-Output ("  passed {0}, failed {1}, blocked {2}, of {3}" -f $passed, $failed, $blocked, $Results.Count)
-Write-Output ""
-Write-Output "BLOCKED MEANS THE ENVIRONMENT, NOT THE TOOL: the editor would not start, so the suite was not"
-Write-Output "run at all. A blocked suite is NOT a passing one, and this summary never counts it as one."
+Write-Output '=== WALL TIME ==='
+Write-Output ("  editor startup/reuse gate : {0,8:N3} s" -f $startupSeconds)
+Write-Output ("  editor health/recovery    : {0,8:N3} s" -f $healthSeconds)
+Write-Output ("  editor final stop         : {0,8:N3} s" -f $shutdownSeconds)
+Write-Output ("  suite processes           : {0,8:N3} s" -f $testSeconds)
+Write-Output ("  fixture restore           : {0,8:N3} s ({1} file(s))" -f $restoreSeconds, $restoreCount)
+Write-Output ("  full runner wall          : {0,8:N3} s" -f $fullClock.Elapsed.TotalSeconds)
 if ($failed -gt 0) { exit 1 }
 exit 0

@@ -28,6 +28,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tmcp_editor  # noqa: E402
 from tmcp import PREVIEW_TOOLSET, READ_TOOLSET, EDIT_TOOLSET, Session  # noqa: E402
 
 # THE FIXTURE IS RESTORED ON THE WAY IN, AND THAT IS COPIED FROM `test-graph-replace` RATHER THAN REDISCOVERED.
@@ -111,6 +112,15 @@ def connect_with_fixture():
     suite fights `check-probe-graphs` for the same asset. `TURBOMCP_PATCH_REBUILD=1` forces it when running by hand
     from a suspect tree.
     """
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        ok, detail = tmcp_editor.restore_runner_fixture()
+        print("    fixture restore: %s" % detail)
+        if not ok:
+            return None
+        session = Session()
+        session.connect()
+        return session
+
     stop = subprocess.run(
         ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1"), "-Stop"],
         capture_output=True, text=True, cwd=REPO)
@@ -366,20 +376,25 @@ def main():
     # the NEIGHBOURS. The fixture is therefore regenerated at the end and the restore is ASSERTED.
     print()
     print("=== giving the shared fixture back ===")
-    stop = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1"), "-Stop"],
-        capture_output=True, text=True, cwd=REPO)
-    _ = stop
-    time.sleep(3)
-    restore = subprocess.run(
-        ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "make-acceptance-asset.ps1")],
-        capture_output=True, text=True, cwd=REPO)
-    restored_ok = restore.returncode == 0 and "PASS" in (restore.stdout or "")
-    print("    fixture restore: %s"
-          % ((restore.stdout or restore.stderr).strip().splitlines() or ["no output"])[0])
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        restored_ok, restore_detail = tmcp_editor.restore_runner_fixture()
+        print("    fixture restore: %s" % restore_detail)
+    else:
+        stop = subprocess.run(
+            ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "start-editor.ps1"), "-Stop"],
+            capture_output=True, text=True, cwd=REPO)
+        _ = stop
+        time.sleep(3)
+        restore = subprocess.run(
+            ["pwsh", "-NoProfile", "-File", os.path.join(REPO, "Tools", "make-acceptance-asset.ps1")],
+            capture_output=True, text=True, cwd=REPO)
+        restored_ok = restore.returncode == 0 and "PASS" in (restore.stdout or "")
+        restore_detail = (restore.stdout or restore.stderr)[-300:]
+        print("    fixture restore: %s"
+              % ((restore.stdout or restore.stderr).strip().splitlines() or ["no output"])[0])
     # A FAILED RESTORE IS A FAILURE, NOT A NOTE, because the next suite reads what this one left behind.
     check("the shared fixture was GIVEN BACK, so the next suite reads what it expects", restored_ok,
-          (restore.stdout or restore.stderr)[-300:])
+          restore_detail)
 
     print()
     if failures:

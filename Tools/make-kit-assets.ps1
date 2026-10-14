@@ -38,6 +38,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# During editor suites, run-suites owns a byte-exact fixture snapshot. Do not stop its kept-alive
+# editor to rebuild the same baseline. Standalone and commandlet-suite calls still rebuild normally.
+if ($env:TURBOMCP_RUNNER_OWNS_FIXTURES -eq '1') {
+    Write-Output 'PASS  fixture rebuild skipped: run-suites owns the clean baseline and restore'
+    exit 0
+}
+
 # ---------------------------------------------------------------------------------------------
 # THE PATHS ARE DERIVED, NOT HARD-CODED. A clone on any machine has to work without editing this
 # file, and an absolute default only ever worked on the machine it was written on.

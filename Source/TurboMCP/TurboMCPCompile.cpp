@@ -457,6 +457,13 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		{
 			AssetObject = LoadObject<UObject>(nullptr, *Resolved.ObjectPath);
 		}
+		if (AssetObject == nullptr)
+		{
+			Errors += FString::Printf(
+				TEXT("\nerror: %s could not be loaded for saving."), *Resolved.ObjectPath);
+			++FailedCount;
+			continue;
+		}
 
 		// *** THE SECOND TOOL WRITES THE PACKAGE ITSELF, SO IT HAS TO NAME THE FILE ITSELF, AND IT
 		// REFUSES WHEN IT CANNOT NAME ONE HONESTLY. *** The filename is the project's content directory

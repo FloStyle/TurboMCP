@@ -84,22 +84,25 @@ namespace TurboMCPNodeId
 	/**
 	 * Splits an ID into its parts.
 	 *
-	 * A colon inside the graph name cannot break the split, because the asset
-	 * name is matched first and the node key is taken from the last colon. The
-	 * spec allows a graph name with spaces, which are kept as written.
+	 * A graph name containing spaces or colons is quoted, and separators inside
+	 * those quotes are ignored. The spec allows a graph name with spaces, which
+	 * are kept as written; the same is true of colons.
 	 */
 	FParsed Parse(const FString& InId);
 
 	/**
-	 * The node key an ID carries, padded or trimmed to six digits.
+	 * The node key an ID carries, trimmed and validated.
 	 *
-	 * Returns an empty string when there is no usable key, so a caller can refuse
-	 * rather than compare against a half-built key.
+	 * Returns an empty string when the key is empty, non-hexadecimal, or shorter
+	 * than the standard six digits, so a caller can refuse rather than compare
+	 * against a partial key.
 	 */
 	FString NormaliseKey(const FString& InKey);
 
 	/**
-	 * Finds every node in a graph whose key starts with InKey.
+	 * Finds every node in a graph whose normalised key starts with InKey.
+	 * Keys shorter than the standard width or containing non-hex characters are
+	 * refused and produce no matches.
 	 *
 	 * Returns how many matched, rather than a bool, because "none" and "more than
 	 * one" need different answers from the caller: one says the node is gone, the

@@ -21,6 +21,43 @@
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 
+namespace
+{
+	int32 FindLastUnquotedColon(const FString& InText)
+	{
+		bool bInsideQuotes = false;
+		for (int32 Index = InText.Len() - 1; Index >= 0; --Index)
+		{
+			if (InText[Index] == TEXT('"'))
+			{
+				bInsideQuotes = !bInsideQuotes;
+			}
+			else if (InText[Index] == TEXT(':') && !bInsideQuotes)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	int32 FindFirstUnquotedColon(const FString& InText)
+	{
+		bool bInsideQuotes = false;
+		for (int32 Index = 0; Index < InText.Len(); ++Index)
+		{
+			if (InText[Index] == TEXT('"'))
+			{
+				bInsideQuotes = !bInsideQuotes;
+			}
+			else if (InText[Index] == TEXT(':') && !bInsideQuotes)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+}
+
 namespace TurboMCPNodeId
 {
 	FString MakeKey(const FGuid& InGuid, int32 InDigits)
@@ -68,9 +105,11 @@ namespace TurboMCPNodeId
 			}
 		}
 
-		// `3.1` says to quote the graph name if it has spaces. The quotes are
-		// printed so the ID can be read back unambiguously.
+		// `3.1` says to quote the graph name if it has spaces. A colon needs the
+		// same treatment so it cannot be mistaken for an ID separator. The quotes
+		// are printed so the ID can be read back unambiguously.
 		const FString GraphPart = InGraphName.Contains(TEXT(" "))
+			|| InGraphName.Contains(TEXT(":"))
 			? FString::Printf(TEXT("\"%s\""), *InGraphName)
 			: InGraphName;
 
@@ -124,12 +163,12 @@ namespace TurboMCPNodeId
 			return Result;
 		}
 
-		// Split from the right, so a graph name containing a colon cannot steal
-		// the node key. The key is always the last part.
+		// Split from the right, so a quoted colon in a graph name cannot steal
+		// the node key. Separators inside quotes are part of the graph name.
 		FString Remainder = InId;
 
-		int32 LastColon = INDEX_NONE;
-		if (!Remainder.FindLastChar(TEXT(':'), LastColon))
+		const int32 LastColon = FindLastUnquotedColon(Remainder);
+		if (LastColon == INDEX_NONE)
 		{
 			// One part only. It can only be an asset.
 			Result.AssetName = Remainder;
@@ -140,12 +179,10 @@ namespace TurboMCPNodeId
 		Result.NodeKey = Remainder.Mid(LastColon + 1).TrimStartAndEnd();
 		Remainder = Remainder.Left(LastColon);
 
-		// The asset name never contains a colon, so the first colon in what is
-		// left separates the asset from the graph. A graph name containing a colon
-		// cannot be handled by an ID anyway, and this is why the key is taken from
-		// the right above.
-		int32 AssetEnd = INDEX_NONE;
-		if (Remainder.FindChar(TEXT(':'), AssetEnd))
+		// The asset name never contains a colon, so the first unquoted colon in
+		// what is left separates the asset from the graph.
+		const int32 AssetEnd = FindFirstUnquotedColon(Remainder);
+		if (AssetEnd != INDEX_NONE)
 		{
 			Result.GraphName = Remainder.Mid(AssetEnd + 1);
 			Remainder = Remainder.Left(AssetEnd);
@@ -163,8 +200,8 @@ namespace TurboMCPNodeId
 		Result.GraphName.TrimStartAndEndInline();
 		Result.bIsLongForm = Result.AssetName.StartsWith(TEXT("/"));
 
-		// `3.1` allows the graph name to be quoted when it holds spaces. Strip the
-		// quotes so the name matches the real graph.
+		// `3.1` allows the graph name to be quoted when it holds spaces, and this
+		// format also quotes colons. Strip the quotes so the name matches the graph.
 		if (Result.GraphName.Len() >= 2
 			&& Result.GraphName.StartsWith(TEXT("\""))
 			&& Result.GraphName.EndsWith(TEXT("\"")))
@@ -196,13 +233,11 @@ namespace TurboMCPNodeId
 			}
 		}
 
-		// Pad a short key with leading zeros, because a GUID's leading zeros are
-		// not significant and a caller may write fewer digits by hand. Appending
-		// an explicit run of zeros rather than padding to a width: `3.1` counts
-		// digits from the left, so the zeros belong on the right.
+		// The writer emits at least the standard width. Refuse shorter input rather
+		// than inventing a different prefix by padding it with zeros.
 		if (Trimmed.Len() < StandardKeyDigits)
 		{
-			Trimmed += FString::ChrN(StandardKeyDigits - Trimmed.Len(), TEXT('0'));
+			return FString();
 		}
 		return Trimmed;
 	}
@@ -216,7 +251,7 @@ namespace TurboMCPNodeId
 			return 0;
 		}
 
-		const FString Wanted = InKey.TrimStartAndEnd().ToLower();
+		const FString Wanted = NormaliseKey(InKey);
 		if (Wanted.IsEmpty())
 		{
 			return 0;

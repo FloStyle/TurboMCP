@@ -19,6 +19,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 
@@ -89,7 +90,7 @@ def rpc(url, method, params=None, request_id=1, session_id=None):
     return message.get("result"), new_session
 
 
-def owner_check(expected_project, args_url=""):
+def owner_check(expected_project, args_url="", expected_pid=None):
     """Return (ok, message) for whether the editor on this port is OURS.
 
     *** WHY THIS EXISTS: THIS SCRIPT CONNECTED TO WHATEVER ANSWERED ON PORT 8000. ***
@@ -110,6 +111,27 @@ def owner_check(expected_project, args_url=""):
     if not expected_project:
         return True, "not checked (no --project given)"
     wanted = os.path.normcase(os.path.abspath(expected_project))
+    if expected_pid is not None:
+        # DSH hosts can deny CIM command-line access. A runner-owned PID is still a useful
+        # safety fence: if that exact editor disappeared, never mutate a server on port 8000.
+        try:
+            pid = int(expected_pid)
+        except (TypeError, ValueError):
+            return False, "the recorded editor PID is invalid"
+        script = "(Get-Process -Id %d -ErrorAction SilentlyContinue).ProcessName" % pid
+        try:
+            with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output:
+                completed = subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", script],
+                    stdout=output, stderr=subprocess.DEVNULL, text=True, timeout=10,
+                )
+                output.seek(0)
+                process_name = output.read().strip()
+            if completed.returncode != 0 or process_name.lower() not in ("unrealeditor", "unrealeditor-cmd"):
+                return False, "the recorded editor PID %d is no longer alive" % pid
+            return True, "the recorded editor PID %d is alive" % pid
+        except Exception as exc:
+            return False, "could not verify the recorded editor PID %d: %s" % (pid, exc)
     # `wmic` and `Get-CimInstance` both format CommandLine in ways that made the earlier probe print nothing at
     # all, so this reads the process list through PowerShell and matches on the project's BASE NAME, which is
     # what actually appears whether the path is quoted, forward-slashed or back-slashed.
@@ -119,11 +141,19 @@ def owner_check(expected_project, args_url=""):
         "ForEach-Object { $_.Id.ToString() + ' ' + [string]$_.Path }"
     )
     try:
-        outp = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", "$p = Get-CimInstance Win32_Process -Filter \"Name='UnrealEditor.exe' or Name='UnrealEditor-Cmd.exe'\"; "
-             "foreach ($x in $p) { Write-Output ($x.ProcessId.ToString() + '|' + $x.CommandLine) }"],
-            capture_output=True, text=True, timeout=30,
-        ).stdout
+        # DSH's Windows sandbox does not allow child processes to open captured
+        # stdio pipes. Redirect to a real file so this ownership check works in
+        # the same confined session that runs the suites.
+        with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output:
+            completed = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", "$p = Get-CimInstance Win32_Process -Filter \"Name='UnrealEditor.exe' or Name='UnrealEditor-Cmd.exe'\"; "
+                 "foreach ($x in $p) { Write-Output ($x.ProcessId.ToString() + '|' + $x.CommandLine) }"],
+                stdout=output, stderr=subprocess.DEVNULL, text=True, timeout=30,
+            )
+            output.seek(0)
+            outp = output.read()
+        if completed.returncode != 0:
+            return True, "not checked (process query exit %d)" % completed.returncode
     except Exception as exc:
         return True, "not checked (%s)" % exc
 
@@ -168,11 +198,22 @@ def main():
         help="the .uproject this probe is meant to be talking to, so a FOREIGN editor on the same "
              "port is named instead of silently measured",
     )
+    parser.add_argument(
+        "--skip-owner-check", action="store_true",
+        help="skip the expensive process query after the runner has already established ownership",
+    )
+    parser.add_argument(
+        "--editor-pid", type=int,
+        help="verify this exact editor process when command-line ownership queries are unavailable",
+    )
     args = parser.parse_args()
 
     print("probing %s" % args.url)
 
-    owner_ok, owner_why = owner_check(args.project, args.url)
+    if args.skip_owner_check:
+        owner_ok, owner_why = True, "already established by the suite runner"
+    else:
+        owner_ok, owner_why = owner_check(args.project, args.url, args.editor_pid)
     print("  owner: %s" % owner_why)
     if not owner_ok:
         print()

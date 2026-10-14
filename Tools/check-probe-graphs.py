@@ -50,7 +50,10 @@ SCRIPT = os.path.join(REPO, "Tools", "make-acceptance-asset.ps1")
 ASSET = "TurboMCPAcceptance"
 
 # The graphs every build must produce. LayoutProbe is the one this round added.
-REQUIRED_GRAPHS = ["KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe"]
+REQUIRED_GRAPHS = [
+    "KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe",
+    "ValueCycleProbe", "SelfLinkProbe", "DepthLimitProbe", "LargeGraphProbe",
+]
 # The graph added to close the two specifications' holes, and the one with structures to assert.
 LAYOUT = "LayoutProbe"
 
@@ -184,15 +187,21 @@ def main():
           "a skip rule with nothing to skip is untested")
 
     print()
-    print("=== the fifth graph is reported alongside the other four ===")
-    # The summary line is the commandlet's own answer to "did every graph build", so its shape is
-    # asserted rather than its contents.
-    summary = re.search(r"KnotProbe=\w+ DeadProbe=\w+ LocalVarProbe=\w+ SaneProbe=\w+ LayoutProbe=(\w+)",
-                        report.log_text() + report.text)
-    check("the summary line names LayoutProbe", summary is not None,
-          "the commandlet's summary does not mention the fifth graph")
-    check("the summary says LayoutProbe built", summary is not None and summary.group(1) == "ok",
-          summary.group(1) if summary else "not found")
+    print("=== every graph is named as built in the commandlet summary ===")
+    # The summary is the commandlet's own all-probes verdict. Assert every guard fixture too,
+    # rather than allowing stale per-graph log lines to make a partial rebuild look complete.
+    summary = re.search(
+        r"KnotProbe=(\w+) DeadProbe=(\w+) LocalVarProbe=(\w+) SaneProbe=(\w+) "
+        r"LayoutProbe=(\w+) ValueCycleProbe=(\w+) SelfLinkProbe=(\w+) "
+        r"DepthLimitProbe=(\w+) LargeGraphProbe=(\w+)",
+        report.log_text() + report.text)
+    summary_names = ["KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe",
+                     "ValueCycleProbe", "SelfLinkProbe", "DepthLimitProbe", "LargeGraphProbe"]
+    check("the summary names every probe graph", summary is not None,
+          "the commandlet summary is incomplete")
+    if summary:
+        for name, state in zip(summary_names, summary.groups()):
+            check("the summary says %s built" % name, state == "ok", state)
 
     print()
     print("=== the editor half, which is OPTIONAL and says so ===")

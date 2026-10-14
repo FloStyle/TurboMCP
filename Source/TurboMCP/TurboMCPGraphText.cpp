@@ -73,6 +73,72 @@ namespace
 		}
 		return const_cast<UEdGraphNode*>(InNode);
 	}
+
+	/** A bounded inline expression must retain a stable node reference when expansion stops. */
+	FString InlineStopReference(const UEdGraphNode* InNode, const TCHAR* InReason)
+	{
+		// Keep the actionable link as a complete S-expression. A semicolon comment
+		// consumes the rest of its line, so a closing ')' after it would be hidden
+		// and make the containing node unreadable.
+		return FString::Printf(TEXT("(-> %s)\n        ; inline expansion stopped: %s\n"),
+			*TurboMCPNodeId::MakeForNode(InNode), InReason);
+	}
+
+	bool IsPureValueNode(const UEdGraphNode* InNode)
+	{
+		if (InNode == nullptr)
+		{
+			return false;
+		}
+		for (const UEdGraphPin* Pin : InNode->Pins)
+		{
+			if (Pin != nullptr && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** Detect a value cycle without using the call stack. */
+	bool HasValueCycle(const UEdGraphNode* InStart)
+	{
+		if (InStart == nullptr)
+		{
+			return false;
+		}
+
+		TArray<const UEdGraphNode*> Pending;
+		TSet<const UEdGraphNode*> Visited;
+		Pending.Add(InStart);
+		Visited.Add(InStart);
+		while (Pending.Num() > 0)
+		{
+			const UEdGraphNode* Current = Pending.Pop();
+			for (const UEdGraphPin* Pin : Current->Pins)
+			{
+				if (Pin == nullptr || Pin->Direction != EGPD_Input)
+				{
+					continue;
+				}
+				for (const UEdGraphPin* Linked : Pin->LinkedTo)
+				{
+					const UEdGraphNode* Target = Linked != nullptr
+						? Linked->GetOwningNode() : nullptr;
+					if (Target == InStart)
+					{
+						return true;
+					}
+					if (IsPureValueNode(Target) && !Visited.Contains(Target))
+					{
+						Visited.Add(Target);
+						Pending.Add(Target);
+					}
+				}
+			}
+		}
+		return false;
+	}
 }
 
 bool FTurboMCPGraphText::ParseDetail(const FString& InName, EDetail& OutDetail)
@@ -228,9 +294,10 @@ void FTurboMCPGraphText::CollectEntryPoints(const UEdGraph* InGraph,
 }
 
 FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InDetail,
-	const FString& InAssetPath,
+	const FString& InAssetPath, int32 InInlineDepth,
 	TSet<const UEdGraphNode*>& InOutPrinted,
 	TSet<const UEdGraphNode*>& InOutSharedValues,
+	TSet<const UEdGraphNode*>& InOutInlineNodes,
 	TArray<FString>& OutNotes) const
 {
 	if (InPin == nullptr)
@@ -264,6 +331,13 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 
 		if (IsValueNode(RealTarget))
 		{
+			if (InOutInlineNodes.Contains(RealTarget))
+			{
+				// The value graph is cyclic. Keep the node reference so the caller can
+				// identify the offending node, but do not enter the cycle again.
+				return InlineStopReference(RealTarget, TEXT("value cycle"));
+			}
+
 			// `2.1.6`: a pure node used by more than one consumer is defined once
 			// and referred to by name. Used once it is written inline.
 			int32 Consumers = 0;
@@ -277,6 +351,11 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 
 			if (Consumers > 1)
 			{
+				if (HasValueCycle(RealTarget))
+				{
+					return InlineStopReference(RealTarget, TEXT("value cycle"));
+				}
+
 				InOutSharedValues.Add(RealTarget);
 				// Named by node ID, which is stable, rather than by a made up
 				// variable name that could collide.
@@ -284,8 +363,18 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 					*TurboMCPNodeId::MakeForNode(RealTarget));
 			}
 
+			if (InInlineDepth >= MaxInlineDepth)
+			{
+				// Depth is measured in inline value nodes, not in exec statements.
+				// The declared limit is a second defence for a very deep acyclic graph.
+				return InlineStopReference(RealTarget, TEXT("depth limit"));
+			}
+
+			InOutInlineNodes.Add(RealTarget);
 			const FString Inline = RenderNode(RealTarget, InDetail, InAssetPath,
-				InOutPrinted, InOutSharedValues, OutNotes);
+				InInlineDepth + 1, InOutPrinted, InOutSharedValues,
+				InOutInlineNodes, OutNotes);
+			InOutInlineNodes.Remove(RealTarget);
 			if (!Inline.IsEmpty())
 			{
 				InOutPrinted.Add(RealTarget);
@@ -327,9 +416,10 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 }
 
 FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDetail,
-	const FString& InAssetPath,
+	const FString& InAssetPath, int32 InInlineDepth,
 	TSet<const UEdGraphNode*>& InOutPrinted,
 	TSet<const UEdGraphNode*>& InOutSharedValues,
+	TSet<const UEdGraphNode*>& InOutInlineNodes,
 	TArray<FString>& OutNotes) const
 {
 	if (InNode == nullptr)
@@ -419,7 +509,7 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 		// `2.1.5`: use the pin's real name, not its display name.
 		FString PinLabel = Pin->PinName.ToString();
 		FString PinValue = RenderPinValue(Pin, InDetail, InAssetPath,
-			InOutPrinted, InOutSharedValues, OutNotes);
+			InInlineDepth, InOutPrinted, InOutSharedValues, InOutInlineNodes, OutNotes);
 
 		if (PinValue.IsEmpty() && Pin->LinkedTo.Num() == 0)
 		{
@@ -461,6 +551,7 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 {
 	FString Body;
 	const FString Indent = FString::ChrN(InDepth * 2 + 2, TEXT(' '));
+	TSet<const UEdGraphNode*> InlineNodes;
 
 	const UEdGraphNode* Current = InFirst;
 	int32 Guard = 0;
@@ -489,7 +580,8 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 		}
 
 		const FString Rendered = RenderNode(Current, InDetail, InAssetPath,
-			InOutPrinted, InOutSharedValues, OutNotes);
+			/*InInlineDepth=*/0, InOutPrinted, InOutSharedValues,
+			InlineNodes, OutNotes);
 		InOutPrinted.Add(Current);
 
 		if (!Rendered.IsEmpty())

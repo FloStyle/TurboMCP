@@ -30,6 +30,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tmcp_editor  # noqa: E402
 from tmcp import Session  # noqa: E402
 
 PREVIEW_TOOLSET = "TurboMCP.TurboMCPPreviewToolset"
@@ -106,6 +107,14 @@ def rebuild_fixture_and_reconnect():
     editor is started again afterwards and the caller gets a new Session.
     """
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if os.environ.get("TURBOMCP_RUNNER_OWNS_FIXTURES") == "1":
+        ok, detail = tmcp_editor.restore_runner_fixture()
+        print("    fixture restore: %s" % detail)
+        if not ok:
+            return None
+        candidate = Session()
+        candidate.connect()
+        return candidate
 
     # THE SHAPE OF THIS HELPER IS COPIED FROM `test-graph-fix-backward.py`'s WORKING `rebuild_kit_and_reconnect`,
     # AND THE COPYING IS DELIBERATE RATHER THAN LAZY.
