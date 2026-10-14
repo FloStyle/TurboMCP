@@ -175,19 +175,32 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(
 			TEXT("Leave it empty for both."), *Direction);
 	}
 
+	// A non-null registry only means that its service exists. During the editor's
+	// asynchronous initial scan it can resolve an asset before its dependency maps
+	// contain the edges, which used to serialize a temporary empty map as "0".
+	// Complete that scan before resolution too: the resolver consults the same
+	// registry for package and short-name forms.
+	IAssetRegistry* Registry = IAssetRegistry::Get();
+	if (Registry == nullptr)
+	{
+		return TEXT("error: the asset registry is unavailable; the reference scan ")
+			TEXT("cannot run. Try again after the editor has started.");
+	}
+
+	Registry->WaitForCompletion();
+	if (Registry->IsLoadingAssets())
+	{
+		// WaitForCompletion can return early during engine startup. An incomplete
+		// scan is not an empty graph, so do not produce counts or a `none` answer.
+		return TEXT("error: the asset registry scan is incomplete; no reference ")
+			TEXT("counts were produced. Try again after the editor has finished loading.");
+	}
+
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
 	if (!ResolveError.IsEmpty())
 	{
 		return ResolveError;
-	}
-
-	// The registry is the only source here, and it is null only during shutdown.
-	IAssetRegistry* Registry = IAssetRegistry::Get();
-	if (Registry == nullptr)
-	{
-		return TEXT("error: the asset registry is not available yet. Try again once ")
-			TEXT("the editor has finished loading.");
 	}
 
 	// The package, not the object: dependency edges are recorded between packages.

@@ -49,13 +49,33 @@ def main():
     session = Session()
     session.connect()
 
-    print("=== T-BP-11: an asset with references, outgoing ===")
-    out = session.call(READ_TOOLSET, "ReadTurboMCPRefs",
-                       {"asset": HAS_REFS, "direction": "out"})
-    print(out)
+    print("=== T-BP-11: repeat one reference query from a cold session ===")
+    # This must be the first reference query in the Session. The original X-1
+    # failure returned a temporary zero on the first query, then real edges on a
+    # later identical query after the registry finished scanning. Repeating the
+    # same asset and direction makes that state transition a test failure.
+    repeated_out = []
+    for attempt in range(5):
+        text = session.call(READ_TOOLSET, "ReadTurboMCPRefs",
+                            {"asset": HAS_REFS, "direction": "out"})
+        repeated_out.append(text)
+        print("--- attempt %d ---" % (attempt + 1))
+        print(text)
+
+    out = repeated_out[0]
     print()
     check("reports the outgoing direction", "uses (out):" in out)
-    check("finds more than zero", "uses (out): 0" not in out)
+    check("finds more than zero on the first query", "uses (out): 0" not in out)
+    check(
+        "the same query stays identical after registry readiness",
+        len(set(repeated_out)) == 1,
+        "%d distinct answer(s)" % len(set(repeated_out)),
+    )
+    check(
+        "no repeated query reports an unavailable or incomplete scan",
+        all(not text.lower().startswith("error: the asset registry")
+            for text in repeated_out),
+    )
     # The package is /AudioWidgets/AudioFader and the asset inside it is
     # AudioFader, so the object part repeats. Checking the full object path catches
     # a regression to the package path, which is what `Package.None` used to be.

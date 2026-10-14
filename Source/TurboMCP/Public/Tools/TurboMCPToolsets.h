@@ -313,6 +313,9 @@ public:
 	 * saved. An asset that has never been saved therefore has no outgoing edges, and
 	 * a user that has never been saved will not appear as an incoming one; the
 	 * result says so rather than letting a zero look like a fact about the project.
+	 * The tool waits for the registry scan before it reports a count. If the registry
+	 * is unavailable or its scan remains incomplete, it returns an error instead of
+	 * treating that missing data as zero references.
 	 *
 	 * A direction that is not one of the three is refused by name, and an asset that
 	 * cannot be resolved is refused by the shared resolver.
