@@ -11,6 +11,8 @@
 #include "Dom/JsonValue.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Interfaces/IPluginManager.h"
+#include "ModuleDescriptor.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 
@@ -23,6 +25,27 @@ namespace
 
 	/** The project's own notes, which win over the shipped file. */
 	const TCHAR* ProjectTrapsRelativePath = TEXT("Config/TurboMCP/Traps.json");
+
+	/**
+	 * Finds the plugin that owns this module, rather than assuming its directory is
+	 * named TurboMCP. Marketplace and project mounts may rename the directory while
+	 * retaining the module identity declared in the descriptor.
+	 */
+	TSharedPtr<IPlugin> FindOwningPlugin()
+	{
+		static const FName ThisModuleName(TEXT("TurboMCP"));
+		for (const TSharedRef<IPlugin>& Plugin : IPluginManager::Get().GetEnabledPlugins())
+		{
+			for (const FModuleDescriptor& Module : Plugin->GetDescriptor().Modules)
+			{
+				if (Module.Name == ThisModuleName)
+				{
+					return Plugin;
+				}
+			}
+		}
+		return nullptr;
+	}
 
 	/**
 	 * Reads the "tools" member of a traps document into OutTools.
@@ -106,22 +129,21 @@ namespace
 
 FTurboMCPTraps::FTurboMCPTraps()
 {
-	// Shipped notes first, so a project file can add to or correct them.
-	const FString Shipped = FPaths::Combine(
-		FPaths::ProjectPluginsDir(), TEXT("TurboMCP"), ShippedTrapsRelativePath);
+	// Shipped notes first, so a project file can add to or correct them. Resolve
+	// the owning plugin through the module in its descriptor; its base directory
+	// is authoritative even when the plugin is mounted under a different folder.
+	const TSharedPtr<IPlugin> OwningPlugin = FindOwningPlugin();
 	const FString Project = FPaths::Combine(FPaths::ProjectDir(), ProjectTrapsRelativePath);
 
-	// The plugin also ships inside the engine, so try the engine's plugin path
-	// when the project does not carry a copy. This is what a project that only
-	// enables the plugin looks like.
-	const FString EngineCopy = FPaths::Combine(
-		FPaths::EnginePluginsDir(), TEXT("Marketplace"), TEXT("TurboMCP"), ShippedTrapsRelativePath);
-
 	TArray<FString> Candidates;
-	Candidates.Add(Shipped);
-	if (!FPaths::IsSamePath(EngineCopy, Shipped))
+	if (OwningPlugin.IsValid())
 	{
-		Candidates.Add(EngineCopy);
+		Candidates.Add(FPaths::Combine(OwningPlugin->GetBaseDir(), ShippedTrapsRelativePath));
+	}
+	else
+	{
+		UE_LOG(LogTurboMCP, Warning,
+			TEXT("Could not resolve the TurboMCP module to an enabled plugin; shipped trap notes unavailable."));
 	}
 	Candidates.Add(Project);
 

@@ -9,6 +9,9 @@
 
 #include "BaseWidgetBlueprint.h"
 #include "Blueprint/WidgetTree.h"
+#include "Blueprint/UserWidget.h"
+#include "Components/NamedSlot.h"
+#include "Components/NamedSlotInterface.h"
 #include "Components/PanelSlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/Widget.h"
@@ -194,32 +197,42 @@ bool FTurboMCPWidgetTree::Collect(UBaseWidgetBlueprint* InWidgetBlueprint,
 	// and is treated as having no bindings, which is the truth.
 	UWidgetBlueprint* Concrete = Cast<UWidgetBlueprint>(InWidgetBlueprint);
 
-	// The tree is walked depth-first, and each widget's depth is recorded so the rendered
-	// text can be indented. A stack of widgets carries the order; a map carries the depth.
-	TMap<const UWidget*, int32> Depths;
-	TArray<UWidget*> Stack;
+	// The tree is walked depth-first. A user widget owns another widget tree, and it can
+	// expose content through named slots; both are children of the placed user widget,
+	// not detached trees. Keep the slot host with the pending child so the compact reader
+	// can tell an ordinary panel child from supplied named-slot content.
+	struct FPendingWidget
+	{
+		UWidget* Widget = nullptr;
+		int32 Depth = 0;
+		FName NamedSlotHost;
+	};
 
+	TSet<const UWidget*> Visited;
+	TArray<FPendingWidget> Stack;
 	if (Tree->RootWidget != nullptr)
 	{
-		Depths.Add(Tree->RootWidget, 0);
-		Stack.Add(Tree->RootWidget);
+		Stack.Add({ Tree->RootWidget, 0, NAME_None });
 	}
 
 	while (Stack.Num() > 0)
 	{
-		UWidget* Widget = Stack.Pop();
-		if (Widget == nullptr)
+		const FPendingWidget Pending = Stack.Pop();
+		UWidget* Widget = Pending.Widget;
+		if (Widget == nullptr || Visited.Contains(Widget))
 		{
 			continue;
 		}
+		Visited.Add(Widget);
 
-		const int32 Depth = Depths.FindRef(Widget);
+		const int32 Depth = Pending.Depth;
 
 		FEntry Entry;
 		Entry.Name = Widget->GetFName();
 		Entry.ClassName = Widget->GetClass()->GetName();
 		Entry.bIsVariable = Widget->bIsVariable;
 		Entry.Visibility = VisibilityName(Widget->GetVisibility());
+		Entry.NamedSlotHost = Pending.NamedSlotHost;
 		Entry.Depth = Depth;
 
 		if (UPanelSlot* Slot = Widget->Slot)
@@ -255,20 +268,47 @@ bool FTurboMCPWidgetTree::Collect(UBaseWidgetBlueprint* InWidgetBlueprint,
 
 		OutEntries.Add(MoveTemp(Entry));
 
-		// Children are pushed in reverse so the first child is popped first, which keeps
-		// the printed order matching the designer's.
+		// Push in reverse because the stack is LIFO. This preserves panel slot order,
+		// then the nested widget tree root, then named-slot content in slot-name order.
+		TArray<FPendingWidget> Children;
 		if (UPanelWidget* Panel = Cast<UPanelWidget>(Widget))
 		{
+			const FName PanelNamedSlot = Cast<UNamedSlot>(Widget) != nullptr
+				? Widget->GetFName() : NAME_None;
 			const int32 SlotCount = Panel->GetChildrenCount();
-			for (int32 Index = SlotCount - 1; Index >= 0; --Index)
+			for (int32 Index = 0; Index < SlotCount; ++Index)
 			{
-				UWidget* Child = Panel->GetChildAt(Index);
-				if (Child != nullptr)
+				if (UWidget* Child = Panel->GetChildAt(Index))
 				{
-					Depths.Add(Child, Depth + 1);
-					Stack.Add(Child);
+					Children.Add({ Child, Depth + 1, PanelNamedSlot });
 				}
 			}
+		}
+
+		if (UUserWidget* UserWidget = Cast<UUserWidget>(Widget))
+		{
+			if (UserWidget->WidgetTree != nullptr && UserWidget->WidgetTree->RootWidget != nullptr)
+			{
+				Children.Add({ UserWidget->WidgetTree->RootWidget, Depth + 1, NAME_None });
+			}
+		}
+
+		if (INamedSlotInterface* NamedSlots = Cast<INamedSlotInterface>(Widget))
+		{
+			TArray<FName> SlotNames;
+			NamedSlots->GetSlotNames(SlotNames);
+			for (const FName SlotName : SlotNames)
+			{
+				if (UWidget* Content = NamedSlots->GetContentForSlot(SlotName))
+				{
+					Children.Add({ Content, Depth + 1, SlotName });
+				}
+			}
+		}
+
+		for (int32 Index = Children.Num() - 1; Index >= 0; --Index)
+		{
+			Stack.Add(Children[Index]);
 		}
 	}
 
@@ -323,6 +363,11 @@ FString FTurboMCPWidgetTree::Render(UBaseWidgetBlueprint* InWidgetBlueprint, FSt
 		if (!Entry.Padding.IsEmpty())
 		{
 			Line += FString::Printf(TEXT("  padding=%s"), *Entry.Padding);
+		}
+
+		if (!Entry.NamedSlotHost.IsNone())
+		{
+			Line += FString::Printf(TEXT("  named-slot=%s"), *Entry.NamedSlotHost.ToString());
 		}
 
 		Out += Line;

@@ -103,6 +103,9 @@ public class TurboMCP : ModuleRules
 				// because it sits at that module's Public ROOT - checked, and the slash form failed
 				// the build with "No such file or directory".
 				"MaterialEditor",
+				// IPluginManager resolves shipped data from the plugin that owns this
+				// module, so a renamed mount directory cannot hide EngineToolTraps.json.
+				"Projects",
 
 				// The call log installs an `IAnalyticsProviderET` over the MCP module's own
 				// analytics hook, so the ET provider interface, its event attribute type and the

@@ -8,8 +8,10 @@
 #include "TurboMCPWidgetTreeSync.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/NamedSlotInterface.h"
 #include "Components/PanelSlot.h"
 #include "Components/PanelWidget.h"
 #include "Components/Widget.h"
@@ -134,13 +136,15 @@ namespace
 	 */
 	void WalkWidget(const UWidget* InWidget,
 		const FString& InParentPath,
+		TSet<const UWidget*>& InOutVisited,
 		TurboMCPWidgetTreeText::FNode& OutNode)
 	{
 		OutNode = TurboMCPWidgetTreeText::FNode();
-		if (InWidget == nullptr)
+		if (InWidget == nullptr || InOutVisited.Contains(InWidget))
 		{
 			return;
 		}
+		InOutVisited.Add(InWidget);
 
 		OutNode.Name = InWidget->GetFName().ToString();
 		OutNode.ClassName = ClassNameOf(InWidget);
@@ -154,6 +158,11 @@ namespace
 		SlotAssignments(InWidget, OutNode.Slot);
 		WidgetAssignments(InWidget, OutNode.Properties);
 
+		// A placed user widget has a separate WidgetTree and may expose content through
+		// INamedSlotInterface. Treat both as descendants of the placed widget. The visited
+		// set prevents a named slot that is also reachable through its panel from appearing
+		// twice, and prevents malformed cyclic ownership from recursing forever.
+		TArray<const UWidget*> Children;
 		if (const UPanelWidget* Panel = Cast<UPanelWidget>(InWidget))
 		{
 			const int32 ChildCount = Panel->GetChildrenCount();
@@ -161,10 +170,43 @@ namespace
 			{
 				if (const UWidget* Child = Panel->GetChildAt(Index))
 				{
-					TurboMCPWidgetTreeText::FNode ChildNode;
-					WalkWidget(Child, OutNode.Path, ChildNode);
-					OutNode.Children.Add(MoveTemp(ChildNode));
+					Children.Add(Child);
 				}
+			}
+		}
+
+		if (const UUserWidget* UserWidget = Cast<UUserWidget>(InWidget))
+		{
+			if (UserWidget->WidgetTree != nullptr && UserWidget->WidgetTree->RootWidget != nullptr)
+			{
+				Children.Add(UserWidget->WidgetTree->RootWidget);
+			}
+		}
+
+		if (const INamedSlotInterface* NamedSlots = Cast<INamedSlotInterface>(InWidget))
+		{
+			TArray<FName> SlotNames;
+			NamedSlots->GetSlotNames(SlotNames);
+			for (const FName SlotName : SlotNames)
+			{
+				if (const UWidget* Content = NamedSlots->GetContentForSlot(SlotName))
+				{
+					Children.Add(Content);
+				}
+			}
+		}
+
+		for (const UWidget* Child : Children)
+		{
+			if (InOutVisited.Contains(Child))
+			{
+				continue;
+			}
+			TurboMCPWidgetTreeText::FNode ChildNode;
+			WalkWidget(Child, OutNode.Path, InOutVisited, ChildNode);
+			if (!ChildNode.Name.IsEmpty())
+			{
+				OutNode.Children.Add(MoveTemp(ChildNode));
 			}
 		}
 	}
@@ -285,8 +327,9 @@ bool FTurboMCPWidgetTreeSync::Walk(UBaseWidgetBlueprint* InWidgetBlueprint,
 		return true;
 	}
 
-	WalkWidget(Tree->RootWidget, FString(), OutTree.Root);
-	OutTree.bHasTree = true;
+	TSet<const UWidget*> Visited;
+	WalkWidget(Tree->RootWidget, FString(), Visited, OutTree.Root);
+	OutTree.bHasTree = !OutTree.Root.Name.IsEmpty();
 	return true;
 }
 

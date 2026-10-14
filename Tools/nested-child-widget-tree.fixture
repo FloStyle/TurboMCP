@@ -1,0 +1,8 @@
+# Runtime fixture contract: a host tree embeds a child UserWidget.
+# The child has an ordinary widget and content supplied through its named slot.
+HostCanvas [CanvasPanel]
+  NestedChild [UserWidget]
+    ChildRoot [CanvasPanel]
+      ChildLabel [TextBlock]
+      ChildSlot [NamedSlot]
+        SlottedLabel [TextBlock] named-slot=ChildSlot
