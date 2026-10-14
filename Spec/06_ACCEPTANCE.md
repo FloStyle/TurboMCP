@@ -156,7 +156,7 @@ date.
 | T-STRUCT-4 | Add override | Right signature in one call; second call refused with location |
 | T-STRUCT-5 | Remove then add a function | Same name, no suffix |
 | T-STRUCT-6 | Retarget | After the class swap in TA-8, one Edit makes the asset compile, with a list of kept and removed nodes |
-| T-STRUCT-7 | Compile | A broken node is named by ID; a clean unsaved asset says compiled, not saved |
+| T-STRUCT-7 | Compile | A broken node is named by ID; a clean unsaved asset says compiled, not saved; an engine message logged during the compile is listed with a count per asset, so a compile that raised an ensure is not reported clean |
 | T-STRUCT-8 | Save | Three assets, three short lines, no log text. During simulate: refused |
 
 ### Writing

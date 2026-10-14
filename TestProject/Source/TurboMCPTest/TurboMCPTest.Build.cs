@@ -43,6 +43,12 @@ public class TurboMCPTest : ModuleRules
 			new string[]
 			{
 				"UnrealEd",
+				// `Kismet` CARRIES THE ONE ENGINE CALL THE T04 FIXTURE NEEDS AND NOTHING ELSE IN THIS MODULE
+				// DOES: `FBlueprintCompilationManager::QueueForCompilation` is declared in
+				// `Engine/Source/Editor/Kismet/Public/BlueprintCompilationManager.h` and is exported by the
+				// `Kismet` module, so without this line the fixture compiles and the link fails with
+				// `LNK2019 ... QueueForCompilation`. Measured, not guessed: that was the first build's error.
+				"Kismet",
 			});
 	}
 }
