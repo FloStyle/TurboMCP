@@ -158,6 +158,7 @@ void FTurboMCPAnalyticsProvider::RegisterServedToolsetsAndTools()
 		TEXT("PreviewTurboMCPEnumAdd"), TEXT("PreviewTurboMCPVarsAdd"),
 		TEXT("PreviewTurboMCPOverrideAdd"), TEXT("PreviewTurboMCPWidgetRetarget"),
 		TEXT("EditTurboMCPCompile"), TEXT("EditTurboMCPSave"),
+		TEXT("EditTurboMCPSaveWithoutThumbnail"),
 		TEXT("EditTurboMCPEnumAdd"), TEXT("EditTurboMCPVarsAdd"),
 		TEXT("EditTurboMCPWidgetsAsVars"), TEXT("EditTurboMCPOverrideAdd"),
 		TEXT("EditTurboMCPOverrideRemove"), TEXT("EditTurboMCPFunctionAdd"),

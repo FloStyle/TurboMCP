@@ -20,7 +20,7 @@ state, read [`HANDOVER.md`](HANDOVER.md) first; for the plan, [`Spec/WORKING_PLA
 
 | | |
 |---|---|
-| **Tools** | **93** `AICallable`, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 33. *** THIS SECTION IS A SNAPSHOT OF THE REVISION THIS RECORD ENDS ON, which its own header states: "This is a chronological record, not a summary." THE LIVE FIGURES ARE IN `HANDOVER.md` AND `STATUS.md`, AND THE PER-TOOLSET SPLIT IS KEPT CURRENT IN `TOOLS.md` ONLY. *** |
+| **Tools** | **94** `AICallable`, in 4 toolsets — Read 30 · Look 4 · Preview 26 · Edit 34. *** THIS SECTION IS A SNAPSHOT OF THE REVISION THIS RECORD ENDS ON, which its own header states: "This is a chronological record, not a summary." THE LIVE FIGURES ARE IN `HANDOVER.md` AND `STATUS.md`, AND THE PER-TOOLSET SPLIT IS KEPT CURRENT IN `TOOLS.md` ONLY. *** |
 | **Full run** | ***`passed 58, failed 0, blocked 0, of 58` — exit code 0*** |
 | **Coverage audit** | **`uncalled: (none)`** — every declared tool is reached by at least one suite |
 | **Suite-quality audit** | **BLOCKS the run** when a check cannot fail *or* cannot pass — **0 candidates** |
@@ -10947,3 +10947,102 @@ and the order I would do the rest in. ***
  AND THE ONE-FRAME LAG: the summary is a bound attribute and is live, while the list is rebuilt when the
  log's entry count changes - so at the instant of a capture the summary can name one more call than the
  list is showing, and it says `1 still running` when that is what happened.
+
+---
+
+## 184. Round 259 — T03's `done when` 3 CLOSES: the requirement was an OR, so the option returns as a TOOL and the DECLARATION that broke every caller is never touched
+
+ HEAD `e56d315` (T04's commit, kept) + this change · build `Result: Succeeded`, 43.51 s, `UnrealEditor-TurboMCP.dll` 01:52:44 · `check-plugin` **PASS (11 checks)** · `check-includes` **PASS** (1499 includes) · `audit-tool-coverage` **PASS**, **94** tools, `uncalled: (none)` · suites **7 of 7 PASS**, then `test-save-thumbnail-option` alone at **31 checks PASS**
+
+### 184.1 *** THE SOURCE IS AN OR, AND THAT IS WHY THE FIX GOT SMALLER RATHER THAN LARGER ***
+
+ `T03`'s card carried `done when` 3 as two sentences, and the previous round chased the first: an *option*.
+ Its source is one requirement with an **OR** in it -
+ `Feedbacks/2026-10-13_S2_TurboMCP_graph-edit-tools.md:107-109`:
+
+     SV-03: No protection against a thumbnail crash (medium)
+       Observed: The engine crash on the second save happened while the editor drew the widget thumbnail.
+       Design:   Add an option to save without a new thumbnail, OR SAY IN THE RESULT THAT THE THUMBNAIL
+                 DRAW RUNS WIDGET CODE.
+
+ `bb6467b` REVERTED THE FIRST BRANCH BECAUSE IT WAS BUILT THE ONE WAY THAT CANNOT WORK: as a second parameter
+ on `EditTurboMCPSave` carrying a C++ default, when the engine's own error message had already shown that a
+ defaulted parameter on a `UFUNCTION(meta=(AICallable))` is **REQUIRED** by the schema UHT generates. So
+ adding the option **REMOVED** the ability to call the tool without it.
+
+ *** THE SECOND BRANCH NEEDS NO PARAMETER, SO THAT REASON NEVER APPLIED TO IT - AND IT IS THE HALF THE
+ REVERTED COMMIT NEVER DELIVERED. *** Both branches are delivered, and **neither touches
+ `EditTurboMCPSave(const FString& Assets)`**:
+
+     branch b   a SENTENCE in the result. No declaration change, no schema change, no caller at risk.
+     branch a   the option, as a SECOND TOOL with its own one-parameter schema, so it breaks nobody and
+                `E-SAVE` keeps exactly the signature every existing caller already passes.
+
+ Both run ONE body, `SaveTurboMCPAssets(Assets, bWithoutThumbnail)`, so the retry cannot quietly go back to
+ the other mechanism - a retry that did would defeat the tool the caller chose with no way to see it.
+
+### 184.2 *** THE MISSING CHECK IS NOW A CHECK, AND IT IS THE NARROW ONE ***
+
+ The lesson on the card - "REACHABLE IS NOT OPTIONAL" - is now `Tools/test-save-thumbnail-option.py`'s first
+ phase. `R-TOOL-SCHEMA` is asked for `EditTurboMCPSave` and the signature must be **exactly**
+ `EditTurboMCPSave(assets)`, `parameters: 1`, `assets : string  REQUIRED`, with `withoutThumbnail` absent.
+ A later change that adds a parameter - defaulted or not - fails there whatever else is green.
+ `audit-suite-quality` reports **0 candidates**, so the check can genuinely fail AND pass.
+
+### 184.3 *** ITEM 4's CONFIRMATION, AND IT FALSIFIED THE CAUSE THE CARD HAD SETTLED ON ***
+
+ The card's `owed` line was "item 4's confirmation, which needed the withdrawn option to produce", and its
+ recorded cause was that **the engine's post-save thumbnail write re-dirties the package about ten seconds
+ later**. Waited out on the tool everyone actually uses:
+
+     === `done when` 4 on the EDITOR'S save, waited out over the whole re-dirty window ===
+     the widget is NOT in the unsaved list after the editor's save
+     ok   `done when` 4 on the editor's save: not listed again, OR the result named what re-dirtied it
+          read: unsaved assets, 0 package(s) dirty
+
+ *** `EditTurboMCPSave` LEFT THE ASSET CLEAN AT 14 SECONDS, AND `R-DIRTY-LIST` ANSWERED `0 package(s) dirty`
+ FOR THE WHOLE EDITOR. *** So item 4's confirmation **never needed the withdrawn option**, and the
+ ten-second re-dirty was **not reproduced** on this fixture. The check accepts either clause of `done when`
+ 4 - not listed again, **or** the result named what changed it again - so it is faithful to the requirement
+ rather than to the card's theory.
+
+### 184.4 *** AND A SECOND, SEPARATE DEFECT: `Tools/build.ps1` COULD NOT RUN AT ALL ***
+
+ It failed twice, both times inside `RunUBT` and **before a line of this plugin compiled**:
+
+     MSB3491: ... fichier « %TEMP%\DotnetDepends-<N>\EpicGames.Build.dll.dep.csv ».
+     Access to the path '...\<random>.tmp' is denied.
+
+ `%TEMP%` IS WRITABLE in that session - a probe file **and** a fresh subdirectory were both created there, a
+ `cmd.exe` child wrote there too, and **no `DENY` entry exists anywhere on the chain** - so it is not a
+ permission on that directory. What differed was **twenty `dotnet` worker nodes left alive by the previous
+ build**, which MSBuild reused: the node that CREATES `DotnetDepends-<N>` is not always the node that WRITES
+ its `.dep.csv`. Setting `MSBUILDDISABLENODEREUSE=1` in `build.ps1` - one variable changed - took the same
+ build from two failures to `Result: Succeeded`. The cost is a few seconds of node start-up.
+
+### 184.5 *** WHAT IS NOT MEASURED, SAID PLAINLY ***
+
+ - **THE VERIFY'S SETUP.** The task list's verify is "save a widget Blueprint whose design-time code logs
+   warnings". The result says `saved` and the unsaved list is empty - both measured above - but **no fixture
+   in the kit raises a warning during a save**, so that first half was NOT reproduced. Measured while
+   looking: **no suite in `Tools/` asserts the save-time warning count at all**, and this file had never
+   mentioned `T03`, `SV-02` or `SV-03` before this section. `done when` 2 rests on that same unexercised
+   path, and the honest next step is a fixture whose design-time code raises a warning.
+ - **THE `/Game` REFUSAL.** The direct write names the file itself, so a package outside the project's
+   `/Game` mount is refused **by name** rather than written to a guessed path. No dirty package here lives
+   outside `/Game`, so the branch is unreachable from the MCP surface; the suite's header names it instead
+   of pretending to test it.
+ - **A THUMBNAIL DRAW ACTUALLY RUNNING.** The engine writes `Generating thumbnails` / `Rendered thumbnail`
+   into the SAVE'S OWN output device and not to `GLog` (`FileHelpers.cpp:1332` passes
+   `SaveOutput.GetOutputDevice()`), and MEASURED, those strings appear in **no log in this repository**. So
+   no capture can see the draw. What is reported is **which mechanism ran**, which is the part a tool can
+   honestly know.
+
+### 184.6 *** THE CONCURRENT SESSION, AND WHY THIS ROUND WAITED ***
+
+ Another session was editing the same two files for **T04** when this round began - `RunUBT` was mid-build,
+ the four source files were dirty, and a commit would have swept its uncommitted work into this one. It
+ committed `e56d315` at 01:49 and a watcher job (`pwsh-214`, baseline `b2944eb`) released the tree. **It
+ began a new fixture (`TurboMCPTestCompileFixture.*`, `TestProject/Source/.../TurboMCPTest.Build.cs`) while
+ this commit was being prepared**, so this change is staged by explicit path and never with `-a`.
+

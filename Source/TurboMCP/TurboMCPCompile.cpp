@@ -16,9 +16,13 @@
 #include "FileHelpers.h"
 #include "Kismet2/CompilerResultsLog.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "Misc/PackageName.h"
+#include "Misc/Paths.h"
 #include "UObject/Object.h"
 #include "UObject/Package.h"
+#include "UObject/SavePackage.h"
 #include "UObject/UObjectGlobals.h"
+#include "WidgetBlueprint.h"
 
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
@@ -347,7 +351,17 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 	return Result;
 }
 
-FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
+/**
+ * The save itself, shared by `E-SAVE` and `E-SAVE-WITHOUT-THUMBNAIL`.
+ *
+ * *** ONE BODY, TWO TOOLS, AND THE MECHANISM IS THE ONLY DIFFERENCE. *** A retry that quietly went back
+ * to the other mechanism would defeat the tool the caller chose, and the caller would have no way to
+ * see it, so the choice is made once and used by both attempts.
+ *
+ * A file-scope function rather than a member: the toolset's public surface is the two declared tools,
+ * and a third entry point on the class would be published as one.
+ */
+static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 {
 	const TArray<FString> Parts = FTurboMCPAssetResolver::SplitList(Assets);
 	if (Parts.Num() == 0)
@@ -444,29 +458,82 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 			AssetObject = LoadObject<UObject>(nullptr, *Resolved.ObjectPath);
 		}
 
+		// *** THE SECOND TOOL WRITES THE PACKAGE ITSELF, SO IT HAS TO NAME THE FILE ITSELF, AND IT
+		// REFUSES WHEN IT CANNOT NAME ONE HONESTLY. *** The filename is the project's content directory
+		// plus the package path with `/Game/` removed, which is the construction
+		// `TurboMCPTestMapCommandlet.cpp:329-332` proved on this machine: the map it writes IS at
+		// `TestProject/Content/Tests/TurboMCPTestMap.umap`. The engine's own
+		// `FPackageName::LongPackageNameToFilename` is NOT used, because it folds in
+		// `MountPoint->GetContentPathRelative()` (`PackageName.cpp:1430`) and this project measured the
+		// result as a path relative to the engine directory, after which `SavePackage` reported "could
+		// not save" while the asset was complete in memory.
+		FString WithoutThumbnailFileName;
+		if (bWithoutThumbnail && AssetObject != nullptr)
+		{
+			const FString SavePackageName = Package->GetName();
+			if (!SavePackageName.StartsWith(TEXT("/Game/")))
+			{
+				Errors += FString::Printf(
+					TEXT("\nerror: %s lives at %s, which is not under the project's /Game mount. ")
+					TEXT("EditTurboMCPSaveWithoutThumbnail writes the package itself, so it has to name ")
+					TEXT("the file, and it will not guess one. Call EditTurboMCPSave for this asset."),
+					*Resolved.ObjectPath, *SavePackageName);
+				++FailedCount;
+				continue;
+			}
+			WithoutThumbnailFileName = FPaths::ConvertRelativePathToFull(FPaths::Combine(
+				FPaths::ProjectContentDir(),
+				SavePackageName.RightChop(FCString::Strlen(TEXT("/Game/")))
+					+ FPackageName::GetAssetPackageExtension()));
+		}
+
 		bool bSaved = false;
 		if (AssetObject != nullptr)
 		{
-			// UEditorAssetLibrary::SaveLoadedAsset is the same save path the
-			// engine's own editor toolset uses. FEditorFileUtils was tried first
-			// and fails in a headless editor because it goes through source
-			// control checkout, which reported failure on every attempt while
-			// nothing was written. That is the D-33 trap from the other side: a
-			// save call's own answer is not the truth.
-			//
-			// One asset at a time, so a failure cannot be blamed on its
-			// neighbour: D-33 records that saving several at once silently saved
-			// only some of them.
-			bSaved = UEditorAssetLibrary::SaveLoadedAsset(AssetObject, /*bOnlyIfIsDirty=*/false);
+			// *** THE MECHANISM IS CHOSEN ONCE AND USED BY BOTH ATTEMPTS, INCLUDING THE RETRY BELOW. ***
+			auto SaveOnce = [&]() -> bool
+			{
+				if (!bWithoutThumbnail)
+				{
+					// UEditorAssetLibrary::SaveLoadedAsset is the same save path the
+					// engine's own editor toolset uses. FEditorFileUtils was tried first
+					// and fails in a headless editor because it goes through source
+					// control checkout, which reported failure on every attempt while
+					// nothing was written. That is the D-33 trap from the other side: a
+					// save call's own answer is not the truth.
+					//
+					// One asset at a time, so a failure cannot be blamed on its
+					// neighbour: D-33 records that saving several at once silently saved
+					// only some of them.
+					return UEditorAssetLibrary::SaveLoadedAsset(AssetObject, /*bOnlyIfIsDirty=*/false);
+				}
+
+				// *** THE OBJECT MUST CARRY THESE FLAGS BEFORE THE CALL, OR THE ENGINE REFUSES AND
+				// REPORTS DATA LOSS. *** `TurboMCPTestMapCommandlet.cpp:350-361` records the engine's own
+				// warning and the silent non-write that followed it: `TopLevelFlags` describe what the
+				// TOP-LEVEL ASSET must carry, so they have to be ON that asset.
+				AssetObject->SetFlags(RF_Public | RF_Standalone);
+				FSavePackageArgs SaveArgs;
+				SaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+				// NO `SAVE_NoError`: a failure must surface through the return value, which is checked. The
+				// commandlet sets it and can afford to, because its next line logs an error; a tool that
+				// reports to an agent cannot.
+				//
+				// `bSlowTask` is off because a tool call must not raise the editor's progress dialog. The
+				// engine's own exec path passes `SILENT=true` for the same reason (`FileHelpers.cpp:1332`).
+				SaveArgs.bSlowTask = false;
+				return UPackage::SavePackage(Package, AssetObject, *WithoutThumbnailFileName, SaveArgs);
+			};
+			bSaved = SaveOnce();
 
 			// The unsaved flag decides the result, never the call's return value.
 			// D-33: an engine save once returned an error when it had worked.
 			if (Package->IsDirty())
 			{
-				// Retry once, which the spec asks for, in case the first attempt
-				// lost a race with a background writer.
-				bSaved = UEditorAssetLibrary::SaveLoadedAsset(
-					AssetObject, /*bOnlyIfIsDirty=*/false);
+				// Retry once, which the spec asks for, in case the first attempt lost a race with a
+				// background writer. THE SAME MECHANISM: a retry that quietly went back to the thumbnail
+				// path would defeat the tool the caller chose.
+				bSaved = SaveOnce();
 			}
 		}
 
@@ -478,6 +545,11 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 		{
 			Lines += FString::Printf(TEXT("\n%s  saved"), *Resolved.ObjectPath);
 			++SavedCount;
+			// WHICH MECHANISM RAN: a caller who chose the direct write and is not told cannot tell the two
+			// saves apart in a log.
+			Lines += bWithoutThumbnail
+				? TEXT("  (written without the thumbnail draw)")
+				: TEXT("  (written by the editor's save)");
 		}
 		else
 		{
@@ -495,6 +567,28 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 				CallOutcome,
 				*Capture.SummariseSince(MarkBeforeSave, /*InMax=*/1));
 			++FailedCount;
+		}
+
+		// *** SV-03, AND IT IS THE BRANCH THAT NEEDS NO NEW PARAMETER. *** The report's design is an OR:
+		// "add an option to save without a new thumbnail, OR SAY IN THE RESULT THAT THE THUMBNAIL DRAW
+		// RUNS WIDGET CODE." This is the second half, said for the mechanism that actually ran, so a
+		// caller who sees a warning during this save knows what drew the asset's own code.
+		//
+		// WHY IT IS TRUE OF THE EDITOR'S SAVE: it is an `OBJ SAVEPACKAGE` exec (`FileHelpers.cpp:1332`),
+		// which runs the engine's thumbnail step (`UnrealEdSrv.cpp:680-682`) and renders when the cached
+		// thumbnail is missing or stale (`:439-446`, `:478-485`); for a Widget Blueprint the renderer
+		// instantiates the widget with `Designing | ExecutePreConstruct`
+		// (`WidgetBlueprintThumbnailRenderer.cpp:189-191`). The direct write calls none of it.
+		if (Cast<UWidgetBlueprint>(AssetObject) != nullptr)
+		{
+			Lines += bWithoutThumbnail
+				? TEXT("\n    ; the package was written directly, so the engine's thumbnail step did not")
+					TEXT(" run for this save, and this widget's design-time code did not run for a draw.")
+				: TEXT("\n    ; the editor's save runs the engine's thumbnail step before it writes, and a")
+					TEXT(" thumbnail draw for a Widget Blueprint instantiates the widget and runs its")
+					TEXT(" design-time code (`WidgetBlueprintThumbnailRenderer.cpp:189-191`, frequency")
+					TEXT(" `OnAssetSave` at `:216`). No option on this tool skips that draw;")
+					TEXT(" `EditTurboMCPSaveWithoutThumbnail` writes the package without it.");
 		}
 
 		if (WarningsHere > 0)
@@ -541,4 +635,14 @@ FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 	Result += CheckoutReport;
 
 	return Result;
+}
+
+FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
+{
+	return SaveTurboMCPAssets(Assets, /*bWithoutThumbnail=*/false);
+}
+
+FString UTurboMCPEditToolset::EditTurboMCPSaveWithoutThumbnail(const FString& Assets)
+{
+	return SaveTurboMCPAssets(Assets, /*bWithoutThumbnail=*/true);
 }

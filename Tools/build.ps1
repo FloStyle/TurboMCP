@@ -74,6 +74,26 @@ if (-not $NoStop) {
     }
 }
 
+# *** MSBUILD'S WORKER NODES ARE TURNED OFF, AND THAT IS A MEASURED FIX RATHER THAN A PREFERENCE. ***
+#
+# WITH NODE REUSE ON, A BUILD FAILED TWICE IN A ROW, BOTH TIMES IN `RunUBT` AND BEFORE ANY OF THIS PLUGIN'S
+# CODE WAS COMPILED:
+#
+#     UnrealEngine.CSharp.targets(65,5): error MSB3491: ... fichier
+#     « %TEMP%\DotnetDepends-<N>\EpicGames.Build.dll.dep.csv ». Access to the path
+#     '...\DotnetDepends-<N>\<random>.tmp' is denied.
+#
+# IT IS NOT A PERMISSION ON THAT DIRECTORY, AND THAT WAS MEASURED RATHER THAN ASSUMED: a probe file AND a fresh
+# subdirectory were both created in `%TEMP%` in that session, a `cmd.exe` child wrote there too, and no `DENY`
+# entry exists anywhere on the chain. WHAT WAS DIFFERENT WAS TWENTY `dotnet` WORKER NODES LEFT ALIVE BY THE
+# PREVIOUS BUILD, WHICH MSBUILD REUSED: the node that CREATES `DotnetDepends-<N>` is not always the node that
+# WRITES its `.dep.csv`, and the write then lands in a directory the writing node cannot use.
+#
+# WITH REUSE OFF, A FRESH NODE SET MADE THE SAME BUILD PASS: `Result: Succeeded`, 43.51 seconds, and a new
+# `UnrealEditor-TurboMCP.dll` timestamp. The cost is a few seconds of node start-up per build, which is nothing
+# beside a build that cannot run at all.
+$env:MSBUILDDISABLENODEREUSE = '1'
+
 # `-WaitMutex` because a stale UBT mutex turns a build into a silent wait that looks like a hang.
 & cmd.exe /c "`"$buildBat`" $Target $Platform $Configuration -Project=`"$project`" -WaitMutex -MaxParallelActions=6"
 $exit = $LASTEXITCODE

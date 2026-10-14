@@ -1571,9 +1571,51 @@ public:
 	 * take a lock cannot fail this call. The appended block names which of the three policies was
 	 * chosen when a provider reports UsesCheckout() == false, and it is (b): attempt the checkout
 	 * and repeat the provider's answer.
+	 *
+	 * `SV-03`'S SECOND BRANCH IS SAID IN THE RESULT, AND THAT IS DELIBERATE. The session report's design
+	 * is an OR: "add an option to save without a new thumbnail, OR SAY IN THE RESULT THAT THE THUMBNAIL
+	 * DRAW RUNS WIDGET CODE". The first branch needs a parameter, and a defaulted parameter on an
+	 * `AICallable` function is REQUIRED by the schema UHT generates - so the option that was tried made
+	 * this tool uncallable without it and was withdrawn (`bb6467b`). This tool therefore reports WHICH
+	 * MECHANISM RAN, and for a Widget Blueprint it says that the editor's save runs the engine's
+	 * thumbnail step and that a thumbnail draw instantiates the widget and runs its design-time code.
+	 * THE OTHER BRANCH IS `EditTurboMCPSaveWithoutThumbnail`, a tool of its own, which needs no such
+	 * parameter and cannot break a caller.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPSave(const FString& Assets);
+
+	/**
+	 * Save one or more assets WITHOUT the editor's thumbnail step.
+	 *
+	 * THE SAME SAVE AS `E-SAVE`, MINUS THE ONE PART THAT CAN CRASH THE EDITOR OR RUN THE ASSET'S OWN
+	 * CODE. `SV-03` observed the editor CRASH in the engine thumbnail renderer while a save drew a
+	 * widget's thumbnail, and its design offers this option as one of two ways to protect a caller.
+	 *
+	 * IT WRITES THE PACKAGE ITSELF, through `UPackage::SavePackage`, instead of going through the
+	 * editor's save. That is the whole point: the editor's save is an `OBJ SAVEPACKAGE` exec
+	 * (`FileHelpers.cpp:1332`), and that exec runs the engine's thumbnail step (`UnrealEdSrv.cpp:680-682`),
+	 * which renders a thumbnail when the cached one is missing or stale (`:439-446`, `:478-485`). For a
+	 * Widget Blueprint the renderer INSTANTIATES THE WIDGET with `Designing | ExecutePreConstruct` and
+	 * runs its design-time code (`WidgetBlueprintThumbnailRenderer.cpp:189-191`, frequency `OnAssetSave`
+	 * at `:216`). A direct package write calls none of that.
+	 *
+	 * *** SO IT IS A TOOL OF ITS OWN AND NOT A SECOND PARAMETER ON `E-SAVE`. *** Every caller that passes
+	 * only `assets` to `E-SAVE` still works, which is the property the withdrawn version lost.
+	 *
+	 * REFUSES a package outside the project's `/Game` mount, by name, because it has to name the file
+	 * itself: this project MEASURED the engine's own conversion answering a path relative to the ENGINE
+	 * directory (`PackageName.cpp:1430`; the consequence is recorded at
+	 * `TurboMCPTestMapCommandlet.cpp:323-332`), and a write to a guessed filename is worse than a
+	 * refusal. `E-SAVE` handles every mount, so the refusal names it.
+	 *
+	 * The result says `(written without the thumbnail draw)`, because a caller who chose this and is not
+	 * told cannot tell the two saves apart in a log. Everything else - one asset at a time, the retry,
+	 * the verdict from the unsaved flag, the counted warnings, the automatic checkout - is `E-SAVE`'s own
+	 * behaviour, because both tools run ONE body.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPSaveWithoutThumbnail(const FString& Assets);
 
 	/**
 	 * Create an enum asset from a list of values.
