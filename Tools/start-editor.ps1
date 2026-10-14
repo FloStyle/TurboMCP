@@ -269,6 +269,14 @@ if ($Running -or $PortBusy) {
 Step 'Starting the editor'
 # ---------------------------------------------------------------------------
 $Args = @($Project)
+# DSH confines writes to the workspace. Unreal's default DDC can live under the engine checkout,
+# so it becomes read-only in a tracked task session and the editor exits before the MCP server starts.
+# Give confined runs a persistent project-local cache; normal interactive launches keep their usual DDC.
+if ($env:DSH_SESSION_ID) {
+    $WorkspaceDDC = Join-Path (Split-Path $Project -Parent) 'Saved\DerivedDataCache'
+    New-Item -ItemType Directory -Force -Path $WorkspaceDDC | Out-Null
+    Set-Item -Path 'Env:UE-LocalDataCachePath' -Value $WorkspaceDDC
+}
 # *** THIS COMMENT WAS STALE AND IT COST A FALSE PREMISE (TestRecord.md section 158). It used to read "`-Offscreen` IS WHAT
 # THE SUITES USE", WHICH STOPPED BEING TRUE WHEN `-Offscreen` WAS REMOVED AT LINE 296 BECAUSE IT MADE THE EDITOR FAIL TO EXIT
 # CLEANLY. THE SUITES NOW RUN WITH **A REAL RHI AND A REAL WINDOW**: `Tools/run-suites.ps1:195` calls this script with

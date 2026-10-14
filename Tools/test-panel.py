@@ -119,6 +119,15 @@ def run_commandlet():
 
     # `-run=` NEEDS THE MODULE PREFIX: the engine calls LoadModule only when the token contains a
     # period. `-nullrhi` and `-unattended` because there is nothing to draw and nobody to ask.
+    # A DSH task can write only inside the workspace, while Unreal's default DDC may live under the
+    # engine checkout. Give confined runs a persistent project-local cache; normal runs keep their
+    # usual DDC.
+    child_env = None
+    if os.environ.get("DSH_SESSION_ID"):
+        workspace_ddc = os.path.join(REPO, "TestProject", "Saved", "DerivedDataCache")
+        os.makedirs(workspace_ddc, exist_ok=True)
+        child_env = os.environ.copy()
+        child_env["UE-LocalDataCachePath"] = workspace_ddc
     command = (
         '"{exe}" "{project}" -run=TurboMCP.TurboMCPPanelProbeCommandlet '
         "-unattended -nullrhi -culture=en -MaxParallelActions=8 > \"{log}\" 2>&1"
@@ -134,7 +143,7 @@ def run_commandlet():
     # the log while the command ALSO redirects into it produced "the process cannot access the file
     # because it is being used by another process", and an empty log. The command owns the redirect and
     # Python only reads the result.
-    completed = subprocess.run(command, shell=True, cwd=REPO,
+    completed = subprocess.run(command, shell=True, cwd=REPO, env=child_env,
                                capture_output=True, text=True)
 
     if not os.path.exists(log_path):
