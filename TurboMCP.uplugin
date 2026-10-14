@@ -36,6 +36,10 @@
 		{
 			"Name": "SlateInspectorToolset",
 			"Enabled": true
+		},
+		{
+			"Name": "Niagara",
+			"Enabled": true
 		}
 	]
 }
