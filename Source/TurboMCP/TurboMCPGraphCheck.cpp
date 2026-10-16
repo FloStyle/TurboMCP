@@ -552,8 +552,12 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 			continue;
 		}
 
-		// A continuation head is not a pin.
-		if (PinName == TEXT(":then") || PinName == TEXT(":else") || PinName.StartsWith(TEXT(":")))
+		// A continuation head is not a pin. The opening parenthesis is attached
+		// to the token by the line lexer (`(:then`), so remove it before matching.
+		const FString ContinuationName = PinName.StartsWith(TEXT("("))
+			? PinName.Mid(1) : PinName;
+		if (ContinuationName == TEXT(":then") || ContinuationName == TEXT(":else")
+			|| ContinuationName.StartsWith(TEXT(":")))
 		{
 			continue;
 		}

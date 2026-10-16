@@ -55,7 +55,7 @@ def has_wire(text, target_key, source_key):
         if (":%s:%s" % (GRAPH, target_key)) not in line:
             continue
         block = "\n".join(lines[index:index + 12])
-        if re.search(r"execute \(-> [^\s)]*:%s:then\)" % re.escape(source_key), block):
+        if re.search(r"execute \(-> [^\s)]*:%s\)" % re.escape(source_key), block):
             return True
     return False
 
