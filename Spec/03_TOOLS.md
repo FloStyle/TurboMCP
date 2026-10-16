@@ -596,6 +596,16 @@ text -> parse -> resolve -> check -> apply -> verify
   the differences. Nodes the text does not mention are left alone.
 - Test: T-WRITE-5.
 
+### P/E-GRAPH-SWAP-CALL: replace one call node by named pins
+
+- Replaces exactly one `UK2Node_CallFunction` selected by its reader node ID with a call node created from the canonical node type ID.
+- Migrates every linked pin by exact pin name and direction, never by pin index. A linked old pin missing on the replacement is named and refused; it is never silently disconnected.
+- `keepOld` defaults to `true`: the old call remains unplugged. With `keepOld=false`, the old node is deleted only after every replacement link is verified.
+- Preview and Edit share one side-effect-free plan. Edit uses one transaction, rolls back on a failed connection or verification, compiles, and reports the replacement ID, migrated pins, unmatched pins, and old-node disposition.
+- Tool arguments are `asset`, `graphName`, `nodeId`, `replacementTypeId`, and `keepOld` (`true` or `false`).
+- This is deliberately separate from GRAPH-REPLACE: swap is a localized node transformation, while replace rewrites and may delete an entire body.
+- Test: T-WRITE-6.
+
 Rules for all write entry points:
 
 - Accepts exactly the graph text format that the readers print. No second

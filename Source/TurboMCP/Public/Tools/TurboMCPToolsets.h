@@ -1272,6 +1272,15 @@ public:
 		const FString& GraphName,
 		const FString& Text);
 
+	/** Preview a localized call-node swap. Links are migrated by exact pin name; keepOld defaults to true. */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphSwapCall(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& NodeId,
+		const FString& ReplacementTypeId,
+		const FString& KeepOld);
+
 	/**
 	 * Change only what changed: name existing nodes by id and give the pins that differ.
 	 *
@@ -2034,6 +2043,15 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& Text);
+
+	/** Apply a localized call-node swap. keepOld=true retains the old node unplugged; false deletes it after verification. */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphSwapCall(
+		const FString& Asset,
+		const FString& GraphName,
+		const FString& NodeId,
+		const FString& ReplacementTypeId,
+		const FString& KeepOld);
 
 	/**
 	 * The Edit twin of PreviewTurboMCPGraphPatch. It reaches the SAME plan, so everything it
