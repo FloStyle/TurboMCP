@@ -606,6 +606,15 @@ text -> parse -> resolve -> check -> apply -> verify
 - This is deliberately separate from GRAPH-REPLACE: swap is a localized node transformation, while replace rewrites and may delete an entire body.
 - Test: T-WRITE-6.
 
+### P/E-GRAPH-REPOINT: repoint every reader of an output
+
+- Input: `asset`, `graphName`, `sourceNodeId`, `sourcePin`, and either an existing `targetNodeId` or `targetTypeId` plus `targetPin` for a new source. `keepSource` defaults to `true`.
+- Preview resolves the source once, enumerates every named consumer, and validates the exact target output and every proposed connection without writing.
+- Edit uses one transaction, breaks and reconnects each reader, reads back every consumer independently, and reports every `consumerNodeId.consumerPin`, old endpoint, new endpoint, count, and whether the old source was retained. A failed connection or readback rolls back all links and any created node.
+- A missing or direction-incompatible pin is refused by name and leaves the original links intact. A new target reports its real node ID and pin after apply. `keepSource=false` deletes the old source only after verification.
+- This is separate from GRAPH-SWAP-CALL: repoint changes all consumers of one output and may create a replacement source.
+- Test: T-WRITE-7.
+
 Rules for all write entry points:
 
 - Accepts exactly the graph text format that the readers print. No second

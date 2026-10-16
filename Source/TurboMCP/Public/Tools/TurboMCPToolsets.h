@@ -1281,6 +1281,13 @@ public:
 		const FString& ReplacementTypeId,
 		const FString& KeepOld);
 
+	/** Preview repointing every reader of one output to an existing or newly created source. */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphRepoint(
+		const FString& Asset, const FString& GraphName, const FString& SourceNodeId,
+		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
+		const FString& TargetPin, const FString& KeepSource);
+
 	/**
 	 * Change only what changed: name existing nodes by id and give the pins that differ.
 	 *
@@ -2052,6 +2059,13 @@ public:
 		const FString& NodeId,
 		const FString& ReplacementTypeId,
 		const FString& KeepOld);
+
+	/** Repoint every reader of one output to an existing or newly created source in one transaction. */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphRepoint(
+		const FString& Asset, const FString& GraphName, const FString& SourceNodeId,
+		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
+		const FString& TargetPin, const FString& KeepSource);
 
 	/**
 	 * The Edit twin of PreviewTurboMCPGraphPatch. It reaches the SAME plan, so everything it
