@@ -13,6 +13,7 @@
 #include "EdGraphNode_Comment.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
+#include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
 #include "K2Node_FunctionEntry.h"
@@ -465,6 +466,19 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 	if (bFull)
 	{
 		Out += FString::Printf(TEXT(" ; class %s"), *InNode->GetClass()->GetName());
+	}
+
+	if (const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(InNode))
+	{
+		if (const UFunction* Target = Call->GetTargetFunction())
+		{
+			Out += FString::Printf(TEXT(" ; target %s"), *Target->GetPathName());
+		}
+		else if (!Call->FunctionReference.GetMemberName().IsNone())
+		{
+			Out += FString::Printf(TEXT(" ; target %s (unresolved)"),
+				*Call->FunctionReference.GetMemberName().ToString());
+		}
 	}
 
 	int32 Printed = 0;

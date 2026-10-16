@@ -67,6 +67,24 @@ namespace
 		return InValue == TEXT("true") || InValue == TEXT("false");
 	}
 
+	/** Parenthesis balance for a multiline inline value node. */
+	int32 ParenthesisBalance(const FString& InText)
+	{
+		int32 Balance = 0;
+		for (const TCHAR Ch : InText)
+		{
+			if (Ch == TEXT('('))
+			{
+				++Balance;
+			}
+			else if (Ch == TEXT(')'))
+			{
+				--Balance;
+			}
+		}
+		return Balance;
+	}
+
 	/**
 	 * The category a pin's type belongs to, in the words the report uses.
 	 *
@@ -400,9 +418,20 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 	// of a fault already reported rather than a second, separate one. See the `CurrentNode == nullptr`
 	// block below for the measurement that put this here.
 	bool bLastHeadUnresolved = false;
+	int32 InlineValueBalance = 0;
 
 	for (const FLine& Line : Lines)
 	{
+		if (InlineValueBalance > 0)
+		{
+			InlineValueBalance += ParenthesisBalance(Line.Text);
+			if (InlineValueBalance <= 0)
+			{
+				InlineValueBalance = 0;
+			}
+			continue;
+		}
+
 		// R-GRAPH-LOAD prefixes its otherwise round-trippable graph text with this
 		// result envelope. It describes the read, not a graph pin, so ignore it
 		// when the exact reader output is supplied to this checker.
@@ -596,6 +625,14 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 				Finding.Message += TEXT(" It has no input pins at all.");
 			}
 			OutPlan.Findings.Add(Finding);
+			continue;
+		}
+
+		// Inline value nodes have their own multiline pin body. The outer pin is
+		// checked above; the nested lines belong to the inline node, not the parent.
+		if (PinValue.StartsWith(TEXT("(")) && !PinValue.StartsWith(TEXT("(->")))
+		{
+			InlineValueBalance = ParenthesisBalance(PinValue);
 			continue;
 		}
 

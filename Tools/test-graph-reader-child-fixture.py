@@ -2,8 +2,9 @@
 
 The fixture has one linked function graph. It deliberately contains every node
 shape this regression needs: function entry, a child-Blueprint parent call, a
-break-struct value path, and a function result. Reading at ``full`` must name
-all of them, and that exact reader output must be accepted by GraphCheck.
+cross-owner call-function value path, and a function result. Reading at ``full``
+must name all of them, including each call target, and that exact reader output
+must be accepted by GraphCheck.
 """
 
 import os
@@ -42,7 +43,8 @@ def main():
     for needle, label in (
         ("(fn GraphReaderFixture", "function entry"),
         ("K2Node_CallParentFunction", "child Blueprint parent call"),
-        ("K2Node_BreakStruct", "break-struct node"),
+        ("K2Node_CallFunction", "cross-owner call node"),
+        (" ; target ", "call target"),
         ("K2Node_FunctionResult", "function result node"),
     ):
         check("reader contains the %s" % label, needle in text, text[:1400])
