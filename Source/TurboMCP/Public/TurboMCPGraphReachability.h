@@ -16,12 +16,12 @@ class UEdGraphNode;
 namespace TurboMCPGraphReachability
 {
 	/**
-	 * Marks every node connected to an entry by any graph wire.
+	 * Marks nodes live from graph entries using Blueprint execution and value rules.
 	 *
-	 * Graph execution flows forward on exec wires, while a value producer is live
-	 * because an entry-reachable consumer reads it. Walking every pin in both
-	 * directions expresses both cases and keeps reader/disconnected reporting in
-	 * lockstep with P-GRAPH-DEAD.
+	 * Exec-capable nodes are reached only through exec output wires. Pure nodes are
+	 * reached backwards through the input links of an already-live node, because a
+	 * value producer is live only when live code reads it. The same walk is shared
+	 * by graph readers, dead-node previews and layout reports.
 	 */
 	void MarkReachable(const UEdGraph* InGraph, TSet<const UEdGraphNode*>& OutReachable);
 }

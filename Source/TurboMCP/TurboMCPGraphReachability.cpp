@@ -10,6 +10,7 @@
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
+#include "EdGraphSchema_K2.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
 #include "K2Node_FunctionEntry.h"
@@ -23,6 +24,37 @@ namespace
 			|| Cast<UK2Node_CustomEvent>(InNode) != nullptr
 			|| Cast<UK2Node_FunctionEntry>(InNode) != nullptr
 			|| Cast<UK2Node_Tunnel>(InNode) != nullptr;
+	}
+
+	bool HasExecPin(const UEdGraphNode* InNode)
+	{
+		if (InNode == nullptr)
+		{
+			return false;
+		}
+		for (const UEdGraphPin* Pin : InNode->Pins)
+		{
+			if (Pin != nullptr && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool IsPureValueNode(const UEdGraphNode* InNode)
+	{
+		return InNode != nullptr && !HasExecPin(InNode);
+	}
+
+	void AddIfNew(const UEdGraphNode* InNode, TSet<const UEdGraphNode*>& OutReachable,
+		TArray<const UEdGraphNode*>& InOutStack)
+	{
+		if (InNode != nullptr && !OutReachable.Contains(InNode))
+		{
+			OutReachable.Add(InNode);
+			InOutStack.Add(InNode);
+		}
 	}
 }
 
@@ -40,8 +72,7 @@ void TurboMCPGraphReachability::MarkReachable(const UEdGraph* InGraph,
 	{
 		if (IsEntryNode(Node))
 		{
-			OutReachable.Add(Node);
-			Stack.Add(Node);
+			AddIfNew(Node, OutReachable, Stack);
 		}
 	}
 
@@ -54,13 +85,33 @@ void TurboMCPGraphReachability::MarkReachable(const UEdGraph* InGraph,
 			{
 				continue;
 			}
+
+			const bool bIsExec = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
+			if (bIsExec && Pin->Direction == EGPD_Output)
+			{
+				// Execution flows forward from an entry. A data-only link must not
+				// make an impure node appear live.
+				for (const UEdGraphPin* Linked : Pin->LinkedTo)
+				{
+					AddIfNew(Linked != nullptr ? Linked->GetOwningNode() : nullptr,
+						OutReachable, Stack);
+				}
+				continue;
+			}
+
+			if (Pin->Direction != EGPD_Input)
+			{
+				continue;
+			}
+
+			// A live node reads its input values. Walk backwards only into pure
+			// producers, so a disconnected impure body is not rescued by a data wire.
 			for (const UEdGraphPin* Linked : Pin->LinkedTo)
 			{
-				const UEdGraphNode* Next = Linked != nullptr ? Linked->GetOwningNode() : nullptr;
-				if (Next != nullptr && !OutReachable.Contains(Next))
+				const UEdGraphNode* Source = Linked != nullptr ? Linked->GetOwningNode() : nullptr;
+				if (IsPureValueNode(Source))
 				{
-					OutReachable.Add(Next);
-					Stack.Add(Next);
+					AddIfNew(Source, OutReachable, Stack);
 				}
 			}
 		}

@@ -18,6 +18,7 @@
 #include "K2Node_VariableGet.h"
 #include "UObject/Class.h"
 
+#include "TurboMCPGraphReachability.h"
 #include "TurboMCPNodeId.h"
 
 namespace
@@ -458,53 +459,11 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 		Report.Findings.Add(MoveTemp(Finding));
 	}
 
-	// Disconnected groups, and whether each repeats logic already in the connected
-	// graph. Reachability starts from every node with no incoming exec link, which is
-	// what an entry point looks like, plus every node with no links at all.
+	// Disconnected groups use the same execution/value liveness rule as the graph
+	// reader and dead-node preview. Keeping one walk prevents those tools from
+	// disagreeing about data-only links and pure value producers.
 	TSet<const UEdGraphNode*> Reachable;
-	TArray<const UEdGraphNode*> Stack;
-
-	for (const UEdGraphNode* Node : FlowNodes)
-	{
-		bool bHasIncoming = false;
-		for (const UEdGraphPin* Pin : Node->Pins)
-		{
-			if (Pin != nullptr && Pin->Direction == EGPD_Input && Pin->LinkedTo.Num() > 0)
-			{
-				bHasIncoming = true;
-				break;
-			}
-		}
-		if (!bHasIncoming)
-		{
-			Stack.Add(Node);
-		}
-	}
-
-	while (Stack.Num() > 0)
-	{
-		const UEdGraphNode* Node = Stack.Pop();
-		if (Node == nullptr || Reachable.Contains(Node))
-		{
-			continue;
-		}
-		Reachable.Add(Node);
-
-		for (const UEdGraphPin* Pin : Node->Pins)
-		{
-			if (Pin == nullptr)
-			{
-				continue;
-			}
-			for (const UEdGraphPin* Other : Pin->LinkedTo)
-			{
-				if (Other != nullptr)
-				{
-					Stack.Add(Other->GetOwningNodeUnchecked());
-				}
-			}
-		}
-	}
+	TurboMCPGraphReachability::MarkReachable(InGraph, Reachable);
 
 	// The logic the connected graph already contains, by signature.
 	TSet<FString> ConnectedSignatures;
