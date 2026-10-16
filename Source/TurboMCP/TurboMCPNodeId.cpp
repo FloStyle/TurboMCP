@@ -11,7 +11,9 @@
 #include "EdGraph/EdGraphNode.h"
 #include "Engine/Blueprint.h"
 #include "K2Node.h"
+#include "K2Node_CallParentFunction.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_FunctionResult.h"
 #include "K2Node_Variable.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
@@ -465,6 +467,17 @@ namespace TurboMCPNodeId
 		if (InNode->IsA<UK2Node_CustomEvent>())
 		{
 			return FString::Printf(TEXT("AddEvent|Custom|%s"), *Title);
+		}
+
+		// Terminators and parent calls have no palette category, but both are
+		// addressable graph nodes and must round-trip through the reader/checker.
+		if (InNode->IsA<UK2Node_FunctionResult>())
+		{
+			return TEXT("Function|Result");
+		}
+		if (InNode->IsA<UK2Node_CallParentFunction>())
+		{
+			return FString::Printf(TEXT("Parent|%s"), *Title);
 		}
 
 		// Variable get and set nodes are the other special case: they are not

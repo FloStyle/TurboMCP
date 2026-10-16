@@ -1,0 +1,9 @@
+{
+  "mountedFolder": "PluginMountedUnderAnotherName",
+  "descriptor": {
+    "Modules": [
+      { "Name": "TurboMCP", "Type": "Editor" }
+    ]
+  },
+  "expectedShippedTrapsPath": "PluginMountedUnderAnotherName/Content/Traps/EngineToolTraps.json"
+}

@@ -20,8 +20,10 @@
 #include "Materials/MaterialExpressionMultiply.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "Materials/MaterialExpressionScalarParameter.h"
+#include "Materials/MaterialExpressionTextureSampleParameter2D.h"
 #include "Materials/MaterialExpressionVectorParameter.h"
 #include "Materials/MaterialFunction.h"
+#include "Engine/Texture.h"
 #include "Materials/MaterialInstanceConstant.h"
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
@@ -231,6 +233,35 @@ namespace
 			++OutCounts.Expressions;
 			++OutCounts.Labels;
 			Wire(OutCounts, UnusedSource, TEXT(""), UnusedTint, TEXT(""));
+		}
+
+		// --- TEXTURE PARAMETERS: ONE SRGB AND ONE LINEAR SAMPLER ----------------------------------
+		// The reader must surface both the sampler type and the actual default texture handle. The
+		// linear parameter deliberately uses DefaultNormal (sRGB disabled); the focused edit test
+		// attempts to set DefaultTexture (sRGB enabled) by name and must refuse it.
+		UTexture* SRGBDefault = LoadObject<UTexture>(nullptr,
+			TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+		UTexture* LinearDefault = LoadObject<UTexture>(nullptr,
+			TEXT("/Engine/EngineMaterials/DefaultNormal.DefaultNormal"));
+		UMaterialExpressionTextureSampleParameter2D* FixtureSRGBTexture =
+			Add<UMaterialExpressionTextureSampleParameter2D>(InMaterial, nullptr, 1200, 450);
+		if (FixtureSRGBTexture != nullptr)
+		{
+			FixtureSRGBTexture->ParameterName = TEXT("FixtureSRGBTexture");
+			FixtureSRGBTexture->Group = TEXT("Fixture");
+			FixtureSRGBTexture->Texture = SRGBDefault;
+			FixtureSRGBTexture->SamplerType = SAMPLERTYPE_Color;
+			++OutCounts.Expressions;
+		}
+		UMaterialExpressionTextureSampleParameter2D* FixtureLinearTexture =
+			Add<UMaterialExpressionTextureSampleParameter2D>(InMaterial, nullptr, 1200, 600);
+		if (FixtureLinearTexture != nullptr)
+		{
+			FixtureLinearTexture->ParameterName = TEXT("FixtureLinearTexture");
+			FixtureLinearTexture->Group = TEXT("Fixture");
+			FixtureLinearTexture->Texture = LinearDefault;
+			FixtureLinearTexture->SamplerType = SAMPLERTYPE_LinearColor;
+			++OutCounts.Expressions;
 		}
 
 		// --- THE FINAL MIX, OUTSIDE BOTH BOXES ---------------------------------------------------

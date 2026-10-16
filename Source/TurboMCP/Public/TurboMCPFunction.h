@@ -55,8 +55,9 @@ public:
 	/** Checks whether a name can be used for a new function on this Blueprint. */
 	static FNameCheck CheckName(UBlueprint* InBlueprint, const FString& InName);
 
-	/** Adds a function and reports the graph it made. */
-	static FString Add(const FString& InAsset, const FString& InName);
+	/** Adds a function and its typed input/output pins, then refreshes every call node. */
+	static FString Add(const FString& InAsset, const FString& InName,
+		const FString& InInputs = TEXT(""), const FString& InOutputs = TEXT(""));
 
 	/** Removes a function and reports what was freed. */
 	static FString Remove(const FString& InAsset, const FString& InName);

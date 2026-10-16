@@ -313,9 +313,10 @@ public:
 	 * saved. An asset that has never been saved therefore has no outgoing edges, and
 	 * a user that has never been saved will not appear as an incoming one; the
 	 * result says so rather than letting a zero look like a fact about the project.
-	 * The tool waits for the registry scan before it reports a count. If the registry
-	 * is unavailable or its scan remains incomplete, it returns an error instead of
-	 * treating that missing data as zero references.
+	 * The tool waits for the registry scan before it reports a count, including a
+	 * later scan of newly mounted content. If the registry is unavailable or its
+	 * scan remains incomplete, it returns an error instead of treating that missing
+	 * data as zero references.
 	 *
 	 * A direction that is not one of the three is refused by name, and an asset that
 	 * cannot be resolved is refused by the shared resolver.
@@ -1154,6 +1155,11 @@ public:
 	 * only by Slate when a node is drawn, so a graph built headlessly has no measured sizes until
 	 * something draws it.
 	 *
+	 * `NodeIds` scopes the pass to a block. An empty list tidies the whole graph; otherwise every
+	 * unselected node is a fixed anchor and only the named nodes may move. The block is moved to clear
+	 * space rather than through its anchors. The preview reports the planned score and the edit reports
+	 * the score it actually measured after writing.
+	 *
 	 * The number it prints is the TOTAL WIRE LENGTH, which is what this pass is judged on. `P-GRAPH-KNOTS`
 	 * is judged on WIRES CROSSING NODES instead, and the two numbers are deliberately not comparable.
 	 */
@@ -1161,7 +1167,8 @@ public:
 	static FString PreviewTurboMCPGraphTidy(
 		const FString& Asset,
 		const FString& GraphName,
-		bool bForce);
+		bool bForce,
+		const TArray<FString>& NodeIds);
 
 	/**
 	 * Repair the bad spots in a mostly-good graph, WITHOUT moving anything.
@@ -1228,7 +1235,9 @@ public:
 	 * It adds nodes and links them to existing nodes BY NODE ID. It CANNOT REMOVE: the
 	 * code path that would delete a node does not exist in this capability, which is
 	 * what separates it from P-GRAPH-REPLACE. A form carrying a node id is read as a
-	 * LINK to that node, never as a second copy of it.
+	 * LINK to that node, never as a second copy of it. To connect two nodes created in one
+	 * block, put `; label First` under the first form and write `(-> First:then)` in the
+	 * second form's input pin. A local label is unique within that submitted block.
 	 *
 	 * The text is the same dialect the readers print, checked by P-GRAPH-CHECK first, so
 	 * a text this accepts is one the edit accepts.
@@ -1751,7 +1760,8 @@ public:
 	 * lists the function as implemented rather than trusting the call's return value.
 	 */
 	UFUNCTION(meta = (AICallable))
-	static FString EditTurboMCPFunctionAdd(const FString& Asset, const FString& Name);
+	static FString EditTurboMCPFunctionAdd(const FString& Asset, const FString& Name,
+		const FString& Inputs = TEXT(""), const FString& Outputs = TEXT(""));
 
 	/**
 	 * Remove a function from a Blueprint, so its name is free at once.
@@ -1886,13 +1896,14 @@ public:
 	 * never moved on its own.
 	 *
 	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
-	 * disagrees with the measure asks for.
+	 * disagrees with the measure asks for. `NodeIds` has the same fixed-anchor scope as the preview.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphTidy(
 		const FString& Asset,
 		const FString& GraphName,
-		bool bForce);
+		bool bForce,
+		const TArray<FString>& NodeIds);
 
 	/**
 	 * Apply the repairs the preview listed.
@@ -2114,6 +2125,18 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPMaterialBlocks(
 		const FString& Asset);
+
+	/**
+	 * Set texture overrides on a material instance.
+	 *
+	 * Each entry is `Parameter = /Asset/Texture.Asset`. The parameter must be declared by the instance's
+	 * parent chain, and the texture must be compatible with the parameter's sampler type. The result is
+	 * re-read through R-MAT-INST-LOAD so it reports what the instance now stores.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPMaterialInstanceSet(
+		const FString& Asset,
+		const TArray<FString>& Overrides);
 
 	/**
 	 * Apply row operations to a DataTable in ONE transaction, then re-read the rows back from the table.

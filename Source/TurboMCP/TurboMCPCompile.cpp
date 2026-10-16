@@ -449,6 +449,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		}
 
 		const int32 MarkBeforeSave = Capture.Mark();
+		const int32 ErrorMarkBeforeSave = Capture.ErrorMark();
 
 		// The asset object is needed for the save call, so it is loaded when it
 		// is not already in memory. Loading is not an edit.
@@ -547,16 +548,17 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		const bool bStillDirty = Package->IsDirty();
 
 		const int32 WarningsHere = Capture.WarningCountSince(MarkBeforeSave);
+		const int32 ErrorsHere = Capture.ErrorCountSince(ErrorMarkBeforeSave);
 
 		if (!bStillDirty)
 		{
-			Lines += FString::Printf(TEXT("\n%s  saved"), *Resolved.ObjectPath);
+			// The package write is independently proven by the dirty flag. Keep it separate from the editor's
+			// thumbnail/design-time phase, whose script errors can happen after a successful package write.
+			Lines += FString::Printf(TEXT("\n%s  package write: saved"), *Resolved.ObjectPath);
 			++SavedCount;
-			// WHICH MECHANISM RAN: a caller who chose the direct write and is not told cannot tell the two
-			// saves apart in a log.
 			Lines += bWithoutThumbnail
-				? TEXT("  (written without the thumbnail draw)")
-				: TEXT("  (written by the editor's save)");
+				? TEXT("\n    thumbnail/design-time work: skipped (written without the thumbnail draw)")
+				: TEXT("\n    thumbnail/design-time work: ran through the editor's save path (written by the editor's save)");
 		}
 		else
 		{
@@ -596,6 +598,15 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 					TEXT(" design-time code (`WidgetBlueprintThumbnailRenderer.cpp:189-191`, frequency")
 					TEXT(" `OnAssetSave` at `:216`). No option on this tool skips that draw;")
 					TEXT(" `EditTurboMCPSaveWithoutThumbnail` writes the package without it.");
+		}
+
+		if (!bStillDirty && !bWithoutThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr && ErrorsHere > 0)
+		{
+			// The write is already proven above. A widget thumbnail may execute design-time script, so report
+			// that work as a warning instead of allowing its error to obscure the saved package.
+			Lines += FString::Printf(
+				TEXT("\n    warning: package write succeeded, but thumbnail/design-time work raised %d engine error(s)"),
+				ErrorsHere);
 		}
 
 		if (WarningsHere > 0)

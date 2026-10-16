@@ -342,4 +342,22 @@ namespace TurboMCPGraphTextLex
 		const FString Candidate = Body.Left(End);
 		return Candidate.Contains(TEXT(":")) ? Candidate : FString();
 	}
+
+	FString LocalLabelFromComment(const FString& InComment)
+	{
+		FString Body = InComment.TrimStartAndEnd();
+		if (Body.StartsWith(TEXT(";")))
+		{
+			Body = Body.RightChop(1).TrimStartAndEnd();
+		}
+		if (!Body.StartsWith(TEXT("label "), ESearchCase::IgnoreCase))
+		{
+			return FString();
+		}
+
+		const FString Label = Body.RightChop(6).TrimStartAndEnd();
+		// Labels are tokens because a link's node half is split from its pin at the final colon.
+		return !Label.IsEmpty() && !Label.Contains(TEXT(":")) && !Label.Contains(TEXT(" "))
+			? Label : FString();
+	}
 }

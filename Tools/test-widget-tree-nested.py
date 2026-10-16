@@ -8,8 +8,10 @@ protect both readers' traversal contracts without requiring an editor server.
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+TOOLS = ROOT / "Tools"
 COMPACT = (ROOT / "Source/TurboMCP/TurboMCPWidgetTree.cpp").read_text(encoding="utf-8")
 DIALECT = (ROOT / "Source/TurboMCP/TurboMCPWidgetTreeSync.cpp").read_text(encoding="utf-8")
+FIXTURE = (TOOLS / "nested-child-widget-tree.fixture").read_text(encoding="utf-8")
 failures = []
 
 
@@ -20,6 +22,14 @@ def check(label, condition):
 
 
 def main():
+    check("fixture describes a host with a nested child user widget",
+          "NestedChild [UserWidget]" in FIXTURE and "ChildRoot [CanvasPanel]" in FIXTURE)
+    check("fixture includes both a child widget and named-slot content",
+          "ChildLabel [TextBlock]" in FIXTURE
+          and "ChildSlot [NamedSlot]" in FIXTURE
+          and "SlottedLabel [TextBlock] named-slot=ChildSlot" in FIXTURE)
+    check("fixture preserves descendant indentation",
+          "  NestedChild [UserWidget]\n    ChildRoot [CanvasPanel]\n      ChildLabel [TextBlock]" in FIXTURE)
     check("compact reader descends into child UUserWidget::WidgetTree",
           "UserWidget->WidgetTree->RootWidget" in COMPACT)
     check("compact reader follows INamedSlotInterface content",

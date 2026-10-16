@@ -231,6 +231,17 @@ def linked_text_for(marker, target_key):
             % (marker, ASSET, GRAPH, target_key, LINK_TARGET_PIN))
 
 
+def local_label_text(marker):
+    """Two new forms, where the second targets the first by a block-local label."""
+    return ('(Development|PrintString\n'
+            '    ; label First\n'
+            '    InString "%s source")\n'
+            '(Development|PrintString\n'
+            '    ; label Second\n'
+            '    InString "%s target"\n'
+            '    execute (-> First:then))') % (marker, marker)
+
+
 def main():
     session = rebuild_fixture_and_reconnect()
     if session is None:
@@ -381,7 +392,24 @@ def main():
               "before %s after %s" % (before_link_count, node_count(session)[0]))
 
         print()
-        print("=== 5b. a link to a node that does NOT exist is still refused by name ===")
+        print("=== 5b. a local label links two new nodes in the same block ===")
+        labelled_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend", {
+            "asset": ASSET, "graphName": GRAPH, "text": local_label_text("PROBE-LOCAL-LABEL")})
+        print(labelled_preview[:500])
+        check("the preview accepts the local-label link", "wire  line" in labelled_preview,
+              labelled_preview[:300])
+        before_label_count, _ = node_count(session)
+        labelled_edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend", {
+            "asset": ASSET, "graphName": GRAPH, "text": local_label_text("PROBE-LOCAL-LABEL")})
+        print(labelled_edit[:500])
+        check("the edit makes the local-label wire", "1 wire(s) made, of 1" in labelled_edit,
+              labelled_edit[:300])
+        check("the local-label block creates both nodes", (node_count(session)[0] or 0) >=
+              (before_label_count or 0) + 2,
+              "before %s after %s" % (before_label_count, node_count(session)[0]))
+
+        print()
+        print("=== 5c. a link to a node that does NOT exist is still refused by name ===")
         ghost = ("(Development|PrintString\n    execute (-> %s:%s:ffffff:then))" % (ASSET, GRAPH))
         ghost_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",
                                      {"asset": ASSET, "graphName": GRAPH, "text": ghost})
@@ -392,7 +420,7 @@ def main():
         check("and it names what could not be resolved", "ffffff" in ghost_preview, ghost_preview[:300])
 
         print()
-        print("=== 5c. a link to a PIN that does not exist names the real pins ===")
+        print("=== 5d. a link to a PIN that does not exist names the real pins ===")
         bad_pin = linked_text_for("PROBE-LINK-BADPIN", target_key).replace(
             ":%s))" % LINK_TARGET_PIN, ":noSuchPin))")
         pin_preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend",

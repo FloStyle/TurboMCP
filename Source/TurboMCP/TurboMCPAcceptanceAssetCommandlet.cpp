@@ -16,9 +16,12 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "GameFramework/Actor.h"
+#include "K2Node_BreakStruct.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_CallParentFunction.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
+#include "K2Node_IfThenElse.h"
 #include "K2Node_Knot.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
@@ -48,6 +51,7 @@
 namespace
 {
 	const FString PackagePath = TEXT("/Game/Tests/TurboMCPAcceptance");
+	const FString GraphReaderChildPackagePath = TEXT("/Game/Tests/TurboMCPGraphReaderChild");
 
 	/**
 	 * NOTHING HERE FORCES THE MODULE TO LOAD, AND THAT IS A MEASURED CONCLUSION RATHER THAN AN
@@ -120,12 +124,12 @@ namespace
 	 * `TurboMCPAcceptance:KnotProbe` does NOT settle it, because such a report can be taken with the asset
 	 * OPEN IN A RENDERED EDITOR, where Slate has already filled the sizes in:
 	 *
-	 *   - a node in an asset OPENED IN THE EDITOR has real sizes, because Slate measured it;
+	 *   - opening an asset only requests a graph panel; sizes are real only after Slate draws it and positive NodeWidth and NodeHeight are read back;
 	 *   - a node freshly built by a COMMANDLET has size 0 until something draws it.
 	 *
 	 * So a layout pass must not assume either. `P/E-GRAPH-KNOTS`, `FIX-BACKWARD` and `TIDY` run in the
-	 * editor and will normally see real sizes, but they must REFUSE rather than compute from points
-	 * when they do not - because placing knots from point-rectangles is arithmetic on nothing.
+	 * editor and must REFUSE rather than compute from points when their read-back does not prove real sizes
+	 * - because placing knots from point-rectangles is arithmetic on nothing.
 	 *
 	 * This commandlet sets the sizes EXPLICITLY so the fixture it writes carries geometry that a test
 	 * can measure without opening a graph editor. It does NOT pretend to know what the editor would
@@ -1328,6 +1332,132 @@ namespace
 	}
 
 	/**
+	 * `ScopedTidyProbe`: two deliberately messy selected nodes surrounded by fixed anchors.
+	 *
+	 * The selection is a contiguous exec block, while Entry, Before and After remain outside it. A
+	 * scoped tidy must move only the two middle calls to clear space, leaving those surrounding nodes
+	 * and the comment box byte-for-byte at their recorded coordinates. The markers let the focused
+	 * suite discover ids from the reader rather than pinning commandlet-generated ids.
+	 */
+	bool BuildScopedTidyProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* Result = nullptr;
+		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("ScopedTidyProbe"), Entry, Result);
+		if (Graph == nullptr || Entry == nullptr)
+		{
+			OutProblems.Add(TEXT("ScopedTidyProbe: no function entry was created"));
+			return false;
+		}
+
+		auto MakePrint = [Graph](const TCHAR* Marker, double X, double Y) -> UK2Node_CallFunction*
+		{
+			UK2Node_CallFunction* Call = NewObject<UK2Node_CallFunction>(Graph);
+			Call->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+			Place(Graph, Call, X, Y);
+			if (UEdGraphPin* Text = Call->FindPin(TEXT("InString")))
+			{
+				Text->DefaultValue = Marker;
+			}
+			return Call;
+		};
+
+		UK2Node_CallFunction* Before = MakePrint(TEXT("SCOPED-TIDY-ANCHOR-BEFORE"), 400.0, 80.0);
+		UK2Node_CallFunction* First = MakePrint(TEXT("SCOPED-TIDY-SELECTED-FIRST"), 900.0, 860.0);
+		UK2Node_CallFunction* Second = MakePrint(TEXT("SCOPED-TIDY-SELECTED-SECOND"), 760.0, 920.0);
+		UK2Node_CallFunction* After = MakePrint(TEXT("SCOPED-TIDY-ANCHOR-AFTER"), 1600.0, 80.0);
+		if (Entry->GetThenPin() == nullptr || Before->GetExecPin() == nullptr || Before->GetThenPin() == nullptr
+			|| First->GetExecPin() == nullptr || First->GetThenPin() == nullptr || Second->GetExecPin() == nullptr
+			|| Second->GetThenPin() == nullptr || After->GetExecPin() == nullptr)
+		{
+			OutProblems.Add(TEXT("ScopedTidyProbe: a PrintString exec pin is missing"));
+			return false;
+		}
+		Entry->GetThenPin()->MakeLinkTo(Before->GetExecPin());
+		Before->GetThenPin()->MakeLinkTo(First->GetExecPin());
+		First->GetThenPin()->MakeLinkTo(Second->GetExecPin());
+		Second->GetThenPin()->MakeLinkTo(After->GetExecPin());
+		MakeCommentBox(Graph, TEXT("SCOPED-TIDY-FIXED-BOX"), 260.0, -20.0, 1540.0, 1240.0);
+
+		for (UEdGraphNode* Node : Graph->Nodes)
+		{
+			SizeForMeasurement(Node);
+		}
+		return true;
+	}
+
+	/**
+	 * `AppendChainProbe`: a compact reader/writer fixture for graph insertion.
+	 *
+	 * Its branch forces the reader to emit named `:then` and `:else` continuations; the condition comes from
+	 * a b-prefixed member variable, and both arms contain library PrintString calls. The then arm has a head and
+	 * tail so append can prove both the ordinary tail case and an insertion that must preserve the old successor.
+	 */
+	bool BuildAppendChainProbe(UBlueprint* InBlueprint, TArray<FString>& OutProblems)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* Result = nullptr;
+		UEdGraph* Graph = MakeFunction(InBlueprint, TEXT("AppendChainProbe"), Entry, Result);
+		if (Graph == nullptr || Entry == nullptr)
+		{
+			OutProblems.Add(TEXT("AppendChainProbe: no function entry was created"));
+			return false;
+		}
+
+		FEdGraphPinType BoolType;
+		BoolType.PinCategory = UEdGraphSchema_K2::PC_Boolean;
+		const FName FlagName(TEXT("bAppendFixtureBranch"));
+		if (!FBlueprintEditorUtils::AddMemberVariable(InBlueprint, FlagName, BoolType, TEXT("true")))
+		{
+			OutProblems.Add(TEXT("AppendChainProbe: could not add bAppendFixtureBranch"));
+			return false;
+		}
+
+		UK2Node_VariableGet* Flag = NewObject<UK2Node_VariableGet>(Graph);
+		Flag->VariableReference.SetSelfMember(FlagName);
+		Place(Graph, Flag, 250.0, -200.0);
+
+		UK2Node_IfThenElse* Branch = NewObject<UK2Node_IfThenElse>(Graph);
+		Place(Graph, Branch, 500.0, 0.0);
+
+		auto MakePrint = [&](const TCHAR* InMarker, double InX, double InY) -> UK2Node_CallFunction*
+		{
+			UK2Node_CallFunction* Call = NewObject<UK2Node_CallFunction>(Graph);
+			Call->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+			Place(Graph, Call, InX, InY);
+			if (UEdGraphPin* Text = Call->FindPin(TEXT("InString")))
+			{
+				Text->DefaultValue = InMarker;
+			}
+			return Call;
+		};
+
+		UK2Node_CallFunction* ThenHead = MakePrint(TEXT("APPEND-FIXTURE-THEN-HEAD"), 800.0, -120.0);
+		UK2Node_CallFunction* ThenTail = MakePrint(TEXT("APPEND-FIXTURE-THEN-TAIL"), 1120.0, -120.0);
+		UK2Node_CallFunction* ElseTail = MakePrint(TEXT("APPEND-FIXTURE-ELSE-TAIL"), 800.0, 180.0);
+
+		UEdGraphPin* EntryThen = Entry->GetThenPin();
+		UEdGraphPin* BranchExec = Branch->GetExecPin();
+		UEdGraphPin* Condition = Branch->FindPin(TEXT("Condition"));
+		UEdGraphPin* Then = Branch->GetThenPin();
+		UEdGraphPin* Else = Branch->GetElsePin();
+		if (EntryThen == nullptr || BranchExec == nullptr || Condition == nullptr || Then == nullptr || Else == nullptr
+			|| Flag->GetValuePin() == nullptr || ThenHead->GetExecPin() == nullptr || ThenHead->GetThenPin() == nullptr
+			|| ThenTail->GetExecPin() == nullptr || ElseTail->GetExecPin() == nullptr)
+		{
+			OutProblems.Add(TEXT("AppendChainProbe: a branch, variable, or library-call pin is missing"));
+			return false;
+		}
+
+		LinkFixturePins(EntryThen, BranchExec);
+		LinkFixturePins(Flag->GetValuePin(), Condition);
+		LinkFixturePins(Then, ThenHead->GetExecPin());
+		LinkFixturePins(ThenHead->GetThenPin(), ThenTail->GetExecPin());
+		LinkFixturePins(Else, ElseTail->GetExecPin());
+		return true;
+	}
+
+	/**
 	 * `SaneProbe`: an ordinary chain that SHOULD NOT be disturbed.
 	 *
 	 * A layout pass that measures and rolls back needs a graph where the pass has nothing to improve,
@@ -1388,6 +1518,94 @@ namespace
 			}
 			Call->GetThenPin()->MakeLinkTo(Result->GetExecPin());
 		}
+		return true;
+	}
+
+	/** A child Blueprint fixture whose one graph keeps reader edge cases together. */
+	UBlueprint* MakeGraphReaderChild(UBlueprint* InParent)
+	{
+		if (InParent == nullptr || InParent->GeneratedClass == nullptr)
+		{
+			return nullptr;
+		}
+
+		if (UPackage* Existing = FindPackage(nullptr, *GraphReaderChildPackagePath))
+		{
+			Existing->SetDirtyFlag(false);
+			if (UObject* Old = FindObject<UObject>(Existing, TEXT("TurboMCPGraphReaderChild")))
+			{
+				Old->Rename(nullptr, GetTransientPackage(),
+					REN_DontCreateRedirectors | REN_NonTransactional);
+			}
+		}
+
+		UPackage* Package = CreatePackage(*GraphReaderChildPackagePath);
+		return Package != nullptr
+			? FKismetEditorUtilities::CreateBlueprint(InParent->GeneratedClass, Package,
+				TEXT("TurboMCPGraphReaderChild"), BPTYPE_Normal, UBlueprint::StaticClass(),
+				UBlueprintGeneratedClass::StaticClass(), TEXT("TurboMCPAcceptanceAssetCommandlet"))
+			: nullptr;
+	}
+
+	/**
+	 * The reader fixture deliberately combines nodes that ordinary generated graphs omit:
+	 * a child Blueprint's parent-function call, an explicit function result, and a
+	 * break-vector value path. Every node is linked so `detail=full` must print it.
+	 */
+	bool BuildGraphReaderFixture(UBlueprint* InParent, UBlueprint* InChild,
+		TArray<FString>& OutProblems)
+	{
+		UK2Node_FunctionEntry* Entry = nullptr;
+		UK2Node_FunctionResult* IgnoredResult = nullptr;
+		UEdGraph* Graph = MakeFunction(InChild, TEXT("GraphReaderFixture"), Entry, IgnoredResult);
+		if (Graph == nullptr || Entry == nullptr || InParent == nullptr || InParent->GeneratedClass == nullptr)
+		{
+			OutProblems.Add(TEXT("GraphReaderFixture: could not create the child function graph and entry"));
+			return false;
+		}
+
+		FEdGraphPinType VectorType;
+		VectorType.PinCategory = UEdGraphSchema_K2::PC_Struct;
+		VectorType.PinSubCategoryObject = TBaseStructure<FVector>::Get();
+		Entry->CreateUserDefinedPin(TEXT("InputVector"), VectorType, EGPD_Output);
+
+		UK2Node_CallParentFunction* ParentCall = NewObject<UK2Node_CallParentFunction>(Graph);
+		// The parent class inherits this native Actor callback. Unlike the acceptance
+		// probe functions it is available before compilation, which matters because
+		// other probes deliberately contain invalid cycles for reader tests.
+		ParentCall->SetFromFunction(AActor::StaticClass()->FindFunctionByName(
+			TEXT("UserConstructionScript")));
+		Place(Graph, ParentCall, 400.0, 0.0);
+
+		UK2Node_BreakStruct* BreakVector = NewObject<UK2Node_BreakStruct>(Graph);
+		BreakVector->StructType = TBaseStructure<FVector>::Get();
+		Place(Graph, BreakVector, 400.0, 300.0);
+
+		UEdGraphPin* VectorInput = Entry->FindPin(TEXT("InputVector"));
+		UEdGraphPin* BreakInput = BreakVector->FindPin(BreakVector->StructType->GetFName());
+		UEdGraphPin* BreakX = BreakVector->FindPin(TEXT("X"));
+		UK2Node_FunctionResult* Result = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(Entry);
+		if (VectorInput == nullptr || BreakInput == nullptr || BreakX == nullptr || Result == nullptr)
+		{
+			OutProblems.Add(TEXT("GraphReaderFixture: the vector input, break-struct pins, or result node is missing"));
+			return false;
+		}
+		Result->CreateUserDefinedPin(TEXT("X"), BreakX->PinType, EGPD_Input);
+		UEdGraphPin* ResultX = Result->FindPin(TEXT("X"));
+		if (ParentCall->GetExecPin() == nullptr || ParentCall->GetThenPin() == nullptr
+			|| Entry->GetThenPin() == nullptr || Result->GetExecPin() == nullptr || ResultX == nullptr)
+		{
+			OutProblems.Add(TEXT("GraphReaderFixture: the parent-call or result exec pins are missing"));
+			return false;
+		}
+
+		// FindOrCreateFunctionResultNode wires a new void function entry directly to
+		// its result. Replace that generated shortcut with the parent-call chain.
+		Entry->GetThenPin()->BreakAllPinLinks();
+		Entry->GetThenPin()->MakeLinkTo(ParentCall->GetExecPin());
+		ParentCall->GetThenPin()->MakeLinkTo(Result->GetExecPin());
+		VectorInput->MakeLinkTo(BreakInput);
+		BreakX->MakeLinkTo(ResultX);
 		return true;
 	}
 }
@@ -1468,7 +1686,9 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 	const bool bKnots = BuildKnotProbe(Blueprint, ProbeProblems);
 	const bool bDead = BuildDeadProbe(Blueprint, ProbeProblems);
 	const bool bLocals = BuildLocalVarProbe(Blueprint, ProbeProblems);
+	const bool bAppendChain = BuildAppendChainProbe(Blueprint, ProbeProblems);
 	const bool bSane = BuildSaneProbe(Blueprint, ProbeProblems);
+	const bool bScopedTidy = BuildScopedTidyProbe(Blueprint, ProbeProblems);
 	// THE FIFTH PROBE, ADDED BECAUSE TWO INDEPENDENT SPECIFICATIONS FOUND THE SAME HOLE. `KnotProbe`
 	// cannot test the crossing case and the asset had no comment box at all, so `P/E-GRAPH-KNOTS` and
 	// `P/E-GRAPH-TIDY` both had their primary case resting on code review.
@@ -1479,19 +1699,37 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 	const bool bTargetPinRoundTrip = BuildTargetPinRoundTripProbe(Blueprint, ProbeProblems);
 	const bool bLargeGraph = BuildLargeGraphProbe(Blueprint, ProbeProblems);
 
+	// Do not compile the parent here: several acceptance probes deliberately
+	// contain invalid cycles. The child parent-call uses Actor's native callback,
+	// so it can be created and saved without compiling either fixture Blueprint.
+	UBlueprint* GraphReaderChild = MakeGraphReaderChild(Blueprint);
+	const bool bGraphReader = GraphReaderChild != nullptr
+		&& BuildGraphReaderFixture(Blueprint, GraphReaderChild, ProbeProblems);
+	if (GraphReaderChild == nullptr)
+	{
+		ProbeProblems.Add(TEXT("GraphReaderFixture: could not create the derived Blueprint asset"));
+	}
+	else if (bGraphReader)
+	{
+		FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(GraphReaderChild);
+	}
+
 	UE_LOG(LogTurboMCP, Display,
-		TEXT("TurboMCP: KnotProbe=%s DeadProbe=%s LocalVarProbe=%s SaneProbe=%s LayoutProbe=%s "
-			"ValueCycleProbe=%s SelfLinkProbe=%s DepthLimitProbe=%s TargetPinRoundTripProbe=%s LargeGraphProbe=%s"),
+		TEXT("TurboMCP: KnotProbe=%s DeadProbe=%s LocalVarProbe=%s AppendChainProbe=%s SaneProbe=%s ScopedTidyProbe=%s LayoutProbe=%s "
+			"ValueCycleProbe=%s SelfLinkProbe=%s DepthLimitProbe=%s TargetPinRoundTripProbe=%s LargeGraphProbe=%s GraphReaderFixture=%s"),
 		bKnots ? TEXT("ok") : TEXT("FAILED"),
 		bDead ? TEXT("ok") : TEXT("FAILED"),
 		bLocals ? TEXT("ok") : TEXT("FAILED"),
+		bAppendChain ? TEXT("ok") : TEXT("FAILED"),
 		bSane ? TEXT("ok") : TEXT("FAILED"),
+		bScopedTidy ? TEXT("ok") : TEXT("FAILED"),
 		bLayout ? TEXT("ok") : TEXT("FAILED"),
 		bValueCycle ? TEXT("ok") : TEXT("FAILED"),
 		bSelfLink ? TEXT("ok") : TEXT("FAILED"),
 		bDepthLimit ? TEXT("ok") : TEXT("FAILED"),
 		bTargetPinRoundTrip ? TEXT("ok") : TEXT("FAILED"),
-		bLargeGraph ? TEXT("ok") : TEXT("FAILED"));
+		bLargeGraph ? TEXT("ok") : TEXT("FAILED"),
+		bGraphReader ? TEXT("ok") : TEXT("FAILED"));
 
 	// WHY A PROBE FAILED, PRINTED RATHER THAN ONLY COUNTED. Without this the log says `FAILED` and the
 	// reason is discarded - the shape `P1` names.
@@ -1500,8 +1738,9 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 		UE_LOG(LogTurboMCP, Error, TEXT("TurboMCP: %s"), *Problem);
 	}
 
-	if (!bKnots || !bDead || !bLocals || !bSane || !bLayout
-		|| !bValueCycle || !bSelfLink || !bDepthLimit || !bTargetPinRoundTrip || !bLargeGraph)
+	if (!bKnots || !bDead || !bLocals || !bAppendChain || !bSane || !bScopedTidy || !bLayout
+		|| !bValueCycle || !bSelfLink || !bDepthLimit || !bTargetPinRoundTrip || !bLargeGraph
+		|| !bGraphReader)
 	{
 		UE_LOG(LogTurboMCP, Error, TEXT("one or more probe graphs could not be built"));
 		return 2;
@@ -1611,7 +1850,53 @@ int32 UTurboMCPAcceptanceAssetCommandlet::Main(const FString& Params)
 
 	FAssetRegistryModule::AssetCreated(Blueprint);
 
+	// Save the derived fixture separately: a child Blueprint is a separate package,
+	// so saving the parent cannot persist its graph by accident.
+	UPackage* GraphReaderPackage = GraphReaderChild->GetOutermost();
+	GraphReaderPackage->MarkPackageDirty();
+	GraphReaderPackage->MarkAsFullyLoaded();
+	const FString GraphReaderFileName = ContentDir
+		+ GraphReaderChildPackagePath.RightChop(FCString::Strlen(TEXT("/Game")))
+		+ FPackageName::GetAssetPackageExtension();
+	const FString GraphReaderTempFileName = GraphReaderFileName + TEXT(".writing");
+	if (PlatformFile.FileExists(*GraphReaderTempFileName)
+		&& !PlatformFile.DeleteFile(*GraphReaderTempFileName))
+	{
+		UE_LOG(LogTurboMCP, Error, TEXT("a stale %s could not be removed"), *GraphReaderTempFileName);
+		return 3;
+	}
+	FStringOutputDevice GraphReaderSaveErrors;
+	FSavePackageArgs GraphReaderSaveArgs;
+	GraphReaderSaveArgs.TopLevelFlags = RF_Public | RF_Standalone;
+	GraphReaderSaveArgs.Error = &GraphReaderSaveErrors;
+	if (!UPackage::SavePackage(GraphReaderPackage, GraphReaderChild, *GraphReaderTempFileName,
+		GraphReaderSaveArgs))
+	{
+		UE_LOG(LogTurboMCP, Error, TEXT("could not save graph-reader fixture %s"),
+			*GraphReaderTempFileName);
+		if (!GraphReaderSaveErrors.IsEmpty())
+		{
+			UE_LOG(LogTurboMCP, Error, TEXT("the engine's reason: %s"), *GraphReaderSaveErrors);
+		}
+		return 3;
+	}
+	if (PlatformFile.FileExists(*GraphReaderFileName)
+		&& !PlatformFile.DeleteFile(*GraphReaderFileName))
+	{
+		UE_LOG(LogTurboMCP, Error, TEXT("could not replace graph-reader fixture at %s"),
+			*GraphReaderFileName);
+		return 3;
+	}
+	if (!PlatformFile.MoveFile(*GraphReaderFileName, *GraphReaderTempFileName))
+	{
+		UE_LOG(LogTurboMCP, Error, TEXT("could not move graph-reader fixture onto %s"),
+			*GraphReaderFileName);
+		return 3;
+	}
+	FAssetRegistryModule::AssetCreated(GraphReaderChild);
+
 	UE_LOG(LogTurboMCP, Display, TEXT("TurboMCP: wrote %s"), *FileName);
+	UE_LOG(LogTurboMCP, Display, TEXT("TurboMCP: wrote graph-reader fixture %s"), *GraphReaderFileName);
 
 	// The counts are the evidence a caller has, so they are printed rather than left to the tool.
 	for (UEdGraph* Graph : Blueprint->FunctionGraphs)

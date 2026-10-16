@@ -67,6 +67,10 @@ def main():
     check("reports the outgoing direction", "uses (out):" in out)
     check("finds more than zero on the first query", "uses (out): 0" not in out)
     check(
+        "no repeated query changes the real result to zero",
+        all("uses (out): 0" not in text for text in repeated_out),
+    )
+    check(
         "the same query stays identical after registry readiness",
         len(set(repeated_out)) == 1,
         "%d distinct answer(s)" % len(set(repeated_out)),

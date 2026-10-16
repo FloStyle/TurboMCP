@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPStruct.h"
+#include "TurboMCPTypeParser.h"
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "BlueprintEditorLibrary.h"
@@ -762,7 +763,7 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 		// prints a plan the edit will not carry out is worse than no preview (`D-02`).
 		FEdGraphPinType PinType;
 		FString TypeWhy;
-		if (!ResolveType(Field.TypeText, PinType, TypeWhy))
+		if (!FTurboMCPTypeParser::Resolve(Field.TypeText, PinType, TypeWhy))
 		{
 			OutError = FString::Printf(
 				TEXT("field '%s' has type '%s', which cannot be used: %s."),
@@ -925,7 +926,7 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 	{
 		FEdGraphPinType PinType;
 		FString TypeWhy;
-		if (!ResolveType(Field.TypeText, PinType, TypeWhy))
+		if (!FTurboMCPTypeParser::Resolve(Field.TypeText, PinType, TypeWhy))
 		{
 			// UNREACHABLE WHILE `PlanNew` IS THE ONLY ENTRY POINT, because every type was resolved there. It is kept
 			// because a resolution that succeeded while planning and fails while applying is a fact the caller must

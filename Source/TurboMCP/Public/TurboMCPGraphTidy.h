@@ -61,24 +61,6 @@ public:
 	/** The clearance between two sibling boxes, set equal to `FitPadding` so a box's margin is not doubled. */
 	static constexpr double BoxGap = 40.0;
 
-	/**
-	 * THE SIZE A NODE IS GIVEN WHEN THE ENGINE HAS MEASURED NONE.
-	 *
-	 * `NodeWidth` and `NodeHeight` are plain `int32` fields that SLATE fills when a node is DRAWN, and
-	 * nothing in the engine computes them: the only writes in the whole engine tree are
-	 * `UEdGraphNode_Documentation::ResizeNode` and `::SetBounds`. So a node in an asset that has never
-	 * been rendered has a ZERO rectangle, and a zero rectangle cannot carry a pin position.
-	 *
-	 * REFUSING IN THAT CASE IS WRONG, HOWEVER DEFENSIBLE IT READS: it makes the tool useless on every
-	 * graph it exists for, which is the shape `P/E-GRAPH-KNOTS` demonstrates on the same condition. So a
-	 * node with no measured size is given a square of this size centred on its position, and
-	 * `FPlan::bUsedFallbackGeometry` is set so EVERY REPORT CAN STATE WHICH GEOMETRY IT USED. That is
-	 * what makes the fallback honest rather than a guess dressed as a measurement.
-	 *
-	 * A PASS MAY NOT SILENTLY SUBSTITUTE A SIZE. It may substitute a documented one, and it must say so.
-	 */
-	static constexpr double MinimumNodeExtent = 48.0;
-
 	/** One node, read once, with the position tidy plans for it kept as VALUES. */
 	struct FNode
 	{
@@ -95,25 +77,6 @@ public:
 		double Y = 0.0;
 		double Width = 0.0;
 		double Height = 0.0;
-
-		/**
-		 * The size the ENGINE reports, before any fallback. Zero when it has never measured one.
-		 *
-		 * KEPT SEPARATE FROM `Width`/`Height`, AND THAT SEPARATION IS A MEASURED FIX. The measure has two
-		 * jobs that want different numbers:
-		 *
-		 *  - the BEFORE number must reproduce what `L-LAYOUT-REPORT` reports, which uses the node's OWN
-		 *    `NodeWidth`/`NodeHeight` and nothing else. Using a substituted size there makes tidy's
-		 *    before-number disagree with the reader's for a reason that has nothing to do with layout;
-		 *  - the PLANNED layout must be computable even when a size is missing, which is where the
-		 *    fallback belongs.
-		 *
-		 * STORING ONLY THE SUBSTITUTED SIZE WOULD COMPUTE THE TWO NUMBERS FROM DIFFERENT RECTANGLES on a
-		 * graph built by a commandlet, so the cross-tool check could never pass - and the failure is
-		 * invisible from the output, because the rollback reads as a considered decision.
-		 */
-		double MeasuredWidth = 0.0;
-		double MeasuredHeight = 0.0;
 
 		/** The rectangle tidy PLANS. Equals the current one until a pass writes to it. */
 		double PlannedX = 0.0;
@@ -133,8 +96,6 @@ public:
 		/** True when no entry point can reach it. Excluded from the layout, never moved. */
 		bool bUnreachable = false;
 
-		/** True when this node's rectangle had to come from `MinimumNodeExtent`. */
-		bool bSizeWasFallback = false;
 	};
 
 	/** One comment box, with its nesting parent resolved GEOMETRICALLY. */
@@ -218,6 +179,12 @@ public:
 		FString GraphName;
 		bool bForce = false;
 
+		/** Empty means the whole graph; otherwise only these nodes may move. */
+		TSet<FString> SelectedNodeKeys;
+
+		/** Every node outside a scoped selection is an anchor and remains fixed. */
+		int32 AnchorCount = 0;
+
 		TArray<FNode> Nodes;
 		TArray<FBox> Boxes;
 		TArray<FWire> Wires;
@@ -229,14 +196,15 @@ public:
 		/** How many pins the before-measure summed, so a caller can see the number's basis. */
 		int32 WireCount = 0;
 
-		/** True when at least one rectangle came from `MinimumNodeExtent`. */
-		bool bUsedFallbackGeometry = false;
 
 		/** Nodes no entry point reaches. Reported, and left exactly where they are. */
 		int32 UnreachableCount = 0;
 
 		/** Nodes whose planned position differs from the current one. */
 		int32 NodesToMove = 0;
+
+		/** Stable keys of those planned moves, so a scoped preview can name its exact boundary. */
+		TArray<FString> NodesToMoveKeys;
 
 		/** Boxes whose planned size differs from the current one. */
 		int32 BoxesToFit = 0;
@@ -269,7 +237,7 @@ public:
 	 * `error:` and names what stopped it.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-		bool bInMergeGetters, FPlan& OutPlan, FString& OutError);
+		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError);
 
 	/** What the pass would do, and both numbers, without touching the graph. */
 	static FString RenderPreview(const FPlan& InPlan);

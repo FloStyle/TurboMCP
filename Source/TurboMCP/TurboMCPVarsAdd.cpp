@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPVarsAdd.h"
+#include "TurboMCPTypeParser.h"
 
 #include "BlueprintEditorLibrary.h"
 #include "EdGraphSchema_K2.h"
@@ -122,6 +123,14 @@ namespace
 	bool ResolveTypeName(const FString& InType, FString& OutWhy)
 	{
 		const FString Lower = InType.ToLower();
+
+		// Typed object and class references share the full field syntax with structs and function pins.
+		if (Lower.StartsWith(TEXT("object<")) || Lower.StartsWith(TEXT("class<"))
+			|| Lower.StartsWith(TEXT("softobject<")) || Lower.StartsWith(TEXT("softclass<")))
+		{
+			FEdGraphPinType Ignored;
+			return FTurboMCPTypeParser::Resolve(InType, Ignored, OutWhy);
+		}
 
 		if (BasicTypeNames().Contains(Lower) || StructTypeNames().Contains(Lower))
 		{
@@ -531,7 +540,17 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 		const TSet<FString>& BasicNames = BasicTypeNames();
 		const TMap<FString, FString>& StructNames = StructTypeNames();
 
-		if (BasicNames.Contains(Lower))
+		if (Lower.StartsWith(TEXT("object<")) || Lower.StartsWith(TEXT("class<"))
+			|| Lower.StartsWith(TEXT("softobject<")) || Lower.StartsWith(TEXT("softclass<")))
+		{
+			FString TypeWhy;
+			if (!FTurboMCPTypeParser::Resolve(Variable.InnerType, PinType, TypeWhy))
+			{
+				return FString::Printf(TEXT("error: '%s' has invalid type '%s': %s. %d variable(s) before it were added."),
+					*Variable.Name, *Variable.InnerType, *TypeWhy, Added);
+			}
+		}
+		else if (BasicNames.Contains(Lower))
 		{
 			// `float` is the name a caller writes; the engine's menu calls it `real`.
 			PinType = UBlueprintEditorLibrary::GetBasicTypeByName(

@@ -51,7 +51,7 @@ ASSET = "TurboMCPAcceptance"
 
 # The graphs every build must produce. LayoutProbe is the one this round added.
 REQUIRED_GRAPHS = [
-    "KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe",
+    "KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe", "ScopedTidyProbe",
     "ValueCycleProbe", "SelfLinkProbe", "DepthLimitProbe", "TargetPinRoundTripProbe",
     "LargeGraphProbe",
 ]
@@ -192,13 +192,15 @@ def main():
     # The summary is the commandlet's own all-probes verdict. Assert every guard fixture too,
     # rather than allowing stale per-graph log lines to make a partial rebuild look complete.
     summary = re.search(
-        r"KnotProbe=(\w+) DeadProbe=(\w+) LocalVarProbe=(\w+) SaneProbe=(\w+) "
-        r"LayoutProbe=(\w+) ValueCycleProbe=(\w+) SelfLinkProbe=(\w+) "
-        r"DepthLimitProbe=(\w+) TargetPinRoundTripProbe=(\w+) LargeGraphProbe=(\w+)",
+        r"KnotProbe=(\w+) DeadProbe=(\w+) LocalVarProbe=(\w+) AppendChainProbe=(\w+) "
+        r"SaneProbe=(\w+) ScopedTidyProbe=(\w+) LayoutProbe=(\w+) ValueCycleProbe=(\w+) "
+        r"SelfLinkProbe=(\w+) DepthLimitProbe=(\w+) TargetPinRoundTripProbe=(\w+) "
+        r"LargeGraphProbe=(\w+) GraphReaderFixture=(\w+)",
         report.log_text() + report.text)
-    summary_names = ["KnotProbe", "DeadProbe", "LocalVarProbe", "SaneProbe", "LayoutProbe",
-                     "ValueCycleProbe", "SelfLinkProbe", "DepthLimitProbe",
-                     "TargetPinRoundTripProbe", "LargeGraphProbe"]
+    summary_names = ["KnotProbe", "DeadProbe", "LocalVarProbe", "AppendChainProbe", "SaneProbe",
+                     "ScopedTidyProbe", "LayoutProbe", "ValueCycleProbe", "SelfLinkProbe",
+                     "DepthLimitProbe", "TargetPinRoundTripProbe", "LargeGraphProbe",
+                     "GraphReaderFixture"]
     check("the summary names every probe graph", summary is not None,
           "the commandlet summary is incomplete")
     if summary:

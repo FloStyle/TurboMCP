@@ -17,6 +17,7 @@
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
+#include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ScopedTransaction.h"
@@ -67,6 +68,31 @@ namespace
 			return InValue.Mid(1, InValue.Len() - 2);
 		}
 		return InValue;
+	}
+
+	/** A connection counts only when both pin records agree. */
+	bool HasLink(const UEdGraphPin* InA, const UEdGraphPin* InB)
+	{
+		return InA != nullptr && InB != nullptr
+			&& InA->LinkedTo.Contains(InB) && InB->LinkedTo.Contains(InA);
+	}
+
+	/** The execution output that can carry a displaced continuation after an insertion. */
+	UEdGraphPin* FindExecContinuation(UEdGraphNode* InNode)
+	{
+		if (InNode == nullptr)
+		{
+			return nullptr;
+		}
+		for (UEdGraphPin* Pin : InNode->Pins)
+		{
+			if (Pin != nullptr && Pin->Direction == EGPD_Output
+				&& Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+			{
+				return Pin;
+			}
+		}
+		return nullptr;
 	}
 }
 
@@ -142,10 +168,18 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		// for a comment that is not an id, which is most of them.
 		if (TurboMCPGraphTextLex::IsCommentLine(Line))
 		{
-			const FString FormId = TurboMCPGraphTextLex::NodeIdFromComment(Line.Text);
-			if (!FormId.IsEmpty() && CurrentIndex != INDEX_NONE)
+			if (CurrentIndex != INDEX_NONE)
 			{
-				OutPlan.Nodes[CurrentIndex].ExistingNodeId = FormId;
+				const FString FormId = TurboMCPGraphTextLex::NodeIdFromComment(Line.Text);
+				if (!FormId.IsEmpty())
+				{
+					OutPlan.Nodes[CurrentIndex].ExistingNodeId = FormId;
+				}
+				const FString LocalLabel = TurboMCPGraphTextLex::LocalLabelFromComment(Line.Text);
+				if (!LocalLabel.IsEmpty())
+				{
+					OutPlan.Nodes[CurrentIndex].LocalLabel = LocalLabel;
+				}
 			}
 			continue;
 		}
@@ -167,6 +201,11 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 			{
 				Form.ExistingNodeId = OnHead;
 			}
+			const FString HeadLabel = TurboMCPGraphTextLex::LocalLabelFromComment(Line.Text.Mid(After));
+			if (!HeadLabel.IsEmpty())
+			{
+				Form.LocalLabel = HeadLabel;
+			}
 
 			OutPlan.Nodes.Add(Form);
 			CurrentIndex = OutPlan.Nodes.Num() - 1;
@@ -178,6 +217,12 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		int32 PinColumn = 0;
 		if (CurrentIndex != INDEX_NONE && TurboMCPGraphTextLex::ParsePinLine(Line.Text, PinName, PinValue, PinColumn))
 		{
+			// Continuations such as `:then` and `:else` are reader containers, not input pins. Keep the append
+			// parser aligned with GraphCheck so exact reader text cannot later try to write a `:then` literal.
+			if (PinName.StartsWith(TEXT(":")))
+			{
+				continue;
+			}
 			TurboMCPGraphTextLex::FPinForm Pin;
 			Pin.Name = PinName;
 			Pin.Value = PinValue;
@@ -293,12 +338,30 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		// The forms this text creates, by the key a link may name. A created form has no id yet, so it is
 		// addressed by ITS TYPE ID - which is what a caller writing a block by hand can actually know.
 		TMap<FString, int32> FormByTypeId;
+		TMap<FString, int32> FormByLocalLabel;
 		for (int32 Index = 0; Index < OutPlan.Nodes.Num(); ++Index)
 		{
 			const FNewNode& Form = OutPlan.Nodes[Index];
-			if (!Form.bLinksToExisting && !FormByTypeId.Contains(Form.TypeId))
+			if (Form.bLinksToExisting)
+			{
+				continue;
+			}
+			if (!FormByTypeId.Contains(Form.TypeId))
 			{
 				FormByTypeId.Add(Form.TypeId, Index);
+			}
+			if (!Form.LocalLabel.IsEmpty())
+			{
+				if (FormByLocalLabel.Contains(Form.LocalLabel))
+				{
+					OutPlan.Refusals.Add(FString::Printf(
+						TEXT("line %d, column %d: local label '%s' is already used by another new node in this text."),
+						Form.Line, Form.Column, *Form.LocalLabel));
+				}
+				else
+				{
+					FormByLocalLabel.Add(Form.LocalLabel, Index);
+				}
 			}
 		}
 
@@ -331,6 +394,15 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 				return true;
 			}
 
+			if (const int32* Found = FormByLocalLabel.Find(InName))
+			{
+				OutNode = nullptr;
+				OutKey.Reset();
+				OutFormIndex = *Found;
+				OutKnownPins = OutPlan.Nodes[*Found].ProbePinNames;
+				return true;
+			}
+
 			if (const int32* Found = FormByTypeId.Find(InName))
 			{
 				OutNode = nullptr;
@@ -350,11 +422,6 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 
 		for (FNewNode& Form : OutPlan.Nodes)
 		{
-			if (Form.bLinksToExisting)
-			{
-				continue;
-			}
-
 			for (const TurboMCPGraphTextLex::FPinForm& Pin : Form.Pins)
 			{
 				if (!TurboMCPGraphTextLex::ValueIsALink(Pin.Value))
@@ -374,8 +441,32 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 				FNewLink NewLink;
 				NewLink.Line = Pin.Line;
 				NewLink.Column = Pin.Column;
-				NewLink.ToFormIndex = &Form - OutPlan.Nodes.GetData();
 				NewLink.ToPin = Pin.Name;
+
+				UEdGraphNode* ToNode = nullptr;
+				TArray<FString> DestinationPins;
+				if (Form.bLinksToExisting)
+				{
+					FString DestinationReason;
+					if (!ResolveEnd(Form.ExistingNodeId, Pin.Line, Pin.Column, TEXT("destination"),
+						NewLink.ToNodeKey, NewLink.ToFormIndex, ToNode, DestinationPins, DestinationReason))
+					{
+						OutPlan.Refusals.Add(DestinationReason);
+						continue;
+					}
+				}
+				else
+				{
+					NewLink.ToFormIndex = &Form - OutPlan.Nodes.GetData();
+					DestinationPins = Form.ProbePinNames;
+				}
+				if (DestinationPins.Num() > 0 && !DestinationPins.Contains(Pin.Name))
+				{
+					OutPlan.Refusals.Add(FString::Printf(
+						TEXT("line %d, column %d: the link's destination pin '%s' does not exist. It has: %s."),
+						Pin.Line, Pin.Column, *Pin.Name, *FString::Join(DestinationPins, TEXT(", "))));
+					continue;
+				}
 
 				UEdGraphNode* FromNode = nullptr;
 				TArray<FString> KnownPins;
@@ -642,8 +733,22 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			}
 		}
 
-		UEdGraphNode* ToNode = (Link.ToFormIndex != INDEX_NONE && CreatedByForm.IsValidIndex(Link.ToFormIndex))
-			? CreatedByForm[Link.ToFormIndex] : nullptr;
+		UEdGraphNode* ToNode = nullptr;
+		if (Link.ToFormIndex != INDEX_NONE)
+		{
+			ToNode = CreatedByForm.IsValidIndex(Link.ToFormIndex) ? CreatedByForm[Link.ToFormIndex] : nullptr;
+		}
+		else
+		{
+			for (UEdGraphNode* Node : Graph->Nodes)
+			{
+				if (Node != nullptr && TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true) == Link.ToNodeKey)
+				{
+					ToNode = Node;
+					break;
+				}
+			}
+		}
 
 		if (FromNode == nullptr || ToNode == nullptr)
 		{
@@ -687,17 +792,103 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			return false;
 		}
 
-		// THE ENGINE'S OWN CONNECTION PATH, so the schema decides whether the two pins may join rather than this
-		// tool assuming they can. A refusal here is a PLAN fault rather than a caller fault only in appearance:
-		// the plan checked that the pins EXIST, and existence is not the same as compatibility.
-		if (!Graph->GetSchema()->TryCreateConnection(FromPin, ToPin))
+		// THE ENGINE'S OWN CONNECTION PATH decides whether the two pins may join. An exec output can already
+		// feed a node: K2 then REPLACES that wire when it accepts this one. That is an INSERTION, not merely
+		// an append, so the displaced continuation must be carried through the new node or restored on failure.
+		const UEdGraphSchema* Schema = Graph->GetSchema();
+		const TArray<UEdGraphPin*> OriginalTargets = FromPin->LinkedTo;
+		const bool bSchemaMadeLink = Schema != nullptr && Schema->TryCreateConnection(FromPin, ToPin);
+		if (!bSchemaMadeLink || !HasLink(FromPin, ToPin))
 		{
+			// A schema is allowed to reject a replacement after it has changed its pin state. Restore the exact
+			// pre-link chain before ending the transaction, then verify the restoration rather than trusting it.
+			bool bRestored = Schema != nullptr;
+			if (Schema != nullptr && HasLink(FromPin, ToPin))
+			{
+				Schema->BreakSinglePinLink(FromPin, ToPin);
+			}
+			if (Schema != nullptr)
+			{
+				for (UEdGraphPin* OriginalTarget : OriginalTargets)
+				{
+					if (OriginalTarget != nullptr && !HasLink(FromPin, OriginalTarget))
+					{
+						bRestored = Schema->TryCreateConnection(FromPin, OriginalTarget)
+							&& HasLink(FromPin, OriginalTarget) && bRestored;
+					}
+				}
+			}
 			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(
-				TEXT("line %d: the engine refused the link '%s' -> '%s'. The pins exist but the schema will ")
-				TEXT("not join them, so NOTHING was written."),
-				Link.Line, *Link.FromPin, *Link.ToPin);
+				TEXT("line %d: the engine refused the link '%s' -> '%s', or did not retain it. ")
+				TEXT("The original chain was %s before rollback; NOTHING was written."),
+				Link.Line, *Link.FromPin, *Link.ToPin, bRestored ? TEXT("restored") : TEXT("NOT fully restored"));
 			return false;
+		}
+
+		TArray<UEdGraphPin*> ReplacedTargets;
+		for (UEdGraphPin* OriginalTarget : OriginalTargets)
+		{
+			if (OriginalTarget != nullptr && !HasLink(FromPin, OriginalTarget))
+			{
+				ReplacedTargets.Add(OriginalTarget);
+			}
+		}
+
+		// A tail has no displaced target and is the ordinary append case. A non-empty replacement is safe only
+		// for exec wires: value pins have no unambiguous continuation output, so refusing is safer than cutting
+		// an existing data path.
+		TArray<TPair<UEdGraphPin*, UEdGraphPin*>> Continuations;
+		auto RestoreOriginalChain = [&]() -> bool
+		{
+			bool bRestored = true;
+			if (HasLink(FromPin, ToPin))
+			{
+				Schema->BreakSinglePinLink(FromPin, ToPin);
+			}
+			for (const TPair<UEdGraphPin*, UEdGraphPin*>& Continuation : Continuations)
+			{
+				if (HasLink(Continuation.Key, Continuation.Value))
+				{
+					Schema->BreakSinglePinLink(Continuation.Key, Continuation.Value);
+				}
+			}
+			for (UEdGraphPin* OriginalTarget : ReplacedTargets)
+			{
+				bRestored = OriginalTarget != nullptr
+					&& Schema->TryCreateConnection(FromPin, OriginalTarget)
+					&& HasLink(FromPin, OriginalTarget)
+					&& bRestored;
+			}
+			return bRestored;
+		};
+
+		if (ReplacedTargets.Num() > 0)
+		{
+			UEdGraphPin* Continuation = FromPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec
+				&& ToPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec
+				? FindExecContinuation(ToNode) : nullptr;
+			bool bContinued = Continuation != nullptr;
+			for (UEdGraphPin* OriginalTarget : ReplacedTargets)
+			{
+				if (OriginalTarget == nullptr || !Schema->TryCreateConnection(Continuation, OriginalTarget)
+					|| !HasLink(Continuation, OriginalTarget))
+				{
+					bContinued = false;
+					break;
+				}
+				Continuations.Add(TPair<UEdGraphPin*, UEdGraphPin*>(Continuation, OriginalTarget));
+			}
+			if (!bContinued)
+			{
+				const bool bRestored = RestoreOriginalChain();
+				FTurboMCPRollback::EndAndUndoActiveTransaction();
+				OutError = FString::Printf(
+					TEXT("line %d: the new link replaced an existing chain but its continuation could not be made. ")
+					TEXT("The original chain was %s before rollback; NOTHING was written."),
+					Link.Line, bRestored ? TEXT("restored") : TEXT("NOT fully restored"));
+				return false;
+			}
 		}
 		++LinksMade;
 	}

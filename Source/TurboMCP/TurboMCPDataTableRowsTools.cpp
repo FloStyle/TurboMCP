@@ -153,7 +153,9 @@ namespace
 		Error = FTurboMCPDataTableRows::Apply(Table, Plan, OutReport);
 		if (!Error.IsEmpty())
 		{
-			return Error;
+			// `Apply` always reads the written rows back, INCLUDING after a partial write. Do not hide that
+			// measurement behind the refusal: it names every requested field that is missing or differs.
+			return OutReport.IsEmpty() ? Error : FString::Printf(TEXT("%s\n\n%s"), *Error, *OutReport);
 		}
 
 		return FString::Printf(TEXT("%s\n\n%s"), *PreviewText(Table, Plan), *OutReport);

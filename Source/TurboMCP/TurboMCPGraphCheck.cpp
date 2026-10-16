@@ -441,8 +441,20 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 
 			if (NodeForType == nullptr)
 			{
+				// The finder and writers resolve creation ids through FTurboMCPNodeType. The checker must
+				// ask that same resolver before it declares a type absent: a type can be valid for this
+				// graph without an instance already being present in it.
+				FString ProbeNote;
+				if (UEdGraphNode* Probe = FTurboMCPNodeType::BuildProbeNode(Blueprint, Graph, TypeId, ProbeNote))
+				{
+					NodeForType = Probe;
+				}
+			}
+
+			if (NodeForType == nullptr)
+			{
 				TArray<FString> Suggestions;
-				NodeForType = ResolveTypeId(ReadOnlyGraph, TypeId, Suggestions);
+				ResolveTypeId(ReadOnlyGraph, TypeId, Suggestions);
 
 				FFinding Finding;
 				Finding.Kind = EFindingKind::NodeType;

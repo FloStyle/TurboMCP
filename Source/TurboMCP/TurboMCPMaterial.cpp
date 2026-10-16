@@ -14,6 +14,7 @@
 #include "Materials/MaterialExpressionFunctionOutput.h"
 #include "Materials/MaterialExpressionNamedReroute.h"
 #include "Materials/MaterialExpressionParameter.h"
+#include "Materials/MaterialExpressionTextureSampleParameter.h"
 #include "Materials/MaterialExpressionReroute.h"
 #include "Materials/MaterialExpressionRerouteBase.h"
 #include "Materials/MaterialFunction.h"
@@ -1381,7 +1382,9 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 	for (UMaterialExpression* Expression : InPlan.Expressions)
 	{
 		if (Expression != nullptr
-			&& Expression->GetClass()->IsChildOf(UMaterialExpressionParameter::StaticClass()))
+			&& (Expression->GetClass()->IsChildOf(UMaterialExpressionParameter::StaticClass())
+				|| Expression->GetClass()->IsChildOf(
+					UMaterialExpressionTextureSampleParameter::StaticClass())))
 		{
 			Parameters.Add(Expression);
 		}
@@ -1395,14 +1398,26 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 		{
 			const UMaterialExpressionParameter* Parameter =
 				Cast<UMaterialExpressionParameter>(Expression);
-			const FName Name = Parameter != nullptr ? Parameter->ParameterName : NAME_None;
-			const FName Group = Parameter != nullptr ? Parameter->Group : NAME_None;
+			const UMaterialExpressionTextureSampleParameter* TextureParameter =
+				Cast<UMaterialExpressionTextureSampleParameter>(Expression);
+			const FName Name = Parameter != nullptr ? Parameter->ParameterName
+				: (TextureParameter != nullptr ? TextureParameter->ParameterName : NAME_None);
+			const FName Group = Parameter != nullptr ? Parameter->Group
+				: (TextureParameter != nullptr ? TextureParameter->Group : NAME_None);
+			FString TextureDetails;
+			if (TextureParameter != nullptr)
+			{
+				TextureDetails = FString::Printf(TEXT(" sampler=%s default=%s handle=%s"),
+					*UEnum::GetValueAsString(TextureParameter->SamplerType),
+					TextureParameter->Texture != nullptr ? *TextureParameter->Texture->GetPathName() : TEXT("(none)"),
+					TextureParameter->Texture != nullptr ? *TextureParameter->Texture->GetPathName() : TEXT("(none)"));
+			}
 
-			ParameterLines.Add(FString::Printf(TEXT("\n%s %s%s ; %s"),
+			ParameterLines.Add(FString::Printf(TEXT("\n%s %s%s%s ; %s"),
 				Name.IsNone() ? TEXT("(unnamed)") : *Name.ToString(),
 				*Expression->GetClass()->GetName(),
 				Group.IsNone() ? TEXT("") : *FString::Printf(TEXT(" group=%s"), *Group.ToString()),
-				*KeyOf(Expression)));
+				*TextureDetails, *KeyOf(Expression)));
 		}
 		ParameterLines.Sort();
 		for (const FString& Line : ParameterLines)

@@ -717,6 +717,21 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		Box.MaxY = FMath::Max(Box.MaxY, R.MaxY);
 	}
 
+	// A zero or negative graph-space frame has no pixels to capture. Check before the
+	// fit calculation can turn it into an artificial one-unit frame or any image is written.
+	const double FrameWidth = Box.Width();
+	const double FrameHeight = Box.Height();
+	if (FrameWidth <= 0.0)
+	{
+		return FString::Printf(TEXT("error: capture frame width is %.0f for %s, but it must be greater than zero. Open the graph so its node outlines are measured, then try again."),
+			FrameWidth, *FrameLabel);
+	}
+	if (FrameHeight <= 0.0)
+	{
+		return FString::Printf(TEXT("error: capture frame height is %.0f for %s, but it must be greater than zero. Open the graph so its node outlines are measured, then try again."),
+			FrameHeight, *FrameLabel);
+	}
+
 	// The graph editor, opened if it is not already.
 	UAssetEditorSubsystem* AssetEditors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
 	if (AssetEditors == nullptr)
@@ -749,8 +764,8 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	}
 
 	// The zoom that fits the box into the image, then the view centre.
-	const double BoxWidth = FMath::Max(Box.Width(), 1.0);
-	const double BoxHeight = FMath::Max(Box.Height(), 1.0);
+	const double BoxWidth = FrameWidth;
+	const double BoxHeight = FrameHeight;
 
 	const float ZoomFitX = static_cast<float>(Width / (BoxWidth * FramePadding));
 	const float ZoomFitY = static_cast<float>(Height / (BoxHeight * FramePadding));

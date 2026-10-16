@@ -45,6 +45,9 @@ public:
 		/** The node id the form carried, or empty when the form describes a NEW node. */
 		FString ExistingNodeId;
 
+		/** A unique local label from `; label Name`, usable by later links in this text block. */
+		FString LocalLabel;
+
 		/** True when this form names a node that is already in the graph, so it is linked to, not made. */
 		bool bLinksToExisting = false;
 

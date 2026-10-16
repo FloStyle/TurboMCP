@@ -23,9 +23,9 @@
  */
 
 FString UTurboMCPEditToolset::EditTurboMCPFunctionAdd(
-	const FString& Asset, const FString& Name)
+	const FString& Asset, const FString& Name, const FString& Inputs, const FString& Outputs)
 {
-	return FTurboMCPFunction::Add(Asset, Name);
+	return FTurboMCPFunction::Add(Asset, Name, Inputs, Outputs);
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPFunctionRemove(

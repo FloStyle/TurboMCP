@@ -280,91 +280,35 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 		return nullptr;
 	}
 
-	// The filter is built from the REAL graph, so "is this allowed here" is answered by the
-	// engine rather than by this code. The node is SPAWNED into a throwaway graph, because
-	// `Invoke` takes the graph as an argument and the real graph's node count must not change.
-	FBlueprintActionFilter Filter;
-	Filter.Context.Blueprints.Add(InBlueprint);
-	Filter.Context.Graphs.Add(InGraph);
-
-	FBlueprintActionDatabase& Database = FBlueprintActionDatabase::Get();
-	const FBlueprintActionDatabase::FActionRegistry& Registry = Database.GetAllActions();
-
-	bool bIdExistsButWasFiltered = false;
-
-	for (FBlueprintActionDatabase::FActionRegistry::TConstIterator Iterator =
-			Registry.CreateConstIterator(); Iterator; ++Iterator)
+	// Lookup, check and writers all consume the SAME filtered action list. Keeping the lookup in
+	// `CollectEntries` prevents a type ID from being offered by one tool and rejected by another.
+	TArray<FEntry> Entries;
+	CollectEntries(InBlueprint, InGraph, Entries);
+	for (const FEntry& Entry : Entries)
 	{
-		UObject* ActionObject = Iterator->Key.ResolveObjectPtr();
-		if (ActionObject == nullptr)
+		if (!Entry.TypeId.Equals(InTypeId, ESearchCase::CaseSensitive))
 		{
 			continue;
 		}
 
-		for (const UBlueprintNodeSpawner* NodeSpawner : Iterator->Value)
+		UEdGraph* ProbeGraph = NewObject<UEdGraph>(InBlueprint, NAME_None, RF_Transient);
+		if (ProbeGraph == nullptr)
 		{
-			if (NodeSpawner == nullptr)
-			{
-				continue;
-			}
-
-			FBlueprintActionInfo ActionInfo(ActionObject, NodeSpawner);
-
-			// The id is built BEFORE the filter test, because the id comparison is the cheaper
-			// rejection and the filter's answer is only needed for the id that was asked for.
-			const FBlueprintActionUiSpec UiSpec =
-				NodeSpawner->GetUiSpec(Filter.Context, ActionInfo.GetBindings());
-			if (!IdFromUiSpec(UiSpec).Equals(InTypeId, ESearchCase::CaseSensitive))
-			{
-				continue;
-			}
-
-			if (Filter.IsFiltered(ActionInfo))
-			{
-				// Remembered rather than reported at once: another spawner may publish the same
-				// id and pass the filter, and the first rejection must not hide that.
-				bIdExistsButWasFiltered = true;
-				continue;
-			}
-
-			// The throwaway graph. Its outer is the Blueprint, so a node that walks its outer
-			// chain looking for a Blueprint finds one, which several node types do. It is
-			// `RF_Transient` and it is NOT added to the Blueprint's graph lists, so nothing in
-			// the asset is touched (`P3`).
-			UEdGraph* ProbeGraph = NewObject<UEdGraph>(InBlueprint, NAME_None, RF_Transient);
-			if (ProbeGraph == nullptr)
-			{
-				OutNote = TEXT("a transient graph for the probe could not be created");
-				return nullptr;
-			}
-			// `UEdGraph::Schema` is a `TSubclassOf<UEdGraphSchema>` (`EdGraph.h:75`), and the
-			// source graph's is the same type, so the copy is of a `TSubclassOf` to a
-			// `TSubclassOf` rather than a raw class pointer being converted.
-			ProbeGraph->Schema = InGraph->Schema;
-
-			UEdGraphNode* Spawned = NodeSpawner->Invoke(ProbeGraph, ActionInfo.GetBindings(),
-				FVector2D::ZeroVector);
-			if (Spawned == nullptr)
-			{
-				OutNote = FString::Printf(
-					TEXT("the engine's spawner for '%s' returned no node, so it declined to ")
-					TEXT("build one in this context"), *InTypeId);
-				return nullptr;
-			}
-			return Spawned;
+			OutNote = TEXT("a transient graph for the probe could not be created");
+			return nullptr;
 		}
+		ProbeGraph->Schema = InGraph->Schema;
+		FBlueprintActionInfo ActionInfo(Entry.Owner, Entry.Spawner);
+		UEdGraphNode* Spawned = Entry.Spawner->Invoke(ProbeGraph, ActionInfo.GetBindings(),
+			FVector2D::ZeroVector);
+		if (Spawned == nullptr)
+		{
+			OutNote = FString::Printf(TEXT("the engine's spawner for '%s' returned no node, so it declined to build one in this context"), *InTypeId);
+		}
+		return Spawned;
 	}
 
-	OutNote = bIdExistsButWasFiltered
-		? FString::Printf(
-			TEXT("'%s' exists but the engine's action filter REJECTS it in this graph. A latent ")
-			TEXT("node in a function graph is the usual reason: the engine does not allow latent ")
-			TEXT("nodes there. P-NODE-TYPE on the event graph would list it."),
-			*InTypeId)
-		: FString::Printf(
-			TEXT("no node type in this graph has the id '%s'. P-NODE-TYPE lists the real ones ")
-			TEXT("and names the closest."),
-			*InTypeId);
+	OutNote = FString::Printf(TEXT("no node type this graph can hold has the id '%s'. P-NODE-TYPE lists the real ones and names the closest."), *InTypeId);
 	return nullptr;
 }
 
@@ -386,88 +330,30 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 		return ESpawnResult::SpawnerDeclined;
 	}
 
-	// THE SAME WALK AS `BuildProbeNode` ABOVE, DELIBERATELY. The two differ in ONE thing - which
-	// graph the spawner is handed - and a second, cleverer traversal here is how the two would come
-	// to disagree about what a type id names. The filter is built from the REAL graph so that "is
-	// this allowed HERE" is answered by the engine.
-	FBlueprintActionFilter Filter;
-	Filter.Context.Blueprints.Add(InBlueprint);
-	Filter.Context.Graphs.Add(InGraph);
-
-	FBlueprintActionDatabase& Database = FBlueprintActionDatabase::Get();
-	const FBlueprintActionDatabase::FActionRegistry& Registry = Database.GetAllActions();
-
-	bool bIdExistsButWasFiltered = false;
-
-	for (FBlueprintActionDatabase::FActionRegistry::TConstIterator Iterator =
-			Registry.CreateConstIterator(); Iterator; ++Iterator)
+	// This is the same resolver used by lookup and probe construction. Replace and patch delegate
+	// to graph append, so all five operations consume this one filtered action list.
+	TArray<FEntry> Entries;
+	CollectEntries(InBlueprint, InGraph, Entries);
+	for (const FEntry& Entry : Entries)
 	{
-		UObject* ActionObject = Iterator->Key.ResolveObjectPtr();
-		if (ActionObject == nullptr)
+		if (!Entry.TypeId.Equals(InTypeId, ESearchCase::CaseSensitive))
 		{
 			continue;
 		}
 
-		for (const UBlueprintNodeSpawner* NodeSpawner : Iterator->Value)
+		FBlueprintActionInfo ActionInfo(Entry.Owner, Entry.Spawner);
+		UEdGraphNode* Spawned = Entry.Spawner->Invoke(InGraph, ActionInfo.GetBindings(), FVector2D::ZeroVector);
+		if (Spawned == nullptr)
 		{
-			if (NodeSpawner == nullptr)
-			{
-				continue;
-			}
-
-			FBlueprintActionInfo ActionInfo(ActionObject, NodeSpawner);
-
-			const FBlueprintActionUiSpec UiSpec =
-				NodeSpawner->GetUiSpec(Filter.Context, ActionInfo.GetBindings());
-			if (!IdFromUiSpec(UiSpec).Equals(InTypeId, ESearchCase::CaseSensitive))
-			{
-				continue;
-			}
-
-			if (Filter.IsFiltered(ActionInfo))
-			{
-				bIdExistsButWasFiltered = true;
-				continue;
-			}
-
-			// THE REAL GRAPH, unlike the probe. `Invoke` is the engine's own creation path, so the
-			// node it returns is the node the editor would have made, with its class, its default
-			// pins and its own `AllocateDefaultPins` already run by the spawner.
-			UEdGraphNode* Spawned = NodeSpawner->Invoke(InGraph, ActionInfo.GetBindings(),
-				FVector2D::ZeroVector);
-			if (Spawned == nullptr)
-			{
-				OutNote = FString::Printf(
-					TEXT("the engine's spawner for '%s' returned no node, so it declined to ")
-					TEXT("build one in this graph"), *InTypeId);
-				return ESpawnResult::SpawnerDeclined;
-			}
-
-			// THE PINS ARE ALLOCATED AGAIN ON PURPOSE, AND IT IS NOT REDUNDANT. A node created
-			// outside the editor is never reconstructed for display, so a pin accessor reads an
-			// EMPTY `Pins` array unless someone runs this. Most spawners do it themselves, which is
-			// why this is cheap; the ones that do not are exactly the ones that would crash a caller
-			// that assumed they had. Running it twice is harmless because the engine's own
-			// implementation early-outs when the pins are already there.
-			Spawned->AllocateDefaultPins();
-
-			OutNode = Spawned;
-			return ESpawnResult::Spawned;
+			OutNote = FString::Printf(TEXT("the engine's spawner for '%s' returned no node, so it declined to build one in this graph"), *InTypeId);
+			return ESpawnResult::SpawnerDeclined;
 		}
+		Spawned->AllocateDefaultPins();
+		OutNode = Spawned;
+		return ESpawnResult::Spawned;
 	}
 
-	if (bIdExistsButWasFiltered)
-	{
-		OutNote = FString::Printf(
-			TEXT("'%s' exists but the engine's action filter REJECTS it in this graph. A latent ")
-			TEXT("node in a function graph is the usual reason: the engine does not allow latent ")
-			TEXT("nodes there."), *InTypeId);
-		return ESpawnResult::FilteredOut;
-	}
-
-	OutNote = FString::Printf(
-		TEXT("no node type this graph can hold has the id '%s'. P-NODE-TYPE lists the real ones ")
-		TEXT("and names the closest."), *InTypeId);
+	OutNote = FString::Printf(TEXT("no node type this graph can hold has the id '%s'. P-NODE-TYPE lists the real ones and names the closest."), *InTypeId);
 	return ESpawnResult::NoSuchTypeId;
 }
 

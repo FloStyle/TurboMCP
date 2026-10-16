@@ -20,7 +20,7 @@ import pathlib
 import re
 import sys
 
-REPO = pathlib.Path(__file__).resolve().parent.parent.parent
+REPO = pathlib.Path(__file__).resolve().parent.parent
 TOOLS = REPO / "Tools"
 OUT = TOOLS / "INVENTORY.md"
 

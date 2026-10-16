@@ -173,4 +173,7 @@ namespace TurboMCPGraphTextLex
 	 * rather than creating a second one beside it.
 	 */
 	FString NodeIdFromComment(const FString& InComment);
+
+	/** A local creation label from `; label Name`, or empty when the comment is not a label. */
+	FString LocalLabelFromComment(const FString& InComment);
 }

@@ -191,7 +191,7 @@ function Start-EditorAndWait {
     # down and the foreground work does not notice. An interactive launch does not have to pass either switch.
     $oldStartingEditor = $env:TURBOMCP_RUNNER_STARTING_EDITOR
     $env:TURBOMCP_RUNNER_STARTING_EDITOR = '1'
-    try { & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null }
+    try { & pwsh -NoProfile -File $StartEditor -LowPriority -Offscreen 2>&1 | Out-Null }
     finally { $env:TURBOMCP_RUNNER_STARTING_EDITOR = $oldStartingEditor }
     $retryDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $retryDeadline) {
@@ -385,7 +385,8 @@ trap {
 # ---------------------------------------------------------------------------------------------
 $NoEditorSuites = @(
     'audit-tool-coverage', 'audit-suite-quality', 'check-includes', 'check-plugin',
-    'check-probe-graphs', 'test-kit-ta17-ta19', 'test-lookup-guards', 'test-panel'
+    'check-probe-graphs', 'test-kit-ta17-ta19', 'test-lookup-guards', 'test-panel',
+    'test-traps-plugin-identity', 'test-widget-tree-nested'
 )
 $All = @(Get-ChildItem $PSScriptRoot -Filter '*.py' |
     Where-Object { $_.BaseName -match '^(test|check|audit)-' } |

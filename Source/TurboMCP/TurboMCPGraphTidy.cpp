@@ -9,16 +9,23 @@
 
 // NO `BlueprintEditorUtils.h` HERE. The editor's utilities live at `Kismet2/BlueprintEditorUtils.h`
 // and the bare name does not resolve, which was a fatal C1083 on the first build of this file.
+#include "BlueprintEditor.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphNode_Comment.h"
+#include "Editor.h"
 #include "Engine/Blueprint.h"
+#include "Framework/Application/SlateApplication.h"
+#include "GraphEditor.h"
 #include "K2Node_Knot.h"
 #include "K2Node_VariableGet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/Guid.h"
+#include "Subsystems/AssetEditorSubsystem.h"
+#include "Templates/Function.h"
 #include "UObject/UObjectGlobals.h"
+#include "Widgets/SWindow.h"
 
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPComment.h"
@@ -64,6 +71,14 @@ namespace
 	bool IsGetterNode(const UEdGraphNode* InNode)
 	{
 		return Cast<UK2Node_VariableGet>(InNode) != nullptr;
+	}
+
+	/** Accept both node-id forms emitted by the graph readers. */
+	bool NodeAnswersToId(const UEdGraphNode* InNode, const FString& InId)
+	{
+		return InNode != nullptr
+			&& (TurboMCPNodeId::MakeForNode(InNode, /*bLongForm=*/true).Equals(InId, ESearchCase::CaseSensitive)
+				|| TurboMCPNodeId::MakeForNode(InNode, /*bLongForm=*/false).Equals(InId, ESearchCase::CaseSensitive));
 	}
 
 	/**
@@ -176,42 +191,83 @@ namespace
 		return false;
 	}
 
-	/**
-	 * The rectangle a node occupies, WITH THE DOCUMENTED FALLBACK APPLIED.
-	 *
-	 * A node the editor has never drawn has a zero rectangle, and a zero rectangle cannot carry a pin
-	 * position. Rather than refuse - which was measured on the sibling capability and made it useless
-	 * on every graph - a node with no measured size is given a `MinimumNodeExtent` square CENTRED on
-	 * its position, and the caller records that the fallback was used so the report can say so.
-	 */
-	FTurboMCPLayoutReport::FRect RectFor(const double InX, const double InY,
-		const double InWidth, const double InHeight, bool& bOutUsedFallback)
+	/** Return the titles of nodes that still have no Slate-measured outline. */
+	bool UnmeasuredNodeTitles(const UEdGraph* InGraph, FString& OutTitles)
 	{
-		FTurboMCPLayoutReport::FRect Rect;
-
-		double Width = InWidth;
-		double Height = InHeight;
-		if (Width <= 0.0 || Height <= 0.0)
+		TArray<FString> Titles;
+		for (const UEdGraphNode* Node : InGraph->Nodes)
 		{
-			// THE FALLBACK IS CENTRED, so a node's planned position and its rectangle agree about where
-			// the node is. Anchoring at the corner instead would move every estimated node half a
-			// square right and down as a side effect of the estimate, which is a layout change nobody
-			// asked for.
-			Width = FTurboMCPGraphTidy::MinimumNodeExtent;
-			Height = FTurboMCPGraphTidy::MinimumNodeExtent;
-			Rect.MinX = InX - Width * 0.5;
-			Rect.MinY = InY - Height * 0.5;
-			bOutUsedFallback = true;
+			if (Node != nullptr && (Node->NodeWidth <= 0 || Node->NodeHeight <= 0))
+			{
+				Titles.Add(TurboMCPNodeId::GetNodeTitle(Node));
+			}
 		}
-		else
+		OutTitles = FString::Join(Titles, TEXT(", "));
+		return Titles.Num() > 0;
+	}
+
+	/**
+	 * Ask the real Blueprint graph panel to lay out any nodes that lack stored outlines, then verify
+	 * its result. Opening an asset is only an attempt: no plan is allowed until NodeWidth and
+	 * NodeHeight prove that Slate actually measured every node.
+	 */
+	bool EnsureMeasuredNodeOutlines(UBlueprint* InBlueprint, UEdGraph* InGraph, FString& OutError)
+	{
+		FString Missing;
+		if (!UnmeasuredNodeTitles(InGraph, Missing))
 		{
-			Rect.MinX = InX;
-			Rect.MinY = InY;
+			return true;
+		}
+		if (GEditor == nullptr || !FSlateApplication::IsInitialized())
+		{
+			OutError = FString::Printf(
+				TEXT("graph %s has node(s) with no measured outline (%s). Tidy will not plan from estimated sizes. Open the graph in a graphical Unreal Editor, let it finish laying out, and try again."),
+				*InGraph->GetName(), *Missing);
+			return false;
 		}
 
-		Rect.MaxX = Rect.MinX + Width;
-		Rect.MaxY = Rect.MinY + Height;
-		return Rect;
+		UAssetEditorSubsystem* AssetEditors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+		if (AssetEditors == nullptr)
+		{
+			OutError = TEXT("the asset editor subsystem is unavailable, so Tidy cannot obtain measured node outlines. Open the graph in the Unreal Editor and try again.");
+			return false;
+		}
+		AssetEditors->OpenEditorForAsset(InBlueprint);
+		IAssetEditorInstance* EditorInstance = AssetEditors->FindEditorForAsset(InBlueprint, false);
+		FBlueprintEditor* BlueprintEditor = EditorInstance != nullptr
+			? static_cast<FBlueprintEditor*>(EditorInstance) : nullptr;
+		if (BlueprintEditor == nullptr)
+		{
+			OutError = FString::Printf(TEXT("%s did not open a Blueprint graph editor, so Tidy cannot obtain measured node outlines."), *InGraph->GetName());
+			return false;
+		}
+		TSharedPtr<SGraphEditor> GraphEditor = BlueprintEditor->OpenGraphAndBringToFront(InGraph);
+		if (!GraphEditor.IsValid())
+		{
+			OutError = FString::Printf(TEXT("the graph editor did not provide a panel for %s, so Tidy cannot obtain measured node outlines."), *InGraph->GetName());
+			return false;
+		}
+		TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(GraphEditor.ToSharedRef());
+		if (!Window.IsValid())
+		{
+			OutError = FString::Printf(TEXT("the graph panel for %s is not in an on-screen window, so Tidy cannot obtain measured node outlines."), *InGraph->GetName());
+			return false;
+		}
+
+		for (int32 Attempt = 0; Attempt < 8; ++Attempt)
+		{
+			FSlateApplication::Get().Tick(ESlateTickType::All);
+			Window->SlatePrepass(1.0f);
+			if (!UnmeasuredNodeTitles(InGraph, Missing))
+			{
+				return true;
+			}
+		}
+
+		OutError = FString::Printf(
+			TEXT("graph %s still has node(s) with no measured outline after Tidy opened and laid out its graph panel (%s). Tidy refuses to plan or edit from estimated sizes. Make the graph tab visible, let the editor finish drawing it, and try again."),
+			*InGraph->GetName(), *Missing);
+		return false;
 	}
 }
 
@@ -221,29 +277,6 @@ namespace
 
 namespace
 {
-	/** The size tidy plans with for a node, after the fallback. */
-	struct FExtent
-	{
-		double Width = 0.0;
-		double Height = 0.0;
-	};
-
-	FExtent ExtentOf(const double InWidth, const double InHeight)
-	{
-		FExtent Out;
-		if (InWidth <= 0.0 || InHeight <= 0.0)
-		{
-			Out.Width = FTurboMCPGraphTidy::MinimumNodeExtent;
-			Out.Height = FTurboMCPGraphTidy::MinimumNodeExtent;
-		}
-		else
-		{
-			Out.Width = InWidth;
-			Out.Height = InHeight;
-		}
-		return Out;
-	}
-
 	/** The graph-space rectangle of a comment box, using the rule `P/E-COMMENT` uses. */
 	void BoxRect(const UEdGraphNode_Comment* InComment, double& OutX, double& OutY,
 		double& OutWidth, double& OutHeight)
@@ -306,7 +339,7 @@ namespace
 // ---------------------------------------------------------------------------------------------
 
 bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-	bool bInMergeGetters, FPlan& OutPlan, FString& OutError)
+	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError)
 {
 	OutError.Empty();
 	OutPlan = FPlan();
@@ -350,8 +383,15 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		return false;
 	}
 
+	// A plan moves nodes, so it must start from Slate-measured outlines. This actively opens and
+	// lays out the graph when needed, but only the postcondition below permits planning.
+	if (!EnsureMeasuredNodeOutlines(Context.Blueprint, Graph, OutError))
+	{
+		return false;
+	}
+
 	// -----------------------------------------------------------------------------------------
-	// STEP 1: read every node once, with its rectangle.
+	// STEP 1: read every node once, with its measured rectangle.
 	// -----------------------------------------------------------------------------------------
 	TMap<const UEdGraphNode*, int32> IndexByNode;
 	for (int32 Order = 0; Order < Graph->Nodes.Num(); ++Order)
@@ -374,26 +414,48 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		Entry.bIsGetter = IsGetterNode(Node);
 		Entry.bIsPure = !Entry.bIsComment && IsNodePure(Node);
 
-		const FExtent Extent = ExtentOf(Node->NodeWidth, Node->NodeHeight);
-		Entry.Width = Extent.Width;
-		Entry.Height = Extent.Height;
-		// THE ENGINE'S OWN NUMBERS ARE KEPT SEPARATELY, so the before-measure can reproduce
-		// `L-LAYOUT-REPORT` exactly while the planned layout still has a size to work with. See the field's
-		// comment: STORING ONLY THE SUBSTITUTED SIZE COMPUTES THE TWO NUMBERS FROM DIFFERENT RECTANGLES,
-		// with nothing in the output to show it.
-		Entry.MeasuredWidth = static_cast<double>(Node->NodeWidth);
-		Entry.MeasuredHeight = static_cast<double>(Node->NodeHeight);
-		if (Node->NodeWidth <= 0 || Node->NodeHeight <= 0)
-		{
-			Entry.bSizeWasFallback = true;
-			OutPlan.bUsedFallbackGeometry = true;
-		}
+		Entry.Width = static_cast<double>(Node->NodeWidth);
+		Entry.Height = static_cast<double>(Node->NodeHeight);
 
 		Entry.PlannedX = Entry.X;
 		Entry.PlannedY = Entry.Y;
 
 		IndexByNode.Add(Node, OutPlan.Nodes.Num());
 		OutPlan.Nodes.Add(Entry);
+	}
+
+	// A non-empty selection makes every other node a fixed anchor. Resolve every id before planning
+	// so preview and edit reject the same stale selection and a partial block is never moved.
+	if (InNodeIds.Num() > 0)
+	{
+		for (const FString& RequestedId : InNodeIds)
+		{
+			const FString Id = RequestedId.TrimStartAndEnd();
+			const FNode* Found = OutPlan.Nodes.FindByPredicate([&Id](const FNode& Candidate)
+			{
+				return NodeAnswersToId(Candidate.Node, Id);
+			});
+			if (Found == nullptr)
+			{
+				OutError = FString::Printf(TEXT("no node with id '%s' in graph '%s'; tidy did not move anything."),
+					*RequestedId, *OutPlan.GraphName);
+				return false;
+			}
+			if (Found->bIsComment)
+			{
+				OutError = FString::Printf(TEXT("node id '%s' names a comment box. Scoped tidy moves graph nodes, not user boxes."), *RequestedId);
+				return false;
+			}
+			OutPlan.SelectedNodeKeys.Add(Found->Key);
+		}
+		OutPlan.AnchorCount = 0;
+		for (const FNode& Candidate : OutPlan.Nodes)
+		{
+			if (!Candidate.bIsComment && !OutPlan.SelectedNodeKeys.Contains(Candidate.Key))
+			{
+				++OutPlan.AnchorCount;
+			}
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------
@@ -540,7 +602,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			}
 			for (UEdGraphPin* Other : Pin->LinkedTo)
 			{
-				if (Other == nullptr)
+				// A node-to-node path is directed only from an output pin to an input pin.
+				// Malformed same-direction links do not establish a dependency for layout.
+				if (Other == nullptr || Other->Direction != EGPD_Input)
 				{
 					continue;
 				}
@@ -577,13 +641,17 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 		for (const FWire& Wire : OutPlan.Wires)
 		{
-			if (Wire.SourceNodeIndex == INDEX_NONE || Wire.TargetNodeIndex == INDEX_NONE
-				|| Wire.SourceNodeIndex == Wire.TargetNodeIndex)
+			if (Wire.SourceNodeIndex == INDEX_NONE || Wire.TargetNodeIndex == INDEX_NONE)
 			{
 				continue;
 			}
-			Outgoing[Wire.SourceNodeIndex].AddUnique(Wire.TargetNodeIndex);
-			++InDegree[Wire.TargetNodeIndex];
+			// Exec and data pins can create parallel wires between the same nodes. They are one
+			// directed dependency, so count the edge once in both adjacency and indegree.
+			if (!Outgoing[Wire.SourceNodeIndex].Contains(Wire.TargetNodeIndex))
+			{
+				Outgoing[Wire.SourceNodeIndex].Add(Wire.TargetNodeIndex);
+				++InDegree[Wire.TargetNodeIndex];
+			}
 		}
 
 		TArray<int32> Queue;
@@ -615,18 +683,51 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		// for one; guessing an order would move nodes on no basis.
 		if (Processed < OutPlan.Nodes.Num())
 		{
-			FString Cyclic;
-			for (int32 Index = 0; Index < OutPlan.Nodes.Num(); ++Index)
+			TArray<uint8> VisitState;
+			VisitState.Init(0, OutPlan.Nodes.Num());
+			TArray<int32> Path;
+			TArray<int32> Cycle;
+			TFunction<bool(int32)> FindCycle = [&](const int32 Current)
 			{
-				if (InDegree[Index] > 0)
+				VisitState[Current] = 1;
+				Path.Add(Current);
+				for (const int32 Next : Outgoing[Current])
 				{
-					Cyclic = OutPlan.Nodes[Index].Key;
-					break;
+					if (VisitState[Next] == 0 && FindCycle(Next))
+					{
+						return true;
+					}
+					if (VisitState[Next] == 1)
+					{
+						const int32 Start = Path.IndexOfByKey(Next);
+						for (int32 Index = Start; Index < Path.Num(); ++Index)
+						{
+							Cycle.Add(Path[Index]);
+						}
+						Cycle.Add(Next);
+						return true;
+					}
+				}
+				Path.Pop();
+				VisitState[Current] = 2;
+				return false;
+			};
+			for (int32 Index = 0; Index < OutPlan.Nodes.Num() && Cycle.Num() == 0; ++Index)
+			{
+				if (VisitState[Index] == 0)
+				{
+					FindCycle(Index);
 				}
 			}
+
+			TArray<FString> Titles;
+			for (const int32 Index : Cycle)
+			{
+				Titles.Add(TurboMCPNodeId::GetNodeTitle(OutPlan.Nodes[Index].Node));
+			}
 			OutError = FString::Printf(
-				TEXT("graph %s has a cycle among its nodes - '%s' is part of one - so no column order exists. Tidy is for graphs that are mostly fine; break the loop and run it again."),
-				*OutPlan.GraphName, *Cyclic);
+				TEXT("graph %s has a directed node cycle: %s. No column order exists; break this loop and run Tidy again."),
+				*OutPlan.GraphName, *FString::Join(Titles, TEXT(" -> ")));
 			return false;
 		}
 	}
@@ -743,6 +844,12 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	for (const int32 BoxIndex : BoxOrder)
 	{
 		FBox& Box = OutPlan.Boxes[BoxIndex];
+		if (OutPlan.SelectedNodeKeys.Num() > 0)
+		{
+			// Scoped tidy never resizes a user's box: it is an anchor alongside the unselected nodes.
+			Box.bWouldFit = false;
+			continue;
+		}
 
 		// The nodes THIS box lays out: its own members, minus those a deeper box owns.
 		TArray<int32> Owned;
@@ -911,25 +1018,46 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	// of every box so it cannot land inside one the user drew.
 	{
 		TArray<int32> Free;
+		const bool bScoped = OutPlan.SelectedNodeKeys.Num() > 0;
 		for (int32 NodeIndex = 0; NodeIndex < OutPlan.Nodes.Num(); ++NodeIndex)
 		{
-			if (OutPlan.Nodes[NodeIndex].bIsComment || OutPlan.Nodes[NodeIndex].bUnreachable
-				|| OwnerOfNode[NodeIndex] != INDEX_NONE)
+			const FNode& Candidate = OutPlan.Nodes[NodeIndex];
+			if (Candidate.bIsComment || Candidate.bUnreachable)
 			{
 				continue;
 			}
-			Free.Add(NodeIndex);
+			if (bScoped)
+			{
+				if (OutPlan.SelectedNodeKeys.Contains(Candidate.Key))
+				{
+					Free.Add(NodeIndex);
+				}
+			}
+			else if (OwnerOfNode[NodeIndex] == INDEX_NONE)
+			{
+				Free.Add(NodeIndex);
+			}
 		}
 
 		if (Free.Num() > 0)
 		{
 			double FreeStartX = 0.0;
-			bool bAnyBox = false;
+			bool bAnyBoundary = false;
+			for (const FNode& Candidate : OutPlan.Nodes)
+			{
+				if (Candidate.bIsComment)
+				{
+					continue;
+				}
+				const double Right = Candidate.X + Candidate.Width + FTurboMCPGraphTidy::BoxGap;
+				FreeStartX = bAnyBoundary ? FMath::Max(FreeStartX, Right) : Right;
+				bAnyBoundary = true;
+			}
 			for (const FBox& Box : OutPlan.Boxes)
 			{
 				const double Right = Box.X + Box.PlannedWidth + FTurboMCPGraphTidy::BoxGap;
-				FreeStartX = bAnyBox ? FMath::Max(FreeStartX, Right) : Right;
-				bAnyBox = true;
+				FreeStartX = bAnyBoundary ? FMath::Max(FreeStartX, Right) : Right;
+				bAnyBoundary = true;
 			}
 
 			Free.Sort([&OutPlan](const int32 InLeft, const int32 InRight)
@@ -968,7 +1096,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	for (int32 NodeIndex = 0; NodeIndex < OutPlan.Nodes.Num(); ++NodeIndex)
 	{
 		FNode& Entry = OutPlan.Nodes[NodeIndex];
-		if (!Entry.bIsGetter || Entry.bUnreachable || Entry.Node == nullptr)
+		if (!Entry.bIsGetter || Entry.bUnreachable || Entry.Node == nullptr
+			|| (OutPlan.SelectedNodeKeys.Num() > 0 && !OutPlan.SelectedNodeKeys.Contains(Entry.Key)))
 		{
 			continue;
 		}
@@ -1059,24 +1188,15 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			const FNode& Source = OutPlan.Nodes[Wire.SourceNodeIndex];
 			const FNode& Target = OutPlan.Nodes[Wire.TargetNodeIndex];
 
-			// The WIDTH matters for an output's edge and for nothing else, so the fallback extent is
-			// used here for the same reason it is used for membership: a zero width would put the
-			// output pin exactly on the input pin's edge and understate every wire.
 			const double SourceX = bUsePlanned ? Source.PlannedX : Source.X;
 			const double SourceY = bUsePlanned ? Source.PlannedY : Source.Y;
 			const double TargetX = bUsePlanned ? Target.PlannedX : Target.X;
 			const double TargetY = bUsePlanned ? Target.PlannedY : Target.Y;
 
-			// THE WIDTH IS CHOSEN BY WHICH NUMBER IS BEING COMPUTED, and that is the whole fix.
-			//
-			// BEFORE must reproduce `L-LAYOUT-REPORT` EXACTLY, and the reader uses the node's own
-			// `NodeWidth` - so the engine's number is used, even when it is zero. Substituting a size here
-			// is what made the two tools disagree.
-			//
-			// AFTER is a layout that does not exist yet, so it has only the planned positions and the
-			// fallback extent to work with. That is where the documented fallback belongs.
-			const double SourceWidth = bUsePlanned ? Source.Width : Source.MeasuredWidth;
-			const double TargetWidth = bUsePlanned ? Target.Width : Target.MeasuredWidth;
+			// Planning is permitted only after every node has a Slate-measured size, so the before
+			// and after values use the same real outline width.
+			const double SourceWidth = Source.Width;
+			const double TargetWidth = Target.Width;
 
 			const FVector2D Start = PlannedPinPosition(Wire.OutputPin, SourceX, SourceY, SourceWidth);
 			const FVector2D End = PlannedPinPosition(Wire.InputPin, TargetX, TargetY, TargetWidth);
@@ -1099,6 +1219,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			|| !FMath::IsNearlyEqual(Entry.PlannedY, Entry.Y))
 		{
 			++OutPlan.NodesToMove;
+			OutPlan.NodesToMoveKeys.Add(Entry.Key);
 		}
 	}
 	for (const FBox& Box : OutPlan.Boxes)
@@ -1157,6 +1278,16 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	// the label is what stops that.
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
 
+	if (InPlan.SelectedNodeKeys.Num() > 0)
+	{
+		Lines.Add(FString::Printf(TEXT("scope: %d selected node(s) would be moved into free space; %d surrounding node(s) and all comment boxes are fixed anchors."),
+			InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount));
+	}
+	else
+	{
+		Lines.Add(TEXT("scope: whole graph; no fixed-node selection was supplied."));
+	}
+
 	if (InPlan.bAlreadyTidy)
 	{
 		Lines.Add(TEXT("the graph is ALREADY TIDY: no node would move, no box would change size, and no getter would be split. The edit would answer unchanged:"));
@@ -1164,6 +1295,10 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	else if (InPlan.bWouldApply)
 	{
 		Lines.Add(FString::Printf(TEXT("the edit WOULD APPLY: %d node(s) would move, %d box(es) would be fitted, %d getter(s) would be split."), InPlan.NodesToMove, InPlan.BoxesToFit, InPlan.GetterCopies.Num()));
+		if (InPlan.SelectedNodeKeys.Num() > 0)
+		{
+			Lines.Add(FString::Printf(TEXT("scope moves only: %s"), *FString::Join(InPlan.NodesToMoveKeys, TEXT(", "))));
+		}
 	}
 	else
 	{
@@ -1197,20 +1332,8 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 		Lines.Add(FString::Printf(TEXT("unreachable: %d node(s) are NOT moved, because disconnected groups are left where they are. R-GRAPH-DEAD removes them."), InPlan.UnreachableCount));
 	}
 
-	if (InPlan.bUsedFallbackGeometry)
-	{
-		// THE FALLBACK IS ALWAYS ANNOUNCED. `NodeWidth` is written only by Slate when a node is drawn,
-		// so a graph that has never been rendered has no measured sizes, and a reader is entitled to
-		// know the geometry came from `MinimumNodeExtent` rather than from the engine.
-		Lines.Add(FString::Printf(TEXT("geometry: at least one node has NO MEASURED SIZE, so a %.0f-unit square centred on its position was used. Open the asset once to give the engine real sizes."), MinimumNodeExtent));
-	}
-	else
-	{
-		// AND WHEN EVERY NODE HAS A REAL SIZE, THAT IS SAID TOO. The line is not decoration: a reader
-		// cannot tell "the engine measured every node" from "the code forgot to mention it" unless the
-		// absence is stated, and the difference decides whether the numbers can be trusted as drawn.
-		Lines.Add(TEXT("geometry: every node has a size the engine measured, so no estimate was used."));
-	}
+	// `Plan` refuses before reaching this point unless the graph panel has measured every outline.
+	Lines.Add(TEXT("geometry: every node has a Slate-measured size; no estimate was used."));
 
 	return FString::Join(Lines, TEXT("\n"));
 }
@@ -1315,9 +1438,11 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	// EXACTLY.
 	// -----------------------------------------------------------------------------------------
 	TArray<TPair<UEdGraphNode*, TPair<int32, int32>>> OriginalPositions;
+	TArray<FString> ActuallyMovedKeys;
 	for (const FNode& Entry : InPlan.Nodes)
 	{
-		if (Entry.Node == nullptr || Entry.bIsComment || Entry.bUnreachable)
+		if (Entry.Node == nullptr || Entry.bIsComment || Entry.bUnreachable
+			|| (InPlan.SelectedNodeKeys.Num() > 0 && !InPlan.SelectedNodeKeys.Contains(Entry.Key)))
 		{
 			continue;
 		}
@@ -1328,6 +1453,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			continue;
 		}
 		OriginalPositions.Add(TPair<UEdGraphNode*, TPair<int32, int32>>(Entry.Node, TPair<int32, int32>(Entry.Node->NodePosX, Entry.Node->NodePosY)));
+		ActuallyMovedKeys.Add(Entry.Key);
 		Entry.Node->Modify();
 		Entry.Node->NodePosX = NewX;
 		Entry.Node->NodePosY = NewY;
@@ -1429,7 +1555,11 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			}
 		}
 		const bool bRestored = FMath::IsNearlyEqual(Restored, InPlan.WireLengthBefore, 1.0);
-		FString Out = FString::Printf(TEXT("unchanged: %s in %s would be worse (total wire length %.1f -> %.1f), so it was rolled back. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
+		FString Out = FString::Printf(TEXT("unchanged: %s in %s would be worse (total wire length %.1f -> %.1f), so it was rolled back. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
+		if (InPlan.SelectedNodeKeys.Num() > 0)
+		{
+			Out += FString::Printf(TEXT(" Scope was %d selected node(s); %d surrounding node(s) and all comment boxes were fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount);
+		}
 
 		// *** THE WIRE LENGTH COMING BACK IS NOT THE SAME AS EVERY READER BEING RE-ATTACHED, SO THE
 		// SECOND QUESTION IS ASKED SEPARATELY. `bRestored` compares a total; this reports the consumers
@@ -1480,8 +1610,15 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 
 	TArray<FString> Lines;
 	const bool bWorse = MeasuredAfter >= InPlan.WireLengthBefore;
+	const bool bScoreMatchesPlan = FMath::IsNearlyEqual(MeasuredAfter, InPlan.WireLengthAfter, 1.0);
 	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? TEXT(" (WORSE, applied because Force was set)") : TEXT("")));
+	Lines.Add(FString::Printf(TEXT("score: preview predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("MATCHES THE PREVIEW") : TEXT("DOES NOT MATCH THE PREVIEW")));
 	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), and NO BOX CORNER MOVED: every box keeps the top-left corner the user placed, and only its size changed."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
+	if (InPlan.SelectedNodeKeys.Num() > 0)
+	{
+		Lines.Add(FString::Printf(TEXT("scope: only the %d selected node(s) were eligible to move; %d surrounding node(s) and all comment boxes remained fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount));
+		Lines.Add(FString::Printf(TEXT("scope moved: %s"), *FString::Join(ActuallyMovedKeys, TEXT(", "))));
+	}
 	if (GettersSplit > 0)
 	{
 		Lines.Add(FString::Printf(TEXT("split %d variable getter(s), one copy per extra consumer, placed beside the node that reads it."), GettersSplit));
@@ -1490,17 +1627,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	{
 		Lines.Add(FString::Printf(TEXT("left %d unreachable node(s) EXACTLY where they were, because disconnected groups are not moved into the layout. R-GRAPH-DEAD removes them."), InPlan.UnreachableCount));
 	}
-	if (InPlan.bUsedFallbackGeometry)
-	{
-		Lines.Add(FString::Printf(TEXT("geometry: at least one node had NO MEASURED SIZE, so a %.0f-unit square centred on its position was used and the positions are computed from that estimate. Open the asset once for real sizes."), MinimumNodeExtent));
-	}
-	else
-	{
-		// THE ABSENCE IS STATED AS WELL AS THE PRESENCE. A reader cannot tell "the engine measured every
-		// node" from "the code forgot to say" unless the answer says which, and that decides whether the
-		// numbers can be trusted as drawn.
-		Lines.Add(TEXT("geometry: every node had a size the engine measured, so no estimate was used."));
-	}
+	Lines.Add(TEXT("geometry: every node had a Slate-measured size; no estimate was used."));
 	Lines.Add(TEXT("no knots were added: P/E-GRAPH-KNOTS owns that rule and tidy is measured on total wire length, which a knot lengthens."));
 	Lines.Add(TEXT("; the change is in memory and NOT saved. Call E-SAVE."));
 

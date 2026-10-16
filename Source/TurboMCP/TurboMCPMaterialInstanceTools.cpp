@@ -1,31 +1,20 @@
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "Tools/TurboMCPToolsets.h"
 
-#include "TurboMCPMaterialInstance.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialExpressionTextureSampleParameter.h"
+#include "Materials/MaterialInstance.h"
+#include "Materials/MaterialInstanceConstant.h"
+#include "Materials/MaterialParameters.h"
+#include "Engine/Texture.h"
+#include "UObject/UObjectGlobals.h"
 
-/**
- * R-MAT-INST-LOAD: read a material instance - its parent chain, what it overrides, and what it inherits.
- *
- * A READER LIVES IN UTurboMCPReadToolset, WHICH IS STRUCTURALLY UNABLE TO WRITE. That is the safety model and the
- * spec requirement, not a convention: an agent that wants to know whether a parameter is on the asset it holds must
- * be able to ask WITHOUT holding a tool that could change it.
- *
- * THE LIST THAT MATTERS IS THE INHERITED ONE, in the spec words: an agent asked to change a parameter needs to know
- * whether the value is REALLY ON THIS INSTANCE or inherited from a parent it does not own. What this reader adds to
- * what existed is exactly that inverse - TurboMCPMaterial.cpp RenderTree already printed the parameters an instance
- * OVERRIDES, and NOTHING PRINTED THE ONES IT DOES NOT.
- *
- * A BASE MATERIAL IS REFUSED BY NAME rather than answered with every parameter marked inherited. D-43 refuses the
- * opposite direction for the same reason - "a text that hides them invites an edit that changes the wrong asset" -
- * and here the analogous harm is telling an agent that a parameter is not editable on the asset it is holding when
- * it is. The refusal NAMES the tools to use instead.
- */
+#include "TurboMCPAssetResolver.h"
+#include "TurboMCPMaterialInstance.h"
+#include "TurboMCPToolError.h"
+
 FString UTurboMCPReadToolset::ReadTurboMCPMaterialInstance(const FString& Asset)
 {
 	if (Asset.TrimStartAndEnd().IsEmpty())
@@ -37,10 +26,172 @@ FString UTurboMCPReadToolset::ReadTurboMCPMaterialInstance(const FString& Asset)
 	FString Error;
 	if (!FTurboMCPMaterialInstance::Read(Asset, Result, Error))
 	{
-		// Read FILLS A MESSAGE THAT ALREADY STARTS WITH error:, so a caller tests ONE prefix rather than matching a
-		// sentence - and the refusal is never an empty string a caller could mistake for success.
 		return Error;
 	}
 
 	return FTurboMCPMaterialInstance::Render(Result);
+}
+
+namespace
+{
+	struct FTextureOverride
+	{
+		FMaterialParameterInfo Parameter;
+		FString Name;
+		UTexture* Texture = nullptr;
+	};
+
+	bool IsSamplerCompatible(const EMaterialSamplerType SamplerType, const UTexture* Texture)
+	{
+		if (Texture == nullptr)
+		{
+			return false;
+		}
+		// Color samplers read sRGB textures; linear-color samplers read linear textures. Other sampler
+		// kinds have engine-specific constraints and are left to the expression's own validation.
+		if (SamplerType == SAMPLERTYPE_Color)
+		{
+			return Texture->SRGB;
+		}
+		if (SamplerType == SAMPLERTYPE_LinearColor)
+		{
+			return !Texture->SRGB;
+		}
+		return true;
+	}
+
+	UMaterialExpressionTextureSampleParameter* FindTextureParameter(UMaterialInstanceConstant* Instance,
+		const FName ParameterName)
+	{
+		for (UMaterialInterface* Link = Instance != nullptr ? Instance->Parent : nullptr;
+			Link != nullptr; Link = Cast<UMaterialInstance>(Link) != nullptr
+				? Cast<UMaterialInstance>(Link)->Parent : nullptr)
+		{
+			const UMaterial* Material = Cast<UMaterial>(Link);
+			if (Material == nullptr)
+			{
+				continue;
+			}
+			for (UMaterialExpression* Expression : Material->GetExpressionCollection().Expressions)
+			{
+				UMaterialExpressionTextureSampleParameter* TextureParameter =
+					Cast<UMaterialExpressionTextureSampleParameter>(Expression);
+				if (TextureParameter != nullptr && TextureParameter->ParameterName == ParameterName)
+				{
+					return TextureParameter;
+				}
+			}
+		}
+		return nullptr;
+	}
+}
+
+FString UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(const FString& Asset,
+	const TArray<FString>& Overrides)
+{
+	if (Asset.TrimStartAndEnd().IsEmpty())
+	{
+		return TEXT("error: no material instance given.");
+	}
+	if (Overrides.Num() == 0)
+	{
+		return TEXT("error: no overrides given. Pass entries in the form Parameter = /Path/Texture.Asset.");
+	}
+
+	FTurboMCPAssetResolver::FResolved Resolved;
+	const FString ResolveError = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+	if (!ResolveError.IsEmpty())
+	{
+		return FTurboMCPToolError::AsError(ResolveError);
+	}
+	UMaterialInstanceConstant* Instance = LoadObject<UMaterialInstanceConstant>(nullptr,
+		*Resolved.ObjectPath);
+	if (Instance == nullptr)
+	{
+		return FString::Printf(TEXT("error: %s is not a Material Instance Constant."), *Resolved.ObjectPath);
+	}
+
+	TMap<FMaterialParameterInfo, FMaterialParameterMetadata> Declared;
+	Instance->GetAllParametersOfType(EMaterialParameterType::Texture, Declared);
+	TArray<FString> DeclaredNames;
+	for (const TPair<FMaterialParameterInfo, FMaterialParameterMetadata>& Pair : Declared)
+	{
+		DeclaredNames.Add(Pair.Key.Name.ToString());
+	}
+	DeclaredNames.Sort();
+
+	TArray<FTextureOverride> Planned;
+	for (const FString& Entry : Overrides)
+	{
+		FString Name;
+		FString TextureAsset;
+		if (!Entry.Split(TEXT("="), &Name, &TextureAsset))
+		{
+			return FString::Printf(TEXT("error: '%s' is not Parameter = texture."), *Entry);
+		}
+		Name = Name.TrimStartAndEnd();
+		TextureAsset = TextureAsset.TrimStartAndEnd();
+		const TPair<FMaterialParameterInfo, FMaterialParameterMetadata>* DeclaredPair = nullptr;
+		for (const TPair<FMaterialParameterInfo, FMaterialParameterMetadata>& Pair : Declared)
+		{
+			if (Pair.Key.Name.ToString().Equals(Name, ESearchCase::IgnoreCase))
+			{
+				DeclaredPair = &Pair;
+				break;
+			}
+		}
+		if (DeclaredPair == nullptr)
+		{
+			return FString::Printf(TEXT("error: texture parameter '%s' is not declared by %s. Known texture parameters: %s."),
+				*Name, *Resolved.ObjectPath,
+				DeclaredNames.Num() > 0 ? *FString::Join(DeclaredNames, TEXT(", ")) : TEXT("(none)"));
+		}
+
+		FTurboMCPAssetResolver::FResolved TextureResolved;
+		const FString TextureResolveError = FTurboMCPAssetResolver::Resolve(TextureAsset, TextureResolved);
+		if (!TextureResolveError.IsEmpty())
+		{
+			return FTurboMCPToolError::AsError(TextureResolveError);
+		}
+		UTexture* Texture = LoadObject<UTexture>(nullptr, *TextureResolved.ObjectPath);
+		if (Texture == nullptr)
+		{
+			return FString::Printf(TEXT("error: %s is not a texture."), *TextureResolved.ObjectPath);
+		}
+
+		UMaterialExpressionTextureSampleParameter* Expression = FindTextureParameter(Instance,
+			DeclaredPair->Key.Name);
+		if (Expression == nullptr)
+		{
+			return FString::Printf(TEXT("error: texture parameter '%s' has no editable texture-sampler expression."),
+				*DeclaredPair->Key.Name.ToString());
+		}
+		if (!IsSamplerCompatible(Expression->SamplerType, Texture))
+		{
+			return FString::Printf(TEXT("error: texture '%s' is incompatible with parameter '%s': sampler %s requires an %s texture."),
+				*Texture->GetPathName(), *DeclaredPair->Key.Name.ToString(),
+				*UEnum::GetValueAsString(Expression->SamplerType),
+				Expression->SamplerType == SAMPLERTYPE_LinearColor ? TEXT("linear (sRGB disabled)") : TEXT("sRGB"));
+		}
+
+		FTextureOverride& Override = Planned.AddDefaulted_GetRef();
+		Override.Parameter = DeclaredPair->Key;
+		Override.Name = DeclaredPair->Key.Name.ToString();
+		Override.Texture = Texture;
+	}
+
+	for (const FTextureOverride& Override : Planned)
+	{
+		Instance->SetTextureParameterValueEditorOnly(Override.Parameter, Override.Texture);
+	}
+	Instance->PostEditChange();
+
+	FTurboMCPMaterialInstance::FResult Result;
+	FString ReadError;
+	if (!FTurboMCPMaterialInstance::Read(Asset, Result, ReadError))
+	{
+		return FTurboMCPToolError::AsError(ReadError);
+	}
+	return FString::Printf(TEXT("changed: %d texture override(s)\n%s"), Planned.Num(),
+		*FTurboMCPMaterialInstance::Render(Result));
 }

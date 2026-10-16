@@ -188,12 +188,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(
 	}
 
 	Registry->WaitForCompletion();
-	if (Registry->IsLoadingAssets())
+	if (Registry->IsGathering())
 	{
-		// WaitForCompletion can return early during engine startup. An incomplete
-		// scan is not an empty graph, so do not produce counts or a `none` answer.
+		// IsLoadingAssets only describes the initial search. A mounted plugin can
+		// start a later search after that initial scan, while this asset's dependency
+		// and referencer edges are still absent. IsGathering covers both cases.
+		// An incomplete scan is not an empty graph, so do not produce counts or a
+		// `none` answer.
 		return TEXT("error: the asset registry scan is incomplete; no reference ")
-			TEXT("counts were produced. Try again after the editor has finished loading.");
+			TEXT("counts were produced. Try again after the editor has finished loading ")
+			TEXT("mounted content.");
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;

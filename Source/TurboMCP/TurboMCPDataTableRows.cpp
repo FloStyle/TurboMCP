@@ -503,6 +503,9 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	// ORDER TO SHIFT, and NOTHING IN THIS FILE CONSULTS A ROW'S POSITION. Removing a row cannot invalidate any
 	// other row's identity because identity IS the name.
 	TMap<FName, FString> FinalText;
+	// The final requested text for every field that this call sets. A row can occur more than once;
+	// just as FinalText keeps its final whole-row import, this map keeps the last requested value per field.
+	TMap<FName, TMap<FName, FString>> ExpectedFields;
 	TArray<FString> Order;
 
 	for (const FRowOp& Op : Plan.Ops)
@@ -529,6 +532,14 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 		FString Merged;
 		MergeIntoExport(Base, Op.Fields, Merged);
 		FinalText.Add(RowName, Merged);
+
+		TMap<FName, FString>& ExpectedForRow = ExpectedFields.FindOrAdd(RowName);
+		for (const FFieldEdit& Edit : Op.Fields)
+		{
+			// Use the struct's spelling in the result, while FName makes the caller's case-insensitive
+			// field spelling refer to the same expected value.
+			ExpectedForRow.Add(FName(*CanonicalField(Struct, Edit.Name)), Edit.Text);
+		}
 	}
 
 	const int32 RowsBefore = Table->GetRowMap().Num();
@@ -572,7 +583,16 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 		FString ImportError;
 		if (!ImportRow(Struct, Row, Table, Pair.Value, ImportError))
 		{
-			Failures.Add(FString::Printf(TEXT("row '%s': %s"), *Pair.Key.ToString(), *ImportError));
+			TArray<FString> RequestedFields;
+			if (const TMap<FName, FString>* ExpectedForRow = ExpectedFields.Find(Pair.Key))
+			{
+				for (const TPair<FName, FString>& Expected : *ExpectedForRow)
+				{
+					RequestedFields.Add(Expected.Key.ToString());
+				}
+			}
+			Failures.Add(FString::Printf(TEXT("row '%s', failed fields: %s: %s"), *Pair.Key.ToString(),
+				*FString::Join(RequestedFields, TEXT(", ")), *ImportError));
 			continue;
 		}
 		++Written;
@@ -584,11 +604,37 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	// MEASUREMENT OF THE RESULT rather than a restatement of the request. The spec asks for exactly this: *"then
 	// re-reads the row names and each changed value back from the table."*
 	FString ReadBack;
+	TArray<FString> VerificationFailures;
 	for (const FString& Name : Order)
 	{
-		const uint8* Row = Table->GetRowMap().FindRef(FName(*Name));
+		const FName RowName(*Name);
+		const uint8* Row = Table->GetRowMap().FindRef(RowName);
 		ReadBack += FString::Printf(TEXT("\n  %s = %s"), *Name,
 			Row != nullptr ? *WholeRowText(Struct, Row, Table) : TEXT("MISSING AFTER WRITE"));
+
+		const TMap<FName, FString>* ExpectedForRow = ExpectedFields.Find(RowName);
+		if (ExpectedForRow == nullptr)
+		{
+			continue;
+		}
+		for (const TPair<FName, FString>& Expected : *ExpectedForRow)
+		{
+			if (Row == nullptr)
+			{
+				VerificationFailures.Add(FString::Printf(
+					TEXT("row '%s', field '%s' is missing after the write (requested %s)"),
+					*Name, *Expected.Key.ToString(), *Expected.Value));
+				continue;
+			}
+
+			const FString Actual = OneFieldText(Struct, Row, Expected.Key.ToString());
+			if (!Actual.Equals(Expected.Value, ESearchCase::CaseSensitive))
+			{
+				VerificationFailures.Add(FString::Printf(
+					TEXT("row '%s', field '%s' differs after the write (requested %s, read back %s)"),
+					*Name, *Expected.Key.ToString(), *Expected.Value, *Actual));
+			}
+		}
 	}
 
 	OutReport = FString::Printf(
@@ -600,14 +646,13 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	// "the engine refused to add the row 'X'" leaves the caller unable to tell a request that did NOTHING from
 	// one that applied nine rows and failed on the tenth. The counts and the before/after row count are the
 	// difference, and the package is dirty either way.
+	Failures.Append(VerificationFailures);
 	if (Failures.Num() > 0)
 	{
 		return FString::Printf(
-			TEXT("error: %d row(s) of this request could NOT be applied: %s")
-			TEXT("\n; THE REST WAS APPLIED - written: %d row(s) set, %d removed, and the table had %d row(s) and ")
-			TEXT("now has %d - so THIS IS A PARTIAL WRITE AND NOT A REFUSAL, and the package IS marked dirty."),
-			Failures.Num(), *FString::Join(Failures, TEXT("; ")),
-			Written, Removed, RowsBefore, Table->GetRowMap().Num());
+			TEXT("error: %d row or field request(s) could NOT be applied or verified: %s")
+			TEXT("\n; the read-back above is the engine result. This is a partial write, not success; the package is marked dirty."),
+			Failures.Num(), *FString::Join(Failures, TEXT("; ")));
 	}
 
 	return FString();

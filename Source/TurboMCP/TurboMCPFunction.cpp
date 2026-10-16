@@ -8,11 +8,15 @@
 #include "TurboMCPFunction.h"
 
 #include "BlueprintEditorLibrary.h"
+#include "Algo/Unique.h"
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
 #include "UObject/Class.h"
@@ -21,6 +25,7 @@
 #include "WidgetBlueprint.h"
 
 #include "TurboMCPAssetResolver.h"
+#include "TurboMCPTypeParser.h"
 
 namespace
 {
@@ -53,6 +58,47 @@ namespace
 			}
 		}
 		return true;
+	}
+
+	struct FSignaturePin { FString Name; FEdGraphPinType Type; };
+
+	bool ParseSignature(const FString& InText, const TCHAR* InKind, TArray<FSignaturePin>& OutPins, FString& OutWhy)
+	{
+		OutPins.Reset();
+		if (InText.TrimStartAndEnd().IsEmpty()) { return true; }
+		TArray<FString> Items; int32 Depth = 0; int32 Start = 0;
+		for (int32 Index = 0; Index < InText.Len(); ++Index)
+		{
+			if (InText[Index] == TEXT('<')) { ++Depth; }
+			else if (InText[Index] == TEXT('>')) { --Depth; }
+			else if (InText[Index] == TEXT(',') && Depth == 0) { Items.Add(InText.Mid(Start, Index - Start)); Start = Index + 1; }
+		}
+		Items.Add(InText.Mid(Start));
+		TSet<FString> Names;
+		for (const FString& Raw : Items)
+		{
+			FString Name; FString TypeText;
+			if (!Raw.Split(TEXT(":"), &Name, &TypeText)) { OutWhy = FString::Printf(TEXT("%s '%s' must be 'Name: Type'"), InKind, *Raw.TrimStartAndEnd()); return false; }
+			Name = Name.TrimStartAndEnd(); TypeText = TypeText.TrimStartAndEnd();
+			FString NameWhy;
+			if (!IsValidFunctionName(Name, NameWhy) || Names.Contains(Name)) { OutWhy = FString::Printf(TEXT("%s pin '%s' is invalid or duplicated"), InKind, *Name); return false; }
+			FSignaturePin& Pin = OutPins.AddDefaulted_GetRef(); Pin.Name = Name;
+			if (!FTurboMCPTypeParser::Resolve(TypeText, Pin.Type, OutWhy)) { OutWhy = FString::Printf(TEXT("%s pin '%s' has invalid type '%s': %s"), InKind, *Name, *TypeText, *OutWhy); return false; }
+			Names.Add(Name);
+		}
+		return true;
+	}
+
+	struct FCallLink { FString PinName; UEdGraphPin* Pin = nullptr; UEdGraphPin* LinkedPin = nullptr; };
+	void CaptureCallLinks(UBlueprint* InBlueprint, const FString& InFunction, TArray<FCallLink>& OutLinks, int32& OutCalls)
+	{
+		TArray<UK2Node_CallFunction*> Calls; FBlueprintEditorUtils::GetAllNodesOfClass(InBlueprint, Calls); OutCalls = 0;
+		for (UK2Node_CallFunction* Call : Calls)
+		{
+			if (Call == nullptr || !NameMatches(Call->GetFunctionName(), InFunction)) { continue; }
+			++OutCalls;
+			for (UEdGraphPin* Pin : Call->Pins) { if (Pin != nullptr) for (UEdGraphPin* Linked : Pin->LinkedTo) { OutLinks.Add({ Pin->PinName.ToString(), Pin, Linked }); } }
+		}
 	}
 }
 
@@ -191,13 +237,23 @@ FTurboMCPFunction::FNameCheck FTurboMCPFunction::CheckName(
 	return Check;
 }
 
-FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName)
+FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
+	const FString& InInputs, const FString& InOutputs)
 {
 	const FString Wanted = InName.TrimStartAndEnd();
 	if (Wanted.IsEmpty())
 	{
 		return TEXT("error: no function name given. Pass a name, for example ")
 			TEXT("ComputeScore.");
+	}
+
+	TArray<FSignaturePin> Inputs;
+	TArray<FSignaturePin> Outputs;
+	FString SignatureWhy;
+	if (!ParseSignature(InInputs, TEXT("input"), Inputs, SignatureWhy)
+		|| !ParseSignature(InOutputs, TEXT("output"), Outputs, SignatureWhy))
+	{
+		return FString::Printf(TEXT("unchanged: %s."), *SignatureWhy);
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;
@@ -271,6 +327,51 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName)
 			*Wanted, *Actual, *Extra);
 	}
 
+	// Add every signature pin before refreshing callers. Entry pins are outputs in the graph;
+	// result pins are inputs. The function's public call node reverses those directions.
+	TArray<UK2Node_FunctionEntry*> Entries;
+	Graph->GetNodesOfClass(Entries);
+	UK2Node_FunctionEntry* Entry = Entries.Num() == 1 ? Entries[0] : nullptr;
+	if (Entry == nullptr)
+	{
+		UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
+		return FString::Printf(TEXT("error: the new function '%s' has no unique entry node; it was removed again."), *Wanted);
+	}
+	for (const FSignaturePin& Pin : Inputs)
+	{
+		Entry->Modify();
+		Entry->CreateUserDefinedPin(FName(*Pin.Name), Pin.Type, EGPD_Output, /*bUseUniqueName=*/false);
+	}
+	UK2Node_FunctionResult* Result = nullptr;
+	if (Outputs.Num() > 0)
+	{
+		Result = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(Entry);
+		if (Result == nullptr)
+		{
+			UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
+			return FString::Printf(TEXT("error: the new function '%s' has no result node; it was removed again."), *Wanted);
+		}
+		for (const FSignaturePin& Pin : Outputs)
+		{
+			Result->Modify();
+			Result->CreateUserDefinedPin(FName(*Pin.Name), Pin.Type, EGPD_Input, /*bUseUniqueName=*/false);
+		}
+	}
+
+	TArray<FCallLink> PreviousLinks;
+	int32 RefreshedCalls = 0;
+	CaptureCallLinks(Blueprint, Wanted, PreviousLinks, RefreshedCalls);
+	FBlueprintEditorUtils::RefreshAllNodes(Blueprint);
+	TArray<FString> LostLinks;
+	for (const FCallLink& Link : PreviousLinks)
+	{
+		if (Link.Pin == nullptr || Link.LinkedPin == nullptr || !Link.Pin->LinkedTo.Contains(Link.LinkedPin))
+		{
+			LostLinks.Add(Link.PinName);
+		}
+	}
+	LostLinks.Sort(); LostLinks.SetNum(Algo::Unique(LostLinks));
+
 	// The read-back. A tool that reported what it added without checking would be reporting
 	// its own intention, and the name mismatch above is exactly why that is not enough.
 	bool bNowImplemented = false;
@@ -286,6 +387,10 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName)
 	FString Out = FString::Printf(TEXT("changed: added function '%s' to %s"),
 		*Wanted, *Resolved.ObjectPath);
 	Out += FString::Printf(TEXT("\ncreated: graph '%s'"), *Graph->GetName());
+	Out += FString::Printf(TEXT("\ncreated inputs: %s"), Inputs.Num() > 0 ? *FString::JoinBy(Inputs, TEXT(", "), [](const FSignaturePin& Pin) { return Pin.Name; }) : TEXT("(none)"));
+	Out += FString::Printf(TEXT("\ncreated outputs: %s"), Outputs.Num() > 0 ? *FString::JoinBy(Outputs, TEXT(", "), [](const FSignaturePin& Pin) { return Pin.Name; }) : TEXT("(none)"));
+	Out += FString::Printf(TEXT("\nrefreshed call nodes: %d"), RefreshedCalls);
+	Out += FString::Printf(TEXT("\nlost links by pin name: %s"), LostLinks.Num() > 0 ? *FString::Join(LostLinks, TEXT(", ")) : TEXT("(none)"));
 	Out += FString::Printf(TEXT("\nthe editor now reports it as implemented: %s"),
 		bNowImplemented ? TEXT("yes") : TEXT("no"));
 

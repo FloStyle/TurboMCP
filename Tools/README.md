@@ -35,6 +35,8 @@ stale list.*
 | `make-test-widget.py` | a running editor | Creates and SAVES the Widget Blueprint test asset |
 | `test-capture.py` | a running editor | The capture checks, including the uncropped `debug-window` reference |
 | `test-widget-tree.py` | a running editor | The R-BP-LOAD widget tree section |
+| `test-widget-tree-nested.py` | nothing, static | Guards recursive child-user-widget and named-slot traversal against the nested fixture |
+| `test-traps-plugin-identity.py` | nothing, static | Guards trap-file discovery by module identity when the plugin mount directory is renamed |
 | `test-json.py` | a running editor | JSON and text must carry the same facts |
 | `test-enum-add.py` | a running editor | P/E-ENUM-ADD, including the names in the saved file |
 | `test-vars-add.py` | a running editor | P/E-VARS-ADD, read back through R-BP-LOAD after a save |
