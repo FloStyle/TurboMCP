@@ -51,6 +51,9 @@ namespace
 
 		/** The module for a native type, or the asset path for a user-made one. */
 		FString Home;
+
+		/** Whether this match came from the asset registry and is not loaded yet. */
+		bool bUnloaded = false;
 	};
 
 	/** True when a type lives in a user-made asset rather than in a module. */
@@ -261,7 +264,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 	// A user-made struct or enum that is not loaded is not in the object graph
 	// yet, so add anything the registry knows about that is not already listed.
 	IAssetRegistry* Registry = IAssetRegistry::Get();
-	int32 UnloadedCount = 0;
 	if (Registry != nullptr && (WantedKind == TEXT("any") || WantedKind == TEXT("struct") || WantedKind == TEXT("enum")))
 	{
 		TArray<FAssetData> AllAssets;
@@ -320,12 +322,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 				continue;
 			}
 
-			++UnloadedCount;
-
 			FTypeHit Hit;
 			Hit.Path = Path;
 			Hit.Kind = AssetKind;
 			Hit.Home = Asset.PackagePath.ToString() + TEXT(" (not loaded yet)");
+			Hit.bUnloaded = true;
 			Hits.Add(MoveTemp(Hit));
 		}
 	}
@@ -356,9 +357,14 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 		Result += FString::Printf(TEXT(", showing the first %d"), Shown);
 	}
 
+	int32 ShownUnloadedCount = 0;
 	for (int32 Index = 0; Index < Shown; ++Index)
 	{
 		const FTypeHit& Hit = Hits[Index];
+		if (Hit.bUnloaded)
+		{
+			++ShownUnloadedCount;
+		}
 		// The exact path comes first, because that is the form a pin or variable
 		// needs and the reason this tool exists (P7).
 		Result += FString::Printf(TEXT("\n%s  [%s] in %s"), *Hit.Path, *Hit.Kind, *Hit.Home);
@@ -369,12 +375,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPTypeFind(const FString& Words, const F
 		Result += FString::Printf(TEXT("\n(%d more, narrow the words or the kind)"), Hits.Num() - Shown);
 	}
 
-	if (UnloadedCount > 0)
+	if (ShownUnloadedCount > 0)
 	{
 		Result += FString::Printf(
-			TEXT("\n%d of these are not loaded yet; the path is still valid, but load the asset ")
+			TEXT("\n%d of the shown matches are not loaded yet; the path is still valid, but load the asset ")
 			TEXT("before using it in a graph."),
-			UnloadedCount);
+			ShownUnloadedCount);
 	}
 
 	return Result;
