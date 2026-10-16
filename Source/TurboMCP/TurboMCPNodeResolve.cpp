@@ -52,6 +52,30 @@ namespace
 	/** How many near-miss node titles are offered when an ID misses. */
 	constexpr int32 MaxNearMissTitles = 6;
 
+	/** Explain why a parsed node key cannot identify a node. */
+	FString InvalidNodeKeyReason(const FString& InKey)
+	{
+		const FString Key = InKey.TrimStartAndEnd();
+		if (Key.IsEmpty())
+		{
+			return TEXT("the key is empty");
+		}
+
+		for (const TCHAR Ch : Key)
+		{
+			const bool bIsHex =
+				(Ch >= TEXT('0') && Ch <= TEXT('9'))
+				|| (Ch >= TEXT('a') && Ch <= TEXT('f'))
+				|| (Ch >= TEXT('A') && Ch <= TEXT('F'));
+			if (!bIsHex)
+			{
+				return FString::Printf(TEXT("character '%c' is not hexadecimal"), Ch);
+			}
+		}
+
+		return TEXT("the key has fewer than six hexadecimal characters");
+	}
+
 	/**
 	 * The reference the engine's tools accept for a node.
 	 *
@@ -263,6 +287,15 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeResolve(const FString& NodeIds)
 			continue;
 		}
 
+		if (TurboMCPNodeId::NormaliseKey(Parsed.NodeKey).IsEmpty())
+		{
+			Errors += FString::Printf(
+				TEXT("\nerror: node ID '%s' has an invalid key: %s. Pass at least six hexadecimal characters."),
+				*Part, *InvalidNodeKeyReason(Parsed.NodeKey));
+			++RefusedCount;
+			continue;
+		}
+
 		// The asset is resolved through the shared resolver, so every path form
 		// works and an ambiguous name is refused with its candidates (3.2).
 		FTurboMCPAssetResolver::FResolved AssetResolved;
@@ -352,9 +385,13 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeResolve(const FString& NodeIds)
 			const FString Wanted = Parsed.NodeKey.ToLower();
 			for (const UEdGraphNode* Node : Graph->Nodes)
 			{
-				if (Node == nullptr || Offered >= MaxNearMissTitles)
+				if (Node == nullptr)
 				{
 					continue;
+				}
+				if (Offered >= MaxNearMissTitles)
+				{
+					break;
 				}
 				const FString Key = Node->NodeGuid.ToString(EGuidFormats::DigitsLower);
 				// Same first two hex digits is a cheap near miss and is enough to
