@@ -46,7 +46,15 @@ workflow. Read [the debt index](audit/technical-debt.md) to avoid adjacent refac
 
 ## Dispatch hold after R13
 
-R16 is the next planned task, but dispatch is blocked until DSH and the
-integration host reconcile the reported R13 claim. The integration ledger has
-no active claim. Do not create another claim or start R16 yet; follow the
-dispatch prerequisite in [R16](../todo/roadmap-r16.md). No claim was released by the reviewer.
+R16 remains blocked pending a second-harness check of the repaired claim store.
+Claims now live at `turbomcp/task-claims.json` inside the shared Git common
+directory, not under `LOCALAPPDATA`. Run `python Tools/task_claim.py --inspect`
+from updated main to report the actual path, digest and active claim. Never use
+the old worker checkout's helper after this storage cutover. The integrator
+preserved the conflicting legacy observations and recorded completed R13 in the
+new history; it has no active claim. Compare that same record from DSH before
+reopening R16. The exact cause of the old profile-view difference remains unknown.
+
+The claim fix does not certify shared engine/port execution-lock visibility.
+Those locks still use per-profile storage; keep build/editor work coordinated
+by the integration owner until cross-harness contention is verified or repaired.

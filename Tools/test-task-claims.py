@@ -31,5 +31,28 @@ class ClaimTests(unittest.TestCase):
             release(second,active['id'],state)
             self.assertIsNone(current(first,state))
 
+            # The default production path must also work across distinct
+            # harness profile directories, not only an injected test root.
+            self.assertEqual(location(first),location(second))
+            self.assertEqual(location(first),first/'.git/turbomcp/task-claims.json')
+            code='import sys;from task_claim import claim;claim(sys.argv[1],"R-test","worker")'
+            children=[]
+            for index,path in enumerate((first,second)):
+                profile=root/('profile-'+str(index));profile.mkdir()
+                child_env=dict(env,LOCALAPPDATA=str(profile))
+                children.append(subprocess.Popen([sys.executable,'-c',code,str(path)],cwd=path,env=child_env,
+                                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL))
+            codes=[p.wait(timeout=20) for p in children]
+            self.assertEqual(sum(code==0 for code in codes),1,codes)
+            active=current(first)
+            self.assertEqual(active,current(second))
+            with self.assertRaises(ValueError):release(second,'wrong')
+            self.assertEqual(current(first),active)
+            release(second,active['id'])
+            self.assertIsNone(current(first))
+            self.assertEqual(subprocess.check_output(['git','-C',str(first),'status','--porcelain']),b'')
+            self.assertEqual(subprocess.check_output(['git','-C',str(second),'status','--porcelain']),b'')
+
+
 
 if __name__=='__main__':unittest.main()

@@ -13,9 +13,13 @@ from execution_recovery import atomic_json
 
 def location(repo,state_root=None):
     common=subprocess.check_output(['git','-C',str(repo),'rev-parse','--path-format=absolute','--git-common-dir'],text=True).strip()
+    # Keep default state beside shared Git metadata, not in a harness-specific
+    # user profile. Git worktrees share this directory even with different envs.
+    if state_root is None:
+        return Path(canonical(common))/'turbomcp/task-claims.json'
+    # Explicit roots are for disposable tests, never an environment override.
     key=hashlib.sha256(canonical(common).encode()).hexdigest()
-    root=Path(state_root) if state_root else Path(os.environ['LOCALAPPDATA'])/'TurboMCP/task-claims'
-    return root/(key+'.json')
+    return Path(state_root)/(key+'.json')
 
 
 def current(repo,state_root=None):
@@ -52,7 +56,12 @@ def release(repo,claim_id,state_root=None):
 if __name__=='__main__':
     import argparse
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--inspect',action='store_true',help='Show the actual store path, digest and active claim')
     parser.add_argument('--release',help='Integration owner only: release the exact claim after review or explicit recovery')
     args=parser.parse_args();repo=Path(__file__).resolve().parents[1]
     if args.release:release(repo,args.release)
+    elif args.inspect:
+        path=location(repo)
+        print(json.dumps({'path':str(path),'sha256':hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None,
+                          'active':current(repo)},indent=2))
     else:print(json.dumps(current(repo),indent=2))

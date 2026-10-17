@@ -34,3 +34,13 @@ checks a committed submission against exact paths from the approved base.
 Run from the trusted integration checkout. See [worker boundaries](../docs/worker-boundaries.md)
 for the review procedure and limits. `test-worker-scope.py` runs offline Git-history
 negative controls; it does not build or launch Unreal.
+
+## Inspect shared task ownership
+
+`python Tools/task_claim.py --inspect` prints the actual claim-store path, SHA256
+and active record. Production state is inside the Git common directory under
+`turbomcp/task-claims.json`; it is shared by worktrees and excluded from the
+tracked tree. `LOCALAPPDATA` does not select this store. Explicit test roots
+remain supported only by the Python test API. Legacy per-profile files are not
+automatically imported, deleted or used as fallback. Upgrade every worker to
+the approved base before dispatch; old helpers use the retired location.

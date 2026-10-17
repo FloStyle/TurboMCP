@@ -68,3 +68,18 @@ This is unresolved coordination debt, not evidence of a particular root cause.
 R16 dispatch is blocked until the exact claim path and Git common-directory
 identity are reconciled from both shells. Do not bypass this by creating a new
 claim or assuming a reported ID is shared ownership evidence.
+
+## Shared claim storage correction
+
+A matching repository probe and main commit established shared repository
+visibility while the legacy per-profile claim file differed between harnesses.
+Task claims now use the Git common directory. A concurrency regression with two
+worktrees and different `LOCALAPPDATA` roots allows exactly one claim; incorrect
+release IDs leave it intact and either worktree can release the exact ID.
+The previous records are preserved locally and completed R13 is in shared
+history. R16 still requires DSH to confirm the new ledger before dispatch.
+
+The precise cause of the divergent profile views is unproven. Execution/recovery
+locks also use `LOCALAPPDATA` and require a separate cross-harness contention
+check or shared-lock repair before simultaneous engine work. Do not infer their
+visibility from a successful task-claim test.

@@ -39,7 +39,7 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--check',action='store_true');parser.add_argument('--track',choices=['v1','compatibility'],default='v1');parser.add_argument('--claim',metavar='OWNER');args=parser.parse_args()
     load_queue(ROOT,args.track)
     if args.check:print('PASS: roadmap IDs, ordered dependencies, task contracts and completion evidence');return 0
-    from task_claim import current,claim
+    from task_claim import current,claim,location
     active=current(ROOT)
     if active:
         print('STOP: task '+active['task']+' is claimed by '+active['owner']+'; claim '+active['id']);return 2
@@ -48,6 +48,7 @@ def main():
     if args.claim:
         assigned=claim(ROOT,row['id'],args.claim)
         print('CLAIM: '+assigned['id']+'; owner '+assigned['owner'])
+        print('CLAIM STORE: '+str(location(ROOT)))
     print('NEXT: '+row['id']+' | '+row['path'])
     print('Read AGENTS.md and this task. Claim its ownership before work. A task claim does not grant engine ownership or execute commands.\n')
     print(text);return 0

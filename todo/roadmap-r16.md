@@ -71,10 +71,20 @@ See the [review register](../docs/audit/task-review.md) for definitions, duplica
 
 ## Dispatch prerequisite
 
-R13 source comparison is accepted. Before dispatch, reconcile its reported
-worker claim with the integration host: that host sees no active claim.
-From the original DSH shell, return `python Tools/task_claim.py` and the resolved
-claim-file path from `task_claim.location`. Do not create, release or overwrite
-a claim merely to make the records agree. The integrator must verify the ledger
-identity and safely resolve the exact old claim before restoring this task to
-todo/ready. No R16 worker should start while this prerequisite is unresolved.
+R13 source comparison is accepted. Matching repository-probe hashes and main
+revisions were observed across harnesses, but the legacy per-profile claim file
+had different bytes. Its exact isolation cause is not established.
+
+Claims now live in the Git common directory at `turbomcp/task-claims.json`.
+The integration owner preserved both legacy observations and recorded the
+completed R13 claim in this shared history. No active claim remains there.
+Before dispatch, DSH must run `python Tools/task_claim.py --inspect` from the
+updated main checkout and return its path, digest and active record. Do not run
+the old worker checkout's claim helper or modify the retired per-profile store.
+The integration owner compares the new ledger and then restores todo/ready.
+Until that confirmation, do not create a new claim or start R16.
+
+Cross-harness engine/port lock visibility is a separate unresolved boundary.
+Execution locks still use a per-profile directory. Do not assume the task-claim
+repair fixes those locks; the integration owner must coordinate the baseline
+build before any worker launches engine work.
