@@ -1,0 +1,3050 @@
+{
+  "schema": 1,
+  "task": "R04",
+  "checkpoint": "call-log-contracts",
+  "approved_base": "1180c6d43655195dc2772b6d1f0b80588e4b466a",
+  "plugin_tree": "590661ec45c829264ea1743fccea994edb748092",
+  "engine": {
+    "version": "5.8.3",
+    "commit": "396c9f059903aed5fec78ecd3d437a40c6415368"
+  },
+  "scope": "Source/offline audit only. No build, editor, engine suite, direct MCP call, packaging or recovery command was run.",
+  "inventory": {
+    "source": "docs/audit/capabilities.json",
+    "tools": 101,
+    "reviewed": 4,
+    "not_reviewed": 97,
+    "reviewed_ids": [
+      "ReadTurboMCPCallCost",
+      "ReadTurboMCPCallLog",
+      "EditTurboMCPCallLog",
+      "EditTurboMCPCallLogClear"
+    ]
+  },
+  "tools": [
+    {
+      "id": "EditTurboMCPBatchEdit",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Operations"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
+        "line": 66
+      },
+      "test_references": [
+        "Tools/test-batch-edit.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPCallLog",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        {
+          "name": "Enabled",
+          "default": "none; empty refused",
+          "parsing": "trimmed and lower-cased; accepts true/on/yes/1 and false/off/no/0; any other token refused",
+          "effect": "sets UTurboMCPSettings::bEnableCallLog and saves config even when the value is unchanged"
+        }
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "line": 202
+      },
+      "test_references": [
+        "Tools/test-call-cost.py",
+        "Tools/test-call-log-file.py",
+        "Tools/test-call-log.py",
+        "Tools/test-graph-text-guards.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "reviewed_source",
+      "note": "Reviewed only at source/offline level in the first R04 checkpoint.",
+      "reviewed_checkpoint": "call-log-contracts",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 1982,
+        "signature": "static FString EditTurboMCPCallLog(const FString& Enabled);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "No C++ default. Empty is not a boolean and is refused."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:254-304",
+        "description": "FScopedCall writes the start only when logging is enabled at construction. Finish writes the end only if Write still sees logging enabled. Toggling OFF therefore leaves a start with no end."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "lines": "202-247"
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350, 414-432",
+        "description": "Compatibility text path; no ARC02 result line. The client does not classify this specific mutation separately; the tool name starts with Edit, so is_mutation() treats it as a mutation for retry policy."
+      },
+      "effects": [
+        "Writes the persisted editor setting bEnableCallLog via FTurboMCPCallLog::SetEnabled -> SaveConfig.",
+        "Changes whether subsequent records are written; does not clear existing entries or the file.",
+        "When switching OFF from ON, its own start record remains without an end. When switching ON from OFF, its start is not written but its end is written after the setting changes."
+      ],
+      "success": "changed: the call log is now on/off, with log path and persistence note; when already in that state, 'unchanged: ...' rather than a false change. No ARC02 result line.",
+      "refusals": [
+        "Any token outside the eight accepted spellings: error naming the original value, 'not a yes or no', and the accepted true/false recommendation. No setting change on refusal."
+      ],
+      "truncation": "Not applicable to the returned text; changing the setting does not truncate the log. Start-only record on ON->OFF is a record-shape defect, not text truncation.",
+      "tests": [
+        "Tools/test-call-log.py: bad boolean refusal; off/on transitions; persistence wording; clear-with-log-off setup.",
+        "The suite is an engine suite and was not run in this checkpoint."
+      ],
+      "source_findings": [
+        "R04-CALL-04",
+        "R04-CALL-05"
+      ]
+    },
+    {
+      "id": "EditTurboMCPCallLogClear",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        {
+          "name": "Confirm",
+          "default": "none; empty refused",
+          "parsing": "trimmed; case-insensitive equals 'yes' or 'true'; anything else refused",
+          "effect": "no clear on refusal; on success clears only the in-memory Entries array"
+        }
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "line": 249
+      },
+      "test_references": [
+        "Tools/test-call-cost.py",
+        "Tools/test-call-log.py",
+        "Tools/test-graph-text-guards.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "reviewed_source",
+      "note": "Reviewed only at source/offline level in the first R04 checkpoint.",
+      "reviewed_checkpoint": "call-log-contracts",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 1992,
+        "signature": "static FString EditTurboMCPCallLogClear(const FString& Confirm);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "No C++ default. Only yes/true (case-insensitive, trimmed) are accepted despite the comment saying confirm=yes."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:254-304",
+        "description": "The clear call is itself recorded when logging is on: start before body, end after. Clear removes the in-memory array including its own start; the later end becomes an end-only record. With logging off, start and end are both suppressed."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "lines": "249-266"
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350, 414-432",
+        "description": "Compatibility text path; no ARC02 result line. is_mutation() classifies EditTurboMCPCallLogClear as a mutation, so a lost response is not replayed."
+      },
+      "effects": [
+        "Drops all in-memory entries via FTurboMCPCallLog::Clear(); the JSONL file is not deleted, truncated or rotated.",
+        "Returns the count observed before clearing and the file path, explicitly saying the file is untouched.",
+        "With logging on, the clear's own end record is written after the clear, so a subsequent read is not empty."
+      ],
+      "success": "changed: dropped N entry(s) from memory. The log file at <path> is untouched. No ARC02 result line.",
+      "refusals": [
+        "Missing, empty or any value other than yes/true: error stating confirmation is required, what is dropped, and that the file is left alone. No clear occurs."
+      ],
+      "truncation": "Not applicable to returned text; no record-count boundary is enforced here beyond the log's own 1000-entry memory cap.",
+      "tests": [
+        "Tools/test-call-log.py: unconfirmed refusal, changed/untouched wording, memory empty while logging off, file line count unchanged, clear works with logging off.",
+        "The suite is an engine suite and was not run in this checkpoint."
+      ],
+      "source_findings": [
+        "R04-CALL-04"
+      ]
+    },
+    {
+      "id": "EditTurboMCPComment",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Action",
+        "Nodes",
+        "Box",
+        "Text",
+        "Color",
+        "Size"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp",
+        "line": 44
+      },
+      "test_references": [
+        "Tools/test-comment-boxes.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPCompile",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "line": 143
+      },
+      "test_references": [
+        "Tools/test-compile-ensure.py",
+        "Tools/test-graph-knots.py",
+        "Tools/test-uncovered-tools.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPDataTableRows",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Rows"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp",
+        "line": 173
+      },
+      "test_references": [
+        "Tools/test-datatable-rows.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPEnumAdd",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Path",
+        "Values"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp",
+        "line": 38
+      },
+      "test_references": [
+        "Tools/test-enum-add.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPFunctionAdd",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Name",
+        "Inputs",
+        "Outputs"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionTools.cpp",
+        "line": 25
+      },
+      "test_references": [
+        "Tools/test-coverage-audit.py",
+        "Tools/test-function.py",
+        "Tools/test-local-vars.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPFunctionRemove",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Name"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionTools.cpp",
+        "line": 31
+      },
+      "test_references": [
+        "Tools/test-function.py",
+        "Tools/test-local-vars.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphAppend",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Text"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
+        "line": 41
+      },
+      "test_references": [
+        "Tools/test-graph-append-chain.py",
+        "Tools/test-graph-append.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphCollapse",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeIds",
+        "MemberName",
+        "MemberKind"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
+        "line": 90
+      },
+      "test_references": [
+        "Tools/test-graph-structure.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphCopy",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "SourceAsset",
+        "SourceGraph",
+        "NodeIds",
+        "TargetAsset",
+        "TargetGraph",
+        "AnchorNodeId"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
+        "line": 42
+      },
+      "test_references": [
+        "Tools/test-graph-structure.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphDead",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp",
+        "line": 37
+      },
+      "test_references": [
+        "Tools/test-graph-dead.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphFixBackward",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "bForce"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp",
+        "line": 43
+      },
+      "test_references": [
+        "Tools/test-graph-fix-backward.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphKnots",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnotsTools.cpp",
+        "line": 41
+      },
+      "test_references": [
+        "Tools/test-graph-knots.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphPatch",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Text"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatchTools.cpp",
+        "line": 43
+      },
+      "test_references": [
+        "Tools/test-graph-patch.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphReplace",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Text"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
+        "line": 44
+      },
+      "test_references": [
+        "Tools/test-graph-replace.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphRepoint",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "SourceNodeId",
+        "SourcePin",
+        "TargetNodeId",
+        "TargetTypeId",
+        "TargetPin",
+        "KeepSource"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepointTools.cpp",
+        "line": 79
+      },
+      "test_references": [
+        "Tools/test-c09-success.py",
+        "Tools/test-client-retry.py",
+        "Tools/test-graph-repoint.py",
+        "Tools/test-result-contract.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphSwapCall",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId",
+        "ReplacementTypeId",
+        "KeepOld"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCallTools.cpp",
+        "line": 19
+      },
+      "test_references": [
+        "Tools/test-graph-swap-call.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPGraphTidy",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "bForce",
+        "NodeIds"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+        "line": 43
+      },
+      "test_references": [
+        "Tools/test-graph-tidy-scope.py",
+        "Tools/test-graph-tidy.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPLocalVars",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp",
+        "line": 37
+      },
+      "test_references": [
+        "Tools/test-local-vars.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPMaterialBlocks",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "material",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
+        "line": 102
+      },
+      "test_references": [
+        "Tools/test-material-blocks.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "name_reference_only",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPMaterialInstanceSet",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "material",
+      "parameters": [
+        "Asset",
+        "Overrides"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp",
+        "line": 89
+      },
+      "test_references": [
+        "Tools/test-material-texture-parameters.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPMaterialLabelPromote",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "material",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp",
+        "line": 88
+      },
+      "test_references": [
+        "Tools/test-material-label-promote.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "name_reference_only",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPMaterialTidy",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "material",
+      "parameters": [
+        "Asset",
+        "Force"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp",
+        "line": 95
+      },
+      "test_references": [
+        "Tools/test-material-tidy.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "name_reference_only",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPOverrideAdd",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "FunctionOrEvent"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp",
+        "line": 39
+      },
+      "test_references": [
+        "Tools/test-override-add.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPOverrideRemove",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "FunctionOrEvent"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp",
+        "line": 46
+      },
+      "test_references": [
+        "Tools/test-override-add.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPSave",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "line": 658
+      },
+      "test_references": [
+        "Tools/test-comment-boxes.py",
+        "Tools/test-enum-add.py",
+        "Tools/test-function.py",
+        "Tools/test-local-vars.py",
+        "Tools/test-override-add.py",
+        "Tools/test-save-thumbnail-option.py",
+        "Tools/test-struct.py",
+        "Tools/test-vars-add.py",
+        "Tools/test-vcs-write.py",
+        "Tools/test-widget-retarget.py",
+        "Tools/test-widgets-as-vars.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPSaveWithoutThumbnail",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "line": 663
+      },
+      "test_references": [
+        "Tools/test-save-thumbnail-option.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPStructFields",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Struct",
+        "Changes"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
+        "line": 86
+      },
+      "test_references": [
+        "Tools/test-struct.py",
+        "Tools/test-vcs-write.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPStructNew",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Path",
+        "Fields"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
+        "line": 42
+      },
+      "test_references": [
+        "Tools/test-struct.py",
+        "Tools/test-vcs-write.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPTrace",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        "Action",
+        "NodeId"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceTools.cpp",
+        "line": 35
+      },
+      "test_references": [
+        "Tools/test-trace.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPVarsAdd",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Variables"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp",
+        "line": 38
+      },
+      "test_references": [
+        "Tools/test-save-thumbnail-option.py",
+        "Tools/test-struct.py",
+        "Tools/test-vars-add.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPVcsCheckout",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+        "line": 46
+      },
+      "test_references": [
+        "Tools/test-vcs.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPWidgetBindAdd",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "widget",
+      "parameters": [
+        "Asset",
+        "Widget",
+        "Property",
+        "Function"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBindAdd.cpp",
+        "line": 41
+      },
+      "test_references": [
+        "Tools/test-widget-retarget.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPWidgetRetarget",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "widget",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp",
+        "line": 38
+      },
+      "test_references": [
+        "Tools/test-widget-retarget.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "EditTurboMCPWidgetsAsVars",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "widget",
+      "parameters": [
+        "Asset",
+        "Widgets",
+        "bIsVariable"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetsAsVarsTools.cpp",
+        "line": 23
+      },
+      "test_references": [
+        "Tools/test-widgets-as-vars.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "LookTurboMCPCapture",
+      "toolset": "UTurboMCPLookToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Mode",
+        "Target",
+        "Size"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+        "line": 96
+      },
+      "test_references": [
+        "Tools/test-capture-asset.py",
+        "Tools/test-capture-selectors.py",
+        "Tools/test-capture.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "LookTurboMCPLayoutReport",
+      "toolset": "UTurboMCPLookToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+        "line": 40
+      },
+      "test_references": [
+        "Tools/test-capture-selectors.py",
+        "Tools/test-capture.py",
+        "Tools/test-graph-fix-backward.py",
+        "Tools/test-graph-tidy.py",
+        "Tools/test-layout.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "LookTurboMCPToolset",
+      "toolset": "UTurboMCPLookToolset",
+      "family": "schema-and-observability",
+      "parameters": [],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+        "line": 202
+      },
+      "test_references": [
+        "Tools/test-uncovered-tools.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "LookTurboMCPWidgetPreview",
+      "toolset": "UTurboMCPLookToolset",
+      "family": "widget",
+      "parameters": [
+        "Widget",
+        "SampleValuesJson",
+        "FunctionName",
+        "Size"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
+        "line": 62
+      },
+      "test_references": [
+        "Tools/test-widget-preview.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPBatchEdit",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Operations"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
+        "line": 62
+      },
+      "test_references": [
+        "Tools/test-batch-edit.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPComment",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Action",
+        "Nodes",
+        "Box",
+        "Text",
+        "Color",
+        "Size"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp",
+        "line": 28
+      },
+      "test_references": [
+        "Tools/test-comment-boxes.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPDataTableRows",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Rows"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp",
+        "line": 165
+      },
+      "test_references": [
+        "Tools/test-datatable-rows.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPEnumAdd",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Path",
+        "Values"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp",
+        "line": 25
+      },
+      "test_references": [
+        "Tools/test-enum-add.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphAppend",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Text"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
+        "line": 28
+      },
+      "test_references": [
+        "Tools/test-graph-append.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphCheck",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Text"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheckTools.cpp",
+        "line": 29
+      },
+      "test_references": [
+        "Tools/test-graph-append-chain.py",
+        "Tools/test-graph-check.py",
+        "Tools/test-graph-reader-child-fixture.py",
+        "Tools/test-graph-roundtrip.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphCollapse",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeIds",
+        "MemberName",
+        "MemberKind"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
+        "line": 75
+      },
+      "test_references": [
+        "Tools/test-graph-structure.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphCopy",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "SourceAsset",
+        "SourceGraph",
+        "NodeIds",
+        "TargetAsset",
+        "TargetGraph",
+        "AnchorNodeId"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
+        "line": 27
+      },
+      "test_references": [
+        "Tools/test-graph-structure.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphDead",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp",
+        "line": 24
+      },
+      "test_references": [
+        "Tools/test-graph-dead.py",
+        "Tools/test-graph-roundtrip.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphFixBackward",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "bForce"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp",
+        "line": 30
+      },
+      "test_references": [
+        "Tools/test-graph-fix-backward.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphKnots",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnotsTools.cpp",
+        "line": 28
+      },
+      "test_references": [
+        "Tools/test-graph-knots.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphPatch",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Text"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatchTools.cpp",
+        "line": 30
+      },
+      "test_references": [
+        "Tools/test-graph-patch.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphReplace",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Text"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
+        "line": 31
+      },
+      "test_references": [
+        "Tools/test-graph-replace.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphRepoint",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "SourceNodeId",
+        "SourcePin",
+        "TargetNodeId",
+        "TargetTypeId",
+        "TargetPin",
+        "KeepSource"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepointTools.cpp",
+        "line": 56
+      },
+      "test_references": [
+        "Tools/test-c09-success.py",
+        "Tools/test-graph-repoint.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphSwapCall",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId",
+        "ReplacementTypeId",
+        "KeepOld"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCallTools.cpp",
+        "line": 8
+      },
+      "test_references": [
+        "Tools/test-graph-swap-call.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPGraphTidy",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "bForce",
+        "NodeIds"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+        "line": 30
+      },
+      "test_references": [
+        "Tools/test-graph-tidy-scope.py",
+        "Tools/test-graph-tidy.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPLocalVars",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp",
+        "line": 24
+      },
+      "test_references": [
+        "Tools/test-local-vars.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPMaterialBlocks",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "material",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
+        "line": 57
+      },
+      "test_references": [
+        "Tools/test-material-blocks.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "name_reference_only",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPMaterialLabelPromote",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "material",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp",
+        "line": 50
+      },
+      "test_references": [
+        "Tools/test-material-label-promote.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "name_reference_only",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPMaterialTidy",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "material",
+      "parameters": [
+        "Asset",
+        "Force"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp",
+        "line": 47
+      },
+      "test_references": [
+        "Tools/test-material-tidy.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "name_reference_only",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPNodePins",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "TypeId"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeTypeTools.cpp",
+        "line": 43
+      },
+      "test_references": [
+        "Tools/test-batch-tools.py",
+        "Tools/test-node-pins-owner.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPNodeType",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Words",
+        "Limit"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeTypeTools.cpp",
+        "line": 30
+      },
+      "test_references": [
+        "Tools/test-batch-tools.py",
+        "Tools/test-node-pins-owner.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPOverrideAdd",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "FunctionOrEvent"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp",
+        "line": 26
+      },
+      "test_references": [
+        "Tools/test-override-add.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPStructFields",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Struct",
+        "Changes"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
+        "line": 57
+      },
+      "test_references": [
+        "Tools/test-struct.py",
+        "Tools/test-vcs-write.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPStructNew",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Path",
+        "Fields"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
+        "line": 29
+      },
+      "test_references": [
+        "Tools/test-struct.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPToolset",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "schema-and-observability",
+      "parameters": [],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+        "line": 248
+      },
+      "test_references": [
+        "Tools/test-uncovered-tools.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPVarsAdd",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Variables"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp",
+        "line": 25
+      },
+      "test_references": [
+        "Tools/test-vars-add.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPVcsCheckout",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+        "line": 39
+      },
+      "test_references": [
+        "Tools/test-vcs.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "PreviewTurboMCPWidgetRetarget",
+      "toolset": "UTurboMCPPreviewToolset",
+      "family": "widget",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp",
+        "line": 26
+      },
+      "test_references": [
+        "Tools/test-widget-retarget.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPAssetCost",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Cap"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetCostTools.cpp",
+        "line": 22
+      },
+      "test_references": [
+        "Tools/test-asset-cost.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPAssetDescribe",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
+        "line": 420
+      },
+      "test_references": [
+        "Tools/test-asset-tools.py",
+        "Tools/test-enum-add.py",
+        "Tools/test-struct.py",
+        "Tools/test-widget-preview.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPAssetSearch",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Query"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
+        "line": 283
+      },
+      "test_references": [
+        "Tools/test-asset-tools.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPBPLint",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets",
+        "Checks",
+        "TokenBudget"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLintTools.cpp",
+        "line": 27
+      },
+      "test_references": [
+        "Tools/test-bp-lint.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPBlueprintLoad",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets",
+        "Detail",
+        "GraphFilter",
+        "Format",
+        "TokenBudget"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp",
+        "line": 49
+      },
+      "test_references": [
+        "Tools/test-call-log-file.py",
+        "Tools/test-call-log.py",
+        "Tools/test-function.py",
+        "Tools/test-json.py",
+        "Tools/test-local-vars.py",
+        "Tools/test-read-budget-floor.py",
+        "Tools/test-refs.py",
+        "Tools/test-vars-add.py",
+        "Tools/test-widget-tree-sync.py",
+        "Tools/test-widget-tree.py",
+        "Tools/test-widgets-as-vars.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPCallCost",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        {
+          "name": "Since",
+          "default": "empty = no lower bound",
+          "parsing": "trimmed; compared lexically with the fixed-width ISO-8601 timestamp; no format validation",
+          "effect": "entries with Timestamp <= Since are skipped and counted as SkippedBySince"
+        },
+        {
+          "name": "Filter",
+          "default": "empty = all calls",
+          "parsing": "trimmed; case-insensitive substring",
+          "effect": "matches normalised tool label, raw toolset, raw tool, or source; unlike ReadTurboMCPCallLog it does not match Arguments or ok/error status"
+        },
+        {
+          "name": "Cap",
+          "default": "10",
+          "parsing": "trimmed; empty means default; IsNumeric then FCString::Atoi; values <= 0 refused after conversion; maximum 50",
+          "effect": "bounds rows shown in each section, not the analysis; all Selected calls feed totals and rankings"
+        }
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostTools.cpp",
+        "line": 80
+      },
+      "test_references": [
+        "Tools/test-call-cost.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "reviewed_source",
+      "note": "Reviewed only at source/offline level in the first R04 checkpoint.",
+      "reviewed_checkpoint": "call-log-contracts",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 464,
+        "signature": "static FString ReadTurboMCPCallCost(const FString& Since, const FString& Filter, const FString& Cap);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "No C++ default arguments. All three parameters are FString; an empty string is the in-code sentinel for the default cap. Omitted and empty are indistinguishable at this boundary."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:254-304",
+        "description": "FRecordingToolset wraps each of the four toolsets. FScopedCall writes a plugin start record before forwarding, and Finish writes an end record with full result size and token estimate. The read's own start record is in memory while this tool reads."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostTools.cpp",
+        "lines": "80-437",
+        "representative_records": "TurboMCPCallTimeline::RepresentativeRecords at TurboMCPCallTimeline.cpp:49-142"
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350, 414-432",
+        "description": "Session.call uses the compatibility path: unwrapped_text() peels the engine returnValue object/string wrapper, parse_answer() reads the final ; tmcp-result-v1 line if present, and body strips it. call_structured() defaults requires_result=True for a TurboMCP.* toolset. These four tools return plain FString and do not append a result line."
+      },
+      "effects": [
+        "Reads the in-memory log; does not clear it, change settings, or write the log file directly.",
+        "Its own call is logged by FRecordingToolset, so a start record for this read is included while the body runs.",
+        "No asset or engine mutation."
+      ],
+      "success": "Returns a text report beginning 'read: what the calls cost', with log path, recording state, counts, separate token/duration rankings, per-tool and per-asset totals, denominators and an explicit token-estimate caveat. It does not append an ARC02 result line.",
+      "refusals": [
+        "Cap is nonnumeric: error naming 'is not a cap' with the default.",
+        "Cap converts to a value <= 0: error naming 'is not usable' with the default.",
+        "No records: reports logging OFF or ON-and-empty rather than zero cost, but this check precedes cap parsing.",
+        "Post-filter empty selection: reports FilterMatchedNothing and a denominator."
+      ],
+      "truncation": "Default 10 rows per section, hard cap 50; only listed rows are bounded. Per-tool/per-asset totals are computed over all Selected calls first. Log entries themselves cap stored result text at 4000 characters while measuring the full result.",
+      "tests": [
+        "Tools/test-call-cost.py (T-HELP-6): off/empty wording, populated token and duration rankings, per-tool agreement with R-CALL-LOG, filter no-match denominator, cap row boundary, banana and zero cap refusals.",
+        "The suite is an engine suite and was not run in this checkpoint."
+      ],
+      "source_findings": [
+        "R04-CALL-01",
+        "R04-CALL-02",
+        "R04-CALL-04"
+      ]
+    },
+    {
+      "id": "ReadTurboMCPCallLog",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        {
+          "name": "Filter",
+          "default": "empty = all records",
+          "parsing": "trimmed; case-insensitive substring",
+          "effect": "matches toolset, tool, source, Arguments and 'error'/'ok'; this is why a nonsense filter finds the reader's own start record"
+        },
+        {
+          "name": "Limit",
+          "default": "50",
+          "parsing": "trimmed; empty means default; IsNumeric then FCString::Atoi; values <= 0 refused; maximum 500",
+          "effect": "newest-first selected list is cut to Limit; Total is the pre-cut matching count"
+        },
+        {
+          "name": "Since",
+          "default": "empty = no lower bound",
+          "parsing": "trimmed; lexical ISO-8601 comparison; no format validation",
+          "effect": "entries with Timestamp <= Since are excluded"
+        }
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "line": 34
+      },
+      "test_references": [
+        "Tools/test-call-cost.py",
+        "Tools/test-call-log.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "reviewed_source",
+      "note": "Reviewed only at source/offline level in the first R04 checkpoint.",
+      "reviewed_checkpoint": "call-log-contracts",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 425,
+        "signature": "static FString ReadTurboMCPCallLog(const FString& Filter, const FString& Limit, const FString& Since);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "No C++ default arguments. All three parameters are FString; an empty limit is the in-code default of 50. Omitted and empty are indistinguishable."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:254-304",
+        "description": "Same FRecordingToolset/FScopedCall boundary as the cost reader. The reader's own start record carries its arguments and is visible to its own filter."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "lines": "34-200",
+        "timeline": "WithSessionsInEffect at TurboMCPCallTimeline.cpp:144+"
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350, 414-432",
+        "description": "Compatibility path decodes the returnValue wrapper and returns the body. It does not require a result line. call_structured would require one for TurboMCP.*; this tool returns none."
+      },
+      "effects": [
+        "Reads in-memory and on-disk log state; never clears or changes settings.",
+        "The read itself writes a start record before the body and an end record after it, so it appears in its own log.",
+        "No asset or engine mutation."
+      ],
+      "success": "Returns 'read: the TurboMCP call log', log path, recording state, raw-record counts, session groups, newest-first rows with phase/source/tool, duration/result size/tokens when measured, up to 200 characters of arguments and result, and an explicit note that one call can leave several records. No ARC02 result line.",
+      "refusals": [
+        "Limit is nonnumeric: error naming 'is not a limit'.",
+        "Limit converts to <= 0: separate error naming 'is not usable'.",
+        "Empty log: distinguishes logging OFF from ON-and-empty.",
+        "Filter/since select nothing: reports how many entries exist and what filter/since was applied."
+      ],
+      "truncation": "Default 50, hard cap 500; selected newest-first before cap. Arguments and results are displayed up to 200 characters each; full values remain in the stored/logged entry subject to the 4000-character stored-result cap. When Total > Selected, the continuation sentence is R04-CALL-03.",
+      "tests": [
+        "Tools/test-call-log.py (T-DBG-1, T-LOG-1/2/3): starts off/persists, empty wording, filter, self-match, since exclusion, clear confirmation, file untouched, 4 MB rotation, bad boolean, banana/zero limit refusals.",
+        "The suite is an engine suite and was not run in this checkpoint."
+      ],
+      "source_findings": [
+        "R04-CALL-01",
+        "R04-CALL-03",
+        "R04-CALL-04"
+      ]
+    },
+    {
+      "id": "ReadTurboMCPCommentList",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComments.cpp",
+        "line": 119
+      },
+      "test_references": [
+        "Tools/test-comments.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPDataTable",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Include"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp",
+        "line": 91
+      },
+      "test_references": [
+        "Tools/test-datatable-rows.py",
+        "Tools/test-datatable.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPDirtyList",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Limit"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp",
+        "line": 389
+      },
+      "test_references": [
+        "Tools/test-asset-tools.py",
+        "Tools/test-save-thumbnail-option.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPEditQueue",
+      "toolset": "UTurboMCPEditToolset",
+      "family": "asset-and-data",
+      "parameters": [],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+        "line": 309
+      },
+      "test_references": [
+        "Tools/test-uncovered-tools.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPGraphLoad",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Format",
+        "Detail"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+        "line": 64
+      },
+      "test_references": [
+        "Tools/test-batch-edit.py",
+        "Tools/test-batch-tools.py",
+        "Tools/test-bp-lint.py",
+        "Tools/test-c09-success.py",
+        "Tools/test-comment-boxes.py",
+        "Tools/test-graph-append-chain.py",
+        "Tools/test-graph-append.py",
+        "Tools/test-graph-check.py",
+        "Tools/test-graph-dead.py",
+        "Tools/test-graph-fix-backward.py",
+        "Tools/test-graph-knots.py",
+        "Tools/test-graph-patch.py",
+        "Tools/test-graph-reader-child-fixture.py",
+        "Tools/test-graph-replace.py",
+        "Tools/test-graph-repoint.py",
+        "Tools/test-graph-roundtrip.py",
+        "Tools/test-graph-structure.py",
+        "Tools/test-graph-swap-call.py",
+        "Tools/test-graph-text-guards.py",
+        "Tools/test-graph-tidy-scope.py",
+        "Tools/test-trace.py",
+        "Tools/test-uncovered-tools.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPMaterialBlocks",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "material",
+      "parameters": [
+        "Asset",
+        "TokenBudget"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
+        "line": 97
+      },
+      "test_references": [
+        "Tools/test-batch-tools.py",
+        "Tools/test-material-blocks.py",
+        "Tools/test-material-label-promote.py",
+        "Tools/test-material-tidy.py",
+        "Tools/test-material.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPMaterialInstance",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "material",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp",
+        "line": 18
+      },
+      "test_references": [
+        "Tools/test-mat-inst-load.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPMaterialLabels",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "material",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
+        "line": 73
+      },
+      "test_references": [
+        "Tools/test-batch-tools.py",
+        "Tools/test-material-blocks.py",
+        "Tools/test-material-label-promote.py",
+        "Tools/test-material.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPMaterialLoad",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "material",
+      "parameters": [
+        "Asset",
+        "bIncludeInstanceOverrides",
+        "TokenBudget"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
+        "line": 81
+      },
+      "test_references": [
+        "Tools/test-batch-tools.py",
+        "Tools/test-mat-inst-load.py",
+        "Tools/test-material-texture-parameters.py",
+        "Tools/test-material-tidy.py",
+        "Tools/test-material.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPMaterialTrace",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "material",
+      "parameters": [
+        "Asset",
+        "OutputProperty",
+        "TokenBudget"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
+        "line": 88
+      },
+      "test_references": [
+        "Tools/test-batch-tools.py",
+        "Tools/test-call-cost.py",
+        "Tools/test-material-tidy.py",
+        "Tools/test-material.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPNodeFind",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "graph",
+      "parameters": [
+        "Asset",
+        "Words",
+        "GraphName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+        "line": 481
+      },
+      "test_references": [
+        "Tools/test-capture-selectors.py",
+        "Tools/test-capture.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPNodeResolve",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "graph",
+      "parameters": [
+        "NodeIds"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+        "line": 246
+      },
+      "test_references": [
+        "Tools/test-uncovered-tools.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPOverrides",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Include"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrides.cpp",
+        "line": 176
+      },
+      "test_references": [
+        "Tools/test-override-add.py",
+        "Tools/test-overrides.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPPlayCheck",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        "Seconds",
+        "Map"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheckTools.cpp",
+        "line": 25
+      },
+      "test_references": [
+        "Tools/test-play-check.py",
+        "Tools/test-trace.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPPureChecks",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Toolsets",
+        "Arguments"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecksTools.cpp",
+        "line": 62
+      },
+      "test_references": [
+        "Tools/test-pure-checks.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPRefs",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Asset",
+        "Direction"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp",
+        "line": 154
+      },
+      "test_references": [
+        "Tools/test-refs.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPStatus",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "schema-and-observability",
+      "parameters": [],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+        "line": 179
+      },
+      "test_references": [
+        "Tools/test-agent-help.py",
+        "Tools/test-call-cost.py",
+        "Tools/test-call-log.py",
+        "Tools/test-client-retry.py",
+        "Tools/test-graph-text-guards.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPToolHelp",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        "ToolsetName",
+        "ToolName"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+        "line": 311
+      },
+      "test_references": [
+        "Tools/test-agent-help.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPToolIndex",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "schema-and-observability",
+      "parameters": [],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+        "line": 252
+      },
+      "test_references": [
+        "Tools/test-agent-help.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPToolSchema",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        "Toolset",
+        "Tool"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchemaTools.cpp",
+        "line": 24
+      },
+      "test_references": [
+        "Tools/test-batch-tools.py",
+        "Tools/test-graph-check.py",
+        "Tools/test-panel-reach.py",
+        "Tools/test-save-thumbnail-option.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPTrace",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "schema-and-observability",
+      "parameters": [
+        "Action",
+        "NodeId"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceReadTools.cpp",
+        "line": 25
+      },
+      "test_references": [
+        "Tools/test-trace.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPTypeFind",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Words",
+        "Kind"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp",
+        "line": 185
+      },
+      "test_references": [
+        "Tools/test-asset-tools.py",
+        "Tools/test-struct.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPVcsState",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "asset-and-data",
+      "parameters": [
+        "Assets"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+        "line": 32
+      },
+      "test_references": [
+        "Tools/test-vcs-write.py",
+        "Tools/test-vcs.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    },
+    {
+      "id": "ReadTurboMCPWidgetTree",
+      "toolset": "UTurboMCPReadToolset",
+      "family": "widget",
+      "parameters": [
+        "Asset"
+      ],
+      "source_reference": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+        "line": 25
+      },
+      "test_references": [
+        "Tools/test-widget-tree-sync.py"
+      ],
+      "capability_audit": {
+        "static_call_evidence": "parsed_call",
+        "implementation_evidence": "definition_located",
+        "runtime_evidence": "not_certified",
+        "release_disposition": "experimental_pending_acceptance"
+      },
+      "audit_status": "not_reviewed",
+      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+    }
+  ],
+  "findings": [
+    {
+      "id": "R04-CALL-01",
+      "status": "confirmed_source",
+      "scope": [
+        "ReadTurboMCPCallLog",
+        "ReadTurboMCPCallCost"
+      ],
+      "title": "Limit and cap accept fractional/signed/overflowing strings because IsNumeric is not whole-number validation",
+      "evidence": [
+        "Engine/Source/Runtime/Core/Public/Misc/CString.h:148-175: IsNumeric accepts an optional sign and at most one dot.",
+        "CString.h:1219-1222: Atoi delegates to the platform conversion; no whole-string or overflow check is performed.",
+        "TurboMCPCallLogTools.cpp:53-67 and TurboMCPCallCostTools.cpp:126-144 call IsNumeric then Atoi."
+      ],
+      "observed_source_behavior": "1.5 passes IsNumeric and Atoi converts the integer prefix to 1; +5 is accepted; 1e3 and 1..2 are refused. Overflow behavior is platform/CRT-dependent and was not executed.",
+      "existing_assertions": "Tools/test-call-log.py:400-408 and Tools/test-call-cost.py:344-353 assert only banana and zero; no fractional, signed or overflow case.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-CALL-02",
+      "status": "confirmed_source",
+      "scope": [
+        "ReadTurboMCPCallCost",
+        "ReadTurboMCPCallLog"
+      ],
+      "title": "Empty-log return precedes cap validation only in ReadTurboMCPCallCost",
+      "evidence": [
+        "TurboMCPCallCostTools.cpp:104-116 returns the empty-log report before the cap block at :126-145.",
+        "TurboMCPCallLogTools.cpp:53-69 validates Limit before it reads or filters entries."
+      ],
+      "observed_source_behavior": "With no entries in memory, ReadTurboMCPCallCost(cap=banana) or cap=0 returns the empty report, while ReadTurboMCPCallLog(limit=banana or 0) returns an error. The two readers apply different precedence to the same request shape.",
+      "existing_assertions": "Invalid caps are tested only with populated logs; no empty-log invalid-cap case exists.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-CALL-03",
+      "status": "confirmed_source",
+      "scope": [
+        "ReadTurboMCPCallLog"
+      ],
+      "title": "Truncation continuation tells the caller to use since=newest, which cannot fetch the omitted older records",
+      "evidence": [
+        "TurboMCPCallLogTools.cpp:104-110 reverses the selected list newest-first and cuts to Cap.",
+        "TurboMCPCallLogTools.cpp:79 excludes Entry.Timestamp <= SinceText; since is a later-than bound.",
+        "TurboMCPCallLogTools.cpp:185-189 prints 'pass since=<Selected[0].Timestamp> to page forward' when Total > Selected."
+      ],
+      "observed_source_behavior": "The omitted records are older than the newest shown. Passing the echoed newest timestamp selects only records later than it, not the omitted older records; the advice cannot retrieve what it says it will.",
+      "existing_assertions": "Tools/test-call-log.py:262-280 proves since excludes older entries; it does not exercise the Total > Selected continuation path.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-CALL-04",
+      "status": "contract_gap",
+      "scope": [
+        "ReadTurboMCPCallCost",
+        "ReadTurboMCPCallLog",
+        "EditTurboMCPCallLog",
+        "EditTurboMCPCallLogClear"
+      ],
+      "title": "These four plain-FString tools carry no ARC02 result line, but call_structured treats every TurboMCP.* toolset as migrated",
+      "evidence": [
+        "None of the four implementations calls FTurboMCPResult::AppendTo. The only production caller is TurboMCPGraphRepointTools.cpp:27.",
+        "Tools/tmcp.py:422-431 defaults requires_result=True when toolset starts with TurboMCP.",
+        "Existing engine suites use Session.call (compatibility text), not call_structured."
+      ],
+      "observed_source_behavior": "A call_structured invocation without requires_result=False raises ResultProtocolError for these four, while Session.call succeeds. Whether these four should be migrated or explicitly compatibility-only is a policy decision; this checkpoint does not choose it.",
+      "existing_assertions": "test-result-contract.py covers GraphRepoint and a native tool, not these four. It passes, but that does not prove their structured path.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-CALL-05",
+      "status": "confirmed_source",
+      "scope": [
+        "EditTurboMCPCallLog"
+      ],
+      "title": "Switching the log OFF leaves its own start record with no end",
+      "evidence": [
+        "FScopedCall writes start in its constructor only if Write sees logging enabled (TurboMCPCallLog.cpp:254-270; Write gate at :216-221).",
+        "Finish writes the end through Write, which is gated by the setting (TurboMCPCallLog.cpp:272-305).",
+        "EditTurboMCPCallLog sets bEnableCallLog=false at TurboMCPCallLogTools.cpp:227 before returning at :237-247."
+      ],
+      "observed_source_behavior": "ON->OFF: start is written, body disables logging, end is suppressed. The in-memory/log file record is a start-only call, which the timeline intentionally renders as running/missing-end and which looks like a crash. ON->OFF also persists the setting. OFF->ON: no start, but the end is written after enabling; unchanged states produce a pair when already ON and nothing when already OFF.",
+      "existing_assertions": "Tools/test-call-log.py exercises off/on transitions but does not assert the record shape after switching OFF.",
+      "runtime_status": "not_run"
+    }
+  ],
+  "repairs": [
+    {
+      "id": "R04-REPAIR-01",
+      "finding": "R04-CALL-01",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostTools.cpp",
+        "Tools/test-call-log.py",
+        "Tools/test-call-cost.py"
+      ],
+      "preserved_behavior": [
+        "empty=default",
+        "positive values accepted",
+        "limit max 500",
+        "cap max 50",
+        "existing error prefixes and named-parameter wording",
+        "totals over all selected calls"
+      ],
+      "synthetic_probe": "Populated disposable log; call both readers with 1.5, +1, .5, 1e3, 999999999999999999999 and a valid 1; compare the parsed count/row limit and error text.",
+      "expected": "One documented integer policy: accept only a whole decimal integer or refuse the value by parameter name. Never silently truncate a fractional value; do not rely on CRT overflow.",
+      "negative_control": "Valid 1 still returns one bounded row and does not produce an error.",
+      "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log,test-call-cost --execute",
+      "rollback": "Revert the two source files and two test files; no public schema change."
+    },
+    {
+      "id": "R04-REPAIR-02",
+      "finding": "R04-CALL-02",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostTools.cpp",
+        "Tools/test-call-cost.py"
+      ],
+      "preserved_behavior": [
+        "valid cap empty-log report",
+        "logging OFF vs ON-and-empty wording",
+        "cap default 10/max 50",
+        "filter/since reporting"
+      ],
+      "synthetic_probe": "Start with logging OFF and an empty log; call ReadTurboMCPCallCost with cap=banana, cap=0, and cap=1; then with logging ON and no entries.",
+      "expected": "Invalid cap is refused before the empty-log message on both empty states, matching ReadTurboMCPCallLog. A valid cap still returns the emptiness explanation.",
+      "negative_control": "cap=1 on an empty log returns the no-cost/empty explanation, not an error.",
+      "validation": "python Tools/execute-tests.py --profile engine --suites test-call-cost --execute",
+      "rollback": "Revert the cost file and test file only."
+    },
+    {
+      "id": "R04-REPAIR-03",
+      "finding": "R04-CALL-03",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "Tools/test-call-log.py"
+      ],
+      "preserved_behavior": [
+        "newest-first selection",
+        "Total pre-cut denominator",
+        "since excludes <= timestamp",
+        "200-character display"
+      ],
+      "synthetic_probe": "Write more than Limit distinct-timestamp records; request limit=1; capture the continuation sentence; use the echoed value as since; compare the returned set with the omitted older records.",
+      "expected": "The continuation names a retrieval that can actually return the omitted records, or says to raise the limit/cap; it must not claim since=newest pages older rows. A cursor/offset alternative must be explicit.",
+      "negative_control": "A since value older than the omitted rows still returns those rows, proving the filter itself is unchanged.",
+      "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log --execute",
+      "rollback": "Revert the log tool and test file only."
+    },
+    {
+      "id": "R04-REPAIR-04",
+      "finding": "R04-CALL-05",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLog.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+        "Tools/test-call-log.py"
+      ],
+      "preserved_behavior": [
+        "settings persistence",
+        "OFF means no new records",
+        "ON calls keep start/end pairs",
+        "clear semantics",
+        "crash evidence for genuinely unfinished calls"
+      ],
+      "synthetic_probe": "With logging ON, call EditTurboMCPCallLog(enabled=false), then read the log with logging OFF; inspect the last record phases and the timeline; repeat ON->ON, OFF->OFF and OFF->ON.",
+      "expected": "A setting change must not create a start-only record that mimics a crash. Either the toggle is recorded symmetrically or not recorded at all; OFF->ON and ON->OFF are consistent and documented.",
+      "negative_control": "A normal ON call still has start and end; a normal OFF call leaves no new records; a real unfinished call still renders as running/missing-end.",
+      "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log --execute",
+      "rollback": "Revert the log implementation/recorder change and test file; no setting or schema migration."
+    },
+    {
+      "id": "R04-REPAIR-05",
+      "finding": "R04-CALL-04",
+      "owner": "R04",
+      "allowed_files": [
+        "Tools/tmcp.py",
+        "Tools/test-result-contract.py"
+      ],
+      "preserved_behavior": [
+        "GraphRepoint structured result",
+        "native tool with no result line",
+        "missing metadata for a truly migrated tool still raises",
+        "compatibility Session.call"
+      ],
+      "synthetic_probe": "Call each of the four tools through a synthetic BlockSession with a plain body and no result line, using call_structured with default requires_result and with explicit False; compare with GraphRepoint and a native tool.",
+      "expected": "The client's migration decision is explicit per tool (or the tools gain a valid result line); no TurboMCP tool silently becomes native. An unresolved policy decision is recorded rather than guessed.",
+      "negative_control": "A GraphRepoint body with missing/invalid result metadata still raises; a native tool with no line still returns text without being certified.",
+      "validation": "python Tools/test-result-contract.py; python Tools/test-client-retry.py",
+      "rollback": "Revert Tools/tmcp.py and Tools/test-result-contract.py only; no plugin change."
+    }
+  ],
+  "probe_gaps": [
+    "Empty/populated logs with fractional, signed, overflow and malformed numeric limits/caps.",
+    "Empty log (logging OFF, entries cleared) with an invalid cap (ReadTurboMCPCallCost order).",
+    "Limit/cap at 50/500 boundaries, and 4000-character stored-result / 200-character display boundaries.",
+    "Truncated ReadTurboMCPCallLog continuation and since paging.",
+    "ON->OFF start-only record and clear-with-log-on end-only record.",
+    "call_structured for the four plain-FString tools.",
+    "No runtime calls, engine suites or direct MCP calls were permitted in this checkpoint."
+  ],
+  "validation": {
+    "audit_inventory_check": {
+      "command": "python Tools/audit-inventory.py --check",
+      "exit": 0,
+      "summary": "101 definitions; 95 parsed_call, 6 name_reference_only."
+    },
+    "test_result_contract": {
+      "command": "python Tools/test-result-contract.py",
+      "exit": 0,
+      "summary": "PASS; C03-C08, no call-log tool cases."
+    },
+    "test_client_retry": {
+      "command": "python Tools/test-client-retry.py",
+      "exit": 0,
+      "summary": "PASS; C01/C02, no call-log tool cases."
+    },
+    "offline_profile": {
+      "command": "python Tools/execute-tests.py --profile offline --execute",
+      "exit": 0,
+      "report": ".local/executions/e08918e140e4430aa2d550140999f441/report.json",
+      "commit": "1180c6d43655195dc2772b6d1f0b80588e4b466a",
+      "tree_digest": "fa4e42656721dc2a9cdc6f4db8642749b916ba7e5212d5b72ed93871913d24c0",
+      "summary": "PASSED; all offline suites passed, including test-task-claims, test-plugin-identity, test-task-review and test-worker-scope."
+    }
+  },
+  "unresolved": [
+    "Whether these four tools are intentionally compatibility-only or should be migrated to ARC02 result lines is not decided.",
+    "Runtime behavior of all four tools is unverified; existing engine suites were not run.",
+    "No installed-engine or 5.9 evidence belongs to this checkpoint."
+  ]
+}

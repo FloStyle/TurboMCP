@@ -37,7 +37,37 @@ Do not expand into another domain. If a prerequisite is absent, record blocked w
 A reviewed specification and evidence record for each confirmed repair, with duplicates linked and unsupported historical claims withdrawn explicitly. This investigation does not authorize implementing every finding.
 
 ## Completion evidence
-Pending. Record source/engine/artifact identity, command, exit, log and remaining limitations. A reviewer must check acceptance before marking done.
+Task R04, first dispatch checkpoint (`call-log-contracts`), claim `ab2cf6535c584bc6a9419c79e85d0b04` (owner `dsh-r04-01`). Approved base `1180c6d43655195dc2772b6d1f0b80588e4b466a`; branch `task/r04-call-log-audit`; worktree `C:\ExampleDev\SampleRoot005\r04`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 is not complete.
+
+Source identity:
+- Engine 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368` (`engine.lock.json`).
+- Plugin tree at the base: `590661ec45c829264ea1743fccea994edb748092`.
+- Claim store: `c:\ExampleDev\turbomcp\.git\turbomcp\task-claims.json`, SHA-256 `308037d40eec30e2e8342409642786cae795bd5914dc5081fcb358812cd92758`; active R04 claim inspected in this worktree.
+
+Scope and inventory:
+- `docs/audit/callable-contracts.json` contains schema 1, the approved base and plugin/engine identities, and exactly 101 unique tool IDs from `docs/audit/capabilities.json`.
+- Four rows are `reviewed_source`: `ReadTurboMCPCallCost`, `ReadTurboMCPCallLog`, `EditTurboMCPCallLog`, `EditTurboMCPCallLogClear`. The other 97 are explicitly `not_reviewed` and retain their capability source/test references.
+- The audit traces declarations, the `FRecordingToolset`/`FScopedCall` wrapper, implementations, the text/result client path, defaults, numeric parsing, effects, success/refusal and truncation. Source conclusions are kept separate from existing engine-suite assertions and from unrun runtime probes.
+
+Findings recorded (source review only; no runtime claim):
+- `R04-CALL-01`: `IsNumeric` + `Atoi` is not whole-integer validation; fractional/signed input can be truncated and overflow is unchecked.
+- `R04-CALL-02`: `ReadTurboMCPCallCost` returns the empty-log report before validating `Cap`; an empty log with `banana` or `0` is accepted while `ReadTurboMCPCallLog` refuses an invalid `Limit`.
+- `R04-CALL-03`: the log's truncation sentence tells the caller to use `since=<newest shown>`, but selection is newest-first and `since` is a later-than bound, so it cannot retrieve the omitted older rows.
+- `R04-CALL-04`: the four tools return plain `FString` without an ARC02 result line; `Tools/tmcp.py` treats every `TurboMCP.*` toolset as migrated, so `call_structured` without `requires_result=False` would raise. Whether to migrate the tools or narrow the client is unresolved.
+- `R04-CALL-05`: switching the log OFF from ON writes a start record and suppresses its end, leaving a start-only record that the timeline renders as running/missing-end.
+Each finding has a bounded repair proposal in the JSON and Markdown with owner R04, exact files, preserved behavior, synthetic probe, expected result, negative control, validation and rollback. Proposals are not implementation permission.
+
+Validation:
+- `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
+- `python Tools/test-result-contract.py` exited 0: PASS, C03-C08. It does not exercise these four tools.
+- `python Tools/test-client-retry.py` exited 0: PASS, C01/C02. It does not exercise these four tools.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 at base `1180c6d`: report `.local/executions/e08918e140e4430aa2d550140999f441/report.json`, tree digest `fa4e42656721dc2a9cdc6f4db8642749b916ba7e5212d5b72ed93871913d24c0`; all offline suites passed.
+- No engine suite, editor, build, direct MCP call, packaging or recovery command was run. `test-call-log.py` and `test-call-cost.py` are existing engine-suite assertions only, not results for this checkpoint.
+- Candidate-bound offline evidence is obtained after this commit and returned separately.
+
+Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contracts.json`, and this Completion evidence only. No plugin, engine, test, helper, dependency, pin, descriptor, status/readiness, TODO, review-register, routing or release control was changed. Raw logs and machine paths outside the repository were not committed.
+
+Unresolved: the four tools' runtime behavior; fractional/signed/overflow and empty-log invalid-cap cases; 50/500/4000/200 boundaries; truncated paging; ON->OFF and clear-with-log-on record shapes; and the `call_structured` migration decision. The 97 unreviewed rows remain unreviewed. Stopping for integration review; no merge, push, completion marking or claim release.
 
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
