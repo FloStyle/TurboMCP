@@ -19,10 +19,7 @@ jobs:
       - name: Structure and focused offline regressions
         shell: pwsh
         run: |
-          $checks = @('validate-repo.py', 'test-client-retry.py', 'test-result-contract.py', 'test-coverage-audit.py', 'test-runner-verdicts.py', 'test-lookup-guards.py', 'test-widget-tree-nested.py', 'test-traps-plugin-identity.py', 'test-repo-boundaries.py', 'test-build-provenance.py')
-          foreach ($check in $checks) {
-            python "Tools/$check"
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          }
+          python Tools/validate.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Public boundary preview (never publishes)
         run: python Tools/export-public.py --preview --output .local/public-preview

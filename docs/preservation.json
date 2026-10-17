@@ -1223,5 +1223,7 @@
       "to": "TestProject/Source/TurboMCPTestEditor.Target.cs",
       "git_blob": "9b9cedcf4d3d4951521ea71229be3270a4c8f669"
     }
-  ]
+  ],
+  "verification_commit": "b41bee4763ee7481a4a77e3d8754ac79a45c52d7",
+  "subsequent_changes": "Foundation commit removes historical comments from TurboMCP.Build.cs; dependency declarations and all C++ implementation remain unchanged. This manifest describes the initial relocation check."
 }

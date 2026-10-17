@@ -1,0 +1,551 @@
+{
+  "schema": 1,
+  "suites": [
+    {
+      "id": "test-agent-help",
+      "path": "Tools/test-agent-help.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-asset-cost",
+      "path": "Tools/test-asset-cost.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-asset-tools",
+      "path": "Tools/test-asset-tools.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-batch-edit",
+      "path": "Tools/test-batch-edit.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-batch-tools",
+      "path": "Tools/test-batch-tools.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-bp-lint",
+      "path": "Tools/test-bp-lint.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-build-provenance",
+      "path": "Tools/test-build-provenance.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-c09-success",
+      "path": "Tools/test-c09-success.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-call-cost",
+      "path": "Tools/test-call-cost.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-call-log-file",
+      "path": "Tools/test-call-log-file.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-call-log",
+      "path": "Tools/test-call-log.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-capture-asset",
+      "path": "Tools/test-capture-asset.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-capture-selectors",
+      "path": "Tools/test-capture-selectors.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-capture",
+      "path": "Tools/test-capture.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-client-retry",
+      "path": "Tools/test-client-retry.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-comment-boxes",
+      "path": "Tools/test-comment-boxes.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-comments",
+      "path": "Tools/test-comments.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-compile-ensure",
+      "path": "Tools/test-compile-ensure.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-coverage-audit",
+      "path": "Tools/test-coverage-audit.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-datatable-rows",
+      "path": "Tools/test-datatable-rows.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-datatable",
+      "path": "Tools/test-datatable.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-enum-add",
+      "path": "Tools/test-enum-add.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-function",
+      "path": "Tools/test-function.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-append-chain",
+      "path": "Tools/test-graph-append-chain.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-append",
+      "path": "Tools/test-graph-append.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-check",
+      "path": "Tools/test-graph-check.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-dead",
+      "path": "Tools/test-graph-dead.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-fix-backward",
+      "path": "Tools/test-graph-fix-backward.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-knots",
+      "path": "Tools/test-graph-knots.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-patch",
+      "path": "Tools/test-graph-patch.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-reader-child-fixture",
+      "path": "Tools/test-graph-reader-child-fixture.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-replace",
+      "path": "Tools/test-graph-replace.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-repoint",
+      "path": "Tools/test-graph-repoint.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-roundtrip",
+      "path": "Tools/test-graph-roundtrip.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-structure",
+      "path": "Tools/test-graph-structure.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-swap-call",
+      "path": "Tools/test-graph-swap-call.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-text-guards",
+      "path": "Tools/test-graph-text-guards.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-tidy-scope",
+      "path": "Tools/test-graph-tidy-scope.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-graph-tidy",
+      "path": "Tools/test-graph-tidy.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-json",
+      "path": "Tools/test-json.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-kit-ta17-ta19",
+      "path": "Tools/test-kit-ta17-ta19.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-layout",
+      "path": "Tools/test-layout.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-local-vars",
+      "path": "Tools/test-local-vars.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-lookup-guards",
+      "path": "Tools/test-lookup-guards.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-mat-inst-load",
+      "path": "Tools/test-mat-inst-load.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-material-blocks",
+      "path": "Tools/test-material-blocks.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-material-label-promote",
+      "path": "Tools/test-material-label-promote.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-material-texture-parameters",
+      "path": "Tools/test-material-texture-parameters.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-material-tidy",
+      "path": "Tools/test-material-tidy.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-material",
+      "path": "Tools/test-material.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-node-pins-owner",
+      "path": "Tools/test-node-pins-owner.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-override-add",
+      "path": "Tools/test-override-add.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-overrides",
+      "path": "Tools/test-overrides.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-ownership",
+      "path": "Tools/test-ownership.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-panel-reach",
+      "path": "Tools/test-panel-reach.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-panel",
+      "path": "Tools/test-panel.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-play-check",
+      "path": "Tools/test-play-check.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-pure-checks",
+      "path": "Tools/test-pure-checks.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-read-budget-floor",
+      "path": "Tools/test-read-budget-floor.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-refs",
+      "path": "Tools/test-refs.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-repo-boundaries",
+      "path": "Tools/test-repo-boundaries.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-result-contract",
+      "path": "Tools/test-result-contract.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-runner-verdicts",
+      "path": "Tools/test-runner-verdicts.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-save-thumbnail-option",
+      "path": "Tools/test-save-thumbnail-option.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-struct",
+      "path": "Tools/test-struct.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-trace",
+      "path": "Tools/test-trace.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-traps-plugin-identity",
+      "path": "Tools/test-traps-plugin-identity.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-uncovered-tools",
+      "path": "Tools/test-uncovered-tools.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-vars-add",
+      "path": "Tools/test-vars-add.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-vcs-write",
+      "path": "Tools/test-vcs-write.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-vcs",
+      "path": "Tools/test-vcs.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-preview",
+      "path": "Tools/test-widget-preview.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-retarget",
+      "path": "Tools/test-widget-retarget.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-tree-nested",
+      "path": "Tools/test-widget-tree-nested.py",
+      "tier": "offline",
+      "timeout_seconds": 300,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-tree-sync",
+      "path": "Tools/test-widget-tree-sync.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-tree",
+      "path": "Tools/test-widget-tree.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widgets-as-vars",
+      "path": "Tools/test-widgets-as-vars.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-release-evidence",
+      "path": "Tools/test-release-evidence.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
+    }
+  ]
+}

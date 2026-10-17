@@ -18,3 +18,5 @@ Pure tests such as test-client-retry.py, test-result-contract.py, test-coverage-
 `python Tools/test-repo-boundaries.py` verifies public export refusal controls. `python Tools/test-build-provenance.py` verifies distinct engine/source identity and staged changes.
 
 CI template: Tools/ci/validate.yml. Activating it under .github/workflows requires a GitHub credential authorized for workflows; the current login lacks that scope.
+
+The standard offline gate is `python Tools/validate.py`; test tiers are in Tests/catalog.json. Release evidence is checked with Tools/release-check.py. See [contributor rules](../docs/contributing.md) and [release manager](../docs/release-manager.md).

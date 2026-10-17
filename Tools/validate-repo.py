@@ -11,6 +11,17 @@ def main():
     for p in [ROOT/'engine.lock.json',ROOT/'Plugins/TurboMCP/TurboMCP.uplugin',ROOT/'TestProject/TurboMCPTest.uproject',ROOT/'Tests/acceptance.json',ROOT/'release/status.json',ROOT/'release/export-policy.json']:
         json.loads(p.read_text(encoding='utf-8-sig'))
     subprocess.run([sys.executable,str(ROOT/'Tools/update-todo.py'),'--check'],check=True)
+    catalog=json.loads((ROOT/'Tests/catalog.json').read_text())['suites']
+    paths=[x['path'] for x in catalog]
+    actual={p.relative_to(ROOT).as_posix() for p in (ROOT/'Tools').glob('test-*.py')}
+    if len(paths)!=len(set(paths)) or set(paths)!=actual:raise ValueError('Test catalog is incomplete or duplicated')
+    for row in catalog:
+        if row['tier'] not in ('offline','engine') or row['timeout_seconds']<=0:raise ValueError('Invalid test tier/deadline')
+    for task in (ROOT/'todo').glob('*.md'):
+        text=task.read_text(encoding='utf8')
+        if 'Readiness: ready' in text:
+            for section in ['Problem','Scope','Dependencies','Acceptance','Verification']:
+                if '## '+section+'\n' not in text:raise ValueError(f'{task.name}: ready task missing {section}')
     imported=json.loads((ROOT/'docs/task-import.json').read_text())
     for task in imported['tasks']:
         if f'ID: {task["id"]}' not in (ROOT/task['path']).read_text():raise ValueError('Imported task lost or ID changed')

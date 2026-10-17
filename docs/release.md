@@ -19,3 +19,5 @@ Initialize clean public history from an approved export. Never merge, cherry-pic
 Keep the old repository until code, tags, releases, issues and other metadata needed by the owner have been preserved. Renaming/replacing it is a separate final cutover; this migration does not delete or rename GitHub repositories or change their visibility.
 
 The initial migrated plugin remains experimental and NOT_READY. The public export mechanism is ready for review; the product acceptance work remains in TODO.md.
+
+See [release manager](release-manager.md) for evidence requirements and [installed engines](installed-engine.md) for packaging support.

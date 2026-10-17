@@ -3,6 +3,8 @@
 ID: ue59-recorder
 Status: backlog
 Priority: P1
+Readiness: needs_reconciliation
+Owner: unassigned
 
 ## Scope and acceptance
 

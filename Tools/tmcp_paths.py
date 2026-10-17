@@ -86,6 +86,6 @@ def find_engine(any_version: bool = False) -> str:
 
     raise RuntimeError(
         "no Unreal Engine install could be found. Tried the TURBOMCP_ENGINE and UE_ROOT environment "
-        "variables, the Epic launcher registry, and D:\\UnrealEngine and C:\\UnrealEngine.\n"
+        "variables and workspace.local.json.\n"
         "Copy workspace.example.json to workspace.local.json and set engineRoot, or set TURBOMCP_ENGINE."
     )

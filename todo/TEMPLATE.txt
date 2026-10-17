@@ -1,0 +1,25 @@
+# Short observable outcome
+
+ID: unique-stable-id
+Status: todo
+Priority: P2
+Readiness: ready
+Owner: unassigned
+
+## Problem
+Current behavior and a reproducible input.
+
+## Scope
+Exact files or subsystem. Explicit exclusions.
+
+## Dependencies
+Task IDs or none. Confirm these are done before starting.
+
+## Acceptance
+Observable outcomes, refusal cases, and unchanged-state expectations.
+
+## Verification
+Exact commands, fixtures, expected results. Record commit, artifact hash, log path and exit codes after running.
+
+## Handoff
+Remaining limitations and integration conflicts. No credentials or local personal paths.

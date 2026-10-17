@@ -3,6 +3,8 @@
 ID: ue59-protocol
 Status: backlog
 Priority: P2
+Readiness: needs_reconciliation
+Owner: unassigned
 
 ## Scope and acceptance
 

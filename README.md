@@ -2,6 +2,8 @@
 
 Private development repository for the TurboMCP Unreal editor plugin. Current release readiness: **not ready**. The migration preserves unfinished implementation; it does not certify a release.
 
+Repository boundaries and integration rules: [repository design](docs/repository-design.md), [contributing](docs/contributing.md), and [test tiers](Tests/README.md).
+
 Start with [AGENTS.md](AGENTS.md), [TODO.md](TODO.md), and [workspace setup](docs/workspace.md). Product contracts are in [architecture](docs/architecture.md), with [acceptance criteria](docs/acceptance.md). The public-facing documentation lives separately in [docs/public](docs/public/README.md).
 
 | Path | Purpose |

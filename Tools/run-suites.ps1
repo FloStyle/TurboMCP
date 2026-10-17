@@ -509,6 +509,11 @@ $NoEditorSuites = @(
     'check-probe-graphs', 'test-kit-ta17-ta19', 'test-lookup-guards', 'test-panel',
     'test-traps-plugin-identity', 'test-widget-tree-nested'
 )
+# Offline infrastructure tests never require starting or stopping an editor.
+$catalog = Get-Content (Join-Path $Repo 'Tests/catalog.json') -Raw | ConvertFrom-Json
+$NoEditorSuites += @($catalog.suites | Where-Object { $_.tier -eq 'offline' } | ForEach-Object { $_.id })
+$NoEditorSuites = @($NoEditorSuites | Select-Object -Unique)
+
 $All = @(Get-ChildItem $PSScriptRoot -Filter '*.py' |
     Where-Object { $_.BaseName -match '^(test|check|audit)-' } |
     ForEach-Object { $_.BaseName } | Sort-Object)

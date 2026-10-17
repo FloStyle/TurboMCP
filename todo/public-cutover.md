@@ -3,6 +3,8 @@
 ID: public-cutover
 Status: backlog
 Priority: P1
+Readiness: needs_reconciliation
+Owner: unassigned
 
 ## Scope and acceptance
 

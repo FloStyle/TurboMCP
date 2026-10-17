@@ -3,6 +3,8 @@
 ID: task-reconciliation
 Status: backlog
 Priority: P2
+Readiness: needs_reconciliation
+Owner: unassigned
 
 ## Scope and acceptance
 
@@ -11,3 +13,5 @@ All 85 original open task IDs are retained. Review duplicated or stale claims on
 ## Verification
 
 Pending.
+
+Implementation entry point: foundation-task-triage. Keep this imported follow-up as scope evidence; do not execute a duplicate reconciliation workstream.

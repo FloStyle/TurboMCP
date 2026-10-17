@@ -14,13 +14,15 @@ def tasks():
         if tid in seen or status not in STATUSES or not re.fullmatch(r'P[0-6]',priority):
             raise ValueError(f'{path.name}: duplicate ID or invalid status/priority')
         seen.add(tid)
-        items.append((status,priority,tid,text.splitlines()[0].removeprefix('# '),path))
+        readiness=field('Readiness')
+        if readiness not in ('ready','needs_reconciliation'): raise ValueError(f'{path.name}: invalid readiness')
+        items.append((status,priority,tid,'['+readiness+'] '+text.splitlines()[0].removeprefix('# '),path))
     return sorted(items,key=lambda x:(STATUSES.index(x[0]),x[1],x[2]))
 def render():
     items=tasks()
     lines=['# TODO','','Repository task files are authoritative. No external Kanban board is used.',
            'Edit the selected task, then run `python Tools/update-todo.py`. See [AGENTS.md](AGENTS.md).',
-           'Imported evidence is historical; revalidate claims before implementation or completion.','']
+           'Only tasks marked Readiness: ready may be implemented. Reconcile imported findings first. See docs/contributing.md.','']
     for status in STATUSES:
         group=[x for x in items if x[0]==status]
         if not group:continue

@@ -3,6 +3,8 @@
 ID: ee4fde11-5d9a-43f2-a017-ad6993605e30
 Status: todo
 Priority: P1
+Readiness: needs_reconciliation
+Owner: unassigned
 
 ## Scope and acceptance
 

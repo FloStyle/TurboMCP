@@ -375,7 +375,7 @@ def main():
                json.dumps({k: field(payload, k) for k in ("Ok", "NoOpCandidate")}))
 
         # --- E05, second half: the real build script's failure path, end to end -------------------------
-        if pathlib.Path("C:/UnrealEngine").is_dir():
+        if "--with-engine-build" in sys.argv:
             provenance = work / "provenance.json"
             done = subprocess.run(
                 [PWSH, "-NoProfile", "-File", str(BUILD), "-Engine", "C:/UnrealEngine", "-NoStop",
@@ -388,7 +388,7 @@ def main():
                    (done.stdout or "").strip().splitlines()[-1][:150])
             record("E05 provenance is written even on that failure", provenance.is_file())
         else:
-            record("E05 build.ps1 missing-artifact failure", True, "skipped: no engine on this host")
+            record("E05 build.ps1 missing-artifact failure", True, "not requested; use --with-engine-build for the separate build integration case")
 
         # --- E04, third half: the token-in-URL advice is gone and cannot come back ----------------------
         code, out = ps_json(            "$t = Test-TurboMCPTokenInUrl -Text $env:TMCPARG_TEXT; Write-Output ('DETECT:' + $t.Count)",
@@ -409,10 +409,6 @@ def main():
 
     finally:
         shutil.rmtree(work, ignore_errors=True)
-        # The probe wrote a lease into the real repository's .agent directory; remove exactly that file.
-        lease_file = ROOT / ".agent" / "turbo-mcp-lease.json"
-        if lease_file.is_file():
-            lease_file.unlink()
 
     if failures:
         print("")
@@ -421,7 +417,7 @@ def main():
         print("RESULT: FAIL ({0} check(s))".format(len(failures)))
         return 1
     print("RESULT: PASS (a foreign editor is never owned, the lease is exclusive, a foreign mount is refused, "
-          "and a missing artifact fails the build)")
+          "and missing artifacts are rejected; real build case requires explicit opt-in)")
     return 0
 
 

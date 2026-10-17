@@ -3,6 +3,8 @@
 ID: 8beb2deb-3cfd-4c55-854e-25c6cb917a26
 Status: backlog
 Priority: P6
+Readiness: needs_reconciliation
+Owner: unassigned
 
 ## Scope and acceptance
 

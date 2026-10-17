@@ -28,7 +28,7 @@ def source_files():
     return result
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output',required=True);parser.add_argument('--preview',action='store_true');args=parser.parse_args()
+    parser.add_argument('--output',required=True);parser.add_argument('--preview',action='store_true');parser.add_argument('--evidence');args=parser.parse_args()
     out=pathlib.Path(args.output).resolve()
     if out.exists():raise ValueError('Output must be a new directory; existing output is never overwritten')
     if out==ROOT or ROOT.is_relative_to(out):raise ValueError('Output cannot contain the source repository')
@@ -39,6 +39,9 @@ def main():
         if dirty:raise ValueError('Release export requires a clean committed source tree')
         if status.get('readiness')!='ready' or not status.get('public_export_approved') or status.get('validated_tree')!=subprocess.check_output(['git','-C',str(ROOT),'rev-parse','HEAD:Plugins/TurboMCP'],text=True).strip():
             raise ValueError('Release gates require ready, owner approval, and the validated plugin tree ID')
+    if not args.preview:
+        if not args.evidence:raise ValueError('Release export requires --evidence from acceptance execution')
+        subprocess.run([sys.executable,str(ROOT/'Tools/release-check.py'),'--evidence',args.evidence],check=True)
     files=source_files();out.mkdir(parents=True)
     entries=[]
     for p,target,data in files:

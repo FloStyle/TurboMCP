@@ -1,6 +1,6 @@
 # Binding architecture for the first release
 
-Revision: 2. This document settles implementation choices for the sequential release run.
+Revision: 3. Current behavioral contracts; historical implementation claims require current evidence.
 Product contracts carried forward from approved revision 2. Repository workflow is defined only in AGENTS.md.
 These decisions do not prove that the implementation is correct.
 
