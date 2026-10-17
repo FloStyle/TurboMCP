@@ -15,7 +15,8 @@ For each tool record actual callable schema, side effects, supported scope, refu
 All 101 rows of docs/audit/capabilities.json, declarations, wrapper definitions, schema/result helpers and matching tests. Review one tool family at a time.
 
 ## Dependencies
-R03
+
+R16
 
 ## Acceptance
 - Every tool has an explicit audit status and a source/test reference; none disappears from the inventory.

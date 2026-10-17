@@ -1,43 +1,14 @@
 # Copyright (c) 2026 FloStyle
 # SPDX-License-Identifier: MPL-2.0
-"""Audit that EVERY MCP tool has a testable call, without needing the editor.
+"""Inventory static tool references in test source.
 
-WHY THIS EXISTS
----------------
-The requirement is that every MCP feature is testable. A tool whose arguments nobody ever supplies is
-not testable, and the dangerous version of that is a tool that REGISTERS and then fails or answers
-nothing when called - it looks finished in `R-TOOL-INDEX` and in the panel's list, and no check
-contradicts it.
-
-So this audit reads the tool declarations out of the header and the calls out of the test suites, and
-reports three things per tool:
-
-  DECLARED   the parameters the tool takes;
-  COVERED    whether some suite in Tools/ actually calls it with those parameters;
-  BLANK      a parameter that appears in no sample anywhere.
-
-A tool with a BLANK parameter is one a caller has to guess at, which is exactly what the panel's
-one-click samples are for, and exactly what this audit is for.
-
-*** THE DECISION IS NOW A FUNCTION OF ITS INPUTS, WHICH IS WHY THE PARSER CAN BE TESTED. ***
-
-Release finding R04 recorded two measured defects in this file:
-
-  1. `Coverage parsing:73-79 takes the last whitespace token as a parameter name. Defaulted `Inputs` and
-     `Outputs` become `TEXT("")`.` A parameter with a default value was split on every comma - including
-     the comma inside `TEXT("...")` - and its name was read as the last whitespace token, so
-     `const FString& Inputs = TEXT("")` produced a parameter literally named `TEXT("")`. The audit then
-     reported a real tool as having an unsampled parameter, which is a FALSE POSITIVE, and a false
-     positive in a blocking gate teaches a reader to bypass the gate.
-
-  2. The checks credited a suite for NAMING a tool without executing it. That part is inherent to a static
-     audit and is now stated rather than hidden: this audit proves a tool has a caller and a sample, and it
-     proves nothing about behaviour. Behaviour is the acceptance catalog's job.
-
-Everything below is reachable as a function so `Tools/test-coverage-audit.py` can drive the real parser
-against a tiny header fixture instead of against a copy of it.
+Parse declarations, call syntax and literal names separately. None proves that
+a suite executes or verifies behavior. Parameter samples are whole-file hints,
+not a verified association between arguments and a particular call. Dynamic
+helper calls require manual review. The acceptance catalog owns runtime proof.
 """
 
+import ast
 import os
 import re
 import sys
@@ -148,54 +119,29 @@ def read_declarations(header_path=HEADER):
 
 
 def read_calls(tools_dir=TOOLS_DIR):
-    """Every tool name and the parameter keys used in any suite, as one blob per tool."""
+    """Static call syntax and literal references; neither proves execution."""
     calls = {}
     for entry in sorted(os.listdir(tools_dir)):
-        if not entry.endswith(".py") or entry in NON_ACCEPTANCE:
+        if not entry.startswith('test-') or not entry.endswith('.py'):
             continue
-        path = os.path.join(tools_dir, entry)
-        if not os.path.isfile(path):
-            continue
-        with open(path, "r", encoding="utf-8", errors="replace") as handle:
-            text = handle.read()
-
-        # `session.call(TOOLSET, "ToolName", {...})` - the blob after the name is the arguments.
-        for match in re.finditer(
-                r'\.call\(\s*[A-Z_]+\s*,\s*"(\w+)"\s*,\s*(\{.*?\})\s*\)', text, re.DOTALL):
-            tool = match.group(1)
-            blob = match.group(2)
-            keys = set(re.findall(r'"(\w+)"\s*:', blob))
-            calls.setdefault(tool, {"files": set(), "keys": set()})
-            # Recorded so the verdict can tell a real call from a name that was merely mentioned.
-            calls[tool]["parsed"] = True
-            calls[tool]["files"].add(entry)
-            calls[tool]["keys"] |= keys
-
-        # A tool called through a helper that passes named arguments is still covered; the helper's
-        # own body is where the keys appear, so the whole file is scanned for the tool name.
-        #
-        # ONLY NAMES THAT ARE TOOL FUNCTIONS, filtered against the header afterwards. The first
-        # version matched any `*TurboMCP*` string and so counted the TOOLSET CLASS names
-        # (`UTurboMCPLookToolset`) as uncalled tools - two false positives that made the audit look
-        # like it had found more than it had.
-        for name in re.findall(r'"((?:Read|Look|Preview|Edit)TurboMCP\w+)"', text):
-            entry_info = calls.setdefault(name, {"files": set(), "keys": set()})
-            entry_info["files"].add(entry)
-            entry_info.setdefault("named", set()).add(entry)
-
-        # *** AND `.call(` WITH A LITERAL NAME IS PROOF ENOUGH, WHATEVER THE ARGUMENTS ARE. *** The strict
-        # pattern above requires a LITERAL `{...}`, so it MISSES the perfectly ordinary shape where the
-        # arguments are assembled first and passed by name - `session.call(PREVIEW_TOOLSET,
-        # "PreviewTurboMCPComment", args)` - WHICH IS HOW ELEVEN TOOLS ACROSS FIVE SUITES ARE ACTUALLY CALLED.
-        # MEASURED BEFORE THIS LINE EXISTED: all eleven were reported as "named but not parsed", a list long
-        # enough to look like noise, WHICH IS THE ONE FAILURE MODE AN AUDIT MUST NOT HAVE - a false positive
-        # makes a real finding look like noise.
-        for match in re.finditer(r'\.call\(\s*(?:[A-Z_]+|"[^"]*")\s*,\s*"((?:Read|Look|Preview|Edit)TurboMCP\w+)"', text):
-            call_name = match.group(1)
-            call_info = calls.setdefault(call_name, {"files": set(), "keys": set()})
-            call_info["files"].add(entry)
-            call_info["in_call"] = True
-
+        text = open(os.path.join(tools_dir, entry), encoding='utf8').read()
+        tree = ast.parse(text, filename=entry)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str) and re.fullmatch(r'(?:Read|Look|Preview|Edit)TurboMCP\w+', node.value):
+                info = calls.setdefault(node.value, {'files': set(), 'keys': set()})
+                info['files'].add(entry)
+                info.setdefault('named', set()).add(entry)
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute) or node.func.attr != 'call' or len(node.args) < 2:
+                continue
+            name = node.args[1]
+            if not isinstance(name, ast.Constant) or not isinstance(name.value, str):
+                continue
+            info = calls.setdefault(name.value, {'files': set(), 'keys': set()})
+            info['files'].add(entry)
+            info['in_call'] = True
+            if len(node.args) > 2 and isinstance(node.args[2], ast.Dict):
+                info['parsed'] = True
+                info['keys'].update(k.value for k in node.args[2].keys if isinstance(k, ast.Constant) and isinstance(k.value, str))
     return calls
 
 
@@ -294,7 +240,7 @@ def audit(headers=None, tools_dir=TOOLS_DIR):
             seen_unparsed.append(name)
     # THIS IS THE CHECK THE USER'S REQUIREMENT TURNS INTO. A tool no suite calls has never been run,
     # which is how a registered tool that answers nothing survives.
-    check("no AICallable tool is left uncalled by every suite",
+    check("no AICallable tool lacks any static test reference",
           len(uncalled) == 0, ", ".join(uncalled))
 
     # A tool that is called but whose parameter is never supplied is called in only one shape.
@@ -331,6 +277,7 @@ def audit(headers=None, tools_dir=TOOLS_DIR):
         "calls": calls,
         "uncalled": uncalled,
         "namedButUnparsed": seen_unparsed,
+        "parsedCalls": sorted(n for n, c in calls.items() if c.get("in_call")),
         "blankParameters": blank,
         "perFile": per_file,
         "notes": notes,
@@ -359,15 +306,16 @@ def main():
     show(2)
 
     print()
-    print("=== every tool is CALLED by some suite ===")
-    print("    uncalled: %s" % (", ".join(report["uncalled"]) if report["uncalled"] else "(none)"))
+    print("=== STATIC references only: not execution evidence ===")
+    print("    missing static reference: %s" % (", ".join(report["uncalled"]) if report["uncalled"] else "(none)"))
+    print("    parsed call syntax: %d; name-only references: %d; missing: %d" % (len(report["parsedCalls"]), len(report["namedButUnparsed"]), len(report["uncalled"])))
     if report["namedButUnparsed"]:
         print("    NAMED BUT NOT PARSED AS A CALL (look at these by hand): %s"
               % ", ".join(report["namedButUnparsed"]))
     show(3)
 
     print()
-    print("=== every PARAMETER of every called tool appears in some sample ===")
+    print("=== parameter sample hints (whole-file heuristic; not verified call arguments) ===")
     for name in sorted(report["blankParameters"]):
         print("    %-40s %s" % (name, ", ".join(report["blankParameters"][name])))
     if not report["blankParameters"]:
@@ -375,7 +323,7 @@ def main():
     show(4)
 
     print()
-    print("=== the suites that cover the most tools ===")
+    print("=== suites with the most static tool references ===")
     for entry, count in sorted(report["perFile"].items(), key=lambda kv: -kv[1])[:6]:
         print("    %-30s %d tool(s)" % (entry, count))
 

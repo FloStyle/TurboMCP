@@ -10,11 +10,11 @@ Generated from task files and the approved queue. After editing task status, run
 
 | Task | Track | Kind | Status |
 | --- | --- | --- | --- |
-| [R01: Repair the test-audit evidence classifications](todo/roadmap-r01.md) | v1 | implementation | todo |
+| [R01: Repair the test-audit evidence classifications](todo/roadmap-r01.md) | v1 | implementation | done |
+| [R02: Make shared engine ownership atomic](todo/roadmap-r02.md) | v1 | implementation | in_progress |
+| [R03: Establish fixture and binary reproducibility evidence](todo/roadmap-r03.md) | v1 | investigation | todo |
 | [R13: Measure 5.9 native overlap before approving new features](todo/roadmap-r13.md) | v1 | investigation | todo |
 | [R16: Determine what prevents an installed-engine plugin](todo/roadmap-r16.md) | v1 | investigation | todo |
-| [R02: Make shared engine ownership atomic](todo/roadmap-r02.md) | v1 | implementation | todo |
-| [R03: Establish fixture and binary reproducibility evidence](todo/roadmap-r03.md) | v1 | investigation | todo |
 | [R04: Audit callable behavior and result contracts](todo/roadmap-r04.md) | v1 | investigation | todo |
 | [R05: Specify and verify mutation lifecycle repairs](todo/roadmap-r05.md) | v1 | investigation | todo |
 | [R06: Reconcile graph identity and representation repairs](todo/roadmap-r06.md) | v1 | investigation | todo |

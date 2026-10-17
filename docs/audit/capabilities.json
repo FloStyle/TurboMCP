@@ -686,13 +686,11 @@
         }
       ],
       "test_references": [
-        "Tools/make-test-widget.py",
         "Tools/test-comment-boxes.py",
         "Tools/test-enum-add.py",
         "Tools/test-function.py",
         "Tools/test-local-vars.py",
         "Tools/test-override-add.py",
-        "Tools/test-panel.py",
         "Tools/test-save-thumbnail-option.py",
         "Tools/test-struct.py",
         "Tools/test-vars-add.py",
@@ -1060,7 +1058,6 @@
         }
       ],
       "test_references": [
-        "Tools/audit-tool-coverage.py",
         "Tools/test-comment-boxes.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1755,7 +1752,6 @@
         }
       ],
       "test_references": [
-        "Tools/make-test-widget.py",
         "Tools/test-asset-tools.py",
         "Tools/test-enum-add.py",
         "Tools/test-struct.py",
@@ -1913,7 +1909,6 @@
         }
       ],
       "test_references": [
-        "Tools/check-probe-graphs.py",
         "Tools/test-comments.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -2321,7 +2316,6 @@
         "Tools/test-call-cost.py",
         "Tools/test-call-log.py",
         "Tools/test-client-retry.py",
-        "Tools/test-coverage-audit.py",
         "Tools/test-graph-text-guards.py"
       ],
       "static_call_evidence": "parsed_call",

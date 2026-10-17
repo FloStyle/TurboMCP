@@ -43,6 +43,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $env:TURBOMCP_OWNER_ID) { $env:TURBOMCP_OWNER_ID = "run-suites:$PID" }
 $Repo = Split-Path -Parent $PSScriptRoot
 $StartEditor = Join-Path $PSScriptRoot 'start-editor.ps1'
 
@@ -134,8 +135,9 @@ function Invoke-SuiteProcess {
     if (-not $base) { $base = $suiteRoot }
 
     $exe = (Get-Command python).Source
-    $outFile = Join-Path $env:TEMP "tmcp-$SuiteName.out"
-    $errFile = Join-Path $env:TEMP "tmcp-$SuiteName.err"
+    $captureId = [guid]::NewGuid().ToString("N")
+    $outFile = Join-Path $env:TEMP "tmcp-$captureId.out"
+    $errFile = Join-Path $env:TEMP "tmcp-$captureId.err"
     Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
 
     $proc = Start-Process -FilePath $exe `
@@ -272,12 +274,17 @@ function Start-EditorAndWait {
     # failed, so the process in the way is not merely slow - it is not coming. Killing it and starting once
     # more is the recovery, and ONE retry is deliberate: a loop would turn a genuinely broken editor into a run
     # that appears to hang, which is the failure mode this project keeps having to undo.
-    Write-Host "  the editor in the way answers nothing; clearing it and retrying ONCE"
-    Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue |
-        Stop-Process -Force -ErrorAction SilentlyContinue
-    Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue |
-        Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 5
+    Write-Host "  the owned editor did not answer; stopping it before one retry"
+    $oldAllowStop = $env:TURBOMCP_RUNNER_ALLOW_STOP
+    $env:TURBOMCP_RUNNER_ALLOW_STOP = '1'
+    try {
+        & pwsh -NoProfile -File $StartEditor -Stop
+        if ($LASTEXITCODE -ne 0) {
+            Write-Output 'RESULT: REFUSED (editor recovery could not establish ownership)'
+            return $false
+        }
+    } finally { $env:TURBOMCP_RUNNER_ALLOW_STOP = $oldAllowStop }
+    Start-Sleep -Seconds 2
     $launchTime = Get-Date
     # restarts it between suites - so the machine stole focus several times per run. It also skips shader
     # compilation, which makes each start faster, and no suite loses anything because every TurboMCP tool
@@ -315,7 +322,10 @@ function Start-EditorAndWait {
 function Stop-Editor {
     $oldAllowStop = $env:TURBOMCP_RUNNER_ALLOW_STOP
     $env:TURBOMCP_RUNNER_ALLOW_STOP = '1'
-    try { & pwsh -NoProfile -File $StartEditor -Stop 2>&1 | Out-Null }
+    try {
+        & pwsh -NoProfile -File $StartEditor -Stop 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Editor cleanup refused ownership; fixture restoration must stop' }
+    }
     finally { $env:TURBOMCP_RUNNER_ALLOW_STOP = $oldAllowStop }
 
     # ---------------------------------------------------------------------------------------------

@@ -18,6 +18,10 @@ Tools fixture generation/isolation/build provenance, TestProject fixtures and re
 R02
 
 ## Acceptance
+- Snapshot the exact owned fixture boundary before the first engine operation. Reject links that escape the checkout.
+- After normal completion, assertion failure, startup failure and total timeout, stop owned descendants before restoring exact fixture bytes. Preserve unrelated files and leases.
+- Retain a durable recovery manifest when the supervisor crashes. A later run must refuse pending recovery. Recovery must verify ownership and absence of a live run before copying files.
+- Capture first-run and second-run results independently. Do not retry a failed mutation to obtain a passing report.
 - Every fixture drift claim has before/after hashes, producing command and an owned editor identity.
 - The initial failing run is retained; later passes do not replace it.
 - Each confirmed repair names exact files and failure-path checks; withdrawn findings cite measured evidence.

@@ -11,32 +11,12 @@
       "track": "v1"
     },
     {
-      "id": "R13",
-      "path": "todo/roadmap-r13.md",
-      "kind": "investigation",
-      "workstream": "ue59",
-      "depends_on": [
-        "R01"
-      ],
-      "track": "v1"
-    },
-    {
-      "id": "R16",
-      "path": "todo/roadmap-r16.md",
-      "kind": "investigation",
-      "workstream": "installed-engine",
-      "depends_on": [
-        "R13"
-      ],
-      "track": "v1"
-    },
-    {
       "id": "R02",
       "path": "todo/roadmap-r02.md",
       "kind": "implementation",
       "workstream": "engine-ownership",
       "depends_on": [
-        "R16"
+        "R01"
       ],
       "track": "v1"
     },
@@ -51,12 +31,32 @@
       "track": "v1"
     },
     {
+      "id": "R13",
+      "path": "todo/roadmap-r13.md",
+      "kind": "investigation",
+      "workstream": "ue59",
+      "depends_on": [
+        "R03"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R16",
+      "path": "todo/roadmap-r16.md",
+      "kind": "investigation",
+      "workstream": "installed-engine",
+      "depends_on": [
+        "R13"
+      ],
+      "track": "v1"
+    },
+    {
       "id": "R04",
       "path": "todo/roadmap-r04.md",
       "kind": "investigation",
       "workstream": "results",
       "depends_on": [
-        "R03"
+        "R16"
       ],
       "track": "v1"
     },

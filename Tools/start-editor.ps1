@@ -241,6 +241,13 @@ function Stop-TurboMCPOwnedEditor {
     #>
     param([string] $ProjectPath, [string] $EnginePath, [switch] $AllowForeign)
 
+    # A stop request must not erase another owner's bookkeeping or corrupt evidence.
+    $remainingLease = Read-TurboMCPLease -RepoRoot $RepoRoot
+    if ($remainingLease -and ($remainingLease.Unreadable -or $remainingLease.OwnerId -ne $OwnerId)) {
+        Write-Host '  lease belongs to another owner or is unreadable; preserved for explicit recovery'
+        return $false
+    }
+
     $state = Get-TurboMCPRunningEditors -ProjectPath $ProjectPath -EnginePath $EnginePath
     if ($state.Foreign.Count -gt 0 -and -not $AllowForeign) {
         foreach ($entry in $state.Foreign) {
@@ -264,15 +271,7 @@ function Stop-TurboMCPOwnedEditor {
         }
     }
 
-    # LiveCodingConsole is stopped too, and this is not tidiness. It is a separate process that the editor
-    # starts and that can outlive it. While it runs, UnrealBuildTool refuses every build with "Unable to build
-    # while Live Coding is active", which is a confusing failure an hour later. It holds no asset, so it is
-    # stopped by name - and that is the ONLY name-based stop left in this script, stated rather than implied.
-    $liveCoding = @(Get-Process -Name LiveCodingConsole -ErrorAction SilentlyContinue)
-    if ($liveCoding.Count -gt 0) {
-        Write-Host "  stopping $($liveCoding.Count) leftover LiveCodingConsole process(es) - they block every build"
-        $liveCoding | Stop-Process -Force -ErrorAction SilentlyContinue
-    }
+    # Unowned Live Coding processes are not stopped. A locked build must fail visibly.
 
     $deadline = (Get-Date).AddSeconds(30)
     while ((Get-Date) -lt $deadline) {
@@ -286,29 +285,6 @@ function Stop-TurboMCPOwnedEditor {
         return $false
     }
 
-    # *** `-Stop` IS ALSO THE WAY OUT OF A STALE LEASE, AND WITHOUT THAT IT IS A DEAD END. ***
-    #
-    # MEASURED: after an editor exited without releasing, the next start refused with exit 8 and told the operator
-    # to "delete <lease path> if the run is over" - handing a person a manual file deletion as the only recovery.
-    # The lease deliberately blocks an UNRELEASED lease (the writer and the reader are different processes, so
-    # liveness cannot be trusted), which makes an explicit release necessary rather than optional. `-Stop` is the
-    # operator tool for exactly this, so when it has established that NO editor of this project is running and
-    # none foreign is in the way, the lease is released too - whoever wrote it.
-    $anyForeign = @((Get-TurboMCPRunningEditors -ProjectPath $ProjectPath -EnginePath $EnginePath).Foreign)
-    if ($anyForeign.Count -eq 0) {
-        $staleLease = Read-TurboMCPLease -RepoRoot $RepoRoot
-        if ($staleLease -and -not ($staleLease.PSObject.Properties.Name -contains 'Unreadable' -and $staleLease.Unreadable)) {
-            if ($staleLease.OwnerId -ne $OwnerId) {
-                Write-Host "  releasing a lease left by '$($staleLease.OwnerId)' (pid $($staleLease.Pid)); no editor of this project is running"
-            }
-            Remove-Item $LeasePath -Force -ErrorAction SilentlyContinue
-        } elseif ($staleLease) {
-            # An unparseable lease is removed only here, where the operator has explicitly asked to stop and
-            # nothing of this project is running. It is never removed silently by a start.
-            Write-Host "  removing an unreadable lease file at $LeasePath; no editor of this project is running"
-            Remove-Item $LeasePath -Force -ErrorAction SilentlyContinue
-        }
-    }
     Remove-TurboMCPLease -RepoRoot $RepoRoot -OwnerId $OwnerId | Out-Null
     return $true
 }

@@ -1,6 +1,10 @@
 # Agent instructions
 
-[Repository home](README.md) · [Contributor workflow](docs/contributing.md)
+[Repository home](README.md) | [Contributor workflow](docs/contributing.md)
+
+## Current handoff gate
+
+Product implementation is paused for infrastructure verification. Read [the infrastructure review](docs/audit/infrastructure-review.md). Do not dispatch implementation agents or enable unattended engine execution until R02 and R03 acceptance is recorded. Fast/offline execution is available through `Tools/execute-tests.py`.
 
 ## Start a task
 

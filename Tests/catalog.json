@@ -65,6 +65,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-call-log",
+      "path": "Tools/test-call-log.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-call-log-file",
       "path": "Tools/test-call-log-file.py",
       "tier": "engine",
@@ -72,8 +79,8 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-call-log",
-      "path": "Tools/test-call-log.py",
+      "id": "test-capture",
+      "path": "Tools/test-capture.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -88,13 +95,6 @@
     {
       "id": "test-capture-selectors",
       "path": "Tools/test-capture-selectors.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-capture",
-      "path": "Tools/test-capture.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -135,15 +135,15 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-datatable-rows",
-      "path": "Tools/test-datatable-rows.py",
+      "id": "test-datatable",
+      "path": "Tools/test-datatable.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-datatable",
-      "path": "Tools/test-datatable.py",
+      "id": "test-datatable-rows",
+      "path": "Tools/test-datatable-rows.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -156,6 +156,20 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-execution-runtime",
+      "path": "Tools/test-execution-runtime.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-feedback-report",
+      "path": "Tools/test-feedback-report.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-function",
       "path": "Tools/test-function.py",
       "tier": "engine",
@@ -163,15 +177,15 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-graph-append-chain",
-      "path": "Tools/test-graph-append-chain.py",
+      "id": "test-graph-append",
+      "path": "Tools/test-graph-append.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-graph-append",
-      "path": "Tools/test-graph-append.py",
+      "id": "test-graph-append-chain",
+      "path": "Tools/test-graph-append-chain.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -261,15 +275,15 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-graph-tidy-scope",
-      "path": "Tools/test-graph-tidy-scope.py",
+      "id": "test-graph-tidy",
+      "path": "Tools/test-graph-tidy.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-graph-tidy",
-      "path": "Tools/test-graph-tidy.py",
+      "id": "test-graph-tidy-scope",
+      "path": "Tools/test-graph-tidy-scope.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -286,6 +300,13 @@
       "path": "Tools/test-kit-ta17-ta19.py",
       "tier": "engine",
       "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-language-policy",
+      "path": "Tools/test-language-policy.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
       "acceptance": "not_mapped"
     },
     {
@@ -312,6 +333,13 @@
     {
       "id": "test-mat-inst-load",
       "path": "Tools/test-mat-inst-load.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-material",
+      "path": "Tools/test-material.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -345,11 +373,11 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-material",
-      "path": "Tools/test-material.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
+      "id": "test-next-task",
+      "path": "Tools/test-next-task.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
     },
     {
       "id": "test-node-pins-owner",
@@ -380,15 +408,15 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-panel-reach",
-      "path": "Tools/test-panel-reach.py",
+      "id": "test-panel",
+      "path": "Tools/test-panel.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-panel",
-      "path": "Tools/test-panel.py",
+      "id": "test-panel-reach",
+      "path": "Tools/test-panel-reach.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -420,6 +448,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-release-evidence",
+      "path": "Tools/test-release-evidence.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
     },
     {
       "id": "test-repo-boundaries",
@@ -485,15 +520,15 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-vcs-write",
-      "path": "Tools/test-vcs-write.py",
+      "id": "test-vcs",
+      "path": "Tools/test-vcs.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-vcs",
-      "path": "Tools/test-vcs.py",
+      "id": "test-vcs-write",
+      "path": "Tools/test-vcs-write.py",
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
@@ -513,6 +548,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-widget-tree",
+      "path": "Tools/test-widget-tree.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-widget-tree-nested",
       "path": "Tools/test-widget-tree-nested.py",
       "tier": "offline",
@@ -527,13 +569,6 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-widget-tree",
-      "path": "Tools/test-widget-tree.py",
-      "tier": "engine",
-      "timeout_seconds": 600,
-      "acceptance": "not_mapped"
-    },
-    {
       "id": "test-widgets-as-vars",
       "path": "Tools/test-widgets-as-vars.py",
       "tier": "engine",
@@ -541,31 +576,10 @@
       "acceptance": "not_mapped"
     },
     {
-      "id": "test-release-evidence",
-      "path": "Tools/test-release-evidence.py",
+      "id": "test-process-cleanup",
+      "path": "Tools/test-process-cleanup.py",
       "tier": "offline",
-      "timeout_seconds": 60,
-      "acceptance": "infrastructure-regression"
-    },
-    {
-      "id": "test-next-task",
-      "path": "Tools/test-next-task.py",
-      "tier": "offline",
-      "timeout_seconds": 60,
-      "acceptance": "infrastructure-regression"
-    },
-    {
-      "id": "test-language-policy",
-      "path": "Tools/test-language-policy.py",
-      "tier": "offline",
-      "timeout_seconds": 60,
-      "acceptance": "not_mapped"
-    },
-    {
-      "id": "test-feedback-report",
-      "path": "Tools/test-feedback-report.py",
-      "tier": "offline",
-      "timeout_seconds": 60,
+      "timeout_seconds": 90,
       "acceptance": "not_mapped"
     }
   ]

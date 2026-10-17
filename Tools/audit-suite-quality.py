@@ -1,29 +1,11 @@
-"""Audit whether each suite can actually FAIL, without running anything.
+"""Find candidate test weaknesses without claiming runtime coverage.
 
-WHY THIS EXISTS
----------------
-This project's most-recorded failure is A CHECK THAT PASSES WHILE THE THING IT VERIFIES IS BROKEN. It has
-happened at least eight times, and every time the fix was to make the check able to fail and then SHOW it
-failing. That is a property of the CODE of the check, not of a run, so it can be partly audited statically.
-
-WHAT THIS LOOKS FOR, and each is a way a suite can be unable to fail:
-
-  NO-ASSERT    a suite that calls tools but never appends to its failure list. It can pass on anything;
-  ALWAYS-TRUE  a comparison against a literal that is trivially true, such as `x == x` or `0 == 0`;
-  ALWAYS-PASS  a `check(...)` whose condition is a constant rather than an expression over a response;
-  NO-PARSE     a suite that asserts on text it never PARSED out of a response, which usually means it is
-               matching the harness's own echo rather than the tool's answer;
-  TAUTOLOGY    a check that asserts a variable is truthy immediately after assigning it a truthy constant.
-
-IT IS DELIBERATELY CONSERVATIVE. A static reader cannot prove a check meaningful, and a false positive here
-would be worse than no audit, because it would teach a reader to ignore the output. So it reports
-CANDIDATES with the line, and says plainly that each needs a human eye.
-
-WHAT IT CANNOT SEE, stated rather than implied: whether the ASSERTION is the right one. A suite can parse a
-value, compare it, and still assert something that does not matter. Only a run against a broken subject
-settles that.
+AST recognition identifies assertion and exit syntax, excluding comments and
+simple unreachable branches. It cannot prove that a test runs, checks the right
+behavior, or detects a broken implementation. Review every reported candidate.
 """
 
+import ast
 import os
 import re
 import sys
@@ -31,18 +13,6 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(REPO, "Tools")
 
-# *** THE AUDIT EXAMINES FEWER FILES THAN THE RUNNER RUNS, AND THE TWO NUMBERS ARE BOTH CORRECT. ***
-#
-# `run-suites.ps1` runs **58** suites; this audits **54**, and the four it leaves out are exactly the four that
-# are not suites in the sense this audit means - `audit-tool-coverage`, `audit-suite-quality`, `check-includes`
-# and `check-mcp-server`. *** TWO OF THE FOUR ARE THIS AUDIT AND ITS NEIGHBOUR, AND AN AUDIT THAT GRADES ITSELF
-# IS MEASURING THE WRONG THING. *** The other two are static checks whose whole body is a pass/fail over files
-# rather than a series of assertions about a running editor, so there is no failure list for this to look for.
-#
-# AND THE LIST IS NOT THE DISCOVERY RULE. This walks `Tools/` with `os.listdir`, which does not descend - so
-# when the documentation checks were moved into `Tools/checks/`, this stopped seeing them **without any change
-# being made here.** That is the behaviour wanted, and it is why a `check-*` script belongs in `Tools/` only if
-# it is genuinely a suite.
 SKIP = {"tmcp.py", "check-includes.py", "check-mcp-server.py", "test-helper.py",
         "audit-tool-coverage.py", "audit-suite-quality.py"}
 
@@ -55,56 +25,46 @@ def strip_strings(line):
 
 
 def failure_signals(text):
-    """Every way this suite can report a failure, and each is a real one.
+    """Candidate failure paths, excluding comments and obvious unreachable blocks.
 
-    *** THIS WAS ONE PATTERN AND IT PRODUCED TWO FALSE POSITIVES ON SUITES THAT CAN FAIL. ***
-
-    Release finding R04 recorded the cause: "Quality heuristic:74-80 equates a list that receives append calls
-    with a failure recorder. That is neither necessary nor sufficient." The audit reported
-    `test-graph-repoint.py` and `test-graph-swap-call.py` as unable to record a failure. Both CAN, and they do
-    it without ever calling `.append`:
-
-      * `test-graph-repoint.py:36` builds `checks = [...]` and exits `0 if all(checks) else 1`;
-      * `test-graph-swap-call.py:71` builds `failures = [name for name, ok in checks if not ok]`.
-
-    A list comprehension that selects the failures is a failure recorder. `all(checks)` feeding a non-zero
-    return is one too. And a suite that prints `RESULT: FAIL` and returns a literal 1 with no list at all is
-    just as able to fail as one that appends.
-
-    So the recogniser looks for a WAY TO FAIL rather than for one preferred shape. It is still conservative in
-    the other direction: a suite with none of these signals is reported, because a suite that cannot fail is
-    the defect this audit exists to find.
+    This is syntax evidence, not proof that a function runs or an oracle is correct.
     """
+    tree = ast.parse(text)
     signals = []
-
-    # 1. A list built and appended to - the original pattern, kept.
-    list_names = set(re.findall(r"(\w+)\s*=\s*\[\s*\]", text))
-    appended_to = set(re.findall(r"(\w+)\.append\(", text))
-    failure_lists = sorted(list_names & appended_to)
-    if failure_lists:
-        signals.append("append:%s" % ",".join(failure_lists))
-
-    # 2. A list comprehension that COLLECTS failures - `[x for x, ok in checks if not ok]`.
-    for match in re.finditer(r"(\w+)\s*=\s*\[[^\]]*for\s+([^\]]*?)\bif\b[^\]]*\]", text):
-        target, body = match.group(1), match.group(2)
-        if re.search(r"\bnot\b|==\s*False|is\s+False", body):
-            signals.append("comprehension:%s" % target)
-
-    # 3. An explicit non-zero exit. `return 1` and `sys.exit(1)` cannot be mistaken for anything else.
-    for match in re.finditer(r"\b(?:return|sys\.exit)\s*\(?\s*([A-Za-z_]\w*|\d+)\s*\)?", text):
-        value = match.group(1)
-        if value.isdigit() and int(value) != 0:
-            signals.append("explicit-exit:%s" % value)
-        elif value in ("False", "1"):
-            signals.append("explicit-exit:%s" % value)
-    # `all(checks)` / `any(checks)` feeding a return is the shape test-graph-repoint.py uses.
-    if re.search(r"\ball\(\s*\w+\s*\)", text) or re.search(r"\ball\s*\(\s*\w+\s*\)", text):
-        signals.append("all-of-list")
-    # A failure accumulator that is only ever READ in a non-empty test still counts as one.
-    for name in re.findall(r"\bif\s+(\w+)\s*:", text):
-        if name in list_names or name in set(re.findall(r"(\w+)\s*=\s*\[[^\]]*for", text)):
-            signals.append("nonempty-test:%s" % name)
-
+    def walk(node):
+        if isinstance(node, ast.If) and isinstance(node.test, ast.Constant):
+            for child in node.body if node.test.value else node.orelse:
+                walk(child)
+            return
+        if isinstance(node, ast.While) and isinstance(node.test, ast.Constant) and not node.test.value:
+            for child in node.orelse: walk(child)
+            return
+        if isinstance(node, ast.Assert):
+            if not (isinstance(node.test, ast.Constant) and bool(node.test.value)):
+                signals.append('assert')
+        if isinstance(node, ast.Raise):
+            signals.append('raise')
+        if isinstance(node, ast.Return):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, int) and node.value.value != 0:
+                signals.append('explicit-exit')
+            if isinstance(node.value, ast.IfExp):
+                signals.append('conditional-return')
+        if isinstance(node, ast.Call):
+            name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, 'id', '')
+            if name.startswith('assert') and isinstance(node.func, ast.Attribute):
+                signals.append('assert-method')
+            if name == 'exit' and node.args and isinstance(node.args[0], ast.Constant) and node.args[0].value not in (None, 0, False):
+                signals.append('explicit-exit')
+        for field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                for child in value:
+                    if isinstance(child, ast.AST):
+                        walk(child)
+                        if field in ('body', 'orelse', 'finalbody') and isinstance(child, (ast.Return, ast.Raise)):
+                            break
+            elif isinstance(value, ast.AST):
+                walk(value)
+    walk(tree)
     return sorted(set(signals))
 
 
@@ -128,8 +88,7 @@ def audit(path):
     has_failures = bool(signals)
     if not has_failures:
         findings.append(("NO-ASSERT", 0,
-                         "no append, no failure-collecting comprehension and no explicit non-zero exit, so "
-                         "nothing in this file can be recorded as a failure"))
+                         "no recognized failure-path syntax; review manually (not proof of an incapable test)"))
 
     # 2. Does anything ever go INTO the recorder?
     #

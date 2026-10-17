@@ -7,3 +7,5 @@ The engine tier uses `Tools/run-suites.ps1` after a build, with owned editor and
 `test-ownership.py --with-engine-build` explicitly opts into the real missing-artifact build case. Never run it concurrently with a build or editor. No routine offline test may conditionally start an installed engine.
 
 For a v1 candidate: reconcile all required acceptance IDs to exact test selectors, record source and binary identity, run each required case, test a fresh public export in a clean project, then validate the release evidence. A skipped, blocked, timed-out or missing case does not pass.
+
+See the [infrastructure review and execution gate](../docs/audit/infrastructure-review.md) for bounded local checks and remaining engine-dispatch requirements.

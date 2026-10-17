@@ -2,13 +2,12 @@
 
 [Documentation](README.md) · [Roadmap](../ROADMAP.md)
 
-## Next assignment: R01
+## Handoff is paused
 
-Give the implementation agent this instruction:
-
-> Read AGENTS.md, docs/contributing.md and todo/roadmap-r01.md. Implement R01 only. Claim the task with your recorded owner in an isolated worktree. Preserve plugin behavior, engine configuration and roadmap order. Run the specified regression and offline checks. Return the base commit, commit IDs, changed files, failing-before/passing-after evidence, test commands and exit codes, limitations and task-status changes. Do not mark reviewed completion or push to main yourself.
-
-R01 is infrastructure work and needs offline parser evidence. It does not claim a runtime plugin change or require an engine rebuild. Plugin behavior changes require the exact 5.8.3 baseline build and owned-editor evidence; 5.9 source review never substitutes for that evidence.
+The integration owner is completing the infrastructure before implementation
+agents resume. See the [infrastructure review](audit/infrastructure-review.md).
+Do not dispatch the previous R01 assignment or choose a product task. The bounded
+offline executor is available; unattended engine execution remains disabled.
 
 ## Review packet for every agent
 
@@ -24,7 +23,7 @@ The reviewer inspects the diff, verifies evidence, checks scope and regressions,
 
 ## Sequence and priorities
 
-R01 repairs evidence classification. R13 completes the three-way source comparison. R16 establishes the integration and packaging constraints early. R02-R09 provide ownership, fixtures and behavioral audit evidence. R17 makes verified preferences discoverable; R18 produces the UI design; R10 reconciles help and documentation. R11 is baseline acceptance and R15 release automation. Confirmed fixes discovered by investigations require owner-approved bounded repair tasks before their acceptance gate.
+R01 repairs evidence classification. R02 and R03 establish ownership and fixture recovery before any handoff. R13 then completes the source comparison and R16 establishes integration and packaging constraints. R04-R09 provide behavioral audit evidence. R17 makes verified preferences discoverable; R18 produces the UI design; R10 reconciles help and documentation. R11 is baseline acceptance and R15 release automation. Confirmed fixes discovered by investigations require owner-approved bounded repair tasks before their acceptance gate.
 
 R12 separately validates installed-engine packages. R14 handles the 5.9 adapter. Neither optional target inherits baseline certification. Prefer useful native functionality over duplication; preserve TurboMCP workflows where evidence demonstrates a worthwhile improvement.
 

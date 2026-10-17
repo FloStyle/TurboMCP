@@ -127,23 +127,10 @@ try {
 $stopScript = Join-Path $PSScriptRoot 'start-editor.ps1'
 if (Test-Path $stopScript) {
     & pwsh -NoProfile -File $stopScript -Stop 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Ownership check refused editor cleanup; operation stopped' }
 }
 
-$deadline = (Get-Date).AddSeconds(30)
-while ((Get-Date) -lt $deadline) {
-    if (-not (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue)) { break }
-    Start-Sleep -Seconds 1
-}
-$stubborn = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
-if ($stubborn) {
-    Write-Output ("  a previous editor (PID {0}) outlived the stop; killing it before the commandlet runs" -f `
-        ($stubborn.Id -join ', '))
-    $stubborn | Stop-Process -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 3
-}
-# The launcher's own editor is a different process name and holds the same DLL, so it is cleared too.
-Get-Process -Name UnrealEditor-Cmd -ErrorAction SilentlyContinue |
-    Stop-Process -Force -ErrorAction SilentlyContinue
+# Do not stop commandlets or editors that this invocation does not own.
 
 & cmd.exe /c "`"$EditorExe`" `"$Project`" -run=TurboMCP.TurboMCPAcceptanceAssetCommandlet -unattended -nullrhi -culture=en -MaxParallelActions=8 > `"$log`" 2>&1"
 $exit = $LASTEXITCODE

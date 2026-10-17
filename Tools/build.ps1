@@ -82,6 +82,7 @@ if (-not $NoStop) {
     $startEditor = Join-Path $PSScriptRoot 'start-editor.ps1'
     if (Test-Path $startEditor) {
         & pwsh -NoProfile -File $startEditor -Stop 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Ownership check refused editor cleanup; operation stopped' }
         Start-Sleep -Seconds 2
     }
 }

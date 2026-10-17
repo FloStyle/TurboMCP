@@ -74,11 +74,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path -Parent $log) | Out-Null
 $stopScript = Join-Path $PSScriptRoot 'start-editor.ps1'
 if (Test-Path $stopScript) {
     & pwsh -NoProfile -File $stopScript -Stop 2>&1 | Out-Null
-    # GHOSTS ARE CLEARED TOO, from a measurement that cost a build elsewhere in this project: an
-    # `UnrealEditor-Cmd` left by an earlier experiment keeps the plugin DLL mapped and makes the NEXT build
-    # fail with `LNK1104`, and `-Stop` does not know about it because it is not the editor it started.
-    Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue |
-        Stop-Process -Force -ErrorAction SilentlyContinue
+    if ($LASTEXITCODE -ne 0) { throw 'Ownership check refused editor cleanup; operation stopped' }
     Start-Sleep -Seconds 2
 }
 

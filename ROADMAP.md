@@ -1,6 +1,6 @@
 # Roadmap to a dependable v1
 
-[Repository home](README.md) · [Documentation](docs/README.md)
+[Repository home](README.md) | [Documentation](docs/README.md)
 
 The v1 plan starts with trustworthy tests, then audits existing tools and repairs confirmed defects. Release follows only after the acceptance gates pass. Compatibility work is tracked separately.
 
@@ -21,10 +21,10 @@ Fix false success, data-loss risk, misleading observations and unusable tests be
 | Stage | Work | Exit condition |
 | --- | --- | --- |
 | [R01](todo/roadmap-r01.md) | Make test-audit classifications truthful | Parser regressions distinguish evidence from references and false positives |
-| [R13](todo/roadmap-r13.md) | Compare pinned 5.9 native interfaces early | Adopt/adapter/retain/defer decisions; unknown runtime parity stays explicit |
-| [R16](todo/roadmap-r16.md) | Establish installed-engine integration constraints early | Dependency and rebuild-boundary evidence; bounded adapter/package proposals |
 | [R02](todo/roadmap-r02.md) | Shared engine/editor/port ownership | Concurrent-process contention and cleanup tests pass |
 | [R03](todo/roadmap-r03.md) | Fixture and binary reproducibility | First-run failures and fixture drift have reproducible root-cause evidence |
+| [R13](todo/roadmap-r13.md) | Compare pinned 5.9 native interfaces early | Adopt/adapter/retain/defer decisions; unknown runtime parity stays explicit |
+| [R16](todo/roadmap-r16.md) | Establish installed-engine integration constraints early | Dependency and rebuild-boundary evidence; bounded adapter/package proposals |
 | [R04](todo/roadmap-r04.md) | Audit every callable and result contract | Every tool has schema/effect/refusal/evidence status and bounded repair specifications |
 | [R05](todo/roadmap-r05.md) | Mutation, rollback and restricted batch | Exact lifecycle gaps and required repairs are specified against ARC03-ARC09 |
 | [R06](todo/roadmap-r06.md) | Graph identity and representation | Findings resolved or specified with concrete negative controls |

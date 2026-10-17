@@ -1,7 +1,7 @@
 # R01: Repair the test-audit evidence classifications
 
 ID: R01
-Status: todo
+Status: done
 Priority: P1
 Readiness: ready
 Owner: unassigned
@@ -35,7 +35,15 @@ Do not expand into another domain. If a prerequisite is absent, record blocked w
 The bounded change plus regression evidence, updated affected specifications and a concise handoff.
 
 ## Completion evidence
-Pending. Record source/engine/artifact identity, command, exit, log and remaining limitations. A reviewer must check acceptance before marking done.
+Reviewed against baseline 1e41e14f6fef9ee2473fad3433bd2406c18fae86.
+The original audit reports NO-ASSERT for `assert actual == expected` and credits
+a commented call. Both failures were reproduced from Git HEAD in temporary files.
+The revised `python Tools/test-coverage-audit.py` passes positive, literal-only,
+comment, assert-True and simple unreachable-code controls. Inventory remains
+101 tools: 95 parsed-call references and six name-only references. Runtime
+acceptance remains uncertified. This change does not require an engine build.
+Full offline validation is required for the integration commit; local evidence
+is retained under .local/executions. R02/R03 remain open and block handoff.
 
 ## Related findings
 - [048107d9-a439-4e28-955a-562804215ac9](048107d9.md)

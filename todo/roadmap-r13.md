@@ -15,7 +15,8 @@ Re-fetch the development head once at task start. If it differs, record a new pi
 Pinned Epic ToolsetRegistry/ModelContextProtocol/Toolsets interfaces and the deferred backlog. Keep the 5.8.3 baseline unchanged.
 
 ## Dependencies
-R01
+
+R03
 
 ## Acceptance
 - Each deferred proposal is adopt-native, thin-adapter, retain-TurboMCP or defer, with a demonstrated gap and maintenance cost.

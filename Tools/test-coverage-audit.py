@@ -181,23 +181,23 @@ def main():
                report["uncalled"] == ["ReadTurboMCPUncalledProbe"],
                "uncalled: %s" % report["uncalled"])
         record("H09 the failed check names exactly that tool",
-               any("no AICallable tool is left uncalled" in name for name in report["failures"]),
+               any("no AICallable tool lacks any static test reference" in name for name in report["failures"]),
                "failures: %s" % report["failures"])
 
-        # The positive control: the same fixture with the missing call inserted must clear the check.
+        # Removing a literal reference must not invent a parsed call.
         (tools / "test-fixture-caller.py").write_text(CALLER_FIXTURE_MISSING, encoding="utf-8")
         inserted = coverage.audit(headers=[str(header)], tools_dir=str(tools))
-        record("H09 adding the call clears the finding for that tool",
+        record("H09 removing the reference keeps the tool missing",
                "ReadTurboMCPUncalledProbe" in inserted["uncalled"],
                "uncalled now: %s" % inserted["uncalled"])
 
-        # And the negative control in the other direction: a call for it removes the finding.
+        # A commented call must not remove the missing-reference finding.
         (tools / "test-fixture-caller.py").write_text(
             CALLER_FIXTURE_MISSING + '\n# session.call(READ_TOOLSET, "ReadTurboMCPUncalledProbe", {"query": "q"})\n',
             encoding="utf-8")
         fixed = coverage.audit(headers=[str(header)], tools_dir=str(tools))
-        record("H09 a call for the inserted tool clears its finding",
-               "ReadTurboMCPUncalledProbe" not in fixed["uncalled"],
+        record("H09 a commented call does not count as a reference",
+               "ReadTurboMCPUncalledProbe" in fixed["uncalled"],
                "uncalled now: %s" % fixed["uncalled"])
 
         # --- H08, assertion styles: both are recognised by the quality audit ---------------------
@@ -240,6 +240,31 @@ def main():
         found = quality.audit(str(no_signal))
         record("H08 a suite with no way to fail is still reported",
                any(f[0] == "NO-ASSERT" for f in found), "findings: %s" % found)
+
+        # Static syntax is evidence of a candidate check, never proof of execution.
+        for source in [
+            'assert value == expected',
+            'if broken:\n    raise RuntimeError("bad")',
+        ]:
+            record('R01 recognizes an actual failure candidate', bool(quality.failure_signals(source)))
+        for source in [
+            '# assert False\nprint("raise RuntimeError")',
+            'assert True',
+            'if False:\n    assert False',
+            'while False:\n    raise RuntimeError()',
+            'def check():\n    return 0\n    raise RuntimeError()',
+        ]:
+            record('R01 ignores comments and simple dead checks', not quality.failure_signals(source), source)
+        parsed_dir = work / 'syntax-only'
+        parsed_dir.mkdir()
+        (parsed_dir / 'test-syntax.py').write_text(
+            '# session.call("set", "ReadTurboMCPComment", {})\n'
+            'names = ["ReadTurboMCPNamed"]\n'
+            'session.call("set", "ReadTurboMCPParsed", {"Path": "generic"})\n', encoding='utf8')
+        syntax = load(AUDIT_PATH, 'syntax_coverage').read_calls(str(parsed_dir))
+        record('R01 comment is not a reference', 'ReadTurboMCPComment' not in syntax)
+        record('R01 literal reference is not a call', not syntax['ReadTurboMCPNamed'].get('in_call'))
+        record('R01 parsed call has argument keys', syntax['ReadTurboMCPParsed'].get('parsed') and 'Path' in syntax['ReadTurboMCPParsed']['keys'])
 
     finally:
         shutil.rmtree(work, ignore_errors=True)
