@@ -45,16 +45,28 @@ param(
     [string] $Platform = 'Win64',
     # EMPTY ON PURPOSE: resolved below by Tools/common.ps1, which prefers a version-matching engine.
     [string] $Engine = '',
-    [switch] $NoStop
+    [switch] $NoStop,
+    # *** THE ARTIFACT THE BUILD MUST PRODUCE. ASSERTED, NOT DESCRIBED. ***
+    #
+    # Finding R11: build.ps1 printed "plugin DLL: NOT FOUND, so nothing was produced even though the build
+    # succeeded" and then returned PASS with exit zero. A build that produced nothing is a failed build, and an
+    # automated gate cannot tell the difference from prose. The path is a parameter so the assertion can be
+    # shown FAILING against a fixture - a check whose failure path has never been exercised is not a check.
+    [string] $ExpectArtifact = '',
+    # Where the build's provenance record is written. R11's required correction names the fields.
+    [string] $ProvenancePath = ''
 )
 
 $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'common.ps1')
+. (Join-Path $PSScriptRoot 'ownership.ps1')
 
 $repo = Get-TurboMCPRepoRoot
 $project = Get-TurboMCPProject -RepoRoot $repo
 if (-not $Engine) { $Engine = Resolve-TurboMCPEngine -Project $project }
+if (-not $ExpectArtifact) { $ExpectArtifact = Join-Path $repo 'Binaries\Win64\UnrealEditor-TurboMCP.dll' }
+if (-not $ProvenancePath) { $ProvenancePath = Join-Path $repo '.agent\build-provenance.json' }
 
 $buildBat = Join-Path $Engine 'Engine\Build\BatchFiles\Build.bat'
 if (-not (Test-Path $buildBat)) { throw "no Build.bat under $Engine - that directory is not an engine root" }
@@ -95,21 +107,56 @@ if (-not $NoStop) {
 $env:MSBUILDDISABLENODEREUSE = '1'
 
 # `-WaitMutex` because a stale UBT mutex turns a build into a silent wait that looks like a hang.
-& cmd.exe /c "`"$buildBat`" $Target $Platform $Configuration -Project=`"$project`" -WaitMutex -MaxParallelActions=6"
+#
+# `Tee-Object` KEEPS THE BUILD OUTPUT VISIBLE AND COLLECTS IT. The console sees every line as it arrives, and
+# the same lines are captured so the toolchain can be READ FROM THE BUILD rather than assumed. A silent
+# capture would hide a long build's progress, which is the failure mode the comment above records.
+$script:BuildOutput = New-Object System.Collections.Generic.List[string]
+& cmd.exe /c "`"$buildBat`" $Target $Platform $Configuration -Project=`"$project`" -WaitMutex -MaxParallelActions=6" 2>&1 |
+    ForEach-Object { $script:BuildOutput.Add([string]$_) ; Write-Output $_ }
 $exit = $LASTEXITCODE
+$buildOutput = @($script:BuildOutput)
 
 Write-Output ""
 if ($exit -eq 0) {
     # *** `Result: Succeeded` ALONE IS NOT EVIDENCE THE BINARY CHANGED, WHICH THIS PROJECT MEASURED: a
     # `-SingleFile` build once reported success while the object file was TWO HOURS OLDER than its source.
-    # So the DLL's timestamp is printed beside the verdict, and a reader can see whether it moved. ***
-    $dll = Join-Path $repo 'Binaries\Win64\UnrealEditor-TurboMCP.dll'
-    if (Test-Path $dll) {
-        Write-Output ("  plugin DLL: {0}" -f (Get-Item $dll).LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss'))
-    } else {
-        Write-Output "  plugin DLL: NOT FOUND, so nothing was produced even though the build succeeded"
+    # So the artifact is checked for existence and size, hashed, and compared with its newest input - and a
+    # MISSING artifact now FAILS the build instead of being mentioned and then passed over. ***
+    $newestInput = ''
+    $sourceDir = Join-Path $repo 'Source'
+    if (Test-Path $sourceDir) {
+        $newest = Get-ChildItem $sourceDir -Recurse -File -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+        if ($newest) { $newestInput = $newest.FullName }
     }
-    Write-Output "  RESULT: PASS (the build succeeded)"
+    $artifact = Get-TurboMCPArtifactVerdict -Path $ExpectArtifact -NewestInput $newestInput
+
+    # The toolchain, recorded from the build's own output rather than assumed.
+    $toolchain = ''
+    $toolchainMatch = [regex]::Match(($buildOutput -join "`n"), 'Using Visual Studio ([^\r\n]+)')
+    if ($toolchainMatch.Success) { $toolchain = $toolchainMatch.Groups[1].Value.Trim() }
+
+    $provenance = New-TurboMCPBuildProvenance -RepoRoot $repo -Engine $Engine -Target $Target `
+        -Configuration $Configuration -Platform $Platform -Artifact $artifact -Project $project `
+        -ExitCode $exit -Toolchain $toolchain -OutPath $ProvenancePath
+
+    if ($artifact.Exists) {
+        Write-Output ("  plugin DLL: {0} ({1} bytes, {2})" -f `
+            $ExpectArtifact, $artifact.Length, $artifact.LastWriteTimeUtc.ToString('yyyy-MM-dd HH:mm:ss'))
+        if ($artifact.NoOpCandidate) {
+            # UP-TO-DATE IS NOT A FAILURE. R11's correction is explicit that a legitimate no-op build must not
+            # be rejected; what must not happen is reporting a moved timestamp it did not have.
+            Write-Output "  NOTE: the artifact is older than its newest input, so this was an UP-TO-DATE build. That is not a defect."
+        }
+    }
+    Write-Output ("  provenance: {0}" -f $ProvenancePath)
+
+    if (-not $artifact.Ok) {
+        Write-Output ("  RESULT: FAIL (the build succeeded but {0})" -f $artifact.Reason)
+        exit 1
+    }
+    Write-Output ("  RESULT: PASS ({0})" -f $artifact.Reason)
     exit 0
 }
 

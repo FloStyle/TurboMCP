@@ -39,7 +39,16 @@ WINDOW = 12
 
 SAME_STATEMENT = re.compile(r"^\s*if\s*\(")
 NULL_CHECK = r"\b{0}\s*==\s*nullptr"
+# *** `if (!X)` AND `if(!X)` ARE THE SAME GUARD, AND THE PATTERN ONLY MATCHED THE FIRST. ***
+#
+# MEASURED: `TurboMCPGraphRepoint.cpp:90` holds `if(!B||!G){Error=...;return false;}` - a real guard on both
+# pointers, written without a space after `if`. The pattern required `if (` and so reported the site as
+# unguarded, which made the whole check fail on a file that is guarded. A GUARD RECOGNISER THAT MISSES A
+# GUARD PRODUCES EXACTLY THE FALSE POSITIVE THIS FILE'S OWN DOC COMMENT WARNS ABOUT, and a blocking gate
+# that fails healthy code is a reason to bypass the gate. The space is optional in C++ and the pattern now
+# says so.
 NOT_CHECK = r"if\s*\(\s*!\s*{0}\b"
+# The same omission in the cast form: `if(Cast<T>(X))`.
 CAST_INTO = r"\b\w[\w:<>]*\s*\*?\s+({0})\s*=\s*Cast\s*<[^>]+>\s*\(\s*{1}\s*\)"
 
 
@@ -50,6 +59,17 @@ def guard_for(lines, index, var):
     # The same-statement form: the assignment is the condition itself.
     if SAME_STATEMENT.match(lines[index]):
         return "checked in the if"
+    # *** AND THE STATEMENT MAY BEGIN WITH A DECLARATION ON THE SAME LINE. ***
+    #
+    # `UBlueprint* B=LoadObject<UBlueprint>(...); UEdGraph* G=FindGraph(B,...); if(!B||!G){...}` is one line
+    # that declares two pointers AND guards both of them. The loop below starts at offset 1, so a guard
+    # written on the assignment's own line was never seen, and the site was reported unguarded while the very
+    # next token was `if(!B`. A guard on the same line as the assignment is a guard.
+    if re.search(r"=\s*(?:[^;]*;)[^;]*\bif\s*\(", lines[index]) or re.match(r"\s*if\s*\(", lines[index]):
+        if re.search(r"if\s*\(\s*!\s*" + re.escape(var) + r"\b", lines[index]):
+            return "same-line if (!x)"
+        if re.search(r"\b" + re.escape(var) + r"\s*==\s*nullptr", lines[index]):
+            return "same-line null check"
 
     for offset, line in enumerate(window):
         if offset == 0:

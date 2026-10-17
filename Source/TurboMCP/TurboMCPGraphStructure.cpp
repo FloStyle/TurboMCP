@@ -41,24 +41,14 @@ namespace
 	 */
 	UEdGraph* FindGraph(UBlueprint* InBlueprint, const FString& InGraphName)
 	{
-		if (InBlueprint == nullptr)
-		{
-			return nullptr;
-		}
-
-		TArray<UEdGraph*> Graphs;
-		Graphs.Append(InBlueprint->UbergraphPages);
-		Graphs.Append(InBlueprint->FunctionGraphs);
-		Graphs.Append(InBlueprint->MacroGraphs);
-
-		for (UEdGraph* Graph : Graphs)
-		{
-			if (Graph != nullptr && Graph->GetName().Equals(InGraphName, ESearchCase::CaseSensitive))
-			{
-				return Graph;
-			}
-		}
-		return nullptr;
+		// *** ONE RESOLUTION POLICY WITH EVERY OTHER TOOL AND THE READER. ***
+		// This was one of EIGHT graph resolvers. It searched UbergraphPages, FunctionGraphs and MacroGraphs;
+		// the reader's TurboMCPNodeId::FindGraphByName searches those THREE PLUS EventGraphs, and nothing
+		// compared them. A node id is `...:GraphName:<hash>` - the graph NAME ONLY - so a name matching
+		// two graphs in different arrays would make this tool EDIT ONE AND REPORT ON ANOTHER, and no
+		// caller could tell. That is the ARC06 family: identity that cannot be verified across calls.
+		// It now delegates, so this tool and the reader resolve a name identically.
+				return TurboMCPNodeId::FindGraphByName(InBlueprint, InGraphName);
 	}
 
 	/** Finds a pin by name with the CASE THE ENGINE USES, rather than a case-insensitive guess. */

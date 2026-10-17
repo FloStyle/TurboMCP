@@ -54,6 +54,60 @@ def strip_strings(line):
     return line
 
 
+def failure_signals(text):
+    """Every way this suite can report a failure, and each is a real one.
+
+    *** THIS WAS ONE PATTERN AND IT PRODUCED TWO FALSE POSITIVES ON SUITES THAT CAN FAIL. ***
+
+    Release finding R04 recorded the cause: "Quality heuristic:74-80 equates a list that receives append calls
+    with a failure recorder. That is neither necessary nor sufficient." The audit reported
+    `test-graph-repoint.py` and `test-graph-swap-call.py` as unable to record a failure. Both CAN, and they do
+    it without ever calling `.append`:
+
+      * `test-graph-repoint.py:36` builds `checks = [...]` and exits `0 if all(checks) else 1`;
+      * `test-graph-swap-call.py:71` builds `failures = [name for name, ok in checks if not ok]`.
+
+    A list comprehension that selects the failures is a failure recorder. `all(checks)` feeding a non-zero
+    return is one too. And a suite that prints `RESULT: FAIL` and returns a literal 1 with no list at all is
+    just as able to fail as one that appends.
+
+    So the recogniser looks for a WAY TO FAIL rather than for one preferred shape. It is still conservative in
+    the other direction: a suite with none of these signals is reported, because a suite that cannot fail is
+    the defect this audit exists to find.
+    """
+    signals = []
+
+    # 1. A list built and appended to - the original pattern, kept.
+    list_names = set(re.findall(r"(\w+)\s*=\s*\[\s*\]", text))
+    appended_to = set(re.findall(r"(\w+)\.append\(", text))
+    failure_lists = sorted(list_names & appended_to)
+    if failure_lists:
+        signals.append("append:%s" % ",".join(failure_lists))
+
+    # 2. A list comprehension that COLLECTS failures - `[x for x, ok in checks if not ok]`.
+    for match in re.finditer(r"(\w+)\s*=\s*\[[^\]]*for\s+([^\]]*?)\bif\b[^\]]*\]", text):
+        target, body = match.group(1), match.group(2)
+        if re.search(r"\bnot\b|==\s*False|is\s+False", body):
+            signals.append("comprehension:%s" % target)
+
+    # 3. An explicit non-zero exit. `return 1` and `sys.exit(1)` cannot be mistaken for anything else.
+    for match in re.finditer(r"\b(?:return|sys\.exit)\s*\(?\s*([A-Za-z_]\w*|\d+)\s*\)?", text):
+        value = match.group(1)
+        if value.isdigit() and int(value) != 0:
+            signals.append("explicit-exit:%s" % value)
+        elif value in ("False", "1"):
+            signals.append("explicit-exit:%s" % value)
+    # `all(checks)` / `any(checks)` feeding a return is the shape test-graph-repoint.py uses.
+    if re.search(r"\ball\(\s*\w+\s*\)", text) or re.search(r"\ball\s*\(\s*\w+\s*\)", text):
+        signals.append("all-of-list")
+    # A failure accumulator that is only ever READ in a non-empty test still counts as one.
+    for name in re.findall(r"\bif\s+(\w+)\s*:", text):
+        if name in list_names or name in set(re.findall(r"(\w+)\s*=\s*\[[^\]]*for", text)):
+            signals.append("nonempty-test:%s" % name)
+
+    return sorted(set(signals))
+
+
 def audit(path):
     name = os.path.basename(path)
     with open(path, "r", encoding="utf-8", errors="replace") as handle:
@@ -62,32 +116,33 @@ def audit(path):
 
     findings = []
 
-    # 1. Does it have a failure list at all?
+    # 1. Does it have a WAY TO FAIL at all?
     #
-    # *** A SUITE NEED NOT CALL IT `failures`. *** The first version looked only for `failures = []` and so
-    # reported `test-graph-structure.py` as having NO WAY TO RECORD A FAILURE - a suite that keeps
-    # `results = []` of `(name, bool(ok), detail)` tuples and prints `FAIL` per row and a `RESULT: FAIL (n)`
-    # line. THAT IS A FALSE POSITIVE, and a false positive in an audit that is about to BLOCK is worse than
-    # no audit: it teaches the reader to ignore the warning, which is exactly "an invisible refusal reads as
-    # a capability" turned round. The list is recognised by the SHAPE - a list literal that failures are
-    # appended to - rather than by one preferred name.
-    list_names = set(re.findall(r"(\w+)\s*=\s*\[\s*\]", text))
-    appended_to = set(re.findall(r"(\w+)\.append\(", text))
-    failure_lists = sorted(list_names & appended_to)
-    has_failures = bool(failure_lists)
+    # *** A SUITE NEED NOT CALL IT `failures`, AND IT NEED NOT BE A LIST. *** The first version looked only for
+    # `failures = []`, and reported `test-graph-structure.py` as having NO WAY TO RECORD A FAILURE - a suite
+    # that keeps `results = []` of `(name, bool(ok), detail)` tuples and prints `FAIL` per row and a
+    # `RESULT: FAIL (n)` line. THAT IS A FALSE POSITIVE, and a false positive in an audit that BLOCKS is worse
+    # than no audit: it teaches the reader to ignore the warning, which is exactly "an invisible refusal reads
+    # as a capability" turned round. The recogniser below accepts every shape that can produce a non-zero exit.
+    signals = failure_signals(text)
+    has_failures = bool(signals)
     if not has_failures:
         findings.append(("NO-ASSERT", 0,
-                         "no list is built and appended to, so nothing can be recorded as a failure"))
+                         "no append, no failure-collecting comprehension and no explicit non-zero exit, so "
+                         "nothing in this file can be recorded as a failure"))
 
-    # 2. Does anything ever go into it?
+    # 2. Does anything ever go INTO the recorder?
     #
     # THE SAME WIDENING AS ABOVE, FOR THE SAME REASON: the first version hard-coded the name `failures` here
     # too, so after the list check was widened this one still reported `test-graph-structure.py` as having a
     # list nothing is ever appended to - while the file appends to `results` on every row.
+    list_names = set(re.findall(r"(\w+)\s*=\s*\[\s*\]", text))
+    appended_to = set(re.findall(r"(\w+)\.append\(", text))
+    failure_lists = sorted(list_names & appended_to)
     appends = 0
     for list_name in failure_lists:
         appends += len(re.findall(re.escape(list_name) + r"\.append\(", text))
-    if has_failures and appends == 0:
+    if failure_lists and appends == 0 and not [s for s in signals if s.startswith(("explicit-exit", "all-of-list"))]:
         findings.append(("NO-ASSERT", 0,
                          "the list(s) %s exist but NOTHING is ever appended to them"
                          % ", ".join("`%s`" % n for n in failure_lists)))

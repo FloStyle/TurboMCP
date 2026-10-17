@@ -243,6 +243,22 @@ namespace
 			TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
 		UTexture* LinearDefault = LoadObject<UTexture>(nullptr,
 			TEXT("/Engine/EngineMaterials/DefaultNormal.DefaultNormal"));
+		// *** BOTH LOADS ARE GUARDED, AND THE GUARD IS NOT DECORATION. ***
+		//
+		// The lookup guard checker reported these two sites: the results were handed to the fixture's texture
+		// parameters without ever being compared with nullptr. A missing engine default texture would then
+		// produce a fixture whose texture parameters point at nothing, and the material reader's
+		// sampler/default assertions would measure a broken fixture and report the result as a product
+		// defect. Failing here names the real cause instead of producing a plausible fixture.
+		if (SRGBDefault == nullptr || LinearDefault == nullptr)
+		{
+			UE_LOG(LogTurboMCP, Error,
+				TEXT("the fixture's default textures could not be loaded, so the texture-parameter assertions "
+				     "would measure an empty fixture: DefaultTexture=%s DefaultNormal=%s"),
+				SRGBDefault == nullptr ? TEXT("missing") : TEXT("loaded"),
+				LinearDefault == nullptr ? TEXT("missing") : TEXT("loaded"));
+			return false;
+		}
 		UMaterialExpressionTextureSampleParameter2D* FixtureSRGBTexture =
 			Add<UMaterialExpressionTextureSampleParameter2D>(InMaterial, nullptr, 1200, 450);
 		if (FixtureSRGBTexture != nullptr)

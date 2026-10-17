@@ -1,0 +1,56 @@
+---
+id: "e35faf67-33e1-47ac-9155-59c86e5b0f4c"
+title: "T32 (P5, medium) — Agent entry point and trap notes"
+status: todo
+priority: "P5"
+tags: ["P5", "medium", "docs", "feedback-2026-10-13"]
+workspace: "7d139a89-61a3-4566-b367-cf7a89b9969b"
+created: "2026-10-13T21:05:27Z"
+updated: "2026-10-16T19:57:58Z"
+executions: 0
+board_revision: 1803
+exported: "2026-10-17T09:13:25Z"
+---
+
+# T32 (P5, medium) — Agent entry point and trap notes
+
+| Field | Value |
+|---|---|
+| Card ID | `e35faf67-33e1-47ac-9155-59c86e5b0f4c` |
+| Status | todo |
+| Priority | P5 |
+| Tags | `P5` `medium` `docs` `feedback-2026-10-13` |
+| Workspace | `7d139a89-61a3-4566-b367-cf7a89b9969b` |
+| Created (UTC) | 2026-10-13T21:05:27Z |
+| Updated (UTC) | 2026-10-16T19:57:58Z |
+| Executions recorded | 0 |
+
+## Description
+
+Source
+    `Feedbacks/TurboMCP_TaskList_2026-10-13.md:340-346`, group P5. Source IDs: X-04 (S1) and X-07 (S2), plus P8 (backlog). This card came from the list. No one measured it on the tree.
+
+done when
+    1. A short entry file points to the tool list and to the handover file.
+    2. The entry file maps common jobs to tools: add nodes, rewire, compile, save, lay out, dead nodes, trace, tables, structs.
+    3. The trap notes file ships with the plugin, and the help tool reads it.
+
+Clause 3 already has a mechanism, and it is measured
+    `TurboMCPTraps.cpp` is 202 lines. It reads a `traps` JSON from four candidate paths and keeps four failure states distinct: "a parse failure and a missing file are reported differently, because they need different fixes". Its own note at `:144-146` says why a broken project file is worth a warning "even when an earlier file already provided notes, because the author will otherwise never learn their file is being ignored". So "the help tool reads it" is a question of wiring, not of writing.
+
+Clause 2 is a coverage claim that can be checked
+    `audit-tool-coverage.py` already reports the tools that no suite calls. The same machinery answers whether the entry file names every job that a tool exists for.
+
+## Execution prompt
+
+```text
+Testing policy: Before editing, run the fastest relevant focused/static check. Re-run it after the change. Avoid a complete suite by default; run one only when this change spans integrations or the focused test cannot establish confidence, and record why.
+```
+
+## Execution history
+
+_No execution record. The card state is a board declaration, not run evidence._
+
+---
+
+_Exported from the DSH task board, revision 1803, at 2026-10-17T09:13:25Z. The board is authoritative; this file is a snapshot._

@@ -348,7 +348,24 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 			OutNote = FString::Printf(TEXT("the engine's spawner for '%s' returned no node, so it declined to build one in this graph"), *InTypeId);
 			return ESpawnResult::SpawnerDeclined;
 		}
-		Spawned->AllocateDefaultPins();
+		// *** ONLY ALLOCATE PINS THE SPAWNER DID NOT. ***
+		//
+		// MEASURED, and this line is the only visible difference between the path that WORKS and the path that
+		// does NOT: `BuildProbeNode` (L302) returns the spawner's node AS-IS, while this function called
+		// `AllocateDefaultPins()` on a node the spawner had just built - whose `Invoke` already creates the pins.
+		//
+		// The migration this belongs to was measured reporting "changed ... compile: passed; target <id>" for a
+		// created target that the graph did not contain afterwards, on a graph whose node CLASS count fell 3 -> 2,
+		// and a node-count guard running AFTER the commit saw a CORRECT count - so the created node existed at
+		// commit time and vanished later, in the window that contains the tool's own recompile and GC.
+		//
+		// Re-allocating pins on a registered node resets its pin state, which is exactly the kind of damage a
+		// recompile would then resolve by discarding the node. Allocating only when there are none is strictly
+		// safer and preserves the original intent.
+		if (Spawned->Pins.Num() == 0)
+		{
+			Spawned->AllocateDefaultPins();
+		}
 		OutNode = Spawned;
 		return ESpawnResult::Spawned;
 	}

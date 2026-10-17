@@ -78,7 +78,10 @@ param(
     [string] $Branch = 'release',
     [int]    $MaxParallelActions = 8,
     [switch] $SkipClone,
-    [switch] $SkipSetup
+    [switch] $SkipSetup,
+    # Refuse-by-default on an engine version this project does not target (release finding R09's second half).
+    # The flag exists so an operator who knowingly wants another version can proceed; it is never implied.
+    [switch] $AllowOtherEngineVersion
 )
 
 $ErrorActionPreference = 'Stop'
@@ -122,9 +125,20 @@ Write-Step "Engine source at $EngineDir"
 if ($SkipClone -or (Test-Path "$EngineDir\Engine\Build\Build.version")) {
     Write-Ok 'engine already cloned'
 } else {
-    Write-Host '  note  the UnrealEngine repository is private. Git needs a token.'
-    Write-Host '        If git prompts and cannot reach a credential helper, put the'
-    Write-Host '        token in the URL: https://<user>:<token>@github.com/EpicGames/UnrealEngine.git'
+    # *** A TOKEN IN A URL IS NOT AN INSTRUCTION THIS SCRIPT GIVES ANY MORE, AND IT DOES NOT PRINT THE SHAPE. ***
+    #
+    # Release finding R09: this advised a clone URL of the form scheme://host/path. A URL is written
+    # to shell history, to `.git/config`, to clone logs and to the process table, so the secret leaks to all
+    # four. The note below now names a credential manager instead, and it does not reproduce the shape it is
+    # warning about either - `Tools/test-ownership.py` scans this file for that pattern and a regression must
+    # not be able to hide behind a quotation of itself.
+    Write-Host '  note  the UnrealEngine repository is private, so git must authenticate.'
+    Write-Host '        Use a credential manager rather than embedding a secret in the clone URL:'
+    Write-Host '          git config --global credential.helper manager'
+    Write-Host '        or, for a single clone, set a helper that prompts:'
+    Write-Host '          git -c credential.helper=manager clone ...'
+    Write-Host '        A secret inside a URL is written to shell history, to .git/config, to logs and to the'
+    Write-Host '        process table, so this script will not suggest one.'
     & git clone --filter=blob:none --depth 1 --single-branch --branch $Branch `
         "https://github.com/EpicGames/UnrealEngine.git" $EngineDir
     if ($LASTEXITCODE -ne 0) { throw 'git clone failed' }
@@ -134,7 +148,25 @@ if ($SkipClone -or (Test-Path "$EngineDir\Engine\Build\Build.version")) {
 $versionFile = "$EngineDir\Engine\Build\Build.version"
 if (-not (Test-Path $versionFile)) { throw "Build.version missing at $versionFile" }
 $version = Get-Content $versionFile -Raw | ConvertFrom-Json
-Write-Ok ("engine is {0}.{1}.{2}" -f $version.MajorVersion, $version.MinorVersion, $version.PatchVersion)
+$found = "{0}.{1}.{2}" -f $version.MajorVersion, $version.MinorVersion, $version.PatchVersion
+Write-Ok "engine is $found"
+
+# *** A VERSION MISMATCH IS REFUSED HERE, WHICH IS RELEASE FINDING R09's SECOND HALF. ***
+#
+# The old code PRINTED the version and then continued with whatever it found. That is the same shape as the
+# build that printed "plugin DLL: NOT FOUND" and returned success (R11): a fact stated and then not acted on.
+# This project targets one engine version, and building against another fails inside the engine's own headers,
+# where the failure reads like a defect in this plugin - which is exactly how a machine with both 5.8.3 and a
+# launcher 5.6 resolved the WRONG engine by discovery once already.
+$expected = '5.8.3'
+if ($found -ne $expected) {
+    Write-Fail "engine version is $found but this project targets $expected"
+    Write-Host "        The plugin is built and tested against $expected only. Another version fails in the" -ForegroundColor Yellow
+    Write-Host "        engine's own headers and reads as a defect here." -ForegroundColor Yellow
+    Write-Host "        Pass -AllowOtherEngineVersion to proceed anyway, and expect to diagnose engine-side errors." -ForegroundColor Yellow
+    if (-not $AllowOtherEngineVersion) { throw "engine version mismatch: found $found, expected $expected" }
+    Write-Warn "continuing with $found because -AllowOtherEngineVersion was given"
+}
 
 # ---------------------------------------------------------------------------
 # 2. Dependencies

@@ -82,11 +82,56 @@ $SlowSuites = @('test-capture')
 #
 # THE DEFAULT IS GENEROUS ON PURPOSE: the slowest suite measures about two minutes and the default is TEN, so a
 # deadline firing means something is genuinely wrong rather than merely slow.
+# ---------------------------------------------------------------------------------------------
+# THE VERDICT AND SELECTION DECISIONS LIVE IN A MODULE, SO THEY CAN BE TESTED WITHOUT RUNNING A SUITE.
+#
+# Release finding R01 was confirmed against the real classifier: `RESULT: PASS` followed by a traceback was
+# accepted as passing. Four causes, all of them decisions rather than processes - a discarded exit code, an
+# unclassified timeout, a zero-match selection that only warned, and a partly misspelled selection that was
+# silently reduced. Decisions kept inside this file could only be tested by running the whole harness, so they
+# never were. `run-suites-lib.ps1` holds them and `Tools/test-runner-verdicts.py` drives them with fake children.
+# ---------------------------------------------------------------------------------------------
+. (Join-Path $PSScriptRoot 'run-suites-lib.ps1')
+
+# ---------------------------------------------------------------------------------------------
+# OWNERSHIP IS A DECISION MODULE, SO IT IS DOT-SOURCED RATHER THAN REIMPLEMENTED HERE.
+#
+# Release finding R10: this runner's recovery path stopped every process named UnrealEditor, and its cleanup
+# stopped every UnrealEditor-Cmd and UnrealTraceServer, after a health check that was about "an editor" rather
+# than "THIS repository's editor". Both are now decided from a process's own command line by
+# `Tools/ownership.ps1`, whose decisions `Tools/test-ownership.py` drives with fake process records.
+# ---------------------------------------------------------------------------------------------
+. (Join-Path $PSScriptRoot 'ownership.ps1')
+. (Join-Path $PSScriptRoot 'common.ps1')
+$EnginePath = try { Resolve-TurboMCPEngine -Project (Get-TurboMCPProject -RepoRoot $Repo) } catch { '' }
+
 $script:SuiteTimeoutSeconds = 600
+# An explicit, bounded override so a test can force the deadline path without waiting ten minutes.
+# It is read once here and clamped; a child process cannot raise it above the default.
+$envTimeout = $env:TURBOMCP_RUNNER_SUITE_TIMEOUT
+if ($envTimeout -and $envTimeout -match '^\d+$') {
+    $parsedTimeout = [int] $envTimeout
+    if ($parsedTimeout -ge 1 -and $parsedTimeout -le $script:SuiteTimeoutSeconds) {
+        $script:SuiteTimeoutSeconds = $parsedTimeout
+    }
+}
+# Where a failing suite's complete log is kept. A verdict line is not a log, and the audit's required
+# correction for R01 is that each child's complete log is preserved rather than discarded.
+# `TURBOMCP_RUNNER_LOG_ROOT` redirects it so a test can keep a run's evidence in its own scratch tree.
+$script:SuiteLogRoot = Join-Path $Repo '.agent\suite-logs'
+if ($env:TURBOMCP_RUNNER_LOG_ROOT) { $script:SuiteLogRoot = $env:TURBOMCP_RUNNER_LOG_ROOT }
 $suiteRoot = $PSScriptRoot
 
 function Invoke-SuiteProcess {
     param([string] $SuiteName, [int] $TimeoutSeconds = $script:SuiteTimeoutSeconds)
+
+    # The suite's directory, so a fake suite root discovered through TURBOMCP_RUNNER_EXTRA_SUITES runs from
+    # its own directory while every real suite keeps running from Tools/.
+    $base = $suiteRoot
+    if ($script:SuiteRoots -and $script:SuiteRoots.ContainsKey($SuiteName)) {
+        $base = $script:SuiteRoots[$SuiteName]
+    }
+    if (-not $base) { $base = $suiteRoot }
 
     $exe = (Get-Command python).Source
     $outFile = Join-Path $env:TEMP "tmcp-$SuiteName.out"
@@ -94,17 +139,39 @@ function Invoke-SuiteProcess {
     Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
 
     $proc = Start-Process -FilePath $exe `
-        -ArgumentList (Join-Path $suiteRoot "$SuiteName.py") `
-        -WorkingDirectory $suiteRoot -NoNewWindow -PassThru `
+        -ArgumentList (Join-Path $base "$SuiteName.py") `
+        -WorkingDirectory $base -NoNewWindow -PassThru `
         -RedirectStandardOutput $outFile -RedirectStandardError $errFile
 
     if (-not $proc.WaitForExit($TimeoutSeconds * 1000)) {
-        # KILLED, AND THE KILL IS REPORTED RATHER THAN HIDDEN. A suite that had to be killed is recorded as
-        # TIMED OUT so it can never be mistaken for one that passed, failed, or was never run.
-        try { $proc.Kill($true) } catch { try { $proc.Kill() } catch { } }
+        # *** KILLED, AND THE KILL IS BOUNDED TO THIS CHILD'S OWN TREE. ***
+        #
+        # The release audit's rule for this path is "stops only its child tree". `Stop-Process` on the child
+        # leaves anything the child started alive; a global name-based kill is what finding R10 forbids. The
+        # tree is ended by PID, and the process that was started is waited on so the kill is complete before
+        # the caller reads its output.
+        try {
+            & taskkill.exe /T /F /PID $proc.Id 2>&1 | Out-Null
+        } catch { }
+        try { $proc.WaitForExit(15000) | Out-Null } catch { }
+        if (-not $proc.HasExited) { try { $proc.Kill($true) } catch { try { $proc.Kill() } catch { } } }
         Start-Sleep -Seconds 2
-        return @{ Output = @("RESULT: TIMED OUT (${TimeoutSeconds}s)"); TimedOut = $true }
+        $text = ''
+        if (Test-Path $outFile) { $text = Get-Content $outFile -Raw -ErrorAction SilentlyContinue }
+        if (Test-Path $errFile) {
+            $errText = Get-Content $errFile -Raw -ErrorAction SilentlyContinue
+            if ($errText) { $text = "$text`n$errText" }
+        }
+        Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
+        return @{ Output = @($text -split "`r?`n"); TimedOut = $true; ExitCode = $null }
     }
+
+    # *** THE CHILD'S EXIT CODE IS PRESERVED, WHICH IT WAS NOT BEFORE. ***
+    #
+    # This was the first cause of R01: a child that printed `PASS` and exited 7 was recorded as a passing
+    # suite, because only its printed text was read. `$proc.ExitCode` is the engine's own answer and no
+    # longer optional.
+    $exitCode = $proc.ExitCode
 
     $text = ''
     if (Test-Path $outFile) { $text = Get-Content $outFile -Raw -ErrorAction SilentlyContinue }
@@ -113,7 +180,38 @@ function Invoke-SuiteProcess {
         if ($errText) { $text = "$text`n$errText" }
     }
     Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
-    return @{ Output = ($text -split "`r?`n"); TimedOut = $false }
+    return @{ Output = @($text -split "`r?`n"); TimedOut = $false; ExitCode = $exitCode }
+}
+
+function Resolve-SuiteVerdict {
+    <#
+    .SYNOPSIS
+        One `Invoke-SuiteProcess` result plus its suite name, as a testable verdict object.
+
+    .DESCRIPTION
+        The complete log is written to `.agent/suite-logs/<suite>.log` before it is discarded, because the
+        audit's required correction is that each child's log is preserved. The log is evidence for a reader;
+        it is deliberately not an input to the verdict, so a log cannot make a suite pass.
+    #>
+    param([string] $SuiteName, $Run)
+
+    $output = @($Run.Output)
+    $verdict = Get-TurboMCPVerdict -Output $output
+    $logPath = ''
+    try {
+        if (-not (Test-Path $script:SuiteLogRoot)) { New-Item -ItemType Directory -Path $script:SuiteLogRoot -Force | Out-Null }
+        $logPath = Join-Path $script:SuiteLogRoot "$SuiteName.log"
+        Set-Content -Path $logPath -Value ($output -join "`n") -Encoding utf8
+    } catch {
+        # A log that cannot be written must not change the verdict, but the refusal is not silent: the
+        # verdict records the path attempt in Detail instead of pretending the log exists.
+        $logPath = ''
+    }
+
+    $outputCaptured = ($output.Count -gt 0 -and ($output -join '').Trim().Length -gt 0)
+    return New-TurboMCPVerdict -Suite $SuiteName -Verdict $verdict `
+        -ExitCode $Run.ExitCode -TimedOut ([bool]$Run.TimedOut) `
+        -OutputCaptured $outputCaptured -LogPath $logPath
 }
 
 function Start-EditorAndWait {
@@ -219,17 +317,35 @@ function Stop-Editor {
     $env:TURBOMCP_RUNNER_ALLOW_STOP = '1'
     try { & pwsh -NoProfile -File $StartEditor -Stop 2>&1 | Out-Null }
     finally { $env:TURBOMCP_RUNNER_ALLOW_STOP = $oldAllowStop }
-    # A commandlet or trace server can outlive UnrealEditor and still hold package
-    # handles. Clear those descendants before any disk-only restore.
-    Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue |
-        Stop-Process -Force -ErrorAction SilentlyContinue
+
+    # ---------------------------------------------------------------------------------------------
+    # *** A COMMANDLET OR TRACE SERVER IS CLEARED BY PID, NOT BY NAME. ***
+    #
+    # This was release finding R10's second half: the line below used to be
+    # `Get-Process -Name UnrealEditor-Cmd, UnrealTraceServer | Stop-Process -Force`, which stops EVERY process
+    # with those names on the machine - including a commandlet belonging to another checkout, or a trace server
+    # a person started deliberately. A commandlet CAN outlive UnrealEditor and still hold package handles, so
+    # the clearance is needed; what is not needed is the blast radius.
+    #
+    # The PIDs this runner observed while it owned the editor are the only ones it may end, and they are
+    # discovered BEFORE the editor is asked to stop, because afterwards the parent-child link is gone. A process
+    # that appeared after the snapshot is NOT touched: it is not this runner's child.
+    $ownedDescendants = @(Get-TurboMCPOwnedDescendants -EditorPid $script:EditorPid)
+    foreach ($processId in $ownedDescendants) {
+        try { Stop-Process -Id $processId -Force -ErrorAction Stop } catch {
+            Write-Host "  [cleanup] could not stop owned descendant pid $processId`: $($_.Exception.Message)"
+        }
+    }
+
+    # The wait is on processes this runner owns, re-derived from the editor's command line, so a foreign
+    # encoder or commandlet never makes this loop fail.
+    $projectPath = Get-TurboMCPProject -RepoRoot $Repo
     $deadline = (Get-Date).AddSeconds(30)
     while ((Get-Date) -lt $deadline) {
-        $left = Get-Process -Name UnrealEditor, UnrealEditor-Cmd, UnrealTraceServer -ErrorAction SilentlyContinue
-        if (-not $left) { return }
+        if (-not (Test-TurboMCPAnyOwnedEditorRunning -Project $projectPath -Engine $EnginePath)) { return }
         Start-Sleep -Seconds 1
     }
-    throw 'editor-related process(es) still alive after 30s'
+    throw 'this project''s editor-related process(es) are still alive after 30s'
 }
 # ---------------------------------------------------------------------------------------------
 # Fixture isolation without editor churn
@@ -340,21 +456,26 @@ function Restore-FixtureSnapshot {
     return $restoredCount
 }
 
-function Get-Verdict {
-    param([string[]] $Output)
-    $line = ($Output | Select-String -Pattern '^RESULT|^PASS|^FAIL' | Select-Object -Last 1).Line
-    if ($line) { return $line.Trim() }
-    $tail = @($Output | Select-Object -Last 4) -join ' | '
-    if ($tail) { return "RESULT: no result line ($tail)" }
-    return 'RESULT: no result line and no output'
+# ---------------------------------------------------------------------------------------------
+# `Get-Verdict` and `Test-VerdictPassed` USED TO LIVE HERE, AND THEY WERE THE DEFECT.
+#
+# The confirmed reproduction is in Release/Audit/audit-verification.json: the real classifier accepted
+# `RESULT: PASS` followed by a traceback. Both functions read printed text and nothing else - the child's exit
+# code was never consulted (it had been discarded), a timeout was a verdict string rather than a state, and a
+# selection that matched nothing only warned. They are replaced by `run-suites-lib.ps1`, which returns a
+# verdict OBJECT carrying the exit code, the timeout flag, whether output was captured, and a preserved log
+# path, and which decides acceptance from all of them together. `Tools/test-runner-verdicts.py` drives those
+# decisions through PowerShell with fake children, so the classifier itself is now covered.
+#
+# The two names are kept as thin wrappers because the runner's summary already speaks in a single line.
+function Get-VerdictLine {
+    param($Verdict)
+    return $Verdict.Verdict
 }
 
 function Test-VerdictPassed {
-    param([string] $Verdict)
-    # A -Fast failure may carry an isolated PASS after the primary verdict. Count the
-    # primary result only; otherwise a non-hermetic suite is reported as green.
-    $primary = ($Verdict -split '\s+\*\*\* ALONE:')[0].Trim()
-    return $primary -match 'RESULT:\s*PASS|^PASS '
+    param($Verdict)
+    return (Test-TurboMCPVerdictAcceptance $Verdict).Accepted
 }
 
 $script:RunnerCleanupDone = $false
@@ -391,17 +512,65 @@ $NoEditorSuites = @(
 $All = @(Get-ChildItem $PSScriptRoot -Filter '*.py' |
     Where-Object { $_.BaseName -match '^(test|check|audit)-' } |
     ForEach-Object { $_.BaseName } | Sort-Object)
-$Selected = @($All)
-if ($Suites -notcontains 'all' -and $Suites.Count -gt 0) {
-    $wanted = @()
-    foreach ($entry in $Suites) { $wanted += ($entry -split ',') }
-    $wanted = @($wanted | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-    $Selected = @($All | Where-Object { $wanted -contains $_ })
-    if ($Selected.Count -eq 0) { Write-Output "WARNING: no suite matched: $($wanted -join ', ')" }
+
+# ---------------------------------------------------------------------------------------------
+# *** FAKE SUITES CAN ONLY BE DISCOVERED FROM AN EXPLICIT, ABSOLUTE EXTRA ROOT. ***
+#
+# The verdict and selection decisions below are only testable if a fake child can be run through the real
+# runner. Release finding R01's acceptance requires exactly that: "test exit 7 after printed PASS, blocked-only
+# runs, zero matches, one valid plus one invalid suite, timeout, and malformed verdict". A fake suite root lets
+# `Tools/test-runner-verdicts.py` do it without an editor and without adding a suite-shaped file to `Tools/`.
+#
+# The root must be absolute and must exist. It is ADDITIVE ONLY: `Tools/` remains the discovery source, so a
+# normal run cannot lose a suite to a misspelled environment variable. Discovery happens BEFORE the selection is
+# resolved, or a requested fake name would be refused as unknown.
+$ExtraSuiteRoot = $env:TURBOMCP_RUNNER_EXTRA_SUITES
+$script:SuiteRoots = @{ }
+$script:ExtraStaticSuites = @()
+if ($ExtraSuiteRoot) {
+    if (-not [System.IO.Path]::IsPathRooted($ExtraSuiteRoot) -or -not (Test-Path $ExtraSuiteRoot)) {
+        Write-Output "RESULT: REFUSED (TURBOMCP_RUNNER_EXTRA_SUITES must be an existing absolute directory)"
+        exit $script:SelectionExitCode
+    }
+    $extraEntries = @(Get-ChildItem $ExtraSuiteRoot -Filter '*.py' |
+        Where-Object { $_.BaseName -match '^(test|check|audit)-' })
+    $extraNames = @($extraEntries | ForEach-Object { $_.BaseName })
+    $All = @((@($All) + @($extraNames)) | Sort-Object -Unique)
+    foreach ($name in $All) { $script:SuiteRoots[$name] = $PSScriptRoot }
+    foreach ($entry in $extraEntries) {
+        $script:SuiteRoots[$entry.BaseName] = $ExtraSuiteRoot
+        $script:ExtraStaticSuites += $entry.BaseName
+    }
 }
+
+# *** A REQUESTED SELECTION IS HONOURED EXACTLY OR REFUSED, AND THAT IS NEW. ***
+#
+# The confirmed defect in finding R01: `Select unknown suite, then valid plus unknown suite` used to reduce the
+# selection to whatever it recognised and run that, so a misspelled name could silently drop a suite from a
+# release manifest and a zero-match selection could produce a green empty run. The decision is made by
+# `Resolve-TurboMCPSuiteSelection` in `run-suites-lib.ps1`, which refuses unknown names, duplicate names, and an
+# empty resolution. The refusal happens BEFORE anything is started, and it uses exit code 2 so a caller can tell
+# "your request could not be honoured" from "a suite failed".
+$selection = Resolve-TurboMCPSuiteSelection -Requested $Suites -Available $All
+if (-not $selection.Ok) {
+    Write-Output "RESULT: REFUSED ($($selection.Reason))"
+    exit $script:SelectionExitCode
+}
+$Selected = @($selection.Selected)
+# A fake suite is never asked for an editor: starting one would fail for a reason unrelated to what the fake
+# suite is testing, and the fake root exists only to exercise verdict and selection decisions.
 if ($SkipSlow) { $Selected = @($Selected | Where-Object { $SlowSuites -notcontains $_ }) }
-$Static = @($Selected | Where-Object { $NoEditorSuites -contains $_ })
-$NeedsEditor = @($Selected | Where-Object { $NoEditorSuites -notcontains $_ })
+$Static = @($Selected | Where-Object {
+    $NoEditorSuites -contains $_ -or $script:ExtraStaticSuites -contains $_
+})
+$NeedsEditor = @($Selected | Where-Object { $Static -notcontains $_ })
+
+# A selection that survives the name check but loses every entry to -SkipSlow is also an empty run.
+if ($Selected.Count -eq 0) {
+    Write-Output ("RESULT: REFUSED (the selection resolved to no suite after filters; requested: " +
+                  "$($Suites -join ', '))")
+    exit $script:SelectionExitCode
+}
 
 $fullClock = [Diagnostics.Stopwatch]::StartNew()
 $tempRoot = Join-Path $Repo ('.agent\tmp\run-suites-' + $PID)
@@ -438,8 +607,8 @@ $env:TURBOMCP_NO_EDITOR = '1'
 foreach ($name in $Static) {
     $clock = [Diagnostics.Stopwatch]::StartNew(); $run = Invoke-SuiteProcess $name; $clock.Stop()
     $testSeconds += $clock.Elapsed.TotalSeconds
-    $Results[$name] = Get-Verdict $run.Output
-    Write-Output ("  {0,-28} {1}" -f $name, $Results[$name])
+    $Results[$name] = Resolve-SuiteVerdict $name $run
+    Write-Output ("  {0,-28} {1}" -f $name, $Results[$name].Verdict)
 }
 $env:TURBOMCP_NO_EDITOR = $null
 
@@ -489,13 +658,16 @@ if ($NeedsEditor.Count -gt 0 -and $editorReady) {
 foreach ($name in $NeedsEditor) {
     Write-Output "--- $name ---"
     if (-not $editorReady) {
-        $Results[$name] = 'RESULT: BLOCKED (the editor would not start)'
+        # BLOCKED is a state, not a sentence: it carries no exit code, so the acceptance test refuses it
+        # rather than reading the word out of a string.
+        $Results[$name] = New-TurboMCPVerdict -Suite $name `
+            -Verdict 'RESULT: BLOCKED (the editor would not start)' -ExitCode $null
         continue
     }
     $clock = [Diagnostics.Stopwatch]::StartNew(); $run = Invoke-SuiteProcess $name; $clock.Stop()
     $testSeconds += $clock.Elapsed.TotalSeconds
-    $Results[$name] = Get-Verdict $run.Output
-    Write-Output ("  " + $Results[$name])
+    $Results[$name] = Resolve-SuiteVerdict $name $run
+    Write-Output ("  " + $Results[$name].Verdict)
 
     # One post-suite probe detects a suite that stopped or wedged the editor. A
     # successful editor-side restore is itself the second health proof, so probing
@@ -554,7 +726,7 @@ if ($Fast -and $NeedsEditor.Count -gt 0) {
     Write-Output "  -Fast deferred restore: $n file(s)"
 
     $failedInPass = @($NeedsEditor | Where-Object {
-        $Results.Contains($_) -and $Results[$_] -notmatch 'RESULT: PASS|^PASS ' -and $Results[$_] -notmatch 'BLOCKED'
+        $Results.Contains($_) -and -not (Test-VerdictPassed $Results[$_])
     })
     foreach ($name in $failedInPass) {
         $clock = [Diagnostics.Stopwatch]::StartNew(); $editorReady = Start-EditorAndWait; $clock.Stop()
@@ -562,9 +734,11 @@ if ($Fast -and $NeedsEditor.Count -gt 0) {
         if (-not $editorReady) { continue }
         $clock = [Diagnostics.Stopwatch]::StartNew(); $alone = Invoke-SuiteProcess $name; $clock.Stop()
         $testSeconds += $clock.Elapsed.TotalSeconds
-        $aloneLine = Get-Verdict $alone.Output
-        Write-Output "  isolated $name -> $aloneLine"
-        $Results[$name] = "$($Results[$name]) *** ALONE: $aloneLine ***"
+        # The isolated verdict is kept as a second verdict OBJECT rather than appended to a string: the
+        # primary run is what the gate judges, and the isolated result is recorded beside it.
+        $aloneVerdict = Resolve-SuiteVerdict "$name-isolated" $alone
+        $Results[$name].Detail = "isolated re-run: $($aloneVerdict.Verdict) (exit $($aloneVerdict.ExitCode))"
+        Write-Output "  isolated $name -> $($aloneVerdict.Verdict)"
         $clock = [Diagnostics.Stopwatch]::StartNew()
         $n = Restore-FixtureSnapshot $fixtureDir $fixtureSnapshot $tempRoot -EditorLive
         $clock.Stop(); $restoreSeconds += $clock.Elapsed.TotalSeconds; $restoreCount += $n
@@ -598,16 +772,68 @@ Remove-Item $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
 $fullClock.Stop()
 
 Write-Output '=== SUMMARY ==='
-$passed = 0; $failed = 0; $blocked = 0
+$passed = 0; $failed = 0; $blocked = 0; $timedOut = 0
 foreach ($name in $Results.Keys) {
     $r = $Results[$name]
-    if (Test-VerdictPassed $r) { $passed++ }
-    elseif ($r -match 'BLOCKED') { $blocked++ }
+    $accept = Test-TurboMCPVerdictAcceptance $r
+    if ($accept.Accepted) { $passed++ }
+    elseif ($accept.Kind -eq 'blocked') { $blocked++ }
+    elseif ($accept.Kind -eq 'timeout' -or $r.TimedOut) { $timedOut++; $failed++ }
     else { $failed++ }
-    $mark = if (Test-VerdictPassed $r) { 'PASS' } elseif ($r -match 'BLOCKED') { 'BLOCKED' } else { 'FAIL' }
-    Write-Output ("  {0,-7} {1,-28} {2}" -f $mark, $name, $r)
+    $mark = if ($accept.Accepted) { 'PASS' } elseif ($accept.Kind -eq 'blocked') { 'BLOCKED' } else { 'FAIL' }
+    $detail = if ($accept.Accepted) { '' } else { ' <- ' + ($accept.Reasons -join '; ') }
+    $where = if ($r.LogPath) { "  [log: $($r.LogPath)]" } else { '' }
+    Write-Output ("  {0,-7} {1,-28} {2}{3}{4}" -f $mark, $name, $r.Verdict, $detail, $where)
 }
-Write-Output ("  passed {0}, failed {1}, blocked {2}, of {3}" -f $passed, $failed, $blocked, $Results.Count)
+Write-Output ("  passed {0}, failed {1}, blocked {2}, timed out {3}, of {4}" -f `
+    $passed, $failed, $blocked, $timedOut, $Results.Count)
+
+# ---------------------------------------------------------------------------------------------
+# *** A MACHINE-READABLE ARTIFACT, BECAUSE A HUMAN-READ SUMMARY IS NOT A RELEASE MANIFEST. ***
+#
+# The release gate needs to be checked, and a checker that parses a formatted line is a checker that breaks
+# when the line is reworded. Each suite's verdict, exit code, timeout state, whether its output was captured,
+# and the path of its preserved log are written as JSON. `Tools/check-suite-manifest.py` reads it back and
+# refuses a manifest that contains a required suite which did not pass.
+$manifestPath = Join-Path $script:SuiteLogRoot 'manifest.json'
+$manifestWritten = $false
+try {
+    if (-not (Test-Path $script:SuiteLogRoot)) { New-Item -ItemType Directory -Path $script:SuiteLogRoot -Force | Out-Null }
+    $manifestSuites = @()
+    foreach ($name in $Results.Keys) {
+        $r = $Results[$name]
+        $accept = Test-TurboMCPVerdictAcceptance $r
+        $manifestSuites += [pscustomobject]@{
+            suite           = $name
+            verdict         = $r.Verdict
+            exitCode        = $r.ExitCode
+            timedOut        = [bool]$r.TimedOut
+            outputCaptured  = [bool]$r.OutputCaptured
+            accepted        = [bool]$accept.Accepted
+            kind            = $accept.Kind
+            reasons         = @($accept.Reasons)
+            logPath         = $r.LogPath
+            detail          = $r.Detail
+        }
+    }
+    $manifest = [pscustomobject]@{
+        schemaVersion = 1
+        requested     = @($Suites)
+        passed        = $passed
+        failed        = $failed
+        blocked       = $blocked
+        timedOut      = $timedOut
+        total         = $Results.Count
+        suites        = $manifestSuites
+    }
+    $manifest | ConvertTo-Json -Depth 6 | Set-Content -Path $manifestPath -Encoding utf8
+    $manifestWritten = $true
+    Write-Output ("  manifest: {0}" -f $manifestPath)
+} catch {
+    Write-Output ("  manifest could not be written: " + $_.Exception.Message)
+    Write-Output '  RESULT: FAIL (the run produced no machine-readable manifest, so it is not release evidence)'
+}
+
 Write-Output '=== WALL TIME ==='
 Write-Output ("  editor startup/reuse gate : {0,8:N3} s" -f $startupSeconds)
 Write-Output ("  editor health/recovery    : {0,8:N3} s" -f $healthSeconds)
@@ -615,5 +841,12 @@ Write-Output ("  editor final stop         : {0,8:N3} s" -f $shutdownSeconds)
 Write-Output ("  suite processes           : {0,8:N3} s" -f $testSeconds)
 Write-Output ("  fixture restore           : {0,8:N3} s ({1} file(s))" -f $restoreSeconds, $restoreCount)
 Write-Output ("  full runner wall          : {0,8:N3} s" -f $fullClock.Elapsed.TotalSeconds)
-if ($failed -gt 0) { exit 1 }
+
+# *** EVERY NON-PASSING SUITE PRODUCES A NONZERO EXIT, WHICH IT DID NOT BEFORE. ***
+#
+# The confirmed defect in finding R01: the summary counted blocked suites but exited nonzero only for
+# `failed`, so a run of blocked suites exited 0 and the release gate could approve untested behaviour.
+# A required block is not a pass, a timeout is not a pass, and an unaccepted verdict is not a pass.
+if (-not $manifestWritten) { exit 1 }
+if ($blocked -gt 0 -or $failed -gt 0) { exit 1 }
 exit 0

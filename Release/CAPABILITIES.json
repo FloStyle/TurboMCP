@@ -1,0 +1,1646 @@
+{
+  "schemaVersion": 1,
+  "architectureRevision": 1,
+  "purpose": "Release capability manifest. One row per exposed TurboMCP operation, with its support boundary, effect class, release disposition and required evidence. Seeded from the declarations; `effects` stays `unknown` until the implementation has been read or exercised, and `evidence` stays empty until a required case passes.",
+  "generatedFrom": "Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+  "counts": {
+    "total": 101,
+    "byToolset": {
+      "TurboMCP.UTurboMCPReadToolset": 30,
+      "TurboMCP.UTurboMCPLookToolset": 4,
+      "TurboMCP.UTurboMCPPreviewToolset": 29,
+      "TurboMCP.UTurboMCPEditToolset": 38
+    }
+  },
+  "releaseBoundary": {
+    "platform": "Windows, source build",
+    "engine": "Unreal Engine 5.8.3 source revision 396c9f059903aed5fec78ecd3d437a40c6415368",
+    "excludedPlatforms": [
+      "Launcher",
+      "Linux",
+      "macOS",
+      "adjacent engine versions"
+    ],
+    "batchScope": "ARC09: existing graphRepoint operation kind, one Blueprint graph, one transaction, one final compile, no save"
+  },
+  "tools": [
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPStatus",
+      "parameters": "",
+      "description": "Read the MCP server state and this plugin's registration state.",
+      "headerLine": 72,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPToolIndex",
+      "parameters": "",
+      "description": "Read every tool the server serves, one line each.",
+      "headerLine": 89,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPToolHelp",
+      "parameters": "const FString& ToolsetName, const FString& ToolName",
+      "description": "Read the parameters and known traps of one tool.",
+      "headerLine": 112,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPAssetSearch",
+      "parameters": "const FString& Query",
+      "description": "Read assets matching a query, like the editor's quick open search.",
+      "headerLine": 133,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPAssetDescribe",
+      "parameters": "const FString& Assets",
+      "description": "Read what one or more assets are, in any path form.",
+      "headerLine": 151,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPTypeFind",
+      "parameters": "const FString& Words, const FString& Kind",
+      "description": "Read the exact type path a pin or a variable needs.",
+      "headerLine": 172,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPDirtyList",
+      "parameters": "const FString& Limit",
+      "description": "Read every asset with unsaved changes.",
+      "headerLine": 188,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPNodeResolve",
+      "parameters": "const FString& NodeIds",
+      "description": "Turn node IDs into nodes.",
+      "headerLine": 210,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPNodeFind",
+      "parameters": "const FString& Asset, const FString& Words, const FString& GraphName",
+      "description": "Find nodes in a Blueprint by what they say.",
+      "headerLine": 227,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPGraphLoad",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Format, const FString& Detail",
+      "description": "Read one graph as text.",
+      "headerLine": 255,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPBlueprintLoad",
+      "parameters": "const FString& Assets, const FString& Detail, const FString& GraphFilter, const FString& Format, const FString& TokenBudget",
+      "description": "Read whole Blueprints: the main Read tool.",
+      "headerLine": 294,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPRefs",
+      "parameters": "const FString& Asset, const FString& Direction",
+      "description": "Read what an asset references, and what references it.",
+      "headerLine": 325,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPOverrides",
+      "parameters": "const FString& Asset, const FString& Include",
+      "description": "Read what a Blueprint can override, and what it already does.",
+      "headerLine": 352,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPCommentList",
+      "parameters": "const FString& Asset, const FString& GraphName",
+      "description": "Read the comment boxes of a Blueprint's graphs as data.",
+      "headerLine": 373,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPDataTable",
+      "parameters": "const FString& Asset, const FString& Include",
+      "description": "Describe a data table.",
+      "headerLine": 400,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPCallLog",
+      "parameters": "const FString& Filter, const FString& Limit, const FString& Since",
+      "description": "Read the call log: what the server recorded about its own use.",
+      "headerLine": 426,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPCallCost",
+      "parameters": "const FString& Since, const FString& Filter, const FString& Cap",
+      "description": "What the calls COST: which were most expensive, which were slowest, which failed, and the totals per tool and per asset.",
+      "headerLine": 465,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPToolSchema",
+      "parameters": "const FString& Toolset, const FString& Tool",
+      "description": "The exact schema of one tool: its signature, one row per parameter, and its trap notes.",
+      "headerLine": 485,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPMaterialLabels",
+      "parameters": "const FString& Asset",
+      "description": "Read the named reroutes of a material: every label, its readers, and the unused ones.",
+      "headerLine": 497,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPMaterialLoad",
+      "parameters": "const FString& Asset, bool bIncludeInstanceOverrides, int32 TokenBudget",
+      "description": "Read a whole material: its parameters, then every connected output as a tree.",
+      "headerLine": 510,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPMaterialTrace",
+      "parameters": "const FString& Asset, const FString& OutputProperty, int32 TokenBudget",
+      "description": "Read ONE output of a material rather than all of them.",
+      "headerLine": 523,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPMaterialBlocks",
+      "parameters": "const FString& Asset, int32 TokenBudget",
+      "description": "Read a material by BLOCK of logic, one block per comment box.",
+      "headerLine": 535,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPMaterialInstance",
+      "parameters": "const FString& Asset",
+      "description": "Read a material INSTANCE: its parent chain, what it overrides, and - the list that matters - what it inherits from a parent it does not own.",
+      "headerLine": 554,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPPlayCheck",
+      "parameters": "const FString& Seconds, const FString& Map",
+      "description": "Play the project for a few seconds and report the warnings and errors it raised.",
+      "headerLine": 580,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPTrace",
+      "parameters": "const FString& Action, const FString& NodeId",
+      "description": "Read the trace: what is armed, and how often each point has run.",
+      "headerLine": 595,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPBPLint",
+      "parameters": "const FString& Assets, const FString& Checks, const FString& TokenBudget",
+      "description": "Lint one or more Blueprints and report what is wrong with them, with each check NAMED.",
+      "headerLine": 617,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPAssetCost",
+      "parameters": "const FString& Asset, int32 Cap",
+      "description": "The size map and hard references of one asset, SPLIT BY PROVENANCE.",
+      "headerLine": 636,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPWidgetTree",
+      "parameters": "const FString& Asset",
+      "description": "Read a Widget Blueprint's tree as the text dialect of `04_FORMATS.md` section 8.",
+      "headerLine": 666,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPPureChecks",
+      "parameters": "const FString& Toolsets, const FString& Arguments",
+      "description": "Call the two PURE functions behind `R-CALL-COST` with LITERAL inputs, and print what they returned.",
+      "headerLine": 705,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPReadToolset",
+      "kind": "Read",
+      "classWrites": false,
+      "tool": "ReadTurboMCPVcsState",
+      "parameters": "const FString& Assets",
+      "description": "Read what source control holds for each asset, and refuse by name when it holds nothing.",
+      "headerLine": 742,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPLookToolset",
+      "kind": "Look",
+      "classWrites": false,
+      "tool": "LookTurboMCPToolset",
+      "parameters": "",
+      "description": "Look for a live editor window that a capture could use.",
+      "headerLine": 768,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPLookToolset",
+      "kind": "Look",
+      "classWrites": false,
+      "tool": "LookTurboMCPLayoutReport",
+      "parameters": "const FString& Asset, const FString& GraphName",
+      "description": "Look at the layout of one graph: measure it and report, without moving anything.",
+      "headerLine": 796,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPLookToolset",
+      "kind": "Look",
+      "classWrites": false,
+      "tool": "LookTurboMCPWidgetPreview",
+      "parameters": "const FString& Widget, const FString& SampleValuesJson, const FString& FunctionName, const FString& Size",
+      "description": "Render a Widget Blueprint with sample values and write a PNG.",
+      "headerLine": 826,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPLookToolset",
+      "kind": "Look",
+      "classWrites": false,
+      "tool": "LookTurboMCPCapture",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Mode, const FString& Target, const FString& Size",
+      "description": "Capture a picture of a Blueprint's graph editor, framed one of seven ways.",
+      "headerLine": 884,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPToolset",
+      "parameters": "",
+      "description": "Preview the size of this plugin's own tool help.",
+      "headerLine": 919,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPEnumAdd",
+      "parameters": "const FString& Path, const FString& Values",
+      "description": "Work out what creating an enum asset would do, without creating it.",
+      "headerLine": 936,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPVarsAdd",
+      "parameters": "const FString& Asset, const FString& Variables",
+      "description": "Work out what adding Blueprint variables would do, without adding them.",
+      "headerLine": 957,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPOverrideAdd",
+      "parameters": "const FString& Asset, const FString& FunctionOrEvent",
+      "description": "Work out what creating an override would do, without creating it.",
+      "headerLine": 975,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPWidgetRetarget",
+      "parameters": "const FString& Asset",
+      "description": "Work out which widget bindings a class swap has left broken, without changing anything.",
+      "headerLine": 995,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPComment",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Action, const FString& Nodes, const FString& Box, const FString& Text, const FString& Color, const FString& Size",
+      "description": "Work out what a comment-box change would do, without making it.",
+      "headerLine": 1024,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphDead",
+      "parameters": "const FString& Asset, const FString& GraphName",
+      "description": "Work out which nodes are dead and would be removed, without removing them.",
+      "headerLine": 1054,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPLocalVars",
+      "parameters": "const FString& Asset, const FString& GraphName",
+      "description": "Work out which values could become local variables, without promoting any.",
+      "headerLine": 1074,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPNodeType",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Words, const FString& Limit",
+      "description": "Finds the REAL node type id the engine's node creation tool will accept.",
+      "headerLine": 1092,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPNodePins",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& TypeId",
+      "description": "The pins a node type produces, WITHOUT TOUCHING the asset's own graph.",
+      "headerLine": 1113,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphKnots",
+      "parameters": "const FString& Asset, const FString& GraphName",
+      "description": "Work out which wires cross a node, and where a knot would fix them, without placing any.",
+      "headerLine": 1141,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphTidy",
+      "parameters": "const FString& Asset, const FString& GraphName, bool bForce, const TArray<FString>& NodeIds",
+      "description": "Work out a clean layout for one graph, WITHOUT moving anything.",
+      "headerLine": 1167,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphFixBackward",
+      "parameters": "const FString& Asset, const FString& GraphName, bool bForce",
+      "description": "Repair the bad spots in a mostly-good graph, WITHOUT moving anything.",
+      "headerLine": 1195,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphCheck",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Text",
+      "description": "Check graph text before writing it, and write nothing.",
+      "headerLine": 1223,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphAppend",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Text",
+      "description": "Add a block to a graph from graph text, and write nothing.",
+      "headerLine": 1249,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphReplace",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Text",
+      "description": "Rewrite the body of one function, override or event, and list what it removes.",
+      "headerLine": 1270,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphSwapCall",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& NodeId, const FString& ReplacementTypeId, const FString& KeepOld",
+      "description": "Preview a localized call-node swap.",
+      "headerLine": 1277,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphRepoint",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& SourceNodeId, const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId, const FString& TargetPin, const FString& KeepSource",
+      "description": "Preview repointing every reader of one output to an existing or newly created source.",
+      "headerLine": 1286,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPBatchEdit",
+      "parameters": "const FString& Operations",
+      "description": "Preview a batch of graph repoint operations; the batch owns one transaction and defers compile/save.",
+      "headerLine": 1293,
+      "effects": [
+        "none_planned_only",
+        "reads_assets"
+      ],
+      "releaseDisposition": "in_scope_repair_required",
+      "dispositionReason": "ARC09 subset card. Current implementation parses and plans only; it does not mutate.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphPatch",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Text",
+      "description": "Change only what changed: name existing nodes by id and give the pins that differ.",
+      "headerLine": 1313,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPMaterialTidy",
+      "parameters": "const FString& Asset, const FString& Force",
+      "description": "Lay out a material, one comment box per block, and change nothing.",
+      "headerLine": 1333,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPMaterialLabelPromote",
+      "parameters": "const FString& Asset",
+      "description": "List the values in a material worth a name, and change nothing.",
+      "headerLine": 1354,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPMaterialBlocks",
+      "parameters": "const FString& Asset",
+      "description": "`P-MAT-BLOCKS`: make labels follow blocks.",
+      "headerLine": 1386,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPDataTableRows",
+      "parameters": "const FString& Asset, const TArray<FString>& Rows",
+      "description": "Preview row operations on a DataTable.",
+      "headerLine": 1400,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphCopy",
+      "parameters": "const FString& SourceAsset, const FString& SourceGraph, const TArray<FString>& NodeIds, const FString& TargetAsset, const FString& TargetGraph, const FString& AnchorNodeId",
+      "description": "Plan copying a block of nodes from one graph to another, and write nothing.",
+      "headerLine": 1418,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPGraphCollapse",
+      "parameters": "const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, const FString& MemberName, const FString& MemberKind",
+      "description": "Plan extracting a selection into a function or a macro, and write nothing.",
+      "headerLine": 1438,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPStructNew",
+      "parameters": "const FString& Path, const FString& Fields",
+      "description": "Work out what creating a user struct asset would do, without creating it.",
+      "headerLine": 1468,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPStructFields",
+      "parameters": "const FString& Struct, const FString& Changes",
+      "description": "Work out what editing a user struct's fields would do, without changing any.",
+      "headerLine": 1500,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPPreviewToolset",
+      "kind": "Preview",
+      "classWrites": false,
+      "tool": "PreviewTurboMCPVcsCheckout",
+      "parameters": "const FString& Assets",
+      "description": "Work out what a checkout would do, per asset, without checking anything out.",
+      "headerLine": 1524,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "ReadTurboMCPEditQueue",
+      "parameters": "",
+      "description": "Read whether the editor can accept a write right now.",
+      "headerLine": 1549,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPCompile",
+      "parameters": "const FString& Assets",
+      "description": "Compile one or more Blueprints or widgets, with a real answer each.",
+      "headerLine": 1578,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPSave",
+      "parameters": "const FString& Assets",
+      "description": "Save one or more assets without noise.",
+      "headerLine": 1618,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPSaveWithoutThumbnail",
+      "parameters": "const FString& Assets",
+      "description": "Save one or more assets WITHOUT the editor's thumbnail step.",
+      "headerLine": 1650,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPEnumAdd",
+      "parameters": "const FString& Path, const FString& Values",
+      "description": "Create an enum asset from a list of values.",
+      "headerLine": 1670,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPVarsAdd",
+      "parameters": "const FString& Asset, const FString& Variables",
+      "description": "Add Blueprint variables in bulk.",
+      "headerLine": 1692,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPWidgetsAsVars",
+      "parameters": "const FString& Asset, const FString& Widgets, bool bIsVariable",
+      "description": "Mark widgets as variables, or unmark them, in one call.",
+      "headerLine": 1713,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPOverrideAdd",
+      "parameters": "const FString& Asset, const FString& FunctionOrEvent",
+      "description": "Create an override on purpose.",
+      "headerLine": 1736,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPOverrideRemove",
+      "parameters": "const FString& Asset, const FString& FunctionOrEvent",
+      "description": "Remove an override this Blueprint has.",
+      "headerLine": 1757,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPFunctionAdd",
+      "parameters": "const FString& Asset, const FString& Name, const FString& Inputs = TEXT(\"\"), const FString& Outputs = TEXT(\"\")",
+      "description": "Add a function to a Blueprint.",
+      "headerLine": 1783,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPFunctionRemove",
+      "parameters": "const FString& Asset, const FString& Name",
+      "description": "Remove a function from a Blueprint, so its name is free at once.",
+      "headerLine": 1798,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPWidgetRetarget",
+      "parameters": "const FString& Asset",
+      "description": "Repair widget bindings after a class swap.",
+      "headerLine": 1817,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPWidgetBindAdd",
+      "parameters": "const FString& Asset, const FString& Widget, const FString& Property, const FString& Function",
+      "description": "Bind an event on a widget to a function name.",
+      "headerLine": 1838,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPComment",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Action, const FString& Nodes, const FString& Box, const FString& Text, const FString& Color, const FString& Size",
+      "description": "Make a comment-box change.",
+      "headerLine": 1862,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphDead",
+      "parameters": "const FString& Asset, const FString& GraphName",
+      "description": "Remove the dead copies in a graph.",
+      "headerLine": 1889,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphKnots",
+      "parameters": "const FString& Asset, const FString& GraphName",
+      "description": "Place the knots the preview listed.",
+      "headerLine": 1906,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphTidy",
+      "parameters": "const FString& Asset, const FString& GraphName, bool bForce, const TArray<FString>& NodeIds",
+      "description": "Apply the layout the preview worked out.",
+      "headerLine": 1922,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphFixBackward",
+      "parameters": "const FString& Asset, const FString& GraphName, bool bForce",
+      "description": "Apply the repairs the preview listed.",
+      "headerLine": 1942,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPLocalVars",
+      "parameters": "const FString& Asset, const FString& GraphName",
+      "description": "Promote the SAFE values to local variables.",
+      "headerLine": 1965,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPCallLog",
+      "parameters": "const FString& Enabled",
+      "description": "Turn the call log on or off.",
+      "headerLine": 1983,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPCallLogClear",
+      "parameters": "const FString& Confirm",
+      "description": "Drop the in-memory call log entries.",
+      "headerLine": 1993,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPTrace",
+      "parameters": "const FString& Action, const FString& NodeId",
+      "description": "Mark a node to be traced, or clear the marks.",
+      "headerLine": 2011,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphAppend",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Text",
+      "description": "Add a block to a graph from graph text.",
+      "headerLine": 2032,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphReplace",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Text",
+      "description": "Rewrite the body of one function, override or event, and report every node it removed.",
+      "headerLine": 2053,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphSwapCall",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& NodeId, const FString& ReplacementTypeId, const FString& KeepOld",
+      "description": "Apply a localized call-node swap.",
+      "headerLine": 2060,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphRepoint",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& SourceNodeId, const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId, const FString& TargetPin, const FString& KeepSource",
+      "description": "Repoint every reader of one output to an existing or newly created source in one transaction.",
+      "headerLine": 2069,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPBatchEdit",
+      "parameters": "const FString& Operations",
+      "description": "Apply a batch of graph repoint operations under one caller-owned transaction.",
+      "headerLine": 2076,
+      "effects": [
+        "asset_memory",
+        "graph_edit"
+      ],
+      "releaseDisposition": "in_scope_repair_required",
+      "dispositionReason": "ARC09 restricts the release batch to graphRepoint in one Blueprint graph. The current implementation does not yet refuse cross-asset or cross-graph batches, does not compile once at the end, and does not bound each operation against the state produced by its predecessors. Repairing it is step S16.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphPatch",
+      "parameters": "const FString& Asset, const FString& GraphName, const FString& Text",
+      "description": "The Edit twin of PreviewTurboMCPGraphPatch.",
+      "headerLine": 2098,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPMaterialTidy",
+      "parameters": "const FString& Asset, const FString& Force",
+      "description": "Lay out a material, one comment box per block, and PROVE it changed nothing but geometry.",
+      "headerLine": 2119,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPMaterialLabelPromote",
+      "parameters": "const FString& Asset",
+      "description": "Give a material values names: create the declaration and rewire the readers.",
+      "headerLine": 2141,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPMaterialBlocks",
+      "parameters": "const FString& Asset",
+      "description": "`E-MAT-BLOCKS`: make labels follow blocks, changing exactly what the Preview listed.",
+      "headerLine": 2166,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPMaterialInstanceSet",
+      "parameters": "const FString& Asset, const TArray<FString>& Overrides",
+      "description": "Set texture overrides on a material instance.",
+      "headerLine": 2177,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPDataTableRows",
+      "parameters": "const FString& Asset, const TArray<FString>& Rows",
+      "description": "Apply row operations to a DataTable in ONE transaction, then re-read the rows back from the table.",
+      "headerLine": 2189,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphCopy",
+      "parameters": "const FString& SourceAsset, const FString& SourceGraph, const TArray<FString>& NodeIds, const FString& TargetAsset, const FString& TargetGraph, const FString& AnchorNodeId",
+      "description": "Copy a block of nodes from one graph to another, and report what could not come with it.",
+      "headerLine": 2207,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPGraphCollapse",
+      "parameters": "const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, const FString& MemberName, const FString& MemberKind",
+      "description": "Extract a selection into a function or a macro.",
+      "headerLine": 2230,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPStructNew",
+      "parameters": "const FString& Path, const FString& Fields",
+      "description": "Create a user struct asset, with its fields in one call.",
+      "headerLine": 2261,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPStructFields",
+      "parameters": "const FString& Struct, const FString& Changes",
+      "description": "Add, change, reorder and remove fields on an existing user struct.",
+      "headerLine": 2287,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    },
+    {
+      "toolset": "TurboMCP.UTurboMCPEditToolset",
+      "kind": "Edit",
+      "classWrites": true,
+      "tool": "EditTurboMCPVcsCheckout",
+      "parameters": "const FString& Assets",
+      "description": "Take the lock before a write: check one or more assets out through the project own provider.",
+      "headerLine": 2317,
+      "effects": [
+        "unknown"
+      ],
+      "releaseDisposition": "included",
+      "dispositionReason": "Existing declared capability. No repair identified for it yet.",
+      "requiredCases": [],
+      "evidence": []
+    }
+  ]
+}

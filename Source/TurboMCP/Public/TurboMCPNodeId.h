@@ -134,6 +134,21 @@ namespace TurboMCPNodeId
 	UEdGraph* FindGraphByName(const UBlueprint* InBlueprint, const FString& InGraphName);
 
 	/**
+	 * The same resolution, and it also reports how many graphs matched.
+	 *
+	 * *** WHY THIS EXISTS: A NAME IS NOT AN IDENTITY. *** `FindGraphByName` returns the FIRST matching graph and
+	 * never counts the rest, and a node id is `...:GraphName:<hash>` - the graph NAME ONLY. So when a blueprint
+	 * holds two graphs of the same name in different arrays, a tool can resolve one while the reader shows the
+	 * other and the report names the same `name:hash` for either. That is the ARC06 family: identity that cannot
+	 * be verified across calls.
+	 *
+	 * `OutMatchCount > 1` means the name is AMBIGUOUS. A MUTATING caller must REFUSE and name the candidates
+	 * rather than guess; a READER should report the count and stay available. The returned graph is still the
+	 * first match, so this overload changes nothing by itself - it only makes the ambiguity observable.
+	 */
+	UEdGraph* FindGraphByName(const UBlueprint* InBlueprint, const FString& InGraphName, int32& OutMatchCount);
+
+	/**
 	 * The node type ID the engine's own graph write tool accepts.
 	 *
 	 * Format is `<category>|<title>` with every whitespace character removed from

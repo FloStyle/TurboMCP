@@ -37,63 +37,15 @@ namespace
 	/** Reads a graph out of a Blueprint by name, or the first graph when the name is empty. */
 	UEdGraph* FindGraph(UBlueprint* InBlueprint, const FString& InGraphName, FString& OutError)
 	{
-		if (InBlueprint == nullptr)
-		{
-			OutError = TEXT("no Blueprint");
-			return nullptr;
-		}
-
-		TArray<UEdGraph*> All;
-		for (UEdGraph* Graph : InBlueprint->UbergraphPages)
-		{
-			if (Graph != nullptr) { All.Add(Graph); }
-		}
-		for (UEdGraph* Graph : InBlueprint->FunctionGraphs)
-		{
-			if (Graph != nullptr) { All.Add(Graph); }
-		}
-		for (UEdGraph* Graph : InBlueprint->MacroGraphs)
-		{
-			if (Graph != nullptr) { All.Add(Graph); }
-		}
-
-		if (InGraphName.IsEmpty())
-		{
-			// A default rather than a refusal, because a single-graph Blueprint is the common case
-			// and `EventGraph` is what a caller means. Named when it is not there, so the caller is
-			// not left guessing which graph was chosen.
-			for (UEdGraph* Graph : All)
-			{
-				if (NameMatches(Graph->GetFName(), TEXT("EventGraph")))
-				{
-					return Graph;
-				}
-			}
-			if (All.Num() > 0)
-			{
-				return All[0];
-			}
-			OutError = TEXT("the Blueprint has no graphs");
-			return nullptr;
-		}
-
-		for (UEdGraph* Graph : All)
-		{
-			if (NameMatches(Graph->GetFName(), InGraphName))
-			{
-				return Graph;
-			}
-		}
-
-		TArray<FString> Names;
-		for (UEdGraph* Graph : All)
-		{
-			Names.Add(Graph->GetName());
-		}
-		Names.Sort();
-		OutError = FString::Printf(TEXT("'%s' is not a graph of this Blueprint. Its graphs ")
-			TEXT("are: %s"), *InGraphName, *FString::Join(Names, TEXT(", ")));
-		return nullptr;
+		// *** ONE RESOLUTION POLICY WITH EVERY OTHER TOOL AND THE READER. ***
+		// This was one of EIGHT graph resolvers. It searched UbergraphPages, FunctionGraphs and MacroGraphs;
+		// the reader's TurboMCPNodeId::FindGraphByName searches those THREE PLUS EventGraphs, and nothing
+		// compared them. A node id is `...:GraphName:<hash>` - the graph NAME ONLY - so a name matching
+		// two graphs in different arrays would make this tool EDIT ONE AND REPORT ON ANOTHER, and no
+		// caller could tell. That is the ARC06 family: identity that cannot be verified across calls.
+		// It now delegates, so this tool and the reader resolve a name identically.
+				OutError.Empty();
+		return TurboMCPNodeId::FindGraphByName(InBlueprint, InGraphName);
 	}
 
 	/**

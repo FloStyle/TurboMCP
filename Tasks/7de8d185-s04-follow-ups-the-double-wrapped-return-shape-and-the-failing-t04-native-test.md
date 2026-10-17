@@ -1,0 +1,60 @@
+---
+id: "7de8d185-a025-4485-837e-2d03975691b0"
+title: "S04 follow-ups — the double-wrapped return shape, and the failing T04 native test"
+status: todo
+priority: "P1"
+tags: ["release-1.0", "P1", "wrapper", "native-test", "S04"]
+workspace: "7d139a89-61a3-4566-b367-cf7a89b9969b"
+parent: "5f2cee78-ed31-487e-bfa6-6452eaaf738f"
+created: "2026-10-16T21:12:32Z"
+updated: "2026-10-16T21:12:32Z"
+executions: 0
+board_revision: 1803
+exported: "2026-10-17T09:13:25Z"
+---
+
+# S04 follow-ups — the double-wrapped return shape, and the failing T04 native test
+
+| Field | Value |
+|---|---|
+| Card ID | `7de8d185-a025-4485-837e-2d03975691b0` |
+| Status | todo |
+| Priority | P1 |
+| Tags | `release-1.0` `P1` `wrapper` `native-test` `S04` |
+| Workspace | `7d139a89-61a3-4566-b367-cf7a89b9969b` |
+| Parent card | `5f2cee78-ed31-487e-bfa6-6452eaaf738f` |
+| Created (UTC) | 2026-10-16T21:12:32Z |
+| Updated (UTC) | 2026-10-16T21:12:32Z |
+| Executions recorded | 0 |
+
+## Description
+
+Two related items, both measured this round and neither closed.
+
+ITEM 1 - A DOUBLE-WRAPPED RETURN SHAPE IS NOT FULLY DECODED.
+Evidence: Release/EVIDENCE/S04/first-migration.md
+MEASURED: a migrated answer's raw payload is `{"returnValue": "<json-encoded string>"}` and the raw tail shows a FURTHER layer of escaping. `Tools/tmcp.py`'s StructuredAnswer.unwrapped_text() peels up to three layers, and the STRUCTURED read of the graph-repoint refusals works (outcome=refused, code=plan_refused, changed=false, exit 1, diagnostics naming the pin). But a read through the COMPATIBILITY path returned only the error sentence and no result, so at least one shape is still not decoded on every path.
+WHY IT MATTERS: this is the same class as TWO wrapper defects already fixed this run - `body` computed from raw blocks, and only the object form of the wrapper being unwrapped. Each time, the symptom was a migrated tool looking like a protocol failure while the engine was behaving correctly.
+FIRST ACTION: print the exact bytes the engine emits for an FString tool whose answer contains escaped JSON (an error sentence plus a result line), then extend unwrapped_text to that shape. Add ONE case per shape to Tools/test-result-contract.py so a fourth form cannot arrive unnoticed.
+DO NOT: weaken the parser to accept a wrapper as a body, and do not treat "the structured path works" as proof that the text path does.
+
+ITEM 2 - A NATIVE AUTOMATION TEST FAILS AND WAS NOT TOUCHED BY THIS ROUND.
+MEASURED: `Automation RunTests TurboMCP` reports `Test Completed. Result={Fail} Name={QueueForCompilationDuringCompile} Path={TurboMCP.T04.QueueForCompilationDuringCompile}`, while CoordinatorStateMachine, LineContract and NodeId.RoundTripAndKeyValidation all report Success.
+FIRST ACTION: run that one test alone, read the assertion it reports, and decide whether the failure is pre-existing or a consequence of the ARC03/ARC04 migration in TurboMCPGraphRepoint (which now compiles with a results log inside the edit). It relates to queueing a compile DURING a compile - exactly the region the new `FKismetEditorUtilities::CompileBlueprint(..., &Log)` call sits in.
+DO NOT mark it passed without a passing run, and do not delete it.
+
+TARGET STATE for both: the two shapes are pinned with a case each, and every native TurboMCP automation test reports Success or has a recorded, evidence-backed reason it cannot.
+
+## Execution prompt
+
+```text
+S04 follow-ups: the double-wrapped return shape, and the failing T04 native test. Do not run from the board.
+```
+
+## Execution history
+
+_No execution record. The card state is a board declaration, not run evidence._
+
+---
+
+_Exported from the DSH task board, revision 1803, at 2026-10-17T09:13:25Z. The board is authoritative; this file is a snapshot._

@@ -22,6 +22,8 @@ Usage:
 """
 
 import argparse
+import glob as globmodule
+import json
 import os
 import re
 import sys
@@ -445,6 +447,82 @@ def check_tools(report):
                       % (name, ", ".join(classes), len(declared)))
 
 
+def check_declared_dependencies(report):
+    """Every engine plugin module the source uses is declared in the descriptor.
+
+    *** RELEASE FINDING R08, AND THE REASON IT SURVIVED SO LONG. ***
+
+    `TurboMCP.Build.cs` lists `EditorScriptingUtilities` and `PythonScriptPlugin` as module dependencies, and
+    `TurboMCP.uplugin` declared neither. The build still worked on THIS machine because the test project enables
+    Python explicitly and the editor loads EditorScriptingUtilities for its own reasons - so a missing
+    DECLARATION is invisible until someone installs the plugin somewhere else, which is exactly the clean-
+    installation case the release has to pass.
+
+    The evidence is in the source rather than in a hand-kept list: an include of
+    `Engine/Plugins/<...>/Source/<Module>/...` names both the engine plugin and the module. Every such plugin
+    an include refers to must appear in the descriptor's `Plugins` array, or a fresh project cannot resolve it.
+    """
+    report.section("declared plugin dependencies")
+
+    descriptor = os.path.join(REPO, "TurboMCP.uplugin")
+    if not os.path.isfile(descriptor):
+        report.fail("TurboMCP.uplugin is missing, so no dependency can be declared")
+        return
+    try:
+        with open(descriptor, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+    except ValueError as error:
+        report.fail("TurboMCP.uplugin is not valid JSON: %s" % error)
+        return
+
+    declared = set()
+    for entry in data.get("Plugins", []):
+        name = entry.get("Name")
+        if name:
+            declared.add(name)
+
+    # `Engine/Plugins/<group>/<PluginName>/Source/<Module>/...` - the plugin directory name IS the plugin name
+    # in the descriptor, which is why the path is enough.
+    pattern = re.compile(r"Engine[/\\]Plugins[/\\][^/\\]+[/\\]([^/\\]+)[/\\]Source[/\\]")
+    used = {}
+    for extension in (".h", ".cpp", ".cs"):
+        for path in plugin_files(extension):
+            with open(path, "r", encoding="utf-8", errors="replace") as handle:
+                for name in pattern.findall(handle.read()):
+                    used.setdefault(name, set()).add(os.path.basename(path))
+
+    if not used:
+        report.ok("no engine-plugin module is referenced from a plugin include path")
+    else:
+        undeclared = sorted(name for name in used if name not in declared)
+        if undeclared:
+            for name in undeclared:
+                report.fail(
+                    "%s is used by %s but is not declared in TurboMCP.uplugin. A fresh project resolves "
+                    "declared dependencies only, so this fails on an installation that does not happen to "
+                    "enable it already."
+                    % (name, ", ".join(sorted(used[name])[:3])))
+        else:
+            report.ok("%d engine plugin(s) referenced from includes are all declared: %s"
+                      % (len(used), ", ".join(sorted(used))))
+
+    # And the reverse direction, which is what could break NEXT: a declared plugin whose descriptor does not
+    # exist in the engine. That is a hard load failure on a clean install, not a warning.
+    #
+    # THE SEARCH IS RECURSIVE, AND IT HAS TO BE. MEASURED: the first version looked only at
+    # `Engine/Plugins/<group>/<Name>/<Name>.uplugin` and reported `SlateInspectorToolset` as having no
+    # descriptor, while it is at `Engine/Plugins/Experimental/Toolsets/SlateInspectorToolset/`. A false
+    # positive in a blocking gate is a reason to bypass the gate, so the depth is not assumed.
+    if ENGINE:
+        for name in sorted(declared):
+            found = globmodule.glob(
+                os.path.join(ENGINE, "Engine", "Plugins", "**", name, name + ".uplugin"),
+                recursive=True)
+            if not found:
+                report.fail("TurboMCP.uplugin declares '%s' and no engine descriptor was found for it" % name)
+        report.ok("every declared plugin has an engine descriptor under %s" % ENGINE)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quiet", action="store_true")
@@ -455,6 +533,7 @@ def main():
     check_engine(report)
     check_mount(report)
     check_includes(report)
+    check_declared_dependencies(report)
     check_apis(report)
     check_uht_freshness(report)
     check_tools(report)

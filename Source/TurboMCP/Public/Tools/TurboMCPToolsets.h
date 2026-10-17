@@ -1288,6 +1288,10 @@ public:
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
 		const FString& TargetPin, const FString& KeepSource);
 
+	/** Preview a batch of graph repoint operations; the batch owns one transaction and defers compile/save. */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPBatchEdit(const FString& Operations);
+
 	/**
 	 * Change only what changed: name existing nodes by id and give the pins that differ.
 	 *
@@ -2066,6 +2070,10 @@ public:
 		const FString& Asset, const FString& GraphName, const FString& SourceNodeId,
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
 		const FString& TargetPin, const FString& KeepSource);
+
+	/** Apply a batch of graph repoint operations under one caller-owned transaction. */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPBatchEdit(const FString& Operations);
 
 	/**
 	 * The Edit twin of PreviewTurboMCPGraphPatch. It reaches the SAME plan, so everything it

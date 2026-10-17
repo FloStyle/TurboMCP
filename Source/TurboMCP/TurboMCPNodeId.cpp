@@ -319,8 +319,10 @@ namespace TurboMCPNodeId
 		return Mine.Len();
 	}
 
-	UEdGraph* FindGraphByName(const UBlueprint* InBlueprint, const FString& InGraphName)
+	UEdGraph* FindGraphByName(const UBlueprint* InBlueprint, const FString& InGraphName, int32& OutMatchCount)
 	{
+		OutMatchCount = 0;
+
 		if (InBlueprint == nullptr || InGraphName.IsEmpty())
 		{
 			return nullptr;
@@ -346,15 +348,29 @@ namespace TurboMCPNodeId
 		Collect(InBlueprint->MacroGraphs);
 		Collect(InBlueprint->EventGraphs);
 
+		UEdGraph* First = nullptr;
 		for (UEdGraph* Graph : Candidates)
 		{
 			if (Graph->GetName().Equals(InGraphName, ESearchCase::IgnoreCase))
 			{
-				return Graph;
+				++OutMatchCount;
+				if (First == nullptr)
+				{
+					First = Graph;
+				}
 			}
 		}
 
-		return nullptr;
+		// The FIRST match is still the answer, so no existing caller changes behaviour. The COUNT is the new
+		// information: `OutMatchCount > 1` means the name is ambiguous and a mutating caller must refuse.
+		return First;
+	}
+
+	// The original entry point, unchanged for every existing caller.
+	UEdGraph* FindGraphByName(const UBlueprint* InBlueprint, const FString& InGraphName)
+	{
+		int32 MatchCount = 0;
+		return FindGraphByName(InBlueprint, InGraphName, MatchCount);
 	}
 
 	FString Unlocalised(const FText& InText)

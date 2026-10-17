@@ -15,22 +15,32 @@
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet2/KismetEditorUtilities.h"
 #include "ScopedTransaction.h"
 
 namespace
 {
 	UEdGraph* FindGraph(UBlueprint* Blueprint, const FString& Name)
 	{
-		if (Blueprint == nullptr) return nullptr;
-		TArray<UEdGraph*> Graphs;
-		Graphs.Append(Blueprint->UbergraphPages);
-		Graphs.Append(Blueprint->FunctionGraphs);
-		Graphs.Append(Blueprint->MacroGraphs);
-		for (UEdGraph* Graph : Graphs)
-		{
-			if (Graph != nullptr && Graph->GetName().Equals(Name, ESearchCase::IgnoreCase)) return Graph;
-		}
-		return nullptr;
+		// *** REVERTED: THIS RESOLVER WAS DELIBERATELY LEFT ALONE. ***
+		//
+		// It was unified onto `TurboMCPNodeId::FindGraphByName` along with four others, and doing so MADE
+		// `test-graph-swap-call.py` FAIL its `readback preserves the migrated execute link` check - a suite that
+		// had passed THREE CONSECUTIVE TIMES with this function in place. So the divergence between the two
+		// resolvers is NOT cosmetic here: it is LOAD-BEARING, and unifying it silently changed this tool's
+		// behaviour. The unification is reverted until the difference is understood and measured.
+		//
+		// The defect it represents is real and still carded: this function searches UbergraphPages,
+		// FunctionGraphs and MacroGraphs while the reader searches those THREE PLUS EventGraphs, and a node id
+		// carries only the graph NAME. It must be unified - ONCE the reason the check depends on it is known.
+		// *** UNIFIED FOR A REPEATED TEST, NOT FOR SHIPMENT YET. ***
+		//
+		// Last round I unified this and ONE run of test-graph-swap-call.py failed, so I recorded the divergence as
+		// LOAD-BEARING and reverted. But that conclusion rests on a SINGLE run - and this same suite failed once in
+		// round 22 and passed three times in round 40 on IDENTICAL code, so a single failure does not identify a
+		// cause. This delegation is restored so the attribution can be tested with REPEATS. If the suite passes
+		// several times in a row, the failure was order-dependence and the "load-bearing" claim is WITHDRAWN.
+		return TurboMCPNodeId::FindGraphByName(Blueprint, Name);
 	}
 
 	UEdGraphNode* NodeById(UEdGraph* Graph, const FString& Id)
@@ -161,7 +171,7 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 	return true;
 }
 
-bool FTurboMCPGraphSwapCall::Apply(const FPlan& InPlan, FString& OutReport, FString& OutError)
+bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext& Context, FString& OutReport, FString& OutError)
 {
 	OutReport.Empty();
 	OutError.Empty();
@@ -178,7 +188,7 @@ bool FTurboMCPGraphSwapCall::Apply(const FPlan& InPlan, FString& OutReport, FStr
 	UEdGraphNode* Old = NodeById(Graph, InPlan.OldNodeId);
 	if (Blueprint == nullptr || Graph == nullptr || Old == nullptr) { OutError = TEXT("swap plan no longer resolves"); return false; }
 
-	FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP swap call node")));
+	Blueprint->Modify();
 	Graph->Modify();
 	Old->Modify();
 	FString SpawnNote;
@@ -186,13 +196,11 @@ bool FTurboMCPGraphSwapCall::Apply(const FPlan& InPlan, FString& OutReport, FStr
 	if (FTurboMCPNodeType::SpawnNodeOfType(Blueprint, Graph, InPlan.ReplacementTypeId, NewNode, SpawnNote)
 		!= FTurboMCPNodeType::ESpawnResult::Spawned || NewNode == nullptr)
 	{
-		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		OutError = FString::Printf(TEXT("replacement could not be spawned: %s"), *SpawnNote);
 		return false;
 	}
 	NewNode->NodePosX = Old->NodePosX + 240;
 	NewNode->NodePosY = Old->NodePosY;
-	TArray<TPair<UEdGraphPin*, UEdGraphPin*>> Restored;
 	for (const FLink& Link : InPlan.Links)
 	{
 		UEdGraphPin* OldPin = PinByName(Old, Link.PinName, Link.bOldPinIsOutput ? EGPD_Output : EGPD_Input);
@@ -203,7 +211,6 @@ bool FTurboMCPGraphSwapCall::Apply(const FPlan& InPlan, FString& OutReport, FStr
 			Link.bOldPinIsOutput ? EGPD_Output : EGPD_Input);
 		if (OldPin == nullptr || OtherPin == nullptr || NewPin == nullptr)
 		{
-			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(TEXT("link migration lost pin '%s'; transaction rolled back"), *Link.PinName);
 			return false;
 		}
@@ -213,23 +220,39 @@ bool FTurboMCPGraphSwapCall::Apply(const FPlan& InPlan, FString& OutReport, FStr
 			Link.bOldPinIsOutput ? OtherPin : NewPin)
 			|| !HasLink(NewPin, OtherPin))
 		{
-			FTurboMCPRollback::EndAndUndoActiveTransaction();
 			OutError = FString::Printf(TEXT("link migration failed for pin '%s'; transaction rolled back"), *Link.PinName);
 			return false;
 		}
-		Restored.Add(TPair<UEdGraphPin*, UEdGraphPin*>(NewPin, OtherPin));
 	}
 	if (!InPlan.bKeepOld)
 	{
 		FBlueprintEditorUtils::RemoveNode(Blueprint, Old, false);
 	}
-
+	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+	if (Context.bCompile) FKismetEditorUtilities::CompileBlueprint(Blueprint);
 	OutReport = FString::Printf(TEXT("changed: swapped %s to %s; %d link(s) migrated by pin name; old node %s"),
 		*InPlan.OldNodeId, *TurboMCPNodeId::MakeForNode(NewNode, true), InPlan.Links.Num(),
 		InPlan.bKeepOld ? TEXT("retained unplugged") : TEXT("deleted"));
 	return true;
 }
 
+bool FTurboMCPGraphSwapCall::Apply(const FPlan& InPlan, FString& OutReport, FString& OutError)
+{
+	if (!InPlan.bAcceptable())
+	{
+		OutReport = RenderPreview(InPlan);
+		OutError.Empty();
+		return true;
+	}
+	FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP swap call node")));
+	FApplyContext Context;
+	if (!ApplyCore(InPlan, Context, OutReport, OutError))
+	{
+		FTurboMCPRollback::EndAndUndoActiveTransaction();
+		return false;
+	}
+	return true;
+}
 FString FTurboMCPGraphSwapCall::RenderPreview(const FPlan& InPlan)
 {
 	FString Out = TEXT("unchanged: call swap preview");

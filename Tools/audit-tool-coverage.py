@@ -1,3 +1,5 @@
+# Copyright (c) 2026 FloStyle
+# SPDX-License-Identifier: MPL-2.0
 """Audit that EVERY MCP tool has a testable call, without needing the editor.
 
 WHY THIS EXISTS
@@ -17,12 +19,23 @@ reports three things per tool:
 A tool with a BLANK parameter is one a caller has to guess at, which is exactly what the panel's
 one-click samples are for, and exactly what this audit is for.
 
-IT DOES NOT NEED THE EDITOR, so it can run at any time, including while a build is in flight. That is
-deliberate: the checks that DO need the editor are slow and serial, so the ones that can be static
-should be.
+*** THE DECISION IS NOW A FUNCTION OF ITS INPUTS, WHICH IS WHY THE PARSER CAN BE TESTED. ***
 
-IT READS THE HEADER RATHER THAN A HAND-KEPT LIST. A list would agree with reality until someone added
-a tool, which is the recurring failure this project keeps recording.
+Release finding R04 recorded two measured defects in this file:
+
+  1. `Coverage parsing:73-79 takes the last whitespace token as a parameter name. Defaulted `Inputs` and
+     `Outputs` become `TEXT("")`.` A parameter with a default value was split on every comma - including
+     the comma inside `TEXT("...")` - and its name was read as the last whitespace token, so
+     `const FString& Inputs = TEXT("")` produced a parameter literally named `TEXT("")`. The audit then
+     reported a real tool as having an unsampled parameter, which is a FALSE POSITIVE, and a false
+     positive in a blocking gate teaches a reader to bypass the gate.
+
+  2. The checks credited a suite for NAMING a tool without executing it. That part is inherent to a static
+     audit and is now stated rather than hidden: this audit proves a tool has a caller and a sample, and it
+     proves nothing about behaviour. Behaviour is the acceptance catalog's job.
+
+Everything below is reachable as a function so `Tools/test-coverage-audit.py` can drive the real parser
+against a tiny header fixture instead of against a copy of it.
 """
 
 import os
@@ -38,18 +51,72 @@ NON_ACCEPTANCE = {"tmcp.py", "check-includes.py", "check-mcp-server.py", "test-h
                   "make-acceptance-asset.ps1", "start-editor.ps1", "build-test-graph.py",
                   "make-test-blueprint.py"}
 
-failures = []
+
+def split_parameters(params_text):
+    """Split a C++ parameter list on TOP-LEVEL commas only.
+
+    A default value such as `= TEXT("a,b")` or `= FString(TEXT("x"))` contains commas and parentheses that
+    do not separate parameters. Splitting naively on `,` is what produced the `TEXT("")` parameter name.
+    """
+    pieces = []
+    depth = 0
+    current = ""
+    in_string = False
+    quote = ""
+    index = 0
+    while index < len(params_text):
+        char = params_text[index]
+        if in_string:
+            current += char
+            if char == "\\" and index + 1 < len(params_text):
+                current += params_text[index + 1]
+                index += 2
+                continue
+            if char == quote:
+                in_string = False
+            index += 1
+            continue
+        if char in "\"'":
+            in_string = True
+            quote = char
+            current += char
+            index += 1
+            continue
+        if char in "([{<":
+            depth += 1
+        elif char in ")]}>":
+            depth = max(0, depth - 1)
+        if char == "," and depth == 0:
+            pieces.append(current)
+            current = ""
+            index += 1
+            continue
+        current += char
+        index += 1
+    if current.strip():
+        pieces.append(current)
+    return pieces
 
 
-def check(name, ok, detail=""):
-    print("  %-4s %s%s" % ("ok" if ok else "FAIL", name, ("  " + detail) if detail else ""))
-    if not ok:
-        failures.append(name)
+def parameter_name(piece):
+    """The parameter's name, from `const FString& Inputs = TEXT("")` -> `Inputs`.
+
+    The declarator is everything before the default value. The name is the last identifier in it, after any
+    pointer or reference markers. A piece with no identifier yields None rather than a fabricated name.
+    """
+    declarator = piece.split("=", 1)[0].strip()
+    declarator = declarator.rstrip()
+    if not declarator:
+        return None
+    match = re.search(r"([A-Za-z_]\w*)\s*[\)\]]?\s*$", declarator)
+    if not match:
+        return None
+    return match.group(1)
 
 
-def read_declarations():
+def read_declarations(header_path=HEADER):
     """Every AICallable tool: its name, its toolset class, and its parameters."""
-    with open(HEADER, "r", encoding="utf-8", errors="replace") as handle:
+    with open(header_path, "r", encoding="utf-8", errors="replace") as handle:
         text = handle.read()
 
     # The class each declaration sits in, so the toolset is known without a second list.
@@ -57,7 +124,7 @@ def read_declarations():
                                                             re.MULTILINE)]
 
     tools = {}
-    # A declaration is `UFUNCTION(meta = (AICallable))` then a `static FString Name(args);`
+    # A declaration is `UFUNCTION(meta = (AICallable))` then a `static FString Name(args);`.
     for match in re.finditer(
             r"UFUNCTION\(meta = \(AICallable\)\)\s*\n\s*static FString (\w+)\(([^;]*?)\);",
             text, re.DOTALL):
@@ -70,24 +137,25 @@ def read_declarations():
             else:
                 break
         params = []
-        for piece in params_text.split(","):
-            piece = piece.strip()
-            if not piece:
+        for piece in split_parameters(params_text):
+            if not piece.strip():
                 continue
-            # `const FString& Asset` -> Asset
-            param = piece.split()[-1].lstrip("*&")
-            params.append(param)
+            parsed = parameter_name(piece)
+            if parsed:
+                params.append(parsed)
         tools[name] = {"owner": owner, "params": params}
     return tools
 
 
-def read_calls():
+def read_calls(tools_dir=TOOLS_DIR):
     """Every tool name and the parameter keys used in any suite, as one blob per tool."""
     calls = {}
-    for entry in sorted(os.listdir(TOOLS_DIR)):
+    for entry in sorted(os.listdir(tools_dir)):
         if not entry.endswith(".py") or entry in NON_ACCEPTANCE:
             continue
-        path = os.path.join(TOOLS_DIR, entry)
+        path = os.path.join(tools_dir, entry)
+        if not os.path.isfile(path):
+            continue
         with open(path, "r", encoding="utf-8", errors="replace") as handle:
             text = handle.read()
 
@@ -131,10 +199,49 @@ def read_calls():
     return calls
 
 
-def main():
-    tools = read_declarations()
-    calls = read_calls()
+def local_keys_for(entry, tools_dir=TOOLS_DIR):
+    """Every `"key":` that appears anywhere in one suite, so a call assembled through a helper is covered."""
+    path = os.path.join(tools_dir, entry)
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as handle:
+            return set(re.findall(r'"(\w+)"\s*:', handle.read()))
+    except OSError:
+        return set()
 
+
+def parameter_missing_reason(missing, tool_name, every_suite_that_calls_it):
+    """Why these parameter names count, and what would supply them.
+
+    *** A FALSE POSITIVE AND A REAL GAP PRINTED THE SAME LINE, WHICH IS THE FAILURE MODE THIS AUDIT IS WORST
+    AT. *** R04 recorded that defaulted `Inputs`/`Outputs` were parsed as a parameter named `TEXT("")`, which
+    made a covered tool look uncovered. That parser defect is fixed. What the fix exposed is real: every caller
+    of `EditTurboMCPFunctionAdd` omitted the two defaulted parameters, so no suite anywhere supplies a sample
+    for them. The line must therefore say which case it is, because "the parser is wrong" and "no suite passes
+    this argument" need different work.
+    """
+    return ("the parsed parameter name(s) %s appear in no sample. Suites that call %s: %s. "
+            "A defaulted parameter still needs ONE caller that supplies it, or the default is the only shape "
+            "anyone has ever run."
+            % (", ".join("`%s`" % p for p in missing), tool_name,
+               ", ".join(sorted(every_suite_that_calls_it)) or "(none)"))
+
+
+def audit(headers=None, tools_dir=TOOLS_DIR):
+    """The audit's findings as data. `failures` is empty only when every check passed.
+
+    `headers` is a list of header paths; the default is the one real header. A fixture header is accepted so
+    the parser and the check can be driven directly instead of trusted.
+    """
+    if headers is None:
+        headers = [HEADER]
+    tools = {}
+    declared_names = []
+    for header_path in headers:
+        tools.update(read_declarations(header_path))
+        with open(header_path, "r", encoding="utf-8", errors="replace") as handle:
+            declared_names += re.findall(r"static FString (\w+)\(", handle.read())
+
+    calls = read_calls(tools_dir)
     # THE CALLS ARE INTERSECTED WITH THE DECLARATIONS, because the registry serves one EXTRA
     # callable name per toolset that is NOT a tool this project wrote: the engine registers each
     # toolset class itself, so `LookTurboMCPToolset` and `PreviewTurboMCPToolset` appear as callable
@@ -143,13 +250,13 @@ def main():
     # must not have, because a false positive makes a real finding look like noise.
     calls = {name: info for name, info in calls.items() if name in tools}
 
-    print("=== %d AICallable tool(s) declared ===" % len(tools))
-    by_owner = {}
-    for name, info in tools.items():
-        by_owner.setdefault(info["owner"], []).append(name)
-    for owner in sorted(by_owner):
-        print("    %-26s %d" % (owner, len(by_owner[owner])))
-    print()
+    failures = []
+    notes = []
+
+    def check(name, ok, detail=""):
+        notes.append(("ok" if ok else "FAIL", name, detail))
+        if not ok:
+            failures.append(name)
 
     check("every tool is declared inside a toolset class",
           all(info["owner"] for info in tools.values()),
@@ -158,16 +265,12 @@ def main():
     # counted occurrences of that string in the header and compared 45 declarations against 46 hits,
     # because the header's own doc comment mentions it in prose at line 35. The header was right and
     # the CHECK was wrong - the sixth time this project has had to learn that.
-    declared_names = re.findall(r"static FString (\w+)\(", open(HEADER, encoding="utf-8",
-                                                             errors="replace").read())
     check("every static FString is a parsed tool, so none was skipped",
           len(tools) == len(declared_names),
           "parsed %d of %d declared" % (len(tools), len(declared_names)))
     check("no two tools share a name", len(declared_names) == len(set(declared_names)),
           "duplicates: %s" % [n for n in declared_names if declared_names.count(n) > 1])
 
-    print()
-    print("=== every tool is CALLED by some suite ===")
     # *** THREE STATES, SEPARATED AT LAST, BECAUSE "uncalled" WAS CONFLATING TWO OF THEM. ***
     #
     # UNCALLED means no suite names the tool at all: the fix is to WRITE A SUITE.
@@ -189,16 +292,11 @@ def main():
             uncalled.append(name)
         elif info.get("named") and not info.get("parsed") and not info.get("in_call"):
             seen_unparsed.append(name)
-    print("    uncalled: %s" % (", ".join(uncalled) if uncalled else "(none)"))
-    if seen_unparsed:
-        print("    NAMED BUT NOT PARSED AS A CALL (look at these by hand): %s" % ", ".join(seen_unparsed))
     # THIS IS THE CHECK THE USER'S REQUIREMENT TURNS INTO. A tool no suite calls has never been run,
     # which is how a registered tool that answers nothing survives.
     check("no AICallable tool is left uncalled by every suite",
           len(uncalled) == 0, ", ".join(uncalled))
 
-    print()
-    print("=== every PARAMETER of every called tool appears in some sample ===")
     # A tool that is called but whose parameter is never supplied is called in only one shape.
     blank = {}
     for name in sorted(tools):
@@ -212,36 +310,78 @@ def main():
         # its own suite spells the keys.
         local_keys = set()
         for entry in calls[name]["files"]:
-            path = os.path.join(TOOLS_DIR, entry)
-            try:
-                with open(path, "r", encoding="utf-8", errors="replace") as handle:
-                    local_keys |= set(re.findall(r'"(\w+)"\s*:', handle.read()))
-            except OSError:
-                pass
+            local_keys |= local_keys_for(entry, tools_dir)
         supplied_lower = {k.lower() for k in supplied} | {k.lower() for k in local_keys}
         missing = [p for p in tools[name]["params"]
                    if p not in supplied and p.lower() not in supplied_lower]
         if missing and len(supplied) < len(tools[name]["params"]):
             blank[name] = missing
-    for name in sorted(blank):
-        print("    %-40s %s" % (name, ", ".join(blank[name])))
-    if not blank:
-        print("    (every parameter appears in at least one sample)")
     check("no called tool leaves a parameter with no sample anywhere",
-          len(blank) == 0, "%d tool(s)" % len(blank))
+          len(blank) == 0,
+          "; ".join(parameter_missing_reason(blank[n], n, calls[n]["files"]) for n in sorted(blank)))
 
-    print()
-    print("=== the suites that cover the most tools ===")
     per_file = {}
     for name, info in calls.items():
         for entry in info["files"]:
             per_file[entry] = per_file.get(entry, 0) + 1
-    for entry, count in sorted(per_file.items(), key=lambda kv: -kv[1])[:6]:
+
+    return {
+        "tools": tools,
+        "declaredNames": declared_names,
+        "calls": calls,
+        "uncalled": uncalled,
+        "namedButUnparsed": seen_unparsed,
+        "blankParameters": blank,
+        "perFile": per_file,
+        "notes": notes,
+        "failures": failures,
+    }
+
+
+def main():
+    report = audit()
+
+    print("=== %d AICallable tool(s) declared ===" % len(report["tools"]))
+    by_owner = {}
+    for name, info in report["tools"].items():
+        by_owner.setdefault(info["owner"], []).append(name)
+    for owner in sorted(by_owner):
+        print("    %-26s %d" % (owner, len(by_owner[owner])))
+    print()
+
+    def show(index):
+        """One recorded check, in the shape this report has always printed it."""
+        mark, name, detail = report["notes"][index]
+        print("  %-4s %s%s" % (mark, name, ("  " + detail) if detail else ""))
+
+    show(0)
+    show(1)
+    show(2)
+
+    print()
+    print("=== every tool is CALLED by some suite ===")
+    print("    uncalled: %s" % (", ".join(report["uncalled"]) if report["uncalled"] else "(none)"))
+    if report["namedButUnparsed"]:
+        print("    NAMED BUT NOT PARSED AS A CALL (look at these by hand): %s"
+              % ", ".join(report["namedButUnparsed"]))
+    show(3)
+
+    print()
+    print("=== every PARAMETER of every called tool appears in some sample ===")
+    for name in sorted(report["blankParameters"]):
+        print("    %-40s %s" % (name, ", ".join(report["blankParameters"][name])))
+    if not report["blankParameters"]:
+        print("    (every parameter appears in at least one sample)")
+    show(4)
+
+    print()
+    print("=== the suites that cover the most tools ===")
+    for entry, count in sorted(report["perFile"].items(), key=lambda kv: -kv[1])[:6]:
         print("    %-30s %d tool(s)" % (entry, count))
 
     print()
-    if failures:
-        print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
+    if report["failures"]:
+        print("RESULT: FAIL (%d) -> %s" % (len(report["failures"]), ", ".join(report["failures"])))
         return 1
     print("RESULT: PASS")
     return 0

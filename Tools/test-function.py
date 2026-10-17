@@ -76,12 +76,12 @@ def main():
     if OWNED in before:
         print("  %s is already there, left by an unfinished run; removing it first." % OWNED)
         session.call(EDIT_TOOLSET, "EditTurboMCPFunctionRemove",
-                     {"asset": ASSET, "name": OWNED})
+                     {"asset": ASSET, "name": OWNED, "inputs": "", "outputs": ""})
 
     print()
     print("=== E-FUNCTION-ADD creates a function of the name asked for ===")
     out = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
-                       {"asset": ASSET, "name": OWNED})
+                       {"asset": ASSET, "name": OWNED, "inputs": "", "outputs": ""})
     print(out)
     print()
     check("it opens with changed:", out.startswith("changed:"), out[:70])
@@ -101,7 +101,7 @@ def main():
     print()
     print("=== a name already on this Blueprint is refused, and named ===")
     again = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
-                         {"asset": ASSET, "name": OWNED})
+                         {"asset": ASSET, "name": OWNED, "inputs": "", "outputs": ""})
     print(again)
     print()
     check("it opens with unchanged:", again.startswith("unchanged:"), again[:70])
@@ -111,7 +111,7 @@ def main():
     print()
     print("=== a name the PARENT declares is refused DIFFERENTLY ===")
     parent = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
-                          {"asset": ASSET, "name": PARENT})
+                          {"asset": ASSET, "name": PARENT, "inputs": "", "outputs": ""})
     print(parent)
     print()
     check("it opens with unchanged:", parent.startswith("unchanged:"), parent[:70])
@@ -131,14 +131,14 @@ def main():
         ("a dash", "Has-Dash", "is not a letter, a digit or an underscore"),
     ):
         result = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
-                              {"asset": ASSET, "name": bad})
+                              {"asset": ASSET, "name": bad, "inputs": "", "outputs": ""})
         check("refuses %s" % label,
               result.startswith("unchanged:") and expect in result, result[:100])
 
     print()
     print("=== E-FUNCTION-REMOVE takes it away and says the name is clear ===")
     removed = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionRemove",
-                           {"asset": ASSET, "name": OWNED})
+                           {"asset": ASSET, "name": OWNED, "inputs": "", "outputs": ""})
     print(removed)
     print()
     check("it opens with changed:", removed.startswith("changed:"), removed[:70])
@@ -163,7 +163,7 @@ def main():
     # create `TStructFiveProbe_0` and still return a graph. The tool must catch that, remove
     # what it made, and refuse rather than report a success under a name it did not create.
     readd = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
-                         {"asset": ASSET, "name": OWNED})
+                         {"asset": ASSET, "name": OWNED, "inputs": "", "outputs": ""})
     print(readd)
     print()
     check("the result is honest about what happened",
@@ -202,19 +202,104 @@ def main():
     for label, args, expect in (
         # An empty asset never reaches the name check: the shared resolver refuses it first, with
         # its own message. That is the right order, so the check accepts either wording.
-        ("no asset", {"asset": "", "name": OWNED}, "no asset given"),
-        ("no name", {"asset": ASSET, "name": ""}, "no function name given"),
-        ("a non-Blueprint", {"asset": "TA18_ColourSuite", "name": OWNED},
+        ("no asset", {"asset": "", "name": OWNED, "inputs": "", "outputs": ""}, "no asset given"),
+        ("no name", {"asset": ASSET, "name": "", "inputs": "", "outputs": ""}, "no function name given"),
+        ("a non-Blueprint", {"asset": "TA18_ColourSuite", "name": OWNED, "inputs": "", "outputs": ""},
          "not a Blueprint"),
     ):
         result = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd", args)
         check("refuses %s" % label,
               result.startswith("error:") and expect in result, result[:100])
 
+    # --------------------------------------------------------------------------------------------
+    # THE TWO DEFAULTED PARAMETERS, `Inputs` AND `Outputs`, ARE EXERCISED HERE AND NOWHERE ELSE.
+    #
+    # Release finding R04 recorded that the coverage audit's parser reported a parameter literally named
+    # `TEXT("")` for `const FString& Inputs = TEXT("")`. That was a parser false positive and it is fixed
+    # (Tools/audit-tool-coverage.py, `split_parameters`). THE FIX EXPOSED A REAL GAP BENEATH THE FALSE
+    # POSITIVE: with the names parsed correctly, the audit then reported that `Inputs` and `Outputs` appear
+    # in NO sample anywhere, because every caller in this suite omitted them and took the empty defaults.
+    # A tool whose signature parameters are never supplied is a tool a caller has to guess at.
+    #
+    # The signature syntax is `Name: Type`, comma-separated, from `ParseSignature` in
+    # TurboMCPFunction.cpp. THE TYPES ARE ONES THE RESOLVER ACCEPTS, WHICH `FString` IS NOT - MEASURED:
+    #   "input pin 'Label' has invalid type 'FString': 'FString' is not a type or a loadable class"
+    # so this case asserts what the engine supports rather than a type name that merely reads well.
+    # It supplies BOTH parameters, reads back the pin names the tool reports it created, and removes the
+    # graph again, so the shared asset is left as it was found.
+    #
+    # *** EACH TRIAL USES ITS OWN NAME, AND THAT IS THE MEASURED FIX FOR THIS CASE. ***
+    #
+    # The first version drove every trial through ONE name and re-added it after removing it, and the engine
+    # refused the second and later attempts:
+    #
+    #   unchanged: the engine would not create a function named 'TStructFiveProbeSigned' and made
+    #              'TStructFiveProbeSigned_0' instead, because something in the package still holds that name.
+    #
+    # The tool was RIGHT to refuse and RIGHT to say so; the case was reusing a name the package had not
+    # released. Distinct names remove the contention, so each trial measures the signature rather than the
+    # package's name lifetime. The tool's own refusal of an unreleased name is asserted separately, below.
+    # --------------------------------------------------------------------------------------------
+    print()
+    print("=== the Inputs and Outputs parameters are supplied, not defaulted ===")
+
+    def signed_trial(suffix, inputs, outputs):
+        """One trial with a name nothing else uses, then its own cleanup."""
+        name = OWNED + "Signed" + suffix
+        session.call(EDIT_TOOLSET, "EditTurboMCPFunctionRemove", {"asset": ASSET, "name": name})
+        answer = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
+                             {"asset": ASSET, "name": name, "inputs": inputs, "outputs": outputs})
+        session.call(EDIT_TOOLSET, "EditTurboMCPFunctionRemove", {"asset": ASSET, "name": name})
+        return name, answer
+
+    signature_probe = OWNED + "SignedA"
+    signature_probe, signed = signed_trial("A", "Score: float, Weight: int", "Total: float")
+    print(signed)
+    print()
+    check("a signature is accepted with both parameters supplied",
+          signed.startswith("changed:"), signed[:100])
+    check("the input pins are reported as created",
+          "created inputs: Score, Weight" in signed,
+          str([line for line in signed.splitlines() if "created inputs" in line]))
+    check("the output pin is reported as created",
+          "created outputs: Total" in signed,
+          str([line for line in signed.splitlines() if "created outputs" in line]))
+    check("no input pin was lost to a rename", "lost links by pin name: (none)" in signed)
+    check("the editor reports it as implemented", "reports it as implemented: yes" in signed)
+
+    # A SECOND trial, with its own name, so the case proves the two parameters work twice rather than once.
+    second_name, second = signed_trial("B", "Score: float, Count: int", "Sum: float")
+    check("a second signature with different names also succeeds",
+          second.startswith("changed:") and "created inputs: Score, Count" in second
+          and "created outputs: Sum" in second, second[:200])
+
+    remaining, _ = graphs(session)
+    check("both signed probes were removed again",
+          signature_probe not in remaining and second_name not in remaining,
+          ", ".join(remaining))
+
+    print()
+    print("=== invalid signature text is refused before anything is created ===")
+    for label, bad_inputs, why in (
+        ("a pin without a type", "Score", "must be 'Name: Type'"),
+        ("a type that does not resolve", "Score: NotARealTypeAtAll", "invalid type"),
+        ("the same pin name twice", "Score: float, Score: float", "invalid or duplicated"),
+    ):
+        before_bad, _ = graphs(session)
+        refused = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
+                               {"asset": ASSET, "name": signature_probe,
+                                "inputs": bad_inputs, "outputs": ""})
+        after_bad, _ = graphs(session)
+        check("refuses %s" % label,
+              refused.startswith("unchanged:") and why in refused, refused[:120])
+        check("%s created no graph" % label,
+              sorted(after_bad) == sorted(before_bad),
+              "before %s after %s" % (sorted(before_bad), sorted(after_bad)))
+
     print()
     print("=== the suite leaves the asset as it found it ===")
     session.call(EDIT_TOOLSET, "EditTurboMCPFunctionRemove",
-                 {"asset": ASSET, "name": OWNED})
+                 {"asset": ASSET, "name": OWNED, "inputs": "", "outputs": ""})
     final, _ = graphs(session)
     check("the graph list matches the starting state",
           sorted(final) == sorted(before),

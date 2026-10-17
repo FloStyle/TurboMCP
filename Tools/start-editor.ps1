@@ -113,6 +113,11 @@ param(
     [switch] $Offscreen,
     [switch] $StopFirst,
     [switch] $Stop,
+    # *** OFF BY DEFAULT, AND THAT IS THE RELEASE DECISION. *** Stopping an editor that belongs to a DIFFERENT
+    # project is refused, because this repository has recorded test failures caused by exactly that kind of
+    # interference. The flag exists so an operator who genuinely owns the other editor can say so explicitly;
+    # it is never implied by -Stop or -StopFirst.
+    [switch] $StopForeignEditors,
     [switch] $KeepOpen
 )
 
@@ -164,47 +169,163 @@ function Fail  { param([string]$T) Write-Host "  FAIL  $T" -ForegroundColor Red 
 
 $Problems = @()
 
+# ---------------------------------------------------------------------------------------------
+# *** OWNERSHIP DECIDES WHAT MAY BE STOPPED, AND THAT IS THE WHOLE OF RELEASE FINDING R10. ***
+#
+# This script used to stop every process named `UnrealEditor`. An earlier ownership check did not make that
+# safe: a foreign editor can start between the check and the stop, and the check itself was about "is an
+# editor running" rather than "is THIS REPOSITORY'S editor running". It also stopped `UnrealEditor-Cmd` and
+# `UnrealTraceServer` by name, which is a wider blast radius than the caller asked for.
+#
+# `Tools/ownership.ps1` decides ownership from a process's COMMAND LINE - its executable and its `-Project=`
+# argument - and the decisions are unit-tested by `Tools/test-ownership.py` with fake process records. A
+# process whose command line cannot be read is NOT owned, because an unprovable owner is not an owner.
+# ---------------------------------------------------------------------------------------------
+. (Join-Path $PSScriptRoot 'ownership.ps1')
+
+$OwnerId = if ($env:TURBOMCP_OWNER_ID) { $env:TURBOMCP_OWNER_ID } else { "start-editor:$PID" }
+# The plugin binary lives in the plugin's own Binaries folder, not the engine's. Computed before the -Stop
+# block, because that block needs the repository root to decide ownership.
+$ProjectDir = Split-Path $Project -Parent
+$RepoDir = Split-Path $ProjectDir -Parent
+$RepoRoot = $RepoDir
+$LeasePath = Get-TurboMCPLeasePath -RepoRoot $RepoRoot
+
+function Get-TurboMCPRunningEditors {
+    <#
+    .SYNOPSIS
+        Every running UnrealEditor, split into THIS project's and foreign ones.
+
+    .DESCRIPTION
+        The split is the point. A foreign editor is reported with the reason it was not claimed, so the caller
+        can refuse and tell the user which project is actually running, instead of either killing it or
+        pretending nothing is running.
+
+        *** THE ENUMERATION IS CIM, NOT `Get-Process -Name`. *** MEASURED: after one suite run,
+        `Get-Process -Name UnrealEditor` returned ONE process while `Get-CimInstance Win32_Process` returned
+        FOUR, all four of them this project's. The name-based cmdlet was reporting a subset, so a stop built on
+        it would have declared success while three editors held the plugin DLL and the fixture. CIM also gives
+        the command line in the same call, which is what ownership is decided from.
+    #>
+    param([string] $ProjectPath, [string] $EnginePath)
+
+    $records = @()
+    try {
+        $records = @(Get-CimInstance Win32_Process -Filter "Name='UnrealEditor.exe'" -ErrorAction Stop)
+    } catch {
+        $records = @()
+    }
+    $owned = @(); $foreign = @()
+    foreach ($record in $records) {
+        $id = [int]$record.ProcessId
+        $verdict = Test-TurboMCPOwnsProcess -ProcessId $id -Project $ProjectPath -Engine $EnginePath `
+            -CommandLine ([string]$record.CommandLine) -ExecutablePath ([string]$record.ExecutablePath)
+        if ($verdict.Owned) {
+            $owned += [pscustomobject]@{ Id = $id; CommandLine = [string]$record.CommandLine }
+        } else {
+            $foreign += [pscustomobject]@{ Id = $id; Reason = $verdict.Reason }
+        }
+    }
+    return [pscustomobject]@{ Owned = $owned; Foreign = $foreign; All = $records }
+}
+
+function Stop-TurboMCPOwnedEditor {
+    <#
+    .SYNOPSIS
+        Stop only this project's editor and its own LiveCodingConsole children.
+
+    .DESCRIPTION
+        Returns `$true` when the stop is safe to report as done. It REFUSES when a foreign editor is running:
+        the caller is told which project owns it. That refusal is deliberately not overridable by a flag in
+        this release - an operator who really needs another project's editor gone can close it themselves.
+    #>
+    param([string] $ProjectPath, [string] $EnginePath, [switch] $AllowForeign)
+
+    $state = Get-TurboMCPRunningEditors -ProjectPath $ProjectPath -EnginePath $EnginePath
+    if ($state.Foreign.Count -gt 0 -and -not $AllowForeign) {
+        foreach ($entry in $state.Foreign) {
+            Warn ("editor pid {0} belongs to another project and was NOT stopped: {1}" -f $entry.Id, $entry.Reason)
+        }
+        if ($state.Owned.Count -eq 0) {
+            Fail ('an editor is running that this repository does not own. Refusing to stop anything. ' +
+                  'Close it in the editor, or run with -StopForeignEditors if you are certain it is yours.')
+            return $false
+        }
+    }
+
+    if ($state.Owned.Count -gt 0) {
+        Write-Host "  stopping $($state.Owned.Count) editor process(es) that own this project"
+        foreach ($proc in $state.Owned) {
+            # Only the process itself. A forced child-tree kill is the runner's job for a child it started,
+            # not this script's job for an editor a person may be looking at.
+            try { Stop-Process -Id $proc.Id -Force -ErrorAction Stop } catch {
+                Warn ("could not stop editor pid {0}: {1}" -f $proc.Id, $_.Exception.Message)
+            }
+        }
+    }
+
+    # LiveCodingConsole is stopped too, and this is not tidiness. It is a separate process that the editor
+    # starts and that can outlive it. While it runs, UnrealBuildTool refuses every build with "Unable to build
+    # while Live Coding is active", which is a confusing failure an hour later. It holds no asset, so it is
+    # stopped by name - and that is the ONLY name-based stop left in this script, stated rather than implied.
+    $liveCoding = @(Get-Process -Name LiveCodingConsole -ErrorAction SilentlyContinue)
+    if ($liveCoding.Count -gt 0) {
+        Write-Host "  stopping $($liveCoding.Count) leftover LiveCodingConsole process(es) - they block every build"
+        $liveCoding | Stop-Process -Force -ErrorAction SilentlyContinue
+    }
+
+    $deadline = (Get-Date).AddSeconds(30)
+    while ((Get-Date) -lt $deadline) {
+        $still = (Get-TurboMCPRunningEditors -ProjectPath $ProjectPath -EnginePath $EnginePath).Owned
+        if ($still.Count -eq 0) { break }
+        Start-Sleep -Seconds 1
+    }
+    $left = @((Get-TurboMCPRunningEditors -ProjectPath $ProjectPath -EnginePath $EnginePath).Owned)
+    if ($left.Count -gt 0) {
+        Fail "this project's editor is still alive after 30s (pid $($left[0].Id))"
+        return $false
+    }
+
+    # *** `-Stop` IS ALSO THE WAY OUT OF A STALE LEASE, AND WITHOUT THAT IT IS A DEAD END. ***
+    #
+    # MEASURED: after an editor exited without releasing, the next start refused with exit 8 and told the operator
+    # to "delete <lease path> if the run is over" - handing a person a manual file deletion as the only recovery.
+    # The lease deliberately blocks an UNRELEASED lease (the writer and the reader are different processes, so
+    # liveness cannot be trusted), which makes an explicit release necessary rather than optional. `-Stop` is the
+    # operator tool for exactly this, so when it has established that NO editor of this project is running and
+    # none foreign is in the way, the lease is released too - whoever wrote it.
+    $anyForeign = @((Get-TurboMCPRunningEditors -ProjectPath $ProjectPath -EnginePath $EnginePath).Foreign)
+    if ($anyForeign.Count -eq 0) {
+        $staleLease = Read-TurboMCPLease -RepoRoot $RepoRoot
+        if ($staleLease -and -not ($staleLease.PSObject.Properties.Name -contains 'Unreadable' -and $staleLease.Unreadable)) {
+            if ($staleLease.OwnerId -ne $OwnerId) {
+                Write-Host "  releasing a lease left by '$($staleLease.OwnerId)' (pid $($staleLease.Pid)); no editor of this project is running"
+            }
+            Remove-Item $LeasePath -Force -ErrorAction SilentlyContinue
+        } elseif ($staleLease) {
+            # An unparseable lease is removed only here, where the operator has explicitly asked to stop and
+            # nothing of this project is running. It is never removed silently by a start.
+            Write-Host "  removing an unreadable lease file at $LeasePath; no editor of this project is running"
+            Remove-Item $LeasePath -Force -ErrorAction SilentlyContinue
+        }
+    }
+    Remove-TurboMCPLease -RepoRoot $RepoRoot -OwnerId $OwnerId | Out-Null
+    return $true
+}
+
 # ---------------------------------------------------------------------------
 # -Stop: stop the editor and exit. No file checks, because stopping must work
 # even when something is missing or half built.
 # ---------------------------------------------------------------------------
 if ($Stop) {
     Step 'Stopping the editor'
-    $Editors = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
-
-    # LiveCodingConsole is stopped too, and this is not tidiness.
-    #
-    # It is a separate process that the editor starts, and it can outlive the
-    # editor. While it runs, UnrealBuildTool refuses every build with
-    # "Unable to build while Live Coding is active", which is a confusing failure
-    # an hour later and has nothing to do with the change being built. A leftover
-    # console from a Live Coding experiment once blocked a build exactly that way.
-    $LiveCoding = Get-Process -Name LiveCodingConsole -ErrorAction SilentlyContinue
-    if ($LiveCoding) {
-        Write-Host "  stopping $($LiveCoding.Count) leftover LiveCodingConsole process(es)"
-        $LiveCoding | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 2
-        Ok 'LiveCodingConsole stopped, so builds will not be blocked'
-    }
-
-    if (-not $Editors) {
-        Ok 'no editor was running'
-        exit 0
-    }
-    Write-Host "  stopping $($Editors.Count) process(es)"
-    $Editors | Stop-Process -Force -ErrorAction SilentlyContinue
-
-    # Wait for the DLL lock to actually clear before claiming success, because a
-    # rebuild started too early fails with a locked binary.
-    $Deadline = (Get-Date).AddSeconds(30)
-    while ((Get-Date) -lt $Deadline) {
-        if (-not (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue)) { break }
-        Start-Sleep -Seconds 1
-    }
-
-    if (Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue) {
-        Fail 'an editor process is still alive after 30s'
-        exit 6
+    # *** THIS USED TO STOP EVERY PROCESS NAMED `UnrealEditor`, WHICH IS RELEASE FINDING R10. ***
+    # Now the decision is `Stop-TurboMCPOwnedEditor` above: this project's editor is stopped, a foreign one is
+    # reported and refused, and a process whose command line cannot be read is not claimed.
+    $stopped = Stop-TurboMCPOwnedEditor -ProjectPath $Project -EnginePath $Engine -AllowForeign:$StopForeignEditors
+    if (-not $stopped) {
+        Write-Host "`nRESULT: REFUSED (ownership could not be established; nothing was stopped)" -ForegroundColor Red
+        exit 7
     }
     if (Get-NetTCPConnection -LocalPort $McpPort -State Listen -ErrorAction SilentlyContinue) {
         Warn "port $McpPort is still held by another process"
@@ -226,8 +347,7 @@ foreach ($item in @(
 }
 
 # The plugin binary lives in the plugin's own Binaries folder, not the engine's.
-$ProjectDir = Split-Path $Project -Parent
-$RepoDir = Split-Path $ProjectDir -Parent
+# `$ProjectDir`, `$RepoDir` and `$RepoRoot` were computed before the -Stop block, because ownership needs them.
 $PluginDll = Join-Path $RepoDir 'Binaries\Win64\UnrealEditor-TurboMCP.dll'
 if (Test-Path $PluginDll) { Ok "plugin binary: $PluginDll" }
 else { Fail "plugin binary missing: $PluginDll (build it first)"; $Problems += 'plugin binary' }
@@ -250,31 +370,116 @@ if ($Problems.Count -gt 0) {
 }
 
 # ---------------------------------------------------------------------------
+Step 'Ownership lease'
+# ---------------------------------------------------------------------------
+# *** ONE EXPLICIT OWNER FOR THE PROJECT, THE ENGINE, THE PORT AND THE FIXTURE SET. ***
+# Finding R10's required correction. The lease is taken BEFORE an editor is started, and a second owner is
+# refused rather than warned: two editors racing for one `.uasset` and one MCP port is a failure this
+# repository has recorded more than once. The lease is read back from disk, because the tools that need it are
+# separate processes.
+$FixtureDir = Join-Path $RepoRoot 'TestProject\Content\Tests'
+$lease = New-TurboMCPLease -RepoRoot $RepoRoot -OwnerId $OwnerId -Project $Project -Engine $Engine `
+    -FixtureDir $FixtureDir -McpPort $McpPort
+if (-not $lease.Ok) {
+    Fail "the lease could not be taken: $($lease.Reason)"
+    Write-Host '        Nothing was started. Establish who owns the editor before retrying.' -ForegroundColor Yellow
+    exit 8
+}
+if ($lease.State -eq 'acquired' -and $lease.Note -and $lease.Note -ne 'no lease is held') {
+    Warn $lease.Note
+}
+Ok "lease held by $OwnerId (pid $PID) at $LeasePath"
+
+# ---------------------------------------------------------------------------
 Step 'Existing editor'
 # ---------------------------------------------------------------------------
 # Refuse rather than warn. A warning here once let a second editor start while a
 # first was still running, which means two servers racing for the MCP port and a
 # confusing picture for whoever is watching. Starting a second editor is never
 # what the caller meant.
-$Running = Get-Process -Name UnrealEditor -ErrorAction SilentlyContinue
+#
+# *** AND "AN EDITOR IS RUNNING" IS NOW SPLIT INTO "THIS PROJECT'S EDITOR" AND "SOMEONE ELSE'S". ***
+# Finding R10: -StopFirst used to stop every process named UnrealEditor. It now stops only editors whose command
+# line names THIS project, and refuses when the running editor belongs to a different checkout - because
+# replacing another project's editor is not what the caller asked for, and the previous behaviour could end a
+# session that had nothing to do with this repository.
+$editorState = Get-TurboMCPRunningEditors -ProjectPath $Project -EnginePath $Engine
+$Running = $editorState.Owned
+$ForeignEditors = $editorState.Foreign
 $PortBusy = Get-NetTCPConnection -LocalPort $McpPort -State Listen -ErrorAction SilentlyContinue
+
+# *** MORE THAN ONE EDITOR FOR THIS PROJECT IS A CONDITION TO REPORT, NOT A CONDITION TO PAPER OVER. ***
+# MEASURED while building this step: FOUR editors for this project were alive at once, left by earlier suite
+# runs, while `Get-Process -Name UnrealEditor` reported only one of them. Four editors share one fixture
+# directory and race for one MCP port, and every test result taken while they run is suspect. The count is
+# printed, and a start refuses rather than joining them.
+if ($Running.Count -gt 1) {
+    Warn "$($Running.Count) editors for this project are already running (pid $((($Running | ForEach-Object { $_.Id }) -join ', ')))"
+    Warn 'they share one fixture directory and race for the MCP port; results taken now are not trustworthy'
+}
+
+if ($ForeignEditors.Count -gt 0) {
+    foreach ($entry in $ForeignEditors) {
+        Write-Host "  foreign editor pid $($entry.Id): $($entry.Reason)" -ForegroundColor Yellow
+    }
+    if ($StopFirst -or $Stop) {
+        Fail 'an editor belonging to another project is running; this project will not stop it'
+        Write-Host "        Close it yourself, or re-run with -StopForeignEditors if you are certain it is yours." -ForegroundColor Yellow
+        exit 7
+    }
+    Warn 'a foreign editor is running; this project will start its own only if the MCP port is free'
+}
 
 if ($Running -or $PortBusy) {
     if ($StopFirst) {
-        if ($Running) {
-            Write-Host "  stopping $($Running.Count) running editor process(es)"
-            $Running | Stop-Process -Force -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 6
-            Ok 'stopped'
-        } else {
-            # Something else owns the port. Stopping UnrealEditor processes is not
-            # guaranteed to free it, so say what is holding it rather than guess.
-            Warn "port $McpPort is held by a process that is not UnrealEditor; the new server may fail to bind"
+        $stopped = Stop-TurboMCPOwnedEditor -ProjectPath $Project -EnginePath $Engine -AllowForeign:$StopForeignEditors
+        if (-not $stopped) {
+            Fail 'ownership could not be established, so nothing was stopped'
+            exit 7
         }
+        Start-Sleep -Seconds 2
+        Ok 'stopped this project''s editor'
     } else {
+        # *** REUSE A HEALTHY EDITOR INSTEAD OF REFUSING THE CALLER'S OWN START. ***
+        #
+        # MEASURED, and it blocked the fixture-rebuilding suites for two rounds: a suite stops the editor to
+        # rebuild a fixture, the rebuild starts one, and the suite's NEXT `start-editor.ps1` was then refused with
+        # "this project's editor is already running (PID 2032)". The suite's own editor was healthy and answering;
+        # the launcher simply would not say so.
+        #
+        # The refusal is still right for the cases it was written for, so it is not deleted - it is now REACHED
+        # only after the health probe fails. The three outcomes are distinct and each is reported:
+        #
+        #   * this project's editor answers the MCP server  -> REUSE, exit 0. Nothing is stopped and nothing is
+        #     started, which is strictly less work than before.
+        #   * this project's editor does NOT answer        -> the existing refusal, so the wedged-editor recovery
+        #     in `run-suites.ps1` still detects it (its `Start-EditorAndWait` relies on exactly this).
+        #   * a FOREIGN editor                             -> already refused above, never pre-empted.
+        #
+        # THE PROBE IS THE DECISION, NOT THE PROCESS. `run-suites.ps1` records why in as many words: a launcher
+        # answered "an editor is already running (PID 53852)" while `check-mcp-server.py` could NOT REACH A
+        # SERVER - a live process whose server never came up, which every later suite then inherited. So a
+        # process being alive proves nothing; the server answering is what "healthy" means.
         if ($Running) {
-            Fail "an editor is already running (PID $($Running[0].Id))"
-            Write-Host "        Re-run with -StopFirst to replace it, or use -Stop to stop it." -ForegroundColor Yellow
+            $healthArgs = @()
+            if ($Running[0].Id) { $healthArgs += @('--editor-pid', [string]$Running[0].Id) }
+            $probe = & python (Join-Path $PSScriptRoot 'check-mcp-server.py') @healthArgs 2>&1
+            if ($probe -match '^PASS') {
+                Ok "this project's editor is already running and healthy (PID $($Running[0].Id)); reusing it"
+                Write-Host "        The MCP server answered and all four TurboMCP toolsets are registered."
+                Write-Host '        Nothing was stopped and nothing was started.'
+                # The lease is refreshed to name this editor, so the reclaim rule and the stop path both see the
+                # owner that is actually running rather than the launcher that asked.
+                $LeaseRecord = Read-TurboMCPLease -RepoRoot $RepoRoot
+                if ($LeaseRecord -and -not ($LeaseRecord.PSObject.Properties.Name -contains 'Unreadable' -and $LeaseRecord.Unreadable)) {
+                    $LeaseRecord | Add-Member -NotePropertyName EditorPid -NotePropertyValue $Running[0].Id -Force
+                    $LeaseRecord | ConvertTo-Json -Depth 4 | Set-Content -Path $LeasePath -Encoding utf8
+                }
+                Write-Host "`nRESULT: PASS (an existing healthy editor was reused)" -ForegroundColor Green
+                exit 0
+            }
+            Fail "this project's editor is running (PID $($Running[0].Id)) but the MCP server did not answer"
+            Write-Host "        A live process is not a healthy server; re-run with -StopFirst to replace it." -ForegroundColor Yellow
         }
         if ($PortBusy) {
             Fail "port $McpPort is already in use, so a second MCP server would fail to bind"
@@ -352,6 +557,25 @@ else          { $Started = Start-Process -FilePath $EditorExe -ArgumentList $Arg
 
 $EditorPid = $Started.Id
 Write-Host "  PID $EditorPid"
+
+# *** THE LEASE MUST NAME THE EDITOR, NOT THE LAUNCHER. ***
+#
+# MEASURED, and it broke every suite that rebuilds a fixture: the lease recorded the LAUNCHER's pid, the launcher
+# exited as soon as the editor was up, and the lease then refused the NEXT start with
+# "another owner holds it: 'start-editor:7488' (pid 7488); the owning process is gone" - advice to release it by
+# hand. The fixture-rebuilding suites call `start-editor.ps1` from Python, so every one of them failed on a lease
+# no live process held.
+#
+# The world state that matters is "is an editor of THIS project running", not "is the process that asked for it
+# still alive". So the lease is rewritten with the editor's own pid, and `Get-TurboMCPLeaseConflict` treats a
+# lease whose editor is gone as FREE - the safe direction, because the editor's absence is exactly what makes the
+# next start legitimate.
+$LeaseRecord = Read-TurboMCPLease -RepoRoot $RepoRoot
+if ($LeaseRecord -and -not ($LeaseRecord.PSObject.Properties.Name -contains 'Unreadable' -and $LeaseRecord.Unreadable)) {
+    $LeaseRecord | Add-Member -NotePropertyName EditorPid -NotePropertyValue $EditorPid -Force
+    $LeaseRecord | ConvertTo-Json -Depth 4 | Set-Content -Path $LeasePath -Encoding utf8
+    Write-Host "  lease records editor pid $EditorPid (the launcher's pid is not the owner of an editor)"
+}
 
 $Deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 $SawWindow = $false

@@ -1,0 +1,60 @@
+---
+id: "4ff1c6d8-10ae-4397-b1ad-331968b7fa8a"
+title: "T-X4-01 (P4, low) — The X4 screen over all of Tools/: zero orphaned symbols, so the pattern lives entirely in Source/ where there are five"
+status: backlog
+priority: "P4"
+tags: ["P4", "low", "tools", "X4", "layer", "negative"]
+workspace: "7d139a89-61a3-4566-b367-cf7a89b9969b"
+created: "2026-10-12T10:36:53Z"
+updated: "2026-10-16T19:57:32Z"
+executions: 0
+board_revision: 1803
+exported: "2026-10-17T09:13:25Z"
+---
+
+# T-X4-01 (P4, low) — The X4 screen over all of Tools/: zero orphaned symbols, so the pattern lives entirely in Source/ where there are five
+
+| Field | Value |
+|---|---|
+| Card ID | `4ff1c6d8-10ae-4397-b1ad-331968b7fa8a` |
+| Status | backlog |
+| Priority | P4 |
+| Tags | `P4` `low` `tools` `X4` `layer` `negative` |
+| Workspace | `7d139a89-61a3-4566-b367-cf7a89b9969b` |
+| Created (UTC) | 2026-10-12T10:36:53Z |
+| Updated (UTC) | 2026-10-16T19:57:32Z |
+| Executions recorded | 0 |
+
+## Description
+
+Summary
+    A symbol-level screen over everything in `Tools/`, looking for anything declared and never consulted. It found nothing there — and the negative result is worth keeping, because it says where the pattern actually lives.
+
+What was screened
+    With `Select-String` over every file, not `git grep`, which returned false zeros four times in that session.
+    `Tools/checks/` (8 scripts): every function is called. `Report` in `check-plugin.py` is instantiated at `:453`, passed to all six check functions, and its `failures` and `passes` are read and printed at `:463` and `:467`.
+    Infrastructure (3 modules): `tmcp.py` 7 functions, `tmcp_paths.py` 3, `tmcp_editor.py` 4 — and `tmcp_editor.rebuild_fixture` is called from `test-graph-replace.py:88`, `test-graph-structure.py:129` and four suites that wrap it.
+    Generators (`make-*.py`, 7 files): 17 functions, none unused. Scripts (`*.ps1`, 11 files): 17 functions, none unused — `run-suites.ps1` calls `Invoke-SuiteProcess` at `:260` and `:345`, `Start-EditorAndWait` at `:309`, `Stop-Editor` at `:390` and `:402`.
+
+So the pattern lives entirely in `Source/`, where there are five
+    `TurboMCPTypes.cpp:116-119` — `KindOfType` returns "function" and `KnownKinds` at `:199` does not accept it. `TurboMCPNodeId.cpp:178-208` — `NormaliseKey` exists and two of its four callers use it. `TurboMCPPanelToolRunner.h` — the header documents a `mutable` and the code uses a `const_cast`. `TurboMCPNodeType.h:140` — `OutNote`, "never empty on failure", assigned fourteen times and read by no line. `Tools/make-tools-doc.py` — the template requires a phrase that only 9 of 52 suites use; that is the one `Tools/` instance and it is a convention rather than a symbol.
+
+The contrast is the useful part
+    The C++ side declares five things it does not consume. The script side follows its own rules when a gate enforces them, and not when they are only written in a template. `audit-suite-quality.py` blocks on six code properties and reports 0 candidates; the comment convention is unmeasured, and 43 of 52 suites do not use it.
+
+What this card does not claim
+    That the `Tools/` scripts are correct. This was a symbol-level screen — it answers "is anything declared and never consulted" and nothing else. The 43 suites have not been read, and neither have `common.ps1`, `build.ps1`, `setup-engine.ps1` or `start-editor.ps1`.
+
+## Execution prompt
+
+```text
+Testing policy: Before editing, run the fastest relevant focused/static check. Re-run it after the change. Avoid a complete suite by default; run one only when this change spans integrations or the focused test cannot establish confidence, and record why. For audit/documentation-only work, use direct validation only; do not run a complete Unreal suite.
+```
+
+## Execution history
+
+_No execution record. The card state is a board declaration, not run evidence._
+
+---
+
+_Exported from the DSH task board, revision 1803, at 2026-10-17T09:13:25Z. The board is authoritative; this file is a snapshot._

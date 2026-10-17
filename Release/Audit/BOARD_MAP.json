@@ -1,0 +1,1022 @@
+{
+  "schemaVersion": 1,
+  "purpose": "S00 scope reconciliation. Board cards are declarations; this map routes each one to a roadmap step and a disposition. It is not evidence that any card's claim holds.",
+  "sourceSnapshotRevision": 1632,
+  "liveBoardRevisionAtReconciliation": 1742,
+  "rules": [
+    "A done column is not acceptance evidence.",
+    "ARC01 and ARC09 exclusions are applied without reopening them.",
+    "An excluded feature stays in backlog and is never counted as done.",
+    "Every card maps to exactly one roadmap step or to an explicit exclusion."
+  ],
+  "counts": {
+    "total": 111,
+    "byDisposition": {
+      "out_of_release_scope": 30,
+      "deferred_by_scope": 52,
+      "route_to_step": 2,
+      "verify_existing_done": 27
+    }
+  },
+  "cards": [
+    {
+      "boardId": "9935c0ea-9d4a-4287-9786-6a805c38d76d",
+      "title": "T-FIXTURE-01 (P2, high) — The acceptance fixture's saved bytes are NOT reproducible: three sizes from one source, so the tracked asset drifts on every rebuild",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "63d5c9e2-ab8b-4a85-a6f2-2f644e0c3e1c",
+      "title": "T11 (P1, medium) — Function from text, with its signature",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "bbb63d1e-1503-4094-9376-9ae2e2578222",
+      "title": "T12 (P1, high) — Atomic multi-asset batch edit",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "ARC09: only the existing graphRepoint operation kind in one Blueprint graph is in release scope. General multi-asset atomic editing stays backlog. The subset is tracked by its own card."
+    },
+    {
+      "boardId": "ff18311b-9e72-49c5-8a65-5a96ccf5e028",
+      "title": "T13 (P1, medium) — Pin-level link dump",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Not an included release capability; no acceptance case requires it."
+    },
+    {
+      "boardId": "602feaab-6a94-4004-9c1b-ada71d983f53",
+      "title": "T14 (P1, low) — Session change list",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Not an included release capability; no acceptance case requires it."
+    },
+    {
+      "boardId": "f1a04ef1-cd1d-4129-a972-53646838d9ce",
+      "title": "T15 (P1, low) — Cleanup helpers",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Not an included release capability; no acceptance case requires it."
+    },
+    {
+      "boardId": "be9c2edb-2826-4421-941e-f02b00041b4d",
+      "title": "T16 (P2, high) — Real node sizes for every layout tool",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "c5c54253-37b8-452c-84d5-93f088f11ea8",
+      "title": "T17 (P2, high) — Layout rules and score that match a person's layout",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "02ba0f24-4c9d-41cf-8a02-b75644a13b0c",
+      "title": "T18 (P2, high) — One getter rule for the report and the fixer",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "e6fc78bd-754d-43c1-bdad-78d7abaeaaee",
+      "title": "T19 (P2, high) — Tidy: no false cycle",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "c421299d-8275-4cc5-85d1-bc85cbb49276",
+      "title": "T20 (P2, high) — Capture shows what it framed",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "a8341453-1aae-48d9-ad3f-fec762cfa0e5",
+      "title": "T21 (P2, low) — Layout report counts",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "abdd2c08-6544-4730-b183-e4d856aad868",
+      "title": "T22 (P3, medium) — One field syntax for all field tools",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "ba6df3c8-12e8-4678-a020-a89881e3e0d7",
+      "title": "T23 (P3, medium) — Table row preview and read-back",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "7bd81b84-da3f-4132-bb87-de189eea69ac",
+      "title": "T24 (P3, medium) — Struct readers include break and make nodes",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "a4eed2e1-88a7-4c0a-b9de-7443e492f54b",
+      "title": "T25 (P3, low) — Data table create, with nested rows",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "ARC01: broad asset creation is unbuilt for this release."
+    },
+    {
+      "boardId": "1f5fe672-f84d-40f1-98c0-adc77a8a8816",
+      "title": "T26 (P3, low) — Show the dependents of a struct change",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "e866ba0d-4f6e-408e-9df7-d90a6467d410",
+      "title": "T27 (P4, medium) — One node ID format, readable by a person",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "9db83209-5824-4dd4-a08d-fdfffce29f2c",
+      "title": "T28 (P4, medium) — Node-type lookup accuracy",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "ca5bbbfc-9ffe-4ae4-b92c-32c18d688b1a",
+      "title": "T29 (P4, low) — Node find covers every graph",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "261bb8db-950c-49f3-b7f2-fff304a3ec8a",
+      "title": "T30 (P4, low) — Bound handlers are not \"never called\"",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "1db73082-b800-4503-b6df-2d1ad761baf7",
+      "title": "T31 (P5, medium) — Short checkout report",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "e35faf67-33e1-47ac-9155-59c86e5b0f4c",
+      "title": "T32 (P5, medium) — Agent entry point and trap notes",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "9d4624ff-4e90-4c5e-9f8f-1e621af2d537",
+      "title": "T33 (P5, low) — Plugin window presentation",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "5b06fa2e-f0b8-4fa9-be6d-76dc0ae05141",
+      "title": "T34 (P6) — Widget authoring (rows 5.2 to 5.5): tree, properties, slot layout, animations, bindings in bulk",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "ARC01: widget animation authoring is explicitly unbuilt for this release."
+    },
+    {
+      "boardId": "b6fa0cf7-c92e-41e4-a5f1-0c1c86636283",
+      "title": "T35 (P6) — Material writing (rows 3.2 to 3.6): full reader, then check, append, replace, patch, then function arguments",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "cdbf31c9-caa6-4233-8314-1f960538ea8c",
+      "title": "T36 (P6) — Source control next to the editor hooks",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "66d97dc8-2aa7-41a2-a8ae-7b289c89cbdb",
+      "title": "T37 (P6) — Asset operations (row 7.6): create, rename, move, duplicate, with redirectors fixed",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "ARC01: general asset CRUD is explicitly unbuilt for this release."
+    },
+    {
+      "boardId": "f434ffba-f4cc-49a1-bb51-21b51941c8b7",
+      "title": "T38 (P6) — Test: the material reader keeps constants on unconnected inputs",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "4ec9e1cc-763d-46f6-aa31-181e8547e2fa",
+      "title": "T39 (P6) — Curve assets (row 7.3)",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "ARC01: curve editing is explicitly unbuilt for this release."
+    },
+    {
+      "boardId": "d0f909a3-e329-45da-9b20-1c47a5980317",
+      "title": "T40 (P6) — Preview of the ordered steps to add a node: create, then link these pins in this order",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "ba518a2a-c4fa-4260-9947-613f8568a84b",
+      "title": "T41 (P6) — Input test loop for play sessions: mouse, input action injection, simulated gamepad, menu solver",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "ARC01: input injection is explicitly unbuilt for this release."
+    },
+    {
+      "boardId": "2f066e6c-8c34-412f-b1b4-451389996086",
+      "title": "T-KEEP (P3, medium) — `Keep: works today`: the file's 10 regression checks, which no card owned until now",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "100b52a6-19fa-4437-982e-34485a9695ea",
+      "title": "T-RECON (P1, medium) — Three `plan row` clauses the list dropped: macros (row 6.6), an open tab refusing (row 7.6), E-SESSION/R-EDIT-SESSION bounded (row 9.2)",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "51678b9f-9760-4548-b8f7-f58c461af520",
+      "title": "X-17/X-16 (P1, high) — feedback reports must retain items and IDs",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "3eae39b1-82f6-480c-bf6e-e20d3bef5fe6",
+      "title": "F5-F8/RF-1/AC-1/AC-2/AC-4/GL-4/BL-1/BL-3 (P2, medium) — read and cost outputs must be truthful and bounded",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "04111899-8525-4699-a2b1-8d538e6f9fc4",
+      "title": "F9-F13/RF-2/AC-3/BL-2/NF-1/VC-1/MI-1 (P3, low/positive) — keep outputs compact and preserve proven good behavior",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "c2865829-9206-4df7-8cf1-89d8d1c319bc",
+      "title": "Release 1.0 gate: safety, build, and public release",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S18",
+      "disposition": "route_to_step",
+      "reason": "Mapped to the roadmap step that governs its subject."
+    },
+    {
+      "boardId": "081329d2-85bf-42c4-9939-35cbf4c05863",
+      "title": "Release 1.0: reconcile the public branch",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Branch reconciliation is a publication step. Publication is not authorized in this run."
+    },
+    {
+      "boardId": "3be553c8-ff93-4646-9bd7-3b3712c1b582",
+      "title": "X-18/X-21/X-22 (P2, medium) — read-only calls must not silently dirty, save or check out assets",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "0b84b1d8-ac34-4ea6-b2a7-f196ad74e81f",
+      "title": "NR-03/WT-04 (P3, medium) — read tools need actionable detail, not counts or cuts",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "0e4658ad-625d-4f86-b81b-ee38cb298011",
+      "title": "AS-01/BL-07/TH-02/TH-03 (P3, low) — filters, focused output and usable help",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "d4433d0e-57d9-4830-8630-a7ff8c79fa1e",
+      "title": "FT-25/FT-26/FT-29 (P4, medium) — reduce common asset, component and listener authoring work",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature requests beyond the fixed release boundary."
+    },
+    {
+      "boardId": "e9a28b8d-b558-4054-a5ae-3ff7b39bea2e",
+      "title": "FT-32–FT-36 (P4, low) — add focused read, layout and read-only helper tools",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature requests beyond the fixed release boundary."
+    },
+    {
+      "boardId": "ee4fde11-5d9a-43f2-a017-ad6993605e30",
+      "title": "Batch verifier — test the ten concurrent urgent fixes",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Written for ten parallel sessions. This release run is sequential and owns no parallel batch."
+    },
+    {
+      "boardId": "4f1bfd61-2e79-4f4f-ab66-644a6d1acc76",
+      "title": "GC-09 / FT-47 (P1, high) — graph append must detect invalid created nodes and roll back",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "d3897f07-b45f-4726-91e9-9c59829985cd",
+      "title": "GL-10–GL-13 / GL-11 (P1, high) — graph reads must preserve every node and every pin link",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "02674939-2883-4cec-b2eb-24588dcfeac6",
+      "title": "TR-01 / TR-02 (P1, high) — trace must not claim a node never ran without a proven match",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "484d5638-06b1-44ea-a597-97097644699d",
+      "title": "RF-06 (P1, high) — references direction both must not return a false zero",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "7bbe9c3c-19c2-4b62-aad2-9cd098d0fedf",
+      "title": "LT-04 (P1, high) — lint must not call a linked cast result unnecessary",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "7ae3dd76-6224-4318-ac79-78fd5306dde8",
+      "title": "X-24/X-26 / FT-37 (P2, medium) — read live widget instances and usable paths",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "4de12720-cdc0-473e-8cb0-d9b4f5431a7b",
+      "title": "GC-10–GC-12 / X-33 (P2, medium) — graph writers must accept canonical reader text",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Widening the writer grammar is beyond the fixed release boundary."
+    },
+    {
+      "boardId": "a28a09fd-cb1a-4b58-baee-085beff7ce10",
+      "title": "BL-09 / LT-03 / LT-06 (P2, medium) — usage analysis must recognize delegates, bound handlers and implicit self",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "9c47994b-6b0a-49c3-a332-44e64650f199",
+      "title": "X-27 / FT-41 (P2, medium) — preview and revert unsaved assets safely",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "9e5d5c9a-d446-40aa-a822-cb55d304476d",
+      "title": "X-28 / TH-05 / TH-07 / X-34 / FT-43 (P2, medium) — bounded task-to-tool discovery",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Bounded task-to-tool discovery is a feature request, not an included repair."
+    },
+    {
+      "boardId": "1388b93a-bbcc-4f26-bbfd-d2c6cadc02d0",
+      "title": "WT-07 (P2, medium) — widget subtree write and explicit event binding",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feature request beyond the fixed release boundary."
+    },
+    {
+      "boardId": "1256778b-652c-4534-8c3b-133dc44c8ec0",
+      "title": "BL-10 / X-30 / X-31 / FT-46 (P3, medium) — complete widget overrides and animation state reads",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "9263bd95-5a42-4723-aa29-cd43406efb35",
+      "title": "TH-06 / GC-08 / TR-04 / TH-04 (P3, low) — help must show valid actions and graph-edit forms",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "deferred_by_scope",
+      "reason": "Feedback-batch card outside the 47-finding release ledger; its release-relevant content is owned by the mapped findings and the capability manifest."
+    },
+    {
+      "boardId": "b230e508-5b3b-4de1-aad3-b832838fc2cb",
+      "title": "T12 prerequisite — Extract transaction-free operation cores",
+      "snapshotColumn": "todo",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S16",
+      "disposition": "route_to_step",
+      "reason": "Mapped to the roadmap step that governs its subject."
+    },
+    {
+      "boardId": "745637f4-b07e-46fc-9251-c89e62fa2f04",
+      "title": "T-C3-01 (P5, low) — C3: 17 of the 50 comment-versus-code sites remain — 33 fixed, and this card is the resume point",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "53fb9672-b301-4d18-877a-9bf737c0ad6b",
+      "title": "T-METHOD-01 (P3, medium) — Every count in every card must state the scope it was taken over — 161 is a floor, not a total",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "81cbc063-f063-4b7a-a9e6-d8633db9951d",
+      "title": "T-AUDIT-10 (P5, low) — AUDITED BY HAND 10/49: TurboMCPWidgetTreeText.cpp — 688 lines, one comment omits the character its sibling calls decisive, and no round-trip defect",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "c4485ba2-aa66-4413-b519-722823b1263f",
+      "title": "T-AUDIT-12 (P1, medium) — AUDITED BY HAND 12/49: TurboMCPOverrideRemove.cpp — 182 lines, the count that caught its worst bug is not in the answer",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "214d6e7a-7b19-4efa-a08f-7cf6a4461eec",
+      "title": "T-AUDIT-14 (P1, medium) — AUDITED BY HAND 14/49: TurboMCPEnumAdd.cpp — 311 lines, Renamed restates the request while ShownAs beside it is measured",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "48608da1-2d6d-42f5-8eac-095db728c5c2",
+      "title": "T-AUDIT-16 (P5, low) — AUDITED BY HAND 16/49: TurboMCPTokenEstimate — 48 correct lines and one false universal (one finding withdrawn after checking the spec)",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "a6a86af7-99b9-46e4-8bc3-a1998fecad87",
+      "title": "T-AUDIT-17 (P6, low) — AUDITED BY HAND 17/49: TurboMCPPureChecks.cpp — 132 lines, zero defects, and the structural reason why",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "a312b008-744b-4fb0-a366-806c4bc03282",
+      "title": "T-AUDIT-18-19 (P5, low) — AUDITED BY HAND 18-19/49: TurboMCPSettings.cpp clean; TurboMCPModule.cpp measures the analytics install and only logs it, plus a member read nowhere in the repository",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "8beb2deb-3cfd-4c55-854e-25c6cb917a26",
+      "title": "T-AUDIT-20 (P6, low) — AUDITED BY HAND 20/49: TurboMCPTraps.cpp — 202 lines, zero defects, and four failure states kept distinct",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "019cf7af-dfe5-4cda-91b9-1ca706ace4e5",
+      "title": "T-AUDIT-22 (P1, medium) — AUDITED BY HAND 22/49: TurboMCPCallCostTools.cpp read to the end — a substituted cap parameter, and reporting discipline the three material writers lack",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "37d3d49e-9a9d-4b7d-b5d6-88652b0dfe43",
+      "title": "T-AUDIT-27-29 (P6, low) — AUDITED BY HAND 27-29/49: TurboMCPPlayCheck (.cpp + .h + Tools) — 757 lines, zero defects, and the correct form of what TraceTools does wrong",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "71e2e86a-9854-4a25-9d17-18f18f5679e5",
+      "title": "T-SUITE-02 (P3, low) — The FAILS ON convention measures a vocabulary, not a quality — two full suites tested, and one of the 34 silent ones is exemplary",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "77b738a1-1574-4c70-85e1-4de626ca89df",
+      "title": "T-AUDIT-31 (P6, low) — AUDITED BY HAND 31/49: TurboMCPOverrides.cpp — 402 lines, zero defects, and the fifteenth read-only file with no behaviour defect",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "701a6c3d-90d5-403d-84f1-5f2eacc2113d",
+      "title": "T-AUDIT-32 (P5, low) — AUDITED BY HAND 32/49: TurboMCPNodeType.cpp — 1058 lines, and a note with a written contract that fourteen assignments fill and no caller reads",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "4ff1c6d8-10ae-4397-b1ad-331968b7fa8a",
+      "title": "T-X4-01 (P4, low) — The X4 screen over all of Tools/: zero orphaned symbols, so the pattern lives entirely in Source/ where there are five",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "5301f48e-4603-436a-b34f-54c31ab6f0a5",
+      "title": "T-AUDIT-UNCOVERED (P3, low) — AUDITED: test-uncovered-tools.py — 176 lines, the best statement of C3 in the audit, and one weak check named",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "d03a170f-8ba2-4131-9258-c02644e22eb9",
+      "title": "T-AUDIT-36 (P5, low) — AUDITED BY HAND 36/49: TurboMCPGraphLoad.cpp — the spec and code are both honest about format 'write'; the plan's count is the only thing that omits it",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "048107d9-a439-4e28-955a-562804215ac9",
+      "title": "T-SUITE-01 (P3, medium) — The material suites DO assert the rollback text — but only on the paths the code verifies, which is why 28 unchecked sites are untested",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "8af56e37-5290-4b95-8057-8cc3a5df0ceb",
+      "title": "T-C3-02 (P5, low) — C3 and C-P10 overlap on 16 sites: the C-P10 card owns them, and C3 owns only the comment question at those lines",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "5013737a-dd64-4ac3-a627-aab8c590b676",
+      "title": "T-SUITE-03 (P4, low) — The two obsolete T03 suites are removed (a0b4556) and the final 62-suite sweep is running",
+      "snapshotColumn": "backlog",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Audit and verification bookkeeping. Not a repair of an exposed capability; retained as history."
+    },
+    {
+      "boardId": "03aec229-589c-41dd-93e0-9acca8c4109d",
+      "title": "T-AUDIT-TYPES (P1, medium) — 2 of 3 fixed (4fc7f70, c01e385): the limit is refused by name and the unreachable kind branch is gone — finding 3 open",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "a2ce8296-2cab-457f-893a-050d430d888d",
+      "title": "T-AUDIT-06 (P0, high) — AUDITED BY HAND 6/49: TurboMCPNodeId.cpp — 461 lines, a colon that breaks round-tripping, and a normaliser two of four callers skip",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "ce7de655-8b26-47ea-9d66-a4f1c6782cef",
+      "title": "T-AUDIT-11 (P1, medium) — AUDITED BY HAND 11/49: TurboMCPNodeResolve.cpp — 570 lines, a malformed key refused with a diagnosis about the graph, plus a continue where break is meant",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "3d0ac490-f0f2-423a-a7c3-a12e2aec90ef",
+      "title": "T-AUDIT-21-24 (P0, high) — AUDITED BY HAND 21-24/49: the tool-wrapper layer — one unguarded refusal prefix against a project rule that names the exact failure, and three pass-throughs that are correct",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "727195e1-c262-436e-a560-bb25581ee2bc",
+      "title": "T-AUDIT-30 (P0, high) — AUDITED BY HAND 30/49: TurboMCPWidgetsAsVarsTools.cpp — 32 lines, a second confirmed site of the unguarded prefix, and the one justified absence of a Preview twin",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "backlog",
+      "disposition": "out_of_release_scope",
+      "reason": "Per-file hand-audit history. Defects with release relevance are represented by the G/D/R/X findings."
+    },
+    {
+      "boardId": "8b005ace-2484-46f9-b94a-0205fcc7bc2b",
+      "title": "T01 (P0, high) — DONE (bded08c): both crashes fixed, both verify scenarios PASS live, and the anti-vacuous checks caught my own wrong ids twice",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "5b0eb43f-3c10-4a39-9f6b-35bd7842e6e1",
+      "title": "T03 (P0) CORRECTED: `done when` 3 is NOT done — the option was withdrawn (bb6467b) because a defaulted schema parameter is required, and it broke every caller that omitted it",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "aaa00f84-b544-4d90-a9a2-5463cd1d0017",
+      "title": "T04 (P0) code done (7153502): the verdict reads the log capture — the verify needs an engine ensure, which no suite can force",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "bec3dcf6-a495-48d6-b83e-868ae4e7b740",
+      "title": "T05 (P1, high) — 2 of 5: every offered node type is built or refused by name — items 2 and 5 proven and passing (15f6f52); items 1, 3 and 4 (GC-02, GC-03, GC-04) are open and were on no card",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "28f94b91-6b09-43fe-b412-c738a3222774",
+      "title": "T-FAST (P0, high, TOP) — `-Fast` is implemented and committed (d376e41) but undocumented and unverified; the restore, not the suites, is where the minutes go",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "6eab4f44-d594-49a4-8034-c99a2ac24c02",
+      "title": "T06 (P1, high) — The graph reader prints every node",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "4f481e7b-6f4f-405d-9945-f57969495e65",
+      "title": "T07 (P1, high) — Dead-node detection on exec reachability, with a cleanup edit",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "d872e8a7-fa3c-4fd0-a4b3-549fb873b08b",
+      "title": "T08 (P1, medium) — Insert into an exec chain",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "13385c4a-6444-4b47-b1cd-6242d58f7e88",
+      "title": "T09 (P1, medium) — Add dedicated call-node swap with named-pin preservation",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "328dd5a2-be03-4a2c-bf71-c37a36a716f1",
+      "title": "T10 (P1, medium) — Repoint every reader from one output to another",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "a9074954-c4d1-445b-81aa-71cca1ab7fbf",
+      "title": "T02 (P0, high) — DONE: the price was measured in the wrong place (4 handler substitutions, not 68 body insertions), the agent path writes its start record, item 4b's filters/grouping/expansion are asserted and the window is photographed, and BOTH verifies pass — including the forced-kill crash test",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "8bd85fb2-7141-4ffa-ae86-243ac41ada2a",
+      "title": "T05 remainder (P1, high) — the file's items 1, 3 and 4: one ID resolver (GC-02), bracketed IDs in nested forms (GC-03), a local label as a link target (GC-04)",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "6e8e8381-147c-4345-abee-f2e679697496",
+      "title": "T-LOG03 (P0, medium), clarified by the user — the TurboMCP window must show the log of what is called — not the Unreal log — formatted for a human",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "0ee9dfca-bc2f-4f7d-9577-5abff04bba8e",
+      "title": "T-FAST-1 (P0, high, TOP) — the fixture restore is what restarts the editor: make the restore cheap so one editor serves the whole run",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "d1a36410-3ab8-4c88-a623-ca08ee0dca06",
+      "title": "T-UPLUGIN-01 (P1, high) — TurboMCP.uplugin does not declare Niagara, but the module depends on Niagara and NiagaraEditor",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "0ee2ebb7-ef6f-431d-930a-c75b385ddeb6",
+      "title": "T-BUILD-01 (P1, high) — two warnings in TurboMCPCapture.cpp: a shadowed 'Size' at :821 and a deprecated Slate position API at :831",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "4b5b7af0-0148-41ca-9e20-84db8db965fe",
+      "title": "X-2 (P0, critical) — graph reading can crash Unreal on large graphs",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "62ea1488-64e7-4508-b3e5-426a71efceea",
+      "title": "X-1 (P1, high) — reference reads must not return intermittent false zero",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "71616c71-ab92-425c-b9b3-307ca24b62a2",
+      "title": "F1/GL-1 (P1, high) — graph readers must preserve connected target pins",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "f01dbe38-709c-47dd-b178-0e788f7c0840",
+      "title": "F3/F4/X-3 (P1, high) — widget traversal and plugin trap loading must be reliable",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "e67be5ad-e197-4e0b-9f1b-fa609f1a13d3",
+      "title": "DT-06/SV-07 (P1, high) — never hide a partial write or a successful save",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "36dc9bf6-6f2c-4330-ad58-086c269a5912",
+      "title": "GL-09 (P1, high) — graph reads must print Blueprint calls and break-struct nodes",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": false,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "f4a6396f-4fcb-4bc1-9ef9-cf05d5e7759e",
+      "title": "X-20/TD-04/CP-05 (P1, high) — layout and capture must reject unmeasured or invalid geometry",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "cb52d85c-0859-4d82-a0f3-83bf40d042cd",
+      "title": "SF-04/VA-02/FA-04 (P2, medium) — typed fields and function signatures must support object types",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "db3ea44d-dc72-4892-917e-4446ad995219",
+      "title": "GC-06/GC-07 (P2, medium) — one graph grammar and safe in-function insertion",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "143431f3-7db4-4fa0-8559-2c322786cad2",
+      "title": "MI-02/FT-27 (P2, medium) — material reads and default changes need sampler facts",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    },
+    {
+      "boardId": "f4d8c14a-e362-42b0-8c25-912732fe75f4",
+      "title": "FT-30/FT-31/TD-05 (P2, medium) — scope layout work and make preview match edit",
+      "snapshotColumn": "done",
+      "snapshotVerificationBypassed": true,
+      "roadmapStep": "S15",
+      "disposition": "verify_existing_done",
+      "reason": "Card declares done. That is a declaration, not acceptance evidence: the board also carries failed executions among these cards. Routed for re-verification against current behavior before any release claim."
+    }
+  ]
+}
