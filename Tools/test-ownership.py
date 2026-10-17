@@ -77,7 +77,11 @@ def ps_json(body, arguments):
     prefixed so it cannot collide, and a variable that is absent reads as an empty string, which every module
     parameter treats as "not given" - the same default as before.
     """
-    preamble = ". '%s'\n" % str(MODULE).replace("'", "''")
+    # PowerShell diagnostics may use the OS language. Match the pipe producer
+    # and consumer explicitly instead of inheriting Python's locale encoding.
+    preamble = ("[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)\n"
+                "$OutputEncoding = [Console]::OutputEncoding\n"
+                ". '%s'\n") % str(MODULE).replace("'", "''")
     environment = dict(os.environ)
     # *** EVERY PREVIOUS ARGUMENT IS CLEARED FIRST, AND THAT WAS A REAL DEFECT IN THIS HELPER. ***
     # The environment is inherited from the test process, so a variable set by an EARLIER probe survived into
@@ -90,7 +94,7 @@ def ps_json(body, arguments):
     for key, value in arguments.items():
         environment["TMCPARG_%s" % key.upper()] = "" if value is None else str(value)
     done = subprocess.run([PWSH, "-NoProfile", "-Command", preamble + body],
-                          capture_output=True, text=True, timeout=300, cwd=str(ROOT),
+                          capture_output=True, text=True, encoding="utf-8", errors="strict", timeout=300, cwd=str(ROOT),
                           env=environment)
     return done.returncode, (done.stdout or "") + (done.stderr or "")
 
@@ -157,6 +161,20 @@ def main():
     if not MODULE.is_file():
         print("RESULT: BLOCKED (missing %s)" % MODULE)
         return 1
+
+    # U+0410 encodes with byte 0x90, which cp1252 cannot decode. Use code
+    # points to keep the test source English/ASCII while exercising OS output.
+    code, out = ps_json(
+        "@{Blocking=$true;Reason=([string][char]0x0410)} | ConvertTo-Json -Compress; "
+        "[Console]::Error.WriteLine([string][char]0x00e9)", {})
+    payload = last_json(out)
+    record("E03 non-ASCII stdout and stderr survive the pipe exactly",
+           code == 0 and field(payload, "Blocking") is True
+           and field(payload, "Reason") == "\u0410" and out.endswith("\u00e9\n"))
+    code, out = ps_json(
+        "@{Blocking=$false;Reason=([string][char]0x0410)} | ConvertTo-Json -Compress", {})
+    record("E03 a decoded false verdict is not converted to blocking",
+           code == 0 and verdict(out) is False)
 
     work = pathlib.Path(tempfile.mkdtemp(prefix="tmcp-ownership-"))
     repo = work / "Repo"
