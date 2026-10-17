@@ -1,4 +1,4 @@
-# R06: Reconcile graph identity and representation repairs
+# R06: Specify graph correctness repairs
 
 ID: R06
 Status: todo
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/graphs.md
 Kind: investigation
+Review: source-reviewed
 
 ## Problem
 Separate identity, read completeness, grammar and mutation defects into independently testable repairs. Enforce D-008, preserve every link endpoint, refuse ambiguous keys and unsupported destructive formats. Compare reader output against canonical writer input without pretending compact reports are lossless.
@@ -48,3 +49,31 @@ Pending. Record source/engine/artifact identity, command, exit, log and remainin
 - [d3897f07-b45f-4726-91e9-9c59829985cd](d3897f07.md)
 - [e866ba0d-4f6e-408e-9df7-d90a6467d410](e866ba0d.md)
 - [ff18311b-9e72-49c5-8a65-5a96ccf5e028](ff18311b.md)
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R06](roadmap-r06.md).
+
+Empty-graph fallback and cast-pin assumptions are confirmed source defects. Some node creation and note-propagation claims are stale.
+
+### Next action and acceptance
+
+Order evidence by identity/refusal, reader completeness, grammar/spawn, then destructive mutation. Use current reviewed actions as the checklist; preserve independent endpoint/state oracles and named refusal cases.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp#L235)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatch.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatch.cpp#L26)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp#L250)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/test-lookup-guards.py`
+- `python Tools/execute-tests.py --profile engine --suites test-graph-roundtrip --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

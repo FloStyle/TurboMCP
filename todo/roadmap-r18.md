@@ -1,4 +1,4 @@
-# R18: Specify a clearer editor panel and icon system
+# R18: Design the editor panel before rewriting it
 
 ID: R18
 Status: todo
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/editor-experience.md
 Kind: investigation
+Review: source-reviewed
 
 ## Problem
 The editor panel needs a clearer layout and easier status/result interpretation. Produce a concrete design that preserves behavior and can be handed to a separate implementation task.
@@ -39,3 +40,29 @@ A reviewable editor UX specification, annotated layouts and bounded implementati
 
 ## Completion evidence
 Pending. Record exact source and engine identities, commands, exits, evidence locations, tested binary hashes where applicable, changed files and unresolved limits. Integration review is required before marking done.
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R18](roadmap-r18.md).
+
+The panel and plugin icon exist; improved UX is a design task rather than permission for a Slate rewrite. Descriptor beta state is not equivalent to panel status.
+
+### Next action and acceptance
+
+Capture synthetic baseline states, draft narrow/wide and high-DPI layouts, keyboard/focus behavior and honest effects/results. Fold 9d4624ff into this design. Stop for owner design review before creating implementation scope.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp](../Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelToolRunner.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelToolRunner.cpp)
+- [docs/design/editor-experience.md](../docs/design/editor-experience.md)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-panel --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

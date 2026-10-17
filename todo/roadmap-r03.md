@@ -1,4 +1,4 @@
-# R03: Establish fixture and binary reproducibility evidence
+# R03: Verify fixture recovery and binary identity
 
 ID: R03
 Status: done
@@ -7,9 +7,10 @@ Readiness: ready
 Owner: integration-owner
 Design: docs/design/verification.md
 Kind: investigation
+Review: source-reviewed
 
 ## Problem
-Reproduce the first-run-after-rebuild and fixture-drift reports. Capture baseline hashes, build identity, first and second test runs, in-memory and disk restoration. Classify deterministic content changes versus package serialization noise. Create one bounded repair specification per confirmed root cause; do not normalize away meaningful differences.
+Establish owned recovery, loaded binary identity and separate first/second fixture trials. Historical serialization drift and intermittent failures remain open under 9935c0ea and efa76989; this foundation task does not certify their root causes.
 
 ## Scope
 Tools fixture generation/isolation/build provenance, TestProject fixtures and related tests. Do not regenerate every asset or commit changed binaries without explaining their cause.
@@ -56,3 +57,30 @@ need current source and runtime reconciliation before implementation.
 - [9935c0ea-9d4a-4287-9786-6a805c38d76d](9935c0ea.md)
 - [b4d297e2-ba48-4981-b122-6c9dd48dc1ab](b4d297e2.md)
 - [efa76989-7e08-4673-8ac1-901c709cdc04](efa76989.md)
+
+## Current review
+
+**Decision:** completed. **Follow-up owner:** [R03](roadmap-r03.md).
+
+Bounded crash recovery and identity checks are verified. Deterministic serialization and intermittent fixture failure remain separate open findings.
+
+### Next action and acceptance
+
+State that this foundation completion does not close 9935c0ea or efa76989. Use identity-verified first/second trials; keep superseded legacy-DLL evidence excluded.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Tools/execution_recovery.py](../Tools/execution_recovery.py)
+- [Tools/plugin_identity.py](../Tools/plugin_identity.py)
+- [Tools/execute-tests.py](../Tools/execute-tests.py)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/test-execution-recovery.py`
+- `python Tools/test-plugin-identity.py`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

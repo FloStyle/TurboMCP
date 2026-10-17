@@ -1,4 +1,4 @@
-# R13: Measure 5.9 native overlap before approving new features
+# R13: Compare native capabilities before expansion
 
 ID: R13
 Status: todo
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
+Review: source-reviewed
 
 ## Problem
 Inspect the upstream development head once at task start. Record its revision separately from the approved comparison pin. Do not edit engine.lock.json or upgrade the local engine. Compare only relevant APIs and label evidence from each revision explicitly. Compare native enum/struct/source-control/widget-animation and stdio proxy against concrete TurboMCP workflows, including safety and output costs. Names alone do not prove parity.
@@ -62,3 +63,29 @@ unverified; it is not a reason to invent parity or build the whole engine.
 Use the offline test profile. Return source identifiers, exact declaration
 references, comparison decisions and unresolved questions. Stop for review;
 do not automatically claim R16.
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R13](roadmap-r13.md).
+
+The existing three-way inventory is a candidate source scan. This task review does not execute the separate forward-engine comparison.
+
+### Next action and acceptance
+
+Inspect exact pinned interfaces and current upstream revision separately. Compare each deferred workflow for inputs, effects, outputs, failure and maintenance cost. Keep all 101 rows, unverified runtime labels and no engine upgrade.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [engine.lock.json](../engine.lock.json)
+- [docs/audit/epic-tool-inventory.json](../docs/audit/epic-tool-inventory.json)
+- [docs/audit/tool-routing.json](../docs/audit/tool-routing.json)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile offline --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

@@ -1,4 +1,4 @@
-# T29 (P4, low) — Node find covers every graph
+# State graph search coverage explicitly
 
 ID: ca5bbbfc-9ffe-4ae4-b92c-32c18d688b1a
 Status: todo
@@ -6,6 +6,36 @@ Priority: P4
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/graphs.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** investigate. **Follow-up owner:** [R06](roadmap-r06.md).
+
+Several call sites enumerate UbergraphPages, FunctionGraphs and MacroGraphs themselves. Shared graph lookup and graph enumeration are different contracts; recursive/subgraph coverage remains to be proved.
+
+### Next action and acceptance
+
+Use a Blueprint with function, macro, event and nested graphs. Compare against an independent engine graph enumeration; list skipped graphs and reasons. Do not infer whole-asset coverage from a successful named-graph resolver.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp#L481)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-batch-tools --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -35,3 +65,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

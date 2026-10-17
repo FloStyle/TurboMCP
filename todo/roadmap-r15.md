@@ -1,4 +1,4 @@
-# R15: Automate source and binary release preparation
+# R15: Activate gated private CI and release preparation
 
 ID: R15
 Status: todo
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/verification.md
 Kind: implementation
+Review: source-reviewed
 
 ## Problem
 Activate CI with authorized workflow credentials; preserve read-only PR validation. Build deterministic source/package manifests, retain evidence artifacts, and add a manually authorized release job that fails on missing gates. Separate private development credentials from publication credentials.
@@ -40,3 +41,30 @@ Pending. Record source/engine/artifact identity, command, exit, log and remainin
 ## Related findings
 - [c2865829-9206-4df7-8cf1-89d8d1c319bc](c2865829.md)
 - [public-cutover](public-cutover.md)
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R15](roadmap-r15.md).
+
+CI exists as a template, not an active required GitHub check. Workflow credentials and repository-plan restrictions are external prerequisites. Publication remains separate.
+
+### Next action and acceptance
+
+Implement/read-test dry-run refusal controls first; activate CI only with suitable credentials. Record branch protection availability honestly. Use complete tracked-tree exports and target-specific packages; never auto-publish from main.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Tools/ci/validate.yml](../Tools/ci/validate.yml)
+- [Tools/export-public.py](../Tools/export-public.py)
+- [Tools/release-check.py](../Tools/release-check.py)
+- [release/status.json](../release/status.json)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile offline --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

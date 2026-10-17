@@ -24,3 +24,5 @@ they are not independent agent entry points.
 No automatic publication or paid agent launch is performed. GitHub CI remains
 inactive; its template is Tools/ci/validate.yml. Local validation is not remote
 branch protection. See [release management](../docs/release-manager.md).
+
+Task review integrity is checked by `python Tools/check-task-review.py` as part of repository validation. It checks complete ID coverage, source references, follow-up owners and catalogued test commands. It does not decide whether a defect is fixed or replace semantic review.

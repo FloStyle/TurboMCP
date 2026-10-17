@@ -1,4 +1,4 @@
-# T38 (P6) — Test: the material reader keeps constants on unconnected inputs
+# Verify exact unconnected material constants
 
 ID: f434ffba-f4cc-49a1-bb51-21b51941c8b7
 Status: todo
@@ -6,6 +6,35 @@ Priority: P6
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/verification.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** partial. **Follow-up owner:** [R08](roadmap-r08.md).
+
+ConstantForInput and unlinked-input rendering exist. The current suite accepts any numeric constant rather than the fixture's exact expected value, so it cannot prove exact constant preservation.
+
+### Next action and acceptance
+
+Use multiple distinct constants, zero, vectors and a documented default case. Compare each named input to independent expression properties; an arbitrary numeric token is not a pass. Keep this as the gate for b6fa0cf7 expansion.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterial.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterial.cpp)
+- [Tools/test-material.py](../Tools/test-material.py#L120)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-material --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -39,3 +68,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

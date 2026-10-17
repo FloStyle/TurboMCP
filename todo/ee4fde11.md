@@ -1,4 +1,4 @@
-# Batch verifier — test the ten concurrent urgent fixes
+# Retire the parallel-fix batch verifier
 
 ID: ee4fde11-5d9a-43f2-a017-ad6993605e30
 Status: todo
@@ -6,6 +6,36 @@ Priority: P1
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/verification.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** superseded. **Follow-up owner:** [R11](roadmap-r11.md).
+
+The ten parallel workers and shared-checkout assumptions are obsolete. Current engine execution is serialized and tied to a candidate digest.
+
+### Next action and acceptance
+
+R11 owns combined regression evidence after reviewed integration. Preserve named failure classes in acceptance, but do not wait for nonexistent workers or start the historical parallel run.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [ROADMAP.md](../ROADMAP.md)
+- [Tools/execute-tests.py](../Tools/execute-tests.py)
+- [Tests/acceptance.json](../Tests/acceptance.json)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile offline --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -24,3 +54,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

@@ -1,4 +1,4 @@
-# R17: Expose verified tool preferences in discovery and help
+# R17: Expose verified tool preferences
 
 ID: R17
 Status: todo
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/tool-selection.md
 Kind: implementation
+Review: source-reviewed
 
 ## Problem
 Agents sometimes choose an Epic tool when TurboMCP offers a useful alternative. Make verified, narrowly scoped preferences visible in the live descriptions and schemas that clients actually discover. Do not blanket-prefer TurboMCP or claim untested supersession.
@@ -42,3 +43,29 @@ Evidence-backed routing data, live discovery/help changes, generated documentati
 
 ## Completion evidence
 Pending. Record exact source and engine identities, commands, exits, evidence locations, tested binary hashes where applicable, changed files and unresolved limits. Integration review is required before marking done.
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R17](roadmap-r17.md).
+
+Routing preferences have no blanket superiority evidence. Task review does not supply the parity probes that this implementation depends on.
+
+### Next action and acceptance
+
+Allow preference labels only for exact engine/scope with accepted evidence from R04/R09. Test unknown/unavailable/refused alternatives. Record client model and choice trials without bypassing tool refusals or replaying mutations.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [docs/audit/tool-routing.json](../docs/audit/tool-routing.json)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-agent-help --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

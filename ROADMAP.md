@@ -4,7 +4,7 @@
 
 The v1 plan starts with trustworthy tests, then audits existing tools and repairs confirmed defects. Release follows only after the acceptance gates pass. Compatibility work is tracked separately.
 
-See [project status](docs/status.md) for current support and release limits. The [capability inventory](docs/audit/capabilities.md) covers all 101 tool declarations; [task dispositions](roadmap/task-dispositions.json) account for the 92 historical tasks.
+See [project status](docs/status.md) for current support and release limits. The [capability inventory](docs/audit/capabilities.md) covers all 101 tool declarations; [task dispositions](roadmap/task-dispositions.json) account for the 92 historical/foundation records. The [complete task review](docs/audit/task-review.md) covers all 110 records and separates source-confirmed defects from pending runtime evidence.
 
 ## Give an agent one instruction
 
@@ -22,7 +22,7 @@ Fix false success, data-loss risk, misleading observations and unusable tests be
 | --- | --- | --- |
 | [R01](todo/roadmap-r01.md) | Make test-audit classifications truthful | Parser regressions distinguish evidence from references and false positives |
 | [R02](todo/roadmap-r02.md) | Shared engine/editor/port ownership | Concurrent-process contention and cleanup tests pass |
-| [R03](todo/roadmap-r03.md) | Fixture and binary reproducibility | First-run failures and fixture drift have reproducible root-cause evidence |
+| [R03](todo/roadmap-r03.md) | Fixture and binary reproducibility | Owned fixture recovery and loaded-binary identity are verified; historical intermittent/serialization findings remain open |
 | [R13](todo/roadmap-r13.md) | Compare pinned 5.9 native interfaces early | Adopt/adapter/retain/defer decisions; unknown runtime parity stays explicit |
 | [R16](todo/roadmap-r16.md) | Establish installed-engine integration constraints early | Dependency and rebuild-boundary evidence; bounded adapter/package proposals |
 | [R04](todo/roadmap-r04.md) | Audit every callable and result contract | Every tool has schema/effect/refusal/evidence status and bounded repair specifications |

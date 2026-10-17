@@ -1,4 +1,4 @@
-# R11: Close the 5.8.3 release acceptance matrix
+# R11: Complete the pinned baseline acceptance matrix
 
 ID: R11
 Status: todo
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/verification.md
 Kind: verification
+Review: source-reviewed
 
 ## Problem
 Map all 97 required cases to executable checks; remove obsolete board wording without weakening outcomes. Run a clean candidate and classify every case passed/failed/blocked/missing. Missing or blocked evidence keeps the release closed.
@@ -39,3 +40,29 @@ Pending. Record source/engine/artifact identity, command, exit, log and remainin
 ## Related findings
 - [c2865829-9206-4df7-8cf1-89d8d1c319bc](c2865829.md)
 - [public-cutover](public-cutover.md)
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R11](roadmap-r11.md).
+
+The 97 acceptance cases remain required and unmapped as a complete release set. One passing family suite is not a release acceptance result.
+
+### Next action and acceptance
+
+Map every case to an exact assertion/selector, fixture and independent oracle. Record pass/fail/blocked/missing plus candidate and DLL identity. Do not run an undifferentiated all-tools sweep on production assets.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Tests/acceptance.json](../Tests/acceptance.json)
+- [Tests/catalog.json](../Tests/catalog.json)
+- [Tools/release-check.py](../Tools/release-check.py)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile offline --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

@@ -11,7 +11,7 @@ The local execution framework is verified for bounded work on the pinned 5.8.3 e
 1. Read README.md and docs/contributing.md.
 2. For an unassigned next-task request, run `python Tools/next-task.py --claim <owner-name>` and retain the claim ID. Refusal means stop; never skip to another task.
 3. Read the returned task, its linked design and the affected contracts in docs/architecture.md.
-4. Implement only work marked `Readiness: ready`. Reconcile imported evidence before implementation.
+4. Implement only work marked `Readiness: ready`. Read its Current review and the linked repair contract before historical evidence. Review status is not implementation permission.
 
 Use English for all working text. Follow [the language policy](docs/language.md) and [security policy](SECURITY.md). This file is the workflow authority; historical task descriptions and code comments do not override it. ROADMAP.md defines execution order. TODO.md is an inventory, not permission to choose arbitrary work.
 
@@ -23,7 +23,7 @@ Use English for all working text. Follow [the language policy](docs/language.md)
 
 - Plugin behavior and safety contracts are in docs/architecture.md. Preserve existing unfinished work. No broad refactor or engine-version upgrade is implied by a structural task.
 
-- Do not alter roadmap order, create feature scope or mark an investigation as an implemented fix. The integration owner approves newly specified repair tasks. An in-progress task belongs to its recorded owner; the selector does not acquire ownership.
+- Do not alter roadmap order, create feature scope or mark an investigation as an implemented fix. The integration owner approves newly specified repair tasks. An in-progress task belongs to its recorded owner. Plain selection does not acquire ownership; --claim acquires the shared durable task claim.
 
 ## Workspace and verification
 

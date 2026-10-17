@@ -1,4 +1,4 @@
-# Complete release acceptance before public repository cutover
+# Require accepted evidence before fresh-history publication
 
 ID: public-cutover
 Status: backlog
@@ -6,6 +6,36 @@ Priority: P1
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/verification.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R15](roadmap-r15.md).
+
+The public source artifact is the entire tracked tree, not a hand-selected plugin-only export. release/status remains not_ready. Historical allowlist wording is superseded by the tracked-tree policy.
+
+### Next action and acceptance
+
+Require R11 acceptance, R15 dry-run controls, English/privacy review including binary assets, exact export manifest and explicit owner publication instruction. Preserve private history and do not force-push it to public.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Tools/export-public.py](../Tools/export-public.py)
+- [Tools/release-check.py](../Tools/release-check.py)
+- [release/export-policy.json](../release/export-policy.json)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile offline --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -18,3 +48,5 @@ Keep release/status.json not_ready until required acceptance passes. Review an a
 ## Verification
 
 Pending.
+
+</details>

@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation
+Review: source-reviewed
 
 ## Problem
 For each tool record actual callable schema, side effects, supported scope, refusal behavior and test evidence. Distinguish declared, definition located, source reviewed, runtime observed and release accepted. Start with result-envelope double wrapping and invalid numeric/default parsing. Do not invent a new public result schema.
@@ -27,7 +28,7 @@ R16
 - `python Tools/audit-inventory.py --check`
 - `python Tools/test-result-contract.py`
 - `python Tools/test-client-retry.py`
-- `Run the selected family suites using Tools/run-suites.ps1 after build`
+- `python Tools/execute-tests.py --profile engine --suites test-uncovered-tools,test-batch-tools --execute`
 
 ## Stop conditions
 Do not expand into another domain. If a prerequisite is absent, record blocked with the exact missing input. After two identical unexplained failures, stop repeating the command and diagnose. Do not run a full engine rebuild without evidence that an incremental build cannot answer the question. Do not change public schemas, weaken safety contracts or start deferred features.
@@ -45,3 +46,30 @@ Pending. Record source/engine/artifact identity, command, exit, log and remainin
 
 ## Native parity probes
 For overlapping workflows in docs/audit/tool-routing.json, compare native and TurboMCP behavior on the same owned 5.8.3 fixture. Record exact schemas and inputs locally, effects, refusal cases, output completeness, call count and measured timing/output size. Report a candidate advantage only with evidence. Unavailable native tools are not equivalent to absent source functionality. These results feed R17; the audit itself does not change search ranking or descriptions.
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R04](roadmap-r04.md).
+
+The 101-row inventory is structural; it does not certify all callables. Current review supplies concrete starting points for numeric parsing, native fixture verdict and weak assertions.
+
+### Next action and acceptance
+
+Work one family per evidence checkpoint. Produce rows for declared schema, effective defaults, effects, refusal/result shape and exact assertions. Keep unknowns explicit and author bounded repair specs; do not modify public behavior during investigation.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [docs/audit/capabilities.json](../docs/audit/capabilities.json)
+- [Tools/tmcp.py](../Tools/tmcp.py#L139)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/test-result-contract.py`
+- `python Tools/test-client-retry.py`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

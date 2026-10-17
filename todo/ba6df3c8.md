@@ -1,4 +1,4 @@
-# T23 (P3, medium) — Table row preview and read-back
+# Make table previews and application follow caller order
 
 ID: ba6df3c8-12e8-4678-a020-a89881e3e0d7
 Status: todo
@@ -6,6 +6,35 @@ Priority: P3
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** confirmed. **Follow-up owner:** [R08](roadmap-r08.md).
+
+Plan adds changes even after recording an unknown-field refusal. Apply collects edits, removes rows, then writes rows; that grouping can violate set-then-remove order. WholeRowText read-back exists, so absence of any read-back is not the defect.
+
+### Next action and acceptance
+
+Test invalid field plus valid field, set/remove and remove/set on one row, repeated partial sets and default-valued fields. Preview must not present refused lines as accepted; final data must match caller order with atomic restoration on failure.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp#L409)
+- [Tools/test-datatable-rows.py](../Tools/test-datatable-rows.py)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-datatable-rows --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -37,3 +66,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

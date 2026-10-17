@@ -15,6 +15,7 @@ Start with [Contributing](../CONTRIBUTING.md), then [workspace setup](workspace.
 
 - [Roadmap](../ROADMAP.md): priorities and approved execution order.
 - [Task index](../TODO.md): queued work and historical findings.
+- [Task review](audit/task-review.md): current decisions for every task and bounded repair contracts.
 - [Contributor workflow](contributing.md): ownership, review and completion evidence.
 - [Test guide](../Tests/README.md): test layers and commands.
 - [Tooling guide](../Tools/README.md): repository scripts.

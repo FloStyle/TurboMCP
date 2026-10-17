@@ -1,4 +1,4 @@
-# T25 (P3, low) — Data table create, with nested rows
+# Separate table creation from nested row correctness
 
 ID: a4eed2e1-88a7-4c0a-b9de-7443e492f54b
 Status: todo
@@ -6,6 +6,36 @@ Priority: P3
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** deferred. **Follow-up owner:** [R13](roadmap-r13.md), [R08](roadmap-r08.md).
+
+Existing row operations and fixture creation are distinct. A kit commandlet does not establish a public table-create tool. Nested field aliases are correctness work only where already supported.
+
+### Next action and acceptance
+
+Compare native table creation before adding a tool. Keep nested-array/display-name cases under abdd2c08 and row read-back under ba6df3c8. Any new create design must refuse collisions and preserve existing files on failure.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp#L409)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypeParser.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypeParser.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPKitCommandlet.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPKitCommandlet.cpp)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-datatable-rows --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -37,3 +67,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

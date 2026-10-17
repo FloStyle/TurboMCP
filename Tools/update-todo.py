@@ -24,7 +24,7 @@ def render():
     by_id={item[2]:item for item in items}
     queued={entry['id'] for entry in queue}
     lines=['# Task index','','[Repository home](README.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md)','',
-           'Run `python Tools/next-task.py` to select work. The approved queue below defines execution order; historical findings need reconciliation before implementation.',
+           'Run `python Tools/next-task.py` to select work. The approved queue defines execution order. Read the [current task review](docs/audit/task-review.md) before historical evidence; reviewed does not mean implementation-ready.',
            '', 'Generated from task files and the approved queue. After editing task status, run `python Tools/update-todo.py`.','',
            '## Approved queue','','| Task | Track | Kind | Status |','| --- | --- | --- | --- |']
     for entry in queue:

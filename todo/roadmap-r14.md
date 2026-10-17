@@ -1,12 +1,13 @@
-# R14: Implement bounded 5.9 compatibility adapters
+# R14: Implement only an approved compatibility adapter
 
 ID: R14
 Status: todo
 Priority: P1
-Readiness: ready
+Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/protocol.md
 Kind: implementation
+Review: source-reviewed
 
 ## Problem
 Replace the removed GetToolsetClass dependency through a supported identity mechanism. Locate SemanticSearchToolset replacement/move before changing the test descriptor. Verify native images/structured content and JSON null. Preserve 5.8.3 behavior.
@@ -39,3 +40,29 @@ Pending. Record source/engine/artifact identity, command, exit, log and remainin
 ## Related findings
 - [ue59-protocol](ue59-protocol.md)
 - [ue59-recorder](ue59-recorder.md)
+
+## Current review
+
+**Decision:** requires spec. **Follow-up owner:** [R14](roadmap-r14.md).
+
+This implementation task was marked ready before R13 identified the supported replacement API or exact adapter design. That is premature even though dependencies prevent immediate dispatch.
+
+### Next action and acceptance
+
+Keep needs_reconciliation until R13 supplies file/API/version boundaries and both-engine test commands. Then approve one adapter at a time. Missing forward runtime is a blocker for certification, not permission to invent API shims.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp)
+- [Tools/tmcp.py](../Tools/tmcp.py#L139)
+- [engine.lock.json](../engine.lock.json)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/test-result-contract.py`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

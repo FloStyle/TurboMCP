@@ -1,4 +1,4 @@
-# T39 (P6) — Curve assets (row 7.3)
+# Defer curve authoring until a workflow gap is shown
 
 ID: 4ec9e1cc-763d-46f6-aa31-181e8547e2fa
 Status: todo
@@ -6,6 +6,35 @@ Priority: P6
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** deferred. **Follow-up owner:** [R13](roadmap-r13.md).
+
+A curve fixture generator does not establish a shipped curve-editing contract. This proposal lacks operation-level acceptance.
+
+### Next action and acceptance
+
+Compare read/write curve workflows with pinned native capabilities. Specify key times, interpolation/tangents, duplicate-time policy, undo and persistence only if a missing workflow justifies a separate design. Do not implement from a table-row title.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPKitCommandlet.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPKitCommandlet.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h](../Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile offline --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -38,3 +67,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

@@ -1,4 +1,4 @@
-# T19 (P2, high) — Tidy: no false cycle
+# Verify Tidy cycle reports with real wire graphs
 
 ID: e6fc78bd-754d-43c1-bdad-78d7abaeaaee
 Status: todo
@@ -6,6 +6,34 @@ Priority: P2
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/graphs.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** partial. **Follow-up owner:** [R07](roadmap-r07.md).
+
+Current adjacency is built from output-to-input LinkedTo edges with parallel-edge deduplication and a cycle path. The alleged variable-name dependency is not present in that code.
+
+### Next action and acceptance
+
+Retain set/get plus by-reference-call as a regression alongside a real directed wire cycle and parallel exec/data links. Confirm full cycle titles and no mutation on refusal. Do not rewrite the cycle detector from the historical diagnosis.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp#L587)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-graph-tidy --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -41,3 +69,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

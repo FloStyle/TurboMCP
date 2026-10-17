@@ -31,3 +31,7 @@ R01 repairs evidence classification. R02 and R03 establish ownership and fixture
 R12 separately validates installed-engine packages. R14 handles the 5.9 adapter. Neither optional target inherits baseline certification. Prefer useful native functionality over duplication; preserve TurboMCP workflows where evidence demonstrates a worthwhile improvement.
 
 Review continues when the owner provides a commit, branch or review packet. This document does not install a background monitor or automatically start agents.
+
+## Task review boundary
+
+All 110 records have a [current source/specification review](audit/task-review.md). Read the assigned task's Current review first. Historical prose is retained in a collapsed section and does not override the current architecture. Confirmed defects have [repair contracts](audit/repair-contracts.md); the integration owner assigns each repair after its prerequisites. R13 is still the next task. R14 is unready until the exact compatibility adapter is specified. No review status certifies all runtime acceptance or authorizes implementing the backlog.

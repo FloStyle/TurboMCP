@@ -1,4 +1,4 @@
-# T22 (P3, medium) — One field syntax for all field tools
+# Define field syntax without changing value semantics
 
 ID: abdd2c08-6544-4730-b183-e4d856aad868
 Status: todo
@@ -6,6 +6,37 @@ Priority: P3
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** partial. **Follow-up owner:** [R04](roadmap-r04.md), [R08](roadmap-r08.md).
+
+A common type resolver already maps float/real/double to PC_Real, while field/options and row operations have different grammars. A shared type resolver is not a shared field parser.
+
+### Next action and acceptance
+
+Inventory accepted syntax and precision for each current caller. Test display/internal-name ambiguity, nested arrays, duplicate options and invalid types. Preserve existing valid inputs; approve any common grammar before refactoring unrelated parsers.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypeParser.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypeParser.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp#L582)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAdd.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAdd.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp#L409)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-batch-tools,test-vars-add,test-struct,test-datatable-rows --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -37,3 +68,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

@@ -1,4 +1,4 @@
-# T12 (P1, high) — Atomic multi-asset batch edit
+# Keep general multi-asset batch outside v1 scope
 
 ID: bbb63d1e-1503-4094-9376-9ae2e2578222
 Status: todo
@@ -6,6 +6,35 @@ Priority: P1
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** deferred. **Follow-up owner:** [R13](roadmap-r13.md), [R05](roadmap-r05.md).
+
+The historical proposal requires multi-asset edits and save atomicity that ARC05/ARC09 explicitly do not promise. Existing preview/edit names do not make the broad proposal implemented.
+
+### Next action and acceptance
+
+Only 5b6a8e45 is the v1 subset. Retain multi-asset and general operation kinds as deferred requirements. Never claim disk atomicity from an undo transaction or mark this done when single-graph repoint passes.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp#L21)
+- [docs/architecture.md](../docs/architecture.md)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-batch-edit --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -42,3 +71,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

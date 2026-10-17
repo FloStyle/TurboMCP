@@ -1,4 +1,4 @@
-# T16 (P2, high) — Real node sizes for every layout tool
+# Verify geometry provenance across all layout tools
 
 ID: be9c2edb-2826-4421-941e-f02b00041b4d
 Status: todo
@@ -6,6 +6,36 @@ Priority: P2
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/graphs.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** partial. **Follow-up owner:** [R07](roadmap-r07.md).
+
+Tidy now refuses absent measured outlines and attempts panel layout. FixBackward still has a fallback path and LayoutReport reads stored dimensions. The universal default-square claim is stale, but cross-tool consistency is not certified.
+
+### Next action and acceptance
+
+Test unopened, visible and zero-dimension graphs per tool. Separate measured versus estimated geometry and actual pin positions. Do not add a force bypass to Tidy from the old proposal; a change to that refusal needs a reviewed contract.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp#L587)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackward.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackward.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-layout,test-graph-tidy,test-graph-fix-backward --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -42,3 +72,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

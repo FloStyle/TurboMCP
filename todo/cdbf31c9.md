@@ -1,4 +1,4 @@
-# T36 (P6) — Source control next to the editor hooks
+# Distinguish checkout state from checkout provenance
 
 ID: cdbf31c9-caa6-4233-8314-1f960538ea8c
 Status: todo
@@ -6,6 +6,35 @@ Priority: P6
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** partial. **Follow-up owner:** [R13](roadmap-r13.md), [R10](roadmap-r10.md).
+
+Already-checked-out handling exists. Provider state does not prove whether TurboMCP, an editor hook or a user performed checkout.
+
+### Next action and acceptance
+
+Verify consistent already-checked-out success and independent save outcome. Record actor/provenance only when observed; otherwise say unknown. Compare additional source-control operations with native tools before expanding the plugin.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlWrite.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlWrite.cpp)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-vcs-write --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -39,3 +68,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

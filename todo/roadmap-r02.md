@@ -1,4 +1,4 @@
-# R02: Make shared engine ownership atomic
+# R02: Enforce shared engine ownership
 
 ID: R02
 Status: done
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: integration-owner
 Design: docs/design/verification.md
 Kind: implementation
+Review: source-reviewed
 
 ## Problem
 Current lease acquisition is check-then-write in a per-checkout .agent path. Two worktrees can race for one engine or port. Implement shared atomic ownership keyed by canonical engine and port, with explicit owner identity and recovery. Preserve foreign-process refusals and same-owner nested operations.
@@ -71,3 +72,30 @@ The current launcher uses port 8000, so engine sessions intentionally serialize
 even for different engines. Distinct resource keys are independent at the lock
 primitive; multiple live editor ports are not claimed by this handoff. Local
 task claims support cooperating worktrees under one Windows account.
+
+## Current review
+
+**Decision:** completed. **Follow-up owner:** [R02](roadmap-r02.md).
+
+Ownership is enforced through a supervisor and shared resource locks; evidence and operating limits are documented. Same-account coordination is not a security sandbox.
+
+### Next action and acceptance
+
+Preserve the fixed-port serial limit, foreign editor refusal and process-descendant ownership. Keep direct helper calls guarded; do not broaden to unattended paid-agent dispatch.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Tools/execution_runtime.py](../Tools/execution_runtime.py)
+- [Tools/engine_execution.py](../Tools/engine_execution.py)
+- [Tools/execute-tests.py](../Tools/execute-tests.py)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/test-execution-runtime.py`
+- `python Tools/test-process-cleanup.py`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

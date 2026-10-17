@@ -1,4 +1,4 @@
-# R10: Make discovery and human documentation match observed behavior
+# R10: Align human docs and help with verified behavior
 
 ID: R10
 Status: todo
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/editor-domains.md
 Kind: documentation
+Review: source-reviewed
 
 ## Problem
 Document actual parameter requiredness, valid examples, side effects, supported scopes and refusal conditions. Remove historical narrative from active instructions only where its current contract has been retained. Keep a short human README and concise task entry point.
@@ -51,3 +52,31 @@ Pending. Record source/engine/artifact identity, command, exit, log and remainin
 - [a312b008-744b-4fb0-a366-806c4bc03282](a312b008.md)
 - [d03a170f-8ba2-4131-9258-c02644e22eb9](d03a170f.md)
 - [e35faf67-33e1-47ac-9155-59c86e5b0f4c](e35faf67.md)
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R10](roadmap-r10.md).
+
+Current task history contains obsolete names and unsupported universals. Help consumes trap data, so a second help source would introduce drift.
+
+### Next action and acceptance
+
+Use approved task decisions and live schemas. Fix bounded wording, valid examples, navigation and effect labels. Code defects found while documenting return to their repair owner; do not hide them with optimistic prose.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraps.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraps.cpp)
+- [Tools/make-tools-doc.py](../Tools/make-tools-doc.py)
+- [README.md](../README.md)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/test-traps-plugin-identity.py`
+- `python Tools/execute-tests.py --profile engine --suites test-agent-help --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

@@ -1,4 +1,4 @@
-# T-AUDIT-20 (P6, low) — AUDITED BY HAND 20/49: TurboMCPTraps.cpp — 202 lines, zero defects, and four failure states kept distinct
+# Retain trap-loader behavior and clarify replacement semantics
 
 ID: 8beb2deb-3cfd-4c55-854e-25c6cb917a26
 Status: backlog
@@ -6,6 +6,34 @@ Priority: P6
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/verification.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** reference. **Follow-up owner:** [R10](roadmap-r10.md).
+
+Current trap loading preserves distinct missing/parse/schema errors and replaces later entries. A historical no-defects statement does not certify arbitrary project overrides.
+
+### Next action and acceptance
+
+Keep malformed JSON, missing tools object, empty entries and later override controls. State replacement rather than additive merge. Do not change precedence during wording cleanup.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraps.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraps.cpp)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/test-traps-plugin-identity.py`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -32,3 +60,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

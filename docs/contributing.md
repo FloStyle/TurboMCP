@@ -18,7 +18,7 @@ Use English for comments, documentation, tasks and commits. `Tools/check-languag
 
 ## Prepare a task
 
-Imported findings retain their original IDs and start as `needs_reconciliation`. Check each finding against current source and tests before treating its diagnosis as correct.
+Imported findings retain their original IDs. The [task review](audit/task-review.md) records current source findings, withdrawn diagnoses and remaining evidence. `Review: source-reviewed` is separate from `Readiness: ready`: a reviewed observation may still need a reproduction or approved repair specification. Read the current review before the folded historical evidence.
 
 Use [the task template](../todo/TEMPLATE.txt) to record the problem, scope, dependencies, acceptance criteria and verification. A ready task must include:
 
@@ -42,7 +42,7 @@ git worktree add -b task/<id>-<slug> ../worktrees/<id> main
 
 Do not switch another agent's branch or edit its checkout. Queue overlapping file or fixture changes through the integration owner. Binary fixture conflicts require manual review.
 
-Engine builds and editor tests need a shared schedule. Do not share an editor, port or build output between workers. Existing per-checkout leases do not provide a cross-worktree mutex. One integration owner schedules access to the engine and test editor.
+Engine builds and editor tests need a shared schedule. Do not share an editor, port or build output between workers. Use Tools/execute-tests.py: its shared kernel locks serialize the engine and fixed port across cooperating worktrees. Per-checkout leases are bookkeeping. One integration owner schedules access; this is not an OS security sandbox.
 
 ## Verify and integrate
 

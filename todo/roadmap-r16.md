@@ -1,4 +1,4 @@
-# R16: Determine what prevents an installed-engine plugin
+# R16: Establish installed-engine integration constraints
 
 ID: R16
 Status: todo
@@ -7,6 +7,7 @@ Readiness: ready
 Owner: unassigned
 Design: docs/design/verification.md
 Kind: investigation
+Review: source-reviewed
 
 ## Problem
 The owner currently relies on the 5.8.3 source build. Establish which requirements actually demand engine rebuilding, which require only a plugin build, and which would be missing in an installed distribution. Do not assume registration through Epic MCP requires engine patches.
@@ -40,3 +41,30 @@ A dependency and build-boundary report, a decision on the smallest integration s
 
 ## Completion evidence
 Pending. Record exact source and engine identities, commands, exits, evidence locations, tested binary hashes where applicable, changed files and unresolved limits. Integration review is required before marking done.
+
+## Current review
+
+**Decision:** plan. **Follow-up owner:** [R16](roadmap-r16.md).
+
+Non-unity incremental plugin compilation is verified; that does not require a full engine rebuild. Production and fixture dependencies still need caller/export analysis.
+
+### Next action and acceptance
+
+Produce dependency rows with production/test callers, public header/export visibility and distribution evidence. Compare direct registry use and a small adapter before a module split. Record broken public URLs without inventing a replacement publication target.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs](../Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPModule.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPModule.cpp)
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp)
+- [Plugins/TurboMCP/TurboMCP.uplugin](../Plugins/TurboMCP/TurboMCP.uplugin)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile offline --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.

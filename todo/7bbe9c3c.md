@@ -1,4 +1,4 @@
-# LT-04 (P1, high) — lint must not call a linked cast result unnecessary
+# Avoid false unnecessary-cast warnings
 
 ID: 7bbe9c3c-19c2-4b62-aad2-9cd098d0fedf
 Status: todo
@@ -6,6 +6,36 @@ Priority: P1
 Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/protocol.md
+Review: source-reviewed
+
+## Current review
+
+**Decision:** confirmed. **Follow-up owner:** [R06](roadmap-r06.md).
+
+RunUnnecessaryCasts looks for literal AsObject and treats a missing pin as zero consumers. The pinned UK2Node_DynamicCast API exposes GetCastResultPin and GetCastSourcePin. Target-class equality with the enclosing Blueprint alone does not prove the input object type.
+
+### Next action and acceptance
+
+Use the real cast node API and conservative input-type evidence. Test a typed result feeding a variable set, a used success/failure exec branch with unused object output, and a truly redundant cast. Unknown evidence produces no deletion recommendation; inspect only, never delete.
+
+### Current source and verification
+
+Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+
+- [Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp](../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp#L250)
+
+Starting checks for the assigned follow-up:
+
+- `python Tools/execute-tests.py --profile engine --suites test-bp-lint --execute`
+
+These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
+
+See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+The detailed repair boundary is [cast lint](../docs/audit/repair-contracts.md#cast-lint).
+
+<details>
+<summary>Historical requirements and evidence (not execution instructions)</summary>
 
 ## Roadmap disposition
 
@@ -24,3 +54,5 @@ Historical paths and completion claims below are not current proof. This task mu
 ## Verification
 
 Pending. Record command, result, commit, and any blocked acceptance here.
+
+</details>

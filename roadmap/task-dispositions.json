@@ -1,650 +1,650 @@
 {
   "schema": 1,
-  "scope": "Planning reconciliation of every task present at the start of this roadmap pass. Does not assert runtime verification or close historical findings.",
+  "scope": "Task-level source review at 6aee9dfd92a4c06a73e89c091973f982d715b7a2. Each record has a decision in task-review.json. Does not assert runtime acceptance or close product defects.",
   "tasks": [
     {
       "id": "019cf7af-dfe5-4cda-91b9-1ca706ace4e5",
       "path": "todo/019cf7af.md",
       "workstream": "results",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Call-cost now refuses nonnumeric and nonpositive caps when records exist. The old banana/zero fallback diagnosis is stale on that path. IsNumeric plus Atoi is not strict integer validation, and the empty-log return precedes validation. The 50-row ceiling still needs truthful continuation wording. Next: Probe empty and populated logs with empty, banana, zero, negative, fractional, overflow and over-ceiling caps. Specify one integer policy before editing; totals must still cover all records. Do not rewrite the cost aggregator.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "02674939-2883-4cec-b2eb-24588dcfeac6",
       "path": "todo/02674939.md",
       "workstream": "observations",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "OnScriptException passes literal DebugOpcodeOffset=0 to FindSourceNodeForCodeLocation. That cannot establish which bytecode location executed. The recorded arm-loss cause is not established. Next: Use a synthetic graph with two armed nodes and a deliberately unmappable event. Verify actual offsets, separate raw/unmapped/mapped counts, and inspect arms before/during/after PIE. No zero-hit answer may imply never executed when mapping is unavailable.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "02ba0f24-4c9d-41cf-8a02-b75644a13b0c",
       "path": "todo/02ba0f24.md",
       "workstream": "layout-capture",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "LayoutReport compares getter rectangles to consumer rectangles; the fixer has separate pin-position and GetterGap logic. One shared rule is not established. Next: Measure overlapping, right-of-input, aligned and vertically distant getters, including one getter with multiple consumers. Specify pin-relative thresholds and re-read findings after the fix. Preserve unrelated layout and links.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "04111899-8525-4699-a2b1-8d538e6f9fc4",
       "path": "todo/04111899.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "This is a mixed regression/wording umbrella, not one repair. Existing help, cost and save implementations have different output contracts. Next: Record baseline output for discovery, VCS status, lint denominators, widget text and save separately. Preserve exact find/refs, kind-specific cost, literal filters and inherited defaults. Give each changed output a measured size and a retained-information check.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "048107d9-a439-4e28-955a-562804215ac9",
       "path": "todo/048107d9.md",
       "workstream": "test-foundation",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The old count of 28 unchecked cancels is historical, not a current count. Shared rollback calls and tests for reported set mismatches exist; those are not proof for allocation/creation failure paths. Next: Inventory current failure exits in the three writers. Add test-only creation-failure injection through the real core, then independently compare expressions, links, defaults and dirty state. Do not merely assert rollback wording or revive old cancel counts.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "081329d2-85bf-42c4-9939-35cbf4c05863",
       "path": "todo/081329d2.md",
       "workstream": "superseded-process",
-      "disposition": "Use ROADMAP.md and the ordered queue. Obsolete branch counts, parallel workstream instructions and old release steps are not executable instructions.",
-      "verification": "planning_disposition_only"
+      "disposition": "The owner removed the old public repository. Private main is the integration target; public source is a complete fresh-history export. Historical divergence counts are not actionable. Next: Use public-cutover and R15 for release evidence. Do not recreate the old remote, merge its history or publish because this record says to tag.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "0b84b1d8-ac34-4ea6-b2a7-f196ad74e81f",
       "path": "todo/0b84b1d8.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Node resolution and widget property collection are separate reader paths. Detailed endpoints overlap ff18311b; widget object/reference omissions overlap 1256778b. Next: Let ff18311b own endpoint completeness and 1256778b own widget differences. Preserve this record's requested detail level and explicit truncation behavior. Test multiple links and changed child values against independent engine reads.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "0e4658ad-625d-4f86-b81b-ee38cb298011",
       "path": "todo/0e4658ad.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Assets ParseQuery already examines every token and accepts type/path filters at any position. The claimed order defect is stale for that syntax; class: versus type: needs a documented decision. Help and graph-filter output remain separate checks. Next: Compare equivalent queries with filters first/last and unsupported prefixes. Check that graph-focused Blueprint output does not repeat unrelated widget data. For each changed help entry retain actual requiredness, accepted values and a valid example.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "100b52a6-19fa-4437-982e-34485a9695ea",
       "path": "todo/100b52a6.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The old plan is retired. Macro support belongs to the node-family corpus; asset moves and general sessions are expansion proposals. ARC09 explicitly limits release batch to one graph and forbids saving. Next: Keep a macro create-or-refuse case in R06. Carry open-editor/redirector requirements into 66d97dc8. Defer session lifetime and multi-asset work with bbb63d1e; do not resurrect the archived omnibus card.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "1256778b-652c-4534-8c3b-133dc44c8ec0",
       "path": "todo/1256778b.md",
       "workstream": "data-widget",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "WidgetTree skips every FObjectPropertyBase and FInterfaceProperty to suppress slot noise. This also excludes meaningful editable object-reference overrides. Animation-track inspection is an additional feature, not this repair. Next: Use a child widget with unchanged slot ownership and one changed editable object reference. Report the reference difference without internal slot noise, with explicit null/default provenance. Defer animation authoring/track expansion to R13 comparison.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "1388b93a-bbcc-4f26-bbfd-d2c6cadc02d0",
       "path": "todo/1388b93a.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Tree synchronization and binding implementations already exist. The claim that all common widget writes are absent is too broad. Event and property bindings are different contracts. Next: Compare subtree creation, property setting and event binding individually against existing TurboMCP and pinned native tools. Specify only the remaining workflow gap; keep ambiguous binding help under R10. No bulk widget editor from this card.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "1db73082-b800-4503-b6df-2d1ad761baf7",
       "path": "todo/1db73082.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Checkout reporting is separate from the mutation outcome. A short success line must not conceal provider failure, skipped checkout or the fact that no disk save occurred. Next: Capture no-provider, already-checked-out, success and failure answers. Specify one line per asset on success and full actionable failure detail. Do not change checkout policy or infer which hook performed an action without evidence.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "1f5fe672-f84d-40f1-98c0-adc77a8a8816",
       "path": "todo/1f5fe672.md",
       "workstream": "data-widget",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "FindReaders scans loaded Blueprint variable holders and DataTable row structs. A dirty package or reference is not evidence that the dependent is broken. Next: Use a struct held by a Blueprint and a table. Record before/after dirty sets, loaded-scan limits and compile-not-run. Offer an explicit compile action; report broken only from a witnessed compile. Coordinate reader coverage with 7bd81b84.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "214d6e7a-7b19-4efa-a08f-7cf6a4461eec",
       "path": "todo/214d6e7a.md",
       "workstream": "data-widget",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Renamed is still assigned NewNames.Num() and printed as names set. SetEnums success is checked, but the displayed count is requested input rather than independently read names. Next: Read back qualified names and display names after creation; compare identity and multiplicity, including an invalid/duplicate request. Refuse or report partial failure honestly. Do not invent a return value for AddNewEnumeratorForUserDefinedEnum.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "261bb8db-950c-49f3-b7f2-fff304a3ec8a",
       "path": "todo/261bb8db.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "This requirement overlaps a28a09fd. Current lint parses Blueprint relation text and includes an engine-called caveat; that does not prove delegate coverage. Next: a28a09fd owns the shared usage repair. Retain a create-event-bound handler and a widget binding as separate controls. Static evidence must say no observed static use, not never called at runtime.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "2f066e6c-8c34-412f-b1b4-451389996086",
       "path": "todo/2f066e6c.md",
       "workstream": "test-foundation",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Named suites exist, but catalog presence and a parsed call are not executed acceptance. The historical list includes multi-asset behavior outside restricted batch scope. Next: Map each of the ten workflows to an exact assertion and fixture. Retain multi-asset compile/save only where current public operations promise it; do not extend batch scope. Run supervised family suites and attach candidate identities.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "37d3d49e-9a9d-4b7d-b5d6-88652b0dfe43",
       "path": "todo/37d3d49e.md",
       "workstream": "evidence-only",
-      "disposition": "Retain as regression/reference evidence; no implementation spend is authorized by a historical no-defect finding.",
-      "verification": "planning_disposition_only"
+      "disposition": "The no-defects title was a historical opinion. Separate pending/refused outcomes exist; ARC11 still requires start/end witnesses and accurate played duration. Next: Keep the useful pending/error/counter controls. Check requested versus actually started time, startup timeout and stop failure under R09. No implementation work is justified by praise in this record.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "3be553c8-ff93-4646-9bd7-3b3712c1b582",
       "path": "todo/3be553c8.md",
       "workstream": "mutation",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Reader names do not establish purity. WidgetPreview constructs a generated widget and can call ProcessEvent; no Execution argument guards that path. Historical dirty/save attribution remains unproved. Next: Measure one call at a time on a clean synthetic asset and one already-dirty asset. Compare semantic state, dirty flag, disk hash and checkout events. Never clear a dirty flag to hide semantic changes; use ARC10 consent for script-capable preview.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "3eae39b1-82f6-480c-bf6e-e20d3bef5fe6",
       "path": "todo/3eae39b1.md",
       "workstream": "observations",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "This umbrella combines table values, graph coverage, call classification, reference kinds, holder properties and output budgets. It cannot be implemented safely as one patch. Next: Track each clause independently: table defaults with ba6df3c8, graph coverage with ca5bbbfc, refs with 484d5638, usage with a28a09fd; retain size provenance and output-budget probes under R09. Unknown must not become zero.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "484d5638-06b1-44ea-a597-97097644699d",
       "path": "todo/484d5638.md",
       "workstream": "observations",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "bWantBoth accepts the string both, but only bWantOut and bWantIn gate the queries. Both are false for explicit both, so the code prints zero counts without querying. The existing zero-reference test sends an empty string, which takes another path. Next: Use two saved synthetic assets with a known dependency. Compare endpoint sets for in, out, empty and both using short/package/object paths. Make both query both directions; preserve registry readiness/refusal behavior. Add an explicit both regression; counts alone are insufficient.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "48608da1-2d6d-42f5-8eac-095db728c5c2",
       "path": "todo/48608da1.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The header still says every token-related tool description labels estimates. That universal claim is not established; the function is a heuristic, not a tokenizer. Next: Remove the unsupported universal wording when R10 edits docs. Keep heuristic provenance and separate a heuristic budget from a hard character/byte limit. Do not change the estimate algorithm merely to resolve this comment.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "4de12720-cdc0-473e-8cb0-d9b4f5431a7b",
       "path": "todo/4de12720.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Reader display formats and writer grammar are separate paths. ARC07 does not promise every compact read string is a lossless edit input. Next: Use a corpus for inline getters, nested pure nodes, empty labelled forms and case-only type IDs. Classify accepted, canonicalized and explicitly refused forms. Preserve links/defaults with an independent oracle; no new general graph dialect.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "4ec9e1cc-763d-46f6-aa31-181e8547e2fa",
       "path": "todo/4ec9e1cc.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "A curve fixture generator does not establish a shipped curve-editing contract. This proposal lacks operation-level acceptance. Next: Compare read/write curve workflows with pinned native capabilities. Specify key times, interpolation/tangents, duplicate-time policy, undo and persistence only if a missing workflow justifies a separate design. Do not implement from a table-row title.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "4f1bfd61-2e79-4f4f-ab66-644a6d1acc76",
       "path": "todo/4f1bfd61.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The spawner now avoids the extra default-pin allocation described in its correction comment. Append still has rollback calls whose result is ignored and no compile-verdict check in its Apply path. Old duplicated-pin cause must not be assumed current. Next: Probe wildcard/promotable and split-pin nodes. Compare actual pin identities/types and links to an independent engine-created equivalent, then establish ARC04 baseline and compile delta. Failed creation or new diagnostics must restore state; do not close from pin counts alone.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "4ff1c6d8-10ae-4397-b1ad-331968b7fa8a",
       "path": "todo/4ff1c6d8.md",
       "workstream": "evidence-only",
-      "disposition": "Retain as regression/reference evidence; no implementation spend is authorized by a historical no-defect finding.",
-      "verification": "planning_disposition_only"
+      "disposition": "Text searches for a parameter spelling cannot determine whether callers consume an output under another local name. Current SpawnNote and Note callers demonstrate that limitation. Next: No cleanup patch from this survey. Recheck an actual dataflow/caller before claiming a dead value; use 701a6c3d for the withdrawn OutNote diagnosis. Historical counts are scoped to their old snapshot.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "5013737a-dd64-4ac3-a627-aab8c590b676",
       "path": "todo/5013737a.md",
       "workstream": "evidence-only",
-      "disposition": "Retain as regression/reference evidence; no implementation spend is authorized by a historical no-defect finding.",
-      "verification": "planning_disposition_only"
+      "disposition": "The old 62-suite sweep does not certify this candidate. A separate EditTurboMCPSaveWithoutThumbnail tool now exists; withdrawing an optional argument did not remove all thumbnail-free saving. Current acceptance and suite catalog are authoritative. Next: Do not recreate removed save-option suites to satisfy an old count. R11 must map supported save behavior to current acceptance and run the current candidate; retain this only as provenance.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "51678b9f-9760-4548-b8f7-f58c461af520",
       "path": "todo/51678b9f.md",
       "workstream": "test-foundation",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "A session-report skill and a tested bundled report linter now exist. The linter checks sanitized document rules; it is not an allocator or a confidentiality guarantee. Single-writer allocation remains procedural. Next: Exercise first/recurrent/correction reports, duplicate IDs, gaps, archived reports and concurrent writers using synthetic ASCII data. Preserve earlier files and atomic numbering; verify read-back. Never copy workplace code, asset names, raw logs or paths into a report.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "5301f48e-4603-436a-b34f-54c31ab6f0a5",
       "path": "todo/5301f48e.md",
       "workstream": "test-foundation",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The suite checks error absence and window wording, but its per-line check is still newline count >= 1. That does not establish one entry per window. Next: Define a stable result shape or fixture-backed window list. Add negative controls for a multiline error and malformed listing, and a positive empty-list case. Keep assertions on actual output rather than header prose.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "53fb9672-b301-4d18-877a-9bf737c0ad6b",
       "path": "todo/53fb9672.md",
       "workstream": "test-foundation",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Old spill-file totals cannot be verified from this repository and must not be presented as current totals. Current inventories distinguish declarations and parsed-call evidence. Next: Use exact candidate identity, scanned paths and excluded paths for every new count. Retain missing old evidence as unavailable; never fabricate lost findings or import the historic 161 as a current total.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "5b06fa2e-f0b8-4fa9-be6d-76dc0ae05141",
       "path": "todo/5b06fa2e.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Existing widget sync/binding code makes this broad absent-feature claim stale in part. Save-time construction and thumbnail effects are separate correctness concerns. Next: Split tree/property/slot/animation/binding workflows in the native comparison. Preserve the save-side-effect probe under R05/R08. No bulk authoring until a bounded gap and safe save behavior have evidence.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "5b6a8e45-6c5f-4dbc-8bc6-0b37e6da1eae",
       "path": "todo/5b6a8e45.md",
       "workstream": "mutation",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "ParseBatch preplans all operations, ignores unknown fields and lacks same-graph enforcement. Batch defers compile and can print unchanged after failed rollback. ApplyCore now calls ApplyTransacted, which owns a transaction, so the supposed transaction-free core is not transaction-free. Next: First resolve b230e508 core ownership, then enforce one asset/graph, strict fields and IDs, sequential revalidation, one final compile and verified whole-batch restoration. Count the partially applied failing operation. Replace BASELINE tests with B01-B05; never broaden to multi-asset or save.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "5f2cee78-ed31-487e-bfa6-6452eaaf738f",
       "path": "todo/5f2cee78.md",
       "workstream": "superseded-process",
-      "disposition": "Use ROADMAP.md and the ordered queue. Obsolete branch counts, parallel workstream instructions and old release steps are not executable instructions.",
-      "verification": "planning_disposition_only"
+      "disposition": "The old Release directory, ledger and board runner are retired. Their instructions cannot own current execution. Next: Use the current queue, acceptance catalog and local evidence directories. Do not recreate Release/ or restart the historical implementation run.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "602feaab-6a94-4004-9c1b-ada71d983f53",
       "path": "todo/602feaab.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Call logs record calls and timeline merges; they are not an authoritative semantic change ledger. A startup snapshot would miss create-then-undo history. Next: Choose net state difference versus chronological edits, retention, privacy and external edits before designing anything. Compare native session tooling. Do not add instrumentation to every writer under this vague card.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "63d5c9e2-ab8b-4a85-a6f2-2f644e0c3e1c",
       "path": "todo/63d5c9e2.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "A function implementation and shared type resolver already exist. The historical claim that no equivalent creation path exists is not an adequate scope. Next: Compare inputs, outputs, locals and body replacement separately. Test void and output-bearing functions without requiring a result node for every void function. Depend on reviewed field syntax and graph completeness before adding body authoring.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "66d97dc8-2aa7-41a2-a8ae-7b289c89cbdb",
       "path": "todo/66d97dc8.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "The fixture commandlet is not a production asset-operation API. Asset rename/move creates persistence and open-editor obligations beyond a generic create helper. Next: Compare native create/rename/move/duplicate first. Preserve explicit open-tab refusal, remaining redirectors/referencers and failed-save behavior in any approved design. Never delete the existing file before verified replacement.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "701a6c3d-90d5-403d-84f1-5f2eacc2113d",
       "path": "todo/701a6c3d.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The current caller stores OutNote in Note or SpawnNote and puts it into refusal text. Searching only the parameter name missed those callers. NodeType preview also returns Note when probe creation fails. Next: Do not add a second copy of the message or remove the output parameter. Preserve missing-type and failed-spawn diagnostics in R04/R06 regressions. This withdrawal applies to the claimed unused output, not every node-type behavior.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "71e2e86a-9854-4a25-9d17-18f18f5679e5",
       "path": "todo/71e2e86a.md",
       "workstream": "test-foundation",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "A FAILS ON phrase measures wording. AST assertion detection is now present, but that still does not prove behavioral adequacy. Next: Keep wording checks advisory and require a concrete negative control for changed behavior. Do not rewrite all tests to satisfy a comment phrase or count AST calls as runtime coverage.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "745637f4-b07e-46fc-9251-c89e62fa2f04",
       "path": "todo/745637f4.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The record claims 17 remaining sites but does not contain all of them. Its full-rebuild-first instruction is obsolete. Dirty-state restoration and failed struct rename are behavior issues, not comment cleanup. Next: Review the named functions at current revision; split semantic rollback, leftover renamed fields and selection restoration from wording. For each retained site record a source anchor and test. Missing unnamed sites are unavailable evidence, not 17 invented tasks.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "77b738a1-1574-4c70-85e1-4de626ca89df",
       "path": "todo/77b738a1.md",
       "workstream": "evidence-only",
-      "disposition": "Retain as regression/reference evidence; no implementation spend is authorized by a historical no-defect finding.",
-      "verification": "planning_disposition_only"
+      "disposition": "The historical absence of explicit write calls does not prove all reader side effects or all outputs correct. Existing override filters and parent-chain output remain useful regression subjects. Next: Keep empty/invalid filters, missing parent and interface-only declarations as controls. No refactor is justified by this praise-only record; runtime verification belongs to R08.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "7ae3dd76-6224-4318-ac79-78fd5306dde8",
       "path": "todo/7ae3dd76.md",
       "workstream": "data-widget",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Blueprint template reads and newly constructed preview widgets are not live PIE instance inspection. The requested live enumeration is an additional capability. Next: Compare native live-object inspection first. If justified, specify multiple instances/worlds, owner, visibility, enabled state and inactive stack children, with no construction or callback execution. Never substitute a generated preview for a live instance.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "7bbe9c3c-19c2-4b62-aad2-9cd098d0fedf",
       "path": "todo/7bbe9c3c.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "RunUnnecessaryCasts looks for literal AsObject and treats a missing pin as zero consumers. The pinned UK2Node_DynamicCast API exposes GetCastResultPin and GetCastSourcePin. Target-class equality with the enclosing Blueprint alone does not prove the input object type. Next: Use the real cast node API and conservative input-type evidence. Test a typed result feeding a variable set, a used success/failure exec branch with unused object output, and a truly redundant cast. Unknown evidence produces no deletion recommendation; inspect only, never delete.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "7bd81b84-da3f-4132-bb87-de189eea69ac",
       "path": "todo/7bd81b84.md",
       "workstream": "data-widget",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "FindReaders only scans loaded Blueprint NewVariables and DataTable row structs. Make/break-only graph use is outside that scan. Its count is per loaded asset, not per field or per node. Next: Add synthetic loaded Blueprints using make-only and break-only nodes without a struct member variable. Define the reader unit and share it with the force-count decision. Retain unloaded-scan limitations; do not silently treat a partial loaded scan as global safety.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "7de8d185-a025-4485-837e-2d03975691b0",
       "path": "todo/7de8d185.md",
       "workstream": "results",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "unwrapped_text already handles up to three JSON layers and both client paths use it. The exact historical payload remains unverified. The native compile fixture exists in TestProject, deliberately provoking ensures; its raw failed verdict alone does not distinguish expected stimulus from a failed assertion. Next: Test escaped object/string layers, malformed envelopes and text/structured consistency without accepting wrappers as bodies. Run test-compile-ensure separately; prove discovery and inspect exact ensure identities and fixture assertions. Classify expected injected errors separately from unexpected failures. Never delete the fixture or mark all native tests green from this exception.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "81cbc063-f063-4b7a-a9e6-d8633db9951d",
       "path": "todo/81cbc063.md",
       "workstream": "evidence-only",
-      "disposition": "Retain as regression/reference evidence; no implementation spend is authorized by a historical no-defect finding.",
-      "verification": "planning_disposition_only"
+      "disposition": "TakeToken stops at both parentheses; its comment still names only closing parenthesis. The historical round-trip suspicion was withdrawn and should stay withdrawn. Next: When R10 edits wording, name opening and closing parentheses and comment delimiters. Preserve quote/escape, empty-string and CRLF behavior; no parser rewrite is authorized.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "8af56e37-5290-4b95-8057-8cc3a5df0ceb",
       "path": "todo/8af56e37.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The quoted overlap count and old C-P10 owner are not a current complete issue list. Return-value checks and restoration are behavioral concerns owned by R05; wording belongs to R10. Next: Use 745637f4 as the primary legacy-site inventory. Record each actual current site once with separate semantic and wording acceptance if needed. Do not apply line-number patches or assume sixteen surviving defects.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "8beb2deb-3cfd-4c55-854e-25c6cb917a26",
       "path": "todo/8beb2deb.md",
       "workstream": "evidence-only",
-      "disposition": "Retain as regression/reference evidence; no implementation spend is authorized by a historical no-defect finding.",
-      "verification": "planning_disposition_only"
+      "disposition": "Current trap loading preserves distinct missing/parse/schema errors and replaces later entries. A historical no-defects statement does not certify arbitrary project overrides. Next: Keep malformed JSON, missing tools object, empty entries and later override controls. State replacement rather than additive merge. Do not change precedence during wording cleanup.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "9263bd95-5a42-4723-aa29-cd43406efb35",
       "path": "todo/9263bd95.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "This overlaps 0e4658ad help requirements. Actual tool signatures and accepted actions must drive examples, not the retired spec names. Next: 0e4658ad owns parameter-help reconciliation. Retain trace actions, append/patch grammar and engine property forms as explicit cases. Run examples against the pinned schema without guessing required empty-string arguments.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "9935c0ea-9d4a-4287-9786-6a805c38d76d",
       "path": "todo/9935c0ea.md",
       "workstream": "fixtures",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Supervisor recovery restores run-start bytes. That does not prove deterministic serialization or fresh-clone generation. The earlier proposal to untrack the asset is not justified by byte differences alone. Next: Compare independent generations semantically and record hashes and loaded DLL identity. Verify clean-clone generation before changing tracking policy. Coordinate b4d297e2 and retain intermittent failures under efa76989.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "9c47994b-6b0a-49c3-a332-44e64650f199",
       "path": "todo/9c47994b.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "ARC05 preserves unsaved work and forbids automatic reload recovery. A user-requested revert is a destructive feature with different authorization and dependency semantics. Next: Compare native revert/reload. Any future design must preview exact package scope, dependent dirty assets, discarded changes and refusal states, then require explicit per-operation approval. Do not make revert an automatic rollback fallback.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "9d4624ff-4e90-4c5e-9f8f-1e621af2d537",
       "path": "todo/9d4624ff.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The descriptor already declares beta/experimental and an icon; that does not establish a visible panel badge or menu icon. Build.cs includes ToolMenus, so the old no-dependency claim is stale. Next: R18 owns narrow/wide layouts, status states, Tools-menu entry and icon roles. Inspect actual UI before changing it. Keep descriptor metadata, tab icon and menu icon as separate checks; avoid duplicate icon tasks.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "9db83209-5824-4dd4-a08d-fdfffce29f2c",
       "path": "todo/9db83209.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "NodeType preview now reads IsNodePure from the created probe. That narrows the old purity diagnosis; finder/spawner agreement does not prove declared-name aliasing. Next: Compare advertised purity with an independently spawned pure/impure node. Test a boolean declared name versus display label, ambiguous aliases and cross-Blueprint function IDs. Refuse ambiguity rather than choose the first match.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "9e5d5c9a-d446-40aa-a822-cb55d304476d",
       "path": "todo/9e5d5c9a.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Help generation and routing inventory exist, but all routing preferences require accepted comparison evidence. A long listing is not a task-search contract. Next: Specify word search, deterministic ordering, limits and continuation. Test no-match, ties, unavailable native alternatives and long descriptions. Let R17 own preference labels; never suggest bypassing a refused mutation through another tool.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "a28a09fd-cb1a-4b58-baee-085beff7ce10",
       "path": "todo/a28a09fd.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Blueprint relations and lint share rendered text, not a typed usage model. This can make both tools agree on incomplete evidence. Bound handlers and implicit-self pins require specific controls. Next: Own the duplicate 261bb8db requirement. Use delegate call/bind, CreateEvent, widget binding, engine callback and implicit self cases. Report use kind and scan scope. Static absence cannot justify deletion; do not infer runtime nonuse.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "a312b008-744b-4fb0-a366-806c4bc03282",
       "path": "todo/a312b008.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "PreviousAnalyticsProvider is absent from the current module header. Current installation state comes from IsInstalled and participates in teardown logic; the old two-line dead-member cleanup is stale. Next: Withdraw the dead-member subclaim. Verify observable recorder status for available registry, headless mode and installation failure without converting optional analytics absence into plugin-wide failure. Keep lifecycle work with R16 and ue59-recorder.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "a4eed2e1-88a7-4c0a-b9de-7443e492f54b",
       "path": "todo/a4eed2e1.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Existing row operations and fixture creation are distinct. A kit commandlet does not establish a public table-create tool. Nested field aliases are correctness work only where already supported. Next: Compare native table creation before adding a tool. Keep nested-array/display-name cases under abdd2c08 and row read-back under ba6df3c8. Any new create design must refuse collisions and preserve existing files on failure.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "a6a86af7-99b9-46e4-8bc3-a1998fecad87",
       "path": "todo/a6a86af7.md",
       "workstream": "evidence-only",
-      "disposition": "Retain as regression/reference evidence; no implementation spend is authorized by a historical no-defect finding.",
-      "verification": "planning_disposition_only"
+      "disposition": "PureChecks reports actual helper output and lengths, but its historic no-defects statement is not current exhaustive certification. Next: Keep empty inputs, folded display versus original input, aliases and missing asset cases. Do not create implementation work from this reference or use its historical line count as a coverage metric.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "a8341453-1aae-48d9-ad3f-fec762cfa0e5",
       "path": "todo/a8341453.md",
       "workstream": "layout-capture",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Layout, tidy and knot results count different populations. Replacing labels without checking inclusion could create double-counting. Next: Use a fixture with semantic nodes, reroutes and comments. Record each denominator and explicitly state inclusion/exclusion. Verify node plus knot counts against an independent enumeration; do not impose one total on differently scoped operations.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "abdd2c08-6544-4730-b183-e4d856aad868",
       "path": "todo/abdd2c08.md",
       "workstream": "results",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "A common type resolver already maps float/real/double to PC_Real, while field/options and row operations have different grammars. A shared type resolver is not a shared field parser. Next: Inventory accepted syntax and precision for each current caller. Test display/internal-name ambiguity, nested arrays, duplicate options and invalid types. Preserve existing valid inputs; approve any common grammar before refactoring unrelated parsers.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "b230e508-5b3b-4de1-aad3-b832838fc2cb",
       "path": "todo/b230e508.md",
       "workstream": "defer-broad-batch",
-      "disposition": "General multi-asset batching is outside v1. Do not extract every operation core speculatively; fix only the restricted current batch under ARC09.",
-      "verification": "planning_disposition_only"
+      "disposition": "ApplyCore delegates to ApplyTransacted, which opens FScopedTransaction. Context flags disable compile/save, not transaction ownership. The batch wrapper opens another transaction. Next: Define one internal core with caller-owned transaction and no compile/save/undo, then preserve the public repoint wrapper behavior. Start with repoint only: ARC09 does not require swap in batch. Verify one undo and one final compile plus injected partial failure.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "b4d297e2-ba48-4981-b122-6c9dd48dc1ab",
       "path": "todo/b4d297e2.md",
       "workstream": "fixtures",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "This is part of 9935c0ea fixture policy. Recovery correctly restores run-start bytes, which may differ from Git when the user began with local edits. Next: 9935c0ea owns the serialization decision. Compare dirty input with new drift, retain initial hashes and never git reset as recovery. An offline run must not mutate fixtures; diagnose the actual producing command before assigning cause.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "b6fa0cf7-c92e-41e4-a5f1-0c1c86636283",
       "path": "todo/b6fa0cf7.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Material readers and specialized writers already exist. A six-operation authoring roadmap is not a bounded defect repair, and historic rollback counts are stale. Next: Require f434ffba constant/read-completeness verification, R05 lifecycle evidence and native overlap before any append/replace/patch/function-argument expansion. Split a justified gap into individual operation designs.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "ba518a2a-c4fa-4260-9947-613f8568a84b",
       "path": "todo/ba518a2a.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "The cited external P1-P7 proposal is not a self-contained specification here. PlayCheck is observation infrastructure, not permission to inject input or run a menu solver. Next: Document target world/window, input ownership, cancellation, time bounds and external effects before a synthetic probe. Compare native automation first. Do not reconstruct missing phases from their titles or use a workplace project.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "ba6df3c8-12e8-4678-a020-a89881e3e0d7",
       "path": "todo/ba6df3c8.md",
       "workstream": "data-widget",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Plan adds changes even after recording an unknown-field refusal. Apply collects edits, removes rows, then writes rows; that grouping can violate set-then-remove order. WholeRowText read-back exists, so absence of any read-back is not the defect. Next: Test invalid field plus valid field, set/remove and remove/set on one row, repeated partial sets and default-valued fields. Preview must not present refused lines as accepted; final data must match caller order with atomic restoration on failure.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "bbb63d1e-1503-4094-9376-9ae2e2578222",
       "path": "todo/bbb63d1e.md",
       "workstream": "defer-broad-batch",
-      "disposition": "General multi-asset batching is outside v1. Do not extract every operation core speculatively; fix only the restricted current batch under ARC09.",
-      "verification": "planning_disposition_only"
+      "disposition": "The historical proposal requires multi-asset edits and save atomicity that ARC05/ARC09 explicitly do not promise. Existing preview/edit names do not make the broad proposal implemented. Next: Only 5b6a8e45 is the v1 subset. Retain multi-asset and general operation kinds as deferred requirements. Never claim disk atomicity from an undo transaction or mark this done when single-graph repoint passes.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "be9c2edb-2826-4421-941e-f02b00041b4d",
       "path": "todo/be9c2edb.md",
       "workstream": "layout-capture",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Tidy now refuses absent measured outlines and attempts panel layout. FixBackward still has a fallback path and LayoutReport reads stored dimensions. The universal default-square claim is stale, but cross-tool consistency is not certified. Next: Test unopened, visible and zero-dimension graphs per tool. Separate measured versus estimated geometry and actual pin positions. Do not add a force bypass to Tidy from the old proposal; a change to that refusal needs a reviewed contract.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "c1e04796-f433-4f97-8945-d1b08459e136",
       "path": "todo/c1e04796.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Patch and Replace FindGraphLocal still return the first graph when Wanted is empty. The shared helper refuses empty names; D-008 already decides the contract. Next: Use the shared resolver for writers with graph_name_required before mutation. Test every named writer caller plus explicit asset-wide reader iteration, per-graph counts and incomplete reads. Preserve nonempty-name and ambiguity behavior; no fallback to first graph.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "c2865829-9206-4df7-8cf1-89d8d1c319bc",
       "path": "todo/c2865829.md",
       "workstream": "release",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "This older release checklist overlaps R11/R15 and omits current acceptance requirements. Passing its six bullets cannot authorize publication. Next: Retain graph completeness, refs, renamed discovery, dependencies, clean tree and regressions within R11. Use public-cutover for explicit publication instruction; never publish from historical card wording.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "c421299d-8275-4cc5-85d1-bc85cbb49276",
       "path": "todo/c421299d.md",
       "workstream": "layout-capture",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Capture has separate selector, geometry and output paths. A saved file or correct caption does not prove every framed node is visible. Next: Use an owned graph with nodes at all frame edges and an undersized frame. Inspect pixels/dimensions and reported bounds; require explicit refusal or truthful partial framing. Verify media/path accessibility without uploading project captures.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "c4485ba2-aa66-4413-b519-722823b1263f",
       "path": "todo/c4485ba2.md",
       "workstream": "data-widget",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Current removal reads whether the named implementation remains, but that alone cannot show unrelated overrides survived. Modify and DestroyNode alone do not prove a single owned undo transaction. Next: Create at least two event overrides and one function override. Remove one and compare exact remaining identities and graph contents, then undo once. Counts are supplementary; verify unaffected identities and dirty state under ARC03/ARC05.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "c5c54253-37b8-452c-84d5-93f088f11ea8",
       "path": "todo/c5c54253.md",
       "workstream": "layout-capture",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Tidy currently judges total wire length and keeps knots separate; the imported lexicographic overlap/crossing/backward/length objective conflicts with that rule. Zero crossings is not achievable for every graph. Next: Specify a solvable 30-node synthetic fixture with independent geometry and score checks. Obtain a decision on objective order and pin-row thresholds before algorithm work. Never promise zero crossings universally or silently replace the existing objective.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "ca5bbbfc-9ffe-4ae4-b92c-32c18d688b1a",
       "path": "todo/ca5bbbfc.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Several call sites enumerate UbergraphPages, FunctionGraphs and MacroGraphs themselves. Shared graph lookup and graph enumeration are different contracts; recursive/subgraph coverage remains to be proved. Next: Use a Blueprint with function, macro, event and nested graphs. Compare against an independent engine graph enumeration; list skipped graphs and reasons. Do not infer whole-asset coverage from a successful named-graph resolver.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "cdbf31c9-caa6-4233-8314-1f960538ea8c",
       "path": "todo/cdbf31c9.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Already-checked-out handling exists. Provider state does not prove whether TurboMCP, an editor hook or a user performed checkout. Next: Verify consistent already-checked-out success and independent save outcome. Record actor/provenance only when observed; otherwise say unknown. Compare additional source-control operations with native tools before expanding the plugin.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "d03a170f-8ba2-4131-9258-c02644e22eb9",
       "path": "todo/d03a170f.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The old Spec/WORKING_PLAN.md count is retired. ARC07 now distinguishes inspection formats from the explicitly versioned edit format. Next: Do not recreate the old plan or rename read output to lossless write. R06 owns the supported format matrix and explicit refusal cases; R10 documents it. Keep unsupported formats visible as limitations.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "d0f909a3-e329-45da-9b20-1c47a5980317",
       "path": "todo/d0f909a3.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Append already has planning and application phases. That does not prove all schema-dependent pin creation/link ordering is represented in preview. Next: Measure create/link order for dynamic and wildcard pins. Add only a justified preview gap after R06 grammar and node-family evidence; no separate graph language or new authoring tool from this broad proposal.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "d3897f07-b45f-4726-91e9-9c59829985cd",
       "path": "todo/d3897f07.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "GraphText still uses LinkedTo[0] in node-following helpers. This is a concrete review target for multi-linked completeness; its effect must be tested per rendering mode. Next: Use unsupported/read-only node families, shared pure nodes and a legal multi-link case. Independently enumerate endpoints and compare each output mode. Incomplete exports must say so and must never authorize destructive replacement.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "d4433d0e-57d9-4830-8630-a7ff8c79fa1e",
       "path": "todo/d4433d0e.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "This combines three new capabilities with distinct safety and ownership boundaries. Existing declarations are not a specification for initial properties or listener templates. Next: Compare native asset create/duplicate, component-template writes and event creation separately. Require exact property/node read-back, collision behavior and undo scope for each justified follow-up. No combined implementation task.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "e35faf67-33e1-47ac-9155-59c86e5b0f4c",
       "path": "todo/e35faf67.md",
       "workstream": "help-polish",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "AGENTS and a handoff guide exist, and AgentHelp reads traps. A static call-reference audit cannot establish that a job-to-tool guide is complete or usable. Next: Keep AGENTS as workflow authority. Verify the requested job routes against actual capabilities and live help, using R17 evidence for preferences. Do not create another conflicting entry document.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "e6fc78bd-754d-43c1-bdad-78d7abaeaaee",
       "path": "todo/e6fc78bd.md",
       "workstream": "layout-capture",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Current adjacency is built from output-to-input LinkedTo edges with parallel-edge deduplication and a cycle path. The alleged variable-name dependency is not present in that code. Next: Retain set/get plus by-reference-call as a regression alongside a real directed wire cycle and parallel exec/data links. Confirm full cycle titles and no mutation on refusal. Do not rewrite the cycle detector from the historical diagnosis.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "e866ba0d-4f6e-408e-9df7-d90a6467d410",
       "path": "todo/e866ba0d.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "ARC06/ARC07 require canonical graph ownership and full GUIDs at mutation boundaries. The old every-tool-accepts-every-short-key rule is too broad. Next: Test short/full IDs, graph names containing separators, invalid GUIDs and colliding prefixes. Share alias normalization; refuse ambiguity before mutation. Display title/key/graph without treating human labels as stable identifiers.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "e9a28b8d-b558-4054-a5ae-3ff7b39bea2e",
       "path": "todo/e9a28b8d.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Layout completion, counts, source reads, widget values and dirty cleanup are independent proposals. Source-file access adds a data boundary; flag clearing can hide real changes. Next: Route layout checks to R07, widget detail to 1256778b and dirty-state attribution to 3be553c8. Defer source access until approved roots, canonical-path/symlink checks, file/byte limits and redaction rules are specified. Never clear unexplained dirty state.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "ee4fde11-5d9a-43f2-a017-ad6993605e30",
       "path": "todo/ee4fde11.md",
       "workstream": "superseded-process",
-      "disposition": "Use ROADMAP.md and the ordered queue. Obsolete branch counts, parallel workstream instructions and old release steps are not executable instructions.",
-      "verification": "planning_disposition_only"
+      "disposition": "The ten parallel workers and shared-checkout assumptions are obsolete. Current engine execution is serialized and tied to a candidate digest. Next: R11 owns combined regression evidence after reviewed integration. Preserve named failure classes in acceptance, but do not wait for nonexistent workers or start the historical parallel run.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "efa76989-7e08-4673-8ac1-901c709cdc04",
       "path": "todo/efa76989.md",
       "workstream": "fixtures",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Identity-verified first/second trials passed previously. That does not disprove the historical first-run failure or identify its cause. Next: Use fixture profile with separate first/second logs. On failure retain exact pre/post graph state, process/DLL identity and generating command before any retry. Stop and inspect the failing run; never weaken the migrated-link assertion to close this record.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "f1a04ef1-cd1d-4129-a972-53646838d9ce",
       "path": "todo/f1a04ef1.md",
       "workstream": "defer-native-comparison",
-      "disposition": "Do not expand this capability before a pinned native-tool comparison demonstrates a concrete missing workflow and an accepted design. Existing safety defects remain eligible for fixes.",
-      "verification": "planning_disposition_only"
+      "disposition": "Existing dead-node analysis is not a safe debug-print removal contract. Shared string producers and exec bypass links make default deletion risky. Next: Define previewed deletion identities and preserve shared inputs and unrelated behavior. Test bridge refusal and rollback before proposing a cleanup tool. A park mode is a separate explicit edit; do not silently add default deletion.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "f434ffba-f4cc-49a1-bb51-21b51941c8b7",
       "path": "todo/f434ffba.md",
       "workstream": "data-widget",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "ConstantForInput and unlinked-input rendering exist. The current suite accepts any numeric constant rather than the fixture's exact expected value, so it cannot prove exact constant preservation. Next: Use multiple distinct constants, zero, vectors and a documented default case. Compare each named input to independent expression properties; an arbitrary numeric token is not a pass. Keep this as the gate for b6fa0cf7 expansion.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "ff18311b-9e72-49c5-8a65-5a96ccf5e028",
       "path": "todo/ff18311b.md",
       "workstream": "graph-fidelity",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "This overlaps endpoint detail in 0b84b1d8 and link completeness in d3897f07. Display text is not automatically safe mutation input under ARC07. Next: Own the explicit node title/GUID/graph/position and both-endpoint inventory requirement. Use independent enumeration for multi-links, shared pure nodes and unknown node types. Mark incomplete reads and keep canonical edit export separate from compact display.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "foundation-engine-matrix",
       "path": "todo/foundation-engine-matrix.md",
       "workstream": "installed-engine",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The source-engine incremental plugin build is verified. Installed 5.8.3 availability and ABI compatibility are not. This foundation task duplicates the newer two-stage plan. Next: R16 owns dependency/build-boundary investigation; R12 owns actual installed-distribution packaging and clean consumer validation. Do not create a third packaging workstream or treat installed 5.6 as equivalent.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "foundation-shared-lease",
       "path": "todo/foundation-shared-lease.md",
       "workstream": "engine-ownership",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Shared kernel resource locks now supplement per-checkout leases. R02 carries completion evidence. The old statement that ownership is only check-then-write is stale for supervised entry points. Next: Retain this as the original requirement. Regress contention, owner death and foreign-process preservation through R02 tests; no second lock manager. Port 8000 still serializes engine sessions.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "foundation-task-triage",
       "path": "todo/foundation-task-triage.md",
       "workstream": "superseded-process",
-      "disposition": "Use ROADMAP.md and the ordered queue. Obsolete branch counts, parallel workstream instructions and old release steps are not executable instructions.",
-      "verification": "planning_disposition_only"
+      "disposition": "This pass reviews all task records, separating current source findings from missing runtime evidence. Imported status does not authorize implementation. Next: Use docs/audit/task-review.md and each reviewed action. Keep confirmed repair specifications separate from investigation outcomes; update evidence when implementation changes source. Do not repeat a blanket backlog rewrite or claim all acceptance cases passed.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "public-cutover",
       "path": "todo/public-cutover.md",
       "workstream": "release",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "The public source artifact is the entire tracked tree, not a hand-selected plugin-only export. release/status remains not_ready. Historical allowlist wording is superseded by the tracked-tree policy. Next: Require R11 acceptance, R15 dry-run controls, English/privacy review including binary assets, exact export manifest and explicit owner publication instruction. Preserve private history and do not force-push it to public.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "task-reconciliation",
       "path": "todo/task-reconciliation.md",
       "workstream": "superseded-process",
-      "disposition": "Use ROADMAP.md and the ordered queue. Obsolete branch counts, parallel workstream instructions and old release steps are not executable instructions.",
-      "verification": "planning_disposition_only"
+      "disposition": "The original 85 imported IDs remain intact. This review supplies a current disposition for all 110 records; that is separate from proving all product outcomes. Next: foundation-task-triage owns review maintenance. Preserve original evidence in folded history and the current decisions above it. Future repairs must cite the original IDs, not create competing copies of their scope.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "ue59-protocol",
       "path": "todo/ue59-protocol.md",
       "workstream": "ue59",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Baseline source and client handling are available; the local 5.8.3 build does not prove forward discovery, mixed media, nulls or child-actor refusals. Existing forward notes need revision-qualified verification. Next: R13 must locate exact native interfaces and distinguish source presence from default discovery. R14 owns target runtime probes once a bounded adapter is approved. Preserve media blocks; never flatten them into a successful text-only claim.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     },
     {
       "id": "ue59-recorder",
       "path": "todo/ue59-recorder.md",
       "workstream": "ue59",
-      "disposition": "Retain for current-source reconciliation and bounded 5.8.3 fixes in this workstream. Historical diagnosis is not yet a verified defect.",
-      "verification": "planning_disposition_only"
+      "disposition": "Recorder identity and registry wrapping are integration boundaries. The prior removal claim belongs to the pinned forward comparison, not a claim about all future 5.9 builds. Next: Confirm supported public identity APIs at the comparison revision, specify lifecycle/ownership and version guards, and prove baseline preservation. Do not add a transport replacement or patch engine source to bypass the registry.",
+      "verification": "source_review_runtime_acceptance_not_implied"
     }
   ]
 }
