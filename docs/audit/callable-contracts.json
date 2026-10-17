@@ -986,7 +986,7 @@
         {
           "name": "Assets",
           "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
-          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate; each part is passed to the shared Resolve.",
+          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate. Resolve tries direct forms first: loaded FindObject for slash-free names, then mounted object/package forms. The /Game-only FindAllByName registry fallback is later. Duplicate parts remain duplicate rows.",
           "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
         }
       ],
@@ -1023,7 +1023,8 @@
       "implementation": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
         "lines": "46-50",
-        "checkout": "TurboMCPSourceControl.cpp:410-530"
+        "checkout": "TurboMCPSourceControl.cpp:410-530",
+        "resolver_routes": "Resolve first tries direct forms. For an input without '/', it tries FindObject for a loaded object before the registry fallback; that loaded-object route has no /Game mount filter and no registry uniqueness check. The /Game-only restriction belongs to the later FindAllByName fallback. TryDirectForms can fall back from a failed loaded-object lookup to CompleteFromPackagePath, which accepts a sole package asset without matching the requested object member; multi-asset refusal applies only to that package fallback. The generated-class `_C` condition is also narrower than its comment: the dot must be at Len-3, which the normal Package.Object_C form does not satisfy."
       },
       "client": {
         "path": "Tools/tmcp.py",
@@ -1032,7 +1033,7 @@
       },
       "effects": [
         "Runs Plan, renders the state half, then issues one FCheckOut per eligible row through Provider.Execute(Operation, Row.File).",
-        "Skips refused rows, rows without readable state, and rows the plan says are checked out/added here; CanCheckout() false still attempts.",
+        "Skips refused rows and rows without readable state. The already-checked-out/added skip is only in the UsesCheckout() == true branch; when UsesCheckout() is false, Edit issues the operation even if those flags are set. CanCheckout() false still attempts.",
         "On a provider with UsesCheckout() false, states the no-op expectation and still issues the operation to record the provider answer.",
         "No asset file/save is written; a provider may change source-control/depot state. No rollback or atomic multi-asset transaction exists.",
         "With logging enabled, the wrapper writes start/end records and can rotate the log."
@@ -1042,13 +1043,14 @@
         "Empty Assets: no checkout; says there is nothing to check out after the provider facts.",
         "Run-level disabled/unavailable refusal: no checkout attempted and no provider reached.",
         "Per-row resolve/file/refusal: not attempted; no provider call for that row.",
-        "Null state: not attempted; an unreadable state is not a request to check out.",
-        "Already checked out/added in the plan: ALREADY DONE, no operation."
+        "Null state: not attempted; an unreadable state is not a request to check out. Preview can describe the same row differently because its no-checkout branch precedes its no-state branch (R04-VCS-06).",
+        "Already checked out/added in the plan: ALREADY DONE only when UsesCheckout() is true. On a provider with UsesCheckout() false, the no-op branch still issues the operation."
       ],
       "truncation": "No per-row or total character cap; output grows with inputs and provider messages. No pagination.",
       "tests": [
         "Tools/test-vcs.py no-provider Edit refusal, Git no-op checkout result, Perforce unavailable edit refusal, no working-tree change.",
-        "No test covers a successful live checkout, post-operation state, partial failure, duplicate input, stale plan, checked-out-other or read-only state."
+        "No test covers a successful live checkout, post-operation state, partial failure, duplicate input, stale plan, checked-out-other or read-only state.",
+        "No test exercises UsesCheckout() false with a readable checked-out/added state, or a null state on a no-checkout provider."
       ],
       "source_findings": [
         "R04-VCS-01",
@@ -1057,7 +1059,9 @@
         "R04-VCS-04",
         "R04-VCS-05",
         "R04-CALL-04",
-        "R04-CALL-06"
+        "R04-CALL-06",
+        "R04-VCS-06",
+        "R04-VCS-07"
       ]
     },
     {
@@ -1929,7 +1933,7 @@
         {
           "name": "Assets",
           "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
-          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate; each part is passed to the shared Resolve.",
+          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate. Resolve tries direct forms first: loaded FindObject for slash-free names, then mounted object/package forms. The /Game-only FindAllByName registry fallback is later. Duplicate parts remain duplicate rows.",
           "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
         }
       ],
@@ -1966,7 +1970,8 @@
       "implementation": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
         "lines": "39-44",
-        "plan_render": "TurboMCPSourceControl.cpp:184-408 (Plan) and :325-408 (Render with intent)"
+        "plan_render": "TurboMCPSourceControl.cpp:184-408 (Plan) and :325-408 (Render with intent)",
+        "resolver_routes": "Resolve first tries direct forms. For an input without '/', it tries FindObject for a loaded object before the registry fallback; that loaded-object route has no /Game mount filter and no registry uniqueness check. The /Game-only restriction belongs to the later FindAllByName fallback. TryDirectForms can fall back from a failed loaded-object lookup to CompleteFromPackagePath, which accepts a sole package asset without matching the requested object member; multi-asset refusal applies only to that package fallback. The generated-class `_C` condition is also narrower than its comment: the dot must be at Len-3, which the normal Package.Object_C form does not satisfy."
       },
       "client": {
         "path": "Tools/tmcp.py",
@@ -1975,18 +1980,19 @@
       },
       "effects": [
         "Runs the same Plan as Read and Edit: provider/module facts, per-asset GetState(ForceUpdate), and wrapper logging.",
-        "Does not issue FCheckOut; it renders checkout intent from the plan's UsesCheckout/state/CanCheckout fields.",
-        "No asset file, save or setting is written."
+        "Does not issue FCheckOut. Plan can still execute Provider.GetState(ForceUpdate), so Preview can perform a source-control refresh/cache/network operation even though it performs no checkout.",
+        "Reads and renders the plan's checkout intent; no asset file, save or setting is written."
       ],
       "success": "Returns the state/refusal text plus a per-row 'WHAT A CHECKOUT WOULD DO' section. No ARC02 result line.",
       "refusals": [
         "Same Plan refusals as Read and Edit: empty assets has no rows; invalid/missing/unspecified file per-row refusal; disabled/unavailable provider refuses every resolved asset; null state is UNKNOWN.",
-        "Preview does not refuse merely because CanCheckout() is false; it says the checkout would still be attempted."
+        "Preview does not refuse merely because CanCheckout() is false; it says the checkout would still be attempted. When UsesCheckout() is false its no-op branch runs before its !bStateRead check, which can differ from Edit for a null state (R04-VCS-06)."
       ],
       "truncation": "No tool-level character cap; one row per input plus checkout-intent lines. No pagination.",
       "tests": [
         "Tools/test-vcs.py checks no-provider Preview/Edit refusal strings, Git preview refusals and intent wording, and that Preview does not report a provider answer.",
-        "The suite does not compare Preview and Edit intent/state line-for-line under a provider, nor exercise state changes between the two calls."
+        "The suite does not compare Preview and Edit intent/state line-for-line under a provider, nor exercise state changes between the two calls.",
+        "No test compares Preview and Edit branches for a readable/null state under UsesCheckout() true and false, or a readable checked-out/added state on a no-checkout provider."
       ],
       "source_findings": [
         "R04-VCS-01",
@@ -1994,7 +2000,9 @@
         "R04-VCS-03",
         "R04-VCS-04",
         "R04-CALL-04",
-        "R04-CALL-06"
+        "R04-CALL-06",
+        "R04-VCS-06",
+        "R04-VCS-07"
       ]
     },
     {
@@ -3069,7 +3077,7 @@
         {
           "name": "Assets",
           "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
-          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate; each part is passed to the shared Resolve.",
+          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate. Resolve tries direct forms first: loaded FindObject for slash-free names, then mounted object/package forms. The /Game-only FindAllByName registry fallback is later. Duplicate parts remain duplicate rows.",
           "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
         }
       ],
@@ -3107,7 +3115,8 @@
       "implementation": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
         "lines": "32-37",
-        "plan_render": "TurboMCPSourceControl.cpp:184-408"
+        "plan_render": "TurboMCPSourceControl.cpp:184-408",
+        "resolver_routes": "Resolve first tries direct forms. For an input without '/', it tries FindObject for a loaded object before the registry fallback; that loaded-object route has no /Game mount filter and no registry uniqueness check. The /Game-only restriction belongs to the later FindAllByName fallback. TryDirectForms can fall back from a failed loaded-object lookup to CompleteFromPackagePath, which accepts a sole package asset without matching the requested object member; multi-asset refusal applies only to that package fallback. The generated-class `_C` condition is also narrower than its comment: the dot must be at Len-3, which the normal Package.Object_C form does not satisfy."
       },
       "client": {
         "path": "Tools/tmcp.py",
@@ -3116,15 +3125,15 @@
       },
       "effects": [
         "Plan loads the SourceControl module, reads registered provider names, IsEnabled and (when enabled) IsAvailable/UsesCheckout, and resolves every input.",
-        "For each resolved file whose run checks pass, Plan calls Provider.GetState(file, EStateCacheUsage::ForceUpdate); this may refresh provider cache/network state but does not check out or write an asset.",
+        "For each resolved file whose run checks pass, Plan calls Provider.GetState(file, ForceUpdate); this can execute a provider refresh/cache/network operation but does not check out or write an asset.",
         "With logging enabled, the recorder writes start/end records and can rotate the log.",
         "No asset file, save, checkout or setting is written by this tool."
       ],
       "success": "Returns '=== source control: E-VCS-CHECKOUT ===' module/provider facts, then zero or more rows; each row reports package/file, provider flags and state text, or REFUSED with the reason. No ARC02 result line.",
       "refusals": [
         "Empty Assets: no rows; the answer is provider/module facts and says no asset was given.",
-        "Invalid/ambiguous/missing input: per-row refusal from Resolve.",
-        "Resolved package without a verified file: per-row refusal; no provider state query for that row.",
+        "Invalid/ambiguous/missing input: a per-row refusal from Resolve when that route fails. This is not universal: loaded-object and sole-package fallback routes can accept forms without a registry uniqueness/member check (R04-VCS-07).",
+        "Resolved package without a verified file: per-row refusal; no provider state query for that row. Resolution is not a universal refusal: loaded-object and sole-package fallback routes can accept forms without a registry uniqueness check; see R04-VCS-07.",
         "Module disabled/unavailable: every resolved asset is refused with the engine string or the module-load reason; no GetState call.",
         "Null provider state: UNKNOWN with the reason, not 'not under source control'."
       ],
@@ -3132,7 +3141,8 @@
       "tests": [
         "Tools/test-vcs.py: no-provider empty/per-asset refusals, mixed invalid input, Preview/Edit identical refusals, Git state, Perforce enabled/unavailable, engine-helper cross-check, no working-tree change.",
         "Tools/test-vcs-write.py uses ReadTurboMCPVcsState only with empty Assets for provider facts; it does not exercise per-asset state.",
-        "No test covers duplicate/separator/whitespace, unsaved package, null/unknown non-null state, checked-out-other or read-only state."
+        "No test covers duplicate/separator/whitespace, unsaved package, null/unknown non-null state, checked-out-other or read-only state.",
+        "No test covers loaded-object-first resolution, a package fallback whose requested member is absent, the normal Package.Object_C form, or a multi-asset package with a loaded direct object."
       ],
       "source_findings": [
         "R04-VCS-01",
@@ -3140,7 +3150,9 @@
         "R04-VCS-03",
         "R04-VCS-05",
         "R04-CALL-04",
-        "R04-CALL-06"
+        "R04-CALL-06",
+        "R04-VCS-06",
+        "R04-VCS-07"
       ]
     },
     {
@@ -3509,12 +3521,12 @@
       "title": "Checkout executes against the plan state without revalidation, post-operation read-back or aggregate outcome",
       "evidence": [
         "TurboMCPSourceControl.cpp:293 reads state once; Checkout at :410-530 never calls GetState before or after Provider.Execute.",
-        "Checkout decides to skip from plan fields bCheckedOut/bAdded/bStateRead/CanCheckout (:455-488) and then executes FCheckOut at :491-492; it does not recheck the file, provider, enablement or state.",
+        "Checkout skips refused rows and rows without readable state first (:455-460); the checked-out/added skip is only in the UsesCheckout()==true branch (:473-488). On a no-checkout provider a readable checked-out/added row still issues FCheckOut. CanCheckout() false does not prevent the attempt.",
         "The result section (:494-522) reports the operation's ECommandResult and messages only. The result fields bAttempted/bSucceeded/ProviderAnswer in TurboMCPSourceControl.h:101-109 are not populated by this path.",
         "The per-asset loop continues after failures; there is no rollback, aggregate count or partial-success summary.",
         "Preview and Edit each call Plan separately (:39-50); sharing the Plan function does not share a state snapshot across calls, so state changes between calls can change the answer."
       ],
-      "observed_source_behavior": "A stale plan can skip a file that is no longer checked out/added, or attempt a checkout on a file that has changed owner/state. ECommandResult::Succeeded is reported as the provider's operation result, not as a verified checkout; no post-state read proves the lock. A multi-asset call can partially succeed, with per-row results but no aggregate or rollback.",
+      "observed_source_behavior": "A stale plan can attempt a checkout on a changed file or, in the UsesCheckout()==true branch, skip a file whose plan state says checked out/added even though that state is stale. On a no-checkout provider, readable checked-out/added rows are not skipped: the operation is still issued. ECommandResult::Succeeded is the provider operation result, not a verified checkout; no post-state read proves the lock. Partial multi-asset results have no aggregate or rollback.",
       "existing_assertions": "test-vcs.py only exercises Git no-op and no-provider/Perforce-unavailable paths; it never observes a successful checkout or reads state back. test-vcs-write.py tests write tools, not this checkout tool.",
       "runtime_status": "not_run"
     },
@@ -3536,6 +3548,113 @@
       ],
       "observed_source_behavior": "Read/Preview state rows cannot distinguish checked out by another user, a genuinely unknown non-null state, or a filesystem read-only asset except through provider text or CanCheckout. The declaration says it reports 'whether it is checked out here', which is true, but the broader state question is not structured.",
       "existing_assertions": "test-vcs.py does not assert checked-out-other, unknown-state or read-only flags; the Git assertions only require checked-out/out-of-date lines to exist.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-VCS-06",
+      "status": "confirmed_source",
+      "checkpoint": "source-control-state-and-checkout",
+      "scope": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "title": "Preview and Edit branch on UsesCheckout and readable state in different orders",
+      "evidence": [
+        "TurboMCPSourceControl.cpp:145-177 AddAssetLines checks !InPlan.bUsesCheckout first; its bStateRead check is at :163.",
+        "TurboMCPSourceControl.cpp:455-488 Checkout checks !Row.bStateRead first (:455-460) and the no-checkout branch at :473-479.",
+        "For a resolved row with no refusal, UsesCheckout() false and a null state, Preview says the provider is still asked, while Edit prints NOT ATTEMPTED and continues.",
+        "The already-checked-out/added skip in Checkout is an else-if after the no-op branch (:481-487); with UsesCheckout() false and a readable state, Edit still issues FCheckOut even when bCheckedOut/bAdded are true.",
+        "Preview and Edit call Plan separately (:39-50); the branch mismatch exists on the same plan input and does not require a state change between calls."
+      ],
+      "branch_matrix": [
+        {
+          "uses_checkout": true,
+          "state": "readable",
+          "checked_out_or_added": true,
+          "can_checkout": "any",
+          "preview": "nothing to do",
+          "edit": "ALREADY DONE, skip"
+        },
+        {
+          "uses_checkout": true,
+          "state": "readable",
+          "checked_out_or_added": false,
+          "can_checkout": false,
+          "preview": "CANNOT CHECK OUT; still attempted",
+          "edit": "attempt FCheckOut"
+        },
+        {
+          "uses_checkout": true,
+          "state": "readable",
+          "checked_out_or_added": false,
+          "can_checkout": true,
+          "preview": "FCheckOut would be issued",
+          "edit": "attempt FCheckOut"
+        },
+        {
+          "uses_checkout": true,
+          "state": "null",
+          "checked_out_or_added": false,
+          "can_checkout": "any",
+          "preview": "nothing would be attempted",
+          "edit": "NOT ATTEMPTED"
+        },
+        {
+          "uses_checkout": false,
+          "state": "readable",
+          "checked_out_or_added": true,
+          "can_checkout": "any",
+          "preview": "no-op, provider still asked",
+          "edit": "issue FCheckOut (no-op)"
+        },
+        {
+          "uses_checkout": false,
+          "state": "readable",
+          "checked_out_or_added": false,
+          "can_checkout": "any",
+          "preview": "no-op, provider still asked",
+          "edit": "issue FCheckOut (no-op)"
+        },
+        {
+          "uses_checkout": false,
+          "state": "null",
+          "checked_out_or_added": false,
+          "can_checkout": "any",
+          "preview": "no-op, provider still asked",
+          "edit": "NOT ATTEMPTED (mismatch)"
+        },
+        {
+          "uses_checkout": "any",
+          "state": "refused",
+          "checked_out_or_added": "any",
+          "can_checkout": "any",
+          "preview": "REFUSED",
+          "edit": "REFUSED, skip"
+        }
+      ],
+      "observed_source_behavior": "The null-state/no-checkout row is a concrete Preview/Edit disagreement produced by branch order, not a state change. The readable-state/no-checkout row is not a skip: Edit still calls the provider even if the state says checked out or added. The branch order is the defect; plan refusals and operation outcomes are separate.",
+      "existing_assertions": "test-vcs.py has no null-state/UsesCheckout-false case and no readable checked-out/added no-checkout case; it only sees Git readable states and a no-provider refusal.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-VCS-07",
+      "status": "confirmed_source",
+      "checkpoint": "source-control-state-and-checkout",
+      "scope": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "title": "Resolver route precedence, /Game restriction and generated-class handling were overclaimed",
+      "evidence": [
+        "TurboMCPAssetResolver.cpp:60-68,269-315: a slash-free input first tries FindObject and CompleteFromObject; that route has no /Game mount filter, no registry uniqueness check, and rejects only UPackage (not other non-asset UObjects).",
+        "TurboMCPAssetResolver.cpp:357-400: the /Game-only, exact-name, registry uniqueness behavior belongs to FindAllByName, the later short-name fallback.",
+        "TurboMCPAssetResolver.cpp:208-267: TryDirectForms can fall from a failed loaded-object lookup to CompleteFromPackagePath; :317-355 accepts a sole package asset without matching the requested object member. Multi-asset refusal applies only to that package fallback.",
+        "TurboMCPAssetResolver.cpp:215-221: with ClassSuffix='_C', DotBeforeSuffix is Len-3; the normal Package.Object_C form does not put a dot there, so it is not recognized as a generated class path."
+      ],
+      "observed_source_behavior": "A short slash-free name can resolve through a loaded object with no /Game or uniqueness check; a package path can fall back to a sole asset without checking the requested object member; the normal generated-class shape is not matched by the stated suffix condition. Invalid/ambiguous input is not universally refused by every route, and a multi-asset package is not a universal refusal for a loaded direct object.",
+      "existing_assertions": "test-vcs.py uses simple short names and does not distinguish a loaded-object route from the /Game registry fallback; it has no loaded-object-first, absent-member, normal generated-class or multi-asset-package case.",
       "runtime_status": "not_run"
     }
   ],
@@ -3927,6 +4046,51 @@
       "fixture_gap": "No fixture supplies checked-out-other/read-only/unknown provider states; a test provider or state fixture is missing.",
       "validation": "No current suite asserts these flags. Proposed provider fixture; engine command unavailable until the fixture exists.",
       "rollback": "Revert TurboMCPSourceControl.cpp and test-vcs.py only."
+    },
+    {
+      "id": "R04-REPAIR-18",
+      "finding": "R04-VCS-06",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+        "Tools/test-vcs.py"
+      ],
+      "preserved_behavior": [
+        "per-asset refusals",
+        "readable UsesCheckout false no-op branch",
+        "readable UsesCheckout true checked-out/added skip",
+        "CanCheckout false still attempts",
+        "no asset file write"
+      ],
+      "synthetic_probe": "Use a test provider with UsesCheckout() false and a null state for a resolved asset, then a readable state with checked-out/added true; compare Preview and Edit branches. No live depot is needed.",
+      "expected": "Preview and Edit agree on the null-state branch: a null state cannot be acted on, so both say NOT ATTEMPTED/UNKNOWN rather than Preview saying the provider will be asked. With a readable state on a no-checkout provider, Edit still issues exactly as before.",
+      "negative_control": "UsesCheckout() true with a readable checked-out/added state still skips; a readable no-checkout state still issues a no-op operation; a refusal still skips both.",
+      "fixture_gap": "A provider fixture that reports UsesCheckout() false and returns a null state is not present; Git is readable and Perforce is unavailable.",
+      "validation": "No current suite asserts this branch matrix. Proposed provider fixture plus test-vcs.py branches; exact engine command unavailable until the fixture exists.",
+      "rollback": "Revert TurboMCPSourceControl.cpp and test-vcs.py only."
+    },
+    {
+      "id": "R04-REPAIR-19",
+      "finding": "R04-VCS-07",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetResolver.cpp",
+        "Tools/test-vcs.py"
+      ],
+      "preserved_behavior": [
+        "four accepted path forms for simple assets",
+        "case-insensitive short-name fallback",
+        "ambiguous short-name refusal",
+        "package/file refusal before provider"
+      ],
+      "synthetic_probe": "Resolve a loaded asset by short name, an unloaded Package.Object path, a normal Package.Object_C class path, a package containing multiple assets, and a package path whose requested object member is absent.",
+      "expected": "Document and test the actual route precedence. The loaded-object route must not be described as /Game-only; a package fallback must either match the requested member or say it selected the sole asset; the normal generated-class form is recognized or explicitly refused, not silently treated as another asset.",
+      "negative_control": "A genuine ambiguous short name still refuses with candidates; a normal sole-asset package still resolves; an invalid path still refuses.",
+      "fixture_gap": "Tests need a loaded-only object, an unloaded asset, a normal class path and a multi-asset package; current test-vcs.py uses two simple short names.",
+      "validation": "No current resolver/route assertion covers these forms. Proposed test-vcs.py extension; exact engine command unavailable until fixtures are selected.",
+      "rollback": "Revert TurboMCPAssetResolver.cpp and test-vcs.py only."
     }
   ],
   "probe_gaps": [
@@ -3952,7 +4116,9 @@
     "VCS unsaved package, multiple-asset package, missing file and mounted-plugin path.",
     "VCS null, non-null unknown, cached-after-failed-refresh, checked-out-other and read-only states.",
     "VCS successful live checkout, post-operation read-back, partial failure and multi-asset atomicity.",
-    "VCS Preview/Edit behavior after a state change between calls."
+    "VCS Preview/Edit behavior after a state change between calls.",
+    "Preview/Edit branch order for UsesCheckout false + null state, and readable checked-out/added on a no-checkout provider.",
+    "Resolver route precedence: loaded-object-first vs /Game registry fallback vs package fallback; normal Package.Object_C and absent member."
   ],
   "validation": {
     "audit_inventory_check": {
@@ -3990,7 +4156,9 @@
     "Required/default, long-help and missing-schema probes are awaiting fixture/test-seam scope; current test-agent-help.py does not supply them.",
     "Whether a duplicate asset should be deduplicated or refused; the policy is unresolved.",
     "Whether a checkout success must be verified by post-state read-back, and how a partial multi-asset result should be summarized.",
-    "How to represent provider freshness and non-null unknown/checked-out-other/read-only state without inventing a provider-independent result."
+    "How to represent provider freshness and non-null unknown/checked-out-other/read-only state without inventing a provider-independent result.",
+    "How Preview should describe a null-state/no-checkout row while preserving the readable no-op branch.",
+    "How the resolver should reconcile loaded-object, package fallback and generated-class routes without changing the accepted simple path forms."
   ],
   "schema_validation": {
     "status": "source_traced_not_runtime",
@@ -4116,10 +4284,10 @@
       "offline_profile": {
         "command": "python Tools/execute-tests.py --profile offline --execute",
         "exit": 0,
-        "report": ".local/executions/9ebf217b4f3f4564b78a55bc77059f40/report.json",
-        "request_commit": "fc46e01845c4fbd6814c07f5f228d946aeaef6b9",
-        "tree_digest": "8486fa8ee108917e3ecfc18856399c49424dd6547912406ba9b0584af0ad0728",
-        "summary": "PASSED; all offline suites passed."
+        "report": ".local/executions/4500325719d74722a50a67edbc702f38/report.json",
+        "request_commit": "861ef46fafec4c7e31b3cc83aa89ac2cd6069339",
+        "tree_digest": "6f3f2dfbb67e1750019cd52f20ac6fcd975d70162c68f69147462d0b9fa35045",
+        "summary": "PASSED after checkpoint-3 corrections; all offline suites passed."
       }
     }
   }

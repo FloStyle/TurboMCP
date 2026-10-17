@@ -136,28 +136,32 @@ Contract notes:
 - Each input resolves through the shared resolver. Invalid/ambiguous/missing/multiple-asset-package/unsaved-package inputs are refused per row; a resolved package without a verified file is refused before any provider state query.
 - Disabled, unavailable and module-missing runs refuse every resolved asset with the engine string/module reason and do not call per-asset `GetState`.
 - Null provider state is reported as UNKNOWN. A non-null `IsUnknown` state is not checked; Perforce `DontCare` defaults can print as source-controlled true with provider text `Unknown`.
-- `ForceUpdate` does not prove refresh success: the single-file helper discards the command result, and pinned Perforce ignores `FUpdateStatus` failure and returns cached state with `Succeeded`.
-- `Read`/`Preview` issue per-asset `GetState(ForceUpdate)` and wrapper logging but no `FCheckOut`. `Edit` issues per-asset `FCheckOut`; it does not revalidate the plan or read state back, does not populate the result fields, and has no aggregate/partial/rollback outcome. `UsesCheckout() == false` is reported as a no-op expectation but the operation is still issued.
+- `ForceUpdate` does not prove refresh success: the single-file helper returns a state only when the array call returns `Succeeded` and is nonempty (otherwise null) and does not expose the result; pinned Perforce ignores `FUpdateStatus` failure and returns cached state with `Succeeded`.
+- Resolution route precedence is not `/Game`-only: a slash-free input first tries a loaded `FindObject` (no mount filter/uniqueness); `/Game` belongs to the later registry fallback. `TryDirectForms` can fall to a sole-package fallback without matching the requested object member; the `_C` condition at `Len-3` does not recognize normal `Package.Object_C`. Multi-asset refusal is package-fallback-only.
+- `Read`/`Preview` issue per-asset `GetState(ForceUpdate)` and wrapper logging but no `FCheckOut`; Preview can still execute a refresh operation. `Edit` issues per-asset `FCheckOut`; it does not revalidate the plan or read state back, does not populate the result fields, and has no aggregate/partial/rollback outcome. `UsesCheckout() == false` is reported as a no-op expectation but the operation is still issued.
+- Preview/Edit branch order differs: `AddAssetLines` checks `!UsesCheckout` before `!bStateRead`; `Checkout` checks `!bStateRead` first. With no-checkout provider and null state, Preview says the provider is still asked while Edit skips. Already checked-out/added skip applies only when `UsesCheckout()` is true; readable no-checkout rows still issue.
 
-New findings (`R04-VCS-01` through `05`):
+New findings (`R04-VCS-01` through `07`):
 - `R04-VCS-01`: pinned ForceUpdate/cached-state freshness limitation; not stale-proof.
 - `R04-VCS-02`: non-null `IsUnknown` state is treated as measured; Perforce `DontCare` can print source-controlled true.
 - `R04-VCS-03`: duplicate inputs produce duplicate rows/state queries and potentially duplicate checkouts.
 - `R04-VCS-04`: checkout has no revalidation/post-read-back/aggregate result; stale plan and partial multi-asset outcomes.
 - `R04-VCS-05`: checked-out-other, non-null unknown and read-only distinctions are not structured.
-Each has an unapproved proposal `R04-REPAIR-13` through `17` with exact files, preserved behavior, synthetic provider/state probe or explicit fixture gap, expected result, negative control, validation and rollback. Duplicate policy, post-state verification, freshness representation and provider fixtures remain unresolved.
+- `R04-VCS-06`: Preview/Edit branch mismatch for UsesCheckout=false + null state; checked-out/added skip is UsesCheckout=true-only.
+- `R04-VCS-07`: resolver route precedence, `/Game` restriction, generated-class condition and package-fallback member matching were overclaimed.
+Each has an unapproved proposal `R04-REPAIR-13` through `19` with exact files, preserved behavior, synthetic provider/state probe or explicit fixture gap, expected result, negative control, validation and rollback. Duplicate policy, branch policy, post-state verification, freshness representation and provider/resolver fixtures remain unresolved.
 
 Validation:
 - `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
 - `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
 - `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
-- `python Tools/execute-tests.py --profile offline --execute` exited 0 at base `fc46e01`: report `.local/executions/9ebf217b4f3f4564b78a55bc77059f40/report.json`, tree digest `8486fa8ee108917e3ecfc18856399c49424dd6547912406ba9b0584af0ad0728`; all offline suites passed.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 after corrections (request commit `861ef46`): report `.local/executions/4500325719d74722a50a67edbc702f38/report.json`, tree digest `6f3f2dfbb67e1750019cd52f20ac6fcd975d70162c68f69147462d0b9fa35045`; all offline suites passed.
 - No engine suite, editor, build, direct MCP call, source-control checkout, packaging or recovery command was run. `test-vcs.py` and `test-vcs-write.py` are existing engine-suite assertions only, not results here.
 - Candidate-bound offline evidence is obtained after this commit and returned separately.
 
 Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contracts.json`, and this Completion evidence only. No plugin, engine, test, helper, dependency, pin, routing preference, task status/readiness, TODO, review register or release control was changed.
 
-Unresolved: live-depot checkout and post-state verification; failed-refresh/cached, non-null unknown, checked-out-other and read-only provider states; duplicate policy; aggregate/partial outcome and rollback policy; how to represent freshness without a new public schema; all three tools' lack of ARC02 lines and `call_structured` implications; `R04-CALL-06` refusal recording; the 91 unreviewed rows. R04 remains incomplete; no merge, push, completion or claim release.
+Unresolved: live-depot checkout and post-state verification; failed-refresh/cached, non-null unknown, checked-out-other and read-only provider states; duplicate policy; Preview/Edit null-state branch policy; aggregate/partial outcome and rollback policy; resolver route precedence/generated-class/member-matching policy; how to represent freshness without a new public schema; all three tools' lack of ARC02 lines and `call_structured` implications; `R04-CALL-06` refusal recording; the 91 unreviewed rows. R04 remains incomplete; no merge, push, completion or claim release.
 
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
