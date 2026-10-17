@@ -116,7 +116,8 @@
           "runtime_parity": "unverified"
         }
       ],
-      "runtime_parity": "unverified"
+      "runtime_parity": "unverified",
+      "atomicity": "One call covers the named-creation workflow but is not atomic: SetEnums failure can leave the asset present, and display-name failures do not roll back creation. Read-back/partial-failure repair: todo/214d6e7a.md."
     },
     {
       "tool": "EditTurboMCPFunctionAdd",
@@ -447,7 +448,7 @@
           "UserDefinedStructToolset.SetVariableEditableOnInstance",
           "UserDefinedStructToolset.SetVariableSaveGame"
         ],
-        "source_notes": "Native covers flags and rename but has no type-change, reader-count or preview operation."
+        "source_notes": "Source-only candidate coverage for rename and variable flags; TurboMCP retains type change, category, the limited loaded-asset reader diagnostic and preview. Native has no type-change, graph-only reader scan or preview."
       },
       "preference": "unverified",
       "evidence": [
@@ -460,7 +461,20 @@
           "runtime_parity": "unverified"
         }
       ],
-      "runtime_parity": "unverified"
+      "runtime_parity": "unverified",
+      "candidate_coverage": [
+        "UserDefinedStructToolset.RenameVariable",
+        "UserDefinedStructToolset.SetVariableEditableOnInstance",
+        "UserDefinedStructToolset.SetVariableSaveGame"
+      ],
+      "retained_workflows": [
+        "type change",
+        "category",
+        "loaded-asset reader diagnostic (Blueprint NewVariables and DataTable row structs)",
+        "preview"
+      ],
+      "source_only": true,
+      "reader_scope": "Loaded Blueprint NewVariables and DataTable row structs only; graph-only make/break use and unloaded assets are outside the scan."
     },
     {
       "tool": "EditTurboMCPStructNew",
@@ -996,7 +1010,7 @@
         "equivalent_tools": [
           "UserDefinedStructToolset.ListVariables"
         ],
-        "source_notes": "Native can list variables but does not preview a planned edit or report loaded readers."
+        "source_notes": "Native can list variables but does not preview a planned edit or provide a loaded-asset reader diagnostic."
       },
       "preference": "unverified",
       "evidence": [
@@ -1547,7 +1561,8 @@
           "runtime_parity": "unverified"
         }
       ],
-      "runtime_parity": "unverified"
+      "runtime_parity": "unverified",
+      "freshness_limit": "A null GetState is handled explicitly, but ForceUpdate does not prove a successful refresh. The pinned Perforce provider can ignore the FUpdateStatus result and return cached state. This is diagnostic detail, not stale-proof measurement. Failed-refresh coverage belongs under the R04 tool audit."
     },
     {
       "tool": "ReadTurboMCPWidgetTree",
@@ -1574,6 +1589,12 @@
       "no-native-tool-found": "The inspected source routes contain no equivalent. This is not proof that no engine utility can perform the operation.",
       "partial-native-tools-found": "At least one native source interface covers part of the workflow; runtime and output parity are unverified.",
       "unverified": "No runtime comparison was performed."
+    },
+    "investment_vs_preference": "These are investment recommendations, not live tool preferences. A live preference requires target availability plus accepted runtime and safety evidence. All 101 preferences remain unverified.",
+    "remaining_work": {
+      "behavioral_audit": "R04",
+      "forward_runtime_certification": "R14",
+      "note": "Rows outside the five R13 areas remain unverified. R04 owns the remaining behavioral/workflow audit and R14 owns forward runtime certification; R13 is not their pending owner."
     }
   }
 }

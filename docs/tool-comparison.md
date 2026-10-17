@@ -16,8 +16,8 @@ All 101 TurboMCP tools are accounted for below. No tool is currently labeled as 
 | --- | --- | --- | --- | --- |
 | Blueprint graph workflows | Complete native equivalent not resolved by this header scan | Compact graph inspection, explicit identity, coordinated edits and layout | Full native graph parity still to inspect | Compare exact reads, supported nodes, failed-edit state and output size; no superiority claim yet |
 | Widget authoring | UMGToolSet declares creation, tree edits and compilation | Tree representation, targeted workflows and preview | Existing UMG tools plus WidgetAnimationToolset | Retain TurboMCP widget workflows; adopt native animation lifecycle and bindings; defer track/key authoring |
-| Enums and structs | These specific authoring headers are absent from the scanned subtree | Existing authoring workflows on baseline | Dedicated enum and struct toolsets | Retain TurboMCP one-call creation, type change and preview; adopt native editing and variable flags; see R13 decisions |
-| Source control | Dedicated SourceControlToolset header absent from scan | Explicit project asset state | Revision and changelist interfaces | Retain checkout and diagnostic state; adopt native history and changelists; native state fails open |
+| Enums and structs | These specific authoring headers are absent from the scanned subtree | Existing authoring workflows on baseline | Dedicated enum and struct toolsets | Retain TurboMCP one-call creation (not atomic), type change and limited loaded-asset reader diagnostic; adopt native editing and variable flags; see R13 decisions |
+| Source control | Dedicated SourceControlToolset header absent from scan | Explicit project asset state | Revision and changelist interfaces | Retain checkout and provider diagnostics; adopt native history and changelists; native state fails open and TurboMCP freshness is unproven |
 | Capture and editor interaction | EditorApp capture and SlateInspector tools | Graph framing, layout diagnostics and widget preview | Both tool families remain | Measure framing and result handling; screenshot existence alone is not proof |
 | Materials | Complete native equivalent unresolved | Material inspection, reroute workflows and compact output | Native parity unresolved | Compare concrete material workflows before declaring an advantage |
 | Connection and protocol | Epic MCP server and registry | Tool extensions, help and outcome conventions | Registry/media changes and native stdio proxy | Adopt the native 5.9 proxy; do not build a competing proxy; preserve unknown-outcome semantics |
@@ -28,11 +28,13 @@ The five deferred areas were compared at the pinned revisions. Full evidence, in
 
 | Area | Decision | Demonstrated reason |
 | --- | --- | --- |
-| Enums | Retain TurboMCP named one-call creation; adopt native editing on 5.9; thin adapter for preview only if requested | Native creates empty enums and cannot set internal enumerator names; native editing covers add, remove, move, display name and bitflags. |
-| Structs | Retain TurboMCP creation, type change, reader safety and preview; adopt native rename and variable flags | Native has no field-list creation, type-change or preview; TurboMCP has no rename or editable/savegame flags. |
-| Source control | Retain TurboMCP checkout and batch diagnostics; adopt native history, revision load and changelists | Native has no checkout; its single-asset state fails open and cannot replace TurboMCP's per-asset refusal or unknown report. |
+| Enums | Retain TurboMCP named one-call workflow; adopt native editing on 5.9; thin adapter for preview only if requested | Native creates empty enums and cannot set internal enumerator names; native editing covers add, remove, move, display name and bitflags. TurboMCP's one call is not atomic; see [214d6e7a](../todo/214d6e7a.md). |
+| Structs | Retain TurboMCP creation, type change, limited loaded-asset reader diagnostic and preview; evaluate native rename and variable flags | Native has no field-list creation, type-change or preview; TurboMCP has no rename or editable/savegame flags. The reader diagnostic misses graph-only make/break use and unloaded assets; see [7bd81b84](../todo/7bd81b84.md). |
+| Source control | Retain TurboMCP checkout and provider diagnostics; adopt native history, revision load and changelists | Native has no checkout; its single-asset state fails open. TurboMCP handles a null state but does not prove `ForceUpdate` freshness, so this is diagnostic detail, not stale-proof measurement. |
 | Widget animation | Adopt native lifecycle and bindings on 5.9; defer track and key authoring | TurboMCP has no animation tool; the 5.9 header's Sequencer toolsets were not found in the pinned tree. |
 | MCP stdio proxy | Adopt the native 5.9 proxy; do not build a competitor | The bridge exists only at 5.9 and covers install, reconnect and tool-list change notifications. |
+
+These are investment recommendations, not live tool preferences. A live preference requires target availability plus accepted runtime and safety evidence. All 101 routing preferences remain `unverified`. For workflows outside the five areas, R04 owns the remaining behavioral/workflow audit and R14 owns forward runtime certification.
 
 ## Native interface inventory
 
@@ -81,111 +83,111 @@ These are candidate declaration counts, not feature scores. References link to E
 
 ## TurboMCP coverage and comparison status
 
-Every row has a definition and static-reference audit in the [capability inventory](audit/capabilities.json). Family grouping routes investigation; it is not a mapping to an equivalent native function. R13 records source-level equivalence for the five deferred areas below; runtime comparisons and preference decisions remain pending. Rows outside those areas remain pending R13/R04.
+Every row has a definition and static-reference audit in the [capability inventory](audit/capabilities.json). Family grouping routes investigation; it is not a mapping to an equivalent native function. R13 records source-level equivalence for the five deferred areas below; runtime comparisons and preference decisions remain pending. Rows outside those areas remain unverified: R04 owns the remaining behavioral/workflow audit and R14 owns forward runtime certification. R13 is not their pending owner.
 
 | TurboMCP tool | Family | Epic 5.8.3 parity | Epic 5.9 parity | Routing status |
 | --- | --- | --- | --- | --- |
-| `EditTurboMCPBatchEdit` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPCallLog` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPCallLogClear` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPComment` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPCompile` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPDataTableRows` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `EditTurboMCPBatchEdit` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPCallLog` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPCallLogClear` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPComment` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPCompile` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPDataTableRows` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
 | `EditTurboMCPEnumAdd` | asset-and-data | No native tool found (source) | Create/AddEnumerator; no name control (source) | Retain; preference unverified |
-| `EditTurboMCPFunctionAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPFunctionRemove` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphAppend` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphCollapse` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphCopy` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphDead` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphFixBackward` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphKnots` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphPatch` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphReplace` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphRepoint` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphSwapCall` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPGraphTidy` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPLocalVars` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPMaterialBlocks` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPMaterialInstanceSet` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPMaterialLabelPromote` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPMaterialTidy` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPOverrideAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPOverrideRemove` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPSave` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPSaveWithoutThumbnail` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPStructFields` | asset-and-data | No native tool found (source) | 14 functions; no type change (source) | Retain type change; adopt rest (unverified) |
+| `EditTurboMCPFunctionAdd` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPFunctionRemove` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphAppend` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphCollapse` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphCopy` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphDead` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphFixBackward` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphKnots` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphPatch` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphReplace` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphRepoint` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphSwapCall` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPGraphTidy` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPLocalVars` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPMaterialBlocks` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPMaterialInstanceSet` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPMaterialLabelPromote` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPMaterialTidy` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPOverrideAdd` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPOverrideRemove` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPSave` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPSaveWithoutThumbnail` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPStructFields` | asset-and-data | No native tool found (source) | Rename+flags; no type change (source) | Retain type change/category/preview; native rename+flags are source-only candidates (unverified) |
 | `EditTurboMCPStructNew` | asset-and-data | No native tool found (source) | Create/AddVariable; no field list (source) | Retain; preference unverified |
-| `EditTurboMCPTrace` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPVarsAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `EditTurboMCPTrace` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPVarsAdd` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
 | `EditTurboMCPVcsCheckout` | asset-and-data | No native checkout (source) | No native checkout (source) | Retain; preference unverified |
-| `EditTurboMCPWidgetBindAdd` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPWidgetRetarget` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPWidgetsAsVars` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
-| `LookTurboMCPCapture` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `LookTurboMCPLayoutReport` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `LookTurboMCPToolset` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `LookTurboMCPWidgetPreview` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPBatchEdit` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPComment` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPDataTableRows` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `EditTurboMCPWidgetBindAdd` | widget | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPWidgetRetarget` | widget | Pending R04 | Pending R04/R14 | No replacement claim |
+| `EditTurboMCPWidgetsAsVars` | widget | Pending R04 | Pending R04/R14 | No replacement claim |
+| `LookTurboMCPCapture` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `LookTurboMCPLayoutReport` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `LookTurboMCPToolset` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `LookTurboMCPWidgetPreview` | widget | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPBatchEdit` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPComment` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPDataTableRows` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
 | `PreviewTurboMCPEnumAdd` | asset-and-data | No native tool found (source) | GetEnumerators only (source) | Retain; preference unverified |
-| `PreviewTurboMCPGraphAppend` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphCheck` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphCollapse` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphCopy` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphDead` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphFixBackward` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphKnots` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphPatch` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphReplace` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphRepoint` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphSwapCall` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPGraphTidy` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPLocalVars` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPMaterialBlocks` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPMaterialLabelPromote` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPMaterialTidy` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPNodePins` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPNodeType` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPOverrideAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `PreviewTurboMCPGraphAppend` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphCheck` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphCollapse` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphCopy` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphDead` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphFixBackward` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphKnots` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphPatch` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphReplace` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphRepoint` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphSwapCall` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPGraphTidy` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPLocalVars` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPMaterialBlocks` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPMaterialLabelPromote` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPMaterialTidy` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPNodePins` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPNodeType` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPOverrideAdd` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
 | `PreviewTurboMCPStructFields` | asset-and-data | No native tool found (source) | ListVariables only (source) | Retain; preference unverified |
 | `PreviewTurboMCPStructNew` | asset-and-data | No native tool found (source) | ListVariables only (source) | Retain; preference unverified |
-| `PreviewTurboMCPToolset` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPVarsAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `PreviewTurboMCPToolset` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `PreviewTurboMCPVarsAdd` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
 | `PreviewTurboMCPVcsCheckout` | asset-and-data | State booleans only (source) | State only; no checkout (source) | Retain; preference unverified |
-| `PreviewTurboMCPWidgetRetarget` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPAssetCost` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPAssetDescribe` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPAssetSearch` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPBPLint` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPBlueprintLoad` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPCallCost` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPCallLog` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPCommentList` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPDataTable` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPDirtyList` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPEditQueue` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPGraphLoad` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPMaterialBlocks` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPMaterialInstance` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPMaterialLabels` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPMaterialLoad` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPMaterialTrace` | material | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPNodeFind` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPNodeResolve` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPOverrides` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPPlayCheck` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPPureChecks` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPRefs` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPStatus` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPToolHelp` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPToolIndex` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPToolSchema` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPTrace` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPTypeFind` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `PreviewTurboMCPWidgetRetarget` | widget | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPAssetCost` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPAssetDescribe` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPAssetSearch` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPBPLint` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPBlueprintLoad` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPCallCost` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPCallLog` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPCommentList` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPDataTable` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPDirtyList` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPEditQueue` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPGraphLoad` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPMaterialBlocks` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPMaterialInstance` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPMaterialLabels` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPMaterialLoad` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPMaterialTrace` | material | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPNodeFind` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPNodeResolve` | graph | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPOverrides` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPPlayCheck` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPPureChecks` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPRefs` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPStatus` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPToolHelp` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPToolIndex` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPToolSchema` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPTrace` | schema-and-observability | Pending R04 | Pending R04/R14 | No replacement claim |
+| `ReadTurboMCPTypeFind` | asset-and-data | Pending R04 | Pending R04/R14 | No replacement claim |
 | `ReadTurboMCPVcsState` | asset-and-data | can_edit_asset/is_checked_out (source) | GetAssetSourceControlState (source) | Retain diagnostics; preference unverified |
-| `ReadTurboMCPWidgetTree` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
+| `ReadTurboMCPWidgetTree` | widget | Pending R04 | Pending R04/R14 | No replacement claim |
 
 ## Required comparison for a preference decision
 

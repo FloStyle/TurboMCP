@@ -70,7 +70,18 @@
           "PreviewTurboMCPEnumAdd"
         ],
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAdd.cpp",
-        "behaviour": "One call parses Name or Name=Display Name values, validates identifier rules and duplicates, refuses an existing asset, creates through FEnumEditorUtils, sets names through UEnum::SetEnums, and does not save."
+        "behaviour": "One call parses Name or Name=Display Name values, validates identifier rules and duplicates, refuses an existing asset, creates through FEnumEditorUtils, sets names through UEnum::SetEnums, and does not save. One call covers the workflow; it is not an atomic mutation.",
+        "failure_semantics": [
+          "A failed SetEnums returns an error after the asset has been created; the asset can remain present with unverified names.",
+          "A failed display-name setter only lowers the reported count; it does not roll back creation.",
+          "Read-back of qualified names and display names remains open under todo/214d6e7a.md."
+        ],
+        "debt": [
+          {
+            "record": "todo/214d6e7a.md",
+            "scope": "Read back enum names and display names; report partial failure truthfully."
+          }
+        ]
       },
       "output_cost": {
         "native": "GetEnumerators returns a structured array with four fields per enumerator.",
@@ -81,9 +92,9 @@
         {
           "proposal": "Create an enum with named values in one call",
           "decision": "retain-turbomcp",
-          "demonstrated_gap": "Native Create makes an empty enum and AddEnumerator controls only the display name; N values require 1+N calls and no preview.",
+          "demonstrated_gap": "Native Create makes an empty enum and AddEnumerator controls only the display name; N values require 1+N calls and no preview. TurboMCP covers the named-creation workflow in one call, but that call is not atomic.",
           "maintenance_cost": "One C++ file and header coupled to FEnumEditorUtils and UEnum::SetEnums; engine API drift is the main risk.",
-          "limitations": "TurboMCP cannot edit an existing enum and does not save.",
+          "limitations": "SetEnums failure can leave the asset present with unverified names; display-name failures do not roll back creation. TurboMCP cannot edit an existing enum and does not save. Read-back and partial-failure repair: todo/214d6e7a.md.",
           "evidence": "UserDefinedEnumToolset.h and TurboMCPEnumAdd.cpp"
         },
         {
@@ -153,7 +164,20 @@
           "PreviewTurboMCPStructFields"
         ],
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp",
-        "behaviour": "Compact Name: Type dialect with containers and typed references, type change, defaults, tooltips, categories, reorder, removal with a loaded-reader count, one-transaction creation, explicit compile and package dirtying, and a shared preview plan."
+        "behaviour": "Compact Name: Type dialect with containers and typed references, type change, defaults, tooltips, categories, reorder, removal with a loaded-asset reader diagnostic, one-transaction creation, explicit compile and package dirtying, and a shared preview plan. The reader diagnostic scans loaded Blueprint NewVariables and DataTable row structs only.",
+        "reader_scope": {
+          "covered": [
+            "Loaded Blueprint NewVariables whose variable type is the struct.",
+            "Loaded DataTable assets whose row struct is the struct."
+          ],
+          "not_covered": [
+            "Graph-only make/break use without a struct member variable.",
+            "Unloaded assets.",
+            "Per-field or per-node reader counting."
+          ],
+          "limitation": "A zero reported reader count does not establish that field removal is safe.",
+          "debt": "todo/7bd81b84.md"
+        }
       },
       "output_cost": {
         "native": "ListVariables returns a structured array with six fields per variable.",
@@ -180,9 +204,9 @@
         {
           "proposal": "Change a variable type, report loaded readers, or preview field changes",
           "decision": "retain-turbomcp",
-          "demonstrated_gap": "Native has no type-change, reader-count or preview function.",
+          "demonstrated_gap": "Native has no type-change, loaded-asset reader diagnostic or preview function.",
           "maintenance_cost": "High; type change and reader counting depend on engine utilities and loaded assets.",
-          "limitations": "The reader count is a snapshot, not a guarantee that a later compile succeeds.",
+          "limitations": "The TurboMCP reader diagnostic covers loaded Blueprint NewVariables and DataTable row structs only; graph-only make/break use and unloaded assets are outside it. Zero readers are not proof of safe removal. Existing repair: todo/7bd81b84.md.",
           "evidence": "UserDefinedStructToolset.h and TurboMCPStruct.cpp"
         }
       ]
@@ -226,7 +250,9 @@
           "EditTurboMCPVcsCheckout"
         ],
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
-        "behaviour": "Reports provider name and capability flags, per-asset state, per-asset refusal or unknown state, and the provider's own checkout result. It never writes an asset file."
+        "behaviour": "Reports provider name and capability flags, per-asset state, a per-asset refusal or null-state report, and the provider's own checkout result. It never writes an asset file. A null GetState is handled explicitly, but ForceUpdate does not prove a successful refresh.",
+        "freshness_limit": "In the pinned Perforce provider, GetState(..., ForceUpdate) ignores the Execute(FUpdateStatus) result and returns cached states with Succeeded. The report is diagnostic detail, not provider-independent protection against stale or unknown measurements.",
+        "follow_up": "Failed-refresh coverage belongs under the R04 tool audit."
       },
       "output_cost": {
         "native": "State is three fields for one asset; revision history is six fields per revision.",
@@ -261,9 +287,9 @@
         {
           "proposal": "Batch diagnostic source-control state",
           "decision": "retain-turbomcp",
-          "demonstrated_gap": "Native has no batch equivalent and collapses unknowns.",
+          "demonstrated_gap": "Native has no batch equivalent and collapses a disabled provider or failed refresh into a default state. TurboMCP handles a null GetState explicitly, but does not prove refresh freshness.",
           "maintenance_cost": "High; provider gating and per-asset refusal reporting are duplicated.",
-          "limitations": "Long output and no history.",
+          "limitations": "Long output; no history. The pinned Perforce provider can return cached state after ForceUpdate, so diagnostic detail is not stale-proof measurement. Failed-refresh coverage belongs under the R04 tool audit.",
           "evidence": "TurboMCPSourceControl.cpp"
         }
       ]
@@ -502,6 +528,26 @@
       "defect": "NoRedist is present in descriptors but no runtime enforcement was found in the inspected source.",
       "impact": "Installed-distribution absence cannot be inferred from the descriptor alone.",
       "owner": "R16"
+    },
+    {
+      "defect": "TurboMCP enum creation is one call but not an atomic mutation.",
+      "impact": "SetEnums failure can leave the asset present; display-name failures do not roll back creation. Read-back remains open.",
+      "owner": "R08; repair todo/214d6e7a.md"
+    },
+    {
+      "defect": "TurboMCP struct reader counting covers loaded Blueprint NewVariables and DataTable row structs only.",
+      "impact": "Graph-only make/break use and unloaded assets are outside the scan; zero readers are not proof of safe removal.",
+      "owner": "R08; repair todo/7bd81b84.md"
+    },
+    {
+      "defect": "TurboMCP VCS state handles null but does not prove ForceUpdate refresh success.",
+      "impact": "The pinned Perforce provider can return cached state with Succeeded; the report is not stale-proof.",
+      "owner": "R04 tool audit"
+    },
+    {
+      "defect": "The offline ownership test is environment-sensitive: text=True without an explicit encoding contract can decode a PowerShell diagnostic incorrectly.",
+      "impact": "test-ownership E03 can fail on byte 0x90 even though the unreadable-lease behavior passes directly and an independent full offline run passed.",
+      "owner": "Integrator-owned tooling repair; R13 does not change tests, runners or shell configuration"
     }
   ],
   "refresh_triggers": [
@@ -512,7 +558,8 @@
     "The UToolsetRegistryManifest bake format or RegisterToolsetClass lifecycle changes",
     "A 5.9 runtime becomes available for R14 probes",
     "The TurboMCP plugin tree moves from 590661ec45c829264ea1743fccea994edb748092",
-    "An installed engine is inspected under R16"
+    "An installed engine is inspected under R16",
+    "Perforce ForceUpdate/GetState behavior or another provider's refresh contract changes"
   ],
   "unresolved": [
     "No 5.9 runtime or installed engine was available; runtime discovery, undo, save and failure-state behavior are unverified.",
@@ -520,6 +567,15 @@
     "Native struct compile and dirty behavior after edits was not traced.",
     "Track and key authoring for 5.9 widget animations is unresolved.",
     "Proxy behavior for an in-flight mutation across reconnect is not documented.",
-    "Whether a project-defined Python toolset can still be registered in 5.9 through reflected APIs is unverified."
-  ]
+    "Whether a project-defined Python toolset can still be registered in 5.9 through reflected APIs is unverified.",
+    "Enum creation partial failure: SetEnums and display-name setters do not roll back; read-back remains open under todo/214d6e7a.md.",
+    "Struct reader coverage: graph-only make/break use and unloaded assets are not scanned; zero readers do not establish safe removal.",
+    "VCS freshness: ForceUpdate success is provider-dependent and unverified; failed-refresh coverage belongs to R04."
+  ],
+  "investment_vs_preference": "Decisions are investment recommendations, not live tool preferences. A live preference requires target availability plus accepted runtime and safety evidence. All 101 routing preferences remain unverified.",
+  "remaining_work": {
+    "behavioral_audit": "R04",
+    "forward_runtime_certification": "R14",
+    "note": "Workflows outside the five R13 areas remain unverified. R04 owns the remaining behavioral/workflow audit and R14 owns forward runtime certification; R13 is not their pending owner."
+  }
 }
