@@ -577,5 +577,12 @@
     "behavioral_audit": "R04",
     "forward_runtime_certification": "R14",
     "note": "Workflows outside the five R13 areas remain unverified. R04 owns the remaining behavioral/workflow audit and R14 owns forward runtime certification; R13 is not their pending owner."
+  },
+  "integration_review": {
+    "candidate": "78d0ceb4ed3fff4f4b81f974a1d4a98c3d05bec9",
+    "result": "accepted-source-comparison-only",
+    "encoding_repair_commit": "00ac2b8824bee51e09bcff41cba2c21f98efec0e",
+    "offline_pass": "3121fd3995424c49ae8317227915c0d0",
+    "runtime_certification": "unverified"
   }
 }

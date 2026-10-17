@@ -4,7 +4,7 @@
 
 Use one reviewed task, one isolated worktree and one durable claim per worker.
 The integration owner records a full approved base commit before dispatch.
-R13 is next. R16 starts only after R13 is reviewed and integrated.
+R13 source comparison is reviewed and accepted. R16 is the next assignment.
 
 ## Approved scope
 
@@ -63,3 +63,10 @@ read-only except where an owned build requires generated outputs. Avoid exposing
 publication credentials. The current process uses explicit reviewer checks;
 required server-side CI remains R15 debt. A worker unable to honor these boundaries
 must stop and return its blocker rather than bypass a check.
+
+## Dispatch hold after R13
+
+R16 is the next planned task, but dispatch is blocked until DSH and the
+integration host reconcile the reported R13 claim. The integration ledger has
+no active claim. Do not create another claim or start R16 yet; follow the
+dispatch prerequisite in [R16](../todo/roadmap-r16.md). No claim was released by the reviewer.

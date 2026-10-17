@@ -2,11 +2,11 @@
 
 [Documentation](README.md) · [Roadmap](../ROADMAP.md)
 
-## Next assignment: R13
+## Next assignment: R16
 
 Give the agent this instruction:
 
-> Read AGENTS.md. Create or use a clean isolated worktree, then run `python Tools/next-task.py --claim deepseek-01`. Work only on the returned task. Stop on a refusal. For R13, inspect pinned source and update comparison evidence; do not implement features, edit engine source, change the baseline pin or claim untested runtime parity. Run the offline gate and return commits, evidence and unresolved questions. Do not merge, publish, release your claim or start another task. Wait for review.
+> Read AGENTS.md. Create or use a clean isolated worktree, then run `python Tools/next-task.py --claim deepseek-01`. Work only on the returned task. Stop on a refusal. For R16, map production and fixture dependencies, public headers/exports and build boundaries. Use only the approved report paths and task Completion evidence. Run the bounded baseline build through the supervisor; do not edit plugin or engine source, change the baseline pin, remove dependencies or claim untested installed-engine support. Run the offline gate and return commits, evidence and unresolved questions. Do not merge, publish, release your claim or start another task. Wait for review.
 
 Use a different owner identifier for each worker. The [execution guide](audit/infrastructure-review.md)
 contains commands, recovery steps and measured limits. This readiness applies to
@@ -34,7 +34,7 @@ Review continues when the owner provides a commit, branch or review packet. This
 
 ## Task review boundary
 
-All 110 records have a [current source/specification review](audit/task-review.md). Read the assigned task's Current review first. Historical prose is retained in a collapsed section and does not override the current architecture. Confirmed defects have [repair contracts](audit/repair-contracts.md); the integration owner assigns each repair after its prerequisites. R13 is still the next task. R14 is unready until the exact compatibility adapter is specified. No review status certifies all runtime acceptance or authorizes implementing the backlog.
+All 110 records have a [current source/specification review](audit/task-review.md). Read the assigned task's Current review first. Historical prose is retained in a collapsed section and does not override the current architecture. Confirmed defects have [repair contracts](audit/repair-contracts.md); the integration owner assigns each repair after its prerequisites. R13 source comparison is accepted; R16 is the next task. R14 is unready until the exact compatibility adapter is specified. No review status certifies all runtime acceptance or authorizes implementing the backlog.
 
 ## Required submission gate
 
@@ -43,3 +43,10 @@ The integration owner supplies the approved base SHA and applies
 Workers must not change task status or regenerate TODO for R13/R16; submit
 Completion evidence only. This narrower rule overrides the general status-update
 workflow. Read [the debt index](audit/technical-debt.md) to avoid adjacent refactors.
+
+## Dispatch hold after R13
+
+R16 is the next planned task, but dispatch is blocked until DSH and the
+integration host reconcile the reported R13 claim. The integration ledger has
+no active claim. Do not create another claim or start R16 yet; follow the
+dispatch prerequisite in [R16](../todo/roadmap-r16.md). No claim was released by the reviewer.

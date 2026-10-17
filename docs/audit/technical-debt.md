@@ -45,3 +45,26 @@ the explicit `both` defect. Preserve those distinctions when writing regressions
 
 The [worker submission gate](../worker-boundaries.md) limits the next two
 investigations. It cannot make unchecked code safe or replace human review.
+
+## R13 integration follow-up
+
+The source comparison is accepted; runtime preferences remain unverified. R04
+must probe VCS failed refresh with a cached state: TurboMCP's non-null
+`ForceUpdate` result does not prove freshness when a provider ignores the update
+operation result. Specify a failure control before any production repair.
+Enum partial failure/read-back remains [214d6e7a](../../todo/214d6e7a.md), and
+struct graph-only reader coverage remains [7bd81b84](../../todo/7bd81b84.md).
+
+The ownership test's locale-dependent pipe decoding was repaired separately in
+`00ac2b8`. Producer and consumer now agree on UTF-8. The exact non-ASCII stdout,
+stderr and false-verdict controls pass, as does the original unreadable-lease
+blocking check. Full offline run `3121fd3995424c49ae8317227915c0d0` passed with
+`PYTHONUTF8=0`. Earlier failures are retained; no product safety claim follows
+from this harness repair. R16 still must investigate integration dependencies,
+and R12/R14 must establish installed-engine and forward runtime support.
+
+The R13 claim reported by DSH is not present in the integration host ledger.
+This is unresolved coordination debt, not evidence of a particular root cause.
+R16 dispatch is blocked until the exact claim path and Git common-directory
+identity are reconciled from both shells. Do not bypass this by creating a new
+claim or assuming a reported ID is shared ownership evidence.

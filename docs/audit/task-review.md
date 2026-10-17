@@ -8,7 +8,7 @@ The review is complete as backlog triage and specification review. It is not a c
 
 ## What an agent may do
 
-R13 remains the next queued task: source-backed native comparison. R16 follows with integration constraints. The queue order is unchanged. Give one task to one worker through the claim workflow. Imported records remain evidence for the assigned roadmap investigation, not permission to implement the whole backlog. R14 is now unready until its replacement API and adapter boundaries are specified.
+R13 has completed its bounded source comparison after integration review. R16 is next, for integration constraints. The queue order is unchanged. Give one task to one worker through the claim workflow. Imported records remain evidence for the assigned roadmap investigation, not permission to implement the whole backlog. R14 is now unready until its replacement API and adapter boundaries are specified.
 
 A source-confirmed defect needs a failing regression and a reviewed repair scope before integration. The repair contracts below are the starting specifications; they are not a blanket implementation assignment. Runtime investigations may finish with explicitly unresolved evidence, but a product repair cannot be marked done on that basis.
 
@@ -16,13 +16,13 @@ A source-confirmed defect needs a failing regression and a reviewed repair scope
 
 | Decision | Records | Meaning |
 | --- | ---: | --- |
-| completed | 3 | Existing bounded foundation completion retained; broader claims stay open. |
+| completed | 4 | Bounded foundation and R13 source comparison completed; broader runtime claims stay open. |
 | confirmed | 17 | A specific current source path supports a defect or contract gap; runtime acceptance is still required. |
 | deferred | 18 | New scope or compatibility work needs a native comparison, design or unavailable target. |
 | duplicate | 6 | Another named record owns the change; these requirements remain linked. |
 | investigate | 17 | The symptom or design conflict still needs a targeted experiment or decision. |
 | partial | 18 | Some historical claims are stale or already implemented; remaining checks are named. |
-| plan | 16 | The roadmap or release contract is actionable within its dependencies and stated limits. |
+| plan | 15 | The roadmap or release contract is actionable within its dependencies and stated limits. |
 | reference | 6 | Useful historical regression evidence, not an implementation task. |
 | requires spec | 1 | Implementation must wait for an exact reviewed specification. |
 | superseded | 7 | Old process instructions are replaced by the current workflow. |
@@ -150,7 +150,7 @@ The compile-ensure native test is in `TestProject/Source/TurboMCPTest/Private/Tu
 | [R10: Align human docs and help with verified behavior](../../todo/roadmap-r10.md) | plan | R10 |
 | [R11: Complete the pinned baseline acceptance matrix](../../todo/roadmap-r11.md) | plan | R11 |
 | [R12: Validate installed-engine packages on the exact target](../../todo/roadmap-r12.md) | plan | R12 |
-| [R13: Compare native capabilities before expansion](../../todo/roadmap-r13.md) | plan | R13 |
+| [R13: Compare native capabilities before expansion](../../todo/roadmap-r13.md) | completed | R16, R04, R14 |
 | [R14: Implement only an approved compatibility adapter](../../todo/roadmap-r14.md) | requires spec | R14 |
 | [R15: Activate gated private CI and release preparation](../../todo/roadmap-r15.md) | plan | R15 |
 | [R16: Establish installed-engine integration constraints](../../todo/roadmap-r16.md) | plan | R16 |
@@ -164,4 +164,4 @@ The compile-ensure native test is in `TestProject/Source/TurboMCPTest/Private/Tu
 
 Source links remain relative so they work in a fresh public clone. The review revision and source hashes identify the inspected snapshot; displayed line numbers may move later. The machine-readable register records source hashes and commands so a later reviewer can locate the original evidence; hashes are not a claim that the entire referenced file was audited. Re-review affected decisions when source changes. Do not update the review revision without checking the new behavior.
 
-No 5.9 native-parity investigation, installed-engine certification, full 101-tool behavioral audit or 97-case release acceptance was completed by this task review. R13/R16 and R04-R11 own those deliverables. Missing workplace reports are not prerequisites: reproduce with synthetic fixtures or record the observation as unresolved. No proprietary report, raw crash log or engine implementation body is added to the public-intended tree.
+The original task review did not execute the native comparison. R13 subsequently completed the bounded source investigation; its completion evidence records the accepted candidate and validation. Installed-engine certification, full 101-tool behavioral audit and 97-case release acceptance remain open under R16/R12 and R04-R11. Missing workplace reports are not prerequisites: reproduce with synthetic fixtures or record the observation as unresolved. No proprietary report, raw crash log or engine implementation body is added to the public-intended tree.

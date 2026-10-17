@@ -4,7 +4,7 @@
 
 The local Windows framework is ready for one claimed roadmap task at a time.
 This is not certification of every TurboMCP feature, a public release or an
-installed-engine package. The next assignment is R13, a source-comparison task.
+installed-engine package. The next assignment is R16, an integration-constraints investigation.
 Imported reports still need reconciliation before product implementation.
 
 ## Commands
@@ -123,3 +123,10 @@ integration. Full tool behavior, rendering/capture, UI and release acceptance
 remain separate work. Headless tests do not certify rendered output. GitHub CI
 is still not active; local results are not remote branch enforcement. No agent
 dispatch here starts a paid model session or automatically publishes anything.
+
+## Dispatch hold after R13
+
+R16 is the next planned task, but dispatch is blocked until DSH and the
+integration host reconcile the reported R13 claim. The integration ledger has
+no active claim. Do not create another claim or start R16 yet; follow the
+dispatch prerequisite in [R16](../../todo/roadmap-r16.md). No claim was released by the reviewer.

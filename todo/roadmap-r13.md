@@ -1,7 +1,7 @@
 # R13: Compare native capabilities before expansion
 
 ID: R13
-Status: todo
+Status: done
 Priority: P1
 Readiness: ready
 Owner: unassigned
@@ -36,6 +36,14 @@ Do not expand into another domain. If a prerequisite is absent, record blocked w
 A reviewed specification and evidence record for each confirmed repair, with duplicates linked and unsupported historical claims withdrawn explicitly. This investigation does not authorize implementing every finding.
 
 ## Completion evidence
+
+Integration review accepted corrected candidate `78d0ceb4ed3fff4f4b81f974a1d4a98c3d05bec9` within the six-file scope. The separate test-harness repair `00ac2b8824bee51e09bcff41cba2c21f98efec0e` sets PowerShell output and Python decoding explicitly to UTF-8, with strict decoding. A synthetic diagnostic reproduced the original cp1252/0x90 failure before the repair and passed afterward. Exact non-ASCII stdout/stderr and a false-verdict control now run in the ownership suite; the unreadable-lease assertion is unchanged.
+
+Combined offline validation passed with `PYTHONUTF8=0`: run `3121fd3995424c49ae8317227915c0d0` in the integration worktree, at `00ac2b8824bee51e09bcff41cba2c21f98efec0e`. Earlier failed worker runs remain valid historical evidence. R13 is complete only as the bounded source-comparison investigation. No engine, plugin or runtime preference changed.
+
+Claim reconciliation: the worker reports claim `452cb2dbb8364466810f876797b06abc`, but the integration host's shared ledger has no active claim and only the earlier framework-smoke history. No claim was released. R16 dispatch is blocked until the worker supplies its claim location and both harnesses agree on one ledger. This does not invalidate the reviewed source comparison.
+
+The worker submission below is retained as historical evidence; its pre-integration failure and pending-review wording do not override this integration result.
 Task R13, claim `452cb2dbb8364466810f876797b06abc` (owner `dsh-r13-01`). Approved base `1aea14e402bcdedce85a25381916e06d707c20e7`; branch `task/r13-native-comparison`; worktree `C:\ExampleDev\SampleRoot005\r13`. Original candidate `36bed13e2fe143a2c80337f6859ae48113e80a60` is preserved. The review corrections are a new commit; the correction commit is the commit that contains this evidence, and its full SHA is returned in the submission message.
 
 Source identity:
@@ -92,17 +100,17 @@ do not automatically claim R16.
 
 ## Current review
 
-**Decision:** plan. **Follow-up owner:** [R13](roadmap-r13.md).
+**Decision:** completed. **Follow-up owners:** [R16](roadmap-r16.md), [R04](roadmap-r04.md), [R14](roadmap-r14.md).
 
-The existing three-way inventory is a candidate source scan. This task review does not execute the separate forward-engine comparison.
+The five deferred areas have a reviewed source comparison at the pinned revisions. All 101 routing rows remain present and unverified. Enum rollback, struct reader coverage and VCS refresh limitations are explicit; this is not runtime certification.
 
 ### Next action and acceptance
 
-Inspect exact pinned interfaces and current upstream revision separately. Compare each deferred workflow for inputs, effects, outputs, failure and maintenance cost. Keep all 101 rows, unverified runtime labels and no engine upgrade.
+Proceed to R16 for installed-engine integration constraints. R04 owns remaining workflow behavior and failed-refresh coverage; R14 owns forward runtime certification. Do not implement deferred features or advertise a live preference from this source comparison.
 
 ### Current source and verification
 
-Reviewed at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
+Original triage at private main `6aee9dfd92a4c06a73e89c091973f982d715b7a2`; updated integration review at `00ac2b8824bee51e09bcff41cba2c21f98efec0e`. These source findings do not certify runtime behavior. Source links open the current file; line numbers refer to the reviewed revision.
 
 - [engine.lock.json](../engine.lock.json)
 - [docs/audit/epic-tool-inventory.json](../docs/audit/epic-tool-inventory.json)

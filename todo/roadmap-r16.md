@@ -1,9 +1,9 @@
 # R16: Establish installed-engine integration constraints
 
 ID: R16
-Status: todo
+Status: blocked
 Priority: P1
-Readiness: ready
+Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/verification.md
 Kind: investigation
@@ -68,3 +68,13 @@ Starting checks for the assigned follow-up:
 These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
 
 See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+## Dispatch prerequisite
+
+R13 source comparison is accepted. Before dispatch, reconcile its reported
+worker claim with the integration host: that host sees no active claim.
+From the original DSH shell, return `python Tools/task_claim.py` and the resolved
+claim-file path from `task_claim.location`. Do not create, release or overwrite
+a claim merely to make the records agree. The integrator must verify the ledger
+identity and safely resolve the exact old claim before restoring this task to
+todo/ready. No R16 worker should start while this prerequisite is unresolved.

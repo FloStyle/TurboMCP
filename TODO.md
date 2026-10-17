@@ -13,8 +13,8 @@ Generated from task files and the approved queue. After editing task status, run
 | [R01: Repair test-audit evidence classifications](todo/roadmap-r01.md) | v1 | implementation | done |
 | [R02: Enforce shared engine ownership](todo/roadmap-r02.md) | v1 | implementation | done |
 | [R03: Verify fixture recovery and binary identity](todo/roadmap-r03.md) | v1 | investigation | done |
-| [R13: Compare native capabilities before expansion](todo/roadmap-r13.md) | v1 | investigation | todo |
-| [R16: Establish installed-engine integration constraints](todo/roadmap-r16.md) | v1 | investigation | todo |
+| [R13: Compare native capabilities before expansion](todo/roadmap-r13.md) | v1 | investigation | done |
+| [R16: Establish installed-engine integration constraints](todo/roadmap-r16.md) | v1 | investigation | blocked |
 | [R04: Audit callable behavior and result contracts](todo/roadmap-r04.md) | v1 | investigation | todo |
 | [R05: Specify mutation and restricted-batch repairs](todo/roadmap-r05.md) | v1 | investigation | todo |
 | [R06: Specify graph correctness repairs](todo/roadmap-r06.md) | v1 | investigation | todo |

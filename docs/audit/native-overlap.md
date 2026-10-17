@@ -158,3 +158,13 @@ These are recorded, not repaired:
 - Track and key authoring for 5.9 widget animations: the referenced Sequencer toolsets were not found.
 - Proxy behavior for an in-flight mutation across reconnect: not documented.
 - Whether a project-defined Python toolset can still be registered in 5.9 through reflected APIs: unverified, and not used as a parity claim.
+
+## Integration resolution
+
+The integrator repaired the ownership-test encoding boundary separately in
+`00ac2b8`. A synthetic non-ASCII diagnostic reproduced the byte 0x90 failure
+before the change. Strict UTF-8 producer/consumer handling and exact stdout,
+stderr and false-verdict regression controls now pass. Full offline run
+`3121fd3995424c49ae8317227915c0d0` passed with `PYTHONUTF8=0`. Defect 10 above
+is retained as historical evidence of the worker submission, not an open request
+to alter tests. Product and compatibility limitations remain open.

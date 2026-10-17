@@ -2957,12 +2957,14 @@
     },
     {
       "title": "R13: Compare native capabilities before expansion",
-      "decision": "plan",
+      "decision": "completed",
       "owners": [
-        "R13"
+        "R16",
+        "R04",
+        "R14"
       ],
-      "finding": "The existing three-way inventory is a candidate source scan. This task review does not execute the separate forward-engine comparison.",
-      "action": "Inspect exact pinned interfaces and current upstream revision separately. Compare each deferred workflow for inputs, effects, outputs, failure and maintenance cost. Keep all 101 rows, unverified runtime labels and no engine upgrade.",
+      "finding": "The five deferred areas have a reviewed source comparison at the pinned revisions. All 101 routing rows remain present and unverified. Enum rollback, struct reader coverage and VCS refresh limitations are explicit; this is not runtime certification.",
+      "action": "Proceed to R16 for installed-engine integration constraints. R04 owns remaining workflow behavior and failed-refresh coverage; R14 owns forward runtime certification. Do not implement deferred features or advertise a live preference from this source comparison.",
       "id": "R13",
       "path": "todo/roadmap-r13.md",
       "source_refs": [
@@ -2974,17 +2976,18 @@
         {
           "path": "docs/audit/epic-tool-inventory.json",
           "line": null,
-          "sha256": "9dba5f017860ea182459ca7435b96ad26a55e6b1e2481fc628699b9d9d36d9bd"
+          "sha256": "f559411cdb3fc76f018d44d24b06479d3b684a9a2ef0de091cc39de36bfdd9d5"
         },
         {
           "path": "docs/audit/tool-routing.json",
           "line": null,
-          "sha256": "46829c0bf407fcfa67075a4ae45e7e4ed0650a1097a23872bec8921889e4712c"
+          "sha256": "e16ca6dd110585757106a62ba55628a3aa1c2f0ab47244ebd60b7aa5ffd55e9c"
         }
       ],
       "verification_commands": [
         "python Tools/execute-tests.py --profile offline --execute"
-      ]
+      ],
+      "latest_review_commit": "00ac2b8824bee51e09bcff41cba2c21f98efec0e"
     },
     {
       "title": "R14: Implement only an approved compatibility adapter",
