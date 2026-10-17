@@ -1,9 +1,9 @@
 # R16: Establish installed-engine integration constraints
 
 ID: R16
-Status: blocked
+Status: todo
 Priority: P1
-Readiness: needs_reconciliation
+Readiness: ready
 Owner: unassigned
 Design: docs/design/verification.md
 Kind: investigation
@@ -50,7 +50,7 @@ Non-unity incremental plugin compilation is verified; that does not require a fu
 
 ### Next action and acceptance
 
-Produce dependency rows with production/test callers, public header/export visibility and distribution evidence. Compare direct registry use and a small adapter before a module split. Record broken public URLs without inventing a replacement publication target.
+Produce dependency rows with production/test callers, public header/export visibility and distribution evidence. Compare direct registry use and a small adapter before a module split. Record broken public URLs without inventing a replacement publication target. Workers perform source/offline work only; the integration owner supplies the baseline build evidence while cross-harness execution locking remains unverified.
 
 ### Current source and verification
 
@@ -69,22 +69,21 @@ These suites are starting checks, not proof of the new cases. Use owned syntheti
 
 See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
 
-## Dispatch prerequisite
+## Dispatch and build ownership
 
-R13 source comparison is accepted. Matching repository-probe hashes and main
-revisions were observed across harnesses, but the legacy per-profile claim file
-had different bytes. Its exact isolation cause is not established.
+Shared-claim reconciliation is complete. DSH and the integration host both read
+the Git common-directory ledger with no active claim and SHA256
+`2870b5c5aa0fd6ed77b31343e9003cbc1ba73bd787609edf7401dda93884f39e`.
+This digest records the empty-ledger checkpoint; a new claim will change it.
+Start from updated main in a fresh worktree and use the shared claim helper.
+Do not use the old R13 checkout's helper or the retired per-profile ledger.
 
-Claims now live in the Git common directory at `turbomcp/task-claims.json`.
-The integration owner preserved both legacy observations and recorded the
-completed R13 claim in this shared history. No active claim remains there.
-Before dispatch, DSH must run `python Tools/task_claim.py --inspect` from the
-updated main checkout and return its path, digest and active record. Do not run
-the old worker checkout's claim helper or modify the retired per-profile store.
-The integration owner compares the new ledger and then restores todo/ready.
-Until that confirmation, do not create a new claim or start R16.
-
-Cross-harness engine/port lock visibility is a separate unresolved boundary.
-Execution locks still use a per-profile directory. Do not assume the task-claim
-repair fixes those locks; the integration owner must coordinate the baseline
-build before any worker launches engine work.
+R16 workers may inspect source, write the three approved report/evidence files
+and run the offline profile. They must not start builds, an editor, engine
+suites or recovery commands. Cross-harness engine/port lock visibility remains
+unverified because execution locks still use per-profile storage. The integration
+owner will run the required baseline build through the supervisor and supply its
+report during review. Workers may analyze existing evidence but must label its
+revision and must not claim an unrun build passed. Submit the source report with
+the build evidence explicitly pending if no matching report has been supplied.
+This rule takes precedence over the general build command in Verification.

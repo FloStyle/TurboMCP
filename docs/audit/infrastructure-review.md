@@ -124,17 +124,13 @@ remain separate work. Headless tests do not certify rendered output. GitHub CI
 is still not active; local results are not remote branch enforcement. No agent
 dispatch here starts a paid model session or automatically publishes anything.
 
-## Dispatch hold after R13
+## R16 dispatch boundary
 
-R16 remains blocked pending a second-harness check of the repaired claim store.
-Claims now live at `turbomcp/task-claims.json` inside the shared Git common
-directory, not under `LOCALAPPDATA`. Run `python Tools/task_claim.py --inspect`
-from updated main to report the actual path, digest and active claim. Never use
-the old worker checkout's helper after this storage cutover. The integrator
-preserved the conflicting legacy observations and recorded completed R13 in the
-new history; it has no active claim. Compare that same record from DSH before
-reopening R16. The exact cause of the old profile-view difference remains unknown.
-
-The claim fix does not certify shared engine/port execution-lock visibility.
-Those locks still use per-profile storage; keep build/editor work coordinated
-by the integration owner until cross-harness contention is verified or repaired.
+The shared Git-directory claim ledger was confirmed from both harnesses with
+matching path, SHA256 and no active claim. R16 is ready for one source/offline
+worker from updated main in a fresh worktree. Do not use the retired R13 helper.
+The worker must not launch builds, editors, engine suites or recovery commands.
+Cross-harness execution-lock visibility is still unverified; the integration
+owner supplies the required supervised baseline-build evidence during review.
+An absent build report remains pending, never passed. The exact report-file
+allowlist and completion-review requirements remain unchanged.

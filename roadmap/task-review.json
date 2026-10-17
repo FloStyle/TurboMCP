@@ -3063,7 +3063,7 @@
         "R16"
       ],
       "finding": "Non-unity incremental plugin compilation is verified; that does not require a full engine rebuild. Production and fixture dependencies still need caller/export analysis.",
-      "action": "Produce dependency rows with production/test callers, public header/export visibility and distribution evidence. Compare direct registry use and a small adapter before a module split. Record broken public URLs without inventing a replacement publication target.",
+      "action": "Produce dependency rows with production/test callers, public header/export visibility and distribution evidence. Compare direct registry use and a small adapter before a module split. Record broken public URLs without inventing a replacement publication target. Workers perform source/offline work only; the integration owner supplies the baseline build evidence while cross-harness execution locking remains unverified.",
       "id": "R16",
       "path": "todo/roadmap-r16.md",
       "source_refs": [

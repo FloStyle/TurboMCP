@@ -65,8 +65,8 @@ and R12/R14 must establish installed-engine and forward runtime support.
 
 The R13 claim reported by DSH is not present in the integration host ledger.
 This is unresolved coordination debt, not evidence of a particular root cause.
-R16 dispatch is blocked until the exact claim path and Git common-directory
-identity are reconciled from both shells. Do not bypass this by creating a new
+This initially blocked R16; the shared Git-directory ledger has since been
+confirmed from both shells, as recorded below. Do not bypass this by creating a new
 claim or assuming a reported ID is shared ownership evidence.
 
 ## Shared claim storage correction
@@ -77,9 +77,14 @@ Task claims now use the Git common directory. A concurrency regression with two
 worktrees and different `LOCALAPPDATA` roots allows exactly one claim; incorrect
 release IDs leave it intact and either worktree can release the exact ID.
 The previous records are preserved locally and completed R13 is in shared
-history. R16 still requires DSH to confirm the new ledger before dispatch.
+history. DSH has confirmed the new ledger with the same path, digest and empty active record.
 
 The precise cause of the divergent profile views is unproven. Execution/recovery
 locks also use `LOCALAPPDATA` and require a separate cross-harness contention
 check or shared-lock repair before simultaneous engine work. Do not infer their
 visibility from a successful task-claim test.
+
+The shared-ledger confirmation closes the task-claim visibility blocker. R16 is
+reopened for source/offline work only. Until execution-lock visibility is proven,
+the integration owner alone runs its baseline build and supplies the evidence.
+No worker may infer engine-execution permission from holding a task claim.
