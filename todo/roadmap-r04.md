@@ -97,24 +97,24 @@ Scope and inventory:
 
 New findings (`R04-DISC-01` through `06`):
 - Help omits `REQUIRED`/`default=` though the schema reader prints them.
-- Help's 2000-character budget is a warning, not a cap; the declaration says capped.
+- Help's single-tool path warns over its 2000-character promise without cutting; the summary path returns before that check and caps rows, not characters. `TurboMCPToolsets.h:102-103` is the help promise; `:481` belongs to the schema tool's separate cap.
 - Status's “costs nothing and changes nothing” is false when logging is ON because the recorder writes/rotates.
 - Status conflates declared, registered, enabled and discoverable layers; it reports settings/registration, not discovery.
-- Help name matching is narrower than schema normalization (`Read`, space/underscore variants and full tool names).
+- Help preserves joined `Toolset.Tool` in `ToolsetName` and exact dotted toolset names, but does not accept the schema's `Read` alias, normalization variants or a qualified name in `ToolName`; the report's eight-row matrix distinguishes these modes.
 - Help does not distinguish a missing inputSchema/properties object from a zero-parameter tool.
-Each finding has an unapproved bounded proposal `R04-REPAIR-07` through `12` with exact repository-relative files, preserved behavior, synthetic probe, expected result, negative control, focused checks and rollback. Alternatives for help capping, status enablement and name normalization are recorded as unresolved decisions.
+Each finding has an unapproved bounded proposal `R04-REPAIR-07` through `12` with exact repository-relative files, preserved behavior, synthetic probe, expected result, negative control, focused checks and rollback. Required/default, long-help and missing-schema probes are marked as awaiting fixture/test-seam scope rather than claiming current `test-agent-help.py` supplies them. Status enablement, cap policy and name normalization remain unresolved decisions.
 
 Validation:
 - `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
 - `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
 - `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
-- `python Tools/execute-tests.py --profile offline --execute` exited 0 at base `b353fdd`: report `.local/executions/98e74ff4df4c41c99ed12ac5e98aae9c/report.json`, tree digest `025e11e4004e45c19b1523930991be6176b711e560ecdf414c7b3d4b62586442`; all offline suites passed.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 after corrections (request commit `4a79243`): report `.local/executions/536baf104ac5401fa25e907fe5f48c29/report.json`, tree digest `c603009e509b32398f892e4f26bec4704babb2ab9940f429ae569b73043eee4c`; all offline suites passed.
 - No engine suite, editor, build, direct MCP call, packaging or recovery command was run. `test-agent-help.py`, `test-batch-tools.py` and the status uses in other suites are existing assertions only, not results here.
 - Candidate-bound offline evidence is obtained after this commit and returned separately.
 
 Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contracts.json`, and this Completion evidence only. No plugin, engine, test, helper, dependency, pin, routing preference, task status/readiness, TODO, review register or release control was changed.
 
-Unresolved: status/help/schema runtime behavior; long-help cap; disabled/ambiguous name behavior; missing-schema fixture; declared/enabled/discoverable status contract; all three tools' lack of ARC02 result lines and `call_structured` implications; `R04-CALL-06` refusal recording; the 94 unreviewed rows. R04 remains incomplete; no merge, push, completion or claim release.
+Unresolved: status/help/schema runtime behavior; the single-tool cap versus summary row cap; fixture/test-seam scope for required/default, long-help and missing-schema probes; disabled/ambiguous name behavior; declared/enabled/discoverable status contract and enablement API; all three tools' lack of ARC02 result lines and `call_structured` implications; `R04-CALL-06` refusal recording; the 94 unreviewed rows. R04 remains incomplete; no merge, push, completion or claim release.
 
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)

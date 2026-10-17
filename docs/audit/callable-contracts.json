@@ -2713,13 +2713,13 @@
         {
           "name": "ToolsetName",
           "default": "explicit empty = search all toolsets when ToolName is nonempty; both empty refused; omitted rejected by schema",
-          "parsing": "trimmed; case-insensitive exact full name or dotted suffix; spaces/underscores/hyphens are not normalized",
-          "effect": "selects a toolset or, with ToolName empty, requests its summary; short 'Read' is not accepted"
+          "parsing": "trimmed; case-insensitive exact known toolset; if ToolName is empty and the whole value is not a known toolset, split at the last dot only when the prefix is an exact known toolset (joined Toolset.Tool); otherwise dotted-suffix match. Spaces/underscores/hyphens are not normalized; 'Read' is not accepted.",
+          "effect": "selects a toolset; with ToolName empty, selects summary mode. Existing joined-name and real dotted toolset-name behavior is preserved."
         },
         {
           "name": "ToolName",
           "default": "explicit empty = summary when ToolsetName is nonempty; both empty refused; omitted rejected",
-          "parsing": "trimmed; case-insensitive exact bare name; a dotted full name is not matched",
+          "parsing": "trimmed; case-insensitive exact bare name. A qualified Toolset.Tool in ToolName is not matched; the joined form is supported only in ToolsetName with ToolName empty.",
           "effect": "selects one tool; with an empty ToolsetName the first matching tool across all toolsets is returned"
         }
       ],
@@ -2756,7 +2756,7 @@
       "implementation": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
         "lines": "311-574; matching helpers 165-178,378-383; parameters 461-503; budget 536-542",
-        "description": "Reads every schema from GetAllToolsetJsonSchemas, resolves toolset by exact or dotted-suffix match and tool by exact bare name, prints name:type-description rows, appends traps, and warns when the help exceeds HelpBudgetChars. It does not read the required array or print default values."
+        "description": "Reads every schema from GetAllToolsetJsonSchemas, trims both arguments, checks known toolsets before splitting, supports joined Toolset.Tool in ToolsetName only when ToolName is empty, preserves exact dotted toolset names, matches the tool as an exact bare name, prints name:type-description rows, appends traps, and warns when single-tool help exceeds HelpBudgetChars. It does not read the required array or print default values."
       },
       "client": {
         "path": "Tools/tmcp.py",
@@ -2767,17 +2767,17 @@
         "Reads the registry schema list and trap data; no asset or setting mutation.",
         "When call logging is enabled and the recorder is installed, the wrapper writes a start and end record and can rotate the log file."
       ],
-      "success": "Returns 'read:' help for a toolset summary or one tool, including kind, source, what, parameters, traps and, when the budget is exceeded, a warning. It does not append an ARC02 result line.",
+      "success": "Returns 'read:' help for a toolset summary or one tool, including kind, source, what, parameters and traps. The single-tool path warns when over budget; the summary path returns before that check and caps the row count at 12. No ARC02 result line.",
       "refusals": [
         "Both names empty: error: no tool named.",
         "Registry unavailable or unreadable: error naming the missing registry/schema.",
         "No matching toolset/tool: error listing real toolset names and, for a tool miss, the instruction to use R-TOOL-INDEX.",
         "All refusals are plain error: strings; R04-CALL-06 applies to their recorder status."
       ],
-      "truncation": "Description text is first-sentence/160-character capped; a toolset summary lists at most 12 tools and names the remainder. HelpBudgetChars=2000 only appends a warning when exceeded; the text is not cut.",
+      "truncation": "Description text is first-sentence/160-character capped. A toolset summary lists at most 12 tools and names the remainder, but has no character cap. The single-tool path has HelpBudgetChars=2000 and only appends a warning over it; the text is not cut. The schema tool's separate 2000-character cut is not a help behavior.",
       "tests": [
         "Tools/test-agent-help.py: T-HELP-2 checks 'parameters:', 'traps:' and <=2000 for selected tools; T-HELP-3/T-HELP-5 check refusals; joined/short toolset forms are exercised.",
-        "No assertion checks REQUIRED/default output, a long-help cap, 'Read' as a short form, a dotted tool name, or a missing inputSchema."
+        "No assertion checks REQUIRED/default output, a long single-tool cap, a long summary, 'Read' as a short form, a qualified name in ToolName, or a missing inputSchema. The joined Toolset.Tool form is asserted around test-agent-help.py:128-136."
       ],
       "source_findings": [
         "R04-DISC-01",
@@ -3126,14 +3126,16 @@
       "scope": [
         "ReadTurboMCPToolHelp"
       ],
-      "title": "The 2000-character help budget is only a warning, not a cap",
+      "title": "Help single-tool 2000-character promise is only a warning; summary has no character cap",
       "evidence": [
-        "TurboMCPToolsets.h:481 says a tool's help is capped at 2000 characters.",
-        "TurboMCPAgentHelp.cpp:40 defines HelpBudgetChars=2000; :536-542 appends a warning when Help.Len() exceeds it but returns the full text.",
-        "TurboMCPToolSchema.cpp:783-789 implements an actual hard cut for the schema reader."
+        "TurboMCPToolsets.h:102-103 says the reply stays under 2000 characters for one tool; that declaration belongs to ReadTurboMCPToolHelp.",
+        "TurboMCPAgentHelp.cpp:536-542 is reached only on the single-tool path and appends a warning; it does not cut the text.",
+        "TurboMCPAgentHelp.cpp:385-430 is the summary path: it returns before the budget check, and MaxSummaryTools=12 is a row cap, not a character cap.",
+        "TurboMCPToolsets.h:481 is the separate ReadTurboMCPToolSchema declaration; its 2000-character cap is not evidence for help.",
+        "TurboMCPToolSchema.cpp:783-789 implements the schema tool's separate hard cut."
       ],
-      "observed_source_behavior": "A long description or trap list makes help exceed 2000 characters and the result contains a warning plus the complete over-budget text. The schema reader would cut and announce the cut.",
-      "existing_assertions": "test-agent-help.py:63-65 checks <=2000 only for selected short help; no long synthetic case.",
+      "observed_source_behavior": "A single tool's help can exceed 2000 characters and is returned whole with a warning. A summary can also exceed 2000 characters but is limited only to 12 rows and returned before the warning. The schema reader's single-tool branch is the one that cuts at 2000 and announces the cut. These are three different behaviors.",
+      "existing_assertions": "test-agent-help.py:63-65 checks <=2000 only for selected short single-tool help; it has no long single-tool, long summary or schema-cut assertion.",
       "runtime_status": "not_run"
     },
     {
@@ -3181,15 +3183,65 @@
         "ReadTurboMCPToolHelp",
         "ReadTurboMCPToolSchema"
       ],
-      "title": "Help name matching is narrower than schema name matching",
+      "title": "Help name matching is narrower than schema matching for aliases, normalization and qualified tool names",
       "evidence": [
         "TurboMCPToolSchema.cpp:291-323 normalizes case, spaces, underscores, brackets, angle brackets and hyphens; :474-533 accepts exact/short-tail/suffix toolset forms; :561-570 accepts bare or published full tool names.",
         "TurboMCPAgentHelp.cpp:378-383 accepts exact full or dotted-suffix toolset names only; :449-450 matches only the bare tool name.",
         "Tools/test-batch-tools.py:58 uses toolset 'Read' and expects success from the schema reader; test-agent-help.py uses 'TurboMCPReadToolset', not 'Read', for help."
       ],
-      "observed_source_behavior": "The schema reader accepts 'Read', a space/underscore variant, or a full Toolset.Tool name. Help rejects 'Read' (no dotted suffix), does not normalize variants, and rejects the full tool name. Whether help should be as permissive or document the narrower contract is unresolved.",
-      "existing_assertions": "No help test uses 'Read', a normalized variant or a full tool name; no schema test uses those exact forms except 'Read'.",
-      "runtime_status": "not_run"
+      "observed_source_behavior": "Help preserves joined Toolset.Tool in ToolsetName and exact dotted toolset names, but it does not accept the schema's 'Read' suffix alias, does not normalize spaces/underscores/hyphens, and does not accept a qualified Toolset.Tool placed in ToolName. A bare tool with an empty ToolsetName searches all toolsets and returns the first match without ambiguity reporting.",
+      "existing_assertions": "test-batch-tools.py:58 uses 'Read' successfully for schema; test-agent-help.py uses the exact/suffix toolset forms and asserts the joined Toolset.Tool form around lines 128-136. No help test covers 'Read', normalized variants, qualified ToolName, empty ToolsetName + tool, or ambiguous suffix matches.",
+      "runtime_status": "not_run",
+      "matching_matrix": [
+        {
+          "input": "full toolset + bare tool",
+          "mode": "full help",
+          "result": "accepted",
+          "evidence": "ToolsetMatches exact; Bare.Equals exact"
+        },
+        {
+          "input": "suffix toolset (TurboMCPReadToolset) + bare tool",
+          "mode": "full help or summary",
+          "result": "accepted",
+          "evidence": "InName.EndsWith('.' + WantedToolset)"
+        },
+        {
+          "input": "Read alias + bare tool",
+          "mode": "full help",
+          "result": "not accepted by help; accepted by schema suffix match",
+          "evidence": "ToolsetMatches has no stem-strip/suffix rule"
+        },
+        {
+          "input": "joined Toolset.Tool in ToolsetName, empty ToolName",
+          "mode": "full help",
+          "result": "accepted when the last-dot prefix is an exact known toolset",
+          "evidence": "IsKnownToolset/SplitName at 343-372; test-agent-help.py:128-136"
+        },
+        {
+          "input": "qualified Toolset.Tool in ToolName",
+          "mode": "full help",
+          "result": "not accepted; ToolName must be the exact bare name",
+          "evidence": "Bare.Equals(WantedTool) at 449-450"
+        },
+        {
+          "input": "exact dotted toolset summary + empty ToolName",
+          "mode": "summary",
+          "result": "accepted when the whole value is a known toolset",
+          "evidence": "IsKnownToolset checked before split at 343-357"
+        },
+        {
+          "input": "empty ToolsetName + bare tool",
+          "mode": "full help",
+          "result": "searches all toolsets; first match wins, no ambiguity report",
+          "evidence": "ToolsetMatches empty branch at 380; first matching loop at 440-546"
+        },
+        {
+          "input": "unknown/ambiguous input",
+          "mode": "refusal",
+          "result": "unknown is refused with real names; multiple suffix matches choose the first",
+          "evidence": "error paths 433-436,548-573; first-match loop"
+        }
+      ]
     },
     {
       "id": "R04-DISC-06",
@@ -3369,8 +3421,9 @@
       "synthetic_probe": "Call help for a tool with a required parameter and one with a default; compare its parameter rows with the same tool's schema output.",
       "expected": "Help prints requiredness and default values in a named form matching the schema reader; a no-parameter tool still says it takes no parameters.",
       "negative_control": "A no-parameter tool must not acquire a false REQUIRED row; an optional/defaulted parameter must not be marked required.",
-      "validation": "python Tools/execute-tests.py --profile engine --suites test-agent-help --execute",
-      "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only."
+      "validation": "Proposed: python Tools/execute-tests.py --profile engine --suites test-agent-help --execute, conditional on the missing required/defaulted fixture. Current suite alone is insufficient.",
+      "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only.",
+      "fixture_gap": "Current test-agent-help.py can call a real tool with required parameters, but it does not guarantee a tool with a defaulted parameter. A test-only schema fixture or a pure help-render seam would be needed; neither is in the allowed files, so the defaulted-parameter half is awaiting fixture scope."
     },
     {
       "id": "R04-REPAIR-08",
@@ -3382,17 +3435,20 @@
         "Tools/test-agent-help.py"
       ],
       "preserved_behavior": [
-        "help content below the budget",
+        "single-tool help content below budget",
         "traps",
-        "summary limit of 12",
-        "first-sentence description"
+        "summary path's 12-row cap and early return",
+        "first-sentence description",
+        "schema tool's separate 2000-character cut"
       ],
       "synthetic_probe": "Use a tool with a trap/description set that exceeds 2000 characters; compare length and omission notice with a short tool.",
-      "expected": "A single-tool help answer is at most 2000 characters, names what was omitted, and never silently drops content. Alternative: if the warning-only design is retained, the declaration and protocol are corrected to say it is not capped; that is a separate decision.",
+      "expected": "The single-tool promise is enforced and omissions are named; the summary keeps its 12-row cap and is not described as character-capped. Alternative warning-only requires a separate contract decision. The schema reader's cut is not changed.",
       "negative_control": "A short tool remains byte-identical and shows no warning.",
-      "validation": "python Tools/execute-tests.py --profile engine --suites test-agent-help --execute",
+      "validation": "Proposed: python Tools/execute-tests.py --profile engine --suites test-agent-help --execute, conditional on the missing long-help fixture. Current suite is insufficient.",
       "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only.",
-      "unresolved_decision": "Cap-and-announce versus warning-only; the protocol requires a cap, so cap-and-announce is the proposed alternative, not an implicit approval of either."
+      "unresolved_decision": "Cap-and-announce versus warning-only; the protocol requires a cap, so cap-and-announce is the proposed alternative, not an implicit approval of either.",
+      "probe": "Single tool with a trap/description over 2000 characters, plus a summary with more than 12 tools and long descriptions. These are different branches.",
+      "fixture_gap": "A long description/trap needs a test-only trap or schema fixture. TestProject/Config/TurboMCP/Traps.json is production data and is outside the allowed files; the over-budget probe is awaiting fixture scope."
     },
     {
       "id": "R04-REPAIR-09",
@@ -3410,8 +3466,8 @@
       "synthetic_probe": "Call status with logging ON and OFF; inspect the log and the declaration text.",
       "expected": "The declaration no longer says the call costs/changes nothing unconditionally; it states that read calls are recorded when call logging is enabled. The output may remain unchanged.",
       "negative_control": "Logging OFF still produces no status log record; the existing status text remains unchanged.",
-      "validation": "Source review plus test-call-log/test-graph-text-guards; no production behavior change.",
-      "rollback": "Revert the header comment only."
+      "validation": "python Tools/validate-repo.py; python Tools/validate.py; source review. No engine assertion is needed for a comment-only correction.",
+      "rollback": "Revert Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h only."
     },
     {
       "id": "R04-REPAIR-10",
@@ -3426,14 +3482,16 @@
         "server/settings line",
         "one line per declared class",
         "registered/MISSING names",
-        "no asset change"
+        "no client-discovery claim"
       ],
       "synthetic_probe": "Compare status while all toolsets are enabled, with one toolset disabled, and while the registry is unavailable; compare declared count, registered count and schema-listed count.",
-      "expected": "Status labels declared, registered and schema-listed/enabled layers separately, and states registry unavailability rather than printing only MISSING. No claim of client discoverability.",
-      "negative_control": "A genuinely missing class still prints MISSING; a disabled but registered class is not labelled enabled/discoverable.",
-      "validation": "Source review plus test-call-log/test-agent-help; engine probe remains integrator-owned.",
-      "rollback": "Revert TurboMCPToolsets.cpp and the focused test only.",
-      "unresolved_decision": "Whether to add a public enabled query or use GetToolsetJsonSchemas as the enabled/schema-listed proxy; the status contract must be decided before implementation."
+      "expected": "Status labels declared, registered and schema-listed/enabled layers separately and states registry unavailability. It does not claim client discovery. A disabled but registered class is not labelled enabled or discoverable.",
+      "negative_control": "A genuinely missing class still prints MISSING; a disabled registered class is not printed as enabled; the server pointer line is unchanged.",
+      "validation": "No current status assertion exists. test-call-log.py/test-call-cost.py use status only as a known call; a focused status test does not exist. Exact proposed command after adding one: python Tools/execute-tests.py --profile engine --suites test-agent-help --execute (status case must be added). Design and test scope are unresolved, so validation is unavailable today.",
+      "rollback": "Revert Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp and Tools/test-agent-help.py only.",
+      "unresolved_decision": "Whether to add a public enabled query or use GetToolsetJsonSchemas as the enabled/schema-listed proxy; the status contract must be decided before implementation.",
+      "probe": "Compare status with all toolsets enabled, one registered-but-disabled toolset, and the registry subsystem unavailable. Read declared count, registered count, schema-listed count and server line.",
+      "blocked_by": "No public API exposes enablement by class or name; GetToolsetJsonSchemas is only a schema-listed proxy. The status contract and the API choice require an integrator decision."
     },
     {
       "id": "R04-REPAIR-11",
@@ -3445,17 +3503,19 @@
         "Tools/test-agent-help.py"
       ],
       "preserved_behavior": [
-        "case-insensitive matching",
-        "full and dotted-suffix toolset forms",
-        "bare tool form",
+        "joined Toolset.Tool in ToolsetName with empty ToolName",
+        "exact dotted toolset summary",
+        "case-insensitive full/suffix toolset forms",
+        "exact bare tool form",
         "refusal names"
       ],
       "synthetic_probe": "Call help with 'Read', 'TurboMCPReadToolset', 'turbo mcp read toolset' and a full Toolset.Tool name; compare with schema reader results.",
-      "expected": "Help and schema accept the same documented name forms, or help explicitly states its narrower forms. Ambiguous/multiple matches are named rather than silently choosing the first.",
-      "negative_control": "An unknown name is still refused with real names; no name silently resolves to a different toolset.",
+      "expected": "Help preserves the joined-name and exact-dotted-toolset forms it already supports. It either accepts the same additional alias/normalization/qualified-tool forms as schema or explicitly documents a narrower contract. Multiple matches are named rather than silently choosing the first.",
+      "negative_control": "Unknown names are still refused with real names; no name silently resolves to a different toolset; the joined form and exact dotted toolset names still work.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-agent-help,test-batch-tools --execute",
-      "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only.",
-      "unresolved_decision": "Reuse schema normalization versus document a narrower help contract; no shared helper is authorized by this proposal."
+      "rollback": "Revert Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp and Tools/test-agent-help.py only.",
+      "unresolved_decision": "Reuse schema normalization versus document a narrower help contract; no shared helper is authorized.",
+      "probe": "Use the eight-row matching matrix: full toolset + bare tool, suffix toolset, Read alias, joined Toolset.Tool in ToolsetName + empty ToolName, qualified name in ToolName, exact dotted toolset summary, empty ToolsetName + bare tool, and unknown/ambiguous input."
     },
     {
       "id": "R04-REPAIR-12",
@@ -3474,8 +3534,9 @@
       "synthetic_probe": "Feed help a tool whose schema lacks inputSchema/properties and a tool with an empty properties object; compare with a real zero-parameter tool.",
       "expected": "Missing schema prints 'parameters: unavailable' with the reason; a genuinely empty properties object prints zero parameters.",
       "negative_control": "A real no-parameter tool still says it takes no parameters and does not acquire a schema-error warning.",
-      "validation": "Source review plus a synthetic help/schema fixture; engine suite if a fixture is added.",
-      "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only."
+      "validation": "No current suite exercises a missing inputSchema/properties object. Proposed synthetic help/schema fixture; exact engine command unavailable until the fixture exists.",
+      "rollback": "Revert Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp and Tools/test-agent-help.py only.",
+      "fixture_gap": "Production schemas do not omit inputSchema, so this probe needs a synthetic registry/test seam or a test-only schema fixture. Neither is in the allowed files; the probe is awaiting fixture scope."
     }
   ],
   "probe_gaps": [
@@ -3494,7 +3555,9 @@
     "Help with 'Read', normalized/space variants, a full Toolset.Tool name, duplicate bare tool names and empty/omitted fields.",
     "Schema with an ambiguous short/suffix name, duplicate tool name across toolsets, empty Toolset and the exact 2000-character cut.",
     "Help/schema for a tool whose inputSchema or properties object is missing.",
-    "Status/help/schema recorded with logging ON and OFF, including the status declaration's cost claim."
+    "Status/help/schema recorded with logging ON and OFF, including the status declaration's cost claim.",
+    "Help single-tool >2000 and summary >12 rows are separate branches; the summary has no character cap.",
+    "Required/default, long-help and missing-schema probes need a synthetic schema/trap fixture or test seam not present in the allowed files."
   ],
   "validation": {
     "audit_inventory_check": {
@@ -3528,7 +3591,8 @@
     "Whether help should be capped-and-announced or keep warning-only; the protocol requires a cap, but the implementation choice is unapproved.",
     "Whether help should reuse schema normalization or document a narrower name contract; no shared helper is authorized.",
     "Whether status should expose enabled/discoverable layers through a new public query or a schema-list proxy; design unresolved.",
-    "The three tools remain plain-FString, non-ARC02 tools; call_structured and refusal-to-record behavior remain unresolved as in checkpoint 1."
+    "The three tools remain plain-FString, non-ARC02 tools; call_structured and refusal-to-record behavior remain unresolved as in checkpoint 1.",
+    "Required/default, long-help and missing-schema probes are awaiting fixture/test-seam scope; current test-agent-help.py does not supply them."
   ],
   "schema_validation": {
     "status": "source_traced_not_runtime",
@@ -3593,10 +3657,10 @@
       "offline_profile": {
         "command": "python Tools/execute-tests.py --profile offline --execute",
         "exit": 0,
-        "report": ".local/executions/98e74ff4df4c41c99ed12ac5e98aae9c/report.json",
-        "request_commit": "b353fdd8b44f405c84ef9a67fde9db679f8c4804",
-        "tree_digest": "025e11e4004e45c19b1523930991be6176b711e560ecdf414c7b3d4b62586442",
-        "summary": "PASSED; all offline suites passed."
+        "report": ".local/executions/536baf104ac5401fa25e907fe5f48c29/report.json",
+        "request_commit": "4a79243de5f4c7bb1a1267a0bcb41b858c6320e1",
+        "tree_digest": "c603009e509b32398f892e4f26bec4704babb2ab9940f429ae569b73043eee4c",
+        "summary": "PASSED after checkpoint-2 corrections; all offline suites passed."
       }
     },
     "review": {
