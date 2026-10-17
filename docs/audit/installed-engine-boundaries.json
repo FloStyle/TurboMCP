@@ -21,9 +21,9 @@
     "installed_flag": false
   },
   "evidence_status": {
-    "source_inspection": "complete",
-    "offline_validation": "pending at time of writing; run at task end",
-    "current_base_build": "pending; integrator supplies the supervised baseline build",
+    "source_inspection": "partial; cited source evidence is recorded, but acceptance-required installed and per-symbol evidence is absent",
+    "offline_validation": "correction run 29ee2d839d95454cb85592b87f006872 passed (tree digest 5bf496b8...); original candidate ff633b8 passed at 44e70a8e... (tree digest 3040f00e...)",
+    "current_base_build": "integrator-supplied build at original candidate ff633b8 passed; corrected documentation commit was not rebuilt",
     "installed_5_8_3": "absent",
     "installed_5_6": "present locally but lacks ModelContextProtocol and ToolsetRegistry",
     "packaged_plugin": "not run",
@@ -43,7 +43,11 @@
       ],
       "header_visibility": "engine public",
       "installed_evidence": "present in any editor distribution",
-      "classification": "engine-required"
+      "classification": "engine-required",
+      "owning_header": "Runtime/Core/Public/CoreMinimal.h",
+      "used_surface": "FString, TArray, delegates, FModuleManager",
+      "export_mechanism": "CORE_API engine import",
+      "local_link_evidence": "linked in integrator build 7fe2db69671c429f82126beba6d529a6 at ff633b8"
     },
     {
       "name": "CoreUObject",
@@ -56,7 +60,11 @@
       ],
       "header_visibility": "engine public",
       "installed_evidence": "present in any editor distribution",
-      "classification": "engine-required"
+      "classification": "engine-required",
+      "owning_header": "Runtime/CoreUObject/Public/UObject/Object.h",
+      "used_surface": "UObject, UClass, UHT reflection",
+      "export_mechanism": "COREUOBJECT_API and generated code",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "Engine",
@@ -69,7 +77,11 @@
       ],
       "header_visibility": "engine public",
       "installed_evidence": "present in any editor distribution",
-      "classification": "engine-required"
+      "classification": "engine-required",
+      "owning_header": "Runtime/Engine/Public/Engine/Engine.h",
+      "used_surface": "GEngine, UWorld, UTextureRenderTarget2D, FRenderTarget",
+      "export_mechanism": "ENGINE_API engine import",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "AssetRegistry",
@@ -82,7 +94,11 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Runtime/AssetRegistry/Public/AssetRegistry/IAssetRegistry.h",
+      "used_surface": "IAssetRegistry, FAssetRegistryModule",
+      "export_mechanism": "virtual interface and module API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "BlueprintEditorLibrary",
@@ -95,7 +111,11 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Editor/BlueprintEditorLibrary/Public/BlueprintEditorLibrary.h",
+      "used_surface": "UBlueprintEditorLibrary static functions",
+      "export_mechanism": "BLUEPRINTEDITORLIBRARY_API (UE_API)",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "BlueprintGraph",
@@ -108,19 +128,26 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Editor/BlueprintGraph/Classes/K2Node.h",
+      "used_surface": "UK2Node and K2Node_* classes",
+      "export_mechanism": "module API and UHT classes",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "KismetCompiler",
       "build_kind": "private",
       "production_callers": [
-        "TurboMCPCompile.cpp",
-        "graph repoint"
+        "no direct include or symbol located; may be required by the UnrealEd compile path"
       ],
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "transitive-unverified",
+      "owning_header": "none located",
+      "used_surface": "no direct include or symbol located",
+      "export_mechanism": "not established; keep until a build test",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "DeveloperSettings",
@@ -131,18 +158,26 @@
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "Runtime/Engine/Public/Engine/DeveloperSettings.h",
+      "used_surface": "UDeveloperSettings",
+      "export_mechanism": "ENGINE_API and UHT",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "EditorFramework",
       "build_kind": "private",
       "production_callers": [
-        "FAssetEditorToolkit in capture"
+        "IToolkitHost::GetParentWidget in TurboMCPCaptureAsset.cpp:617-618"
       ],
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "Editor/EditorFramework/Public/Toolkits/IToolkitHost.h",
+      "used_surface": "IToolkitHost::GetParentWidget; the interface is obtained from FAssetEditorToolkit::GetToolkitHost",
+      "export_mechanism": "pure virtual interface; implementation in the UnrealEd host",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "EditorScriptingUtilities",
@@ -154,18 +189,26 @@
       "fixture_callers": [],
       "header_visibility": "public plugin module",
       "installed_evidence": "plugin is off by default; presence in installed 5.8.3 unverified",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "Editor/EditorScriptingUtilities/Source/EditorScriptingUtilities/Public/EditorAssetLibrary.h",
+      "used_surface": "UEditorAssetLibrary::SaveLoadedAsset",
+      "export_mechanism": "EDITORSCRIPTINGUTILITIES_API (UE_API)",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "EditorSubsystem",
       "build_kind": "private",
       "production_callers": [
-        "UAssetEditorSubsystem in capture"
+        "UEditorSubsystem base of UAssetEditorSubsystem; GetEditorSubsystem<UAssetEditorSubsystem>() in TurboMCPCapture.cpp:507,560,736 and TurboMCPCaptureAsset.cpp:568-569"
       ],
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "Editor/EditorSubsystem/Public/EditorSubsystem.h",
+      "used_surface": "UEditorSubsystem base class and UHT reflection; UAssetEditorSubsystem is owned by UnrealEd",
+      "export_mechanism": "UCLASS MinimalAPI and UHT reflection",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "GraphEditor",
@@ -176,7 +219,11 @@
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "Editor/GraphEditor/Public/GraphEditor.h",
+      "used_surface": "SGraphEditor",
+      "export_mechanism": "GRAPHEDITOR_API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "Json",
@@ -189,31 +236,41 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Runtime/Json/Public/Dom/JsonObject.h",
+      "used_surface": "FJsonObject, FJsonSerializer",
+      "export_mechanism": "JSON_API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "JsonUtilities",
       "build_kind": "private",
       "production_callers": [
-        "UObject JSON conversion"
+        "no direct include or symbol located"
       ],
-      "fixture_callers": [
-        "commandlets"
-      ],
+      "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "transitive-unverified",
+      "owning_header": "Runtime/JsonUtilities/Public/JsonObjectConverter.h",
+      "used_surface": "no direct include or symbol located",
+      "export_mechanism": "not established; keep until a build test",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "Kismet",
       "build_kind": "private",
       "production_callers": [
-        "Blueprint compile path"
+        "no direct include or symbol located; compile path uses UnrealEd FKismetEditorUtilities"
       ],
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "transitive-unverified",
+      "owning_header": "Editor/Kismet/Public/BlueprintCompilationManager.h",
+      "used_surface": "no direct include or symbol located",
+      "export_mechanism": "not established; keep until a build test",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "InputCore",
@@ -224,7 +281,11 @@
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified; keep until a clean build proves it unnecessary",
-      "classification": "transitive-unverified"
+      "classification": "transitive-unverified",
+      "owning_header": "Runtime/InputCore/Public/InputCoreTypes.h",
+      "used_surface": "no direct include or symbol located",
+      "export_mechanism": "not established; keep until a build test",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "Slate",
@@ -237,7 +298,11 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Runtime/Slate/Public/Widgets/SWidget.h",
+      "used_surface": "SWidget and Slate widgets",
+      "export_mechanism": "SLATE_API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "SlateCore",
@@ -250,7 +315,11 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Runtime/SlateCore/Public/Styling/CoreStyle.h",
+      "used_surface": "FSlateStyleSet and FCoreStyle",
+      "export_mechanism": "SLATECORE_API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "ToolMenus",
@@ -261,20 +330,29 @@
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified; candidate",
-      "classification": "listed-unused-candidate"
+      "classification": "listed-unused-candidate",
+      "owning_header": "Developer/ToolMenus/Public/ToolMenus.h",
+      "used_surface": "no direct include or symbol located",
+      "export_mechanism": "not established; candidate",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "UnrealEd",
       "build_kind": "private",
       "production_callers": [
-        "editor APIs across production tools"
+        "FAssetEditorToolkit and FBaseToolkit::GetToolkitHost in TurboMCPCaptureAsset.cpp:600,617",
+        "UAssetEditorSubsystem in TurboMCPCapture.cpp:507,560,736"
       ],
       "fixture_callers": [
         "kit, acceptance, material and test-map commandlets"
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Editor/UnrealEd/Public/Toolkits/AssetEditorToolkit.h and Editor/UnrealEd/Public/Subsystems/AssetEditorSubsystem.h",
+      "used_surface": "FAssetEditorToolkit, FBaseToolkit::GetToolkitHost, UAssetEditorSubsystem",
+      "export_mechanism": "UNREALED_API class/method exports and UHT",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "ModelContextProtocol",
@@ -286,7 +364,11 @@
       "fixture_callers": [],
       "header_visibility": "public plugin module",
       "installed_evidence": "mandatory; NoRedist and off by default; installed presence unverified",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "ModelContextProtocol/Public/IModelContextProtocolModule.h and ModelContextProtocolAnalytics.h",
+      "used_surface": "IModelContextProtocolModule::Get/GetTools/GetAnalyticsProvider, HashToolIdentifier, ParseToolsetName",
+      "export_mechanism": "MODELCONTEXTPROTOCOL_API and virtual interfaces",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "ModelContextProtocolEngine",
@@ -298,7 +380,11 @@
       "fixture_callers": [],
       "header_visibility": "public plugin module",
       "installed_evidence": "mandatory; supplied by ModelContextProtocol",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "ModelContextProtocolEngine/Public/ModelContextProtocolSettings.h",
+      "used_surface": "UModelContextProtocolSettings and server URL/port helpers",
+      "export_mechanism": "MODELCONTEXTPROTOCOLENGINE_API and UHT",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "ToolsetRegistry",
@@ -312,29 +398,41 @@
       ],
       "header_visibility": "public plugin module",
       "installed_evidence": "mandatory; NoRedist and off by default; installed presence unverified",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "ToolsetRegistry/Public/ToolsetRegistry/UToolsetRegistry.h, ToolsetRegistry.h, Toolset.h, ToolsetRegistrySubsystem.h",
+      "used_surface": "RegisterToolsetClass, Find, RegisterToolset, UnregisterToolset, ForEachToolset, ExecuteTool, GetJsonSchema, GetToolsetClass",
+      "export_mechanism": "TOOLSETREGISTRY_API and virtual interfaces",
+      "local_link_evidence": "linked in integrator build 7fe2db69671c429f82126beba6d529a6 at ff633b8; 5.9 GetToolsetClass removal unresolved under R14"
     },
     {
       "name": "ImageWrapper",
       "build_kind": "private",
       "production_callers": [
-        "PNG capture encoding"
+        "no direct include or symbol located; PNG path uses Engine FImageUtils"
       ],
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "transitive-unverified",
+      "owning_header": "Runtime/ImageWrapper/Public/ImageWrapper.h",
+      "used_surface": "no direct include or symbol located",
+      "export_mechanism": "not established; keep until a build test",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "RenderCore",
       "build_kind": "private",
       "production_callers": [
-        "render-target readback in capture"
+        "no direct RenderCore-exported symbol located; render-target readback uses Engine APIs"
       ],
       "fixture_callers": [],
       "header_visibility": "public engine module",
-      "installed_evidence": "unverified; RHI symbols are not re-exported here",
-      "classification": "production-required"
+      "installed_evidence": "unverified; RHI is a propagated build dependency, not a RenderCore DLL export",
+      "classification": "production-required",
+      "owning_header": "Runtime/RenderCore/Public/RenderCore.h; RHI headers are propagated",
+      "used_surface": "no direct RenderCore-exported symbol located; RHI headers and link closure are propagated by RenderCore's public RHI dependency",
+      "export_mechanism": "build dependency propagation: RenderCore.Build.cs publicly depends on RHI; RHI symbols are exported by RHI, not by RenderCore",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "UMG",
@@ -347,7 +445,11 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Runtime/UMG/Public/Blueprint/UserWidget.h",
+      "used_surface": "UUserWidget and UWidgetTree",
+      "export_mechanism": "UMG_API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "UMGEditor",
@@ -360,7 +462,11 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Editor/UMGEditor/Public/WidgetBlueprint.h and WidgetBlueprintOperationUtils.h",
+      "used_surface": "UWidgetBlueprint and FWidgetBlueprintOperationUtils",
+      "export_mechanism": "UMGEDITOR_API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "MaterialEditor",
@@ -373,7 +479,11 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-and-fixture"
+      "classification": "production-and-fixture",
+      "owning_header": "Editor/MaterialEditor/Public/MaterialEditingLibrary.h",
+      "used_surface": "UMaterialEditingLibrary",
+      "export_mechanism": "MATERIALEDITOR_API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "Projects",
@@ -384,7 +494,11 @@
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "Runtime/Projects/Public/Interfaces/IPluginManager.h",
+      "used_surface": "IPluginManager",
+      "export_mechanism": "PROJECTS_API and virtual interface",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "AnalyticsET",
@@ -395,7 +509,11 @@
       "fixture_callers": [],
       "header_visibility": "public engine module",
       "installed_evidence": "unverified in installed 5.8.3",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "Runtime/Analytics/AnalyticsET/Public/IAnalyticsProviderET.h",
+      "used_surface": "IAnalyticsProviderET; FAnalyticsET::Config (inline)",
+      "export_mechanism": "virtual interface and inline config type",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "SlateInspectorToolset",
@@ -407,7 +525,11 @@
       "fixture_callers": [],
       "header_visibility": "public plugin module",
       "installed_evidence": "required for capture; NoRedist and off by default; installed presence unverified",
-      "classification": "production-required"
+      "classification": "production-required",
+      "owning_header": "SlateInspectorToolset/Public/SlateInspectorToolset.h",
+      "used_surface": "USlateInspectorToolset::Screenshot",
+      "export_mechanism": "SLATEINSPECTORTOOLSET_API",
+      "local_link_evidence": "linked in integrator build at ff633b8"
     },
     {
       "name": "AnimGraph",
@@ -418,7 +540,11 @@
       ],
       "header_visibility": "public engine module",
       "installed_evidence": "no include or symbol reference found",
-      "classification": "listed-unused-candidate"
+      "classification": "listed-unused-candidate",
+      "owning_header": "none located; candidate header Editor/AnimGraph/Public/AnimGraphNode_StateMachine.h",
+      "used_surface": "no include or typed symbol located",
+      "export_mechanism": "not established; candidate",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "Niagara",
@@ -432,7 +558,11 @@
       ],
       "header_visibility": "public plugin module",
       "installed_evidence": "descriptor plugin is enabled by default; no typed use found",
-      "classification": "listed-unused-candidate"
+      "classification": "listed-unused-candidate",
+      "owning_header": "none located; candidate header Plugins/FX/Niagara/Source/Niagara/Classes/NiagaraSystem.h",
+      "used_surface": "no include or typed symbol located",
+      "export_mechanism": "not established; candidate",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "NiagaraEditor",
@@ -444,7 +574,11 @@
       ],
       "header_visibility": "public plugin module",
       "installed_evidence": "no typed use found",
-      "classification": "listed-unused-candidate"
+      "classification": "listed-unused-candidate",
+      "owning_header": "none located; candidate header Plugins/FX/Niagara/Source/NiagaraEditor/Public/NiagaraSystemFactoryNew.h",
+      "used_surface": "no include or typed symbol located",
+      "export_mechanism": "not established; candidate",
+      "local_link_evidence": "not separately exercised"
     },
     {
       "name": "PythonScriptPlugin",
@@ -456,7 +590,11 @@
       ],
       "header_visibility": "public plugin module",
       "installed_evidence": "plugin is off by default; presence unverified",
-      "classification": "fixture-only"
+      "classification": "fixture-only",
+      "owning_header": "PythonScriptPlugin/Public/IPythonScriptPlugin.h",
+      "used_surface": "IPythonScriptPlugin::Get and ExecPythonCommand",
+      "export_mechanism": "module interface and pure virtual method",
+      "local_link_evidence": "linked in integrator build at ff633b8 for the fixture code path"
     }
   ],
   "descriptor_plugins": [
@@ -606,8 +744,8 @@
     },
     {
       "option": "isolated version adapter",
-      "assessment": "Needed for the 5.9 removal of FToolset::GetToolsetClass in TurboMCPCallRecorder.cpp; compile-time adapter, no engine patch.",
-      "decision": "required-follow-up-for-5.9"
+      "assessment": "Candidate for 5.9, not a demonstrated replacement. FToolset::GetToolsetClass is removed; the public name-based path is not proven authoritative. R14 must resolve it. No protected manifest access.",
+      "decision": "proposal-under-R14-not-implemented"
     },
     {
       "option": "optional development module extraction",
@@ -628,28 +766,33 @@
   "follow_ups": [
     {
       "id": "T16-ADAPTER-1",
-      "scope": "Compile-time adapter in TurboMCPCallRecorder.cpp for 5.8.3 class identity and 5.9 registered-name identity; conditionally compile the removed override.",
-      "acceptance": "Both engines compile; four toolsets wrapped once; start/end records unchanged; unregister/reload leaves no stale handler."
+      "scope": "Proposal under R14. The public 5.9 FToolset no longer exposes GetToolsetClass. GetToolsetName, ForEachToolset and Find are public, but reconstructed-name identity is not demonstrated authoritative. R14 must identify a public class-to-registered-name path or explicitly leave adapter identity unresolved; do not use protected manifest access. Requirements: preserve unrelated handlers; skip unavailable or filtered toolsets correctly; avoid duplicate wrapping; restore the original handler after a failed swap; retain filtering, enable state and recording through shutdown/reload.",
+      "acceptance": "R14 resolves the public identity path and proves both engine builds. Negative checks: name mismatch, missing or filtered handler, repeated install, failed wrapper registration. No adapter is implemented by R16.",
+      "status": "proposal; not dispatch-ready"
     },
     {
       "id": "T16-DEPS-1",
       "scope": "Verify listed-but-unused AnimGraph, Niagara, NiagaraEditor, ToolMenus and InputCore with a clean build and symbol search; remove only proven-unused dependencies.",
-      "acceptance": "Clean plugin build with each dependency absent; no production or fixture regression."
+      "acceptance": "Clean plugin build with each dependency absent; no production or fixture regression.",
+      "status": "proposal; not dispatch-ready"
     },
     {
       "id": "T16-DEV-1",
       "scope": "If a prebuilt package cannot require fixture-only dependencies, move commandlets and development automation into a separate editor/development module.",
-      "acceptance": "Production package loads without PythonScriptPlugin; commandlets still runnable from the development build."
+      "acceptance": "Production package loads without PythonScriptPlugin; commandlets still runnable from the development build.",
+      "status": "proposal; not dispatch-ready"
     },
     {
       "id": "T16-PKG-1 / R12",
       "scope": "Build a Win64 Editor package with RunUAT BuildPlugin; install into a fresh Blueprint-only project; test discovery, calls, save, undo/rollback, shutdown and reload.",
-      "acceptance": "Clean install on the exact engine build; producer and consumer requirements recorded; no game C++ or engine source compile."
+      "acceptance": "Clean install on the exact engine build; producer and consumer requirements recorded; no game C++ or engine source compile.",
+      "status": "proposal; not dispatch-ready"
     },
     {
       "id": "T16-META-1",
       "scope": "Replace deleted-public-repository DocsURL and SupportURL only after a live publication target exists.",
-      "acceptance": "Valid metadata target recorded; no invented URL."
+      "acceptance": "Valid metadata target recorded; no invented URL.",
+      "status": "proposal; not dispatch-ready"
     }
   ],
   "defects": [
@@ -683,10 +826,167 @@
   ],
   "evidence_gaps": [
     "No installed 5.8.3 distribution; the local installed 5.6 tree lacks ModelContextProtocol and ToolsetRegistry.",
-    "No current-base build or provenance report; the historical report is at 084b76c with a dirty tree.",
     "No packaged plugin, no Blueprint-only clean install, no runtime discovery/save/undo proof.",
     "No 5.9 runtime or installed-engine certification; R14/R12 own those.",
-    "Cross-harness engine/port locking remains unverified; the integrator supplies the supervised build.",
-    "NoRedist has no runtime enforcement in the inspected source; installed contents are unknown."
+    "Cross-harness engine/port locking remains unverified; the supervised build was supplied by the integrator.",
+    "NoRedist has no runtime enforcement in the inspected source; installed contents are unknown.",
+    "The corrected documentation commit was not rebuilt; the integrator build belongs to original candidate ff633b8 and tree 3040f00e....",
+    "No per-symbol installed-distribution export audit; local link evidence is not installed availability."
+  ],
+  "integrator_build_evidence": {
+    "ownership": "integrator-owned; supplied for review",
+    "run": "7fe2db69671c429f82126beba6d529a6",
+    "command": "TURBOMCP_ENGINE=C:\\UnrealEngine; python Tools/execute-tests.py --profile build --max-seconds 900 --execute",
+    "result": "passed; exit 0; 320.367 seconds supervisor total, 298.43 seconds UBT",
+    "candidate": "ff633b8e687bab7dffba45721553422339d316de",
+    "tree_digest": "3040f00ea58bc2250844bad394cbb4cdf2b1e867d8bb67540c7673282a390451",
+    "engine": "396c9f059903aed5fec78ecd3d437a40c6415368 (5.8.3)",
+    "target": "TurboMCPTestEditor Win64 Development",
+    "actions": "145; compilation/linking of TurboMCP and TurboMCPTest plus target metadata; no engine-module compile actions",
+    "engine_modules_rebuilt": false,
+    "no_op": false,
+    "doctor": "passed; supervisor restored 16 fixture files; git status clean afterward",
+    "provenance": "DirtyDiffPresent=false, NoOpCandidate=false, BuildExitCode=0",
+    "artifact": "TestProject/Binaries/Win64/UnrealEditor-TurboMCP.dll",
+    "artifact_bytes": 3741184,
+    "artifact_sha256": "14DEE2F2B7DE4278BA02CDB090511EA1CBB5760BD84CD7665A29ADD398C03AC0",
+    "toolchain": "MSVC 14.50.35728, Windows SDK 10.0.22621.0",
+    "limits": [
+      "source-engine target build only",
+      "not packaging",
+      "not a Blueprint-only consumer install",
+      "not installed-engine availability",
+      "not 5.9 support",
+      "not runtime behavior",
+      "does not certify the corrected documentation commit"
+    ]
+  },
+  "transitive_interfaces": [
+    {
+      "interface": "ISourceControlModule, ISourceControlProvider, ISourceControlState, FCheckOut, FUpdateStatus",
+      "owning_module": "SourceControl",
+      "headers": [
+        "Developer/SourceControl/Public/ISourceControlModule.h",
+        "Developer/SourceControl/Public/ISourceControlProvider.h",
+        "Developer/SourceControl/Public/ISourceControlState.h",
+        "Developer/SourceControl/Public/SourceControlOperations.h"
+      ],
+      "plugin_references": [
+        "TurboMCPSourceControl.cpp:10-18, 191-320, 410-530",
+        "TurboMCPSourceControlWrite.cpp:10-15, 254-459"
+      ],
+      "build_path": "SourceControl is a public dependency of UnrealEd (UnrealEd.Build.cs:52-68). TurboMCP privately depends on UnrealEd, so UBT propagates the SourceControl include paths and link closure. SourceControl is not a direct TurboMCP.Build.cs entry.",
+      "export_mechanism": "ISourceControlModule, ISourceControlProvider and ISourceControlState are virtual interfaces; FCheckOut and FUpdateStatus are plain operation classes created by ISourceControlOperation::Create (inline template); the single-file GetState and Execute overloads are SOURCECONTROL_API virtual.",
+      "local_link_evidence": "linked in integrator build at ff633b8; no per-symbol audit",
+      "installed_evidence": "unverified in installed 5.8.3"
+    },
+    {
+      "interface": "FAnalyticsEventAttribute",
+      "owning_module": "Analytics",
+      "headers": [
+        "Runtime/Analytics/Analytics/Public/AnalyticsEventAttribute.h"
+      ],
+      "plugin_references": [
+        "TurboMCPAnalyticsProvider.cpp:15, 202-205, 279-295, 446"
+      ],
+      "build_path": "AnalyticsET.Build.cs lists Analytics in PrivateDependencyModuleNames and in PublicIncludePathModuleNames. The header is visible to include; this is not a public link dependency of AnalyticsET.",
+      "export_mechanism": "FAnalyticsEventAttribute constructors, destructor and copy/move operations are inline in the public header; no Analytics link symbol is required by the inspected uses.",
+      "local_link_evidence": "linked through AnalyticsET in integrator build at ff633b8",
+      "installed_evidence": "unverified in installed 5.8.3"
+    },
+    {
+      "interface": "FRenderTarget::ReadPixels, UTextureRenderTarget2D, RHI build closure",
+      "owning_module": "Engine and RenderCore/RHI",
+      "headers": [
+        "Runtime/Engine/Public/UnrealClient.h",
+        "Runtime/Engine/Public/TextureRenderTarget2D.h",
+        "Runtime/RenderCore/Public/RenderCore.h",
+        "Runtime/RHI/Public/RHI.h"
+      ],
+      "plugin_references": [
+        "TurboMCPCapture.cpp:1032",
+        "TurboMCPCaptureAsset.cpp:729",
+        "TurboMCPCaptureSelector.cpp:1008",
+        "TurboMCPWidgetPreview.cpp:286"
+      ],
+      "build_path": "RenderCore.Build.cs publicly depends on RHI (line 12) and adds RHI to PublicIncludePathModuleNames. A module that depends on RenderCore receives that build closure. This is build propagation, not a RenderCore DLL re-export.",
+      "export_mechanism": "FRenderTarget::ReadPixels is ENGINE_API in UnrealClient.h:113; the plugin uses that Engine symbol and FApp::CanEverRender instead of the RHI GRHIGlobals symbol. RHI symbols are exported by RHI, not by RenderCore.",
+      "local_link_evidence": "linked in integrator build at ff633b8",
+      "installed_evidence": "unverified in installed 5.8.3"
+    }
+  ],
+  "prioritized_interface_evidence": [
+    {
+      "surface": "registry registration",
+      "reference": "TurboMCPToolsets.cpp:355-392",
+      "header": "ToolsetRegistry/Public/ToolsetRegistry/UToolsetRegistry.h",
+      "used": "UToolsetRegistry::RegisterToolsetClass; IsToolsetClassRegistered; GetToolsetJsonSchema",
+      "mechanism": "TOOLSETREGISTRY_API static functions",
+      "local_link": "linked in integrator build at ff633b8",
+      "installed": "unverified"
+    },
+    {
+      "surface": "recorder wrapper",
+      "reference": "TurboMCPCallRecorder.cpp:84-198",
+      "header": "ToolsetRegistry/Public/ToolsetRegistry/Toolset.h and ToolsetRegistry.h",
+      "used": "FToolset::ExecuteTool, GetJsonSchema, GetToolsetClass; FToolsetRegistry::Find, RegisterToolset, UnregisterToolset, ForEachToolset",
+      "mechanism": "TOOLSETREGISTRY_API methods and virtual interfaces; GetToolsetClass is inline virtual at 5.8.3 and removed at 5.9",
+      "local_link": "linked in integrator build at ff633b8; 5.9 identity unresolved",
+      "installed": "unverified"
+    },
+    {
+      "surface": "MCP analytics interception",
+      "reference": "TurboMCPAnalyticsProvider.cpp:45, 69, 76, 103, 241, 265",
+      "header": "ModelContextProtocol/Public/IModelContextProtocolModule.h and ModelContextProtocolAnalytics.h",
+      "used": "IModelContextProtocolModule::Get, GetTools, GetAnalyticsProvider; HashToolIdentifier; ParseToolsetName",
+      "mechanism": "MODELCONTEXTPROTOCOL_API static functions and virtual interfaces",
+      "local_link": "linked in integrator build at ff633b8",
+      "installed": "unverified"
+    },
+    {
+      "surface": "SlateInspector screenshot",
+      "reference": "TurboMCPCapture.cpp:940",
+      "header": "SlateInspectorToolset/Public/SlateInspectorToolset.h",
+      "used": "USlateInspectorToolset::Screenshot",
+      "mechanism": "SLATEINSPECTORTOOLSET_API static function",
+      "local_link": "linked in integrator build at ff633b8",
+      "installed": "unverified; descriptor plugin is NoRedist and off by default"
+    },
+    {
+      "surface": "editor save",
+      "reference": "TurboMCPCompile.cpp:516",
+      "header": "EditorScriptingUtilities/Public/EditorAssetLibrary.h",
+      "used": "UEditorAssetLibrary::SaveLoadedAsset",
+      "mechanism": "EDITORSCRIPTINGUTILITIES_API static function",
+      "local_link": "linked in integrator build at ff633b8",
+      "installed": "unverified; descriptor plugin is off by default"
+    },
+    {
+      "surface": "source-control interfaces",
+      "reference": "TurboMCPSourceControl.cpp:10-18; TurboMCPSourceControlWrite.cpp:10-15",
+      "header": "Developer/SourceControl/Public/ISourceControlModule.h and related",
+      "used": "see transitive_interfaces",
+      "mechanism": "virtual interfaces, SOURCECONTROL_API overloads, inline operation creation",
+      "local_link": "linked in integrator build at ff633b8",
+      "installed": "unverified"
+    },
+    {
+      "surface": "analytics event attribute",
+      "reference": "TurboMCPAnalyticsProvider.cpp:15, 202-205, 279-295",
+      "header": "Runtime/Analytics/Analytics/Public/AnalyticsEventAttribute.h",
+      "used": "FAnalyticsEventAttribute",
+      "mechanism": "inline type methods; include path via AnalyticsET PublicIncludePathModuleNames",
+      "local_link": "linked through AnalyticsET at ff633b8",
+      "installed": "unverified"
+    },
+    {
+      "surface": "render-target readback and RHI closure",
+      "reference": "TurboMCPCapture.cpp:1032; TurboMCPCaptureAsset.cpp:729",
+      "header": "Engine/Public/UnrealClient.h; Engine/Public/TextureRenderTarget2D.h",
+      "used": "FRenderTarget::ReadPixels; UTextureRenderTarget2D",
+      "mechanism": "ENGINE_API readback; RenderCore publicly propagates RHI build closure; no direct RHI symbol",
+      "local_link": "linked in integrator build at ff633b8",
+      "installed": "unverified"
+    }
   ]
 }
