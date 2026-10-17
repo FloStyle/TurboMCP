@@ -82,7 +82,7 @@
         "line": 1982,
         "signature": "static FString EditTurboMCPCallLog(const FString& Enabled);",
         "ufunction": "UFUNCTION(meta = (AICallable))",
-        "defaults": "No C++ default. Empty is not a boolean and is refused."
+        "defaults": "No C++ default. The reflection schema marks this FString parameter required because it has no default; an omitted field is rejected before the body. An explicit empty string reaches the body and is refused."
       },
       "wrapper": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
@@ -100,11 +100,11 @@
         "description": "Compatibility text path; no ARC02 result line. The client does not classify this specific mutation separately; the tool name starts with Edit, so is_mutation() treats it as a mutation for retry policy."
       },
       "effects": [
-        "Writes the persisted editor setting bEnableCallLog via FTurboMCPCallLog::SetEnabled -> SaveConfig.",
+        "Writes the persisted editor setting bEnableCallLog via FTurboMCPCallLog::SetEnabled -> SaveConfig. SaveConfig is a persistence attempt only; successful disk writing and persistence across restart are not verified.",
         "Changes whether subsequent records are written; does not clear existing entries or the file.",
-        "When switching OFF from ON, its own start record remains without an end. When switching ON from OFF, its start is not written but its end is written after the setting changes."
+        "When switching OFF from ON, its own start record is written while logging is on and its end is suppressed after the setting changes. When switching ON from OFF, its start is not written but its end is written after the setting changes. Normal OFF suppression applies when the call starts OFF."
       ],
-      "success": "changed: the call log is now on/off, with log path and persistence note; when already in that state, 'unchanged: ...' rather than a false change. No ARC02 result line.",
+      "success": "changed: the call log is now on/off, with log path and a persistence-attempt note (SaveConfig, not verified restart/disk evidence); when already in that state, 'unchanged: ...' rather than a false change. No ARC02 result line. Changing the setting can change whether its own end record is written.",
       "refusals": [
         "Any token outside the eight accepted spellings: error naming the original value, 'not a yes or no', and the accepted true/false recommendation. No setting change on refusal."
       ],
@@ -115,7 +115,8 @@
       ],
       "source_findings": [
         "R04-CALL-04",
-        "R04-CALL-05"
+        "R04-CALL-05",
+        "R04-CALL-06"
       ]
     },
     {
@@ -154,7 +155,7 @@
         "line": 1992,
         "signature": "static FString EditTurboMCPCallLogClear(const FString& Confirm);",
         "ufunction": "UFUNCTION(meta = (AICallable))",
-        "defaults": "No C++ default. Only yes/true (case-insensitive, trimmed) are accepted despite the comment saying confirm=yes."
+        "defaults": "No C++ default. The reflection schema marks this FString parameter required because it has no default; an omitted field is rejected before the body. An explicit empty string reaches the body and is refused."
       },
       "wrapper": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
@@ -172,21 +173,22 @@
         "description": "Compatibility text path; no ARC02 result line. is_mutation() classifies EditTurboMCPCallLogClear as a mutation, so a lost response is not replayed."
       },
       "effects": [
-        "Drops all in-memory entries via FTurboMCPCallLog::Clear(); the JSONL file is not deleted, truncated or rotated.",
-        "Returns the count observed before clearing and the file path, explicitly saying the file is untouched.",
-        "With logging on, the clear's own end record is written after the clear, so a subsequent read is not empty."
+        "The body calls FTurboMCPCallLog::Clear(), which drops only the in-memory Entries array; the body does not open, delete, truncate or rotate the JSONL file.",
+        "Returns the count observed before clearing and the file path, explicitly saying the body left the file alone. This does not make the complete invocation byte-stable: when logging is ON, the wrapper writes the clear's start/end records and normal rotation can run.",
+        "With logging ON, the clear's own start record is removed by the clear and its end record is written afterwards, so a subsequent read is not empty. With logging OFF, no start/end is written."
       ],
-      "success": "changed: dropped N entry(s) from memory. The log file at <path> is untouched. No ARC02 result line.",
+      "success": "changed: dropped N entry(s) from memory. The log file at <path> is untouched by the body. No ARC02 result line. The complete invocation may append wrapper records and rotate the file when logging is ON.",
       "refusals": [
         "Missing, empty or any value other than yes/true: error stating confirmation is required, what is dropped, and that the file is left alone. No clear occurs."
       ],
       "truncation": "Not applicable to returned text; no record-count boundary is enforced here beyond the log's own 1000-entry memory cap.",
       "tests": [
-        "Tools/test-call-log.py: unconfirmed refusal, changed/untouched wording, memory empty while logging off, file line count unchanged, clear works with logging off.",
+        "Tools/test-call-log.py: unconfirmed refusal, changed/untouched wording, memory empty while logging OFF, file line count unchanged only in that OFF-mode setup, clear works with logging off.",
         "The suite is an engine suite and was not run in this checkpoint."
       ],
       "source_findings": [
-        "R04-CALL-04"
+        "R04-CALL-04",
+        "R04-CALL-06"
       ]
     },
     {
@@ -2030,19 +2032,19 @@
       "parameters": [
         {
           "name": "Since",
-          "default": "empty = no lower bound",
+          "default": "explicit empty string = no lower bound; omitted is rejected by the engine schema",
           "parsing": "trimmed; compared lexically with the fixed-width ISO-8601 timestamp; no format validation",
           "effect": "entries with Timestamp <= Since are skipped and counted as SkippedBySince"
         },
         {
           "name": "Filter",
-          "default": "empty = all calls",
+          "default": "explicit empty string = all; omitted is rejected by the engine schema",
           "parsing": "trimmed; case-insensitive substring",
           "effect": "matches normalised tool label, raw toolset, raw tool, or source; unlike ReadTurboMCPCallLog it does not match Arguments or ok/error status"
         },
         {
           "name": "Cap",
-          "default": "10",
+          "default": "explicit empty string = 10; omitted is rejected by the engine schema",
           "parsing": "trimmed; empty means default; IsNumeric then FCString::Atoi; values <= 0 refused after conversion; maximum 50",
           "effect": "bounds rows shown in each section, not the analysis; all Selected calls feed totals and rankings"
         }
@@ -2069,7 +2071,7 @@
         "line": 464,
         "signature": "static FString ReadTurboMCPCallCost(const FString& Since, const FString& Filter, const FString& Cap);",
         "ufunction": "UFUNCTION(meta = (AICallable))",
-        "defaults": "No C++ default arguments. All three parameters are FString; an empty string is the in-code sentinel for the default cap. Omitted and empty are indistinguishable at this boundary."
+        "defaults": "No C++ defaults. The reflection schema marks these FString parameters required because they have no defaults; an omitted field is rejected before the body. An explicitly supplied empty string is the in-code default sentinel (Cap 10); omitted and empty are not equivalent."
       },
       "wrapper": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
@@ -2089,17 +2091,17 @@
       },
       "effects": [
         "Reads the in-memory log; does not clear it, change settings, or write the log file directly.",
-        "Its own call is logged by FRecordingToolset, so a start record for this read is included while the body runs.",
+        "When logging is enabled and the recorder is installed, its own start record is included while the body runs; when logging is off, no record is written.",
         "No asset or engine mutation."
       ],
-      "success": "Returns a text report beginning 'read: what the calls cost', with log path, recording state, counts, separate token/duration rankings, per-tool and per-asset totals, denominators and an explicit token-estimate caveat. It does not append an ARC02 result line.",
+      "success": "Returns a text report beginning 'read: what the calls cost', with log path, recording state, counts, separate token/duration rankings, per-tool and per-asset totals, denominators and an explicit token-estimate caveat. It does not append an ARC02 result line. When logging is enabled and the recorder is installed, a normal MCP read is preceded by its own start record, so the body does not see a literally empty log.",
       "refusals": [
         "Cap is nonnumeric: error naming 'is not a cap' with the default.",
         "Cap converts to a value <= 0: error naming 'is not usable' with the default.",
         "No records: reports logging OFF or ON-and-empty rather than zero cost, but this check precedes cap parsing.",
         "Post-filter empty selection: reports FilterMatchedNothing and a denominator."
       ],
-      "truncation": "Default 10 rows per section, hard cap 50; only listed rows are bounded. Per-tool/per-asset totals are computed over all Selected calls first. Log entries themselves cap stored result text at 4000 characters while measuring the full result.",
+      "truncation": "Default 10 rows per section, hard cap 50; only listed rows are bounded. Per-tool/per-asset totals are computed over all Selected calls first. The log stores the first 4000 result characters plus a truncation suffix; ResultChars records the full measured length.",
       "tests": [
         "Tools/test-call-cost.py (T-HELP-6): off/empty wording, populated token and duration rankings, per-tool agreement with R-CALL-LOG, filter no-match denominator, cap row boundary, banana and zero cap refusals.",
         "The suite is an engine suite and was not run in this checkpoint."
@@ -2107,7 +2109,8 @@
       "source_findings": [
         "R04-CALL-01",
         "R04-CALL-02",
-        "R04-CALL-04"
+        "R04-CALL-04",
+        "R04-CALL-06"
       ]
     },
     {
@@ -2117,19 +2120,19 @@
       "parameters": [
         {
           "name": "Filter",
-          "default": "empty = all records",
+          "default": "explicit empty string = all; omitted is rejected by the engine schema",
           "parsing": "trimmed; case-insensitive substring",
           "effect": "matches toolset, tool, source, Arguments and 'error'/'ok'; this is why a nonsense filter finds the reader's own start record"
         },
         {
           "name": "Limit",
-          "default": "50",
+          "default": "explicit empty string = 50; omitted is rejected by the engine schema",
           "parsing": "trimmed; empty means default; IsNumeric then FCString::Atoi; values <= 0 refused; maximum 500",
           "effect": "newest-first selected list is cut to Limit; Total is the pre-cut matching count"
         },
         {
           "name": "Since",
-          "default": "empty = no lower bound",
+          "default": "explicit empty string = no lower bound; omitted is rejected by the engine schema",
           "parsing": "trimmed; lexical ISO-8601 comparison; no format validation",
           "effect": "entries with Timestamp <= Since are excluded"
         }
@@ -2157,7 +2160,7 @@
         "line": 425,
         "signature": "static FString ReadTurboMCPCallLog(const FString& Filter, const FString& Limit, const FString& Since);",
         "ufunction": "UFUNCTION(meta = (AICallable))",
-        "defaults": "No C++ default arguments. All three parameters are FString; an empty limit is the in-code default of 50. Omitted and empty are indistinguishable."
+        "defaults": "No C++ defaults. The reflection schema marks these FString parameters required because they have no defaults; an omitted field is rejected before the body. An explicitly supplied empty string is the in-code default sentinel (Limit 50); omitted and empty are not equivalent."
       },
       "wrapper": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
@@ -2176,18 +2179,18 @@
         "description": "Compatibility path decodes the returnValue wrapper and returns the body. It does not require a result line. call_structured would require one for TurboMCP.*; this tool returns none."
       },
       "effects": [
-        "Reads in-memory and on-disk log state; never clears or changes settings.",
-        "The read itself writes a start record before the body and an end record after it, so it appears in its own log.",
+        "Reads FTurboMCPCallLog::GetEntries() from memory. GetLogFilePath constructs a path for display; this tool does not read the on-disk file or its history.",
+        "When logging is enabled and the recorder is installed, the read writes a start record before the body and an end after it, so it appears in its own log. When logging is off, no start/end is written.",
         "No asset or engine mutation."
       ],
-      "success": "Returns 'read: the TurboMCP call log', log path, recording state, raw-record counts, session groups, newest-first rows with phase/source/tool, duration/result size/tokens when measured, up to 200 characters of arguments and result, and an explicit note that one call can leave several records. No ARC02 result line.",
+      "success": "Returns 'read: the TurboMCP call log', log path, recording state, raw-record counts, session groups, newest-first rows with phase/source/tool, duration/result size/tokens when measured, up to 200 characters of arguments and result, and an explicit note that one call can leave several records. No ARC02 result line. When logging is enabled and the recorder is installed, the body does not see a literally empty log because its own start record already exists; ON-and-empty is a direct/synthetic state, not an ordinary MCP read.",
       "refusals": [
         "Limit is nonnumeric: error naming 'is not a limit'.",
         "Limit converts to <= 0: separate error naming 'is not usable'.",
         "Empty log: distinguishes logging OFF from ON-and-empty.",
         "Filter/since select nothing: reports how many entries exist and what filter/since was applied."
       ],
-      "truncation": "Default 50, hard cap 500; selected newest-first before cap. Arguments and results are displayed up to 200 characters each; full values remain in the stored/logged entry subject to the 4000-character stored-result cap. When Total > Selected, the continuation sentence is R04-CALL-03.",
+      "truncation": "Default 50, hard cap 500; selected newest-first before cap. Arguments and results are displayed up to 200 characters each. The stored result is the first 4000 characters plus a truncation suffix; ResultChars records the full measured length. When Total > Selected, the continuation sentence is R04-CALL-03.",
       "tests": [
         "Tools/test-call-log.py (T-DBG-1, T-LOG-1/2/3): starts off/persists, empty wording, filter, self-match, since exclusion, clear confirmation, file untouched, 4 MB rotation, bad boolean, banana/zero limit refusals.",
         "The suite is an engine suite and was not run in this checkpoint."
@@ -2195,7 +2198,8 @@
       "source_findings": [
         "R04-CALL-01",
         "R04-CALL-03",
-        "R04-CALL-04"
+        "R04-CALL-04",
+        "R04-CALL-06"
       ]
     },
     {
@@ -2822,14 +2826,14 @@
         "ReadTurboMCPCallLog",
         "ReadTurboMCPCallCost"
       ],
-      "title": "Limit and cap accept fractional/signed/overflowing strings because IsNumeric is not whole-number validation",
+      "title": "Limit and cap accept fractional strings and unchecked overflow because IsNumeric is not whole-number validation",
       "evidence": [
         "Engine/Source/Runtime/Core/Public/Misc/CString.h:148-175: IsNumeric accepts an optional sign and at most one dot.",
         "CString.h:1219-1222: Atoi delegates to the platform conversion; no whole-string or overflow check is performed.",
         "TurboMCPCallLogTools.cpp:53-67 and TurboMCPCallCostTools.cpp:126-144 call IsNumeric then Atoi."
       ],
-      "observed_source_behavior": "1.5 passes IsNumeric and Atoi converts the integer prefix to 1; +5 is accepted; 1e3 and 1..2 are refused. Overflow behavior is platform/CRT-dependent and was not executed.",
-      "existing_assertions": "Tools/test-call-log.py:400-408 and Tools/test-call-cost.py:344-353 assert only banana and zero; no fractional, signed or overflow case.",
+      "observed_source_behavior": "1.5 passes IsNumeric and Atoi converts the integer prefix to 1; +5 is accepted as a positive integer spelling and is a compatibility policy choice, not inherently malformed; 1e3 and 1..2 are refused. Overflow behavior is platform/CRT-dependent and was not executed.",
+      "existing_assertions": "Tools/test-call-log.py:400-408 and Tools/test-call-cost.py:344-353 assert only banana and zero; no fractional, signed-positive or overflow case.",
       "runtime_status": "not_run"
     },
     {
@@ -2898,6 +2902,31 @@
       "observed_source_behavior": "ON->OFF: start is written, body disables logging, end is suppressed. The in-memory/log file record is a start-only call, which the timeline intentionally renders as running/missing-end and which looks like a crash. ON->OFF also persists the setting. OFF->ON: no start, but the end is written after enabling; unchanged states produce a pair when already ON and nothing when already OFF.",
       "existing_assertions": "Tools/test-call-log.py exercises off/on transitions but does not assert the record shape after switching OFF.",
       "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-CALL-06",
+      "status": "confirmed_source",
+      "scope": [
+        "ReadTurboMCPCallCost",
+        "ReadTurboMCPCallLog",
+        "EditTurboMCPCallLog",
+        "EditTurboMCPCallLogClear"
+      ],
+      "title": "Domain refusals are successful reflected values, so the recorder logs bError=false and failed-call counts omit them",
+      "evidence": [
+        "FFunctionLibraryToolset::ExecuteToolInternal returns MakeValue(JsonToString(ResultValue)) for a normal reflected return and MakeError only for unknown tool/toolset, script exception, conversion failure or invalid result (FunctionLibraryToolset.cpp:134-197).",
+        "ObjectFunctionToolCall.cpp:461-500 converts a normal FString return through PropertyToJsonData; :502-521 wraps it in returnValue; required-param and conversion failures are MakeError before invocation (:105-162, :390-413).",
+        "TurboMCPCallRecorder.cpp:126-128 sets bError = Result.HasError(); FScopedCall stores only that boolean (TurboMCPCallLog.cpp:272-305).",
+        "ReadTurboMCPCallCost counts bError at :237-240; ReadTurboMCPCallLog's filter maps bError to 'error'/'ok' at :95."
+      ],
+      "observed_source_behavior": "The four tools return ordinary FString bodies beginning 'error:' for invalid arguments. The reflection layer serializes that as a successful string value, so the recorder records no ERROR, the cost report's failed count does not include it, and a filter=error does not match it. A genuine unknown-tool, pre-invocation parameter-conversion error, or script exception is HasError and does record bError=true.",
+      "controls": {
+        "ordinary_refusal": "EditTurboMCPCallLog enabled=banana returns 'error: ... is not a yes or no' from the body.",
+        "genuine_invocation_error": "An unknown tool name or a malformed required parameter rejected by FunctionLibraryToolset before the body."
+      },
+      "existing_assertions": "Tools/test-call-log.py:386-397 checks the bad-boolean text but not the log record's bError or the cost failed count; no invocation-error control asserts bError=true.",
+      "runtime_status": "not_run",
+      "repair_note": "No prose parser is proposed. A production repair must use a structured domain outcome (for example an ARC02 result line) or an engine-provided structured error; this checkpoint only adds the probe requirement."
     }
   ],
   "repairs": [
@@ -2912,16 +2941,17 @@
         "Tools/test-call-cost.py"
       ],
       "preserved_behavior": [
-        "empty=default",
+        "explicit empty defaults",
         "positive values accepted",
+        "signed-positive +1 remains accepted unless a separate policy decision changes it",
         "limit max 500",
         "cap max 50",
         "existing error prefixes and named-parameter wording",
         "totals over all selected calls"
       ],
-      "synthetic_probe": "Populated disposable log; call both readers with 1.5, +1, .5, 1e3, 999999999999999999999 and a valid 1; compare the parsed count/row limit and error text.",
-      "expected": "One documented integer policy: accept only a whole decimal integer or refuse the value by parameter name. Never silently truncate a fractional value; do not rely on CRT overflow.",
-      "negative_control": "Valid 1 still returns one bounded row and does not produce an error.",
+      "synthetic_probe": "Populated disposable log; call both readers with 1.5, +1, .5, 1e3, a large decimal and valid 1; compare the parsed count/row limit and error text. Use +1 as a compatibility control, not a presumed-invalid input.",
+      "expected": "Fractional input is not silently truncated and overflow does not depend on CRT behavior. A signed positive integer such as +1 remains accepted unless a separately reviewed integer policy changes it. Negative integers remain refused by the existing <= 0 rule.",
+      "negative_control": "Valid 1 and, if the policy preserves it, +1 still return one bounded row without an error.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log,test-call-cost --execute",
       "rollback": "Revert the two source files and two test files; no public schema change."
     },
@@ -2957,10 +2987,11 @@
         "newest-first selection",
         "Total pre-cut denominator",
         "since excludes <= timestamp",
+        "limit hard maximum 500",
         "200-character display"
       ],
       "synthetic_probe": "Write more than Limit distinct-timestamp records; request limit=1; capture the continuation sentence; use the echoed value as since; compare the returned set with the omitted older records.",
-      "expected": "The continuation names a retrieval that can actually return the omitted records, or says to raise the limit/cap; it must not claim since=newest pages older rows. A cursor/offset alternative must be explicit.",
+      "expected": "The continuation says truthfully that the shown rows are the newest N of M and that older rows are not returned by this answer; it does not promise since=newest can fetch them and does not advise raising limit or cap above 500/50. No pagination or schema change is part of this repair.",
       "negative_control": "A since value older than the omitted rows still returns those rows, proving the filter itself is unchanged.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log --execute",
       "rollback": "Revert the log tool and test file only."
@@ -2975,17 +3006,18 @@
         "Tools/test-call-log.py"
       ],
       "preserved_behavior": [
-        "settings persistence",
-        "OFF means no new records",
-        "ON calls keep start/end pairs",
+        "settings persistence attempt",
+        "OFF means no new start/end records",
+        "normal ON calls keep start/end pairs",
         "clear semantics",
         "crash evidence for genuinely unfinished calls"
       ],
       "synthetic_probe": "With logging ON, call EditTurboMCPCallLog(enabled=false), then read the log with logging OFF; inspect the last record phases and the timeline; repeat ON->ON, OFF->OFF and OFF->ON.",
-      "expected": "A setting change must not create a start-only record that mimics a crash. Either the toggle is recorded symmetrically or not recorded at all; OFF->ON and ON->OFF are consistent and documented.",
+      "expected": "A setting change must not create a start-only record that mimics a crash. Proposed policy: write an end only when a start was written for that call; a call that started OFF remains unrecorded even if logging is enabled during it. This preserves normal OFF suppression and never authorizes writes after disable except closing a start that was already written. A header/state field may be required; that is an unresolved scope item, not permission to edit the header in this checkpoint.",
       "negative_control": "A normal ON call still has start and end; a normal OFF call leaves no new records; a real unfinished call still renders as running/missing-end.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log --execute",
-      "rollback": "Revert the log implementation/recorder change and test file; no setting or schema migration."
+      "rollback": "Revert the two listed TurboMCPCallLog source files and Tools/test-call-log.py only; do not revert TurboMCPCallRecorder.cpp, which is outside this proposed scope.",
+      "unresolved_scope": "If the policy requires a bStartWritten/state member in FScopedCall, Public/TurboMCPCallLog.h must be explicitly added by the integrator. It is not in this allowlist."
     },
     {
       "id": "R04-REPAIR-05",
@@ -2997,23 +3029,51 @@
       ],
       "preserved_behavior": [
         "GraphRepoint structured result",
+        "strict failure for a genuinely migrated tool with missing/invalid metadata",
         "native tool with no result line",
-        "missing metadata for a truly migrated tool still raises",
         "compatibility Session.call"
       ],
       "synthetic_probe": "Call each of the four tools through a synthetic BlockSession with a plain body and no result line, using call_structured with default requires_result and with explicit False; compare with GraphRepoint and a native tool.",
-      "expected": "The client's migration decision is explicit per tool (or the tools gain a valid result line); no TurboMCP tool silently becomes native. An unresolved policy decision is recorded rather than guessed.",
+      "expected": "Client-only alternative: the migration requirement is explicit per tool (or callers pass requires_result=False explicitly for compatibility-only call-log tools), so no TurboMCP tool is silently certified as native and no missing metadata is treated as a successful domain outcome. ARC02 remains the target. Adding result lines to the four tools is a separate migration alternative that awaits integrator specification and is not authorized by this repair.",
       "negative_control": "A GraphRepoint body with missing/invalid result metadata still raises; a native tool with no line still returns text without being certified.",
       "validation": "python Tools/test-result-contract.py; python Tools/test-client-retry.py",
-      "rollback": "Revert Tools/tmcp.py and Tools/test-result-contract.py only; no plugin change."
+      "rollback": "Revert Tools/tmcp.py and Tools/test-result-contract.py only; no plugin change.",
+      "migration_alternative": {
+        "status": "awaiting_integrator_specification",
+        "scope": "Add ARC02 result lines to the four call-log tools and derive bError from the structured outcome.",
+        "allowed_files": "not approved in this checkpoint"
+      }
+    },
+    {
+      "id": "R04-REPAIR-06",
+      "finding": "R04-CALL-06",
+      "owner": "R04",
+      "status": "probe_only_deferred",
+      "allowed_files": [
+        "Tools/test-call-log.py",
+        "Tools/test-call-cost.py"
+      ],
+      "preserved_behavior": [
+        "no arbitrary prose parsing",
+        "transport/invocation errors still record bError=true",
+        "ordinary refusals keep their existing text"
+      ],
+      "synthetic_probe": "With logging ON, make one known ordinary refusal (EditTurboMCPCallLog enabled=banana) and one genuine invocation error (unknown tool or a malformed required parameter rejected before the body); inspect the end records' bError/ERROR and the cost failed count/filter=error.",
+      "expected": "The probe records the current truth: ordinary refusal has bError=false and is absent from failed counts; genuine invocation error has bError=true. A production fix is deferred until a structured outcome exists; do not parse 'error:' prose.",
+      "negative_control": "Genuine invocation error must still produce bError=true, so the probe cannot pass by marking everything false.",
+      "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log,test-call-cost --execute",
+      "rollback": "Test-only; no production rollback."
     }
   ],
   "probe_gaps": [
-    "Empty/populated logs with fractional, signed, overflow and malformed numeric limits/caps.",
+    "Empty/populated logs with fractional, signed-positive policy, overflow and malformed numeric limits/caps.",
     "Empty log (logging OFF, entries cleared) with an invalid cap (ReadTurboMCPCallCost order).",
-    "Limit/cap at 50/500 boundaries, and 4000-character stored-result / 200-character display boundaries.",
+    "Limit/cap at 50/500 boundaries, and first-4000-plus-suffix / 200-character display boundaries.",
     "Truncated ReadTurboMCPCallLog continuation and since paging.",
-    "ON->OFF start-only record and clear-with-log-on end-only record.",
+    "ON->OFF start-only, OFF->ON end-only, and clear-with-log-on end-only record shapes.",
+    "Self-recording/self-filtering when logging is ON vs OFF and when the recorder is installed.",
+    "Omitted vs explicit-empty fields through a live schema/call.",
+    "Ordinary domain refusal vs genuine invocation error: bError, ERROR row, failed count and filter=error.",
     "call_structured for the four plain-FString tools.",
     "No runtime calls, engine suites or direct MCP calls were permitted in this checkpoint."
   ],
@@ -3036,15 +3096,24 @@
     "offline_profile": {
       "command": "python Tools/execute-tests.py --profile offline --execute",
       "exit": 0,
-      "report": ".local/executions/e08918e140e4430aa2d550140999f441/report.json",
-      "commit": "1180c6d43655195dc2772b6d1f0b80588e4b466a",
-      "tree_digest": "fa4e42656721dc2a9cdc6f4db8642749b916ba7e5212d5b72ed93871913d24c0",
-      "summary": "PASSED; all offline suites passed, including test-task-claims, test-plugin-identity, test-task-review and test-worker-scope."
+      "report": ".local/executions/80e0be2ee0be46869c49d72d72483d5d/report.json",
+      "request_commit": "5067616c7a2995876d4bd59308f68a8cada8694e",
+      "tree_digest": "70db220b04b4d42f02162e00c0e43a4d3312aba0ea229f19836d6c6e50748f3c",
+      "summary": "PASSED; all offline suites passed."
     }
   },
   "unresolved": [
     "Whether these four tools are intentionally compatibility-only or should be migrated to ARC02 result lines is not decided.",
     "Runtime behavior of all four tools is unverified; existing engine suites were not run.",
     "No installed-engine or 5.9 evidence belongs to this checkpoint."
-  ]
+  ],
+  "schema_validation": {
+    "status": "source_traced_not_runtime",
+    "finding": "The four C++ signatures have no defaults. FJsonSchemaGenerator marks non-optional function parameters without defaults as required; ObjectFunctionToolCall checks required fields and fills schema defaults before invoking. Therefore an omitted field is rejected before the body, while an explicit empty string reaches the body and selects the documented in-code default/refusal. This is a source trace, not a live schema call.",
+    "evidence": [
+      "Engine/Source/Runtime/JsonUtilities/Private/JsonSchema/JsonSchemaGenerator.cpp:288-299",
+      "Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Private/ToolsetRegistry/ObjectFunctionToolCall.cpp:105-162,555-559",
+      "Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Private/ToolsetRegistry/FunctionLibraryToolset.cpp:155-194"
+    ]
+  }
 }
