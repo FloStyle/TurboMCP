@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "tasks": {
+    "R13": {
+      "task_file": "todo/roadmap-r13.md",
+      "files": [
+        "docs/tool-comparison.md",
+        "docs/audit/epic-tool-inventory.json",
+        "docs/audit/native-overlap.md",
+        "docs/audit/native-overlap.json",
+        "docs/audit/tool-routing.json",
+        "todo/roadmap-r13.md"
+      ],
+      "preserve_rows": [
+        {
+          "path": "docs/audit/tool-routing.json",
+          "key": "tool"
+        }
+      ]
+    },
+    "R16": {
+      "task_file": "todo/roadmap-r16.md",
+      "files": [
+        "docs/audit/installed-engine-boundaries.md",
+        "docs/audit/installed-engine-boundaries.json",
+        "todo/roadmap-r16.md"
+      ],
+      "preserve_rows": []
+    }
+  }
+}

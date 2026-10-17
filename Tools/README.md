@@ -26,3 +26,11 @@ inactive; its template is Tools/ci/validate.yml. Local validation is not remote
 branch protection. See [release management](../docs/release-manager.md).
 
 Task review integrity is checked by `python Tools/check-task-review.py` as part of repository validation. It checks complete ID coverage, source references, follow-up owners and catalogued test commands. It does not decide whether a defect is fixed or replace semantic review.
+
+## Worker scope review
+
+`check-worker-scope.py --task R13 --base <full-sha> --candidate <full-sha>`
+checks a committed submission against exact paths from the approved base.
+Run from the trusted integration checkout. See [worker boundaries](../docs/worker-boundaries.md)
+for the review procedure and limits. `test-worker-scope.py` runs offline Git-history
+negative controls; it does not build or launch Unreal.

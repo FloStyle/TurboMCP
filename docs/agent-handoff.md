@@ -35,3 +35,11 @@ Review continues when the owner provides a commit, branch or review packet. This
 ## Task review boundary
 
 All 110 records have a [current source/specification review](audit/task-review.md). Read the assigned task's Current review first. Historical prose is retained in a collapsed section and does not override the current architecture. Confirmed defects have [repair contracts](audit/repair-contracts.md); the integration owner assigns each repair after its prerequisites. R13 is still the next task. R14 is unready until the exact compatibility adapter is specified. No review status certifies all runtime acceptance or authorizes implementing the backlog.
+
+## Required submission gate
+
+The integration owner supplies the approved base SHA and applies
+[the worker boundaries](worker-boundaries.md) before accepting a submission.
+Workers must not change task status or regenerate TODO for R13/R16; submit
+Completion evidence only. This narrower rule overrides the general status-update
+workflow. Read [the debt index](audit/technical-debt.md) to avoid adjacent refactors.

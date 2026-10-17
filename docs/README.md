@@ -53,3 +53,6 @@ Architecture and design describe required behavior. The audit and acceptance evi
 Agent workflow is defined in [AGENTS.md](../AGENTS.md). Historical task evidence does not override current contracts or authorize additional work.
 
 See the [infrastructure review and execution gate](audit/infrastructure-review.md) for bounded local checks and remaining engine-dispatch requirements.
+
+- [Remaining technical debt](audit/technical-debt.md): risks, owners and bounded refactoring.
+- [Worker boundaries](worker-boundaries.md): exact scope and reviewer submission checks.

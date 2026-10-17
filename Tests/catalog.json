@@ -609,6 +609,13 @@
       "tier": "offline",
       "timeout_seconds": 300,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-worker-scope",
+      "path": "Tools/test-worker-scope.py",
+      "tier": "offline",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
     }
   ]
 }

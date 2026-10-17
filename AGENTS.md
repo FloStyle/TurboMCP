@@ -46,3 +46,13 @@ Use English for all working text. Follow [the language policy](docs/language.md)
 - Private development uses the TurboMCP-Development remote. Public artifacts are created only by Tools/export-public.py. Never push a private branch or merge private history into the public repository. Public publication requires the owner's instruction and passing release gates.
 
 - Every tracked file is intended for the future public source tree. Keep private recovery material outside Git. Publication copies the entire tracked tree with fresh history; never create private-only tracked directories.
+
+## Worker submission boundary
+
+Before dispatch, the integration owner records the approved base SHA and exact
+file scope in [worker-scopes.json](roadmap/worker-scopes.json). Follow
+[the submission gate](docs/worker-boundaries.md). Workers may not widen their
+scope or self-approve task completion. For R13/R16 update only allowed reports
+and the task Completion evidence section; the reviewer updates status, review
+records and TODO after acceptance. Record newly discovered debt in the review
+packet; [the debt index](docs/audit/technical-debt.md) identifies existing owners.
