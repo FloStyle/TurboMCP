@@ -1,24 +1,26 @@
 # Development commands
 
-Run commands from the repository root. Tools is deliberately kept as the existing command surface so scripts and suites retain stable names during the structural migration.
+Run commands from the intended checkout. Configure the pinned engine through
+workspace.local.json. Start with the [execution and recovery guide](../docs/audit/infrastructure-review.md).
 
 | Command | Purpose |
 | --- | --- |
-| `python Tools/validate-repo.py` | Layout, task integrity, public-policy and documentation checks |
-| `python Tools/doctor.py` | Explicit engine path, pinned revision and project discovery |
-| `python Tools/check-plugin.py` | Existing engine/include/reflection checks |
-| `pwsh -File Tools/build.ps1 -Engine <root>` | Build the test editor and verify the plugin artifact |
-| `pwsh -File Tools/start-editor.ps1` | Start the owned test editor |
-| `pwsh -File Tools/run-suites.ps1 -Suites <name>` | Run selected integration suites |
-| `python Tools/update-todo.py` | Regenerate TODO.md from repository task files |
-| `python Tools/export-public.py --preview --output .local/public-preview` | Produce a reviewable complete public source tree |
+| `python Tools/next-task.py --claim <owner>` | Atomically claim the next ready task from a clean worktree |
+| `python Tools/execute-tests.py --profile fast --execute` | Structure and English encoding checks |
+| `python Tools/execute-tests.py --profile offline --execute` | Complete editor-free regression tier |
+| `python Tools/execute-tests.py --profile build --execute` | Owned incremental build and artifact verification |
+| `python Tools/execute-tests.py --profile engine --suites <name> --execute` | Build and run explicit catalogued engine suites |
+| `python Tools/execute-tests.py --profile fixture --suites <name> --execute` | Regenerate the acceptance fixture and retain first/second trials |
+| `python Tools/recover-tests.py <run-id> --execute` | Recover one interrupted run after ownership checks |
+| `python Tools/doctor.py` | Verify engine revision and project discovery |
+| `python Tools/update-todo.py` | Regenerate the task index |
+| `python Tools/export-public.py --preview --output .local/public-preview` | Prepare a complete source export for review |
 
-Pure tests such as test-client-retry.py, test-result-contract.py, test-coverage-audit.py and test-runner-verdicts.py do not require the editor. Other tests may create or mutate fixture assets; follow the ownership helpers and serialize editor access. Do not infer a passing plugin from a passing static check.
+Omit `--execute` to inspect a test request. Set `--max-seconds` for an explicit
+total deadline. Logs, snapshots and feedback remain under ignored .local paths.
+PowerShell build/editor/fixture helpers require the supervisor's live context;
+they are not independent agent entry points.
 
-`python Tools/test-repo-boundaries.py` verifies public export refusal controls. `python Tools/test-build-provenance.py` verifies distinct engine/source identity and staged changes.
-
-CI template: Tools/ci/validate.yml. Activating it under .github/workflows requires a GitHub credential authorized for workflows; the current login lacks that scope.
-
-The standard offline gate is `python Tools/validate.py`; test tiers are in Tests/catalog.json. Release evidence is checked with Tools/release-check.py. See [contributor rules](../docs/contributing.md) and [release manager](../docs/release-manager.md).
-
-See the [infrastructure review and execution gate](../docs/audit/infrastructure-review.md) for bounded local checks and remaining engine-dispatch requirements.
+No automatic publication or paid agent launch is performed. GitHub CI remains
+inactive; its template is Tools/ci/validate.yml. Local validation is not remote
+branch protection. See [release management](../docs/release-manager.md).

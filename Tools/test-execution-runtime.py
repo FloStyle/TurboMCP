@@ -63,7 +63,22 @@ class ExecutionTests(unittest.TestCase):
         finally:
             sentinel.terminate();sentinel.wait(timeout=5)
 
-    def test_default_plan_and_engine_execution_refusal(self):
+    def test_context_requires_live_ancestor_and_matching_engine(self):
+        from execution_runtime import canonical
+        context=self.root/'context.json'
+        context.write_text(json.dumps({'repo':canonical(self.root),'engine':canonical(self.root/'engine'),
+                                      'pid':os.getpid(),'token':'test-token'}))
+        env=dict(self.env,TURBOMCP_EXECUTION_CONTEXT=str(context),TURBOMCP_EXECUTION_TOKEN='test-token')
+        command=[sys.executable,str(TOOLS/'execution_runtime.py'),'--authorize',str(self.root),str(self.root/'engine')]
+        valid=subprocess.run(command,env=env,capture_output=True)
+        self.assertEqual(valid.returncode,0,valid.stderr)
+        bad_engine=subprocess.run(command[:-1]+[str(self.root/'other')],env=env,capture_output=True)
+        self.assertNotEqual(bad_engine.returncode,0)
+        data=json.loads(context.read_text());data['pid']=0;context.write_text(json.dumps(data))
+        stale=subprocess.run(command,env=env,capture_output=True)
+        self.assertNotEqual(stale.returncode,0)
+
+    def test_default_plan_and_request_validation(self):
         command=[sys.executable,str(TOOLS/'execute-tests.py')]
         result=subprocess.run(command,capture_output=True,text=True)
         self.assertEqual(result.returncode,0,result.stderr)

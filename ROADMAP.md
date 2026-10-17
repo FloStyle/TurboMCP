@@ -10,7 +10,7 @@ See [project status](docs/status.md) for current support and release limits. The
 
 > Read AGENTS.md. Run `python Tools/next-task.py`. Work only on the returned task, follow its scope and stop conditions, and record evidence. If it says STOP, explain the blocker; do not skip ahead or invent work.
 
-The selector reads the approved sequence and refuses blocked, unready, already-owned/in-progress or incomplete-prerequisite work. It does not execute commands, grant a lease, assign credentials or publish. A coordinator must claim the task before launching an agent. Concurrent agents require distinct worktrees and explicitly assigned independent tasks; the default queue is intentionally serial.
+The selector reads the approved sequence and refuses blocked, unready, already-owned/in-progress or incomplete-prerequisite work. It does not execute commands, grant a lease, assign credentials or publish. Use `python Tools/next-task.py --claim <owner-name>` in the worker's clean worktree. A shared durable claim prevents duplicate dispatch; the integration owner releases it only after review. Concurrent agents require distinct worktrees and explicitly assigned independent tasks; the default queue is intentionally serial.
 
 ## Investment decisions
 

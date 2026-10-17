@@ -36,14 +36,21 @@ def select(root,track='v1'):
         return row,text
     return None,'No unfinished approved task on track '+track+'. Do not invent another task.'
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--check',action='store_true');parser.add_argument('--track',choices=['v1','compatibility'],default='v1');args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--check',action='store_true');parser.add_argument('--track',choices=['v1','compatibility'],default='v1');parser.add_argument('--claim',metavar='OWNER');args=parser.parse_args()
     load_queue(ROOT,args.track)
     if args.check:print('PASS: roadmap IDs, ordered dependencies, task contracts and completion evidence');return 0
+    from task_claim import current,claim
+    active=current(ROOT)
+    if active:
+        print('STOP: task '+active['task']+' is claimed by '+active['owner']+'; claim '+active['id']);return 2
     row,text=select(ROOT,args.track)
     if not row:print(text);return 2
+    if args.claim:
+        assigned=claim(ROOT,row['id'],args.claim)
+        print('CLAIM: '+assigned['id']+'; owner '+assigned['owner'])
     print('NEXT: '+row['id']+' | '+row['path'])
-    print('Read AGENTS.md and this task. Claim its ownership before work. This command does not grant a lease or execute commands.\n')
+    print('Read AGENTS.md and this task. Claim its ownership before work. A task claim does not grant engine ownership or execute commands.\n')
     print(text);return 0
 if __name__=='__main__':
     try:sys.exit(main())
-    except (ValueError,KeyError,OSError) as exc:sys.exit('FAIL: '+str(exc))
+    except (ValueError,KeyError,OSError,RuntimeError) as exc:sys.exit('FAIL: '+str(exc))

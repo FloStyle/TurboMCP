@@ -28,7 +28,7 @@ R13
 ## Verification
 - `python Tools/doctor.py`
 - Inspect tracked module/descriptor and production include/caller references; record exact files and findings.
-- `pwsh -File Tools/build.ps1 -Engine <baseline-engine-root>` only under the shared build owner; replace the placeholder with the actual configured path in local evidence.
+- `python Tools/execute-tests.py --profile build --execute` using workspace.local.json for the pinned baseline; retain the run report and build provenance.
 - `python Tools/check-plugin.py`
 - Record whether the build rebuilt engine modules, only the plugin, or reused artifacts; include actual build logs. No installed-engine claim from this build.
 

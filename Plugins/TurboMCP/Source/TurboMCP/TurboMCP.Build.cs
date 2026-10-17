@@ -8,6 +8,8 @@ public class TurboMCP : ModuleRules
 	public TurboMCP(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
+		// Keep private helpers isolated; unity grouping otherwise creates name collisions.
+		bUseUnity = false;
 
 		PublicDependencyModuleNames.AddRange(
 			new string[]

@@ -93,7 +93,7 @@ For engine work, copy `workspace.example.json` to ignored `workspace.local.json`
 
 ```powershell
 python Tools/doctor.py
-pwsh -File Tools/build.ps1 -Engine <engine-root>
+python Tools/execute-tests.py --profile build --execute
 ```
 
 Replace `<engine-root>` with your actual engine path. Follow [workspace setup](docs/workspace.md) for harness access and build ownership, and the [test guide](Tests/README.md) for engine checks. Offline checks alone do not establish runtime correctness.

@@ -65,6 +65,9 @@ $ErrorActionPreference = 'Stop'
 $repo = Get-TurboMCPRepoRoot
 $project = Get-TurboMCPProject -RepoRoot $repo
 $Engine = Resolve-TurboMCPEngine -Project $project -Engine $Engine
+& python (Join-Path $PSScriptRoot 'execution_runtime.py') --authorize $repo $Engine
+if ($LASTEXITCODE -ne 0) { throw 'Owned execution context required' }
+
 if (-not $ExpectArtifact) { $ExpectArtifact = Join-Path $repo 'TestProject\Binaries\Win64\UnrealEditor-TurboMCP.dll' }
 if (-not $ProvenancePath) { $ProvenancePath = Join-Path $repo '.agent\build-provenance.json' }
 

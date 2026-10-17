@@ -189,6 +189,9 @@ $OwnerId = if ($env:TURBOMCP_OWNER_ID) { $env:TURBOMCP_OWNER_ID } else { "start-
 $ProjectDir = Split-Path $Project -Parent
 $RepoDir = Split-Path $ProjectDir -Parent
 $RepoRoot = $RepoDir
+& python (Join-Path $PSScriptRoot 'execution_runtime.py') --authorize $RepoRoot $Engine
+if ($LASTEXITCODE -ne 0) { throw 'Owned execution context required' }
+
 $LeasePath = Get-TurboMCPLeasePath -RepoRoot $RepoRoot
 
 function Get-TurboMCPRunningEditors {

@@ -23,7 +23,7 @@ R08
 - Budgeted output is bounded with explicit truncation/completeness.
 
 ## Verification
-- `pwsh -File Tools/run-suites.ps1 -Suites test-refs,test-trace,test-play-check,test-asset-cost`
+- `python Tools/execute-tests.py --profile engine --suites test-refs,test-trace,test-play-check,test-asset-cost --execute`
 
 ## Stop conditions
 Do not expand into another domain. If a prerequisite is absent, record blocked with the exact missing input. After two identical unexplained failures, stop repeating the command and diagnose. Do not run a full engine rebuild without evidence that an incremental build cannot answer the question. Do not change public schemas, weaken safety contracts or start deferred features.

@@ -12,6 +12,8 @@ import time
 import uuid
 from execution_runtime import ResourceLocks, canonical, run_owned
 from tmcp_paths import find_engine
+from execution_recovery import atomic_json, snapshot, restore, pending, collect_failure
+from engine_execution import preflight, finish_lease
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -31,13 +33,13 @@ def identity(root):
 def validate_request(request, root=ROOT):
     required={'schema','commit','tree_digest','profile','suites','max_seconds'}
     if set(request)!=required or request['schema']!=1:raise ValueError('Unknown or missing request fields')
-    if request['profile'] not in ('fast','offline','engine'):raise ValueError('Unknown profile')
+    if request['profile'] not in ('fast','offline','engine','fixture','build'):raise ValueError('Unknown profile')
     if type(request['max_seconds']) is not int or not 1<=request['max_seconds']<=7200:raise ValueError('Run deadline must be 1..7200 seconds')
     if not isinstance(request['suites'],list) or any(not isinstance(x,str) for x in request['suites']):raise ValueError('Suites must be a list of names')
     if len(request['suites'])!=len(set(request['suites'])):raise ValueError('Duplicate suite')
     catalog=json.loads((root/'Tests/catalog.json').read_text(encoding='utf8'))['suites']
     eligible={Path(x['path']).stem for x in catalog if x['tier']=='engine'}
-    if request['profile']=='engine':
+    if request['profile'] in ('engine','fixture'):
         if not request['suites'] or not set(request['suites'])<=eligible:raise ValueError('Select explicit catalogued engine suites; all and arbitrary commands are refused')
     elif request['suites']:raise ValueError('Only engine requests accept suite selection')
     commit=subprocess.check_output(['git','-C',str(root),'rev-parse','HEAD'],text=True).strip()
@@ -49,14 +51,20 @@ def commands(request, engine):
     if request['profile']=='offline':return [[sys.executable,'Tools/validate.py']]
     pwsh=shutil.which('pwsh')
     if not pwsh:raise ValueError('PowerShell 7 is required')
-    return [[sys.executable,'Tools/doctor.py'],
-            [pwsh,'-NoProfile','-File','Tools/build.ps1','-Engine',engine],
-            [pwsh,'-NoProfile','-File','Tools/run-suites.ps1','-Suites',','.join(request['suites'])]]
+    steps=[[sys.executable,'Tools/doctor.py'],
+           [pwsh,'-NoProfile','-File','Tools/build.ps1','-Engine',engine]]
+    if request['profile']=='build':return steps
+    suite=[pwsh,'-NoProfile','-File','Tools/run-suites.ps1','-Suites',','.join(request['suites'])]
+    if request['profile']=='fixture':
+        steps.append([pwsh,'-NoProfile','-File','Tools/make-acceptance-asset.ps1'])
+        steps.extend([suite,suite.copy()])
+    else:steps.append(suite)
+    return steps
 
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--profile',choices=['fast','offline','engine'],default='fast')
+    parser.add_argument('--profile',choices=['fast','offline','engine','fixture','build'],default='fast')
     parser.add_argument('--suites',default='')
     parser.add_argument('--max-seconds',type=int,default=1800)
     parser.add_argument('--request',type=Path)
@@ -71,9 +79,7 @@ def main():
     if not args.execute:
         print(json.dumps(request,indent=2));return 0
     if os.name!='nt':raise ValueError('Owned execution currently requires Windows')
-    if request['profile']=='engine':
-        raise ValueError('Engine execution is not enabled: complete R02 ownership and R03 recovery acceptance first')
-    engine=canonical(find_engine()) if request['profile']=='engine' else ''
+    engine=canonical(find_engine()) if request['profile'] in ('engine','fixture','build') else ''
     run=ROOT/'.local/executions'/uuid.uuid4().hex;run.mkdir(parents=True)
     # Remove inherited automation overrides and common credential variables from children.
     env={k:v for k,v in os.environ.items() if not k.startswith('TURBOMCP_') and not any(w in k.upper() for w in ('TOKEN','SECRET','PASSWORD','API_KEY','AUTHORIZATION'))}
@@ -93,33 +99,50 @@ def main():
         with ResourceLocks(lockroot,resources):
             validate_request(request)
             if engine:
-                # Never adopt a pre-existing test editor or compete with an engine build.
-                query=r"Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(UnrealEditor|UnrealEditor-Cmd|UnrealBuildTool)\.exe$' } | Select-Object ProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress"
-                result=subprocess.run(['pwsh','-NoProfile','-Command',query],capture_output=True,text=True,timeout=20,check=True)
-                processes=json.loads(result.stdout) if result.stdout.strip() else []
-                if isinstance(processes,dict):processes=[processes]
-                for process in processes:
-                    text=(str(process.get('ExecutablePath') or '')+' '+str(process.get('CommandLine') or '')).lower()
-                    if not process.get('CommandLine') or engine.lower() in text:
-                        raise RuntimeError('A pre-existing editor/build may use this engine. Close it explicitly; no process was stopped')
-            for index,command in enumerate(commands(request,engine)):
-                remaining=request['max_seconds']-(time.monotonic()-start)
-                if remaining<=0:raise TimeoutError('Total run deadline exceeded')
-                print('RUN: '+Path(command[1] if command[0]==sys.executable else command[3]).name,flush=True)
-                log=run/f'{index:02d}.log'
-                result=run_owned(command,str(ROOT),env,str(log),remaining)
-                result.update(command=command,log=log.name)
-                report['results'].append(result)
-                if result['exit_code']!=0:
-                    report['status']='timed_out' if result['timed_out'] else 'failed';break
-            else:report['status']='passed'
+                if pending(ROOT):raise RuntimeError('Pending fixture recovery blocks engine execution: '+', '.join(pending(ROOT)))
+                preflight(engine)
+                if (ROOT/'.agent/turbo-mcp-lease.json').exists():
+                    raise RuntimeError('Existing editor lease preserved; inspect before starting a new run')
+                atomic_json(run/'owner.json',{'engine':engine,'owner':env['TURBOMCP_OWNER_ID'],'pid':os.getpid()})
+                snapshot(ROOT,run)
+            atomic_json(run/'report.json',report)
+            try:
+                for index,command in enumerate(commands(request,engine)):
+                    remaining=request['max_seconds']-(time.monotonic()-start)
+                    if remaining<=0:raise TimeoutError('Total run deadline exceeded')
+                    print('RUN: '+Path(command[1] if command[0]==sys.executable else command[3]).name,flush=True)
+                    log=run/f'{index:02d}.log'
+                    report['active_command']=command
+                    atomic_json(run/'report.json',report)
+                    env['TURBOMCP_RUNNER_LOG_ROOT']=str(run/(f'{index:02d}-suites'))
+                    result=run_owned(command,str(ROOT),env,str(log),remaining)
+                    result.update(command=command,log=log.name)
+                    if result['exit_code']==0 and 'Tools/build.ps1' in command:
+                        shutil.copyfile(ROOT/'.agent/build-provenance.json',run/'build-provenance.json')
+                    report['results'].append(result)
+                    atomic_json(run/'report.json',report)
+                    if result['exit_code']!=0:
+                        report['status']='timed_out' if result['timed_out'] else 'failed';break
+                else:report['status']='passed'
+            except BaseException:
+                report['status']='interrupted'
+                raise
+            finally:
+                if engine and (run/'recovery.json').exists():
+                    if report['status']!='passed':
+                        report['failure_evidence']=collect_failure(ROOT,run,report)
+                    # run_owned has closed the Job Object before returning or raising.
+                    preflight(engine)
+                    report['restored_files']=restore(ROOT,run)
+                    finish_lease(ROOT,env['TURBOMCP_OWNER_ID'])
             if identity(ROOT)!=request['tree_digest']:
                 report['status']='failed';report['reason']='Candidate files changed during validation; inspect before retrying'
+
     except (OSError,ValueError,RuntimeError,TimeoutError,subprocess.SubprocessError) as error:
         report['status']='blocked';report['reason']=str(error)
     finally:
         report['duration_seconds']=round(time.monotonic()-start,3)
-        (run/'report.json').write_text(json.dumps(report,indent=2)+'\n',encoding='utf8')
+        atomic_json(run/'report.json',report)
         context_path.unlink(missing_ok=True)
     print('RESULT: '+report['status'].upper()+'; evidence: '+str(run/'report.json'))
     return 0 if report['status']=='passed' else 1

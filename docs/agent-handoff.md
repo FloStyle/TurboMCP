@@ -2,12 +2,15 @@
 
 [Documentation](README.md) · [Roadmap](../ROADMAP.md)
 
-## Handoff is paused
+## Next assignment: R13
 
-The integration owner is completing the infrastructure before implementation
-agents resume. See the [infrastructure review](audit/infrastructure-review.md).
-Do not dispatch the previous R01 assignment or choose a product task. The bounded
-offline executor is available; unattended engine execution remains disabled.
+Give the agent this instruction:
+
+> Read AGENTS.md. Create or use a clean isolated worktree, then run `python Tools/next-task.py --claim deepseek-01`. Work only on the returned task. Stop on a refusal. For R13, inspect pinned source and update comparison evidence; do not implement features, edit engine source, change the baseline pin or claim untested runtime parity. Run the offline gate and return commits, evidence and unresolved questions. Do not merge, publish, release your claim or start another task. Wait for review.
+
+Use a different owner identifier for each worker. The [execution guide](audit/infrastructure-review.md)
+contains commands, recovery steps and measured limits. This readiness applies to
+the approved queue; imported reports remain blocked until reconciled.
 
 ## Review packet for every agent
 

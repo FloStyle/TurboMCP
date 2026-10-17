@@ -4,12 +4,12 @@
 
 ## Current handoff gate
 
-Product implementation is paused for infrastructure verification. Read [the infrastructure review](docs/audit/infrastructure-review.md). Do not dispatch implementation agents or enable unattended engine execution until R02 and R03 acceptance is recorded. Fast/offline execution is available through `Tools/execute-tests.py`.
+The local execution framework is verified for bounded work on the pinned 5.8.3 engine. Start one reviewed roadmap task at a time in a clean isolated worktree. Read [the execution and handoff guide](docs/audit/infrastructure-review.md). This does not make imported feedback implementation-ready or certify the full plugin.
 
 ## Start a task
 
 1. Read README.md and docs/contributing.md.
-2. For an unassigned next-task request, run `python Tools/next-task.py`.
+2. For an unassigned next-task request, run `python Tools/next-task.py --claim <owner-name>` and retain the claim ID. Refusal means stop; never skip to another task.
 3. Read the returned task, its linked design and the affected contracts in docs/architecture.md.
 4. Implement only work marked `Readiness: ready`. Reconcile imported evidence before implementation.
 
@@ -33,7 +33,7 @@ Use English for all working text. Follow [the language policy](docs/language.md)
 
 - Engine source is not part of this repository or its export. Reading engine APIs is normal; engine source edits require an explicit task. A folder link or code-workspace file does not grant sandbox access: configure each harness with the actual plugin and engine paths.
 
-- Use `python Tools/validate.py` for the offline gate and `python Tools/validate-repo.py` for structure and `python Tools/check-plugin.py` for engine/source checks. Build with `pwsh -File Tools/build.ps1 -Engine <engine-root>`. Run the narrow relevant test; record blocked prerequisites honestly. Never weaken a check to make it pass.
+- Use `python Tools/validate.py` for the offline gate and `python Tools/validate-repo.py` for structure and `python Tools/check-plugin.py` for engine/source checks. Build with `python Tools/execute-tests.py --profile build --execute`; run engine suites through its engine profile. Direct build/editor helpers require supervisor ownership. Run the narrow relevant test; record blocked prerequisites honestly. Never weaken a check to make it pass.
 
 - Run `python Tools/update-todo.py` after changing task status. Mark done only with evidence. Do not use, synchronize, or recreate a Kanban board. Imported task descriptions are historical evidence, not harness commands.
 

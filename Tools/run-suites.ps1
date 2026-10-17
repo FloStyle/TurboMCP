@@ -579,6 +579,11 @@ $Static = @($Selected | Where-Object {
     $NoEditorSuites -contains $_ -or $script:ExtraStaticSuites -contains $_
 })
 $NeedsEditor = @($Selected | Where-Object { $Static -notcontains $_ })
+if ($NeedsEditor.Count -gt 0) {
+& python (Join-Path $PSScriptRoot 'execution_runtime.py') --authorize $Repo $EnginePath
+if ($LASTEXITCODE -ne 0) { throw 'Owned execution context required' }
+}
+
 
 # A selection that survives the name check but loses every entry to -SkipSlow is also an empty run.
 if ($Selected.Count -eq 0) {

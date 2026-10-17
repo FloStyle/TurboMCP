@@ -25,7 +25,7 @@ R18
 ## Verification
 - `python Tools/make-tools-doc.py`
 - `python Tools/test-traps-plugin-identity.py`
-- `pwsh -File Tools/run-suites.ps1 -Suites test-agent-help,test-call-cost`
+- `python Tools/execute-tests.py --profile engine --suites test-agent-help,test-call-cost --execute`
 
 ## Stop conditions
 Do not expand into another domain. If a prerequisite is absent, record blocked with the exact missing input. After two identical unexplained failures, stop repeating the command and diagnose. Do not run a full engine rebuild without evidence that an incremental build cannot answer the question. Do not change public schemas, weaken safety contracts or start deferred features.

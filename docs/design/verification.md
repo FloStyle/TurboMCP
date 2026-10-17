@@ -8,7 +8,7 @@ A validation record identifies source commit, engine revision/distribution, conf
 
 ## Execution
 
-Tools/validate.py runs bounded offline checks serially and writes ignored evidence. Engine tests run only after building the selected checkout. A build executor owns the engine/editor/port and fixtures. Current leases are per checkout; cross-worktree atomic scheduling remains an explicit task. Until it is implemented, the integration owner must serialize engine work. Never kill an unowned editor.
+Tools/validate.py runs bounded offline checks serially and writes ignored evidence. Engine tests run only after building the selected checkout. A build executor owns the engine/editor/port and fixtures. The supervisor uses shared kernel locks and bounded Job Objects; per-checkout leases are bookkeeping. See the measured execution and recovery boundaries in [the infrastructure review](../audit/infrastructure-review.md). Never kill an unowned editor.
 
 Snapshot owned fixtures before mutation and restore exact bytes plus relevant loaded state afterward. Separate fixture generation from acceptance, and test the first run after generation; repeated passes must not conceal first-run failures. Any fixture intended to change in Git needs explicit review. A blocked, skipped or timed-out required case cannot pass.
 

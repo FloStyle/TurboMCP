@@ -24,7 +24,7 @@ R04
 
 ## Verification
 - `python Tools/test-result-contract.py`
-- `pwsh -File Tools/run-suites.ps1 -Suites test-batch-edit,test-compile-ensure`
+- `python Tools/execute-tests.py --profile engine --suites test-batch-edit,test-compile-ensure --execute`
 - `Review Tests/acceptance.json mutation and batch cases`
 
 ## Stop conditions

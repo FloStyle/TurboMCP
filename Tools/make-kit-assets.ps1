@@ -54,6 +54,13 @@ if (-not $Project)   { $Project   = Get-TurboMCPProject }
 $repo = Get-TurboMCPRepoRoot
 if (-not $EditorExe) { $EditorExe = Join-Path (Resolve-TurboMCPEngine -Project $Project) 'Engine\Binaries\Win64\UnrealEditor-Cmd.exe' }
 
+
+$executionRepo = Split-Path -Parent $PSScriptRoot
+if ([System.IO.Path]::GetFullPath($Project) -ne [System.IO.Path]::GetFullPath((Join-Path $executionRepo 'TestProject/TurboMCPTest.uproject'))) { throw 'Only the repository test project may be changed by this fixture command' }
+$executionEngine = [System.IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $EditorExe) '..\..\..'))
+& python (Join-Path $PSScriptRoot 'execution_runtime.py') --authorize $executionRepo $executionEngine
+if ($LASTEXITCODE -ne 0) { throw 'Owned execution context required' }
+
 if (-not (Test-Path $EditorExe)) { throw "the editor is not at $EditorExe" }
 if (-not (Test-Path $Project))   { throw "the project is not at $Project" }
 

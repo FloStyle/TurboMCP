@@ -1,7 +1,7 @@
 # R02: Make shared engine ownership atomic
 
 ID: R02
-Status: in_progress
+Status: done
 Priority: P1
 Readiness: ready
 Owner: integration-owner
@@ -20,11 +20,9 @@ R01
 
 ## Source review
 
-The existing lease is per checkout and uses check-then-write. The new executor
-has tested kernel locks and bounded child containment, but legacy entry points
-do not yet require its context. Engine execution therefore remains disabled.
-Global editor/trace/Live Coding stops have been removed from recovery paths.
-Do not treat those repairs as completion of cross-worktree ownership.
+Shared kernel locks now supervise build, editor, runner and fixture entry points.
+Per-checkout leases remain bookkeeping, not the concurrency guarantee. Direct
+entry points require the live execution context. Unknown owners are preserved.
 
 ## Acceptance
 - Every engine entry point validates a live supervisor, canonical checkout and engine identity before mutation. An environment variable alone is insufficient.
@@ -50,7 +48,26 @@ Do not expand into another domain. If a prerequisite is absent, record blocked w
 The bounded change plus regression evidence, updated affected specifications and a concise handoff.
 
 ## Completion evidence
-Pending. Record source/engine/artifact identity, command, exit, log and remaining limitations. A reviewer must check acceptance before marking done.
+
+Reviewed against the pinned 5.8.3 engine and the candidate described in
+[the infrastructure evidence](../docs/audit/infrastructure-review.md).
+Focused ownership, crash/recovery and task-claim regressions pass. Real build,
+tool-help and two graph suites pass. First/second trials after fixture generation
+pass with separate logs. A forced real-engine timeout and supervisor death both
+preserved evidence and restored 16 content files. The failed initial unity build
+is retained; this module now compiles without unity grouping. No full engine
+rebuild or product feature change was required.
+
+This closes the bounded ownership/reproducibility foundation, not all historical
+fixture claims, every plugin tool or release acceptance. Imported defects still
+need current source and runtime reconciliation before implementation.
 
 ## Related findings
 - [foundation-shared-lease](foundation-shared-lease.md)
+
+## Operating limit
+
+The current launcher uses port 8000, so engine sessions intentionally serialize
+even for different engines. Distinct resource keys are independent at the lock
+primitive; multiple live editor ports are not claimed by this handoff. Local
+task claims support cooperating worktrees under one Windows account.

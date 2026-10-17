@@ -29,7 +29,7 @@ R09
 - `python Tools/audit-inventory.py --check`
 - `python Tools/test-traps-plugin-identity.py`
 - `python Tools/make-tools-doc.py`
-- `pwsh -File Tools/run-suites.ps1 -Suites test-agent-help,test-call-cost`
+- `python Tools/execute-tests.py --profile engine --suites test-agent-help,test-call-cost --execute`
 - Add a focused regression for missing/stale routing evidence and discovery wording; register it in Tests/catalog.json. Record the real new command after creating it.
 - Use the owned baseline editor for live discovery and prompt trials. Never use a proprietary project fixture.
 - `python Tools/validate.py`

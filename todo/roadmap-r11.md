@@ -24,7 +24,7 @@ R10
 
 ## Verification
 - `python Tools/validate.py`
-- `pwsh -File Tools/build.ps1 -Engine <configured-engine>`
+- `python Tools/execute-tests.py --profile build --execute`
 - `python Tools/release-check.py --evidence <candidate-evidence>`
 
 ## Stop conditions

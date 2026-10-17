@@ -23,7 +23,7 @@ R07
 - Widget preview/code-execution side effects are documented and tested.
 
 ## Verification
-- `pwsh -File Tools/run-suites.ps1 -Suites test-material,test-datatable-rows,test-enum-add,test-struct,test-widget-tree,test-widget-retarget`
+- `python Tools/execute-tests.py --profile engine --suites test-material,test-datatable-rows,test-enum-add,test-struct,test-widget-tree,test-widget-retarget --execute`
 
 ## Stop conditions
 Do not expand into another domain. If a prerequisite is absent, record blocked with the exact missing input. After two identical unexplained failures, stop repeating the command and diagnose. Do not run a full engine rebuild without evidence that an incremental build cannot answer the question. Do not change public schemas, weaken safety contracts or start deferred features.

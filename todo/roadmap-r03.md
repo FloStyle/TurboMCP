@@ -1,10 +1,10 @@
 # R03: Establish fixture and binary reproducibility evidence
 
 ID: R03
-Status: todo
+Status: done
 Priority: P1
 Readiness: ready
-Owner: unassigned
+Owner: integration-owner
 Design: docs/design/verification.md
 Kind: investigation
 
@@ -28,8 +28,8 @@ R02
 
 ## Verification
 - `python Tools/test-build-provenance.py`
-- `pwsh -File Tools/build.ps1 -Engine <configured-engine>`
-- `pwsh -File Tools/run-suites.ps1 -Suites test-graph-swap-call,test-graph-repoint`
+- `python Tools/execute-tests.py --profile build --execute`
+- `python Tools/execute-tests.py --profile fixture --suites test-graph-swap-call,test-graph-repoint --execute`
 
 ## Stop conditions
 Do not expand into another domain. If a prerequisite is absent, record blocked with the exact missing input. After two identical unexplained failures, stop repeating the command and diagnose. Do not run a full engine rebuild without evidence that an incremental build cannot answer the question. Do not change public schemas, weaken safety contracts or start deferred features.
@@ -38,7 +38,19 @@ Do not expand into another domain. If a prerequisite is absent, record blocked w
 A reviewed specification and evidence record for each confirmed repair, with duplicates linked and unsupported historical claims withdrawn explicitly. This investigation does not authorize implementing every finding.
 
 ## Completion evidence
-Pending. Record source/engine/artifact identity, command, exit, log and remaining limitations. A reviewer must check acceptance before marking done.
+
+Reviewed against the pinned 5.8.3 engine and the candidate described in
+[the infrastructure evidence](../docs/audit/infrastructure-review.md).
+Focused ownership, crash/recovery and task-claim regressions pass. Real build,
+tool-help and two graph suites pass. First/second trials after fixture generation
+pass with separate logs. A forced real-engine timeout and supervisor death both
+preserved evidence and restored 16 content files. The failed initial unity build
+is retained; this module now compiles without unity grouping. No full engine
+rebuild or product feature change was required.
+
+This closes the bounded ownership/reproducibility foundation, not all historical
+fixture claims, every plugin tool or release acceptance. Imported defects still
+need current source and runtime reconciliation before implementation.
 
 ## Related findings
 - [9935c0ea-9d4a-4287-9786-6a805c38d76d](9935c0ea.md)

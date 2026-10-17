@@ -22,8 +22,10 @@ Review scope: the 16 normative ARC contracts and repository execution/publicatio
 | ARC14 local trust/logging | Keep trusted loopback deployment and bounded logs | Do not invent remote auth/server work for this release; verify actual bind and log limits |
 | ARC15 repository workflow | One complete tracked tree, one ordered task queue, fresh public history | Avoid private/public documentation drift and hidden contributor prerequisites |
 | ARC16 D-008/D-009 | Keep writer refusal/explicit reader all-graphs and unchanged diagnostic safety | Empty graph cannot mean arbitrary first graph; failing acceptance does not authorize narrowing safety |
-| Shared engine ownership | Replace per-checkout check-then-write as the concurrency guarantee | Needs actual atomic cross-worktree/port tests; until then use one integration owner |
+| Shared engine ownership | Replace per-checkout check-then-write as the concurrency guarantee | Verified local shared locks and recovery; engine runs remain serial under one Windows account |
 | Feature investment | Native comparison before expansion | Keep value in safety, bounded workflows and truthful output; do not duplicate Epic's new primitives without a demonstrated gap |
 | Release automation | Automate preparation and verification; explicitly authorize publication | No development push should publish incomplete work or private history |
 
 Every new technical choice beyond these boundaries belongs in its bounded task: alternative considered, observable benefit, engine assumption, failure behavior, test and maintenance cost. Do not create architecture prose solely to justify a speculative feature.
+
+The TurboMCP module sets `bUseUnity = false`: measured unity builds combined private helpers with duplicate names and failed. Non-unity compilation passed on the pinned engine and keeps results independent of adaptive-unity file selection. This increases the module's cold compile work; it does not disable unity for the engine.

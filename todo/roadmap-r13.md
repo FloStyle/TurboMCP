@@ -9,7 +9,7 @@ Design: docs/design/protocol.md
 Kind: investigation
 
 ## Problem
-Re-fetch the development head once at task start. If it differs, record a new pinned snapshot and compare only relevant APIs. Compare native enum/struct/source-control/widget-animation and stdio proxy against concrete TurboMCP workflows, including safety and output costs. Names alone do not prove parity.
+Inspect the upstream development head once at task start. Record its revision separately from the approved comparison pin. Do not edit engine.lock.json or upgrade the local engine. Compare only relevant APIs and label evidence from each revision explicitly. Compare native enum/struct/source-control/widget-animation and stdio proxy against concrete TurboMCP workflows, including safety and output costs. Names alone do not prove parity.
 
 ## Scope
 Pinned Epic ToolsetRegistry/ModelContextProtocol/Toolsets interfaces and the deferred backlog. Keep the 5.8.3 baseline unchanged.
@@ -50,3 +50,15 @@ Use docs/tool-comparison.md, docs/audit/epic-tool-inventory.json and docs/audit/
 For each TurboMCP workflow identify exact native equivalents or explicitly unresolved parity on both versions. Record scope, inputs, output completeness, effects, failure/rollback/save semantics and candidate benefits. Use unverified preference until R04 supplies accepted runtime comparison evidence. Never infer a missing Epic feature from a missing header. Store identifiers and source references, not licensed engine implementation bodies.
 
 Source comparison may complete without a 5.9 runtime. Pin the inspected revision, retain unverified runtime columns and keep the 5.8.3 baseline unchanged. Do not silently refresh the compatibility target while preparing an unrelated fix.
+
+## Worker boundaries
+
+Update the comparison Markdown/JSON and this task's evidence only. Preserve all
+101 TurboMCP rows. Do not modify plugin code, engine source, engine.lock.json,
+release workflows or task priorities. Propose a bounded follow-up if parser or
+implementation work is necessary. Missing 5.9 runtime evidence must stay
+unverified; it is not a reason to invent parity or build the whole engine.
+
+Use the offline test profile. Return source identifiers, exact declaration
+references, comparison decisions and unresolved questions. Stop for review;
+do not automatically claim R16.

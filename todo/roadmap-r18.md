@@ -27,7 +27,7 @@ R17
 
 ## Verification
 - Inspect the current panel and existing Tools/test-panel.py and panel probe entry points.
-- `pwsh -File Tools/run-suites.ps1 -Suites test-panel` against the pinned editor under exclusive ownership; record failures as baseline evidence.
+- `python Tools/execute-tests.py --profile engine --suites test-panel --execute` against the pinned editor under exclusive ownership; record failures as baseline evidence.
 - Walk through the design states with the owner; record approved and unresolved decisions.
 - `python Tools/validate-repo.py`
 

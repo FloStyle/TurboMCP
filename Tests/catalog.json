@@ -581,6 +581,27 @@
       "tier": "offline",
       "timeout_seconds": 90,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-execution-recovery",
+      "path": "Tools/test-execution-recovery.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-task-claims",
+      "path": "Tools/test-task-claims.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-plugin-identity",
+      "path": "Tools/test-plugin-identity.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
     }
   ]
 }

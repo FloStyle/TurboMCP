@@ -188,6 +188,14 @@ def owner_check(expected_project, args_url="", expected_pid=None):
 
 
 def main():
+    if os.environ.get('TURBOMCP_EXECUTION_CONTEXT'):
+        from plugin_identity import verify_loaded
+        try:
+            verify_loaded(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        except (OSError,ValueError,KeyError,subprocess.SubprocessError) as error:
+            print('FAIL: loaded plugin identity: '+str(error))
+            return 2
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--url", default="http://localhost:8000/mcp", help="MCP endpoint"
