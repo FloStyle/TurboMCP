@@ -100,7 +100,7 @@
         "description": "Compatibility text path; no ARC02 result line. The client does not classify this specific mutation separately; the tool name starts with Edit, so is_mutation() treats it as a mutation for retry policy."
       },
       "effects": [
-        "Writes the persisted editor setting bEnableCallLog via FTurboMCPCallLog::SetEnabled -> SaveConfig. SaveConfig is a persistence attempt only; successful disk writing and persistence across restart are not verified.",
+        "Writes the editor setting bEnableCallLog via FTurboMCPCallLog::SetEnabled -> SaveConfig. SaveConfig is a persistence attempt only; successful disk writing and persistence across restart are not verified.",
         "Changes whether subsequent records are written; does not clear existing entries or the file.",
         "When switching OFF from ON, its own start record is written while logging is on and its end is suppressed after the setting changes. When switching ON from OFF, its start is not written but its end is written after the setting changes. Normal OFF suppression applies when the call starts OFF."
       ],
