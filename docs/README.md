@@ -6,6 +6,7 @@
 
 - [Installation and connection](user/installation.md): prerequisites, project setup and first use.
 - [Tool reference](user/tools.md): tools declared by the plugin, grouped by toolset.
+- [Troubleshooting](user/troubleshooting.md): connection, plugin loading and unexpected results.
 - [Project status](status.md): release and compatibility limits.
 
 ## Contribute

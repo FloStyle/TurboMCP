@@ -28,3 +28,5 @@ Keep the listener local. Logging can include project paths, arguments and result
 Have the client discover the available toolsets and schemas, then consult the [tool reference](tools.md). Test edits in a version-controlled project and do not send overlapping mutation calls. Inspect the returned outcome metadata: an HTTP success response alone does not confirm that an edit succeeded.
 
 Adding reflected tool declarations during development requires a rebuild and editor restart.
+
+For connection, build or result problems, see [Troubleshooting](troubleshooting.md).
