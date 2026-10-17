@@ -116,6 +116,8 @@ Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contract
 
 Unresolved: status/help/schema runtime behavior; the single-tool cap versus summary row cap; fixture/test-seam scope for required/default, long-help and missing-schema probes; disabled/ambiguous name behavior; declared/enabled/discoverable status contract and enablement API; all three tools' lack of ARC02 result lines and `call_structured` implications; `R04-CALL-06` refusal recording; the 94 unreviewed rows. R04 remains incomplete; no merge, push, completion or claim release.
 
+Checkpoint 2 integration review accepted candidate `f10dc74ca4569ca449c0e598fe76abe042a0e7b7` as source-only evidence for status, help and schema. Scope and checkpoint-1 preservation passed; candidate offline run `8018fadb647741b6a07bd7cd7c80668c` passed. R04 remains todo, seven tools source-reviewed and 94 not reviewed. Repair proposals and next-family dispatch remain unapproved.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)

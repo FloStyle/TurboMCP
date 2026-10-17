@@ -117,3 +117,18 @@ lifecycle policy, including any state/header changes and handling after disable.
 Do not use prose parsing to turn domain refusals into structured errors. A transport
 failure does not guarantee a recorded invocation error. Existing source findings
 and passing offline checks do not substitute for owned engine probes.
+
+## R04 discovery checkpoint
+
+The status/help/schema source checkpoint is accepted. R04-DISC-01 through 06
+record missing required/default help, an unenforced single-tool help budget,
+unqualified status side-effect wording, registration versus discovery ambiguity,
+differing name normalization and missing-schema handling. Existing joined-name
+and dotted-toolset behavior must be preserved. Seven of 101 tools are now
+source-reviewed; none is runtime-certified by these checkpoints.
+
+R04 owns the proposed repairs, with R17 discovery work still separate. Required/
+default, long-help and malformed-schema probes need approved synthetic fixture
+scope; status enablement queries, normalization and cap policy require design
+decisions. All proposals remain unapproved; no broad helper refactor or schema
+change follows from this source audit.

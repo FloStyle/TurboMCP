@@ -3668,5 +3668,15 @@
       "checkpoint_1_accepted_candidate": "12d515ac46b58e42e83fffb9b577181fb4e68b55",
       "note": "Checkpoint 2 remains unapproved; seven reviewed rows, 94 not reviewed."
     }
+  },
+  "checkpoint_2_integration_review": {
+    "candidate": "f10dc74ca4569ca449c0e598fe76abe042a0e7b7",
+    "decision": "accepted_source_checkpoint_only",
+    "task_complete": false,
+    "repairs_approved": false,
+    "reviewed_tools": 7,
+    "remaining_tools": 94,
+    "offline_run": "8018fadb647741b6a07bd7cd7c80668c",
+    "limitations": "Runtime remains unobserved. Synthetic fixture scope, status queries, cap policy and name normalization need reviewed specifications before repairs."
   }
 }
