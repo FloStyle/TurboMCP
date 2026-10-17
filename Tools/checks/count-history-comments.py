@@ -45,7 +45,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # THE ROOTS WALKED, STATED SO THE COUNT CANNOT BE READ AS A TOTAL OVER SOMETHING ELSE.
-ROOTS = ["Source"]
+ROOTS = ["Plugins/TurboMCP/Source"]
 SUFFIXES = (".cpp", ".h")
 
 PATTERNS = [

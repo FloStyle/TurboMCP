@@ -270,7 +270,7 @@ function Get-TurboMCPCommandLineProject {
         MEASURED: the live editor's command line is
 
             "C:\\ExampleUnrealengine\\Engine\\Binaries\\Win64\\UnrealEditor.exe"
-              C:\\Users\\Example\\Desktop\\TurboMCP\\TestProject\\TurboMCPTest.uproject -nullrhi -unattended ...
+              <repository>\\TestProject\\TurboMCPTest.uproject -nullrhi -unattended ...
 
         The project is a POSITIONAL argument. A recogniser that only understood `-Project=<path>` therefore
         reported this repository's own editor as foreign, which is a false negative in the dangerous direction:
@@ -556,12 +556,14 @@ function Get-TurboMCPArtifactVerdict {
 
     if (-not (Test-Path $Path)) {
         return [pscustomobject]@{
+            Path = [IO.Path]::GetFullPath($Path)
             Ok = $false; Reason = "the expected artifact does not exist: $Path"; Exists = $false; NoOpCandidate = $false
         }
     }
     $item = Get-Item $Path
     if ($item.Length -lt $MinimumBytes) {
         return [pscustomobject]@{
+            Path = [IO.Path]::GetFullPath($Path)
             Ok = $false
             Reason = ("the expected artifact is {0} bytes, below the required {1}: {2}" -f $item.Length, $MinimumBytes, $Path)
             Exists = $true
@@ -577,6 +579,7 @@ function Get-TurboMCPArtifactVerdict {
         }
     }
     return [pscustomobject]@{
+            Path = [IO.Path]::GetFullPath($Path)
         Ok = $true
         Reason = "artifact present: $Path ($($item.Length) bytes, sha256 $($hash.Substring(0,16))...)"
         Exists = $true
@@ -622,7 +625,7 @@ function New-TurboMCPBuildProvenance {
     }
 
     $head = GitOutput @('rev-parse', 'HEAD')
-    $diff = GitOutput @('diff')
+    $diff = GitOutput @('diff', 'HEAD', '--binary')
     $diffHash = ''
     if ($diff) {
         $sha = [System.Security.Cryptography.SHA256]::Create()
@@ -633,12 +636,10 @@ function New-TurboMCPBuildProvenance {
     }
     $engineHead = ''
     if (Test-Path (Join-Path $Engine '.git')) {
-        $engineHead = (GitOutput @('rev-parse', 'HEAD'))
-        if (-not $engineHead) {
-            try {
-                $engineHead = (& git -C $Engine rev-parse HEAD 2>&1 | Select-Object -First 1)
-            } catch { $engineHead = '' }
-        }
+        try {
+            $engineOutput = & git -C $Engine rev-parse HEAD 2>&1
+            if ($LASTEXITCODE -eq 0) { $engineHead = ($engineOutput -join "`n").Trim() }
+        } catch { $engineHead = '' }
     }
     if (-not $engineHead) {
         $versionFile = Join-Path $Engine 'Engine\Build\Build.version'
@@ -663,7 +664,7 @@ function New-TurboMCPBuildProvenance {
         Platform          = $Platform
         Toolchain         = $Toolchain
         BuildExitCode     = $ExitCode
-        ArtifactPath      = $Artifact.Reason
+        ArtifactPath      = $Artifact.Path
         ArtifactExists    = [bool]$Artifact.Exists
         ArtifactBytes     = $Artifact.Length
         ArtifactSha256    = $Artifact.Sha256

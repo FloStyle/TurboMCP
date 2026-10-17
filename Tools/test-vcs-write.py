@@ -97,10 +97,10 @@ NO_PROVIDER_REFUSAL = "Revision control is not enabled."
 BLOCK_FORMAT = "=== automatic checkout before the write (D-57): %s ==="
 
 # The source of the mechanism, read statically by two checks below.
-MECHANISM_H = os.path.join(REPO, "Source", "TurboMCP", "TurboMCPSourceControlWrite.h")
-MECHANISM_CPP = os.path.join(REPO, "Source", "TurboMCP", "TurboMCPSourceControlWrite.cpp")
-STRUCT_TOOLS = os.path.join(REPO, "Source", "TurboMCP", "TurboMCPStructTools.cpp")
-SAVE_TOOL = os.path.join(REPO, "Source", "TurboMCP", "TurboMCPCompile.cpp")
+MECHANISM_H = os.path.join(REPO, "Plugins", "TurboMCP", "Source", "TurboMCP", "TurboMCPSourceControlWrite.h")
+MECHANISM_CPP = os.path.join(REPO, "Plugins", "TurboMCP", "Source", "TurboMCP", "TurboMCPSourceControlWrite.cpp")
+STRUCT_TOOLS = os.path.join(REPO, "Plugins", "TurboMCP", "Source", "TurboMCP", "TurboMCPStructTools.cpp")
+SAVE_TOOL = os.path.join(REPO, "Plugins", "TurboMCP", "Source", "TurboMCP", "TurboMCPCompile.cpp")
 
 # ---------------------------------------------------------------------------------------------------------
 # THE CROSS-CHECK PROBE: THE ENGINE'S OWN `USourceControlHelpers`, THROUGH THE ENGINE'S OWN COMMANDLET.

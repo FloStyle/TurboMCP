@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "readiness": "not_ready",
+  "engine_version": "5.8.3",
+  "engine_commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
+  "baseline_commit": "eca2771a0084b33126de1efee0575f221b2e3b94",
+  "reason": "Migration preserves unfinished implementation; release acceptance has not been completed.",
+  "last_active_step": "S04",
+  "public_export_approved": false
+}

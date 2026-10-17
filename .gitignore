@@ -1,50 +1,29 @@
-# TurboMCP plugin: ignore build output, keep source.
-#
-# The plugin is source-only. A project that wants it compiles it, so compiler
-# output and IDE files are never committed.
-
-# Unreal build output
-Binaries/
-Intermediate/
-Build/
-DerivedDataCache/
-
-# Visual Studio
-.vs/
-*.sln
-*.suo
-*.opensdf
-*.sdf
-*.VC.db
-*.VC.opendb
-
-# JetBrains
-.idea/
-
-# The agent's working notes and engine reference copies are local scratch,
-# not part of the plugin.
+# Local configuration, credentials, and artifacts
+.local/
 .agent/
-
-# OS noise
-Thumbs.db
-desktop.ini
-
-# Python bytecode from the Tools scripts
+artifacts/
+dist/
+workspace.local.json
+*.local.code-workspace
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+GitCredentialHelper*
+.commit-msg*
+# Unreal and IDE generated files (fixtures and source remain tracked)
+**/Binaries/
+**/Intermediate/
+**/Saved/
+**/DerivedDataCache/
+.vs/
+.idea/
+*.sln
+*.slnx
+*.suo
+*.VC.db
 __pycache__/
 *.pyc
-
-# Commit-message files are a workflow artefact, not part of the plugin.
-.commit-msg*.txt
-
-# A compiled binary that reads the Windows Credential Manager must never be committed.
-# The source it is built from is local too; see the note in Tools/README.md.
-GitCredentialHelper*
-*.exe
-
-# Temporary commit-message files. They were written by the agent that made these commits and one
-# of them reached a commit because its name did not match the existing pattern.
-.cmsg*.txt
-*.cmsg.txt
-
-# Local feedback notes: not part of the plugin, never pushed.
-Feedbacks/
+Thumbs.db
+desktop.ini

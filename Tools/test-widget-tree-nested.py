@@ -9,8 +9,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOLS = ROOT / "Tools"
-COMPACT = (ROOT / "Source/TurboMCP/TurboMCPWidgetTree.cpp").read_text(encoding="utf-8")
-DIALECT = (ROOT / "Source/TurboMCP/TurboMCPWidgetTreeSync.cpp").read_text(encoding="utf-8")
+COMPACT = (ROOT / "Plugins" / "TurboMCP" / "Source/TurboMCP/TurboMCPWidgetTree.cpp").read_text(encoding="utf-8")
+DIALECT = (ROOT / "Plugins" / "TurboMCP" / "Source/TurboMCP/TurboMCPWidgetTreeSync.cpp").read_text(encoding="utf-8")
 FIXTURE = (TOOLS / "nested-child-widget-tree.fixture").read_text(encoding="utf-8")
 failures = []
 

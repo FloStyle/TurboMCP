@@ -59,7 +59,7 @@ $HeaderFile = Join-Path $PSScriptRoot 'license-header.txt'
 # is this project's own code and carries the same notice; the first version of this script missed it because
 # it only walked `Source/`.
 $SourceRoots = @(
-    (Join-Path $Repo 'Source'),
+    (Join-Path $Repo 'Plugins\TurboMCP\Source'),
     (Join-Path $Repo 'TestProject\Source')
 ) | Where-Object { Test-Path $_ }
 

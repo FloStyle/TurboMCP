@@ -184,7 +184,7 @@ $Problems = @()
 . (Join-Path $PSScriptRoot 'ownership.ps1')
 
 $OwnerId = if ($env:TURBOMCP_OWNER_ID) { $env:TURBOMCP_OWNER_ID } else { "start-editor:$PID" }
-# The plugin binary lives in the plugin's own Binaries folder, not the engine's. Computed before the -Stop
+# The external plugin binary lives in the test project's Binaries folder. Computed before the -Stop
 # block, because that block needs the repository root to decide ownership.
 $ProjectDir = Split-Path $Project -Parent
 $RepoDir = Split-Path $ProjectDir -Parent
@@ -346,9 +346,9 @@ foreach ($item in @(
     else { Fail "$($item.What) missing: $($item.Path)"; $Problems += $item.What }
 }
 
-# The plugin binary lives in the plugin's own Binaries folder, not the engine's.
+# The external plugin binary lives in the test project's Binaries folder.
 # `$ProjectDir`, `$RepoDir` and `$RepoRoot` were computed before the -Stop block, because ownership needs them.
-$PluginDll = Join-Path $RepoDir 'Binaries\Win64\UnrealEditor-TurboMCP.dll'
+$PluginDll = Join-Path $ProjectDir 'Binaries\Win64\UnrealEditor-TurboMCP.dll'
 if (Test-Path $PluginDll) { Ok "plugin binary: $PluginDll" }
 else { Fail "plugin binary missing: $PluginDll (build it first)"; $Problems += 'plugin binary' }
 

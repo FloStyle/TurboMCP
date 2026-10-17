@@ -52,11 +52,10 @@ def _find_engine_root():
 
 REPO = _REPO
 ENGINE = _find_engine_root()
-PLUGIN_SRC = os.path.join(REPO, "Source", "TurboMCP")
+PLUGIN_SRC = os.path.join(REPO, "Plugins", "TurboMCP", "Source", "TurboMCP")
 UHT_OUT = os.path.join(
-    REPO, "Intermediate", "Build", "Win64", "UnrealEditor", "Inc", "TurboMCP", "UHT"
+    REPO, "Plugins", "TurboMCP", "Intermediate", "Build", "Win64", "UnrealEditor", "Inc", "TurboMCP", "UHT"
 )
-MOUNT = os.path.join(ENGINE, "Engine", "Plugins", "Marketplace", "TurboMCP") if ENGINE else None
 BUILD_VERSION = os.path.join(ENGINE, "Engine", "Build", "Build.version") if ENGINE else None
 
 EXPECTED_VERSION = (5, 8, 3)
@@ -212,19 +211,21 @@ def check_engine(report):
 
 def check_mount(report):
     report.section("plugin discovery")
-    if not os.path.isdir(MOUNT):
-        report.fail(
-            "plugin is not mounted at %s. UBT cannot see a plugin outside "
-            "Engine/Plugins. Create it with:\n"
-            "        New-Item -ItemType Junction -Path '%s' -Target '%s'"
-            % (MOUNT, MOUNT, REPO)
-        )
+    import json
+    project = os.path.join(REPO, "TestProject", "TurboMCPTest.uproject")
+    with open(project, encoding="utf-8-sig") as handle:
+        data = json.load(handle)
+    expected = os.path.realpath(os.path.join(REPO, "Plugins"))
+    paths = [os.path.realpath(os.path.join(os.path.dirname(project), p))
+             for p in data.get("AdditionalPluginDirectories", [])]
+    if expected not in paths:
+        report.fail("TestProject must discover this checkout's Plugins directory")
         return
-    report.ok("mounted at %s" % MOUNT)
-    if os.path.isfile(os.path.join(MOUNT, "TurboMCP.uplugin")):
-        report.ok("TurboMCP.uplugin reachable through the mount")
+    descriptor = os.path.join(expected, "TurboMCP", "TurboMCP.uplugin")
+    if os.path.isfile(descriptor):
+        report.ok("project discovers this checkout's TurboMCP descriptor")
     else:
-        report.fail("TurboMCP.uplugin is not reachable through the mount")
+        report.fail("plugin descriptor missing in this checkout")
 
 
 def check_includes(report):
@@ -464,7 +465,7 @@ def check_declared_dependencies(report):
     """
     report.section("declared plugin dependencies")
 
-    descriptor = os.path.join(REPO, "TurboMCP.uplugin")
+    descriptor = os.path.join(REPO, "Plugins", "TurboMCP", "TurboMCP.uplugin")
     if not os.path.isfile(descriptor):
         report.fail("TurboMCP.uplugin is missing, so no dependency can be declared")
         return

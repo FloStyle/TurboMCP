@@ -1,82 +1,17 @@
-# Line endings and binary handling.
-#
-# Why this file exists: the machine's global git config sets core.autocrlf=true.
-# On a Windows checkout that rewrites every text file to CRLF. The engine and its
-# plugins use LF throughout, so a CRLF working copy makes every diff noisy and
-# can break includes that were checked in with LF. Pinning the policy in the repo
-# means the checkout is the same for everyone, whatever their global config says.
-
-# Source and docs: always LF in the repository.
-*.h        text eol=lf
-*.hpp      text eol=lf
-*.c        text eol=lf
-*.cc       text eol=lf
-*.cpp      text eol=lf
-*.cs       text eol=lf
-*.inl      text eol=lf
-*.uplugin  text eol=lf
+* text=auto
+*.cpp text eol=lf
+*.h text eol=lf
+*.cs text eol=lf
+*.py text eol=lf
+*.ps1 text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.uplugin text eol=lf
 *.uproject text eol=lf
-*.ini      text eol=lf
-*.md       text eol=lf
-*.py       text eol=lf
-*.ps1      text eol=lf
-*.js       text eol=lf
-*.json     text eol=lf
-.gitignore text eol=lf
-
-# THE LICENSE AND THE FILE NOTICE ARE PINNED TOO, AND THAT IS NOT COSMETIC.
-#
-# `LICENSE` is the official MPL-2.0 text, kept byte-for-byte as mozilla.org publishes it. Without an entry
-# here the machine's `core.autocrlf=true` rewrites it to CRLF on checkout, so the file a reader opens is
-# NOT the file that was verified. A license whose exact text a line-ending conversion has altered is a
-# small problem but a real one. Measured: git warned "LF will be replaced by CRLF the next time Git
-# touches it" for both of these until they were listed.
-#
-# The notice is pinned for the same reason: it is copied verbatim into every source file by
-# `Tools/apply-license-header.ps1`, so a converted notice would make that script's output depend on the
-# checkout rather than on the file it reads.
-LICENSE                  text eol=lf
-Tools/license-header.txt text eol=lf
-MPL-2.0-SETUP.md        text eol=lf
-
-# Build scripts the engine ships from elsewhere may need CRLF on Windows.
-*.bat      text eol=crlf
-
-# Unreal content is binary. Without this, git may try to normalise it.
-*.uasset   binary
-*.umap     binary
-*.png      binary
-*.jpg      binary
-*.jpeg     binary
-*.ico      binary
-*.dll      binary
-*.exe      binary
-*.lib      binary
-*.pdb      binary
-
-# Diffs for content files are not readable, so do not try.
-*.uasset   -diff
-*.umap     -diff
-
-# A binary file cannot be merged, and letting git try only stops a merge halfway
-# with a conflict. Test content changed on two branches once and blocked a merge
-# of `feature/r-graph-load` into `main`.
-#
-# `merge=ours` is not built in. It resolves through the driver named here, which is
-# configured in the repository, so a fresh clone needs the config too:
-#
-#   git config merge.ours.driver true
-#
-# Without that config git falls back to its normal binary behaviour, which is the
-# conflict again rather than anything worse. Resolve it by keeping one side
-# deliberately and saying which:
-#
-#   git checkout --theirs TestProject/Content/Tests/<asset>.uasset   # the branch being merged in
-#   git checkout --ours   TestProject/Content/Tests/<asset>.uasset   # the branch you are on
-#   git add               TestProject/Content/Tests/<asset>.uasset
-#
-# There is no automatic right answer: a test asset that both branches changed has
-# to be rebuilt from whichever branch holds the state the tests were written
-# against. For the kit that is `Tools/build-test-graph.py`, which is reproducible.
-*.uasset   merge=ours
-*.umap     merge=ours
+*.bat text eol=crlf
+*.uasset binary
+*.umap binary
+*.png binary
+*.jpg binary
+*.ico binary
+# No merge=ours driver: conflicts in fixtures require an explicit resolution.

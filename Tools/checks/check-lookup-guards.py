@@ -27,7 +27,7 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 # An optional path argument points this at a fixture instead of the plugin. That is how the FAILURE path is tested:
 # a check whose failure path is never exercised is a check nobody has shown can fail.
-SOURCE = pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / "Source" / "TurboMCP"
+SOURCE = pathlib.Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / "Plugins" / "TurboMCP" / "Source" / "TurboMCP"
 
 # The two lookups in this codebase that can answer null.
 LOOKUP = re.compile(

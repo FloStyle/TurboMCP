@@ -64,8 +64,8 @@ $ErrorActionPreference = 'Stop'
 
 $repo = Get-TurboMCPRepoRoot
 $project = Get-TurboMCPProject -RepoRoot $repo
-if (-not $Engine) { $Engine = Resolve-TurboMCPEngine -Project $project }
-if (-not $ExpectArtifact) { $ExpectArtifact = Join-Path $repo 'Binaries\Win64\UnrealEditor-TurboMCP.dll' }
+$Engine = Resolve-TurboMCPEngine -Project $project -Engine $Engine
+if (-not $ExpectArtifact) { $ExpectArtifact = Join-Path $repo 'TestProject\Binaries\Win64\UnrealEditor-TurboMCP.dll' }
 if (-not $ProvenancePath) { $ProvenancePath = Join-Path $repo '.agent\build-provenance.json' }
 
 $buildBat = Join-Path $Engine 'Engine\Build\BatchFiles\Build.bat'
@@ -92,7 +92,7 @@ if (-not $NoStop) {
 # CODE WAS COMPILED:
 #
 #     UnrealEngine.CSharp.targets(65,5): error MSB3491: ... fichier
-#     « %TEMP%\DotnetDepends-<N>\EpicGames.Build.dll.dep.csv ». Access to the path
+#     Â« %TEMP%\DotnetDepends-<N>\EpicGames.Build.dll.dep.csv Â». Access to the path
 #     '...\DotnetDepends-<N>\<random>.tmp' is denied.
 #
 # IT IS NOT A PERMISSION ON THAT DIRECTORY, AND THAT WAS MEASURED RATHER THAN ASSUMED: a probe file AND a fresh
@@ -124,7 +124,7 @@ if ($exit -eq 0) {
     # So the artifact is checked for existence and size, hashed, and compared with its newest input - and a
     # MISSING artifact now FAILS the build instead of being mentioned and then passed over. ***
     $newestInput = ''
-    $sourceDir = Join-Path $repo 'Source'
+    $sourceDir = Join-Path $repo 'Plugins\TurboMCP\Source'
     if (Test-Path $sourceDir) {
         $newest = Get-ChildItem $sourceDir -Recurse -File -ErrorAction SilentlyContinue |
             Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1

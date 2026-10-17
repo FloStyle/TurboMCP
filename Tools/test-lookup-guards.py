@@ -57,7 +57,7 @@ def main():
     failures = []
 
     # 1. The real tree, and it must have found sites to check.
-    code, out = run(ROOT / "Source" / "TurboMCP")
+    code, out = run(ROOT / "Plugins" / "TurboMCP" / "Source" / "TurboMCP")
     if code != 0:
         failures.append("the real tree reports unguarded lookups:\n{0}".format(out))
     if "lookup sites checked: 0" in out:

@@ -55,7 +55,7 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HEADER = os.path.join(REPO, "Source", "TurboMCP", "Public", "Tools", "TurboMCPToolsets.h")
+HEADER = os.path.join(REPO, "Plugins", "TurboMCP", "Source", "TurboMCP", "Public", "Tools", "TurboMCPToolsets.h")
 LOG = os.path.join(REPO, ".agent", "logs", "panel-probe.log")
 
 EDITOR_EXE = os.path.join(tmcp_paths.find_engine(), "Engine", "Binaries", "Win64", "UnrealEditor-Cmd.exe")

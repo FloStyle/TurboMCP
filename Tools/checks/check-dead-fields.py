@@ -42,7 +42,7 @@ import re
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent.parent
-SRC = REPO / "Source" / "TurboMCP"
+SRC = REPO / "Plugins" / "TurboMCP" / "Source" / "TurboMCP"
 
 # `X = `, `X += `, `X -= `, `Out.X = ` - the left side of an assignment.
 ASSIGN = re.compile(r"(?<![\w>.!<>=+\-*/%&|^])(\w+)\s*(?:[+\-*/%&|^]|<<|>>)?=(?!=)")

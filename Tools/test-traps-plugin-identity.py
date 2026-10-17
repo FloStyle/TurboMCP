@@ -10,8 +10,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 TOOLS = ROOT / "Tools"
-SOURCE = (ROOT / "Source/TurboMCP/TurboMCPTraps.cpp").read_text(encoding="utf-8")
-BUILD = (ROOT / "Source/TurboMCP/TurboMCP.Build.cs").read_text(encoding="utf-8")
+SOURCE = (ROOT / "Plugins" / "TurboMCP" / "Source/TurboMCP/TurboMCPTraps.cpp").read_text(encoding="utf-8")
+BUILD = (ROOT / "Plugins" / "TurboMCP" / "Source/TurboMCP/TurboMCP.Build.cs").read_text(encoding="utf-8")
 FIXTURE = json.loads((TOOLS / "renamed-plugin-traps.fixture.json").read_text(encoding="utf-8"))
 failures = []
 

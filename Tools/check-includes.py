@@ -26,7 +26,7 @@ import sys
 # silently checking a smaller tree than it claims to - a check that searched nothing would report
 # "every include resolves" about no includes at all.
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PLUGIN_ROOT = os.path.join(_REPO, "Source")
+PLUGIN_ROOT = os.path.join(_REPO, "Plugins", "TurboMCP", "Source")
 
 
 def _find_engine_root():

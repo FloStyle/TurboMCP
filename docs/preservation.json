@@ -1,0 +1,1227 @@
+{
+  "baseline": "eca2771a0084b33126de1efee0575f221b2e3b94",
+  "preserved_files": 244,
+  "scope": "All plugin C++/build source, resources, shipped trap JSON and non-document test-project files, except the intentionally changed project descriptor. Git-normalized text compared byte-for-byte.",
+  "files": [
+    {
+      "from": "Content/Traps/EngineToolTraps.json",
+      "to": "Plugins/TurboMCP/Content/Traps/EngineToolTraps.json",
+      "git_blob": "fbc9c25db40b271a9e426f26802794e6384583e2"
+    },
+    {
+      "from": "Resources/Icon128.png",
+      "to": "Plugins/TurboMCP/Resources/Icon128.png",
+      "git_blob": "fe42888eaba417b9a5ca51ba69c460e4227f0df0"
+    },
+    {
+      "from": "Source/TurboMCP/Logging.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Logging.cpp",
+      "git_blob": "60b29a47077db079af77887a2bd38c7e6ccf44cd"
+    },
+    {
+      "from": "Source/TurboMCP/Public/Logging.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/Logging.h",
+      "git_blob": "2090af889ae85d1126cad1072e6232b24e9436f3"
+    },
+    {
+      "from": "Source/TurboMCP/Public/Panel/STurboMCPPanel.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/Panel/STurboMCPPanel.h",
+      "git_blob": "11d6fd40ece5b68c4650e6d8c7b45c09a2f7367a"
+    },
+    {
+      "from": "Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+      "git_blob": "5c8eb417bf09b994598299622122781a2e258063"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPAcceptanceAssetCommandlet.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPAcceptanceAssetCommandlet.h",
+      "git_blob": "121f06538c7822b566922bf9a45ea29043631a08"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPAnalyticsProvider.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPAnalyticsProvider.h",
+      "git_blob": "73d17c0bac46fc5213889303928ae89a3619fe67"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPAssetCost.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPAssetCost.h",
+      "git_blob": "1c8ff98cc6fdd011eae035937f3411401aad2e8c"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPAssetResolver.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPAssetResolver.h",
+      "git_blob": "25731274ff928ebb3ea66e60c27017ab6a5937e2"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPBPLint.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPBPLint.h",
+      "git_blob": "9fd0ed1a97f8c2a389ed7b7d8697a0b3784ae389"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPBlueprintJson.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPBlueprintJson.h",
+      "git_blob": "4b0bde476f5ecac9bbc4f3a047cca9c8a013aaa1"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPBlueprintRead.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPBlueprintRead.h",
+      "git_blob": "747017f2c88b35096c60a54c0a580b2476b4c011"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPCallCost.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallCost.h",
+      "git_blob": "d8e4e5c7fb7924acb4570451b09ff2655168d0a8"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPCallCostCommandlet.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallCostCommandlet.h",
+      "git_blob": "d2116530d80103a29b92d655b4d0196160de28e2"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPCallLog.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallLog.h",
+      "git_blob": "ef5e9482c502866d18b287c0856961a4356f71b7"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPCallRecorder.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallRecorder.h",
+      "git_blob": "649370f1cb0a7e8bebcca182bcb77a0ab431138d"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPCallTimeline.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallTimeline.h",
+      "git_blob": "17728f27d8aee31b9c3a8a4d858af3a1a298fce7"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPCapture.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCapture.h",
+      "git_blob": "5c1b4ba9fe41625131b007b8086f2868a5fbef69"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPCaptureAsset.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCaptureAsset.h",
+      "git_blob": "991f03cff226a7cfab4e077424384bddae9cc846"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPComment.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPComment.h",
+      "git_blob": "f94db55b3ac0278d198d53cd5201b541dd1a6ad9"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPDataTableRows.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPDataTableRows.h",
+      "git_blob": "f165ddd3d04cc1b50c0a73be941649816f835300"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPDescribe.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPDescribe.h",
+      "git_blob": "11ddfaa74e6cc56c65f3f7d8edd15ec25f6f2612"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPEnumAdd.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPEnumAdd.h",
+      "git_blob": "b0dcdcf8d05de11a896dcba70e28026975377da9"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPFocusGuard.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPFocusGuard.h",
+      "git_blob": "905b5f516cf118388275dd18b65ef8ce5d3e2540"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPFunction.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPFunction.h",
+      "git_blob": "8a71cb29fd81f13279e285954b7e38c72a2ee7c7"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphAppend.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h",
+      "git_blob": "839bb9b347cee47487ec32b186381d93175d94e9"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphCheck.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphCheck.h",
+      "git_blob": "1094104ef88983fa31ec6846ff14e94342259631"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphDead.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphDead.h",
+      "git_blob": "8377b312a1cdef329da9a77bfc867d9be683424d"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphFixBackward.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphFixBackward.h",
+      "git_blob": "f7b95c1f2f02f07461d59ec9e1cbb747608a9b05"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphKnots.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphKnots.h",
+      "git_blob": "fb8ec2739cf9e82ff1c0f26246ead756f07cd67d"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphPatch.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphPatch.h",
+      "git_blob": "910082cbd021e0f729a0028e3b25d8e73f84ef22"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphReachability.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphReachability.h",
+      "git_blob": "3175125e2020c179dcd4db1189bbd59a84bc35e5"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphReplace.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphReplace.h",
+      "git_blob": "caf24b579d970b5dfa858964081662418b078817"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphRepoint.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphRepoint.h",
+      "git_blob": "19ba3cc95853f8d21dbd084a6d3cd4cf59906ffa"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphStructureNotes.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphStructureNotes.h",
+      "git_blob": "1eb60423d021b0c7456c2202163050bf4493275c"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphSwapCall.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphSwapCall.h",
+      "git_blob": "1db32a4cc0e2c1ca76d8194ead1f6ac492d05c55"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphText.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphText.h",
+      "git_blob": "0720762aa94d6c77a9b209c7b7a5ffa35afd8a3a"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphTextLex.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphTextLex.h",
+      "git_blob": "ff84bb52180149bf6d43881bc25aa6bc1f5cd8cb"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPGraphTidy.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphTidy.h",
+      "git_blob": "544feb8ee7fb7de14bbcc474d07a2baf6276e5db"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPKitCommandlet.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPKitCommandlet.h",
+      "git_blob": "0a1be2b82edf811165b5e9318c470599e3df1032"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPKitRow.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPKitRow.h",
+      "git_blob": "b5253d2a99758423442f552cdf35374e2f441441"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPLayoutReport.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLayoutReport.h",
+      "git_blob": "72953e771d33ba3f7720e1377d894baae5c499a9"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPLocalVars.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLocalVars.h",
+      "git_blob": "898f2bddc344941124706d9f35ca8f8ccb56c8d2"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPLogCapture.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLogCapture.h",
+      "git_blob": "a4440e8d9eb562cd7c9d3789d68cc197b0dbe9d7"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPMaterial.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterial.h",
+      "git_blob": "b52cfda8990dca462b1121c234aefa92d7c9e52a"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPMaterialBlocks.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialBlocks.h",
+      "git_blob": "cd74a4e55d51f8652a229b24a9b64c17f8e4b811"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPMaterialFixtureCommandlet.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialFixtureCommandlet.h",
+      "git_blob": "9fd9c2293f0da793bbde35e5628b870d1cb799f0"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPMaterialInstance.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialInstance.h",
+      "git_blob": "05602a61fff60fd8cf3e3d9aac0b645153d3f875"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPMaterialLabelsPromote.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialLabelsPromote.h",
+      "git_blob": "891009f85855904237eacf7b5d9262b3a34d14b7"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPMaterialTidy.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMaterialTidy.h",
+      "git_blob": "88472b0c0cd0199c8997973471b29d10958aedba"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPModule.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPModule.h",
+      "git_blob": "6e2454dd6bf6aff929f4d17892d7a3631d891e3f"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPMutation.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPMutation.h",
+      "git_blob": "29c68f8a9b570be9248aaf953146b06fc9b67bdf"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPNodeId.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPNodeId.h",
+      "git_blob": "86101e9597b381e3194afe13ab86e93df8c05efd"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPNodeType.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPNodeType.h",
+      "git_blob": "d8600b4f2b5488924b4a1eb3449af45e94909e3a"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPOverrideAdd.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPOverrideAdd.h",
+      "git_blob": "0c4a3c5fbc4f83a42744eca0e6908421c7942dfe"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPPanelProbeCommandlet.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPPanelProbeCommandlet.h",
+      "git_blob": "ed1a6ec54c99637f4048b8906abd506e2949a0e5"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPPanelToolRunner.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPPanelToolRunner.h",
+      "git_blob": "2df2b688011470648a9e9319dc3dd4e3cf1533ba"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPResult.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPResult.h",
+      "git_blob": "ba6f13feb5b376eb216ed7ea207b9a17a9c95f0c"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPRollback.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPRollback.h",
+      "git_blob": "28241c64077a91cba1f1ffa7521d4150f40e67b1"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPSettings.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPSettings.h",
+      "git_blob": "b5b603853dd835c7c5742c84964aa4b3f30bc540"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPStruct.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPStruct.h",
+      "git_blob": "ac2923b22ba4cf9ca2071db6a77a6f686d6a2aa0"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPTestMapCommandlet.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPTestMapCommandlet.h",
+      "git_blob": "d74e2fb5c2f2c3e54bb069a0de27cc51059d8548"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPTokenEstimate.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPTokenEstimate.h",
+      "git_blob": "b3c537951718f3f94ea8fcf2417b5bd164f82458"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPToolError.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPToolError.h",
+      "git_blob": "6607c80712940784ff2eaf5c3af7679e892b81fd"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPToolSchema.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPToolSchema.h",
+      "git_blob": "af5161ef584c52835cb25de867c636ea9534b695"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPTraps.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPTraps.h",
+      "git_blob": "896f74cc714680df9f1e2e7048f0ceb1e18aedbc"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPTypeParser.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPTypeParser.h",
+      "git_blob": "428539fd227edba9c9cc968d06e8dfd334f5618f"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPVarsAdd.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPVarsAdd.h",
+      "git_blob": "7e92cde843558c66d0f8fc26a54ab9de2be8f586"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPWidgetRetarget.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPWidgetRetarget.h",
+      "git_blob": "058b13e0de2be4c700433b5359e3c1db82ac2eea"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPWidgetTree.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPWidgetTree.h",
+      "git_blob": "530b330bf483e5cc9c405e790946a66924792ff4"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPWidgetTreeSync.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPWidgetTreeSync.h",
+      "git_blob": "ed2e2101d45a567e08260cefdd8dbef69bf08bb5"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPWidgetTreeText.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPWidgetTreeText.h",
+      "git_blob": "fd563a03062fde135f87f9a711d7e9b4166e97f0"
+    },
+    {
+      "from": "Source/TurboMCP/Public/TurboMCPWidgetsAsVars.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPWidgetsAsVars.h",
+      "git_blob": "41f726dac9479cc66dc1893d172e7e7e9bddc064"
+    },
+    {
+      "from": "Source/TurboMCP/STurboMCPPanel.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp",
+      "git_blob": "a90a5d93dc9f8f0215f54352ab08c8365860da2e"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCP.Build.cs",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs",
+      "git_blob": "036bda2b9251fc2f982da570b782938ec5c5e0c2"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPAcceptanceAssetCommandlet.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAcceptanceAssetCommandlet.cpp",
+      "git_blob": "519d1a01cd235bb5475b3ae3ac226b1c34c53f36"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPAgentHelp.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+      "git_blob": "753802e6575dc23751d18a87b4626da3deaa3fcf"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPAnalyticsProvider.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAnalyticsProvider.cpp",
+      "git_blob": "12a09d27338eee3d1f6684b6deb89dd4dc3d7dae"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPAssetCost.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetCost.cpp",
+      "git_blob": "a5deb8bae4a4a8c760ec655f191c842a41f0808a"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPAssetCostTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetCostTools.cpp",
+      "git_blob": "64f8ddaa9ee0025f88c4c2b10ef33e0d2820b433"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPAssetResolver.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetResolver.cpp",
+      "git_blob": "afa8166f5092a3622def84e2038a958c77f54ea5"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPAssets.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
+      "git_blob": "e9e435b600ca0f785c2e59c641a0eba7fa87348e"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPBPLint.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp",
+      "git_blob": "cbf6e2c35689f9c20595807540715eb3f130e9a0"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPBPLintTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLintTools.cpp",
+      "git_blob": "08aadd7ba2bcae7272695611dd9f905c99d9d29a"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPBatchEditTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
+      "git_blob": "2fa0beaaf651cde68d995e11b46e6917abd571dd"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPBlueprintJson.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintJson.cpp",
+      "git_blob": "202ed8c677d51cbb76cf4e8ed41fb0a71206a040"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPBlueprintLoad.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp",
+      "git_blob": "eed239a157c28fe5d9caaabf5c429638f8742290"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPBlueprintRead.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp",
+      "git_blob": "4bad1b3c202860290c2dcf0cade3be0fdb8fc6e7"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCallCost.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCost.cpp",
+      "git_blob": "3ce11a0d09d4229c9b539b6dcbc178a63b107f50"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCallCostCommandlet.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostCommandlet.cpp",
+      "git_blob": "7a194e417f54ffd9bcb78d9945abf73f54bd1a9a"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCallCostTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostTools.cpp",
+      "git_blob": "0466c5464249686cd9a7890bffe966197572b45a"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCallLog.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLog.cpp",
+      "git_blob": "75699294f486bbaae408606cd66744c38cee9714"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCallLogTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
+      "git_blob": "d51f4b4aba5c9b2ea7af590fb05ff454728952ab"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCallRecorder.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+      "git_blob": "9912110e6761b0bec0c39fc638765746399bb856"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCallTimeline.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallTimeline.cpp",
+      "git_blob": "fd9ec2ca3efe6b73ad18d8915ffcc8818cd27581"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCapture.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+      "git_blob": "8b5a74c6cfef0f9d33d97fd273ca4d8a8a67c2ac"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCaptureAsset.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureAsset.cpp",
+      "git_blob": "a6845126a01bdd1c443c2db486cffb4add312d36"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCaptureSelector.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureSelector.cpp",
+      "git_blob": "64958dc6aa51ee0e3f3d0b9a1124b7cdd3eddba7"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPComment.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComment.cpp",
+      "git_blob": "c8879c15b9b00f158af4406aab035e1dddfda99e"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCommentTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp",
+      "git_blob": "758b8c4f01ca0f76be2b11db749900e52b837c84"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPComments.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComments.cpp",
+      "git_blob": "ebb3cc269c51bfa8f236130dc986e91d7695af21"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPCompile.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+      "git_blob": "4511d8536008aaceecb1388d7de100a53f947318"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPDataTable.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp",
+      "git_blob": "c10b76b6bb9ed42d0baec7f36b7d849a749a7141"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPDataTableRows.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp",
+      "git_blob": "ac4dc81188e8e414ca2c475ff48cc012eff9b827"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPDataTableRowsTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp",
+      "git_blob": "59525c3c21ac02b366a87c30b53df8e0ae0cf9b6"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPDescribe.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDescribe.cpp",
+      "git_blob": "98f154d3f07eaee9d27e3d682b93ceb026cdc3c0"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPEnumAdd.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAdd.cpp",
+      "git_blob": "4260b7a4a600be36917540c9480c512be6373298"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPEnumAddTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp",
+      "git_blob": "e6c7757ac2ce5cb5df8a8e2439eff3b2ef88fbe9"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPFocusGuard.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFocusGuard.cpp",
+      "git_blob": "98656c419b60c4a02eafe76f10ed539a5f27279e"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPFunction.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunction.cpp",
+      "git_blob": "109c19450d5a8c8cf0a8d8e111237b920b0aabfd"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPFunctionTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionTools.cpp",
+      "git_blob": "d9713f98d4dd8ac50d622a9999430bd08526470f"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphAppend.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+      "git_blob": "a8ccc8312069c70f1547f645b2fe6a6eaa5615d3"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
+      "git_blob": "9d72a57c3e7d4866b435b05866cb37763f6a5e2d"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphCheck.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheck.cpp",
+      "git_blob": "d5fe7a8bccecc627b971801afd9e3e10416715b2"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphCheckTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheckTools.cpp",
+      "git_blob": "700714534213a5679eb5b882812ac432dcb63f06"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphDead.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDead.cpp",
+      "git_blob": "427d14a88a97fe9c43a227d754f6a6db278f1dd0"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphDeadTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp",
+      "git_blob": "f1b7ed49dcf1f2223903190bfa676e03aab0e47c"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphFixBackward.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackward.cpp",
+      "git_blob": "b596a7d685727be05366255feadb9e42d8364379"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp",
+      "git_blob": "39154cd2682870c33139f8df3420f6f410378938"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphKnots.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnots.cpp",
+      "git_blob": "3606441e5d3cf5f15afb14d61426e689b1a49df5"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphKnotsTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnotsTools.cpp",
+      "git_blob": "bfdf870b4dc593ca42087aa63ee2d3027ce9732d"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphLoad.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+      "git_blob": "2266d4799b519af24a0f02750bd4507b1ab4b0f5"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphPatch.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatch.cpp",
+      "git_blob": "0d55fc5defd737dc18f7e70a2cb65f63f672ec93"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphPatchTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatchTools.cpp",
+      "git_blob": "c520b849c0213f9080bc48a01bb7f50bfec9f4ab"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphReachability.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReachability.cpp",
+      "git_blob": "9aefe2c533e539e478fa608ddd0a10342fc59062"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphReplace.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp",
+      "git_blob": "b4ddb2b4f84541fec4af914fa94411eece2db3b2"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
+      "git_blob": "055722fac51eeba82433e28fa55ba4f9678205c4"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphRepoint.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp",
+      "git_blob": "5196978e8991c3b24a4a09e4afe8bfc80325ec53"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphRepointTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepointTools.cpp",
+      "git_blob": "606714f52c86fc915e3da5afcb30715da4441012"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphStructure.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp",
+      "git_blob": "1648f95bd9a9d61c94169c646162d1f079745c90"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphStructure.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.h",
+      "git_blob": "94bf2072b123a4fc294b3943cc341549f8e09f5e"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
+      "git_blob": "f62fb234131d25f971a9d8b5114bcad5ffed73f0"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphSwapCall.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCall.cpp",
+      "git_blob": "68978bfcc78499408106c34fba1b64c5d11c24fd"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphSwapCallTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCallTools.cpp",
+      "git_blob": "502a2a3bb876a5694afbb3190f46354df477d05c"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphText.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+      "git_blob": "3e84774ca7cf8d71a633b42b3af7590f7c30562f"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphTextLex.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextLex.cpp",
+      "git_blob": "c4ea6d3f87c4b2bd978360cf55413355bca3f2ed"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphTidy.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+      "git_blob": "d8254de4ac93bade7837eb09f0654e6a33a2a860"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+      "git_blob": "28089308d27b19550833786055aed618e6362064"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPKitCommandlet.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPKitCommandlet.cpp",
+      "git_blob": "67dbdc3a49209256ec366ee0937807e245afcdea"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPLayout.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+      "git_blob": "3700aa3ebfd6aa90d5e827cef26a5b327c4bed3b"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPLayoutReport.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+      "git_blob": "e440998dc9d9383520253786058ec9d97efe3b42"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPLocalVars.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVars.cpp",
+      "git_blob": "1f0ae63486caf82d2e422b36ec1b9d13824310ff"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPLocalVarsTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp",
+      "git_blob": "1c05e833827eb4091113517b958f02832104ce02"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPLogCapture.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLogCapture.cpp",
+      "git_blob": "8666703fbe34452856928a000b77e408606f0866"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterial.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterial.cpp",
+      "git_blob": "b504c0da2f8d1dcf0097c02d59f85f8e22aa4afb"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialBlocks.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocks.cpp",
+      "git_blob": "8464b4705703ee366af015c75194f76118d879db"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
+      "git_blob": "19287c881c829da0a543dbe63db5f6ea56832728"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialFixtureCommandlet.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialFixtureCommandlet.cpp",
+      "git_blob": "dd688ab8bf2e6512cd73390b3012dddd34b502af"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialInstance.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstance.cpp",
+      "git_blob": "68435c29f43d5c3d52d2042d1ddee633b73bc6b1"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp",
+      "git_blob": "bd5e59c0a0752ff0f7ca7c8a56550c454689e69d"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialLabelsPromote.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromote.cpp",
+      "git_blob": "475db436614cc08fc60e2df11d3579df11c8bb01"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp",
+      "git_blob": "d0a1b61bf9f73feb5b7edb59bd435ea95aa16d86"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialTidy.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidy.cpp",
+      "git_blob": "54e5531868318fa6f98288ff5dd1be5808124154"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialTidyTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp",
+      "git_blob": "c5be6a878ffc97f82e3617ee6c9ba2b2e33dcaf9"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMaterialTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
+      "git_blob": "ef3c40f297284f9748d82a9e8077a158917659ad"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPModule.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPModule.cpp",
+      "git_blob": "b86a0ac4f44ec4f4472bd9f3ee04c3b84409e5f4"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMutation.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMutation.cpp",
+      "git_blob": "78bc70c5caa9fc37f911485631ba00fec55454a7"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPMutationTest.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMutationTest.cpp",
+      "git_blob": "d617de5759124754d113c848d61bd3514078f647"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPNodeId.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp",
+      "git_blob": "3e952230d414b1cd55fa505856be9ef5363e350a"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPNodeIdTest.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeIdTest.cpp",
+      "git_blob": "cfa64683085f599cc3adcfc50e7c1751f54e430a"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPNodeResolve.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+      "git_blob": "b5e91f7fa51f45962f3cc7dd5ffb8553ffc4bb13"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPNodeType.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+      "git_blob": "6fc075f8db3125e6eeade258bb2615e84484a3f7"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPNodeTypeTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeTypeTools.cpp",
+      "git_blob": "12df99f51ee885a60e3d20ac9bbbd85a5bbdfc91"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPOverrideAdd.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAdd.cpp",
+      "git_blob": "43356a4fc3cad8d1fdcf7b34b0cf12d4e35507f4"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPOverrideAddTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp",
+      "git_blob": "25efbb6b38d70710d49f180a7b6e1f06b611b973"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPOverrideRemove.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp",
+      "git_blob": "80a7e0ed460c2e8771d86f29ea215a508097b0a5"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPOverrides.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrides.cpp",
+      "git_blob": "39bab57901ee8e4c0735a7c43b187c05147741fd"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPPanelProbeCommandlet.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelProbeCommandlet.cpp",
+      "git_blob": "690831ee678ae353f64b1bca6ab824801a404612"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPPanelToolRunner.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelToolRunner.cpp",
+      "git_blob": "3468e93827fd6cf5ecd8f45a614e4a684e6b92b4"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPPlayCheck.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheck.cpp",
+      "git_blob": "66bd3fc2398170301a809d76782758da931d20f0"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPPlayCheck.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheck.h",
+      "git_blob": "f730df1bf4053411c9fa37aaf5a41d773644e3b4"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPPlayCheckTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheckTools.cpp",
+      "git_blob": "24a18561e03fa5967817f789b8f5264ccd1ed982"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPPureChecks.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecks.cpp",
+      "git_blob": "d6c43fd2f8a64e641f9a1fbcd0b51c93bc77f7d0"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPPureChecks.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecks.h",
+      "git_blob": "05d44fbbf7fc96b374908177ac8660a06766db17"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPPureChecksTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecksTools.cpp",
+      "git_blob": "1cce8777bde0cfcdfdbdba6e997ebbf9b26e7ded"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPRefs.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp",
+      "git_blob": "83abc7e28811fd988a06425d373e26d11f06d64b"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPResult.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPResult.cpp",
+      "git_blob": "a7d7de4e7f80b142c817ad68b4c9a543e4b90bfe"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPResultTest.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPResultTest.cpp",
+      "git_blob": "6a851caf3b9b95af0870db0396f67e1bdf7f82aa"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPRollback.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRollback.cpp",
+      "git_blob": "e0a5ddd72c2027552c62704fc92b04b45051cd83"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPSettings.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSettings.cpp",
+      "git_blob": "04d84f17c872ddd908ebcdbd4ec1107e9e887558"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPSourceControl.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+      "git_blob": "2dcc2d3bf8ff728423741704f748f8115182c0f3"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPSourceControl.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.h",
+      "git_blob": "9800010ededa3925d49784a59205da46ac2375c6"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+      "git_blob": "67b37c58f9910338b2a3ae308b64454e1c20a18b"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPSourceControlWrite.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlWrite.cpp",
+      "git_blob": "b9baabd3d6e2623b281efba82974d1ce30a6a908"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPSourceControlWrite.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlWrite.h",
+      "git_blob": "428a793465305a0de515104051d30a42bb83782d"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPStruct.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp",
+      "git_blob": "4d82a1d57e1f576d2c0bb5955d4d677639480b0a"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPStructTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
+      "git_blob": "dd3ea07bc3a342cdd69d6f2e656fd918a6e19ba0"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTestMapCommandlet.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTestMapCommandlet.cpp",
+      "git_blob": "551b4534db4dd9ea0955ccb3927061aa97936d76"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTokenEstimate.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTokenEstimate.cpp",
+      "git_blob": "d99ff75cb3393cc54c9621af0b4b3d0a4bb64dae"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPToolSchema.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp",
+      "git_blob": "390fdc36358b3d65c62090a28027df95bcbb3a8b"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPToolSchemaTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchemaTools.cpp",
+      "git_blob": "20110d830d50f7d64895bedb1f426d6faa064747"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPToolsets.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+      "git_blob": "d870c9357411eb7054b3b4121ad16a21ea56ee37"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPToolsetsInternal.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsetsInternal.h",
+      "git_blob": "12fe0ec2588c1706637bafdb6de9dd40d07ea8d6"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTrace.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTrace.cpp",
+      "git_blob": "ce1e2bee5d457281af69ac02845494539b88b627"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTrace.h",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTrace.h",
+      "git_blob": "00aa65e468dc5c4678aa98ec8ba67c6c5e1dfb4d"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTraceReadTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceReadTools.cpp",
+      "git_blob": "928b313d205358e288e5afc6d870d3f37f40fdb1"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTraceTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceTools.cpp",
+      "git_blob": "6a4bf9c0e73d6693aec24bf090354cdb35b7ce62"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTraps.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraps.cpp",
+      "git_blob": "f2ca7b418ec2fa6e1256150288271f1eaaddd31c"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTypeParser.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypeParser.cpp",
+      "git_blob": "9f32f38760ee978a2dd5389a0e946ce1e0cf0468"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPTypes.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp",
+      "git_blob": "c5afbd2337ec413ce9f72211ff278ffaafad1b8d"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPVarsAdd.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAdd.cpp",
+      "git_blob": "6d92c4a24bd945b168a7ed4c548f46ad4a967136"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPVarsAddTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp",
+      "git_blob": "8d2096b2a21efad54a0f92437ea554ca199f08a3"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetBindAdd.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBindAdd.cpp",
+      "git_blob": "c7545daaad02d5c045fe251adb1a26c468917b25"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetPreview.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
+      "git_blob": "d3f68b7599755841c59381130fb693bfd3f7ab6c"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetRetarget.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetarget.cpp",
+      "git_blob": "1047a29f15946058c4afc32509b46b0fae6021ed"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp",
+      "git_blob": "f41e3389a2b492306f56e6e0212dfa2c52dbf038"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetTree.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTree.cpp",
+      "git_blob": "b5d221dd3b925a7b13a2990203db69c489cdbdfa"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetTreeSync.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeSync.cpp",
+      "git_blob": "aab850511869192a6e9a6b3a385b60605b0ab4ac"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetTreeText.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeText.cpp",
+      "git_blob": "90b9394fda89422474647d3b07d1195a69068f78"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+      "git_blob": "b4821e4e8562c683a70cf931af60d086baf07370"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetsAsVars.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetsAsVars.cpp",
+      "git_blob": "bfa5dfe157d1c1522e7e7835b608aa9a0c506eda"
+    },
+    {
+      "from": "Source/TurboMCP/TurboMCPWidgetsAsVarsTools.cpp",
+      "to": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetsAsVarsTools.cpp",
+      "git_blob": "73c0ef28fbf3d2d5005d497ba4b334244f86e060"
+    },
+    {
+      "from": "TestProject/.gitignore",
+      "to": "TestProject/.gitignore",
+      "git_blob": "30b85fa919fa14a57b3f334ecf2c93ef6e5c1423"
+    },
+    {
+      "from": "TestProject/Config/DefaultEditorPerProjectUserSettings.ini",
+      "to": "TestProject/Config/DefaultEditorPerProjectUserSettings.ini",
+      "git_blob": "ecdaa2c3608a5c524257a356e59000f35e9e7c22"
+    },
+    {
+      "from": "TestProject/Config/DefaultEngine.ini",
+      "to": "TestProject/Config/DefaultEngine.ini",
+      "git_blob": "6d931bfea0a287b402fb622563db211831cc31ce"
+    },
+    {
+      "from": "TestProject/Config/DefaultInput.ini",
+      "to": "TestProject/Config/DefaultInput.ini",
+      "git_blob": "fa1c5ad24dfefecc50e89d6fd5e8a58653037b84"
+    },
+    {
+      "from": "TestProject/Config/TurboMCP/Traps.json",
+      "to": "TestProject/Config/TurboMCP/Traps.json",
+      "git_blob": "bf19e213698c1bef7991fc5633a0b6abe5aaf6f0"
+    },
+    {
+      "from": "TestProject/Content/Python/init_unreal.py",
+      "to": "TestProject/Content/Python/init_unreal.py",
+      "git_blob": "d6e2c8e8f0c7d2c949ed8e5ae3d8967ca1d6831e"
+    },
+    {
+      "from": "TestProject/Content/Tests/BP_NodeTest.uasset",
+      "to": "TestProject/Content/Tests/BP_NodeTest.uasset",
+      "git_blob": "c2ebf533a32cf9990ecc0e88237e2d3751147fdc"
+    },
+    {
+      "from": "TestProject/Content/Tests/BP_TurboMCPTestLog.uasset",
+      "to": "TestProject/Content/Tests/BP_TurboMCPTestLog.uasset",
+      "git_blob": "4193f267e2441eee73e6b1bb7f3f9377a4cc0fd7"
+    },
+    {
+      "from": "TestProject/Content/Tests/Kit/BP_TestAlpha.uasset",
+      "to": "TestProject/Content/Tests/Kit/BP_TestAlpha.uasset",
+      "git_blob": "d50acb9b5453a629b1da650428fdf8c9408e0e5d"
+    },
+    {
+      "from": "TestProject/Content/Tests/Kit/BP_TowerArray.uasset",
+      "to": "TestProject/Content/Tests/Kit/BP_TowerArray.uasset",
+      "git_blob": "e3cd8e4bdc1a0b7c6eadd1902dbd7886c12970f7"
+    },
+    {
+      "from": "TestProject/Content/Tests/Kit/TA01_HandLaid.uasset",
+      "to": "TestProject/Content/Tests/Kit/TA01_HandLaid.uasset",
+      "git_blob": "d1449e0e1010442acc9efa393105842f68683675"
+    },
+    {
+      "from": "TestProject/Content/Tests/Kit/TA07_Card.uasset",
+      "to": "TestProject/Content/Tests/Kit/TA07_Card.uasset",
+      "git_blob": "7d6770dbcda5344a3f420bdc9c5d00aba9fd2d78"
+    },
+    {
+      "from": "TestProject/Content/Tests/Kit/TA11_KitEnum.uasset",
+      "to": "TestProject/Content/Tests/Kit/TA11_KitEnum.uasset",
+      "git_blob": "6455080962bd727917db6e0ad650eb74a626bd8f"
+    },
+    {
+      "from": "TestProject/Content/Tests/Kit/TA13_KitPath/TA13_KitPath.uasset",
+      "to": "TestProject/Content/Tests/Kit/TA13_KitPath/TA13_KitPath.uasset",
+      "git_blob": "1811acbdce6e8c727b4d5c94ea14adcfd0f76f79"
+    },
+    {
+      "from": "TestProject/Content/Tests/TA11_TestEnum.uasset",
+      "to": "TestProject/Content/Tests/TA11_TestEnum.uasset",
+      "git_blob": "c8a125f6640b2d2f04cbfedcbdda93b34c6c51e7"
+    },
+    {
+      "from": "TestProject/Content/Tests/TA18_ColourSuite.uasset",
+      "to": "TestProject/Content/Tests/TA18_ColourSuite.uasset",
+      "git_blob": "f4962dce3b28e93102507c882044be49ee1218a6"
+    },
+    {
+      "from": "TestProject/Content/Tests/TurboMCPAcceptance.uasset",
+      "to": "TestProject/Content/Tests/TurboMCPAcceptance.uasset",
+      "git_blob": "7ab0447b4909ea8a3152dc5e1da394e552004bca"
+    },
+    {
+      "from": "TestProject/Content/Tests/TurboMCPGraphReaderChild.uasset",
+      "to": "TestProject/Content/Tests/TurboMCPGraphReaderChild.uasset",
+      "git_blob": "aacf64e106a6a3c561d40c4d5983af6e1587448c"
+    },
+    {
+      "from": "TestProject/Content/Tests/TurboMCPMaterialFixture.uasset",
+      "to": "TestProject/Content/Tests/TurboMCPMaterialFixture.uasset",
+      "git_blob": "87cc1700a2f3763e1b9ea64a61168c2a60bd4627"
+    },
+    {
+      "from": "TestProject/Content/Tests/TurboMCPTestMap.umap",
+      "to": "TestProject/Content/Tests/TurboMCPTestMap.umap",
+      "git_blob": "39e490a0e54da95acafadbe90ab4b7c18c56f0f8"
+    },
+    {
+      "from": "TestProject/Content/Tests/WBP_NodeTest.uasset",
+      "to": "TestProject/Content/Tests/WBP_NodeTest.uasset",
+      "git_blob": "8cfd575c796f26beabc7bb32ea32a67591e20b1f"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest.Target.cs",
+      "to": "TestProject/Source/TurboMCPTest.Target.cs",
+      "git_blob": "7b495caa2fd0a0622ef49d69ef9af56df82492b3"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest/Private/TurboMCPTestCompileEnsureTest.cpp",
+      "to": "TestProject/Source/TurboMCPTest/Private/TurboMCPTestCompileEnsureTest.cpp",
+      "git_blob": "1c96dc735298cdf9b2fabb6391a23be48718cecd"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest/TurboMCPTest.Build.cs",
+      "to": "TestProject/Source/TurboMCPTest/TurboMCPTest.Build.cs",
+      "git_blob": "bfe3ad92342aae7239a0010386d1e8220f9dc60f"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest/TurboMCPTest.cpp",
+      "to": "TestProject/Source/TurboMCPTest/TurboMCPTest.cpp",
+      "git_blob": "0024d930455a2412c3068ee96f2b753626bd36a5"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest/TurboMCPTest.h",
+      "to": "TestProject/Source/TurboMCPTest/TurboMCPTest.h",
+      "git_blob": "61dc01518728527240f0b2f5ec5722b4ef891988"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest/TurboMCPTestCompileFixture.cpp",
+      "to": "TestProject/Source/TurboMCPTest/TurboMCPTestCompileFixture.cpp",
+      "git_blob": "ef35f92bc2902b39c1a39681fd992a26aa5e4d90"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest/TurboMCPTestCompileFixture.h",
+      "to": "TestProject/Source/TurboMCPTest/TurboMCPTestCompileFixture.h",
+      "git_blob": "12de91b5bb862769fe920d4865e1fafc39734880"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest/TurboMCPTestLogActor.cpp",
+      "to": "TestProject/Source/TurboMCPTest/TurboMCPTestLogActor.cpp",
+      "git_blob": "1cc64ef2c99f26a1c9cbfecf3e47c0cf0f38b08a"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTest/TurboMCPTestLogActor.h",
+      "to": "TestProject/Source/TurboMCPTest/TurboMCPTestLogActor.h",
+      "git_blob": "cbb7334317011f76e87e3b92495329a7227485e8"
+    },
+    {
+      "from": "TestProject/Source/TurboMCPTestEditor.Target.cs",
+      "to": "TestProject/Source/TurboMCPTestEditor.Target.cs",
+      "git_blob": "9b9cedcf4d3d4951521ea71229be3270a4c8f669"
+    }
+  ]
+}

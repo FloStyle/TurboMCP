@@ -30,7 +30,7 @@ import re
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent.parent
-SRC = REPO / "Source" / "TurboMCP"
+SRC = REPO / "Plugins" / "TurboMCP" / "Source" / "TurboMCP"
 
 # A file that writes cannot be screened this way - its defects are the C-P10 family and need a human.
 WRITES = re.compile(r"(Modify\(\)|MarkPackageDirty|DestroyNode|NewObject<|::Apply\()")

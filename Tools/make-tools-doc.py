@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-HEADER = REPO / "Source" / "TurboMCP" / "Public" / "Tools" / "TurboMCPToolsets.h"
+HEADER = REPO / "Plugins" / "TurboMCP" / "Source" / "TurboMCP" / "Public" / "Tools" / "TurboMCPToolsets.h"
 
 # One entry per toolset class, in file order, with the kind a reader needs to know.
 TOOLSET_KIND = {
@@ -122,154 +122,13 @@ def main() -> int:
             }
         )
 
-    without = [t for t in tools if not t["summary"]]
-
-    out = []
-    out.append("# TurboMCP tool catalogue")
-    out.append("")
-    out.append(
-        "**This file is generated from the declarations in\n"
-        "[`Source/TurboMCP/Public/Tools/TurboMCPToolsets.h`](Source/TurboMCP/Public/Tools/TurboMCPToolsets.h)**\n"
-        "by `Tools/make-tools-doc.py`, so it cannot drift from the code. The engine turns each of these into an\n"
-        "MCP tool at load time, and **the first sentence of the doc comment above each function is the\n"
-        "description an agent receives** - that is why the summaries below are extracted rather than written."
-    )
-    out.append("")
-    out.append("| Toolset | Kind | Writes? | Tools |")
-    out.append("|---|---|---|---|")
-    for _, cls in classes:
-        kind, writes = TOOLSET_KIND.get(cls, ("?", "?"))
-        count = len([t for t in tools if t["owner"] == cls])
-        out.append("| `%s` | %s | %s | **%d** |" % (cls, kind, writes, count))
-    out.append("| **Total** | | | **%d** |" % len(tools))
-    out.append("")
-    out.append(
-        "**A reader in `Read` or `Look` cannot write**, because those classes hold no editing code - it is a\n"
-        "property of the type, not a convention."
-    )
-    out.append("")
-
-    for _, cls in classes:
-        kind, writes = TOOLSET_KIND.get(cls, ("?", "?"))
-        out.append("## `%s` — %s, writes: %s" % (cls, kind, writes))
-        out.append("")
-        out.append("| Tool | Description | Line |")
-        out.append("|---|---|---|")
-        for tool in [t for t in tools if t["owner"] == cls]:
-            summary = tool["summary"] or "*** NO DOC COMMENT - see the note at the end ***"
-            out.append(
-                "| `%s` | %s | [%d](Source/TurboMCP/Public/Tools/TurboMCPToolsets.h#L%d) |"
-                % (tool["name"], summary, tool["line"], tool["line"])
-            )
-        out.append("")
-
-    out.append("## Calling one")
-    out.append("")
-    out.append(
-        "The MCP server runs in the editor on **`http://localhost:8000/mcp`**. With tool search enabled - the\n"
-        "engine default, kept here - a client sees three meta-tools and reaches everything else through the third:"
-    )
-    out.append("")
-    out.append("- `list_toolsets` — what is registered, including these four;")
-    out.append("- `describe_toolset` — one toolset's tools and their schemas;")
-    out.append("- `call_tool` — takes `toolset_name` and the **bare** function name, with `arguments` as a **JSON object, not a string**.")
-    out.append("")
-    out.append(
-        "So the tool above named `ReadTurboMCPStatus` is called with `toolset_name` = `TurboMCP.Read` and\n"
-        "`tool_name` = `ReadTurboMCPStatus`. The full dotted name is what a listing prints; `call_tool` wants the\n"
-        "bare one. Both facts are in [`Spec/07_ENGINE_NOTES.md`](Spec/07_ENGINE_NOTES.md), and they are repeated\n"
-        "here because they are the two things a caller gets wrong first."
-    )
-    out.append("")
-    out.append("## Adding a tool")
-    out.append("")
-    out.append(
-        "**Three steps, and the third is the one that is always forgotten.** A tool that exists but that no\n"
-        "suite names is a tool the coverage audit reports as uncalled, and the audit passes only at\n"
-        "`uncalled: (none)`."
-    )
-    out.append("")
-    out.append("### 1. Declare it, in the right toolset class")
-    out.append("")
-    out.append(
-        "Put it in the class that matches what it does — `UTurboMCPReadToolset` for a reader,\n"
-        "`UTurboMCPEditToolset` for a writer — in\n"
-        "[`TurboMCPToolsets.h`](Source/TurboMCP/Public/Tools/TurboMCPToolsets.h). **The class is the safety\n"
-        "property**: a reader declared in Read holds no editing code, so \"this cannot modify your project\" is a\n"
-        "fact about the type rather than a promise. A writer needs a `Preview` twin in\n"
-        "`UTurboMCPPreviewToolset` that shares the same `Plan`, so what the plan reports and what the edit does\n"
-        "cannot drift apart."
-    )
-    out.append("")
-    out.append("```cpp")
-    out.append("/**")
-    out.append(" * One line saying what the tool does. THIS SENTENCE IS WHAT AN AGENT READS, because the")
-    out.append(" * engine builds the tool description from this comment through reflection.")
-    out.append(" *")
-    out.append(" * Then the parameters, and every refusal by name with the engine line that decides it.")
-    out.append(" */")
-    out.append("UFUNCTION(meta = (AICallable))")
-    out.append("static FString ReadTurboMCPYourThing(const FString& Asset);")
-    out.append("```")
-    out.append("")
-    out.append("### 2. Write a suite that calls it **by its literal name**")
-    out.append("")
-    out.append(
-        "Add `Tools/test-<capability>.py`. *** THE CALL SITE MUST SPELL THE TOOL NAME AS A LITERAL, EXACTLY AS\n"
-        "THE DECLARATION DOES, BECAUSE `Tools/audit-tool-coverage.py` FINDS IT BY REGEX OVER THE SUITE FILES.\n"
-        "*** A name built at run time, or interpolated, is a name the audit cannot see, and the audit will\n"
-        "report the tool as uncalled even though the suite exercises it."
-    )
-    out.append("")
-    out.append("```python")
-    out.append("session.call(READ_TOOLSET, \"ReadTurboMCPYourThing\", {\"asset\": \"/Game/Tests/Thing\"})")
-    out.append("```")
-    out.append("")
-    out.append(
-        "**Every check you write must name an input that makes it fail.** `Tools/audit-suite-quality.py`\n"
-        "**blocks the whole run** when a check cannot fail or cannot pass, so a check that only ever passes is\n"
-        "a build failure here, not a stylistic complaint. And run the break test: change the code so the check\n"
-        "should go red, and confirm it does **with the wrong value visible** — a check that matches a prefix\n"
-        "cannot see a change after the prefix."
-    )
-    out.append("")
-    out.append("### 3. Verify, and run the whole thing")
-    out.append("")
-    out.append("```powershell")
-    out.append("python Tools\\audit-tool-coverage.py    # must print: uncalled: (none)")
-    out.append("python Tools\\audit-suite-quality.py    # must print 0 candidates, and it BLOCKS")
-    out.append("python Tools\\make-tools-doc.py         # regenerate this file, so it lists the new tool")
-    out.append("Tools\\build.ps1")
-    out.append("Tools\\run-suites.ps1                   # the signal that matters: passed N, failed 0")
-    out.append("```")
-    out.append("")
-    out.append(
-        "**AND `Tools/make-tools-doc.py` IS STEP 3 FOR A REASON: THIS FILE IS GENERATED FROM THE DECLARATIONS, SO\n"
-        "THE ONLY WAY TO KEEP IT TRUE IS TO RE-RUN THE GENERATOR.** A hand edit here is lost the next time\n"
-        "anybody regenerates, which is the same defect as a hand-kept list of 93 names."
-    )
-    out.append("")
-
-    if without:
-        out.append("## Tools with no doc comment")
-        out.append("")
-        out.append(
-            "*** THESE DECLARATIONS CARRY NO USABLE DOC COMMENT, SO THE ENGINE HANDS AN AGENT NO DESCRIPTION\n"
-            "FOR THEM. *** They are listed rather than hidden because a tool nobody can understand is a tool\n"
-            "that will be called wrongly:"
-        )
-        out.append("")
-        for tool in without:
-            out.append("- `%s` (line %d, `%s`)" % (tool["name"], tool["line"], tool["owner"]))
-        out.append("")
-
-    (REPO / "TOOLS.md").write_text("\n".join(out) + "\n", encoding="utf-8")
-
-    print("  tools found:            %d" % len(tools))
-    print("  without a doc comment:  %d" % len(without))
-    print("  wrote TOOLS.md")
+    out = ["# Declared tool reference", "", "Generated from the plugin header. Declarations are not release acceptance evidence.", "", "| Toolset | Function | Description |", "| --- | --- | --- |"]
+    for tool in tools:
+        summary = tool["summary"].replace("|", "\\|").replace("\n", " ")
+        out.append(f"| `{tool['owner']}` | `{tool['name']}` | {summary} |")
+    (REPO / "docs/public/docs/tools.md").write_text("\n".join(out)+"\n", encoding="utf8")
+    print(f"Generated reference for {len(tools)} declarations")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

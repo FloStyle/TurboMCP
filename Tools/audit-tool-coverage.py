@@ -43,7 +43,7 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-HEADER = os.path.join(REPO, "Source", "TurboMCP", "Public", "Tools", "TurboMCPToolsets.h")
+HEADER = os.path.join(REPO, "Plugins", "TurboMCP", "Source", "TurboMCP", "Public", "Tools", "TurboMCPToolsets.h")
 TOOLS_DIR = os.path.join(REPO, "Tools")
 
 # Suites that are not acceptance tests of a tool, so a tool named only there is not covered.

@@ -11,7 +11,7 @@ creates the node and its output is free by construction.
 import os, re, sys
 import time
 
-sys.path.insert(0, r"C:\Users\Example\Desktop\TurboMCP\Tools")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session, call_structured  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
