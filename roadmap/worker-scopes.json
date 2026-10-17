@@ -26,6 +26,15 @@
         "todo/roadmap-r16.md"
       ],
       "preserve_rows": []
+    },
+    "R04": {
+      "task_file": "todo/roadmap-r04.md",
+      "files": [
+        "docs/audit/callable-contracts.md",
+        "docs/audit/callable-contracts.json",
+        "todo/roadmap-r04.md"
+      ],
+      "preserve_rows": []
     }
   }
 }

@@ -4,14 +4,14 @@
 
 Use one reviewed task, one isolated worktree and one durable claim per worker.
 The integration owner records a full approved base commit before dispatch.
-R13 source comparison is reviewed and accepted. R16 is the next assignment.
+R13 and R16 are accepted. R04 starts with the bounded call-log checkpoint in its task.
 
 ## Approved scope
 
 [worker-scopes.json](../roadmap/worker-scopes.json) contains exact writable paths
-for R13 and R16. Everything else is outside scope. R13 may update the six listed
+for R13, R16 and the first R04 checkpoint. Everything else is outside scope. R13 may update the six listed
 comparison/evidence files. R16 may write its two dependency reports and task
-evidence. In a task file, only the Completion evidence section may change.
+evidence. R04 may write its two callable-contract reports and task evidence. In a task file, only the Completion evidence section may change.
 The reviewer owns task status, review registers, generated TODO and queue updates.
 Unknown tasks fail closed until the integration owner supplies a reviewed scope.
 
@@ -35,7 +35,7 @@ From a trusted integration checkout, run this command with the recorded full SHA
 python Tools/check-worker-scope.py --task R13 --base <approved-base-sha> --candidate <submitted-sha>
 ```
 
-Use R16 for that assignment. The commits must be available in this repository.
+Use R16 or R04 for those assignments. The commits must be available in this repository.
 The command reads policy from the approved base, not from the worker submission.
 Do not accept a base chosen retrospectively by the worker. Do not run a worker's
 modified validator as review authority. Inspect changes before executing any

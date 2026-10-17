@@ -52,7 +52,7 @@ Use English for all working text. Follow [the language policy](docs/language.md)
 Before dispatch, the integration owner records the approved base SHA and exact
 file scope in [worker-scopes.json](roadmap/worker-scopes.json). Follow
 [the submission gate](docs/worker-boundaries.md). Workers may not widen their
-scope or self-approve task completion. For R13/R16 update only allowed reports
+scope or self-approve task completion. For R13/R16/R04 update only allowed reports
 and the task Completion evidence section; the reviewer updates status, review
 records and TODO after acceptance. Record newly discovered debt in the review
 packet; [the debt index](docs/audit/technical-debt.md) identifies existing owners.

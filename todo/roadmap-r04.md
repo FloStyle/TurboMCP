@@ -73,3 +73,47 @@ Starting checks for the assigned follow-up:
 These suites are starting checks, not proof of the new cases. Use owned synthetic fixtures and retain local evidence. Reference records do not authorize implementation.
 
 See the [review register](../docs/audit/task-review.md) for definitions, duplicate ownership and observed test results.
+
+## First dispatch checkpoint: call-log contracts
+
+This checkpoint is source/offline investigation only. It does not complete R04.
+It overrides the general engine verification commands for this worker dispatch.
+The integration owner runs any engine probes while cross-harness execution-lock
+visibility remains unverified. Do not run builds, editors, engine suites,
+packaging, recovery commands or direct MCP calls.
+
+Create docs/audit/callable-contracts.json with schema 1, the approved base and
+plugin/engine identities, and a tools array containing exactly the 101 unique
+IDs from capabilities.json. Keep unaudited rows explicitly not_reviewed. Audit
+only ReadTurboMCPCallCost, ReadTurboMCPCallLog, EditTurboMCPCallLog and
+EditTurboMCPCallLogClear in this checkpoint. Write a concise human summary in
+docs/audit/callable-contracts.md. Do not edit the generated capability inventory.
+
+For these four rows, trace declaration, wrapper, implementation and relevant
+client/result decoding. Record parameter/default parsing, supported scope,
+side effects, success/refusal/unknown outcomes, and exact source references.
+Separate source findings, existing test assertions, actual offline results and
+unrun runtime probes. Inspect shared result helpers only as needed for these
+four callers; do not broaden the audit to other families.
+
+Start with the current review in 019cf7af.md and the result-decoding portion of
+7de8d185.md. The compile-ensure engine fixture remains outside this checkpoint.
+Cover empty/populated logs, omitted/zero/negative/fractional/overflow/malformed
+numeric inputs and truncation boundaries where relevant. Trace result envelopes
+and retry behavior without assuming a passing client test proves tool behavior.
+Do not invent a cause or claim a source-only finding was reproduced at runtime.
+
+For each confirmed gap, give a proposed repair with one existing owner, exact
+allowed files, preserved behavior, synthetic reproduction/probe, expected result,
+failure control, focused validation and rollback plan. Proposals are not repair
+permission. Keep raw logs and proprietary or licensed source outside Git; use
+source paths and short factual descriptions rather than copied engine bodies.
+
+Only the three R04 paths in roadmap/worker-scopes.json may change. In this task,
+only Completion evidence is worker-editable. No plugin/engine/test/helper,
+status/readiness, TODO, review-register, dependency, routing or release changes.
+Use the existing offline profile, audit-inventory --check, test-result-contract
+and test-client-retry. Record the assertions they actually cover and remaining
+probe gaps. Commit the checkpoint, obtain candidate-bound offline evidence and
+run the full-base-to-candidate scope check. Retain the claim and stop for review;
+do not start the next family, mark R04 done, merge, push or release the claim.
