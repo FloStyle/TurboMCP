@@ -13,3 +13,5 @@ Read README.md, docs/contributing.md, TODO.md, and the single selected todo file
 - Credentials stay in the OS credential manager. Never store tokens in Git URLs, tracked files, prompts, or scripts. Do not replace Git Credential Manager with a custom credential reader.
 - Engine source is not part of this repository or its export. Reading engine APIs is normal; engine source edits require an explicit task. A folder link or code-workspace file does not grant sandbox access: configure each harness with the actual plugin and engine paths.
 - Report changed files, checks run, results, and remaining blockers. Missing editor/build evidence is not a passing result.
+
+- Every tracked file is intended for the future public source tree. Keep private recovery material outside Git. Publication copies the entire tracked tree with fresh history; never create private-only tracked directories.

@@ -5,6 +5,7 @@ Status: todo
 Priority: P1
 Readiness: ready
 Owner: unassigned
+Design: docs/design/verification.md
 
 ## Problem
 The foundation needs a verified implementation contract for this boundary.

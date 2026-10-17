@@ -5,6 +5,7 @@ Status: backlog
 Priority: P6
 Readiness: needs_reconciliation
 Owner: unassigned
+Design: docs/design/verification.md
 
 ## Scope and acceptance
 
@@ -12,7 +13,7 @@ Preserve the substantive scope below. Before editing, reconcile the finding with
 
 ## Imported evidence
 
-Historical paths and completion claims below are not current proof. Old documents are recoverable from the private backup commit recorded in docs/migration.md.
+Historical paths and completion claims below are not current proof. This task must be made self-contained against the current source before implementation; no private archive is a prerequisite for public contributors.
 
 > Summary
 >     `TurboMCPTraps.cpp`, 202 lines, zero defects found. One word in one comment is optimistic, and it is recorded as the small thing it is rather than inflated into a finding.

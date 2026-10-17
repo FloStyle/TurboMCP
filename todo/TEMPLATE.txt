@@ -5,6 +5,7 @@ Status: todo
 Priority: P2
 Readiness: ready
 Owner: unassigned
+Design: docs/design/CHOOSE-DOMAIN.md
 
 ## Problem
 Current behavior and a reproducible input.

@@ -5,7 +5,7 @@ def main():
     for p in ['AGENTS.md','README.md','TODO.md','engine.lock.json','Plugins/TurboMCP/TurboMCP.uplugin','TestProject/TurboMCPTest.uproject','docs/architecture.md','docs/workspace.md','release/export-policy.json']:
         if not (ROOT/p).is_file():raise ValueError(f'Missing {p}')
     root_names={p.name for p in ROOT.iterdir()}
-    for p in ['Spec','Release','Tasks','HANDOVER.md','STATUS.md','PLAN.md','RELEASE_AGENT.md','Source','TurboMCP.uplugin']:
+    for p in ['Spec','Release','Tasks','HANDOVER.md','STATUS.md','PLAN.md','RELEASE_AGENT.md','Source','TurboMCP.uplugin','provenance']:
         if p in root_names:raise ValueError(f'Retired path still active: {p}')
     for p in (ROOT/'Tools').rglob('*.py'):ast.parse(p.read_text(encoding='utf-8-sig'),filename=str(p))
     for p in [ROOT/'engine.lock.json',ROOT/'Plugins/TurboMCP/TurboMCP.uplugin',ROOT/'TestProject/TurboMCPTest.uproject',ROOT/'Tests/acceptance.json',ROOT/'release/status.json',ROOT/'release/export-policy.json']:
@@ -19,6 +19,8 @@ def main():
         if row['tier'] not in ('offline','engine') or row['timeout_seconds']<=0:raise ValueError('Invalid test tier/deadline')
     for task in (ROOT/'todo').glob('*.md'):
         text=task.read_text(encoding='utf8')
+        design=re.search(r'^Design: (.+)$',text,re.M)
+        if not design or not (ROOT/design.group(1)).is_file():raise ValueError(f'{task.name}: missing design reference')
         if 'Readiness: ready' in text:
             for section in ['Problem','Scope','Dependencies','Acceptance','Verification']:
                 if '## '+section+'\n' not in text:raise ValueError(f'{task.name}: ready task missing {section}')
@@ -26,7 +28,7 @@ def main():
     for task in imported['tasks']:
         if f'ID: {task["id"]}' not in (ROOT/task['path']).read_text():raise ValueError('Imported task lost or ID changed')
     # Canonical navigation must resolve. Task quotations and source comments are explicitly historical evidence.
-    docs=[ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'TODO.md',ROOT/'Tools/README.md',ROOT/'TestProject/README.md',*list((ROOT/'docs').rglob('*.md'))]
+    docs=[ROOT/'CONTRIBUTING.md',ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'TODO.md',ROOT/'Tools/README.md',ROOT/'TestProject/README.md',*list((ROOT/'docs').rglob('*.md'))]
     for p in docs:
         for target in re.findall(r'\]\(<?([^\s)>]+)>?\)',p.read_text(encoding='utf8')):
             if re.match(r'^[a-zA-Z]+:|^#',target):continue

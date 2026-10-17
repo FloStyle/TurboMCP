@@ -4,7 +4,7 @@ English is the working language for code comments, documentation, tasks and comm
 
 ## One authority for each concern
 
-AGENTS.md controls agent workflow. README.md is navigation. docs/architecture.md controls behavioral contracts. engine.lock.json pins the supported source baseline. TODO.md is generated navigation over todo/. Tests/acceptance.json holds release requirements. release/status.json records readiness. The recovery archive and imported quotations are evidence only.
+AGENTS.md controls agent workflow. README.md is navigation. docs/architecture.md controls behavioral contracts. engine.lock.json pins the supported source baseline. TODO.md is generated navigation over todo/. Tests/acceptance.json holds release requirements. release/status.json records readiness. Imported quotations are evidence only; private recovery archives remain outside tracked source.
 
 ## Task readiness
 
@@ -18,4 +18,8 @@ Commit coherent steps: regression/evidence, implementation, documentation as use
 
 ## Completion
 
-Record command, exit code, logs, source commit, artifact hash and engine identity. Report tests that could not run. Update only the selected task and regenerate TODO.md. A static guard is not runtime acceptance. An integrator checks combined changes before publishing private main. Public history is created separately from an approved allowlisted export.
+Record command, exit code, logs, source commit, artifact hash and engine identity. Report tests that could not run. Update only the selected task and regenerate TODO.md. A static guard is not runtime acceptance. An integrator checks combined changes before publishing private main. Public history is created separately from an approved complete tracked-tree export.
+
+## Specification review
+
+A task is not ready merely because its headings are present. Confirm current source references, supported engine APIs, a reproducible input or concrete investigation question, failure/refusal semantics, fixture ownership and exact verification commands. Each acceptance condition needs an observable check. Resolve conflicting historical requirements against the current architecture and record the resolution. A task that depends on unavailable private notes must be rewritten with the required facts before it is assigned.

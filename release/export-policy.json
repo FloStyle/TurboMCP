@@ -1,64 +1,28 @@
 {
-  "schema": 1,
-  "copies": [
-    {
-      "source": "Plugins/TurboMCP/Source",
-      "destination": "Plugins/TurboMCP/Source",
-      "extensions": [
-        ".h",
-        ".cpp",
-        ".cs"
-      ]
-    },
-    {
-      "source": "Plugins/TurboMCP/Content",
-      "destination": "Plugins/TurboMCP/Content",
-      "extensions": [
-        ".json",
-        ".md"
-      ]
-    },
-    {
-      "source": "Plugins/TurboMCP/Resources",
-      "destination": "Plugins/TurboMCP/Resources",
-      "extensions": [
-        ".png"
-      ]
-    },
-    {
-      "source": "Plugins/TurboMCP/TurboMCP.uplugin",
-      "destination": "Plugins/TurboMCP/TurboMCP.uplugin",
-      "extensions": [
-        ".uplugin"
-      ]
-    },
-    {
-      "source": "docs/public",
-      "destination": ".",
-      "extensions": [
-        ".md"
-      ]
-    },
-    {
-      "source": "LICENSE",
-      "destination": "LICENSE",
-      "extensions": [
-        ""
-      ]
-    },
-    {
-      "source": ".gitattributes",
-      "destination": ".gitattributes",
-      "extensions": [
-        ""
-      ]
-    },
-    {
-      "source": "release/public.gitignore",
-      "destination": ".gitignore",
-      "extensions": [
-        ".gitignore"
-      ]
-    }
-  ]
+  "schema": 2,
+  "mode": "complete-tracked-tree",
+  "forbidden_components": [
+    ".git",
+    ".agent",
+    ".local",
+    "provenance",
+    "Binaries",
+    "Intermediate",
+    "Saved",
+    "DerivedDataCache",
+    "__pycache__"
+  ],
+  "forbidden_names": [
+    "workspace.local.json",
+    ".env"
+  ],
+  "forbidden_suffixes": [
+    ".dll",
+    ".exe",
+    ".pdb",
+    ".pem",
+    ".key",
+    ".zip"
+  ],
+  "scope": "Every tracked regular file at the same path. Refuse unsafe content; never silently omit it."
 }

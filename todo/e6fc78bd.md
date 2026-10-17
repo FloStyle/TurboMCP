@@ -5,6 +5,7 @@ Status: todo
 Priority: P2
 Readiness: needs_reconciliation
 Owner: unassigned
+Design: docs/design/graphs.md
 
 ## Scope and acceptance
 
@@ -12,7 +13,7 @@ Preserve the substantive scope below. Before editing, reconcile the finding with
 
 ## Imported evidence
 
-Historical paths and completion claims below are not current proof. Old documents are recoverable from the private backup commit recorded in docs/migration.md.
+Historical paths and completion claims below are not current proof. This task must be made self-contained against the current source before implementation; no private archive is a prerequisite for public contributors.
 
 > *** SOURCE: `Feedbacks/TurboMCP_TaskList_2026-10-13.md:243-250`, group P2. SOURCE IDs: TD-01, TD-02 (S1). *** *** CARDED FROM THE LIST, NEVER MEASURED ON THE TREE. ***
 >

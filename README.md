@@ -1,30 +1,46 @@
-# TurboMCP development
+# TurboMCP
 
-Private development repository for the TurboMCP Unreal editor plugin. Current release readiness: **not ready**. The migration preserves unfinished implementation; it does not certify a release.
+TurboMCP extends Unreal Engine's MCP tooling with editor tools for Blueprint graphs, materials, widgets, inspection, capture and diagnostics. The plugin is currently **experimental, 1.0.0-dev**. The v1 acceptance work is unfinished.
 
-Repository boundaries and integration rules: [repository design](docs/repository-design.md), [contributing](docs/contributing.md), and [test tiers](Tests/README.md).
+Development baseline: Windows and the exact Unreal Engine 5.8.3 source revision in engine.lock.json. Installed-engine and 5.9 support are separate validation targets.
 
-Start with [AGENTS.md](AGENTS.md), [TODO.md](TODO.md), and [workspace setup](docs/workspace.md). Product contracts are in [architecture](docs/architecture.md), with [acceptance criteria](docs/acceptance.md). The public-facing documentation lives separately in [docs/public](docs/public/README.md).
+## Start here
 
-| Path | Purpose |
-| --- | --- |
-| Plugins/TurboMCP/ | Installable plugin: descriptor, C++ source, runtime content, resources |
-| TestProject/ | Unreal integration project and versioned fixtures |
-| Tools/ | Build, editor, test, validation, and export entry points |
-| Tests/acceptance.json | Required release acceptance cases; not evidence of passing |
-| docs/ | Current development contracts and workflow |
-| docs/public/ | Documentation eligible for a public export |
-| todo/ + TODO.md | Repository-owned tasks and generated index |
-| release/ | Release readiness and export policy |
-| engine.lock.json | Exact tested baseline and separate unsupported forward target |
+- Using the plugin: [installation](docs/user/installation.md) and [declared tools](docs/user/tools.md).
+- Contributing or running an agent: [AGENTS.md](AGENTS.md), [contributor workflow](docs/contributing.md), then [TODO.md](TODO.md).
+- Understanding the product: [requirements](docs/product.md), [technical contracts](docs/architecture.md) and [design index](docs/design/README.md).
+- Setting up a checkout: [workspace setup](docs/workspace.md) and [test layers](Tests/README.md).
+- Preparing a release: [release process](docs/release.md).
+
+## Quick validation
+
+From the repository root, with Python 3.13, Git and PowerShell available:
 
 ```powershell
-python Tools/validate-repo.py
-python Tools/doctor.py
-pwsh -File Tools/build.ps1 -Engine C:/UnrealEngine
-python Tools/test-result-contract.py
+python Tools/validate.py
 ```
 
-Keep the existing engine checkout. TestProject discovers `../Plugins` through AdditionalPluginDirectories; setup does not install a junction inside the engine. See [migration provenance](docs/migration.md) for the preserved history and recovery path. See [5.9 planning](docs/engine-compatibility.md) before upgrading.
+For engine work, copy workspace.example.json to ignored workspace.local.json, configure the engine root, then run:
 
-Prepare a review-only public tree with `python Tools/export-public.py --preview --output .local/public-preview`. This does not push, initialize public Git history, or assert release readiness. See [release workflow](docs/release.md).
+```powershell
+python Tools/doctor.py
+pwsh -File Tools/build.ps1 -Engine <engine-root>
+```
+
+Offline checks do not certify runtime behavior. Follow the selected task's engine and fixture verification requirements.
+
+## Source layout
+
+| Directory | Purpose |
+| --- | --- |
+| Plugins/TurboMCP | Installable editor plugin source, content and resources |
+| TestProject | Integration host and versioned fixtures |
+| Tools | Build, test, documentation and release commands |
+| Tests | Test catalog and product acceptance specifications |
+| docs | User guides, product requirements, technical contracts and designs |
+| todo | Bounded tasks and historical findings awaiting reconciliation |
+| release | Release gates and complete-tree publication policy |
+
+The private development tree and future public source tree have the same files and paths. Public publication starts fresh Git history from a verified copy of this complete tree. Plugin binary packages are separate release assets. Unreal source, credentials, generated outputs and private recovery archives do not belong in the tracked tree.
+
+Licensed under [MPL-2.0](LICENSE). See [repository design](docs/repository-design.md) for boundaries.

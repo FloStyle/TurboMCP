@@ -1,6 +1,6 @@
 # Workspace setup
 
-The repository and Unreal share one working environment but remain separate Git repositories. Keep Unreal at its existing location. The current migrated checkout is C:/ExampleDev/TurboMCP; that is a local choice, not a requirement encoded in source.
+The repository and Unreal share one working environment but remain separate Git repositories. Choose explicit roots for the plugin checkout and the separate Unreal checkout. Neither must be nested in the other.
 
 1. Copy workspace.example.json to workspace.local.json and set engineRoot to the actual engine root. Alternatively set TURBOMCP_ENGINE. Explicit environment configuration wins; a wrong configured path fails instead of silently selecting another engine.
 2. Run `python Tools/doctor.py`. It checks the version and exact commit in engine.lock.json.
@@ -13,7 +13,7 @@ The ignored TurboMCP.local.code-workspace is an IDE convenience, not a security 
 
 ## Build and test isolation
 
-TestProject/TurboMCPTest.uproject uses AdditionalPluginDirectories = ../Plugins. This removes the need to mutate Engine/Plugins/Marketplace for each checkout. The original engine-wide junction has been left intact for the old checkout; verify new builds and loaded artifacts use this checkout.
+TestProject/TurboMCPTest.uproject uses AdditionalPluginDirectories = ../Plugins. This removes the need to mutate Engine/Plugins/Marketplace for each checkout. Remove stale engine-wide plugin mounts from your local setup only after checking their targets; verify builds and loaded artifacts use this checkout.
 
 Use one editor/build/test owner at a time. Each implementation worker gets a separate Git worktree; a build executor owns the engine outputs and the test editor. Do not let workers regenerate shared fixtures concurrently. Configure each worktree with its own ignored workspace.local.json.
 

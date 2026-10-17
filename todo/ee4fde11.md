@@ -5,6 +5,7 @@ Status: todo
 Priority: P1
 Readiness: needs_reconciliation
 Owner: unassigned
+Design: docs/design/verification.md
 
 ## Scope and acceptance
 
@@ -12,7 +13,7 @@ Preserve the substantive scope below. Before editing, reconcile the finding with
 
 ## Imported evidence
 
-Historical paths and completion claims below are not current proof. Old documents are recoverable from the private backup commit recorded in docs/migration.md.
+Historical paths and completion claims below are not current proof. This task must be made self-contained against the current source before implementation; no private archive is a prerequisite for public contributors.
 
 > Run only after the ten parallel fix cards have settled. Scope: X-1; F3/F4/X-3; DT-06/SV-07; X-20/TD-04/CP-05; GC-02/GC-03/GC-04; SF-04/VA-02/FA-04; GC-06/GC-07; X-18/X-21/X-22; MI-02/FT-27; FT-30/FT-31/TD-05. First reconcile the shared worktree and list every commit or conflict. Then build once from the final worktree and run the selected regression suites for every changed area. Record each card's pass, fail, blocked or not-covered result. Do not close source cards solely because this batch starts.
 

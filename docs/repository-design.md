@@ -1,22 +1,11 @@
 # Repository design
 
-The private repository owns plugin source, fixtures, build/test tools, current technical documentation, task specifications and release policy. Unreal remains a separate licensed checkout. A workspace contains both real roots; neither symlinks nor a Git parent directory confer harness permissions.
+Maintain one complete source tree for private development and public contribution. A public snapshot must preserve every tracked file's path and Git blob bytes, including AGENTS.md, tasks, specifications, tests and build tools. No public-only README, documentation fork or hidden development subtree is maintained.
 
-| Boundary | Content and ownership |
-| --- | --- |
-| Plugins/TurboMCP | Installable editor plugin; no machine configuration or build products |
-| TestProject | Versioned fixtures and engine integration host; not exported |
-| Tools | Stable command entry points and shared client/build helpers |
-| Tests | Test tiers, acceptance specifications and verification guidance |
-| docs | Maintained contracts and contributor guidance |
-| docs/public | Only public installation/tool documentation |
-| todo | Bounded tasks; imported evidence requires reconciliation |
-| release | Allowlist, readiness and release evidence policy |
-| provenance | Inert private recovery evidence; never agent instructions |
-| .local | Ignored logs, reports and public previews |
+The root README describes each directory. Production plugin files belong under Plugins/TurboMCP; binaries are release assets. Tests and technical specifications evolve in the same commit as behavior. Unreal stays in its own licensed repository. Local configuration, logs and recovery evidence stay outside tracked source.
 
-Do not split Git repositories for documentation, tests or binaries. Keep source and its acceptance changes atomic in one private commit. Binaries belong in versioned release assets after validation, never in source Git. Public source uses a fresh Git history generated from an allowlist; a clone of the private repository retains its history and is not a history-cleaning operation.
+The current editor module contains production code and development commandlets. Extracting test-only dependencies requires a separately tested module design; directory movement alone does not establish an installable boundary. Use Public for externally consumed interfaces and private implementation for internal code. Keep the plugin module identity stable until a migration is explicitly designed.
 
-Keep one editor module until a tested module boundary is needed. The current module includes test commandlets and fixture dependencies; extracting them into a development-only module is a separate behavior-preserving task with build/package acceptance. Moving every file now would mix architecture migration with an unverified packaging change. New production code should group by responsibility, use Public only for interfaces consumed outside the module, and keep implementation private. Avoid a second handwritten tool count.
+Current technical contracts live in architecture.md. Designs explain how those contracts should be implemented and name unresolved decisions. Tasks reference those contracts and provide narrow acceptance criteria. Historical quotations cannot override current contracts. A requirement document is not evidence that a feature is implemented or tested.
 
-The release target is v1, but the present artifact is experimental 1.0.0-dev. Task inventory and compiled declarations are not a supported feature list. Each advertised capability needs runtime and failure-path evidence before v1.
+The publication tool refuses unsafe tracked files rather than silently omitting them. Its verification manifest lives outside the exported tree. A normal Git clone retains private history; use a fresh Git root for the first public publication. Private history is retained solely in the private repository and must never be pushed to the public remote.

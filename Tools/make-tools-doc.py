@@ -126,7 +126,7 @@ def main() -> int:
     for tool in tools:
         summary = tool["summary"].replace("|", "\\|").replace("\n", " ")
         out.append(f"| `{tool['owner']}` | `{tool['name']}` | {summary} |")
-    (REPO / "docs/public/docs/tools.md").write_text("\n".join(out)+"\n", encoding="utf8")
+    (REPO / "docs/user/tools.md").write_text("\n".join(out)+"\n", encoding="utf8")
     print(f"Generated reference for {len(tools)} declarations")
     return 0
 

@@ -5,6 +5,7 @@ Status: todo
 Priority: P3
 Readiness: needs_reconciliation
 Owner: unassigned
+Design: docs/design/editor-domains.md
 
 ## Scope and acceptance
 
@@ -12,7 +13,7 @@ Preserve the substantive scope below. Before editing, reconcile the finding with
 
 ## Imported evidence
 
-Historical paths and completion claims below are not current proof. Old documents are recoverable from the private backup commit recorded in docs/migration.md.
+Historical paths and completion claims below are not current proof. This task must be made self-contained against the current source before implementation; no private archive is a prerequisite for public contributors.
 
 > *** SOURCE: `Feedbacks/TurboMCP_TaskList_2026-10-13.md:291-296`, group P3. SOURCE IDs: FT-12 (S4). *** *** CARDED FROM THE LIST, NEVER MEASURED ON THE TREE. ***
 >

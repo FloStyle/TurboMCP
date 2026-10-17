@@ -11,7 +11,7 @@ Run commands from the repository root. Tools is deliberately kept as the existin
 | `pwsh -File Tools/start-editor.ps1` | Start the owned test editor |
 | `pwsh -File Tools/run-suites.ps1 -Suites <name>` | Run selected integration suites |
 | `python Tools/update-todo.py` | Regenerate TODO.md from repository task files |
-| `python Tools/export-public.py --preview --output .local/public-preview` | Produce a reviewable allowlisted public tree |
+| `python Tools/export-public.py --preview --output .local/public-preview` | Produce a reviewable complete public source tree |
 
 Pure tests such as test-client-retry.py, test-result-contract.py, test-coverage-audit.py and test-runner-verdicts.py do not require the editor. Other tests may create or mutate fixture assets; follow the ownership helpers and serialize editor access. Do not infer a passing plugin from a passing static check.
 

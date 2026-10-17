@@ -5,6 +5,7 @@ Status: backlog
 Priority: P1
 Readiness: needs_reconciliation
 Owner: unassigned
+Design: docs/design/protocol.md
 
 ## Scope and acceptance
 

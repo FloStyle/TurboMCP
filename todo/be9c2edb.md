@@ -5,6 +5,7 @@ Status: todo
 Priority: P2
 Readiness: needs_reconciliation
 Owner: unassigned
+Design: docs/design/graphs.md
 
 ## Scope and acceptance
 
@@ -12,7 +13,7 @@ Preserve the substantive scope below. Before editing, reconcile the finding with
 
 ## Imported evidence
 
-Historical paths and completion claims below are not current proof. Old documents are recoverable from the private backup commit recorded in docs/migration.md.
+Historical paths and completion claims below are not current proof. This task must be made self-contained against the current source before implementation; no private archive is a prerequisite for public contributors.
 
 > Source
 >     `Feedbacks/TurboMCP_TaskList_2026-10-13.md:208-218`, group P2. Source IDs: X-01, LR-05 and KN-01 (S1), plus the capture design note (S1). This card came from the list. No one measured it on the tree.

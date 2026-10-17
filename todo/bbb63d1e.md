@@ -5,6 +5,7 @@ Status: todo
 Priority: P1
 Readiness: needs_reconciliation
 Owner: unassigned
+Design: docs/design/editor-domains.md
 
 ## Scope and acceptance
 
@@ -12,7 +13,7 @@ Preserve the substantive scope below. Before editing, reconcile the finding with
 
 ## Imported evidence
 
-Historical paths and completion claims below are not current proof. Old documents are recoverable from the private backup commit recorded in docs/migration.md.
+Historical paths and completion claims below are not current proof. This task must be made self-contained against the current source before implementation; no private archive is a prerequisite for public contributors.
 
 > Architectural decision
 >     Add a dedicated Preview/Edit batch capability. Do not call existing Edit tools sequentially: each existing writer owns its own transaction, compile, and save, so composition would create multiple undo records and cannot guarantee rollback. The batch owns the only transaction and invokes reusable plan/apply primitives without nested transactions.

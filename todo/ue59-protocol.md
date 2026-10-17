@@ -5,6 +5,7 @@ Status: backlog
 Priority: P2
 Readiness: needs_reconciliation
 Owner: unassigned
+Design: docs/design/editor-domains.md
 
 ## Scope and acceptance
 

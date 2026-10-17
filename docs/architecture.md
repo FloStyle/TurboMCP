@@ -10,7 +10,8 @@ Follow this document before the roadmap or archived audit recommendations.
 Do not replace these decisions with a new architecture.
 Use existing engine APIs and existing plugin helpers where they meet these contracts.
 Extract small shared helpers only when multiple repaired callers need them.
-Do not introduce another service, database, framework, plugin module, or general workflow engine.
+Do not introduce another service, database, framework or general workflow engine.
+Changes to module boundaries require a bounded design and packaging evidence; keep existing interfaces stable.
 
 If engine behavior contradicts a decision, record the contradiction with evidence.
 Continue unrelated safe work. Ask the owner only for a genuine architectural exception.
@@ -381,9 +382,9 @@ Do not modify engine-wide plugin mounts.
 Fail missing artifacts and stale loaded-module identity.
 Use incremental plugin builds, not repeated clean engine builds.
 
-Prepare a source release with plugin source, descriptor, required content, resources, license, and user documentation.
-Do not bundle engine code, credentials, local evidence logs, caches, or test assets by default.
-Keep developer-only scripts and audit history separate from the user package.
+The public source release preserves the complete tracked repository, including contributor tools, test fixtures, tasks and specifications.
+The installable plugin package is a separate artifact containing the plugin and validated target-specific binaries; development fixtures and tooling do not belong in that install package.
+Neither artifact includes engine source, credentials, local evidence logs, caches or private recovery archives.
 Document prerequisites honestly.
 Perform the minimal clean-install test on the actual staged package.
 
@@ -405,7 +406,7 @@ Do not claim logs prove an edit's final state.
 AGENTS.md defines the workspace workflow. TODO.md links to repository-owned tasks.
 No external task board is required. Evidence establishes correctness; status text does not.
 Private commits and migration pushes are authorized for this restructuring. Public publication is a separate operation.
-Use the allowlisted exporter; never merge private history into the public repository.
+Use the complete tracked-tree exporter; never merge private history into the public repository.
 
 ## ARC16 — Decisions taken after the first run
 
