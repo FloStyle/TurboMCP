@@ -1,10 +1,10 @@
 # R16: Establish installed-engine integration constraints
 
 ID: R16
-Status: todo
+Status: done
 Priority: P1
 Readiness: ready
-Owner: unassigned
+Owner: dsh-r16-01
 Design: docs/design/verification.md
 Kind: investigation
 Review: source-reviewed
@@ -74,15 +74,17 @@ Changed files: `docs/audit/installed-engine-boundaries.md`, `docs/audit/installe
 
 Unresolved: installed 5.8.3 distribution is absent; the local 5.6 installation lacks `ModelContextProtocol` and `ToolsetRegistry`; no packaged plugin, Blueprint-only clean install or runtime discovery/save/undo proof exists; the corrected documentation commit was not rebuilt; per-symbol installed export availability is unverified; `NoRedist` has no runtime enforcement in the inspected source; cross-harness engine/port locking and the 5.9 runtime remain unverified. Integration review is required before marking R16 done.
 
+Integration acceptance: candidate `637cc1c5284b99fd4faf8828d7da5bfaf469a694` passed the full-base scope gate and candidate-bound offline run `d166ce1` (full run identity retained locally). The integration reviewer verified cited physical header paths and corrected representative-interface wording. Plugin tree `590661ec45c829264ea1743fccea994edb748092` is unchanged from the supervised passing build. Completion applies only to the investigation; no package or runtime compatibility is certified.
+
 ## Current review
 
-**Decision:** plan. **Follow-up owner:** [R16](roadmap-r16.md).
+**Decision:** completed. **Follow-up owner:** [R12](roadmap-r12.md), [R14](roadmap-r14.md), [R04](roadmap-r04.md).
 
-Non-unity incremental plugin compilation is verified; that does not require a full engine rebuild. Production and fixture dependencies still need caller/export analysis.
+The dependency and integration investigation is accepted. The pinned 5.8.3 build compiled and linked the plugin and test project without engine-module compilation. Installed-engine packaging and 5.9 compatibility remain unverified.
 
 ### Next action and acceptance
 
-Produce dependency rows with production/test callers, public header/export visibility and distribution evidence. Compare direct registry use and a small adapter before a module split. Record broken public URLs without inventing a replacement publication target. Workers perform source/offline work only; the integration owner supplies the baseline build evidence while cross-harness execution locking remains unverified.
+R12 owns exact-distribution packaging and Blueprint-only consumer proof. R14 must resolve the public registry identity path before adapter implementation. R04 owns behavioral auditing. Dependency removal and development-module extraction remain proposals requiring separate approved scopes. Cross-harness engine execution remains restricted to the integration owner pending lock verification.
 
 ### Current source and verification
 

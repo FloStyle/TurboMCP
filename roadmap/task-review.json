@@ -3058,12 +3058,14 @@
     },
     {
       "title": "R16: Establish installed-engine integration constraints",
-      "decision": "plan",
+      "decision": "completed",
       "owners": [
-        "R16"
+        "R12",
+        "R14",
+        "R04"
       ],
-      "finding": "Non-unity incremental plugin compilation is verified; that does not require a full engine rebuild. Production and fixture dependencies still need caller/export analysis.",
-      "action": "Produce dependency rows with production/test callers, public header/export visibility and distribution evidence. Compare direct registry use and a small adapter before a module split. Record broken public URLs without inventing a replacement publication target. Workers perform source/offline work only; the integration owner supplies the baseline build evidence while cross-harness execution locking remains unverified.",
+      "finding": "The dependency and integration investigation is accepted. The pinned 5.8.3 build compiled and linked the plugin and test project without engine-module compilation. Installed-engine packaging and 5.9 compatibility remain unverified.",
+      "action": "R12 owns exact-distribution packaging and Blueprint-only consumer proof. R14 must resolve the public registry identity path before adapter implementation. R04 owns behavioral auditing. Dependency removal and development-module extraction remain proposals requiring separate approved scopes. Cross-harness engine execution remains restricted to the integration owner pending lock verification.",
       "id": "R16",
       "path": "todo/roadmap-r16.md",
       "source_refs": [

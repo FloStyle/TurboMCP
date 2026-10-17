@@ -46,7 +46,7 @@
       "installed_evidence": "present in any editor distribution",
       "classification": "engine-required",
       "owning_header": "Engine/Source/Runtime/Core/Public/CoreMinimal.h",
-      "used_surface": "FString, TArray, delegates, FModuleManager",
+      "used_surface": "Representative Core types via CoreMinimal.h; template/inline code and CORE_API imports",
       "export_mechanism": "CORE_API engine import",
       "local_link_evidence": "linked in integrator build 7fe2db69671c429f82126beba6d529a6 at ff633b8"
     },
@@ -63,7 +63,7 @@
       "installed_evidence": "present in any editor distribution",
       "classification": "engine-required",
       "owning_header": "Engine/Source/Runtime/CoreUObject/Public/UObject/Object.h",
-      "used_surface": "UObject, UClass, UHT reflection",
+      "used_surface": "UObject",
       "export_mechanism": "COREUOBJECT_API and generated code",
       "local_link_evidence": "linked in integrator build at ff633b8"
     },
@@ -80,7 +80,7 @@
       "installed_evidence": "present in any editor distribution",
       "classification": "engine-required",
       "owning_header": "Engine/Source/Runtime/Engine/Classes/Engine/World.h; Engine/Source/Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h",
-      "used_surface": "UWorld, UTextureRenderTarget2D, AActor",
+      "used_surface": "UWorld and UTextureRenderTarget2D",
       "export_mechanism": "ENGINE_API",
       "local_link_evidence": "linked in integrator build at ff633b8"
     },
@@ -97,7 +97,7 @@
       "installed_evidence": "unverified in installed 5.8.3",
       "classification": "production-and-fixture",
       "owning_header": "Engine/Source/Runtime/AssetRegistry/Public/AssetRegistry/IAssetRegistry.h",
-      "used_surface": "IAssetRegistry, FAssetRegistryModule",
+      "used_surface": "IAssetRegistry",
       "export_mechanism": "ASSETREGISTRY_API module and virtual interface",
       "local_link_evidence": "linked in integrator build at ff633b8"
     },
@@ -241,7 +241,7 @@
       "installed_evidence": "unverified in installed 5.8.3",
       "classification": "production-and-fixture",
       "owning_header": "Engine/Source/Runtime/Json/Public/Dom/JsonObject.h",
-      "used_surface": "FJsonObject, FJsonSerializer",
+      "used_surface": "FJsonObject",
       "export_mechanism": "JSON_API",
       "local_link_evidence": "linked in integrator build at ff633b8"
     },
@@ -450,7 +450,7 @@
       "installed_evidence": "unverified in installed 5.8.3",
       "classification": "production-and-fixture",
       "owning_header": "Engine/Source/Runtime/UMG/Public/Blueprint/UserWidget.h",
-      "used_surface": "UUserWidget and UWidgetTree",
+      "used_surface": "UUserWidget",
       "export_mechanism": "UMG_API",
       "local_link_evidence": "linked in integrator build at ff633b8"
     },
@@ -514,7 +514,7 @@
       "installed_evidence": "unverified in installed 5.8.3",
       "classification": "production-required",
       "owning_header": "Engine/Source/Runtime/Analytics/AnalyticsET/Public/IAnalyticsProviderET.h",
-      "used_surface": "IAnalyticsProviderET; FAnalyticsET::Config (inline)",
+      "used_surface": "IAnalyticsProviderET",
       "export_mechanism": "virtual interface and inline config type",
       "local_link_evidence": "linked in integrator build at ff633b8"
     },

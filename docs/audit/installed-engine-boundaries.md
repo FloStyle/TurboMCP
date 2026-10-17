@@ -2,7 +2,7 @@
 
 [Documentation](../README.md) · [Engine compatibility](../engine-compatibility.md) · [Installed-engine support](../installed-engine.md)
 
-Checked 2026-10-17. This is a source and dependency investigation. No build, editor, engine suite, packaging run or installed-engine test was performed by R16.
+Checked 2026-10-17. This is a source and dependency investigation. The worker performed source and offline checks only; the integrator supplied the baseline build described below. No editor, engine suite, packaging run or installed-engine test was performed for this investigation.
 
 ## Identity and evidence status
 
@@ -86,10 +86,10 @@ The declaration table records every Build.cs entry; the evidence tables name the
 
 | Dependency | Owning public header | Used surface | Export/link mechanism | Local link evidence |
 | --- | --- | --- | --- | --- |
-| `Core` | Engine/Source/Runtime/Core/Public/CoreMinimal.h | FString, TArray, delegates, FModuleManager | CORE_API engine import | linked in integrator build 7fe2db69671c429f82126beba6d529a6 at ff633b8 |
-| `CoreUObject` | Engine/Source/Runtime/CoreUObject/Public/UObject/Object.h | UObject, UClass, UHT reflection | COREUOBJECT_API and generated code | linked in integrator build at ff633b8 |
-| `Engine` | Engine/Source/Runtime/Engine/Classes/Engine/World.h; Engine/Source/Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h | UWorld, UTextureRenderTarget2D, AActor | ENGINE_API | linked in integrator build at ff633b8 |
-| `AssetRegistry` | Engine/Source/Runtime/AssetRegistry/Public/AssetRegistry/IAssetRegistry.h | IAssetRegistry, FAssetRegistryModule | ASSETREGISTRY_API module and virtual interface | linked in integrator build at ff633b8 |
+| `Core` | Engine/Source/Runtime/Core/Public/CoreMinimal.h | Representative Core types via CoreMinimal.h; template/inline code and CORE_API imports | CORE_API engine import | linked in integrator build 7fe2db69671c429f82126beba6d529a6 at ff633b8 |
+| `CoreUObject` | Engine/Source/Runtime/CoreUObject/Public/UObject/Object.h | UObject | COREUOBJECT_API and generated code | linked in integrator build at ff633b8 |
+| `Engine` | Engine/Source/Runtime/Engine/Classes/Engine/World.h; Engine/Source/Runtime/Engine/Classes/Engine/TextureRenderTarget2D.h | UWorld and UTextureRenderTarget2D | ENGINE_API | linked in integrator build at ff633b8 |
+| `AssetRegistry` | Engine/Source/Runtime/AssetRegistry/Public/AssetRegistry/IAssetRegistry.h | IAssetRegistry | ASSETREGISTRY_API module and virtual interface | linked in integrator build at ff633b8 |
 | `BlueprintEditorLibrary` | Engine/Source/Editor/BlueprintEditorLibrary/Public/BlueprintEditorLibrary.h | UBlueprintEditorLibrary static functions | BLUEPRINTEDITORLIBRARY_API (UE_API) | linked in integrator build at ff633b8 |
 | `BlueprintGraph` | Engine/Source/Editor/BlueprintGraph/Classes/K2Node.h | UK2Node and K2Node_* classes | BLUEPRINTGRAPH_API methods and UHT classes | linked in integrator build at ff633b8 |
 | `KismetCompiler` | none located | no direct include or symbol located | not established; keep until a build test | not separately exercised |
@@ -98,7 +98,7 @@ The declaration table records every Build.cs entry; the evidence tables name the
 | `EditorScriptingUtilities` | Engine/Plugins/Editor/EditorScriptingUtilities/Source/EditorScriptingUtilities/Public/EditorAssetLibrary.h | UEditorAssetLibrary::SaveLoadedAsset | EDITORSCRIPTINGUTILITIES_API (UE_API) | linked in integrator build at ff633b8 |
 | `EditorSubsystem` | Engine/Source/Editor/EditorSubsystem/Public/EditorSubsystem.h | UEditorSubsystem base of UAssetEditorSubsystem; subsystem lookup | UCLASS MinimalAPI and UHT reflection | linked in integrator build at ff633b8 |
 | `GraphEditor` | Engine/Source/Editor/UnrealEd/Public/GraphEditor.h (SGraphEditor declaration; the declared GraphEditor module has no located direct include) | SGraphEditor::Construct, GetViewLocation and SetViewLocation | UNREALED_API class methods | linked in integrator build at ff633b8 |
-| `Json` | Engine/Source/Runtime/Json/Public/Dom/JsonObject.h | FJsonObject, FJsonSerializer | JSON_API | linked in integrator build at ff633b8 |
+| `Json` | Engine/Source/Runtime/Json/Public/Dom/JsonObject.h | FJsonObject | JSON_API | linked in integrator build at ff633b8 |
 | `JsonUtilities` | none located | no direct include or symbol located | not established; keep until a build test | not separately exercised |
 | `Kismet` | none located | no direct include or symbol located; compile path uses UnrealEd FKismetEditorUtilities | not established; keep until a build test | not separately exercised |
 | `InputCore` | none located | no direct include or symbol located | not established; keep until a build test | not separately exercised |
@@ -111,11 +111,11 @@ The declaration table records every Build.cs entry; the evidence tables name the
 | `ToolsetRegistry` | Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Public/ToolsetRegistry/UToolsetRegistry.h; Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Public/ToolsetRegistry/ToolsetRegistry.h; Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Public/ToolsetRegistry/Toolset.h; Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Public/ToolsetRegistry/ToolsetRegistrySubsystem.h | RegisterToolsetClass, Find, RegisterToolset, UnregisterToolset, ForEachToolset, ExecuteTool, GetJsonSchema, GetToolsetClass | TOOLSETREGISTRY_API and virtual interfaces | linked in integrator build 7fe2db69671c429f82126beba6d529a6 at ff633b8; 5.9 GetToolsetClass removal unresolved under R14 |
 | `ImageWrapper` | none located | no direct include or symbol located; PNG path uses Engine FImageUtils | not established; keep until a build test | not separately exercised |
 | `RenderCore` | none located | no direct RenderCore-exported symbol located; RHI headers and link closure are propagated by RenderCore's public RHI dependency | build dependency propagation: RenderCore.Build.cs publicly depends on RHI; RHI symbols are exported by RHI, not by RenderCore | linked in integrator build at ff633b8 |
-| `UMG` | Engine/Source/Runtime/UMG/Public/Blueprint/UserWidget.h | UUserWidget and UWidgetTree | UMG_API | linked in integrator build at ff633b8 |
+| `UMG` | Engine/Source/Runtime/UMG/Public/Blueprint/UserWidget.h | UUserWidget | UMG_API | linked in integrator build at ff633b8 |
 | `UMGEditor` | Engine/Source/Editor/UMGEditor/Public/WidgetBlueprint.h; Engine/Source/Editor/UMGEditor/Public/WidgetBlueprintOperationUtils.h | UWidgetBlueprint and FWidgetBlueprintOperationUtils | UMGEDITOR_API | linked in integrator build at ff633b8 |
 | `MaterialEditor` | Engine/Source/Editor/MaterialEditor/Public/MaterialEditingLibrary.h | UMaterialEditingLibrary | MATERIALEDITOR_API | linked in integrator build at ff633b8 |
 | `Projects` | Engine/Source/Runtime/Projects/Public/Interfaces/IPluginManager.h | IPluginManager | PROJECTS_API and virtual interface | linked in integrator build at ff633b8 |
-| `AnalyticsET` | Engine/Source/Runtime/Analytics/AnalyticsET/Public/IAnalyticsProviderET.h | IAnalyticsProviderET; FAnalyticsET::Config (inline) | virtual interface and inline config type | linked in integrator build at ff633b8 |
+| `AnalyticsET` | Engine/Source/Runtime/Analytics/AnalyticsET/Public/IAnalyticsProviderET.h | IAnalyticsProviderET | virtual interface and inline config type | linked in integrator build at ff633b8 |
 | `SlateInspectorToolset` | Engine/Plugins/Experimental/Toolsets/SlateInspectorToolset/Source/SlateInspectorToolset/Public/SlateInspectorToolset.h | USlateInspectorToolset::Screenshot | SLATEINSPECTORTOOLSET_API | linked in integrator build at ff633b8 |
 | `AnimGraph` | none located | no include or typed symbol located | not established; candidate | not separately exercised |
 | `Niagara` | none located | no include or typed symbol located | not established; candidate | not separately exercised |

@@ -88,3 +88,18 @@ The shared-ledger confirmation closes the task-claim visibility blocker. R16 is
 reopened for source/offline work only. Until execution-lock visibility is proven,
 the integration owner alone runs its baseline build and supplies the evidence.
 No worker may infer engine-execution permission from holding a task claim.
+
+## R16 integration follow-up
+
+The [dependency investigation](installed-engine-boundaries.md) is accepted with a
+passing source-engine build and unchanged plugin code. No engine-module rebuild
+was needed. R12 still owns exact installed-distribution dependency/export checks,
+packaging and Blueprint-only consumer acceptance. R14 owns the unresolved public
+class-to-registered-name identity path and recorder lifecycle/filtering controls.
+R04 owns behavioral checks; none of these support claims follows from a link pass.
+
+Dependency removal, development-module extraction and release URL changes remain
+proposals, not worker implementation permission. Keep unused-looking dependencies
+until a bounded removal test establishes production and fixture behavior. The
+cross-harness execution-lock gap remains open; only the integration owner may
+schedule engine work until contention and recovery are verified across harnesses.

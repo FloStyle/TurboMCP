@@ -8,7 +8,7 @@ The review is complete as backlog triage and specification review. It is not a c
 
 ## What an agent may do
 
-R13 has completed its bounded source comparison after integration review. R16 is next, for integration constraints. The queue order is unchanged. Give one task to one worker through the claim workflow. Imported records remain evidence for the assigned roadmap investigation, not permission to implement the whole backlog. R14 is now unready until its replacement API and adapter boundaries are specified.
+R13 and R16 have completed their bounded source investigations after integration review. R04 is next, for callable behavior and result contracts. Worker engine execution remains restricted pending cross-harness lock verification. The queue order is unchanged. Give one task to one worker through the claim workflow. Imported records remain evidence for the assigned roadmap investigation, not permission to implement the whole backlog. R14 is now unready until its replacement API and adapter boundaries are specified.
 
 A source-confirmed defect needs a failing regression and a reviewed repair scope before integration. The repair contracts below are the starting specifications; they are not a blanket implementation assignment. Runtime investigations may finish with explicitly unresolved evidence, but a product repair cannot be marked done on that basis.
 
@@ -16,13 +16,13 @@ A source-confirmed defect needs a failing regression and a reviewed repair scope
 
 | Decision | Records | Meaning |
 | --- | ---: | --- |
-| completed | 4 | Bounded foundation and R13 source comparison completed; broader runtime claims stay open. |
+| completed | 5 | Bounded foundation, R13 comparison and R16 integration investigation completed; broader runtime claims stay open. |
 | confirmed | 17 | A specific current source path supports a defect or contract gap; runtime acceptance is still required. |
 | deferred | 18 | New scope or compatibility work needs a native comparison, design or unavailable target. |
 | duplicate | 6 | Another named record owns the change; these requirements remain linked. |
 | investigate | 17 | The symptom or design conflict still needs a targeted experiment or decision. |
 | partial | 18 | Some historical claims are stale or already implemented; remaining checks are named. |
-| plan | 15 | The roadmap or release contract is actionable within its dependencies and stated limits. |
+| plan | 14 | The roadmap or release contract is actionable within its dependencies and stated limits. |
 | reference | 6 | Useful historical regression evidence, not an implementation task. |
 | requires spec | 1 | Implementation must wait for an exact reviewed specification. |
 | superseded | 7 | Old process instructions are replaced by the current workflow. |
@@ -153,7 +153,7 @@ The compile-ensure native test is in `TestProject/Source/TurboMCPTest/Private/Tu
 | [R13: Compare native capabilities before expansion](../../todo/roadmap-r13.md) | completed | R16, R04, R14 |
 | [R14: Implement only an approved compatibility adapter](../../todo/roadmap-r14.md) | requires spec | R14 |
 | [R15: Activate gated private CI and release preparation](../../todo/roadmap-r15.md) | plan | R15 |
-| [R16: Establish installed-engine integration constraints](../../todo/roadmap-r16.md) | plan | R16 |
+| [R16: Establish installed-engine integration constraints](../../todo/roadmap-r16.md) | completed | R12, R14, R04 |
 | [R17: Expose verified tool preferences](../../todo/roadmap-r17.md) | plan | R17 |
 | [R18: Design the editor panel before rewriting it](../../todo/roadmap-r18.md) | plan | R18 |
 | [Keep one owner for task review](../../todo/task-reconciliation.md) | duplicate | R04 |
