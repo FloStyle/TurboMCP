@@ -78,6 +78,8 @@ Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contract
 
 Unresolved: the four tools' runtime behavior; fraction/overflow and empty-log invalid-cap cases; 50/500 and 4000-plus-suffix boundaries; truncated paging; ON->OFF, OFF->ON and clear-with-log-on record shapes; omitted-vs-empty live schema behavior; refusal-versus-invocation bError; `call_structured` migration; and any `FScopedCall` state/header change required by `R04-REPAIR-04`. The 97 unreviewed rows remain unreviewed. Stopping for integration review; no merge, push, completion or claim release.
 
+Integration review accepted candidate `12d515ac46b58e42e83fffb9b577181fb4e68b55` as the first source-only checkpoint. The scope gate and candidate-bound offline run `ba930a8` passed; the shared claim matched. The integration owner qualified error-filter and pre-wrapper/transport behavior. Four of 101 tools are source-reviewed; R04 remains todo and every repair proposal remains unapproved. No next-family dispatch is authorized by this acceptance.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)

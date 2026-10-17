@@ -103,3 +103,17 @@ proposals, not worker implementation permission. Keep unused-looking dependencie
 until a bounded removal test establishes production and fixture behavior. The
 cross-harness execution-lock gap remains open; only the integration owner may
 schedule engine work until contention and recovery are verified across harnesses.
+
+## R04 call-log checkpoint
+
+The [four-tool source audit](callable-contracts.md) records six findings: permissive
+numeric conversion, empty-log validation ordering, misleading continuation text,
+missing structured-result migration metadata, toggle record asymmetry and domain
+refusals recorded without an error flag. R04 owns their specification and probes.
+None is repaired or runtime-certified; 97 tool rows remain unreviewed.
+
+Before implementation, decide the client/tool migration boundary and the toggle
+lifecycle policy, including any state/header changes and handling after disable.
+Do not use prose parsing to turn domain refusals into structured errors. A transport
+failure does not guarantee a recorded invocation error. Existing source findings
+and passing offline checks do not substitute for owned engine probes.

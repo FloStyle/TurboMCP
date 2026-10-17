@@ -2919,10 +2919,10 @@
         "TurboMCPCallRecorder.cpp:126-128 sets bError = Result.HasError(); FScopedCall stores only that boolean (TurboMCPCallLog.cpp:272-305).",
         "ReadTurboMCPCallCost counts bError at :237-240; ReadTurboMCPCallLog's filter maps bError to 'error'/'ok' at :95."
       ],
-      "observed_source_behavior": "The four tools return ordinary FString bodies beginning 'error:' for invalid arguments. The reflection layer serializes that as a successful string value, so the recorder records no ERROR, the cost report's failed count does not include it, and a filter=error does not match it. A genuine unknown-tool, pre-invocation parameter-conversion error, or script exception is HasError and does record bError=true.",
+      "observed_source_behavior": "Ordinary error-prefixed FString refusals are reflected as successful values. When recorded, their plugin end has bError=false and does not contribute to error-flag-based failed counts. The error-status filter branch does not match it, but other OR branches can match tool/source/argument text containing error. An error returned by the inner invocation after the recorder starts produces bError=true if logging remains enabled. Failures before wrapper entry or transport disconnects do not guarantee such a record.",
       "controls": {
         "ordinary_refusal": "EditTurboMCPCallLog enabled=banana returns 'error: ... is not a yes or no' from the body.",
-        "genuine_invocation_error": "An unknown tool name or a malformed required parameter rejected by FunctionLibraryToolset before the body."
+        "genuine_invocation_error": "With logging enabled and the recorder installed on an enabled toolset, invoke the known EditTurboMCPCallLog tool with its required Enabled field omitted. Verify the request reaches the wrapper, then fails inner required-parameter validation before the body. A disabled/filtered toolset or transport failure is not an equivalent control."
       },
       "existing_assertions": "Tools/test-call-log.py:386-397 checks the bad-boolean text but not the log record's bError or the cost failed count; no invocation-error control asserts bError=true.",
       "runtime_status": "not_run",
@@ -2953,7 +2953,8 @@
       "expected": "Fractional input is not silently truncated and overflow does not depend on CRT behavior. A signed positive integer such as +1 remains accepted unless a separately reviewed integer policy changes it. Negative integers remain refused by the existing <= 0 rule.",
       "negative_control": "Valid 1 and, if the policy preserves it, +1 still return one bounded row without an error.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log,test-call-cost --execute",
-      "rollback": "Revert the two source files and two test files; no public schema change."
+      "rollback": "Revert the two source files and two test files; no public schema change.",
+      "approval": "proposal_only_not_dispatch_ready"
     },
     {
       "id": "R04-REPAIR-02",
@@ -2973,7 +2974,8 @@
       "expected": "Invalid cap is refused before the empty-log message on both empty states, matching ReadTurboMCPCallLog. A valid cap still returns the emptiness explanation.",
       "negative_control": "cap=1 on an empty log returns the no-cost/empty explanation, not an error.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-cost --execute",
-      "rollback": "Revert the cost file and test file only."
+      "rollback": "Revert the cost file and test file only.",
+      "approval": "proposal_only_not_dispatch_ready"
     },
     {
       "id": "R04-REPAIR-03",
@@ -2994,7 +2996,8 @@
       "expected": "The continuation says truthfully that the shown rows are the newest N of M and that older rows are not returned by this answer; it does not promise since=newest can fetch them and does not advise raising limit or cap above 500/50. No pagination or schema change is part of this repair.",
       "negative_control": "A since value older than the omitted rows still returns those rows, proving the filter itself is unchanged.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log --execute",
-      "rollback": "Revert the log tool and test file only."
+      "rollback": "Revert the log tool and test file only.",
+      "approval": "proposal_only_not_dispatch_ready"
     },
     {
       "id": "R04-REPAIR-04",
@@ -3017,7 +3020,8 @@
       "negative_control": "A normal ON call still has start and end; a normal OFF call leaves no new records; a real unfinished call still renders as running/missing-end.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log --execute",
       "rollback": "Revert the two listed TurboMCPCallLog source files and Tools/test-call-log.py only; do not revert TurboMCPCallRecorder.cpp, which is outside this proposed scope.",
-      "unresolved_scope": "If the policy requires a bStartWritten/state member in FScopedCall, Public/TurboMCPCallLog.h must be explicitly added by the integrator. It is not in this allowlist."
+      "unresolved_scope": "If the policy requires a bStartWritten/state member in FScopedCall, Public/TurboMCPCallLog.h must be explicitly added by the integrator. It is not in this allowlist.",
+      "approval": "proposal_only_not_dispatch_ready"
     },
     {
       "id": "R04-REPAIR-05",
@@ -3042,7 +3046,8 @@
         "status": "awaiting_integrator_specification",
         "scope": "Add ARC02 result lines to the four call-log tools and derive bError from the structured outcome.",
         "allowed_files": "not approved in this checkpoint"
-      }
+      },
+      "approval": "proposal_only_not_dispatch_ready"
     },
     {
       "id": "R04-REPAIR-06",
@@ -3055,14 +3060,15 @@
       ],
       "preserved_behavior": [
         "no arbitrary prose parsing",
-        "transport/invocation errors still record bError=true",
+        "inner invocation errors reaching the active recorder still record bError=true while logging stays enabled",
         "ordinary refusals keep their existing text"
       ],
-      "synthetic_probe": "With logging ON, make one known ordinary refusal (EditTurboMCPCallLog enabled=banana) and one genuine invocation error (unknown tool or a malformed required parameter rejected before the body); inspect the end records' bError/ERROR and the cost failed count/filter=error.",
+      "synthetic_probe": "EditTurboMCPCallLog enabled=banana returns 'error: ... is not a yes or no' from the body. Compare with: With logging enabled and the recorder installed on an enabled toolset, invoke the known EditTurboMCPCallLog tool with its required Enabled field omitted. Verify the request reaches the wrapper, then fails inner required-parameter validation before the body. A disabled/filtered toolset or transport failure is not an equivalent control.",
       "expected": "The probe records the current truth: ordinary refusal has bError=false and is absent from failed counts; genuine invocation error has bError=true. A production fix is deferred until a structured outcome exists; do not parse 'error:' prose.",
       "negative_control": "Genuine invocation error must still produce bError=true, so the probe cannot pass by marking everything false.",
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log,test-call-cost --execute",
-      "rollback": "Test-only; no production rollback."
+      "rollback": "Test-only; no production rollback.",
+      "approval": "proposal_only_not_dispatch_ready"
     }
   ],
   "probe_gaps": [
@@ -3115,5 +3121,13 @@
       "Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Private/ToolsetRegistry/ObjectFunctionToolCall.cpp:105-162,555-559",
       "Engine/Plugins/Experimental/ToolsetRegistry/Source/ToolsetRegistry/Private/ToolsetRegistry/FunctionLibraryToolset.cpp:155-194"
     ]
+  },
+  "integration_review": {
+    "candidate": "12d515ac46b58e42e83fffb9b577181fb4e68b55",
+    "decision": "accepted_source_checkpoint_only",
+    "task_complete": false,
+    "repairs_approved": false,
+    "remaining_tools": 97,
+    "limitations": "No runtime results. Toggle lifecycle policy, state/header scope and result migration require integrator specification before implementation."
   }
 }
