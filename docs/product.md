@@ -1,5 +1,7 @@
 # Product requirements
 
+[Documentation](README.md)
+
 ## Purpose and users
 
 TurboMCP extends Unreal's MCP server so a human-supervised agent can inspect and edit an Unreal Editor project with explicit targets, bounded output and verifiable results. Contributors must be able to build, test and understand the plugin from this source repository without private documents or a particular agent harness.

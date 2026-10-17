@@ -1,5 +1,7 @@
 # Audit status and confirmed planning findings
 
+[Documentation](../README.md)
+
 Inspected baseline: private main 4984478, plugin implementation unchanged from the earlier baseline except Build.cs comment cleanup. Inspection date: 2026-10-17. This report separates complete inventory coverage from incomplete semantic/runtime audit coverage.
 
 ## Coverage

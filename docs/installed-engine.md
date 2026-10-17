@@ -1,5 +1,7 @@
 # Installed-engine support
 
+[Documentation](README.md)
+
 Goal: install TurboMCP into a normal project's Plugins/TurboMCP folder, using an installed engine, without engine source patches. This is a compatibility target, not current certified support.
 
 The present machine has source 5.8.3 and Launcher 5.6. The installed 5.6 tree has no ModelContextProtocol plugin descriptor, so it cannot validate this plugin's mandatory MCP dependency. Do not downgrade the source baseline or silently select that engine.

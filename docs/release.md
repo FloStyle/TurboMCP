@@ -1,17 +1,38 @@
-# Source publication and plugin releases
+# Release guide
 
-The development repository is private until publication is explicitly authorized. The public source tree is a complete 1:1 copy of a reviewed tracked tree. Tasks, specifications, tests, tools and contributor instructions are part of that public source repository. A plugin install package is a different artifact containing the installable plugin and validated binaries for an exact engine distribution.
+[Documentation](README.md) · [Project status](status.md)
 
-## Preview
+## Two release artifacts
 
-Stage the candidate changes, then run `python Tools/export-public.py --preview --output .local/source-preview`. The exporter reads staged Git blobs, preserves paths and bytes, and refuses unstaged tracked edits, symlinks, unresolved merges, prohibited tracked artifacts and sensitive-data patterns. Ignored/untracked local files and .git are not source. No tracked file is silently omitted. Review metadata is written beside the directory as source-preview.manifest.json, so it cannot change the copied tree.
+| Artifact | Contents |
+| --- | --- |
+| Public source repository | Every tracked file, with identical paths and bytes, in fresh Git history |
+| Plugin installation package | Installable plugin and validated binaries for an exact engine distribution |
 
-A preview does not certify release readiness or authorize publication. Verify the manifest against the staged tree and run offline validation from the exported tree after initializing a temporary Git repository. Inspect binary fixtures and third-party ownership separately; text pattern checks are not a complete privacy or licensing audit.
+Tasks, specifications, tests and contributor tools belong in the public source tree. Unreal source, credentials, personal configuration and private recovery archives do not belong in either artifact.
 
-## Release
+## Preview the source tree
 
-A release requires a clean committed tree, readiness and owner approval, validated plugin identity and complete acceptance evidence. See [release manager](release-manager.md). Initialize a new Git repository in the approved complete export. Verify its root commit has no private ancestors and its source manifest matches the reviewed candidate. Push only after the owner authorizes publication. Never mirror or merge private history.
+Stage the candidate changes, then run:
 
-Do not put development credentials, private recovery archives or personal machine configuration into tracked files. If something cannot be public, keep it outside this source tree rather than adding a silent export exception. Implementation credentials should not grant publication rights.
+```powershell
+python Tools/export-public.py --preview --output .local/source-preview
+```
 
-Binary releases require separate exact engine/platform/build identity, package hashes and clean-install acceptance. See [installed-engine support](installed-engine.md). Current development remains experimental; the export mechanism does not certify v1.
+Choose a new output directory for each preview. The exporter reads staged Git blobs and refuses unstaged tracked edits, unresolved merges, symlinks, prohibited artifacts and sensitive-data patterns. It never silently omits a tracked file. Ignored files, untracked files and `.git` are excluded because they are not part of the tracked tree.
+
+The manifest is written beside the export as `source-preview.manifest.json`. Verify it against the staged tree. Initialize a temporary Git repository in the export and run offline validation there. Review binary fixtures and third-party ownership separately: text scanning cannot establish their privacy or licensing status.
+
+A preview is a review artifact. It does not approve or publish a release.
+
+## Approve and publish
+
+Follow the [release manager checklist](release-manager.md). Release requires a clean committed tree, complete acceptance evidence, validated plugin identity, readiness approval and the owner's explicit publication instruction.
+
+Create a new Git repository from the approved complete export. Check that its root commit has no private ancestors and that its manifest matches the reviewed candidate. Never mirror the private repository or merge its history into the public one.
+
+Keep implementation credentials separate from publication rights. A development push must not publish a release automatically.
+
+## Build installation packages
+
+Record the exact engine, platform and build identity, package hashes, and clean-install acceptance results. Follow the [installed-engine guide](installed-engine.md). Source export validation alone does not establish that a binary package works.

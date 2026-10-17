@@ -1,25 +1,55 @@
-# Development and integration
+# Contributor workflow
 
-English is the working language for code comments, documentation, tasks and commits. `Tools/check-language.py` rejects CJK ideographs in active candidate text and filenames. It does not certify binary asset strings, historical commits or the inert recovery archive.
+[Documentation](README.md) · [Contributing](../CONTRIBUTING.md)
 
-## One authority for each concern
+## Find the authoritative document
 
-AGENTS.md controls agent workflow. README.md is navigation. docs/architecture.md controls behavioral contracts. engine.lock.json pins the supported source baseline. TODO.md is generated navigation over todo/. Tests/acceptance.json holds release requirements. release/status.json records readiness. Imported quotations are evidence only; private recovery archives remain outside tracked source.
+| Concern | Source |
+| --- | --- |
+| Agent workflow | [AGENTS.md](../AGENTS.md) |
+| Behavioral requirements | [Architecture](architecture.md) |
+| Engine baseline | [engine.lock.json](../engine.lock.json) |
+| Execution order | [Roadmap](../ROADMAP.md) |
+| Task inventory | [TODO.md](../TODO.md), generated from `todo/` |
+| Release acceptance | [Tests/acceptance.json](../Tests/acceptance.json) |
+| Release readiness | [release/status.json](../release/status.json) |
 
-## Task readiness
+Use English for comments, documentation, tasks and commits. `Tools/check-language.py` checks active text and filenames for CJK ideographs. It does not inspect binary asset strings or Git history.
 
-Imported cards are retained by ID and marked needs_reconciliation. Their old todo status does not authorize blindly implementing an old diagnosis. A reconciliation task reads the current source and relevant test, identifies duplicates by ID, and writes the Problem, Scope, Dependencies, Acceptance and Verification sections from todo/TEMPLATE.txt. Only then set Readiness: ready. Preserve withdrawn findings as explained evidence; do not silently delete requirements. Use one primary task for duplicated findings and link the others.
+## Prepare a task
 
-## Concurrent work
+Imported findings retain their original IDs and start as `needs_reconciliation`. Check each finding against current source and tests before treating its diagnosis as correct.
 
-Use `git worktree add -b task/<id>-<slug> ../worktrees/<id> main` from the private checkout. Each agent owns one worktree and one task. Do not switch branches in another agent's checkout. Each task declares files/subsystems and fixture ownership; overlapping changes queue behind the integration owner. Do not share an editor, port or build output across worktrees. The engine is a separate repository; one integration owner schedules engine builds and editor tests. Existing per-checkout leases are not a cross-worktree mutex.
+Use [the task template](../todo/TEMPLATE.txt) to record the problem, scope, dependencies, acceptance criteria and verification. A ready task must include:
 
-Commit coherent steps: regression/evidence, implementation, documentation as useful. Include the task ID in each message. Before integration, fetch private main, rebase the task branch or merge main, resolve conflicts, and rerun affected checks. Never auto-resolve binary fixture conflicts. Integrate through a reviewed private PR or an explicitly authorized local merge. Use ordinary pushes; no force push to main.
+- Current source references and the relevant engine APIs.
+- A reproducible input or a concrete investigation question.
+- Expected success, failure and refusal behavior.
+- Ownership of affected files, subsystems and fixtures.
+- Exact verification commands and an observable check for each acceptance criterion.
 
-## Completion
+Resolve conflicts with the architecture and record the decision. Link duplicate findings to one primary task. Preserve withdrawn findings with an explanation. Include all facts needed to execute the task; it must not depend on unavailable private notes.
 
-Record command, exit code, logs, source commit, artifact hash and engine identity. Report tests that could not run. Update only the selected task and regenerate TODO.md. A static guard is not runtime acceptance. An integrator checks combined changes before publishing private main. Public history is created separately from an approved complete tracked-tree export.
+Only set `Readiness: ready` after this review. The integration owner approves new repair tasks and changes to execution order.
 
-## Specification review
+## Work independently
 
-A task is not ready merely because its headings are present. Confirm current source references, supported engine APIs, a reproducible input or concrete investigation question, failure/refusal semantics, fixture ownership and exact verification commands. Each acceptance condition needs an observable check. Resolve conflicting historical requirements against the current architecture and record the resolution. A task that depends on unavailable private notes must be rewritten with the required facts before it is assigned.
+Give each implementation agent one task and one worktree:
+
+```powershell
+git worktree add -b task/<id>-<slug> ../worktrees/<id> main
+```
+
+Do not switch another agent's branch or edit its checkout. Queue overlapping file or fixture changes through the integration owner. Binary fixture conflicts require manual review.
+
+Engine builds and editor tests need a shared schedule. Do not share an editor, port or build output between workers. Existing per-checkout leases do not provide a cross-worktree mutex. One integration owner schedules access to the engine and test editor.
+
+## Verify and integrate
+
+Commit coherent changes and include the task ID in commit messages. Before integration, fetch private main, rebase the task branch or merge main, resolve conflicts, and rerun affected checks. Never weaken a failing check to obtain a pass.
+
+Record commands, exit codes, logs, source commit, artifact hash and engine identity as applicable. Identify tests that could not run. Static checks do not replace runtime acceptance.
+
+Update the selected task and regenerate TODO.md. An integrator reviews the combined changes before they enter private main, through a reviewed private PR or an explicitly authorized local merge. Use ordinary pushes; never force-push main.
+
+Public publication is a separate, approved export with fresh history. Follow the [release guide](release.md).

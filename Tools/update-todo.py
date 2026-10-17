@@ -1,5 +1,5 @@
 """Generate the task index from the repository-owned task files."""
-import pathlib, re, sys
+import json, pathlib, re, sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 STATUSES = ('in_progress', 'blocked', 'todo', 'backlog', 'done')
 def tasks():
@@ -20,18 +20,26 @@ def tasks():
     return sorted(items,key=lambda x:(STATUSES.index(x[0]),x[1],x[2]))
 def render():
     items=tasks()
-    lines=['# TODO','','Repository task files preserve requirements and evidence. No external Kanban board is used.',
-           'Execution order is in [ROADMAP.md](ROADMAP.md). Run `python Tools/next-task.py`; do not choose arbitrary imported findings.',
-           'Edit the selected task, then run `python Tools/update-todo.py`. See [AGENTS.md](AGENTS.md).',
-           'Only tasks marked Readiness: ready may be implemented. Reconcile imported findings first. See docs/contributing.md.','']
+    queue=json.loads((ROOT/'roadmap/queue.json').read_text(encoding='utf8'))['tasks']
+    by_id={item[2]:item for item in items}
+    queued={entry['id'] for entry in queue}
+    lines=['# Task index','','[Repository home](README.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md)','',
+           'Run `python Tools/next-task.py` to select work. The approved queue below defines execution order; historical findings need reconciliation before implementation.',
+           '', 'Generated from task files and the approved queue. After editing task status, run `python Tools/update-todo.py`.','',
+           '## Approved queue','','| Task | Track | Kind | Status |','| --- | --- | --- | --- |']
+    for entry in queue:
+        status,priority,tid,title,path=by_id[entry['id']]
+        title=title.split('] ',1)[-1]
+        lines.append(f"| [{title}](todo/{path.name}) | {entry['track']} | {entry['kind']} | {status} |")
+    lines += ['', '## Historical findings', '', 'These records preserve original requirements and evidence. Their status does not grant implementation permission.', '']
     for status in STATUSES:
-        group=[x for x in items if x[0]==status]
+        group=[x for x in items if x[0]==status and x[2] not in queued]
         if not group:continue
-        lines += [f'## {status} ({len(group)})','']
+        lines += ['<details>',f'<summary>{status.replace("_"," ")} ({len(group)})</summary>','']
         for _,priority,tid,title,path in group:
-            title=title.replace('[','(').replace(']',')')
-            lines.append(f'- [{"x" if status=="done" else " "}] **{priority}** [{title}](todo/{path.name})')
-        lines.append('')
+            title=title.split('] ',1)[-1].replace('[','(').replace(']',')')
+            lines.append(f'- **{priority}** [{title}](todo/{path.name})')
+        lines += ['', '</details>', '']
     return '\n'.join(lines).rstrip()+'\n'
 if __name__=='__main__':
     expected=render(); path=ROOT/'TODO.md'

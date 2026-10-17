@@ -1,5 +1,7 @@
 # Mutation lifecycle
 
+[Documentation](../README.md)
+
 ## Ownership
 
 A public wrapper resolves inputs and formats the result. A domain planner computes an explicit change set. A mutation coordinator owns transaction boundaries and lifecycle. Domain primitives must not create hidden nested transactions, compile repeatedly or save implicitly. Existing integration points include [TurboMCPMutation.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMutation.cpp), TurboMCPRollback.cpp and TurboMCPCompile.cpp; their presence does not prove every caller uses the contract.

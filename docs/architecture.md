@@ -1,8 +1,27 @@
 # Binding architecture for the first release
 
-Revision: 3. Current behavioral contracts; historical implementation claims require current evidence.
-Product contracts carried forward from approved revision 2. Repository workflow is defined only in AGENTS.md.
-These decisions do not prove that the implementation is correct.
+[Documentation](README.md)
+
+Revision 3. These contracts define required behavior for the first release. They do not certify the current implementation. [AGENTS.md](../AGENTS.md) defines repository workflow; the [design index](design/README.md) explains implementation responsibilities.
+
+## Contract index
+
+- [ARC01 — Release boundary](#arc01--release-boundary)
+- [ARC02 — One result contract without replacing every public signature](#arc02--one-result-contract-without-replacing-every-public-signature)
+- [ARC03 — Mutation coordination](#arc03--mutation-coordination)
+- [ARC04 — Compile baseline and diagnostics](#arc04--compile-baseline-and-diagnostics)
+- [ARC05 — Rollback and persistence are separate](#arc05--rollback-and-persistence-are-separate)
+- [ARC06 — Planning and stale-state protection](#arc06--planning-and-stale-state-protection)
+- [ARC07 — Graph text and destructive replacement](#arc07--graph-text-and-destructive-replacement)
+- [ARC08 — Exact edit semantics](#arc08--exact-edit-semantics)
+- [ARC09 — Batch release scope](#arc09--batch-release-scope)
+- [ARC10 — Preview and project-code execution](#arc10--preview-and-project-code-execution)
+- [ARC11 — Runtime observations and reader truth](#arc11--runtime-observations-and-reader-truth)
+- [ARC12 — Testing architecture](#arc12--testing-architecture)
+- [ARC13 — Build, install, and packaging](#arc13--build-install-and-packaging)
+- [ARC14 — Local trust and logging](#arc14--local-trust-and-logging)
+- [ARC15 — Repository workflow and release authority](#arc15--repository-workflow-and-release-authority)
+- [ARC16 — Decisions taken after the first run](#arc16--decisions-taken-after-the-first-run)
 
 ## Authority and scope
 
@@ -29,7 +48,7 @@ Do not implement unbuilt curve editing, general asset CRUD, widget animation aut
 Keep those requests visible in backlog with disposition `deferred_by_scope`.
 Do not mark a deferred feature done.
 
-Preserve untracked batch work. Its release boundary is ARC09, not general multi-asset atomic editing.
+Preserve the existing batch implementation. Its release boundary is ARC09, not general multi-asset atomic editing.
 A narrower supported domain must produce explicit refusal outside that domain.
 A narrow domain does not permit false success within it.
 
@@ -91,7 +110,7 @@ CLI exit codes: 0 for completed success, 1 for refusal/failure/partial, 2 for un
 Do not add automatic replay to recover any of those outcomes.
 
 Migrate shared formatting early. Migrate affected wrappers with each family repair.
-Finish migration and consistency tests for every exposed TurboMCP tool in S14.
+Complete migration and consistency tests for every exposed TurboMCP tool before release acceptance.
 
 ## ARC03 — Mutation coordination
 

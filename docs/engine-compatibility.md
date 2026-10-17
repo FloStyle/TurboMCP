@@ -1,5 +1,7 @@
 # Unreal 5.9 planning
 
+[Documentation](README.md)
+
 Baseline: 5.8.3, commit 396c9f059903aed5fec78ecd3d437a40c6415368.
 Forward inspection: ue5-main at 5789fc07f00643fb37f85ede9894cd08f1cebcef (Build.version says 5.9.0). This is a development snapshot, not a supported release promise or a full engine-wide migration audit.
 

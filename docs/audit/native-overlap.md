@@ -1,5 +1,7 @@
 # Native-tool overlap and investment decisions
 
+[Documentation](../README.md)
+
 Checked 2026-10-17 against the pinned 5.9 development snapshot. The upstream head still matches engine.lock.json. A development snapshot is not a released support guarantee. These are source-interface observations; runtime parity and installation availability remain unverified.
 
 | Area | Observed upstream interface | Decision |

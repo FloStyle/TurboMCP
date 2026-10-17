@@ -1,5 +1,7 @@
 # Repository design
 
+[Documentation](README.md)
+
 Maintain one complete source tree for private development and public contribution. A public snapshot must preserve every tracked file's path and Git blob bytes, including AGENTS.md, tasks, specifications, tests and build tools. No public-only README, documentation fork or hidden development subtree is maintained.
 
 The root README describes each directory. Production plugin files belong under Plugins/TurboMCP; binaries are release assets. Tests and technical specifications evolve in the same commit as behavior. Unreal stays in its own licensed repository. Local configuration, logs and recovery evidence stay outside tracked source.

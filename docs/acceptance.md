@@ -1,9 +1,8 @@
 # Required acceptance cases
 
-This catalog specifies behavior, not a passing result.
-Implement these cases in existing focused suites or small new suites.
-Record their actual commands in the test manifest.
-Do not invent a command before the test entry point exists.
+[Documentation](README.md)
+
+This catalog defines required behavior. Implement each case in a focused test suite and record the working command in the test manifest. Passing results belong in the acceptance evidence; this document alone does not establish a pass.
 
 ## Test rules
 
@@ -23,7 +22,7 @@ Compare GUIDs, classes, signatures, defaults, topology, and dirty state as appli
 Ignore only explicitly named non-semantic fields, such as transient addresses.
 Do not remove differences from the oracle simply to make tests pass.
 
-## H — Harness and selection / S01
+## H — Harness and selection
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -40,7 +39,7 @@ Do not remove differences from the oracle simply to make tests pass.
 Use tiny fake children. Do not start Unreal for H cases.
 Test the real verdict/selection functions, not copied versions.
 
-## C — Client and results / S02, S04, S14
+## C — Client and results
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -54,7 +53,7 @@ Test the real verdict/selection functions, not copied versions.
 | C08 | L1 | Output reaches its exact budget with a metadata trailer | Metadata remains valid, body truncation is explicit, no partial syntax |
 | C09 | L3 | Invoke one real success and one real refusal through MCP | Wire payload, structured client, and CLI agree on operation outcome |
 
-## E — Environment, ownership, and artifacts / S03
+## E — Environment, ownership, and artifacts
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -68,7 +67,7 @@ Test the real verdict/selection functions, not copied versions.
 
 Mock processes for destructive failure cases. Do not kill a real foreign editor as a test.
 
-## M — Shared mutation contract / S04, S08, S12
+## M — Shared mutation contract
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -85,7 +84,7 @@ Use one real writer to prove the common coordinator.
 Each other family still needs one success and one restoration case.
 Do not rerun every common-guard permutation for every wrapper.
 
-## G — Identity and representation / S05
+## G — Identity and representation
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -104,7 +103,7 @@ G suffix T distinguishes case IDs from audit finding IDs.
 Use the smallest corpus that covers supported creation families and the listed syntax dimensions.
 Do not claim support for an untested node family.
 
-## P — Preview / S06
+## P — Preview
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -117,7 +116,7 @@ Use a spawner that could affect Blueprint structure, not only a harmless call no
 Count and inspect probe ownership after the operation.
 Do not infer cleanup from the final graph node count alone.
 
-## W — Patch, replace, swap, and repoint / S07–S10
+## W — Patch, replace, swap, and repoint
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -136,7 +135,7 @@ Do not infer cleanup from the final graph node count alone.
 Run direct append acceptance after extracting its transaction-free core.
 Do not count substring occurrence as proof that a particular edge exists.
 
-## F — Data, fields, and remaining writers / S11–S12
+## F — Data, fields, and remaining writers
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -155,7 +154,7 @@ F09 applies to each supported semantic operation kind, not every possible asset 
 If no provider environment exists for F10, provider support remains unverified and must not be advertised as verified.
 Do not count a refusal-only test as successful checkout support.
 
-## R — References and runtime / S13
+## R — References and runtime
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -171,7 +170,7 @@ Do not make tests slow with real long sleeps.
 Use an injectable monotonic clock for pure lifecycle cases.
 Use a short real engine smoke for actual start/end integration.
 
-## U — Widget execution and user-facing truth / S14–S15
+## U — Widget execution and user-facing truth
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -189,7 +188,7 @@ For U07, use deterministic colored markers or a small image-region assertion.
 Do not require a heavyweight vision model for routine image acceptance.
 Do not call a screenshot test passed merely because PNG decoding succeeds.
 
-## L — Logs and local trust / S14
+## L — Logs and local trust
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -199,7 +198,7 @@ Do not call a screenshot test passed merely because PNG decoding succeeds.
 
 Use temporary files for log tests. Do not fill the disk.
 
-## B — Restricted batch / S16
+## B — Restricted batch
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|
@@ -209,7 +208,7 @@ Use temporary files for log tests. Do not fill the disk.
 | B04 | L1 + L3 | Cross-asset, cross-graph, duplicate ID, unknown kind/field | Refusal before mutation |
 | B05 | L3 | Successful batch followed by one undo | Exact complete restoration |
 
-## Z — Release / S17–S18
+## Z — Release
 
 | ID | Level | Setup and action | Required assertion |
 |---|---|---|---|

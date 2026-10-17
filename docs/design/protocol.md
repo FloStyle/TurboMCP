@@ -1,5 +1,7 @@
 # Protocol, discovery and results
 
+[Documentation](../README.md)
+
 ## Boundary
 
 Unreal owns the MCP transport and ToolsetRegistry. TurboMCP registers editor tools; it does not introduce a second MCP server. Reflected declarations are in [TurboMCPToolsets.h](../../Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h). Registration and lifecycle start in TurboMCPModule.cpp; schema/help/traps are maintained by TurboMCPToolSchema.cpp, TurboMCPAgentHelp.cpp and TurboMCPTraps.cpp.

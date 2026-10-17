@@ -1,13 +1,30 @@
-# Installation and use
+# Install and connect
 
-This source snapshot targets Windows and the pinned Unreal Engine 5.8.3 source build. It requires the engine's ModelContextProtocol, ToolsetRegistry and other dependencies declared in TurboMCP.uplugin.
+[Documentation](../README.md) · [Tool reference](tools.md)
 
-Copy Plugins/TurboMCP into your Unreal project's Plugins directory, enable it in the project and build the project editor target with the matching engine/toolchain. The plugin is editor-only. Do not copy private development tasks or engine source into your project.
+## Prerequisites
 
-Enable the engine MCP server for your local editor and connect your client using the engine-generated client configuration. Keep the listener local. Logging may contain project paths, arguments and results; enable it only when appropriate for your project.
+Use Windows and the Unreal Engine 5.8.3 source revision pinned in [engine.lock.json](../../engine.lock.json). The plugin requires the engine's ModelContextProtocol, ToolsetRegistry and the other dependencies listed in [TurboMCP.uplugin](../../Plugins/TurboMCP/TurboMCP.uplugin).
 
-Tool-search clients discover toolsets and schemas before invoking a tool. Do not issue overlapping mutation calls. Adding reflected tool declarations requires a rebuild and editor restart.
+Installed-engine packages and Unreal 5.9 are not validated yet. See [project status](../status.md).
 
-This snapshot is experimental. Validate changes on a version-controlled project and inspect returned outcome metadata; a successful HTTP response alone does not establish that an edit succeeded.
+## Install in a project
 
-See [Epic's MCP documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8) for the engine connection workflow.
+1. Copy `Plugins/TurboMCP` from this repository into your project's `Plugins` directory.
+2. Enable TurboMCP in the project.
+3. Build the project's editor target with the matching engine and toolchain.
+4. Open the project in that editor.
+
+TurboMCP is editor-only. Only the plugin folder is installed into the project; repository tests, tasks and build tools remain development files. To develop the plugin itself, use [workspace setup](../workspace.md).
+
+## Connect an MCP client
+
+Enable Unreal's MCP server for the local editor and use its generated client configuration. Follow [Epic's connection guide](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-mcp-in-unreal-editor?application_version=5.8) for the engine setup.
+
+Keep the listener local. Logging can include project paths, arguments and results, so enable it only when appropriate for your project.
+
+## First use
+
+Have the client discover the available toolsets and schemas, then consult the [tool reference](tools.md). Test edits in a version-controlled project and do not send overlapping mutation calls. Inspect the returned outcome metadata: an HTTP success response alone does not confirm that an edit succeeded.
+
+Adding reflected tool declarations during development requires a rebuild and editor restart.

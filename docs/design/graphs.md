@@ -1,5 +1,7 @@
 # Graph identity, text and editing
 
+[Documentation](../README.md)
+
 ## Source boundaries
 
 [TurboMCPNodeId.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp) owns graph/node identity. TurboMCPGraphText.cpp and TurboMCPGraphTextLex.cpp handle representation. GraphAppend, GraphPatch, GraphReplace, GraphRepoint and GraphSwapCall implement distinct operations. GraphReachability, GraphDead, Layout and GraphTidy provide analysis/layout behavior. Keep identity and grammar rules shared across wrappers.

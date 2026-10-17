@@ -1,5 +1,7 @@
 # Editor domain contracts
 
+[Documentation](../README.md)
+
 Each domain uses the common result and mutation contracts. Domain-specific acceptance must compare actual Unreal state with the requested outcome.
 
 | Domain | Main implementation files | Required behavior |

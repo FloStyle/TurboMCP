@@ -1,5 +1,7 @@
 # Build, testing and distribution design
 
+[Documentation](../README.md)
+
 ## Identities and boundaries
 
 A validation record identifies source commit, engine revision/distribution, configuration, binary hash, commands, exits and logs. A source guard, mocked regression, successful compile, native smoke and runtime acceptance are different evidence layers. Tests/catalog.json inventories script tiers; Tests/acceptance.json specifies required release cases. Neither file proves a pass.

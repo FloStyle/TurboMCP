@@ -1,5 +1,7 @@
 # Release manager
 
+[Documentation](README.md)
+
 The release manager is a local, fail-closed verification and export process. It never pushes or publishes. Run `python Tools/validate.py`, then build and execute mapped product acceptance against the candidate commit. Keep reports and binaries under ignored .local. Commit documentation, version, acceptance mapping and owner approval before collecting final evidence so the evidence identifies the exact final commit.
 
 `python Tools/release-check.py --evidence .local/release/evidence.json` requires a clean tree, readiness ready, explicit approval, an executable mapping for every required acceptance case, exact source/engine identities, passing results, and intact log/artifact hashes. Blocked, missing, duplicate or stale results fail. `Tools/export-public.py --evidence ... --output ...` invokes this gate before a non-preview export; the existing plugin-tree approval also remains required.

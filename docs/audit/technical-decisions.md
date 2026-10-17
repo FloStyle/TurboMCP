@@ -1,5 +1,7 @@
 # Technical decision review
 
+[Documentation](../README.md)
+
 Review scope: the 16 normative ARC contracts and repository execution/publication model, 2026-10-17. Each decision below is a planning judgment with an explicit validation obligation. Existing implementation is not presumed compliant.
 
 | Contract/choice | Decision | Reason and obligation |

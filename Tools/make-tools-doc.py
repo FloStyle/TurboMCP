@@ -122,10 +122,16 @@ def main() -> int:
             }
         )
 
-    out = ["# Declared tool reference", "", "Generated from the plugin header. Declarations are not release acceptance evidence.", "", "| Toolset | Function | Description |", "| --- | --- | --- |"]
-    for tool in tools:
-        summary = tool["summary"].replace("|", "\\|").replace("\n", " ")
-        out.append(f"| `{tool['owner']}` | `{tool['name']}` | {summary} |")
+    out = ["# Tool reference", "", "[Documentation](../README.md) · [Installation](installation.md)", "", "Generated from plugin declarations. For validation and compatibility limits, see [project status](../status.md).", ""]
+    owners = list(dict.fromkeys(tool["owner"] for tool in tools))
+    for owner in owners:
+        out.append(f"- [{owner}](#{owner.lower()})")
+    for owner in owners:
+        group = [tool for tool in tools if tool["owner"] == owner]
+        out += ["", f"## {owner}", "", f"{len(group)} declared tools.", "", "| Function | Description |", "| --- | --- |"]
+        for tool in group:
+            summary = tool["summary"].replace("|", "\\|").replace("\n", " ")
+            out.append(f"| `{tool['name']}` | {summary} |")
     (REPO / "docs/user/tools.md").write_text("\n".join(out)+"\n", encoding="utf8")
     print(f"Generated reference for {len(tools)} declarations")
     return 0

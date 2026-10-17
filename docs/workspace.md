@@ -1,5 +1,7 @@
 # Workspace setup
 
+[Documentation](README.md)
+
 The repository and Unreal share one working environment but remain separate Git repositories. Choose explicit roots for the plugin checkout and the separate Unreal checkout. Neither must be nested in the other.
 
 1. Copy workspace.example.json to workspace.local.json and set engineRoot to the actual engine root. Alternatively set TURBOMCP_ENGINE. Explicit environment configuration wins; a wrong configured path fails instead of silently selecting another engine.
