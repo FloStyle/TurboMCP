@@ -158,3 +158,50 @@ and test-client-retry. Record the assertions they actually cover and remaining
 probe gaps. Commit the checkpoint, obtain candidate-bound offline evidence and
 run the full-base-to-candidate scope check. Retain the claim and stop for review;
 do not start the next family, mark R04 done, merge, push or release the claim.
+
+## Active dispatch checkpoint 2: status, help and schema
+
+Checkpoint 1 is accepted source evidence, not an active assignment. This section
+supersedes its tool selection and report-creation instructions for the next worker.
+The same source/offline restrictions and three-file allowlist remain in force.
+
+Audit only ReadTurboMCPStatus, ReadTurboMCPToolHelp and ReadTurboMCPToolSchema.
+Extend the existing callable-contracts reports rather than replacing them.
+Preserve all 101 IDs, the four accepted call-log rows, R04-CALL-01 through 06,
+repair proposals and prior evidence identities. On completion, exactly seven
+rows should be reviewed_source and 94 not_reviewed. If accepted evidence appears
+wrong, record the discrepancy separately for review; do not silently rewrite it.
+Record checkpoint-specific base and validation identities so the first checkpoint
+is not relabeled with the new base. Use new R04-DISC-xx finding identifiers.
+
+Read the reflected declarations and actual implementations, plus shared schema,
+registration, help/trap, recorder and client paths only where needed by these
+three tools. Check parameter requiredness, omitted/empty/unknown input, exact
+name and case matching, normalization, defaults, truncation and error handling.
+Distinguish declarations from registered/enabled/discoverable tools and runtime
+availability. Identify stale or unsupported capability/version/support claims.
+Check whether help and schema describe actual parameter behavior and refusal
+boundaries. Explain what status can prove and what it merely reports from settings
+or registration. Trace side effects from wrappers even for Read tools. Do not
+assume prose refusals become invocation errors or that transport success proves
+semantic success. Read the current 0e4658ad.md review as relevant context.
+
+Native overlap and routing reports are read-only context. Do not promote any
+unverified routing preference, change descriptions/ranking or implement R17.
+Use pinned source only; no engine upgrade, external feature expansion or broad
+rewrite. Every cited local path must exist and every claimed declaration or API
+must be read. Do not copy engine source bodies into the reports.
+
+For each confirmed gap, propose one owner, exact repair files, preserved behavior,
+a reproducible synthetic probe, expected result, negative control, focused checks
+and rollback. Mark proposals unapproved. If more than one design is possible,
+state the unresolved decision and separate the alternatives' scopes. R04 remains
+incomplete and no production repairs are authorized.
+
+Run audit-inventory --check, test-result-contract, test-client-retry and the
+existing offline profile. Inspect relevant engine suites as source only, recording
+which assertions exist and which probes remain unrun. Do not run builds, editors,
+engine suites, direct MCP calls, packaging or recovery. Commit, obtain candidate-
+bound offline evidence and run the full approved-base-to-candidate scope check.
+Retain the new checkpoint claim and stop for review; no merge, push, completion,
+claim release or next-family work.

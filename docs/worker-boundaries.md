@@ -4,12 +4,12 @@
 
 Use one reviewed task, one isolated worktree and one durable claim per worker.
 The integration owner records a full approved base commit before dispatch.
-R13 and R16 are accepted. R04 starts with the bounded call-log checkpoint in its task.
+R13 and R16 are accepted. R04 checkpoint 1 is accepted; the active assignment is checkpoint 2 (status, help and schema) in its task.
 
 ## Approved scope
 
 [worker-scopes.json](../roadmap/worker-scopes.json) contains exact writable paths
-for R13, R16 and the first R04 checkpoint. Everything else is outside scope. R13 may update the six listed
+for R13, R16 and the active R04 checkpoint. Everything else is outside scope. R13 may update the six listed
 comparison/evidence files. R16 may write its two dependency reports and task
 evidence. R04 may write its two callable-contract reports and task evidence. In a task file, only the Completion evidence section may change.
 The reviewer owns task status, review registers, generated TODO and queue updates.
