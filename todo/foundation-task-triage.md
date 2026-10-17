@@ -24,3 +24,7 @@ Run python Tools/update-todo.py and python Tools/validate.py. Review source and 
 
 ## Handoff
 Record results and remaining blockers before changing status.
+
+## Roadmap disposition
+
+Use ROADMAP.md and the ordered queue. Obsolete branch counts, parallel workstream instructions and old release steps are not executable instructions.

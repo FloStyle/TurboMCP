@@ -7,6 +7,10 @@ Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
 
+## Roadmap disposition
+
+General multi-asset batching is outside v1. Do not extract every operation core speculatively; fix only the restricted current batch under ARC09.
+
 ## Scope and acceptance
 
 Preserve the substantive scope below. Before editing, reconcile the finding with current source and identify the focused acceptance check. Do not execute historical board/harness instructions. Record duplicates by task ID without discarding their requirements.

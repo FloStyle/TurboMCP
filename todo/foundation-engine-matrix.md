@@ -24,3 +24,7 @@ Run python Tools/doctor.py for the baseline. Record exact RunUAT command, engine
 
 ## Handoff
 Record results and remaining blockers before changing status.
+
+## Roadmap disposition
+
+Workstream: installed-engine. Reconcile this finding with the current source under the ordered roadmap before implementation. Preserve its acceptance requirements and link duplicate findings to one repair task.

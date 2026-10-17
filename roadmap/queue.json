@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "policy": "Return only the first unfinished task in this approved sequence. Never skip blocked or unready tasks. No automatic execution or publication.",
+  "tasks": [
+    {
+      "id": "R01",
+      "path": "todo/roadmap-r01.md",
+      "kind": "implementation",
+      "workstream": "test-foundation",
+      "depends_on": [],
+      "track": "v1"
+    },
+    {
+      "id": "R13",
+      "path": "todo/roadmap-r13.md",
+      "kind": "investigation",
+      "workstream": "ue59",
+      "depends_on": [
+        "R01"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R02",
+      "path": "todo/roadmap-r02.md",
+      "kind": "implementation",
+      "workstream": "engine-ownership",
+      "depends_on": [
+        "R13"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R03",
+      "path": "todo/roadmap-r03.md",
+      "kind": "investigation",
+      "workstream": "fixtures",
+      "depends_on": [
+        "R02"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R04",
+      "path": "todo/roadmap-r04.md",
+      "kind": "investigation",
+      "workstream": "results",
+      "depends_on": [
+        "R03"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R05",
+      "path": "todo/roadmap-r05.md",
+      "kind": "investigation",
+      "workstream": "mutation",
+      "depends_on": [
+        "R04"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R06",
+      "path": "todo/roadmap-r06.md",
+      "kind": "investigation",
+      "workstream": "graph-fidelity",
+      "depends_on": [
+        "R05"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R07",
+      "path": "todo/roadmap-r07.md",
+      "kind": "investigation",
+      "workstream": "layout-capture",
+      "depends_on": [
+        "R06"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R08",
+      "path": "todo/roadmap-r08.md",
+      "kind": "investigation",
+      "workstream": "data-widget",
+      "depends_on": [
+        "R07"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R09",
+      "path": "todo/roadmap-r09.md",
+      "kind": "investigation",
+      "workstream": "observations",
+      "depends_on": [
+        "R08"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R10",
+      "path": "todo/roadmap-r10.md",
+      "kind": "documentation",
+      "workstream": "help-polish",
+      "depends_on": [
+        "R09"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R11",
+      "path": "todo/roadmap-r11.md",
+      "kind": "verification",
+      "workstream": "release",
+      "depends_on": [
+        "R10"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R15",
+      "path": "todo/roadmap-r15.md",
+      "kind": "implementation",
+      "workstream": "release",
+      "depends_on": [
+        "R11"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R12",
+      "path": "todo/roadmap-r12.md",
+      "kind": "investigation",
+      "workstream": "installed-engine",
+      "depends_on": [
+        "R11"
+      ],
+      "track": "compatibility"
+    },
+    {
+      "id": "R14",
+      "path": "todo/roadmap-r14.md",
+      "kind": "implementation",
+      "workstream": "ue59",
+      "depends_on": [
+        "R13",
+        "R11"
+      ],
+      "track": "compatibility"
+    }
+  ]
+}

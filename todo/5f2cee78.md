@@ -7,6 +7,10 @@ Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/verification.md
 
+## Roadmap disposition
+
+Use ROADMAP.md and the ordered queue. Obsolete branch counts, parallel workstream instructions and old release steps are not executable instructions.
+
 ## Scope and acceptance
 
 Preserve the substantive scope below. Before editing, reconcile the finding with current source and identify the focused acceptance check. Do not execute historical board/harness instructions. Record duplicates by task ID without discarding their requirements.

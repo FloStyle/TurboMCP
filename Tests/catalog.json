@@ -546,6 +546,13 @@
       "tier": "offline",
       "timeout_seconds": 60,
       "acceptance": "infrastructure-regression"
+    },
+    {
+      "id": "test-next-task",
+      "path": "Tools/test-next-task.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "infrastructure-regression"
     }
   ]
 }

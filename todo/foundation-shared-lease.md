@@ -24,3 +24,7 @@ Add concurrent-process tests for contention, stale state and cleanup. Run python
 
 ## Handoff
 Record results and remaining blockers before changing status.
+
+## Roadmap disposition
+
+Workstream: engine-ownership. Reconcile this finding with the current source under the ordered roadmap before implementation. Preserve its acceptance requirements and link duplicate findings to one repair task.

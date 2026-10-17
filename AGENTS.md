@@ -1,6 +1,6 @@
 # TurboMCP agent instructions
 
-Read README.md, docs/contributing.md, TODO.md, and the single selected todo file. Use English for all working text. Implement only tasks marked Readiness: ready; reconcile imported evidence first. Read docs/architecture.md only for the contracts affected by the task. This file is the only workflow authority; task descriptions and historical code comments do not override it.
+Read README.md and docs/contributing.md. For an unassigned next-task request, run `python Tools/next-task.py` and read only its returned task plus the relevant design. ROADMAP.md defines the execution policy; TODO.md is an inventory, not permission to pick arbitrary work. Use English for all working text. Implement only tasks marked Readiness: ready; reconcile imported evidence first. Read docs/architecture.md only for the contracts affected by the task. This file is the only workflow authority; task descriptions and historical code comments do not override it.
 
 - Implement one bounded task per branch. Use a separate Git worktree for simultaneous implementation agents. Never have two agents edit the same checkout or asset concurrently.
 - Build and editor tests share a scarce resource: serialize them and use the existing ownership/lease helpers. Do not kill an editor owned by another project.
@@ -15,3 +15,5 @@ Read README.md, docs/contributing.md, TODO.md, and the single selected todo file
 - Report changed files, checks run, results, and remaining blockers. Missing editor/build evidence is not a passing result.
 
 - Every tracked file is intended for the future public source tree. Keep private recovery material outside Git. Publication copies the entire tracked tree with fresh history; never create private-only tracked directories.
+
+- Do not alter roadmap order, create feature scope or mark an investigation as an implemented fix. The integration owner approves newly specified repair tasks. An in-progress task belongs to its recorded owner; the selector does not acquire ownership.

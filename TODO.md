@@ -1,10 +1,11 @@
 # TODO
 
-Repository task files are authoritative. No external Kanban board is used.
+Repository task files preserve requirements and evidence. No external Kanban board is used.
+Execution order is in [ROADMAP.md](ROADMAP.md). Run `python Tools/next-task.py`; do not choose arbitrary imported findings.
 Edit the selected task, then run `python Tools/update-todo.py`. See [AGENTS.md](AGENTS.md).
 Only tasks marked Readiness: ready may be implemented. Reconcile imported findings first. See docs/contributing.md.
 
-## todo (68)
+## todo (83)
 
 - [ ] **P1** [(needs_reconciliation) TR-01 / TR-02 (P1, high) — trace must not claim a node never ran without a proven match](todo/02674939.md)
 - [ ] **P1** [(needs_reconciliation) T-RECON (P1, medium) — Three `plan row` clauses the list dropped: macros (row 6.6), an open tab refusing (row 7.6), E-SESSION/R-EDIT-SESSION bounded (row 9.2)](todo/100b52a6.md)
@@ -15,6 +16,21 @@ Only tasks marked Readiness: ready may be implemented. Reconcile imported findin
 - [ ] **P1** [(needs_reconciliation) T11 (P1, medium) — Function from text, with its signature](todo/63d5c9e2.md)
 - [ ] **P1** [(needs_reconciliation) LT-04 (P1, high) — lint must not call a linked cast result unnecessary](todo/7bbe9c3c.md)
 - [ ] **P1** [(needs_reconciliation) S04 follow-ups — the double-wrapped return shape, and the failing T04 native test](todo/7de8d185.md)
+- [ ] **P1** [(ready) R01: Repair the test-audit evidence classifications](todo/roadmap-r01.md)
+- [ ] **P1** [(ready) R02: Make shared engine ownership atomic](todo/roadmap-r02.md)
+- [ ] **P1** [(ready) R03: Establish fixture and binary reproducibility evidence](todo/roadmap-r03.md)
+- [ ] **P1** [(ready) R04: Audit callable behavior and result contracts](todo/roadmap-r04.md)
+- [ ] **P1** [(ready) R05: Specify and verify mutation lifecycle repairs](todo/roadmap-r05.md)
+- [ ] **P1** [(ready) R06: Reconcile graph identity and representation repairs](todo/roadmap-r06.md)
+- [ ] **P1** [(ready) R07: Reconcile geometry, layout and capture correctness](todo/roadmap-r07.md)
+- [ ] **P1** [(ready) R08: Reconcile data and widget state correctness](todo/roadmap-r08.md)
+- [ ] **P1** [(ready) R09: Reconcile references and runtime observations](todo/roadmap-r09.md)
+- [ ] **P1** [(ready) R10: Make discovery and human documentation match observed behavior](todo/roadmap-r10.md)
+- [ ] **P1** [(ready) R11: Close the 5.8.3 release acceptance matrix](todo/roadmap-r11.md)
+- [ ] **P1** [(ready) R12: Prove installed-engine packaging and isolate development dependencies](todo/roadmap-r12.md)
+- [ ] **P1** [(ready) R13: Measure 5.9 native overlap before approving new features](todo/roadmap-r13.md)
+- [ ] **P1** [(ready) R14: Implement bounded 5.9 compatibility adapters](todo/roadmap-r14.md)
+- [ ] **P1** [(ready) R15: Automate source and binary release preparation](todo/roadmap-r15.md)
 - [ ] **P1** [(needs_reconciliation) T12 (P1, high) — Atomic multi-asset batch edit](todo/bbb63d1e.md)
 - [ ] **P1** [(needs_reconciliation) GL-10–GL-13 / GL-11 (P1, high) — graph reads must preserve every node and every pin link](todo/d3897f07.md)
 - [ ] **P1** [(needs_reconciliation) Batch verifier — test the ten concurrent urgent fixes](todo/ee4fde11.md)

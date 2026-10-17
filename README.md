@@ -7,6 +7,7 @@ Development baseline: Windows and the exact Unreal Engine 5.8.3 source revision 
 ## Start here
 
 - Using the plugin: [installation](docs/user/installation.md) and [declared tools](docs/user/tools.md).
+- Planning and next work: [ROADMAP.md](ROADMAP.md); run `python Tools/next-task.py`.
 - Contributing or running an agent: [AGENTS.md](AGENTS.md), [contributor workflow](docs/contributing.md), then [TODO.md](TODO.md).
 - Understanding the product: [requirements](docs/product.md), [technical contracts](docs/architecture.md) and [design index](docs/design/README.md).
 - Setting up a checkout: [workspace setup](docs/workspace.md) and [test layers](Tests/README.md).

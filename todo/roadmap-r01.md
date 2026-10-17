@@ -1,0 +1,46 @@
+# R01: Repair the test-audit evidence classifications
+
+ID: R01
+Status: todo
+Priority: P1
+Readiness: ready
+Owner: unassigned
+Design: docs/design/verification.md
+Kind: implementation
+
+## Problem
+The current quality audit falsely reports NO-ASSERT for test-build-provenance.py and test-repo-boundaries.py, which use Python assert. The coverage audit reports all tools called while six material tools are only name references. Correct the classifications; do not suppress files or count a name as an executed call.
+
+## Scope
+Tools/audit-suite-quality.py, Tools/audit-tool-coverage.py, and their focused regression tests. No plugin or engine edits.
+
+## Dependencies
+None.
+
+## Acceptance
+- Use AST or an equivalently tested parser to recognize a real assertion failure path; assert True and dead/comment text must not become behavioral evidence.
+- Output distinguishes parsed call, name-only reference and missing reference. It never says all tools were executed.
+- Add positive/negative parser fixtures and demonstrate the old behavior fails the new regression. Keep candidate findings distinct from proved defects.
+
+## Verification
+- `python Tools/test-coverage-audit.py`
+- `python Tools/audit-tool-coverage.py`
+- `python Tools/audit-suite-quality.py`
+- `python Tools/validate.py`
+
+## Stop conditions
+Do not expand into another domain. If a prerequisite is absent, record blocked with the exact missing input. After two identical unexplained failures, stop repeating the command and diagnose. Do not run a full engine rebuild without evidence that an incremental build cannot answer the question. Do not change public schemas, weaken safety contracts or start deferred features.
+
+## Deliverable
+The bounded change plus regression evidence, updated affected specifications and a concise handoff.
+
+## Completion evidence
+Pending. Record source/engine/artifact identity, command, exit, log and remaining limitations. A reviewer must check acceptance before marking done.
+
+## Related findings
+- [048107d9-a439-4e28-955a-562804215ac9](048107d9.md)
+- [2f066e6c-8c34-412f-b1b4-451389996086](2f066e6c.md)
+- [51678b9f-9760-4548-b8f7-f58c461af520](51678b9f.md)
+- [5301f48e-4603-436a-b34f-54c31ab6f0a5](5301f48e.md)
+- [53fb9672-b301-4d18-877a-9bf737c0ad6b](53fb9672.md)
+- [71e2e86a-9854-4a25-9d17-18f18f5679e5](71e2e86a.md)

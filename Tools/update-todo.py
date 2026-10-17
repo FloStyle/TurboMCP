@@ -20,7 +20,8 @@ def tasks():
     return sorted(items,key=lambda x:(STATUSES.index(x[0]),x[1],x[2]))
 def render():
     items=tasks()
-    lines=['# TODO','','Repository task files are authoritative. No external Kanban board is used.',
+    lines=['# TODO','','Repository task files preserve requirements and evidence. No external Kanban board is used.',
+           'Execution order is in [ROADMAP.md](ROADMAP.md). Run `python Tools/next-task.py`; do not choose arbitrary imported findings.',
            'Edit the selected task, then run `python Tools/update-todo.py`. See [AGENTS.md](AGENTS.md).',
            'Only tasks marked Readiness: ready may be implemented. Reconcile imported findings first. See docs/contributing.md.','']
     for status in STATUSES:

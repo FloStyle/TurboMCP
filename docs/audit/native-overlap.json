@@ -1,0 +1,94 @@
+{
+  "schema": 1,
+  "checked_utc_date": "2026-10-17",
+  "baseline_version": "5.8.3",
+  "baseline_commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
+  "target_commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+  "target_version": "5.9.0-development",
+  "target_supported": false,
+  "refresh_policy": "Recheck target head once at compatibility-task start and before approving overlapping feature work. Pin changes; do not continuously poll or upgrade the baseline automatically.",
+  "areas": [
+    {
+      "area": "enum authoring",
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
+      "observed": [
+        "Create",
+        "GetEnumerators",
+        "AddEnumerator",
+        "RemoveEnumerator",
+        "SetDisplayName",
+        "MoveEnumerator",
+        "IsBitflags",
+        "SetBitflags"
+      ],
+      "decision": "Keep 5.8.3 correctness fixes; freeze additional primitive enum authoring until parity of validation, naming/read-back, rollback and compact output is measured.",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
+      "evidence": "pinned_source_interface",
+      "runtime_parity": "unverified"
+    },
+    {
+      "area": "struct authoring",
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
+      "observed": [
+        "Create",
+        "ListVariables",
+        "AddVariable",
+        "AddStructVariable",
+        "AddObjectVariable",
+        "RemoveVariable",
+        "RenameVariable",
+        "SetVariableDefaultValue"
+      ],
+      "decision": "Compare native primitives before expanding TurboMCP struct authoring. Existing field syntax, dependency reporting and safety requirements may remain useful; no equivalence assumed.",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
+      "evidence": "pinned_source_interface",
+      "runtime_parity": "unverified"
+    },
+    {
+      "area": "source control",
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
+      "observed": [
+        "GetAssetSourceControlState",
+        "LoadAssetRevision",
+        "ListAssetRevisions",
+        "CreateChangelist"
+      ],
+      "decision": "Do not build duplicate history/changelist primitives. Preserve explicit save/checkout outcomes; native presence does not establish provider behavior or write gating parity.",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
+      "evidence": "pinned_source_interface",
+      "runtime_parity": "unverified"
+    },
+    {
+      "area": "widget animation",
+      "path": "Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
+      "observed": [
+        "CreateWidgetAnimation",
+        "ListWidgetAnimations",
+        "FindWidgetAnimation",
+        "RenameWidgetAnimation",
+        "SetWidgetAnimationLength",
+        "RemoveWidgetAnimation",
+        "AddWidgetToAnimation",
+        "GetWidgetAnimationBindings"
+      ],
+      "decision": "Defer broad animation authoring. Measure native lifecycle/binding coverage before considering a thin workflow adapter; these names do not prove arbitrary track/key editing support.",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
+      "evidence": "pinned_source_interface",
+      "runtime_parity": "unverified"
+    },
+    {
+      "area": "MCP stdio bridge",
+      "path": "Engine/Plugins/Experimental/ModelContextProtocol/Extras/Proxy/README.md",
+      "observed": [
+        "stdio bridge",
+        "upstream reconnect",
+        "tool-list change notification",
+        "explicit mcp-json path"
+      ],
+      "decision": "Do not develop a competing proxy. Assess the native bridge for the harness; preserve client unknown-mutation-outcome semantics and never assume reconnect authorizes replay.",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/ModelContextProtocol/Extras/Proxy/README.md",
+      "evidence": "pinned_source_interface",
+      "runtime_parity": "unverified"
+    }
+  ]
+}

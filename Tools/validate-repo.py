@@ -24,11 +24,19 @@ def main():
         if 'Readiness: ready' in text:
             for section in ['Problem','Scope','Dependencies','Acceptance','Verification']:
                 if '## '+section+'\n' not in text:raise ValueError(f'{task.name}: ready task missing {section}')
+    subprocess.run([sys.executable,str(ROOT/'Tools/next-task.py'),'--check'],check=True)
+    subprocess.run([sys.executable,str(ROOT/'Tools/audit-inventory.py'),'--check'],check=True)
+    dispositions=json.loads((ROOT/'roadmap/task-dispositions.json').read_text(encoding='utf8'))['tasks']
+    ids=[x['id'] for x in dispositions]
+    if len(ids)!=len(set(ids)):raise ValueError('Duplicate historical task disposition')
+    for row in dispositions:
+        text=(ROOT/row['path']).read_text(encoding='utf8')
+        if 'ID: '+row['id'] not in text:raise ValueError('Disposition/task mismatch')
     imported=json.loads((ROOT/'docs/task-import.json').read_text())
     for task in imported['tasks']:
         if f'ID: {task["id"]}' not in (ROOT/task['path']).read_text():raise ValueError('Imported task lost or ID changed')
     # Canonical navigation must resolve. Task quotations and source comments are explicitly historical evidence.
-    docs=[ROOT/'CONTRIBUTING.md',ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'TODO.md',ROOT/'Tools/README.md',ROOT/'TestProject/README.md',*list((ROOT/'docs').rglob('*.md'))]
+    docs=[ROOT/'ROADMAP.md',ROOT/'CONTRIBUTING.md',ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'TODO.md',ROOT/'Tools/README.md',ROOT/'TestProject/README.md',*list((ROOT/'docs').rglob('*.md'))]
     for p in docs:
         for target in re.findall(r'\]\(<?([^\s)>]+)>?\)',p.read_text(encoding='utf8')):
             if re.match(r'^[a-zA-Z]+:|^#',target):continue
