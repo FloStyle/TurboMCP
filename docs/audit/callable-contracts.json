@@ -12,8 +12,8 @@
   "inventory": {
     "source": "docs/audit/capabilities.json",
     "tools": 101,
-    "reviewed": 7,
-    "not_reviewed": 94,
+    "reviewed": 10,
+    "not_reviewed": 91,
     "reviewed_ids": [
       "ReadTurboMCPCallCost",
       "ReadTurboMCPCallLog",
@@ -21,7 +21,10 @@
       "EditTurboMCPCallLogClear",
       "ReadTurboMCPStatus",
       "ReadTurboMCPToolHelp",
-      "ReadTurboMCPToolSchema"
+      "ReadTurboMCPToolSchema",
+      "ReadTurboMCPVcsState",
+      "PreviewTurboMCPVcsCheckout",
+      "EditTurboMCPVcsCheckout"
     ],
     "checkpoint_1": {
       "reviewed": 4,
@@ -30,6 +33,10 @@
     "checkpoint_2": {
       "reviewed": 3,
       "not_reviewed": 94
+    },
+    "checkpoint_3": {
+      "reviewed": 3,
+      "not_reviewed": 91
     }
   },
   "tools": [
@@ -976,7 +983,12 @@
       "toolset": "UTurboMCPEditToolset",
       "family": "asset-and-data",
       "parameters": [
-        "Assets"
+        {
+          "name": "Assets",
+          "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
+          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate; each part is passed to the shared Resolve.",
+          "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
+        }
       ],
       "source_reference": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
@@ -991,8 +1003,62 @@
         "runtime_evidence": "not_certified",
         "release_disposition": "experimental_pending_acceptance"
       },
-      "audit_status": "not_reviewed",
-      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+      "audit_status": "reviewed_source",
+      "note": "Reviewed at source/offline level in R04 checkpoint 3.",
+      "reviewed_checkpoint": "source-control-state-and-checkout",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 2316,
+        "signature": "static FString EditTurboMCPVcsCheckout(const FString& Assets);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "One required FString parameter; no C++ default. Empty string is explicit no-asset mode; omitted is rejected before the body."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:216-234,254-305",
+        "description": "FRecordingToolset wraps all three toolsets. FScopedCall writes start/end records only while logging is enabled; the wrapper therefore adds a log side effect to Read, Preview and Edit calls."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+        "lines": "46-50",
+        "checkout": "TurboMCPSourceControl.cpp:410-530"
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350,414-432",
+        "description": "Session.call returns the text body. These tools do not append an ARC02 result line, so call_structured defaults to requiring one for TurboMCP.* and would raise unless requires_result=False. Refusals are text values, so the recorder's bError is false (R04-CALL-06)."
+      },
+      "effects": [
+        "Runs Plan, renders the state half, then issues one FCheckOut per eligible row through Provider.Execute(Operation, Row.File).",
+        "Skips refused rows, rows without readable state, and rows the plan says are checked out/added here; CanCheckout() false still attempts.",
+        "On a provider with UsesCheckout() false, states the no-op expectation and still issues the operation to record the provider answer.",
+        "No asset file/save is written; a provider may change source-control/depot state. No rollback or atomic multi-asset transaction exists.",
+        "With logging enabled, the wrapper writes start/end records and can rotate the log."
+      ],
+      "success": "Renders module/provider/state facts and a per-row checkout section. Each attempted row repeats ECommandResult::Succeeded/Failed/Cancelled and all provider error/info messages; skipped rows say NOT ATTEMPTED/ALREADY DONE. No aggregate success count and no ARC02 result line.",
+      "refusals": [
+        "Empty Assets: no checkout; says there is nothing to check out after the provider facts.",
+        "Run-level disabled/unavailable refusal: no checkout attempted and no provider reached.",
+        "Per-row resolve/file/refusal: not attempted; no provider call for that row.",
+        "Null state: not attempted; an unreadable state is not a request to check out.",
+        "Already checked out/added in the plan: ALREADY DONE, no operation."
+      ],
+      "truncation": "No per-row or total character cap; output grows with inputs and provider messages. No pagination.",
+      "tests": [
+        "Tools/test-vcs.py no-provider Edit refusal, Git no-op checkout result, Perforce unavailable edit refusal, no working-tree change.",
+        "No test covers a successful live checkout, post-operation state, partial failure, duplicate input, stale plan, checked-out-other or read-only state."
+      ],
+      "source_findings": [
+        "R04-VCS-01",
+        "R04-VCS-02",
+        "R04-VCS-03",
+        "R04-VCS-04",
+        "R04-VCS-05",
+        "R04-CALL-04",
+        "R04-CALL-06"
+      ]
     },
     {
       "id": "EditTurboMCPWidgetBindAdd",
@@ -1860,7 +1926,12 @@
       "toolset": "UTurboMCPPreviewToolset",
       "family": "asset-and-data",
       "parameters": [
-        "Assets"
+        {
+          "name": "Assets",
+          "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
+          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate; each part is passed to the shared Resolve.",
+          "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
+        }
       ],
       "source_reference": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
@@ -1875,8 +1946,56 @@
         "runtime_evidence": "not_certified",
         "release_disposition": "experimental_pending_acceptance"
       },
-      "audit_status": "not_reviewed",
-      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+      "audit_status": "reviewed_source",
+      "note": "Reviewed at source/offline level in R04 checkpoint 3.",
+      "reviewed_checkpoint": "source-control-state-and-checkout",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 1523,
+        "signature": "static FString PreviewTurboMCPVcsCheckout(const FString& Assets);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "One required FString parameter; no C++ default. Empty string is explicit no-asset mode; omitted is rejected before the body."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:216-234,254-305",
+        "description": "FRecordingToolset wraps all three toolsets. FScopedCall writes start/end records only while logging is enabled; the wrapper therefore adds a log side effect to Read, Preview and Edit calls."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+        "lines": "39-44",
+        "plan_render": "TurboMCPSourceControl.cpp:184-408 (Plan) and :325-408 (Render with intent)"
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350,414-432",
+        "description": "Session.call returns the text body. These tools do not append an ARC02 result line, so call_structured defaults to requiring one for TurboMCP.* and would raise unless requires_result=False. Refusals are text values, so the recorder's bError is false (R04-CALL-06)."
+      },
+      "effects": [
+        "Runs the same Plan as Read and Edit: provider/module facts, per-asset GetState(ForceUpdate), and wrapper logging.",
+        "Does not issue FCheckOut; it renders checkout intent from the plan's UsesCheckout/state/CanCheckout fields.",
+        "No asset file, save or setting is written."
+      ],
+      "success": "Returns the state/refusal text plus a per-row 'WHAT A CHECKOUT WOULD DO' section. No ARC02 result line.",
+      "refusals": [
+        "Same Plan refusals as Read and Edit: empty assets has no rows; invalid/missing/unspecified file per-row refusal; disabled/unavailable provider refuses every resolved asset; null state is UNKNOWN.",
+        "Preview does not refuse merely because CanCheckout() is false; it says the checkout would still be attempted."
+      ],
+      "truncation": "No tool-level character cap; one row per input plus checkout-intent lines. No pagination.",
+      "tests": [
+        "Tools/test-vcs.py checks no-provider Preview/Edit refusal strings, Git preview refusals and intent wording, and that Preview does not report a provider answer.",
+        "The suite does not compare Preview and Edit intent/state line-for-line under a provider, nor exercise state changes between the two calls."
+      ],
+      "source_findings": [
+        "R04-VCS-01",
+        "R04-VCS-02",
+        "R04-VCS-03",
+        "R04-VCS-04",
+        "R04-CALL-04",
+        "R04-CALL-06"
+      ]
     },
     {
       "id": "PreviewTurboMCPWidgetRetarget",
@@ -2947,7 +3066,12 @@
       "toolset": "UTurboMCPReadToolset",
       "family": "asset-and-data",
       "parameters": [
-        "Assets"
+        {
+          "name": "Assets",
+          "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
+          "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate; each part is passed to the shared Resolve.",
+          "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
+        }
       ],
       "source_reference": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
@@ -2963,8 +3087,61 @@
         "runtime_evidence": "not_certified",
         "release_disposition": "experimental_pending_acceptance"
       },
-      "audit_status": "not_reviewed",
-      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+      "audit_status": "reviewed_source",
+      "note": "Reviewed at source/offline level in R04 checkpoint 3.",
+      "reviewed_checkpoint": "source-control-state-and-checkout",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 741,
+        "signature": "static FString ReadTurboMCPVcsState(const FString& Assets);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "One required FString parameter; no C++ default. Empty string is explicit no-asset mode; omitted is rejected before the body."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:216-234,254-305",
+        "description": "FRecordingToolset wraps all three toolsets. FScopedCall writes start/end records only while logging is enabled; the wrapper therefore adds a log side effect to Read, Preview and Edit calls."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+        "lines": "32-37",
+        "plan_render": "TurboMCPSourceControl.cpp:184-408"
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350,414-432",
+        "description": "Session.call returns the text body. These tools do not append an ARC02 result line, so call_structured defaults to requiring one for TurboMCP.* and would raise unless requires_result=False. Refusals are text values, so the recorder's bError is false (R04-CALL-06)."
+      },
+      "effects": [
+        "Plan loads the SourceControl module, reads registered provider names, IsEnabled and (when enabled) IsAvailable/UsesCheckout, and resolves every input.",
+        "For each resolved file whose run checks pass, Plan calls Provider.GetState(file, EStateCacheUsage::ForceUpdate); this may refresh provider cache/network state but does not check out or write an asset.",
+        "With logging enabled, the recorder writes start/end records and can rotate the log.",
+        "No asset file, save, checkout or setting is written by this tool."
+      ],
+      "success": "Returns '=== source control: E-VCS-CHECKOUT ===' module/provider facts, then zero or more rows; each row reports package/file, provider flags and state text, or REFUSED with the reason. No ARC02 result line.",
+      "refusals": [
+        "Empty Assets: no rows; the answer is provider/module facts and says no asset was given.",
+        "Invalid/ambiguous/missing input: per-row refusal from Resolve.",
+        "Resolved package without a verified file: per-row refusal; no provider state query for that row.",
+        "Module disabled/unavailable: every resolved asset is refused with the engine string or the module-load reason; no GetState call.",
+        "Null provider state: UNKNOWN with the reason, not 'not under source control'."
+      ],
+      "truncation": "No tool-level character cap; output grows with one row per input and the fixed provider facts. No pagination.",
+      "tests": [
+        "Tools/test-vcs.py: no-provider empty/per-asset refusals, mixed invalid input, Preview/Edit identical refusals, Git state, Perforce enabled/unavailable, engine-helper cross-check, no working-tree change.",
+        "Tools/test-vcs-write.py uses ReadTurboMCPVcsState only with empty Assets for provider facts; it does not exercise per-asset state.",
+        "No test covers duplicate/separator/whitespace, unsaved package, null/unknown non-null state, checked-out-other or read-only state."
+      ],
+      "source_findings": [
+        "R04-VCS-01",
+        "R04-VCS-02",
+        "R04-VCS-03",
+        "R04-VCS-05",
+        "R04-CALL-04",
+        "R04-CALL-06"
+      ]
     },
     {
       "id": "ReadTurboMCPWidgetTree",
@@ -3259,6 +3436,107 @@
       "observed_source_behavior": "A missing inputSchema produces no parameter section at all; an inputSchema without a properties object produces 'parameters: none'; a real zero-parameter tool with an empty properties object produces 'parameters: 0 (this tool takes no parameters)'. The schema reader records OddSchemaNote for the missing cases.",
       "existing_assertions": "No test supplies a schema without inputSchema or checks the difference from a zero-parameter tool.",
       "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-VCS-01",
+      "status": "confirmed_source_limitation",
+      "checkpoint": "source-control-state-and-checkout",
+      "scope": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "title": "ForceUpdate does not establish refresh success; pinned Perforce can return cached state with Succeeded",
+      "evidence": [
+        "TurboMCPSourceControl.cpp:293 calls Provider.GetState(Row.File, EStateCacheUsage::ForceUpdate) for every resolved file.",
+        "ISourceControlProvider.cpp:50-60 implements the single-file helper by calling the array GetState and returning only a nonempty state when the array call returns Succeeded; TurboMCP never receives the refresh result.",
+        "PerforceSourceControlProvider.cpp:423-433 executes FUpdateStatus on ForceUpdate but ignores its result, fetches GetStateInternal from StateCache, and returns ECommandResult::Succeeded.",
+        "PerforceSourceControlProvider.cpp:131-151 creates a cached DontCare state for a filename absent from the cache; PerforceSourceControlState.h:52-56 defaults it to DontCare.",
+        "R13 already records the limit: docs/audit/native-overlap.md:35,88 and docs/audit/technical-debt.md:52-53."
+      ],
+      "observed_source_behavior": "A provider can return a cached or unknown state after a failed refresh and still report Succeeded. TurboMCP reports the state as if it were a current measurement. This is a provider-diagnostic answer, not stale-proof freshness evidence.",
+      "existing_assertions": "test-vcs.py has no failed-refresh/cached-state case; Perforce is only tested when IsAvailable() is false, and Git is a no-op provider.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-VCS-02",
+      "status": "confirmed_source",
+      "checkpoint": "source-control-state-and-checkout",
+      "scope": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "title": "A non-null provider state is never checked with IsUnknown(); Perforce DontCare can be reported as source-controlled",
+      "evidence": [
+        "TurboMCPSourceControl.cpp:295-317 treats any non-null state as measured and reads IsSourceControlled/IsCheckedOut/IsAdded/IsCurrent/IsModified/IsIgnored/CanCheckout.",
+        "ISourceControlState.h:208 exposes IsUnknown(); TurboMCP never calls it.",
+        "PerforceSourceControlState.cpp:356-359 returns true for DontCare; PerforceSourceControlState.cpp:326-329 returns IsSourceControlled true for DontCare as well.",
+        "PerforceSourceControlState.cpp:168-206 displays DontCare as 'Unknown', but the structured flags are still printed as measured booleans."
+      ],
+      "observed_source_behavior": "The null-state branch is handled, but a non-null unknown state is not: Perforce's default DontCare state can print under source control: true, checked out: false, current: false and provider text Unknown. The output does not say the state is unknown.",
+      "existing_assertions": "No test creates a non-null IsUnknown state; test-vcs.py only exercises the null/no-provider and Git/Perforce-unavailable cases.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-VCS-03",
+      "status": "confirmed_source",
+      "checkpoint": "source-control-state-and-checkout",
+      "scope": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "title": "Duplicate asset inputs are preserved, producing duplicate rows, state queries and checkout attempts",
+      "evidence": [
+        "TurboMCPAssetResolver.cpp:182-206 SplitList splits on comma/pipe, trims and culls empty parts, but never deduplicates.",
+        "TurboMCPSourceControl.cpp:252-320 loops every input and creates one row/GetState call per duplicate.",
+        "TurboMCPSourceControl.cpp:443-527 Checkout loops every row and can issue FCheckOut once per duplicate.",
+        "TurboMCPSourceControl.cpp:390-404 prints assets: N and one 1-based row per input, so duplicates inflate the count."
+      ],
+      "observed_source_behavior": "Passing the same resolved asset twice produces two rows; with a provider it produces two GetState(ForceUpdate) calls and can issue two FCheckOut operations for one file. No duplicate warning or deduplication exists. Ordering is preserved and empty separators are silently culled.",
+      "existing_assertions": "test-vcs.py uses exactly two distinct fixtures and checks len(rows)==2; it never sends a duplicate or separator-only input.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-VCS-04",
+      "status": "confirmed_source",
+      "checkpoint": "source-control-state-and-checkout",
+      "scope": [
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "title": "Checkout executes against the plan state without revalidation, post-operation read-back or aggregate outcome",
+      "evidence": [
+        "TurboMCPSourceControl.cpp:293 reads state once; Checkout at :410-530 never calls GetState before or after Provider.Execute.",
+        "Checkout decides to skip from plan fields bCheckedOut/bAdded/bStateRead/CanCheckout (:455-488) and then executes FCheckOut at :491-492; it does not recheck the file, provider, enablement or state.",
+        "The result section (:494-522) reports the operation's ECommandResult and messages only. The result fields bAttempted/bSucceeded/ProviderAnswer in TurboMCPSourceControl.h:101-109 are not populated by this path.",
+        "The per-asset loop continues after failures; there is no rollback, aggregate count or partial-success summary.",
+        "Preview and Edit each call Plan separately (:39-50); sharing the Plan function does not share a state snapshot across calls, so state changes between calls can change the answer."
+      ],
+      "observed_source_behavior": "A stale plan can skip a file that is no longer checked out/added, or attempt a checkout on a file that has changed owner/state. ECommandResult::Succeeded is reported as the provider's operation result, not as a verified checkout; no post-state read proves the lock. A multi-asset call can partially succeed, with per-row results but no aggregate or rollback.",
+      "existing_assertions": "test-vcs.py only exercises Git no-op and no-provider/Perforce-unavailable paths; it never observes a successful checkout or reads state back. test-vcs-write.py tests write tools, not this checkout tool.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-VCS-05",
+      "status": "confirmed_source",
+      "checkpoint": "source-control-state-and-checkout",
+      "scope": [
+        "ReadTurboMCPVcsState",
+        "PreviewTurboMCPVcsCheckout",
+        "EditTurboMCPVcsCheckout"
+      ],
+      "title": "Checked-out-by-other, non-null unknown and read-only distinctions are not surfaced as structured state",
+      "evidence": [
+        "TurboMCPSourceControl.cpp:309-317 calls IsSourceControlled/IsCheckedOut/IsAdded/IsCurrent/IsModified/IsIgnored/CanCheckout but not IsCheckedOutOther or IsUnknown.",
+        "TurboMCPSourceControl.cpp:134-142 prints those seven flags plus a CanCheckout flag; checked-out-other and unknown appear only if the provider's own display text mentions them.",
+        "ISourceControlState.h:156 exposes IsCheckedOutOther; :208 exposes IsUnknown.",
+        "The plan prints UsesLocalReadOnlyState at :238,363 but does not inspect a file's read-only attribute; CanCheckout is the only structured read-only-adjacent signal."
+      ],
+      "observed_source_behavior": "Read/Preview state rows cannot distinguish checked out by another user, a genuinely unknown non-null state, or a filesystem read-only asset except through provider text or CanCheckout. The declaration says it reports 'whether it is checked out here', which is true, but the broader state question is not structured.",
+      "existing_assertions": "test-vcs.py does not assert checked-out-other, unknown-state or read-only flags; the Git assertions only require checked-out/out-of-date lines to exist.",
+      "runtime_status": "not_run"
     }
   ],
   "repairs": [
@@ -3537,6 +3815,118 @@
       "validation": "No current suite exercises a missing inputSchema/properties object. Proposed synthetic help/schema fixture; exact engine command unavailable until the fixture exists.",
       "rollback": "Revert Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp and Tools/test-agent-help.py only.",
       "fixture_gap": "Production schemas do not omit inputSchema, so this probe needs a synthetic registry/test seam or a test-only schema fixture. Neither is in the allowed files; the probe is awaiting fixture scope."
+    },
+    {
+      "id": "R04-REPAIR-13",
+      "finding": "R04-VCS-01",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+        "Tools/test-vcs.py"
+      ],
+      "preserved_behavior": [
+        "per-asset state rows",
+        "provider/module facts",
+        "refusal strings",
+        "no checkout in Read/Preview",
+        "no asset write"
+      ],
+      "synthetic_probe": "Use a test provider or fixture that returns a cached state after a failed FUpdateStatus; compare a successful refresh with the cached case. No live depot is required.",
+      "expected": "The output states that the state is provider-reported and freshness was not proven, or refuses to label it current; it never presents cached state as stale-proof. The provider's own state text remains visible.",
+      "negative_control": "A successful refresh with a changed state still shows the changed state; a null state still reports UNKNOWN.",
+      "fixture_gap": "A test provider or a provider fixture that can fail FUpdateStatus and retain cache is not present in the allowed files. The probe is awaiting fixture/provider-seam scope.",
+      "validation": "No current suite exercises failed-refresh; test-vcs.py has no such assertion. Proposed focused provider fixture; exact engine command unavailable until the fixture exists.",
+      "rollback": "Revert TurboMCPSourceControl.cpp and test-vcs.py only."
+    },
+    {
+      "id": "R04-REPAIR-14",
+      "finding": "R04-VCS-02",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+        "Tools/test-vcs.py"
+      ],
+      "preserved_behavior": [
+        "null-state branch",
+        "provider text",
+        "per-asset refusal/ordering",
+        "no checkout in Read/Preview"
+      ],
+      "synthetic_probe": "Provide a non-null ISourceControlState whose IsUnknown() is true (Perforce DontCare) and one with a known state; compare the rows.",
+      "expected": "IsUnknown() is checked before flags; the unknown row is marked UNKNOWN with the provider text and no true/false source-control claim. Known states keep their current flags.",
+      "negative_control": "A known tracked/checked-out state still prints its true flags and is not mislabeled unknown; the null-state branch is unchanged.",
+      "fixture_gap": "No current fixture can create a non-null IsUnknown state; the environment's Perforce is unavailable. A test provider/state fixture is missing.",
+      "validation": "No current suite exercises non-null unknown state. Proposed provider fixture; exact command unavailable until the fixture exists.",
+      "rollback": "Revert TurboMCPSourceControl.cpp and test-vcs.py only."
+    },
+    {
+      "id": "R04-REPAIR-15",
+      "finding": "R04-VCS-03",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+        "Tools/test-vcs.py"
+      ],
+      "preserved_behavior": [
+        "input order",
+        "comma/pipe separators",
+        "whitespace trimming",
+        "per-asset refusals",
+        "distinct assets remain separate"
+      ],
+      "synthetic_probe": "Call with 'TA01,TA01', 'TA01|TA01', and 'TA01, ,TA01'; compare row count, GetState calls and checkout attempts.",
+      "expected": "Duplicates are either collapsed to one resolved asset with one state query/checkout, or refused explicitly as duplicates. The choice must be stated; distinct assets and order remain unchanged.",
+      "negative_control": "Two distinct assets still produce two rows and two independent states; empty separators do not create rows.",
+      "fixture_gap": "No fixture needs new data, but the chosen duplicate policy is an unresolved design decision.",
+      "validation": "test-vcs.py currently asserts only two distinct rows; add the duplicate/separator cases to that suite.",
+      "rollback": "Revert TurboMCPSourceControl.cpp and test-vcs.py only."
+    },
+    {
+      "id": "R04-REPAIR-16",
+      "finding": "R04-VCS-04",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+        "Tools/test-vcs.py"
+      ],
+      "preserved_behavior": [
+        "per-asset refusals",
+        "no-op UsesCheckout behavior",
+        "provider messages",
+        "no asset file write"
+      ],
+      "synthetic_probe": "With a test provider, change the state between Plan and Execute; simulate one success, one failure and one skip; then read state back. Compare with a stable-state control.",
+      "expected": "Before acting, the tool revalidates the row or states that it is acting on a snapshot; after Execute it reads the state back and only claims checked-out status when verified. The provider result remains reported separately. Partial failures are named in a summary.",
+      "negative_control": "A stable successful checkout still succeeds; a no-op Git provider still reports the operation failure and never claims a lock; a refused row reaches no provider.",
+      "fixture_gap": "A state-changing test provider and a post-state assertion are not present; no live depot is available.",
+      "validation": "No current suite observes a successful live checkout or post-state. Proposed provider fixture; engine command unavailable until the fixture exists.",
+      "rollback": "Revert TurboMCPSourceControl.cpp and test-vcs.py only."
+    },
+    {
+      "id": "R04-REPAIR-17",
+      "finding": "R04-VCS-05",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+        "Tools/test-vcs.py"
+      ],
+      "preserved_behavior": [
+        "existing flags and provider text",
+        "per-asset ordering",
+        "refusal wording",
+        "no checkout in Read/Preview"
+      ],
+      "synthetic_probe": "Provide states that are checked out by another user, non-null unknown, and read-only; compare the structured rows.",
+      "expected": "Rows expose checked-out-other and unknown/read-only status explicitly, or say the provider cannot report it. Provider text remains; no false true/false claim.",
+      "negative_control": "A normal checked-out-here/current state still prints the same flags; a truly not-under-control state is not labeled unknown.",
+      "fixture_gap": "No fixture supplies checked-out-other/read-only/unknown provider states; a test provider or state fixture is missing.",
+      "validation": "No current suite asserts these flags. Proposed provider fixture; engine command unavailable until the fixture exists.",
+      "rollback": "Revert TurboMCPSourceControl.cpp and test-vcs.py only."
     }
   ],
   "probe_gaps": [
@@ -3557,7 +3947,12 @@
     "Help/schema for a tool whose inputSchema or properties object is missing.",
     "Status/help/schema recorded with logging ON and OFF, including the status declaration's cost claim.",
     "Help single-tool >2000 and summary >12 rows are separate branches; the summary has no character cap.",
-    "Required/default, long-help and missing-schema probes need a synthetic schema/trap fixture or test seam not present in the allowed files."
+    "Required/default, long-help and missing-schema probes need a synthetic schema/trap fixture or test seam not present in the allowed files.",
+    "VCS separator/whitespace/duplicate/empty input and per-asset count/order.",
+    "VCS unsaved package, multiple-asset package, missing file and mounted-plugin path.",
+    "VCS null, non-null unknown, cached-after-failed-refresh, checked-out-other and read-only states.",
+    "VCS successful live checkout, post-operation read-back, partial failure and multi-asset atomicity.",
+    "VCS Preview/Edit behavior after a state change between calls."
   ],
   "validation": {
     "audit_inventory_check": {
@@ -3592,7 +3987,10 @@
     "Whether help should reuse schema normalization or document a narrower name contract; no shared helper is authorized.",
     "Whether status should expose enabled/discoverable layers through a new public query or a schema-list proxy; design unresolved.",
     "The three tools remain plain-FString, non-ARC02 tools; call_structured and refusal-to-record behavior remain unresolved as in checkpoint 1.",
-    "Required/default, long-help and missing-schema probes are awaiting fixture/test-seam scope; current test-agent-help.py does not supply them."
+    "Required/default, long-help and missing-schema probes are awaiting fixture/test-seam scope; current test-agent-help.py does not supply them.",
+    "Whether a duplicate asset should be deduplicated or refused; the policy is unresolved.",
+    "Whether a checkout success must be verified by post-state read-back, and how a partial multi-asset result should be summarized.",
+    "How to represent provider freshness and non-null unknown/checked-out-other/read-only state without inventing a provider-independent result."
   ],
   "schema_validation": {
     "status": "source_traced_not_runtime",
@@ -3678,5 +4076,51 @@
     "remaining_tools": 94,
     "offline_run": "8018fadb647741b6a07bd7cd7c80668c",
     "limitations": "Runtime remains unobserved. Synthetic fixture scope, status queries, cap policy and name normalization need reviewed specifications before repairs."
+  },
+  "checkpoint_3": {
+    "name": "source-control-state-and-checkout",
+    "approved_base": "fc46e01845c4fbd6814c07f5f228d946aeaef6b9",
+    "plugin_tree": "590661ec45c829264ea1743fccea994edb748092",
+    "engine": {
+      "version": "5.8.3",
+      "commit": "396c9f059903aed5fec78ecd3d437a40c6415368"
+    },
+    "claim": {
+      "id": "c44cc6b13e824f5682e53c43bee3cd5d",
+      "owner": "dsh-r04-vcs-01",
+      "worktree": "C:\\ExampleDev\\SampleRoot005\\r04-vcs",
+      "store_sha256": "6a003399621601864306562b3d74418f328098574bd1edfdb53cc16cfc2f64e5"
+    },
+    "reviewed_ids": [
+      "ReadTurboMCPVcsState",
+      "PreviewTurboMCPVcsCheckout",
+      "EditTurboMCPVcsCheckout"
+    ],
+    "scope": "Source/offline audit of VCS state, checkout preview and checkout execution; no engine/build/editor/MCP execution.",
+    "validation": {
+      "audit_inventory_check": {
+        "command": "python Tools/audit-inventory.py --check",
+        "exit": 0,
+        "summary": "101 definitions; 95 parsed_call, 6 name_reference_only."
+      },
+      "test_result_contract": {
+        "command": "python Tools/test-result-contract.py",
+        "exit": 0,
+        "summary": "PASS; C03-C08."
+      },
+      "test_client_retry": {
+        "command": "python Tools/test-client-retry.py",
+        "exit": 0,
+        "summary": "PASS; C01/C02."
+      },
+      "offline_profile": {
+        "command": "python Tools/execute-tests.py --profile offline --execute",
+        "exit": 0,
+        "report": ".local/executions/9ebf217b4f3f4564b78a55bc77059f40/report.json",
+        "request_commit": "fc46e01845c4fbd6814c07f5f228d946aeaef6b9",
+        "tree_digest": "8486fa8ee108917e3ecfc18856399c49424dd6547912406ba9b0584af0ad0728",
+        "summary": "PASSED; all offline suites passed."
+      }
+    }
   }
 }

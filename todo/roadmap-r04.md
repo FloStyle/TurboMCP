@@ -118,6 +118,47 @@ Unresolved: status/help/schema runtime behavior; the single-tool cap versus summ
 
 Checkpoint 2 integration review accepted candidate `f10dc74ca4569ca449c0e598fe76abe042a0e7b7` as source-only evidence for status, help and schema. Scope and checkpoint-1 preservation passed; candidate offline run `8018fadb647741b6a07bd7cd7c80668c` passed. R04 remains todo, seven tools source-reviewed and 94 not reviewed. Repair proposals and next-family dispatch remain unapproved.
 
+### Checkpoint 3: source-control state and checkout
+Task R04 checkpoint 3, claim `c44cc6b13e824f5682e53c43bee3cd5d` (owner `dsh-r04-vcs-01`). Approved base `fc46e01845c4fbd6814c07f5f228d946aeaef6b9`; branch `task/r04-vcs-audit`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the checkpoint commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+
+Source identity:
+- Engine 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`; local engine HEAD verified equal to the pin.
+- Plugin tree: `590661ec45c829264ea1743fccea994edb748092`.
+- Claim store: `c:\ExampleDev\turbomcp\.git\turbomcp\task-claims.json`, SHA-256 `6a003399621601864306562b3d74418f328098574bd1edfdb53cc16cfc2f64e5`; active R04 claim inspected in this worktree.
+
+Scope and inventory:
+- `docs/audit/callable-contracts.json` retains all 101 IDs and prior checkpoint rows/findings/proposals. Three rows are added as `reviewed_source`: `ReadTurboMCPVcsState`, `PreviewTurboMCPVcsCheckout`, `EditTurboMCPVcsCheckout`. Current totals are 10 reviewed and 91 `not_reviewed`; prior checkpoints remain 4/97 and 7/94.
+- Checkpoint-specific base/claim/validation identities are stored under `checkpoint_3`; earlier base, claim, validation and acceptance text are preserved.
+- The audit traces declarations, `Plan`/`Render`/`Checkout`, `TurboMCPAssetResolver`, provider gating and `GetState`, the recorder, and the text/result client path. No runtime behavior is claimed.
+
+Contract notes:
+- `Assets` is required; omitted fields are rejected before the body. Explicit empty means provider/module facts with no asset rows. Comma/pipe separators are trimmed and empty parts culled; order is preserved and duplicates are not deduplicated.
+- Each input resolves through the shared resolver. Invalid/ambiguous/missing/multiple-asset-package/unsaved-package inputs are refused per row; a resolved package without a verified file is refused before any provider state query.
+- Disabled, unavailable and module-missing runs refuse every resolved asset with the engine string/module reason and do not call per-asset `GetState`.
+- Null provider state is reported as UNKNOWN. A non-null `IsUnknown` state is not checked; Perforce `DontCare` defaults can print as source-controlled true with provider text `Unknown`.
+- `ForceUpdate` does not prove refresh success: the single-file helper discards the command result, and pinned Perforce ignores `FUpdateStatus` failure and returns cached state with `Succeeded`.
+- `Read`/`Preview` issue per-asset `GetState(ForceUpdate)` and wrapper logging but no `FCheckOut`. `Edit` issues per-asset `FCheckOut`; it does not revalidate the plan or read state back, does not populate the result fields, and has no aggregate/partial/rollback outcome. `UsesCheckout() == false` is reported as a no-op expectation but the operation is still issued.
+
+New findings (`R04-VCS-01` through `05`):
+- `R04-VCS-01`: pinned ForceUpdate/cached-state freshness limitation; not stale-proof.
+- `R04-VCS-02`: non-null `IsUnknown` state is treated as measured; Perforce `DontCare` can print source-controlled true.
+- `R04-VCS-03`: duplicate inputs produce duplicate rows/state queries and potentially duplicate checkouts.
+- `R04-VCS-04`: checkout has no revalidation/post-read-back/aggregate result; stale plan and partial multi-asset outcomes.
+- `R04-VCS-05`: checked-out-other, non-null unknown and read-only distinctions are not structured.
+Each has an unapproved proposal `R04-REPAIR-13` through `17` with exact files, preserved behavior, synthetic provider/state probe or explicit fixture gap, expected result, negative control, validation and rollback. Duplicate policy, post-state verification, freshness representation and provider fixtures remain unresolved.
+
+Validation:
+- `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
+- `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
+- `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 at base `fc46e01`: report `.local/executions/9ebf217b4f3f4564b78a55bc77059f40/report.json`, tree digest `8486fa8ee108917e3ecfc18856399c49424dd6547912406ba9b0584af0ad0728`; all offline suites passed.
+- No engine suite, editor, build, direct MCP call, source-control checkout, packaging or recovery command was run. `test-vcs.py` and `test-vcs-write.py` are existing engine-suite assertions only, not results here.
+- Candidate-bound offline evidence is obtained after this commit and returned separately.
+
+Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contracts.json`, and this Completion evidence only. No plugin, engine, test, helper, dependency, pin, routing preference, task status/readiness, TODO, review register or release control was changed.
+
+Unresolved: live-depot checkout and post-state verification; failed-refresh/cached, non-null unknown, checked-out-other and read-only provider states; duplicate policy; aggregate/partial outcome and rollback policy; how to represent freshness without a new public schema; all three tools' lack of ARC02 lines and `call_structured` implications; `R04-CALL-06` refusal recording; the 91 unreviewed rows. R04 remains incomplete; no merge, push, completion or claim release.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)

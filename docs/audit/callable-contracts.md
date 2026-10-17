@@ -1,28 +1,30 @@
-# R04 callable contracts — checkpoints 1 and 2
+# R04 callable contracts — checkpoints 1, 2 and 3
 
-Source/offline investigation only. Checkpoint 1 audits the four call-log tools; checkpoint 2 extends the inventory to status, help and schema. Neither checkpoint completes R04.
+Source/offline investigation only. Checkpoint 1 audits four call-log tools; checkpoint 2 adds status/help/schema; checkpoint 3 adds source-control state and checkout. None completes R04.
 
 - **Checkpoint 1 base:** `1180c6d43655195dc2772b6d1f0b80588e4b466a`
 - **Checkpoint 1 claim:** `ab2cf6535c584bc6a9419c79e85d0b04` (`dsh-r04-01`)
 - **Checkpoint 2 base:** `b353fdd8b44f405c84ef9a67fde9db679f8c4804`
 - **Checkpoint 2 claim:** `350b288bbc2d4f5ab0e408d760bf2dfb` (`dsh-r04-02`)
+- **Checkpoint 3 base:** `fc46e01845c4fbd6814c07f5f228d946aeaef6b9`
+- **Checkpoint 3 claim:** `c44cc6b13e824f5682e53c43bee3cd5d` (`dsh-r04-vcs-01`)
 - **Plugin tree:** `590661ec45c829264ea1743fccea994edb748092`
 - **Engine:** 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`
 - **Machine-readable inventory:** [callable-contracts.json](callable-contracts.json)
 
 ## Scope and coverage
 
-`docs/audit/capabilities.json` contains **101 unique tool IDs**. Checkpoint 1 created the four-row baseline; checkpoint 2 adds three rows.
+`docs/audit/capabilities.json` contains **101 unique tool IDs**. Checkpoint 1 created the four-row baseline; checkpoint 2 added three; checkpoint 3 adds the three VCS rows.
 
 | Audit status | Count |
 | --- | ---: |
-| `reviewed_source` | 7 |
-| `not_reviewed` | 94 |
+| `reviewed_source` | 10 |
+| `not_reviewed` | 91 |
 | **Total** | **101** |
 
-Checkpoint 1 snapshot: 4 reviewed, 97 not reviewed. Checkpoint 2 adds `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp` and `ReadTurboMCPToolSchema`. The 94 unreviewed rows retain their capability source/test references and are explicitly marked. No conclusion is implied for them.
+Checkpoint 1 snapshot: 4 reviewed/97 not reviewed. Checkpoint 2: 7/94. Checkpoint 3 adds `ReadTurboMCPVcsState`, `PreviewTurboMCPVcsCheckout` and `EditTurboMCPVcsCheckout`. The 91 unreviewed rows retain their capability source/test references and are explicitly marked. No conclusion is implied for them.
 
-Reviewed tools: `ReadTurboMCPCallCost`, `ReadTurboMCPCallLog`, `EditTurboMCPCallLog`, `EditTurboMCPCallLogClear`, `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp`, `ReadTurboMCPToolSchema`.
+Reviewed tools: `ReadTurboMCPCallCost`, `ReadTurboMCPCallLog`, `EditTurboMCPCallLog`, `EditTurboMCPCallLogClear`, `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp`, `ReadTurboMCPToolSchema`, `ReadTurboMCPVcsState`, `PreviewTurboMCPVcsCheckout`, `EditTurboMCPVcsCheckout`.
 
 ## Reviewed contracts
 
@@ -201,6 +203,98 @@ No engine suite, editor, build, direct MCP call, packaging or recovery was run. 
 - All three tools remain plain-FString, non-ARC02 tools; `call_structured` and `R04-CALL-06` refusal recording remain unresolved.
 - The 94 unreviewed rows remain unreviewed; R04 is incomplete.
 
+## Checkpoint 3: source-control state and checkout
+
+Checkpoint 3 is source/offline evidence at base `fc46e01845c4fbd6814c07f5f228d946aeaef6b9`; it does not certify runtime behavior or a live-depot checkout. Reviewed tools: `ReadTurboMCPVcsState`, `PreviewTurboMCPVcsCheckout` and `EditTurboMCPVcsCheckout`.
+
+### Reviewed contracts
+
+| Tool | Declaration | Implementation and effects | Success / refusal shape |
+| --- | --- | --- | --- |
+| `ReadTurboMCPVcsState` | `TurboMCPToolsets.h:741-742`; required `Assets` | `TurboMCPSourceControlTools.cpp:32-37` calls `Plan` then `Render(..., false)`; `TurboMCPSourceControl.cpp:184-408` | Provider/module facts plus one row per input; per-row state or `REFUSED`; no checkout or asset write. Plain text; no ARC02 line. |
+| `PreviewTurboMCPVcsCheckout` | `TurboMCPToolsets.h:1523-1524`; required `Assets` | `:39-44` calls `Plan` then `Render(..., true)`; same Plan, no `FCheckOut` | State/refusal rows plus `WHAT A CHECKOUT WOULD DO`; no provider write operation. Plain text; no ARC02 line. |
+| `EditTurboMCPVcsCheckout` | `TurboMCPToolsets.h:2316-2317`; required `Assets` | `:46-50` calls `Plan` then `Checkout` (`TurboMCPSourceControl.cpp:410-530`) | Per-row `ECommandResult::Succeeded/Failed/Cancelled` plus provider messages; skipped rows say `NOT ATTEMPTED`/`ALREADY DONE`; no aggregate or post-state verification. Plain text; no ARC02 line. |
+
+`Assets` is a required `FString`; omitted is rejected before the body. Explicit empty string is the documented no-asset mode: `Read`/`Preview` print provider/module facts with no rows; `Edit` says there is nothing to check out. `SplitList` (`TurboMCPAssetResolver.cpp:182-206`) splits on comma or pipe, trims, culls empty parts, preserves order and does not deduplicate. Empty separators are silently discarded. Each part is resolved by `FTurboMCPAssetResolver::Resolve` (`:36-143`).
+
+Resolution accepts short names, package/object paths and generated class paths; short names cover `/Game` only. Invalid, ambiguous, multiple-asset-package and missing-file inputs are refused per row. An unsaved package can resolve in memory but has no verified file, so `FileForPackagePath` refuses it (`TurboMCPSourceControl.cpp:54-85`). Files are verified with `FileExists` before a provider is asked. Duplicate inputs remain duplicate rows, duplicate `GetState` calls and potentially duplicate checkout operations.
+
+### Provider and state trace
+
+`Plan` asks `ISourceControlModule::IsEnabled` and, only when enabled, `IsAvailable` and the provider capability flags (`TurboMCPSourceControl.cpp:184-245`). A disabled/unavailable/module-missing run produces one refusal string per resolved asset and does not call `GetState`. The refusal strings are the engine's own `SourceControlHelpers.cpp:67,76` or a module-load reason.
+
+For each surviving row, `Plan` calls:
+
+`Provider.GetState(Row.File, EStateCacheUsage::ForceUpdate)` (`TurboMCPSourceControl.cpp:293`).
+
+That reaches the single-file helper (`ISourceControlProvider.cpp:50-60`), which discards the `ECommandResult` and returns the state only when the array call succeeded and returned a nonempty state. The pinned Perforce provider's array `GetState` (`PerforceSourceControlProvider.cpp:423-433`) executes `FUpdateStatus` when `ForceUpdate` is requested, ignores that operation's result, reads `GetStateInternal` from its cache and returns `ECommandResult::Succeeded`. A cached state can therefore be reported after a failed refresh. R13 recorded the same limit (`docs/audit/native-overlap.md:35,88`; `docs/audit/technical-debt.md:52-53`); no stale-proof claim is made here.
+
+`Plan` checks `State.IsValid()` only (`TurboMCPSourceControl.cpp:295`). A null state becomes `UNKNOWN` with the reason. It does not call `ISourceControlState::IsUnknown()`. Perforce's default `FPerforceSourceControlState` is `DontCare` (`PerforceSourceControlState.h:52-56`); `IsUnknown()` is true for it (`PerforceSourceControlState.cpp:356-359`), and `IsSourceControlled()` is also true (`:326-329`). A non-null cached unknown state can therefore print `under source control: true` with provider text `Unknown`, rather than the unknown-state branch.
+
+The structured flags are `IsSourceControlled`, `IsCheckedOut`, `IsAdded`, `IsCurrent`, `IsModified`, `IsIgnored` and `CanCheckout` (`TurboMCPSourceControl.cpp:309-317`). `IsCheckedOutOther` and `IsUnknown` are not read; a filesystem read-only attribute is not probed. Those conditions appear only through provider display text or `CanCheckout()`.
+
+### Read, Preview and Edit side effects
+
+- `Read` and `Preview` call `Plan`, so they can issue per-asset `GetState(ForceUpdate)` provider refresh/cache/network work even though they never issue `FCheckOut` or write an asset file.
+- `Preview` renders checkout intent from `UsesCheckout`, `bCheckedOut`/`bAdded`, `bStateRead` and `CanCheckout`; it does not execute a source-control operation.
+- `Edit` issues one `FCheckOut` for each eligible row (`TurboMCPSourceControl.cpp:491-492`). It skips plan-refused rows, unreadable states and rows already checked out/added; it still attempts when `CanCheckout()` is false. On a `UsesCheckout() == false` provider it states the no-op expectation and still executes to record the provider's answer.
+- All three are wrapped by `FRecordingToolset` (`TurboMCPCallRecorder.cpp:103-130`); logging ON adds start/end records and can rotate the log.
+- No tool writes or saves an asset. `Edit` can change provider/depot lock state. There is no rollback, aggregate transaction or atomic multi-asset behavior.
+
+### Checkout execution and result limits
+
+`Edit` calls `Plan`, renders the state half, then loops the rows. It does not re-run `GetState` before or after `Provider.Execute`; skips are based on the plan's stale fields. A file whose state changes between Plan and Execute can be skipped or attempted on the wrong condition. `ECommandResult::Succeeded` is the provider operation's answer only; no post-operation state read proves that the file is checked out. The result fields `bAttempted`/`bSucceeded`/`ProviderAnswer` in `TurboMCPSourceControl.h:101-109` are not populated by this path.
+
+A multi-asset call continues after a failed row. The output has per-row results but no aggregate count, partial-success marker, retry or rollback. `Preview` and `Edit` each call `Plan` separately; sharing the same function does not preserve one state snapshot across two calls, so a state change between Preview and Edit can legitimately/incorrectly change the answer.
+
+All three tools return plain `FString` with no ARC02 result line. `Tools/tmcp.py` `call_structured` requires one for `TurboMCP.*` unless `requires_result=False`; this is the prior `R04-CALL-04` contract gap. Text refusals are values to the recorder, so `bError=false` (`R04-CALL-06`); they are not failed-call counts.
+
+### Findings
+
+| ID | Status | Scope | Finding and evidence | Existing assertions |
+| --- | --- | --- | --- | --- |
+| `R04-VCS-01` | confirmed limitation | all three | `ForceUpdate` does not prove refresh success. Single-file helper discards the command result (`ISourceControlProvider.cpp:50-60`); Perforce ignores `FUpdateStatus` failure and returns cached state with `Succeeded` (`PerforceSourceControlProvider.cpp:423-433`). R13 recorded the same at `native-overlap.md:35,88`. | No failed-refresh/cached-state test; Perforce only tested unavailable. |
+| `R04-VCS-02` | confirmed source | all three | Non-null state is never checked with `IsUnknown` (`TurboMCPSourceControl.cpp:295-317`). Perforce `DontCare` is `IsUnknown` true but `IsSourceControlled` true (`PerforceSourceControlState.cpp:326-329,356-359`); it can print `under source control: true` with provider text `Unknown`. | No non-null unknown-state test. |
+| `R04-VCS-03` | confirmed source | all three | `SplitList` preserves duplicates (`TurboMCPAssetResolver.cpp:182-206`); Plan loops every row (`TurboMCPSourceControl.cpp:252-320`) and Checkout can execute per duplicate (`:443-527`). Duplicate inputs inflate `assets:` and can duplicate state queries/checkouts. | `test-vcs.py` uses two distinct fixtures and checks `len(rows)==2`; no duplicate/separator case. |
+| `R04-VCS-04` | confirmed source | preview, edit | Checkout uses plan state without revalidation (`TurboMCPSourceControl.cpp:455-492`), never reads state after Execute, does not populate the `bSucceeded` fields, and has no aggregate/partial/rollback result. Preview/Edit each call Plan separately; shared code is not a shared snapshot. | `test-vcs.py` only covers no-provider, Git no-op and Perforce-unavailable; no successful live checkout or post-state. |
+| `R04-VCS-05` | confirmed source | all three | Flags at `TurboMCPSourceControl.cpp:134-142,309-317` omit `IsCheckedOutOther` and `IsUnknown`; read-only is not probed. Those states are only in provider text/`CanCheckout`. | No test for checked-out-other, unknown non-null or read-only. |
+
+### Bounded repair proposals
+
+All proposals are unapproved.
+
+| ID | Finding / owner | Exact allowed files | Preserved behavior | Probe | Expected / negative control | Validation / rollback |
+| --- | --- | --- | --- | --- | --- | --- |
+| `R04-REPAIR-13` | `R04-VCS-01`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp`; `Tools/test-vcs.py` | Per-asset state rows, provider/module facts, refusal strings, no checkout in Read/Preview | Cached state after failed `FUpdateStatus` via test provider | State is labeled provider-reported/freshness-unproven, never stale-proof; provider text remains. Negative: changed successful state still changes. Fixture gap: no failed-refresh provider fixture. | No current suite; proposed provider fixture; rollback both files. |
+| `R04-REPAIR-14` | `R04-VCS-02`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp`; `Tools/test-vcs.py` | Null-state branch, provider text, per-asset rows/order, no checkout in Read/Preview | Non-null `IsUnknown` state plus a known state | Unknown row is marked UNKNOWN and does not claim true/false source control. Negative: known state still prints known flags. Fixture gap: no unknown-state provider fixture. | No current suite; proposed fixture; rollback both files. |
+| `R04-REPAIR-15` | `R04-VCS-03`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp`; `Tools/test-vcs.py` | Comma/pipe, trimming, order, distinct assets, per-asset refusals | `TA01,TA01`, `TA01|TA01`, separator-only | Duplicates collapsed or explicitly refused; distinct assets/order unchanged. Policy is unresolved. Negative: two distinct assets still two rows. | Add cases to test-vcs.py; revert both files. |
+| `R04-REPAIR-16` | `R04-VCS-04`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp`; `Tools/test-vcs.py` | Per-asset refusals, no-op Git behavior, provider messages, no asset write | State change between Plan and Execute; post-state read; one success/failure/skip | Revalidate or state snapshot; read back state and only claim verified checkout; summarize partial results. Negative: stable success still succeeds; Git no-op never claims lock. Fixture gap: no state-changing provider fixture. | No current suite; proposed provider fixture; rollback both files. |
+| `R04-REPAIR-17` | `R04-VCS-05`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp`; `Tools/test-vcs.py` | Existing flags/provider text/order/refusals | Checked-out-other, non-null unknown, read-only states | New structured status or explicit inability; no false true/false. Negative: normal checked-out/current flags unchanged. Fixture gap: no such provider states. | No current suite; proposed fixture; rollback both files. |
+
+### Checkpoint 3 validation
+
+| Command | Result |
+| --- | --- |
+| `python Tools/audit-inventory.py --check` | exit 0; 101 definitions; 95 `parsed_call`, 6 `name_reference_only` |
+| `python Tools/test-result-contract.py` | exit 0; PASS (C03–C08) |
+| `python Tools/test-client-retry.py` | exit 0; PASS (C01/C02) |
+| `python Tools/execute-tests.py --profile offline --execute` | exit 0; report `.local/executions/9ebf217b4f3f4564b78a55bc77059f40/report.json`, tree `8486fa8e…` |
+
+No engine suite, editor, build, direct MCP, source-control checkout, packaging or recovery was run. Existing engine suites are assertions only:
+
+- `Tools/test-vcs.py` (T-VCS-1): no-provider empty/per-asset refusals; mixed invalid input; Preview/Edit identical refusals; Git state and no-op checkout answer; Perforce enabled/unavailable refusal; engine-helper cross-check; no working-tree change. It explicitly says no live depot checkout, Plastic/Subversion unavailable and Phase C restore.
+- `Tools/test-vcs-write.py` tests the separate automatic-checkout path in write tools; its only `ReadTurboMCPVcsState` use is empty `Assets`. It does not exercise per-asset VCS state or `EditTurboMCPVcsCheckout`.
+- `test-vcs.py` line 313's “no row missing or duplicated” is a two-distinct-asset check, not a duplicate-input test. Line 471's “attempted” is the Git no-op operation, not a successful lock. Line 479 only checks Preview refusals, not state/intent equality.
+
+### Checkpoint 3 unresolved questions
+
+- Whether duplicates should be deduplicated or refused; no policy is approved.
+- Whether checkout success requires post-state verification and how partial multi-asset results are summarized.
+- How to represent freshness, non-null unknown, checked-out-other and read-only state without a provider-independent schema.
+- No live-depot checkout or failed-refresh fixture exists; provider-seam scope is missing.
+- All three tools remain plain text/non-ARC02; `call_structured` and refusal recording remain unresolved.
+- The 91 unreviewed rows remain unreviewed; R04 is incomplete.
+
 ## Integration review
 
-Checkpoint 1 was accepted as a source-only checkpoint at candidate `12d515ac46b58e42e83fffb9b577181fb4e68b55`. That acceptance covered four reviewed tools and 97 not reviewed; all repair rows remain unapproved proposals. The toggle end-after-disable exception and any state/header expansion require an explicit reviewed lifecycle contract before implementation. Checkpoint 2 is accepted at candidate `f10dc74ca4569ca449c0e598fe76abe042a0e7b7`: it adds three source-reviewed rows, for a current total of seven reviewed and 94 not reviewed. Scope, preservation and candidate-bound offline evidence were verified. R04 remains incomplete. No runtime outcome or repair is certified.
+Checkpoint 1 was accepted as a source-only checkpoint at candidate `12d515ac46b58e42e83fffb9b577181fb4e68b55`. That acceptance covered four reviewed tools and 97 not reviewed; all repair rows remain unapproved proposals. The toggle end-after-disable exception and any state/header expansion require an explicit reviewed lifecycle contract before implementation. Checkpoint 2 is accepted at candidate `f10dc74ca4569ca449c0e598fe76abe042a0e7b7`: it adds three source-reviewed rows, for a cumulative seven reviewed and 94 not reviewed. Checkpoint 3 is pending review: it adds three VCS rows, for a current total of ten reviewed and 91 not reviewed. R04 remains incomplete. No runtime outcome or repair is certified.
