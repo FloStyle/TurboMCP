@@ -42,3 +42,10 @@ Pending. Record source/engine/artifact identity, command, exit, log and remainin
 
 ## Source-comparison completion boundary
 This early decision task can complete from pinned source/schema inspection with unsupported runtime parity explicitly marked unverified and expansion deferred. An unavailable 5.9 runtime must not block 5.8.3 safety fixes. Runtime certification belongs to the optional compatibility track.
+
+## Three-way comparison deliverable
+Use docs/tool-comparison.md, docs/audit/epic-tool-inventory.json and docs/audit/tool-routing.json. Preserve all TurboMCP rows. Review the declaration-parser candidates against pinned source and discover other native registration routes; the existing Experimental/Toolsets header scan is not an exhaustive Epic MCP inventory. Distinguish source-present, runtime-discovered, enabled-by-default and installed-distribution availability.
+
+For each TurboMCP workflow identify exact native equivalents or explicitly unresolved parity on both versions. Record scope, inputs, output completeness, effects, failure/rollback/save semantics and candidate benefits. Use unverified preference until R04 supplies accepted runtime comparison evidence. Never infer a missing Epic feature from a missing header. Store identifiers and source references, not licensed engine implementation bodies.
+
+Source comparison may complete without a 5.9 runtime. Pin the inspected revision, retain unverified runtime columns and keep the 5.8.3 baseline unchanged. Do not silently refresh the compatibility target while preparing an unrelated fix.

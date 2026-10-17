@@ -15,7 +15,7 @@ Verify dependency headers/libraries/manifests before proposing module extraction
 Plugin descriptor/Build.cs, development commandlets, exact installed 5.8.3 distribution and clean consumer project.
 
 ## Dependencies
-R11
+R16, R11
 
 ## Acceptance
 - Dependency availability is recorded for the exact distribution.
@@ -23,7 +23,7 @@ R11
 - Unavailable engine distribution is a blocker, never a support claim.
 
 ## Verification
-- `python Tools/doctor.py`
+- Inspect the installed target identity directly; Tools/doctor.py validates the source baseline and cannot certify a Launcher distribution.
 - `Run the target distribution RunUAT BuildPlugin with explicit plugin and package paths`
 - `Run clean-consumer discovery and mutation/refusal checks`
 

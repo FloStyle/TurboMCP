@@ -15,7 +15,7 @@ Current lease acquisition is check-then-write in a per-checkout .agent path. Two
 Tools/ownership.ps1 and its build/editor/runner callers; focused process-concurrency tests. No C++ changes.
 
 ## Dependencies
-R13
+R16
 
 ## Acceptance
 - Two actual concurrent processes in separate temporary worktrees cannot both acquire the same resource.

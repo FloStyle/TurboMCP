@@ -21,12 +21,22 @@
       "track": "v1"
     },
     {
+      "id": "R16",
+      "path": "todo/roadmap-r16.md",
+      "kind": "investigation",
+      "workstream": "installed-engine",
+      "depends_on": [
+        "R13"
+      ],
+      "track": "v1"
+    },
+    {
       "id": "R02",
       "path": "todo/roadmap-r02.md",
       "kind": "implementation",
       "workstream": "engine-ownership",
       "depends_on": [
-        "R13"
+        "R16"
       ],
       "track": "v1"
     },
@@ -101,12 +111,32 @@
       "track": "v1"
     },
     {
+      "id": "R17",
+      "path": "todo/roadmap-r17.md",
+      "kind": "implementation",
+      "workstream": "tool-routing",
+      "depends_on": [
+        "R09"
+      ],
+      "track": "v1"
+    },
+    {
+      "id": "R18",
+      "path": "todo/roadmap-r18.md",
+      "kind": "investigation",
+      "workstream": "editor-ux",
+      "depends_on": [
+        "R17"
+      ],
+      "track": "v1"
+    },
+    {
       "id": "R10",
       "path": "todo/roadmap-r10.md",
       "kind": "documentation",
       "workstream": "help-polish",
       "depends_on": [
-        "R09"
+        "R18"
       ],
       "track": "v1"
     },
@@ -136,6 +166,7 @@
       "kind": "investigation",
       "workstream": "installed-engine",
       "depends_on": [
+        "R16",
         "R11"
       ],
       "track": "compatibility"

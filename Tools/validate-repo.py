@@ -26,6 +26,16 @@ def main():
                 if '## '+section+'\n' not in text:raise ValueError(f'{task.name}: ready task missing {section}')
     subprocess.run([sys.executable,str(ROOT/'Tools/next-task.py'),'--check'],check=True)
     subprocess.run([sys.executable,str(ROOT/'Tools/audit-inventory.py'),'--check'],check=True)
+    capabilities=json.loads((ROOT/'docs/audit/capabilities.json').read_text(encoding='utf8'))['tools']
+    routing=json.loads((ROOT/'docs/audit/tool-routing.json').read_text(encoding='utf8'))['tools']
+    route_ids=[row['tool'] for row in routing]
+    if len(route_ids)!=len(set(route_ids)) or set(route_ids)!={row['id'] for row in capabilities}:
+        raise ValueError('Tool routing must cover every declared tool exactly once')
+    for row in routing:
+        if row['preference'] not in ('unverified','prefer-turbomcp','prefer-native','complementary','unavailable'):
+            raise ValueError('Unknown routing preference')
+        if row['preference'] in ('prefer-turbomcp','prefer-native') and not row.get('evidence'):
+            raise ValueError('Tool preference requires reviewable evidence')
     dispositions=json.loads((ROOT/'roadmap/task-dispositions.json').read_text(encoding='utf8'))['tasks']
     ids=[x['id'] for x in dispositions]
     if len(ids)!=len(set(ids)):raise ValueError('Duplicate historical task disposition')

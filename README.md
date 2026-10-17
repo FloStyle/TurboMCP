@@ -105,6 +105,7 @@ Contributors and implementation agents should read [CONTRIBUTING.md](CONTRIBUTIN
 | Question | Guide |
 | --- | --- |
 | Where is the complete documentation index? | [Documentation home](docs/README.md) |
+| How does TurboMCP compare with Epic tools? | [Three-way comparison](docs/tool-comparison.md) |
 | What tools are declared? | [Tool reference](docs/user/tools.md) |
 | What is supported and what remains unfinished? | [Project status](docs/status.md) and [roadmap](ROADMAP.md) |
 | What is the intended product scope? | [Product requirements](docs/product.md) |

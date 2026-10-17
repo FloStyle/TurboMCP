@@ -15,7 +15,7 @@ Document actual parameter requiredness, valid examples, side effects, supported 
 ToolSchema, AgentHelp, Traps, generated user docs, README and public capability descriptions. No new tool surface.
 
 ## Dependencies
-R09
+R18
 
 ## Acceptance
 - Every advertised capability has accepted evidence or an explicit experimental limitation.

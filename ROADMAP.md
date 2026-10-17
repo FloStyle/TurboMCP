@@ -22,6 +22,7 @@ Fix false success, data-loss risk, misleading observations and unusable tests be
 | --- | --- | --- |
 | [R01](todo/roadmap-r01.md) | Make test-audit classifications truthful | Parser regressions distinguish evidence from references and false positives |
 | [R13](todo/roadmap-r13.md) | Compare pinned 5.9 native interfaces early | Adopt/adapter/retain/defer decisions; unknown runtime parity stays explicit |
+| [R16](todo/roadmap-r16.md) | Establish installed-engine integration constraints early | Dependency and rebuild-boundary evidence; bounded adapter/package proposals |
 | [R02](todo/roadmap-r02.md) | Shared engine/editor/port ownership | Concurrent-process contention and cleanup tests pass |
 | [R03](todo/roadmap-r03.md) | Fixture and binary reproducibility | First-run failures and fixture drift have reproducible root-cause evidence |
 | [R04](todo/roadmap-r04.md) | Audit every callable and result contract | Every tool has schema/effect/refusal/evidence status and bounded repair specifications |
@@ -30,6 +31,8 @@ Fix false success, data-loss risk, misleading observations and unusable tests be
 | [R07](todo/roadmap-r07.md) | Geometry, layout and capture | Measured geometry/framing requirements and fixes |
 | [R08](todo/roadmap-r08.md) | Data/material/widget correctness | Domain read-back and restoration requirements resolved |
 | [R09](todo/roadmap-r09.md) | References and runtime observation | Unknown/unmatched data cannot masquerade as measured absence |
+| [R17](todo/roadmap-r17.md) | Make verified tool preferences discoverable | Live help/schema and client-choice evidence; no refusal bypass |
+| [R18](todo/roadmap-r18.md) | Design the editor panel and icon improvements | Reviewed layouts, states and bounded implementation proposals |
 | [R10](todo/roadmap-r10.md) | Human docs, help and discovery | Descriptions and examples agree with observed behavior |
 | [R11](todo/roadmap-r11.md) | Complete 5.8.3 acceptance | All 97 required cases mapped and passing on the candidate |
 | [R15](todo/roadmap-r15.md) | Release automation | Required CI and release dry-run failure controls pass |
@@ -38,10 +41,12 @@ Investigations produce reviewed repair specifications, not unlimited implementat
 
 ## Optional compatibility track
 
-R12 proves installed-engine packaging. R14 implements and verifies the 5.9 adapter. Run `python Tools/next-task.py --track compatibility` when the baseline prerequisites and target engine are available. Missing optional engine distributions do not block baseline safety fixes and do not become support claims.
+R16 investigates integration constraints early; R12 proves installed-engine packaging. R14 implements and verifies the 5.9 adapter. Run `python Tools/next-task.py --track compatibility` when the baseline prerequisites and target engine are available. Missing optional engine distributions do not block baseline safety fixes and do not become support claims.
 
 ## Cost and drift controls
 
 Read the selected task, relevant design and exact source/test files; do not reload all historical audits each turn. Reuse existing fixtures and focused suites. Do not run a clean engine build to answer a source-only question. After two identical unexplained failures, diagnose instead of repeating. Record invalidated assumptions and stop on missing prerequisites. Changes to release scope, public schema or approved architecture require an explicit design decision. No automatic publication from a development push.
 
 For each completed task, retain the observable outcome, source/engine/binary identity, commands, exits and logs. A statement of confidence or a generated document is not acceptance evidence. See [audit findings](docs/audit/findings.md), [technical decisions](docs/audit/technical-decisions.md) and [native overlap](docs/audit/native-overlap.md).
+
+See the [implementation handoff](docs/agent-handoff.md), [three-way comparison](docs/tool-comparison.md), [tool-selection design](docs/design/tool-selection.md) and [editor experience requirements](docs/design/editor-experience.md).

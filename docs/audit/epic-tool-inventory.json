@@ -1,0 +1,2926 @@
+{
+  "schema": 1,
+  "baseline_commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
+  "target_commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+  "scope": "Candidate AICallable declarations from headers under Experimental/Toolsets only. Not default-enabled, exhaustive engine-wide, runtime-discovered or behavior-certified. Declaration parser requires R13 review. No engine source bodies included.",
+  "headers": [
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/AutomationTestToolset/Source/AutomationTestToolset/Public/AutomationTestToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "DiscoverTests",
+          "line": 39
+        },
+        {
+          "name": "ListTests",
+          "line": 47
+        },
+        {
+          "name": "RunTests",
+          "line": 54
+        },
+        {
+          "name": "RunTestsByFilter",
+          "line": 72
+        },
+        {
+          "name": "GetTestResults",
+          "line": 78
+        },
+        {
+          "name": "GetTestStatus",
+          "line": 85
+        },
+        {
+          "name": "StopTests",
+          "line": 91
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "DiscoverTests",
+          "line": 39
+        },
+        {
+          "name": "ListTests",
+          "line": 47
+        },
+        {
+          "name": "RunTests",
+          "line": 54
+        },
+        {
+          "name": "RunTestsByFilter",
+          "line": 72
+        },
+        {
+          "name": "GetTestResults",
+          "line": 78
+        },
+        {
+          "name": "GetTestStatus",
+          "line": 85
+        },
+        {
+          "name": "StopTests",
+          "line": 91
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/ChaosClothAssetToolset/Source/ChaosClothAssetToolset/Private/ChaosClothAsset/ClothAssetToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "CreateClothingAsset",
+          "line": 55
+        },
+        {
+          "name": "AssignClothingToSection",
+          "line": 75
+        },
+        {
+          "name": "RemoveClothingFromSection",
+          "line": 91
+        },
+        {
+          "name": "ListClothingAssets",
+          "line": 106
+        },
+        {
+          "name": "GetSectionClothing",
+          "line": 116
+        },
+        {
+          "name": "ConvertClothingAssetCommonToChaosClothAsset",
+          "line": 132
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "CreateClothingAsset",
+          "line": 55
+        },
+        {
+          "name": "AssignClothingToSection",
+          "line": 75
+        },
+        {
+          "name": "RemoveClothingFromSection",
+          "line": 91
+        },
+        {
+          "name": "ListClothingAssets",
+          "line": 106
+        },
+        {
+          "name": "GetSectionClothing",
+          "line": 116
+        },
+        {
+          "name": "ConvertClothingAssetCommonToChaosClothAsset",
+          "line": 132
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/CheatsToolset/Source/CheatsToolset/Private/CheatsToolsetDefinition.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "ListCheats",
+          "line": 51
+        },
+        {
+          "name": "CallCheat",
+          "line": 60
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/ConfigSettingsToolset/Source/ConfigSettingsToolset/Private/ConfigSettingsToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "ListContainers",
+          "line": 24
+        },
+        {
+          "name": "ListCategories",
+          "line": 33
+        },
+        {
+          "name": "ListSections",
+          "line": 43
+        },
+        {
+          "name": "GetSectionSchema",
+          "line": 58
+        },
+        {
+          "name": "GetSectionPropertyValues",
+          "line": 74
+        },
+        {
+          "name": "SetSectionProperties",
+          "line": 95
+        },
+        {
+          "name": "SaveSection",
+          "line": 110
+        },
+        {
+          "name": "ResetSectionToDefaults",
+          "line": 124
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "ListContainers",
+          "line": 24
+        },
+        {
+          "name": "ListCategories",
+          "line": 33
+        },
+        {
+          "name": "ListSections",
+          "line": 43
+        },
+        {
+          "name": "GetSectionSchema",
+          "line": 58
+        },
+        {
+          "name": "GetSectionPropertyValues",
+          "line": 74
+        },
+        {
+          "name": "SetSectionProperties",
+          "line": 95
+        },
+        {
+          "name": "SaveSection",
+          "line": 110
+        },
+        {
+          "name": "ResetSectionToDefaults",
+          "line": 124
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/DataRegistryToolset/Source/DataRegistryToolset/Private/DataRegistryTools.h",
+      "epic_5_8_3": [
+        {
+          "name": "ListRegistries",
+          "line": 96
+        },
+        {
+          "name": "GetRegistryInfo",
+          "line": 104
+        },
+        {
+          "name": "GetSchema",
+          "line": 112
+        },
+        {
+          "name": "ListItems",
+          "line": 120
+        },
+        {
+          "name": "ListDataSources",
+          "line": 130
+        },
+        {
+          "name": "ListRuntimeSources",
+          "line": 140
+        },
+        {
+          "name": "GetItems",
+          "line": 151
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "ListRegistries",
+          "line": 96
+        },
+        {
+          "name": "GetRegistryInfo",
+          "line": 104
+        },
+        {
+          "name": "GetSchema",
+          "line": 112
+        },
+        {
+          "name": "ListItems",
+          "line": 120
+        },
+        {
+          "name": "ListDataSources",
+          "line": 130
+        },
+        {
+          "name": "ListRuntimeSources",
+          "line": 140
+        },
+        {
+          "name": "GetItems",
+          "line": 151
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/DataflowAgent/Source/DataflowAgent/Private/DataflowAgentToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "CreateGraph",
+          "line": 32
+        },
+        {
+          "name": "GetGraphStructure",
+          "line": 43
+        },
+        {
+          "name": "ListNodeTypes",
+          "line": 54
+        },
+        {
+          "name": "GetNodeTypeSchema",
+          "line": 64
+        },
+        {
+          "name": "AddNode",
+          "line": 80
+        },
+        {
+          "name": "UpdateNode",
+          "line": 95
+        },
+        {
+          "name": "GetNodeInfo",
+          "line": 104
+        },
+        {
+          "name": "RepositionNode",
+          "line": 114
+        },
+        {
+          "name": "RemoveNode",
+          "line": 123
+        },
+        {
+          "name": "ConnectNodePins",
+          "line": 137
+        },
+        {
+          "name": "DisconnectNodePins",
+          "line": 150
+        },
+        {
+          "name": "ListVariables",
+          "line": 164
+        },
+        {
+          "name": "AddVariable",
+          "line": 182
+        },
+        {
+          "name": "RemoveVariable",
+          "line": 191
+        },
+        {
+          "name": "SetVariable",
+          "line": 204
+        },
+        {
+          "name": "AddCommentBox",
+          "line": 218
+        },
+        {
+          "name": "RemoveCommentBox",
+          "line": 231
+        },
+        {
+          "name": "ListDataflowCompatibleAssetTypes",
+          "line": 246
+        },
+        {
+          "name": "CreateDataflowCompatibleAsset",
+          "line": 259
+        },
+        {
+          "name": "CreateDataflowCompatibleAssetFromTemplate",
+          "line": 277
+        },
+        {
+          "name": "ListDataflowTemplatesForAssetClass",
+          "line": 296
+        },
+        {
+          "name": "AssignDataflowTemplate",
+          "line": 310
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "CreateGraph",
+          "line": 32
+        },
+        {
+          "name": "GetGraphStructure",
+          "line": 43
+        },
+        {
+          "name": "ListNodeTypes",
+          "line": 54
+        },
+        {
+          "name": "GetNodeTypeSchema",
+          "line": 64
+        },
+        {
+          "name": "AddNode",
+          "line": 80
+        },
+        {
+          "name": "UpdateNode",
+          "line": 95
+        },
+        {
+          "name": "GetNodeInfo",
+          "line": 104
+        },
+        {
+          "name": "RepositionNode",
+          "line": 114
+        },
+        {
+          "name": "RemoveNode",
+          "line": 123
+        },
+        {
+          "name": "ConnectNodePins",
+          "line": 137
+        },
+        {
+          "name": "DisconnectNodePins",
+          "line": 150
+        },
+        {
+          "name": "ListVariables",
+          "line": 164
+        },
+        {
+          "name": "AddVariable",
+          "line": 182
+        },
+        {
+          "name": "RemoveVariable",
+          "line": 191
+        },
+        {
+          "name": "SetVariable",
+          "line": 204
+        },
+        {
+          "name": "AddCommentBox",
+          "line": 218
+        },
+        {
+          "name": "RemoveCommentBox",
+          "line": 231
+        },
+        {
+          "name": "ListDataflowCompatibleAssetTypes",
+          "line": 246
+        },
+        {
+          "name": "CreateDataflowCompatibleAsset",
+          "line": 259
+        },
+        {
+          "name": "CreateDataflowCompatibleAssetFromTemplate",
+          "line": 277
+        },
+        {
+          "name": "ListDataflowTemplatesForAssetClass",
+          "line": 296
+        },
+        {
+          "name": "AssignDataflowTemplate",
+          "line": 310
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorDataStorageToolset/Source/EditorDataStorageToolset/Public/EditorDataStorageToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "Stats",
+          "line": 31
+        },
+        {
+          "name": "DebugQueries",
+          "line": 35
+        },
+        {
+          "name": "ListTables",
+          "line": 47
+        },
+        {
+          "name": "GetTable",
+          "line": 58
+        },
+        {
+          "name": "ListTableColumns",
+          "line": 65
+        },
+        {
+          "name": "ListTableRows",
+          "line": 76
+        },
+        {
+          "name": "GetRow",
+          "line": 90
+        },
+        {
+          "name": "ListRowColumns",
+          "line": 97
+        },
+        {
+          "name": "CreateRow",
+          "line": 104
+        },
+        {
+          "name": "DeleteRow",
+          "line": 111
+        },
+        {
+          "name": "ModifyRowColumns",
+          "line": 120
+        },
+        {
+          "name": "Query",
+          "line": 138
+        },
+        {
+          "name": "ListRelationTypes",
+          "line": 150
+        },
+        {
+          "name": "GetRelationType",
+          "line": 157
+        },
+        {
+          "name": "GetRelationObjects",
+          "line": 165
+        },
+        {
+          "name": "GetRelationSubjects",
+          "line": 175
+        },
+        {
+          "name": "CreateRelation",
+          "line": 186
+        },
+        {
+          "name": "DestroyRelation",
+          "line": 198
+        },
+        {
+          "name": "ListHierarchies",
+          "line": 207
+        },
+        {
+          "name": "HierarchyParent",
+          "line": 215
+        },
+        {
+          "name": "HierarchyChildren",
+          "line": 227
+        },
+        {
+          "name": "HierarchyAncestors",
+          "line": 239
+        },
+        {
+          "name": "HierarchyDescendants",
+          "line": 252
+        },
+        {
+          "name": "LookupMapping",
+          "line": 267
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorDataStorageToolset/Source/EditorDataStorageToolset/Public/EditorDataStorageUIToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "Stats",
+          "line": 38
+        },
+        {
+          "name": "ListExtensions",
+          "line": 42
+        },
+        {
+          "name": "ListPurposes",
+          "line": 53
+        },
+        {
+          "name": "GetPurpose",
+          "line": 64
+        },
+        {
+          "name": "GetPurposeByRow",
+          "line": 74
+        },
+        {
+          "name": "GetDefaultPurposes",
+          "line": 78
+        },
+        {
+          "name": "ListAllFactories",
+          "line": 89
+        },
+        {
+          "name": "ListFactoriesByPurpose",
+          "line": 103
+        },
+        {
+          "name": "ListFactoriesByColumns",
+          "line": 117
+        },
+        {
+          "name": "ListFactoriesByPurposeAndColumns",
+          "line": 130
+        },
+        {
+          "name": "ListFactoriesByConstructor",
+          "line": 142
+        },
+        {
+          "name": "GetFactory",
+          "line": 150
+        },
+        {
+          "name": "GetPurposeHierarchy",
+          "line": 162
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/EditorAppToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "SearchCVars",
+          "line": 206
+        },
+        {
+          "name": "CaptureAssetImage",
+          "line": 215
+        },
+        {
+          "name": "CaptureEditorImage",
+          "line": 222
+        },
+        {
+          "name": "CaptureViewport",
+          "line": 245
+        },
+        {
+          "name": "GetSelectedActors",
+          "line": 255
+        },
+        {
+          "name": "SelectActors",
+          "line": 262
+        },
+        {
+          "name": "GetCameraTransform",
+          "line": 269
+        },
+        {
+          "name": "SetCameraTransform",
+          "line": 276
+        },
+        {
+          "name": "FocusOnActors",
+          "line": 284
+        },
+        {
+          "name": "GetVisibleActors",
+          "line": 291
+        },
+        {
+          "name": "WorldPosToScreenCoords",
+          "line": 299
+        },
+        {
+          "name": "ScreenCoordsToWorld",
+          "line": 308
+        },
+        {
+          "name": "GetSelectedAssets",
+          "line": 315
+        },
+        {
+          "name": "SelectAssets",
+          "line": 323
+        },
+        {
+          "name": "GetContentBrowserPath",
+          "line": 330
+        },
+        {
+          "name": "SetContentBrowserPath",
+          "line": 337
+        },
+        {
+          "name": "OpenEditorForAsset",
+          "line": 344
+        },
+        {
+          "name": "GetOpenAssets",
+          "line": 351
+        },
+        {
+          "name": "StartPIE",
+          "line": 364
+        },
+        {
+          "name": "StopPIE",
+          "line": 371
+        },
+        {
+          "name": "IsPIERunning",
+          "line": 378
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "SearchCVars",
+          "line": 288
+        },
+        {
+          "name": "GetCVarValue",
+          "line": 297
+        },
+        {
+          "name": "SetCVarValue",
+          "line": 306
+        },
+        {
+          "name": "ShowNotification",
+          "line": 317
+        },
+        {
+          "name": "CaptureAssetImage",
+          "line": 328
+        },
+        {
+          "name": "GetAssetThumbnails",
+          "line": 341
+        },
+        {
+          "name": "CaptureEditorImage",
+          "line": 348
+        },
+        {
+          "name": "CaptureViewport",
+          "line": 371
+        },
+        {
+          "name": "GetSelectedActors",
+          "line": 381
+        },
+        {
+          "name": "SelectActors",
+          "line": 388
+        },
+        {
+          "name": "GetSelectedOutlinerFolders",
+          "line": 395
+        },
+        {
+          "name": "SelectOutlinerFolders",
+          "line": 404
+        },
+        {
+          "name": "GetCameraTransform",
+          "line": 411
+        },
+        {
+          "name": "SetCameraTransform",
+          "line": 418
+        },
+        {
+          "name": "FocusOnActors",
+          "line": 426
+        },
+        {
+          "name": "GetVisibleActors",
+          "line": 433
+        },
+        {
+          "name": "WorldPosToScreenCoords",
+          "line": 441
+        },
+        {
+          "name": "ScreenCoordsToWorld",
+          "line": 450
+        },
+        {
+          "name": "SetViewportViewMode",
+          "line": 458
+        },
+        {
+          "name": "ListShowFlags",
+          "line": 465
+        },
+        {
+          "name": "GetShowFlag",
+          "line": 474
+        },
+        {
+          "name": "SetShowFlag",
+          "line": 483
+        },
+        {
+          "name": "GetSelectedAssets",
+          "line": 490
+        },
+        {
+          "name": "SelectAssets",
+          "line": 498
+        },
+        {
+          "name": "GetContentBrowserPath",
+          "line": 505
+        },
+        {
+          "name": "SetContentBrowserPath",
+          "line": 512
+        },
+        {
+          "name": "OpenEditorForAsset",
+          "line": 519
+        },
+        {
+          "name": "GetOpenAssets",
+          "line": 526
+        },
+        {
+          "name": "ListCollections",
+          "line": 532
+        },
+        {
+          "name": "GetCollectionAssets",
+          "line": 539
+        },
+        {
+          "name": "CreateCollection",
+          "line": 547
+        },
+        {
+          "name": "DestroyCollection",
+          "line": 554
+        },
+        {
+          "name": "AddAssetsToCollection",
+          "line": 562
+        },
+        {
+          "name": "RemoveAssetsFromCollection",
+          "line": 570
+        },
+        {
+          "name": "ListEditorModes",
+          "line": 578
+        },
+        {
+          "name": "GetActiveEditorModes",
+          "line": 586
+        },
+        {
+          "name": "SetEditorMode",
+          "line": 594
+        },
+        {
+          "name": "StartPIE",
+          "line": 607
+        },
+        {
+          "name": "StopPIE",
+          "line": 614
+        },
+        {
+          "name": "IsPIERunning",
+          "line": 621
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/LogsToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "GetLogEntries",
+          "line": 28
+        },
+        {
+          "name": "GetLogCategories",
+          "line": 38
+        },
+        {
+          "name": "GetVerbosity",
+          "line": 48
+        },
+        {
+          "name": "SetVerbosity",
+          "line": 57
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "GetLogEntries",
+          "line": 28
+        },
+        {
+          "name": "GetLogCategories",
+          "line": 38
+        },
+        {
+          "name": "GetVerbosity",
+          "line": 48
+        },
+        {
+          "name": "SetVerbosity",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "GetAssetSourceControlState",
+          "line": 111
+        },
+        {
+          "name": "LoadAssetRevision",
+          "line": 125
+        },
+        {
+          "name": "ListAssetRevisions",
+          "line": 134
+        },
+        {
+          "name": "CreateChangelist",
+          "line": 146
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "Create",
+          "line": 53
+        },
+        {
+          "name": "GetEnumerators",
+          "line": 61
+        },
+        {
+          "name": "AddEnumerator",
+          "line": 70
+        },
+        {
+          "name": "RemoveEnumerator",
+          "line": 78
+        },
+        {
+          "name": "SetDisplayName",
+          "line": 87
+        },
+        {
+          "name": "MoveEnumerator",
+          "line": 96
+        },
+        {
+          "name": "IsBitflags",
+          "line": 104
+        },
+        {
+          "name": "SetBitflags",
+          "line": 112
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "Create",
+          "line": 72
+        },
+        {
+          "name": "GetTooltip",
+          "line": 79
+        },
+        {
+          "name": "SetTooltip",
+          "line": 87
+        },
+        {
+          "name": "ListVariables",
+          "line": 95
+        },
+        {
+          "name": "AddVariable",
+          "line": 106
+        },
+        {
+          "name": "AddStructVariable",
+          "line": 118
+        },
+        {
+          "name": "AddObjectVariable",
+          "line": 130
+        },
+        {
+          "name": "RemoveVariable",
+          "line": 141
+        },
+        {
+          "name": "RenameVariable",
+          "line": 150
+        },
+        {
+          "name": "SetVariableDefaultValue",
+          "line": 160
+        },
+        {
+          "name": "SetVariableTooltip",
+          "line": 170
+        },
+        {
+          "name": "SetVariableEditableOnInstance",
+          "line": 180
+        },
+        {
+          "name": "SetVariableSaveGame",
+          "line": 190
+        },
+        {
+          "name": "MoveVariable",
+          "line": 201
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/GASToolsets/Source/GASToolsets/Private/AbilitySystemInspectorToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "GetAttributeValues",
+          "line": 101
+        },
+        {
+          "name": "GetActiveEffects",
+          "line": 111
+        },
+        {
+          "name": "GetGrantedAbilities",
+          "line": 120
+        },
+        {
+          "name": "GetActiveTags",
+          "line": 130
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "GetAttributeValues",
+          "line": 101
+        },
+        {
+          "name": "GetActiveEffects",
+          "line": 111
+        },
+        {
+          "name": "GetGrantedAbilities",
+          "line": 120
+        },
+        {
+          "name": "GetActiveTags",
+          "line": 130
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/GASToolsets/Source/GASToolsets/Private/AttributeSetToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "FindAttributeSetClasses",
+          "line": 60
+        },
+        {
+          "name": "ListAttributes",
+          "line": 69
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "FindAttributeSetClasses",
+          "line": 60
+        },
+        {
+          "name": "ListAttributes",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/GASToolsets/Source/GASToolsets/Private/GameplayCueToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "ListCues",
+          "line": 67
+        },
+        {
+          "name": "GetCueInfo",
+          "line": 76
+        },
+        {
+          "name": "ExecuteCueOnSelectedActor",
+          "line": 90
+        },
+        {
+          "name": "FindCueNotifyAssets",
+          "line": 100
+        },
+        {
+          "name": "CreateCueNotifyAsset",
+          "line": 114
+        },
+        {
+          "name": "AddCueTag",
+          "line": 127
+        },
+        {
+          "name": "RemoveCueTag",
+          "line": 136
+        },
+        {
+          "name": "FindCueTagsWithoutNotifies",
+          "line": 144
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "ListCues",
+          "line": 67
+        },
+        {
+          "name": "GetCueInfo",
+          "line": 76
+        },
+        {
+          "name": "ExecuteCueOnSelectedActor",
+          "line": 90
+        },
+        {
+          "name": "FindCueNotifyAssets",
+          "line": 100
+        },
+        {
+          "name": "CreateCueNotifyAsset",
+          "line": 114
+        },
+        {
+          "name": "AddCueTag",
+          "line": 127
+        },
+        {
+          "name": "RemoveCueTag",
+          "line": 136
+        },
+        {
+          "name": "FindCueTagsWithoutNotifies",
+          "line": 144
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/GameFeaturesToolset/Source/GameFeaturesToolset/Private/GameFeaturesToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "ListEnabledGameFeaturePlugins",
+          "line": 40
+        },
+        {
+          "name": "ListDiscoveredGameFeaturePlugins",
+          "line": 50
+        },
+        {
+          "name": "IsGameFeaturePlugin",
+          "line": 59
+        },
+        {
+          "name": "IsGameFeatureActive",
+          "line": 69
+        },
+        {
+          "name": "GetGameFeatureState",
+          "line": 78
+        },
+        {
+          "name": "RequestActivateGameFeature",
+          "line": 90
+        },
+        {
+          "name": "RequestDeactivateGameFeature",
+          "line": 101
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "ListEnabledGameFeaturePlugins",
+          "line": 73
+        },
+        {
+          "name": "ListDiscoveredGameFeaturePlugins",
+          "line": 83
+        },
+        {
+          "name": "IsGameFeaturePlugin",
+          "line": 92
+        },
+        {
+          "name": "IsGameFeatureActive",
+          "line": 102
+        },
+        {
+          "name": "GetGameFeatureState",
+          "line": 111
+        },
+        {
+          "name": "RequestActivateGameFeature",
+          "line": 123
+        },
+        {
+          "name": "RequestDeactivateGameFeature",
+          "line": 134
+        },
+        {
+          "name": "GetGameFeaturePluginDetails",
+          "line": 145
+        },
+        {
+          "name": "GetConfiguredAdditionalMetadataKeys",
+          "line": 155
+        },
+        {
+          "name": "SetGameFeaturePluginBuiltInAutoState",
+          "line": 165
+        },
+        {
+          "name": "SetGameFeaturePluginMetadataValue",
+          "line": 178
+        },
+        {
+          "name": "RemoveGameFeaturePluginMetadataValue",
+          "line": 189
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/GameplayTagsToolset/Source/GameplayTagsToolset/Private/GameplayTagsToolset/GameplayTagsToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "ListTags",
+          "line": 44
+        },
+        {
+          "name": "GetTagInfo",
+          "line": 53
+        },
+        {
+          "name": "AddTag",
+          "line": 63
+        },
+        {
+          "name": "RemoveTag",
+          "line": 71
+        },
+        {
+          "name": "RenameTag",
+          "line": 80
+        },
+        {
+          "name": "FindReferencersByTag",
+          "line": 88
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "ListTags",
+          "line": 59
+        },
+        {
+          "name": "GetTagInfo",
+          "line": 67
+        },
+        {
+          "name": "AddTag",
+          "line": 79
+        },
+        {
+          "name": "RemoveTag",
+          "line": 87
+        },
+        {
+          "name": "RenameTag",
+          "line": 96
+        },
+        {
+          "name": "MoveTags",
+          "line": 106
+        },
+        {
+          "name": "ListTagsInSource",
+          "line": 115
+        },
+        {
+          "name": "FindReferencersByTag",
+          "line": 123
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/LiveCodingToolset/Source/LiveCodingToolset/Public/LiveCodingToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "CompileLiveCoding",
+          "line": 26
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "CompileLiveCoding",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/MVVMToolset/Source/MVVMToolset/Private/MVVMToolset/MVVMToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "CreateViewModel",
+          "line": 42
+        },
+        {
+          "name": "AddViewModelProperty",
+          "line": 54
+        },
+        {
+          "name": "ListViewModels",
+          "line": 63
+        },
+        {
+          "name": "ListWidgetViewModels",
+          "line": 72
+        },
+        {
+          "name": "AddViewModelToWidget",
+          "line": 81
+        },
+        {
+          "name": "ListWidgetViewBindings",
+          "line": 90
+        },
+        {
+          "name": "RemoveWidgetViewBinding",
+          "line": 99
+        },
+        {
+          "name": "CreateViewBinding",
+          "line": 122
+        },
+        {
+          "name": "ListConversionFunctions",
+          "line": 130
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "FixupMVVMData",
+          "line": 85
+        },
+        {
+          "name": "CreateViewModel",
+          "line": 96
+        },
+        {
+          "name": "AddViewModelProperty",
+          "line": 108
+        },
+        {
+          "name": "ListViewModels",
+          "line": 117
+        },
+        {
+          "name": "ListWidgetViewModels",
+          "line": 126
+        },
+        {
+          "name": "AddViewModelToWidget",
+          "line": 135
+        },
+        {
+          "name": "ListWidgetViewBindings",
+          "line": 144
+        },
+        {
+          "name": "RemoveWidgetViewBinding",
+          "line": 153
+        },
+        {
+          "name": "CreateViewBinding",
+          "line": 176
+        },
+        {
+          "name": "ListConversionFunctions",
+          "line": 184
+        },
+        {
+          "name": "GetWidgetViewConfig",
+          "line": 194
+        },
+        {
+          "name": "SetWidgetViewConfig",
+          "line": 204
+        },
+        {
+          "name": "CreateViewEventBinding",
+          "line": 225
+        },
+        {
+          "name": "ListWidgetViewEvents",
+          "line": 233
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/MovieRenderPipelineToolset/Source/MovieRenderPipelineToolset/Private/MovieRenderPipelineToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "GetGraphTopology",
+          "line": 29
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/NiagaraToolsets/Source/NiagaraToolsets/Private/NiagaraToolset_Assets.h",
+      "epic_5_8_3": [
+        {
+          "name": "GetAssetDiscoveryInfo",
+          "line": 118
+        },
+        {
+          "name": "FindNiagaraScripts",
+          "line": 139
+        },
+        {
+          "name": "GetNiagaraScriptDigest",
+          "line": 160
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "GetAssetDiscoveryInfo",
+          "line": 115
+        },
+        {
+          "name": "FindNiagaraScripts",
+          "line": 130
+        },
+        {
+          "name": "GetNiagaraScriptDigest",
+          "line": 146
+        },
+        {
+          "name": "SetNiagaraScriptDescription",
+          "line": 159
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/NiagaraToolsets/Source/NiagaraToolsets/Private/NiagaraToolset_Blueprint.h",
+      "epic_5_8_3": [
+        {
+          "name": "ConstructNiagaraBPWrapperFromSystem",
+          "line": 45
+        },
+        {
+          "name": "ConstructNiagaraBPWrapperFromComponent",
+          "line": 59
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "ConstructNiagaraBPWrapperFromSystem",
+          "line": 45
+        },
+        {
+          "name": "ConstructNiagaraBPWrapperFromComponent",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/NiagaraToolsets/Source/NiagaraToolsets/Private/NiagaraToolset_Component.h",
+      "epic_5_8_3": [
+        {
+          "name": "SetSystem",
+          "line": 37
+        },
+        {
+          "name": "GetUserVariables",
+          "line": 47
+        },
+        {
+          "name": "SetVariable",
+          "line": 57
+        },
+        {
+          "name": "GetVariable",
+          "line": 68
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "SetSystem",
+          "line": 37
+        },
+        {
+          "name": "GetUserVariables",
+          "line": 47
+        },
+        {
+          "name": "SetVariable",
+          "line": 57
+        },
+        {
+          "name": "GetVariable",
+          "line": 68
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/NiagaraToolsets/Source/NiagaraToolsets/Private/NiagaraToolset_Info.h",
+      "epic_5_8_3": [
+        {
+          "name": "UEnum_Info",
+          "line": 35
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "UEnum_Info",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/NiagaraToolsets/Source/NiagaraToolsets/Private/NiagaraToolset_System.h",
+      "epic_5_8_3": [
+        {
+          "name": "GetAvailableDynamicInputs",
+          "line": 100
+        },
+        {
+          "name": "CreateNiagaraSystem",
+          "line": 112
+        },
+        {
+          "name": "GetSystemSchema",
+          "line": 125
+        },
+        {
+          "name": "GetEmitterSchema",
+          "line": 134
+        },
+        {
+          "name": "GetRendererSchema",
+          "line": 144
+        },
+        {
+          "name": "GetDataInterfaceSchema",
+          "line": 154
+        },
+        {
+          "name": "GetStackInputSchema",
+          "line": 164
+        },
+        {
+          "name": "GetModuleSchema",
+          "line": 174
+        },
+        {
+          "name": "GetDynamicInputSchema",
+          "line": 184
+        },
+        {
+          "name": "GetModuleSchemaFromAsset",
+          "line": 194
+        },
+        {
+          "name": "GetDynamicInputSchemaFromAsset",
+          "line": 204
+        },
+        {
+          "name": "GetSystemSummary",
+          "line": 217
+        },
+        {
+          "name": "GetEmitterSummary",
+          "line": 227
+        },
+        {
+          "name": "GetEmitterTopology",
+          "line": 246
+        },
+        {
+          "name": "GetScriptStackTopology",
+          "line": 256
+        },
+        {
+          "name": "GetModuleTopology",
+          "line": 266
+        },
+        {
+          "name": "GetStackInputTopology",
+          "line": 276
+        },
+        {
+          "name": "GetUserVariables",
+          "line": 289
+        },
+        {
+          "name": "GetSystemData",
+          "line": 299
+        },
+        {
+          "name": "GetEmitterData",
+          "line": 314
+        },
+        {
+          "name": "GetRendererData",
+          "line": 324
+        },
+        {
+          "name": "GetStackInputData",
+          "line": 334
+        },
+        {
+          "name": "GetEmitterInputValues",
+          "line": 345
+        },
+        {
+          "name": "GetScriptStackInputValues",
+          "line": 355
+        },
+        {
+          "name": "GetModuleInputValues",
+          "line": 365
+        },
+        {
+          "name": "GetDynamicInputChain",
+          "line": 380
+        },
+        {
+          "name": "GetSystemDependencies",
+          "line": 394
+        },
+        {
+          "name": "SetSystemData",
+          "line": 407
+        },
+        {
+          "name": "SetEmitterData",
+          "line": 417
+        },
+        {
+          "name": "SetRendererData",
+          "line": 429
+        },
+        {
+          "name": "AddUserVariables",
+          "line": 439
+        },
+        {
+          "name": "RemoveUserVariables",
+          "line": 449
+        },
+        {
+          "name": "AddEmitter",
+          "line": 462
+        },
+        {
+          "name": "RemoveEmitter",
+          "line": 471
+        },
+        {
+          "name": "AddRenderer",
+          "line": 484
+        },
+        {
+          "name": "RemoveRenderer",
+          "line": 493
+        },
+        {
+          "name": "AddModule",
+          "line": 505
+        },
+        {
+          "name": "RemoveModule",
+          "line": 514
+        },
+        {
+          "name": "SetModuleEnabled",
+          "line": 524
+        },
+        {
+          "name": "AddSetParametersModule",
+          "line": 537
+        },
+        {
+          "name": "AddSetParameterEntry",
+          "line": 549
+        },
+        {
+          "name": "RemoveSetParameterEntry",
+          "line": 560
+        },
+        {
+          "name": "SetStackInputData",
+          "line": 571
+        },
+        {
+          "name": "GetSystemCompileState",
+          "line": 583
+        },
+        {
+          "name": "GetStackIssues",
+          "line": 592
+        },
+        {
+          "name": "ApplyStackIssueFix",
+          "line": 604
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "GetAvailableDynamicInputs",
+          "line": 100
+        },
+        {
+          "name": "CreateNiagaraSystem",
+          "line": 112
+        },
+        {
+          "name": "GetSystemSchema",
+          "line": 125
+        },
+        {
+          "name": "GetEmitterSchema",
+          "line": 134
+        },
+        {
+          "name": "GetRendererSchema",
+          "line": 144
+        },
+        {
+          "name": "GetDataInterfaceSchema",
+          "line": 154
+        },
+        {
+          "name": "GetStackInputSchema",
+          "line": 164
+        },
+        {
+          "name": "GetModuleSchema",
+          "line": 174
+        },
+        {
+          "name": "GetDynamicInputSchema",
+          "line": 184
+        },
+        {
+          "name": "GetModuleSchemaFromAsset",
+          "line": 194
+        },
+        {
+          "name": "GetDynamicInputSchemaFromAsset",
+          "line": 204
+        },
+        {
+          "name": "GetSystemSummary",
+          "line": 217
+        },
+        {
+          "name": "GetEmitterSummary",
+          "line": 227
+        },
+        {
+          "name": "GetEmitterTopology",
+          "line": 246
+        },
+        {
+          "name": "GetScriptStackTopology",
+          "line": 256
+        },
+        {
+          "name": "GetModuleTopology",
+          "line": 266
+        },
+        {
+          "name": "GetStackInputTopology",
+          "line": 276
+        },
+        {
+          "name": "GetUserVariables",
+          "line": 289
+        },
+        {
+          "name": "GetSystemData",
+          "line": 299
+        },
+        {
+          "name": "GetEmitterData",
+          "line": 314
+        },
+        {
+          "name": "GetRendererData",
+          "line": 324
+        },
+        {
+          "name": "GetStackInputData",
+          "line": 334
+        },
+        {
+          "name": "GetEmitterInputValues",
+          "line": 345
+        },
+        {
+          "name": "GetScriptStackInputValues",
+          "line": 355
+        },
+        {
+          "name": "GetModuleInputValues",
+          "line": 365
+        },
+        {
+          "name": "GetDynamicInputChain",
+          "line": 380
+        },
+        {
+          "name": "GetSystemDependencies",
+          "line": 394
+        },
+        {
+          "name": "SetSystemData",
+          "line": 407
+        },
+        {
+          "name": "SetEmitterData",
+          "line": 417
+        },
+        {
+          "name": "SetRendererData",
+          "line": 429
+        },
+        {
+          "name": "AddUserVariables",
+          "line": 439
+        },
+        {
+          "name": "RemoveUserVariables",
+          "line": 449
+        },
+        {
+          "name": "AddEmitter",
+          "line": 462
+        },
+        {
+          "name": "RemoveEmitter",
+          "line": 471
+        },
+        {
+          "name": "AddRenderer",
+          "line": 484
+        },
+        {
+          "name": "RemoveRenderer",
+          "line": 493
+        },
+        {
+          "name": "AddModule",
+          "line": 505
+        },
+        {
+          "name": "RemoveModule",
+          "line": 514
+        },
+        {
+          "name": "SetModuleEnabled",
+          "line": 524
+        },
+        {
+          "name": "AddSetParametersModule",
+          "line": 537
+        },
+        {
+          "name": "AddSetParameterEntry",
+          "line": 549
+        },
+        {
+          "name": "RemoveSetParameterEntry",
+          "line": 560
+        },
+        {
+          "name": "SetStackInputData",
+          "line": 571
+        },
+        {
+          "name": "GetSystemCompileState",
+          "line": 583
+        },
+        {
+          "name": "GetStackIssues",
+          "line": 592
+        },
+        {
+          "name": "ApplyStackIssueFix",
+          "line": 604
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/PCGToolset/Source/PCGToolset/Public/PCGSpatialToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "RunPCGInstantGraph",
+          "line": 24
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "RunPCGInstantGraph",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/PCGToolset/Source/PCGToolset/Public/PCGToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "CreateGraph",
+          "line": 29
+        },
+        {
+          "name": "GetGraphStructure",
+          "line": 40
+        },
+        {
+          "name": "SetGraphParams",
+          "line": 50
+        },
+        {
+          "name": "RemoveGraphParams",
+          "line": 60
+        },
+        {
+          "name": "GetGraphSchema",
+          "line": 69
+        },
+        {
+          "name": "GetGraphDescription",
+          "line": 78
+        },
+        {
+          "name": "SetGraphDescription",
+          "line": 88
+        },
+        {
+          "name": "ListGraphInstances",
+          "line": 97
+        },
+        {
+          "name": "SpawnGraphInstance",
+          "line": 111
+        },
+        {
+          "name": "ExecuteGraphInstance",
+          "line": 121
+        },
+        {
+          "name": "GetGraphInstanceParams",
+          "line": 130
+        },
+        {
+          "name": "SetGraphInstanceParams",
+          "line": 140
+        },
+        {
+          "name": "ResetGraphInstanceParams",
+          "line": 150
+        },
+        {
+          "name": "ListNativeNodes",
+          "line": 160
+        },
+        {
+          "name": "ListAvailableSubgraphs",
+          "line": 169
+        },
+        {
+          "name": "GetNativeNodeSchema",
+          "line": 179
+        },
+        {
+          "name": "AddNode",
+          "line": 195
+        },
+        {
+          "name": "AddSubgraphNode",
+          "line": 219
+        },
+        {
+          "name": "UpdateNode",
+          "line": 238
+        },
+        {
+          "name": "SetNodeComment",
+          "line": 248
+        },
+        {
+          "name": "GetNodeInfo",
+          "line": 257
+        },
+        {
+          "name": "RepositionNode",
+          "line": 268
+        },
+        {
+          "name": "RemoveNode",
+          "line": 278
+        },
+        {
+          "name": "ConnectNodePins",
+          "line": 290
+        },
+        {
+          "name": "DisconnectNodePins",
+          "line": 303
+        },
+        {
+          "name": "GetNodeDataView",
+          "line": 324
+        },
+        {
+          "name": "AddCommentBox",
+          "line": 345
+        },
+        {
+          "name": "UpdateCommentBox",
+          "line": 359
+        },
+        {
+          "name": "RemoveCommentBox",
+          "line": 374
+        },
+        {
+          "name": "DrawSpline",
+          "line": 385
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "CreateGraph",
+          "line": 29
+        },
+        {
+          "name": "GetGraphStructure",
+          "line": 40
+        },
+        {
+          "name": "SetGraphParams",
+          "line": 50
+        },
+        {
+          "name": "RemoveGraphParams",
+          "line": 60
+        },
+        {
+          "name": "GetGraphSchema",
+          "line": 69
+        },
+        {
+          "name": "GetGraphDescription",
+          "line": 78
+        },
+        {
+          "name": "SetGraphDescription",
+          "line": 88
+        },
+        {
+          "name": "ListGraphInstances",
+          "line": 97
+        },
+        {
+          "name": "SpawnGraphInstance",
+          "line": 111
+        },
+        {
+          "name": "ExecuteGraphInstance",
+          "line": 121
+        },
+        {
+          "name": "GetGraphInstanceParams",
+          "line": 130
+        },
+        {
+          "name": "SetGraphInstanceParams",
+          "line": 140
+        },
+        {
+          "name": "ResetGraphInstanceParams",
+          "line": 150
+        },
+        {
+          "name": "ListNativeNodes",
+          "line": 160
+        },
+        {
+          "name": "ListAvailableSubgraphs",
+          "line": 169
+        },
+        {
+          "name": "GetNativeNodeSchema",
+          "line": 179
+        },
+        {
+          "name": "AddNode",
+          "line": 195
+        },
+        {
+          "name": "AddSubgraphNode",
+          "line": 219
+        },
+        {
+          "name": "UpdateNode",
+          "line": 238
+        },
+        {
+          "name": "SetNodeComment",
+          "line": 248
+        },
+        {
+          "name": "GetNodeInfo",
+          "line": 257
+        },
+        {
+          "name": "RepositionNode",
+          "line": 268
+        },
+        {
+          "name": "RemoveNode",
+          "line": 278
+        },
+        {
+          "name": "ConnectNodePins",
+          "line": 290
+        },
+        {
+          "name": "DisconnectNodePins",
+          "line": 303
+        },
+        {
+          "name": "GetNodeDataView",
+          "line": 324
+        },
+        {
+          "name": "AddCommentBox",
+          "line": 345
+        },
+        {
+          "name": "UpdateCommentBox",
+          "line": 359
+        },
+        {
+          "name": "RemoveCommentBox",
+          "line": 374
+        },
+        {
+          "name": "DrawSpline",
+          "line": 385
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/PerfToolset/Source/PerfToolset/Private/GpuProfilerToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "TriggerGPUProfile",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/PerfToolset/Source/PerfToolset/Private/StatsToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "GetFrameTimings",
+          "line": 74
+        },
+        {
+          "name": "GetFrameTree",
+          "line": 86
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/PhysicsToolsets/Source/PhysicsToolsets/Private/PhysicsToolsets/PhysicsAssetToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "CreateFromMesh",
+          "line": 157
+        },
+        {
+          "name": "GetBodyNames",
+          "line": 165
+        },
+        {
+          "name": "GetBodyShapes",
+          "line": 174
+        },
+        {
+          "name": "SetSphere",
+          "line": 187
+        },
+        {
+          "name": "SetCapsule",
+          "line": 205
+        },
+        {
+          "name": "SetBox",
+          "line": 223
+        },
+        {
+          "name": "RemoveShape",
+          "line": 235
+        },
+        {
+          "name": "AddBody",
+          "line": 248
+        },
+        {
+          "name": "RemoveBody",
+          "line": 257
+        },
+        {
+          "name": "GetBodyPhysicsMode",
+          "line": 269
+        },
+        {
+          "name": "SetBodyPhysicsMode",
+          "line": 279
+        },
+        {
+          "name": "GetBodyMassScale",
+          "line": 288
+        },
+        {
+          "name": "SetBodyMassScale",
+          "line": 297
+        },
+        {
+          "name": "GetConstraints",
+          "line": 310
+        },
+        {
+          "name": "AddConstraint",
+          "line": 319
+        },
+        {
+          "name": "SetConstraintLimits",
+          "line": 328
+        },
+        {
+          "name": "RemoveConstraint",
+          "line": 337
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "CreateFromMesh",
+          "line": 157
+        },
+        {
+          "name": "GetBodyNames",
+          "line": 165
+        },
+        {
+          "name": "GetBodyShapes",
+          "line": 174
+        },
+        {
+          "name": "SetSphere",
+          "line": 187
+        },
+        {
+          "name": "SetCapsule",
+          "line": 205
+        },
+        {
+          "name": "SetBox",
+          "line": 223
+        },
+        {
+          "name": "RemoveShape",
+          "line": 235
+        },
+        {
+          "name": "AddBody",
+          "line": 248
+        },
+        {
+          "name": "RemoveBody",
+          "line": 257
+        },
+        {
+          "name": "GetBodyPhysicsMode",
+          "line": 269
+        },
+        {
+          "name": "SetBodyPhysicsMode",
+          "line": 279
+        },
+        {
+          "name": "GetBodyMassScale",
+          "line": 288
+        },
+        {
+          "name": "SetBodyMassScale",
+          "line": 297
+        },
+        {
+          "name": "GetConstraints",
+          "line": 310
+        },
+        {
+          "name": "AddConstraint",
+          "line": 319
+        },
+        {
+          "name": "SetConstraintLimits",
+          "line": 328
+        },
+        {
+          "name": "RemoveConstraint",
+          "line": 337
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/PluginToolset/Source/PluginToolset/Private/PluginToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "ListEnabledPlugins",
+          "line": 169
+        },
+        {
+          "name": "ListDiscoveredPlugins",
+          "line": 176
+        },
+        {
+          "name": "GetPluginInfo",
+          "line": 185
+        },
+        {
+          "name": "IsEnabled",
+          "line": 193
+        },
+        {
+          "name": "GetPluginDependencies",
+          "line": 201
+        },
+        {
+          "name": "GetPluginDependents",
+          "line": 209
+        },
+        {
+          "name": "GetPluginForAsset",
+          "line": 218
+        },
+        {
+          "name": "GetPluginTemplateDescriptions",
+          "line": 227
+        },
+        {
+          "name": "IsPluginCreationAllowed",
+          "line": 236
+        },
+        {
+          "name": "ValidateNewPluginNameAndLocation",
+          "line": 250
+        },
+        {
+          "name": "CreatePlugin",
+          "line": 270
+        },
+        {
+          "name": "IsPluginModificationAllowed",
+          "line": 284
+        },
+        {
+          "name": "SetPluginEnabled",
+          "line": 292
+        },
+        {
+          "name": "GetPluginDescriptor",
+          "line": 302
+        },
+        {
+          "name": "UpdatePluginDescriptor",
+          "line": 312
+        },
+        {
+          "name": "AddPluginDependency",
+          "line": 324
+        },
+        {
+          "name": "RemovePluginDependency",
+          "line": 332
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "ListEnabledPlugins",
+          "line": 169
+        },
+        {
+          "name": "ListDiscoveredPlugins",
+          "line": 176
+        },
+        {
+          "name": "GetPluginInfo",
+          "line": 185
+        },
+        {
+          "name": "IsEnabled",
+          "line": 193
+        },
+        {
+          "name": "GetPluginDependencies",
+          "line": 201
+        },
+        {
+          "name": "GetPluginDependents",
+          "line": 209
+        },
+        {
+          "name": "GetPluginForAsset",
+          "line": 218
+        },
+        {
+          "name": "GetPluginTemplateDescriptions",
+          "line": 227
+        },
+        {
+          "name": "IsPluginCreationAllowed",
+          "line": 236
+        },
+        {
+          "name": "ValidateNewPluginNameAndLocation",
+          "line": 250
+        },
+        {
+          "name": "CreatePlugin",
+          "line": 271
+        },
+        {
+          "name": "IsPluginModificationAllowed",
+          "line": 286
+        },
+        {
+          "name": "SetPluginEnabled",
+          "line": 294
+        },
+        {
+          "name": "GetPluginDescriptor",
+          "line": 304
+        },
+        {
+          "name": "UpdatePluginDescriptor",
+          "line": 314
+        },
+        {
+          "name": "AddPluginDependency",
+          "line": 326
+        },
+        {
+          "name": "RemovePluginDependency",
+          "line": 334
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/RewindDebuggerToolset/Source/RewindDebuggerToolset/Public/RewindDebuggerToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "GetSessionInfo",
+          "line": 46
+        },
+        {
+          "name": "ListObjects",
+          "line": 54
+        },
+        {
+          "name": "GetObjectEvents",
+          "line": 64
+        },
+        {
+          "name": "GetObjectProperties",
+          "line": 73
+        },
+        {
+          "name": "SelectObject",
+          "line": 82
+        },
+        {
+          "name": "SetScrubTime",
+          "line": 90
+        },
+        {
+          "name": "CenterView",
+          "line": 98
+        },
+        {
+          "name": "ListObjectTraceEvents",
+          "line": 116
+        },
+        {
+          "name": "GetTraceEventDetails",
+          "line": 131
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/SemanticSearchToolset/Source/SemanticSearchToolset/Private/SemanticSearchToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "Search",
+          "line": 55
+        },
+        {
+          "name": "FindSimilar",
+          "line": 74
+        }
+      ],
+      "epic_5_9": []
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/SlateInspectorToolset/Source/SlateInspectorToolset/Public/SlateInspectorToolset.h",
+      "epic_5_8_3": [
+        {
+          "name": "Snapshot",
+          "line": 91
+        },
+        {
+          "name": "Observe",
+          "line": 101
+        },
+        {
+          "name": "Unobserve",
+          "line": 106
+        },
+        {
+          "name": "ListObservers",
+          "line": 112
+        },
+        {
+          "name": "Screenshot",
+          "line": 118
+        },
+        {
+          "name": "Click",
+          "line": 128
+        },
+        {
+          "name": "Hover",
+          "line": 133
+        },
+        {
+          "name": "Type",
+          "line": 141
+        },
+        {
+          "name": "PressKey",
+          "line": 147
+        },
+        {
+          "name": "SelectOption",
+          "line": 154
+        },
+        {
+          "name": "Drag",
+          "line": 161
+        },
+        {
+          "name": "Windows",
+          "line": 167
+        },
+        {
+          "name": "WaitFor",
+          "line": 174
+        },
+        {
+          "name": "FillForm",
+          "line": 180
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "Snapshot",
+          "line": 89
+        },
+        {
+          "name": "Observe",
+          "line": 99
+        },
+        {
+          "name": "Unobserve",
+          "line": 104
+        },
+        {
+          "name": "ListObservers",
+          "line": 110
+        },
+        {
+          "name": "Screenshot",
+          "line": 116
+        },
+        {
+          "name": "Click",
+          "line": 126
+        },
+        {
+          "name": "Hover",
+          "line": 131
+        },
+        {
+          "name": "Type",
+          "line": 139
+        },
+        {
+          "name": "PressKey",
+          "line": 145
+        },
+        {
+          "name": "SelectOption",
+          "line": 152
+        },
+        {
+          "name": "Drag",
+          "line": 159
+        },
+        {
+          "name": "Windows",
+          "line": 165
+        },
+        {
+          "name": "WaitFor",
+          "line": 172
+        },
+        {
+          "name": "FillForm",
+          "line": 178
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/UMGToolSet/Source/UMGToolSet/Private/UMGToolSet.h",
+      "epic_5_8_3": [
+        {
+          "name": "CreateWidgetBlueprint",
+          "line": 286
+        },
+        {
+          "name": "AddWidget",
+          "line": 299
+        },
+        {
+          "name": "SetNamedSlotContent",
+          "line": 310
+        },
+        {
+          "name": "GetWidgets",
+          "line": 322
+        },
+        {
+          "name": "GetNamedSlots",
+          "line": 329
+        },
+        {
+          "name": "ListWidgetBlueprints",
+          "line": 336
+        },
+        {
+          "name": "ListWidgetClasses",
+          "line": 343
+        },
+        {
+          "name": "GetWidgetClassInfo",
+          "line": 353
+        },
+        {
+          "name": "MoveWidget",
+          "line": 365
+        },
+        {
+          "name": "RemoveWidget",
+          "line": 373
+        },
+        {
+          "name": "RenameWidget",
+          "line": 382
+        },
+        {
+          "name": "ToggleWidgetAsVariable",
+          "line": 391
+        },
+        {
+          "name": "BindToEventProperty",
+          "line": 410
+        },
+        {
+          "name": "WrapWidgets",
+          "line": 425
+        },
+        {
+          "name": "GetWidgetDescription",
+          "line": 441
+        },
+        {
+          "name": "GetWidgetTreeDepth",
+          "line": 449
+        },
+        {
+          "name": "AddUIComponent",
+          "line": 464
+        },
+        {
+          "name": "RemoveUIComponent",
+          "line": 474
+        },
+        {
+          "name": "MoveUIComponent",
+          "line": 486
+        },
+        {
+          "name": "ReplaceWidgetWithTemplate",
+          "line": 505
+        },
+        {
+          "name": "ReplaceWidgetWithNamedSlot",
+          "line": 518
+        },
+        {
+          "name": "ReplaceWidgetWithChild",
+          "line": 529
+        },
+        {
+          "name": "CompileWidgetBlueprint",
+          "line": 540
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "CreateWidgetBlueprint",
+          "line": 286
+        },
+        {
+          "name": "AddWidget",
+          "line": 299
+        },
+        {
+          "name": "SetNamedSlotContent",
+          "line": 310
+        },
+        {
+          "name": "GetWidgets",
+          "line": 322
+        },
+        {
+          "name": "GetNamedSlots",
+          "line": 329
+        },
+        {
+          "name": "ListWidgetBlueprints",
+          "line": 336
+        },
+        {
+          "name": "ListWidgetClasses",
+          "line": 343
+        },
+        {
+          "name": "GetWidgetClassInfo",
+          "line": 353
+        },
+        {
+          "name": "MoveWidget",
+          "line": 365
+        },
+        {
+          "name": "RemoveWidget",
+          "line": 373
+        },
+        {
+          "name": "RenameWidget",
+          "line": 382
+        },
+        {
+          "name": "ToggleWidgetAsVariable",
+          "line": 391
+        },
+        {
+          "name": "BindToEventProperty",
+          "line": 410
+        },
+        {
+          "name": "WrapWidgets",
+          "line": 425
+        },
+        {
+          "name": "GetWidgetDescription",
+          "line": 441
+        },
+        {
+          "name": "GetWidgetTreeDepth",
+          "line": 449
+        },
+        {
+          "name": "AddUIComponent",
+          "line": 464
+        },
+        {
+          "name": "RemoveUIComponent",
+          "line": 474
+        },
+        {
+          "name": "MoveUIComponent",
+          "line": 486
+        },
+        {
+          "name": "ReplaceWidgetWithTemplate",
+          "line": 505
+        },
+        {
+          "name": "ReplaceWidgetWithNamedSlot",
+          "line": 518
+        },
+        {
+          "name": "ReplaceWidgetWithChild",
+          "line": 529
+        },
+        {
+          "name": "CompileWidgetBlueprint",
+          "line": 540
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
+      "epic_5_8_3": [],
+      "epic_5_9": [
+        {
+          "name": "CreateWidgetAnimation",
+          "line": 68
+        },
+        {
+          "name": "ListWidgetAnimations",
+          "line": 75
+        },
+        {
+          "name": "FindWidgetAnimation",
+          "line": 79
+        },
+        {
+          "name": "RenameWidgetAnimation",
+          "line": 85
+        },
+        {
+          "name": "SetWidgetAnimationDisplayLabel",
+          "line": 92
+        },
+        {
+          "name": "SetWidgetAnimationLength",
+          "line": 101
+        },
+        {
+          "name": "RemoveWidgetAnimation",
+          "line": 107
+        },
+        {
+          "name": "AddWidgetToAnimation",
+          "line": 126
+        },
+        {
+          "name": "GetWidgetAnimationBindings",
+          "line": 133
+        },
+        {
+          "name": "RemoveWidgetBinding",
+          "line": 137
+        }
+      ]
+    },
+    {
+      "path": "Engine/Plugins/Experimental/Toolsets/WorldConditionsToolset/Source/WorldConditionsToolset/Private/WorldConditionTools.h",
+      "epic_5_8_3": [
+        {
+          "name": "GetQueryDescription",
+          "line": 23
+        },
+        {
+          "name": "GetConditionDescription",
+          "line": 32
+        }
+      ],
+      "epic_5_9": [
+        {
+          "name": "GetQueryDescription",
+          "line": 23
+        },
+        {
+          "name": "GetConditionDescription",
+          "line": 32
+        }
+      ]
+    }
+  ]
+}

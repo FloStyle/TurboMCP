@@ -39,8 +39,12 @@ Start with [Contributing](../CONTRIBUTING.md), then [workspace setup](workspace.
 
 Architecture and design describe required behavior. The audit and acceptance evidence establish what the current implementation actually does.
 
+- [Implementation handoff](agent-handoff.md): next assignment and review evidence.
+- [Tool selection](design/tool-selection.md) and [editor experience](design/editor-experience.md): planned discovery and UI behavior.
+
 ## Compatibility and releases
 
+- [Epic 5.8.3 / TurboMCP / Epic 5.9 comparison](tool-comparison.md).
 - [Engine compatibility](engine-compatibility.md) and [native feature comparison](audit/native-overlap.md).
 - [Installed-engine investigation](installed-engine.md).
 - [Release guide](release.md) and [release manager checklist](release-manager.md).

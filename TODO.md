@@ -12,6 +12,7 @@ Generated from task files and the approved queue. After editing task status, run
 | --- | --- | --- | --- |
 | [R01: Repair the test-audit evidence classifications](todo/roadmap-r01.md) | v1 | implementation | todo |
 | [R13: Measure 5.9 native overlap before approving new features](todo/roadmap-r13.md) | v1 | investigation | todo |
+| [R16: Determine what prevents an installed-engine plugin](todo/roadmap-r16.md) | v1 | investigation | todo |
 | [R02: Make shared engine ownership atomic](todo/roadmap-r02.md) | v1 | implementation | todo |
 | [R03: Establish fixture and binary reproducibility evidence](todo/roadmap-r03.md) | v1 | investigation | todo |
 | [R04: Audit callable behavior and result contracts](todo/roadmap-r04.md) | v1 | investigation | todo |
@@ -20,6 +21,8 @@ Generated from task files and the approved queue. After editing task status, run
 | [R07: Reconcile geometry, layout and capture correctness](todo/roadmap-r07.md) | v1 | investigation | todo |
 | [R08: Reconcile data and widget state correctness](todo/roadmap-r08.md) | v1 | investigation | todo |
 | [R09: Reconcile references and runtime observations](todo/roadmap-r09.md) | v1 | investigation | todo |
+| [R17: Expose verified tool preferences in discovery and help](todo/roadmap-r17.md) | v1 | implementation | todo |
+| [R18: Specify a clearer editor panel and icon system](todo/roadmap-r18.md) | v1 | investigation | todo |
 | [R10: Make discovery and human documentation match observed behavior](todo/roadmap-r10.md) | v1 | documentation | todo |
 | [R11: Close the 5.8.3 release acceptance matrix](todo/roadmap-r11.md) | v1 | verification | todo |
 | [R15: Automate source and binary release preparation](todo/roadmap-r15.md) | v1 | implementation | todo |
