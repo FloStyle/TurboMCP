@@ -12,14 +12,25 @@
   "inventory": {
     "source": "docs/audit/capabilities.json",
     "tools": 101,
-    "reviewed": 4,
-    "not_reviewed": 97,
+    "reviewed": 7,
+    "not_reviewed": 94,
     "reviewed_ids": [
       "ReadTurboMCPCallCost",
       "ReadTurboMCPCallLog",
       "EditTurboMCPCallLog",
-      "EditTurboMCPCallLogClear"
-    ]
+      "EditTurboMCPCallLogClear",
+      "ReadTurboMCPStatus",
+      "ReadTurboMCPToolHelp",
+      "ReadTurboMCPToolSchema"
+    ],
+    "checkpoint_1": {
+      "reviewed": 4,
+      "not_reviewed": 97
+    },
+    "checkpoint_2": {
+      "reviewed": 3,
+      "not_reviewed": 94
+    }
   },
   "tools": [
     {
@@ -2646,16 +2657,71 @@
         "runtime_evidence": "not_certified",
         "release_disposition": "experimental_pending_acceptance"
       },
-      "audit_status": "not_reviewed",
-      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+      "audit_status": "reviewed_source",
+      "note": "Reviewed at source/offline level in R04 checkpoint 2.",
+      "reviewed_checkpoint": "status-help-schema",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 71,
+        "signature": "static FString ReadTurboMCPStatus();",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "No parameters; the reflected inputSchema has no properties and no required names."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:216-234,254-305",
+        "description": "FRecordingToolset wraps every TurboMCP toolset. FScopedCall writes a start before the body and an end after it only while logging is enabled; the three read tools therefore have a recorder side effect when the call log is ON."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+        "lines": "179-193; helpers 36-148",
+        "description": "ToolsetCount is the size of the static declared-class list, not a registry count. DescribeServerState reads the MCP module/server pointer, URL/port and bEnableToolSearch. DescribeRegisteredToolsets checks IsToolsetClassRegistered for each declared class."
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350,414-432",
+        "description": "Session.call decodes the engine returnValue wrapper and returns the body. These tools do not append an ARC02 result line, so call_structured defaults to requiring one for a TurboMCP.* toolset and would raise unless requires_result=False. Refusals are plain error: text, which the recorder treats as a successful value (R04-CALL-06)."
+      },
+      "effects": [
+        "Reads the MCP module/server pointer, configured URL/port, tool-search setting and registry handler map.",
+        "When call logging is enabled and the recorder is installed, the wrapper writes a start and end record; this can append to and rotate the log file.",
+        "Does not change assets, toolset enablement, settings or registration."
+      ],
+      "success": "Returns 'read: TurboMCP status, N toolsets' where N is the declared-class count, then one server line and one registered/MISSING line per declared class. It does not append an ARC02 result line.",
+      "refusals": [
+        "The tool body has no refusal/parameter path. If the Read toolset is not registered or discoverable, the tool cannot be called through MCP at all.",
+        "With the registry subsystem unavailable, every class is printed as MISSING; the output does not separately say that the registry itself is unavailable."
+      ],
+      "truncation": "No tool-level cap. The output is a server line, a setting suffix and four toolset lines. If recorded, the log end stores at most the first 4000 result characters plus a suffix; ResultChars remains full.",
+      "tests": [
+        "Tools/test-call-cost.py and test-call-log.py use ReadTurboMCPStatus as a known call; test-client-retry.py uses it as a read-only retry probe; test-graph-text-guards.py checks a later status call is non-error.",
+        "No assertion distinguishes declared, registered, enabled or discoverable counts, or checks the logging side effect."
+      ],
+      "source_findings": [
+        "R04-DISC-03",
+        "R04-DISC-04",
+        "R04-CALL-06"
+      ]
     },
     {
       "id": "ReadTurboMCPToolHelp",
       "toolset": "UTurboMCPReadToolset",
       "family": "schema-and-observability",
       "parameters": [
-        "ToolsetName",
-        "ToolName"
+        {
+          "name": "ToolsetName",
+          "default": "explicit empty = search all toolsets when ToolName is nonempty; both empty refused; omitted rejected by schema",
+          "parsing": "trimmed; case-insensitive exact full name or dotted suffix; spaces/underscores/hyphens are not normalized",
+          "effect": "selects a toolset or, with ToolName empty, requests its summary; short 'Read' is not accepted"
+        },
+        {
+          "name": "ToolName",
+          "default": "explicit empty = summary when ToolsetName is nonempty; both empty refused; omitted rejected",
+          "parsing": "trimmed; case-insensitive exact bare name; a dotted full name is not matched",
+          "effect": "selects one tool; with an empty ToolsetName the first matching tool across all toolsets is returned"
+        }
       ],
       "source_reference": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
@@ -2670,8 +2736,56 @@
         "runtime_evidence": "not_certified",
         "release_disposition": "experimental_pending_acceptance"
       },
-      "audit_status": "not_reviewed",
-      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+      "audit_status": "reviewed_source",
+      "note": "Reviewed at source/offline level in R04 checkpoint 2.",
+      "reviewed_checkpoint": "status-help-schema",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 111,
+        "signature": "static FString ReadTurboMCPToolHelp(const FString& ToolsetName, const FString& ToolName);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "No C++ defaults; both FString fields are required by the reflection schema. An explicit empty ToolsetName with a nonempty ToolName searches all toolsets; both empty is refused; a nonempty ToolsetName with empty ToolName is summary mode. Omitted fields are rejected before the body."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:216-234,254-305",
+        "description": "FRecordingToolset wraps every TurboMCP toolset. FScopedCall writes a start before the body and an end after it only while logging is enabled; the three read tools therefore have a recorder side effect when the call log is ON."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+        "lines": "311-574; matching helpers 165-178,378-383; parameters 461-503; budget 536-542",
+        "description": "Reads every schema from GetAllToolsetJsonSchemas, resolves toolset by exact or dotted-suffix match and tool by exact bare name, prints name:type-description rows, appends traps, and warns when the help exceeds HelpBudgetChars. It does not read the required array or print default values."
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350,414-432",
+        "description": "Session.call decodes the engine returnValue wrapper and returns the body. These tools do not append an ARC02 result line, so call_structured defaults to requiring one for a TurboMCP.* toolset and would raise unless requires_result=False. Refusals are plain error: text, which the recorder treats as a successful value (R04-CALL-06)."
+      },
+      "effects": [
+        "Reads the registry schema list and trap data; no asset or setting mutation.",
+        "When call logging is enabled and the recorder is installed, the wrapper writes a start and end record and can rotate the log file."
+      ],
+      "success": "Returns 'read:' help for a toolset summary or one tool, including kind, source, what, parameters, traps and, when the budget is exceeded, a warning. It does not append an ARC02 result line.",
+      "refusals": [
+        "Both names empty: error: no tool named.",
+        "Registry unavailable or unreadable: error naming the missing registry/schema.",
+        "No matching toolset/tool: error listing real toolset names and, for a tool miss, the instruction to use R-TOOL-INDEX.",
+        "All refusals are plain error: strings; R04-CALL-06 applies to their recorder status."
+      ],
+      "truncation": "Description text is first-sentence/160-character capped; a toolset summary lists at most 12 tools and names the remainder. HelpBudgetChars=2000 only appends a warning when exceeded; the text is not cut.",
+      "tests": [
+        "Tools/test-agent-help.py: T-HELP-2 checks 'parameters:', 'traps:' and <=2000 for selected tools; T-HELP-3/T-HELP-5 check refusals; joined/short toolset forms are exercised.",
+        "No assertion checks REQUIRED/default output, a long-help cap, 'Read' as a short form, a dotted tool name, or a missing inputSchema."
+      ],
+      "source_findings": [
+        "R04-DISC-01",
+        "R04-DISC-02",
+        "R04-DISC-05",
+        "R04-DISC-06",
+        "R04-CALL-06"
+      ]
     },
     {
       "id": "ReadTurboMCPToolIndex",
@@ -2699,8 +2813,18 @@
       "toolset": "UTurboMCPReadToolset",
       "family": "schema-and-observability",
       "parameters": [
-        "Toolset",
-        "Tool"
+        {
+          "name": "Toolset",
+          "default": "none; empty refused with the real toolset names; omitted rejected",
+          "parsing": "trimmed; NormaliseForMatch folds case and removes spaces, underscores, brackets, angle brackets and hyphens; exact full, short tail and suffix forms",
+          "effect": "selects the toolset; 'Read' is accepted as a suffix match"
+        },
+        {
+          "name": "Tool",
+          "default": "explicit empty = whole-toolset listing; omitted rejected",
+          "parsing": "trimmed; same normalization; accepts bare name or published full Toolset.Tool name",
+          "effect": "selects one tool; empty lists all tools in the resolved toolset"
+        }
       ],
       "source_reference": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchemaTools.cpp",
@@ -2718,8 +2842,56 @@
         "runtime_evidence": "not_certified",
         "release_disposition": "experimental_pending_acceptance"
       },
-      "audit_status": "not_reviewed",
-      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+      "audit_status": "reviewed_source",
+      "note": "Reviewed at source/offline level in R04 checkpoint 2.",
+      "reviewed_checkpoint": "status-help-schema",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 484,
+        "signature": "static FString ReadTurboMCPToolSchema(const FString& Toolset, const FString& Tool);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "No C++ defaults; both fields are required by the reflection schema. Empty Toolset is refused with the real names; empty Tool lists the selected toolset; both empty is the same no-toolset error. Omitted fields are rejected before the body."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:216-234,254-305",
+        "description": "FRecordingToolset wraps every TurboMCP toolset. FScopedCall writes a start before the body and an end after it only while logging is enabled; the three read tools therefore have a recorder side effect when the call log is ON."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp",
+        "lines": "447-792; matching 291-323,474-570; parameters 701-719; cap 783-789",
+        "description": "Plan normalizes toolset/tool names, resolves exact full, short-tail and suffix forms, and matches tools by bare or published full name. Render prints required/default flags, traps and an explicit 2000-character cut; the whole-toolset listing is not capped by the same guard."
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350,414-432",
+        "description": "Session.call decodes the engine returnValue wrapper and returns the body. These tools do not append an ARC02 result line, so call_structured defaults to requiring one for a TurboMCP.* toolset and would raise unless requires_result=False. Refusals are plain error: text, which the recorder treats as a successful value (R04-CALL-06)."
+      },
+      "effects": [
+        "Reads the registry schema list and trap data; no asset/setting mutation.",
+        "When call logging is enabled and the recorder is installed, the wrapper writes start/end records and can rotate the log file."
+      ],
+      "success": "Returns 'read: tool schema for ...' with a toolset list or one tool's signature, required/default parameter flags, traps and an explicit cut/omission notice when the 2000-character cap applies. No ARC02 result line.",
+      "refusals": [
+        "Empty Toolset: error listing all real toolset names.",
+        "Unknown toolset: error with closest normalized names.",
+        "Unknown tool: error with closest tool names and the toolset's tool count.",
+        "Unavailable/unreadable registry: error explaining the missing or unparseable schema list.",
+        "All refusals are plain error: strings; R04-CALL-06 applies."
+      ],
+      "truncation": "One-tool render has a 2000-character hard cap: parameter rows and traps are omitted with a named count, and a final cut announces the cut. The whole-toolset listing is not passed through the same final cap; its length is bounded by the enabled tools' names/opening sentences.",
+      "tests": [
+        "Tools/test-batch-tools.py: short 'Read', engine toolset, one tool parameters, <2400 check, unknown toolset closest names.",
+        "Tools/test-graph-check.py, test-panel-reach.py and test-save-thumbnail-option.py use the schema reader for toolset membership/reachability.",
+        "No test checks required/default semantics, ambiguous short names, a duplicate tool name across toolsets, empty Toolset except as a name source, or the exact 2000 cut."
+      ],
+      "source_findings": [
+        "R04-CALL-04",
+        "R04-CALL-06",
+        "R04-DISC-05"
+      ]
     },
     {
       "id": "ReadTurboMCPTrace",
@@ -2927,6 +3099,114 @@
       "existing_assertions": "Tools/test-call-log.py:386-397 checks the bad-boolean text but not the log record's bError or the cost failed count; no invocation-error control asserts bError=true.",
       "runtime_status": "not_run",
       "repair_note": "No prose parser is proposed. A production repair must use a structured domain outcome (for example an ARC02 result line) or an engine-provided structured error; this checkpoint only adds the probe requirement."
+    },
+    {
+      "id": "R04-DISC-01",
+      "status": "confirmed_source",
+      "checkpoint": "status-help-schema",
+      "scope": [
+        "ReadTurboMCPToolHelp",
+        "ReadTurboMCPToolSchema"
+      ],
+      "title": "Tool help omits requiredness and defaults that the schema actually prints",
+      "evidence": [
+        "docs/design/protocol.md:13 requires help to state parameter meaning, requiredness, accepted formats, side effects and a valid example.",
+        "TurboMCPAgentHelp.cpp:461-493 prints only name:type-description from properties; it never reads inputSchema.required and never prints a default.",
+        "TurboMCPToolSchema.cpp:127-140 reads the required array; :701-719 prints REQUIRED and default= for each parameter.",
+        "TurboMCPToolsets.h:105-109 claims both help parameters are required 'whatever its default'; JsonSchemaGenerator.cpp:288-299 requires non-optional parameters without defaults, not every FString."
+      ],
+      "observed_source_behavior": "Help for a tool with a required parameter prints the same shape as an optional one. The schema reader distinguishes them. The header's reason for requiredness is stale even though these two parameters are in fact required because they have no defaults.",
+      "existing_assertions": "test-agent-help.py checks only 'parameters:' and the 2000-character bound; no REQUIRED/default assertion.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-DISC-02",
+      "status": "confirmed_source",
+      "checkpoint": "status-help-schema",
+      "scope": [
+        "ReadTurboMCPToolHelp"
+      ],
+      "title": "The 2000-character help budget is only a warning, not a cap",
+      "evidence": [
+        "TurboMCPToolsets.h:481 says a tool's help is capped at 2000 characters.",
+        "TurboMCPAgentHelp.cpp:40 defines HelpBudgetChars=2000; :536-542 appends a warning when Help.Len() exceeds it but returns the full text.",
+        "TurboMCPToolSchema.cpp:783-789 implements an actual hard cut for the schema reader."
+      ],
+      "observed_source_behavior": "A long description or trap list makes help exceed 2000 characters and the result contains a warning plus the complete over-budget text. The schema reader would cut and announce the cut.",
+      "existing_assertions": "test-agent-help.py:63-65 checks <=2000 only for selected short help; no long synthetic case.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-DISC-03",
+      "status": "confirmed_source",
+      "checkpoint": "status-help-schema",
+      "scope": [
+        "ReadTurboMCPStatus"
+      ],
+      "title": "Status is declared free of cost/effects but the recorder can write and rotate the log",
+      "evidence": [
+        "TurboMCPToolsets.h:64-66 says the status tool costs nothing and changes nothing.",
+        "TurboMCPCallRecorder.cpp:103-130 wraps every toolset and creates FScopedCall before forwarding.",
+        "TurboMCPCallLog.cpp:216-234 writes only when logging is enabled; :254-305 writes start/end, and AppendToFile can rotate at 4 MiB."
+      ],
+      "observed_source_behavior": "When call logging is ON, a status call appends a start and end record and can rotate the log. When logging is OFF, it has no log side effect. The declaration's absolute claim is false in the ON state.",
+      "existing_assertions": "No test checks status's log side effect; call-log tests use status as an ordinary recorded call.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-DISC-04",
+      "status": "confirmed_source",
+      "checkpoint": "status-help-schema",
+      "scope": [
+        "ReadTurboMCPStatus",
+        "ReadTurboMCPToolHelp",
+        "ReadTurboMCPToolSchema"
+      ],
+      "title": "Status reports declared and registered layers but not enabled or discoverable ones",
+      "evidence": [
+        "TurboMCPToolsets.cpp:36-43 is the static declared-class list; :184 prints its size as 'N toolsets'.",
+        "TurboMCPToolsets.cpp:133-148 uses UToolsetRegistry::IsToolsetClassRegistered for each class; IsToolsetClassRegistered returns true for a handler-map entry even when the toolset is disabled (UToolsetRegistry.cpp:91-106).",
+        "FToolset::GetJsonSchema returns empty for a disabled toolset (Toolset.cpp:115-120), and GetToolsetJsonSchemas skips empty schemas (ToolsetRegistry.cpp:231-245); help/schema therefore omit a disabled toolset.",
+        "DescribeServerState checks the module/server pointer and reports settings, not listening or client discovery (TurboMCPToolsets.cpp:94-130)."
+      ],
+      "observed_source_behavior": "Status can print 'registered:' for a disabled toolset that help/schema cannot see, and always prints the declared class count as 'N toolsets'. If the registry subsystem is unavailable, all classes print MISSING without a separate registry-unavailable sentence.",
+      "existing_assertions": "No test distinguishes declared/registered/enabled/schema-listed/discoverable counts or checks a disabled toolset.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-DISC-05",
+      "status": "contract_gap",
+      "checkpoint": "status-help-schema",
+      "scope": [
+        "ReadTurboMCPToolHelp",
+        "ReadTurboMCPToolSchema"
+      ],
+      "title": "Help name matching is narrower than schema name matching",
+      "evidence": [
+        "TurboMCPToolSchema.cpp:291-323 normalizes case, spaces, underscores, brackets, angle brackets and hyphens; :474-533 accepts exact/short-tail/suffix toolset forms; :561-570 accepts bare or published full tool names.",
+        "TurboMCPAgentHelp.cpp:378-383 accepts exact full or dotted-suffix toolset names only; :449-450 matches only the bare tool name.",
+        "Tools/test-batch-tools.py:58 uses toolset 'Read' and expects success from the schema reader; test-agent-help.py uses 'TurboMCPReadToolset', not 'Read', for help."
+      ],
+      "observed_source_behavior": "The schema reader accepts 'Read', a space/underscore variant, or a full Toolset.Tool name. Help rejects 'Read' (no dotted suffix), does not normalize variants, and rejects the full tool name. Whether help should be as permissive or document the narrower contract is unresolved.",
+      "existing_assertions": "No help test uses 'Read', a normalized variant or a full tool name; no schema test uses those exact forms except 'Read'.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-DISC-06",
+      "status": "confirmed_source",
+      "checkpoint": "status-help-schema",
+      "scope": [
+        "ReadTurboMCPToolHelp",
+        "ReadTurboMCPToolSchema"
+      ],
+      "title": "Help does not distinguish a missing schema/properties object from a zero-parameter tool",
+      "evidence": [
+        "TurboMCPAgentHelp.cpp:461-503: a missing inputSchema skips the whole parameter block; a present inputSchema without properties prints 'parameters: none'; a zero-parameter tool prints 'parameters: 0 (this tool takes no parameters)'.",
+        "TurboMCPToolSchema.cpp:207-213 records OddSchemaNote for missing inputSchema/properties, and :694-699 prints that note; :701 prints the parameter count."
+      ],
+      "observed_source_behavior": "A missing inputSchema produces no parameter section at all; an inputSchema without a properties object produces 'parameters: none'; a real zero-parameter tool with an empty properties object produces 'parameters: 0 (this tool takes no parameters)'. The schema reader records OddSchemaNote for the missing cases.",
+      "existing_assertions": "No test supplies a schema without inputSchema or checks the difference from a zero-parameter tool.",
+      "runtime_status": "not_run"
     }
   ],
   "repairs": [
@@ -3069,6 +3349,133 @@
       "validation": "python Tools/execute-tests.py --profile engine --suites test-call-log,test-call-cost --execute",
       "rollback": "Test-only; no production rollback.",
       "approval": "proposal_only_not_dispatch_ready"
+    },
+    {
+      "id": "R04-REPAIR-07",
+      "finding": "R04-DISC-01",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+        "Tools/test-agent-help.py"
+      ],
+      "preserved_behavior": [
+        "existing help framing",
+        "tool summary/full modes",
+        "traps and refusal text",
+        "first-sentence description",
+        "no schema change"
+      ],
+      "synthetic_probe": "Call help for a tool with a required parameter and one with a default; compare its parameter rows with the same tool's schema output.",
+      "expected": "Help prints requiredness and default values in a named form matching the schema reader; a no-parameter tool still says it takes no parameters.",
+      "negative_control": "A no-parameter tool must not acquire a false REQUIRED row; an optional/defaulted parameter must not be marked required.",
+      "validation": "python Tools/execute-tests.py --profile engine --suites test-agent-help --execute",
+      "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only."
+    },
+    {
+      "id": "R04-REPAIR-08",
+      "finding": "R04-DISC-02",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+        "Tools/test-agent-help.py"
+      ],
+      "preserved_behavior": [
+        "help content below the budget",
+        "traps",
+        "summary limit of 12",
+        "first-sentence description"
+      ],
+      "synthetic_probe": "Use a tool with a trap/description set that exceeds 2000 characters; compare length and omission notice with a short tool.",
+      "expected": "A single-tool help answer is at most 2000 characters, names what was omitted, and never silently drops content. Alternative: if the warning-only design is retained, the declaration and protocol are corrected to say it is not capped; that is a separate decision.",
+      "negative_control": "A short tool remains byte-identical and shows no warning.",
+      "validation": "python Tools/execute-tests.py --profile engine --suites test-agent-help --execute",
+      "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only.",
+      "unresolved_decision": "Cap-and-announce versus warning-only; the protocol requires a cap, so cap-and-announce is the proposed alternative, not an implicit approval of either."
+    },
+    {
+      "id": "R04-REPAIR-09",
+      "finding": "R04-DISC-03",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+      ],
+      "preserved_behavior": [
+        "status output",
+        "server/registration checks",
+        "no asset change"
+      ],
+      "synthetic_probe": "Call status with logging ON and OFF; inspect the log and the declaration text.",
+      "expected": "The declaration no longer says the call costs/changes nothing unconditionally; it states that read calls are recorded when call logging is enabled. The output may remain unchanged.",
+      "negative_control": "Logging OFF still produces no status log record; the existing status text remains unchanged.",
+      "validation": "Source review plus test-call-log/test-graph-text-guards; no production behavior change.",
+      "rollback": "Revert the header comment only."
+    },
+    {
+      "id": "R04-REPAIR-10",
+      "finding": "R04-DISC-04",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+        "Tools/test-agent-help.py"
+      ],
+      "preserved_behavior": [
+        "server/settings line",
+        "one line per declared class",
+        "registered/MISSING names",
+        "no asset change"
+      ],
+      "synthetic_probe": "Compare status while all toolsets are enabled, with one toolset disabled, and while the registry is unavailable; compare declared count, registered count and schema-listed count.",
+      "expected": "Status labels declared, registered and schema-listed/enabled layers separately, and states registry unavailability rather than printing only MISSING. No claim of client discoverability.",
+      "negative_control": "A genuinely missing class still prints MISSING; a disabled but registered class is not labelled enabled/discoverable.",
+      "validation": "Source review plus test-call-log/test-agent-help; engine probe remains integrator-owned.",
+      "rollback": "Revert TurboMCPToolsets.cpp and the focused test only.",
+      "unresolved_decision": "Whether to add a public enabled query or use GetToolsetJsonSchemas as the enabled/schema-listed proxy; the status contract must be decided before implementation."
+    },
+    {
+      "id": "R04-REPAIR-11",
+      "finding": "R04-DISC-05",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+        "Tools/test-agent-help.py"
+      ],
+      "preserved_behavior": [
+        "case-insensitive matching",
+        "full and dotted-suffix toolset forms",
+        "bare tool form",
+        "refusal names"
+      ],
+      "synthetic_probe": "Call help with 'Read', 'TurboMCPReadToolset', 'turbo mcp read toolset' and a full Toolset.Tool name; compare with schema reader results.",
+      "expected": "Help and schema accept the same documented name forms, or help explicitly states its narrower forms. Ambiguous/multiple matches are named rather than silently choosing the first.",
+      "negative_control": "An unknown name is still refused with real names; no name silently resolves to a different toolset.",
+      "validation": "python Tools/execute-tests.py --profile engine --suites test-agent-help,test-batch-tools --execute",
+      "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only.",
+      "unresolved_decision": "Reuse schema normalization versus document a narrower help contract; no shared helper is authorized by this proposal."
+    },
+    {
+      "id": "R04-REPAIR-12",
+      "finding": "R04-DISC-06",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+        "Tools/test-agent-help.py"
+      ],
+      "preserved_behavior": [
+        "zero-parameter wording",
+        "parameter rows",
+        "traps and refusal text"
+      ],
+      "synthetic_probe": "Feed help a tool whose schema lacks inputSchema/properties and a tool with an empty properties object; compare with a real zero-parameter tool.",
+      "expected": "Missing schema prints 'parameters: unavailable' with the reason; a genuinely empty properties object prints zero parameters.",
+      "negative_control": "A real no-parameter tool still says it takes no parameters and does not acquire a schema-error warning.",
+      "validation": "Source review plus a synthetic help/schema fixture; engine suite if a fixture is added.",
+      "rollback": "Revert TurboMCPAgentHelp.cpp and test-agent-help.py only."
     }
   ],
   "probe_gaps": [
@@ -3081,7 +3488,13 @@
     "Omitted vs explicit-empty fields through a live schema/call.",
     "Ordinary domain refusal vs genuine invocation error: bError, ERROR row, failed count and filter=error.",
     "call_structured for the four plain-FString tools.",
-    "No runtime calls, engine suites or direct MCP calls were permitted in this checkpoint."
+    "No runtime calls, engine suites or direct MCP calls were permitted in this checkpoint.",
+    "Status with all toolsets enabled, one disabled and registry unavailable; distinguish declared/registered/enabled/schema-listed/discoverable.",
+    "Help with a required/defaulted parameter and a description/trap set over 2000 characters.",
+    "Help with 'Read', normalized/space variants, a full Toolset.Tool name, duplicate bare tool names and empty/omitted fields.",
+    "Schema with an ambiguous short/suffix name, duplicate tool name across toolsets, empty Toolset and the exact 2000-character cut.",
+    "Help/schema for a tool whose inputSchema or properties object is missing.",
+    "Status/help/schema recorded with logging ON and OFF, including the status declaration's cost claim."
   ],
   "validation": {
     "audit_inventory_check": {
@@ -3111,7 +3524,11 @@
   "unresolved": [
     "Whether these four tools are intentionally compatibility-only or should be migrated to ARC02 result lines is not decided.",
     "Runtime behavior of all four tools is unverified; existing engine suites were not run.",
-    "No installed-engine or 5.9 evidence belongs to this checkpoint."
+    "No installed-engine or 5.9 evidence belongs to this checkpoint.",
+    "Whether help should be capped-and-announced or keep warning-only; the protocol requires a cap, but the implementation choice is unapproved.",
+    "Whether help should reuse schema normalization or document a narrower name contract; no shared helper is authorized.",
+    "Whether status should expose enabled/discoverable layers through a new public query or a schema-list proxy; design unresolved.",
+    "The three tools remain plain-FString, non-ARC02 tools; call_structured and refusal-to-record behavior remain unresolved as in checkpoint 1."
   ],
   "schema_validation": {
     "status": "source_traced_not_runtime",
@@ -3129,5 +3546,63 @@
     "repairs_approved": false,
     "remaining_tools": 97,
     "limitations": "No runtime results. Toggle lifecycle policy, state/header scope and result migration require integrator specification before implementation."
+  },
+  "checkpoint_2": {
+    "name": "status-help-schema",
+    "approved_base": "b353fdd8b44f405c84ef9a67fde9db679f8c4804",
+    "plugin_tree": "590661ec45c829264ea1743fccea994edb748092",
+    "engine": {
+      "version": "5.8.3",
+      "commit": "396c9f059903aed5fec78ecd3d437a40c6415368"
+    },
+    "claim": {
+      "id": "350b288bbc2d4f5ab0e408d760bf2dfb",
+      "owner": "dsh-r04-02",
+      "worktree": "C:\\ExampleDev\\SampleRoot005\\r04-discovery",
+      "store_sha256": "402acaf349aefb5613fbb10fe5bf93c05e5ba4a184598b94ad379eb5be8ce649"
+    },
+    "reviewed_ids": [
+      "ReadTurboMCPStatus",
+      "ReadTurboMCPToolHelp",
+      "ReadTurboMCPToolSchema"
+    ],
+    "scope": "Source/offline audit of status, tool help and tool schema; no engine/build/editor/MCP execution.",
+    "discovery_layers": {
+      "declared": "AICallable UFUNCTIONs and the 101-row capability inventory; four TurboMCP toolset classes in GetToolsetClasses().",
+      "registered": "RegisterToolsetClass creates a handler only when HasValidTools(); IsToolsetClassRegistered checks the handler map by class name.",
+      "enabled": "FToolset::IsEnabled gates ExecuteTool; GetJsonSchema returns empty for a disabled toolset or one with no enabled tools.",
+      "discoverable": "GetAllToolsetJsonSchemas returns only enabled, nonempty schemas; the MCP server/tool-search path is a further client-side layer not proven by status."
+    },
+    "status_proves": "ReadTurboMCPStatus proves that the MCP module/server pointer existed at sampling time, reports the configured URL/tool-search setting, and reports whether each declared class name is present in the registry handler map. It does not prove listening, client discoverability, tool filtering, or that a registered toolset is enabled.",
+    "validation": {
+      "audit_inventory_check": {
+        "command": "python Tools/audit-inventory.py --check",
+        "exit": 0,
+        "summary": "101 definitions; 95 parsed_call, 6 name_reference_only."
+      },
+      "test_result_contract": {
+        "command": "python Tools/test-result-contract.py",
+        "exit": 0,
+        "summary": "PASS; C03-C08."
+      },
+      "test_client_retry": {
+        "command": "python Tools/test-client-retry.py",
+        "exit": 0,
+        "summary": "PASS; C01/C02."
+      },
+      "offline_profile": {
+        "command": "python Tools/execute-tests.py --profile offline --execute",
+        "exit": 0,
+        "report": ".local/executions/98e74ff4df4c41c99ed12ac5e98aae9c/report.json",
+        "request_commit": "b353fdd8b44f405c84ef9a67fde9db679f8c4804",
+        "tree_digest": "025e11e4004e45c19b1523930991be6176b711e560ecdf414c7b3d4b62586442",
+        "summary": "PASSED; all offline suites passed."
+      }
+    },
+    "review": {
+      "status": "pending_integration_review",
+      "checkpoint_1_accepted_candidate": "12d515ac46b58e42e83fffb9b577181fb4e68b55",
+      "note": "Checkpoint 2 remains unapproved; seven reviewed rows, 94 not reviewed."
+    }
   }
 }

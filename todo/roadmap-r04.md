@@ -80,6 +80,42 @@ Unresolved: the four tools' runtime behavior; fraction/overflow and empty-log in
 
 Integration review accepted candidate `12d515ac46b58e42e83fffb9b577181fb4e68b55` as the first source-only checkpoint. The scope gate and candidate-bound offline run `ba930a8` passed; the shared claim matched. The integration owner qualified error-filter and pre-wrapper/transport behavior. Four of 101 tools are source-reviewed; R04 remains todo and every repair proposal remains unapproved. No next-family dispatch is authorized by this acceptance.
 
+### Checkpoint 2: status, help and schema
+Task R04 checkpoint 2, claim `350b288bbc2d4f5ab0e408d760bf2dfb` (owner `dsh-r04-02`). Approved base `b353fdd8b44f405c84ef9a67fde9db679f8c4804`; branch `task/r04-discovery-audit`; worktree `C:\ExampleDev\SampleRoot005\r04-discovery`. The candidate is the correction/checkpoint commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+
+Source identity:
+- Engine 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368` (`engine.lock.json`).
+- Plugin tree: `590661ec45c829264ea1743fccea994edb748092`.
+- Claim store: `c:\ExampleDev\turbomcp\.git\turbomcp\task-claims.json`, SHA-256 `402acaf349aefb5613fbb10fe5bf93c05e5ba4a184598b94ad379eb5be8ce649`; active R04 claim inspected in this worktree.
+
+Scope and inventory:
+- `docs/audit/callable-contracts.json` retains all 101 IDs and the four accepted call-log rows, findings `R04-CALL-01` through `06` and their repair proposals. Three rows are added as `reviewed_source`: `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp`, `ReadTurboMCPToolSchema`. Current totals are 7 reviewed and 94 `not_reviewed`; checkpoint 1 remains recorded as 4/97.
+- Checkpoint-specific base/claim/validation identities are stored under `checkpoint_2`; checkpoint 1's base, claim, validation and acceptance text are preserved.
+- The audit traces declarations, implementation, registry availability/registration, enabled/schema-listed/discoverable layers, help/schema/traps, recorder side effects and the client path.
+- Parameter behavior is source-traced: all three have no C++ defaults. Status has no parameters. Help and schema parameters are required; omitted fields are rejected before the body, while explicit empty strings reach the body. Help's empty values mean summary/search-all/refusal depending on the pair; schema's empty toolset is refused and empty tool lists the toolset.
+- Status count is the static declared-class count, not a registry count. A registered-but-disabled toolset can be absent from help/schema because `GetJsonSchema` returns empty for disabled toolsets. Status does not distinguish registry-unavailable from MISSING. No client-discovery or runtime claim is made.
+
+New findings (`R04-DISC-01` through `06`):
+- Help omits `REQUIRED`/`default=` though the schema reader prints them.
+- Help's 2000-character budget is a warning, not a cap; the declaration says capped.
+- Status's “costs nothing and changes nothing” is false when logging is ON because the recorder writes/rotates.
+- Status conflates declared, registered, enabled and discoverable layers; it reports settings/registration, not discovery.
+- Help name matching is narrower than schema normalization (`Read`, space/underscore variants and full tool names).
+- Help does not distinguish a missing inputSchema/properties object from a zero-parameter tool.
+Each finding has an unapproved bounded proposal `R04-REPAIR-07` through `12` with exact repository-relative files, preserved behavior, synthetic probe, expected result, negative control, focused checks and rollback. Alternatives for help capping, status enablement and name normalization are recorded as unresolved decisions.
+
+Validation:
+- `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
+- `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
+- `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 at base `b353fdd`: report `.local/executions/98e74ff4df4c41c99ed12ac5e98aae9c/report.json`, tree digest `025e11e4004e45c19b1523930991be6176b711e560ecdf414c7b3d4b62586442`; all offline suites passed.
+- No engine suite, editor, build, direct MCP call, packaging or recovery command was run. `test-agent-help.py`, `test-batch-tools.py` and the status uses in other suites are existing assertions only, not results here.
+- Candidate-bound offline evidence is obtained after this commit and returned separately.
+
+Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contracts.json`, and this Completion evidence only. No plugin, engine, test, helper, dependency, pin, routing preference, task status/readiness, TODO, review register or release control was changed.
+
+Unresolved: status/help/schema runtime behavior; long-help cap; disabled/ambiguous name behavior; missing-schema fixture; declared/enabled/discoverable status contract; all three tools' lack of ARC02 result lines and `call_structured` implications; `R04-CALL-06` refusal recording; the 94 unreviewed rows. R04 remains incomplete; no merge, push, completion or claim release.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)

@@ -1,27 +1,28 @@
-# R04 call-log contracts — first checkpoint
+# R04 callable contracts — checkpoints 1 and 2
 
-Source/offline investigation only. This checkpoint audits four call-log tools and does not complete R04.
+Source/offline investigation only. Checkpoint 1 audits the four call-log tools; checkpoint 2 extends the inventory to status, help and schema. Neither checkpoint completes R04.
 
-- **Task:** R04, first dispatch checkpoint
-- **Approved base:** `1180c6d43655195dc2772b6d1f0b80588e4b466a`
+- **Checkpoint 1 base:** `1180c6d43655195dc2772b6d1f0b80588e4b466a`
+- **Checkpoint 1 claim:** `ab2cf6535c584bc6a9419c79e85d0b04` (`dsh-r04-01`)
+- **Checkpoint 2 base:** `b353fdd8b44f405c84ef9a67fde9db679f8c4804`
+- **Checkpoint 2 claim:** `350b288bbc2d4f5ab0e408d760bf2dfb` (`dsh-r04-02`)
 - **Plugin tree:** `590661ec45c829264ea1743fccea994edb748092`
 - **Engine:** 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`
-- **Claim:** `ab2cf6535c584bc6a9419c79e85d0b04` (`dsh-r04-01`)
 - **Machine-readable inventory:** [callable-contracts.json](callable-contracts.json)
 
 ## Scope and coverage
 
-`docs/audit/capabilities.json` contains **101 unique tool IDs**. This checkpoint creates all 101 rows.
+`docs/audit/capabilities.json` contains **101 unique tool IDs**. Checkpoint 1 created the four-row baseline; checkpoint 2 adds three rows.
 
 | Audit status | Count |
 | --- | ---: |
-| `reviewed_source` | 4 |
-| `not_reviewed` | 97 |
+| `reviewed_source` | 7 |
+| `not_reviewed` | 94 |
 | **Total** | **101** |
 
-The 97 `not_reviewed` rows retain their capability source/test references and are explicitly marked. No conclusion is implied for them.
+Checkpoint 1 snapshot: 4 reviewed, 97 not reviewed. Checkpoint 2 adds `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp` and `ReadTurboMCPToolSchema`. The 94 unreviewed rows retain their capability source/test references and are explicitly marked. No conclusion is implied for them.
 
-Reviewed tools: `ReadTurboMCPCallCost`, `ReadTurboMCPCallLog`, `EditTurboMCPCallLog`, `EditTurboMCPCallLogClear`.
+Reviewed tools: `ReadTurboMCPCallCost`, `ReadTurboMCPCallLog`, `EditTurboMCPCallLog`, `EditTurboMCPCallLogClear`, `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp`, `ReadTurboMCPToolSchema`.
 
 ## Reviewed contracts
 
@@ -106,6 +107,85 @@ Not run: engine suites, editor, build, direct MCP, packaging, recovery. Probes s
 - `R04-CALL-06` has no production repair; a structured outcome is required, not prose parsing.
 - The 97 unreviewed rows remain unreviewed. Compile-ensure and engine runtime work are outside this checkpoint.
 
+## Checkpoint 2: status, help and schema
+
+Checkpoint 2 is source/offline evidence at base `b353fdd8b44f405c84ef9a67fde9db679f8c4804`; it does not relabel checkpoint 1 and does not certify runtime behavior. The three reviewed tools are `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp` and `ReadTurboMCPToolSchema`.
+
+### Reviewed contracts
+
+| Tool | Declaration and schema | Implementation and wrapper | Parameters/defaults | Effects, success and refusal |
+| --- | --- | --- | --- | --- |
+| `ReadTurboMCPStatus` | `Public/Tools/TurboMCPToolsets.h:71-72`; no parameters | `TurboMCPToolsets.cpp:179-193`; helpers `:36-148`; recorder `TurboMCPCallRecorder.cpp:103-130` | No parameters; empty inputSchema/required array. | Reads the MCP module/server pointer, URL/port, tool-search setting and registry class map. The count is the static declared-class count, not a registry count. No ARC02 line. |
+| `ReadTurboMCPToolHelp` | `Public/Tools/TurboMCPToolsets.h:111-112`; both `FString`s required | `TurboMCPAgentHelp.cpp:311-574`; schema read `:194-238`; matching `:378-383`; parameters `:461-503`; budget `:536-542` | `ToolsetName`/`ToolName` required, no defaults. Explicit empty toolset + nonempty tool searches all toolsets; both empty refused; empty tool with a named toolset is summary mode. Omitted fields are rejected before the body. | Reads registry schemas and traps. Prints name:type-description, not required/default. Help >2000 chars gets a warning, not a cut. Plain `error:` refusals; no ARC02 line. |
+| `ReadTurboMCPToolSchema` | `Public/Tools/TurboMCPToolsets.h:484-485`; both `FString`s required | `TurboMCPToolSchema.cpp:447-792`; normalization `:291-323`; matching `:474-570`; parameter rows `:701-719`; cap `:783-789` | Empty `Toolset` refused with real names; empty `Tool` lists the toolset; both empty the same no-toolset error. Matching normalizes case/spaces/underscores/brackets/hyphens and accepts bare or full tool names. Omitted fields are rejected before the body. | Reads registry schemas/traps. One-tool output prints `REQUIRED`, `default=` and a hard 2000-character cut with omissions. Whole-toolset listing is not passed through the final cap. Plain `error:` refusals; no ARC02 line. |
+
+All three are wrapped by `FRecordingToolset` (`TurboMCPCallRecorder.cpp:103-130`). When logging is enabled and the recorder is installed, a read writes start/end records and may rotate the log; status's declaration saying it “costs nothing and changes nothing” is therefore not unconditional (`R04-DISC-03`). When logging is off, no record is written. None of these tools appends an ARC02 result line; `call_structured` would require one for a `TurboMCP.*` toolset unless `requires_result=False` is passed (`R04-CALL-04`). Plain `error:` refusals are values to `FToolResult`, so the recorder marks `bError=false` (`R04-CALL-06`).
+
+### Declared, registered, enabled and discoverable
+
+| Layer | What the source establishes | What it does not establish |
+| --- | --- | --- |
+| Declared | The 101 capability IDs and the four `AICallable` toolset classes in `GetToolsetClasses()` (`TurboMCPToolsets.cpp:36-43`). | That any class registered. |
+| Registered | `RegisterToolsetClass` creates a handler only when `HasValidTools()`; `IsToolsetClassRegistered` checks the handler map by class name (`UToolsetRegistry.cpp:22-61,91-106`). | That the handler is enabled, has enabled tools, or is exposed to MCP clients. |
+| Enabled | `FToolset::IsEnabled` gates execution; `GetJsonSchema` returns empty for a disabled toolset or one with no enabled tools (`Toolset.cpp:115-120`). | That status reports enablement; it does not. |
+| Discoverable | `GetAllToolsetJsonSchemas` iterates handlers and skips empty schemas (`ToolsetRegistry.cpp:231-245`); this is the list help/schema read. | That the MCP server is listening, tool search exposes it, or a client sees it. |
+
+`ReadTurboMCPStatus` proves only that the server pointer existed when sampled, reports the configured URL/tool-search setting, and reports whether each declared class name is in the registry handler map. It does not prove listening, enablement, filtering or client discovery. With the registry subsystem unavailable, all classes print `MISSING` without a separate registry-unavailable sentence (`R04-DISC-04`).
+
+### Parameter and name behavior
+
+- All three tools have no C++ defaults. `ReadTurboMCPStatus` has no parameters. Help/schema parameters are required by the reflection schema; an omitted field is rejected before the body, while an explicit empty string reaches the body and is interpreted by the tool.
+- Help: both names empty -> `error: no tool named`; empty toolset + tool -> search all toolsets; empty tool + named toolset -> summary (max 12, remainder counted).
+- Schema: empty toolset -> `error: no toolset given` listing real names; empty tool -> whole-toolset listing; one tool -> signature, required/default rows, traps and cap.
+- Help matching is exact case-insensitive full/dotted-suffix toolset and exact bare tool. Schema matching normalizes spaces/underscores/brackets/angle brackets/hyphens and accepts suffix `Read` and full `Toolset.Tool`. This is `R04-DISC-05`; the shared-contract decision is unresolved.
+- Help prints only parameter name/type/description. It does not print `REQUIRED` or `default=` even though the schema reader does (`R04-DISC-01`).
+- Help's parameter section is absent when `inputSchema` is missing and says `parameters: none` when the properties object is missing; a real zero-parameter tool says `parameters: 0 (this tool takes no parameters)`. The schema reader records `OddSchemaNote` for the missing cases (`R04-DISC-06`).
+- Help's 2000-character budget appends a warning but returns the full text; the declaration's “capped” claim is stale (`R04-DISC-02`).
+
+### Findings
+
+| ID | Status | Scope | Finding and evidence | Existing assertions |
+| --- | --- | --- | --- | --- |
+| `R04-DISC-01` | confirmed source | help, schema | Help does not read `inputSchema.required` or print defaults (`TurboMCPAgentHelp.cpp:461-493`); schema does (`TurboMCPToolSchema.cpp:127-140,701-719`). Protocol requires requiredness. The header's “whatever its default” reason is stale; the engine requires non-optional parameters without defaults (`JsonSchemaGenerator.cpp:288-299`). | `test-agent-help.py` checks `parameters:` and length only. |
+| `R04-DISC-02` | confirmed source | help | `HelpBudgetChars=2000`; over-budget only appends a warning and returns the full text (`TurboMCPAgentHelp.cpp:40,536-542`). Declaration says capped (`TurboMCPToolsets.h:481`). Schema has a real cut (`TurboMCPToolSchema.cpp:783-789`). | `test-agent-help.py:63-65` checks selected short help only. |
+| `R04-DISC-03` | confirmed source | status | Declaration says status costs/changes nothing (`TurboMCPToolsets.h:64-66`); the recorder writes start/end and can rotate when logging is ON (`TurboMCPCallRecorder.cpp:103-130`; `TurboMCPCallLog.cpp:216-234,254-305`). | No status side-effect assertion. |
+| `R04-DISC-04` | confirmed source | status, help, schema | Status prints the static declared count as “N toolsets” (`TurboMCPToolsets.cpp:36-43,184`); registration is handler-map presence (`UToolsetRegistry.cpp:91-106`), while disabled toolsets have empty schemas and are omitted from help/schema (`Toolset.cpp:115-120`; `ToolsetRegistry.cpp:231-245`). Registry unavailability prints only MISSING. | No declared/registered/enabled/schema-listed distinction test. |
+| `R04-DISC-05` | contract gap | help, schema | Schema accepts normalized `Read`, space/underscore variants and full `Toolset.Tool` (`TurboMCPToolSchema.cpp:291-323,474-570`); help accepts exact/dotted-suffix toolset and bare tool only (`TurboMCPAgentHelp.cpp:378-383,449-450`). `test-batch-tools.py:58` uses `Read` successfully; help tests do not. | No help test for `Read`, normalized variants or full tool name. |
+| `R04-DISC-06` | confirmed source | help | Missing `inputSchema` omits the parameter section; a present `inputSchema` without `properties` prints `parameters: none`; a real zero-parameter tool prints `parameters: 0 (this tool takes no parameters)` (`TurboMCPAgentHelp.cpp:461-503`). Schema records `OddSchemaNote` for the missing cases (`TurboMCPToolSchema.cpp:207-213,694-699`). | No missing-schema help case. |
+
+### Bounded repair proposals
+
+Proposals are unapproved. They preserve the accepted checkpoint-1 rows and findings.
+
+| ID | Finding / owner | Exact allowed files | Preserved behavior | Probe | Expected / negative control | Validation / rollback |
+| --- | --- | --- | --- | --- | --- | --- |
+| `R04-REPAIR-07` | `R04-DISC-01`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp`; `Tools/test-agent-help.py` | Help framing, summary/full modes, traps, first-sentence description, no schema change | Required/default tool and no-parameter tool | Print requiredness/default matching schema; zero-param still says none. Negative: optional/default not marked required. | `test-agent-help`; revert help/tool test. |
+| `R04-REPAIR-08` | `R04-DISC-02`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp`; `Tools/test-agent-help.py` | Short help, traps, 12-tool summary, first-sentence rule | Description/traps >2000 | Cap at 2000 and name omissions; alternative warning-only requires a separate contract decision. Negative: short help byte-identical. | `test-agent-help`; revert help/tool test. |
+| `R04-REPAIR-09` | `R04-DISC-03`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h` | Status output, server/registration checks, no asset change | Status with logging ON/OFF | Declaration states read calls are recorded when logging is ON; no unconditional “costs nothing”. Negative: OFF has no record and text unchanged. | Source review plus call-log/status tests; comment-only rollback. |
+| `R04-REPAIR-10` | `R04-DISC-04`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp`; `Tools/test-agent-help.py` | Server/settings line, one line per class, registered/MISSING names | Enabled all, one disabled, registry unavailable | Label declared/registered/schema-listed/enabled separately; no client-discovery claim. Negative: missing class still MISSING; disabled not labeled enabled. | Source plus `test-call-log`/help; design unresolved. |
+| `R04-REPAIR-11` | `R04-DISC-05`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp`; `Tools/test-agent-help.py` | Case-insensitive full/short forms, bare tool, refusal names | `Read`, normalized variant, full `Toolset.Tool`, unknown | Same documented forms as schema, or an explicit narrower help contract; ambiguity named. Negative: unknown refused, no silent cross-toolset match. | `test-agent-help,test-batch-tools`; revert help/test. |
+| `R04-REPAIR-12` | `R04-DISC-06`, owner R04 | `Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp`; `Tools/test-agent-help.py` | Zero-param wording, parameter rows, traps/refusals | Missing inputSchema/properties vs truly empty properties | “parameters: unavailable” for missing schema; zero for real empty properties. Negative: no-param tool still says none. | Source/synthetic help fixture; engine suite if added. |
+
+### Checkpoint 2 validation
+
+| Command | Result |
+| --- | --- |
+| `python Tools/audit-inventory.py --check` | exit 0; 101 definitions; 95 `parsed_call`, 6 `name_reference_only` |
+| `python Tools/test-result-contract.py` | exit 0; PASS (C03–C08) |
+| `python Tools/test-client-retry.py` | exit 0; PASS (C01/C02) |
+| `python Tools/execute-tests.py --profile offline --execute` | exit 0 at base `b353fdd`; report `.local/executions/98e74ff4df4c41c99ed12ac5e98aae9c/report.json`, tree `025e11e4…` |
+
+No engine suite, editor, build, direct MCP call, packaging or recovery was run. Existing engine suites are assertions only: `test-agent-help.py` (T-HELP-1/2/3/5; selected help under 2000, traps, refusals, joined form), `test-batch-tools.py` (schema short `Read`, engine toolset, one-tool parameters, <2400, closest names), and the status uses in `test-call-cost/log`, `test-client-retry` and `test-graph-text-guards`. The unrun probes are listed in the JSON `probe_gaps`.
+
+### Checkpoint 2 unresolved questions
+
+- Cap-and-announce versus warning-only help: the protocol requires a cap, but the implementation choice is not approved.
+- Whether help should reuse schema normalization or document a narrower name contract; no shared helper is authorized.
+- Whether status should expose enablement/discoverability through a new public query or a schema-list proxy; design unresolved.
+- Help's required/default output format and the missing-schema wording have not been reviewed for implementation.
+- All three tools remain plain-FString, non-ARC02 tools; `call_structured` and `R04-CALL-06` refusal recording remain unresolved.
+- The 94 unreviewed rows remain unreviewed; R04 is incomplete.
+
 ## Integration review
 
-Accepted as a source-only checkpoint at candidate `12d515ac46b58e42e83fffb9b577181fb4e68b55`. R04 remains incomplete: four tools reviewed, 97 not reviewed. All repair rows remain unapproved proposals. In particular, the toggle end-after-disable exception and any state/header expansion require an explicit reviewed lifecycle contract before implementation. No runtime outcome or repair is certified.
+Checkpoint 1 was accepted as a source-only checkpoint at candidate `12d515ac46b58e42e83fffb9b577181fb4e68b55`. That acceptance covered four reviewed tools and 97 not reviewed; all repair rows remain unapproved proposals. The toggle end-after-disable exception and any state/header expansion require an explicit reviewed lifecycle contract before implementation. Checkpoint 2 is pending review: it adds three reviewed rows, for a current total of seven reviewed and 94 not reviewed. R04 remains incomplete. No runtime outcome or repair is certified.
