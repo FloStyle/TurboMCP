@@ -560,6 +560,13 @@
       "tier": "offline",
       "timeout_seconds": 60,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-feedback-report",
+      "path": "Tools/test-feedback-report.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
     }
   ]
 }

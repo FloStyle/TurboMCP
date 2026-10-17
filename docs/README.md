@@ -22,6 +22,8 @@ Start with [Contributing](../CONTRIBUTING.md), then [workspace setup](workspace.
 - [Governance](governance.md), [security policy](../SECURITY.md) and [community conduct](../CODE_OF_CONDUCT.md).
 - [English-language policy](language.md): rules, automated checks and review limits.
 
+- [Reusable agent skills](agent-skills.md): field reporting, session checks and maintainer triage.
+
 ## Understand the design
 
 | Document | Question it answers |

@@ -74,6 +74,10 @@ For the required result and mutation behavior, see [protocol design](docs/design
 
 For a bug report, include the plugin commit, engine version and revision, client, tool arguments, expected result and a minimal reproduction. Remove credentials and private project data. Use the repository's bug-report template; report vulnerabilities through [SECURITY.md](SECURITY.md).
 
+## Report field-test feedback
+
+Use the [session-report skill](docs/agent-skills.md) to prepare a local, sanitized report from a work session. It records reproduction steps, observed results and limitations without proprietary code or project identifiers. Reports require human review before transfer; the field tester does not contribute code or submit issues automatically.
+
 ## Develop TurboMCP
 
 Use Python 3.13, Git and PowerShell for repository tooling. Keep Unreal Engine in a separate checkout. From the TurboMCP repository root:

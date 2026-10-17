@@ -36,7 +36,7 @@ def main():
     for task in imported['tasks']:
         if f'ID: {task["id"]}' not in (ROOT/task['path']).read_text():raise ValueError('Imported task lost or ID changed')
     # Canonical navigation must resolve. Task quotations and source comments are explicitly historical evidence.
-    docs=[ROOT/'SECURITY.md',ROOT/'CODE_OF_CONDUCT.md',ROOT/'ROADMAP.md',ROOT/'CONTRIBUTING.md',ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'TODO.md',ROOT/'Tools/README.md',ROOT/'TestProject/README.md',*list((ROOT/'docs').rglob('*.md'))]
+    docs=[ROOT/'SECURITY.md',ROOT/'CODE_OF_CONDUCT.md',ROOT/'ROADMAP.md',ROOT/'CONTRIBUTING.md',ROOT/'README.md',ROOT/'AGENTS.md',ROOT/'TODO.md',ROOT/'Tools/README.md',ROOT/'TestProject/README.md',*list((ROOT/'docs').rglob('*.md')),*list((ROOT/'skills').rglob('*.md'))]
     for p in docs:
         for target in re.findall(r'\]\(<?([^\s)>]+)>?\)',p.read_text(encoding='utf8')):
             if re.match(r'^[a-zA-Z]+:|^#',target):continue
