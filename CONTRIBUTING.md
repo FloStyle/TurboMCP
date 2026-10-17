@@ -2,6 +2,12 @@
 
 [Repository home](README.md) · [Documentation](docs/README.md)
 
+## Propose a contribution
+
+Bug reports, tests, documentation corrections and focused fixes are welcome. Use an issue to describe the problem and a minimal reproduction; discuss new features before implementing them. Maintainers turn accepted work into repository tasks. See [governance](docs/governance.md) for review responsibilities and [community conduct](CODE_OF_CONDUCT.md).
+
+Report vulnerabilities privately through [SECURITY.md](SECURITY.md), not public issues. You remain responsible for reviewing and verifying AI-assisted contributions.
+
 ## Choose work
 
 Follow the [roadmap](ROADMAP.md). To find the next approved task:

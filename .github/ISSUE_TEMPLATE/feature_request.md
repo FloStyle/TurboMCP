@@ -3,6 +3,8 @@ name: Workflow improvement
 about: Describe a concrete missing workflow and its value
 ---
 
+Please write in English. Remove credentials and private project data. For vulnerabilities, follow SECURITY.md instead of opening a public issue.
+
 ## Workflow and benefit
 What user task is difficult today, and what measurable improvement would help?
 

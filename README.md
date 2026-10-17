@@ -39,6 +39,10 @@ For builds and editor tests, follow [workspace setup](docs/workspace.md). Unreal
 
 The future public repository will contain this complete tracked tree with fresh Git history. Installable plugin packages are separate release assets. See [repository design](docs/repository-design.md).
 
+## Community and security
+
+[Contributing](CONTRIBUTING.md) · [Governance](docs/governance.md) · [Security policy](SECURITY.md) · [Community conduct](CODE_OF_CONDUCT.md)
+
 ## License
 
 [MPL-2.0](LICENSE).

@@ -7,7 +7,7 @@
 # NAMED HERE SO `Spec/06_ACCEPTANCE.md` CAN BE ANSWERED MECHANICALLY. `Spec/WORKING_PLAN.md` section 1.3 says a
 # capability is done when its acceptance row PASSES, WHICH MAKES THAT DOCUMENT THE DEFINITION OF DONE - and a script
 # over the tree measured 64 OF ITS 122 ROWS CITED BY NO SUITE AT ALL before this practice started.
-# *** THE SCRIPT IS NAMED NOW: python Tools/checks/count-acceptance-citations.py - IT STATES ITS CRITERION,  literal occurrence of the id in a Tools/test-*.py file, AND REPORTS 64. FOUR EARLIER ATTEMPTS GAVE 91, 64, 66 AND 56 BECAUSE NONE SAID WHAT CITED MEANT, AND THIS LINE CARRIED THE 91. ***
+# *** THE SCRIPT IS NAMED NOW: python Tools/checks/count-acceptance-citations.py - IT STATES ITS CRITERION, a literal occurrence of the id in a Tools/test-*.py file, AND REPORTS 64. FOUR EARLIER ATTEMPTS GAVE 91, 64, 66 AND 56 BECAUSE NONE SAID WHAT CITED MEANT, AND THIS LINE CARRIED THE 91. ***
 #
 # THE ID IS READ FROM THE DOCUMENT, NOT GUESSED. VERIFIED FOR THIS ONE: the row above is copied from
 # `Spec/06_ACCEPTANCE.md` verbatim.

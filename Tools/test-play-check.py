@@ -7,7 +7,8 @@
 # 'is this row passing?' without a human reading it.
 #
 # *** AND THE SCRIPT IS NAMED NOW, BECAUSE A SCRIPT OVER THE TREE IS NOT A REFERENCE: ***
-#   python Tools/checks/count-acceptance-citations.py`n# IT STATES ITS CRITERION -  literal occurrence of the id in a Tools/test-*.py file - AND REPORTS 64. FOUR
+#   python Tools/checks/count-acceptance-citations.py
+# IT STATES ITS CRITERION - a literal occurrence of the id in a Tools/test-*.py file - AND REPORTS 64. FOUR
 # EARLIER ATTEMPTS GAVE 91, 64, 66 AND 56 BECAUSE NONE OF THEM SAID WHAT CITED MEANT, AND THIS LINE CARRIED
 # THE 91. *** A NUMBER WITHOUT ITS CRITERION IS NOT A MEASUREMENT; IT IS A NUMBER. ***
 #

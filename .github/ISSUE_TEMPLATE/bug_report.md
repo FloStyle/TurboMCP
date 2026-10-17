@@ -3,6 +3,8 @@ name: Bug report
 about: Report incorrect behavior with a minimal reproduction
 ---
 
+Please write in English. Remove credentials and private project data. For vulnerabilities, follow SECURITY.md instead of opening a public issue.
+
 ## Environment
 TurboMCP commit/version, exact Unreal version/build, source or installed distribution, OS and client/harness:
 

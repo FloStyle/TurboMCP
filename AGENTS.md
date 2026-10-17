@@ -9,7 +9,7 @@
 3. Read the returned task, its linked design and the affected contracts in docs/architecture.md.
 4. Implement only work marked `Readiness: ready`. Reconcile imported evidence before implementation.
 
-Use English for all working text. This file is the workflow authority; historical task descriptions and code comments do not override it. ROADMAP.md defines execution order. TODO.md is an inventory, not permission to choose arbitrary work.
+Use English for all working text. Follow [the language policy](docs/language.md) and [security policy](SECURITY.md). This file is the workflow authority; historical task descriptions and code comments do not override it. ROADMAP.md defines execution order. TODO.md is an inventory, not permission to choose arbitrary work.
 
 ## Ownership and scope
 

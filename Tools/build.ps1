@@ -92,7 +92,7 @@ if (-not $NoStop) {
 # CODE WAS COMPILED:
 #
 #     UnrealEngine.CSharp.targets(65,5): error MSB3491: ... fichier
-#     Â« %TEMP%\DotnetDepends-<N>\EpicGames.Build.dll.dep.csv Â». Access to the path
+#     " %TEMP%\DotnetDepends-<N>\EpicGames.Build.dll.dep.csv ". Access to the path
 #     '...\DotnetDepends-<N>\<random>.tmp' is denied.
 #
 # IT IS NOT A PERMISSION ON THAT DIRECTORY, AND THAT WAS MEASURED RATHER THAN ASSUMED: a probe file AND a fresh

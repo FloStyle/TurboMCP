@@ -553,6 +553,13 @@
       "tier": "offline",
       "timeout_seconds": 60,
       "acceptance": "infrastructure-regression"
+    },
+    {
+      "id": "test-language-policy",
+      "path": "Tools/test-language-policy.py",
+      "tier": "offline",
+      "timeout_seconds": 60,
+      "acceptance": "not_mapped"
     }
   ]
 }

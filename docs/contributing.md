@@ -14,7 +14,7 @@
 | Release acceptance | [Tests/acceptance.json](../Tests/acceptance.json) |
 | Release readiness | [release/status.json](../release/status.json) |
 
-Use English for comments, documentation, tasks and commits. `Tools/check-language.py` checks active text and filenames for CJK ideographs. It does not inspect binary asset strings or Git history.
+Use English for comments, documentation, tasks and commits. `Tools/check-language.py` checks candidate text, filenames and encoding. See the [language policy](language.md) for binary, history and semantic review limits.
 
 ## Prepare a task
 
