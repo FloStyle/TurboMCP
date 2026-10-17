@@ -40,7 +40,34 @@ Do not patch engine source, change the pinned baseline, add a competing server, 
 A dependency and build-boundary report, a decision on the smallest integration strategy, and reviewable repair/package task specifications. Preserve the current working 5.8.3 installation.
 
 ## Completion evidence
-Pending. Record exact source and engine identities, commands, exits, evidence locations, tested binary hashes where applicable, changed files and unresolved limits. Integration review is required before marking done.
+Task R16, claim `b419d20cd55b4f28959155084842327d` (owner `dsh-r16-01`). Approved base `af4d0efd97365df0f991f13ef369664b56aa927d`; branch `task/r16-installed-engine`; worktree `C:\ExampleDev\SampleRoot005\r16`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message.
+
+Source identity:
+- Engine 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368` from `engine.lock.json` and the local source checkout.
+- TurboMCP plugin tree at the base: `590661ec45c829264ea1743fccea994edb748092`.
+- Forward target remains R13's recorded 5.9 development revision `5789fc07f00643fb37f85ede9894cd08f1cebcef`; it is not certified by this task.
+
+Claim and shared state:
+- `python Tools/next-task.py --claim dsh-r16-01` exited 0 and assigned R16.
+- `python Tools/task_claim.py --inspect` exited 0. The store is `c:\ExampleDev\turbomcp\.git\turbomcp\task-claims.json`, the shared Git common directory, with active R16 claim `b419d20cd55b4f28959155084842327d` in this worktree. No new claim or base change was made after that check.
+
+Findings:
+- The plugin is one `Editor` module, loading at `PostEngineInit`; descriptor `EnabledByDefault` is false, `CanContainContent` is true and `Installed` is false. Registration uses the public `UToolsetRegistry::RegisterToolsetClass` path from the module loading-phase callback; no engine patch, private manifest API or custom transport is required.
+- The Build.cs declares 35 module dependencies. Production code uses the editor/material/UMG/graph/MCP modules; the commandlets and three development automation tests compile into the same module. `PythonScriptPlugin` is used only by `TurboMCPTestMapCommandlet.cpp`. `AnimGraph`, `Niagara` and `NiagaraEditor` are listed but no include or typed symbol caller was located; `ToolMenus` and `InputCore` likewise have no located direct caller. These are recorded as candidates, not removed.
+- All inspected engine includes resolve to public engine or plugin headers; no `Private/` engine include was found. The plugin's public headers are under `Source/TurboMCP/Public`; private module headers are not exported. Binary exports are the module entry plus `TURBOMCP_API` on `UTurboMCPSettings`, `FTurboMCPMutationTransaction` and `LogTurboMCP`; the four toolset UCLASSes are internal.
+- A full engine rebuild is not required by the plugin source. `Tools/build.ps1` builds `TurboMCPTestEditor Win64 Development`; the plugin compiles as a separate module with `bUseUnity=false`. Historical build evidence at commit `084b76c` (`91c49a6cddc544b8bc0ed9e0d6e3cd28`) reports `Target is up to date`, 0 actions and a reused plugin DLL, with `DirtyDiffPresent: true`; it is not current-base evidence.
+- Packaging requires `RunUAT BuildPlugin` against an exact engine distribution and produces a Win64 Editor package. The producer needs the matching engine and compiler; a Blueprint-only consumer must not need game C++ or engine source. The consumer still needs matching binaries, all descriptor plugins, content and explicit plugin enablement.
+- The smallest supported integration is the current public registry path plus a small compile-time adapter for the 5.9 `FToolset::GetToolsetClass` removal in `TurboMCPCallRecorder.cpp`. Optional development-module extraction is deferred until packaging evidence proves it necessary; no speculative dependency removal was made.
+- Release metadata defect: `DocsURL` and `SupportURL` point at the deleted public repository; no replacement URL was invented. Dependency metadata drift, fixture coupling and the 5.9 recorder compile break are recorded in the boundary report for bounded follow-ups.
+
+Validation:
+- `python Tools/execute-tests.py --profile offline --execute` exited 0. Report: `.local/executions/4eeed91d6dfd4d148b76b59c20deedb5/report.json`; tree digest `addd6bcf5f9739a7cc7dcfe6e1225f52178c4e092a313bfa7c51e9f53d1d8ee4`; suite log `.local/executions/4eeed91d6dfd4d148b76b59c20deedb5/00.log`. All offline suites passed, including `validate-repo`, `check-language`, `test-task-review` and `test-worker-scope`.
+- `python Tools/validate-repo.py` exited 0 before the task evidence was written.
+- No build, editor, engine suite, packaging run, recovery command or installed-engine test was performed. Build evidence is explicitly pending; the integrator supplies it during review.
+
+Changed files: `docs/audit/installed-engine-boundaries.md`, `docs/audit/installed-engine-boundaries.json`, and this Completion evidence only. No plugin code, engine source, dependency, pin, test, task status, TODO, review register or release control was changed.
+
+Unresolved: installed 5.8.3 distribution is absent; the local 5.6 installation lacks `ModelContextProtocol` and `ToolsetRegistry`; no current-base build/provenance, packaged plugin, Blueprint-only clean install or runtime discovery/save/undo proof exists; `NoRedist` has no runtime enforcement in the inspected source; cross-harness engine/port locking and the 5.9 runtime remain unverified. Integration review is required before marking R16 done.
 
 ## Current review
 

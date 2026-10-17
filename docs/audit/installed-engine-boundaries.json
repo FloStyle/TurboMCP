@@ -1,0 +1,692 @@
+{
+  "schema": 1,
+  "task": "R16",
+  "checked_utc_date": "2026-10-17",
+  "base_commit": "af4d0efd97365df0f991f13ef369664b56aa927d",
+  "engine": {
+    "version": "5.8.3",
+    "commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
+    "source": "local source checkout; engine.lock.json"
+  },
+  "plugin": {
+    "tree": "590661ec45c829264ea1743fccea994edb748092",
+    "descriptor": "Plugins/TurboMCP/TurboMCP.uplugin",
+    "build_rule": "Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs",
+    "module": "TurboMCP",
+    "module_type": "Editor",
+    "loading_phase": "PostEngineInit",
+    "can_contain_content": true,
+    "enabled_by_default": false,
+    "explicitly_loaded": false,
+    "installed_flag": false
+  },
+  "evidence_status": {
+    "source_inspection": "complete",
+    "offline_validation": "pending at time of writing; run at task end",
+    "current_base_build": "pending; integrator supplies the supervised baseline build",
+    "installed_5_8_3": "absent",
+    "installed_5_6": "present locally but lacks ModelContextProtocol and ToolsetRegistry",
+    "packaged_plugin": "not run",
+    "blueprint_only_consumer": "not run",
+    "runtime_discovery": "not run",
+    "forward_5_9_runtime": "not run"
+  },
+  "module_dependencies": [
+    {
+      "name": "Core",
+      "build_kind": "public",
+      "production_callers": [
+        "all production sources"
+      ],
+      "fixture_callers": [
+        "all fixtures"
+      ],
+      "header_visibility": "engine public",
+      "installed_evidence": "present in any editor distribution",
+      "classification": "engine-required"
+    },
+    {
+      "name": "CoreUObject",
+      "build_kind": "public",
+      "production_callers": [
+        "all UObject and reflection code"
+      ],
+      "fixture_callers": [
+        "all fixtures"
+      ],
+      "header_visibility": "engine public",
+      "installed_evidence": "present in any editor distribution",
+      "classification": "engine-required"
+    },
+    {
+      "name": "Engine",
+      "build_kind": "public",
+      "production_callers": [
+        "all production sources"
+      ],
+      "fixture_callers": [
+        "all fixtures"
+      ],
+      "header_visibility": "engine public",
+      "installed_evidence": "present in any editor distribution",
+      "classification": "engine-required"
+    },
+    {
+      "name": "AssetRegistry",
+      "build_kind": "private",
+      "production_callers": [
+        "asset and capture tools"
+      ],
+      "fixture_callers": [
+        "kit, acceptance and material commandlets"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "BlueprintEditorLibrary",
+      "build_kind": "private",
+      "production_callers": [
+        "function and graph tools"
+      ],
+      "fixture_callers": [
+        "kit commandlet"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "BlueprintGraph",
+      "build_kind": "private",
+      "production_callers": [
+        "graph tools and K2Node reflection"
+      ],
+      "fixture_callers": [
+        "kit and acceptance commandlets"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "KismetCompiler",
+      "build_kind": "private",
+      "production_callers": [
+        "TurboMCPCompile.cpp",
+        "graph repoint"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "DeveloperSettings",
+      "build_kind": "private",
+      "production_callers": [
+        "UTurboMCPSettings"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "EditorFramework",
+      "build_kind": "private",
+      "production_callers": [
+        "FAssetEditorToolkit in capture"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "EditorScriptingUtilities",
+      "build_kind": "private",
+      "descriptor_plugin": "EditorScriptingUtilities",
+      "production_callers": [
+        "UEditorAssetLibrary::SaveLoadedAsset in compile/save"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public plugin module",
+      "installed_evidence": "plugin is off by default; presence in installed 5.8.3 unverified",
+      "classification": "production-required"
+    },
+    {
+      "name": "EditorSubsystem",
+      "build_kind": "private",
+      "production_callers": [
+        "UAssetEditorSubsystem in capture"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "GraphEditor",
+      "build_kind": "private",
+      "production_callers": [
+        "capture and graph tidy"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "Json",
+      "build_kind": "private",
+      "production_callers": [
+        "JSON parsing and schema/result serialization"
+      ],
+      "fixture_callers": [
+        "commandlets"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "JsonUtilities",
+      "build_kind": "private",
+      "production_callers": [
+        "UObject JSON conversion"
+      ],
+      "fixture_callers": [
+        "commandlets"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "Kismet",
+      "build_kind": "private",
+      "production_callers": [
+        "Blueprint compile path"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "InputCore",
+      "build_kind": "private",
+      "production_callers": [
+        "no direct include or symbol located"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified; keep until a clean build proves it unnecessary",
+      "classification": "transitive-unverified"
+    },
+    {
+      "name": "Slate",
+      "build_kind": "private",
+      "production_callers": [
+        "panel, widget preview and capture UI"
+      ],
+      "fixture_callers": [
+        "panel probe commandlet"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "SlateCore",
+      "build_kind": "private",
+      "production_callers": [
+        "panel, widget preview and capture UI"
+      ],
+      "fixture_callers": [
+        "panel probe commandlet"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "ToolMenus",
+      "build_kind": "private",
+      "production_callers": [
+        "no direct include or symbol located"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified; candidate",
+      "classification": "listed-unused-candidate"
+    },
+    {
+      "name": "UnrealEd",
+      "build_kind": "private",
+      "production_callers": [
+        "editor APIs across production tools"
+      ],
+      "fixture_callers": [
+        "kit, acceptance, material and test-map commandlets"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "ModelContextProtocol",
+      "build_kind": "private",
+      "descriptor_plugin": "ModelContextProtocol",
+      "production_callers": [
+        "registration, server state and analytics"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public plugin module",
+      "installed_evidence": "mandatory; NoRedist and off by default; installed presence unverified",
+      "classification": "production-required"
+    },
+    {
+      "name": "ModelContextProtocolEngine",
+      "build_kind": "private",
+      "descriptor_plugin": "ModelContextProtocol",
+      "production_callers": [
+        "settings and server address"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public plugin module",
+      "installed_evidence": "mandatory; supplied by ModelContextProtocol",
+      "classification": "production-required"
+    },
+    {
+      "name": "ToolsetRegistry",
+      "build_kind": "private",
+      "descriptor_plugin": "ToolsetRegistry",
+      "production_callers": [
+        "registration and call-recorder wrapper"
+      ],
+      "fixture_callers": [
+        "commandlets use registry async results"
+      ],
+      "header_visibility": "public plugin module",
+      "installed_evidence": "mandatory; NoRedist and off by default; installed presence unverified",
+      "classification": "production-required"
+    },
+    {
+      "name": "ImageWrapper",
+      "build_kind": "private",
+      "production_callers": [
+        "PNG capture encoding"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "RenderCore",
+      "build_kind": "private",
+      "production_callers": [
+        "render-target readback in capture"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified; RHI symbols are not re-exported here",
+      "classification": "production-required"
+    },
+    {
+      "name": "UMG",
+      "build_kind": "private",
+      "production_callers": [
+        "widget tree, bindings and preview"
+      ],
+      "fixture_callers": [
+        "kit and acceptance commandlets"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "UMGEditor",
+      "build_kind": "private",
+      "production_callers": [
+        "widget tree, bindings and preview"
+      ],
+      "fixture_callers": [
+        "kit and acceptance commandlets"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "MaterialEditor",
+      "build_kind": "private",
+      "production_callers": [
+        "material tools"
+      ],
+      "fixture_callers": [
+        "material fixture commandlet"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-and-fixture"
+    },
+    {
+      "name": "Projects",
+      "build_kind": "private",
+      "production_callers": [
+        "IPluginManager in trap loading"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "AnalyticsET",
+      "build_kind": "private",
+      "production_callers": [
+        "IAnalyticsProviderET implementation"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public engine module",
+      "installed_evidence": "unverified in installed 5.8.3",
+      "classification": "production-required"
+    },
+    {
+      "name": "SlateInspectorToolset",
+      "build_kind": "private",
+      "descriptor_plugin": "SlateInspectorToolset",
+      "production_callers": [
+        "USlateInspectorToolset::Screenshot in capture"
+      ],
+      "fixture_callers": [],
+      "header_visibility": "public plugin module",
+      "installed_evidence": "required for capture; NoRedist and off by default; installed presence unverified",
+      "classification": "production-required"
+    },
+    {
+      "name": "AnimGraph",
+      "build_kind": "private",
+      "production_callers": [],
+      "fixture_callers": [
+        "none located; TurboMCPKitCommandlet.cpp:2084-2128 says the module is linked for TA-18 but the fixture is not built"
+      ],
+      "header_visibility": "public engine module",
+      "installed_evidence": "no include or symbol reference found",
+      "classification": "listed-unused-candidate"
+    },
+    {
+      "name": "Niagara",
+      "build_kind": "private",
+      "descriptor_plugin": "Niagara",
+      "production_callers": [
+        "none located; capture compares class-name strings only"
+      ],
+      "fixture_callers": [
+        "none located; TA-19 is not built"
+      ],
+      "header_visibility": "public plugin module",
+      "installed_evidence": "descriptor plugin is enabled by default; no typed use found",
+      "classification": "listed-unused-candidate"
+    },
+    {
+      "name": "NiagaraEditor",
+      "build_kind": "private",
+      "descriptor_plugin": "Niagara",
+      "production_callers": [],
+      "fixture_callers": [
+        "none located"
+      ],
+      "header_visibility": "public plugin module",
+      "installed_evidence": "no typed use found",
+      "classification": "listed-unused-candidate"
+    },
+    {
+      "name": "PythonScriptPlugin",
+      "build_kind": "private",
+      "descriptor_plugin": "PythonScriptPlugin",
+      "production_callers": [],
+      "fixture_callers": [
+        "TurboMCPTestMapCommandlet.cpp:19,123"
+      ],
+      "header_visibility": "public plugin module",
+      "installed_evidence": "plugin is off by default; presence unverified",
+      "classification": "fixture-only"
+    }
+  ],
+  "descriptor_plugins": [
+    {
+      "name": "ModelContextProtocol",
+      "provides": [
+        "ModelContextProtocol",
+        "ModelContextProtocolEngine",
+        "editor modules"
+      ],
+      "enabled_by_default": false,
+      "no_redist": true,
+      "role": "mandatory transport and registration"
+    },
+    {
+      "name": "ToolsetRegistry",
+      "provides": [
+        "ToolsetRegistry"
+      ],
+      "enabled_by_default": false,
+      "no_redist": true,
+      "role": "mandatory toolset registry"
+    },
+    {
+      "name": "SlateInspectorToolset",
+      "provides": [
+        "SlateInspectorToolset"
+      ],
+      "enabled_by_default": false,
+      "no_redist": true,
+      "role": "capture screenshot path"
+    },
+    {
+      "name": "Niagara",
+      "provides": [
+        "Niagara",
+        "NiagaraEditor"
+      ],
+      "enabled_by_default": true,
+      "no_redist": false,
+      "role": "descriptor and module dependency; no typed production use located"
+    },
+    {
+      "name": "EditorScriptingUtilities",
+      "provides": [
+        "EditorScriptingUtilities"
+      ],
+      "enabled_by_default": false,
+      "no_redist": false,
+      "role": "save path"
+    },
+    {
+      "name": "PythonScriptPlugin",
+      "provides": [
+        "PythonScriptPlugin"
+      ],
+      "enabled_by_default": false,
+      "no_redist": false,
+      "role": "test-map fixture only"
+    }
+  ],
+  "registration": {
+    "path": "UToolsetRegistry::RegisterToolsetClass",
+    "module_hook": "FCoreDelegates::OnAllModuleLoadingPhasesComplete",
+    "source": "TurboMCPModule.cpp:22-81, TurboMCPToolsets.cpp:355-392",
+    "engine_patch_required": false,
+    "custom_transport": false,
+    "private_manifest_api": false
+  },
+  "build_boundaries": {
+    "full_engine_rebuild": {
+      "required_by_plugin_source": false,
+      "reason": "All used engine headers resolve to public headers; registration and analytics use exported module APIs; no engine source edit is needed.",
+      "exception": "Engine binaries or headers missing/modified would require an engine build, but that is not caused by this plugin."
+    },
+    "plugin_compile": {
+      "command": "Build.bat TurboMCPTestEditor Win64 Development -Project=<project>",
+      "helper": "Tools/build.ps1",
+      "unity": false,
+      "requires_engine_build_and_compiler": true,
+      "implies_engine_rebuild": false
+    },
+    "packaging": {
+      "command": "RunUAT BuildPlugin against an exact engine distribution",
+      "run": false,
+      "producer_requires_compiler": true,
+      "consumer_requires_compiler": false,
+      "target": "Win64 Editor"
+    },
+    "consumer_install": {
+      "copy_path": "Plugins/TurboMCP",
+      "enable_plugin": true,
+      "requires_game_cpp": false,
+      "requires_engine_source": false,
+      "requires_matching_engine_binary": true,
+      "requires_all_descriptor_plugins": true,
+      "runtime_proof": "pending"
+    }
+  },
+  "historical_build_evidence": {
+    "report": ".local/executions/91c49a6cddc544b8bc0ed9e0d6e3cd28/report.json",
+    "commit": "084b76ceb58309ca8d17e996e0e2fa25027051ee",
+    "engine_identity": "396c9f059903aed5fec78ecd3d437a40c6415368",
+    "target": "TurboMCPTestEditor Win64 Development",
+    "result": "Succeeded; Target is up to date; 0 actions",
+    "artifact": "TestProject/Binaries/Win64/UnrealEditor-TurboMCP.dll",
+    "artifact_bytes": 3740672,
+    "artifact_sha256": "6A20846E6ADCD22BB879A1557D93A5BAE6A278A60C9A16AB7174DDC2469902C9",
+    "dirty_diff_present": true,
+    "usable_for_current_base": false
+  },
+  "public_surface": {
+    "module_entry": "IMPLEMENT_MODULE(FTurboMCPModule, TurboMCP)",
+    "exported_symbols": [
+      "UTurboMCPSettings (TURBOMCP_API)",
+      "FTurboMCPMutationTransaction (TURBOMCP_API)",
+      "LogTurboMCP (TURBOMCP_API)"
+    ],
+    "toolset_classes_exported": false,
+    "public_header_root": "Plugins/TurboMCP/Source/TurboMCP/Public",
+    "private_engine_include_found": false,
+    "consumer_cpp_link_required": false,
+    "blueprint_only_import_library_required": false
+  },
+  "blueprint_only_consumer": {
+    "goal": "Copy a matching prebuilt plugin package, enable it, and load it without compiling game C++ or Unreal source.",
+    "requirements": [
+      "Plugin under Plugins/TurboMCP",
+      "Explicit enable because EnabledByDefault is false",
+      "Win64 Editor binary built for the exact engine build and compatible configuration",
+      "All descriptor plugins present in the installed engine",
+      "Content/Traps/EngineToolTraps.json and Resources/Icon128.png included",
+      "No game C++ or engine source compile required on the consumer",
+      "Runtime discovery, calls, save, undo/rollback, shutdown and reload still unproven"
+    ],
+    "blocked_by": [
+      "No installed 5.8.3 distribution",
+      "No packaged plugin",
+      "No Blueprint-only clean-install fixture"
+    ]
+  },
+  "integration_options": [
+    {
+      "option": "direct supported registry registration",
+      "assessment": "Current public path: UToolsetRegistry::RegisterToolsetClass plus public MCP module APIs; no engine patch or custom transport.",
+      "decision": "recommended-smallest-supported"
+    },
+    {
+      "option": "isolated version adapter",
+      "assessment": "Needed for the 5.9 removal of FToolset::GetToolsetClass in TurboMCPCallRecorder.cpp; compile-time adapter, no engine patch.",
+      "decision": "required-follow-up-for-5.9"
+    },
+    {
+      "option": "optional development module extraction",
+      "assessment": "Could separate commandlets, tests and PythonScriptPlugin from the production editor package.",
+      "decision": "defer-until-packaging-evidence"
+    },
+    {
+      "option": "direct per-tool IModelContextProtocolTool registration",
+      "assessment": "Would bypass the toolset registry and duplicate schema/registration behavior.",
+      "decision": "not-preferred"
+    },
+    {
+      "option": "custom transport, replacement server or engine patch",
+      "assessment": "Outside scope and unsafe as a shortcut.",
+      "decision": "rejected"
+    }
+  ],
+  "follow_ups": [
+    {
+      "id": "T16-ADAPTER-1",
+      "scope": "Compile-time adapter in TurboMCPCallRecorder.cpp for 5.8.3 class identity and 5.9 registered-name identity; conditionally compile the removed override.",
+      "acceptance": "Both engines compile; four toolsets wrapped once; start/end records unchanged; unregister/reload leaves no stale handler."
+    },
+    {
+      "id": "T16-DEPS-1",
+      "scope": "Verify listed-but-unused AnimGraph, Niagara, NiagaraEditor, ToolMenus and InputCore with a clean build and symbol search; remove only proven-unused dependencies.",
+      "acceptance": "Clean plugin build with each dependency absent; no production or fixture regression."
+    },
+    {
+      "id": "T16-DEV-1",
+      "scope": "If a prebuilt package cannot require fixture-only dependencies, move commandlets and development automation into a separate editor/development module.",
+      "acceptance": "Production package loads without PythonScriptPlugin; commandlets still runnable from the development build."
+    },
+    {
+      "id": "T16-PKG-1 / R12",
+      "scope": "Build a Win64 Editor package with RunUAT BuildPlugin; install into a fresh Blueprint-only project; test discovery, calls, save, undo/rollback, shutdown and reload.",
+      "acceptance": "Clean install on the exact engine build; producer and consumer requirements recorded; no game C++ or engine source compile."
+    },
+    {
+      "id": "T16-META-1",
+      "scope": "Replace deleted-public-repository DocsURL and SupportURL only after a live publication target exists.",
+      "acceptance": "Valid metadata target recorded; no invented URL."
+    }
+  ],
+  "defects": [
+    {
+      "id": "R16-D1",
+      "defect": "TurboMCP.uplugin DocsURL and SupportURL point at the deleted public repository; MarketplaceURL is empty.",
+      "impact": "Release metadata is broken; no replacement URL is invented.",
+      "owner": "R16-META-1 / release owner",
+      "docs_url": "https://github.com/FloStyle/TurboMCP",
+      "support_url": "https://github.com/FloStyle/TurboMCP/issues",
+      "marketplace_url": ""
+    },
+    {
+      "id": "R16-D2",
+      "defect": "TurboMCP.Build.cs lists AnimGraph, Niagara and NiagaraEditor, while TurboMCPKitCommandlet.cpp says those modules are absent for TA-18/TA-19; no include or typed symbol use was located.",
+      "impact": "Dependency metadata is contradictory and may add unnecessary installed-engine requirements.",
+      "owner": "T16-DEPS-1"
+    },
+    {
+      "id": "R16-D3",
+      "defect": "Six commandlets and three development automation tests compile into the same editor module as production code; PythonScriptPlugin is used only by the test-map commandlet.",
+      "impact": "A production prebuilt package carries fixture-only dependency and binary surface.",
+      "owner": "T16-DEV-1"
+    },
+    {
+      "id": "R16-D4",
+      "defect": "TurboMCPCallRecorder.cpp uses FToolset::GetToolsetClass, removed at the pinned 5.9 target.",
+      "impact": "Forward compile break; requires a small adapter, not an engine patch.",
+      "owner": "T16-ADAPTER-1"
+    }
+  ],
+  "evidence_gaps": [
+    "No installed 5.8.3 distribution; the local installed 5.6 tree lacks ModelContextProtocol and ToolsetRegistry.",
+    "No current-base build or provenance report; the historical report is at 084b76c with a dirty tree.",
+    "No packaged plugin, no Blueprint-only clean install, no runtime discovery/save/undo proof.",
+    "No 5.9 runtime or installed-engine certification; R14/R12 own those.",
+    "Cross-harness engine/port locking remains unverified; the integrator supplies the supervised build.",
+    "NoRedist has no runtime enforcement in the inspected source; installed contents are unknown."
+  ]
+}
