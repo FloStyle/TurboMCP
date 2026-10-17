@@ -36,7 +36,27 @@ Do not expand into another domain. If a prerequisite is absent, record blocked w
 A reviewed specification and evidence record for each confirmed repair, with duplicates linked and unsupported historical claims withdrawn explicitly. This investigation does not authorize implementing every finding.
 
 ## Completion evidence
-Pending. Record source/engine/artifact identity, command, exit, log and remaining limitations. A reviewer must check acceptance before marking done.
+Task R13, claim `452cb2dbb8364466810f876797b06abc` (owner `dsh-r13-01`). Approved base `1aea14e402bcdedce85a25381916e06d707c20e7`; branch `task/r13-native-comparison`; worktree `C:\ExampleDev\SampleRoot005\r13`. Candidate: the commit that contains this evidence; the full SHA is returned in the submission message.
+
+Source identity:
+- Baseline Epic 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368` (local `release` checkout).
+- Pinned comparison target Epic 5.9 development at `5789fc07f00643fb37f85ede9894cd08f1cebcef`.
+- Upstream development head read once on 2026-10-17 with `git ls-remote https://github.com/EpicGames/UnrealEngine.git refs/heads/ue5-main`; it resolved to `5789fc07f00643fb37f85ede9894cd08f1cebcef`, matching the pin. No target drift.
+- TurboMCP approved base plugin tree `590661ec45c829264ea1743fccea994edb748092`; the comparison previously cited `2513a0bbb42604fd3f6427bc7536e61c7822c912`, which is superseded.
+
+Comparison result: each deferred area has an adopt-native, thin-adapter, retain-turbomcp or defer decision with evidence, limitations and maintenance cost in `docs/audit/native-overlap.md` and `.json`. Enum named one-call creation, struct one-call creation/type change/reader safety/preview, and explicit VCS checkout/batch diagnostics are retained. Native enum/struct editing, source-control history/load/changelist, widget-animation lifecycle/bindings and the 5.9 stdio proxy are adopted. Track/key animation parity is deferred because the referenced 5.9 Sequencer toolsets were not found and the 5.8.3 Python animation toolsets are absent at 5.9. A native enum-edit preview is a thin-adapter candidate only if requested. No TurboMCP feature was removed because of a similarly named native tool.
+
+Discovery and availability: the 38-header C++ scan (274 baseline and 392 target declarations) is not exhaustive. R13 also found 598 candidate Python tool declarations in 29 files across 7 toolset plugins at 5.8.3; the engine-shipped Python toolset modules are absent at 5.9. Registration routes also include legacy MCP tool libraries, direct `IModelContextProtocolTool` registration, `MCPClientToolset`, AgentSkill, tool-search meta-tools and 5.9 baked manifests. All native toolsets in scope are source-present only; none is enabled by default, and runtime discovery and installed-distribution availability remain unverified. `bEnableToolSearch` is true in both revisions, so `tools/list` exposes meta-tools rather than every tool.
+
+Validation:
+- `python Tools/execute-tests.py --profile offline --execute`: exit 1. 22 of 23 suites passed, including `validate-repo`, `check-language`, `test-task-review` and `test-worker-scope`. `test-ownership` failed its E03 unreadable-lease check because the runner's captured PowerShell output hit a `UnicodeDecodeError` on byte `0x90`; the failure names no R13 file. Report: `.local/executions/9adfea49139b48ae9fff8c0d4fc1a262/report.json`; suite log: `.local/validation/e9a60b41dfc847c6b23a979ad0994c8f/test-ownership.log`.
+- `python Tools/test-ownership.py` invoked directly: exit 0, `RESULT: PASS`. This is diagnostic evidence only, not a substitute for the failed gate.
+- UTF-8 mode (`PYTHONUTF8=1`) and a UTF-8 console (`chcp 65001`) produced the same E03/`UnicodeDecodeError`; no test or runner file was changed.
+- No Unreal build, editor launch, 5.9 runtime probe or installed-engine inspection was performed, as required for this source-only task.
+
+Unresolved: 5.9 runtime discovery and behavior; installed-engine availability (R16); native struct compile/dirty behavior after edits; exact 5.9 track/key animation equivalents; proxy replay of an in-flight mutation after reconnect; whether a project-defined Python toolset can still be registered at 5.9. Adjacent defects are recorded in `docs/audit/native-overlap.md`; none was repaired.
+
+Changed files: `docs/tool-comparison.md`, `docs/audit/epic-tool-inventory.json`, `docs/audit/native-overlap.md`, `docs/audit/native-overlap.json`, `docs/audit/tool-routing.json`, and this Completion evidence. All 101 routing rows and every `unverified` preference are preserved. A reviewer must check acceptance before marking R13 done.
 
 ## Related findings
 - [ue59-protocol](ue59-protocol.md)

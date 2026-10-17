@@ -1,8 +1,263 @@
 {
-  "schema": 1,
+  "schema": 2,
+  "checked_utc_date": "2026-10-17",
   "baseline_commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
   "target_commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
-  "scope": "Candidate AICallable declarations from headers under Experimental/Toolsets only. Not default-enabled, exhaustive engine-wide, runtime-discovered or behavior-certified. Declaration parser requires R13 review. No engine source bodies included.",
+  "upstream_head": {
+    "ref": "refs/heads/ue5-main",
+    "commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+    "checked_utc_date": "2026-10-17",
+    "matches_comparison_target": true,
+    "method": "git ls-remote https://github.com/EpicGames/UnrealEngine.git refs/heads/ue5-main",
+    "result": "0"
+  },
+  "turbo_mcp_plugin_tree": "590661ec45c829264ea1743fccea994edb748092",
+  "scope": "C++ AICallable declarations from headers under Experimental/Toolsets (38 headers; 274 baseline and 392 target declarations), plus separately discovered registration routes: engine Python toolsets, legacy MCP tool libraries, direct IModelContextProtocolTool registration, MCPClientToolset, AgentSkill, tool-search meta-tools and baked UToolsetRegistryManifest. Candidate declarations, not a default-enabled, exhaustive, runtime-discovered or behavior-certified inventory. No engine source bodies included.",
+  "declaration_counts": {
+    "headers": 38,
+    "epic_5_8_3": 274,
+    "epic_5_9": 392
+  },
+  "python_toolsets": [
+    {
+      "plugin": "AIModuleToolset",
+      "files": 1,
+      "candidate_tools": 7,
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "path": "Engine/Plugins/Experimental/Toolsets/AIModuleToolset/Content/Python",
+      "evidence": "Static scan of decorated Python tool methods, tests excluded. The engine-shipped Content/Python tree under this plugin was not present at 5789fc07f00643fb37f85ede9894cd08f1cebcef."
+    },
+    {
+      "plugin": "AnimationAssistantToolset",
+      "files": 8,
+      "candidate_tools": 319,
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "path": "Engine/Plugins/Experimental/Toolsets/AnimationAssistantToolset/Content/Python",
+      "evidence": "Static scan of decorated Python tool methods, tests excluded. The engine-shipped Content/Python tree under this plugin was not present at 5789fc07f00643fb37f85ede9894cd08f1cebcef."
+    },
+    {
+      "plugin": "ConversationToolset",
+      "files": 1,
+      "candidate_tools": 7,
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "path": "Engine/Plugins/Experimental/Toolsets/ConversationToolset/Content/Python",
+      "evidence": "Static scan of decorated Python tool methods, tests excluded. The engine-shipped Content/Python tree under this plugin was not present at 5789fc07f00643fb37f85ede9894cd08f1cebcef."
+    },
+    {
+      "plugin": "EditorToolset",
+      "files": 16,
+      "candidate_tools": 226,
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python",
+      "evidence": "Static scan of decorated Python tool methods, tests excluded. The engine-shipped Content/Python tree under this plugin was not present at 5789fc07f00643fb37f85ede9894cd08f1cebcef."
+    },
+    {
+      "plugin": "MetaHumanGenerator",
+      "files": 1,
+      "candidate_tools": 9,
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "path": "Engine/Plugins/Experimental/Toolsets/MetaHumanGenerator/Content/Python",
+      "evidence": "Static scan of decorated Python tool methods, tests excluded. The engine-shipped Content/Python tree under this plugin was not present at 5789fc07f00643fb37f85ede9894cd08f1cebcef."
+    },
+    {
+      "plugin": "SequencerAnimMixerToolset",
+      "files": 1,
+      "candidate_tools": 21,
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "path": "Engine/Plugins/Experimental/Toolsets/SequencerAnimMixerToolset/Content/Python",
+      "evidence": "Static scan of decorated Python tool methods, tests excluded. The engine-shipped Content/Python tree under this plugin was not present at 5789fc07f00643fb37f85ede9894cd08f1cebcef."
+    },
+    {
+      "plugin": "StateTreeToolset",
+      "files": 1,
+      "candidate_tools": 9,
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "path": "Engine/Plugins/Experimental/Toolsets/StateTreeToolset/Content/Python",
+      "evidence": "Static scan of decorated Python tool methods, tests excluded. The engine-shipped Content/Python tree under this plugin was not present at 5789fc07f00643fb37f85ede9894cd08f1cebcef."
+    }
+  ],
+  "python_tool_count": 598,
+  "python_tool_files": 29,
+  "registration_routes": [
+    {
+      "route": "C++ UToolsetDefinition with AICallable UFUNCTIONs",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ToolsetRegistry/ToolsetDefinition.h and plugin module StartupModule calls to RegisterToolsetClass",
+      "evidence_5_9": "ToolsetRegistry/ToolsetDefinition.h and UToolsetRegistry::RegisterToolsetClass",
+      "consequence": "Live registration requires the owning plugin to load. A header declaration alone does not make a tool discoverable."
+    },
+    {
+      "route": "Engine Python toolset_registry classes",
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "evidence_5_8_3": "ToolsetRegistry/Content/Python/toolset_registry; 598 candidate declarations in 29 files across 7 toolset plugins",
+      "evidence_5_9": "No engine-shipped Content/Python toolset module under ToolsetRegistry, EditorToolset or AnimationAssistantToolset; GitHub code search finds no toolset_registry Python file",
+      "consequence": "The 38-header scan undercounts 5.8.3 native tools. 5.9 removes the engine-shipped Python toolsets, including the save/checkout helpers."
+    },
+    {
+      "route": "Legacy UModelContextProtocolToolLibrary",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ModelContextProtocolEngine/Public/ModelContextProtocolToolLibrary.h",
+      "evidence_5_9": "ModelContextProtocolEngine/Public/ModelContextProtocolToolLibrary.h",
+      "consequence": "Deprecated Blueprint and data-defined route outside ToolsetRegistry; still a discovery source."
+    },
+    {
+      "route": "Direct IModelContextProtocolTool registration",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ModelContextProtocol/Public/IModelContextProtocolTool.h",
+      "evidence_5_9": "ModelContextProtocol/Public/IModelContextProtocolTool.h",
+      "consequence": "A module can add a tool without a toolset class; not counted by the header scan."
+    },
+    {
+      "route": "MCPClientToolset external-server adapter",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "Toolsets/MCPClientToolset",
+      "evidence_5_9": "Toolsets/MCPClientToolset",
+      "consequence": "Imports tools from local or private MCP servers; another source of discoverable tools."
+    },
+    {
+      "route": "AgentSkill toolset and data assets",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ToolsetRegistry/Public/ToolsetRegistry/AgentSkill.h",
+      "evidence_5_9": "ToolsetRegistry/Public/ToolsetRegistry/AgentSkill.h",
+      "consequence": "Skills are instructions, not tools; the toolset is registered by the subsystem."
+    },
+    {
+      "route": "Tool-search meta-tools",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ModelContextProtocolSettings.h: bEnableToolSearch = true",
+      "evidence_5_9": "ModelContextProtocolSettings.h: bEnableToolSearch = true",
+      "consequence": "By default tools/list exposes list_toolsets, describe_toolset and call_tool, not every toolset tool."
+    },
+    {
+      "route": "Baked UToolsetRegistryManifest",
+      "present_5_8_3": false,
+      "present_5_9": true,
+      "evidence_5_8_3": "No manifest type in the 5.8.3 ToolsetRegistry public headers",
+      "evidence_5_9": "ToolsetRegistryManifest.h and ToolsetManifestBaker.h",
+      "consequence": "Cooked metadata supplement to live registration; not a replacement for plugin enablement."
+    },
+    {
+      "route": "MCP server autostart",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ModelContextProtocolSettings.h: bAutoStartServer = false",
+      "evidence_5_9": "ModelContextProtocolSettings.h: bAutoStartServer = false",
+      "consequence": "Source-present tools are not reachable until the server is started or autostart is enabled."
+    }
+  ],
+  "focus_interfaces": [
+    {
+      "toolset": "User-defined enum authoring",
+      "plugin": "EditorToolset",
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
+      "functions": [
+        "Create(FString FolderPath, FString AssetName) -> UUserDefinedEnum*",
+        "GetEnumerators(UUserDefinedEnum* Enum) -> TArray<FUserDefinedEnumerator>",
+        "AddEnumerator(UUserDefinedEnum* Enum, FString DisplayName) -> FUserDefinedEnumerator",
+        "RemoveEnumerator(UUserDefinedEnum* Enum, int32 Index) -> void",
+        "SetDisplayName(UUserDefinedEnum* Enum, int32 Index, FString DisplayName) -> void",
+        "MoveEnumerator(UUserDefinedEnum* Enum, int32 FromIndex, int32 ToIndex) -> void",
+        "IsBitflags(UUserDefinedEnum* Enum) -> bool",
+        "SetBitflags(UUserDefinedEnum* Enum, bool bEnabled) -> void"
+      ],
+      "availability": {
+        "runtime_discovered": "unverified",
+        "enabled_by_default": false,
+        "enabled_by_default_evidence": "EditorToolset is an engine plugin and omits EnabledByDefault; the engine default for an unspecified engine plugin is disabled.",
+        "installed_distribution": "unverified"
+      }
+    },
+    {
+      "toolset": "User-defined struct authoring",
+      "plugin": "EditorToolset",
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
+      "functions": [
+        "Create(FString FolderPath, FString AssetName) -> UUserDefinedStruct*",
+        "GetTooltip(UUserDefinedStruct* Struct) -> FString",
+        "SetTooltip(UUserDefinedStruct* Struct, FString Tooltip) -> void",
+        "ListVariables(UUserDefinedStruct* Struct) -> TArray<FUserDefinedStructVariableInfo>",
+        "AddVariable(UUserDefinedStruct* Struct, FString TypeName, FUserDefinedStructVariableInfo Spec) -> void",
+        "AddStructVariable(UUserDefinedStruct* Struct, UScriptStruct* StructType, FUserDefinedStructVariableInfo Spec) -> void",
+        "AddObjectVariable(UUserDefinedStruct* Struct, UClass* ObjectClass, FUserDefinedStructVariableInfo Spec) -> void",
+        "RemoveVariable(UUserDefinedStruct* Struct, FString VariableName) -> void",
+        "RenameVariable(UUserDefinedStruct* Struct, FString OldName, FString NewName) -> void",
+        "SetVariableDefaultValue(UUserDefinedStruct* Struct, FString VariableName, FString DefaultValue) -> void",
+        "SetVariableTooltip(UUserDefinedStruct* Struct, FString VariableName, FString Tooltip) -> void",
+        "SetVariableEditableOnInstance(UUserDefinedStruct* Struct, FString VariableName, bool bEditableOnInstance) -> void",
+        "SetVariableSaveGame(UUserDefinedStruct* Struct, FString VariableName, bool bSaveGame) -> void",
+        "MoveVariable(UUserDefinedStruct* Struct, FString VariableName, FString RelativeToName, bool bAbove) -> void"
+      ],
+      "availability": {
+        "runtime_discovered": "unverified",
+        "enabled_by_default": false,
+        "enabled_by_default_evidence": "EditorToolset is an engine plugin and omits EnabledByDefault.",
+        "installed_distribution": "unverified"
+      }
+    },
+    {
+      "toolset": "Asset source control",
+      "plugin": "EditorToolset",
+      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
+      "functions": [
+        "GetAssetSourceControlState(FString AssetPath) -> FAssetSourceControlState",
+        "LoadAssetRevision(FString AssetPath, FString Revision) -> UToolCallAsyncResultString*",
+        "ListAssetRevisions(FString AssetPath) -> UToolCallAsyncResultAssetRevisions*",
+        "CreateChangelist(TArray<FString> AssetPaths, FString Description) -> UToolCallAsyncResultString*"
+      ],
+      "availability": {
+        "runtime_discovered": "unverified",
+        "enabled_by_default": false,
+        "enabled_by_default_evidence": "EditorToolset is an engine plugin and omits EnabledByDefault.",
+        "installed_distribution": "unverified"
+      }
+    },
+    {
+      "toolset": "UMG widget animation",
+      "plugin": "WidgetAnimationToolset",
+      "path": "Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
+      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
+      "functions": [
+        "CreateWidgetAnimation(UWidgetBlueprint* WidgetBlueprint, FName AnimationName, float LengthSeconds = 1.0f) -> FWidgetAnimationInfo",
+        "ListWidgetAnimations(UWidgetBlueprint* WidgetBlueprint) -> TArray<FWidgetAnimationInfo>",
+        "FindWidgetAnimation(UWidgetBlueprint* WidgetBlueprint, FName AnimationName) -> FWidgetAnimationInfo",
+        "RenameWidgetAnimation(UWidgetBlueprint* WidgetBlueprint, UWidgetAnimation* Animation, FName NewName) -> bool",
+        "SetWidgetAnimationDisplayLabel(UWidgetAnimation* Animation, FString DisplayLabel) -> bool",
+        "SetWidgetAnimationLength(UWidgetAnimation* Animation, float LengthSeconds) -> bool",
+        "RemoveWidgetAnimation(UWidgetBlueprint* WidgetBlueprint, UWidgetAnimation* Animation) -> bool",
+        "AddWidgetToAnimation(UWidgetBlueprint* WidgetBlueprint, UWidgetAnimation* Animation, UObject* ObjectToBind) -> FMovieSceneBindingProxy",
+        "GetWidgetAnimationBindings(UWidgetAnimation* Animation) -> TArray<FMovieSceneBindingProxy>",
+        "RemoveWidgetBinding(UWidgetAnimation* Animation, FGuid BindingGuid) -> bool"
+      ],
+      "availability": {
+        "runtime_discovered": "unverified",
+        "enabled_by_default": false,
+        "enabled_by_default_evidence": "WidgetAnimationToolset.uplugin sets EnabledByDefault false.",
+        "installed_distribution": "unverified",
+        "dependencies": [
+          "ToolsetRegistry",
+          "UMGToolSet",
+          "AnimationAssistantToolset"
+        ]
+      }
+    }
+  ],
   "headers": [
     {
       "path": "Engine/Plugins/Experimental/Toolsets/AutomationTestToolset/Source/AutomationTestToolset/Public/AutomationTestToolset.h",

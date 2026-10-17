@@ -1,94 +1,525 @@
 {
-  "schema": 1,
+  "schema": 2,
   "checked_utc_date": "2026-10-17",
-  "baseline_version": "5.8.3",
-  "baseline_commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
-  "target_commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
-  "target_version": "5.9.0-development",
-  "target_supported": false,
-  "refresh_policy": "Recheck target head once at compatibility-task start and before approving overlapping feature work. Pin changes; do not continuously poll or upgrade the baseline automatically.",
+  "baseline": {
+    "version": "5.8.3",
+    "commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
+    "source_root": "engine release branch, local checkout"
+  },
+  "comparison_target": {
+    "version": "5.9.0-development",
+    "commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+    "supported": false
+  },
+  "upstream_head": {
+    "ref": "refs/heads/ue5-main",
+    "commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+    "checked_utc_date": "2026-10-17",
+    "matches_comparison_target": true,
+    "method": "git ls-remote https://github.com/EpicGames/UnrealEngine.git refs/heads/ue5-main",
+    "result": "0"
+  },
+  "turbo_mcp": {
+    "approved_base": "1aea14e402bcdedce85a25381916e06d707c20e7",
+    "plugin_tree": "590661ec45c829264ea1743fccea994edb748092",
+    "previous_plugin_tree": "2513a0bbb42604fd3f6427bc7536e61c7822c912",
+    "previous_plugin_tree_status": "superseded by the approved base; no runtime comparison was performed at either tree"
+  },
+  "enabled_by_default_rule": "Engine plugins are enabled by default only when EnabledByDefault is explicitly true; an absent field and an explicit false both leave an engine plugin disabled. Project plugins are enabled when the field is absent. Source: Engine/Source/Runtime/Projects/Private/PluginManager.cpp:421-435 at 5.8.3.",
+  "installed_distribution_status": "unverified; NoRedist is a descriptor convention and no runtime enforcement was found in the inspected source. R16 owns the installed-engine matrix.",
   "areas": [
     {
-      "area": "enum authoring",
-      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
-      "observed": [
-        "Create",
-        "GetEnumerators",
-        "AddEnumerator",
-        "RemoveEnumerator",
-        "SetDisplayName",
-        "MoveEnumerator",
-        "IsBitflags",
-        "SetBitflags"
-      ],
-      "decision": "Keep 5.8.3 correctness fixes; freeze additional primitive enum authoring until parity of validation, naming/read-back, rollback and compact output is measured.",
-      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
-      "evidence": "pinned_source_interface",
-      "runtime_parity": "unverified"
+      "id": "enum-authoring",
+      "title": "User-defined enum authoring",
+      "baseline_5_8_3": {
+        "source_present": false,
+        "evidence": "No enum authoring header under Engine/Plugins/Experimental/Toolsets and no Python enum tool in the 5.8.3 scan. A missing inspected route is not proof that no engine utility can create an enum."
+      },
+      "target_5_9": {
+        "source_present": true,
+        "plugin": "EditorToolset",
+        "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
+        "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedEnumToolset.h",
+        "interfaces": [
+          "Create(FString FolderPath, FString AssetName) -> UUserDefinedEnum*",
+          "GetEnumerators(UUserDefinedEnum* Enum) -> TArray<FUserDefinedEnumerator>",
+          "AddEnumerator(UUserDefinedEnum* Enum, FString DisplayName) -> FUserDefinedEnumerator",
+          "RemoveEnumerator(UUserDefinedEnum* Enum, int32 Index) -> void",
+          "SetDisplayName(UUserDefinedEnum* Enum, int32 Index, FString DisplayName) -> void",
+          "MoveEnumerator(UUserDefinedEnum* Enum, int32 FromIndex, int32 ToIndex) -> void",
+          "IsBitflags(UUserDefinedEnum* Enum) -> bool",
+          "SetBitflags(UUserDefinedEnum* Enum, bool bEnabled) -> void"
+        ],
+        "availability": {
+          "runtime_discovered": "unverified",
+          "enabled_by_default": false,
+          "enabled_by_default_evidence": "EditorToolset is an engine plugin and omits EnabledByDefault; the engine default for an unspecified engine plugin is disabled.",
+          "installed_distribution": "unverified"
+        },
+        "semantics": [
+          "Create checks the asset registry and uses the enum factory; it creates no enumerators.",
+          "AddEnumerator appends one enumerator, optionally sets its display name, and removes it again when the display name is rejected.",
+          "Edit functions validate indices and raise script errors.",
+          "The inspected file contains no explicit transaction or save call.",
+          "The internal enumerator name is not an input to AddEnumerator or SetDisplayName."
+        ]
+      },
+      "turbo_mcp": {
+        "tools": [
+          "EditTurboMCPEnumAdd",
+          "PreviewTurboMCPEnumAdd"
+        ],
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAdd.cpp",
+        "behaviour": "One call parses Name or Name=Display Name values, validates identifier rules and duplicates, refuses an existing asset, creates through FEnumEditorUtils, sets names through UEnum::SetEnums, and does not save."
+      },
+      "output_cost": {
+        "native": "GetEnumerators returns a structured array with four fields per enumerator.",
+        "turbo_mcp": "Compact text with one line per value plus counts.",
+        "measured": false
+      },
+      "decisions": [
+        {
+          "proposal": "Create an enum with named values in one call",
+          "decision": "retain-turbomcp",
+          "demonstrated_gap": "Native Create makes an empty enum and AddEnumerator controls only the display name; N values require 1+N calls and no preview.",
+          "maintenance_cost": "One C++ file and header coupled to FEnumEditorUtils and UEnum::SetEnums; engine API drift is the main risk.",
+          "limitations": "TurboMCP cannot edit an existing enum and does not save.",
+          "evidence": "UserDefinedEnumToolset.h and TurboMCPEnumAdd.cpp"
+        },
+        {
+          "proposal": "Edit an existing enum (add, remove, move, display name, bitflags)",
+          "decision": "adopt-native",
+          "demonstrated_gap": "TurboMCP has no edit-existing operation.",
+          "maintenance_cost": "None in TurboMCP; track the experimental toolset and its plugin availability.",
+          "limitations": "Native cannot choose an internal enumerator name; no explicit transaction or save was found.",
+          "evidence": "UserDefinedEnumToolset.h and the 5.9 implementation"
+        },
+        {
+          "proposal": "Preview native enum edits",
+          "decision": "thin-adapter",
+          "demonstrated_gap": "No native preview function; a read-only diff over GetEnumerators is small.",
+          "maintenance_cost": "Low, but a version-specific wrapper must track FUserDefinedEnumerator.",
+          "limitations": "No workflow currently requires it; do not build without a concrete request.",
+          "evidence": "UserDefinedEnumToolset.h"
+        }
+      ]
     },
     {
-      "area": "struct authoring",
-      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
-      "observed": [
-        "Create",
-        "ListVariables",
-        "AddVariable",
-        "AddStructVariable",
-        "AddObjectVariable",
-        "RemoveVariable",
-        "RenameVariable",
-        "SetVariableDefaultValue"
-      ],
-      "decision": "Compare native primitives before expanding TurboMCP struct authoring. Existing field syntax, dependency reporting and safety requirements may remain useful; no equivalence assumed.",
-      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
-      "evidence": "pinned_source_interface",
-      "runtime_parity": "unverified"
+      "id": "struct-authoring",
+      "title": "User-defined struct authoring",
+      "baseline_5_8_3": {
+        "source_present": false,
+        "evidence": "No struct authoring header under Engine/Plugins/Experimental/Toolsets and no Python struct tool in the 5.8.3 scan."
+      },
+      "target_5_9": {
+        "source_present": true,
+        "plugin": "EditorToolset",
+        "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
+        "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/UserDefinedStructToolset.h",
+        "interfaces": [
+          "Create(FString FolderPath, FString AssetName) -> UUserDefinedStruct*",
+          "GetTooltip(UUserDefinedStruct* Struct) -> FString",
+          "SetTooltip(UUserDefinedStruct* Struct, FString Tooltip) -> void",
+          "ListVariables(UUserDefinedStruct* Struct) -> TArray<FUserDefinedStructVariableInfo>",
+          "AddVariable(UUserDefinedStruct* Struct, FString TypeName, FUserDefinedStructVariableInfo Spec) -> void",
+          "AddStructVariable(UUserDefinedStruct* Struct, UScriptStruct* StructType, FUserDefinedStructVariableInfo Spec) -> void",
+          "AddObjectVariable(UUserDefinedStruct* Struct, UClass* ObjectClass, FUserDefinedStructVariableInfo Spec) -> void",
+          "RemoveVariable(UUserDefinedStruct* Struct, FString VariableName) -> void",
+          "RenameVariable(UUserDefinedStruct* Struct, FString OldName, FString NewName) -> void",
+          "SetVariableDefaultValue(UUserDefinedStruct* Struct, FString VariableName, FString DefaultValue) -> void",
+          "SetVariableTooltip(UUserDefinedStruct* Struct, FString VariableName, FString Tooltip) -> void",
+          "SetVariableEditableOnInstance(UUserDefinedStruct* Struct, FString VariableName, bool bEditableOnInstance) -> void",
+          "SetVariableSaveGame(UUserDefinedStruct* Struct, FString VariableName, bool bSaveGame) -> void",
+          "MoveVariable(UUserDefinedStruct* Struct, FString VariableName, FString RelativeToName, bool bAbove) -> void"
+        ],
+        "availability": {
+          "runtime_discovered": "unverified",
+          "enabled_by_default": false,
+          "enabled_by_default_evidence": "EditorToolset is an engine plugin and omits EnabledByDefault.",
+          "installed_distribution": "unverified"
+        },
+        "semantics": [
+          "Create installs one default bool variable; it does not accept a field list.",
+          "AddVariableWithSpec applies all fields of a variable and rolls the new variable back if a later field fails.",
+          "ListVariables returns name, element type, container type, default, tooltip, editable-on-instance and savegame.",
+          "The inspected file contains no explicit transaction, compile or save call."
+        ]
+      },
+      "turbo_mcp": {
+        "tools": [
+          "EditTurboMCPStructNew",
+          "EditTurboMCPStructFields",
+          "PreviewTurboMCPStructNew",
+          "PreviewTurboMCPStructFields"
+        ],
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp",
+        "behaviour": "Compact Name: Type dialect with containers and typed references, type change, defaults, tooltips, categories, reorder, removal with a loaded-reader count, one-transaction creation, explicit compile and package dirtying, and a shared preview plan."
+      },
+      "output_cost": {
+        "native": "ListVariables returns a structured array with six fields per variable.",
+        "turbo_mcp": "One line per field plus counts and a read-back; no byte measurement.",
+        "measured": false
+      },
+      "decisions": [
+        {
+          "proposal": "Create a struct from a compact field list with preview",
+          "decision": "retain-turbomcp",
+          "demonstrated_gap": "Native creation installs one default bool; each variable is a separate call and there is no field-list input or preview.",
+          "maintenance_cost": "High; a large C++ unit coupled to FStructureEditorUtils and engine compile/dirty behavior.",
+          "limitations": "The preview and edit share a plan, but neither is runtime-certified.",
+          "evidence": "UserDefinedStructToolset.h and TurboMCPStruct.cpp"
+        },
+        {
+          "proposal": "Expand variable authoring to flags, rename, containers and object/struct types",
+          "decision": "adopt-native",
+          "demonstrated_gap": "TurboMCP lacks rename and the editable-on-instance/savegame flags; native covers them.",
+          "maintenance_cost": "None in TurboMCP for the adopted features.",
+          "limitations": "TurboMCP already supports containers and typed references, so adopt only the missing coverage; do not duplicate it.",
+          "evidence": "UserDefinedStructToolset.h"
+        },
+        {
+          "proposal": "Change a variable type, report loaded readers, or preview field changes",
+          "decision": "retain-turbomcp",
+          "demonstrated_gap": "Native has no type-change, reader-count or preview function.",
+          "maintenance_cost": "High; type change and reader counting depend on engine utilities and loaded assets.",
+          "limitations": "The reader count is a snapshot, not a guarantee that a later compile succeeds.",
+          "evidence": "UserDefinedStructToolset.h and TurboMCPStruct.cpp"
+        }
+      ]
     },
     {
-      "area": "source control",
-      "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
-      "observed": [
-        "GetAssetSourceControlState",
-        "LoadAssetRevision",
-        "ListAssetRevisions",
-        "CreateChangelist"
-      ],
-      "decision": "Do not build duplicate history/changelist primitives. Preserve explicit save/checkout outcomes; native presence does not establish provider behavior or write gating parity.",
-      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
-      "evidence": "pinned_source_interface",
-      "runtime_parity": "unverified"
+      "id": "source-control",
+      "title": "Asset source control",
+      "baseline_5_8_3": {
+        "source_present": true,
+        "evidence": "Python AssetTools exposes can_edit_asset, is_checked_out, is_dirty and save_assets; write_file checks out a text file. No asset checkout, revision history or changelist tool was found."
+      },
+      "target_5_9": {
+        "source_present": true,
+        "plugin": "EditorToolset",
+        "path": "Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
+        "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/EditorToolset/Source/EditorToolset/Private/SourceControlToolset.h",
+        "interfaces": [
+          "GetAssetSourceControlState(FString AssetPath) -> FAssetSourceControlState",
+          "LoadAssetRevision(FString AssetPath, FString Revision) -> UToolCallAsyncResultString*",
+          "ListAssetRevisions(FString AssetPath) -> UToolCallAsyncResultAssetRevisions*",
+          "CreateChangelist(TArray<FString> AssetPaths, FString Description) -> UToolCallAsyncResultString*"
+        ],
+        "availability": {
+          "runtime_discovered": "unverified",
+          "enabled_by_default": false,
+          "enabled_by_default_evidence": "EditorToolset is an engine plugin and omits EnabledByDefault.",
+          "installed_distribution": "unverified"
+        },
+        "semantics": [
+          "GetAssetSourceControlState reports tracked, can-edit and checked-out-by for one asset.",
+          "A disabled provider or a failed state refresh returns the default state instead of an error; the state fails open.",
+          "LoadAssetRevision loads a read-only historical package and keeps it until garbage collection.",
+          "ListAssetRevisions returns newest-first provider history; CreateChangelist requires a provider that uses changelists and assets with pending work.",
+          "No checkout, save or dirty-state function is present in this toolset."
+        ]
+      },
+      "turbo_mcp": {
+        "tools": [
+          "ReadTurboMCPVcsState",
+          "PreviewTurboMCPVcsCheckout",
+          "EditTurboMCPVcsCheckout"
+        ],
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+        "behaviour": "Reports provider name and capability flags, per-asset state, per-asset refusal or unknown state, and the provider's own checkout result. It never writes an asset file."
+      },
+      "output_cost": {
+        "native": "State is three fields for one asset; revision history is six fields per revision.",
+        "turbo_mcp": "A long text report with provider facts and about nine state lines per asset.",
+        "measured": false
+      },
+      "decisions": [
+        {
+          "proposal": "Explicit asset checkout with a preview",
+          "decision": "retain-turbomcp",
+          "demonstrated_gap": "Native 5.9 has no checkout function; 5.8.3 Python checks out only text files written through write_file.",
+          "maintenance_cost": "Two C++ files and a header repeat provider gating and result reporting.",
+          "limitations": "Verbose output; no history or changelist; no save.",
+          "evidence": "SourceControlToolset.h, asset.py and TurboMCPSourceControl.cpp"
+        },
+        {
+          "proposal": "Revision history, historical revision load, changelist creation",
+          "decision": "adopt-native",
+          "demonstrated_gap": "TurboMCP has no equivalent.",
+          "maintenance_cost": "None; native 5.9 owns the feature.",
+          "limitations": "Unavailable on the 5.8.3 baseline; the functions are asynchronous and provider-specific.",
+          "evidence": "SourceControlToolset.h"
+        },
+        {
+          "proposal": "Simple single-asset editability or checkout state",
+          "decision": "adopt-native",
+          "demonstrated_gap": "Native provides a single-asset state or boolean; TurboMCP's batch report is heavier.",
+          "maintenance_cost": "None for the check itself.",
+          "limitations": "The 5.9 state fails open, so it must not be used where an unknown measurement must stay distinct from not-tracked.",
+          "evidence": "SourceControlToolset.cpp and asset.py"
+        },
+        {
+          "proposal": "Batch diagnostic source-control state",
+          "decision": "retain-turbomcp",
+          "demonstrated_gap": "Native has no batch equivalent and collapses unknowns.",
+          "maintenance_cost": "High; provider gating and per-asset refusal reporting are duplicated.",
+          "limitations": "Long output and no history.",
+          "evidence": "TurboMCPSourceControl.cpp"
+        }
+      ]
     },
     {
-      "area": "widget animation",
-      "path": "Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
-      "observed": [
-        "CreateWidgetAnimation",
-        "ListWidgetAnimations",
-        "FindWidgetAnimation",
-        "RenameWidgetAnimation",
-        "SetWidgetAnimationLength",
-        "RemoveWidgetAnimation",
-        "AddWidgetToAnimation",
-        "GetWidgetAnimationBindings"
-      ],
-      "decision": "Defer broad animation authoring. Measure native lifecycle/binding coverage before considering a thin workflow adapter; these names do not prove arbitrary track/key editing support.",
-      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
-      "evidence": "pinned_source_interface",
-      "runtime_parity": "unverified"
+      "id": "widget-animation",
+      "title": "UMG widget animation",
+      "baseline_5_8_3": {
+        "source_present": false,
+        "evidence": "No UMG-specific widget-animation toolset. The Python AnimationAssistantToolset has 319 candidate declarations for Sequencer, keyframing, control rig and conditions, but no UMG lifecycle or binding tool was found."
+      },
+      "target_5_9": {
+        "source_present": true,
+        "plugin": "WidgetAnimationToolset",
+        "path": "Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
+        "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/Toolsets/WidgetAnimationToolset/Source/WidgetAnimationToolset/Private/WidgetAnimationToolset.h",
+        "interfaces": [
+          "CreateWidgetAnimation(UWidgetBlueprint* WidgetBlueprint, FName AnimationName, float LengthSeconds = 1.0f) -> FWidgetAnimationInfo",
+          "ListWidgetAnimations(UWidgetBlueprint* WidgetBlueprint) -> TArray<FWidgetAnimationInfo>",
+          "FindWidgetAnimation(UWidgetBlueprint* WidgetBlueprint, FName AnimationName) -> FWidgetAnimationInfo",
+          "RenameWidgetAnimation(UWidgetBlueprint* WidgetBlueprint, UWidgetAnimation* Animation, FName NewName) -> bool",
+          "SetWidgetAnimationDisplayLabel(UWidgetAnimation* Animation, FString DisplayLabel) -> bool",
+          "SetWidgetAnimationLength(UWidgetAnimation* Animation, float LengthSeconds) -> bool",
+          "RemoveWidgetAnimation(UWidgetBlueprint* WidgetBlueprint, UWidgetAnimation* Animation) -> bool",
+          "AddWidgetToAnimation(UWidgetBlueprint* WidgetBlueprint, UWidgetAnimation* Animation, UObject* ObjectToBind) -> FMovieSceneBindingProxy",
+          "GetWidgetAnimationBindings(UWidgetAnimation* Animation) -> TArray<FMovieSceneBindingProxy>",
+          "RemoveWidgetBinding(UWidgetAnimation* Animation, FGuid BindingGuid) -> bool"
+        ],
+        "availability": {
+          "runtime_discovered": "unverified",
+          "enabled_by_default": false,
+          "enabled_by_default_evidence": "WidgetAnimationToolset.uplugin sets EnabledByDefault false.",
+          "installed_distribution": "unverified",
+          "dependencies": [
+            "ToolsetRegistry",
+            "UMGToolSet",
+            "AnimationAssistantToolset"
+          ]
+        },
+        "semantics": [
+          "Mutations use FScopedTransaction; the binding path compiles the Widget Blueprint when a generated class is missing.",
+          "FindWidgetAnimation returns empty info when the name is not found.",
+          "No save call is present.",
+          "The header refers to SequencerTools, SequencerKeyframingTools and SequencerConditionTools; no such toolset was found in the pinned 5.9 tree."
+        ]
+      },
+      "turbo_mcp": {
+        "tools": [],
+        "path": "",
+        "behaviour": "No widget-animation tool. TurboMCP widget tools cover trees, bindings, retargeting, variables and previews, not animation."
+      },
+      "output_cost": {
+        "native": "Animation info is five fields per animation; bindings are proxy arrays.",
+        "turbo_mcp": "Not applicable; no animation tool.",
+        "measured": false
+      },
+      "decisions": [
+        {
+          "proposal": "Widget-animation lifecycle and bindings",
+          "decision": "adopt-native",
+          "demonstrated_gap": "TurboMCP has no animation lifecycle or binding tool; native 5.9 covers it.",
+          "maintenance_cost": "None; do not add a duplicate.",
+          "limitations": "Plugin explicitly disabled by default; track/key coverage is unresolved; runtime unverified.",
+          "evidence": "WidgetAnimationToolset.h and .uplugin"
+        },
+        {
+          "proposal": "Widget-animation track and key authoring",
+          "decision": "defer",
+          "demonstrated_gap": "The referenced 5.9 Sequencer toolsets are absent; the 5.8.3 Python animation toolsets are removed at 5.9.",
+          "maintenance_cost": "Potentially high if TurboMCP duplicated animation authoring before 5.9 parity is established.",
+          "limitations": "Exact native equivalents are unresolved; do not infer them from the header comment.",
+          "evidence": "WidgetAnimationToolset.h, 5.9 Toolsets tree and 5.8.3 AnimationAssistantToolset Content/Python"
+        }
+      ]
     },
     {
-      "area": "MCP stdio bridge",
-      "path": "Engine/Plugins/Experimental/ModelContextProtocol/Extras/Proxy/README.md",
-      "observed": [
-        "stdio bridge",
-        "upstream reconnect",
-        "tool-list change notification",
-        "explicit mcp-json path"
-      ],
-      "decision": "Do not develop a competing proxy. Assess the native bridge for the harness; preserve client unknown-mutation-outcome semantics and never assume reconnect authorizes replay.",
-      "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/ModelContextProtocol/Extras/Proxy/README.md",
-      "evidence": "pinned_source_interface",
-      "runtime_parity": "unverified"
+      "id": "mcp-stdio-proxy",
+      "title": "MCP stdio proxy",
+      "baseline_5_8_3": {
+        "source_present": false,
+        "evidence": "No Extras/Proxy directory under ModelContextProtocol at 5.8.3."
+      },
+      "target_5_9": {
+        "source_present": true,
+        "plugin": "ModelContextProtocol (Extras, not a plugin)",
+        "path": "Engine/Plugins/Experimental/ModelContextProtocol/Extras/Proxy/README.md",
+        "url": "https://github.com/EpicGames/UnrealEngine/blob/5789fc07f00643fb37f85ede9894cd08f1cebcef/Engine/Plugins/Experimental/ModelContextProtocol/Extras/Proxy/README.md",
+        "interfaces": [
+          "unreal_mcp_proxy install",
+          "unreal_mcp_proxy uninstall",
+          "--mcp-json PATH"
+        ],
+        "availability": {
+          "runtime_discovered": "not applicable; manually installed stdio process",
+          "enabled_by_default": false,
+          "installed_distribution": "unverified"
+        },
+        "semantics": [
+          "Answers initialize locally, connects lazily upstream, and reconnects on session loss.",
+          "Emits notifications/tools/list_changed on upstream reconnect.",
+          "Rewrites .mcp.json and can be clobbered by an editor integration that writes the same file.",
+          "In-flight mutation replay across reconnect is not documented."
+        ]
+      },
+      "turbo_mcp": {
+        "tools": [],
+        "path": "",
+        "behaviour": "No proxy implementation."
+      },
+      "output_cost": {
+        "native": "Adds one local process hop; no latency measurement.",
+        "turbo_mcp": "Not applicable.",
+        "measured": false
+      },
+      "decisions": [
+        {
+          "proposal": "Compete with the native stdio proxy",
+          "decision": "adopt-native",
+          "demonstrated_gap": "Native 5.9 provides the bridge; TurboMCP has none.",
+          "maintenance_cost": "None; do not build a competing proxy.",
+          "limitations": "Manual install and configuration rewrite; reconnect must not be read as replay permission.",
+          "evidence": "Extras/Proxy/README.md"
+        },
+        {
+          "proposal": "Integrate the proxy into TurboMCP guidance",
+          "decision": "defer",
+          "demonstrated_gap": "No runtime harness probe was run.",
+          "maintenance_cost": "Low for documentation, but it must track the proxy's install format.",
+          "limitations": "Preserve the client's unknown-mutation-outcome semantics.",
+          "evidence": "Extras/Proxy/README.md and Tools/tmcp.py"
+        }
+      ]
     }
+  ],
+  "registration_routes": [
+    {
+      "route": "C++ UToolsetDefinition with AICallable UFUNCTIONs",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ToolsetRegistry/ToolsetDefinition.h and plugin module StartupModule calls to RegisterToolsetClass",
+      "evidence_5_9": "ToolsetRegistry/ToolsetDefinition.h and UToolsetRegistry::RegisterToolsetClass",
+      "consequence": "Live registration requires the owning plugin to load. A header declaration alone does not make a tool discoverable."
+    },
+    {
+      "route": "Engine Python toolset_registry classes",
+      "present_5_8_3": true,
+      "present_5_9": false,
+      "evidence_5_8_3": "ToolsetRegistry/Content/Python/toolset_registry; 598 candidate declarations in 29 files across 7 toolset plugins",
+      "evidence_5_9": "No engine-shipped Content/Python toolset module under ToolsetRegistry, EditorToolset or AnimationAssistantToolset; GitHub code search finds no toolset_registry Python file",
+      "consequence": "The 38-header scan undercounts 5.8.3 native tools. 5.9 removes the engine-shipped Python toolsets, including the save/checkout helpers."
+    },
+    {
+      "route": "Legacy UModelContextProtocolToolLibrary",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ModelContextProtocolEngine/Public/ModelContextProtocolToolLibrary.h",
+      "evidence_5_9": "ModelContextProtocolEngine/Public/ModelContextProtocolToolLibrary.h",
+      "consequence": "Deprecated Blueprint and data-defined route outside ToolsetRegistry; still a discovery source."
+    },
+    {
+      "route": "Direct IModelContextProtocolTool registration",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ModelContextProtocol/Public/IModelContextProtocolTool.h",
+      "evidence_5_9": "ModelContextProtocol/Public/IModelContextProtocolTool.h",
+      "consequence": "A module can add a tool without a toolset class; not counted by the header scan."
+    },
+    {
+      "route": "MCPClientToolset external-server adapter",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "Toolsets/MCPClientToolset",
+      "evidence_5_9": "Toolsets/MCPClientToolset",
+      "consequence": "Imports tools from local or private MCP servers; another source of discoverable tools."
+    },
+    {
+      "route": "AgentSkill toolset and data assets",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ToolsetRegistry/Public/ToolsetRegistry/AgentSkill.h",
+      "evidence_5_9": "ToolsetRegistry/Public/ToolsetRegistry/AgentSkill.h",
+      "consequence": "Skills are instructions, not tools; the toolset is registered by the subsystem."
+    },
+    {
+      "route": "Tool-search meta-tools",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ModelContextProtocolSettings.h: bEnableToolSearch = true",
+      "evidence_5_9": "ModelContextProtocolSettings.h: bEnableToolSearch = true",
+      "consequence": "By default tools/list exposes list_toolsets, describe_toolset and call_tool, not every toolset tool."
+    },
+    {
+      "route": "Baked UToolsetRegistryManifest",
+      "present_5_8_3": false,
+      "present_5_9": true,
+      "evidence_5_8_3": "No manifest type in the 5.8.3 ToolsetRegistry public headers",
+      "evidence_5_9": "ToolsetRegistryManifest.h and ToolsetManifestBaker.h",
+      "consequence": "Cooked metadata supplement to live registration; not a replacement for plugin enablement."
+    },
+    {
+      "route": "MCP server autostart",
+      "present_5_8_3": true,
+      "present_5_9": true,
+      "evidence_5_8_3": "ModelContextProtocolSettings.h: bAutoStartServer = false",
+      "evidence_5_9": "ModelContextProtocolSettings.h: bAutoStartServer = false",
+      "consequence": "Source-present tools are not reachable until the server is started or autostart is enabled."
+    }
+  ],
+  "adjacent_defects": [
+    {
+      "defect": "5.9 WidgetAnimationToolset header claims SequencerTools, SequencerKeyframingTools and SequencerConditionTools work on widget animations, but those toolsets are absent from the pinned 5.9 tree.",
+      "impact": "Track and key coverage cannot be claimed; track/key parity remains unresolved.",
+      "owner": "R13/R14 review"
+    },
+    {
+      "defect": "5.9 GetAssetSourceControlState fails open when the provider is disabled or a refresh fails.",
+      "impact": "An unknown measurement is reported as not tracked and editable.",
+      "owner": "R04/R14 review"
+    },
+    {
+      "defect": "5.9 removes the engine Python AssetTools save/checkout/dirty helpers without a replacement save or checkout tool in the pinned C++ toolsets.",
+      "impact": "The 5.9 save and checkout path is unverified; do not assume parity.",
+      "owner": "R16/R14 review"
+    },
+    {
+      "defect": "The prior native-overlap list named 8 struct functions; the pinned header declares 14.",
+      "impact": "Earlier coverage claims understated native struct authoring.",
+      "owner": "R13 evidence correction"
+    },
+    {
+      "defect": "The comparison cited TurboMCP plugin tree 2513a0b while the approved base builds 590661e.",
+      "impact": "Evidence identity was stale; corrected in this task.",
+      "owner": "R13 evidence correction"
+    },
+    {
+      "defect": "NoRedist is present in descriptors but no runtime enforcement was found in the inspected source.",
+      "impact": "Installed-distribution absence cannot be inferred from the descriptor alone.",
+      "owner": "R16"
+    }
+  ],
+  "refresh_triggers": [
+    "ue5-main moves from 5789fc07f00643fb37f85ede9894cd08f1cebcef",
+    "Any of the five pinned headers or their plugin descriptors changes",
+    "The 5.8.3 or 5.9 Python Content/Python toolset trees change",
+    "bEnableToolSearch, bAutoStartServer or EnabledByDefault changes",
+    "The UToolsetRegistryManifest bake format or RegisterToolsetClass lifecycle changes",
+    "A 5.9 runtime becomes available for R14 probes",
+    "The TurboMCP plugin tree moves from 590661ec45c829264ea1743fccea994edb748092",
+    "An installed engine is inspected under R16"
+  ],
+  "unresolved": [
+    "No 5.9 runtime or installed engine was available; runtime discovery, undo, save and failure-state behavior are unverified.",
+    "Native enum internal-name control is absent from the inspected 5.9 toolset.",
+    "Native struct compile and dirty behavior after edits was not traced.",
+    "Track and key authoring for 5.9 widget animations is unresolved.",
+    "Proxy behavior for an in-flight mutation across reconnect is not documented.",
+    "Whether a project-defined Python toolset can still be registered in 5.9 through reflected APIs is unverified."
   ]
 }

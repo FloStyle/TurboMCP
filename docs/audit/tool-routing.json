@@ -2,7 +2,7 @@
   "schema": 1,
   "baseline_commit": "396c9f059903aed5fec78ecd3d437a40c6415368",
   "target_commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
-  "plugin_tree": "2513a0bbb42604fd3f6427bc7536e61c7822c912",
+  "plugin_tree": "590661ec45c829264ea1743fccea994edb748092",
   "tools": [
     {
       "tool": "EditTurboMCPBatchEdit",
@@ -92,15 +92,31 @@
       "tool": "EditTurboMCPEnumAdd",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "no-native-tool-found",
+        "equivalent_tools": [],
+        "source_notes": "No enum authoring tool in the 38-header C++ scan or the 5.8.3 Python toolset scan."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "UserDefinedEnumToolset.Create",
+          "UserDefinedEnumToolset.AddEnumerator",
+          "UserDefinedEnumToolset.SetDisplayName"
+        ],
+        "source_notes": "Native Create makes an empty enum; AddEnumerator controls display names only and needs one call per value."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "EditTurboMCPFunctionAdd",
@@ -414,29 +430,68 @@
       "tool": "EditTurboMCPStructFields",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "no-native-tool-found",
+        "equivalent_tools": [],
+        "source_notes": "No struct field editing tool in the 5.8.3 scan."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "UserDefinedStructToolset.ListVariables",
+          "UserDefinedStructToolset.AddVariable",
+          "UserDefinedStructToolset.RemoveVariable",
+          "UserDefinedStructToolset.RenameVariable",
+          "UserDefinedStructToolset.MoveVariable",
+          "UserDefinedStructToolset.SetVariableDefaultValue",
+          "UserDefinedStructToolset.SetVariableTooltip",
+          "UserDefinedStructToolset.SetVariableEditableOnInstance",
+          "UserDefinedStructToolset.SetVariableSaveGame"
+        ],
+        "source_notes": "Native covers flags and rename but has no type-change, reader-count or preview operation."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "EditTurboMCPStructNew",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "no-native-tool-found",
+        "equivalent_tools": [],
+        "source_notes": "No struct authoring tool in the 38-header C++ scan or the 5.8.3 Python toolset scan."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "UserDefinedStructToolset.Create",
+          "UserDefinedStructToolset.AddVariable",
+          "UserDefinedStructToolset.AddStructVariable",
+          "UserDefinedStructToolset.AddObjectVariable"
+        ],
+        "source_notes": "Native Create installs one default bool and each variable is a separate call; no field-list input or preview."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "EditTurboMCPTrace",
@@ -470,15 +525,29 @@
       "tool": "EditTurboMCPVcsCheckout",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "no-native-tool-found",
+        "equivalent_tools": [],
+        "source_notes": "No asset checkout tool; write_file checks out text files only."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "SourceControlToolset.GetAssetSourceControlState"
+        ],
+        "source_notes": "Native has state but no checkout operation; no explicit save or dirty tool was found in the pinned 5.9 toolsets."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "EditTurboMCPWidgetBindAdd",
@@ -624,15 +693,29 @@
       "tool": "PreviewTurboMCPEnumAdd",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "no-native-tool-found",
+        "equivalent_tools": [],
+        "source_notes": "No enum preview tool in the 5.8.3 scan."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "UserDefinedEnumToolset.GetEnumerators"
+        ],
+        "source_notes": "Native has a read function but no preview or diff of a planned edit."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "PreviewTurboMCPGraphAppend",
@@ -904,29 +987,57 @@
       "tool": "PreviewTurboMCPStructFields",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "no-native-tool-found",
+        "equivalent_tools": [],
+        "source_notes": "No struct field preview in the 5.8.3 scan."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "UserDefinedStructToolset.ListVariables"
+        ],
+        "source_notes": "Native can list variables but does not preview a planned edit or report loaded readers."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "PreviewTurboMCPStructNew",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "no-native-tool-found",
+        "equivalent_tools": [],
+        "source_notes": "No struct creation preview in the 5.8.3 scan."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "UserDefinedStructToolset.ListVariables"
+        ],
+        "source_notes": "Native can read a struct after creation but has no creation preview."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "PreviewTurboMCPToolset",
@@ -960,15 +1071,32 @@
       "tool": "PreviewTurboMCPVcsCheckout",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "AssetTools.can_edit_asset",
+          "AssetTools.is_checked_out"
+        ],
+        "source_notes": "Native has state booleans but no asset checkout preview."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "SourceControlToolset.GetAssetSourceControlState"
+        ],
+        "source_notes": "Native has state but no checkout operation or preview."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "PreviewTurboMCPWidgetRetarget",
@@ -1394,15 +1522,32 @@
       "tool": "ReadTurboMCPVcsState",
       "family": "asset-and-data",
       "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "AssetTools.can_edit_asset",
+          "AssetTools.is_checked_out"
+        ],
+        "source_notes": "Python AssetTools exposes two single-asset booleans; no batch state, provider capability or refusal report."
       },
       "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
+        "status": "partial-native-tools-found",
+        "equivalent_tools": [
+          "SourceControlToolset.GetAssetSourceControlState"
+        ],
+        "source_notes": "Single-asset state only; a disabled provider or failed refresh fails open instead of reporting unknown."
       },
       "preference": "unverified",
-      "evidence": []
+      "evidence": [
+        {
+          "kind": "source-interface-comparison",
+          "task": "R13",
+          "baseline": "396c9f059903aed5fec78ecd3d437a40c6415368",
+          "target": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+          "record": "docs/audit/native-overlap.json",
+          "runtime_parity": "unverified"
+        }
+      ],
+      "runtime_parity": "unverified"
     },
     {
       "tool": "ReadTurboMCPWidgetTree",
@@ -1418,5 +1563,17 @@
       "preference": "unverified",
       "evidence": []
     }
-  ]
+  ],
+  "source_comparison": {
+    "task": "R13",
+    "checked_utc_date": "2026-10-17",
+    "upstream_head_commit": "5789fc07f00643fb37f85ede9894cd08f1cebcef",
+    "upstream_head_matches_target": true,
+    "preference_rule": "All preferences remain unverified until R04 supplies accepted runtime comparison evidence.",
+    "status_legend": {
+      "no-native-tool-found": "The inspected source routes contain no equivalent. This is not proof that no engine utility can perform the operation.",
+      "partial-native-tools-found": "At least one native source interface covers part of the workflow; runtime and output parity are unverified.",
+      "unverified": "No runtime comparison was performed."
+    }
+  }
 }

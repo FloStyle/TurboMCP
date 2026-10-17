@@ -4,23 +4,35 @@
 
 ## Evidence and scope
 
-Baseline: Epic source 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`. Forward target: Epic 5.9 development at `5789fc07f00643fb37f85ede9894cd08f1cebcef`. TurboMCP plugin tree: `2513a0bbb42604fd3f6427bc7536e61c7822c912`. The development target is not a released compatibility promise.
+Baseline: Epic source 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`. Forward target: Epic 5.9 development at `5789fc07f00643fb37f85ede9894cd08f1cebcef`. TurboMCP: approved base `1aea14e402bcdedce85a25381916e06d707c20e7`, plugin tree `590661ec45c829264ea1743fccea994edb748092`. The upstream development head (`refs/heads/ue5-main`) was read once on 2026-10-17 and matched the forward target. The development target is not a released compatibility promise.
 
-The tables distinguish source declarations from runtime capability. A tool present in Epic source is not necessarily enabled in a default editor or shipped in an installed distribution. The native scan covers AICallable declarations in headers under Experimental/Toolsets; Python, data-defined tools and other engine locations still need R13 discovery review. A missing entry is not proof that Epic lacks a feature.
+The tables distinguish source declarations from runtime capability. A tool present in Epic source is not necessarily enabled in a default editor or shipped in an installed distribution. The native header scan covers AICallable declarations in headers under Experimental/Toolsets. R13 also found 598 candidate Python tool declarations in 29 files across 7 toolset plugins at 5.8.3, plus legacy MCP tool libraries, direct tool registration, `MCPClientToolset`, AgentSkill, tool-search meta-tools and 5.9 baked manifests. The 5.8.3 engine-shipped Python toolset modules are absent at 5.9. A missing entry is not proof that Epic lacks a feature.
 
-All 101 TurboMCP tools are accounted for below. No tool is currently labeled as a verified replacement for an Epic tool. R13 completes the source comparison, R04 establishes behavior, and R17 publishes evidence-backed routing guidance.
+All 101 TurboMCP tools are accounted for below. No tool is currently labeled as a verified replacement for an Epic tool. R13 records source-level equivalence and limitations for the five deferred areas in [native overlap](audit/native-overlap.md); R04 establishes runtime behavior, and R17 publishes evidence-backed routing guidance. All routing preferences remain unverified.
 
 ## Where TurboMCP aims to add value
 
 | Workflow | Epic 5.8.3 source evidence | TurboMCP intended value | Epic 5.9 source evidence | Decision / proof needed |
 | --- | --- | --- | --- | --- |
 | Blueprint graph workflows | Complete native equivalent not resolved by this header scan | Compact graph inspection, explicit identity, coordinated edits and layout | Full native graph parity still to inspect | Compare exact reads, supported nodes, failed-edit state and output size; no superiority claim yet |
-| Widget authoring | UMGToolSet declares creation, tree edits and compilation | Tree representation, targeted workflows and preview | Existing UMG tools plus WidgetAnimationToolset | Retain demonstrated workflow benefits; defer broad animation duplication |
-| Enums and structs | These specific authoring headers are absent from the scanned subtree | Existing authoring workflows on baseline | Dedicated enum and struct toolsets | Compare naming, validation, read-back and failure state before expansion |
-| Source control | Dedicated SourceControlToolset header absent from scan | Explicit project asset state | Revision and changelist interfaces | Prefer native primitives where they meet requirements; verify provider semantics |
+| Widget authoring | UMGToolSet declares creation, tree edits and compilation | Tree representation, targeted workflows and preview | Existing UMG tools plus WidgetAnimationToolset | Retain TurboMCP widget workflows; adopt native animation lifecycle and bindings; defer track/key authoring |
+| Enums and structs | These specific authoring headers are absent from the scanned subtree | Existing authoring workflows on baseline | Dedicated enum and struct toolsets | Retain TurboMCP one-call creation, type change and preview; adopt native editing and variable flags; see R13 decisions |
+| Source control | Dedicated SourceControlToolset header absent from scan | Explicit project asset state | Revision and changelist interfaces | Retain checkout and diagnostic state; adopt native history and changelists; native state fails open |
 | Capture and editor interaction | EditorApp capture and SlateInspector tools | Graph framing, layout diagnostics and widget preview | Both tool families remain | Measure framing and result handling; screenshot existence alone is not proof |
 | Materials | Complete native equivalent unresolved | Material inspection, reroute workflows and compact output | Native parity unresolved | Compare concrete material workflows before declaring an advantage |
-| Connection and protocol | Epic MCP server and registry | Tool extensions, help and outcome conventions | Registry/media changes and native stdio proxy | Reuse Epic transport; isolate version differences; do not build a competing proxy |
+| Connection and protocol | Epic MCP server and registry | Tool extensions, help and outcome conventions | Registry/media changes and native stdio proxy | Adopt the native 5.9 proxy; do not build a competing proxy; preserve unknown-outcome semantics |
+
+## R13 source-comparison decisions
+
+The five deferred areas were compared at the pinned revisions. Full evidence, including registration routes, availability labels and maintenance costs, is in [native overlap](audit/native-overlap.md) and its [JSON record](audit/native-overlap.json).
+
+| Area | Decision | Demonstrated reason |
+| --- | --- | --- |
+| Enums | Retain TurboMCP named one-call creation; adopt native editing on 5.9; thin adapter for preview only if requested | Native creates empty enums and cannot set internal enumerator names; native editing covers add, remove, move, display name and bitflags. |
+| Structs | Retain TurboMCP creation, type change, reader safety and preview; adopt native rename and variable flags | Native has no field-list creation, type-change or preview; TurboMCP has no rename or editable/savegame flags. |
+| Source control | Retain TurboMCP checkout and batch diagnostics; adopt native history, revision load and changelists | Native has no checkout; its single-asset state fails open and cannot replace TurboMCP's per-asset refusal or unknown report. |
+| Widget animation | Adopt native lifecycle and bindings on 5.9; defer track and key authoring | TurboMCP has no animation tool; the 5.9 header's Sequencer toolsets were not found in the pinned tree. |
+| MCP stdio proxy | Adopt the native 5.9 proxy; do not build a competitor | The bridge exists only at 5.9 and covers install, reconnect and tool-list change notifications. |
 
 ## Native interface inventory
 
@@ -69,7 +81,7 @@ These are candidate declaration counts, not feature scores. References link to E
 
 ## TurboMCP coverage and comparison status
 
-Every row has a definition and static-reference audit in the [capability inventory](audit/capabilities.json). Family grouping routes investigation; it is not a mapping to an equivalent native function. All runtime comparisons and preference decisions remain pending.
+Every row has a definition and static-reference audit in the [capability inventory](audit/capabilities.json). Family grouping routes investigation; it is not a mapping to an equivalent native function. R13 records source-level equivalence for the five deferred areas below; runtime comparisons and preference decisions remain pending. Rows outside those areas remain pending R13/R04.
 
 | TurboMCP tool | Family | Epic 5.8.3 parity | Epic 5.9 parity | Routing status |
 | --- | --- | --- | --- | --- |
@@ -79,7 +91,7 @@ Every row has a definition and static-reference audit in the [capability invento
 | `EditTurboMCPComment` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPCompile` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPDataTableRows` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPEnumAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `EditTurboMCPEnumAdd` | asset-and-data | No native tool found (source) | Create/AddEnumerator; no name control (source) | Retain; preference unverified |
 | `EditTurboMCPFunctionAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPFunctionRemove` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPGraphAppend` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
@@ -102,11 +114,11 @@ Every row has a definition and static-reference audit in the [capability invento
 | `EditTurboMCPOverrideRemove` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPSave` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPSaveWithoutThumbnail` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPStructFields` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPStructNew` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `EditTurboMCPStructFields` | asset-and-data | No native tool found (source) | 14 functions; no type change (source) | Retain type change; adopt rest (unverified) |
+| `EditTurboMCPStructNew` | asset-and-data | No native tool found (source) | Create/AddVariable; no field list (source) | Retain; preference unverified |
 | `EditTurboMCPTrace` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPVarsAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `EditTurboMCPVcsCheckout` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `EditTurboMCPVcsCheckout` | asset-and-data | No native checkout (source) | No native checkout (source) | Retain; preference unverified |
 | `EditTurboMCPWidgetBindAdd` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPWidgetRetarget` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
 | `EditTurboMCPWidgetsAsVars` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
@@ -117,7 +129,7 @@ Every row has a definition and static-reference audit in the [capability invento
 | `PreviewTurboMCPBatchEdit` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
 | `PreviewTurboMCPComment` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
 | `PreviewTurboMCPDataTableRows` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPEnumAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `PreviewTurboMCPEnumAdd` | asset-and-data | No native tool found (source) | GetEnumerators only (source) | Retain; preference unverified |
 | `PreviewTurboMCPGraphAppend` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
 | `PreviewTurboMCPGraphCheck` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
 | `PreviewTurboMCPGraphCollapse` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
@@ -137,11 +149,11 @@ Every row has a definition and static-reference audit in the [capability invento
 | `PreviewTurboMCPNodePins` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
 | `PreviewTurboMCPNodeType` | graph | Pending R13/R04 | Pending R13 | No replacement claim |
 | `PreviewTurboMCPOverrideAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPStructFields` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPStructNew` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `PreviewTurboMCPStructFields` | asset-and-data | No native tool found (source) | ListVariables only (source) | Retain; preference unverified |
+| `PreviewTurboMCPStructNew` | asset-and-data | No native tool found (source) | ListVariables only (source) | Retain; preference unverified |
 | `PreviewTurboMCPToolset` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
 | `PreviewTurboMCPVarsAdd` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `PreviewTurboMCPVcsCheckout` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `PreviewTurboMCPVcsCheckout` | asset-and-data | State booleans only (source) | State only; no checkout (source) | Retain; preference unverified |
 | `PreviewTurboMCPWidgetRetarget` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
 | `ReadTurboMCPAssetCost` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
 | `ReadTurboMCPAssetDescribe` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
@@ -172,7 +184,7 @@ Every row has a definition and static-reference audit in the [capability invento
 | `ReadTurboMCPToolSchema` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
 | `ReadTurboMCPTrace` | schema-and-observability | Pending R13/R04 | Pending R13 | No replacement claim |
 | `ReadTurboMCPTypeFind` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
-| `ReadTurboMCPVcsState` | asset-and-data | Pending R13/R04 | Pending R13 | No replacement claim |
+| `ReadTurboMCPVcsState` | asset-and-data | can_edit_asset/is_checked_out (source) | GetAssetSourceControlState (source) | Retain diagnostics; preference unverified |
 | `ReadTurboMCPWidgetTree` | widget | Pending R13/R04 | Pending R13 | No replacement claim |
 
 ## Required comparison for a preference decision
