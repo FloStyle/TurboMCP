@@ -30,15 +30,12 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "Tools/persistence_process_reader.py",
-        "Tools/read-persistence-process.ps1",
-        "Tools/test-persistence-process-reader.py",
-        "Tests/catalog.json",
+        "docs/audit/process-reader-lifecycle.md",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "f7a797c14d9ca29a921b40c3623ab767829ac8e5",
-      "checkpoint": "10: bounded process reader; dispatch base includes this contract commit"
+      "approved_base": "c76fe48363bd0a880c6e2704e0696204283bb99e",
+      "checkpoint": "11: process-reader lifecycle admission; dispatch base includes contract commit"
     }
   }
 }

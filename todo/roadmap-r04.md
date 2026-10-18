@@ -770,7 +770,7 @@ commit, retain candidate-bound evidence, and stop for review. No merge, push,
 claim release, task completion or additional task.
 
 
-## Active dispatch checkpoint 10: bounded Windows process reader
+## Completed dispatch checkpoint 10: bounded Windows process reader
 
 Checkpoint 9 is accepted as pure offline orchestration. Implement only the
 read_process portion of the future Windows backend. This is implementation
@@ -825,3 +825,46 @@ Register one offline test row with timeout_seconds 30 and acceptance not_mapped.
 Run focused test, offline profile and full-base scope gate. Commit, retain
 candidate-bound evidence, report full SHA/limits and stop. No merge/push, claim
 release, readiness/task completion or next task.
+
+
+## Active dispatch checkpoint 11: process-reader lifecycle admission
+
+Checkpoint 10 is accepted only as an offline-tested process-reader implementation.
+Live use remains blocked. Resolve the helper-process lifecycle question before
+expanding the Windows backend. This is a bounded investigation, not code work.
+
+Allowed: docs/audit/process-reader-lifecycle.md and this task's Completion evidence.
+Read the fixed PowerShell script, Python runner and available Windows PowerShell/
+.NET source or authoritative documentation. Establish whether Add-Type compilation
+can start a compiler child, whether that child inherits the result pipes, and
+what the existing direct-child cleanup can and cannot guarantee on timeout or
+parent death. Distinguish owned compiler descendants from external shared CIM/WMI
+services; do not propose killing shared services or unrelated processes.
+
+Choose the smallest viable admission strategy. Compare only (a) containment of
+the dedicated collection process and its own descendants using an appropriate
+Windows Job Object established before code runs, or (b) avoiding the compiler
+child through a narrowly justified alternative. Do not implement either. Check
+repository job helpers for reuse; explain nested-job/assignment failure, suspended
+launch/resume/termination, handle inheritance, bounded pipe reads, cleanup grace
+versus request deadline, orphan detection and abnormal supervisor exit. No broad
+runner rewrite, package dependency, persistent service or production integration.
+
+Deliver a concise decision (target <=200 lines) with actual source/API references,
+known versus unverified facts, exact proposed implementation files, ownership and
+failure invariants, rollback, and a supervisor-only synthetic acceptance recipe.
+The recipe must use only newly created harmless test children and synthetic
+strings, no editor or existing process command-line collection, and include
+forced timeout, inherited-pipe child, parent death and a negative control proving
+an unrelated process survives. It is a proposal, not worker execution permission.
+
+Explicitly record that current fake Thread.join treats unstarted joins as no-op,
+whereas real Python Thread.join raises before start. This affects cleanup_failed
+classification in thread-start-failure tests; it is not proof of a child leak.
+Include that small mock-fidelity repair in the proposed implementation scope.
+Also record real Windows script parsing/API/UTF-8/handle behavior as unverified.
+
+No code/test/catalog/scope/status/TODO/lease/config changes, no live processes,
+PowerShell/native calls, sockets, editor, builds or recovery. Existing offline
+profile and full-base scope gate only. Commit and retain candidate-bound evidence;
+report full SHA and blockers, keep claim, stop for review. No merge/push/release.
