@@ -68,6 +68,10 @@ namespace
 	{
 		FString Guid;
 		FString Text;
+		int32 X = 0;
+		int32 Y = 0;
+		int32 Width = 0;
+		int32 Height = 0;
 	};
 
 	struct FGraphSnapshot
@@ -213,6 +217,10 @@ namespace
 			}
 			FNodeSnapshot Row;
 			Row.Guid = Node->NodeGuid.ToString(EGuidFormats::DigitsLower);
+			Row.X = Node->NodePosX;
+			Row.Y = Node->NodePosY;
+			Row.Width = Node->NodeWidth;
+			Row.Height = Node->NodeHeight;
 			FString Text = FString::Printf(TEXT("class=%s pos=%d,%d size=%d,%d"),
 				*Node->GetClass()->GetName(), Node->NodePosX, Node->NodePosY,
 				Node->NodeWidth, Node->NodeHeight);
@@ -314,6 +322,113 @@ namespace
 			}
 		}
 		return true;
+	}
+
+	// THE CREATED NODE HAS NO STORED SIZE UNTIL SLATE DRAWS IT, and Apply records only
+	// its position. The planned footprint is therefore the documented 320x160 estimate
+	// (`FPlannedPosition::bEstimatedSize`, TurboMCPGraphAppend.h), and an existing node
+	// without a stored positive size uses the same estimate. This is geometry, not a
+	// measured Slate footprint, and the test must not claim a visual result.
+	constexpr int32 PlacementFootprintWidth = 320;
+	constexpr int32 PlacementFootprintHeight = 160;
+
+	int32 FootprintWidth(const UEdGraphNode* InNode)
+	{
+		return InNode != nullptr && InNode->NodeWidth > 0
+			? InNode->NodeWidth : PlacementFootprintWidth;
+	}
+
+	int32 FootprintHeight(const UEdGraphNode* InNode)
+	{
+		return InNode != nullptr && InNode->NodeHeight > 0
+			? InNode->NodeHeight : PlacementFootprintHeight;
+	}
+
+	bool FootprintsOverlap(const UEdGraphNode* InA, const UEdGraphNode* InB)
+	{
+		if (InA == nullptr || InB == nullptr)
+		{
+			return false;
+		}
+		const int64 ALeft = InA->NodePosX;
+		const int64 ATop = InA->NodePosY;
+		const int64 ARight = ALeft + FootprintWidth(InA);
+		const int64 ABottom = ATop + FootprintHeight(InA);
+		const int64 BLeft = InB->NodePosX;
+		const int64 BTop = InB->NodePosY;
+		const int64 BRight = BLeft + FootprintWidth(InB);
+		const int64 BBottom = BTop + FootprintHeight(InB);
+		return ALeft < BRight && BLeft < ARight && ATop < BBottom && BTop < ABottom;
+	}
+
+	// Layout acceptance: every pre-existing node keeps its stored position and size, and
+	// the newly placed node's footprint does not overlap any of them.
+	void CheckPlacementGeometry(FAutomationTestBase& InTest, const TCHAR* InLabel,
+		const FGraphSnapshot& InBefore, const UEdGraph* InGraph, const UEdGraphNode* InNewNode)
+	{
+		TMap<FString, const UEdGraphNode*> CurrentByGuid;
+		if (InGraph != nullptr)
+		{
+			for (const UEdGraphNode* Node : InGraph->Nodes)
+			{
+				if (Node != nullptr)
+				{
+					CurrentByGuid.Add(Node->NodeGuid.ToString(EGuidFormats::DigitsLower), Node);
+				}
+			}
+		}
+
+		int32 Checked = 0;
+		int32 Moved = 0;
+		for (const FNodeSnapshot& Before : InBefore.Nodes)
+		{
+			const UEdGraphNode* const* Current = CurrentByGuid.Find(Before.Guid);
+			if (Current == nullptr || *Current == nullptr)
+			{
+				++Moved;
+				continue;
+			}
+			++Checked;
+			if ((*Current)->NodePosX != Before.X || (*Current)->NodePosY != Before.Y
+				|| (*Current)->NodeWidth != Before.Width
+				|| (*Current)->NodeHeight != Before.Height)
+			{
+				++Moved;
+			}
+		}
+		InTest.TestTrue(
+			*FString::Printf(TEXT("%s: the layout check has pre-existing nodes"), InLabel),
+			InBefore.Nodes.Num() > 0);
+		InTest.TestEqual(
+			*FString::Printf(TEXT("%s: every pre-existing node is still in the graph"), InLabel),
+			Checked, InBefore.Nodes.Num());
+		InTest.TestEqual(
+			*FString::Printf(TEXT("%s: every pre-existing node keeps its stored position and size"), InLabel),
+			Moved, 0);
+
+		int32 Compared = 0;
+		int32 Overlaps = 0;
+		if (InGraph != nullptr && InNewNode != nullptr)
+		{
+			for (const UEdGraphNode* Other : InGraph->Nodes)
+			{
+				if (Other == nullptr || Other == InNewNode)
+				{
+					continue;
+				}
+				++Compared;
+				if (FootprintsOverlap(InNewNode, Other))
+				{
+					++Overlaps;
+				}
+			}
+		}
+		InTest.TestTrue(
+			*FString::Printf(TEXT("%s: the overlap check compares other nodes"), InLabel),
+			Compared > 0);
+		InTest.TestEqual(
+			*FString::Printf(TEXT("%s: the new node's planned footprint overlaps no existing node"), InLabel),
+			Overlaps, 0);
 	}
 
 	FString CaptureWidgets(const UWidgetBlueprint* InBlueprint)
@@ -1024,6 +1139,8 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 			Plan.PlannedPositions[0].X);
 		TestEqual(TEXT("the new node is at the planned Y"), NewNode->NodePosY,
 			Plan.PlannedPositions[0].Y);
+		CheckPlacementGeometry(*this, TEXT("literal append"), TargetBefore,
+			Fixture.Target, NewNode);
 		UEdGraphPin* InString = NewNode->FindPin(TEXT("InString"), EGPD_Input);
 		TestEqual(TEXT("the new node carries the append literal"),
 			InString != nullptr ? InString->DefaultValue : FString(),
@@ -1399,6 +1516,8 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 			ConnectedNewNode->NodePosX, ConnectedPlan.PlannedPositions[0].X);
 		TestEqual(TEXT("the connected new node is at the planned Y"),
 			ConnectedNewNode->NodePosY, ConnectedPlan.PlannedPositions[0].Y);
+		CheckPlacementGeometry(*this, TEXT("connected append"), ConnectedTarget,
+			Connected.Target, ConnectedNewNode);
 
 		const FString ConnectedNewGuidDigits = ConnectedNewGuids[0];
 		const FString ConnectedGraphName = Connected.Target->GetName();
