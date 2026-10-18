@@ -54,10 +54,12 @@ These helpers are useful evidence sources, but none is a complete collector. In 
 | --- | --- | --- |
 | Expected PID | Supervisor launch record / lease `EditorPid` | Positive integer. Missing or changed: refuse. |
 | Expected creation time | `GetProcessTimes` `lpCreationTime` on the launched PID | `FILETIME` ticks of 100 ns; convert the 1601-epoch 64-bit count to UTC with integer arithmetic, then format exactly 7 fractional digits. Access denied or process gone: refuse. Do not use CIM `CreationDate` or a padded millisecond value. |
-| Observed creation time | Same `GetProcessTimes` call for the PID | 100 ns `FILETIME`; compare exact ticks to expected and across snapshots. |
-| Expected executable | Launch record built from `$EditorExe`, canonicalized | Absolute Windows path. Missing/changed: refuse. |
-| Observed executable | `Win32_Process.ExecutablePath`; fall back only to a readable `Process.Path` | Normalize `/` to `\`, `GetFullPath`, trim trailing `\`. If unreadable: refuse. |
-| Project identity | Expected project from launch record; observed project parsed from `Win32_Process.CommandLine` | Parse one project token; canonicalize; compare to expected. Unparseable/multiple/ambiguous: refuse. |
+| Observed creation time | Same `GetProcessTimes` call for the PID, using a handle opened with `PROCESS_QUERY_LIMITED_INFORMATION` and closed after the call | 100 ns `FILETIME`; compare exact ticks to expected and across snapshots. |
+| Expected executable | Launch record built from `$EditorExe`, canonicalized | Absolute Windows path plus its `BY_HANDLE_FILE_INFORMATION` volume serial/file index. Missing/changed: refuse. |
+| Observed executable | `Win32_Process.ExecutablePath`; fall back only to a readable `Process.Path` | Normalize `/` to `\`, `GetFullPath`, trim trailing `\`. Open read-only and compare volume/file index to the launch record. If unreadable: refuse. |
+| Project identity | Expected project from launch record; observed project parsed from `Win32_Process.CommandLine` | Parse one project token; canonicalize; open read-only and compare volume/file index to the launch record. Unparseable/multiple/ambiguous: refuse. |
+| Expected project/engine file ID | `GetFileInformationByHandle` on the launch-record paths | Volume serial and 64-bit file index captured at launch. Missing/denied: refuse. |
+| Observed project/engine file ID | `GetFileInformationByHandle` on the observed paths | Must equal the launch record. Mismatch/denied: refuse. |
 | Command line | `Get-CimInstance Win32_Process -Filter "ProcessId=<pid>"` `.CommandLine` | Raw Windows text. Do not log it. Unreadable: refuse. |
 | TCP rows | `Get-NetTCPConnection -State Listen -LocalPort <port>` | All rows for the port. Include IPv4/IPv6 exact and wildcard. Any exception or incomplete result: refuse. |
 | Listener owner | Each row's `OwningProcess`; then the same process reads | Owner 0/4, missing process, unreadable command line/executable or unreadable creation time: refuse. |
@@ -75,7 +77,9 @@ LaunchRecordVersion = 1
 EditorPid            = <process id>
 EditorStartTimeUtc   = <FILETIME, canonical 7-digit UTC>
 EditorExecutablePath = <canonical absolute path>
+EngineFileId         = <volume serial + 64-bit file index>
 ProjectPath          = <canonical absolute .uproject path>
+ProjectFileId        = <volume serial + 64-bit file index>
 EngineExecutablePath = <canonical absolute UnrealEditor.exe path>
 McpHost              = "127.0.0.1" or "::1"
 McpPort              = <configured port>
@@ -83,7 +87,7 @@ McpPort              = <configured port>
 
 The expected identity is written from the launch call, not copied from a later process or TCP observation. If any field cannot be captured, the launch is refused; a later observation must not fill it in. A reused editor takes the identity from the lease that already names it, after `Test-TurboMCPOwnsProcess` revalidates project/engine.
 
-This record does not prove file identity. See the path limits below.
+This record carries file IDs for the collector's internal gate; the v1 schema still carries only paths. See the path limits below.
 
 ## Command-line parsing and path identity
 
@@ -100,11 +104,14 @@ Canonicalize with `GetFullPath` and separator normalization, then compare using 
 Therefore:
 
 - A string match is **path consistency**, not proof that both paths name the same file.
+- For the v1 slice, open the expected and observed project paths and engine executables read-only and compare `BY_HANDLE_FILE_INFORMATION` volume serial/file index. A mismatch, missing file, sharing violation or access denial refuses the attempt. This catches hardlinks, junctions, and case-sensitive-directory paths whose strings normalize alike; it is an internal gate and the v1 payload still records only paths.
 - Before accepting a path, read `GetFileAttributes`; a `ReparsePoint` on the project or engine path is refused. Compare `GetLongPathName` with the supplied path (ASCII-case-insensitive); a short/8.3 alias or an unexpected long-path difference is refused.
 - Do not silently treat a case-insensitive match in a case-sensitive directory as the same file.
 - Do not claim volume/file identity from a path string.
 
-If file identity is required, schema v1 is insufficient. The exact proposed adjustment is a future `turbomcp.persistence-identity/2` with `project_file_id` and `engine_file_id` objects, each containing `volume_serial`, `file_index_high` and `file_index_low` from `GetFileInformationByHandle` (or `GetFinalPathNameByHandle` plus file-ID comparison). The validator would compare those IDs, not strings. This is not implemented here.
+The launch record carries `ProjectFileId`/`EngineFileId`; observations do not copy them. If the file IDs cannot be read at launch or observation, refuse. Schema v1 still cannot expose that identity to the validator; the v2 fields below are required if the evidence itself must carry it.
+
+If auditable file identity is required in the evidence itself, schema v1 is insufficient. The exact proposed adjustment is a future `turbomcp.persistence-identity/2` with `project_file_id` and `engine_file_id` objects, each containing `volume_serial`, `file_index_high` and `file_index_low` from `GetFileInformationByHandle` (or `GetFinalPathNameByHandle` plus file-ID comparison). The validator would compare those IDs, not strings. This is not implemented here.
 
 ## Collection algorithm and bounds
 
@@ -212,7 +219,7 @@ This slice deliberately does **not** include `start-editor.ps1`, lease fields, r
 - Permission denial/partial process or TCP enumeration; owner PID 0/4; unreadable command line.
 - More than 32 listener rows.
 - Quoted project path, `-Project=` and positional forms; multiple/ambiguous project tokens.
-- Reparse/short/alias path and case-sensitive-directory ambiguity refusal.
+- Reparse/short/alias path, file-ID mismatch and case-sensitive-directory ambiguity refusal.
 - Future or coarser creation time; no fabricated 100 ns digits.
 - Pair timeout, out-of-order observations, stale pair and clock rollback.
 - Validator acceptance for a complete pair; no payload on any refusal.

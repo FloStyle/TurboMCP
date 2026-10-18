@@ -331,14 +331,14 @@ Deliverable: `docs/audit/persistence-collector-contract.md` specifies a read-onl
 
 Key limits recorded:
 - Expected identity comes from the launch record, never from observations.
-- Path equality is canonical string consistency, not file identity; symlinks/junctions/hardlinks/8.3 aliases and case-sensitive directories remain outside v1. A future `turbomcp.persistence-identity/2` with `project_file_id`/`engine_file_id` volume/file-index fields is the exact proposed adjustment if file identity is required.
+- Path equality is canonical string consistency, not file identity; the collector adds a launch/observation `GetFileInformationByHandle` volume/file-index gate where possible, but schema v1 does not carry that identity. Symlinks/junctions/hardlinks/8.3 aliases and case-sensitive directories remain below v1. A future `turbomcp.persistence-identity/2` with `project_file_id`/`engine_file_id` volume/file-index fields is the exact proposed adjustment if file identity must be auditable.
 - The collector refuses unreadable/partial process or TCP enumeration, PID reuse, process exit, listener replacement, unsupported addresses, owner 0/4 and more than 32 rows.
 - A validation pass is evidence consistency only; it never authorizes connection, mutation, stop, restart or a persistence claim. The residual race remains.
 - The proposed implementation slice is `Tools/persistence_collector.py`, `Tools/test-persistence-collector.py` and one `Tests/catalog.json` offline row, with injected-backend tests only. No caller, launch-record, lifecycle, settings or persistence work is included.
 
 Validation:
 - Source review only; no live process, socket, editor, build, MCP or recovery operation was run.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/97511de392ab414f97d4f9f2c948f2aa/report.json`; all offline checks passed.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/ac0e2a9600574486b5b580ba01421586/report.json`; all offline checks passed.
 - Candidate-bound offline evidence and the full-base scope gate are recorded in the submission after the commit. All collector/launch-record steps remain `proposed_unapproved`.
 
 Rollback: remove the new report and this evidence only. No existing file or caller is changed.
