@@ -195,7 +195,7 @@ class CollectorTests(unittest.TestCase):
         backend = ScriptedBackend()
         backend.mono = 9_000_000_000_000_000_000
         result, _ = self.success(backend, pol=policy())
-        self.assertEqual(result["payload"]["bounds"]["max_age_seconds"], 1)
+        self.assertEqual(result["payload"]["bounds"]["max_age_seconds"], 10)
 
     def test_foreign_listener_refused_before_unrelated_process_read(self):
         backend = ScriptedBackend()
@@ -315,6 +315,34 @@ class CollectorTests(unittest.TestCase):
         backend = ScriptedBackend()
         backend.process_values = [{"ok": "yes", "value": {}}]
         self.refusal("backend_malformed", backend)
+
+    def test_malformed_discriminants_at_process_boundary(self):
+        for bad in (
+            {"ok": True, "error": "timeout"},
+            {"ok": False, "value": {"pid": PID}},
+            {"ok": False, "error": []},
+            {"ok": False, "error": {}},
+            {"ok": False, "error": None},
+            {"ok": False, "error": 1},
+            {"ok": False, "error": "not-a-category"},
+        ):
+            backend = ScriptedBackend()
+            backend.process_values = [bad]
+            with self.subTest(bad=bad):
+                self.refusal("backend_malformed", backend)
+                self.assertFalse(any(call[0] in ("parse", "path", "listeners") for call in backend.calls))
+
+    def test_malformed_discriminants_across_other_boundaries(self):
+        cases = [
+            ("parse", lambda b: setattr(b, "parse_values", [{"ok": True, "error": "timeout"}])),
+            ("path", lambda b: b.path_values.__setitem__(PROJECT, [{"ok": True, "error": "timeout"}])),
+            ("listeners", lambda b: setattr(b, "listener_values", [{"ok": True, "error": "timeout"}])),
+        ]
+        for label, mutate in cases:
+            backend = ScriptedBackend()
+            mutate(backend)
+            with self.subTest(boundary=label):
+                self.refusal("backend_malformed", backend)
 
     def test_malformed_utc_value(self):
         backend = ScriptedBackend()
@@ -460,17 +488,19 @@ class CollectorTests(unittest.TestCase):
         backend.utc_values = [NOW] * 6
         self.success(backend)
 
-    def test_second_snapshot_before_first_is_order_refusal(self):
+    def test_second_attempt_start_before_previous_end_refused(self):
         backend = ScriptedBackend()
         backend.utc_values = [
             "2026-10-18T01:00:00.0000000Z",  # pair start
-            "2026-10-18T01:00:00.0000000Z",  # attempt 1 start
-            "2026-10-18T01:00:02.0000000Z",  # attempt 1 end
-            "2026-10-18T01:00:01.0000000Z",  # attempt 2 start
-            "2026-10-18T01:00:01.5000000Z",  # attempt 2 end
-            "2026-10-18T01:00:02.0000000Z",  # pair end
+            "2026-10-18T01:00:01.0000000Z",  # attempt 1 start
+            "2026-10-18T01:00:03.0000000Z",  # attempt 1 end
+            "2026-10-18T01:00:02.0000000Z",  # attempt 2 start
+            "2026-10-18T01:00:04.0000000Z",  # attempt 2 end
+            "2026-10-18T01:00:05.0000000Z",  # pair end
         ]
-        self.refusal("observation_order", backend)
+        self.refusal("clock_rollback", backend)
+        # Attempt 2 must be refused at its start, before another process read.
+        self.assertEqual(sum(1 for call in backend.calls if call[0] == "process"), 2)
 
     def test_both_snapshot_age_enforced(self):
         backend = ScriptedBackend()
@@ -499,6 +529,15 @@ class CollectorTests(unittest.TestCase):
             "2026-10-18T01:00:01.1000000Z",
         ]
         self.success(backend, pol=pol)
+
+    def test_payload_bounds_use_policy_not_observed_elapsed(self):
+        backend = ScriptedBackend()
+        pol = policy()
+        pol["age_ns"] = 2_500_000_000
+        pol["snapshot_gap_ns"] = 2_500_000_000
+        result, _ = self.success(backend, pol=pol)
+        self.assertEqual(result["payload"]["bounds"]["max_age_seconds"], 3)
+        self.assertEqual(result["payload"]["bounds"]["max_snapshot_gap_seconds"], 3)
 
     def test_age_one_tick_over_refused(self):
         backend = ScriptedBackend()

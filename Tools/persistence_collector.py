@@ -299,14 +299,16 @@ def _policy(value):
 
 
 def _read_result(raw):
-    if not isinstance(raw, dict) or set(raw) not in ({"ok", "value"}, {"ok", "error"}):
-        _refuse("backend_malformed")
-    if not isinstance(raw["ok"], bool):
+    if not isinstance(raw, dict) or "ok" not in raw or not isinstance(raw["ok"], bool):
         _refuse("backend_malformed")
     if raw["ok"]:
+        if set(raw) != {"ok", "value"}:
+            _refuse("backend_malformed")
         return raw["value"]
-    error = raw.get("error")
-    if error not in _BACKEND_ERRORS:
+    if set(raw) != {"ok", "error"}:
+        _refuse("backend_malformed")
+    error = raw["error"]
+    if not isinstance(error, str) or error not in _BACKEND_ERRORS:
         _refuse("backend_malformed")
     _refuse(_BACKEND_ERRORS[error])
 
@@ -350,6 +352,19 @@ def _utc(backend):
     if not isinstance(value, str):
         _refuse("backend_malformed")
     return _parse_utc(value, "backend.utc")
+
+
+class _UtcClock:
+    def __init__(self, backend):
+        self.backend = backend
+        self.last = None
+
+    def now(self):
+        value = _utc(self.backend)
+        if self.last is not None and value < self.last:
+            _refuse("clock_rollback")
+        self.last = value
+        return value
 
 
 def _process(value):
@@ -500,9 +515,9 @@ def _listener_key(row):
     return (row["family"], row["address"], row["port"], row["state"], row["owner_pid"])
 
 
-def _attempt(sequence, expected, endpoint, backend, policy, clock, pair_start_mono, pair_start_utc, pair_deadline_ns):
+def _attempt(sequence, expected, endpoint, backend, policy, clock, utc_clock, pair_start_mono, pair_start_utc, pair_deadline_ns):
     attempt_start_mono = clock.now()
-    attempt_start_utc = _utc(backend)
+    attempt_start_utc = utc_clock.now()
     if attempt_start_mono < pair_start_mono:
         _refuse("clock_rollback")
     if attempt_start_utc < pair_start_utc:
@@ -550,7 +565,7 @@ def _attempt(sequence, expected, endpoint, backend, policy, clock, pair_start_mo
         _refuse("observation_changed")
 
     end_mono = clock.now()
-    end_utc = _utc(backend)
+    end_utc = utc_clock.now()
     if end_mono < attempt_start_mono:
         _refuse("clock_rollback")
     if end_mono >= attempt_deadline_ns or end_mono >= pair_deadline_ns:
@@ -607,8 +622,9 @@ def collect_pair(expected_record, endpoint, backend, policy):
         policy = _policy(policy)
 
         clock = _Clock(backend)
+        utc_clock = _UtcClock(backend)
         pair_start_mono = clock.now()
-        pair_start_utc = _utc(backend)
+        pair_start_utc = utc_clock.now()
         pair_deadline_ns = pair_start_mono + policy["pair_ns"]
         observations = []
         for sequence in (1, 2):
@@ -620,6 +636,7 @@ def collect_pair(expected_record, endpoint, backend, policy):
                     backend,
                     policy,
                     clock,
+                    utc_clock,
                     pair_start_mono,
                     pair_start_utc,
                     pair_deadline_ns,
@@ -627,7 +644,7 @@ def collect_pair(expected_record, endpoint, backend, policy):
             )
 
         pair_end_mono = clock.now()
-        pair_end_utc = _utc(backend)
+        pair_end_utc = utc_clock.now()
         if pair_end_mono < pair_start_mono or pair_end_utc < pair_start_utc:
             _refuse("clock_rollback")
         if pair_end_mono >= pair_deadline_ns:
@@ -647,11 +664,8 @@ def collect_pair(expected_record, endpoint, backend, policy):
             if age_ns > policy["age_ns"]:
                 _refuse("stale_observation")
 
-        max_age_seconds = max(1, _ceil_seconds(max(
-            (pair_end_utc - observations[0]["_collected_ticks"]) * NS_PER_TICK,
-            (pair_end_utc - observations[1]["_collected_ticks"]) * NS_PER_TICK,
-        )))
-        max_gap_seconds = _ceil_seconds(gap_ns)
+        max_age_seconds = max(1, _ceil_seconds(policy["age_ns"]))
+        max_gap_seconds = _ceil_seconds(policy["snapshot_gap_ns"])
 
         payload = {
             "schema": persistence_identity.SCHEMA,
