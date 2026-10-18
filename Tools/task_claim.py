@@ -134,8 +134,12 @@ def _validate_targets(repo,base,files,new_files,protected):
         raise ValueError('Assignment contains duplicate file targets')
     if existing & new:
         raise ValueError('A file cannot be both existing and new')
+    seen=set()
     for raw in sorted(existing|new):
         path,key=_canonical_file(repo,raw)
+        if key in seen:
+            raise ValueError('Assignment files alias the same canonical path')
+        seen.add(key)
         if _is_protected(raw,protected):
             raise ValueError('Assignment file is integrator-owned: '+raw)
         if raw in new:
