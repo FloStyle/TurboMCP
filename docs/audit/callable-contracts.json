@@ -3892,15 +3892,16 @@
         "EditTurboMCPSave",
         "EditTurboMCPSaveWithoutThumbnail"
       ],
-      "title": "Failure and mechanism text is not conditioned on outcome or provenance",
+      "title": "Failure, draw and error-attribution text is not conditioned on observed outcome",
       "evidence": [
         "TurboMCPCompile.cpp:553-561 prints 'thumbnail/design-time work: ran through the editor's save path' for every successful E-SAVE asset. The engine generates a thumbnail only when the cached thumbnail is missing or dirty and not in automation (UnrealEdSrv.cpp:438-446,478-491); it may only load/keep an existing thumbnail.",
         "The Widget Blueprint explanation at TurboMCPCompile.cpp:591-601 is outside the success/failure branch. On a failed no-thumbnail widget save, it still says 'the package was written directly, so the engine's thumbnail step did not run for this save, and this widget's design-time code did not run for a draw.' The failure branch is :563-579.",
         "TurboMCPCompile.cpp:451-452 takes the capture marks before the object lookup/load at :456-459. ErrorsHere is the count since that mark (:550-551), so the interval covers object loading, path construction, save hooks, serialization, the save call and its retry.",
-        "TurboMCPCompile.cpp:603-611 prints 'thumbnail/design-time work raised %d engine error(s)' whenever the package is clean, the editor path was used, the asset casts to UWidgetBlueprint and ErrorsHere > 0. It does not check whether a thumbnail draw ran or whether any counted error came from the renderer."
+        "TurboMCPCompile.cpp:603-611 prints 'thumbnail/design-time work raised %d engine error(s)' whenever the package is clean, the editor path was used, the asset casts to UWidgetBlueprint and ErrorsHere > 0. It does not check whether a thumbnail draw ran or whether any counted error came from the renderer.",
+        "No current test forces a failure through either save tool on the owned WBP_NodeTest widget, or controls the thumbnail cache state for an E-SAVE draw/no-draw comparison. The success tests therefore cannot distinguish selecting the editor save path from observing a draw."
       ],
-      "observed_source_behavior": "A failed EditTurboMCPSaveWithoutThumbnail on a Widget Blueprint can print both 'is still unsaved after two attempts' and 'the package was written directly'. A successful E-SAVE can say thumbnail/design-time work ran when no draw was needed, because the code does not observe the thumbnail cache or the renderer. It also attributes every captured engine error in the whole per-asset save interval to thumbnail/design-time work, although loading, save hooks, serialization or another save step may have raised it. The widget sentence is true only when a draw actually ran; the warning is provenance-unverified.",
-      "existing_assertions": "test-save-thumbnail-option.py asserts the success strings at :181, :191-197 and :231-235. Its own header says a thumbnail draw cannot be observed in logs. No test forces a failed no-thumbnail widget save, a fresh cached-thumbnail E-SAVE, a controlled non-thumbnail error in the save interval, a genuine thumbnail error, or a zero-error control.",
+      "observed_source_behavior": "A failed EditTurboMCPSaveWithoutThumbnail on a Widget Blueprint can print both 'is still unsaved after two attempts' and 'the package was written directly'. E-SAVE's success text always says thumbnail/design-time work ran through the editor save even when the engine only reused a cached thumbnail or did not draw one. The :604-611 warning attributes every captured error in the whole per-asset save interval to thumbnail/design-time work, although loading, save hooks, serialization or another save step may have raised it. Failure text for both tools, the fresh/cached case and warning provenance all need controlled probes; the direct-write sentence is known to be false on failure, while the other attributions are unverified.",
+      "existing_assertions": "test-save-thumbnail-option.py asserts successful text at :181, :191-197 and :231-235 and uses WBP_NodeTest. It does not force a failure through either save tool, control cached-versus-fresh thumbnail state, raise a controlled non-thumbnail error in the :451-551 interval, raise a genuine thumbnail/design-time error, or use a zero-error control. Its header says a thumbnail draw cannot be observed in logs.",
       "runtime_status": "not_run"
     },
     {
@@ -4505,16 +4506,18 @@
         "Tools/test-save-thumbnail-option.py"
       ],
       "preserved_behavior": [
-        "existing successful E-SAVE and no-thumbnail text",
-        "save counts and failure count lines",
-        "same save mechanisms and retry",
-        "a warning count is still surfaced without pasting log text"
+        "E-SAVE keeps the editor save path and EditTurboMCPSaveWithoutThumbnail keeps the direct SavePackage path",
+        "one retry only while Package->IsDirty() after the first SaveOnce",
+        "save counts, failure counts and per-input error rows",
+        "successful package-write and refusal semantics",
+        "a warning count is still surfaced without pasting log text",
+        "truthful success semantics; correcting misleading draw/provenance wording is explicitly permitted"
       ],
-      "synthetic_probe": "Proposed test-only error seam in Tools/test-save-thumbnail-option.py plus an owned widget probe asset; neither exists. Cases: (1) a successful Widget Blueprint save with a controlled non-thumbnail error raised in the :451-551 capture interval; (2) a successful widget save with a genuine thumbnail/design-time error; (3) a zero-error control. Record the text and whether the error source is actually known. No runtime call is authorized here.",
-      "expected": "A failed save never says the package was written. The no-thumbnail success sentence is emitted only on success. The warning must not attribute an error to thumbnail/design-time work unless provenance was observed; otherwise it says only that engine errors were raised during this asset's save. A zero-error control emits no warning. This is a proposed policy, not current behavior.",
-      "negative_control": "The zero-error control emits no warning. The controlled non-thumbnail error may still be counted but is not labeled thumbnail/design-time work. A genuine thumbnail error is named only when the seam establishes that provenance. A successful no-thumbnail widget save still says the draw was skipped.",
-      "fixture_gap": "No controlled non-thumbnail error seam, genuine thumbnail-error fixture or zero-error control exists; the owned widget probe asset and test-only seam are proposed, not present.",
-      "validation": "Proposed test-only error seam and save-suite cases; no current error-attribution assertion. No engine run in this checkpoint.",
+      "synthetic_probe": "Proposed test-only seams on the owned WBP_NodeTest Widget Blueprint, not existing failure controls. Cases: (1) force a failed save through BOTH EditTurboMCPSave and EditTurboMCPSaveWithoutThumbnail; (2) E-SAVE with a fresh/cached thumbnail, so the suite knows whether a draw was requested; (3) a successful widget save with a controlled non-thumbnail error raised in the :451-551 interval; (4) a successful widget save with a genuine thumbnail/design-time error; (5) a zero-error control. Record the text and whether provenance is actually known. No runtime call or implementation-feasibility claim is authorized here.",
+      "expected": "Proposed policy: a failed save never says the package was written; the successful direct-save sentence ('written directly' / without the thumbnail draw) must not appear on failure, and E-SAVE's 'written by the editor's save' success phrase must not appear on failure. For a fresh/cached-thumbnail E-SAVE save, the text distinguishes selecting the editor save path from observing an actual thumbnail draw and does not assert a draw without evidence. A successful no-thumbnail save still says the draw was skipped. Warning text does not attribute an error to thumbnail/design-time work unless provenance was observed; otherwise it says only that engine errors were raised during this asset's save. Zero errors emit no warning. This is proposed policy, not current behavior.",
+      "negative_control": "Both failure probes must avoid the package-written/direct-success wording. The zero-error control emits no warning. The controlled non-thumbnail error is not labeled thumbnail/design-time work. A genuine thumbnail error is named only when the seam establishes that provenance. A fresh/cached E-SAVE case still says the editor path was selected without inventing a draw; a successful no-thumbnail widget save still says the draw was skipped.",
+      "fixture_gap": "WBP_NodeTest is an owned success fixture, but no controlled failure seam for either tool, fresh/cached-thumbnail state, non-thumbnail error, genuine thumbnail error or zero-error control exists. These seams are proposed, not present; implementation feasibility is not established.",
+      "validation": "Proposed save-suite coverage: failure through both tools; fresh/cached-thumbnail E-SAVE wording; non-thumbnail error; genuine thumbnail error; zero-error control; no package-written/direct-success phrase on failure; no unsupported draw or provenance claim. No current assertion covers these cases. No engine run in this checkpoint.",
       "rollback": "Revert TurboMCPCompile.cpp and the save-suite test only."
     },
     {
@@ -4832,10 +4835,10 @@
       "offline_profile": {
         "command": "python Tools/execute-tests.py --profile offline --execute",
         "exit": 0,
-        "report": ".local/executions/4c09711bd02344ea9ac12fc56d718751/report.json",
-        "request_commit": "ab7b10333b4cf13a4720c82be00536b82a6ea426",
-        "tree_digest": "f4244316bd68d21d2bee0d8f2b72306f02aa04ee2cba57e3f4ef2ed832baab87",
-        "summary": "PASSED; the offline profile ran Tools/validate.py on the correction tree. This is the pre-commit correction run; candidate-bound evidence is obtained after the correction commit and returned separately."
+        "report": ".local/executions/2517d7617b934fc69e7038b279ccf17e/report.json",
+        "request_commit": "489268b522073ef2101f8ff376881e3ef6138e63",
+        "tree_digest": "b3964e03f585d43aa3371b4525d05b821be1c7f56cd8af7a7c3171242f9ade13",
+        "summary": "PASSED; the offline profile ran Tools/validate.py on the R04-REPAIR-25 correction tree. This is the pre-commit correction run; candidate-bound evidence is obtained after the correction commit and returned separately."
       }
     },
     "reviewed_tools": 12,
@@ -4853,6 +4856,15 @@
         "R04-REPAIR-24 has two negative controls: clean package -> no save/no changes, and dirty single-asset successful save -> 1 saved.",
         "R04-SAVE-07 and repeated summaries now qualify the conditional retry and unverified live read-only outcome.",
         "R04-SAVE-06 now covers error-interval attribution without renderer provenance, with a proposed controlled non-thumbnail/thumbnail/zero-error probe."
+      ]
+    },
+    "correction_2": {
+      "prior_candidate": "489268b522073ef2101f8ff376881e3ef6138e63",
+      "status": "proposal_correction_submitted",
+      "changes": [
+        "R04-REPAIR-25 restores failure probes for both save tools on owned WBP_NodeTest and the fresh/cached-thumbnail E-SAVE case, while retaining the non-thumbnail/thumbnail/zero-error probes.",
+        "Existing success text is no longer blanket-preserved; save behavior, retry/count behavior and truthful success semantics are preserved, and correcting misleading draw/provenance wording is permitted.",
+        "R04-SAVE-06 now states the failure, draw and error-attribution limitations consistently with the complete proposal."
       ]
     }
   }
