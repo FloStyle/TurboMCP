@@ -10,6 +10,11 @@
 #include "Misc/AutomationTest.h"
 
 #include "Framework/Application/SlateApplication.h"
+// The panel owns FTurboMCPPanelToolRunner by value, and that runner owns
+// TStrongObjectPtr<UToolCallAsyncResultString>. The defining UCLASS header must
+// be complete before the panel header is instantiated; the forward declaration
+// in TurboMCPPanelToolRunner.h is intentionally not enough for TStrongObjectPtr.
+#include "ToolsetRegistry/ToolCallAsyncResultString.h"
 #include "Panel/STurboMCPPanel.h"
 #include "Templates/UniquePtr.h"
 #include "TurboMCPCallLog.h"
