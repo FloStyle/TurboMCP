@@ -35,14 +35,26 @@ def evidence_only(text):
     return parts[0], tail[1] if len(tail) == 2 else ''
 
 
-def check(root, base, candidate, task):
+def check(root, base, candidate, task, assignment=None):
     base, candidate = revision(root, base), revision(root, candidate)
     subprocess.run(['git', '-C', str(root), 'merge-base', '--is-ancestor', base, candidate], check=True)
     policy = json.loads(blob(root, base, 'roadmap/worker-scopes.json'))
-    if policy.get('schema') != 1 or task not in policy['tasks']:
+    if task not in policy.get('tasks', {}):
         raise ValueError('No approved worker scope for ' + task)
     scope = policy['tasks'][task]
-    allowed = set(scope['files'])
+    if policy.get('schema') == 2:
+        if assignment is None:
+            raise ValueError('Schema 2 requires an explicit --assignment')
+        entry = scope.get('assignments', {}).get(assignment)
+        if not isinstance(entry, dict) or 'files' not in entry:
+            raise ValueError('Unknown assignment ' + assignment + ' for ' + task)
+        allowed = set(entry['files'])
+    elif policy.get('schema') == 1:
+        if assignment is not None:
+            raise ValueError('Schema 1 has no named assignments; omit --assignment')
+        allowed = set(scope['files'])
+    else:
+        raise ValueError('Unsupported worker scope schema')
     task_path = scope['task_file']
     # No rename detection: both the removed and added paths must be examined.
     raw = git(root, 'diff', '--no-ext-diff', '--name-status', '--no-renames', '-z', base, candidate).split(b'\0')
@@ -71,7 +83,8 @@ def check(root, base, candidate, task):
             raise ValueError('Lost, duplicated or invented tool row: ' + path)
         if any(r.get('preference') != 'unverified' for r in after):
             raise ValueError('Investigation cannot approve runtime routing preferences')
-    return {'task': task, 'base': base, 'candidate': candidate, 'files': sorted(changes),
+    return {'task': task, 'assignment': assignment, 'base': base, 'candidate': candidate,
+            'files': sorted(changes),
             'result': 'PASS', 'limit': 'Scope only; independent evidence and semantic review still required.'}
 
 
@@ -81,8 +94,9 @@ def main():
     parser.add_argument('--base', required=True)
     parser.add_argument('--candidate', required=True)
     parser.add_argument('--task', required=True)
+    parser.add_argument('--assignment')
     args = parser.parse_args()
-    print(json.dumps(check(args.repo, args.base, args.candidate, args.task), indent=2))
+    print(json.dumps(check(args.repo, args.base, args.candidate, args.task, args.assignment), indent=2))
 
 
 if __name__ == '__main__':

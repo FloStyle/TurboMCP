@@ -68,4 +68,54 @@ with tempfile.TemporaryDirectory() as temp:
             pass
         else:
             raise AssertionError('Accepted ' + label)
-print('RESULT: PASS (allowed evidence and 13 scope/identity negative controls)')
+
+with tempfile.TemporaryDirectory() as temp:
+    root = pathlib.Path(temp)
+    def git(*args):
+        return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.STDOUT).decode().strip()
+    def write(path, value):
+        p = root / path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(value, encoding='utf8', newline='\n')
+    def commit():
+        git('add', '-A')
+        git('-c', 'user.name=Scope Test', '-c', 'user.email=scope@example.invalid',
+            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'scope fixture')
+        return git('rev-parse', 'HEAD')
+    git('init', '-q')
+    task = '# Task\nStatus: todo\n## Completion evidence\nPending.\n\n## Scope\nRead only.\n'
+    policy = {'schema': 2, 'tasks': {'R04': {'task_file': 'todo/r04.md',
+        'protected': ['Tests/catalog.json'],
+        'assignments': {
+            'a': {'files': ['src/a.py']},
+            'b': {'files': ['src/b.py']},
+        }}}}
+    write('roadmap/worker-scopes.json', json.dumps(policy))
+    write('todo/r04.md', task)
+    write('src/a.py', 'a\n')
+    write('src/b.py', 'b\n')
+    write('Tests/catalog.json', '{}\n')
+    base = commit()
+    write('src/a.py', 'a changed\n')
+    accepted = commit()
+    assert scope.check(root, base, accepted, 'R04', 'a')['result'] == 'PASS'
+    for label, change, assignment in [
+        ('other assignment file', lambda: write('src/b.py', 'b changed\n'), 'a'),
+        ('self-expanded policy', lambda: write('roadmap/worker-scopes.json', '{}'), 'a'),
+        ('unknown assignment', lambda: write('src/a.py', 'a again\n'), 'missing'),
+        ('schema2 without assignment', lambda: write('src/a.py', 'a again\n'), None),
+    ]:
+        git('reset', '--hard', accepted)
+        change()
+        candidate = commit()
+        try:
+            scope.check(root, base, candidate, 'R04', assignment)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('Accepted ' + label)
+    git('reset', '--hard', accepted)
+    write('src/b.py', 'b changed\n')
+    b_accepted = commit()
+    assert scope.check(root, accepted, b_accepted, 'R04', 'b')['result'] == 'PASS'
+print('RESULT: PASS (schema-1 and schema-2 scope/identity negative controls)')

@@ -36,18 +36,25 @@ def select(root,track='v1'):
         return row,text
     return None,'No unfinished approved task on track '+track+'. Do not invent another task.'
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--check',action='store_true');parser.add_argument('--track',choices=['v1','compatibility'],default='v1');parser.add_argument('--claim',metavar='OWNER');args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--check',action='store_true');parser.add_argument('--track',choices=['v1','compatibility'],default='v1');parser.add_argument('--claim',metavar='OWNER');parser.add_argument('--assignment');parser.add_argument('--base');args=parser.parse_args()
     load_queue(ROOT,args.track)
     if args.check:print('PASS: roadmap IDs, ordered dependencies, task contracts and completion evidence');return 0
-    from task_claim import current,claim,location
-    active=current(ROOT)
+    from task_claim import active_claims,claim,claim_assignment,location
+    active=active_claims(ROOT)
     if active:
-        print('STOP: task '+active['task']+' is claimed by '+active['owner']+'; claim '+active['id']);return 2
+        for item in active:
+            print('STOP: task '+str(item.get('task'))+' is claimed by '+str(item.get('owner'))+'; claim '+str(item.get('claim_id'))+' assignment '+str(item.get('assignment')))
+        return 2
     row,text=select(ROOT,args.track)
     if not row:print(text);return 2
     if args.claim:
-        assigned=claim(ROOT,row['id'],args.claim)
-        print('CLAIM: '+assigned['id']+'; owner '+assigned['owner'])
+        if args.assignment:
+            if not args.base:raise ValueError('--base is required with --assignment')
+            assigned=claim_assignment(ROOT,row['id'],args.assignment,args.claim,args.base)
+            print('CLAIM: '+assigned['claim_id']+'; assignment '+assigned['assignment']+'; owner '+assigned['owner'])
+        else:
+            assigned=claim(ROOT,row['id'],args.claim)
+            print('CLAIM: '+assigned['id']+'; owner '+assigned['owner'])
         print('CLAIM STORE: '+str(location(ROOT)))
     print('NEXT: '+row['id']+' | '+row['path'])
     print('Read AGENTS.md and this task. Claim its ownership before work. A task claim does not grant engine ownership or execute commands.\n')
