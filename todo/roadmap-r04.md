@@ -463,7 +463,7 @@ Limitations:
 - Supervisor death uses a retained child handle; marker absence is not used as proof. PID reuse and parent-death race windows remain native limitations.
 - The `ObservedJob` completion-port code is a synthetic harness seam, not a modification or proof of the production `WindowsJob`.
 - Native harness execution, parent-death/Add-Type results and live admission remain integration-owner work.
-- Remaining debt: preassignment remains BLOCKED pending the suspended-launch implementation and independent native controls; the new accounting query/decision are offline-only. Native harness/teardown and native compiler observation remain unexecuted. Timeout end-to-end and compiler observation now have injected offline coverage.
+- Remaining debt: preassignment wiring is offline-only and the native suspended-launch/accounting/positive-control run remains pending; no native acceptance is claimed. Native harness/teardown and native compiler observation remain unexecuted. Timeout end-to-end and compiler observation now have injected offline coverage.
 
 Integrator-owned native evidence (not worker execution or acceptance):
 - Exact candidate `29560ec3abf1b41389bf04b1fe27130d689eadb7`, tree `c9fe57732716710d852a4de4d403796341180ef8330fe6dad51a360b64405358`.
@@ -542,19 +542,28 @@ Implementation slice A (reviewer-approved; accounting and decision only):
 - `ObservedJob.accounting()` performs one checked `QueryInformationJobObject` class-1 call on the open job handle and returns the same snapshot's binary `TotalProcesses` and `ActiveProcesses`. Existing `active_processes()` callers and behavior are unchanged.
 - `preassignment_accounting_decision()` is a pure harness-local decision helper. It requires validated ordering, initial `0/0`, suspended baseline `1/1`, final `1/0`, worker refusal and successful cleanup. It rejects malformed, missing, inconsistent and query-failed inputs; an extra lifetime total fails even with no notifications and cannot be overridden by active zero. Notifications are supporting positive evidence only. A completion-port API error is retained as non-clean diagnostic evidence but does not replace the narrow accounting result.
 - Deterministic offline tests cover exact accounting fields, query failure, initial/baseline mismatch, final extra count, dropped-notification total two, final active nonzero, missing flags/refusal/cleanup, unexpected notification, API-error diagnostics and the expected sequence. The decision helper treats the DWORD fields as bounded 0..0xFFFFFFFF values and does not claim rollover or universal arithmetic proof.
-- `_case_preassignment_eof` is intentionally not wired to this helper and remains BLOCKED. No suspended process is created or resumed in this slice.
-- Deferred to slice B: suspended launch, explicit handle inheritance, assign-before-resume, accounting snapshots around the live worker, setup-failure termination without resume, and native positive/negative controls.
+- `_case_preassignment_eof` was intentionally left unwired in slice A. Slice B now wires the helper to the suspended observer and keeps the native case unaccepted until the supervisor run is independently reviewed.
+- Deferred to slice B at the time: suspended launch, explicit handle inheritance, assign-before-resume, accounting snapshots around the live worker, setup-failure termination without resume, and native positive/negative controls. Slice B now implements the harness-local pieces; native controls remain pending.
 - Integrator evidence remains tied to exact candidate `29560ec…` and its five passed cases plus blocked `preassignment_eof`; none of this new code is certified by that older run.
+
+Implementation slice B (reviewer-approved; offline validation only):
+- `launch_suspended()` is a harness-local fixed-mode launcher. It builds only the real `execution_runtime.py --persistence-worker` command or the fixed `preassignment-parent` control command; callers cannot pass arbitrary commands. It uses direct `CreateProcessW` with `CREATE_SUSPENDED | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT`, a `STARTUPINFOEX` handle list, and explicit Win32 prototypes.
+- It creates the anonymous no-breakaway observer job and completion port before launch, sets an inheritable-handle list containing only the three child-side standard handles, makes the parent ends non-inheritable, and closes the child-side ends after creation so the stdin EOF is real. It retains exact process and primary-thread handles; no PID lookup or global search is used.
+- `preassignment_attempt()` records initial accounting, suspended launch, assign, membership, baseline, resume, EOF, wait, process/thread release, final accounting and drain ordering. Any setup failure closes through the owned launch and terminates the exact suspended process without resuming it.
+- The case now requires both the real-worker negative (exit 2, baseline 1/1, final 1/0, clean accounting/ordering/cleanup) and a fixed short-lived-child control whose lifetime total reaches at least two with active zero. The control succeeds only when the detector refuses it; its expected refusal is not an unconditional suite failure. Missing positive evidence blocks the case.
+- Accounting remains primary; notifications are positive corroboration. A port/API error is retained and downgrades an otherwise proved accounting result to a non-clean blocked result rather than claiming an entirely clean pass. The five previously passing cases are unchanged.
+- Offline tests use fake APIs, handles, processes and clocks: exact create→assign→baseline→resume→EOF→wait→release→query order; restricted handle list; setup failures without resume; resume/EOF/wait/query/close failure cleanup; extra total two with notifications omitted; true negative; positive control; missing control; suspended launch command/flags and no native operation at import.
+- This slice is offline-only. No native suspended launch, accounting or positive-control run was performed. Integrator evidence remains tied to exact candidate `29560ec…`; it does not certify this new code. The later supervisor-only command remains `python Tools/execute-tests.py --profile persistence-native --max-seconds 180 --execute`, after independent review.
 
 Offline tests and later supervisor-only command:
 - Deterministic offline tests must inject fake suspended launch/assign/resume, job/accounting/port/process/pipe and seconds clocks; assert create→assign→baseline→resume→EOF ordering; initial 0/0; baseline 1/1; final 1/0; extra total two with no notifications refuses; short-lived child total two fails; query failure/inconsistent counters block; port `ERROR_TIMEOUT` is idle while other port errors are recorded; setup failure terminates without resume; every owned handle closes.
 - After review and implementation, the later supervisor-only command is exactly `python Tools/execute-tests.py --profile persistence-native --max-seconds 180 --execute`. A pass of `preassignment_eof` would remain synthetic supervisor evidence, not production-reader certification; the harness overall remains unaccepted until separately reviewed.
 
 Validation:
-- `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 91 tests ... OK`.
+- `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 94 tests ... OK`.
 - `python Tools/validate-repo.py` — exit 0.
 - `python Tools/check-language.py` — exit 0.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/14f6cb20169449149ac78b3a0f300b3f/report.json`; all offline checks passed.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; the candidate-bound report path and its request commit are returned in the submission after the final commit; all offline checks passed.
 - Candidate-bound evidence and full-base scope gate are recorded in the submission.
 
 Rollback: remove the `persistence-native` profile branch and `Tools/persistence-job-acceptance.py`, remove the additive harness tests and this evidence. No catalog, production reader/runtime, PowerShell, engine or production caller changes are included.

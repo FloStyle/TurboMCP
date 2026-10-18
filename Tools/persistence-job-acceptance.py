@@ -49,6 +49,44 @@ class JOBOBJECT_ASSOCIATE_COMPLETION_PORT(ctypes.Structure):
     _fields_ = [("CompletionKey", ctypes.c_void_p), ("CompletionPort", W.HANDLE)]
 
 
+class SECURITY_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [("nLength", W.DWORD), ("lpSecurityDescriptor", ctypes.c_void_p),
+                ("bInheritHandle", W.BOOL)]
+
+
+class STARTUPINFOW(ctypes.Structure):
+    _fields_ = [
+        ("cb", W.DWORD), ("lpReserved", W.LPWSTR), ("lpDesktop", W.LPWSTR),
+        ("lpTitle", W.LPWSTR), ("dwX", W.DWORD), ("dwY", W.DWORD),
+        ("dwXSize", W.DWORD), ("dwYSize", W.DWORD),
+        ("dwXCountChars", W.DWORD), ("dwYCountChars", W.DWORD),
+        ("dwFillAttribute", W.DWORD), ("dwFlags", W.DWORD),
+        ("wShowWindow", W.WORD), ("cbReserved2", W.WORD),
+        ("lpReserved2", ctypes.POINTER(ctypes.c_byte)),
+        ("hStdInput", W.HANDLE), ("hStdOutput", W.HANDLE), ("hStdError", W.HANDLE),
+    ]
+
+
+class STARTUPINFOEXW(ctypes.Structure):
+    _fields_ = [("StartupInfo", STARTUPINFOW), ("lpAttributeList", ctypes.c_void_p)]
+
+
+class PROCESS_INFORMATION(ctypes.Structure):
+    _fields_ = [("hProcess", W.HANDLE), ("hThread", W.HANDLE),
+                ("dwProcessId", W.DWORD), ("dwThreadId", W.DWORD)]
+
+
+CREATE_SUSPENDED = 0x00000004
+CREATE_NO_WINDOW = 0x08000000
+EXTENDED_STARTUPINFO_PRESENT = 0x00080000
+STARTF_USESTDHANDLES = 0x00000100
+HANDLE_FLAG_INHERIT = 0x00000001
+PROC_THREAD_ATTRIBUTE_HANDLE_LIST = 0x00020002
+WAIT_OBJECT_0 = 0
+WAIT_TIMEOUT = 258
+INFINITE = 0xFFFFFFFF
+
+
 def _win():
     api = ctypes.WinDLL("kernel32", use_last_error=True)
     api.CreateJobObjectW.argtypes = [ctypes.c_void_p, W.LPCWSTR]
@@ -75,6 +113,31 @@ def _win():
     api.IsProcessInJob.restype = W.BOOL
     api.TerminateProcess.argtypes = [W.HANDLE, W.UINT]
     api.TerminateProcess.restype = W.BOOL
+    api.CreatePipe.argtypes = [ctypes.POINTER(W.HANDLE), ctypes.POINTER(W.HANDLE),
+                               ctypes.POINTER(SECURITY_ATTRIBUTES), W.DWORD]
+    api.CreatePipe.restype = W.BOOL
+    api.SetHandleInformation.argtypes = [W.HANDLE, W.DWORD, W.DWORD]
+    api.SetHandleInformation.restype = W.BOOL
+    api.InitializeProcThreadAttributeList.argtypes = [ctypes.c_void_p, W.DWORD, W.DWORD,
+                                                      ctypes.POINTER(ctypes.c_size_t)]
+    api.InitializeProcThreadAttributeList.restype = W.BOOL
+    api.UpdateProcThreadAttribute.argtypes = [ctypes.c_void_p, W.DWORD, ctypes.c_size_t,
+                                              ctypes.c_void_p, ctypes.c_size_t,
+                                              ctypes.c_void_p, ctypes.POINTER(ctypes.c_size_t)]
+    api.UpdateProcThreadAttribute.restype = W.BOOL
+    api.DeleteProcThreadAttributeList.argtypes = [ctypes.c_void_p]
+    api.DeleteProcThreadAttributeList.restype = None
+    api.CreateProcessW.argtypes = [W.LPCWSTR, W.LPWSTR, ctypes.POINTER(SECURITY_ATTRIBUTES),
+                                   ctypes.POINTER(SECURITY_ATTRIBUTES), W.BOOL, W.DWORD,
+                                   ctypes.c_void_p, W.LPCWSTR, ctypes.POINTER(STARTUPINFOEXW),
+                                   ctypes.POINTER(PROCESS_INFORMATION)]
+    api.CreateProcessW.restype = W.BOOL
+    api.ResumeThread.argtypes = [W.HANDLE]
+    api.ResumeThread.restype = W.DWORD
+    api.WaitForSingleObject.argtypes = [W.HANDLE, W.DWORD]
+    api.WaitForSingleObject.restype = W.DWORD
+    api.GetExitCodeProcess.argtypes = [W.HANDLE, ctypes.POINTER(W.DWORD)]
+    api.GetExitCodeProcess.restype = W.BOOL
     api.CloseHandle.argtypes = [W.HANDLE]
     api.CloseHandle.restype = W.BOOL
     return api
@@ -455,6 +518,189 @@ def finalize_case(result, errors):
     return result
 
 
+class SuspendedLaunch:
+    """Harness-owned process, primary thread and parent-side pipe handles."""
+
+    def __init__(self, api, process, thread, pid, stdin_write, stdout_read, stderr_read):
+        self.api = api
+        self.process_handle = process
+        self.thread_handle = thread
+        self.pid = pid
+        self._handle = int(process) if process else 0
+        self.stdin_write = stdin_write
+        self.stdout_read = stdout_read
+        self.stderr_read = stderr_read
+        self.resumed = False
+        self.exited = False
+        self.exit_code = None
+
+    def _close(self, name):
+        handle = getattr(self, name)
+        if not handle:
+            return []
+        try:
+            if not self.api.CloseHandle(handle):
+                return [name + ":" + str(ctypes.get_last_error())]
+        except Exception as exc:
+            return [name + ":" + str(exc)]
+        setattr(self, name, None)
+        return []
+
+    def resume(self):
+        if not self.thread_handle:
+            raise RuntimeError("resume:thread-handle-missing")
+        result = self.api.ResumeThread(self.thread_handle)
+        if result == 0xFFFFFFFF:
+            raise ctypes.WinError(ctypes.get_last_error())
+        self.resumed = True
+        errors = self._close("thread_handle")
+        if errors:
+            raise RuntimeError("resume-thread-close:" + ";".join(errors))
+
+    def close_stdin(self):
+        errors = self._close("stdin_write")
+        if errors:
+            raise RuntimeError("stdin-close:" + ";".join(errors))
+
+    def wait(self, timeout_ms):
+        result = self.api.WaitForSingleObject(self.process_handle, int(timeout_ms))
+        if result == WAIT_OBJECT_0:
+            self.exited = True
+            code = W.DWORD()
+            if not self.api.GetExitCodeProcess(self.process_handle, ctypes.byref(code)):
+                raise ctypes.WinError(ctypes.get_last_error())
+            self.exit_code = int(code.value)
+            return True
+        if result == WAIT_TIMEOUT:
+            return False
+        raise ctypes.WinError(ctypes.get_last_error())
+
+    def close_process(self):
+        errors = self._close("thread_handle") + self._close("process_handle")
+        if errors:
+            raise RuntimeError("process-close:" + ";".join(errors))
+
+    def terminate(self):
+        errors = []
+        if self.process_handle:
+            try:
+                if not self.api.TerminateProcess(self.process_handle, 125):
+                    errors.append("terminate-process:" + str(ctypes.get_last_error()))
+            except Exception as exc:
+                errors.append("terminate-process:" + str(exc))
+        return errors
+
+    def close(self, deadline=None, clock=time.monotonic):
+        errors = []
+        if self.process_handle and not self.exited:
+            errors.extend(self.terminate())
+            if deadline is not None and self.process_handle:
+                remaining = max(0, int((deadline - clock()) * 1000))
+                try:
+                    self.api.WaitForSingleObject(self.process_handle, remaining)
+                except Exception as exc:
+                    errors.append("terminate-wait:" + str(exc))
+        for name in ("thread_handle", "process_handle", "stdin_write", "stdout_read", "stderr_read"):
+            errors.extend(self._close(name))
+        return errors
+
+
+def _fixed_launch_command(mode):
+    if mode == "worker":
+        return [sys.executable, str(Path(__file__).resolve().with_name("execution_runtime.py")),
+                "--persistence-worker"]
+    if mode == "control":
+        return _helper_command("preassignment-parent")
+    raise ValueError("unsupported preassignment mode")
+
+
+def launch_suspended(mode, api=None):
+    """Create one fixed-mode suspended process with an explicit inherited-handle list."""
+    api = api or _win()
+    command = _fixed_launch_command(mode)
+    command_line = ctypes.create_unicode_buffer(subprocess.list2cmdline(command))
+    parent_handles = []
+    child_handles = []
+    attr_buffer = None
+    launch = None
+    try:
+        def pipe(child_is_read):
+            read = W.HANDLE()
+            write = W.HANDLE()
+            sa = SECURITY_ATTRIBUTES(ctypes.sizeof(SECURITY_ATTRIBUTES), None, True)
+            if not api.CreatePipe(ctypes.byref(read), ctypes.byref(write), ctypes.byref(sa), 0):
+                raise ctypes.WinError(ctypes.get_last_error())
+            child = read if child_is_read else write
+            parent = write if child_is_read else read
+            if not api.SetHandleInformation(parent, HANDLE_FLAG_INHERIT, 0):
+                api.CloseHandle(read); api.CloseHandle(write)
+                raise ctypes.WinError(ctypes.get_last_error())
+            return child, parent
+
+        stdin_read, stdin_write = pipe(True)
+        child_handles.append(stdin_read); parent_handles.append(stdin_write)
+        stdout_write, stdout_read = pipe(False)
+        parent_handles.append(stdout_read); child_handles.append(stdout_write)
+        stderr_write, stderr_read = pipe(False)
+        parent_handles.append(stderr_read); child_handles.append(stderr_write)
+
+        size = ctypes.c_size_t()
+        api.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
+        if size.value == 0:
+            raise ctypes.WinError(ctypes.get_last_error())
+        attr_buffer = ctypes.create_string_buffer(size.value)
+        attr_list = ctypes.cast(attr_buffer, ctypes.c_void_p)
+        if not api.InitializeProcThreadAttributeList(attr_list, 1, 0, ctypes.byref(size)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        inherited = (W.HANDLE * 3)(stdin_read, stdout_write, stderr_write)
+        if not api.UpdateProcThreadAttribute(
+                attr_list, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                ctypes.cast(inherited, ctypes.c_void_p), ctypes.sizeof(inherited),
+                None, None):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+        startup = STARTUPINFOEXW()
+        startup.StartupInfo.cb = ctypes.sizeof(STARTUPINFOEXW)
+        startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES
+        startup.StartupInfo.hStdInput = stdin_read
+        startup.StartupInfo.hStdOutput = stdout_write
+        startup.StartupInfo.hStdError = stderr_write
+        startup.lpAttributeList = attr_list
+        process_info = PROCESS_INFORMATION()
+        if not api.CreateProcessW(
+                None, command_line, None, None, True,
+                CREATE_SUSPENDED | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT,
+                None, str(ROOT), ctypes.byref(startup), ctypes.byref(process_info)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        launch = SuspendedLaunch(api, process_info.hProcess, process_info.hThread,
+                                 int(process_info.dwProcessId), stdin_write, stdout_read, stderr_read)
+        parent_handles = []
+        for handle in list(child_handles):
+            if not api.CloseHandle(handle):
+                raise ctypes.WinError(ctypes.get_last_error())
+            child_handles.remove(handle)
+        child_handles = []
+        if attr_buffer is not None:
+            api.DeleteProcThreadAttributeList(ctypes.cast(attr_buffer, ctypes.c_void_p))
+            attr_buffer = None
+        return launch
+    except Exception:
+        if launch is not None:
+            launch.close()
+        for handle in child_handles + parent_handles:
+            try:
+                api.CloseHandle(handle)
+            except Exception:
+                pass
+        if attr_buffer is not None:
+            api.DeleteProcThreadAttributeList(ctypes.cast(attr_buffer, ctypes.c_void_p))
+        raise
+
+
+def _quote_windows_command(argv):
+    return subprocess.list2cmdline(list(argv))
+
+
 def _helper_command(mode, *args):
     return [sys.executable, str(Path(__file__).resolve()), "--synthetic-helper", mode, *map(str, args)]
 
@@ -581,6 +827,15 @@ def _synthetic_helper(mode, *args):
         code = subprocess.call([powershell, "-NoProfile", "-NonInteractive", "-Command", source], stdin=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         Path(args[0]).write_text(str(code), encoding="utf8")
         return code
+    if mode == "preassignment-child":
+        return 0
+    if mode == "preassignment-parent":
+        child = subprocess.Popen(
+            _helper_command("preassignment-child"),
+            stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        child.wait(timeout=10)
+        return 0
     return 2
 
 
@@ -843,46 +1098,120 @@ def preassignment_accounting_decision(initial, baseline, final, ordering_valid=N
     return result
 
 
-def _case_preassignment_eof(work):
-    job = None
-    proc = None
-    assigned = False
-    result = {"status": "blocked", "detail": "not-observed"}
+def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
+                           wait_seconds=10.0):
+    launcher = launcher or launch_suspended
+    launch = None
+    initial = None
+    baseline = None
+    final = None
+    exit_code = None
+    ordering = {
+        "worker_suspended": False,
+        "initial_zero": False,
+        "assigned_before_resume": False,
+        "membership_verified": False,
+        "baseline_one": False,
+        "resumed": False,
+        "eof_after_assignment": False,
+        "worker_exited": False,
+        "process_released_before_final": False,
+    }
+    unexpected = []
+    port_error = None
+    cleanup_errors = []
+    detail = "not-observed"
     try:
-        worker = Path(__file__).resolve().with_name("execution_runtime.py")
-        job = WindowsJob()
-        proc = subprocess.Popen([sys.executable, str(worker), "--persistence-worker"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        bounded_close = _write_stdin_bounded(proc, None, time.monotonic() + 5)
+        initial = observer.accounting()
+        ordering["initial_zero"] = initial == (0, 0)
+        launch = launcher(mode)
+        ordering["worker_suspended"] = True
+        observer.assign(launch)
+        ordering["assigned_before_resume"] = True
+        if not observer.is_process_in_job(launch):
+            raise RuntimeError("membership-not-verified")
+        ordering["membership_verified"] = True
+        baseline = observer.accounting()
+        ordering["baseline_one"] = baseline == (1, 1)
+        if not ordering["baseline_one"]:
+            raise RuntimeError("baseline-accounting-not-one")
+        launch.resume()
+        ordering["resumed"] = True
+        launch.close_stdin()
+        ordering["eof_after_assignment"] = True
+        if not launch.wait(int(wait_seconds * 1000)):
+            raise RuntimeError("worker-wait-timeout")
+        ordering["worker_exited"] = True
+        exit_code = launch.exit_code
+        launch.close_process()
+        ordering["process_released_before_final"] = True
+        final = observer.accounting()
+
+        def observed(pid):
+            if pid != launch.pid:
+                unexpected.append(pid)
         try:
-            job.assign(proc)
-            assigned = job.is_process_in_job(proc)
-        except Exception:
-            assigned = False
-        exited = _wait_for_exit(proc, time.monotonic() + 10)
-        active = None
-        if assigned:
-            try:
-                active = job.active_processes()
-            except Exception:
-                active = None
-        no_descendants = assigned and active == 0
-        result = {"status": "blocked",
-                  "detail": "worker-refused; preassignment interval not independently observed",
-                  "worker_refused": exited and proc.returncode == 2,
-                  "no_descendant_end_snapshot": no_descendants,
-                  "owned": [proc.pid], "assigned": assigned, "active_processes": active,
-                  "stdin_errors": bounded_close,
-                  "synthetic_analogue": False, "actual_worker_path": True,
-                  "reader_path_evidence": False}
-        if bounded_close:
-            result["status"] = "blocked"
-            result["detail"] = "stdin-close-failed"
+            port_error = observer.drain_messages(clock() + 2.0, observed, clock=clock)
+        except Exception as exc:
+            port_error = "completion-port:" + str(exc)
     except Exception as exc:
-        result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
+        detail = type(exc).__name__ + ": " + str(exc)
     finally:
-        cleanup_errors = cleanup_job(job, proc, time.monotonic() + CLEANUP_LIMIT_SECONDS,
-                                     uncontained=not assigned)
-        result = finalize_case(result, cleanup_errors)
+        cleanup_deadline = clock() + CLEANUP_LIMIT_SECONDS
+        if launch is not None:
+            try:
+                cleanup_errors.extend(launch.close(cleanup_deadline, clock))
+            except Exception as exc:
+                cleanup_errors.append("launch-close:" + str(exc))
+        try:
+            observer.close_checked()
+        except Exception as exc:
+            cleanup_errors.append("observer-close:" + str(exc))
+    decision = preassignment_accounting_decision(
+        initial, baseline, final,
+        ordering_valid=all(ordering.values()),
+        worker_refused=exit_code == 2,
+        cleanup_ok=not cleanup_errors,
+        unexpected_notifications=len(unexpected),
+        port_api_error=port_error,
+    )
+    decision.update(mode=mode, ordering=ordering, exit_code=exit_code,
+                    cleanup_errors=cleanup_errors, operation_detail=detail)
+    if decision["status"] == "passed" and port_error is not None:
+        decision["status"] = "blocked"
+        decision["detail"] = "accounting-proved-with-port-api-error"
+        decision["accounting_status"] = "passed"
+    return decision
+
+
+def _case_preassignment_eof(work):
+    attempt_errors = []
+    try:
+        negative = _preassignment_attempt("worker", ObservedJob())
+    except Exception as exc:
+        negative = {"status": "blocked", "detail": "negative-setup:" + str(exc)}
+        attempt_errors.append(str(exc))
+    try:
+        control = _preassignment_attempt("control", ObservedJob())
+    except Exception as exc:
+        control = {"status": "blocked", "detail": "control-setup:" + str(exc)}
+        attempt_errors.append(str(exc))
+    negative_ok = negative.get("status") == "passed"
+    control_ok = (control.get("status") == "failed"
+                  and control.get("detail") == "extra-associated-process"
+                  and not control.get("cleanup_errors"))
+    result = {
+        "status": "passed" if negative_ok and control_ok and not attempt_errors else "blocked",
+        "detail": "preassignment-accounting-and-control" if negative_ok and control_ok else "preassignment-not-proved",
+        "negative": negative,
+        "positive_control": control,
+        "owned": [],
+        "synthetic_analogue": False,
+        "actual_worker_path": True,
+        "reader_path_evidence": False,
+    }
+    if attempt_errors:
+        result["attempt_errors"] = attempt_errors
     return result
 
 

@@ -1295,19 +1295,29 @@ class AcceptanceHarnessTests(unittest.TestCase):
             )
         self.assertIn("stdin-write-not-confirmed", errors)
 
-        class Job:
-            def assign(self, proc): pass
-            def is_process_in_job(self, proc): return True
-            def active_processes(self): return 0
-            def terminate_checked(self): pass
+        class Observer:
+            def __init__(self): self.queries = 0
+            def accounting(self):
+                self.queries += 1
+                return (0, 0) if self.queries == 1 else (1, 0)
+            def assign(self, launch): pass
+            def is_process_in_job(self, launch): return True
+            def drain_messages(self, deadline, callback, clock=None): return None
             def close_checked(self): pass
+        class Launch:
+            pid = 900; exit_code = 2
+            def resume(self): pass
+            def close_stdin(self): pass
+            def wait(self, timeout): return True
+            def close_process(self): pass
+            def close(self, deadline=None, clock=None): return []
         with tempfile.TemporaryDirectory() as folder, \
-             mock.patch.object(self.acceptance, "WindowsJob", Job), \
-             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()):
+             mock.patch.object(self.acceptance, "ObservedJob", Observer), \
+             mock.patch.object(self.acceptance, "launch_suspended", return_value=Launch()):
             result = self.acceptance._case_preassignment_eof(Path(folder))
         self.assertEqual(result["status"], "blocked", result)
-        self.assertTrue(result["worker_refused"])
-        self.assertFalse(result["no_descendant_end_snapshot"] is False and result["status"] == "passed")
+        self.assertNotEqual(result["negative"]["status"], "passed")
+        self.assertNotIn("accounting_property", result)
 
     def parent_case(self, data, identity, wait_result, terminate_errors=None,
                     close_result=True, supervisor_wait_fail=False):
@@ -1776,6 +1786,240 @@ class AcceptanceHarnessTests(unittest.TestCase):
             result = self.acceptance._case_preassignment_eof(Path(folder))
         self.assertEqual(result["status"], "blocked", result)
         self.assertNotIn("accounting_property", result)
+
+    def test_suspended_launch_uses_explicit_handle_list_and_fixed_command(self):
+        class Api:
+            def __init__(self):
+                self.pipe_no = 0; self.closed = []; self.inherit = []; self.command = None
+                self.flags = None; self.startup_flags = None; self.handle_list_size = None
+                self.resumed = []; self.waited = None
+            def CreatePipe(self, read, write, sa, size):
+                self.pipe_no += 1
+                read._obj.value = 100 + (self.pipe_no - 1) * 2
+                write._obj.value = 101 + (self.pipe_no - 1) * 2
+                return 1
+            def _v(self, handle):
+                try: return ctypes.cast(handle, ctypes.c_void_p).value
+                except Exception: return int(handle)
+            def SetHandleInformation(self, handle, mask, flags): self.inherit.append(self._v(handle)); return 1
+            def InitializeProcThreadAttributeList(self, attr, count, flags, size):
+                if attr is None: size._obj.value = 64; return 0
+                return 1
+            def UpdateProcThreadAttribute(self, attr, flags, attribute, value, size, reserved, ret):
+                self.handle_list_size = size; return 1
+            def CreateProcessW(self, app, command, process_sa, thread_sa, inherit, flags, env, cwd, startup, info):
+                self.command = command.value; self.flags = flags
+                self.startup_flags = startup._obj.StartupInfo.dwFlags
+                info._obj.hProcess = 500; info._obj.hThread = 501
+                info._obj.dwProcessId = 777; info._obj.dwThreadId = 778
+                return 1
+            def CloseHandle(self, handle): self.closed.append(self._v(handle)); return 1
+            def DeleteProcThreadAttributeList(self, attr): pass
+            def ResumeThread(self, handle): self.resumed.append(self._v(handle)); return 1
+            def WaitForSingleObject(self, handle, timeout): self.waited = timeout; return 0
+            def GetExitCodeProcess(self, handle, code): code._obj.value = 2; return 1
+            def TerminateProcess(self, handle, code): return 1
+        api = Api()
+        launch = self.acceptance.launch_suspended("worker", api=api)
+        self.assertIn("--persistence-worker", api.command)
+        self.assertIn("execution_runtime.py", api.command)
+        self.assertTrue(api.flags & self.acceptance.CREATE_SUSPENDED)
+        self.assertTrue(api.flags & self.acceptance.CREATE_NO_WINDOW)
+        self.assertTrue(api.flags & self.acceptance.EXTENDED_STARTUPINFO_PRESENT)
+        self.assertEqual(api.startup_flags, self.acceptance.STARTF_USESTDHANDLES)
+        self.assertEqual(api.inherit, [101, 102, 104])
+        self.assertEqual(api.closed, [100, 103, 105])
+        self.assertEqual(api.handle_list_size, 3 * ctypes.sizeof(ctypes.c_void_p))
+        launch.resume()
+        launch.close_stdin()
+        self.assertTrue(launch.wait(1000))
+        self.assertEqual(launch.exit_code, 2)
+        launch.close_process()
+        self.assertEqual(launch.close(), [])
+        self.assertEqual(api.resumed, [501])
+        self.assertEqual(api.waited, 1000)
+        self.assertIn(500, api.closed)
+        self.assertIn(101, api.closed)
+        self.assertIn(102, api.closed)
+        self.assertIn(104, api.closed)
+        quoted = self.acceptance._quote_windows_command(
+            ["C:\\Program Files\\Python\\python.exe", "C:\\Repo With Space\\execution_runtime.py", "--persistence-worker"]
+        )
+        self.assertIn('"C:\\Program Files\\Python\\python.exe"', quoted)
+        self.assertIn('"C:\\Repo With Space\\execution_runtime.py"', quoted)
+        with self.assertRaises(ValueError):
+            self.acceptance._fixed_launch_command("arbitrary")
+
+    def test_preassignment_attempt_orders_lifecycle_and_refuses_setup_failure(self):
+        class Observer:
+            def __init__(self, values, events): self.values = list(values); self.events = events
+            def accounting(self):
+                self.events.append("accounting")
+                value = self.values.pop(0)
+                if isinstance(value, BaseException): raise value
+                return value
+            def assign(self, launch): self.events.append("assign")
+            def is_process_in_job(self, launch): self.events.append("membership"); return True
+            def drain_messages(self, deadline, callback, clock=None): self.events.append("drain"); return None
+            def close_checked(self): self.events.append("observer-close")
+        class Launch:
+            pid = 900
+            def __init__(self, events, *, exit_code=2, wait=True, resume_fail=False,
+                         eof_fail=False, close_errors=None):
+                self.events = events; self.exit_code = exit_code
+                self.wait_result = wait; self.resume_fail = resume_fail; self.eof_fail = eof_fail
+                self.close_errors = close_errors or []
+            def resume(self):
+                self.events.append("resume")
+                if self.resume_fail: raise RuntimeError("resume failed")
+            def close_stdin(self):
+                self.events.append("eof")
+                if self.eof_fail: raise RuntimeError("eof failed")
+            def wait(self, timeout): self.events.append("wait"); return self.wait_result
+            def close_process(self): self.events.append("process-close")
+            def close(self, deadline=None, clock=None): self.events.append("launch-close"); return list(self.close_errors)
+        events = []
+        observer = Observer([(0, 0), (1, 1), (1, 0)], events)
+        launch = Launch(events)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertEqual(result["status"], "passed", result)
+        self.assertLess(events.index("assign"), events.index("resume"))
+        self.assertLess(events.index("resume"), events.index("eof"))
+        self.assertLess(events.index("eof"), events.index("wait"))
+        self.assertLess(events.index("wait"), events.index("process-close"))
+        self.assertEqual(events.count("accounting"), 3)
+        self.assertGreater(events.index("accounting", events.index("process-close")), events.index("process-close"))
+        self.assertLess(events.index("accounting", events.index("process-close")), events.index("drain"))
+        self.assertLess(events.index("drain"), events.index("launch-close"))
+
+        for values, exc in (
+            ([(0, 0), (1, 0), (1, 0)], "baseline-accounting-not-one"),
+            ([(0, 0), (1, 1), RuntimeError("final query")], "blocked"),
+        ):
+            events = []
+            observer = Observer(values, events)
+            launch = Launch(events)
+            result = self.acceptance._preassignment_attempt(
+                "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+            )
+            self.assertNotEqual(result["status"], "passed", result)
+            if exc != "blocked":
+                self.assertIn(result["detail"], (exc, "malformed-accounting"), result)
+                self.assertNotIn("resume", events)
+
+        events = []
+        observer = Observer([(0, 0), (1, 1), (1, 0)], events)
+        launch = Launch(events, resume_fail=True)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertNotIn("eof", events)
+
+        events = []
+        observer = Observer([(0, 0), (1, 1), (1, 0)], events)
+        launch = Launch(events, eof_fail=True)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertNotIn("wait", events)
+
+        events = []
+        observer = Observer([(0, 0), (1, 1), (1, 0)], events)
+        launch = Launch(events, wait=False)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+
+        events = []
+        observer = Observer([(0, 0), (1, 1), (1, 0)], events)
+        launch = Launch(events, close_errors=["close failed"])
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertTrue(result["cleanup_errors"])
+
+        events = []
+        observer = Observer([(0, 0), (1, 1), (2, 0)], events)
+        launch = Launch(events)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertEqual(result["status"], "failed", result)
+        self.assertEqual(result["detail"], "extra-associated-process")
+
+        events = []
+        observer = Observer([(0, 0)], events)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: (_ for _ in ()).throw(RuntimeError("create failed")),
+            clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertIn("observer-close", events)
+
+        class MembershipFailure(Observer):
+            def is_process_in_job(self, launch): self.events.append("membership"); return False
+        events = []
+        observer = MembershipFailure([(0, 0), (1, 1)], events)
+        launch = Launch(events)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertNotIn("resume", events)
+
+        class PortErrorObserver(Observer):
+            def drain_messages(self, deadline, callback, clock=None):
+                self.events.append("drain"); return "completion-port:5"
+        events = []
+        observer = PortErrorObserver([(0, 0), (1, 1), (1, 0)], events)
+        launch = Launch(events)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertEqual(result["status"], "blocked", result)
+        self.assertEqual(result["accounting_status"], "passed")
+        self.assertFalse(result["clean_run"])
+
+    def test_preassignment_case_requires_negative_and_positive_control(self):
+        class Observer:
+            def __init__(self, final): self.values = [(0, 0), (1, 1), final]
+            def accounting(self): return self.values.pop(0)
+            def assign(self, launch): pass
+            def is_process_in_job(self, launch): return True
+            def drain_messages(self, deadline, callback, clock=None): return None
+            def close_checked(self): pass
+        class Launch:
+            pid = 900
+            def __init__(self, exit_code): self.exit_code = exit_code
+            def resume(self): pass
+            def close_stdin(self): pass
+            def wait(self, timeout): return True
+            def close_process(self): pass
+            def close(self, deadline=None, clock=None): return []
+        finals = iter([(1, 0), (2, 0)])
+        def observer(): return Observer(next(finals))
+        launches = iter([Launch(2), Launch(0)])
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", side_effect=observer), \
+             mock.patch.object(self.acceptance, "launch_suspended", side_effect=lambda mode: next(launches)):
+            result = self.acceptance._case_preassignment_eof(Path(folder))
+        self.assertEqual(result["status"], "passed", result)
+        self.assertEqual(result["negative"]["status"], "passed")
+        self.assertEqual(result["positive_control"]["detail"], "extra-associated-process")
+
+        finals = iter([(1, 0), (1, 0)])
+        launches = iter([Launch(2), Launch(0)])
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", side_effect=lambda: Observer(next(finals))), \
+             mock.patch.object(self.acceptance, "launch_suspended", side_effect=lambda mode: next(launches)):
+            result = self.acceptance._case_preassignment_eof(Path(folder))
+        self.assertEqual(result["status"], "blocked", result)
 
     def test_process_evidence_handle_scoped_failures(self):
         class Job:
