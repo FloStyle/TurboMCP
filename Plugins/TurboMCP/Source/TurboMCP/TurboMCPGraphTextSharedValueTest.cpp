@@ -25,7 +25,9 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionEntry.h"
+#include "K2Node_FunctionResult.h"
 #include "K2Node_Knot.h"
+#include "K2Node_VariableGet.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -263,6 +265,61 @@ namespace
 		return Node;
 	}
 
+	void ForceNodeGuid(UEdGraphNode* InNode, uint32 InA, uint32 InB = 0,
+		uint32 InC = 0, uint32 InD = 0)
+	{
+		if (InNode != nullptr)
+		{
+			InNode->CreateNewGuid();
+			InNode->NodeGuid = FGuid(InA, InB, InC, InD);
+		}
+	}
+
+	void AssignDistinctGuids(UEdGraph* InGraph, uint32 InBase)
+	{
+		if (InGraph == nullptr)
+		{
+			return;
+		}
+		uint32 Index = 0;
+		for (UEdGraphNode* Node : InGraph->Nodes)
+		{
+			if (Node != nullptr)
+			{
+				ForceNodeGuid(Node, InBase + Index, 0x1000, 0, 0);
+				++Index;
+			}
+		}
+	}
+
+	bool VerifyFixtureGuids(FAutomationTestBase& Test, UEdGraph* InGraph, const TCHAR* InLabel)
+	{
+		if (InGraph == nullptr)
+		{
+			return false;
+		}
+		bool bOk = true;
+		TSet<FGuid> Seen;
+		for (UEdGraphNode* Node : InGraph->Nodes)
+		{
+			if (Node == nullptr)
+			{
+				bOk = false;
+				continue;
+			}
+			Test.TestTrue(*FString::Printf(TEXT("%s: every fixture node has a valid GUID"), InLabel),
+				Node->NodeGuid.IsValid());
+			Test.TestFalse(*FString::Printf(TEXT("%s: fixture GUIDs are unique"), InLabel),
+				Seen.Contains(Node->NodeGuid));
+			if (!Node->NodeGuid.IsValid() || Seen.Contains(Node->NodeGuid))
+			{
+				bOk = false;
+			}
+			Seen.Add(Node->NodeGuid);
+		}
+		return bOk;
+	}
+
 	UEdGraphNode* FindFunctionEntry(UEdGraph* InGraph)
 	{
 		if (InGraph != nullptr)
@@ -276,6 +333,25 @@ namespace
 			}
 		}
 		return nullptr;
+	}
+
+	/** Remove only the auto-created result node so the exact fixture has no disconnected tail. */
+	void RemoveFunctionResults(UEdGraph* InGraph)
+	{
+		if (InGraph == nullptr)
+		{
+			return;
+		}
+		for (int32 Index = InGraph->Nodes.Num() - 1; Index >= 0; --Index)
+		{
+			if (UEdGraphNode* Node = InGraph->Nodes[Index])
+			{
+				if (Node->IsA<UK2Node_FunctionResult>())
+				{
+					InGraph->RemoveNode(Node);
+				}
+			}
+		}
 	}
 
 	bool LinkEntryToPrint(UEdGraph* InGraph, UEdGraphNode* InEntry, UK2Node_CallFunction* InPrint)
@@ -330,6 +406,12 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 			AddError(TEXT("shared multi-output fixture links could not be made"));
 			return false;
 		}
+		AssignDistinctGuids(Graph, 0x51000000);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("multi-output")))
+		{
+			AddError(TEXT("multi-output fixture GUID preconditions failed"));
+			return false;
+		}
 
 		TArray<FString> Notes;
 		const FString Text = RenderBodies(Graph, AssetPath, Notes);
@@ -372,6 +454,12 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		if (!bLinks)
 		{
 			AddError(TEXT("cross-entry fixture links could not be made"));
+			return false;
+		}
+		AssignDistinctGuids(Graph, 0x52000000);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("cross-entry")))
+		{
+			AddError(TEXT("cross-entry fixture GUID preconditions failed"));
 			return false;
 		}
 
@@ -418,6 +506,12 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		if (!bLinks)
 		{
 			AddError(TEXT("depth fixture links could not be made"));
+			return false;
+		}
+		AssignDistinctGuids(Graph, 0x53000000);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("depth")))
+		{
+			AddError(TEXT("depth fixture GUID preconditions failed"));
 			return false;
 		}
 
@@ -468,6 +562,12 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 			AddError(TEXT("cycle fixture links could not be made"));
 			return false;
 		}
+		AssignDistinctGuids(Graph, 0x54000000);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("cycle")))
+		{
+			AddError(TEXT("cycle fixture GUID preconditions failed"));
+			return false;
+		}
 
 		TArray<FString> Notes;
 		const FString Text = RenderBodies(Graph, AssetPath, Notes);
@@ -495,6 +595,12 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 			AddError(TEXT("malformed-knot fixture links could not be made"));
 			return false;
 		}
+		AssignDistinctGuids(Graph, 0x55000000);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("malformed-knot")))
+		{
+			AddError(TEXT("malformed-knot fixture GUID preconditions failed"));
+			return false;
+		}
 
 		TArray<FString> Notes;
 		const FString Text = RenderBodies(Graph, AssetPath, Notes);
@@ -502,20 +608,148 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("malformed knot is diagnosed"), Text.Contains(TEXT("unresolved knot chain")));
 	}
 
+	// ---- unsupported shared first form ----------------------------------
 	{
-		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("SingleUsePure"));
-		UK2Node_CallFunction* Shared = Graph != nullptr ? AddConcat(Graph) : nullptr;
-		UK2Node_CallFunction* Print = Graph != nullptr ? AddPrintString(Graph) : nullptr;
+		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("SharedUnsupported"));
+		UK2Node_CallFunction* PrintA = Graph != nullptr ? AddPrintString(Graph) : nullptr;
+		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
-		if (Graph == nullptr || Shared == nullptr || Print == nullptr || Entry == nullptr)
+		UEdGraphNode* Bad = Graph != nullptr ? NewObject<UEdGraphNode>(Graph) : nullptr;
+		if (Graph == nullptr || PrintA == nullptr || PrintB == nullptr || Entry == nullptr || Bad == nullptr)
 		{
-			AddError(TEXT("single-use fixture nodes are missing"));
+			AddError(TEXT("unsupported-node fixture nodes are missing"));
 			return false;
 		}
-		if (!LinkEntryToPrint(Graph, Entry, Print)
-			|| !LinkNodes(Graph, Shared, TEXT("ReturnValue"), Print, TEXT("InString")))
+		Graph->AddNode(Bad, /*bUserAction=*/false, /*bSelectNewNode=*/false);
+		UEdGraphPin* BadOut = Bad->CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_String,
+			FName(TEXT("BadOut")));
+		UEdGraphPin* PrintAString = PinOf(PrintA, TEXT("InString"), EGPD_Input);
+		UEdGraphPin* PrintBString = PinOf(PrintB, TEXT("InString"), EGPD_Input);
+		if (BadOut == nullptr || PrintAString == nullptr || PrintBString == nullptr
+			|| !LinkEntryToPrint(Graph, Entry, PrintA)
+			|| !LinkNodes(Graph, PrintA, TEXT("then"), PrintB, TEXT("execute")))
 		{
-			AddError(TEXT("single-use fixture links could not be made"));
+			AddError(TEXT("unsupported-node fixture links could not be made"));
+			return false;
+		}
+		BadOut->MakeLinkTo(PrintAString);
+		BadOut->MakeLinkTo(PrintBString);
+		AssignDistinctGuids(Graph, 0x56000000);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("unsupported")))
+		{
+			AddError(TEXT("unsupported-node fixture GUID preconditions failed"));
+			return false;
+		}
+		const FString BadId = TurboMCPNodeId::MakeForNode(Bad);
+		TArray<FString> Notes;
+		const FString Text = RenderBodies(Graph, AssetPath, Notes);
+		TestFalse(TEXT("unsupported shared value emits no $id"), Text.Contains(TEXT("$")));
+		TestTrue(TEXT("unsupported shared value is diagnosed"),
+			Text.Contains(TEXT("has no node type ID")));
+		TestFalse(TEXT("an unsupported first form is not reused as a link"),
+			Text.Contains(FString::Printf(TEXT("(-> %s:"), *BadId)));
+	}
+
+	// ---- malformed nonempty link under a shared parent -------------------
+	{
+		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("SharedMalformedLink"));
+		UK2Node_CallFunction* Shared = Graph != nullptr ? AddConcat(Graph) : nullptr;
+		UK2Node_CallFunction* PrintA = Graph != nullptr ? AddPrintString(Graph) : nullptr;
+		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
+		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
+		if (Graph == nullptr || Shared == nullptr || PrintA == nullptr
+			|| PrintB == nullptr || Entry == nullptr)
+		{
+			AddError(TEXT("malformed-link fixture nodes are missing"));
+			return false;
+		}
+		if (!LinkEntryToPrint(Graph, Entry, PrintA)
+			|| !LinkNodes(Graph, PrintA, TEXT("then"), PrintB, TEXT("execute"))
+			|| !LinkNodes(Graph, Shared, TEXT("ReturnValue"), PrintA, TEXT("InString"))
+			|| !LinkNodes(Graph, Shared, TEXT("ReturnValue"), PrintB, TEXT("InString")))
+		{
+			AddError(TEXT("malformed-link fixture links could not be made"));
+			return false;
+		}
+		UEdGraphPin* SharedA = PinOf(Shared, TEXT("A"), EGPD_Input);
+		if (SharedA == nullptr)
+		{
+			AddError(TEXT("malformed-link fixture input pin is missing"));
+			return false;
+		}
+		SharedA->LinkedTo.Add(nullptr);
+		AssignDistinctGuids(Graph, 0x57000000);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("malformed-link")))
+		{
+			AddError(TEXT("malformed-link fixture GUID preconditions failed"));
+			return false;
+		}
+		const FString SharedId = TurboMCPNodeId::MakeForNode(Shared);
+		TArray<FString> Notes;
+		const FString Text = RenderBodies(Graph, AssetPath, Notes);
+		TestFalse(TEXT("malformed nested link emits no $id"), Text.Contains(TEXT("$")));
+		TestTrue(TEXT("malformed nested link is diagnosed"), Text.Contains(TEXT("malformed link")));
+		TestFalse(TEXT("a malformed-first shared parent is not reused"),
+			Text.Contains(FString::Printf(TEXT("(-> %s:"), *SharedId)));
+	}
+
+	// ---- exact ordinary single-use output (approved-base behavior) --------
+	{
+		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("ExactSingleUse"));
+		RemoveFunctionResults(Graph);
+		UK2Node_CallFunction* Print = Graph != nullptr ? AddPrintString(Graph) : nullptr;
+		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
+		FEdGraphPinType StringType;
+		StringType.PinCategory = UEdGraphSchema_K2::PC_String;
+		FBlueprintEditorUtils::AddMemberVariable(Fixture.Blueprint, FName(TEXT("ExactValue")), StringType,
+			TEXT("seed"));
+		UK2Node_VariableGet* Getter = Graph != nullptr ? NewObject<UK2Node_VariableGet>(Graph) : nullptr;
+		if (Graph == nullptr || Print == nullptr || Entry == nullptr || Getter == nullptr)
+		{
+			AddError(TEXT("exact single-use fixture nodes are missing"));
+			return false;
+		}
+		Getter->VariableReference.SetSelfMember(FName(TEXT("ExactValue")));
+		Graph->AddNode(Getter, /*bUserAction=*/false, /*bSelectNewNode=*/false);
+		Getter->AllocateDefaultPins();
+		// The exact literal covers only the ordinary InString input. Clear the
+		// supplied defaults on PrintString's other unlinked inputs so they do not
+		// add unrelated pin lines to the expected shape.
+		for (UEdGraphPin* Pin : Print->Pins)
+		{
+			if (Pin != nullptr && Pin->Direction == EGPD_Input
+				&& !Pin->PinName.ToString().Equals(TEXT("InString"), ESearchCase::CaseSensitive))
+			{
+				Pin->DefaultValue.Empty();
+				Pin->DefaultObject = nullptr;
+				Pin->DefaultTextValue = FText::GetEmpty();
+			}
+		}
+		UEdGraphPin* GetterOut = PinOf(Getter, TEXT("ExactValue"), EGPD_Output);
+		if (GetterOut == nullptr)
+		{
+			for (UEdGraphPin* Pin : Getter->Pins)
+			{
+				if (Pin != nullptr && Pin->Direction == EGPD_Output)
+				{
+					GetterOut = Pin;
+					break;
+				}
+			}
+		}
+		if (GetterOut == nullptr
+			|| !LinkEntryToPrint(Graph, Entry, Print)
+			|| !Link(Graph, GetterOut, PinOf(Print, TEXT("InString"), EGPD_Input)))
+		{
+			AddError(TEXT("exact single-use fixture links could not be made"));
+			return false;
+		}
+		ForceNodeGuid(Entry, 0x11110001);
+		ForceNodeGuid(Print, 0x22220001);
+		ForceNodeGuid(Getter, 0x33330001);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("exact-single-use")))
+		{
+			AddError(TEXT("exact single-use fixture GUID preconditions failed"));
 			return false;
 		}
 
@@ -523,14 +757,22 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		const FString First = RenderBodies(Graph, AssetPath, Notes);
 		TArray<FString> SecondNotes;
 		const FString Second = RenderBodies(Graph, AssetPath, SecondNotes);
-		const FString SharedId = TurboMCPNodeId::MakeForNode(Shared);
-		const FString SharedType = TurboMCPNodeId::GetNodeTypeId(Shared);
-		TestEqual(TEXT("ordinary single-use text is stable"), First, Second);
-		TestFalse(TEXT("single-use text emits no $id"), First.Contains(TEXT("$")));
-		TestEqual(TEXT("single-use pure node is inline once"),
-			CountText(First, FString::Printf(TEXT("(%s"), *SharedType)), 1);
-		TestFalse(TEXT("single-use pure node is not a link"),
-			First.Contains(FString::Printf(TEXT("(-> %s:"), *SharedId)));
+		// Provenance: this literal is the approved-base renderer's ordinary
+		// single-use shape for these controlled identifiers, not a value derived
+		// from the repaired shared-value branch. Repeatability below is extra.
+		const FString PrintId = TurboMCPNodeId::MakeForNode(Print);
+		const FString EntryId = TurboMCPNodeId::MakeForNode(Entry);
+		const FString GetterId = TurboMCPNodeId::MakeForNode(Getter);
+		const FString Expected = FString::Printf(
+			TEXT("; graph %s.ExactSingleUse\n"
+				"(fn ExactSingleUse\n"
+				"  (Development|PrintString ; %s\n"
+				"      execute (-> %s)\n"
+				"      InString (Variables|Default|GetExactValue ; %s)))"),
+			*AssetPath, *PrintId, *EntryId, *GetterId);
+		TestEqual(TEXT("ordinary single-use text exactly matches the legacy shape"), First, Expected);
+		TestEqual(TEXT("ordinary single-use text is repeatable"), First, Second);
+		TestFalse(TEXT("ordinary single-use text emits no $id"), First.Contains(TEXT("$")));
 	}
 
 	return true;

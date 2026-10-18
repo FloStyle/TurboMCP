@@ -406,8 +406,24 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 
 	const bool bFull = InDetail == EDetail::Full;
 
-	if (UEdGraphNode* Target = LinkedNode(InPin))
+	if (InPin->LinkedTo.Num() > 0)
 	{
+		// A nonempty link array is not proof of a usable source. A null first
+		// element or a null owner must not fall through to the default-value path
+		// with Complete evidence.
+		if (InPin->LinkedTo.Num() != 1 || InPin->LinkedTo[0] == nullptr
+			|| InPin->LinkedTo[0]->GetOwningNode() == nullptr)
+		{
+			const FString Note = FString::Printf(
+				TEXT("; error: value source for pin '%s' has a malformed link\n"),
+				*InPin->PinName.ToString());
+			OutNotes.Add(Note);
+			OutEvidence = EFormEvidence::Partial;
+			return Note;
+		}
+
+		UEdGraphNode* Target = InPin->LinkedTo[0]->GetOwningNode();
+
 		// A knot is transparent at bodies, so the link is followed to the real
 		// node. At full the knot is named, because that is where it must be broken.
 		if (IsKnot(Target) && bFull)
