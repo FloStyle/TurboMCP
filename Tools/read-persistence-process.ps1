@@ -8,7 +8,9 @@
     single-PID CIM read, and emits exactly one compressed JSON object. Provider
     errors and command lines are never written outside the result channel.
 
-    Native handles are closed on every path. No child process is launched.
+    Native handles are closed on every path. This script contains no child
+    launch. Windows PowerShell, Add-Type or the CIM/WMI provider may still use
+    internal helper processes; offline source inspection cannot rule that out.
 #>
 [CmdletBinding()]
 param(
@@ -24,6 +26,19 @@ $result = $null
 $handle = [IntPtr]::Zero
 $closeOk = $true
 
+function Write-Json([string] $Text) {
+    $stream = [Console]::OpenStandardOutput()
+    $encoding = New-Object -TypeName System.Text.UTF8Encoding -ArgumentList $false
+    $writer = New-Object -TypeName System.IO.StreamWriter -ArgumentList @($stream, $encoding)
+    try {
+        $writer.Write($Text)
+        $writer.Flush()
+    }
+    finally {
+        $writer.Dispose()
+    }
+}
+
 function New-Failure([string] $Code) {
     return [pscustomobject]@{ schema = $schema; ok = $false; error = $Code }
 }
@@ -32,6 +47,14 @@ function New-NativeFailure([int] $Code) {
     if ($Code -eq 5) { return New-Failure 'permission' }
     if ($Code -eq 87 -or $Code -eq 1168) { return New-Failure 'not_found' }
     return New-Failure 'unknown'
+}
+
+function Test-StillRunning($ExitCode, $ExitTime) {
+    # An active process has exit code 259 (STILL_ACTIVE) and a zero exit FILETIME.
+    # An application that actually exits with code 259 still has a nonzero exit time.
+    return ($ExitCode -eq 259 -and
+        $ExitTime.dwLowDateTime -eq 0 -and
+        $ExitTime.dwHighDateTime -eq 0)
 }
 
 try {
@@ -93,7 +116,7 @@ public static class TurboMCPProcessNative
             elseif (-not [TurboMCPProcessNative]::GetExitCodeProcess($handle, [ref]$beforeExitCode)) {
                 $result = New-NativeFailure ([Runtime.InteropServices.Marshal]::GetLastWin32Error())
             }
-            elseif ($beforeExitCode -ne 259) {
+            elseif (-not (Test-StillRunning $beforeExitCode $beforeExitTime)) {
                 $result = New-Failure 'not_found'
             }
             else {
@@ -134,7 +157,7 @@ public static class TurboMCPProcessNative
                         elseif (-not [TurboMCPProcessNative]::GetExitCodeProcess($handle, [ref]$afterExitCode)) {
                             $result = New-NativeFailure ([Runtime.InteropServices.Marshal]::GetLastWin32Error())
                         }
-                        elseif ($afterExitCode -ne 259) {
+                        elseif (-not (Test-StillRunning $afterExitCode $afterExitTime)) {
                             $result = New-Failure 'not_found'
                         }
                         elseif (
@@ -187,8 +210,10 @@ if (-not $closeOk) {
 }
 
 try {
-    $result | ConvertTo-Json -Compress
+    $json = $result | ConvertTo-Json -Compress
+    Write-Json $json
 }
 catch {
-    [pscustomobject]@{ schema = $schema; ok = $false; error = 'unknown' } | ConvertTo-Json -Compress
+    $json = [pscustomobject]@{ schema = $schema; ok = $false; error = 'unknown' } | ConvertTo-Json -Compress
+    Write-Json $json
 }

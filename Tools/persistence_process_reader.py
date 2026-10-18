@@ -27,6 +27,23 @@ PROCESS_SCHEMA = 1
 _ERRORS = {"timeout", "permission", "not_found", "provider_error", "incomplete", "ambiguous", "unknown"}
 
 
+class _DuplicateKey(ValueError):
+    pass
+
+
+def _reject_nonfinite(value):
+    raise ValueError("nonfinite JSON constant")
+
+
+def _unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise _DuplicateKey("duplicate JSON key")
+        result[key] = value
+    return result
+
+
 def _failure(error):
     if not isinstance(error, str) or error not in _ERRORS:
         error = "unknown"
@@ -59,9 +76,16 @@ def _script_path():
     return Path(__file__).resolve().with_name(SCRIPT_NAME)
 
 
-def _argv(pid):
+def _powershell_path():
+    root = os.environ.get("SystemRoot") or os.environ.get("WINDIR")
+    if not root:
+        return None
+    return str(Path(root) / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe")
+
+
+def _argv(pid, powershell):
     return [
-        "powershell",
+        powershell,
         "-NoProfile",
         "-NonInteractive",
         "-File",
@@ -98,10 +122,14 @@ def _parse_result(pid, stdout):
     except UnicodeDecodeError:
         return _failure("unknown")
     try:
-        message = json.loads(text)
-    except (ValueError, TypeError):
+        message = json.loads(
+            text,
+            object_pairs_hook=_unique_object,
+            parse_constant=_reject_nonfinite,
+        )
+    except (ValueError, TypeError, RecursionError):
         return _failure("unknown")
-    if not isinstance(message, dict) or isinstance(message.get("schema"), bool) or message.get("schema") != PROCESS_SCHEMA:
+    if not isinstance(message, dict) or type(message.get("schema")) is not int or message.get("schema") != PROCESS_SCHEMA:
         return _failure("unknown")
     if message.get("ok") is True:
         if set(message) != {
@@ -142,34 +170,71 @@ def _parse_result(pid, stdout):
 class _PopenRunner:
     """Default bounded subprocess runner. Not executed by offline tests."""
 
+    @staticmethod
+    def _cleanup(proc, threads):
+        failed = False
+        if proc is None:
+            return True
+        try:
+            if proc.poll() is None:
+                try:
+                    proc.kill()
+                except Exception:
+                    failed = True
+        except Exception:
+            failed = True
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            failed = True
+
+        alive = []
+        for thread in threads:
+            if thread is None:
+                continue
+            try:
+                thread.join(timeout=1.0)
+                if thread.is_alive():
+                    alive.append(thread)
+            except Exception:
+                failed = True
+        if alive:
+            failed = True
+            for stream in (proc.stdout, proc.stderr):
+                try:
+                    stream.close()
+                except Exception:
+                    failed = True
+            for thread in alive:
+                try:
+                    thread.join(timeout=1.0)
+                    if thread.is_alive():
+                        failed = True
+                except Exception:
+                    failed = True
+        for stream in (proc.stdout, proc.stderr):
+            try:
+                stream.close()
+            except Exception:
+                failed = True
+        return failed
+
     def run(self, argv, deadline_ns, clock):
         if os.name != "nt":
             return _runner_failure("unknown")
-        startup = None
-        flags = 0
-        if os.name == "nt":
-            startup = subprocess.STARTUPINFO()
-            startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startup.wShowWindow = subprocess.SW_HIDE
-            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        try:
-            proc = subprocess.Popen(
-                argv,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                shell=False,
-                bufsize=0,
-                startupinfo=startup,
-                creationflags=flags,
-            )
-        except OSError as exc:
-            return _runner_failure("permission" if getattr(exc, "winerror", None) == 5 else "unknown")
-
+        startup = subprocess.STARTUPINFO()
+        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startup.wShowWindow = subprocess.SW_HIDE
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
         out = bytearray()
         err = bytearray()
+        out_thread = None
+        err_thread = None
+        timed_out = False
         overflow = threading.Event()
         thread_failure = threading.Event()
+        error = None
+        cleanup_failed = False
 
         def drain(stream, target):
             try:
@@ -189,14 +254,25 @@ class _PopenRunner:
                 except Exception:
                     pass
 
-        out_thread = threading.Thread(target=drain, args=(proc.stdout, out), daemon=True)
-        err_thread = threading.Thread(target=drain, args=(proc.stderr, err), daemon=True)
-        out_thread.start()
-        err_thread.start()
-
-        timed_out = False
-        cleanup_failed = False
         try:
+            proc = subprocess.Popen(
+                argv,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=False,
+                bufsize=0,
+                startupinfo=startup,
+                creationflags=flags,
+            )
+        except OSError as exc:
+            return _runner_failure("permission" if getattr(exc, "winerror", None) == 5 else "unknown")
+
+        try:
+            out_thread = threading.Thread(target=drain, args=(proc.stdout, out), daemon=True)
+            err_thread = threading.Thread(target=drain, args=(proc.stderr, err), daemon=True)
+            out_thread.start()
+            err_thread.start()
             while proc.poll() is None:
                 if overflow.is_set() or thread_failure.is_set():
                     break
@@ -209,27 +285,15 @@ class _PopenRunner:
                     proc.wait(timeout=remaining)
                 except subprocess.TimeoutExpired:
                     continue
-            if timed_out or overflow.is_set() or thread_failure.is_set():
-                try:
-                    proc.kill()
-                except Exception:
-                    cleanup_failed = True
-            try:
-                proc.wait(timeout=5)
-            except Exception:
-                cleanup_failed = True
+        except Exception:
+            error = "unknown"
         finally:
-            for thread in (out_thread, err_thread):
-                thread.join(timeout=1.0)
-                if thread.is_alive():
-                    cleanup_failed = True
-            if proc.poll() is None:
-                try:
-                    proc.kill()
-                    proc.wait(timeout=5)
-                except Exception:
-                    cleanup_failed = True
+            cleanup_failed = self._cleanup(proc, [out_thread, err_thread])
 
+        if error is not None:
+            result = _runner_failure(error)
+            result["cleanup_failed"] = cleanup_failed
+            return result
         return {
             "returncode": proc.returncode,
             "stdout": bytes(out),
@@ -266,19 +330,22 @@ class ProcessReader:
             return _failure("unknown")
         if now >= deadline_ns:
             return _failure("timeout")
-        argv = _argv(pid)
+        powershell = _powershell_path()
+        if not powershell:
+            return _failure("unknown")
+        argv = _argv(pid, powershell)
         try:
             raw = self.runner.run(argv, deadline_ns, self.clock)
         except Exception:
             return _failure("unknown")
         if not _valid_runner_result(raw):
             return _failure("unknown")
+        if raw["cleanup_failed"]:
+            return _failure("unknown")
         if raw["timed_out"]:
             return _failure("timeout")
         if raw["overflow"]:
             return _failure("incomplete")
-        if raw["cleanup_failed"]:
-            return _failure("unknown")
         if raw["error"] is not None:
             return _failure(raw["error"])
         if raw["returncode"] != 0:
