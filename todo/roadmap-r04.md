@@ -190,22 +190,24 @@ New findings (`R04-SAVE-01` through `08`):
 - `R04-SAVE-03`: no-thumbnail direct write does not preserve E-SAVE package semantics for map extension, external packages, registered assets or mark-for-add.
 - `R04-SAVE-04`: direct `SavePackage` still executes `PreSave`/`PostSave` code; "cannot run the asset's own code" is too broad.
 - `R04-SAVE-05`: per-input counters are not per-package outcomes for multi-asset packages, duplicates or external packages; partial success is not explicit.
-- `R04-SAVE-06`: failure/mechanism text is not conditioned on outcome; a failed no-thumbnail widget save can say the package was written, and E-SAVE says thumbnail work ran without observing a draw.
-- `R04-SAVE-07`: no read-only preflight or stable read-only failure cause; two attempts end in a speculative "may be read only" message.
+- `R04-SAVE-06`: failure/mechanism text is not conditioned on outcome; a failed no-thumbnail widget save can say the package was written, E-SAVE says thumbnail work ran without observing a draw, and the `:604-611` warning attributes any captured error in the per-asset save interval to thumbnail/design-time work without renderer provenance; controlled error probes are absent.
+- `R04-SAVE-07`: no plugin-side read-only preflight or stable read-only failure cause; a dirty eligible package that remains dirty after the first attempt can receive a speculative "may be read only" message. A clean package is skipped, checkout may make the file writable, and retry depends on `Package->IsDirty()`; a live read-only failure and the post-checkout attribute/provider outcome are unverified.
 - `R04-SAVE-08`: "saved" is the dirty flag, not verified persistence; F07 reload verification is unmapped.
 Each has an unapproved proposal `R04-REPAIR-20` through `27` with exact files, preserved behavior, synthetic probe, expected result, negative control, fixture gap, validation and rollback. No repair is implemented or approved.
+
+Correction after review: this commit preserves candidate `ab7b10333b4cf13a4720c82be00536b82a6ea426` and addresses request `68812c12-7fb0-4870-9709-23f83a1eb8d1` (verified report SHA-256 `f253abf38b222bf4de9cd63ba36ea9c09778dc6f2a6dccb2c4f2cdec657c9d5b`) with documentation-only corrections: two R04-REPAIR-24 controls (clean package -> no save/no changes; dirty single-asset successful save -> `1 saved`), qualified R04-SAVE-07/read-only wording, and R04-SAVE-06 error-attribution coverage with a proposed controlled non-thumbnail/thumbnail/zero-error probe. All proposals remain unapproved.
 
 Validation:
 - `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
 - `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
 - `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
-- `python Tools/execute-tests.py --profile offline --execute` exited 0 on the pre-commit working tree (request commit `15ab395`): report `.local/executions/ae2ab8e8470b4db9b82ac2424f27cf10/report.json`, tree digest `e592621bb9cf46b48299d71ccd2749ddd32882f4e63b3bc38a4b30e0a6dfb6de`; `Tools/validate.py` passed.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 on the pre-commit correction tree (request commit `ab7b103`): report `.local/executions/4c09711bd02344ea9ac12fc56d718751/report.json`, tree digest `f4244316bd68d21d2bee0d8f2b72306f02aa04ee2cba57e3f4ef2ed832baab87`; `Tools/validate.py` passed.
 - No engine suite, editor, build, direct MCP call, packaging or recovery command was run. `test-save-thumbnail-option.py`, `test-vcs-write.py`, `test-struct.py` and the acceptance catalog are existing assertions only, not results here.
 - Candidate-bound offline evidence is obtained after this commit and returned separately.
 
 Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contracts.json`, and this Completion evidence only. No plugin, engine, test, helper, dependency, pin, routing preference, task status/readiness, TODO, review register or release control was changed.
 
-Unresolved: preflight placement/policy; E-SAVE engine checkout reporting or suppression; map/external-package scope; honest project-code wording; package-level outcomes without a new public schema; read-only preflight versus post-checkout failure; durable persistence verification without automatic reload; `R04-CALL-04`/`R04-CALL-06`; resolver route caveats and the absence of a top-level asset check; the 89 unreviewed rows. R04 remains incomplete; no merge, push, completion marking or claim release.
+Unresolved: preflight placement/policy; E-SAVE engine checkout reporting or suppression; map/external-package scope; honest project-code wording; package-level outcomes without a new public schema; read-only preflight versus post-checkout failure, with no live read-only failure or final attribute/provider outcome established; durable persistence verification without automatic reload; warning provenance for `:604-611`; `R04-CALL-04`/`R04-CALL-06`; resolver route caveats and the absence of a top-level asset check; the 89 unreviewed rows. R04 remains incomplete; no merge, push, completion marking or claim release.
 
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)

@@ -904,7 +904,7 @@
         "A dirty package that cannot be found/loaded: row failure. The 'reports unsaved changes but package could not be opened' branch at :439-449 is effectively unreachable because HasUnsavedChanges already required FindPackage to return the same package."
       ],
       "compile": "No compile call and no compile-state check. A dirty Blueprint may be saved while it has compile errors. The result does not claim compilation; save is separate from the explicit EditTurboMCPCompile operation.",
-      "thumbnail": "E-SAVE goes through the editor OBJ SAVEPACKAGE path, so the engine thumbnail step can run before the package write. For Widget Blueprints the renderer can instantiate the widget and run design-time code (WidgetBlueprintThumbnailRenderer.cpp:189-191,216-218). The result text says the thumbnail/design-time work ran through the editor save even when the engine only reused a cached thumbnail or did not draw one.",
+      "thumbnail": "E-SAVE goes through the editor OBJ SAVEPACKAGE path, so the engine thumbnail step can run before the package write. For Widget Blueprints the renderer can instantiate the widget and run design-time code (WidgetBlueprintThumbnailRenderer.cpp:189-191,216-218). The result text says the thumbnail/design-time work ran through the editor save even when the engine only reused a cached thumbnail or did not draw one. The warning at TurboMCPCompile.cpp:604-611 also attributes every captured error in the per-asset save interval to thumbnail/design-time work without renderer provenance.",
       "persistence": "A successful result means the package's dirty flag became false. UPackage::SavePackage clears that flag only after ESavePackageResult::Success (SavePackage2.cpp:3599-3607), so this is an in-process engine success signal, not a disk readback/reload. No durable persistence or multi-file atomicity is proven.",
       "tests": [
         "Tools/test-save-thumbnail-option.py:145-159 checks the one-parameter required schema; :175-181 saves a dirty Blueprint with only Assets and checks '1 saved' and 'written by the editor's save'; :187-197 saves a widget and checks the thumbnail text; :210-252 waits 14 seconds and checks the dirty list.",
@@ -3892,14 +3892,15 @@
         "EditTurboMCPSave",
         "EditTurboMCPSaveWithoutThumbnail"
       ],
-      "title": "Mechanism narration is not conditioned on the observed outcome",
+      "title": "Failure and mechanism text is not conditioned on outcome or provenance",
       "evidence": [
         "TurboMCPCompile.cpp:553-561 prints 'thumbnail/design-time work: ran through the editor's save path' for every successful E-SAVE asset. The engine generates a thumbnail only when the cached thumbnail is missing or dirty and not in automation (UnrealEdSrv.cpp:438-446,478-491); it may only load/keep an existing thumbnail.",
         "The Widget Blueprint explanation at TurboMCPCompile.cpp:591-601 is outside the success/failure branch. On a failed no-thumbnail widget save, it still says 'the package was written directly, so the engine's thumbnail step did not run for this save, and this widget's design-time code did not run for a draw.' The failure branch is :563-579.",
-        "The success branch at :553-561 is the only place that says the write happened; the widget block does not consult bStillDirty."
+        "TurboMCPCompile.cpp:451-452 takes the capture marks before the object lookup/load at :456-459. ErrorsHere is the count since that mark (:550-551), so the interval covers object loading, path construction, save hooks, serialization, the save call and its retry.",
+        "TurboMCPCompile.cpp:603-611 prints 'thumbnail/design-time work raised %d engine error(s)' whenever the package is clean, the editor path was used, the asset casts to UWidgetBlueprint and ErrorsHere > 0. It does not check whether a thumbnail draw ran or whether any counted error came from the renderer."
       ],
-      "observed_source_behavior": "A failed EditTurboMCPSaveWithoutThumbnail on a Widget Blueprint can print both 'is still unsaved after two attempts' and 'the package was written directly'. A successful E-SAVE can say thumbnail/design-time work ran when no draw was needed, because the code does not observe the thumbnail cache or the renderer. The widget sentence is true only when a draw actually ran; the code only knows that the editor save path was selected.",
-      "existing_assertions": "test-save-thumbnail-option.py asserts the success strings at :181, :191-197 and :231-235. Its own header says a thumbnail draw cannot be observed in logs. No test forces a failed no-thumbnail widget save or a fresh cached-thumbnail E-SAVE.",
+      "observed_source_behavior": "A failed EditTurboMCPSaveWithoutThumbnail on a Widget Blueprint can print both 'is still unsaved after two attempts' and 'the package was written directly'. A successful E-SAVE can say thumbnail/design-time work ran when no draw was needed, because the code does not observe the thumbnail cache or the renderer. It also attributes every captured engine error in the whole per-asset save interval to thumbnail/design-time work, although loading, save hooks, serialization or another save step may have raised it. The widget sentence is true only when a draw actually ran; the warning is provenance-unverified.",
+      "existing_assertions": "test-save-thumbnail-option.py asserts the success strings at :181, :191-197 and :231-235. Its own header says a thumbnail draw cannot be observed in logs. No test forces a failed no-thumbnail widget save, a fresh cached-thumbnail E-SAVE, a controlled non-thumbnail error in the save interval, a genuine thumbnail error, or a zero-error control.",
       "runtime_status": "not_run"
     },
     {
@@ -3914,9 +3915,10 @@
       "evidence": [
         "TurboMCPCompile.cpp:50-74 WriteRefusalReason checks GIsEditor, GEditor, PIE and simulate only; it does not check the package file's read-only attribute.",
         "The VCS plan used for preflight checks file existence and provider state but not IFileManager::IsReadOnly (TurboMCPSourceControl.cpp:269-317; TurboMCPSourceControlWrite.h:96-153). A checkout may clear read-only, but the tool does not re-probe after checkout.",
-        "The save failure branch at TurboMCPCompile.cpp:563-579 collapses the engine result and dirty flag into 'still unsaved after two attempts' and guesses 'The asset may be read only, or another program may hold the file.' The direct path has no file-attribute check either."
+        "A clean package is skipped before SaveOnce at :432-437. For a dirty eligible package, the first SaveOnce is at :535 and the retry at :539-545 is conditional on Package->IsDirty(); the failure branch at :563-579 then says 'still unsaved after two attempts' and guesses 'The asset may be read only, or another program may hold the file.' The direct path has no file-attribute check either.",
+        "The source establishes the missing plugin-side preflight and the speculative failure text, not a live read-only failure. Whether a particular initially read-only file remains read-only after checkout, and what the provider did, is not established here."
       ],
-      "observed_source_behavior": "A read-only package with no usable provider is attempted twice and reported with a speculative cause. A provider checkout that succeeds but leaves the file read-only is not distinguished from any other save failure. A provider checkout that fails is not allowed to gate the write, so the save can still fail on read-only and the report does not identify which condition held.",
+      "observed_source_behavior": "An initially read-only package is not unconditionally attempted twice. A clean package is skipped. A dirty eligible package may be made writable by checkout; if the first SaveOnce leaves it dirty, the conditional retry runs. If it remains dirty after that, the failure text speculates about read-only or another program without probing the attribute. This is a missing preflight/diagnostic finding, not evidence that a live read-only save was attempted twice or failed.",
       "existing_assertions": "test-vcs-write.py has no read-only case; it uses no-provider and Git refusals. Tests/acceptance.json F08 ('Force save refusal on an owned read-only scratch package') is not_mapped at :981-994. No test forces a read-only file or a checkout that succeeds without clearing read-only.",
       "runtime_status": "not_run"
     },
@@ -4480,13 +4482,15 @@
       ],
       "preserved_behavior": [
         "per-input ordering and resolve failures",
+        "clean package skipped before the save path and reported as no changes",
+        "dirty single-asset package with a successful save still reports 1 saved",
         "one retry per package failure",
         "duplicate policy remains unresolved",
         "E-SAVE external-package and direct-path behavior"
       ],
       "synthetic_probe": "Save two assets that share one package, the same asset twice in one Assets value, a package with an external package, and a mix of one saving and one failing package.",
-      "expected": "Package-level write results are named separately from input rows: saved, failed, and unattempted packages, with assets mapped to each. Duplicate inputs do not inflate package outcomes. A partial save is explicit rather than only 'saved N of M'.",
-      "negative_control": "One clean single-asset package still reports '1 saved'; the input order and per-input error text are preserved.",
+      "expected": "Package-level write results are named separately from input rows: saved, failed, and unattempted packages, with assets mapped to each. Duplicate inputs do not inflate package outcomes. A partial save is explicit rather than only 'saved N of M'. A clean package remains no save/no change; a dirty successful single-asset package remains '1 saved'.",
+      "negative_control": "Two controls: a clean single-asset package is skipped before the save path and reports no changes, not '1 saved'; a dirty single-asset package with a successful save reports '1 saved'. Input order and per-input error text are preserved.",
       "fixture_gap": "No multi-asset package or external-package fixture is used; the save suites save one asset at a time and never duplicate an input in one call.",
       "validation": "Proposed save-suite extension; no current package-level assertion. No engine run in this checkpoint.",
       "rollback": "Revert TurboMCPCompile.cpp and the two test files only."
@@ -4501,16 +4505,16 @@
         "Tools/test-save-thumbnail-option.py"
       ],
       "preserved_behavior": [
-        "successful E-SAVE text and widget warning",
-        "successful no-thumbnail 'skipped' text",
-        "failure count and save-count lines",
-        "same save mechanisms and retry"
+        "existing successful E-SAVE and no-thumbnail text",
+        "save counts and failure count lines",
+        "same save mechanisms and retry",
+        "a warning count is still surfaced without pasting log text"
       ],
-      "synthetic_probe": "Force a failed Widget Blueprint save through each tool (read-only file or test failpoint), and save a widget whose cached thumbnail is fresh through E-SAVE; inspect the mechanism text.",
-      "expected": "A failed save never says the package was written. The no-thumbnail success sentence is emitted only on success. Thumbnail text distinguishes 'the editor save path was selected' from 'a thumbnail draw was observed'; a cached/fresh thumbnail is not reported as design-time work that ran.",
-      "negative_control": "A successful no-thumbnail widget save still says the thumbnail draw was skipped; a successful E-SAVE widget save still warns about design-time code.",
-      "fixture_gap": "No failure injection or thumbnail-cache-state fixture exists; the current suite checks only successful text and says a draw cannot be observed.",
-      "validation": "Proposed save-suite failure/cache cases; no current assertion. No engine run in this checkpoint.",
+      "synthetic_probe": "Proposed test-only error seam in Tools/test-save-thumbnail-option.py plus an owned widget probe asset; neither exists. Cases: (1) a successful Widget Blueprint save with a controlled non-thumbnail error raised in the :451-551 capture interval; (2) a successful widget save with a genuine thumbnail/design-time error; (3) a zero-error control. Record the text and whether the error source is actually known. No runtime call is authorized here.",
+      "expected": "A failed save never says the package was written. The no-thumbnail success sentence is emitted only on success. The warning must not attribute an error to thumbnail/design-time work unless provenance was observed; otherwise it says only that engine errors were raised during this asset's save. A zero-error control emits no warning. This is a proposed policy, not current behavior.",
+      "negative_control": "The zero-error control emits no warning. The controlled non-thumbnail error may still be counted but is not labeled thumbnail/design-time work. A genuine thumbnail error is named only when the seam establishes that provenance. A successful no-thumbnail widget save still says the draw was skipped.",
+      "fixture_gap": "No controlled non-thumbnail error seam, genuine thumbnail-error fixture or zero-error control exists; the owned widget probe asset and test-only seam are proposed, not present.",
+      "validation": "Proposed test-only error seam and save-suite cases; no current error-attribution assertion. No engine run in this checkpoint.",
       "rollback": "Revert TurboMCPCompile.cpp and the save-suite test only."
     },
     {
@@ -4526,13 +4530,15 @@
       "preserved_behavior": [
         "checkout is report-only and does not gate the write",
         "a writable target saves even when the provider refuses checkout",
-        "one retry of the selected save mechanism",
+        "a clean package is skipped without a save",
+        "checkout may make an initially read-only file writable",
+        "one retry only while Package->IsDirty() after the first SaveOnce",
         "existing per-input error and count text for other failures"
       ],
-      "synthetic_probe": "Save a read-only scratch package with no provider, with a provider whose checkout fails, and with a provider whose checkout succeeds and clears read-only; add a writable control.",
-      "expected": "After the checkout attempt, the tool probes local read-only state. If the file is still read-only, it reports one explicit read-only failure (stable reason) and does not make a second blind write attempt; if the checkout made it writable, the save proceeds. Provider failure alone still does not gate a writable save.",
-      "negative_control": "A writable no-provider package still saves; a read-only file whose checkout clears the attribute still saves; a provider refusal on a writable file still does not become a save failure.",
-      "fixture_gap": "No read-only fixture and no provider that clears read-only are available; F08 is not_mapped. The current suites cover no-provider and Git only.",
+      "synthetic_probe": "Use a dirty eligible package that is initially read-only and remains dirty after the first SaveOnce: no provider, a failing checkout, a checkout that succeeds but leaves the attribute unverified, and a checkout that clears read-only; add a clean read-only control and a writable control. The current file attribute and provider outcome must be recorded, not assumed.",
+      "expected": "Proposed policy: after checkout, re-probe local read-only state. For a dirty eligible package, if it is still read-only, report one explicit read-only failure and do not make a second blind write attempt; if checkout made it writable, save. A clean package is skipped. Provider failure alone still does not gate a writable save. This is proposed policy, not current behavior.",
+      "negative_control": "A clean read-only package is skipped and reports no changes. A writable control still saves. An initially read-only package whose checkout clears the attribute still saves. A provider refusal on a writable file still does not become a save failure. The current source does not establish a live read-only failure.",
+      "fixture_gap": "No read-only fixture and no provider that clears read-only are available; F08 is not_mapped. The current suites cover no-provider and Git only. The remaining attribute and provider outcome are unverified.",
       "validation": "Proposed read-only/provider tests; no current assertion. No engine run in this checkpoint.",
       "rollback": "Revert TurboMCPCompile.cpp and the two test files only."
     },
@@ -4590,10 +4596,11 @@
     "Save omitted/separator-only/duplicate/malformed input, the 25-part boundary, and duplicate provider/save work.",
     "Save clean asset, unsaved package, package with no loaded object, loaded subobject and package outside /Game.",
     "Save source-control preflight ordering: clean/refused/unloadable assets and duplicate operations; E-SAVE's engine checkout pass.",
-    "Save read-only file, checkout that fails, checkout that succeeds but leaves read-only, and a writable control.",
+    "Save initially read-only dirty/eligible package, checkout that fails, checkout that succeeds but leaves the attribute unverified, checkout that clears read-only, clean read-only and writable controls; record final attribute and provider result.",
     "Save map/World, external package, loaded unregistered asset, and new-asset mark-for-add behavior.",
     "Save failure and partial-success text, widget failure text, cached/fresh thumbnail state, and multi-asset-per-package counts.",
-    "Save durable persistence: unload/reload and compare; F07 is not_mapped."
+    "Save durable persistence: unload/reload and compare; F07 is not_mapped.",
+    "Save warning provenance: successful widget save with a controlled non-thumbnail error in the save interval, a genuine thumbnail/design-time error, and a zero-error control."
   ],
   "validation": {
     "audit_inventory_check": {
@@ -4642,7 +4649,9 @@
     "Whether read-only should be a preflight refusal or an explicit post-checkout failure code; D-57's non-gating rule still applies to writable targets.",
     "How to verify durable persistence without automatic reload over unsaved editor state.",
     "The existing R04-CALL-04/R04-CALL-06 result and recorder gaps apply; no ARC02 line is added by this checkpoint.",
-    "Resolver route caveats from R04-VCS-07 apply to these tools; no top-level asset check is added, and no save-specific subobject fixture exists."
+    "Resolver route caveats from R04-VCS-07 apply to these tools; no top-level asset check is added, and no save-specific subobject fixture exists.",
+    "The source establishes no plugin-side read-only preflight and a speculative failure message; it does not establish a live read-only failure or the post-checkout file attribute/provider outcome.",
+    "Whether the E-SAVE :604-611 warning can observe renderer provenance, or must be reworded as a save-interval error count; no controlled error seam exists."
   ],
   "schema_validation": {
     "status": "source_traced_not_runtime",
@@ -4823,10 +4832,10 @@
       "offline_profile": {
         "command": "python Tools/execute-tests.py --profile offline --execute",
         "exit": 0,
-        "report": ".local/executions/ae2ab8e8470b4db9b82ac2424f27cf10/report.json",
-        "request_commit": "15ab395ac88eaa52ea31d7628d032446c90fddb6",
-        "tree_digest": "e592621bb9cf46b48299d71ccd2749ddd32882f4e63b3bc38a4b30e0a6dfb6de",
-        "summary": "PASSED; the offline profile ran Tools/validate.py. This is the pre-commit working-tree run after the checkpoint-4 report edits; candidate-bound evidence is obtained after the checkpoint commit and returned separately."
+        "report": ".local/executions/4c09711bd02344ea9ac12fc56d718751/report.json",
+        "request_commit": "ab7b10333b4cf13a4720c82be00536b82a6ea426",
+        "tree_digest": "f4244316bd68d21d2bee0d8f2b72306f02aa04ee2cba57e3f4ef2ed832baab87",
+        "summary": "PASSED; the offline profile ran Tools/validate.py on the correction tree. This is the pre-commit correction run; candidate-bound evidence is obtained after the correction commit and returned separately."
       }
     },
     "reviewed_tools": 12,
@@ -4834,6 +4843,17 @@
     "review": {
       "status": "pending_integration_review",
       "note": "Checkpoint 4 adds two source-reviewed save rows; R04 remains incomplete and every repair proposal remains unapproved."
+    },
+    "correction": {
+      "prior_candidate": "ab7b10333b4cf13a4720c82be00536b82a6ea426",
+      "request": "68812c12-7fb0-4870-9709-23f83a1eb8d1",
+      "review_report_sha256": "f253abf38b222bf4de9cd63ba36ea9c09778dc6f2a6dccb2c4f2cdec657c9d5b",
+      "status": "documentation_corrections_submitted",
+      "changes": [
+        "R04-REPAIR-24 has two negative controls: clean package -> no save/no changes, and dirty single-asset successful save -> 1 saved.",
+        "R04-SAVE-07 and repeated summaries now qualify the conditional retry and unverified live read-only outcome.",
+        "R04-SAVE-06 now covers error-interval attribution without renderer provenance, with a proposed controlled non-thumbnail/thumbnail/zero-error probe."
+      ]
     }
   }
 }
