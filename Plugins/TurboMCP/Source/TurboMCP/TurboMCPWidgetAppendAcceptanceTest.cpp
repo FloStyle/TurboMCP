@@ -57,6 +57,7 @@ namespace
 		UK2Node_CallFunction* PrintB = nullptr;
 		UK2Node_FunctionEntry* Entry = nullptr;
 		FString AssetPath;
+		FString LastError;
 	};
 
 	struct FNodeSnapshot
@@ -80,15 +81,23 @@ namespace
 		{
 			if (bRetired)
 			{
-				return true;
+				return bRetireSucceeded;
 			}
 			bRetired = true;
-			auto RetireObject = [](UObject* Object)
+			const bool bHadOwnedObject = Fixture.Package != nullptr || Fixture.Blueprint != nullptr;
+			bool bSkippedRooted = false;
+			auto RetireObject = [&bSkippedRooted](UObject* Object)
 			{
-				if (Object != nullptr && !Object->IsRooted())
+				if (Object == nullptr)
 				{
-					Object->MarkAsGarbage();
+					return;
 				}
+				if (Object->IsRooted())
+				{
+					bSkippedRooted = true;
+					return;
+				}
+				Object->MarkAsGarbage();
 			};
 			auto RetireGraph = [&RetireObject](UEdGraph* Graph)
 			{
@@ -115,11 +124,15 @@ namespace
 				Fixture.Package->SetDirtyFlag(false);
 				RetireObject(Fixture.Package);
 			}
-			return true;
+			// MarkAsGarbage is retirement, not collection. Rooted objects are
+			// reported as a cleanup limit rather than claimed as retired.
+			bRetireSucceeded = bHadOwnedObject && !bSkippedRooted;
+			return bRetireSucceeded;
 		}
 
 		FFixture& Fixture;
 		bool bRetired = false;
+		bool bRetireSucceeded = false;
 	};
 
 	void ForceGuid(UEdGraphNode* InNode, uint32 InA, uint32 InB = 0,
@@ -282,12 +295,25 @@ namespace
 		const UWidgetTree* Tree = InBlueprint->WidgetTree;
 		FString Out = FString::Printf(TEXT("root=%s\n"),
 			Tree->RootWidget != nullptr ? *Tree->RootWidget->GetName() : TEXT("none"));
+		if (const UCanvasPanel* RootPanel = Cast<UCanvasPanel>(Tree->RootWidget))
+		{
+			Out += TEXT("children=");
+			for (int32 Index = 0; Index < RootPanel->GetChildrenCount(); ++Index)
+			{
+				const UWidget* Child = RootPanel->GetChildAt(Index);
+				Out += FString::Printf(TEXT("%s%s"), Index == 0 ? TEXT("") : TEXT(","),
+					Child != nullptr ? *Child->GetName() : TEXT("none"));
+			}
+			Out += TEXT("\n");
+		}
 
 		TArray<UWidget*> Widgets;
 		Tree->GetAllWidgets(Widgets);
-		Widgets.Sort([](const UWidget* A, const UWidget* B)
+		// TArray::Sort dereferences raw pointers before invoking the predicate.
+		Widgets.RemoveAll([](const UWidget* Widget) { return Widget == nullptr; });
+		Widgets.Sort([](const UWidget& A, const UWidget& B)
 		{
-			return A != nullptr && B != nullptr && A->GetName() < B->GetName();
+			return A.GetName() < B.GetName();
 		});
 		for (const UWidget* Widget : Widgets)
 		{
@@ -298,8 +324,9 @@ namespace
 			const UPanelSlot* Slot = Widget->Slot;
 			const FString ParentName = Slot != nullptr && Slot->Parent != nullptr
 				? Slot->Parent->GetName() : FString();
-			FString Line = FString::Printf(TEXT("%s|%s|parent=%s"),
-				*Widget->GetName(), *Widget->GetClass()->GetName(), *ParentName);
+			FString Line = FString::Printf(TEXT("%s|%s|parent=%s|variable=%d"),
+				*Widget->GetName(), *Widget->GetClass()->GetName(), *ParentName,
+				Widget->bIsVariable ? 1 : 0);
 			if (const UTextBlock* Text = Cast<UTextBlock>(Widget))
 			{
 				Line += TEXT("|text=") + Text->GetText().ToString();
@@ -308,12 +335,15 @@ namespace
 			{
 				const FAnchorData Layout = CanvasSlot->GetLayout();
 				Line += FString::Printf(
-					TEXT("|offsets=%.3f,%.3f,%.3f,%.3f|anchors=%.3f,%.3f,%.3f,%.3f")
-					TEXT("|alignment=%.3f,%.3f|z=%d|auto=%d"),
-					Layout.Offsets.Left, Layout.Offsets.Top, Layout.Offsets.Right,
-					Layout.Offsets.Bottom, Layout.Anchors.Minimum.X, Layout.Anchors.Minimum.Y,
-					Layout.Anchors.Maximum.X, Layout.Anchors.Maximum.Y,
-					Layout.Alignment.X, Layout.Alignment.Y,
+					TEXT("|offsets=%.17g,%.17g,%.17g,%.17g|anchors=%.17g,%.17g,%.17g,%.17g")
+					TEXT("|alignment=%.17g,%.17g|z=%d|auto=%d"),
+					static_cast<double>(Layout.Offsets.Left), static_cast<double>(Layout.Offsets.Top),
+					static_cast<double>(Layout.Offsets.Right), static_cast<double>(Layout.Offsets.Bottom),
+					static_cast<double>(Layout.Anchors.Minimum.X),
+					static_cast<double>(Layout.Anchors.Minimum.Y),
+					static_cast<double>(Layout.Anchors.Maximum.X),
+					static_cast<double>(Layout.Anchors.Maximum.Y),
+					static_cast<double>(Layout.Alignment.X), static_cast<double>(Layout.Alignment.Y),
 					CanvasSlot->GetZOrder(), CanvasSlot->GetAutoSize() ? 1 : 0);
 			}
 			Out += Line + TEXT("\n");
@@ -359,6 +389,48 @@ namespace
 		return nullptr;
 	}
 
+	bool ValidateGraphIdentity(UEdGraph* InGraph, FString& OutError)
+	{
+		if (InGraph == nullptr)
+		{
+			OutError = TEXT("graph is null");
+			return false;
+		}
+		TSet<FGuid> NodeGuids;
+		TSet<FGuid> PinGuids;
+		for (const UEdGraphNode* Node : InGraph->Nodes)
+		{
+			if (Node == nullptr)
+			{
+				OutError = TEXT("null node");
+				return false;
+			}
+			if (!Node->NodeGuid.IsValid() || NodeGuids.Contains(Node->NodeGuid))
+			{
+				OutError = FString::Printf(TEXT("node GUID invalid or duplicate: %s"),
+					*Node->GetName());
+				return false;
+			}
+			NodeGuids.Add(Node->NodeGuid);
+			for (const UEdGraphPin* Pin : Node->Pins)
+			{
+				if (Pin == nullptr)
+				{
+					OutError = FString::Printf(TEXT("null pin on %s"), *Node->GetName());
+					return false;
+				}
+				if (!Pin->PinId.IsValid() || PinGuids.Contains(Pin->PinId))
+				{
+					OutError = FString::Printf(TEXT("pin GUID invalid or duplicate on %s:%s"),
+						*Node->GetName(), *Pin->PinName.ToString());
+					return false;
+				}
+				PinGuids.Add(Pin->PinId);
+			}
+		}
+		return true;
+	}
+
 	UK2Node_CallFunction* AddPrint(UEdGraph* InGraph, const TCHAR* InDefault,
 		int32 InX, int32 InY, uint32 InGuid)
 	{
@@ -392,6 +464,123 @@ namespace
 			&& InGraph->GetSchema()->TryCreateConnection(InFrom, InTo);
 	}
 }
+
+	/**
+	 * A separate disposable Widget fixture for comparator negative controls. It
+	 * never touches the acceptance fixture's package, so deliberate comparator
+	 * mutations cannot contaminate Plan/Apply clean-state evidence.
+	 */
+	bool BuildComparatorFixture(FFixture& OutFixture)
+	{
+		const FString Suffix = FGuid::NewGuid().ToString(EGuidFormats::DigitsLower);
+		const FString Leaf = FString::Printf(TEXT("TurboMCPWidgetComparator_%s"), *Suffix);
+		OutFixture.Package = CreatePackage(*FString::Printf(TEXT("/Game/Tests/%s"), *Leaf));
+		if (OutFixture.Package == nullptr)
+		{
+			OutFixture.LastError = TEXT("comparator package was not created");
+			return false;
+		}
+		OutFixture.Package->SetFlags(RF_Transient);
+		OutFixture.Blueprint = FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(
+			OutFixture.Package, FName(*Leaf), BPTYPE_Normal, UUserWidget::StaticClass(),
+			UCanvasPanel::StaticClass(), TEXT("TurboMCPWidgetAppendAcceptanceTest"), false);
+		if (OutFixture.Blueprint == nullptr || OutFixture.Blueprint->WidgetTree == nullptr)
+		{
+			OutFixture.LastError = TEXT("comparator WidgetBlueprint was not created");
+			return false;
+		}
+		OutFixture.Blueprint->SetFlags(RF_Transient);
+		OutFixture.Tree = OutFixture.Blueprint->WidgetTree;
+		OutFixture.Root = Cast<UCanvasPanel>(OutFixture.Tree->RootWidget);
+		if (OutFixture.Root == nullptr)
+		{
+			OutFixture.LastError = TEXT("comparator CanvasPanel root is missing");
+			return false;
+		}
+		OutFixture.Title = OutFixture.Tree->ConstructWidget<UTextBlock>(
+			UTextBlock::StaticClass(), TEXT("ComparatorTitle"));
+		OutFixture.Status = OutFixture.Tree->ConstructWidget<UTextBlock>(
+			UTextBlock::StaticClass(), TEXT("ComparatorStatus"));
+		if (OutFixture.Title == nullptr || OutFixture.Status == nullptr)
+		{
+			OutFixture.LastError = TEXT("comparator TextBlocks were not constructed");
+			return false;
+		}
+		FText WidgetError;
+		if (!FWidgetBlueprintOperationUtils::AddWidget(OutFixture.Blueprint, OutFixture.Title,
+				OutFixture.Root, 0, WidgetError)
+			|| !FWidgetBlueprintOperationUtils::AddWidget(OutFixture.Blueprint, OutFixture.Status,
+				OutFixture.Root, 1, WidgetError))
+		{
+			OutFixture.LastError = TEXT("comparator AddWidget failed: ") + WidgetError.ToString();
+			return false;
+		}
+		OutFixture.TitleSlot = Cast<UCanvasPanelSlot>(OutFixture.Title->Slot);
+		OutFixture.StatusSlot = Cast<UCanvasPanelSlot>(OutFixture.Status->Slot);
+		if (OutFixture.TitleSlot == nullptr || OutFixture.StatusSlot == nullptr)
+		{
+			OutFixture.LastError = TEXT("comparator slot is missing");
+			return false;
+		}
+		OutFixture.TitleSlot->SetZOrder(4);
+		OutFixture.StatusSlot->SetZOrder(1);
+		FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(OutFixture.Blueprint,
+			OutFixture.Title, true);
+		FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(OutFixture.Blueprint,
+			OutFixture.Status, false);
+		{
+			TArray<UWidget*> AllWidgets;
+			OutFixture.Tree->GetAllWidgets(AllWidgets);
+			for (UWidget* Widget : AllWidgets)
+			{
+				if (Widget != nullptr
+					&& !OutFixture.Blueprint->WidgetVariableNameToGuidMap.Contains(Widget->GetFName()))
+				{
+					OutFixture.Blueprint->WidgetVariableNameToGuidMap.Add(Widget->GetFName(),
+						FGuid::NewGuid());
+				}
+			}
+		}
+		OutFixture.Target = AddFunctionGraph(OutFixture, TEXT("ComparatorTarget"));
+		OutFixture.Sibling = AddFunctionGraph(OutFixture, TEXT("ComparatorSibling"));
+		if (OutFixture.Target == nullptr || OutFixture.Sibling == nullptr)
+		{
+			OutFixture.LastError = TEXT("comparator function graphs were not created");
+			return false;
+		}
+		OutFixture.Entry = FindEntry(OutFixture.Target);
+		OutFixture.PrintA = AddPrint(OutFixture.Target, TEXT("control-a"), 100, 100, 0x44440001);
+		OutFixture.PrintB = AddPrint(OutFixture.Target, TEXT("control-b"), 420, 100, 0x55550001);
+		UK2Node_FunctionEntry* SiblingEntry = FindEntry(OutFixture.Sibling);
+		UK2Node_CallFunction* SiblingPrint = AddPrint(OutFixture.Sibling, TEXT("sibling"),
+			100, 100, 0x66660001);
+		if (OutFixture.Entry == nullptr || OutFixture.PrintA == nullptr
+			|| OutFixture.PrintB == nullptr || SiblingEntry == nullptr || SiblingPrint == nullptr)
+		{
+			OutFixture.LastError = TEXT("comparator graph nodes are missing");
+			return false;
+		}
+		if (!Link(OutFixture.Target, OutFixture.Entry->FindPin(TEXT("then"), EGPD_Output),
+				OutFixture.PrintA->FindPin(TEXT("execute"), EGPD_Input))
+			|| !Link(OutFixture.Target, OutFixture.PrintA->FindPin(TEXT("then"), EGPD_Output),
+				OutFixture.PrintB->FindPin(TEXT("execute"), EGPD_Input))
+			|| !Link(OutFixture.Sibling, SiblingEntry->FindPin(TEXT("then"), EGPD_Output),
+				SiblingPrint->FindPin(TEXT("execute"), EGPD_Input)))
+		{
+			OutFixture.LastError = TEXT("comparator seeded links could not be made");
+			return false;
+		}
+		FCompilerResultsLog CompilerLog;
+		FKismetEditorUtilities::CompileBlueprint(OutFixture.Blueprint,
+			EBlueprintCompileOptions::None, &CompilerLog);
+		if (CompilerLog.NumErrors != 0 || OutFixture.Blueprint->Status != BS_Successful)
+		{
+			OutFixture.LastError = FString::Printf(
+				TEXT("comparator compilation failed with %d error(s)"), CompilerLog.NumErrors);
+			return false;
+		}
+		return true;
+	}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FTurboMCPWidgetAppendAcceptanceTest,
@@ -532,6 +721,24 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 	const FGraphSnapshot SiblingBefore = CaptureGraph(Fixture.Sibling);
 	const FString WidgetsBefore = CaptureWidgets(Fixture.Blueprint);
 	const bool bDirtyBefore = Package->IsDirty();
+	FString IdentityError;
+	TestTrue(TEXT("target fixture has unique valid node and pin GUIDs"),
+		ValidateGraphIdentity(Fixture.Target, IdentityError));
+	TestTrue(TEXT("sibling fixture has unique valid node and pin GUIDs"),
+		ValidateGraphIdentity(Fixture.Sibling, IdentityError));
+	TestEqual(TEXT("target fixture has the two seeded exec links"),
+		TargetBefore.Links.Num(), 2);
+	TestEqual(TEXT("sibling fixture has the one seeded exec link"),
+		SiblingBefore.Links.Num(), 1);
+	TestTrue(TEXT("target fixture contains the seeded entry and PrintString nodes"),
+		Fixture.Entry != nullptr && Fixture.PrintA != nullptr && Fixture.PrintB != nullptr
+		&& TargetBefore.Nodes.Num() >= 3);
+	TestTrue(TEXT("widget fixture preserves the seeded child order"),
+		WidgetsBefore.Contains(TEXT("children=TitleText,StatusText")));
+	if (TargetBefore.Links.Num() != 2 || SiblingBefore.Links.Num() != 1)
+	{
+		return false;
+	}
 	if (bDirtyBefore)
 	{
 		AddError(TEXT("widget fixture: baseline dirty state is not clean"));
@@ -580,73 +787,132 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a refused Plan did not change the dirty flag"),
 		Package->IsDirty(), bDirtyBefore);
 
-	// Negative controls: deliberately perturb a disposable fixture, prove the
-	// comparator detects it, restore, and verify the baseline before Apply.
+	FString RefusalReport;
+	FString RefusalApplyError;
+	TestTrue(TEXT("Apply on a refused plan returns its preview without writing"),
+		FTurboMCPGraphAppend::Apply(RefusalPlan, RefusalReport, RefusalApplyError));
+	TestEqual(TEXT("Apply on a refused plan reports no execution error"),
+		RefusalApplyError, FString());
+	TestTrue(TEXT("Apply on a refused plan reports unchanged"),
+		RefusalReport.StartsWith(TEXT("unchanged:")));
+	TestTrue(TEXT("Apply on a refused plan reports the preview changes nothing"),
+		RefusalReport.Contains(TEXT("preview changes NOTHING")));
+	TestTrue(TEXT("Apply on a refused plan did not mutate the target graph"),
+		SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+	TestTrue(TEXT("Apply on a refused plan did not mutate the sibling graph"),
+		SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
+	TestEqual(TEXT("Apply on a refused plan did not mutate the widget tree"),
+		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
+	TestEqual(TEXT("Apply on a refused plan did not change the dirty flag"),
+		Package->IsDirty(), bDirtyBefore);
+
+	// Negative controls run on a separate disposable Widget fixture, so they
+	// cannot contaminate the acceptance fixture's clean Plan/Apply baseline.
+	FFixture Comparator;
+	FScopedFixtureCleanup ComparatorCleanup(Comparator);
+	if (!BuildComparatorFixture(Comparator))
 	{
-		const int32 OriginalX = Fixture.PrintA->NodePosX;
-		Fixture.PrintA->NodePosX = OriginalX + 1;
+		AddError(TEXT("comparator fixture: ") + Comparator.LastError);
+		return false;
+	}
+	const FGraphSnapshot ComparatorTarget = CaptureGraph(Comparator.Target);
+	const FGraphSnapshot ComparatorSibling = CaptureGraph(Comparator.Sibling);
+	const FString ComparatorWidgets = CaptureWidgets(Comparator.Blueprint);
+	FString ComparatorIdentityError;
+	TestTrue(TEXT("comparator fixture has unique valid node and pin GUIDs"),
+		ValidateGraphIdentity(Comparator.Target, ComparatorIdentityError));
+	TestTrue(TEXT("comparator sibling has unique valid node and pin GUIDs"),
+		ValidateGraphIdentity(Comparator.Sibling, ComparatorIdentityError));
+	{
+		const int32 OriginalX = Comparator.PrintA->NodePosX;
+		Comparator.PrintA->NodePosX = OriginalX + 1;
 		TestFalse(TEXT("the graph comparator detects a moved node"),
-			SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
-		Fixture.PrintA->NodePosX = OriginalX;
+			SameGraph(ComparatorTarget, CaptureGraph(Comparator.Target)));
+		Comparator.PrintA->NodePosX = OriginalX;
 		TestTrue(TEXT("the moved-node control restores exactly"),
-			SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+			SameGraph(ComparatorTarget, CaptureGraph(Comparator.Target)));
 	}
 	{
-		UEdGraphPin* InString = Fixture.PrintA->FindPin(TEXT("InString"), EGPD_Input);
-		const FString Original = InString != nullptr ? InString->DefaultValue : FString();
+		UEdGraphPin* InString = Comparator.PrintA->FindPin(TEXT("InString"), EGPD_Input);
 		if (InString == nullptr)
 		{
-			AddError(TEXT("widget fixture: PrintA InString pin is missing"));
+			AddError(TEXT("comparator fixture: PrintA InString pin is missing"));
 			return false;
 		}
+		const FString Original = InString->DefaultValue;
 		InString->DefaultValue = TEXT("perturbed");
 		TestFalse(TEXT("the graph comparator detects a changed default"),
-			SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+			SameGraph(ComparatorTarget, CaptureGraph(Comparator.Target)));
 		InString->DefaultValue = Original;
 		TestTrue(TEXT("the changed-default control restores exactly"),
-			SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+			SameGraph(ComparatorTarget, CaptureGraph(Comparator.Target)));
 	}
 	{
-		UEdGraphPin* Then = Fixture.PrintA->FindPin(TEXT("then"), EGPD_Output);
-		UEdGraphPin* Exec = Fixture.PrintB->FindPin(TEXT("execute"), EGPD_Input);
-		if (Then == nullptr || Exec == nullptr || Fixture.Target->GetSchema() == nullptr)
+		UEdGraphPin* Then = Comparator.PrintA->FindPin(TEXT("then"), EGPD_Output);
+		UEdGraphPin* Exec = Comparator.PrintB->FindPin(TEXT("execute"), EGPD_Input);
+		if (Then == nullptr || Exec == nullptr || Comparator.Target->GetSchema() == nullptr)
 		{
-			AddError(TEXT("widget fixture: seeded link pins are missing"));
+			AddError(TEXT("comparator fixture: seeded link pins are missing"));
 			return false;
 		}
-		Fixture.Target->GetSchema()->BreakSinglePinLink(Then, Exec);
+		Comparator.Target->GetSchema()->BreakSinglePinLink(Then, Exec);
 		TestFalse(TEXT("the graph comparator detects a removed link"),
-			SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+			SameGraph(ComparatorTarget, CaptureGraph(Comparator.Target)));
 		TestTrue(TEXT("the removed link is restored"),
-			Fixture.Target->GetSchema()->TryCreateConnection(Then, Exec));
+			Comparator.Target->GetSchema()->TryCreateConnection(Then, Exec));
 		TestTrue(TEXT("the restored link matches the baseline"),
-			SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+			SameGraph(ComparatorTarget, CaptureGraph(Comparator.Target)));
 	}
 	{
-		UEdGraphNode* SiblingNode = Fixture.Sibling->Nodes.Num() > 0
-			? Fixture.Sibling->Nodes[0] : nullptr;
+		UEdGraphNode* SiblingNode = Comparator.Sibling->Nodes.Num() > 0
+			? Comparator.Sibling->Nodes[0] : nullptr;
 		if (SiblingNode == nullptr)
 		{
-			AddError(TEXT("widget fixture: sibling node is missing"));
+			AddError(TEXT("comparator fixture: sibling node is missing"));
 			return false;
 		}
 		const int32 OriginalY = SiblingNode->NodePosY;
 		SiblingNode->NodePosY = OriginalY + 7;
 		TestFalse(TEXT("the sibling comparator detects a moved node"),
-			SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
+			SameGraph(ComparatorSibling, CaptureGraph(Comparator.Sibling)));
 		SiblingNode->NodePosY = OriginalY;
 		TestTrue(TEXT("the sibling control restores exactly"),
-			SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
+			SameGraph(ComparatorSibling, CaptureGraph(Comparator.Sibling)));
 	}
 	{
-		const int32 OriginalZ = Fixture.TitleSlot->GetZOrder();
-		Fixture.TitleSlot->SetZOrder(OriginalZ + 1);
+		const int32 OriginalZ = Comparator.TitleSlot->GetZOrder();
+		Comparator.TitleSlot->SetZOrder(OriginalZ + 1);
 		TestFalse(TEXT("the widget comparator detects a changed slot property"),
-			CaptureWidgets(Fixture.Blueprint) == WidgetsBefore);
-		Fixture.TitleSlot->SetZOrder(OriginalZ);
+			CaptureWidgets(Comparator.Blueprint) == ComparatorWidgets);
+		Comparator.TitleSlot->SetZOrder(OriginalZ);
 		TestEqual(TEXT("the widget slot control restores exactly"),
-			CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
+			CaptureWidgets(Comparator.Blueprint), ComparatorWidgets);
 	}
+	{
+		const FName StatusName = Comparator.Status->GetFName();
+		const bool bOriginalVariable = Comparator.Status->bIsVariable;
+		const bool bHadGuidEntry = Comparator.Blueprint->WidgetVariableNameToGuidMap.Contains(StatusName);
+		const FGuid OriginalGuid = bHadGuidEntry
+			? Comparator.Blueprint->WidgetVariableNameToGuidMap.FindChecked(StatusName) : FGuid();
+		FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(Comparator.Blueprint,
+			Comparator.Status, !bOriginalVariable);
+		TestFalse(TEXT("the widget comparator detects a changed variable flag"),
+			CaptureWidgets(Comparator.Blueprint) == ComparatorWidgets);
+		FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(Comparator.Blueprint,
+			Comparator.Status, bOriginalVariable);
+		if (bHadGuidEntry)
+		{
+			Comparator.Blueprint->WidgetVariableNameToGuidMap.Add(StatusName, OriginalGuid);
+		}
+		else
+		{
+			Comparator.Blueprint->WidgetVariableNameToGuidMap.Remove(StatusName);
+		}
+		TestEqual(TEXT("the widget variable-flag control restores exactly"),
+			CaptureWidgets(Comparator.Blueprint), ComparatorWidgets);
+	}
+	TestTrue(TEXT("comparator fixture retirement completed"),
+		ComparatorCleanup.Retire());
 
 	FString Report;
 	FString ApplyError;
@@ -657,6 +923,11 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Apply marks the fixture dirty"), Package->IsDirty());
 
 	const FGraphSnapshot TargetAfter = CaptureGraph(Fixture.Target);
+	FString PostIdentityError;
+	TestTrue(TEXT("Apply leaves unique valid node and pin GUIDs"),
+		ValidateGraphIdentity(Fixture.Target, PostIdentityError));
+	TestEqual(TEXT("Apply increases the target node count by exactly one"),
+		TargetAfter.Nodes.Num(), TargetBefore.Nodes.Num() + 1);
 	TArray<FString> NewGuids;
 	TestTrue(TEXT("Apply preserves every existing target node"),
 		ExistingPreserved(TargetBefore, TargetAfter, NewGuids));
@@ -686,6 +957,14 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 				Plan.PlannedPositions[0].X);
 			TestEqual(TEXT("the new node is at the planned Y"), NewNode->NodePosY,
 				Plan.PlannedPositions[0].Y);
+			UK2Node_CallFunction* NewPrint = Cast<UK2Node_CallFunction>(NewNode);
+			TestTrue(TEXT("the new node is a PrintString call node"),
+				NewPrint != nullptr && NewPrint->GetTargetFunction() != nullptr
+				&& NewPrint->GetTargetFunction()->GetName() == TEXT("PrintString"));
+			UEdGraphPin* InString = NewNode->FindPin(TEXT("InString"), EGPD_Input);
+			TestEqual(TEXT("the new PrintString has the intended InString default"),
+				InString != nullptr ? InString->DefaultValue : FString(),
+				FString(TEXT("appended")));
 			UEdGraphPin* Then = Fixture.PrintB->FindPin(TEXT("then"), EGPD_Output);
 			UEdGraphPin* Exec = NewNode->FindPin(TEXT("execute"), EGPD_Input);
 			TestTrue(TEXT("the intended link exists"),
