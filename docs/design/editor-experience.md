@@ -19,3 +19,31 @@ Support keyboard navigation, visible focus, readable scaling, narrow docked pane
 R18 delivers annotated layout states for connected, unavailable, empty, busy, refused, failed and partial outcomes. Include narrow/wide and high-DPI layouts, keyboard order, state-to-control mapping and a before/after usability checklist. Owner review approves the design before a separate implementation task changes Slate code or assets.
 
 Implementation acceptance must use the pinned 5.8.3 editor and verify panel open/close/reopen, status changes, keyboard operation, resizing, scaling, tool search, result display and absence of unintended writes. Existing panel regressions must remain covered. A mockup or screenshot alone is not functional acceptance.
+
+## Approved first pass: 18 October 2026
+
+The owner approved the compact web prototype as the direction for native implementation. This approves the interaction design, not simulated backend capabilities. Keep the native Slate panel; deliver bounded slices with source review and pinned-engine tests. Blueprint/Widget Blueprint targeted read/write reliability remains the Monday release priority.
+
+- Default to a compact Monitor view. Separate tool browsing/help/testing from history. Use a shared selected-item inspector rather than several permanently open panels.
+- Use neutral selection and Read/Preview/Edit badges. Reserve green for successful outcomes, red for failures, orange for issues/refusals and blue for observed active work; always include text. An unmatched start means completion not observed, not proven active work.
+- Provide Start, Stop and Refresh status, endpoint display and client-appropriate copy configuration. Start must not restart an already-started server. Stop does not promise cancellation or rollback. Distinguish configured address/internal state from verified reachability.
+- Record calls by default for new settings; preserve a persisted OFF choice. Keep bounded history, search, outcome filters, follow-latest and request/result inspection. Replace Sample with Fill example arguments and explain that examples are schema scaffolding, not validated runnable requests.
+- Keep measured zero distinct from unknown character counts; label token estimates and unknown totals honestly. Do not fabricate agent turns or session attribution where telemetry lacks them.
+- Add Changed assets review navigation only for observed edits: asset, graph/location, operation and known save state. Distinguish session edits from depot differences. Open/locate/diff actions need verified native support; unavailable actions remain disabled with a reason. Do not infer successful changes from a tool name or transport success.
+- Treat human graph tidying as a separate preview/apply workflow; do not expose a simulated action as an implemented tool.
+
+First implementation slice should repair monitoring freshness at the log cap and clear/refill boundary, unknown totals and ambiguous in-flight states before adding presentation. Then add compact Monitor/Tools navigation and inspector, followed by bounded controls/menu/icon changes. Changed-asset attribution is a separate slice if new telemetry is required. The mockup is not a license to invent telemetry or expand editing scope.
+
+Implementation readiness still requires exact file ownership, source-backed contracts, negative controls and regression coverage for each slice. Validate narrow docked and wide floating panels, keyboard/focus, scaling, empty/unavailable/pending/refused/error states, and no unintended execution. R18 as a whole is not marked complete by design approval.
+
+## Queued monitoring-correctness slice
+
+Reviewed on 18 October 2026. Implementation waits for a dedicated scope and claim after the active Widget Blueprint acceptance task. The approved direction is an isolated per-test log, not replacement/restoration of the production singleton.
+
+Add a mutex-protected revision increment for memory Write and Clear, and a coherent entries/revision snapshot. Disabled writes leave both unchanged. The panel refreshes against revision rather than count and retains the revision of the snapshot actually rendered. Verify cap trimming, same-count clear/refill, unchanged-state no rebuild, measured zero versus separate unknown character/token counts, and completion-not-observed wording. Keep filtering and record JSON compatibility; count call rows separately from headings. Update affected shared timeline text and existing probe assertions together.
+
+Test-only private access may construct a separate log with no disk sink and an explicit enabled state, and bind an isolated panel to it before initial reads. Production uses its existing singleton and settings. Route recording controls through the same instance or disable them for the isolated panel: no test control may write production settings. The instance must outlive every panel reference. No global override, history replacement, revision rollback, settings reset or file suppression is allowed.
+
+Use deterministic sequential snapshot and refresh tests in this first slice; source-review lock coverage explicitly. The proposed unbounded writer/join concurrency loop is excluded. This acceptance must not claim exhaustive concurrent scheduling or race-detector proof. A future concurrency test needs a separately reviewed bounded lifecycle. Duplicate pending-call protection is a separate repair with its own runner-level contract and deterministic test seam.
+
+Expected file owners: CallLog header/implementation, panel header/implementation, CallTimeline header/implementation, existing panel probe and Python assertions, a new isolated compiled history test and engine-suite wrapper, catalog registration and task evidence. Exact allowlist and base must be issued at dispatch. No general layout, menus, server controls, default-setting migration or agent-turn attribution belongs to this slice.
