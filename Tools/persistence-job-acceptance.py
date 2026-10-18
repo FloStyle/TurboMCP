@@ -279,6 +279,7 @@ def _wait_for_exit(proc, deadline):
 
 
 def _write_stdin_bounded(proc, data, deadline, clock=time.monotonic, thread_factory=None):
+    """deadline and clock values are monotonic seconds, matching Thread.join."""
     result = []
     try:
         expired = clock() >= deadline
@@ -314,8 +315,8 @@ def _write_stdin_bounded(proc, data, deadline, clock=time.monotonic, thread_fact
         result.append("stdin-thread:" + str(exc))
     else:
         while thread.is_alive() and clock() < deadline:
-            remaining = max(0, deadline - clock())
-            thread.join(min(0.05, remaining / 1_000_000_000))
+            remaining_seconds = max(0.0, deadline - clock())
+            thread.join(min(0.05, remaining_seconds))
         if thread.is_alive():
             result.append("stdin-timeout")
         elif clock() >= deadline:
@@ -326,6 +327,7 @@ def _write_stdin_bounded(proc, data, deadline, clock=time.monotonic, thread_fact
 
 def _close_bounded(stream, deadline, clock=time.monotonic, sleeper=time.sleep,
                    thread_factory=None):
+    """deadline and clock values are monotonic seconds, matching Thread.join."""
     if stream is None:
         return []
     try:
@@ -350,8 +352,8 @@ def _close_bounded(stream, deadline, clock=time.monotonic, sleeper=time.sleep,
     except Exception as exc:
         return ["close-thread:" + str(exc)]
     while thread.is_alive() and clock() < deadline:
-        remaining = max(0, deadline - clock())
-        thread.join(min(0.05, remaining / 1_000_000_000))
+        remaining_seconds = max(0.0, deadline - clock())
+        thread.join(min(0.05, remaining_seconds))
     if thread.is_alive():
         return ["close-timeout"]
     if clock() >= deadline:

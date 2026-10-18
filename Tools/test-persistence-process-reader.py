@@ -1391,7 +1391,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
             expired = Proc(3)
             factory_calls = []
             def factory(**kwargs): factory_calls.append(kwargs); return WThread(**kwargs)
-            errors = self.acceptance._write_stdin_bounded(expired, b"go\n", 100, clock=lambda: 100, thread_factory=factory)
+            errors = self.acceptance._write_stdin_bounded(expired, b"go\n", 100.0, clock=lambda: 100.0, thread_factory=factory)
             self.assertIn("stdin-deadline-expired", errors)
             self.assertEqual(factory_calls, [])
 
@@ -1400,19 +1400,57 @@ class AcceptanceHarnessTests(unittest.TestCase):
             def budget_factory(**kwargs):
                 thread = WThread(**kwargs); thread_holder.append(thread); return thread
             errors = self.acceptance._write_stdin_bounded(
-                budget, b"go\n", 10_000_000, clock=lambda: 0, thread_factory=budget_factory
+                budget, b"go\n", 0.01, clock=lambda: 0.0, thread_factory=budget_factory
             )
             self.assertEqual(errors, [])
-            self.assertLessEqual(thread_holder[0].joins[0], 0.05)
-            self.assertLessEqual(thread_holder[0].joins[0], 0.01)
+            self.assertAlmostEqual(thread_holder[0].joins[0], 0.01, places=12)
+
+            cap = Proc(3)
+            cap_holder = []
+            def cap_factory(**kwargs):
+                thread = WThread(**kwargs); cap_holder.append(thread); return thread
+            self.assertEqual(self.acceptance._write_stdin_bounded(
+                cap, b"go\n", 1.0, clock=lambda: 0.0, thread_factory=cap_factory
+            ), [])
+            self.assertAlmostEqual(cap_holder[0].joins[0], 0.05, places=12)
 
             crossing = Proc(3)
-            times = iter([0, 0, 0, 10_000_000])
+            times = iter([0.0, 0.0, 0.0, 0.01])
             errors = self.acceptance._write_stdin_bounded(
-                crossing, b"go\n", 10_000_000, clock=lambda: next(times), thread_factory=WThread
+                crossing, b"go\n", 0.01, clock=lambda: next(times), thread_factory=WThread
             )
             self.assertIn("stdin-completion-after-deadline", errors)
         self.assertTrue(closes)
+
+    def test_close_bounded_uses_second_remaining_budget(self):
+        class WThread:
+            def __init__(self, target=None, daemon=None): self.target = target; self.alive = True; self.joins = []
+            def start(self): pass
+            def join(self, timeout=None): self.joins.append(timeout); self.target(); self.alive = False
+            def is_alive(self): return self.alive
+        thread_holder = []
+        def factory(**kwargs):
+            thread = WThread(**kwargs); thread_holder.append(thread); return thread
+        self.assertEqual(self.acceptance._close_bounded(FakeStream(), 100.01, clock=lambda: 100.0, thread_factory=factory), [])
+        self.assertAlmostEqual(thread_holder[0].joins[0], 0.01, places=12)
+        self.assertEqual(self.acceptance._close_bounded(FakeStream(), 101.0, clock=lambda: 100.0, thread_factory=factory), [])
+        self.assertAlmostEqual(thread_holder[1].joins[0], 0.05, places=12)
+        calls = []
+        self.assertTrue(self.acceptance._close_bounded(FakeStream(), 100.0, clock=lambda: 100.0,
+                                                       thread_factory=lambda **k: calls.append(k) or WThread(**k)))
+        self.assertEqual(calls, [])
+
+        class Clock:
+            value = 100.0
+            def __call__(self): return self.value
+        class Crossing(WThread):
+            def __init__(self, target=None, daemon=None): super().__init__(target, daemon)
+            def join(self, timeout=None):
+                self.joins.append(timeout); self.target(); self.alive = False; clock.value = 100.01
+        clock = Clock()
+        self.assertIn("close-completion-after-deadline",
+                      self.acceptance._close_bounded(FakeStream(), 100.01, clock=clock,
+                                                     thread_factory=lambda **k: Crossing(**k)))
 
     def test_write_and_close_thread_construction_failures_are_reported(self):
         class Proc:
