@@ -10,6 +10,14 @@
 #include "Misc/AutomationTest.h"
 
 #include "Framework/Application/SlateApplication.h"
+#include "Layout/ArrangedChildren.h"
+#include "Layout/Geometry.h"
+#include "Rendering/SlateLayoutTransform.h"
+#include "Widgets/SWidget.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SCheckBox.h"
+#include "Widgets/Input/SComboBox.h"
+#include "Widgets/Layout/SBorder.h"
 // The panel owns FTurboMCPPanelToolRunner by value, and that runner owns
 // TStrongObjectPtr<UToolCallAsyncResultString>. The defining UCLASS header must
 // be complete before the panel header is instantiated; the forward declaration
@@ -72,6 +80,20 @@ struct FTurboMCPPanelHistoryTestAccess
 		Panel.TimelineToolFilter = Tool;
 		Panel.RebuildTimelineRows();
 	}
+
+	static SWidget* StatusCombo(const STurboMCPPanel& Panel) { return Panel.TimelineStatusComboBox.Get(); }
+	static SWidget* ToolsetCombo(const STurboMCPPanel& Panel) { return Panel.ToolsetComboBox.Get(); }
+	static SWidget* ToolCombo(const STurboMCPPanel& Panel) { return Panel.ToolComboBox.Get(); }
+	static SWidget* HistoryArea(const STurboMCPPanel& Panel) { return Panel.HistoryListBorder.Get(); }
+	static SWidget* InspectorArea(const STurboMCPPanel& Panel) { return Panel.InspectorBorder.Get(); }
+	static SWidget* ArgumentsArea(const STurboMCPPanel& Panel) { return Panel.ArgumentsBorder.Get(); }
+	static SWidget* ResultArea(const STurboMCPPanel& Panel) { return Panel.ResultBorder.Get(); }
+	static SWidget* RefreshControl(const STurboMCPPanel& Panel) { return Panel.RefreshButton.Get(); }
+	static SWidget* MonitorControl(const STurboMCPPanel& Panel) { return Panel.MonitorButton.Get(); }
+	static SWidget* ToolsControl(const STurboMCPPanel& Panel) { return Panel.ToolsButton.Get(); }
+	static SWidget* FillExampleControl(const STurboMCPPanel& Panel) { return Panel.FillExampleButton.Get(); }
+	static SWidget* CallControl(const STurboMCPPanel& Panel) { return Panel.CallButton.Get(); }
+	static SWidget* RecordControl(const STurboMCPPanel& Panel) { return Panel.RecordCheckBox.Get(); }
 };
 
 namespace
@@ -142,6 +164,112 @@ namespace
 		Entry.DurationMs = 5.0;
 		Log.Write(Entry);
 	}
+
+	void CollectArrangedControls(SWidget& Widget, const FGeometry& Geometry,
+		TArray<FArrangedWidget>& Rects)
+	{
+		FArrangedChildren Arranged(EVisibility::Visible);
+		Widget.ArrangeChildren(Geometry, Arranged, false);
+		for (int32 Index = 0; Index < Arranged.Num(); ++Index)
+		{
+			const FArrangedWidget& Child = Arranged[Index];
+			Rects.Add(Child);
+			CollectArrangedControls(*Child.GetWidgetPtr(), Child.Geometry, Rects);
+		}
+	}
+
+	void CheckPanelLayout(FAutomationTestBase& Test, STurboMCPPanel& Panel,
+		STurboMCPPanel::ETurboMCPView View, const FVector2D& Size)
+	{
+		FTurboMCPPanelHistoryTestAccess::SetView(Panel, View);
+		Panel.SlatePrepass(1.0f);
+
+		FArrangedChildren RootChildren(EVisibility::Visible);
+		const FGeometry Root = FGeometry::MakeRoot(Size, FSlateLayoutTransform());
+		Panel.ArrangeChildren(Root, RootChildren, true);
+		// A second pass lets SWrapBox and AutoWrapText consume the allotted width before the
+		// geometry below is read. This is still not a painter or font-metric test.
+		Panel.SlatePrepass(1.0f);
+		RootChildren.Empty();
+		Panel.ArrangeChildren(Root, RootChildren, true);
+		const FString Context = FString::Printf(TEXT("panel layout at %.0fx%.0f"),
+			Size.X, Size.Y);
+		Test.TestTrue(Context + TEXT(" arranges a root child"), RootChildren.Num() > 0);
+		bool bPositiveRoot = false;
+		for (int32 Index = 0; Index < RootChildren.Num(); ++Index)
+		{
+			const auto LocalSize = RootChildren[Index].Geometry.GetLocalSize();
+			bPositiveRoot = bPositiveRoot || (LocalSize.X > 0.0f && LocalSize.Y > 0.0f);
+		}
+		Test.TestTrue(Context + TEXT(" gives the active view usable space"), bPositiveRoot);
+
+		TArray<FArrangedWidget> Rects;
+		for (int32 Index = 0; Index < RootChildren.Num(); ++Index)
+		{
+			CollectArrangedControls(*RootChildren[Index].GetWidgetPtr(), RootChildren[Index].Geometry, Rects);
+		}
+
+		auto CheckControl = [&](SWidget* Control, const TCHAR* Name, bool bExpectedVisible)
+		{
+			Test.TestTrue(Context + TEXT(" has a ") + Name + TEXT(" widget"), Control != nullptr);
+			if (Control == nullptr)
+			{
+				return;
+			}
+			const FArrangedWidget* Found = Rects.FindByPredicate(
+				[Control](const FArrangedWidget& Candidate)
+				{
+					return Candidate.GetWidgetPtr() == Control;
+				});
+			if (!bExpectedVisible)
+			{
+				Test.TestFalse(Context + TEXT(" collapses the ") + Name, Found != nullptr);
+				return;
+			}
+			Test.TestTrue(Context + TEXT(" arranges the ") + Name, Found != nullptr);
+			if (Found == nullptr)
+			{
+				return;
+			}
+			const auto ControlSize = Found->Geometry.GetLocalSize();
+			Test.TestTrue(Context + TEXT(" gives the ") + Name + TEXT(" usable area"),
+				ControlSize.X > 0.0f && ControlSize.Y > 0.0f);
+			const FSlateRect Rect = Found->Geometry.GetLayoutBoundingRect();
+			Test.TestTrue(Context + TEXT(" keeps the ") + Name + TEXT(" within the window"),
+				Rect.Left >= -1.0f && Rect.Right <= Size.X + 1.0f
+				&& Rect.Top >= -1.0f && Rect.Bottom <= Size.Y + 1.0f);
+		};
+
+		CheckControl(FTurboMCPPanelHistoryTestAccess::RefreshControl(Panel), TEXT("Refresh button"), true);
+		CheckControl(FTurboMCPPanelHistoryTestAccess::MonitorControl(Panel), TEXT("Monitor button"), true);
+		CheckControl(FTurboMCPPanelHistoryTestAccess::ToolsControl(Panel), TEXT("Tools button"), true);
+		CheckControl(FTurboMCPPanelHistoryTestAccess::RecordControl(Panel), TEXT("recording control"), true);
+
+		if (View == STurboMCPPanel::ETurboMCPView::Monitor)
+		{
+			CheckControl(FTurboMCPPanelHistoryTestAccess::StatusCombo(Panel), TEXT("status filter"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::HistoryArea(Panel), TEXT("history area"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::InspectorArea(Panel), TEXT("inspector area"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ToolsetCombo(Panel), TEXT("toolset selector"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ToolCombo(Panel), TEXT("tool selector"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::FillExampleControl(Panel), TEXT("Fill example button"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::CallControl(Panel), TEXT("Call button"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ArgumentsArea(Panel), TEXT("arguments area"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ResultArea(Panel), TEXT("result area"), false);
+		}
+		else
+		{
+			CheckControl(FTurboMCPPanelHistoryTestAccess::StatusCombo(Panel), TEXT("status filter"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::HistoryArea(Panel), TEXT("history area"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::InspectorArea(Panel), TEXT("inspector area"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ToolsetCombo(Panel), TEXT("toolset selector"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ToolCombo(Panel), TEXT("tool selector"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::FillExampleControl(Panel), TEXT("Fill example button"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::CallControl(Panel), TEXT("Call button"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ArgumentsArea(Panel), TEXT("arguments area"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ResultArea(Panel), TEXT("result area"), true);
+		}
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -188,6 +316,16 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("switching views does not change the recording setting"), Log->IsEnabled() == bLogWasEnabled);
 	FTurboMCPPanelHistoryTestAccess::SetView(*Panel, STurboMCPPanel::ETurboMCPView::Monitor);
 	TestTrue(TEXT("the view switches back to Monitor"),
+		FTurboMCPPanelHistoryTestAccess::View(*Panel) == STurboMCPPanel::ETurboMCPView::Monitor);
+
+	// Actual Slate prepass/arrangement at the two requested window sizes. This checks visible
+	// controls and horizontal bounds; it is not a screenshot or a painter test.
+	CheckPanelLayout(*this, *Panel, STurboMCPPanel::ETurboMCPView::Monitor, FVector2D(400.0f, 650.0f));
+	CheckPanelLayout(*this, *Panel, STurboMCPPanel::ETurboMCPView::Tools, FVector2D(400.0f, 650.0f));
+	CheckPanelLayout(*this, *Panel, STurboMCPPanel::ETurboMCPView::Monitor, FVector2D(1000.0f, 700.0f));
+	CheckPanelLayout(*this, *Panel, STurboMCPPanel::ETurboMCPView::Tools, FVector2D(1000.0f, 700.0f));
+	FTurboMCPPanelHistoryTestAccess::SetView(*Panel, STurboMCPPanel::ETurboMCPView::Monitor);
+	TestTrue(TEXT("layout checks restore the Monitor view"),
 		FTurboMCPPanelHistoryTestAccess::View(*Panel) == STurboMCPPanel::ETurboMCPView::Monitor);
 
 	// At the cap a new write changes the revision but not the entry count.

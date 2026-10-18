@@ -17,6 +17,10 @@
 #include "Widgets/SCompoundWidget.h"
 
 template <typename ItemType> class SListView;
+template <typename OptionType> class SComboBox;
+class SBorder;
+class SButton;
+class SCheckBox;
 
 /**
  * The TurboMCP editor window.
@@ -199,6 +203,21 @@ private:
 	/** The rows the list shows, and the list itself so a rebuild can ask it to repaint. */
 	TArray<TSharedPtr<FTurboMCPCallTimeline::FListEntry>> TimelineRows;
 	TSharedPtr<SListView<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>> TimelineListView;
+
+	/** Explicit handles so the compiled fixture can identify view-specific controls. */
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> TimelineStatusComboBox;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> ToolsetComboBox;
+	TSharedPtr<SComboBox<TSharedPtr<FString>>> ToolComboBox;
+	TSharedPtr<SBorder> HistoryListBorder;
+	TSharedPtr<SBorder> InspectorBorder;
+	TSharedPtr<SBorder> ArgumentsBorder;
+	TSharedPtr<SBorder> ResultBorder;
+	TSharedPtr<SButton> RefreshButton;
+	TSharedPtr<SButton> MonitorButton;
+	TSharedPtr<SButton> ToolsButton;
+	TSharedPtr<SButton> FillExampleButton;
+	TSharedPtr<SButton> CallButton;
+	TSharedPtr<SCheckBox> RecordCheckBox;
 
 	/** The current compact view; Monitor is the default. */
 	ETurboMCPView ActiveView = ETurboMCPView::Monitor;

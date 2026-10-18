@@ -20,6 +20,7 @@
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SWrapBox.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Layout/SSeparator.h"
 #include "Widgets/SBoxPanel.h"
@@ -150,6 +151,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				[
 					SNew(STextBlock)
 					.Text(this, &STurboMCPPanel::GetStatusSummary)
+					.AutoWrapText(true)
 					.ToolTipText(this, &STurboMCPPanel::GetStatusText)
 					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 				]
@@ -158,7 +160,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
-					SNew(SButton)
+					SAssignNew(RefreshButton, SButton)
 					.Text(LOCTEXT("Refresh", "Refresh"))
 					.ToolTipText(LOCTEXT("RefreshTip",
 						"Read the server state and the toolset list again."))
@@ -190,7 +192,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.VAlign(VAlign_Center)
 				.Padding(0.0f, 0.0f, 6.0f, 0.0f)
 				[
-					SNew(SCheckBox)
+					SAssignNew(RecordCheckBox, SCheckBox)
 					.IsChecked(this, &STurboMCPPanel::GetCallLogCheckState)
 					.OnCheckStateChanged(this, &STurboMCPPanel::OnCallLogCheckStateChanged)
 					.ToolTipText(LOCTEXT("CallLogTip",
@@ -208,6 +210,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				[
 					SNew(STextBlock)
 					.Text(this, &STurboMCPPanel::GetCallLogSummary)
+					.AutoWrapText(true)
 					.ColorAndOpacity(this, &STurboMCPPanel::GetCallLogSummaryColor)
 					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 					.ToolTipText(LOCTEXT("CallLogSummaryTip",
@@ -227,7 +230,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.AutoWidth()
 				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
 				[
-					SNew(SButton)
+					SAssignNew(MonitorButton, SButton)
 					.Text(this, &STurboMCPPanel::GetMonitorButtonText)
 					.ToolTipText(LOCTEXT("MonitorViewTip", "Show recent calls and the selected-call inspector."))
 					.OnClicked_Lambda([this]()
@@ -240,7 +243,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				[
-					SNew(SButton)
+					SAssignNew(ToolsButton, SButton)
 					.Text(this, &STurboMCPPanel::GetToolsButtonText)
 					.ToolTipText(LOCTEXT("ToolsViewTip", "Show tool discovery, example arguments and call results."))
 					.OnClicked_Lambda([this]()
@@ -315,7 +318,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.FillWidth(0.16f)
 				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
 				[
-					SNew(SComboBox<TSharedPtr<FString>>)
+					SAssignNew(TimelineStatusComboBox, SComboBox<TSharedPtr<FString>>)
 					.OptionsSource(&TimelineStatusOptions)
 					.InitiallySelectedItem(SelectedTimelineStatus)
 					.OnSelectionChanged_Lambda([this](TSharedPtr<FString> InItem, ESelectInfo::Type)
@@ -350,7 +353,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SBorder)
+				SAssignNew(HistoryListBorder, SBorder)
 				.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 				.Padding(4.0f)
 				[
@@ -391,7 +394,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.FillHeight(0.55f)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SBorder)
+				SAssignNew(InspectorBorder, SBorder)
 				.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 				.Padding(4.0f)
 				[
@@ -403,6 +406,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 					[
 						SNew(STextBlock)
 						.Text(this, &STurboMCPPanel::GetSelectedCallHeader)
+						.AutoWrapText(true)
 						.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), BodyTextSize))
 					]
 
@@ -431,16 +435,15 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SHorizontalBox)
+				SNew(SVerticalBox)
 				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 
-				// Toolset.
-				+ SHorizontalBox::Slot()
-				.FillWidth(0.35f)
-				.VAlign(VAlign_Center)
-				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				// Toolset. A full-width row at narrow widths; the old single horizontal row clipped.
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 0.0f, 0.0f, 4.0f)
 				[
-					SNew(SComboBox<TSharedPtr<FString>>)
+					SAssignNew(ToolsetComboBox, SComboBox<TSharedPtr<FString>>)
 					// `SLATE_ITEMS_SOURCE_ARGUMENT(OptionType, OptionsSource)` -
 					// `Slate/Public/Widgets/Input/SComboBox.h:151`.
 					.OptionsSource(&ToolsetOptions)
@@ -459,12 +462,11 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				]
 
 				// Tool.
-				+ SHorizontalBox::Slot()
-				.FillWidth(0.45f)
-				.VAlign(VAlign_Center)
-				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				+ SVerticalBox::Slot()
+				.AutoHeight()
+				.Padding(0.0f, 0.0f, 0.0f, 4.0f)
 				[
-					SNew(SComboBox<TSharedPtr<FString>>)
+					SAssignNew(ToolComboBox, SComboBox<TSharedPtr<FString>>)
 					.OptionsSource(&ToolOptions)
 					.InitiallySelectedItem(SelectedTool)
 					.OnSelectionChanged(this, &STurboMCPPanel::OnToolChanged)
@@ -477,29 +479,33 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 					]
 				]
 
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				// The two actions wrap rather than forcing horizontal overflow.
+				+ SVerticalBox::Slot()
+				.AutoHeight()
 				[
-					SNew(SButton)
-					.Text(LOCTEXT("FillExample", "Fill example arguments"))
-					.ToolTipText(LOCTEXT("FillExampleTip",
-						"Fill the arguments box with schema scaffolding from this tool. It is a valid "
-						"shape, not a validated runnable request; review every field before calling."))
-					.OnClicked(this, &STurboMCPPanel::OnSampleClicked)
-				]
+					SNew(SWrapBox)
+					.UseAllottedSize(true)
+					.InnerSlotPadding(FVector2D(4.0f, 4.0f))
 
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				.VAlign(VAlign_Center)
-				[
-					SNew(SButton)
-					.Text(LOCTEXT("Call", "Call"))
-					.ToolTipText(LOCTEXT("CallTip",
-						"Call the tool through the registry, which is the same entry point the MCP "
-						"server uses, so the two cannot disagree."))
-					.OnClicked(this, &STurboMCPPanel::OnCallClicked)
+					+ SWrapBox::Slot()
+					[
+						SAssignNew(FillExampleButton, SButton)
+						.Text(LOCTEXT("FillExample", "Fill example arguments"))
+						.ToolTipText(LOCTEXT("FillExampleTip",
+							"Fill the arguments box with schema scaffolding from this tool. It is a valid "
+							"shape, not a validated runnable request; review every field before calling."))
+						.OnClicked(this, &STurboMCPPanel::OnSampleClicked)
+					]
+
+					+ SWrapBox::Slot()
+					[
+						SAssignNew(CallButton, SButton)
+						.Text(LOCTEXT("Call", "Call"))
+						.ToolTipText(LOCTEXT("CallTip",
+							"Call the tool through the registry, which is the same entry point the MCP "
+							"server uses, so the two cannot disagree."))
+						.OnClicked(this, &STurboMCPPanel::OnCallClicked)
+					]
 				]
 			]
 
@@ -509,12 +515,13 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.FillHeight(0.4f)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SBorder)
+				SAssignNew(ArgumentsBorder, SBorder)
 				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 				.Padding(4.0f)
 				[
 					SNew(SMultiLineEditableText)
 					.Text(this, &STurboMCPPanel::GetArgumentsText)
+					.AutoWrapText(true)
 					.OnTextChanged(this, &STurboMCPPanel::OnArgumentsChanged)
 					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 					.HintText(LOCTEXT("ArgumentsHint", "arguments, as JSON"))
@@ -546,7 +553,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.FillHeight(0.6f)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SBorder)
+				SAssignNew(ResultBorder, SBorder)
 				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 				.Padding(4.0f)
 				[
@@ -556,6 +563,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 					[
 						SNew(SMultiLineEditableText)
 						.Text(this, &STurboMCPPanel::GetResultText)
+						.AutoWrapText(true)
 						.IsReadOnly(true)
 						.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 						.ToolTipText(LOCTEXT("ResultTip",
@@ -581,6 +589,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 					// `.Text(FText::FromString(CachedStatus))` here evaluated the string ONCE, at build
 					// time, and left the refresh button updating a variable nothing displayed. ***
 					.Text(this, &STurboMCPPanel::GetStatusText)
+					.AutoWrapText(true)
 					.IsReadOnly(true)
 					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 					.ToolTipText(LOCTEXT("StatusTip",
@@ -972,6 +981,7 @@ TSharedRef<ITableRow> STurboMCPPanel::MakeTimelineRow(
 				SNew(STextBlock)
 				.Text(FText::FromString(FString::Printf(TEXT("; session %s"),
 					InItem->SessionId.IsEmpty() ? TEXT("(none)") : *InItem->SessionId)))
+				.AutoWrapText(true)
 				.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 				.ColorAndOpacity(FSlateColor(FLinearColor(0.65f, 0.65f, 0.65f)))
 			];
@@ -990,6 +1000,7 @@ TSharedRef<ITableRow> STurboMCPPanel::MakeTimelineRow(
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(RowText))
+			.AutoWrapText(true)
 			.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 		];
 
