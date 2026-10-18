@@ -10,6 +10,10 @@
 #include "Misc/AutomationTest.h"
 
 #include "Framework/Application/SlateApplication.h"
+#include "Layout/ArrangedChildren.h"
+#include "Layout/Geometry.h"
+#include "Rendering/SlateLayoutTransform.h"
+#include "Widgets/SWidget.h"
 // The panel owns FTurboMCPPanelToolRunner by value, and that runner owns
 // TStrongObjectPtr<UToolCallAsyncResultString>. The defining UCLASS header must
 // be complete before the panel header is instantiated; the forward declaration
@@ -142,6 +146,90 @@ namespace
 		Entry.DurationMs = 5.0;
 		Log.Write(Entry);
 	}
+
+	void CollectArrangedControls(SWidget& Widget, const FGeometry& Geometry, int32& Buttons,
+		int32& Combos, int32& Lists, int32& Editables, TArray<FSlateRect>& Rects)
+	{
+		FArrangedChildren Arranged(EVisibility::Visible);
+		Widget.ArrangeChildren(Geometry, Arranged, false);
+		for (int32 Index = 0; Index < Arranged.Num(); ++Index)
+		{
+			const FArrangedWidget& Child = Arranged[Index];
+			const FString Type = Child.GetWidgetPtr()->GetType().ToString();
+			if (Type == TEXT("SButton"))
+			{
+				++Buttons;
+			}
+			else if (Type == TEXT("SComboBox"))
+			{
+				++Combos;
+			}
+			else if (Type == TEXT("SListView"))
+			{
+				++Lists;
+			}
+			else if (Type == TEXT("SMultiLineEditableText"))
+			{
+				++Editables;
+			}
+			if (Type == TEXT("SButton") || Type == TEXT("SComboBox"))
+			{
+				Rects.Add(Child.Geometry.GetLayoutBoundingRect());
+			}
+			CollectArrangedControls(*Child.GetWidgetPtr(), Child.Geometry, Buttons, Combos, Lists, Editables, Rects);
+		}
+	}
+
+	void CheckPanelLayout(FAutomationTestBase& Test, STurboMCPPanel& Panel,
+		STurboMCPPanel::ETurboMCPView View, const FVector2D& Size)
+	{
+		FTurboMCPPanelHistoryTestAccess::SetView(Panel, View);
+		Panel.SlatePrepass(1.0f);
+
+		FArrangedChildren RootChildren(EVisibility::Visible);
+		const FGeometry Root = FGeometry::MakeRoot(Size, FSlateLayoutTransform());
+		Panel.ArrangeChildren(Root, RootChildren, true);
+		const FString Context = FString::Printf(TEXT("panel layout at %.0fx%.0f"),
+			Size.X, Size.Y);
+		Test.TestTrue(Context + TEXT(" arranges a root child"), RootChildren.Num() > 0);
+		bool bPositiveRoot = false;
+		for (int32 Index = 0; Index < RootChildren.Num(); ++Index)
+		{
+			const auto LocalSize = RootChildren[Index].Geometry.GetLocalSize();
+			bPositiveRoot = bPositiveRoot || (LocalSize.X > 0.0f && LocalSize.Y > 0.0f);
+		}
+		Test.TestTrue(Context + TEXT(" gives the active view usable space"), bPositiveRoot);
+
+		int32 Buttons = 0;
+		int32 Combos = 0;
+		int32 Lists = 0;
+		int32 Editables = 0;
+		TArray<FSlateRect> Rects;
+		for (int32 Index = 0; Index < RootChildren.Num(); ++Index)
+		{
+			CollectArrangedControls(*RootChildren[Index].GetWidgetPtr(), RootChildren[Index].Geometry,
+				Buttons, Combos, Lists, Editables, Rects);
+		}
+		Test.TestTrue(Context + TEXT(" has interactive buttons"), Buttons > 0);
+		for (const FSlateRect& Rect : Rects)
+		{
+			Test.TestTrue(Context + TEXT(" gives each interactive control positive area"),
+				Rect.Right > Rect.Left && Rect.Bottom > Rect.Top);
+			Test.TestTrue(Context + TEXT(" keeps controls within the horizontal window"),
+				Rect.Left >= -1.0f && Rect.Right <= Size.X + 1.0f);
+		}
+		if (View == STurboMCPPanel::ETurboMCPView::Monitor)
+		{
+			Test.TestTrue(Context + TEXT(" shows the history list"), Lists >= 1);
+			Test.TestTrue(Context + TEXT(" hides the tool controls"), Combos == 0 && Editables == 0);
+		}
+		else
+		{
+			Test.TestTrue(Context + TEXT(" hides the history list"), Lists == 0);
+			Test.TestTrue(Context + TEXT(" shows both tool selectors and the argument/result editors"),
+				Combos >= 2 && Editables >= 2);
+		}
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -188,6 +276,16 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("switching views does not change the recording setting"), Log->IsEnabled() == bLogWasEnabled);
 	FTurboMCPPanelHistoryTestAccess::SetView(*Panel, STurboMCPPanel::ETurboMCPView::Monitor);
 	TestTrue(TEXT("the view switches back to Monitor"),
+		FTurboMCPPanelHistoryTestAccess::View(*Panel) == STurboMCPPanel::ETurboMCPView::Monitor);
+
+	// Actual Slate prepass/arrangement at the two requested window sizes. This checks visible
+	// controls and horizontal bounds; it is not a screenshot or a painter test.
+	CheckPanelLayout(*this, *Panel, STurboMCPPanel::ETurboMCPView::Monitor, FVector2D(400.0f, 650.0f));
+	CheckPanelLayout(*this, *Panel, STurboMCPPanel::ETurboMCPView::Tools, FVector2D(400.0f, 650.0f));
+	CheckPanelLayout(*this, *Panel, STurboMCPPanel::ETurboMCPView::Monitor, FVector2D(1000.0f, 700.0f));
+	CheckPanelLayout(*this, *Panel, STurboMCPPanel::ETurboMCPView::Tools, FVector2D(1000.0f, 700.0f));
+	FTurboMCPPanelHistoryTestAccess::SetView(*Panel, STurboMCPPanel::ETurboMCPView::Monitor);
+	TestTrue(TEXT("layout checks restore the Monitor view"),
 		FTurboMCPPanelHistoryTestAccess::View(*Panel) == STurboMCPPanel::ETurboMCPView::Monitor);
 
 	// At the cap a new write changes the revision but not the entry count.
