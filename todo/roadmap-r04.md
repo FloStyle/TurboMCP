@@ -292,7 +292,7 @@ Validation:
 - `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
 - `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
 - `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
-- `python Tools/execute-tests.py --profile offline --execute` exited 0 on the pre-commit correction tree: report `.local/executions/4e57b11fc68f4d22b42c5bc742d78758/report.json`, request commit `f9aa39fff11368622b72fde9a4a6a2218aae1b0c`, tree digest `08662611d28ae011c46da76173be9784270f2212420412675b1861871d1e5b79`.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 on the pre-commit correction tree: report `.local/executions/4d216704f1a6496db3e9f50ed2513acb/report.json`, request commit `229fbfcf33f2120e09a61ed8a06f033ed77e538d`, tree digest `51e48692a08da193b289d7eb4087055f0d49508f6823fc603afb6c4e20836fd4`.
 - No engine/editor/build/MCP/recovery command was run. The proposed live acceptance is unexecuted.
 
 Changed files: `docs/audit/widget-persistence-prerequisites.md` (new) and this Completion evidence only. No code, test, fixture, config, task status/readiness, TODO, routing, release or scope-policy change.

@@ -94,8 +94,11 @@ Supervisor response:
   "oldEditorStartUtc": "2026-10-18T01:23:45.678Z",
   "newEditorPid": 23456,
   "newEditorStartUtc": "2026-10-18T01:24:31.112Z",
+  "oldListenerPid": 12345,
+  "oldListenerStartUtc": "2026-10-18T01:23:45.678Z",
+  "newListenerPid": 23456,
+  "newListenerStartUtc": "2026-10-18T01:24:31.112Z",
   "listenerOwner": true,
-  "listenerPid": 23456,
   "fixture": "/Game/Tests/WBP_NodeTest",
   "expected": {"titleTextVariable": true}
 }
@@ -121,7 +124,7 @@ Extend the existing ownership checks rather than inventing a new service:
   - foreign listener: refuse without stopping it, even if the intended editor is alive;
   - listener disappears, changes PID/start time, or is replaced between the pre-phase and pre-mutation probe: refuse and revalidate; do not reuse the earlier result;
   - a server answering on the configured port while the listener owner is another process is the required negative control.
-- Recheck listener ownership immediately before **each client mutation** (phase A edit, compile and save) and again after restart before phase B. `serverOwner=true` must not be recorded from the existing `check-mcp-server.py --editor-pid` path, which only checks that a process name is alive (`check-mcp-server.py:114-132`). Record `listenerOwner=true` only after the socket-owner identity and project/engine checks pass.
+- Recheck listener ownership immediately before **each client mutation** (phase A edit, compile and save) and again after restart before phase B. Require the old listener identity (PID/start time) to be gone before the new editor is started; if the old listener remains or is replaced by an unknown owner, refuse. `serverOwner=true` must not be recorded from the existing `check-mcp-server.py --editor-pid` path, which only checks that a process name is alive (`check-mcp-server.py:114-132`). Record `listenerOwner=true` only after the socket-owner identity and project/engine checks pass.
 - Extend `Tools/check-mcp-server.py` with an optional `--editor-start-utc` and listener-owner verification (or a small `Tools/ownership.ps1` helper it calls). `--editor-pid` alone is insufficient.
 - Phase B establishes a **new `Session`** through `Tools/tmcp.py`; the supervisor records the new listener identity after it passes the socket check and project/engine checks.
 - Foreign listeners/processes are never stopped. A healthy server without a proved owned listener is a refusal, not a reusable editor. Lease conflicts preserve the foreign editor and block the trial.
@@ -223,7 +226,7 @@ No existing Python/MCP API reads the setting. Add a **test-project-only** C++ fi
 
 - **Scope:** no code; integration owner runs the P1-P5 build/test path under the existing supervisor.
 - **Command:** `python Tools/execute-tests.py --profile persistence --suites test-widget-compile-save-reopen --execute` (proposed; unavailable until P4/P5).
-- **Acceptance:** saved trial retains `TitleText` variable after new PID/new session; no-save control loses it; old PID/start time gone; new PID/start time owned; listener-owning PID/start time and project/engine match; observed settings file set unchanged; cleanup eligibility was CLEAN before mutation; fixture restored only after readback; no unrelated dirty package touched; exact report/request/tree digest recorded.
+- **Acceptance:** saved trial retains `TitleText` variable after new PID/new session; no-save control loses it; old editor and old listener identities gone; new editor/listener PID/start time owned; listener-owning PID/start time and project/engine match; observed settings file set unchanged; cleanup eligibility was CLEAN before mutation; fixture restored only after readback; no unrelated dirty package touched; exact report/request/tree digest recorded.
 - **Manual fallback:** a supervised operator may perform the same two phases manually through the runner owner, supplying old-PID-exit, new-PID/listener-owner and new-session read evidence. It is not an automated gate; it cannot claim unrelated-unsaved preservation under the current KILL_ON_JOB_CLOSE path, and if the supervisor cannot restart, persistence is **blocked**, never passed.
 - **Rollback:** none; this is evidence/acceptance only.
 
@@ -264,7 +267,7 @@ Only the integration owner may run engine work. The sequence is:
 - `python Tools/audit-inventory.py --check` — exit 0; 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
 - `python Tools/test-result-contract.py` — exit 0; PASS, C03-C08.
 - `python Tools/test-client-retry.py` — exit 0; PASS, C01/C02.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0 on the pre-commit correction tree; report `.local/executions/4e57b11fc68f4d22b42c5bc742d78758/report.json`; request commit `f9aa39fff11368622b72fde9a4a6a2218aae1b0c`; tree digest `08662611d28ae011c46da76173be9784270f2212420412675b1861871d1e5b79`.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0 on the pre-commit correction tree; report `.local/executions/4d216704f1a6496db3e9f50ed2513acb/report.json`; request commit `229fbfcf33f2120e09a61ed8a06f033ed77e538d`; tree digest `51e48692a08da193b289d7eb4087055f0d49508f6823fc603afb6c4e20836fd4`.
 - No engine/editor/build/MCP/recovery command was run. The proposed live acceptance is unexecuted.
 
 ## Missing seams and blockers
