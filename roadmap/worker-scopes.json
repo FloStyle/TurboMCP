@@ -30,17 +30,15 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h",
-        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
-        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp",
-        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
-        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacementTest.cpp",
-        "Tools/test-graph-append.py",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphText.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextSharedValueTest.cpp",
+        "Tools/test-graph-text-guards.py",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "a36a5c797aa73d640f0da5f31b2becb4c2a77a52",
-      "checkpoint": "Append placement preserving existing layout; exact dispatch base is the subsequent integrator scope commit recorded in claim and prompt"
+      "approved_base": "f175b4d08091f1c1ca83971ea976606de302dc9f",
+      "checkpoint": "Shared-value reader repair; exact scope-commit dispatch base is recorded in claim and prompt"
     }
   }
 }

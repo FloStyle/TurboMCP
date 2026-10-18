@@ -86,3 +86,7 @@ This supersedes the alias assignment above, which passed source review, a pinned
 ## Current integration state
 
 Append placement through 8ebe1a0 is accepted with pinned-engine and offline evidence in R04. Both worker follow-ups are read-only acceptance/design investigations until a new implementation scope and claim are explicitly issued. The placement allowlist is historical permission for its completed assignment, not authorization for further edits.
+
+## Current integrator assignment: shared-value reader repair
+
+This supersedes the preceding read-only state for Session 2 only. Its five-file scope permits replacing undefined shared-value tokens with a successfully rendered first form and subsequent source-pin references, with bounded upstream reroute resolution. Preserve cycle/depth guards, full-detail knot behavior and unrelated single-use text. Partial child rendering, unsupported forms, unresolved sources and pin caps must not certify a reusable complete form. No writer, dialect, completeness protocol, macro rendering, pagination or engine change. Session 1 remains read-only. Worker validation is offline only; build and engine acceptance remain integration-owned. The exact base and contract accompany dispatch.
