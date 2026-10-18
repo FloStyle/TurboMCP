@@ -12,7 +12,10 @@
 #include "HAL/IConsoleManager.h"
 #include "IModelContextProtocolModule.h"
 #include "ModelContextProtocolServer.h"
+#include "Styling/AppStyle.h"
 #include "Styling/CoreStyle.h"
+#include "Textures/SlateIcon.h"
+#include "ToolMenus.h"
 #include "ToolsetRegistry/UToolsetRegistry.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SCheckBox.h"
@@ -47,6 +50,16 @@ namespace
 	 * a second copy would silently open a second, empty window.
 	 */
 	const FName TurboMCPTabId(TEXT("TurboMCP"));
+
+	/** The two editor menus this plugin contributes to. */
+	const FName TurboMCPWindowMenuName(TEXT("MainFrame.MainMenu.Window"));
+	const FName TurboMCPToolsMenuName(TEXT("MainFrame.MainMenu.Tools"));
+	const FName TurboMCPMenuSection(TEXT("TurboMCP"));
+	const FName TurboMCPWindowEntry(TEXT("TurboMCP.OpenPanel.Window"));
+	const FName TurboMCPToolsEntry(TEXT("TurboMCP.OpenPanel.Tools"));
+
+	/** Defined with the console command below; shared by both menu entries. */
+	void OpenTurboMCPPanel();
 
 	/** Diameter of the server state dot, in slate units. */
 	constexpr float ServerDotSize = 10.0f;
@@ -1323,6 +1336,54 @@ FText STurboMCPPanel::GetResultHeader() const
 		*Where, Lines, Result.CharacterCount, Result.TokenEstimate, Result.DurationMs));
 }
 
+namespace
+{
+	void AddTurboMCPMenuEntry(const FName MenuName, const FName EntryName)
+	{
+		UToolMenus* ToolMenus = UToolMenus::Get();
+		if (ToolMenus == nullptr)
+		{
+			return;
+		}
+		UToolMenu* Menu = ToolMenus->ExtendMenu(MenuName);
+		if (Menu == nullptr)
+		{
+			return;
+		}
+		FToolMenuSection& Section = Menu->FindOrAddSection(
+			TurboMCPMenuSection, LOCTEXT("TurboMCPMenuSection", "TurboMCP"));
+		if (Section.FindEntry(EntryName) != nullptr)
+		{
+			return;
+		}
+		Section.AddMenuEntry(
+			EntryName,
+			LOCTEXT("TurboMCPMenuEntry", "TurboMCP"),
+			LOCTEXT("TurboMCPMenuEntryTip", "Open the TurboMCP tools and call log."),
+			// Existing editor style: StarshipStyle.cpp:470 registers Icons.Tools under the
+			// editor style set that FAppStyle::GetAppStyleSetName() resolves.
+			FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Tools")),
+			FUIAction(FExecuteAction::CreateStatic(&OpenTurboMCPPanel)));
+	}
+
+	void RemoveTurboMCPMenuSection()
+	{
+		UToolMenus* ToolMenus = UToolMenus::Get();
+		if (ToolMenus == nullptr)
+		{
+			return;
+		}
+		if (UToolMenu* WindowMenu = ToolMenus->FindMenu(TurboMCPWindowMenuName))
+		{
+			WindowMenu->RemoveSection(TurboMCPMenuSection);
+		}
+		if (UToolMenu* ToolsMenu = ToolMenus->FindMenu(TurboMCPToolsMenuName))
+		{
+			ToolsMenu->RemoveSection(TurboMCPMenuSection);
+		}
+	}
+}
+
 void RegisterTurboMCPPanel(){
 	// A nomad tab is dockable next to the other editor tabs and needs no
 	// workspace layout entry, which is what a debugging window wants.
@@ -1339,13 +1400,19 @@ void RegisterTurboMCPPanel(){
 		.SetDisplayName(LOCTEXT("TabTitle", "TurboMCP"))
 		.SetTooltipText(LOCTEXT("TabTooltip",
 			"Call TurboMCP tools by hand and check the MCP server."))
-		// The menu entry is what makes the window reachable without typing a
-		// console command, which a developer debugging an agent needs.
+		.SetIcon(FSlateIcon(FAppStyle::GetAppStyleSetName(), TEXT("Icons.Tools")))
+		// The automatic orphan entry is disabled: the explicit Window and Tools entries below
+		// replace its old placement under Programming and cannot duplicate on re-registration.
+		.SetAutoGenerateMenuEntry(false)
 		.SetMenuType(ETabSpawnerMenuType::Enabled);
+
+	AddTurboMCPMenuEntry(TurboMCPWindowMenuName, TurboMCPWindowEntry);
+	AddTurboMCPMenuEntry(TurboMCPToolsMenuName, TurboMCPToolsEntry);
 }
 
 void UnregisterTurboMCPPanel()
 {
+	RemoveTurboMCPMenuSection();
 	if (FSlateApplication::IsInitialized())
 	{
 		FGlobalTabmanager::Get()->UnregisterNomadTabSpawner(TurboMCPTabId);
