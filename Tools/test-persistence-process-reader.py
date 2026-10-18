@@ -1155,6 +1155,63 @@ class AcceptanceHarnessTests(unittest.TestCase):
             self.assertEqual(self.acceptance.main(), 2)
         self.assertIn('"blocked"', output.getvalue())
 
+    def test_cleanup_requires_observed_zero_and_reports_query_failure(self):
+        expired = FakeJob(active=[1])
+        proc = FakeProcess(returncode=0)
+        errors = self.acceptance.cleanup_job(expired, proc, 5, clock=lambda: 10, sleeper=lambda _: None)
+        self.assertIn("active-not-zero", errors)
+        query = FakeJob(active_raises=True)
+        errors = self.acceptance.cleanup_job(query, FakeProcess(returncode=0), 100, clock=lambda: 0, sleeper=lambda _: None)
+        self.assertTrue(any(value.startswith("active:") for value in errors))
+        clean = FakeJob()
+        self.assertEqual(self.acceptance.cleanup_job(clean, FakeProcess(returncode=0), 100, clock=lambda: 0, sleeper=lambda _: None), [])
+
+    def test_helper_entry_refuses_every_mode_without_supervisor_context(self):
+        called = []
+        for mode in ("timeout-descendant", "pipe-holder", "supervisor-death", "wait-for-go", "add-type-wait"):
+            with self.subTest(mode=mode):
+                with self.assertRaises(ValueError):
+                    self.acceptance.helper_entry(mode, [], {}, self.root, action=lambda *a, **k: called.append(a))
+        self.assertEqual(called, [])
+
+    def test_observed_job_acquisition_failures_close_exactly_acquired_handles(self):
+        class Api:
+            def __init__(self):
+                self.handle = 11
+                self.port = 22
+                self.closed = []
+                self.set_results = [1, 1]
+                self.port_result = 22
+            def CreateJobObjectW(self, *a): return self.handle
+            def SetInformationJobObject(self, *a): return self.set_results.pop(0) if self.set_results else 1
+            def CreateIoCompletionPort(self, *a): return self.port_result
+            def CloseHandle(self, h): self.closed.append(h); return 1
+
+        api = Api(); api.port_result = 0
+        with self.assertRaises(Exception):
+            self.acceptance.ObservedJob(api=api)
+        self.assertIn(11, api.closed)
+
+        api = Api(); api.set_results = [1, 0]
+        with self.assertRaises(Exception):
+            self.acceptance.ObservedJob(api=api)
+        self.assertIn(22, api.closed)
+        self.assertIn(11, api.closed)
+
+        api = Api()
+        job = self.acceptance.ObservedJob(api=api)
+        api.closed.clear()
+        api_close = api.CloseHandle
+        def close(h):
+            if h == 22:
+                return 0
+            return api_close(h)
+        api.CloseHandle = close
+        with self.assertRaises(Exception):
+            job.close_checked()
+        self.assertEqual(job.port, 22)
+        self.assertEqual(job.handle, 11)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
