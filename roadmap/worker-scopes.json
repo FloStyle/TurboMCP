@@ -30,11 +30,14 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "Tools/test-persistence-process-reader.py"
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendAliasTest.cpp",
+        "Tools/test-graph-append.py",
+        "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "8b33ac0c2e517697f17478e0b48dda8e9a221ef9",
-      "checkpoint": "Integrator-approved offline isolation repair; dispatch base is the scope commit containing this policy; exact SHA recorded in worker claim and prompt."
+      "approved_base": "907c80296df8e4845a7c83ed50a5d4be1497045f",
+      "checkpoint": "Append alias ambiguity repair; dispatch base is this integrator scope commit, recorded exactly in claim and prompt"
     }
   }
 }
