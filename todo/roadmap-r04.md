@@ -301,6 +301,26 @@ Unresolved: whether the `BlueprintGraph` test dependency and automation seam can
 
 Correction after review: this commit preserves candidate `f9aa39fff11368622b72fde9a4a6a2218aae1b0c` and addresses report SHA-256 `66b4b2ec3637b04233a653fd38ac26ed92c9c4d23c8ee0d71634c699e0fbea55`. The probe now binds the loopback socket owner to the expected PID/start time/canonical project and engine, with foreign/ambiguous/permission/replacement negative controls. Config provenance now distinguishes `GetDefaultConfigFilename()` from `GEditorPerProjectIni`/the loaded hierarchy, never writes settings files, restores in-memory state on every same-process path and requires a fresh token/PID `effective=Never` result. Cleanup eligibility is explicit; the current KILL_ON_JOB_CLOSE job is a blocking lifecycle gap for refusal with unrelated unsaved assets, hard death uses the journal/recovery path, and failed readback is reported **persistence unverified**. All subtasks remain `proposed_unapproved`.
 
+### Checkpoint 7: offline identity validator
+
+Task R04 checkpoint 7, claim `b0827b006bf345989af11dfbba7878b0` (owner `dsh-r04-identity-01`). Approved base `cdf8c68d0e342a0ed22c0287e7de6eff858a1780`; branch `task/r04-identity-validator`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+
+Implementation:
+- `Tools/persistence_identity.py` adds the pure `validate_evidence(payload)` API and schema `turbomcp.persistence-identity/1`. It validates expected PID/start time/project/engine, literal `127.0.0.1` or `::1` endpoints, two bounded-time process/TCP snapshots and exact listener ownership. It returns explicit pass/refusal reason codes and never raises on invalid input.
+- `Tools/test-persistence-identity.py` contains 51 deterministic injected-evidence tests. It covers valid IPv4/IPv6 exact and wildcard cases, explicit same-owner dual-stack rows, multiple rows for one owner, foreign listener with the intended editor alive, PID reuse, changed project/engine, failed collection, missing listener, hostname/remote endpoints, multiple owners, ambiguous other-family wildcard coverage, stale/reversed/gapped observations, changed snapshots, malformed/unknown/missing fields, booleans-as-integers, and relative/UNC/device/dot/forward-slash/wrong-extension paths.
+- No caller, helper, catalog, fixture, config, lease, process/network/filesystem collector, editor or engine path is wired. Only Python's standard library is used.
+
+Validation:
+- `python Tools/test-persistence-identity.py` — exit 0; `Ran 51 tests ... OK`.
+- `python Tools/execute-tests.py --profile offline --execute` — **FAILED** at `validate-repo`: `Test catalog is incomplete or duplicated`. The existing repository invariant treats every `Tools/test-*.py` file as requiring a `Tests/catalog.json` row; the authorized checkpoint 7 scope forbids catalog changes and explicitly says catalog/validator wiring is outside scope. Evidence: `.local/executions/963e4cdab5084675909b4c23d3c1dc0d/report.json`; inner log `.local/validation/851d98debb1847368f442fea5d63812f/validate-repo.log`.
+- Candidate-bound test, offline and scope runs are recorded in the submission after the commit. No engine/editor/build/MCP/recovery command was run.
+
+Blocker: the catalog invariant and the allowed file list conflict. To make the offline profile pass without weakening the check, the integration owner must either authorize one `Tests/catalog.json` entry (tier `engine`, so the test remains explicitly invoked), or update the validator policy. Neither was changed here. Until that decision, the module and its focused tests pass, but the candidate does not satisfy the offline profile.
+
+Limitations: passing proves only that the supplied evidence is internally consistent. It does not prove live ownership, does not secure a future connection, and is subject to a residual race between the final snapshot and any later connect. A trusted collector must supply canonical Windows paths and truthful, bounded process/TCP records; the module neither resolves symlinks nor queries the OS. All P1-P6 persistence work remains `proposed_unapproved`.
+
+Rollback: remove `Tools/persistence_identity.py`, `Tools/test-persistence-identity.py`, and this evidence. No existing file or caller is affected.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)
