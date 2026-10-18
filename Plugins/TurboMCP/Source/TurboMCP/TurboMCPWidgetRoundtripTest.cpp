@@ -113,22 +113,37 @@ namespace
 				}
 				Object->MarkAsGarbage();
 			};
-			auto RetireGraph = [&RetireObject](UEdGraph* Graph)
+			TSet<UEdGraph*> RetiredGraphs;
+			auto RetireGraph = [&RetireObject, &RetiredGraphs](UEdGraph* Graph)
 			{
-				if (Graph == nullptr)
+				if (Graph == nullptr || RetiredGraphs.Contains(Graph))
 				{
 					return;
 				}
+				RetiredGraphs.Add(Graph);
 				for (UEdGraphNode* Node : Graph->Nodes)
 				{
 					RetireObject(Node);
 				}
 				RetireObject(Graph);
 			};
-			RetireGraph(Fixture.Target);
-			RetireGraph(Fixture.Sibling);
 			if (Fixture.Blueprint != nullptr)
 			{
+				// Reacquire the Blueprint's current graph objects from its public
+				// graph arrays. The cached Fixture.Target/Sibling pointers may be
+				// stale after compilation and must not be dereferenced here.
+				auto RetireGraphList = [&RetireGraph](const auto& InGraphs)
+				{
+					for (const TObjectPtr<UEdGraph>& Graph : InGraphs)
+					{
+						RetireGraph(Graph.Get());
+					}
+				};
+				RetireGraphList(Fixture.Blueprint->UbergraphPages);
+				RetireGraphList(Fixture.Blueprint->FunctionGraphs);
+				RetireGraphList(Fixture.Blueprint->MacroGraphs);
+				RetireGraphList(Fixture.Blueprint->EventGraphs);
+				RetireObject(Fixture.Blueprint->WidgetTree.Get());
 				RetireObject(Fixture.Blueprint->GeneratedClass.Get());
 				RetireObject(Fixture.Blueprint->SkeletonGeneratedClass.Get());
 				RetireObject(Fixture.Blueprint);
@@ -1027,12 +1042,13 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("post-write literal Blueprint is up to date"),
 			Fixture.Blueprint->IsUpToDate());
 		UClass* LiteralGeneratedClass = Fixture.Blueprint->GeneratedClass;
-		TestTrue(TEXT("post-write literal generated class is usable"),
-			LiteralGeneratedClass != nullptr
+		const bool bLiteralGeneratedUsable = LiteralGeneratedClass != nullptr
 			&& LiteralGeneratedClass->GetDefaultObject() != nullptr
-			&& Cast<UUserWidget>(LiteralGeneratedClass->GetDefaultObject()) != nullptr);
+			&& Cast<UUserWidget>(LiteralGeneratedClass->GetDefaultObject()) != nullptr;
+		TestTrue(TEXT("post-write literal generated class is usable"),
+			bLiteralGeneratedUsable);
 		if (CompileLog.NumErrors != 0 || !Fixture.Blueprint->IsUpToDate()
-			|| LiteralGeneratedClass == nullptr)
+			|| !bLiteralGeneratedUsable)
 		{
 			return false;
 		}
@@ -1398,12 +1414,13 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("post-write connected Blueprint is up to date"),
 			Connected.Blueprint->IsUpToDate());
 		UClass* ConnectedGeneratedClass = Connected.Blueprint->GeneratedClass;
-		TestTrue(TEXT("post-write connected generated class is usable"),
-			ConnectedGeneratedClass != nullptr
+		const bool bConnectedGeneratedUsable = ConnectedGeneratedClass != nullptr
 			&& ConnectedGeneratedClass->GetDefaultObject() != nullptr
-			&& Cast<UUserWidget>(ConnectedGeneratedClass->GetDefaultObject()) != nullptr);
+			&& Cast<UUserWidget>(ConnectedGeneratedClass->GetDefaultObject()) != nullptr;
+		TestTrue(TEXT("post-write connected generated class is usable"),
+			bConnectedGeneratedUsable);
 		if (ConnectedCompileLog.NumErrors != 0 || !Connected.Blueprint->IsUpToDate()
-			|| ConnectedGeneratedClass == nullptr)
+			|| !bConnectedGeneratedUsable)
 		{
 			return false;
 		}
