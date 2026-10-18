@@ -311,28 +311,31 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 
 		// THE FACTORY DECIDES WHETHER THE TYPE CAN BE BUILT HERE, and it is asked at PLAN time so a Preview
 		// and an Edit refuse the same input rather than the Edit discovering it halfway through.
+		// THE PROBE IS BUILT IN A THROWAWAY TRANSIENT GRAPH. The real graph is used only to filter the action
+		// list. `UBlueprintNodeSpawner::SpawnNode` calls `ParentGraph->Modify()`; using the real graph would
+		// mark the asset dirty even though the probe is removed again. A transient graph makes that
+		// `MarkPackageDirty` a no-op while preserving the same action filtering, class and pin resolution.
 		FString SpawnNote;
-		UEdGraphNode* Probe = nullptr;
-		const FTurboMCPNodeType::ESpawnResult Result =
-			FTurboMCPNodeType::SpawnNodeOfType(Blueprint, Graph, Form.TypeId, Probe, SpawnNote);
-
-		if (Result != FTurboMCPNodeType::ESpawnResult::Spawned || Probe == nullptr)
+		UEdGraphNode* Probe = FTurboMCPNodeType::BuildProbeNode(Blueprint, Graph, Form.TypeId,
+			SpawnNote);
+		if (Probe == nullptr)
 		{
 			OutPlan.Refusals.Add(FString::Printf(TEXT("line %d, column %d: %s"),
 				Form.Line, Form.Column, *SpawnNote));
 			continue;
 		}
+		UEdGraph* ProbeGraph = Cast<UEdGraph>(Probe->GetOuter());
 
-		// THE NODE THE PROBE BUILT IS REMOVED AGAIN, because `Plan` MUST NOT CHANGE THE ASSET. It is removed by
-		// IDENTITY, the node this call created, so a failure here cannot take a node of the caller's with it.
-		//
 		// THE CLASS IS RECORDED, because it is what `Apply` reports and what makes the round trip checkable: a
 		// caller comparing the input with the read-back needs to know what the id resolved TO.
 		Form.ResolvedClass = Probe->GetClass()->GetName();
 
-		// THE PROBE'S PIN NAMES ARE CAPTURED BEFORE IT IS REMOVED, because a link whose SOURCE is a node this
-		// same text creates has to be validated against pins that do not exist in the graph yet. The probe is
-		// the only place they can be READ without `Plan` touching the asset.
+		// THE PROBE'S PIN NAMES ARE CAPTURED BEFORE IT IS RETIRED, because a link whose SOURCE is a node this
+		// same text creates has to be validated against pins that do not exist in the graph yet.
+		if (Probe->Pins.Num() == 0)
+		{
+			Probe->AllocateDefaultPins();
+		}
 		for (const UEdGraphPin* ProbePin : Probe->Pins)
 		{
 			if (ProbePin != nullptr)
@@ -341,7 +344,12 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 			}
 		}
 
-		Graph->RemoveNode(Probe);
+		// The probe was never added to the real graph, so retire it with the throwaway graph it owns.
+		Probe->MarkAsGarbage();
+		if (ProbeGraph != nullptr && ProbeGraph != Graph)
+		{
+			ProbeGraph->MarkAsGarbage();
+		}
 	}
 
 	// ---- 5. LINKS WRITTEN AS A PIN VALUE ARE PLANNED HERE AND MADE IN `Apply` --------------------------

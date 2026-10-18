@@ -800,6 +800,39 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
 	TestEqual(TEXT("Plan did not change the dirty flag"), Package->IsDirty(), bDirtyBefore);
 
+	// Repeated Plan must remain clean and must not touch either graph.
+	FTurboMCPGraphAppend::FPlan RepeatedPlan;
+	FString RepeatedError;
+	TestTrue(TEXT("a repeated Plan still accepts the intended text"),
+		FTurboMCPGraphAppend::Plan(Fixture.AssetPath, Fixture.Target->GetName(), AppendText,
+			RepeatedPlan, RepeatedError, /*bRequestPlacement=*/true));
+	TestTrue(TEXT("the repeated plan is acceptable"), RepeatedPlan.bAcceptable());
+	TestTrue(TEXT("a repeated Plan did not mutate the target graph"),
+		SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+	TestTrue(TEXT("a repeated Plan did not mutate the sibling graph"),
+		SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
+	TestEqual(TEXT("a repeated Plan did not mutate the widget tree"),
+		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
+	TestFalse(TEXT("a repeated clean Plan did not change the dirty flag"),
+		Package->IsDirty());
+
+	// An already-dirty package must stay dirty; Plan must not clear the user's
+	// state as a way to appear clean.
+	Package->SetDirtyFlag(true);
+	FTurboMCPGraphAppend::FPlan DirtyPlan;
+	FString DirtyError;
+	TestTrue(TEXT("Plan accepts the intended text on an already-dirty package"),
+		FTurboMCPGraphAppend::Plan(Fixture.AssetPath, Fixture.Target->GetName(), AppendText,
+			DirtyPlan, DirtyError, /*bRequestPlacement=*/true));
+	TestTrue(TEXT("the already-dirty plan is acceptable"), DirtyPlan.bAcceptable());
+	TestTrue(TEXT("Plan preserved the already-dirty state"), Package->IsDirty());
+	TestTrue(TEXT("an already-dirty Plan did not mutate the target graph"),
+		SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+	TestTrue(TEXT("an already-dirty Plan did not mutate the sibling graph"),
+		SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
+	TestEqual(TEXT("an already-dirty Plan did not mutate the widget tree"),
+		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
+
 	const FString RefusalText = TEXT(
 		"(Development|PrintString\n    execute (-> DefinitelyMissing:then)\n    InString \"refused\")");
 
@@ -854,6 +887,8 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 			RefusalApplyPlanError, /*bRequestPlacement=*/true));
 	TestFalse(TEXT("the refusal Apply plan is not acceptable"), RefusalApplyPlan.bAcceptable());
 	const bool bDirtyBeforeRefusedApply = RefusalApplyFixture.Package->IsDirty();
+	TestFalse(TEXT("the refused Apply plan left its fresh fixture clean"),
+		bDirtyBeforeRefusedApply);
 	FString RefusalReport;
 	FString RefusalApplyError;
 	TestTrue(TEXT("Apply on a refused plan returns its preview without writing"),
