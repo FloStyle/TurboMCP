@@ -539,6 +539,72 @@ class PersistenceIdentityTests(unittest.TestCase):
             observation["listeners"][0]["engine_executable"] = engine
         self.pass_case(payload)
 
+    def test_sharp_s_and_ss_project_paths_are_distinct(self):
+        sharp = "C:\\Stra\u00dfe\\Test.uproject"
+        plain = "C:\\Strasse\\Test.uproject"
+        payload = evidence()
+        payload["expected"]["project_path"] = sharp
+        for observation in payload["observations"]:
+            observation["process"]["project_path"] = plain
+            observation["listeners"][0]["project_path"] = plain
+        self.refuse(payload, identity.PROCESS_MISMATCH)
+
+    def test_sharp_s_and_ss_listener_project_is_foreign(self):
+        sharp = "C:\\Stra\u00dfe\\Test.uproject"
+        plain = "C:\\Strasse\\Test.uproject"
+        payload = evidence()
+        payload["expected"]["project_path"] = sharp
+        for observation in payload["observations"]:
+            observation["process"]["project_path"] = sharp
+            observation["listeners"][0]["project_path"] = plain
+        self.refuse(payload, identity.LISTENER_FOREIGN)
+
+    def test_sharp_s_and_ss_engine_paths_are_distinct(self):
+        sharp = "C:\\Stra\u00dfe\\UnrealEditor.exe"
+        plain = "C:\\Strasse\\UnrealEditor.exe"
+        payload = evidence()
+        payload["expected"]["engine_executable"] = sharp
+        for observation in payload["observations"]:
+            observation["process"]["engine_executable"] = plain
+            observation["listeners"][0]["engine_executable"] = plain
+        self.refuse(payload, identity.PROCESS_MISMATCH)
+
+    def test_sharp_s_and_ss_listener_engine_is_foreign(self):
+        sharp = "C:\\Stra\u00dfe\\UnrealEditor.exe"
+        plain = "C:\\Strasse\\UnrealEditor.exe"
+        payload = evidence()
+        payload["expected"]["engine_executable"] = sharp
+        for observation in payload["observations"]:
+            observation["process"]["engine_executable"] = sharp
+            observation["listeners"][0]["engine_executable"] = plain
+        self.refuse(payload, identity.LISTENER_FOREIGN)
+
+    def test_identical_sharp_s_paths_accepted(self):
+        project = "C:\\Stra\u00dfe\\Test.uproject"
+        engine = "C:\\Stra\u00dfe\\UnrealEditor.exe"
+        payload = evidence()
+        payload["expected"]["project_path"] = project
+        payload["expected"]["engine_executable"] = engine
+        for observation in payload["observations"]:
+            observation["process"]["project_path"] = project
+            observation["process"]["engine_executable"] = engine
+            observation["listeners"][0]["project_path"] = project
+            observation["listeners"][0]["engine_executable"] = engine
+        self.pass_case(payload)
+
+    def test_ascii_case_variations_across_snapshots_accepted(self):
+        payload = evidence()
+        payload["expected"]["project_path"] = r"C:\ExampleDev\SampleRoot003.Uproject"
+        payload["expected"]["engine_executable"] = r"C:\ENGINE\UNREALEDITOR.EXE"
+        lower = (r"c:\ExampleDev\SampleRoot003.uproject", r"c:\engine\unrealeditor.exe")
+        upper = (r"C:\ExampleDev\SampleRoot003.uproject", r"C:\ENGINE\UNREALEDITOR.EXE")
+        for observation, paths in zip(payload["observations"], (lower, upper)):
+            observation["process"]["project_path"] = paths[0]
+            observation["process"]["engine_executable"] = paths[1]
+            observation["listeners"][0]["project_path"] = paths[0]
+            observation["listeners"][0]["engine_executable"] = paths[1]
+        self.pass_case(payload)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

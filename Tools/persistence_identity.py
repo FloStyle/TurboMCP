@@ -69,9 +69,12 @@ raising.
 
 The result proves only that the supplied evidence is internally consistent. It
 does not prove live ownership, and a connection made after validation is
-subject to a residual race between the snapshot and the connect. The collector
-must be trusted to read the process and TCP tables truthfully and atomically
-enough for the stated bounds.
+subject to a residual race between the snapshot and the connect. Path identity
+uses ASCII-only case folding and preserves non-ASCII code points exactly; it is
+not Unicode normalization or filesystem identity. Some Unicode casing variants
+can therefore be refused. A refusal is preferable to accepting distinct
+supplied identities. The collector must be trusted to read the process and TCP
+tables truthfully and atomically enough for the stated bounds.
 
 ``validate_evidence(payload)`` returns an object with ``ok``, ``reason``,
 ``detail`` and, on success, ``normalized``. Refusal reasons are explicit codes in
@@ -135,6 +138,9 @@ _RESERVED_RE = re.compile(
     r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?$", re.IGNORECASE
 )
 _FORBIDDEN_PATH_CHARS = '<>"|?*'
+_ASCII_LOWER = str.maketrans(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"
+)
 
 
 class _Refusal(Exception):
@@ -252,7 +258,7 @@ def _windows_path(value, label, extension):
             _refuse(INVALID_VALUE, "%s contains a segment with a trailing dot or space" % label)
         if _RESERVED_RE.fullmatch(part):
             _refuse(INVALID_VALUE, "%s contains a Windows device name" % label)
-    if ntpath.splitext(parts[-1])[1].casefold() != extension:
+    if _path_key(ntpath.splitext(parts[-1])[1]) != extension:
         _refuse(INVALID_VALUE, "%s must end in %s" % (label, extension))
     return text
 
@@ -282,12 +288,23 @@ def _process(value, label):
     return _identity(item, label)
 
 
+def _path_key(value):
+    """ASCII-only case folding for supplied canonical path identity.
+
+    Windows drive/ASCII names are conventionally case-insensitive, but this
+    validator has no filesystem identity evidence. Preserve every non-ASCII code
+    point exactly and lowercase only ASCII A-Z. This deliberately refuses some
+    Unicode casing variants rather than equating distinct supplied identities.
+    """
+    return value.translate(_ASCII_LOWER)
+
+
 def _owner(identity):
     return (
         identity["pid"],
         identity["start_time_utc"].text,
-        identity["project_path"].casefold(),
-        identity["engine_executable"].casefold(),
+        _path_key(identity["project_path"]),
+        _path_key(identity["engine_executable"]),
     )
 
 
