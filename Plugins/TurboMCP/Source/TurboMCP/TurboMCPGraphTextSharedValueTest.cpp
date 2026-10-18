@@ -650,6 +650,56 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 			Text.Contains(FString::Printf(TEXT("(-> %s:"), *BadId)));
 	}
 
+	// ---- unsupported child under a valid shared parent ------------------
+	{
+		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("SharedUnsupportedChild"));
+		UK2Node_CallFunction* Shared = Graph != nullptr ? AddConcat(Graph) : nullptr;
+		UK2Node_CallFunction* PrintA = Graph != nullptr ? AddPrintString(Graph) : nullptr;
+		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
+		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
+		UEdGraphNode* Bad = Graph != nullptr ? NewObject<UEdGraphNode>(Graph) : nullptr;
+		if (Graph == nullptr || Shared == nullptr || PrintA == nullptr || PrintB == nullptr
+			|| Entry == nullptr || Bad == nullptr)
+		{
+			AddError(TEXT("unsupported-child fixture nodes are missing"));
+			return false;
+		}
+		Graph->AddNode(Bad, /*bUserAction=*/false, /*bSelectNewNode=*/false);
+		UEdGraphPin* BadOut = Bad->CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_String,
+			FName(TEXT("BadOut")));
+		UEdGraphPin* SharedA = PinOf(Shared, TEXT("A"), EGPD_Input);
+		if (BadOut == nullptr || SharedA == nullptr
+			|| !LinkEntryToPrint(Graph, Entry, PrintA)
+			|| !LinkNodes(Graph, PrintA, TEXT("then"), PrintB, TEXT("execute"))
+			|| !LinkNodes(Graph, Shared, TEXT("ReturnValue"), PrintA, TEXT("InString"))
+			|| !LinkNodes(Graph, Shared, TEXT("ReturnValue"), PrintB, TEXT("InString")))
+		{
+			AddError(TEXT("unsupported-child fixture links could not be made"));
+			return false;
+		}
+		BadOut->MakeLinkTo(SharedA);
+		TestTrue(TEXT("unsupported child has no type ID as a setup precondition"),
+			TurboMCPNodeId::GetNodeTypeId(Bad).IsEmpty());
+		AssignDistinctGuids(Graph, 0x58000000);
+		if (!VerifyFixtureGuids(*this, Graph, TEXT("unsupported-child")))
+		{
+			AddError(TEXT("unsupported-child fixture GUID preconditions failed"));
+			return false;
+		}
+		const FString SharedId = TurboMCPNodeId::MakeForNode(Shared);
+		const FString SharedType = TurboMCPNodeId::GetNodeTypeId(Shared);
+		TArray<FString> Notes;
+		const FString Text = RenderBodies(Graph, AssetPath, Notes);
+		TestFalse(TEXT("unsupported child under a shared parent emits no $id"),
+			Text.Contains(TEXT("$")));
+		TestTrue(TEXT("unsupported child diagnostic repeats across parent attempts"),
+			CountText(Text, TEXT("has no node type ID")) >= 2);
+		TestTrue(TEXT("the shared parent is rendered again rather than linked"),
+			CountText(Text, FString::Printf(TEXT("(%s"), *SharedType)) >= 2);
+		TestFalse(TEXT("a parent with a failed child is not reused as a link"),
+			Text.Contains(FString::Printf(TEXT("(-> %s:"), *SharedId)));
+	}
+
 	// ---- malformed nonempty link under a shared parent -------------------
 	{
 		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("SharedMalformedLink"));
@@ -753,23 +803,38 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 			return false;
 		}
 
+		const UFunction* PrintFunction = Print->GetTargetFunction();
+		const FString PrintTargetPath = PrintFunction != nullptr ? PrintFunction->GetPathName() : FString();
+		TestTrue(TEXT("exact fixture PrintString has a real target function"), !PrintTargetPath.IsEmpty());
+		TestEqual(TEXT("exact fixture PrintString type ID is the expected literal"),
+			TurboMCPNodeId::GetNodeTypeId(Print), TEXT("Development|PrintString"));
+		TestEqual(TEXT("exact fixture getter type ID is the expected literal"),
+			TurboMCPNodeId::GetNodeTypeId(Getter), TEXT("Variables|Default|GetExactValue"));
+		if (PrintTargetPath.IsEmpty())
+		{
+			return false;
+		}
+
 		TArray<FString> Notes;
 		const FString First = RenderBodies(Graph, AssetPath, Notes);
 		TArray<FString> SecondNotes;
 		const FString Second = RenderBodies(Graph, AssetPath, SecondNotes);
-		// Provenance: this literal is the approved-base renderer's ordinary
-		// single-use shape for these controlled identifiers, not a value derived
-		// from the repaired shared-value branch. Repeatability below is extra.
+		// Provenance: this literal is the approved-base RenderNode shape derived
+		// from source, including the unconditional `; target <UFunction path>`
+		// annotation for UK2Node_CallFunction and the ordinary single-use inline.
+		// It is not derived from candidate Render output; the fixture metadata
+		// supplies only dynamic IDs and the real function path. It has not been
+		// run against the approved base here. Repeatability below is extra.
 		const FString PrintId = TurboMCPNodeId::MakeForNode(Print);
 		const FString EntryId = TurboMCPNodeId::MakeForNode(Entry);
 		const FString GetterId = TurboMCPNodeId::MakeForNode(Getter);
 		const FString Expected = FString::Printf(
 			TEXT("; graph %s.ExactSingleUse\n"
 				"(fn ExactSingleUse\n"
-				"  (Development|PrintString ; %s\n"
+				"  (Development|PrintString ; %s ; target %s\n"
 				"      execute (-> %s)\n"
 				"      InString (Variables|Default|GetExactValue ; %s)))"),
-			*AssetPath, *PrintId, *EntryId, *GetterId);
+			*AssetPath, *PrintId, *PrintTargetPath, *EntryId, *GetterId);
 		TestEqual(TEXT("ordinary single-use text exactly matches the legacy shape"), First, Expected);
 		TestEqual(TEXT("ordinary single-use text is repeatable"), First, Second);
 		TestFalse(TEXT("ordinary single-use text emits no $id"), First.Contains(TEXT("$")));
