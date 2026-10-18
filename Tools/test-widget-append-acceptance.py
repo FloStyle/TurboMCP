@@ -24,10 +24,42 @@ AUTOMATION_STATES = {"NotRun", "InProcess", "Fail", "Success", "Skipped"}
 failures = []
 
 
+def _detail_text(detail):
+    """Render arbitrary structured detail safely and boundedly."""
+    if detail is None or detail == "" or detail == []:
+        return ""
+    if isinstance(detail, str):
+        text = detail
+    else:
+        text = repr(detail)
+    return text[:500]
+
+
 def check(name, ok, detail=""):
-    print("  %-4s %s%s" % ("ok" if ok else "FAIL", name, ("  " + detail) if detail else ""))
+    detail_text = _detail_text(detail)
+    print("  %-4s %s%s" % ("ok" if ok else "FAIL", name,
+                           ("  " + detail_text) if detail_text else ""))
     if not ok:
         failures.append(name)
+    return bool(ok)
+
+
+def run_self_check():
+    """Exercise nonempty-list detail without connecting to the editor."""
+    saved = list(failures)
+    failures.clear()
+    try:
+        result = check("self-check: nonempty list detail is stringified", False,
+                       ["HTTP request timed out"])
+        recorded = (result is False
+                    and failures == ["self-check: nonempty list detail is stringified"])
+    finally:
+        failures[:] = saved
+    if not recorded:
+        print("RESULT: SELF-CHECK FAIL")
+        return 1
+    print("RESULT: SELF-CHECK PASS (failure remains recorded; normal failure path exits nonzero)")
+    return 0
 
 
 def _is_count(value):
@@ -87,6 +119,8 @@ def parse_run_tests_report(payload, expected_test):
 
 
 def main():
+    if "--self-check" in sys.argv[1:]:
+        return run_self_check()
     session = Session()
     session.connect()
 
