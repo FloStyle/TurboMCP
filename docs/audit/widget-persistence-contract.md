@@ -2,208 +2,246 @@
 
 Status: source-only contract; no runtime evidence. This document specifies the
 smallest save/unload/reload durability test for the accepted literal and
-connected-data Widget roundtrip cases. It does not implement the test.
+connected-data Widget roundtrip cases. It is not implementation permission.
 
 ## Decision
 
-Use one compiled automation suite inside the existing supervisor-owned editor:
+Run one compiled automation suite inside the disposable TestProject editor owned
+by `run-suites.ps1`:
 
-1. Build the accepted disposable Widget fixture at a unique path under
+1. Build the accepted fixture at one unique path under
    `TestProject/Content/Tests`.
-2. Compile it, save it with the production `EditTurboMCPSaveWithoutThumbnail`
-   path, and require the package to become clean.
-3. Unload the package, prove it is absent from the package table and that the
-   old package/object pointers are invalid.
-4. Load the package again from disk and prove the new package/object identity is
-   different.
-5. Read the reloaded graph with the production reader and assert the intended
-   literal/connected node, links, positions, defaults, widget tree/slots and
-   sibling graph.
-6. Restore/remove only the owned unique files on every exit path.
+2. Observe `SaveOnCompile`, set it to `SoC_Never` in memory under a scoped guard,
+   compile, save explicitly through the production save tool, and require a clean
+   package.
+3. Explicitly release test-owned strong references, unload the package with
+   `UPackageTools::UnloadPackages`, and prove the old Blueprint object identity is
+   invalid.
+4. Reload from the saved file with `LoadPackage`/`LoadObject`; prove the new
+   Blueprint weak identity and loaded state.
+5. Read the reloaded graph and assert the intended literal/connected node, links,
+   positions, defaults, widget tree/slots and sibling graph.
+6. Restore/remove only the owned files on every path.
 
-No editor restart is proposed. This is an in-process **package** reload test, not
-a fresh-editor process test. It does not certify save-on-compile, session
-persistence, or user-asset durability.
+This is an in-process package reload, not a fresh editor-process test. It does
+not certify save-on-compile, session persistence or user-asset durability.
 
-## Existing containment
+## Containment and global side effects
 
-- `Tools/execution_recovery.py:37-85` snapshots and restores
-  `TestProject/Content` for each engine-profile execution and removes files not
-  present at run start. This is the outer recovery boundary.
-- `Tools/run-suites.ps1:604-605` sets the fixture root to
-  `TestProject/Content/Tests`; `:637-646` snapshots it and marks the runner as
-  fixture owner; `:395-464` restores it byte-for-byte, including the live-editor
-  path; `:713-728` restores after each suite.
-- `Tools/fixture-isolation.py:70-111` releases package handles and reloads
-  assets through `init_unreal.FixtureIsolationToolset` before a live bypass, or
-  the runner stops its own editor first.
-- The suite must not stop, start or signal an editor. It runs inside the editor
-  owned by `run-suites.ps1`; no new process boundary is needed for package
-  unload/reload.
-- `run-suites.ps1` has no two-pass/editor-restart mode. If `UnloadPackages`
-  cannot release the fixture because of a live reference, this contract cannot
-  prove a fresh disk load; the minimum prerequisite is a separate
-  supervisor-owned process-restart mode. That is not authorized or implemented
-  here.
+`UPackageTools::UnloadPackages` is not a local package-only operation. In
+`Engine/Source/Editor/UnrealEd/Private/PackageTools.cpp:352-630` it:
+
+- clears the editor selection;
+- calls `GEditor->Trans->Reset(...)` when `bResetTransBuffer` is true (`:457`);
+- roots the packages temporarily, flushes async loading/compilation/rendering;
+- broadcasts `OnUnloadPackagesDelegate`, `CleanupUnloadingObjects` and
+  `OnBlueprintGeneratedClassUnloaded`;
+- calls `CollectGarbage(GARBAGE_COLLECTION_KEEPFLAGS)` twice (`:609`, `:626`);
+- mutates editor/package state regardless of whether the caller's package is
+  unloaded.
+
+Use `FUnloadPackageParams` with `bUnloadDirtyPackages=false` and
+`bResetTransBuffer=false` to avoid discarding undo history. This does not avoid
+the two GC passes or the callbacks. The test is therefore suitable **only** in
+the disposable, supervisor-owned TestProject editor with no unrelated unsaved
+assets. It makes no user-editor safety claim. If an unrelated dirty package or
+foreign editor is present, refuse/block; do not unload.
+
+If a retained package shell or rooted object prevents the Blueprint identity
+from invalidating, report **blocked** with the package/object flags. Do not clear
+unrelated references or force GC to manufacture absence. The minimum fallback is
+a supervisor-owned two-pass editor restart, which `run-suites.ps1` does not have;
+it is a separate prerequisite, not part of this contract.
 
 ## Unique synthetic package
 
-Use:
+Use exactly:
 
 - package: `/Game/Tests/WidgetPersistenceContract/<guid>/WBP_<guid>`
-- file: `TestProject/Content/Tests/WidgetPersistenceContract/<guid>/WBP_<guid>.uasset`
+- root: `TestProject/Content/Tests/WidgetPersistenceContract/<guid>/`
+- asset file: `WBP_<guid>.uasset`
+- manifest: `owned.json`
+- quarantine: `WBP_<guid>.uasset.quarantine`
 
-`<guid>` is a lower-case 32-digit GUID created by the test. Both the package and
-the file must be absent before creation. Refuse if any of these is true:
+Before creation, refuse if `FPackageName::DoesPackageExist`, `FindPackage`,
+`FindObject`, the computed file, the root directory or the manifest already
+exists. The manifest records the package name and the exact owned relative paths.
+Only this GUID directory is removable; no recursive delete outside it and no
+pre-existing TestProject asset is touched.
 
-- `FPackageName::DoesPackageExist(PackageName)`.
-- `FindPackage(nullptr, *PackageName)` is non-null.
-- the computed file exists.
-- the asset registry already reports the object path.
+## Compile and explicit save
 
-Refusal happens before creating a package or file. Only the owned GUID directory
-may be removed; no recursive delete outside it and no workplace asset is
-touched.
+`CompileBlueprint` can implicitly save under
+`UBlueprintEditorSettings::SaveOnCompile` (`BlueprintEditorSettings.h:89,243`;
+save path in `BlueprintCompilationManager.cpp:458-490`). Before compiling any
+fixture:
 
-## Save success
+- read `GetMutableDefault<UBlueprintEditorSettings>()->SaveOnCompile`;
+- set it to `SoC_Never` in memory;
+- restore the previous value with a scoped guard on every exit path;
+- never call `SaveConfig`, never write `EditorPerProjectUserSettings.ini`.
 
-Use the production tool directly from C++:
+If the effective value cannot be observed/controlled, stop; explicit-save proof
+would be ambiguous. This is a test-project C++ seam only; there is no Python/MCP
+settings API.
 
-`UTurboMCPEditToolset::EditTurboMCPSaveWithoutThumbnail(PackageName)`
-(`Public/Tools/TurboMCPToolsets.h:1650`,
-`TurboMCPCompile.cpp:364-533,663-666`).
-
-This path writes the package itself with `UPackage::SavePackage` and
-`FSavePackageArgs`, avoiding the Widget thumbnail/design-time path. Success is
-proved by the package's dirty flag becoming false (`TurboMCPCompile.cpp:537-541`)
-and by the computed `.uasset` existing with nonzero size. Do not treat the
-engine call's return value alone as success.
+Save with `UTurboMCPEditToolset::EditTurboMCPSaveWithoutThumbnail(PackageName)`
+(`TurboMCPToolsets.h:1650`, `TurboMCPCompile.cpp:364-533,663-666`). It uses
+`UPackage::SavePackage` and `FSavePackageArgs`, avoiding the Widget thumbnail
+path. Require `UPackage::IsDirty()==false`, a nonzero `WBP_<guid>.uasset`, and
+the exact owned path. Do not treat the call return alone as proof.
 
 ## Unload and reload
 
-Use the existing editor API:
+Before unload, release all test-owned strong references to the package,
+Blueprint, generated class, nodes, widget tree and slots; keep only weak
+observers and stable IDs/values. This is normal ownership hygiene, not clearing
+unrelated engine references or dirty flags to force success.
 
-- `UPackageTools::UnloadPackages(const TArray<UPackage*>&, FText&, bool)`
-  (`Engine/Source/Editor/UnrealEd/Public/PackageTools.h:96`;
-  implementation `PackageTools.cpp:352-...`). Pass the saved package and
-  `bUnloadDirtyPackages=false`; require true and empty `OutErrorMessage`.
-- Immediately verify `FindPackage(nullptr, *PackageName) == nullptr` and keep a
-  `TWeakObjectPtr<UPackage>`/`TWeakObjectPtr<UWidgetBlueprint>` from before the
-  unload; both must be invalid.
-- Reload with `LoadPackage(nullptr, *PackageName, LOAD_None)`
-  (`UObjectGlobals.h:693`). Require a non-null result and
-  `NewPackage != OldPackage`.
-- Load the Blueprint object from the new package and require
-  `UWidgetBlueprint`, a non-null `GeneratedClass`, a non-null generated CDO,
-  and `IsUpToDate()`.
-- The old/new package distinction plus absence from the package table is the
-  primary proof that the object came from the saved bytes, not the still-loaded
-  object. A file digest is supplementary and is recorded before unload and after
-  reload.
+Call:
 
-If unload or the absence check fails, stop and report a blocked/unverified
-result. Do not clear references or dirty flags to force success.
+```cpp
+FUnloadPackageParams Params({Package});
+Params.bUnloadDirtyPackages = false;
+Params.bResetTransBuffer = false;
+const bool bUnloaded = UPackageTools::UnloadPackages(Params);
+```
 
-## Assertions after reload
+Require true, empty error, and invalid old `TWeakObjectPtr<UWidgetBlueprint>` and
+old weak generated class. Do not dereference old raw pointers afterward.
 
-Reacquire nodes only by stable GUIDs captured before unload; never dereference
-pre-unload pointers or require pointer identity across reload.
+Package-table absence is **not** guaranteed by `UnloadPackages`: it can leave a
+retained package shell. Accept either:
+
+- `FindPackage(nullptr, *PackageName) == nullptr`; or
+- a found shell with `!Package->IsFullyLoaded()` and no `RF_WasLoaded`; record
+  that shell as retained. A non-null shell is not by itself failure.
+
+Reload with `LoadPackage(nullptr, *PackageName, LOAD_None)`
+(`UObjectGlobals.h:693`) and `LoadObject<UWidgetBlueprint>`. Require:
+
+- non-null new weak Blueprint and new weak generated class;
+- old weak Blueprint/class remain invalid;
+- new package/Blueprint is fully loaded;
+- `UWidgetBlueprint`, non-null generated class and CDO, and `IsUpToDate()`.
+
+Do not require `NewPackage != OldPackage`: address reuse is legal and a retained
+shell may be reused. Identity evidence is old-weak invalidation plus new-weak
+creation and loaded-from-file state.
+
+## Post-reload assertions
+
+Reacquire nodes only by GUIDs captured before unload; never compare UObject
+pointers across reload.
 
 Literal case:
 
-- Exact existing node GUIDs and positions.
-- New `PrintString` GUID, planned position, `InString` literal, and exec link
-  from the original consumer.
-- Fresh production-reader form carrying the literal and the exact exec source.
-- Sibling graph GUIDs/positions/links and widget tree/slot values.
+- exact existing node GUIDs and positions;
+- new `PrintString` GUID, planned position, `InString` literal and exec link;
+- fresh reader form with literal and exact exec source;
+- sibling graph node GUIDs/positions/links.
 
-Connected-data case:
+Connected case:
 
-- Exact existing and new node GUIDs/positions.
-- New `PrintString` `InString` link to the existing source's `ReturnValue`, and
-  `execute` link to the original consumer's `then`.
-- Fresh reader form carrying the new identity, literal/duration field, source
-  reference and pin, and exec source.
-- No extra/missing node or link relative to the pre-save delta.
+- exact existing/new node GUIDs and positions;
+- new `PrintString` `InString` link to the existing source `ReturnValue`, and
+  `execute` link to the original consumer `then`;
+- fresh reader form with new identity, duration/literal field, source reference
+  and pin, and exec source.
 
-Widget/tree/slot assertions compare by name/class/parent, variable flag, text,
-and exact anchors/offsets/alignment/Z-order/auto-size. Do not compare widget
-UObject pointers after reload.
+Widget/tree/slot values compare by name/class/parent, variable flag, text and
+exact anchors/offsets/alignment/Z-order/auto-size. No widget UObject pointer
+identity across reload.
 
-## Negative controls
+## Negative controls (deterministic)
 
-1. **Failed save:** attempt the production save on a deliberately absent package
-   name (or a unique package made read-only) and require an explicit failure;
-   verify the saved trial's bytes and clean/dirty state are unchanged.
-2. **Missing reload:** after the positive readback, unload the saved package,
-   move its file to a quarantine name inside the owned GUID directory, call
-   `LoadPackage`, and require null/failure. Restore the file, reload, and verify
-   the positive state again. This proves the test is not satisfying reload from
-   the still-loaded package.
-3. **Collision refusal:** pre-create the package/file check condition in a
-   separate disposable name and prove creation refuses before writing.
+1. **Deterministic save-write failure:** create an owned directory at the exact
+   `WBP_<guid>.uasset` path before saving. The production
+   `UPackage::SavePackage` must fail because the target cannot become a file;
+   the package must remain dirty and no valid `.uasset` may exist. Remove the
+   directory in `finally`. Engine save errors are narrow expected-error
+   assertions tied to this control; they are never blanket-suppressed. If the
+   exact log text is unavailable, this control is blocked, not passed.
+2. **Save refusal, no write:** create a transient package under `/Temp/` and call
+   the production save tool; `TurboMCPCompile.cpp:481-490` refuses it before
+   writing. Assert refusal, no file and no dirty-state change. This is a
+   deterministic refusal, not an absent-package or read-only-file test.
+3. **Missing reload:** after the positive readback, unload the saved package,
+   move `WBP_<guid>.uasset` to the exact quarantine path with `IFileManager`, and
+   call `LoadPackage`. Require null/failure. Restore the file in a `finally`
+   guard, unload any failed partial package, reload, and reassert the positive
+   state. Expected load errors are narrowly asserted and recorded; they must not
+   be blanket-filtered. The wrapper still fails on unexpected test warnings or
+   errors.
+4. **Collision refusal:** pre-create the target root/file in a separate unique
+   name and prove creation refuses before package/file write.
 
-Every negative control restores its own state and must not mask the positive
-case. Do not reset a dirty flag after a failed save to make it look clean.
+No dirty flag is reset to make a failed save or missing reload look clean.
 
-## Cleanup
+## Cleanup and recovery
 
-Use a scoped cleanup object with a `Retire`/`finally` equivalent:
+Use a scoped cleanup object and a `finally` equivalent on every path. Cleanup
+uses only weak pointers and the owned manifest; it never dereferences a Blueprint
+or graph pointer invalidated by unload or a failed save. If the first unload
+succeeded, do not call `UnloadPackages` again; if it failed, attempt at most one
+guarded retry and report failure rather than repeating global side effects.
 
-- Unload any package the test still holds.
-- Delete only `<owned GUID>.uasset` and, if empty, its owned directory.
-- Remove the transient package/objects from memory; do not run global GC.
-- On cleanup failure, report it and leave the file for the runner's fixture
-  restore. The outer snapshot is the fallback, not an excuse to skip cleanup.
-- Never save, delete or move a pre-existing TestProject asset.
+- unload any package the test still owns;
+- delete quarantine if present;
+- delete any owned save temp file, then `WBP_<guid>.uasset`, then `owned.json`;
+- delete the GUID directory only if empty;
+- if any unexpected file remains, fail closed and leave it for the runner; do
+  not delete outside the owned directory.
 
-The outer `execute-tests.py` snapshot (`TestProject/Content`) and the
-`run-suites.ps1` fixture snapshot (`TestProject/Content/Tests`) both cover this
-path. They restore it after normal failure and after a hard run failure; they do
-not prove a fresh editor process.
+Outer recovery is conditional:
 
-## Implementation files and commands (later, separately authorized)
+- `Tools/execution_recovery.py:37-85` snapshots/restores
+  `TestProject/Content` only for engine-profile execution and only after its
+  owned Job Object closes. Hard supervisor death requires the recovery journal
+  and `Tools/recover-tests.py`; recovery is not unconditional.
+- `Tools/run-suites.ps1:604-646` snapshots `TestProject/Content/Tests` and
+  restores it at `:395-464`/`:713-728`; live restore requires a usable editor or
+  a runner-owned stop. A crashed editor cannot guarantee disk restore until the
+  runner's recovery path runs.
 
-New files only:
+The test itself adds no GC call, but the required `UnloadPackages` call performs
+the two global `CollectGarbage` passes and editor callbacks noted above. That is
+why only the disposable, supervisor-owned TestProject editor is in scope; no
+"no global GC" claim is made.
 
-- `Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPersistenceTest.cpp`
-- `Tools/test-widget-persistence.py`
+## Later implementation files and command
+
+- `Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPersistenceTest.cpp` (new)
+- `Tools/test-widget-persistence.py` (new)
 - one engine catalog row `test-widget-persistence`, timeout 900.
 
-The wrapper follows `Tools/test-widget-roundtrip.py` strict
-`AutomationTestToolset` parsing and must also fail on warnings.
-
-Proposed supervisor command:
+Supervisor command (not worker):
 
 ```powershell
 python -X utf8 Tools/execute-tests.py --profile engine --suites test-widget-persistence --max-seconds 900 --execute
 ```
 
-Expected evidence: build succeeds; one automation Success with no errors or
-warnings; unique package/file paths; save dirty=false; unload true plus absent
-package; reload new package identity; fresh reader assertions; negative-control
-results; cleanup and runner restore count. Missing native evidence is pending,
-not passed.
+Evidence: build success; one automation Success with no errors/warnings; exact
+owned paths; clean package after explicit save; unload true plus old weak
+invalidation; reloaded Blueprint weak identity and loaded state; graph/widget/
+sibling assertions; negative-control outcomes; cleanup result; runner restore
+count. Missing native evidence remains pending.
 
-## Source-confirmed vs unverified
+## Known vs unverified
 
-Confirmed in source: snapshot/restore boundaries; production save path and
-dirty-flag success; `UnloadPackages`/`LoadPackage` APIs; package path mapping;
-fixture ownership; runner fixture restore.
+Confirmed in source: snapshot/restore boundaries; production save and dirty-flag
+success; `UnloadPackages` callbacks/transaction reset/two GC passes; `LoadPackage`
+API; `SaveOnCompile` implicit-save path; owned path mapping.
 
-Unverified: whether a loaded Widget Blueprint and its generated class can be
-unloaded cleanly in this editor (references/asset registry may refuse); the
-post-load `IsUpToDate`/GeneratedClass state; save failure behavior under a
-read-only package; file quarantine/reload failure behavior; exact runtime
-timing and editor-side restore result.
-
-If `UnloadPackages` refuses the loaded Widget fixture, the minimum prerequisite
-is the supervisor-owned two-pass restart described in
-`docs/audit/widget-persistence-prerequisites.md`; that is a separate approval,
-not part of this contract.
+Unverified: whether this Widget Blueprint can be unloaded without retained
+references in the pinned editor; whether a package shell remains; post-load
+`IsUpToDate`/CDO state; behavior of expected load errors under automation log
+capture; exact timing. If unload cannot invalidate the old Blueprint, the minimum
+prerequisite is the two-pass restart in
+`docs/audit/widget-persistence-prerequisites.md`.
 
 ## Rollback
 
-Remove the document and, if later implemented, the two new test files and the
-catalog row. Restore the fixture snapshot; no production or shared change is
+Remove this document and, if later implemented, the two new test files and the
+catalog row. Restore the fixture snapshot. No production or shared change is
 involved.
