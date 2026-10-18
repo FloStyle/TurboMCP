@@ -40,12 +40,17 @@ not certify save-on-compile, session persistence or user-asset durability.
 - mutates editor/package state regardless of whether the caller's package is
   unloaded.
 
-Use `FUnloadPackageParams` with `bUnloadDirtyPackages=false` and
+Use `UPackageTools::FUnloadPackageParams` with `bUnloadDirtyPackages=false` and
 `bResetTransBuffer=false` to avoid discarding undo history. This does not avoid
 the two GC passes or the callbacks. The test is therefore suitable **only** in
 the disposable, supervisor-owned TestProject editor with no unrelated unsaved
 assets. It makes no user-editor safety claim. If an unrelated dirty package or
 foreign editor is present, refuse/block; do not unload.
+
+The nested struct is `UPackageTools::FUnloadPackageParams`, not a global type.
+Inspect `Params.OutErrorMessage` after the call. A true return means the loaded
+set changed, not that every object/package shell disappeared; use the weak
+identities and loaded-state checks below.
 
 If a retained package shell or rooted object prevents the Blueprint identity
 from invalidating, report **blocked** with the package/object flags. Do not clear
@@ -101,14 +106,18 @@ unrelated engine references or dirty flags to force success.
 Call:
 
 ```cpp
-FUnloadPackageParams Params({Package});
+TArray<UPackage*> ToUnload;
+ToUnload.Add(Package);
+UPackageTools::FUnloadPackageParams Params(ToUnload);
 Params.bUnloadDirtyPackages = false;
 Params.bResetTransBuffer = false;
 const bool bUnloaded = UPackageTools::UnloadPackages(Params);
+// Require bUnloaded and Params.OutErrorMessage.IsEmpty().
 ```
 
-Require true, empty error, and invalid old `TWeakObjectPtr<UWidgetBlueprint>` and
-old weak generated class. Do not dereference old raw pointers afterward.
+Require true, empty `Params.OutErrorMessage`, and invalid old
+`TWeakObjectPtr<UWidgetBlueprint>` and old weak generated class. Do not
+dereference old raw pointers afterward.
 
 Package-table absence is **not** guaranteed by `UnloadPackages`: it can leave a
 retained package shell. Accept either:
@@ -129,6 +138,29 @@ Do not require `NewPackage != OldPackage`: address reuse is legal and a retained
 shell may be reused. Identity evidence is old-weak invalidation plus new-weak
 creation and loaded-from-file state.
 
+### Per-generation ownership and cleanup
+
+Track an explicit generation record for every package load:
+
+- generation ID and stable package/object path;
+- weak package, Blueprint and generated-class observers;
+- `bUnloadAttempted`, `bUnloaded`, `bRetryUsed`.
+
+The positive load is generation 1; a fresh reload is generation 2; a failed
+missing-file load that returns a partial package is generation 3. Never reuse an
+old generation's raw pointer. Release test-owned strong references when a
+generation leaves scope. Cleanup visits every still-current generation:
+
+- unload a generation once if it is loaded and not already unloaded;
+- allow at most one guarded retry per failed generation, then report
+  cleanup-not-complete;
+- a successful unload of generation 1 does **not** exempt generation 2 (the
+  reloaded objects) from cleanup;
+- no successful old unload permits skipping a later generation.
+
+Use only weak observers for older generations; if an old weak pointer becomes
+valid again, treat it as a new generation, not a resurrected old pointer.
+
 ## Post-reload assertions
 
 Reacquire nodes only by GUIDs captured before unload; never compare UObject
@@ -136,16 +168,19 @@ pointers across reload.
 
 Literal case:
 
-- exact existing node GUIDs and positions;
+- exact existing node GUIDs and positions, and every existing pin default;
 - new `PrintString` GUID, planned position, `InString` literal and exec link;
+- exact total node count +1 and link count +1 versus the saved pre-apply state;
 - fresh reader form with literal and exact exec source;
-- sibling graph node GUIDs/positions/links.
+- sibling graph node GUIDs/positions/links/defaults.
 
 Connected case:
 
-- exact existing/new node GUIDs and positions;
+- exact existing/new node GUIDs and positions, and every existing pin default
+  (including `PrintB` `Duration 7.25`, source inputs and output types);
 - new `PrintString` `InString` link to the existing source `ReturnValue`, and
   `execute` link to the original consumer `then`;
+- exact total node count +1 and link count +2 versus the saved pre-apply state;
 - fresh reader form with new identity, duration/literal field, source reference
   and pin, and exec source.
 
@@ -155,13 +190,27 @@ identity across reload.
 
 ## Negative controls (deterministic)
 
-1. **Deterministic save-write failure:** create an owned directory at the exact
-   `WBP_<guid>.uasset` path before saving. The production
-   `UPackage::SavePackage` must fail because the target cannot become a file;
-   the package must remain dirty and no valid `.uasset` may exist. Remove the
-   directory in `finally`. Engine save errors are narrow expected-error
-   assertions tied to this control; they are never blanket-suppressed. If the
-   exact log text is unavailable, this control is blocked, not passed.
+1. **Deterministic save-write failure:** use a separate
+   `WidgetPersistenceContractFailure/<guid>/` root and package, never the
+   positive saved root. Before saving, create a directory at that root's exact
+   `WBP_<guid>.uasset` path. The production `UPackage::SavePackage` must fail
+   because the target cannot become a file; the package must remain dirty and no
+   valid `.uasset` may exist. Record the assertions, then perform the explicitly
+   authorized scoped discard below. Remove the directory and owned manifest in
+   `finally`, and also on early failure. Engine save errors are narrow
+   expected-error assertions tied to this control; they are never
+   blanket-suppressed. If the exact log text is unavailable, this control is
+   blocked, not passed.
+
+   **Scoped discard for this failed fixture only:** after recording assertions,
+   call `UPackageTools::UnloadPackages` on this exclusively owned failed package
+   with `bUnloadDirtyPackages=true`, `bResetTransBuffer=false`, and require
+   `Params.OutErrorMessage` empty. This deliberately discards the failed
+   fixture's unsaved package; it is not a save success and must be recorded as
+   `discarded_unsaved_failure_fixture`. Do not apply dirty-unload to any other
+   package. If dirty unload fails, leave the fixture for supervisor-owned
+   editor shutdown/recovery and report `cleanup_not_complete`; do not reset its
+   dirty flag.
 2. **Save refusal, no write:** create a transient package under `/Temp/` and call
    the production save tool; `TurboMCPCompile.cpp:481-490` refuses it before
    writing. Assert refusal, no file and no dirty-state change. This is a
@@ -172,7 +221,8 @@ identity across reload.
    guard, unload any failed partial package, reload, and reassert the positive
    state. Expected load errors are narrowly asserted and recorded; they must not
    be blanket-filtered. The wrapper still fails on unexpected test warnings or
-   errors.
+   errors. If `LoadPackage` leaves any partial package/object, record it as a new
+   generation and let cleanup unload it once; do not reuse the old generation.
 4. **Collision refusal:** pre-create the target root/file in a separate unique
    name and prove creation refuses before package/file write.
 
@@ -181,17 +231,21 @@ No dirty flag is reset to make a failed save or missing reload look clean.
 ## Cleanup and recovery
 
 Use a scoped cleanup object and a `finally` equivalent on every path. Cleanup
-uses only weak pointers and the owned manifest; it never dereferences a Blueprint
-or graph pointer invalidated by unload or a failed save. If the first unload
-succeeded, do not call `UnloadPackages` again; if it failed, attempt at most one
-guarded retry and report failure rather than repeating global side effects.
+consults the generation records and owned manifest; it never reuses a raw
+Blueprint or graph pointer invalidated by unload, failed save or failed reload.
+A successful earlier unload does not exempt later reloaded generations. For each
+still-current generation, unload once if needed; if it failed, attempt at most
+one guarded retry and report `cleanup_not_complete` rather than repeating global
+side effects.
 
-- unload any package the test still owns;
+- unload every still-loaded owned generation once, subject to the retry cap;
 - delete quarantine if present;
 - delete any owned save temp file, then `WBP_<guid>.uasset`, then `owned.json`;
 - delete the GUID directory only if empty;
 - if any unexpected file remains, fail closed and leave it for the runner; do
-  not delete outside the owned directory.
+  not delete outside the owned directory;
+- never delete the separate write-failure root unless its own manifest and
+  generation record authorize it.
 
 Outer recovery is conditional:
 
