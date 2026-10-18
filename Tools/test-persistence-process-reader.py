@@ -1243,6 +1243,33 @@ class AcceptanceHarnessTests(unittest.TestCase):
             result = self.acceptance._case_add_type(work)
         self.assertEqual(result["status"], "blocked", result)
 
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", Observed), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 701, "image": "csc.exe", "created": 1}, None)):
+            result = self.acceptance._case_add_type(Path(folder))
+        self.assertEqual(result["status"], "blocked", result)
+        self.assertEqual(result["detail"], "compile-result-missing")
+
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", Observed), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 701, "image": "csc.exe", "created": 1}, None)):
+            work = Path(folder)
+            (work / "add-type.result").write_text("21", encoding="utf8")
+            result = self.acceptance._case_add_type(work)
+        self.assertEqual(result["status"], "failed", result)
+
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", Observed), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 701, "image": "python.exe", "created": 1}, None)):
+            work = Path(folder)
+            (work / "add-type.result").write_text("0", encoding="utf8")
+            result = self.acceptance._case_add_type(work)
+        self.assertEqual(result["status"], "blocked", result)
+        self.assertEqual(result["detail"], "compiler-not-identified")
+
     def test_short_write_and_preassignment_empty_snapshot_are_not_success(self):
         class Stdin:
             def write(self, data): return 1
@@ -1581,6 +1608,151 @@ class AcceptanceHarnessTests(unittest.TestCase):
             result = self.acceptance._case_timeout_descendant(Path(folder))
         self.assertNotEqual(result["status"], "passed", result)
         self.assertNotIn("descendant", result)
+
+    def timeout_case(self, *, early_exit=False, identity=(None, "membership"),
+                     active=2, active_raises=False, cleanup_fails=False,
+                     member=True):
+        class Clock:
+            value = 100.0
+            def __call__(self): return self.value
+            def sleep(self, seconds): self.value += seconds
+        class LineStream(FakeStream):
+            def __init__(self, lines): super().__init__(); self.lines = list(lines)
+            def readline(self, size=-1): return self.lines.pop(0) if self.lines else b""
+            def read(self, size=-1): return b""
+        class Stdin:
+            def write(self, data): return len(data)
+            def flush(self): pass
+            def close(self): pass
+        class Proc:
+            pid = 701; _handle = 1
+            def __init__(self):
+                self.returncode = 0 if early_exit else None
+                self.stdin = Stdin(); self.stdout = LineStream([b"READY 702\n"]); self.stderr = LineStream([])
+            def poll(self): return self.returncode
+            def wait(self, timeout=None): return self.returncode
+        class Job:
+            def __init__(self): self.terminated = False
+            def assign(self, proc): pass
+            def is_process_in_job(self, proc): return member
+            def terminate_checked(self):
+                if cleanup_fails: raise RuntimeError("terminate failed")
+                self.terminated = True; proc.returncode = 0
+            def active_processes(self):
+                if active_raises: raise RuntimeError("active failed")
+                return 0 if self.terminated else active
+            def close_checked(self): pass
+        clock = Clock()
+        proc = Proc(); job = Job()
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "WindowsJob", return_value=job), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=proc), \
+             mock.patch.object(self.acceptance, "_write_stdin_bounded", return_value=[]), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=identity):
+            result = self.acceptance._case_timeout_descendant(
+                Path(folder), clock=clock, sleeper=clock.sleep, timeout_seconds=0.05
+            )
+        return result, proc, job
+
+    def test_timeout_case_end_to_end_outcomes(self):
+        success, _, _ = self.timeout_case(identity=({"pid": 702}, None), active=2)
+        self.assertEqual(success["status"], "passed", success)
+        self.assertEqual(success["detail"], "forced-timeout")
+
+        early, _, _ = self.timeout_case(early_exit=True, identity=({"pid": 702}, None))
+        self.assertEqual(early["status"], "failed", early)
+        self.assertEqual(early["detail"], "worker-exited-early")
+
+        missing, _, _ = self.timeout_case(identity=({"pid": 702}, None), active=1)
+        self.assertEqual(missing["status"], "failed", missing)
+        self.assertEqual(missing["detail"], "timeout-evidence-missing")
+
+        no_identity, _, _ = self.timeout_case(identity=(None, "membership"))
+        self.assertEqual(no_identity["status"], "blocked", no_identity)
+
+        query, _, _ = self.timeout_case(identity=({"pid": 702}, None), active_raises=True)
+        self.assertNotEqual(query["status"], "passed", query)
+        self.assertIn("active_error", query)
+
+        membership, _, _ = self.timeout_case(identity=({"pid": 702}, None), member=False)
+        self.assertEqual(membership["status"], "failed", membership)
+        self.assertEqual(membership["detail"], "membership")
+
+    def test_timeout_cleanup_failure_after_valid_timeout_is_not_success(self):
+        result, _, _ = self.timeout_case(
+            identity=({"pid": 702}, None), cleanup_fails=True
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertTrue(result["cleanup_errors"])
+
+    def test_process_evidence_handle_scoped_failures(self):
+        class Job:
+            def __init__(self, member=True, raises=False): self.member = member; self.raises = raises
+            def in_job(self, handle):
+                if self.raises: raise RuntimeError("membership")
+                return self.member
+        class Api:
+            def __init__(self, open_ok=True, image_ok=True, times_ok=True, created=1, close_ok=True):
+                self.open_ok = open_ok; self.image_ok = image_ok; self.times_ok = times_ok
+                self.created = created; self.close_ok = close_ok; self.opens = []; self.closed = []
+            def OpenProcess(self, access, inherit, pid): self.opens.append((access, pid)); return 11 if self.open_ok else 0
+            def QueryFullProcessImageNameW(self, handle, flags, buffer, size):
+                if not self.image_ok: return 0
+                buffer.value = "C:\\synthetic\\csc.exe"; return 1
+            def GetProcessTimes(self, handle, created, exited, kernel, user):
+                if not self.times_ok: return 0
+                created._obj.value = self.created; return 1
+            def CloseHandle(self, handle): self.closed.append(handle); return 1 if self.close_ok else 0
+        cases = (
+            (Api(open_ok=False), Job(), "open:"),
+            (Api(), Job(member=False), "membership"),
+            (Api(), Job(raises=True), "membership:"),
+            (Api(image_ok=False), Job(), "image:"),
+            (Api(times_ok=False), Job(), "times:"),
+            (Api(created=0), Job(), "creation-zero"),
+            (Api(close_ok=False), Job(), "close:"),
+        )
+        for api, job, expected in cases:
+            with self.subTest(expected=expected), mock.patch.object(self.acceptance, "_win", return_value=api):
+                identity, error = self.acceptance.process_evidence(701, job)
+                self.assertIsNone(identity)
+                self.assertTrue(error.startswith(expected), error)
+                self.assertLessEqual(len(api.opens), 1)
+        api = Api()
+        with mock.patch.object(self.acceptance, "_win", return_value=api):
+            identity, error = self.acceptance.process_evidence(701, Job())
+        self.assertIsNone(error)
+        self.assertEqual(identity["pid"], 701)
+        self.assertEqual(api.opens, [(0x101000, 701)])
+        self.assertEqual(api.closed, [11])
+
+    def test_drain_messages_callback_order_and_port_errors(self):
+        class Api:
+            def __init__(self, sequence, error=None): self.sequence = list(sequence); self.error = error; self.events = []
+            def GetQueuedCompletionStatus(self, port, count, key, overlay, timeout):
+                self.events.append("poll")
+                if self.sequence:
+                    message, pid = self.sequence.pop(0); count._obj.value = message; overlay._obj.value = pid; return 1
+                ctypes.set_last_error(self.error or 258); return 0
+        job = object.__new__(self.acceptance.ObservedJob)
+        job.handle = 1; job.port = 1; job.messages = []
+        api = Api([(self.acceptance.JOB_OBJECT_MSG_NEW_PROCESS, 900), (7, 900)])
+        job.api = api
+        seen = []
+        def callback(pid):
+            seen.append(("callback", pid)); api.events.append("callback")
+        error = job.drain_messages(2, callback, clock=lambda: 0)
+        self.assertIsNone(error)
+        self.assertEqual(seen, [("callback", 900)])
+        self.assertEqual(api.events[:3], ["poll", "callback", "poll"])
+        self.assertLess(api.events.index("poll"), len(api.events))
+        self.assertEqual(job.messages, [(self.acceptance.JOB_OBJECT_MSG_NEW_PROCESS, 900), (7, 900)])
+
+        job = object.__new__(self.acceptance.ObservedJob)
+        job.handle = 1; job.port = 1; job.messages = []; job.api = Api([], error=5)
+        self.assertEqual(job.drain_messages(2, None, clock=lambda: 0), "completion-port:5")
+        job.api = Api([], error=258)
+        self.assertIsNone(job.drain_messages(2, None, clock=lambda: 0))
 
     def test_pipe_case_uses_ordered_handshake_and_reports_missing_output(self):
         class Stream:

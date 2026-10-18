@@ -167,10 +167,10 @@ class ObservedJob:
         if errors:
             raise RuntimeError(";".join(errors))
 
-    def drain_messages(self, deadline, on_new_process=None):
+    def drain_messages(self, deadline, on_new_process=None, clock=time.monotonic):
         error = None
-        while self.handle and time.monotonic() < deadline:
-            remaining = max(0, int((deadline - time.monotonic()) * 1000))
+        while self.handle and clock() < deadline:
+            remaining = max(0, int((deadline - clock()) * 1000))
             if remaining == 0:
                 break
             count = W.DWORD()
@@ -227,8 +227,9 @@ def process_evidence(pid, job):
         except Exception as exc:
             error = "membership:" + str(exc)
     finally:
-        if not api.CloseHandle(handle) and error is None:
-            error = "close:" + str(ctypes.get_last_error())
+        if not api.CloseHandle(handle):
+            error = ((error + ";") if error else "") + "close:" + str(ctypes.get_last_error())
+            identity = None
     return identity, error
 
 
@@ -577,7 +578,8 @@ def _synthetic_helper(mode, *args):
     return 2
 
 
-def _case_timeout_descendant(work):
+def _case_timeout_descendant(work, clock=time.monotonic, sleeper=time.sleep,
+                             timeout_seconds=1.0):
     marker = work / "timeout.marker"
     job = None
     proc = None
@@ -603,22 +605,32 @@ def _case_timeout_descendant(work):
                 if error:
                     result = {"status": "blocked", "detail": "descendant-identity:" + error}
                 else:
-                    deadline = time.monotonic() + 1.0
-                    while time.monotonic() < deadline and proc.poll() is None:
-                        time.sleep(0.01)
-                    timed_out = time.monotonic() >= deadline and proc.poll() is None
+                    deadline = clock() + timeout_seconds
+                    while clock() < deadline and proc.poll() is None:
+                        sleeper(min(0.01, max(0, deadline - clock())))
+                    timed_out = clock() >= deadline and proc.poll() is None
                     try:
-                        descendant_alive = job.active_processes() > 1
-                    except Exception:
-                        descendant_alive = False
+                        active = job.active_processes()
+                        active_error = None
+                    except Exception as exc:
+                        active = None
+                        active_error = str(exc)
+                    descendant_alive = active is not None and active > 1
+                    if not timed_out:
+                        detail = "worker-exited-early"
+                    elif not descendant_alive:
+                        detail = "timeout-evidence-missing"
+                    else:
+                        detail = "forced-timeout"
                     result = {"status": "passed" if timed_out and descendant_alive and not marker.exists() else "failed",
-                              "detail": "forced-timeout" if timed_out and descendant_alive else "timeout-evidence-missing",
-                              "owned": [proc.pid, child_pid], "descendant": child_identity}
+                              "detail": detail,
+                              "owned": [proc.pid, child_pid], "descendant": child_identity,
+                              "active_processes": active, "active_error": active_error}
     except Exception as exc:
         result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
-        cleanup_errors = cleanup_job(job, proc, time.monotonic() + CLEANUP_LIMIT_SECONDS,
-                                     uncontained=not assigned)
+        cleanup_errors = cleanup_job(job, proc, clock() + CLEANUP_LIMIT_SECONDS,
+                                     uncontained=not assigned, clock=clock, sleeper=sleeper)
         result = finalize_case(result, cleanup_errors)
     return result
 
