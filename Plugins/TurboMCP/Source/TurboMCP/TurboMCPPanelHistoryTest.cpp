@@ -66,6 +66,12 @@ struct FTurboMCPPanelHistoryTestAccess
 	{
 		return Panel.GetSelectedCallDetail();
 	}
+
+	static void SetToolFilter(STurboMCPPanel& Panel, const FString& Tool)
+	{
+		Panel.TimelineToolFilter = Tool;
+		Panel.RebuildTimelineRows();
+	}
 };
 
 namespace
@@ -294,6 +300,47 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 		Panel->GetToolRunner().GetResult().bIsComplete == bCompleteBeforeSelection);
 	TestFalse(TEXT("selecting history leaves no call pending"), bPendingBeforeSelection);
 	TestTrue(TEXT("selecting history does not change the recording setting"), Log->IsEnabled() == bLogBeforeSelection);
+
+	// The selected call is pinned. An unrelated append must not silently switch the inspector, and a
+	// filter, eviction or Clear must say that the pinned call is no longer in the current list.
+	if (LastCallRow(*this, *Panel, TEXT("pinned history")) != nullptr)
+	{
+		Panel->ToggleTimelineRow(FTurboMCPPanelHistoryTestAccess::Rows(*Panel).Last());
+		AddCall(*Log, TEXT("unrelated"), TEXT("end"), TEXT("plugin"), 0, 0);
+		TestTrue(TEXT("the pinned inspector survives an unrelated append"),
+			FTurboMCPPanelHistoryTestAccess::Refresh(*Panel));
+		TestTrue(TEXT("the pinned inspector still shows the selected call"),
+			FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString().Contains(TEXT("known result")));
+		TestFalse(TEXT("an exact match is not reported as missing"),
+			FTurboMCPPanelHistoryTestAccess::InspectorHeader(*Panel).ToString().Contains(TEXT("not in the current")));
+
+		FTurboMCPPanelHistoryTestAccess::SetToolFilter(*Panel, TEXT("unfinished"));
+		TestTrue(TEXT("a filter that excludes the selected call says so"),
+			FTurboMCPPanelHistoryTestAccess::InspectorHeader(*Panel).ToString().Contains(TEXT("not in the current")));
+		TestTrue(TEXT("a filter does not replace the pinned detail"),
+			FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString().Contains(TEXT("known result")));
+		FTurboMCPPanelHistoryTestAccess::SetToolFilter(*Panel, TEXT(""));
+		TestFalse(TEXT("clearing the filter reattaches the exact selected call"),
+			FTurboMCPPanelHistoryTestAccess::InspectorHeader(*Panel).ToString().Contains(TEXT("not in the current")));
+
+		for (int32 Index = 0; Index < 1001; ++Index)
+		{
+			AddCall(*Log, *FString::Printf(TEXT("evict-%d"), Index), TEXT("end"), TEXT("plugin"), 0, 0);
+		}
+		TestTrue(TEXT("eviction of the selected call refreshes the panel"),
+			FTurboMCPPanelHistoryTestAccess::Refresh(*Panel));
+		TestTrue(TEXT("eviction says the pinned call is no longer in the list"),
+			FTurboMCPPanelHistoryTestAccess::InspectorHeader(*Panel).ToString().Contains(TEXT("not in the current")));
+		TestTrue(TEXT("eviction leaves the pinned detail intact"),
+			FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString().Contains(TEXT("known result")));
+
+		Log->Clear();
+		TestTrue(TEXT("Clear refreshes the panel"), FTurboMCPPanelHistoryTestAccess::Refresh(*Panel));
+		TestTrue(TEXT("Clear says the pinned call is no longer in the list"),
+			FTurboMCPPanelHistoryTestAccess::InspectorHeader(*Panel).ToString().Contains(TEXT("not in the current")));
+		TestTrue(TEXT("Clear leaves the pinned detail intact"),
+			FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString().Contains(TEXT("known result")));
+	}
 
 	// A disabled write changes neither entries nor revision.
 	Log->SetEnabled(false);

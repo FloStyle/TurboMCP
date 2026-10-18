@@ -133,6 +133,9 @@ private:
 	/** True when that row is the one selected for the inspector. */
 	bool IsTimelineRowSelected(const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem) const;
 
+	/** Reattaches the pinned selection only when exactly one full recorded call matches. */
+	void RestoreSelectedCall();
+
 	/** Rebuilds only when the log revision changed, and says whether it did. */
 	bool RefreshTimelineIfChanged();
 
@@ -173,15 +176,12 @@ private:
 	 */
 	FText GetCallTimelineText() const;
 
-	/**
-	 * What identifies one call in the list, for the expansion set.
-	 *
-	 * The stamp and the name. Two calls to one tool inside the same millisecond would collide, and the
-	 * honest fix would be a record index; a collision costs one row that opens with another's detail,
-	 * which is a smaller defect than an index that has to be kept in step with a filtered list.
-	 */
-	/** The selected call's inspector state. */
+	/** The selected call's inspector state. Pinned as a full record, never matched by name alone. */
 	TSharedPtr<FTurboMCPCallTimeline::FListEntry> SelectedTimelineRow;
+	FTurboMCPCallLog::FEntry SelectedTimelineCall;
+	bool bHasSelectedCall = false;
+	bool bSelectedCallInCurrentView = false;
+	bool bSelectedCallAmbiguous = false;
 
 	/** The status combo's face. */
 	FText GetSelectedTimelineStatusText() const;

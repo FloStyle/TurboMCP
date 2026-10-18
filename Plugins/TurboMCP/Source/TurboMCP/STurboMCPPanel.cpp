@@ -61,6 +61,23 @@ namespace
 	 * instead.
 	 */
 	constexpr float TimelineHeight = 150.0f;
+
+	/** Full recorded identity, used only to reattach an exact selected call; never a partial key. */
+	bool SameRecordedCall(const FTurboMCPCallLog::FEntry& A, const FTurboMCPCallLog::FEntry& B)
+	{
+		return A.Timestamp == B.Timestamp
+			&& A.Phase == B.Phase
+			&& A.Source == B.Source
+			&& A.SessionId == B.SessionId
+			&& A.Toolset == B.Toolset
+			&& A.Tool == B.Tool
+			&& A.Arguments == B.Arguments
+			&& A.Result == B.Result
+			&& A.DurationMs == B.DurationMs
+			&& A.ResultChars == B.ResultChars
+			&& A.TokenEstimate == B.TokenEstimate
+			&& A.bError == B.bError;
+	}
 }
 
 void STurboMCPPanel::Construct(const FArguments& InArgs)
@@ -244,10 +261,10 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// records - so what is here is only which rows are shown and which one is selected.
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 2.0f)
 			[
 				SNew(SHorizontalBox)
+				.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 
 				// THE FOUR FILTERS, ONE FIELD EACH, matched against their own column. A single blob
 				// matched against everything cannot answer "which calls touched THIS asset".
@@ -331,10 +348,10 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SBorder)
+				.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 				.Padding(4.0f)
 				[
 					SNew(SBox)
@@ -372,10 +389,10 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// actually recorded; selecting a row never calls a tool or changes a setting.
 			+ SVerticalBox::Slot()
 			.FillHeight(0.55f)
-			.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SBorder)
+				.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 				.Padding(4.0f)
 				[
 					SNew(SVerticalBox)
@@ -412,10 +429,10 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// later, which is the failure this window exists to make visible.
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SHorizontalBox)
+				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 
 				// Toolset.
 				+ SHorizontalBox::Slot()
@@ -490,10 +507,10 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// arguments are JSON and its answer is text, and neither fits on one line.
 			+ SVerticalBox::Slot()
 			.FillHeight(0.4f)
-			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SBorder)
+				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 				.Padding(4.0f)
 				[
 					SNew(SMultiLineEditableText)
@@ -513,10 +530,10 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// size before deciding to scroll.
 			+ SVerticalBox::Slot()
 			.AutoHeight()
-			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 2.0f)
 			[
 				SNew(STextBlock)
+				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 				.Text(this, &STurboMCPPanel::GetResultHeader)
 				.ColorAndOpacity(this, &STurboMCPPanel::GetResultColor)
 				.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
@@ -527,10 +544,10 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// wrapper around it.
 			+ SVerticalBox::Slot()
 			.FillHeight(0.6f)
-			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SBorder)
+				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 				.Padding(4.0f)
 				[
 					SNew(SScrollBox)
@@ -552,9 +569,9 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// exactly what this window is for.
 			+ SVerticalBox::Slot()
 			.FillHeight(1.0f)
-			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			[
 				SNew(SScrollBox)
+				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 
 				+ SScrollBox::Slot()
 				[
@@ -736,7 +753,6 @@ void STurboMCPPanel::RebuildTimelineRows()
 	LastTimelineRevision = Snapshot.Revision;
 	bHasTimelineRevision = true;
 	++TimelineRebuildCount;
-	SelectedTimelineRow.Reset();
 
 	// THE DENOMINATOR FIRST, because a list that is short looks the same whether the filter removed the
 	// rows or nothing was recorded - and those two need different actions from a reader.
@@ -758,10 +774,11 @@ void STurboMCPPanel::RebuildTimelineRows()
 	TimelineRows.Reserve(Entries.Num());
 	for (const FTurboMCPCallTimeline::FListEntry& Entry : Entries)
 	{
-		// A shared pointer per row because that is what `SListView` hands back to `OnGenerateRow`, and
-		// the identity it hands back is what an expansion is keyed by.
+		// A shared pointer per row because that is what `SListView` hands back to `OnGenerateRow`.
 		TimelineRows.Add(MakeShared<FTurboMCPCallTimeline::FListEntry>(Entry));
 	}
+
+	RestoreSelectedCall();
 
 	if (TimelineListView.IsValid())
 	{
@@ -783,9 +800,46 @@ void STurboMCPPanel::ToggleTimelineRow(const TSharedPtr<FTurboMCPCallTimeline::F
 		return;
 	}
 	SelectedTimelineRow = InItem;
+	SelectedTimelineCall = InItem->Call;
+	bHasSelectedCall = true;
+	bSelectedCallInCurrentView = true;
+	bSelectedCallAmbiguous = false;
 	if (TimelineListView.IsValid())
 	{
 		TimelineListView->RequestListRefresh();
+	}
+}
+
+void STurboMCPPanel::RestoreSelectedCall()
+{
+	SelectedTimelineRow.Reset();
+	bSelectedCallInCurrentView = false;
+	bSelectedCallAmbiguous = false;
+	if (!bHasSelectedCall)
+	{
+		return;
+	}
+
+	TSharedPtr<FTurboMCPCallTimeline::FListEntry> Match;
+	int32 Matches = 0;
+	for (const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& Row : TimelineRows)
+	{
+		if (Row.IsValid() && !Row->bHeading && SameRecordedCall(Row->Call, SelectedTimelineCall))
+		{
+			++Matches;
+			Match = Row;
+		}
+	}
+	if (Matches == 1)
+	{
+		SelectedTimelineRow = Match;
+		bSelectedCallInCurrentView = true;
+	}
+	else if (Matches > 1)
+	{
+		// Two records identical in every available field cannot be told apart. Keep the pinned
+		// snapshot and say so rather than silently pointing at one of them.
+		bSelectedCallAmbiguous = true;
 	}
 }
 
@@ -801,27 +855,34 @@ FText STurboMCPPanel::GetToolsButtonText() const
 
 FText STurboMCPPanel::GetSelectedCallHeader() const
 {
-	if (!SelectedTimelineRow.IsValid() || SelectedTimelineRow->bHeading)
+	if (!bHasSelectedCall)
 	{
 		return LOCTEXT("NoInspectorSelection", "No call selected");
 	}
-	const FTurboMCPCallLog::FEntry& Call = SelectedTimelineRow->Call;
+	const FTurboMCPCallLog::FEntry& Call = SelectedTimelineCall;
 	const FString Status = Call.Phase == TEXT("start")
 		? TEXT("completion not observed")
 		: (Call.bError ? TEXT("error") : TEXT("ok"));
-	return FText::FromString(FString::Printf(TEXT("%s  %s.%s  %s  source %s"),
+	FString Header = FString::Printf(TEXT("%s  %s.%s  %s  source %s"),
 		*Call.Timestamp, *Call.Toolset, *Call.Tool, *Status,
-		Call.Source.IsEmpty() ? TEXT("unavailable") : *Call.Source));
+		Call.Source.IsEmpty() ? TEXT("unavailable") : *Call.Source);
+	if (!bSelectedCallInCurrentView)
+	{
+		Header += bSelectedCallAmbiguous
+			? TEXT("  |  selected call has multiple matches; pinned snapshot")
+			: TEXT("  |  selected call is not in the current filtered/retained history");
+	}
+	return FText::FromString(Header);
 }
 
 FText STurboMCPPanel::GetSelectedCallDetail() const
 {
-	if (!SelectedTimelineRow.IsValid() || SelectedTimelineRow->bHeading)
+	if (!bHasSelectedCall)
 	{
 		return LOCTEXT("InspectorEmpty",
 			"Select one call to inspect its actual request and result. No tool is called by selecting a row.");
 	}
-	const FTurboMCPCallLog::FEntry& Call = SelectedTimelineRow->Call;
+	const FTurboMCPCallLog::FEntry& Call = SelectedTimelineCall;
 
 	FString Out = TEXT("request: ");
 	if (Call.Arguments.IsEmpty())
