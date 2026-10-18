@@ -14,12 +14,11 @@
           ],
           "new_files": []
         },
-        "widget-postwrite-compile": {
-          "files": [
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp",
-            "Tools/test-widget-roundtrip.py"
-          ],
-          "new_files": []
+        "widget-persistence-contract": {
+          "files": [],
+          "new_files": [
+            "docs/audit/widget-persistence-contract.md"
+          ]
         }
       },
       "preserve_rows": []
