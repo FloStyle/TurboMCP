@@ -323,6 +323,26 @@ Limitations: passing proves only that the supplied evidence is internally consis
 
 Rollback: remove `Tools/persistence_identity.py`, `Tools/test-persistence-identity.py`, the one catalog row, and this evidence. No existing caller or production file is affected.
 
+### Checkpoint 8: trusted identity collection contract
+
+Task R04 checkpoint 8, claim `8dfd55914dce466ea7d0a6de64edc3a6` (owner `dsh-r04-collector-01`). Approved base `577fdaafed023485adb4e1d3f65c4d6218c5eef3`; branch `task/r04-collector-contract`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+
+Deliverable: `docs/audit/persistence-collector-contract.md` specifies a read-only Windows collector for the accepted validator. It uses a trusted supervisor launch record for the expected PID, `GetProcessTimes` FILETIME creation time (100 ns, no padded CIM precision), `Win32_Process` executable/command line, `CommandLineToArgvW` tokenization, complete `Get-NetTCPConnection` rows for the configured port, and owner-process reads for every row. Two attempts are bounded (5 s each, 15 s pair) and recheck process identity and listener rows before accepting a snapshot.
+
+Key limits recorded:
+- Expected identity comes from the launch record, never from observations.
+- Path equality is canonical string consistency, not file identity; symlinks/junctions/hardlinks/8.3 aliases and case-sensitive directories remain outside v1. A future `turbomcp.persistence-identity/2` with `project_file_id`/`engine_file_id` volume/file-index fields is the exact proposed adjustment if file identity is required.
+- The collector refuses unreadable/partial process or TCP enumeration, PID reuse, process exit, listener replacement, unsupported addresses, owner 0/4 and more than 32 rows.
+- A validation pass is evidence consistency only; it never authorizes connection, mutation, stop, restart or a persistence claim. The residual race remains.
+- The proposed implementation slice is `Tools/persistence_collector.py`, `Tools/test-persistence-collector.py` and one `Tests/catalog.json` offline row, with injected-backend tests only. No caller, launch-record, lifecycle, settings or persistence work is included.
+
+Validation:
+- Source review only; no live process, socket, editor, build, MCP or recovery operation was run.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/97511de392ab414f97d4f9f2c948f2aa/report.json`; all offline checks passed.
+- Candidate-bound offline evidence and the full-base scope gate are recorded in the submission after the commit. All collector/launch-record steps remain `proposed_unapproved`.
+
+Rollback: remove the new report and this evidence only. No existing file or caller is changed.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)
