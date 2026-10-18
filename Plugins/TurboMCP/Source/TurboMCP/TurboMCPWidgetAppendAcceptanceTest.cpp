@@ -491,6 +491,7 @@ namespace
 			OutFixture.LastError = TEXT("comparator WidgetBlueprint was not created");
 			return false;
 		}
+		OutFixture.AssetPath = OutFixture.Blueprint->GetPathName();
 		OutFixture.Tree = OutFixture.Blueprint->WidgetTree;
 		OutFixture.Root = Cast<UCanvasPanel>(OutFixture.Tree->RootWidget);
 		if (OutFixture.Root == nullptr)
@@ -799,27 +800,64 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
 	TestEqual(TEXT("Plan did not change the dirty flag"), Package->IsDirty(), bDirtyBefore);
 
+	const FString RefusalText = TEXT(
+		"(Development|PrintString\n    execute (-> DefinitelyMissing:then)\n    InString \"refused\")");
+
+	// Independent fresh fixture: only this Plan can dirty it.
+	FFixture RefusalPlanFixture;
+	FScopedFixtureCleanup RefusalPlanCleanup(RefusalPlanFixture);
+	if (!BuildComparatorFixture(RefusalPlanFixture))
+	{
+		AddError(TEXT("refusal-plan fixture: ") + RefusalPlanFixture.LastError);
+		return false;
+	}
+	RefusalPlanFixture.Package->SetDirtyFlag(false);
+	const FGraphSnapshot RefusalPlanTarget = CaptureGraph(RefusalPlanFixture.Target);
+	const FGraphSnapshot RefusalPlanSibling = CaptureGraph(RefusalPlanFixture.Sibling);
+	const FString RefusalPlanWidgets = CaptureWidgets(RefusalPlanFixture.Blueprint);
 	FTurboMCPGraphAppend::FPlan RefusalPlan;
 	FString RefusalError;
 	TestTrue(TEXT("the refusal text plans"),
-		FTurboMCPGraphAppend::Plan(Fixture.AssetPath, Fixture.Target->GetName(),
-			TEXT("(Development|PrintString\n    execute (-> DefinitelyMissing:then)\n    InString \"refused\")"),
-			RefusalPlan, RefusalError, /*bRequestPlacement=*/true));
+		FTurboMCPGraphAppend::Plan(RefusalPlanFixture.AssetPath,
+			RefusalPlanFixture.Target->GetName(), RefusalText, RefusalPlan, RefusalError,
+			/*bRequestPlacement=*/true));
 	TestFalse(TEXT("the refusal plan is not acceptable"), RefusalPlan.bAcceptable());
 	TestTrue(TEXT("the refusal plan records a refusal"), RefusalPlan.Refusals.Num() > 0);
 	TestTrue(TEXT("a refused Plan did not mutate the target graph"),
-		SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+		SameGraph(RefusalPlanTarget, CaptureGraph(RefusalPlanFixture.Target)));
 	TestTrue(TEXT("a refused Plan did not mutate the sibling graph"),
-		SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
+		SameGraph(RefusalPlanSibling, CaptureGraph(RefusalPlanFixture.Sibling)));
 	TestEqual(TEXT("a refused Plan did not mutate the widget tree"),
-		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
-	TestEqual(TEXT("a refused Plan did not change the dirty flag"),
-		Package->IsDirty(), bDirtyBefore);
+		CaptureWidgets(RefusalPlanFixture.Blueprint), RefusalPlanWidgets);
+	TestFalse(TEXT("a refused Plan on a fresh fixture left it clean"),
+		RefusalPlanFixture.Package->IsDirty());
 
+	// Independent fresh fixture for refused Apply. Plan necessarily runs first;
+	// Apply is measured against the dirty state immediately before Apply, so it
+	// cannot be blamed for Plan's mutation or contaminated by another case.
+	FFixture RefusalApplyFixture;
+	FScopedFixtureCleanup RefusalApplyCleanup(RefusalApplyFixture);
+	if (!BuildComparatorFixture(RefusalApplyFixture))
+	{
+		AddError(TEXT("refusal-apply fixture: ") + RefusalApplyFixture.LastError);
+		return false;
+	}
+	RefusalApplyFixture.Package->SetDirtyFlag(false);
+	const FGraphSnapshot RefusalApplyTarget = CaptureGraph(RefusalApplyFixture.Target);
+	const FGraphSnapshot RefusalApplySibling = CaptureGraph(RefusalApplyFixture.Sibling);
+	const FString RefusalApplyWidgets = CaptureWidgets(RefusalApplyFixture.Blueprint);
+	FTurboMCPGraphAppend::FPlan RefusalApplyPlan;
+	FString RefusalApplyPlanError;
+	TestTrue(TEXT("the refusal text plans for Apply"),
+		FTurboMCPGraphAppend::Plan(RefusalApplyFixture.AssetPath,
+			RefusalApplyFixture.Target->GetName(), RefusalText, RefusalApplyPlan,
+			RefusalApplyPlanError, /*bRequestPlacement=*/true));
+	TestFalse(TEXT("the refusal Apply plan is not acceptable"), RefusalApplyPlan.bAcceptable());
+	const bool bDirtyBeforeRefusedApply = RefusalApplyFixture.Package->IsDirty();
 	FString RefusalReport;
 	FString RefusalApplyError;
 	TestTrue(TEXT("Apply on a refused plan returns its preview without writing"),
-		FTurboMCPGraphAppend::Apply(RefusalPlan, RefusalReport, RefusalApplyError));
+		FTurboMCPGraphAppend::Apply(RefusalApplyPlan, RefusalReport, RefusalApplyError));
 	TestEqual(TEXT("Apply on a refused plan reports no execution error"),
 		RefusalApplyError, FString());
 	TestTrue(TEXT("Apply on a refused plan reports unchanged"),
@@ -827,13 +865,13 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Apply on a refused plan reports the preview changes nothing"),
 		RefusalReport.Contains(TEXT("preview changes NOTHING")));
 	TestTrue(TEXT("Apply on a refused plan did not mutate the target graph"),
-		SameGraph(TargetBefore, CaptureGraph(Fixture.Target)));
+		SameGraph(RefusalApplyTarget, CaptureGraph(RefusalApplyFixture.Target)));
 	TestTrue(TEXT("Apply on a refused plan did not mutate the sibling graph"),
-		SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
+		SameGraph(RefusalApplySibling, CaptureGraph(RefusalApplyFixture.Sibling)));
 	TestEqual(TEXT("Apply on a refused plan did not mutate the widget tree"),
-		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
+		CaptureWidgets(RefusalApplyFixture.Blueprint), RefusalApplyWidgets);
 	TestEqual(TEXT("Apply on a refused plan did not change the dirty flag"),
-		Package->IsDirty(), bDirtyBefore);
+		RefusalApplyFixture.Package->IsDirty(), bDirtyBeforeRefusedApply);
 
 	// Negative controls run on a separate disposable Widget fixture, so they
 	// cannot contaminate the acceptance fixture's clean Plan/Apply baseline.
@@ -1004,6 +1042,8 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the target baseline is no longer equal after Apply"),
 		!SameGraph(TargetBefore, TargetAfter));
 
+	TestTrue(TEXT("refusal-plan fixture retirement completed"), RefusalPlanCleanup.Retire());
+	TestTrue(TEXT("refusal-apply fixture retirement completed"), RefusalApplyCleanup.Retire());
 	TestTrue(TEXT("scoped fixture cleanup completes"), Cleanup.Retire());
 	return true;
 }
