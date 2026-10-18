@@ -1792,7 +1792,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
             def __init__(self):
                 self.pipe_no = 0; self.closed = []; self.inherit = []; self.command = None
                 self.flags = None; self.startup_flags = None; self.handle_list_size = None
-                self.resumed = []; self.waited = None
+                self.handle_list = None; self.resumed = []; self.waited = None
             def CreatePipe(self, read, write, sa, size):
                 self.pipe_no += 1
                 read._obj.value = 100 + (self.pipe_no - 1) * 2
@@ -1803,10 +1803,14 @@ class AcceptanceHarnessTests(unittest.TestCase):
                 except Exception: return int(handle)
             def SetHandleInformation(self, handle, mask, flags): self.inherit.append(self._v(handle)); return 1
             def InitializeProcThreadAttributeList(self, attr, count, flags, size):
-                if attr is None: size._obj.value = 64; return 0
+                if attr is None:
+                    size._obj.value = 64; ctypes.set_last_error(122); return 0
                 return 1
             def UpdateProcThreadAttribute(self, attr, flags, attribute, value, size, reserved, ret):
-                self.handle_list_size = size; return 1
+                self.handle_list_size = size
+                array = ctypes.cast(value, ctypes.POINTER(ctypes.c_void_p * 3)).contents
+                self.handle_list = [array[index] for index in range(3)]
+                return 1
             def CreateProcessW(self, app, command, process_sa, thread_sa, inherit, flags, env, cwd, startup, info):
                 self.command = command.value; self.flags = flags
                 self.startup_flags = startup._obj.StartupInfo.dwFlags
@@ -1830,6 +1834,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertEqual(api.inherit, [101, 102, 104, 500, 501])
         self.assertEqual(api.closed, [100, 103, 105])
         self.assertEqual(api.handle_list_size, 3 * ctypes.sizeof(ctypes.c_void_p))
+        self.assertEqual(api.handle_list, [100, 103, 105])
         launch.resume()
         launch.close_stdin()
         self.assertTrue(launch.wait(1000))
@@ -1919,7 +1924,8 @@ class AcceptanceHarnessTests(unittest.TestCase):
             )
             self.assertNotEqual(result["status"], "passed", result)
             if exc != "blocked":
-                self.assertIn(result["detail"], (exc, "malformed-accounting"), result)
+                self.assertIn(result["detail"], (exc, "malformed-accounting", "operation-error"), result)
+                self.assertIn(exc, result.get("operation_detail", ""), result)
                 self.assertNotIn("resume", events)
 
         events = []
@@ -2019,7 +2025,55 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertEqual(result["accounting_status"], "passed")
         self.assertFalse(result["clean_run"])
 
-    def test_preassignment_control_requires_clean_positive_evidence(self):
+    def test_preassignment_deadline_late_stages_fail_closed(self):
+        class Clock:
+            value = 100.0
+            def __call__(self): return self.value
+        class Observer:
+            def __init__(self, clock, final, late=None):
+                self.clock = clock; self.values = [(0, 0), (1, 1), final]
+                self.late = late; self.closed = 0; self.drains = 0
+            def accounting(self):
+                if len(self.values) == 1 and self.late == "query":
+                    self.clock.value = 111.0
+                return self.values.pop(0)
+            def assign(self, launch): pass
+            def is_process_in_job(self, launch): return True
+            def drain_messages(self, deadline, callback, clock=None):
+                self.drains += 1
+                if self.late == "drain":
+                    self.clock.value = 111.0
+                return None
+            def close_checked(self): self.closed += 1
+        class Launch:
+            pid = 900; exit_code = 2
+            def __init__(self, clock, late=None): self.clock = clock; self.late = late; self.closes = []
+            def resume(self): pass
+            def close_stdin(self): pass
+            def wait(self, timeout):
+                if self.late == "wait": self.clock.value = 111.0
+                return True
+            def close_process(self): pass
+            def close(self, deadline=None, clock=None): self.closes.append(deadline); return []
+        for late, final, expected in (
+            ("query", (1, 0), "blocked"),
+            ("wait", (1, 0), "blocked"),
+            ("drain", (1, 0), "blocked"),
+            ("query", (2, 0), "failed"),
+        ):
+            clock = Clock(); observer = Observer(clock, final, late); launch = Launch(clock, late)
+            result = self.acceptance._preassignment_attempt(
+                "worker", observer, launcher=lambda mode: launch, clock=clock,
+                wait_seconds=1.0, setup_seconds=10.0, observation_seconds=10.0
+            )
+            self.assertEqual(result["status"], expected, result)
+            self.assertTrue(result["operation_error"], result)
+            self.assertFalse(result["clean_run"], result)
+            self.assertEqual(len(launch.closes), 1)
+            self.assertEqual(launch.closes[0], clock.value + 5.0)
+            self.assertEqual(observer.closed, 1)
+            if final == (2, 0):
+                self.assertEqual(result["detail"], "extra-associated-process")
         base = {
             "status": "failed", "detail": "extra-associated-process",
             "exit_code": 0, "operation_error": False, "final": (2, 0),
@@ -2078,8 +2132,9 @@ class AcceptanceHarnessTests(unittest.TestCase):
 
     def test_suspended_launch_acquisition_failures_preserve_cleanup_errors(self):
         class Api:
-            def __init__(self, fail=None, close_fail=None):
+            def __init__(self, fail=None, close_fail=None, terminate_fail=None, wait_fail=None):
                 self.fail = fail; self.close_fail = close_fail
+                self.terminate_fail = terminate_fail; self.wait_fail = wait_fail
                 self.pipe_no = 0; self.closed = []; self.deleted = 0
                 self.terminated = []; self.waited = []
             def _v(self, handle):
@@ -2087,24 +2142,30 @@ class AcceptanceHarnessTests(unittest.TestCase):
                 except Exception: return int(handle)
             def CreatePipe(self, read, write, sa, size):
                 self.pipe_no += 1
-                if self.fail == "pipe%d" % self.pipe_no: return 0
+                if self.fail == "pipe%d" % self.pipe_no:
+                    ctypes.set_last_error(5); return 0
                 read._obj.value = 100 + (self.pipe_no - 1) * 2
                 write._obj.value = 101 + (self.pipe_no - 1) * 2
                 return 1
             def SetHandleInformation(self, handle, mask, flags):
-                if self.fail == "inherit" and self._v(handle) == 101: return 0
+                if self.fail and self.fail.startswith("inherit") and self._v(handle) == int(self.fail[7:]):
+                    ctypes.set_last_error(5); return 0
                 if self.fail == "process-inherit" and self._v(handle) == 500: return 0
                 if self.fail == "thread-inherit" and self._v(handle) == 501: return 0
                 return 1
             def InitializeProcThreadAttributeList(self, attr, count, flags, size):
                 if attr is None:
                     size._obj.value = 0 if self.fail == "sizing" else 64
+                    ctypes.set_last_error(0 if self.fail == "sizing" else 122)
                     return 0
-                if self.fail == "init": return 0
+                if self.fail == "init":
+                    ctypes.set_last_error(5); return 0
                 return 1
-            def UpdateProcThreadAttribute(self, *args): return 0 if self.fail == "update" else 1
+            def UpdateProcThreadAttribute(self, *args):
+                if self.fail == "update": ctypes.set_last_error(5); return 0
+                return 1
             def CreateProcessW(self, *args):
-                if self.fail == "create": return 0
+                if self.fail == "create": ctypes.set_last_error(5); return 0
                 info = args[-1]
                 info._obj.hProcess = 500; info._obj.hThread = 501
                 info._obj.dwProcessId = 777; info._obj.dwThreadId = 778
@@ -2116,12 +2177,24 @@ class AcceptanceHarnessTests(unittest.TestCase):
                 return 1
             def DeleteProcThreadAttributeList(self, attr): self.deleted += 1
             def ResumeThread(self, handle): return 1
-            def WaitForSingleObject(self, handle, timeout): self.waited.append(handle); return 0
+            def WaitForSingleObject(self, handle, timeout):
+                self.waited.append(handle)
+                if self.wait_fail == "timeout": return 258
+                if self.wait_fail == "raise": raise RuntimeError("wait failed")
+                return 0
             def GetExitCodeProcess(self, handle, code): code._obj.value = 2; return 1
-            def TerminateProcess(self, handle, code): self.terminated.append(handle); return 1
+            def TerminateProcess(self, handle, code):
+                self.terminated.append(handle)
+                if self.terminate_fail == "return": return 0
+                if self.terminate_fail == "raise": raise RuntimeError("terminate failed")
+                return 1
         for fail, expected_deleted, expected_closed in (
+            ("pipe1", 0, []),
             ("pipe2", 0, [100, 101]),
-            ("inherit", 0, [100, 101]),
+            ("pipe3", 0, [100, 101, 102, 103]),
+            ("inherit101", 0, [100, 101]),
+            ("inherit102", 0, [100, 101, 102, 103]),
+            ("inherit104", 0, [100, 101, 102, 103, 104, 105]),
             ("sizing", 0, [100, 101, 102, 103, 104, 105]),
             ("init", 0, [100, 101, 102, 103, 104, 105]),
             ("update", 1, [100, 101, 102, 103, 104, 105]),
@@ -2135,6 +2208,27 @@ class AcceptanceHarnessTests(unittest.TestCase):
             self.assertEqual(api.deleted, expected_deleted, fail)
             self.assertEqual(sorted(api.closed), sorted(expected_closed), fail)
             self.assertEqual(api.terminated, [500] if fail in ("process-inherit", "thread-inherit") else [], fail)
+
+        for terminate_fail in ("return", "raise"):
+            api = Api(fail="process-inherit", terminate_fail=terminate_fail)
+            with self.assertRaises(Exception) as caught:
+                self.acceptance.launch_suspended("worker", api=api)
+            self.assertIn("terminate-process", str(caught.exception))
+            self.assertIn(500, api.closed)
+            self.assertIn(501, api.closed)
+
+        for wait_fail in ("timeout", "raise"):
+            api = Api(fail="process-inherit", wait_fail=wait_fail)
+            with self.assertRaises(Exception) as caught:
+                self.acceptance.launch_suspended("worker", api=api)
+            self.assertIn("terminate-wait", str(caught.exception))
+
+        api = Api(fail="create", close_fail=100)
+        with self.assertRaises(Exception) as caught:
+            self.acceptance.launch_suspended("worker", api=api)
+        self.assertIn("pipe-read", str(caught.exception))
+        self.assertIn(100, api.closed)
+        self.assertEqual(api.deleted, 1)
 
         api = Api(close_fail=100)
         with self.assertRaises(Exception) as caught:

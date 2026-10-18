@@ -678,9 +678,9 @@ def launch_suspended(mode, api=None):
         parent_entries = [stdin_write, stdout_read, stderr_read]
 
         size = ctypes.c_size_t()
-        api.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
+        sizing_ok = api.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
         sizing_error = ctypes.get_last_error()
-        if size.value == 0:
+        if sizing_ok or sizing_error != 122 or size.value <= 0 or size.value > (1 << 20):
             raise ctypes.WinError(sizing_error or 122)
         attr_buffer = ctypes.create_string_buffer(size.value)
         attr_list = ctypes.cast(attr_buffer, ctypes.c_void_p)
@@ -1156,6 +1156,7 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     final = None
     exit_code = None
     setup_deadline = clock() + setup_seconds
+    observation_deadline = None
     ordering = {
         "worker_suspended": False,
         "initial_zero": False,
@@ -1176,6 +1177,10 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     def setup_remaining():
         if clock() >= setup_deadline:
             raise RuntimeError("setup-deadline")
+
+    def observation_remaining():
+        if observation_deadline is None or clock() >= observation_deadline:
+            raise RuntimeError("observation-deadline")
     try:
         observer_api = getattr(observer, "api", None)
         for handle_name in ("handle", "port"):
@@ -1209,27 +1214,29 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
         ordering["resumed"] = True
         launch.close_stdin()
         ordering["eof_after_assignment"] = True
+        observation_remaining()
         remaining = max(0.0, observation_deadline - clock())
-        if remaining <= 0:
-            raise RuntimeError("observation-deadline")
         if not launch.wait(min(wait_seconds, remaining) * 1000):
             raise RuntimeError("worker-wait-timeout")
         ordering["worker_exited"] = True
+        observation_remaining()
         exit_code = launch.exit_code
         launch.close_process()
         ordering["process_released_before_final"] = True
+        observation_remaining()
         final = observer.accounting()
+        observation_remaining()
 
         def observed(pid):
             if pid != launch.pid:
                 unexpected.append(pid)
+        observation_remaining()
         remaining = max(0.0, observation_deadline - clock())
-        if remaining <= 0:
-            raise RuntimeError("observation-deadline")
         try:
             port_error = observer.drain_messages(clock() + min(2.0, remaining), observed, clock=clock)
         except Exception as exc:
             port_error = "completion-port:" + str(exc)
+        observation_remaining()
     except Exception as exc:
         detail = type(exc).__name__ + ": " + str(exc)
         operation_error = True
@@ -1255,10 +1262,20 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     decision.update(mode=mode, ordering=ordering, exit_code=exit_code,
                     cleanup_errors=cleanup_errors, operation_detail=detail,
                     operation_error=operation_error)
-    if decision["status"] == "passed" and port_error is not None:
+    if operation_error:
+        if decision.get("detail") == "extra-associated-process":
+            pass
+        else:
+            if decision.get("status") == "passed":
+                decision["accounting_status"] = "passed"
+            decision["status"] = "blocked"
+            decision["detail"] = "operation-error"
+        decision["clean_run"] = False
+    elif decision["status"] == "passed" and port_error is not None:
         decision["status"] = "blocked"
         decision["detail"] = "accounting-proved-with-port-api-error"
         decision["accounting_status"] = "passed"
+        decision["clean_run"] = False
     return decision
 
 
@@ -1298,7 +1315,9 @@ def _case_preassignment_eof(work):
     except Exception as exc:
         control = {"status": "blocked", "detail": "control-setup:" + str(exc)}
         attempt_errors.append(str(exc))
-    negative_ok = negative.get("status") == "passed"
+    negative_ok = (negative.get("status") == "passed"
+                   and negative.get("operation_error") is False
+                   and negative.get("clean_run") is True)
     control_ok = preassignment_control_success(control)
     result = {
         "status": "passed" if negative_ok and control_ok and not attempt_errors else "blocked",
