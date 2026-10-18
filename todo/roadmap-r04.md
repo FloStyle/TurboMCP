@@ -1402,3 +1402,15 @@ These candidates are merged at the owner's request, not accepted as runtime-cert
 - [ ] R04-FOLLOWUP-MENUS: Review menu candidate b2e535f27b6176dd176c4c6ed6f936fb288e5702 in the pinned editor. Verify Window icon, dedicated TurboMCP Tools section, both open actions, single entry after re-registration, and safe shutdown/reload removal. Check narrow-window rendering and keyboard navigation. Scope: STurboMCPPanel.cpp menu registration only. Source review does not establish visual/lifecycle acceptance.
 
 Verification: supervised build first; menu follow-up uses the owned editor and focused panel suites. The catalog lists the merged wrapper for inventory completeness; it remains disabled and is expected to report BLOCKED. Do not execute the persistence suite until its blockers above are resolved. Neither checkbox is completed by merging source.
+
+## Weekly candidate queue — 18 October 2026
+
+Planning only: these are not dispatched assignments or changes to task readiness. Before implementation, the integrator must approve an exact base, file allowlist and claim. Automatic dispatch is paused. Workers must not merge or push main, force-push, release claims, weaken tests or alter release/readiness controls. Engine/editor tests remain supervisor-owned and serialized. Main branch protection is recommended, not verified here.
+
+- [ ] WEEK-01 / P1 / Widget layout: one simple connected Widget logic edit; compare before/after node positions, links, defaults and widget hierarchy, inspect new-node overlap, then compile/save/read back. Extend focused acceptance coverage only; production fixes require a reproduced defect and bounded scope. This is the next field-test priority.
+- [ ] WEEK-02 / P1 / Reader and refusal: focused regression coverage for truncated input, missing target and ambiguous identity, with a valid control and unchanged-state assertions on refusal. Source/offline work may run alongside WEEK-01 in a disjoint worktree.
+- [ ] WEEK-03 / P2 / Menu UX: complete R04-FOLLOWUP-MENUS visual and lifecycle review; serialize editor access after the Widget test.
+- [ ] WEEK-04 / P2 / Field-test guide: short human-readable read/preview/edit/compile/save checklist using verified schemas, known limits and refusal/partial-failure recovery. Documentation-only scope can run independently.
+- [ ] WEEK-05 / P3 / Persistence harness: complete R04-FOLLOWUP-PERSISTENCE cleanup/ownership review while retaining the disabled entry. Not a prerequisite for the passing MCP package-reload smoke test.
+
+Current integrated field-test baseline: e1c71699d8fcba6719050f5e331647ddddf15445. Final build passed in 17dd2e2b537a4e1e8a7390ea095488ed. Basic Blueprint/Widget MCP disk loop passed in 0163b414b2c046d59ae20641f4e9ab77, with all 16 fixture files restored. This is not a bug-free or complete workflow certificate. Restart is an optional durability check, not required after every normal edit. Menu visual checks and disabled persistence review remain pending despite source integration.
