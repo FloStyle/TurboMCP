@@ -398,6 +398,25 @@ Validation:
 
 Rollback: remove the two new tools, the one catalog row and this evidence. Existing collector/validator and production callers remain unchanged.
 
+### Checkpoint 11: process-reader lifecycle admission
+
+Task R04 checkpoint 11, claim `b3223a4a39b04b599d4ab4bf14029a78` (owner `dsh-r04-lifecycle-01`). Approved base `2d120a9e282e149b7e0f2368a4acf44f5035fd03`; branch `task/r04-process-lifecycle`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 and live process-reader use remain incomplete.
+
+Deliverable: `docs/audit/process-reader-lifecycle.md` records the bounded source investigation. Windows PowerShell 5.1 Add-Type exposes CodeDom/compiler parameters; the .NET Framework C# CodeDom compiler names `csc.exe` and its Executor uses Process/CreateProcess, so Add-Type can create a compiler child. Whether this host actually spawns it and whether it inherits the PowerShell result pipes remain unverified. The current runner cleans up only its direct Popen child, so compiler-descendant survival on timeout/parent death is not excluded. CIM/WMI is a shared external service, not an owned child.
+
+Decision: choose Job Object containment of the dedicated collection process and its descendants; reject avoiding Add-Type because it would require a precompiled helper/dependency or persistent service. Reuse the existing `WindowsJob` KILL_ON_JOB_CLOSE pattern and the `execution_runtime.py --worker` bootstrap that waits for assignment before running a command. Assignment failure, nested-job failure, job accounting or any unproven compiler containment refuses; shared services and unrelated processes are never killed. The report covers suspended-launch alternative, handle inheritance, bounded drains, grace versus request deadline, hard supervisor death, orphan accounting and the supervisor-only synthetic acceptance recipe.
+
+Mock fidelity: the current fake `Thread.join` treats unstarted joins as a no-op; real Python `Thread.join` raises before start. This affects cleanup_failed classification in thread-start-failure mocks and is not proof of a child leak. The proposed test-only repair is recorded. The fixed PowerShell script's real parsing/API/UTF-8/handle behavior remains unverified.
+
+All implementation remains `proposed_unapproved`; no code, test, catalog, lease, status, routing, scope or release change was made. No live process, PowerShell, CIM, native, editor, build or recovery operation was run.
+
+Validation:
+- Source/docs review only; no live processes, PowerShell, native calls, CIM, editor, build or recovery.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/afd7c6594934479f8c0bbde1aa0e0322/report.json`; all offline checks passed.
+- Candidate-bound evidence and full-base scope gate are recorded in the submission.
+
+Rollback: remove the new report and this evidence only.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)
