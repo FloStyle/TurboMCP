@@ -158,8 +158,9 @@ generation leaves scope. Cleanup visits every still-current generation:
   reloaded objects) from cleanup;
 - no successful old unload permits skipping a later generation.
 
-Use only weak observers for older generations; if an old weak pointer becomes
-valid again, treat it as a new generation, not a resurrected old pointer.
+Use only weak observers for older generations. An invalidated weak identity must
+remain invalid; a newly found object at the same path gets a separate weak observer
+and generation record. Never reinterpret an old observer as the new object.
 
 ## Post-reload assertions
 

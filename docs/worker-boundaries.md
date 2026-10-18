@@ -42,3 +42,7 @@ widget-postwrite-compile supersedes completed connected-input acceptance. Extend
 ## Widget persistence contract
 
 widget-persistence-contract supersedes completed post-write compilation. Source-only design of the smallest supervised save/unload/fresh-reload acceptance for the two existing Widget cases. Inspect existing fixture snapshot and restore boundaries; specify collision refusal, owned synthetic paths, failure cleanup, proof of fresh disk reload, exact implementation files and negative controls. Report missing infrastructure before proposing runtime actions. Only docs/audit/widget-persistence-contract.md may be created. No engine execution, fixture writes, implementation or shared-state changes. The integrator reviews the contract before authorizing implementation.
+
+## Widget persistence acceptance implementation
+
+widget-persistence-acceptance implements docs/audit/widget-persistence-contract.md in exactly two new test files. Reuse the accepted roundtrip fixture behavior without modifying existing tests or production. Worker may author tests and run offline checks only. Native save/unload/reload and catalog registration are integrator-owned after source review. Require supervisor-owned disposable TestProject admission before any disk mutation or unload; no standalone user-editor execution. Stop on missing containment/API contracts rather than adding infrastructure. No restart mode or shared file changes.
