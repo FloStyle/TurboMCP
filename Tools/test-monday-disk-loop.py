@@ -102,7 +102,7 @@ def main():
             demand("ReturnValue" in source_pins,
                    "the Concat source exposes ReturnValue in this graph")
             text = (
-                '(Development|Concat_StrStr\n'
+                '(' + CONCAT_TYPE_ID + '\n'
                 '    ; label ConnectedSource\n'
                 '    A "connected "\n'
                 '    B "' + saved + '")\n'
