@@ -231,6 +231,38 @@ def asset_fingerprint():
     return (stat.st_size, stat.st_mtime_ns)
 
 
+def refusal_pair(session, label, asset, graph, text, expected_prefix="unchanged:"):
+    """Send one input to Preview and Edit, require the same answer, prove no mutation.
+
+    THE CONTRACT IS THE SOURCE'S, NOT A GUESS. Any check finding makes the plan
+    unacceptable (`FTurboMCPGraphCheck::FPlan::bAcceptable` is `Findings.Num() == 0`),
+    Preview and Edit build the SAME plan (`TurboMCPGraphAppendTools.cpp:33/48`), a
+    refused plan renders with the first line `unchanged:`
+    (`TurboMCPGraphAppend.cpp:639-648`), and a plan that cannot be built returns
+    `error:` from both tools. The identical answer is asserted because the pair
+    disagreeing is the defect the shared Plan exists to prevent.
+    """
+    before_count, _ = node_count(session)
+    before_ids, _ = node_ids(session)
+    before_fp = asset_fingerprint()
+    request = {"asset": asset, "graphName": graph, "text": text}
+    preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphAppend", request)
+    edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphAppend", request)
+    print("    %s preview: %s" % (label, preview.split("\n", 1)[0][:140]))
+    check(label + ": the preview refuses", preview.startswith(expected_prefix), preview[:220])
+    check(label + ": the edit returns the identical answer", edit == preview, edit[:220])
+    after_count, _ = node_count(session)
+    after_ids, _ = node_ids(session)
+    check(label + ": the node count is unchanged", after_count == before_count,
+          "%s -> %s" % (before_count, after_count))
+    check(label + ": the node identity set is unchanged", after_ids == before_ids,
+          "added=%s removed=%s" % (sorted(after_ids - before_ids)[:3],
+                                   sorted(before_ids - after_ids)[:3]))
+    check(label + ": the saved bytes are unchanged", asset_fingerprint() == before_fp,
+          "%s -> %s" % (before_fp, asset_fingerprint()))
+    return preview, edit
+
+
 def rebuild_fixture_and_reconnect():
     """
     Regenerates the acceptance asset and returns a fresh connected Session, or None.
@@ -642,6 +674,64 @@ def main():
                   % (report["passed"], report["failed"], report["skipped"], report["total"]))
             check(success_name, entry["state"] == "Success", entry["state"])
             check(errors_name, not entry["errors"], entry["errors"][:1])
+
+    print()
+    print("=== 6c. truncated and missing targets are refused without mutation ===")
+    #
+    # THE CONTRACT, READ FROM SOURCE BEFORE THE ASSERTIONS:
+    #
+    # - `(Development|Print` is a truncated TYPE ID. Type ids are resolved by building
+    #   a probe node; an id that matches nothing is a `node-type` finding, and ANY
+    #   finding makes the plan unacceptable.
+    # - `InString "unterminated` is a truncated QUOTED value. It is neither a number,
+    #   a boolean nor a quoted string, so the checker reports it `unjudged` and names
+    #   the pin; `bAcceptable` still requires zero findings, so the writer refuses.
+    # - A missing asset or graph cannot reach a plan at all; both tools return the
+    #   same `error:` line from the shared Plan.
+    # - A VALID CONTROL is the earlier part of this suite: those appends reported
+    #   `changed:` and grew the graph, so the refusals below are not a suite whose
+    #   only outcome is refusal.
+    current_count, _ = node_count(session)
+    check("a valid append earlier in this suite grew the graph",
+          current_count is not None and before_count is not None and current_count > before_count,
+          "%s -> %s" % (before_count, current_count))
+
+    truncated_type = '(Development|Print\n    InString "cut off")'
+    refused, _ = refusal_pair(session, "truncated node type", ASSET, GRAPH, truncated_type)
+    check("the truncated type refusal names the line, the id and the reason",
+          "line 1" in refused and "Development|Print" in refused
+          and "no node type" in refused, refused[:500])
+
+    truncated_literal = '(Development|PrintString\n    InString "unterminated)'
+    refused, _ = refusal_pair(session, "truncated quoted literal", ASSET, GRAPH,
+                              truncated_literal)
+    check("the truncated literal refusal names the pin's line and the pin",
+          "line 2" in refused and "InString" in refused, refused[:500])
+
+    # MISSING TARGET, TWO FORMS: an absent graph on a real asset, and an absent
+    # asset. Both are `error:` lines, so the same helper runs with that prefix.
+    for label, asset, graph in (
+        ("missing graph", ASSET, "NoSuchGraphForRefusalTest"),
+        ("missing asset", "NoSuchAssetForRefusalTest", GRAPH),
+    ):
+        preview, _ = refusal_pair(session, label, asset, graph,
+                                  text_for("PROBE-REFUSAL-UNREACHED"),
+                                  expected_prefix="error:")
+        if label == "missing graph":
+            check("the missing-graph error lists the real graph", "EventGraph" in preview,
+                  preview[:400])
+        else:
+            check("the missing-asset error names the missing asset",
+                  "NoSuchAssetForRefusalTest" in preview, preview[:400])
+
+    # AMBIGUOUS IDENTITY IS DEFERRED, NOT WEAKENED. A deterministic ambiguous node
+    # key needs two nodes sharing the first six hex digits, and an ambiguous asset
+    # name needs two assets with the same leaf name. The committed fixtures have
+    # neither - SaneProbe gets fresh random GUIDs and all TestProject asset names are
+    # unique - and creating either would need a fixture file outside this
+    # assignment's allowlist. The compiled `TurboMCP.GraphAppend.AliasCollision`
+    # test already covers plan-level alias ambiguity; this suite does not fake an
+    # MCP-level case it cannot construct.
 
     print()
     print("=== 7. the asset on disk is untouched, because nothing saved it ===")
