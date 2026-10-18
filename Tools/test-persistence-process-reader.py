@@ -1828,7 +1828,9 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertIn("--persistence-worker", api.command)
         self.assertIn("execution_runtime.py", api.command)
         self.assertTrue(api.flags & self.acceptance.CREATE_SUSPENDED)
-        self.assertTrue(api.flags & self.acceptance.CREATE_NO_WINDOW)
+        self.assertTrue(api.flags & self.acceptance.DETACHED_PROCESS)
+        self.assertFalse(api.flags & 0x08000000)  # CREATE_NO_WINDOW
+        self.assertFalse(api.flags & 0x00000010)  # CREATE_NEW_CONSOLE
         self.assertTrue(api.flags & self.acceptance.EXTENDED_STARTUPINFO_PRESENT)
         self.assertEqual(api.startup_flags, self.acceptance.STARTF_USESTDHANDLES)
         self.assertEqual(api.inherit, [101, 102, 104, 500, 501])

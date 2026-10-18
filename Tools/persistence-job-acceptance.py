@@ -78,7 +78,7 @@ class PROCESS_INFORMATION(ctypes.Structure):
 
 
 CREATE_SUSPENDED = 0x00000004
-CREATE_NO_WINDOW = 0x08000000
+DETACHED_PROCESS = 0x00000008
 EXTENDED_STARTUPINFO_PRESENT = 0x00080000
 STARTF_USESTDHANDLES = 0x00000100
 HANDLE_FLAG_INHERIT = 0x00000001
@@ -758,6 +758,9 @@ def _fixed_launch_command(mode):
 def launch_suspended(mode, api=None):
     """Create one fixed-mode suspended process with an explicit inherited-handle list."""
     api = api or _win()
+    # A fixed pipe-only worker needs no console. CREATE_NO_WINDOW can still
+    # associate a console host with the job on this Windows installation.
+    # Keep explicit standard-handle inheritance and suspended assignment.
     command = _fixed_launch_command(mode)
     command_line = ctypes.create_unicode_buffer(subprocess.list2cmdline(command))
     ledger = []
@@ -843,7 +846,7 @@ def launch_suspended(mode, api=None):
         process_info = PROCESS_INFORMATION()
         if not api.CreateProcessW(
                 None, command_line, None, None, True,
-                CREATE_SUSPENDED | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT,
+                CREATE_SUSPENDED | DETACHED_PROCESS | EXTENDED_STARTUPINFO_PRESENT,
                 None, str(ROOT), ctypes.byref(startup), ctypes.byref(process_info)):
             raise ctypes.WinError(ctypes.get_last_error())
         launch = SuspendedLaunch(api, process_info.hProcess, process_info.hThread,
