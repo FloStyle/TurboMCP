@@ -51,7 +51,7 @@ TArray<FTurboMCPCallLog::FEntry> FTurboMCPCallTimeline::RepresentativeRecords(
 {
 	TArray<FTurboMCPCallLog::FEntry> Out;
 
-	/** The call each open `start` belongs to, by key. One entry per call still running. */
+	/** The call each open `start` belongs to, by key. One entry per call whose completion was not observed. */
 	TMap<FString, int32> Open;
 
 	/**
@@ -202,7 +202,7 @@ FString FTurboMCPCallTimeline::RenderRow(const FTurboMCPCallLog::FEntry& InCall)
 
 	if (InCall.Phase == TEXT("start"))
 	{
-		return Out + TEXT("  -> running");
+		return Out + TEXT("  -> completion not observed");
 	}
 
 	// NAMED LOCALS: `Printf`'s format checker refuses a `%s` whose argument is a temporary (`error C7595`).

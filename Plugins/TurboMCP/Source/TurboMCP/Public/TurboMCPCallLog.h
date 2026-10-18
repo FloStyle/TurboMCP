@@ -117,8 +117,23 @@ public:
 		bool bError = false;
 	};
 
+	/** One coherent read of the records and the revision that produced them. */
+	struct FSnapshot
+	{
+		TArray<FEntry> Entries;
+		uint64 Revision = 0;
+	};
+
 	/** The one log. */
 	static FTurboMCPCallLog& Get();
+
+	/** Public so an isolated test instance can be owned by a scoped fixture. */
+	~FTurboMCPCallLog() = default;
+
+#if WITH_DEV_AUTOMATION_TESTS
+	/** A private per-test log with no disk sink and an explicit enabled state. */
+	static FTurboMCPCallLog* CreateForTest(bool bEnabled = true);
+#endif
 
 	/**
 	 * Whether logging is on.
@@ -134,15 +149,21 @@ public:
 	/** Writes a record. Does nothing when logging is off. */
 	void Write(const FEntry& InEntry);
 
+	/** A coherent copy of entries and revision under one lock. */
+	FSnapshot GetSnapshot() const;
+
+	/** The monotonically increasing record revision, copied under the same lock. */
+	uint64 GetRevision() const;
+
 	/** The entries in memory, oldest first. */
 	TArray<FEntry> GetEntries() const;
 
 	/**
 	 * How many entries are in memory, WITHOUT COPYING THEM.
 	 *
-	 * The panel polls this on every tick to notice that a call completed, and `GetEntries` copies up to
-	 * 1000 structs under a lock - once per frame, for a count it already has. A cheap accessor is the
-	 * difference between a live timeline and a frame-time cost nobody asked for.
+	 * The panel no longer polls this to notice a call: an unchanged count cannot
+	 * distinguish a capped write or a clear/refill. `GetRevision` is the refresh
+	 * signal; this accessor remains for readers that need the bound itself.
 	 */
 	int32 NumEntries() const;
 
@@ -155,8 +176,8 @@ public:
 	/**
 	 * One line per call, oldest first: IN from the `start` record and OUT from the `end` record that follows it.
 	 *
-	 * *** A `start` WITH NO `end` IS PRINTED AS `running` RATHER THAN DROPPED, BECAUSE THAT IS THE CALL THAT WAS IN
-	 * FLIGHT WHEN SOMETHING WENT WRONG - WHICH IS THE CASE THE START RECORD EXISTS FOR. *** A record with an `end` and
+	 * *** A `start` WITH NO `end` MEANS COMPLETION WAS NOT OBSERVED, AND IS PRINTED THAT WAY RATHER THAN AS
+	 * `running`, BECAUSE THE LOG CANNOT PROVE THE TOOL IS STILL ALIVE. *** A record with an `end` and
 	 * no `start` (the engine's own events arrive that way) is a row of its own.
 	 * *** TEXT RATHER THAN WIDGETS SO THE PANEL CAN RENDER IT AND A READER CAN DIFF IT; THE CALL IS ASSEMBLED BY
 	 * `FTurboMCPCallTimeline`, WHICH IS ALSO WHAT `R-CALL-COST` COUNTS, SO THE ROW AND THE TOTAL CANNOT DISAGREE
@@ -188,7 +209,19 @@ public:
 	};
 
 private:
+	struct FTestOptions
+	{
+		bool bDiskSink = false;
+		bool bEnabled = true;
+	};
+
 	FTurboMCPCallLog() = default;
+	explicit FTurboMCPCallLog(const FTestOptions& InOptions)
+		: bUseSettings(false)
+		, bTestEnabled(InOptions.bEnabled)
+		, bDiskSink(InOptions.bDiskSink)
+	{
+	}
 
 	/** Serialises one entry as a JSON object on its own line. */
 	static FString ToJsonLine(const FEntry& InEntry);
@@ -200,6 +233,14 @@ private:
 
 	/** Kept bounded: a long session must not grow without limit. */
 	TArray<FEntry> Entries;
+
+	/** Incremented on every memory write and clear, under Mutex. */
+	uint64 Revision = 0;
+
+	/** Production reads the editor setting; the isolated test instance owns its state. */
+	bool bUseSettings = true;
+	bool bTestEnabled = false;
+	bool bDiskSink = true;
 
 	/** The cap, from `02_PRINCIPLES.md` `P6`: a list must not grow without bound. */
 	static constexpr int32 MaxEntries = 1000;

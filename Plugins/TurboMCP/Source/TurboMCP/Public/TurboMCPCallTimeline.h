@@ -27,7 +27,7 @@
  *
  * *** THREE READERS COUNTED RECORDS AND CALLED THEM CALLS. *** `R-CALL-COST` totalled them, so one
  * call was counted twice the moment the start record existed; the timeline rendered a `start` with no
- * `end` beside it as `running` for the rest of the session; and a per-asset total printed `2 call(s)`
+ * `end` beside it as `completion not observed` for the rest of the session; and a per-asset total printed `2 call(s)`
  * for one call because both records of the pair carry the arguments. NONE OF THAT IS A DEFECT IN ANY
  * ONE READER - they were all correct while every record was an engine `end` record, WHICH IS THE
  * MEASUREMENT THAT CHANGED.
@@ -43,7 +43,7 @@
  * one call does not become two rows. An `engine` `end` for a key that was never opened by this plugin
  * is a call of its own, which is what every engine tool still is.
  *
- * A `start` with no `end` is returned as it stands, so a reader can print it as `running` - the shape
+ * A `start` with no `end` is returned as it stands, so a reader can print it as `completion not observed` - the shape
  * a crash leaves, and the shape `T02`'s start record exists for.
  */
 class FTurboMCPCallTimeline
@@ -57,7 +57,7 @@ public:
 	 * writes the bare `TurboMCPReadToolset`, and the engine's tool slot holds the FULLY QUALIFIED
 	 * `TurboMCP.TurboMCPReadToolset.ReadTurboMCPStatus` where the plugin writes the bare tool name.
 	 * Without folding both fields, no pair would ever meet and every plugin start would render as
-	 * `running` forever.
+	 * `completion not observed` forever.
 	 *
 	 * Folded to lower case as well, because the engine resolves a hash to a name and the two writers
 	 * do not have to agree on case for the same call.
@@ -70,7 +70,7 @@ public:
 	 * The record returned for a finished call is the RICHEST one available - the plugin's own `end`
 	 * record, which carries the arguments, the real size and the token estimate. An engine-only call
 	 * keeps its engine record. A call that never ended keeps its `start` record, so a reader can tell
-	 * `running` from `never happened` without a second pass.
+	 * `completion not observed` from `never happened` without a second pass.
 	 *
 	 * The returned record's `Timestamp` is WHEN THE CALL STARTED when a start record exists, and its
 	 * `SessionId` is filled from the engine's own record for the same call when the plugin's record

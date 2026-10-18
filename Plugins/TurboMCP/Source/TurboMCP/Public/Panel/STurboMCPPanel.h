@@ -45,7 +45,14 @@ template <typename ItemType> class SListView;
 class STurboMCPPanel : public SCompoundWidget
 {
 public:
-	SLATE_BEGIN_ARGS(STurboMCPPanel) {}
+	SLATE_BEGIN_ARGS(STurboMCPPanel)
+#if WITH_DEV_AUTOMATION_TESTS
+		: _TestCallLog(nullptr)
+#endif
+	{}
+#if WITH_DEV_AUTOMATION_TESTS
+		SLATE_ARGUMENT(FTurboMCPCallLog*, TestCallLog)
+#endif
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
@@ -95,6 +102,16 @@ public:
 	int32 GetTimelineRowCount() const { return TimelineRows.Num(); }
 
 private:
+#if WITH_DEV_AUTOMATION_TESTS
+	friend struct FTurboMCPPanelHistoryTestAccess;
+#endif
+
+	/** The log this panel renders; production defaults to the singleton. */
+	FTurboMCPCallLog& GetCallLog() const { return CallLogProvider ? *CallLogProvider : FTurboMCPCallLog::Get(); }
+
+	/** Rebuilds only when the log revision changed, and says whether it did. */
+	bool RefreshTimelineIfChanged();
+
 	/** Colour of the server dot: green when the server is running, else red. */
 	FSlateColor GetServerDotColor() const;
 
@@ -166,8 +183,15 @@ private:
 	FString TimelineToolFilter;
 	FString TimelineAssetFilter;
 
-	/** The log's entry count at the last rebuild, so a new record can be noticed without copying it. */
-	int32 LastTimelineRecordCount = -1;
+	/** The log this panel reads; an isolated test replaces it before the first history read. */
+	FTurboMCPCallLog* CallLogProvider = nullptr;
+
+	/** The log revision the rows were built from. */
+	uint64 LastTimelineRevision = 0;
+	bool bHasTimelineRevision = false;
+
+	/** Test-visible evidence that an unchanged revision did not rebuild the list. */
+	uint64 TimelineRebuildCount = 0;
 
 	/** How many calls there are altogether, so the count line can carry its denominator. */
 	int32 TimelineCallCountBeforeFilter = 0;

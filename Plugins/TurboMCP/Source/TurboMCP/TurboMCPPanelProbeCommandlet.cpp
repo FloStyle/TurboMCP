@@ -347,7 +347,7 @@ void UTurboMCPPanelProbeCommandlet::ProbeCallTimeline()
 	//   call 1  a plugin start and end, PLUS the engine's own event for the same call - four records
 	//           that must collapse to ONE row, or every total in `R-CALL-COST` doubles
 	//   call 2  an engine-only call: the `call_tool` meta-tool, which has no start record of its own
-	//   call 3  a plugin start with NO end: the crash shape, which must render as `running`
+	//   call 3  a plugin start with NO end: the crash shape, which must render as `completion not observed`
 	FEntry Start1;
 	Start1.Timestamp = TEXT("2026-01-01T00:00:01.000Z");
 	Start1.Phase = TEXT("start");
@@ -415,16 +415,16 @@ void UTurboMCPPanelProbeCommandlet::ProbeCallTimeline()
 		Line(FString::Printf(TEXT("panel-timeline-row: %s"), *FTurboMCPCallTimeline::RenderRow(Call)));
 	}
 
-	// THE CRASH SHAPE: a start with no end reads `running` rather than being dropped.
-	int32 Running = 0;
+	// THE CRASH SHAPE: a start with no end reads `completion not observed`, never `running`.
+	int32 CompletionNotObserved = 0;
 	for (const FEntry& Call : Calls)
 	{
 		if (Call.Phase == TEXT("start"))
 		{
-			++Running;
+			++CompletionNotObserved;
 		}
 	}
-	Line(FString::Printf(TEXT("panel-timeline-running: %d"), Running));
+	Line(FString::Printf(TEXT("panel-timeline-unfinished: %d"), CompletionNotObserved));
 
 	// THE FOUR FILTERS, EACH AGAINST ITS OWN COLUMN - and each one's kept count is arithmetic, so a
 	// filter that matched everything by accident is visible as `kept=3` where 1 was expected.

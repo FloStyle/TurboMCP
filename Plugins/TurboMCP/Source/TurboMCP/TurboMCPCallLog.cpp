@@ -59,8 +59,19 @@ FTurboMCPCallLog& FTurboMCPCallLog::Get()
 	return Instance;
 }
 
+#if WITH_DEV_AUTOMATION_TESTS
+FTurboMCPCallLog* FTurboMCPCallLog::CreateForTest(bool bEnabled)
+{
+	return new FTurboMCPCallLog(FTestOptions{false, bEnabled});
+}
+#endif
+
 bool FTurboMCPCallLog::IsEnabled() const
 {
+	if (!bUseSettings)
+	{
+		return bTestEnabled;
+	}
 	// The setting is the single source of truth, so the panel's checkbox and this agree by
 	// construction rather than by both being updated.
 	const UTurboMCPSettings* Settings = UTurboMCPSettings::Get();
@@ -69,6 +80,12 @@ bool FTurboMCPCallLog::IsEnabled() const
 
 void FTurboMCPCallLog::SetEnabled(bool bInEnabled)
 {
+	if (!bUseSettings)
+	{
+		// Isolated test state only; never the editor settings or disk.
+		bTestEnabled = bInEnabled;
+		return;
+	}
 	if (UTurboMCPSettings* Settings = UTurboMCPSettings::GetMutable())
 	{
 		Settings->bEnableCallLog = bInEnabled;
@@ -133,7 +150,7 @@ FString FTurboMCPCallLog::RenderTimeline() const
 
 	/** The row text comes from the timeline, so the panel's list and this text are one rendering. */
 	FString Out = FString::Printf(
-		TEXT("; %d call(s) from %d record(s), oldest first. A call with no OUT yet reads `running`."),
+		TEXT("; %d call(s) from %d record(s), oldest first. A call with no OUT yet reads `completion not observed`."),
 		Calls.Num(), Records.Num());
 
 	// CALLS OF ONE BATCH SCRIPT ARE GROUPED, which is a requirement of the timeline rather than a
@@ -158,6 +175,10 @@ FString FTurboMCPCallLog::RenderTimeline() const
 }
 void FTurboMCPCallLog::AppendToFile(const FString& InLine) const
 {
+	if (!bDiskSink)
+	{
+		return;
+	}
 	const FString Path = GetLogFilePath();
 	const FString Directory = FPaths::GetPath(Path);
 
@@ -231,6 +252,22 @@ void FTurboMCPCallLog::Write(const FEntry& InEntry)
 		// Bounded, per `P6`. The oldest go first, and the FILE keeps everything.
 		Entries.RemoveAt(0, Entries.Num() - MaxEntries);
 	}
+	++Revision;
+}
+
+FTurboMCPCallLog::FSnapshot FTurboMCPCallLog::GetSnapshot() const
+{
+	FScopeLock Lock(&Mutex);
+	FSnapshot Snapshot;
+	Snapshot.Entries = Entries;
+	Snapshot.Revision = Revision;
+	return Snapshot;
+}
+
+uint64 FTurboMCPCallLog::GetRevision() const
+{
+	FScopeLock Lock(&Mutex);
+	return Revision;
 }
 
 TArray<FTurboMCPCallLog::FEntry> FTurboMCPCallLog::GetEntries() const
@@ -249,6 +286,7 @@ void FTurboMCPCallLog::Clear()
 {
 	FScopeLock Lock(&Mutex);
 	Entries.Reset();
+	++Revision;
 }
 
 FTurboMCPCallLog::FScopedCall::FScopedCall(
