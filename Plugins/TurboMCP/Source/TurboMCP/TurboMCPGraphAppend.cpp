@@ -325,6 +325,20 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 			continue;
 		}
 		UEdGraph* ProbeGraph = Cast<UEdGraph>(Probe->GetOuter());
+		if (ProbeGraph == nullptr || ProbeGraph == Graph
+			|| Probe->GetGraph() != ProbeGraph
+			|| !ProbeGraph->HasAnyFlags(RF_Transient)
+			|| ProbeGraph->GetOuter() != Blueprint)
+		{
+			// The spawner returned something we cannot prove is owned by the throwaway graph. Do not mark it
+			// garbage: it may be a real-graph node or a shared template/cache object, and this path must not
+			// mutate or retire either. Refuse the form instead.
+			OutPlan.Refusals.Add(FString::Printf(
+				TEXT("line %d, column %d: the probe for '%s' did not report a node owned by the transient ")
+				TEXT("scratch graph, so this type is refused rather than mutated or retired."),
+				Form.Line, Form.Column, *Form.TypeId));
+			continue;
+		}
 
 		// THE CLASS IS RECORDED, because it is what `Apply` reports and what makes the round trip checkable: a
 		// caller comparing the input with the read-back needs to know what the id resolved TO.
