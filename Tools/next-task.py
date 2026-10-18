@@ -35,6 +35,21 @@ def select(root,track='v1'):
         if status=='in_progress':return None,'STOP: '+row['id']+' is already in progress; coordinate with its owner instead of starting duplicate work'
         return row,text
     return None,'No unfinished approved task on track '+track+'. Do not invent another task.'
+def select_task(root,task,track='v1'):
+    rows=load_queue(root,track)
+    statuses={row['id']:field(text,'Status') for row,text in load_queue(root,'v1')+load_queue(root,'compatibility')}
+    for row,text in rows:
+        if row['id']!=task:continue
+        status=field(text,'Status')
+        if status in ('done','blocked','backlog'):
+            return None,'STOP: '+task+' is '+status+' / '+field(text,'Readiness')
+        if field(text,'Readiness')!='ready':
+            return None,'STOP: '+task+' is '+status+' / '+field(text,'Readiness')
+        missing=[dep for dep in row['depends_on'] if statuses.get(dep)!='done']
+        if missing:
+            return None,'STOP: incomplete prerequisites for '+task+': '+', '.join(missing)
+        return row,text
+    return None,'STOP: task '+task+' is not in the selected queue'
 def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--check',action='store_true');parser.add_argument('--track',choices=['v1','compatibility'],default='v1');parser.add_argument('--claim',metavar='OWNER');parser.add_argument('--assignment');parser.add_argument('--base');args=parser.parse_args()
     load_queue(ROOT,args.track)
@@ -44,9 +59,21 @@ def main():
     if active:
         for item in active:
             print('STOP: task '+str(item.get('task'))+' is claimed by '+str(item.get('owner'))+'; claim '+str(item.get('claim_id'))+' assignment '+str(item.get('assignment')))
-        return 2
-    row,text=select(ROOT,args.track)
-    if not row:print(text);return 2
+        if not args.assignment:
+            return 2
+        if any(item.get('legacy') for item in active):
+            print('STOP: an active legacy claim has no recorded scope; no new assignment')
+            return 2
+        tasks={item.get('task') for item in active}
+        if len(tasks)!=1 or None in tasks:
+            print('STOP: active claims span more than one task; assignment dispatch is ambiguous')
+            return 2
+        task=next(iter(tasks))
+        row,text=select_task(ROOT,task,args.track)
+        if not row:print(text);return 2
+    else:
+        row,text=select(ROOT,args.track)
+        if not row:print(text);return 2
     if args.claim:
         if args.assignment:
             if not args.base:raise ValueError('--base is required with --assignment')

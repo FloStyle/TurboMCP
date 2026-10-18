@@ -89,6 +89,7 @@ with tempfile.TemporaryDirectory() as temp:
         'assignments': {
             'a': {'files': ['src/a.py']},
             'b': {'files': ['src/b.py']},
+            'new': {'files': [], 'new_files': ['src/new.py']},
         }}}}
     write('roadmap/worker-scopes.json', json.dumps(policy))
     write('todo/r04.md', task)
@@ -118,4 +119,26 @@ with tempfile.TemporaryDirectory() as temp:
     write('src/b.py', 'b changed\n')
     b_accepted = commit()
     assert scope.check(root, accepted, b_accepted, 'R04', 'b')['result'] == 'PASS'
+    git('reset', '--hard', accepted)
+    write('src/new.py', 'new\n')
+    new_accepted = commit()
+    assert scope.check(root, accepted, new_accepted, 'R04', 'new')['result'] == 'PASS'
+    git('reset', '--hard', new_accepted)
+    write('src/extra.py', 'extra\n')
+    extra = commit()
+    try:
+        scope.check(root, accepted, extra, 'R04', 'new')
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Accepted undeclared new file')
+    git('reset', '--hard', new_accepted)
+    write('src/new.py', 'modified\n')
+    modified = commit()
+    try:
+        scope.check(root, new_accepted, modified, 'R04', 'new')
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Accepted modification of a declared new file')
 print('RESULT: PASS (schema-1 and schema-2 scope/identity negative controls)')

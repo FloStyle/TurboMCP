@@ -48,11 +48,13 @@ def check(root, base, candidate, task, assignment=None):
         entry = scope.get('assignments', {}).get(assignment)
         if not isinstance(entry, dict) or 'files' not in entry:
             raise ValueError('Unknown assignment ' + assignment + ' for ' + task)
-        allowed = set(entry['files'])
+        allowed = set(entry['files']) | set(entry.get('new_files', []))
+        new_files = set(entry.get('new_files', []))
     elif policy.get('schema') == 1:
         if assignment is not None:
             raise ValueError('Schema 1 has no named assignments; omit --assignment')
         allowed = set(scope['files'])
+        new_files = set()
     else:
         raise ValueError('Unsupported worker scope schema')
     task_path = scope['task_file']
@@ -63,6 +65,10 @@ def check(root, base, candidate, task, assignment=None):
         status, path = raw[i].decode(), raw[i + 1].decode('utf8')
         if path not in allowed or status not in ('A', 'M'):
             raise ValueError('Out-of-scope change: ' + status + ' ' + path)
+        if status == 'A' and path not in new_files:
+            raise ValueError('Only declared new files may be added: ' + path)
+        if status == 'M' and path in new_files:
+            raise ValueError('A declared new file must be added, not modified: ' + path)
         entry = git(root, 'ls-tree', candidate, '--', path).decode().split()
         if not entry or entry[0] != '100644' or entry[1] != 'blob':
             raise ValueError('Only ordinary non-executable files are allowed: ' + path)
