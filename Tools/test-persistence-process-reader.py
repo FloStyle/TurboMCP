@@ -632,6 +632,7 @@ class FakeThread:
         self.started = False
         self.joined = False
         self.finished = False
+        self.joins = []
 
     def start(self):
         if self.behavior == "raise":
@@ -644,8 +645,11 @@ class FakeThread:
     def join(self, timeout=None):
         if not self.started:
             raise RuntimeError("cannot join thread before it is started")
+        self.joins.append(timeout)
         if self.behavior == "deferred" and not self.finished:
             self.target(*self.args)
+            self.finished = True
+        if self.behavior == "finish_on_join":
             self.finished = True
         self.joined = True
 
@@ -653,6 +657,8 @@ class FakeThread:
         if self.behavior == "stuck":
             return self.started
         if self.behavior == "deferred":
+            return self.started and not self.finished
+        if self.behavior == "finish_on_join":
             return self.started and not self.finished
         return False
 
@@ -671,7 +677,7 @@ class ThreadFactory:
 
 class PopenRunnerTests(unittest.TestCase):
     def run_with(self, proc, threads, clock=None, job=None, auth_threads=None):
-        clock = clock if clock is not None else Clock([0, 10, 20, 30, 40, 50, 60])
+        clock = clock if clock is not None else Clock([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110])
         calls = []
         sleeps = []
         job = job if job is not None else FakeJob()
@@ -766,7 +772,7 @@ class PopenRunnerTests(unittest.TestCase):
 
         def thread_factory(target=None, args=(), daemon=None):
             attempts.append(target)
-            if len(attempts) <= 2:
+            if len(attempts) <= 1:
                 raise RuntimeError("ctor failed")
             return FakeThread(target=target, args=args, daemon=daemon, behavior="run")
 
@@ -777,7 +783,7 @@ class PopenRunnerTests(unittest.TestCase):
                 worker_script="worker.py",
                 sleeper=lambda _: None,
                 auth_thread_factory=ThreadFactory(["run"]),
-            ).run(["fixed", str(PID)], 1000, Clock([0, 10, 20, 30, 40, 50, 60]))
+            ).run(["fixed", str(PID)], 1000, Clock([0, 10, 20, 30, 40, 50, 60, 70]))
         self.assertEqual(result["error"], "unknown")
         self.assertFalse(result["cleanup_failed"])
         self.assertEqual(job.closed, 1)
@@ -901,13 +907,63 @@ class PopenRunnerTests(unittest.TestCase):
         self.assertTrue(proc.stdout.closed)
         self.assertTrue(proc.stderr.closed)
 
+    def test_wait_thread_respects_expired_and_short_budgets(self):
+        runner = reader._PopenRunner(
+            job_factory=FakeJob, worker_script="worker.py", sleeper=lambda _: None
+        )
+        expired = FakeThread(behavior="stuck")
+        expired.start()
+        self.assertFalse(runner._wait_thread(expired, Clock([200]), 100))
+        self.assertEqual(expired.joins, [])
+
+        short = FakeThread(behavior="stuck")
+        short.start()
+        self.assertFalse(
+            runner._wait_thread(short, Clock([0, 90_000_000, 100_000_000]), 100_000_000)
+        )
+        self.assertEqual(len(short.joins), 1)
+        self.assertLessEqual(short.joins[0], 0.01)
+        self.assertGreater(short.joins[0], 0)
+
+        crossing = FakeThread(behavior="finish_on_join")
+        crossing.start()
+        self.assertFalse(
+            runner._wait_thread(crossing, Clock([0, 0, 100_000_000]), 100_000_000)
+        )
+        self.assertLessEqual(crossing.joins[0], 0.05)
+
+        first = FakeThread(behavior="stuck")
+        first.start()
+        second = FakeThread(behavior="stuck")
+        second.start()
+        shared = Clock([0, 100_000_000, 100_000_000])
+        self.assertFalse(runner._wait_thread(first, shared, 100_000_000))
+        self.assertFalse(runner._wait_thread(second, shared, 100_000_000))
+        self.assertEqual(first.joins, [])
+        self.assertEqual(second.joins, [])
+
+    def test_blocked_close_on_no_drain_path_refuses_without_unbounded_close(self):
+        job = FakeJob(assign_raises=True)
+        proc = FakeProcess(returncode=None, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(
+            proc,
+            ThreadFactory(["stuck", "stuck", "stuck", "stuck"]),
+            job=job,
+        )
+        self.assertEqual(result["error"], "unknown")
+        self.assertTrue(result["cleanup_failed"])
+        self.assertGreaterEqual(proc.killed, 1)
+        self.assertEqual(job.closed, 1)
+        self.assertFalse(proc.stdout.closed)
+        self.assertFalse(proc.stderr.closed)
+
     def test_timeout_uses_job_and_shared_cleanup(self):
         job = FakeJob(active=[1, 1, 0])
         proc = FakeProcess(returncode=None, timeout_once=False, stdin=FakeStdin(events=job.events))
         result, _, job, sleeps = self.run_with(
             proc,
             ThreadFactory(["run", "run"]),
-            Clock([0, 10, 20, 1000, 1010, 1020, 1030, 1040, 1050, 1060]),
+            Clock([0, 10, 20, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070]),
             job,
         )
         self.assertTrue(result["timed_out"])

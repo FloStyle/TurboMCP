@@ -211,9 +211,30 @@ class _PopenRunner:
     def _wait_thread(self, thread, clock, cleanup_deadline):
         if thread is None or cleanup_deadline is None:
             return False
+        try:
+            now = clock()
+        except _ClockError:
+            return False
+        if now >= cleanup_deadline:
+            return False
+        try:
+            if not thread.is_alive():
+                return True
+        except Exception:
+            return False
         while True:
             try:
-                thread.join(timeout=0.05)
+                now = clock()
+            except _ClockError:
+                return False
+            if now >= cleanup_deadline:
+                return False
+            remaining_ns = cleanup_deadline - now
+            timeout = min(0.05, remaining_ns / 1_000_000_000)
+            if timeout <= 0:
+                return False
+            try:
+                thread.join(timeout=timeout)
             except Exception:
                 return False
             try:
@@ -221,17 +242,11 @@ class _PopenRunner:
             except Exception:
                 return False
             if not alive:
-                return True
-            try:
-                now = clock()
-            except _ClockError:
-                return False
-            if now >= cleanup_deadline:
-                return False
-            try:
-                self.sleeper(min(0.05, (cleanup_deadline - now) / 1_000_000_000))
-            except Exception:
-                return False
+                try:
+                    now = clock()
+                except _ClockError:
+                    return False
+                return now < cleanup_deadline
 
     def _close_bounded(self, stream, clock, cleanup_deadline):
         error = threading.Event()
@@ -293,6 +308,13 @@ class _PopenRunner:
             except Exception:
                 failed = True
 
+        if proc is not None and not contained:
+            try:
+                if proc.poll() is None:
+                    proc.kill()
+            except Exception:
+                failed = True
+
         if auth_thread is not None:
             if not self._wait_thread(auth_thread, clock, cleanup_deadline):
                 failed = True
@@ -305,9 +327,7 @@ class _PopenRunner:
 
         for thread, stream, done in drains:
             if thread is None:
-                try:
-                    stream.close()
-                except Exception:
+                if not self._close_bounded(stream, clock, cleanup_deadline):
                     failed = True
                 continue
             if not self._wait_thread(thread, clock, cleanup_deadline):
@@ -323,12 +343,6 @@ class _PopenRunner:
             failed = True
 
         if proc is not None:
-            if not contained:
-                try:
-                    if proc.poll() is None:
-                        proc.kill()
-                except Exception:
-                    failed = True
             try:
                 if cleanup_deadline is None:
                     proc.wait(timeout=0)
