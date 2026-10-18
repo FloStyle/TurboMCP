@@ -594,6 +594,23 @@ namespace
 		return true;
 	}
 
+	UEdGraphNode* FindNodeByGuid(UEdGraph* InGraph, const FString& InGuidDigits)
+	{
+		if (InGraph == nullptr)
+		{
+			return nullptr;
+		}
+		for (UEdGraphNode* Node : InGraph->Nodes)
+		{
+			if (Node != nullptr
+				&& Node->NodeGuid.ToString(EGuidFormats::DigitsLower) == InGuidDigits)
+			{
+				return Node;
+			}
+		}
+		return nullptr;
+	}
+
 	UEdGraph* AddFunctionGraph(FFixture& Fixture, const TCHAR* InName)
 	{
 		UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(
@@ -1001,11 +1018,41 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the intended link exists"),
 			Then != nullptr && Exec != nullptr && Then->LinkedTo.Contains(Exec));
 
-		// Fresh production reader: the new form and its link must be visible.
+		const FString NewGuidDigits = NewGuids[0];
+		const FString LiteralGraphName = Fixture.Target->GetName();
+		FCompilerResultsLog CompileLog;
+		FKismetEditorUtilities::CompileBlueprint(Fixture.Blueprint,
+			EBlueprintCompileOptions::None, &CompileLog);
+		TestEqual(TEXT("post-write literal compile has no errors"), CompileLog.NumErrors, 0);
+		TestTrue(TEXT("post-write literal Blueprint is up to date"),
+			Fixture.Blueprint->IsUpToDate());
+		UClass* LiteralGeneratedClass = Fixture.Blueprint->GeneratedClass;
+		TestTrue(TEXT("post-write literal generated class is usable"),
+			LiteralGeneratedClass != nullptr
+			&& LiteralGeneratedClass->GetDefaultObject() != nullptr
+			&& Cast<UUserWidget>(LiteralGeneratedClass->GetDefaultObject()) != nullptr);
+		if (CompileLog.NumErrors != 0 || !Fixture.Blueprint->IsUpToDate()
+			|| LiteralGeneratedClass == nullptr)
+		{
+			return false;
+		}
+		UEdGraph* LiteralCompiledGraph = TurboMCPNodeId::FindGraphByName(
+			Fixture.Blueprint, LiteralGraphName);
+		UEdGraphNode* LiteralCompiledNewNode = FindNodeByGuid(LiteralCompiledGraph,
+			NewGuidDigits);
+		TestTrue(TEXT("post-write literal graph and new node are reacquired by identity"),
+			LiteralCompiledGraph != nullptr && LiteralCompiledNewNode != nullptr);
+		if (LiteralCompiledGraph == nullptr || LiteralCompiledNewNode == nullptr)
+		{
+			return false;
+		}
+
+		// Fresh production reader after compilation: the new form and its link
+		// must still be visible. The pre-compile node pointer is not reused.
 		TArray<FString> FreshNotes;
-		const FString ReadAfter = Reader.Render(Fixture.Target,
+		const FString ReadAfter = Reader.Render(LiteralCompiledGraph,
 			FTurboMCPGraphText::EDetail::Bodies, Fixture.AssetPath, FreshNotes);
-		const FString NewShortId = TurboMCPNodeId::MakeForNode(NewNode);
+		const FString NewShortId = TurboMCPNodeId::MakeForNode(LiteralCompiledNewNode);
 		TestFalse(TEXT("the fresh read contains no reader error"),
 			ReadAfter.Contains(TEXT("; error:")));
 		FString FreshRef;
@@ -1337,15 +1384,73 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the connected new node is at the planned Y"),
 			ConnectedNewNode->NodePosY, ConnectedPlan.PlannedPositions[0].Y);
 
+		const FString ConnectedNewGuidDigits = ConnectedNewGuids[0];
+		const FString ConnectedGraphName = Connected.Target->GetName();
+		const FString ConnectedSourceGuid = Connected.Source->NodeGuid.ToString(
+			EGuidFormats::DigitsLower);
+		const FString ConnectedPrintBGuid = Connected.PrintB->NodeGuid.ToString(
+			EGuidFormats::DigitsLower);
+		FCompilerResultsLog ConnectedCompileLog;
+		FKismetEditorUtilities::CompileBlueprint(Connected.Blueprint,
+			EBlueprintCompileOptions::None, &ConnectedCompileLog);
+		TestEqual(TEXT("post-write connected compile has no errors"),
+			ConnectedCompileLog.NumErrors, 0);
+		TestTrue(TEXT("post-write connected Blueprint is up to date"),
+			Connected.Blueprint->IsUpToDate());
+		UClass* ConnectedGeneratedClass = Connected.Blueprint->GeneratedClass;
+		TestTrue(TEXT("post-write connected generated class is usable"),
+			ConnectedGeneratedClass != nullptr
+			&& ConnectedGeneratedClass->GetDefaultObject() != nullptr
+			&& Cast<UUserWidget>(ConnectedGeneratedClass->GetDefaultObject()) != nullptr);
+		if (ConnectedCompileLog.NumErrors != 0 || !Connected.Blueprint->IsUpToDate()
+			|| ConnectedGeneratedClass == nullptr)
+		{
+			return false;
+		}
+		UEdGraph* ConnectedCompiledGraph = TurboMCPNodeId::FindGraphByName(
+			Connected.Blueprint, ConnectedGraphName);
+		UEdGraphNode* ConnectedCompiledNewNode = FindNodeByGuid(ConnectedCompiledGraph,
+			ConnectedNewGuidDigits);
+		UEdGraphNode* ConnectedCompiledSource = FindNodeByGuid(ConnectedCompiledGraph,
+			ConnectedSourceGuid);
+		UEdGraphNode* ConnectedCompiledPrintB = FindNodeByGuid(ConnectedCompiledGraph,
+			ConnectedPrintBGuid);
+		TestTrue(TEXT("post-write connected references are reacquired by identity"),
+			ConnectedCompiledGraph != nullptr && ConnectedCompiledNewNode != nullptr
+			&& ConnectedCompiledSource != nullptr && ConnectedCompiledPrintB != nullptr);
+		if (ConnectedCompiledGraph == nullptr || ConnectedCompiledNewNode == nullptr
+			|| ConnectedCompiledSource == nullptr || ConnectedCompiledPrintB == nullptr)
+		{
+			return false;
+		}
+		TestEqual(TEXT("post-write connected source identity is stable"),
+			TurboMCPNodeId::MakeForNode(ConnectedCompiledSource), ConnectedSourceRef);
+		TestEqual(TEXT("post-write connected consumer identity is stable"),
+			TurboMCPNodeId::MakeForNode(ConnectedCompiledPrintB), ConnectedPrintBRef);
+		UEdGraphPin* CompiledInString = ConnectedCompiledNewNode->FindPin(
+			TEXT("InString"), EGPD_Input);
+		UEdGraphPin* CompiledExec = ConnectedCompiledNewNode->FindPin(
+			TEXT("execute"), EGPD_Input);
+		TestTrue(TEXT("post-write connected data link is preserved"),
+			CompiledInString != nullptr && CompiledInString->LinkedTo.Num() == 1
+			&& CompiledInString->LinkedTo[0] != nullptr
+			&& CompiledInString->LinkedTo[0]->GetOwningNode() == ConnectedCompiledSource
+			&& CompiledInString->LinkedTo[0]->PinName == FName(TEXT("ReturnValue")));
+		TestTrue(TEXT("post-write connected exec link is preserved"),
+			CompiledExec != nullptr && CompiledExec->LinkedTo.Num() == 1
+			&& CompiledExec->LinkedTo[0] != nullptr
+			&& CompiledExec->LinkedTo[0]->GetOwningNode() == ConnectedCompiledPrintB
+			&& CompiledExec->LinkedTo[0]->PinName == FName(TEXT("then")));
+
 		TArray<FString> FreshNotes;
-		const FString ConnectedFresh = ConnectedReader.Render(Connected.Target,
+		const FString ConnectedFresh = ConnectedReader.Render(ConnectedCompiledGraph,
 			FTurboMCPGraphText::EDetail::Bodies, Connected.AssetPath, FreshNotes);
 		FString ConnectedFreshRef, ConnectedFreshForm, ConnectedFreshError;
 		TestTrue(TEXT("the fresh reader emits the connected new form"),
 			ExtractFormByMarker(ConnectedFresh, TEXT("Duration 8.5"), ConnectedFreshRef,
 				ConnectedFreshForm, ConnectedFreshError));
 		TestEqual(TEXT("the fresh connected form is the new node"),
-			ConnectedFreshRef, TurboMCPNodeId::MakeForNode(ConnectedNewNode));
+			ConnectedFreshRef, TurboMCPNodeId::MakeForNode(ConnectedCompiledNewNode));
 		FString FreshSourceRef, FreshSourcePin, FreshValueError;
 		TestTrue(TEXT("the fresh connected form exposes its data source"),
 			ExtractValueLink(ConnectedFreshForm, TEXT("InString"), FreshSourceRef,
