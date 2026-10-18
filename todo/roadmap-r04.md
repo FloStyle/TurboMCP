@@ -242,7 +242,7 @@ probe gaps. Commit the checkpoint, obtain candidate-bound offline evidence and
 run the full-base-to-candidate scope check. Retain the claim and stop for review;
 do not start the next family, mark R04 done, merge, push or release the claim.
 
-## Active dispatch checkpoint 2: status, help and schema
+## Accepted dispatch checkpoint 2: status, help and schema
 
 Checkpoint 1 is accepted source evidence, not an active assignment. This section
 supersedes its tool selection and report-creation instructions for the next worker.
@@ -288,3 +288,33 @@ engine suites, direct MCP calls, packaging or recovery. Commit, obtain candidate
 bound offline evidence and run the full approved-base-to-candidate scope check.
 Retain the new checkpoint claim and stop for review; no merge, push, completion,
 claim release or next-family work.
+
+
+## Active dispatch checkpoint 4: save contracts
+
+Checkpoints 1-3 are accepted source evidence. Checkpoint 3 candidate:
+39c229306f1e5d56cf156be9de3b7891af7382e8. Independent offline run:
+b95fc842c1f543f1a8cffcb220780597. R04 remains incomplete.
+
+Audit only EditTurboMCPSave and EditTurboMCPSaveWithoutThumbnail. Preserve all
+101 IDs, 10 reviewed rows, prior findings, proposals and evidence. Expected result:
+12 reviewed_source and 89 not_reviewed. Use R04-SAVE-xx finding IDs.
+Trace Public/Tools/TurboMCPToolsets.h and TurboMCPCompile.cpp save implementations,
+shared resolver, write/VCS guards, recorder and client decoding. Read
+Tools/test-save-thumbnail-option.py and Tools/test-vcs-write.py as assertions only.
+Cover omitted/empty/list/duplicate inputs, loaded/unsaved assets, package selection,
+dirty/compile conditions, source-control/read-only refusals, thumbnail work,
+save failure propagation, partial success and side effects. Distinguish checkout,
+package write, compile and thumbnail work. Do not infer atomicity, rollback or
+persistence from a success string. Inspect exact pinned engine callees as needed;
+record source references and failure semantics without copying engine bodies.
+
+Only the three R04 worker-scope files may change; task edits are Completion
+evidence only. No plugin/engine/test/helper/routing/pin/status/TODO/release edits.
+No engine/editor/build/MCP/packaging/recovery execution. Source/offline audit only.
+Each repair proposal needs one owner, exact files, preserved behavior, synthetic
+probe, expected result, negative control, fixture gaps, validation and rollback.
+Proposals remain unapproved. Run audit-inventory --check, test-result-contract,
+test-client-retry and the offline profile. Commit, obtain candidate-bound offline
+evidence and run the approved-base-to-candidate scope gate. Retain claim and stop
+for review. No merge, push, completion marking, claim release or next-family work.

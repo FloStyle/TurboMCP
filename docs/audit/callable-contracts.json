@@ -4290,5 +4290,15 @@
         "summary": "PASSED after consistency corrections; all offline suites passed."
       }
     }
+  },
+  "checkpoint_3_integration_review": {
+    "candidate": "39c229306f1e5d56cf156be9de3b7891af7382e8",
+    "decision": "accepted_source_checkpoint_only",
+    "task_complete": false,
+    "repairs_approved": false,
+    "reviewed_tools": 10,
+    "remaining_tools": 91,
+    "offline_run": "b95fc842c1f543f1a8cffcb220780597",
+    "limitations": "Runtime checkout and provider fixtures remain unverified. Repair proposals require approval."
   }
 }

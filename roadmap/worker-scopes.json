@@ -34,7 +34,9 @@
         "docs/audit/callable-contracts.json",
         "todo/roadmap-r04.md"
       ],
-      "preserve_rows": []
+      "preserve_rows": [],
+      "approved_base": "39c229306f1e5d56cf156be9de3b7891af7382e8",
+      "checkpoint": "4: save contracts; dispatch must include the integration contract commit"
     }
   }
 }
