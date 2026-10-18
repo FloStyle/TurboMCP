@@ -30,14 +30,14 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "Tools/persistence_process_reader.py",
-        "Tools/execution_runtime.py",
+        "Tools/execute-tests.py",
+        "Tools/persistence-job-acceptance.py",
         "Tools/test-persistence-process-reader.py",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "6861d8e959f0dcd2e331a2931397e70b7d7d56e4",
-      "checkpoint": "12: offline job containment; dispatch base includes contract commit"
+      "approved_base": "6677350a67b63a0c6e857821c357146d3d5904e3",
+      "checkpoint": "13: synthetic harness implementation and offline mocks; dispatch base includes scope commit"
     }
   }
 }

@@ -4,18 +4,18 @@
 
 Use one reviewed task, one isolated worktree and one durable claim per worker.
 The integration owner records a full approved base commit before dispatch.
-R13 and R16 are accepted. R04 checkpoints 1-5 are accepted as source evidence and checkpoint 6 as a bounded design investigation. Checkpoint 7 is accepted as a pure offline identity validator. Checkpoint 8 is accepted as a design. Checkpoint 9 is accepted as pure offline orchestration. Checkpoint 10 is accepted for offline behavior only. Checkpoint 11 is accepted as design only. The active assignment is checkpoint 12: offline job containment.
+R13 and R16 are accepted. R04 checkpoints 1-5 are accepted as source evidence and checkpoint 6 as a bounded design investigation. Checkpoint 7 is accepted as a pure offline identity validator. Checkpoint 8 is accepted as a design. Checkpoint 9 is accepted as pure offline orchestration. Checkpoint 10 is accepted for offline behavior only. Checkpoint 11 is accepted as design only. Checkpoint 12 is accepted for offline containment behavior only. The active assignment is checkpoint 13: synthetic acceptance harness implementation, with offline mocks only.
 
 ## Approved scope
 
 [worker-scopes.json](../roadmap/worker-scopes.json) contains exact writable paths
 for R13, R16 and the active R04 checkpoint. Everything else is outside scope. R13 may update the six listed
 comparison/evidence files. R16 may write its two dependency reports and task
-evidence. R04 checkpoint 12 may write only the reader, execution runtime, focused reader tests and task Completion evidence, as listed in worker-scopes.json. In a task file, only the Completion evidence section may change.
+evidence. R04 checkpoint 13 may write only the executor profile, new fixed synthetic acceptance script, additive offline reader tests and task Completion evidence, as listed in worker-scopes.json. In a task file, only the Completion evidence section may change.
 The reviewer owns task status, review registers, generated TODO and queue updates.
 Unknown tasks fail closed until the integration owner supplies a reviewed scope.
 
-Checkpoint 12 permits containment code and offline mocks only. No live worker collection, native test profile or production caller is approved. No plugin edits, engine edits, baseline upgrades, existing-test changes, dependency changes,
+Checkpoint 13 permits the synthetic profile and harness implementation, but only offline validation. Native execution remains integration-owner work after review. No live collection or production caller is approved. No plugin edits, engine edits, baseline upgrades, existing-test changes, dependency changes,
 release changes or broad refactors are authorized by these investigation scopes.
 Use the existing supervisor for the exact checks specified in the task. Keep raw
 logs and licensed or workplace source outside Git. Do not copy engine bodies into

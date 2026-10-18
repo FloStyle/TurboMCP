@@ -444,6 +444,9 @@ Validation:
 
 Rollback: remove the containment methods, worker mode and orchestration changes from the three allowed tools, restore the previous runner semantics, and remove this evidence. No catalog, script, production caller or native harness is added.
 
+Integration review accepted checkpoint 12 candidate `6677350a67b63a0c6e857821c357146d3d5904e3` for offline containment behavior. Full-base scope gate passed; independent offline execution `bd8793a3694e402998756c1481f9a88b` passed. The report hash and retained claim matched. Deadline-capped waits and bounded no-drain closes resolve the requested corrections. No native containment, compiler observation, parent-death or live reader admission is certified. R04 remains incomplete; checkpoint 13 authorizes harness implementation and offline tests only.
+
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)
@@ -916,7 +919,7 @@ profile and full-base scope gate only. Commit and retain candidate-bound evidenc
 report full SHA and blockers, keep claim, stop for review. No merge/push/release.
 
 
-## Active dispatch checkpoint 12: offline job containment
+## Previous dispatch checkpoint 12: offline job containment
 
 Implement only the offline containment phase of process-reader-lifecycle.md.
 Allowed files: Tools/persistence_process_reader.py, Tools/execution_runtime.py,
@@ -962,3 +965,57 @@ Run focused test, existing offline profile and full-base scope gate. Commit and
 retain candidate-bound evidence, report full SHA and blockers. No live native
 calls/subprocess tests, editor/build/recovery, merge/push/claim release or task
 completion. Native harness implementation and supervised execution are deferred.
+
+
+## Active dispatch checkpoint 13: synthetic containment acceptance harness
+
+Implement the synthetic admission phase of docs/audit/process-reader-lifecycle.md;
+this dispatch permits implementation and offline mocks only. The integration
+owner will review and run native acceptance separately. R04 stays incomplete.
+
+Exact writable files: Tools/execute-tests.py, Tools/persistence-job-acceptance.py
+(new), Tools/test-persistence-process-reader.py (additive offline mocks only),
+and this task's Completion evidence. All other files are read-only, including
+execution_runtime.py, the production reader, PowerShell, catalog and engine.
+If a production seam is indispensable, return a precise blocker, do not patch it.
+
+Add the fixed persistence-native profile described in the lifecycle design.
+It must select only the fixed acceptance script, reject suite selection, and
+never resolve an engine, build, preflight an editor, snapshot/recover fixtures,
+call run-suites or open ports. Keep existing profiles unchanged. Reuse the
+supervisor's run_owned, ResourceLocks, deadline and local evidence directory.
+The acceptance script must require valid supervisor context before live actions;
+imports and offline tests must never create processes or call native APIs.
+
+Implement owned synthetic cases: timeout with descendant, inherited stdout/stderr
+pipe holder, supervisor death after assignment, pre-assignment stdin EOF, and
+harmless Add-Type compiler observation via job completion notifications. Keep an
+unrelated but test-owned sentinel outside the inner job as a negative control.
+Use exact owned process handles and creation identity, never global process
+search or name-based killing. No real user process/command-line inspection.
+Use fixed synthetic helpers/modes only, no arbitrary command execution API.
+No change to production admission semantics or arbitrary worker argv seam.
+Clearly distinguish testing the real production path from a synthetic analogue;
+a substitute job fixture is not proof of the reader's actual orchestration.
+
+Every test has a deadline and guaranteed best-effort owned-resource cleanup on
+exception. Missing compiler observation or unverifiable membership is BLOCKED,
+never a pass; job NEW_PROCESS notification alone is not executable identity.
+Account for short-lived compiler processes, Windows PID reuse and parent-death
+race windows honestly. Report each case's observed facts, pass/fail/blocked,
+owned process identities, cleanup proof and limitations. Overall missing required
+evidence is nonzero. Do not infer cleanup solely from absent marker files or
+use fixed sleeps as proof of readiness; use bounded explicit handshakes.
+Keep raw evidence local and synthetic. Sentinel is terminated only by its owner
+at test teardown, after verifying survival of the tested inner-job cleanup.
+
+Add offline injected tests to the existing reader test file for profile command
+selection, no engine path, malformed/unsupervised admission, deadline/refusal and
+result aggregation; preserve all existing assertions. Do not add native tests
+to offline execution or modify Tests/catalog.json. No native run in this worker
+assignment, including the new profile or direct acceptance script.
+
+Run focused offline tests, full offline profile and full-base scope gate. Commit
+and retain candidate-bound evidence; report SHA, claim, exact changed files and
+unresolved native prerequisites. Stop with claim retained. No merge, push,
+release, task completion, engine/build/editor/recovery or live native action.
