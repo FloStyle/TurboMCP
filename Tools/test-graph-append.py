@@ -15,12 +15,18 @@ WHAT THIS SUITE IS ACTUALLY ASKING, AND EACH IS A SEPARATE WAY TO BE WRONG:
   4. A REFUSAL WRITES NOTHING. The preview and the edit must refuse the SAME input with the same words, and
      a refused edit must leave the graph untouched - checked by the node count AND by the asset's mtime.
   5. THE FIRST LINE IS `changed` OR `unchanged`, as the spec requires of every write entry point.
+  6. THE AMBIGUOUS SIX-CHARACTER ALIAS REFUSES. A compiled editor automation test drives the real `Plan`
+     with forced-GUID in-memory fixtures, where two nodes share six GUID characters; this suite discovers
+     and runs it, and a missing or failed test FAILS here rather than passing vacuously.
 
 THE SUITE MUTATES A GRAPH, SO IT MUST BE RE-RUNNABLE. It records the node ids present BEFORE the append and
 asserts every one of them is still there afterwards; it does not try to remove what it added, because
 removal is the capability this tool deliberately does not have and a suite that needed it would be testing
 a different tool. Its own growth is bounded by a counter in the marker text, so repeated runs are visible
 rather than silent.
+
+OFFLINE PARSER CHECKS: `python Tools/test-graph-append.py --parser-only` runs the pure RunTests report
+parser checks and exits before any Session, socket or fixture work.
 """
 import json
 import os
@@ -36,6 +42,12 @@ from tmcp import Session  # noqa: E402
 PREVIEW_TOOLSET = "TurboMCP.TurboMCPPreviewToolset"
 EDIT_TOOLSET = "TurboMCP.TurboMCPEditToolset"
 READ_TOOLSET = "TurboMCP.TurboMCPReadToolset"
+AUTO_TOOLSET = "AutomationTestToolset.AutomationTestToolset"
+
+# THE COMPILED TEST THAT PROVES THE ALIAS REFUSAL. It lives in the plugin beside the node-id test because it
+# drives `FTurboMCPGraphAppend::Plan` directly; it builds in-memory Blueprints with forced GUIDs and never
+# saves, applies or opens an editor window.
+APPEND_ALIAS_TEST = "TurboMCP.GraphAppend.AliasCollision"
 
 # THE FIXTURE IS A GRAPH THIS SUITE CAN REBUILD, AND THAT IS THE WHOLE POINT OF THE CHANGE.
 #
@@ -64,6 +76,130 @@ def check(name, ok, detail=""):
     print("  %s %s%s" % ("ok  " if ok else "FAIL", name, ("  " + str(detail)[:200]) if detail else ""))
     if not ok:
         failures.append(name)
+
+
+# THE PINNED `AutomationTestToolset` REPORT SHAPE (5.8.3). `AutomationTestToolsetSubsystem.cpp` writes one
+# object with a `tests` array and aggregate counts, and each test entry carries exactly these fields.
+RUN_REPORT_KEYS = {"tests", "passed", "failed", "skipped", "total", "duration"}
+TEST_ENTRY_KEYS = {"name", "state", "duration", "errors", "warnings"}
+AUTOMATION_STATES = {"NotRun", "InProcess", "Fail", "Success", "Skipped"}
+
+
+def _is_count(value):
+    return type(value) is int and value >= 0
+
+
+def parse_run_tests_report(payload, expected_test):
+    """Parse the pinned RunTests JSON, rejecting anything that is not exactly the requested result.
+
+    Substring checks are not enough: a report that merely quotes "Success" in an error, or that omits the
+    requested test, must fail. Returns (entry, report) or raises ValueError with the reason.
+    """
+    if not isinstance(payload, str):
+        raise ValueError("the RunTests answer is not text")
+    try:
+        report = json.loads(payload)
+    except ValueError as exc:
+        raise ValueError("the RunTests answer is not JSON: %s" % exc)
+    if not isinstance(report, dict):
+        raise ValueError("the RunTests answer is not a JSON object")
+    if set(report) != RUN_REPORT_KEYS:
+        raise ValueError("unexpected report keys: %s" % sorted(set(report) ^ RUN_REPORT_KEYS))
+    for key in ("passed", "failed", "skipped", "total"):
+        if not _is_count(report[key]):
+            raise ValueError("%s is not a non-negative integer" % key)
+    if not isinstance(report["duration"], (int, float)) or isinstance(report["duration"], bool):
+        raise ValueError("duration is not a number")
+    tests = report["tests"]
+    if not isinstance(tests, list):
+        raise ValueError("tests is not an array")
+    if len(tests) != 1:
+        raise ValueError("the report holds %d test entries; exactly one was requested" % len(tests))
+    entry = tests[0]
+    if not isinstance(entry, dict):
+        raise ValueError("the test entry is not an object")
+    if set(entry) != TEST_ENTRY_KEYS:
+        raise ValueError("unexpected test-entry keys: %s" % sorted(set(entry) ^ TEST_ENTRY_KEYS))
+    if not isinstance(entry["name"], str):
+        raise ValueError("the test name is not a string")
+    if entry["name"] != expected_test:
+        raise ValueError("the report names %r, not the requested %r" % (entry["name"], expected_test))
+    if entry["state"] not in AUTOMATION_STATES:
+        raise ValueError("unknown automation state %r" % (entry["state"],))
+    for key in ("errors", "warnings"):
+        values = entry[key]
+        if not isinstance(values, list) or any(not isinstance(value, str) for value in values):
+            raise ValueError("%s is not an array of strings" % key)
+    if not isinstance(entry["duration"], (int, float)) or isinstance(entry["duration"], bool):
+        raise ValueError("the test duration is not a number")
+    if report["total"] != len(tests):
+        raise ValueError("total %d does not match %d test entries" % (report["total"], len(tests)))
+    expected_counts = {"Success": 0, "Fail": 0, "Skipped": 0}
+    expected_counts[entry["state"]] = 1
+    if (report["passed"], report["failed"], report["skipped"]) != (
+            expected_counts["Success"], expected_counts["Fail"], expected_counts["Skipped"]):
+        raise ValueError("aggregate counts do not match the single test entry")
+    if entry["state"] != "Success":
+        raise ValueError("the requested test is %s, not Success" % entry["state"])
+    if entry["errors"]:
+        raise ValueError("the requested test reported %d error(s): %s"
+                         % (len(entry["errors"]), entry["errors"][0][:160]))
+    return entry, report
+
+
+def run_report_parser_checks():
+    """Literal reports only: no editor, socket, fixture or Session."""
+    def make_report(state="Success", errors=None, warnings=None, **overrides):
+        report = {
+            "tests": [{"name": APPEND_ALIAS_TEST, "state": state, "duration": 0.25,
+                       "errors": list(errors or []), "warnings": list(warnings or [])}],
+            "passed": 1 if state == "Success" else 0,
+            "failed": 1 if state == "Fail" else 0,
+            "skipped": 1 if state == "Skipped" else 0,
+            "total": 1,
+            "duration": 0.25,
+        }
+        report.update(overrides)
+        return json.dumps(report)
+
+    def rejects(label, payload):
+        try:
+            parse_run_tests_report(payload, APPEND_ALIAS_TEST)
+        except (ValueError, TypeError):
+            check(label, True)
+        else:
+            check(label, False, "the parser accepted a report it must reject")
+
+    entry, report = parse_run_tests_report(make_report(), APPEND_ALIAS_TEST)
+    check("a pinned Success report is accepted",
+          entry["state"] == "Success" and report["passed"] == 1, entry["state"])
+
+    rejects("a Fail state is rejected", make_report("Fail"))
+    rejects("a quoted Success inside an error is not a pass",
+            make_report("Fail", errors=["Success is not the state here"]))
+    rejects("non-empty errors on Success are rejected", make_report("Success", errors=["boom"]))
+    rejects("a Skipped state is rejected", make_report("Skipped"))
+    rejects("a NotRun state is rejected", make_report("NotRun"))
+    rejects("an unknown state is rejected", make_report("Succeeded"))
+    rejects("a report naming another test is rejected",
+            make_report().replace(APPEND_ALIAS_TEST, "TurboMCP.GraphAppend.Other"))
+    rejects("a missing tests entry is rejected",
+            json.dumps({"tests": [], "passed": 0, "failed": 0, "skipped": 0, "total": 0,
+                        "duration": 0.0}))
+    duplicate = json.loads(make_report())
+    duplicate["tests"].append(dict(duplicate["tests"][0]))
+    duplicate["total"] = 2
+    duplicate["passed"] = 2
+    rejects("a duplicate test entry is rejected", json.dumps(duplicate))
+    rejects("a total mismatch is rejected", make_report(total=2))
+    rejects("a passed-count mismatch is rejected", make_report(passed=0))
+    rejects("an extra top-level key is rejected", make_report(note="unexpected"))
+    rejects("a missing aggregate is rejected",
+            json.dumps({key: value for key, value in json.loads(make_report()).items()
+                        if key != "skipped"}))
+    rejects("a non-JSON answer is rejected", "Result={Success}")
+    rejects("a bare JSON string is rejected", json.dumps("Success"))
+    rejects("an empty answer is rejected", "")
 
 
 def node_count(session):
@@ -242,7 +378,22 @@ def local_label_text(marker):
             '    execute (-> First:then))') % (marker, marker)
 
 
+def report_result():
+    print()
+    if failures:
+        print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
+        return 1
+    print("RESULT: PASS")
+    return 0
+
+
 def main():
+    # PURE FIRST, AND NO SESSION FOR --parser-only: these checks must be runnable without an editor.
+    run_report_parser_checks()
+    if "--parser-only" in sys.argv:
+        print("  RECORDED: parser checks only; no editor, socket or fixture was contacted.")
+        return report_result()
+
     session = rebuild_fixture_and_reconnect()
     if session is None:
         print("RESULT: FAIL (the fixture could not be rebuilt, so nothing was tested)")
@@ -446,6 +597,43 @@ def main():
           empty.startswith("error:"), empty[:160])
 
     print()
+    print("=== 6b. the compiled automation test: an ambiguous six-character alias refuses ===")
+    #
+    # THIS IS A DIFFERENT KIND OF EVIDENCE FROM THE TOOL CHECKS ABOVE. The alias collision needs two nodes
+    # whose GUIDs share six characters, which no fixture asset carries; the compiled test forces those GUIDs
+    # on disposable in-memory Blueprints and calls the real `FTurboMCPGraphAppend::Plan`. It is run here
+    # through the engine's automation toolset, and a MISSING or FAILED test is a failure: the run is
+    # otherwise easy to mistake for "nothing to check".
+    session.call(AUTO_TOOLSET, "DiscoverTests", {})
+    listed = str(session.call(AUTO_TOOLSET, "ListTests",
+                              {"nameFilter": "TurboMCP.GraphAppend", "tagFilter": ""}))
+    print(listed[:400])
+    check("the append alias automation test is discovered",
+          APPEND_ALIAS_TEST in listed, listed[:240])
+
+    if APPEND_ALIAS_TEST in listed:
+        raw = session.call(AUTO_TOOLSET, "RunTests", {"testNames": [APPEND_ALIAS_TEST]})
+        print(str(raw)[:900])
+        # THE PINNED JSON IS PARSED, NOT SEARCHED FOR WORDS. A report that merely quotes "Success" in an
+        # error, omits the requested test, duplicates it, or disagrees with its own counts fails here.
+        try:
+            entry, report = parse_run_tests_report(raw, APPEND_ALIAS_TEST)
+        except (ValueError, TypeError) as exc:
+            check("the RunTests answer is the pinned report for exactly the requested test",
+                  False, str(exc)[:240])
+        else:
+            check("the RunTests answer is the pinned report for exactly the requested test", True,
+                  "passed=%d failed=%d skipped=%d total=%d"
+                  % (report["passed"], report["failed"], report["skipped"], report["total"]))
+            check("the requested test reported Success",
+                  entry["state"] == "Success", entry["state"])
+            check("the requested test reported no errors",
+                  not entry["errors"], entry["errors"][:1])
+    else:
+        check("the ambiguous-alias automation test ran", False,
+              "the test is not registered, so no alias check ran")
+
+    print()
     print("=== 7. the asset on disk is untouched, because nothing saved it ===")
     # `E-SAVE` was never called, so the FILE must be exactly as it was. This is the check that a write to
     # MEMORY did not silently become a write to DISK - a claim no tool's own report can settle.
@@ -457,12 +645,7 @@ def main():
     print("  RECORDED: this suite APPENDS and does not remove, because removal is the capability this")
     print("  tool deliberately does not have. Its own growth is bounded by the marker counter above.")
 
-    print()
-    if failures:
-        print("RESULT: FAIL (%d) -> %s" % (len(failures), ", ".join(failures)))
-        return 1
-    print("RESULT: PASS")
-    return 0
+    return report_result()
 
 
 if __name__ == "__main__":

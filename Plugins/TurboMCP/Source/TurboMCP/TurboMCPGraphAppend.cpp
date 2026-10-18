@@ -312,6 +312,12 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		// The nodes already in the graph, by every key form a caller may have written, so a link resolves the
 		// same way `R-GRAPH-LOAD` prints it.
 		TMap<FString, UEdGraphNode*> ExistingByKey;
+
+		// Qualified keys are unique because `MakeForNode` grows its prefix, but the six-character alias is
+		// not: two GUIDs can share it. Keep the alias in its own map and record a shared one instead of
+		// letting `TMap::Add` keep the last node. Only a reference to a shared alias refuses.
+		TMap<FString, UEdGraphNode*> ExistingByBareKey;
+		TSet<FString> AmbiguousBareKeys;
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
 			if (Node == nullptr)
@@ -320,9 +326,21 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 			}
 			ExistingByKey.Add(TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true), Node);
 			ExistingByKey.Add(TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/false), Node);
-			// The short key alone is also accepted, because a caller copying a line out of a report may have
-			// only that much.
-			ExistingByKey.Add(Node->NodeGuid.ToString(EGuidFormats::Digits).Left(6), Node);
+
+			// `MakeKey` is the project's own lower-case spelling, and `NormaliseKey` lower-cases the caller's
+			// token below, so the alias match does not depend on container case rules.
+			const FString BareKey = TurboMCPNodeId::MakeKey(Node->NodeGuid);
+			if (UEdGraphNode* const* Existing = ExistingByBareKey.Find(BareKey))
+			{
+				if (*Existing != Node)
+				{
+					AmbiguousBareKeys.Add(BareKey);
+				}
+			}
+			else
+			{
+				ExistingByBareKey.Add(BareKey, Node);
+			}
 		}
 
 		// The forms this text creates, by the key a link may name. A created form has no id yet, so it is
@@ -362,16 +380,11 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 			FString& OutKey, int32& OutFormIndex, UEdGraphNode*& OutNode, TArray<FString>& OutKnownPins,
 			FString& OutReason) -> bool
 		{
-			if (UEdGraphNode* const* Found = ExistingByKey.Find(InName))
+			// An existing node is accepted by whichever spelling resolved it. The canonical long key is
+			// stored, not the caller's spelling, because `Apply` compares against it.
+			auto AcceptExisting = [&](UEdGraphNode* InNode) -> bool
 			{
-				OutNode = *Found;
-				// THE CANONICAL KEY IS STORED, NOT THE NAME THE CALLER WROTE, AND APPLY DEPENDS ON THAT.
-				// MEASURED: this used to keep `InName` while `Apply` compared against
-				// `MakeForNode(Node, /*bLongForm=*/true)`, and the two agree only when the caller happened to
-				// write the long form with no pin suffix. A link naming the SHORT key, or the bare key, planned
-				// fine and then failed at apply time with "one end was not in the graph" - a message that blamed
-				// the graph for a key mismatch this code created. Normalising at resolution makes the plan and
-				// the apply agree by construction rather than by the caller's spelling.
+				OutNode = InNode;
 				OutKey = TurboMCPNodeId::MakeForNode(OutNode, /*bLongForm=*/true);
 				OutFormIndex = INDEX_NONE;
 				for (const UEdGraphPin* Pin : OutNode->Pins)
@@ -382,6 +395,42 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 					}
 				}
 				return true;
+			};
+
+			if (UEdGraphNode* const* Found = ExistingByKey.Find(InName))
+			{
+				return AcceptExisting(*Found);
+			}
+
+			// Only a token that normalises to exactly six hex characters is an alias. `NormaliseKey` also
+			// accepts longer strings, and those are labels or type ids in this dialect.
+			const FString LookupKey = TurboMCPNodeId::NormaliseKey(InName);
+			if (LookupKey.Len() == TurboMCPNodeId::StandardKeyDigits)
+			{
+				if (AmbiguousBareKeys.Contains(LookupKey))
+				{
+					// The token cannot select one of the sharing nodes. Refuse and name the qualified ids.
+					TArray<FString> Candidates;
+					for (const UEdGraphNode* Node : Graph->Nodes)
+					{
+						if (Node != nullptr
+							&& TurboMCPNodeId::MakeKey(Node->NodeGuid).Equals(LookupKey, ESearchCase::IgnoreCase))
+						{
+							Candidates.Add(TurboMCPNodeId::MakeForNode(Node));
+						}
+					}
+					OutReason = FString::Printf(
+						TEXT("line %d, column %d: the link's %s names the short node id '%s', which fits %d ")
+						TEXT("nodes in '%s', so it is ambiguous. Use a qualified id: %s."),
+						InLine, InColumn, InSide, *InName, Candidates.Num(), *OutPlan.GraphName,
+						*FString::Join(Candidates, TEXT(", ")));
+					return false;
+				}
+
+				if (UEdGraphNode* const* Found = ExistingByBareKey.Find(LookupKey))
+				{
+					return AcceptExisting(*Found);
+				}
 			}
 
 			if (const int32* Found = FormByLocalLabel.Find(InName))
