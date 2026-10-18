@@ -33,11 +33,12 @@
         "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetAppendAcceptanceTest.cpp",
         "Tools/test-widget-append-acceptance.py",
         "Tests/catalog.json",
-        "todo/roadmap-r04.md"
+        "todo/roadmap-r04.md",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
       ],
       "preserve_rows": [],
-      "approved_base": "e7a177d",
-      "checkpoint": "Widget Blueprint live append acceptance; exact scope-commit base in claim and dispatch"
+      "approved_base": "a8e8d8065a2ef66d6eb9492d52b8ea547089a6c3",
+      "checkpoint": "Widget acceptance and isolated Append Plan probe repair"
     }
   }
 }
