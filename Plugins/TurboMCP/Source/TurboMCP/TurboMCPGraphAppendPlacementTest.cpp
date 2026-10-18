@@ -55,7 +55,11 @@ namespace
 		UEdGraph* Populated = nullptr;
 		UEdGraph* Negative = nullptr;
 		UEdGraph* Estimate = nullptr;
+		UEdGraph* MixedWide = nullptr;
+		UEdGraph* MixedTall = nullptr;
 		UEdGraph* Overflow = nullptr;
+		UEdGraph* OverflowRight = nullptr;
+		UEdGraph* OverflowBottom = nullptr;
 		UEdGraph* Boundary = nullptr;
 		UEdGraph* BoundaryHigh = nullptr;
 		UEdGraph* ApplyTarget = nullptr;
@@ -117,7 +121,11 @@ namespace
 			RetireGraph(Fixture.Populated);
 			RetireGraph(Fixture.Negative);
 			RetireGraph(Fixture.Estimate);
+			RetireGraph(Fixture.MixedWide);
+			RetireGraph(Fixture.MixedTall);
 			RetireGraph(Fixture.Overflow);
+			RetireGraph(Fixture.OverflowRight);
+			RetireGraph(Fixture.OverflowBottom);
 			RetireGraph(Fixture.Boundary);
 			RetireGraph(Fixture.BoundaryHigh);
 			RetireGraph(Fixture.ApplyTarget);
@@ -396,14 +404,20 @@ namespace
 		OutFixture.Populated = AddPage(OutFixture.Blueprint, TEXT("PopulatedGraph"));
 		OutFixture.Negative = AddPage(OutFixture.Blueprint, TEXT("NegativeGraph"));
 		OutFixture.Estimate = AddPage(OutFixture.Blueprint, TEXT("EstimateGraph"));
+		OutFixture.MixedWide = AddPage(OutFixture.Blueprint, TEXT("MixedWideGraph"));
+		OutFixture.MixedTall = AddPage(OutFixture.Blueprint, TEXT("MixedTallGraph"));
 		OutFixture.Overflow = AddPage(OutFixture.Blueprint, TEXT("OverflowGraph"));
+		OutFixture.OverflowRight = AddPage(OutFixture.Blueprint, TEXT("OverflowRightGraph"));
+		OutFixture.OverflowBottom = AddPage(OutFixture.Blueprint, TEXT("OverflowBottomGraph"));
 		OutFixture.Boundary = AddPage(OutFixture.Blueprint, TEXT("BoundaryGraph"));
 		OutFixture.BoundaryHigh = AddPage(OutFixture.Blueprint, TEXT("BoundaryHighGraph"));
 		OutFixture.ApplyTarget = AddPage(OutFixture.Blueprint, TEXT("ApplyGraph"));
 		OutFixture.Legacy = AddPage(OutFixture.Blueprint, TEXT("LegacyGraph"));
 		if (OutFixture.Empty == nullptr || OutFixture.Populated == nullptr
 			|| OutFixture.Negative == nullptr || OutFixture.Estimate == nullptr
-			|| OutFixture.Overflow == nullptr || OutFixture.Boundary == nullptr
+			|| OutFixture.MixedWide == nullptr || OutFixture.MixedTall == nullptr
+			|| OutFixture.Overflow == nullptr || OutFixture.OverflowRight == nullptr
+			|| OutFixture.OverflowBottom == nullptr || OutFixture.Boundary == nullptr
 			|| OutFixture.BoundaryHigh == nullptr
 			|| OutFixture.ApplyTarget == nullptr || OutFixture.Legacy == nullptr)
 		{
@@ -433,9 +447,34 @@ namespace
 			return false;
 		}
 
+		// A known wide bound with no stored height: width 1200 must stay authoritative.
+		if (PlacePrintString(OutFixture.MixedWide, 0x90000023, 100, 100, 1200, 0) == nullptr)
+		{
+			OutError = TEXT("could not build the mixed-width fixture");
+			return false;
+		}
+		// A known tall bound with no stored width: height 1200 must stay authoritative for its row.
+		if (PlacePrintString(OutFixture.MixedTall, 0x90000024, 100, 100, 0, 1200) == nullptr)
+		{
+			OutError = TEXT("could not build the mixed-height fixture");
+			return false;
+		}
+
 		if (PlacePrintString(OutFixture.Overflow, 0x90000031, MAX_int32 - 50, 0, 100, 100) == nullptr)
 		{
 			OutError = TEXT("could not build the overflow fixture");
+			return false;
+		}
+		// The top-left fits, but x+320 would leave int32.
+		if (PlacePrintString(OutFixture.OverflowRight, 0x90000032, MAX_int32 - 300, 0, 100, 100) == nullptr)
+		{
+			OutError = TEXT("could not build the right-overflow fixture");
+			return false;
+		}
+		// The top-left fits, but y+160 would leave int32.
+		if (PlacePrintString(OutFixture.OverflowBottom, 0x90000033, 0, MAX_int32 - 100, 100, 100) == nullptr)
+		{
+			OutError = TEXT("could not build the bottom-overflow fixture");
 			return false;
 		}
 
@@ -538,6 +577,9 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
+	const FString AKey = TurboMCPNodeId::MakeForNode(Fixture.ApplyA, /*bLongForm=*/true);
+	const FString BKey = TurboMCPNodeId::MakeForNode(Fixture.ApplyB, /*bLongForm=*/true);
+
 	// ---- 1. EMPTY GRAPH -------------------------------------------------------------------------------
 	{
 		FTurboMCPGraphAppend::FPlan Plan;
@@ -627,6 +669,40 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 			Plan.bPlacementUsedEstimatedSize);
 	}
 
+	// ---- 4b. MIXED STORED DIMENSIONS ARE PRESERVED INDEPENDENTLY --------------------------------------
+	{
+		FTurboMCPGraphAppend::FPlan WidePlan;
+		FString WideError;
+		TestTrue(TEXT("a width-only stored bound plans"),
+			PlanText(Fixture.Blueprint, Fixture.MixedWide, OneForm(), true, WidePlan, WideError));
+		TestEqual(TEXT("the mixed-width graph plans one position"), WidePlan.PlannedPositions.Num(), 1);
+		if (WidePlan.PlannedPositions.Num() == 1)
+		{
+			// Width 1200 is authoritative; the missing height is estimated but does not shrink the column.
+			TestEqual(TEXT("a known wide bound is respected even when its height is missing"),
+				WidePlan.PlannedPositions[0].X, 100 + 1200 + HorizontalGap);
+			TestEqual(TEXT("the mixed-width column keeps the existing top"),
+				WidePlan.PlannedPositions[0].Y, 100);
+		}
+		TestTrue(TEXT("the mixed-width plan reports the estimated height"),
+			WidePlan.bPlacementUsedEstimatedSize);
+
+		FTurboMCPGraphAppend::FPlan TallPlan;
+		FString TallError;
+		TestTrue(TEXT("a height-only stored bound plans"),
+			PlanText(Fixture.Blueprint, Fixture.MixedTall, OneForm(), true, TallPlan, TallError));
+		TestEqual(TEXT("the mixed-height graph plans one position"), TallPlan.PlannedPositions.Num(), 1);
+		if (TallPlan.PlannedPositions.Num() == 1)
+		{
+			TestEqual(TEXT("a known height does not change the column x"),
+				TallPlan.PlannedPositions[0].X, 100 + EstimatedWidth + HorizontalGap);
+			TestEqual(TEXT("the mixed-height column keeps the existing top"),
+				TallPlan.PlannedPositions[0].Y, 100);
+		}
+		TestTrue(TEXT("the mixed-height plan reports the estimated width"),
+			TallPlan.bPlacementUsedEstimatedSize);
+	}
+
 	// ---- 5. DETERMINISTIC REPEAT ----------------------------------------------------------------------
 	{
 		FTurboMCPGraphAppend::FPlan First;
@@ -649,17 +725,26 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 
 	// ---- 6. OVERFLOW AND THE VALID INT32 BOUNDARY -----------------------------------------------------
 	{
-		FTurboMCPGraphAppend::FPlan OverflowPlan;
-		FString OverflowError;
-		const FGraphSnapshot Before = CaptureGraph(Fixture.Overflow);
-		TestTrue(TEXT("the overflow plan is built"),
-			PlanText(Fixture.Blueprint, Fixture.Overflow, OneForm(), true, OverflowPlan, OverflowError));
-		TestEqual(TEXT("the overflow plan is refused"), OverflowPlan.Refusals.Num(), 1);
-		TestTrue(TEXT("the refusal names placement"),
-			OverflowPlan.Refusals.Num() == 1 && OverflowPlan.Refusals[0].Contains(TEXT("placement")));
-		TestEqual(TEXT("the overflow plan has no positions"), OverflowPlan.PlannedPositions.Num(), 0);
-		TestTrue(TEXT("the overflow plan changed nothing"),
-			SameGraph(Before, CaptureGraph(Fixture.Overflow)));
+		auto RefusesOverflow = [&](const TCHAR* InLabel, UEdGraph* InGraph)
+		{
+			const FString Label(InLabel);
+			const FGraphSnapshot Before = CaptureGraph(InGraph);
+			FTurboMCPGraphAppend::FPlan Plan;
+			FString Error;
+			TestTrue(*FString::Printf(TEXT("%s: the plan is built"), *Label),
+				PlanText(Fixture.Blueprint, InGraph, OneForm(), true, Plan, Error));
+			TestTrue(*FString::Printf(TEXT("%s: the plan is refused"), *Label), !Plan.bAcceptable());
+			TestEqual(*FString::Printf(TEXT("%s: one refusal"), *Label), Plan.Refusals.Num(), 1);
+			TestTrue(*FString::Printf(TEXT("%s: the refusal names placement"), *Label),
+				Plan.Refusals.Num() == 1 && Plan.Refusals[0].Contains(TEXT("placement")));
+			TestEqual(*FString::Printf(TEXT("%s: no positions"), *Label), Plan.PlannedPositions.Num(), 0);
+			TestTrue(*FString::Printf(TEXT("%s: nothing changed"), *Label),
+				SameGraph(Before, CaptureGraph(InGraph)));
+		};
+
+		RefusesOverflow(TEXT("overflowing column"), Fixture.Overflow);
+		RefusesOverflow(TEXT("right-edge footprint overflow"), Fixture.OverflowRight);
+		RefusesOverflow(TEXT("bottom-edge footprint overflow"), Fixture.OverflowBottom);
 
 		FTurboMCPGraphAppend::FPlan BoundaryPlan;
 		FString BoundaryError;
@@ -692,9 +777,64 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		}
 	}
 
+	// ---- 6b. REQUESTED-POSITION GUARDS REFUSE BEFORE ANY MUTATION -------------------------------------
+	{
+		FTurboMCPGraphAppend::FPlan Base;
+		FString BaseError;
+		TestTrue(TEXT("the guard fixture plans"),
+			PlanText(Fixture.Blueprint, Fixture.ApplyTarget, ApplyText(AKey, BKey), true, Base, BaseError));
+		TestTrue(TEXT("the guard plan is acceptable"), Base.bAcceptable());
+		TestEqual(TEXT("the guard plan has two positions"), Base.PlannedPositions.Num(), 2);
+		int32 LinkOnlyIndex = INDEX_NONE;
+		for (int32 Index = 0; Index < Base.Nodes.Num(); ++Index)
+		{
+			if (Base.Nodes[Index].bLinksToExisting)
+			{
+				LinkOnlyIndex = Index;
+			}
+		}
+		TestTrue(TEXT("the guard text contains a link-only form"), LinkOnlyIndex != INDEX_NONE);
+
+		auto RefusesRequestedPlan = [&](const TCHAR* InLabel, const FTurboMCPGraphAppend::FPlan& InPlan)
+		{
+			const FString Label(InLabel);
+			const FGraphSnapshot Before = CaptureGraph(Fixture.ApplyTarget);
+			UPackage* Package = Fixture.ApplyTarget->GetOutermost();
+			const bool bDirtyBefore = Package != nullptr && Package->IsDirty();
+			FString Report;
+			FString Error;
+			const bool bApplied = FTurboMCPGraphAppend::Apply(InPlan, Report, Error);
+			TestTrue(*FString::Printf(TEXT("%s: apply refuses"), *Label), !bApplied);
+			TestTrue(*FString::Printf(TEXT("%s: the error names placement"), *Label),
+				Error.Contains(TEXT("placement")));
+			TestTrue(*FString::Printf(TEXT("%s: the error says nothing was written"), *Label),
+				Error.Contains(TEXT("NOTHING")));
+			TestTrue(*FString::Printf(TEXT("%s: the graph is unchanged"), *Label),
+				SameGraph(Before, CaptureGraph(Fixture.ApplyTarget)));
+			TestTrue(*FString::Printf(TEXT("%s: the dirty state is unchanged"), *Label),
+				Package != nullptr && Package->IsDirty() == bDirtyBefore);
+		};
+
+		if (Base.PlannedPositions.Num() == 2)
+		{
+			FTurboMCPGraphAppend::FPlan Duplicate = Base;
+			Duplicate.PlannedPositions[1].FormIndex = Duplicate.PlannedPositions[0].FormIndex;
+			RefusesRequestedPlan(TEXT("duplicate form index"), Duplicate);
+
+			FTurboMCPGraphAppend::FPlan OutOfRange = Base;
+			OutOfRange.PlannedPositions[0].FormIndex = OutOfRange.Nodes.Num();
+			RefusesRequestedPlan(TEXT("out-of-range form index"), OutOfRange);
+
+			if (LinkOnlyIndex != INDEX_NONE)
+			{
+				FTurboMCPGraphAppend::FPlan LinkOnly = Base;
+				LinkOnly.PlannedPositions[0].FormIndex = LinkOnlyIndex;
+				RefusesRequestedPlan(TEXT("link-only form index"), LinkOnly);
+			}
+		}
+	}
+
 	// ---- 7. SUCCESSFUL APPLY: ONLY THE PLANNED NODES AND LINK DELTAS ----------------------------------
-	const FString AKey = TurboMCPNodeId::MakeForNode(Fixture.ApplyA, /*bLongForm=*/true);
-	const FString BKey = TurboMCPNodeId::MakeForNode(Fixture.ApplyB, /*bLongForm=*/true);
 	{
 		const FGraphSnapshot Before = CaptureGraph(Fixture.ApplyTarget);
 
@@ -853,6 +993,8 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 		if (Plan.PlannedPositions.Num() == 2)
 		{
 			Plan.PlannedPositions.RemoveAt(0);
+			UPackage* Package = Fixture.Legacy->GetOutermost();
+			const bool bDirtyBefore = Package != nullptr && Package->IsDirty();
 			FString Report;
 			FString ApplyError;
 			TestTrue(TEXT("apply returns a failure for the incomplete request"),
@@ -861,6 +1003,8 @@ bool FTurboMCPGraphAppendPlacementTest::RunTest(const FString& Parameters)
 				ApplyError.Contains(TEXT("placement")) && ApplyError.Contains(TEXT("NOTHING")));
 			TestTrue(TEXT("the malformed request changed nothing"),
 				SameGraph(Before, CaptureGraph(Fixture.Legacy)));
+			TestTrue(TEXT("the malformed request left the dirty state unchanged"),
+				Package != nullptr && Package->IsDirty() == bDirtyBefore);
 		}
 	}
 

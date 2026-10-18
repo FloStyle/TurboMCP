@@ -108,7 +108,7 @@ public:
 		int32 X = 0;
 		int32 Y = 0;
 
-		/** True when the node's footprint is the 320x160 estimate rather than a stored size. */
+		/** True when the created node's footprint is the 320x160 estimate rather than a stored size. */
 		bool bEstimatedSize = true;
 	};
 
@@ -142,7 +142,7 @@ public:
 		/** One entry per created form, in input order. Empty when placement was not requested. */
 		TArray<FPlannedPosition> PlannedPositions;
 
-		/** True when an existing node had no stored positive size, so 320x160 had to be estimated. */
+		/** True when at least one existing bound dimension was estimated; created nodes are always estimated. */
 		bool bPlacementUsedEstimatedSize = false;
 
 		/** True when the text would be applied: no refusals AND something to do. */
@@ -165,9 +165,10 @@ public:
 	/**
 	 * Plans one deterministic column to the right of the existing stored/estimated bounds.
 	 *
-	 * Every edge, extent and addition is widened to int64 and checked before the int32 cast; a position
-	 * outside the node coordinate range refuses. The result is stored/estimated geometry, not a measured
-	 * Slate footprint, so it does not prove visual non-overlap.
+	 * Every edge, extent and addition is widened to int64 and checked before the int32 cast. Each positive
+	 * stored dimension is kept and only a missing dimension is estimated. Both the top-left position and the
+	 * estimated 320x160 footprint must fit int32; otherwise the plan refuses before mutation. The result is
+	 * stored/estimated geometry, not a measured Slate footprint, so it does not prove visual non-overlap.
 	 *
 	 * @param OutRefusal  Why the geometry cannot be represented. Empty on success.
 	 */

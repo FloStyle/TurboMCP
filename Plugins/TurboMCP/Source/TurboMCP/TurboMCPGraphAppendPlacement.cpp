@@ -83,9 +83,15 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 
 		int64 Width = Node->NodeWidth;
 		int64 Height = Node->NodeHeight;
-		if (Width <= 0 || Height <= 0)
+		// EACH DIMENSION IS INDEPENDENT: a known positive width stays authoritative even when the
+		// height is missing, so the column cannot be placed inside a known wide bound.
+		if (Width <= 0)
 		{
 			Width = PlacementWidth;
+			bOutUsedEstimatedSize = true;
+		}
+		if (Height <= 0)
+		{
 			Height = PlacementHeight;
 			bOutUsedEstimatedSize = true;
 		}
@@ -132,6 +138,18 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 		return false;
 	}
 
+	// THE POSITION AND THE ESTIMATED FOOTPRINT MUST BOTH FIT. A top-left inside int32 does not mean the
+	// 320x160 rectangle does, and a downstream int32 edge addition would otherwise overflow.
+	const int64 ColumnRight = ColumnX + PlacementWidth;
+	if (!FitsCoordinate(ColumnRight))
+	{
+		OutRefusal = FString::Printf(
+			TEXT("placement: the column at x=%lld would place the estimated %lld-wide footprint past the ")
+			TEXT("32-bit node coordinate range"),
+			ColumnX, PlacementWidth);
+		return false;
+	}
+
 	int64 Offset = 0;
 	for (int32 Index = 0; Index < InNodes.Num(); ++Index)
 	{
@@ -157,6 +175,17 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 				TEXT("placement: the form at line %d would start at y=%lld, outside the 32-bit node ")
 				TEXT("coordinate range"),
 				Form.Line, Y);
+			return false;
+		}
+
+		const int64 FootprintBottom = Y + PlacementHeight;
+		if (!FitsCoordinate(FootprintBottom))
+		{
+			OutPositions.Reset();
+			OutRefusal = FString::Printf(
+				TEXT("placement: the form at line %d at y=%lld would place the estimated %lld-high ")
+				TEXT("footprint past the 32-bit node coordinate range"),
+				Form.Line, Y, PlacementHeight);
 			return false;
 		}
 

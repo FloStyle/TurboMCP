@@ -50,7 +50,7 @@ Evidence applies to this candidate and bounded append checks. It does not certif
 
 ### Append placement implementation (R04-APPEND-PLACEMENT-01)
 
-Task R04, append placement, claim `2313eed090f34a84bbcff9190715edfe` (owner `dsh-r04-placement-01`). Approved base `479c9df0fbc8e1e5d31c9ac760da69bb75323b13`; branch `task/r04-append-placement`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 is not complete and this assignment does not accept it.
+Task R04, append placement, claim `2313eed090f34a84bbcff9190715edfe` (owner `dsh-r04-placement-01`). Approved base `479c9df0fbc8e1e5d31c9ac760da69bb75323b13`; branch `task/r04-append-placement`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. Submitted candidate `32b55a358c075e51f4e860e22ab2d603a869b62d` is preserved in history; this correction commit adds the evidence below, and its full SHA is returned in the submission message. R04 is not complete and this assignment does not accept it.
 
 Changed files (the recorded seven-file allowlist; nothing else):
 - `Public/TurboMCPGraphAppend.h`: opt-in plan fields and the `PlanPlacement` declaration; `Plan` gains a defaulted placement request.
@@ -64,20 +64,20 @@ Changed files (the recorded seven-file allowlist; nothing else):
 Implementation:
 - Plan placement is opt-in. `PreviewTurboMCPGraphAppend` and `EditTurboMCPGraphAppend` request it; `GraphPatch` and `GraphReplace` keep the default and the previous origin placement.
 - The column starts at the rightmost stored-positive or estimated existing bound plus 160, at the topmost existing top; created forms follow in input order with a 224 vertical stride (160 estimated height plus 64 gap). An empty graph starts at (0,0); negative coordinates are preserved and comments participate.
-- An existing width/height pair is used only when both are positive; otherwise 320x160 is estimated. `FPlan` records `bPlacementRequested`, `PlannedPositions` keyed by form index and `bPlacementUsedEstimatedSize`.
-- Edges, extents and additions are int64 and checked before the int32 cast; `INT32_MIN` is accepted when the arithmetic fits, and an out-of-range column refuses in Plan. Apply revalidates structural completeness before the transaction, so missing, duplicated, link-only or out-of-range form indexes refuse with no mutation.
+- Each positive stored dimension is kept independently and only a missing or non-positive dimension is estimated, so a known wide bound stays authoritative when its height is missing. Created nodes use a 320x160 estimated footprint. `FPlan` records `bPlacementRequested`, `PlannedPositions` keyed by form index and `bPlacementUsedEstimatedSize` (at least one existing dimension estimated).
+- Edges, extents and additions are int64 and checked before the int32 cast. Both the top-left position and the estimated 320x160 footprint must fit int32; `INT32_MIN` is accepted when the arithmetic fits, and a column, right-edge or bottom-edge overflow refuses in Plan. Apply revalidates structural completeness before the transaction, so missing, duplicated, link-only or out-of-range form indexes refuse with no graph or dirty-state mutation.
 - Apply writes positions only on newly created nodes, by form index; existing nodes, links, defaults and comment bounds are untouched. The report appends created node IDs and coordinates plus the stored/estimated-geometry caveat; the first line is unchanged.
 
 Tests written but NOT compiled or run in this assignment:
-- `TurboMCP.GraphAppend.Placement` builds transient in-memory Blueprints with forced positions and stored sizes. It covers an empty graph, a populated graph whose comment is the rightmost bound, negative coordinates, a non-positive stored size, two identical plans, an overflowing column, the valid `INT32_MIN` boundary and a large valid upper bound, a malformed requested-position count, the legacy no-placement path, preview and refusal rendering, a snapshot-negative position, default and link change, and a successful Apply.
+- `TurboMCP.GraphAppend.Placement` builds transient in-memory Blueprints with forced positions and stored sizes. It covers an empty graph, a populated graph whose comment is the rightmost bound, negative coordinates, a non-positive stored size, mixed width/height bounds (a large known width with no height, and a known height with no width), two identical plans, column/right-edge/bottom-edge overflow, the valid `INT32_MIN` boundary and a large valid upper bound, a malformed requested-position count, duplicate, out-of-range and link-only form indexes (each refusing with the graph and dirty state unchanged), the legacy no-placement path, preview and refusal rendering, a snapshot-negative position, default and link change, and a successful Apply.
 - The Apply case seeds a known link and defaults and asserts: every existing node keeps its GUID, position, comment bounds, pins, defaults and graph order; only the planned nodes are created at their planned positions; existing links survive; new links are exactly the planned deltas; and the report names each created node. The fixture is transient and is retired by scoped cleanup on every return.
 - `Tools/test-graph-append.py` runs both `TurboMCP.GraphAppend.AliasCollision` and `TurboMCP.GraphAppend.Placement` through the pinned `RunTests` JSON parser, preserving the alias checks.
 
-Validation (offline, working tree before the commit):
-- `python Tools/validate-repo.py` exit 0.
+Validation (offline):
 - `python Tools/check-language.py` exit 0.
 - `python Tools/test-graph-append.py --parser-only` exit 0; 17 parser checks with no editor, socket or fixture.
-- Candidate-bound offline evidence and the full-base scope gate result are obtained after this commit and returned in the submission. Committing plugin source changes the generated `docs/audit/capabilities.json` `plugin_tree`; that file is integrator-owned and was not written. A candidate-bound inventory-only failure must be reported as such, not bypassed.
+- `python Tools/validate-repo.py`: exit 0 on the placement working tree before its first commit. On the correction tree the plugin source is already committed, so only `audit-inventory --check` fails because the generated `docs/audit/capabilities.json` embeds `plugin_tree`; all 101 inventory rows are identical. That generated file is outside the seven-file scope, was not written, and remains integrator-owned. A candidate-bound inventory-only failure is reported as such, not bypassed.
+- Candidate-bound offline evidence and the full-base scope gate result are obtained after this commit and returned in the submission.
 
 Not proven here (integration-owned):
 - The new C++ was not compiled and neither automation test was run. The placement arithmetic, transient fixtures, seeded link, Apply under a transaction and the read-back are asserted by the tests, not measured here.

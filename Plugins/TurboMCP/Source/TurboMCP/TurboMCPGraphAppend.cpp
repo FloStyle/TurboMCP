@@ -685,8 +685,8 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 			Out += FString::Printf(TEXT("\n  line %d: %s at (%d,%d)"),
 				Form.Line, *Form.TypeId, Position.X, Position.Y);
 		}
-		Out += TEXT("\n; stored/estimated geometry, not a measured Slate footprint; no visual ");
-		Out += TEXT("non-overlap is claimed.");
+		Out += TEXT("\n; existing bounds keep each stored positive dimension and estimate only a missing ");
+		Out += TEXT("one; new nodes use an estimated 320x160 footprint; not a measured Slate footprint.");
 	}
 
 	Out += TEXT("\n; the preview changes NOTHING. Call the edit to write it.");
@@ -1118,8 +1118,9 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			Out += FString::Printf(TEXT("\n  node %s at (%d,%d)"),
 				*TurboMCPNodeId::MakeForNode(CreatedByForm[FormIndex]), Position->X, Position->Y);
 		}
-		Out += TEXT("\n; positions use stored existing sizes where positive and a 320x160 estimate ");
-		Out += TEXT("otherwise; this is not a measured Slate footprint.");
+		Out += TEXT("\n; existing bounds keep each stored positive dimension and estimate only a missing ");
+		Out += TEXT("one; created nodes use an estimated 320x160 footprint; this is not a measured Slate ");
+		Out += TEXT("footprint.");
 	}
 
 	// THE REPORT IS HANDED BACK. IT WAS NOT AT FIRST, AND THE BUG WAS INVISIBLE FROM OUTSIDE., AND THE BUG WAS INVISIBLE FROM OUTSIDE.
