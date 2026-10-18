@@ -272,6 +272,40 @@ class PersistenceIdentityTests(unittest.TestCase):
         payload["observations"][1]["collected_at_utc"] = "2026-10-18T01:23:47.1234567Z"
         self.refuse(payload, identity.STALE)
 
+    def test_creation_time_equal_to_collection_is_allowed(self):
+        payload = evidence()
+        for observation in payload["observations"]:
+            observation["collected_at_utc"] = FIRST
+            observation["process"]["start_time_utc"] = FIRST
+            observation["listeners"][0]["start_time_utc"] = FIRST
+        payload["expected"]["start_time_utc"] = FIRST
+        self.pass_case(payload)
+
+    def test_future_creation_time_by_one_tick_is_refused(self):
+        future = "2026-10-18T01:23:46.1234568Z"
+        payload = evidence()
+        payload["expected"]["start_time_utc"] = future
+        for observation in payload["observations"]:
+            observation["process"]["start_time_utc"] = future
+            observation["listeners"][0]["start_time_utc"] = future
+        self.refuse(payload, identity.FUTURE_START_TIME)
+
+    def test_future_process_creation_time_is_refused(self):
+        future = "2027-01-01T00:00:00.0000000Z"
+        payload = evidence()
+        payload["expected"]["start_time_utc"] = future
+        for observation in payload["observations"]:
+            observation["process"]["start_time_utc"] = future
+            observation["listeners"][0]["start_time_utc"] = future
+        self.refuse(payload, identity.FUTURE_START_TIME)
+
+    def test_future_listener_creation_time_is_independently_refused(self):
+        payload = evidence()
+        payload["observations"][0]["listeners"][0]["start_time_utc"] = (
+            "2026-10-18T01:23:46.1234568Z"
+        )
+        self.refuse(payload, identity.FUTURE_START_TIME)
+
     def test_future_observation(self):
         payload = evidence()
         payload["observations"][1]["collected_at_utc"] = "2026-10-18T01:23:51.1234567Z"
@@ -351,6 +385,48 @@ class PersistenceIdentityTests(unittest.TestCase):
         payload["observations"][0]["listeners"] = {"pid": PID}
         self.refuse(payload, identity.INVALID_TYPE)
 
+    def test_non_string_dict_keys_refused_at_all_levels(self):
+        def root(payload):
+            payload[1] = "extra"
+
+        def expected(payload):
+            payload["expected"][1] = "extra"
+
+        def endpoint(payload):
+            payload["expected"]["endpoint"][1] = "extra"
+
+        def bounds(payload):
+            payload["bounds"][1] = "extra"
+
+        def observation(payload):
+            payload["observations"][0][1] = "extra"
+
+        def process(payload):
+            payload["observations"][0]["process"][1] = "extra"
+
+        def listener_row(payload):
+            payload["observations"][0]["listeners"][0][1] = "extra"
+
+        cases = {
+            "root": root,
+            "expected": expected,
+            "endpoint": endpoint,
+            "bounds": bounds,
+            "observation": observation,
+            "process": process,
+            "listener": listener_row,
+        }
+        for label, mutate in cases.items():
+            payload = evidence()
+            mutate(payload)
+            with self.subTest(level=label):
+                self.refuse(payload, identity.INVALID_TYPE)
+
+    def test_none_dict_key_refused(self):
+        payload = evidence()
+        payload[None] = "extra"
+        self.refuse(payload, identity.INVALID_TYPE)
+
     def test_relative_path_refused(self):
         payload = evidence()
         payload["expected"]["project_path"] = r"TestProject\TurboMCPTest.uproject"
@@ -390,6 +466,49 @@ class PersistenceIdentityTests(unittest.TestCase):
         payload = evidence()
         payload["expected"]["project_path"] = r"C:\ExampleDev\CON.uproject"
         self.refuse(payload, identity.INVALID_VALUE)
+
+    def test_forbidden_win32_path_characters_refused(self):
+        for char in '<>"|?*':
+            payload = evidence()
+            payload["expected"]["project_path"] = (
+                r"C:\Bad" + char + r"Name\Test.uproject"
+            )
+            with self.subTest(char=char):
+                self.refuse(payload, identity.INVALID_VALUE)
+
+    def test_control_characters_in_path_refused(self):
+        for char in ("\x00", "\x01", "\x1f", "\x7f"):
+            payload = evidence()
+            payload["expected"]["project_path"] = r"C:\Bad" + char + r"Name\Test.uproject"
+            with self.subTest(code=ord(char)):
+                self.refuse(payload, identity.INVALID_VALUE)
+
+    def test_forbidden_path_characters_refused_at_process_level(self):
+        payload = evidence()
+        payload["observations"][0]["process"]["project_path"] = (
+            r"C:\Bad<Name\Test.uproject"
+        )
+        self.refuse(payload, identity.INVALID_VALUE)
+
+    def test_forbidden_path_characters_refused_at_listener_level(self):
+        payload = evidence()
+        payload["observations"][0]["listeners"][0]["engine_executable"] = (
+            r"C:\Bad|Name\UnrealEditor.exe"
+        )
+        self.refuse(payload, identity.INVALID_VALUE)
+
+    def test_valid_unicode_paths_allowed(self):
+        payload = evidence()
+        project = "C:\\Donn\u00e9es\\T\u00e9st.uproject"
+        engine = "C:\\Donn\u00e9es\\UnrealEditor.exe"
+        payload["expected"]["project_path"] = project
+        payload["expected"]["engine_executable"] = engine
+        for observation in payload["observations"]:
+            observation["process"]["project_path"] = project
+            observation["process"]["engine_executable"] = engine
+            observation["listeners"][0]["project_path"] = project
+            observation["listeners"][0]["engine_executable"] = engine
+        self.pass_case(payload)
 
 
 if __name__ == "__main__":

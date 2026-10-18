@@ -61,11 +61,17 @@ row belongs to the same verified process; otherwise it is ambiguous.
 
 Both snapshots must be within ``max_age_seconds`` of ``evaluated_at_utc``, in
 sequence/time order, no more than ``max_snapshot_gap_seconds`` apart, and must
-agree on process and listener identity. The result proves only that the supplied
-evidence is internally consistent. It does not prove live ownership, and a
-connection made after validation is subject to a residual race between the
-snapshot and the connect. The collector must be trusted to read the process and
-TCP tables truthfully and atomically enough for the stated bounds.
+agree on process and listener identity. A process or listener creation time may
+equal its observation's collection time but may not be later (the comparison is
+exact to 100 ns). All object keys must be strings; future start times, forbidden
+Win32 path characters/control codes and non-string keys are refused without
+raising.
+
+The result proves only that the supplied evidence is internally consistent. It
+does not prove live ownership, and a connection made after validation is
+subject to a residual race between the snapshot and the connect. The collector
+must be trusted to read the process and TCP tables truthfully and atomically
+enough for the stated bounds.
 
 ``validate_evidence(payload)`` returns an object with ``ok``, ``reason``,
 ``detail`` and, on success, ``normalized``. Refusal reasons are explicit codes in
@@ -93,6 +99,7 @@ LISTENER_FOREIGN = "foreign_listener"
 LISTENER_MULTIPLE_OWNERS = "multiple_listener_owners"
 LISTENER_AMBIGUOUS = "ambiguous_listener_coverage"
 LISTENER_PORT_MISMATCH = "listener_port_mismatch"
+FUTURE_START_TIME = "future_start_time"
 STALE = "stale_observation"
 ORDER = "observation_order"
 CHANGED = "observation_changed"
@@ -101,7 +108,7 @@ REASON_CODES = frozenset({
     PASS, INVALID_SCHEMA, MISSING_FIELD, UNKNOWN_FIELD, INVALID_TYPE,
     INVALID_VALUE, COLLECTION_FAILED, PROCESS_MISMATCH, LISTENER_MISSING,
     LISTENER_FOREIGN, LISTENER_MULTIPLE_OWNERS, LISTENER_AMBIGUOUS,
-    LISTENER_PORT_MISMATCH, STALE, ORDER, CHANGED,
+    LISTENER_PORT_MISMATCH, FUTURE_START_TIME, STALE, ORDER, CHANGED,
 })
 
 _ROOT_KEYS = {"schema", "expected", "bounds", "observations"}
@@ -127,6 +134,7 @@ _DRIVE_RE = re.compile(r"^[A-Za-z]:$")
 _RESERVED_RE = re.compile(
     r"^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?$", re.IGNORECASE
 )
+_FORBIDDEN_PATH_CHARS = '<>"|?*'
 
 
 class _Refusal(Exception):
@@ -147,6 +155,9 @@ def _fail(reason, detail):
 def _dict(value, keys, label):
     if not isinstance(value, dict):
         _refuse(INVALID_TYPE, "%s must be an object" % label)
+    for key in value:
+        if not isinstance(key, str):
+            _refuse(INVALID_TYPE, "%s keys must be strings, not %s" % (label, type(key).__name__))
     missing = sorted(keys - set(value))
     if missing:
         _refuse(MISSING_FIELD, "%s missing field(s): %s" % (label, ", ".join(missing)))
@@ -215,6 +226,9 @@ def _timestamp(value, label):
 
 def _windows_path(value, label, extension):
     text = _string(value, label, _MAX_PATH)
+    for char in text:
+        if char in _FORBIDDEN_PATH_CHARS or ord(char) < 0x20 or ord(char) == 0x7F:
+            _refuse(INVALID_VALUE, "%s contains a forbidden Win32/control character" % label)
     if text.startswith("\\\\"):
         _refuse(INVALID_VALUE, "%s must not be a UNC or device path" % label)
     if "/" in text:
@@ -321,6 +335,14 @@ def _snapshot(value, endpoint, index):
         _listener(raw, endpoint, "%s.listeners[%d]" % (label, i))
         for i, raw in enumerate(listeners_raw)
     ]
+    if process["start_time_utc"].ticks > collected.ticks:
+        _refuse(FUTURE_START_TIME, label + ".process start time is later than collection")
+    for index, row in enumerate(listeners):
+        if row["identity"]["start_time_utc"].ticks > collected.ticks:
+            _refuse(
+                FUTURE_START_TIME,
+                "%s.listeners[%d] start time is later than collection" % (label, index),
+            )
     return {
         "sequence": sequence,
         "collected": collected,

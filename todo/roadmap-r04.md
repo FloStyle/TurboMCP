@@ -303,23 +303,24 @@ Correction after review: this commit preserves candidate `f9aa39fff11368622b72fd
 
 ### Checkpoint 7: offline identity validator
 
-Task R04 checkpoint 7, claim `b0827b006bf345989af11dfbba7878b0` (owner `dsh-r04-identity-01`). Approved base `cdf8c68d0e342a0ed22c0287e7de6eff858a1780`; branch `task/r04-identity-validator`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+Task R04 checkpoint 7 correction, claim `b226ff78f8b44fa9ab49e54b6f763e9f` (owner `dsh-r04-identity-02`). Approved base `ad1a19cce23a19092e68b08f94d15b188dfb59f1`; branch `task/r04-identity-corrections`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The original `e8adf04` remains preserved on `task/r04-identity-validator`; its implementation was replayed as `0773959` on this corrected base. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
 
 Implementation:
 - `Tools/persistence_identity.py` adds the pure `validate_evidence(payload)` API and schema `turbomcp.persistence-identity/1`. It validates expected PID/start time/project/engine, literal `127.0.0.1` or `::1` endpoints, two bounded-time process/TCP snapshots and exact listener ownership. It returns explicit pass/refusal reason codes and never raises on invalid input.
-- `Tools/test-persistence-identity.py` contains 51 deterministic injected-evidence tests. It covers valid IPv4/IPv6 exact and wildcard cases, explicit same-owner dual-stack rows, multiple rows for one owner, foreign listener with the intended editor alive, PID reuse, changed project/engine, failed collection, missing listener, hostname/remote endpoints, multiple owners, ambiguous other-family wildcard coverage, stale/reversed/gapped observations, changed snapshots, malformed/unknown/missing fields, booleans-as-integers, and relative/UNC/device/dot/forward-slash/wrong-extension paths.
-- No caller, helper, catalog, fixture, config, lease, process/network/filesystem collector, editor or engine path is wired. Only Python's standard library is used.
+- Creation times now may equal their observation's collection time but may not be later by even one 100 ns tick. This is checked for the process and independently for every listener row.
+- Win32-forbidden path characters (`< > " | ? *`), NUL/control characters (`U+0000`-`U+001F`, `U+007F`) and non-string dictionary keys are refused at every schema level. Existing colon/device/dot/UNC rules remain; valid Unicode path names remain accepted; no filesystem access was added.
+- `Tools/test-persistence-identity.py` contains 62 deterministic injected-evidence tests. It covers valid IPv4/IPv6 exact and wildcard cases, explicit same-owner dual-stack rows, multiple rows for one owner, foreign listener with the intended editor alive, PID reuse, changed project/engine, failed collection, missing listener, hostname/remote endpoints, multiple owners, ambiguous other-family wildcard coverage, stale/reversed/gapped observations, changed snapshots, malformed/unknown/missing fields, booleans-as-integers, future start times (including the equality boundary and one-tick/one-listener regressions), path characters/controls, Unicode names, mixed dictionary keys and relative/UNC/device/dot/forward-slash/wrong-extension paths.
+- `Tests/catalog.json` gains exactly one row: `test-persistence-identity`, path `Tools/test-persistence-identity.py`, tier `offline`, timeout 30 seconds, acceptance `not_mapped`. All other rows are preserved.
+- No caller, helper, fixture, config, lease, process/network/filesystem collector, editor or engine path is wired. Only Python's standard library is used.
 
 Validation:
-- `python Tools/test-persistence-identity.py` — exit 0; `Ran 51 tests ... OK`.
-- `python Tools/execute-tests.py --profile offline --execute` — **FAILED** at `validate-repo`: `Test catalog is incomplete or duplicated`. The existing repository invariant treats every `Tools/test-*.py` file as requiring a `Tests/catalog.json` row; the authorized checkpoint 7 scope forbids catalog changes and explicitly says catalog/validator wiring is outside scope. Evidence: `.local/executions/963e4cdab5084675909b4c23d3c1dc0d/report.json`; inner log `.local/validation/851d98debb1847368f442fea5d63812f/validate-repo.log`.
-- Candidate-bound test, offline and scope runs are recorded in the submission after the commit. No engine/editor/build/MCP/recovery command was run.
-
-Blocker: the catalog invariant and the allowed file list conflict. To make the offline profile pass without weakening the check, the integration owner must either authorize one `Tests/catalog.json` entry (tier `engine`, so the test remains explicitly invoked), or update the validator policy. Neither was changed here. Until that decision, the module and its focused tests pass, but the candidate does not satisfy the offline profile.
+- `python Tools/test-persistence-identity.py` — exit 0; `Ran 62 tests ... OK`.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/bdf93c55bec847cb99d009e5bf08d1eb/report.json`; aggregate log records `PASS: test-persistence-identity` and every other offline check passed.
+- Candidate-bound focused/offline runs and the full-base R04 scope gate are recorded in the submission after the commit. No engine/editor/build/MCP/recovery command was run.
 
 Limitations: passing proves only that the supplied evidence is internally consistent. It does not prove live ownership, does not secure a future connection, and is subject to a residual race between the final snapshot and any later connect. A trusted collector must supply canonical Windows paths and truthful, bounded process/TCP records; the module neither resolves symlinks nor queries the OS. All P1-P6 persistence work remains `proposed_unapproved`.
 
-Rollback: remove `Tools/persistence_identity.py`, `Tools/test-persistence-identity.py`, and this evidence. No existing file or caller is affected.
+Rollback: remove `Tools/persistence_identity.py`, `Tools/test-persistence-identity.py`, the one catalog row, and this evidence. No existing caller or production file is affected.
 
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
