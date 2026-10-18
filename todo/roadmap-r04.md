@@ -163,6 +163,50 @@ Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contract
 
 Unresolved: live-depot checkout and post-state verification; failed-refresh/cached, non-null unknown, checked-out-other and read-only provider states; duplicate policy; Preview/Edit null-state branch policy; aggregate/partial outcome and rollback policy; resolver route precedence/generated-class/member-matching policy; how to represent freshness without a new public schema; all three tools' lack of ARC02 lines and `call_structured` implications; `R04-CALL-06` refusal recording; the 91 unreviewed rows. R04 remains incomplete; no merge, push, completion or claim release.
 
+### Checkpoint 4: save contracts
+
+Task R04 checkpoint 4, claim `613fbd8768e04378859aad03a5a26bb6` (owner `dsh-r04-save-01`). Approved base `15ab395ac88eaa52ea31d7628d032446c90fddb6`; branch `task/r04-save-audit`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the checkpoint commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+
+Source identity:
+- Engine 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`; local engine HEAD verified equal to the pin.
+- Plugin tree: `590661ec45c829264ea1743fccea994edb748092`.
+- Claim store: `c:\ExampleDev\turbomcp\.git\turbomcp\task-claims.json`, SHA-256 `1e4930ce16f30f4623d50de4721fbb36e7b82ca7e230c9d71dd30ee0e9343473`; active R04 claim inspected in this worktree.
+
+Scope and inventory:
+- `docs/audit/callable-contracts.json` retains all 101 IDs and prior checkpoint rows/findings/proposals. Two rows are added as `reviewed_source`: `EditTurboMCPSave` and `EditTurboMCPSaveWithoutThumbnail`. Current totals are 12 reviewed and 89 `not_reviewed`; prior checkpoints remain 4/97, 7/94 and 10/91.
+- Checkpoint-specific base/claim/validation identities are stored under `checkpoint_4`; earlier base, claim, validation and acceptance text are preserved.
+- The audit traces declarations, `SaveTurboMCPAssets`, `UEditorAssetLibrary::SaveLoadedAsset`, `UPackage::SavePackage`, the source-control preflight, resolver, engine save/thumbnail callees, recorder and text/result client path. No runtime behavior is claimed.
+
+Contract notes:
+- `Assets` is required; omitted fields are rejected before the body. Explicit empty or separator-only input is the whole-call no-asset error. Comma/pipe separators are trimmed and empty parts culled; order is preserved and duplicates are not deduplicated. More than 25 parts is refused before any provider call.
+- E-SAVE goes through `SaveLoadedAsset` -> `SavePackages` -> `InternalCheckoutAndSavePackages` -> the editor `OBJ SAVEPACKAGE` path. It can save external packages, issues another engine checkout pass when source control is enabled, and generates thumbnails before the write. The no-thumbnail tool calls `UPackage::SavePackage` directly; it skips the thumbnail renderer, external-package save, the registered-asset check and mark-for-add, but still runs `PreSave`/`PostSave` and serialization.
+- The source-control preflight runs before the loop's dirty, package-load and `/Game/` eligibility decisions. A clean asset, a refused package, an unloadable object or a duplicate can receive `GetState(ForceUpdate)` and `FCheckOut`; the preflight remains report-only and never gates the save.
+- Success is the package clean dirty flag after one retry, not a disk readback. No compile is performed. `saved` is an engine success signal, not verified durable persistence or multi-file atomicity.
+- Neither tool has an ARC02 result line. Body `error:`/refusal text is a successful value to the recorder; `call_structured` would require metadata unless `requires_result=False`. `Edit*` is a client mutation, so a lost response is unknown and is not replayed.
+
+New findings (`R04-SAVE-01` through `08`):
+- `R04-SAVE-01`: source-control preflight before per-asset write eligibility; clean/refused/unloadable/duplicate inputs can receive state/checkout work.
+- `R04-SAVE-02`: E-SAVE reaches a second engine `CheckoutPackages` pass that the appended block does not report.
+- `R04-SAVE-03`: no-thumbnail direct write does not preserve E-SAVE package semantics for map extension, external packages, registered assets or mark-for-add.
+- `R04-SAVE-04`: direct `SavePackage` still executes `PreSave`/`PostSave` code; "cannot run the asset's own code" is too broad.
+- `R04-SAVE-05`: per-input counters are not per-package outcomes for multi-asset packages, duplicates or external packages; partial success is not explicit.
+- `R04-SAVE-06`: failure/mechanism text is not conditioned on outcome; a failed no-thumbnail widget save can say the package was written, and E-SAVE says thumbnail work ran without observing a draw.
+- `R04-SAVE-07`: no read-only preflight or stable read-only failure cause; two attempts end in a speculative "may be read only" message.
+- `R04-SAVE-08`: "saved" is the dirty flag, not verified persistence; F07 reload verification is unmapped.
+Each has an unapproved proposal `R04-REPAIR-20` through `27` with exact files, preserved behavior, synthetic probe, expected result, negative control, fixture gap, validation and rollback. No repair is implemented or approved.
+
+Validation:
+- `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
+- `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
+- `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 on the pre-commit working tree (request commit `15ab395`): report `.local/executions/ae2ab8e8470b4db9b82ac2424f27cf10/report.json`, tree digest `e592621bb9cf46b48299d71ccd2749ddd32882f4e63b3bc38a4b30e0a6dfb6de`; `Tools/validate.py` passed.
+- No engine suite, editor, build, direct MCP call, packaging or recovery command was run. `test-save-thumbnail-option.py`, `test-vcs-write.py`, `test-struct.py` and the acceptance catalog are existing assertions only, not results here.
+- Candidate-bound offline evidence is obtained after this commit and returned separately.
+
+Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contracts.json`, and this Completion evidence only. No plugin, engine, test, helper, dependency, pin, routing preference, task status/readiness, TODO, review register or release control was changed.
+
+Unresolved: preflight placement/policy; E-SAVE engine checkout reporting or suppression; map/external-package scope; honest project-code wording; package-level outcomes without a new public schema; read-only preflight versus post-checkout failure; durable persistence verification without automatic reload; `R04-CALL-04`/`R04-CALL-06`; resolver route caveats and the absence of a top-level asset check; the 89 unreviewed rows. R04 remains incomplete; no merge, push, completion marking or claim release.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)

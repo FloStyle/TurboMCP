@@ -827,7 +827,12 @@
       "toolset": "UTurboMCPEditToolset",
       "family": "asset-and-data",
       "parameters": [
-        "Assets"
+        {
+          "name": "Assets",
+          "default": "Required FString; no C++ default. Omitted is rejected by the reflection schema before the body. Explicit empty is the body's no-asset error. Comma and pipe are separators; empty parts are culled; at most 25 parts; duplicates are kept.",
+          "parsing": "SplitList parses commas, then pipes inside each comma part, trims each part, culls empties, preserves order and does not deduplicate. Resolve is then called separately by the source-control plan and again by the save loop. Route caveats from R04-VCS-07 still apply: a loaded-object or sole-package fallback can accept forms without the registry uniqueness/member checks that other routes apply.",
+          "effect": "One result row per nonempty input. Empty/separator-only input is a whole-call error; more than 25 parts is a whole-call error. A resolve failure is a per-row failure. A loaded but package-less object is not used as a package. Duplicate inputs remain separate rows and can cause duplicate source-control and save work."
+        }
       ],
       "source_reference": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
@@ -852,15 +857,85 @@
         "runtime_evidence": "not_certified",
         "release_disposition": "experimental_pending_acceptance"
       },
-      "audit_status": "not_reviewed",
-      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+      "audit_status": "reviewed_source",
+      "note": "Reviewed at source/offline level in R04 checkpoint 4.",
+      "reviewed_checkpoint": "save-contracts",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 1617,
+        "signature": "static FString EditTurboMCPSave(const FString& Assets);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "One required FString parameter; no C++ default. The declaration warns that a defaulted parameter on this AICallable function becomes required by the generated schema, which is why the withdrawn withoutThumbnail argument is a separate tool."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:216-234,254-305",
+        "description": "FRecordingToolset wraps the Edit toolset. With logging enabled, FScopedCall writes start/end records and can rotate the log; the save's body text is a normal value, so an error/refusal body records bError=false."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "entry": ":658-661: EditTurboMCPSave calls the shared SaveTurboMCPAssets(Assets, false).",
+        "body": ":364-655: split and 25-part cap, editor/PIE guard, source-control plan and checkout, per-part resolve, dirty check, package/object load, mechanism selection, retry, dirty-flag verdict, text assembly, checkout report append.",
+        "mechanism": ":504-516: UEditorAssetLibrary::SaveLoadedAsset(AssetObject, bOnlyIfIsDirty=false), the editor save path, not a direct UPackage::SavePackage call.",
+        "verdict": ":537-548: after SaveOnce, if Package->IsDirty() it calls SaveOnce again; the result is decided by Package->IsDirty() at :548, not by the returned bool alone.",
+        "checkout": ":405-406: FTurboMCPSourceControlWrite::EnsureCheckedOut(Plan(Parts), 'E-SAVE') runs before the save loop and is appended as a report, never used as a gate."
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350,414-432",
+        "description": "Session.call returns the text body. The tool appends no ARC02 result line, so call_structured defaults to requiring one for a TurboMCP.* toolset and would raise unless requires_result=False. The CLI passes requires_result=False and only applies its text error regex. Body errors/refusals are values, so the recorder bError is false (R04-CALL-06)."
+      },
+      "effects": [
+        "Source-control preflight: Plan can resolve every input, call Provider.GetState(file, ForceUpdate), and EnsureCheckedOut can issue FCheckOut for each planned row (TurboMCPSourceControlWrite.cpp:254-343,371-460; TurboMCPSourceControl.cpp:269-317).",
+        "Editor save path: SaveLoadedAsset -> SavePackages -> InternalCheckoutAndSavePackages -> InternalPromptForCheckoutAndSave -> SaveAsset -> OBJ SAVEPACKAGE. The engine path checks out packages again, can save external packages, and generates thumbnails before the package write (FileHelpers.cpp:5925-5951,6019-6022,1318-1332; UnrealEdSrv.cpp:680-691).",
+        "The tool writes the package file through the editor save, may write external packages, and may run thumbnail/design-time widget code. It does not call CompileBlueprint and does not verify a Blueprint compile state.",
+        "It retries the same mechanism once when the package is still dirty. It does not reload or read the file back; 'saved' is the package dirty flag after the call.",
+        "With logging enabled the recorder writes/rotates the call log."
+      ],
+      "success": "Starts with 'changed: saved N of M asset(s)' when at least one input's package became clean, or 'unchanged: ...' when none did. Adds per-input rows, counts, errors, warning counts, widget thumbnail/design-time text, and an appended automatic-checkout block. No ARC02 result line.",
+      "refusals": [
+        "Empty or separator-only Assets: whole-call 'error: no asset given'.",
+        "More than 25 parts: whole-call error before any provider call.",
+        "GIsEditor false, GEditor null, PIE or simulate in progress: whole-call 'unchanged: <reason>.' before checkout or save.",
+        "Per-input resolve failure: a row error and a failed count; other inputs continue.",
+        "A package with no unsaved changes: 'had no changes', no SaveLoadedAsset call, but the preflight checkout has already run.",
+        "A dirty package that cannot be found/loaded: row failure. The 'reports unsaved changes but package could not be opened' branch at :439-449 is effectively unreachable because HasUnsavedChanges already required FindPackage to return the same package."
+      ],
+      "compile": "No compile call and no compile-state check. A dirty Blueprint may be saved while it has compile errors. The result does not claim compilation; save is separate from the explicit EditTurboMCPCompile operation.",
+      "thumbnail": "E-SAVE goes through the editor OBJ SAVEPACKAGE path, so the engine thumbnail step can run before the package write. For Widget Blueprints the renderer can instantiate the widget and run design-time code (WidgetBlueprintThumbnailRenderer.cpp:189-191,216-218). The result text says the thumbnail/design-time work ran through the editor save even when the engine only reused a cached thumbnail or did not draw one.",
+      "persistence": "A successful result means the package's dirty flag became false. UPackage::SavePackage clears that flag only after ESavePackageResult::Success (SavePackage2.cpp:3599-3607), so this is an in-process engine success signal, not a disk readback/reload. No durable persistence or multi-file atomicity is proven.",
+      "tests": [
+        "Tools/test-save-thumbnail-option.py:145-159 checks the one-parameter required schema; :175-181 saves a dirty Blueprint with only Assets and checks '1 saved' and 'written by the editor's save'; :187-197 saves a widget and checks the thumbnail text; :210-252 waits 14 seconds and checks the dirty list.",
+        "Tools/test-vcs-write.py:423-449 saves a brand-new asset with no provider and checks the file exists; :500-508 and :623-636 check changed file bytes/field across E-SAVE; :401-402 uses ReadTurboMCPVcsState only with empty Assets; :713-732 checks that both save tools call EnsureCheckedOut.",
+        "Tools/test-struct.py:287-291 checks '1 saved', file existence and field bytes; it does not unload/reload.",
+        "No assertion covers omitted/empty/separator-only/duplicate/malformed lists, clean assets with checkout, non-/Game on the no-thumbnail tool, map/external packages, read-only failure, a failed save's widget text, per-package counts, or a post-save reload."
+      ],
+      "source_findings": [
+        "R04-SAVE-01",
+        "R04-SAVE-02",
+        "R04-SAVE-03",
+        "R04-SAVE-04",
+        "R04-SAVE-05",
+        "R04-SAVE-06",
+        "R04-SAVE-07",
+        "R04-SAVE-08",
+        "R04-CALL-04",
+        "R04-CALL-06"
+      ]
     },
     {
       "id": "EditTurboMCPSaveWithoutThumbnail",
       "toolset": "UTurboMCPEditToolset",
       "family": "asset-and-data",
       "parameters": [
-        "Assets"
+        {
+          "name": "Assets",
+          "default": "Required FString; no C++ default. Omitted is rejected by the reflection schema before the body. Explicit empty is the body's no-asset error. Comma and pipe are separators; empty parts are culled; at most 25 parts; duplicates are kept.",
+          "parsing": "Same SplitList and Resolve calls as E-SAVE. Duplicates are not deduplicated. Route caveats from R04-VCS-07 apply; the tool does not additionally require a top-level asset or reject a loaded non-asset UObject.",
+          "effect": "One result row per nonempty input. A package not under /Game/ is refused for this tool only after the source-control preflight has already run. Map packages are not recognized as maps by filename construction: the direct path always uses GetAssetPackageExtension(), not GetMapPackageExtension()."
+        }
       ],
       "source_reference": {
         "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
@@ -875,8 +950,70 @@
         "runtime_evidence": "not_certified",
         "release_disposition": "experimental_pending_acceptance"
       },
-      "audit_status": "not_reviewed",
-      "note": "Outside the first R04 call-log checkpoint; no source or runtime conclusion is made here."
+      "audit_status": "reviewed_source",
+      "note": "Reviewed at source/offline level in R04 checkpoint 4.",
+      "reviewed_checkpoint": "save-contracts",
+      "runtime_status": "not_run",
+      "declaration": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "line": 1649,
+        "signature": "static FString EditTurboMCPSaveWithoutThumbnail(const FString& Assets);",
+        "ufunction": "UFUNCTION(meta = (AICallable))",
+        "defaults": "One required FString parameter; no C++ default. The header says the separate tool exists because a defaulted parameter on E-SAVE would be required by the generated schema."
+      },
+      "wrapper": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+        "lines": "103-130",
+        "log": "TurboMCPCallLog.cpp:216-234,254-305",
+        "description": "Same FRecordingToolset wrapper as E-SAVE. With logging enabled, a start/end pair and possible rotation are added; a body error/refusal remains a value, so bError=false."
+      },
+      "implementation": {
+        "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "entry": ":663-665: EditTurboMCPSaveWithoutThumbnail calls the shared SaveTurboMCPAssets(Assets, true).",
+        "body": ":364-655 shared body; the mechanism branch at :479-546 differs from E-SAVE.",
+        "mechanism": ":479-495 requires the package path to start with /Game/, builds ProjectContentDir + package-relative path + GetAssetPackageExtension(), then :523-533 calls UPackage::SavePackage(Package, AssetObject, Filename, SaveArgs). It does not call SaveLoadedAsset or SaveExternalPackages.",
+        "flags": ":523-525 sets RF_Public | RF_Standalone on the asset and the same TopLevelFlags on the save arguments before the direct write.",
+        "verdict": ":537-548 retries the same direct SavePackage once when the package is still dirty; the result is decided by Package->IsDirty() at :548."
+      },
+      "client": {
+        "path": "Tools/tmcp.py",
+        "lines": "330-350,414-432",
+        "description": "Session.call returns the text body; there is no ARC02 line. call_structured defaults to requiring one for a TurboMCP.* toolset and would raise unless requires_result=False. Body errors/refusals are values to the recorder (R04-CALL-06)."
+      },
+      "effects": [
+        "Same source-control preflight as E-SAVE: Plan/GetState/EnsureCheckedOut happen at :405-406 before the loop; they are not gated by this tool's /Game refusal at :479-491.",
+        "Direct UPackage::SavePackage write only. It skips the editor save path's thumbnail generation, but it still runs SavePackage's PreSave/PreSaveRoot/Serialize/PostSaveRoot/PostSave work (SavePackage2.cpp:4050-4060,4117-4129). For a Widget Blueprint this includes UWidgetBlueprint::PreSave (WidgetBlueprint.cpp:705-713).",
+        "It does not call SaveExternalPackages, does not mark a newly written file for add, and does not perform the editor save path's registered-asset check or uncontrolled-changelist handling.",
+        "It does not compile. It sets RF_Public | RF_Standalone on the asset before the write and does not restore them if the write fails.",
+        "With logging enabled the recorder writes/rotates the call log."
+      ],
+      "success": "Starts with 'changed: saved N of M asset(s)' or 'unchanged: ...' from the shared body, then per-input rows and counts. On success it says 'thumbnail/design-time work: skipped (written without the thumbnail draw)'. A Widget Blueprint gets an extra sentence saying the package was written directly and no thumbnail draw ran. No ARC02 result line.",
+      "refusals": [
+        "Empty or separator-only Assets: whole-call error.",
+        "More than 25 parts: whole-call error.",
+        "Editor/PIE/simulate refusal: whole-call 'unchanged: <reason>.' before checkout.",
+        "Package not under /Game/: per-input error at :479-491, after the source-control preflight. The message tells the caller to use EditTurboMCPSave.",
+        "Resolve/package/load failures: per-input errors; other inputs continue."
+      ],
+      "compile": "No compile call or compile-state check. The direct save writes the current in-memory package.",
+      "thumbnail": "No editor thumbnail generation. The header's claim that this is the same save minus the thumbnail is too broad: it also skips external-package saving, the registered-asset check, mark-for-add and the editor save path's other handling. It still executes PreSave/PostSave code, so 'cannot run the asset's own code' is false.",
+      "persistence": "Same dirty-flag verdict as E-SAVE, not a disk readback. UPackage::SavePackage clears the dirty flag only after ESavePackageResult::Success (SavePackage2.cpp:3599-3607). No durable reload or external-package persistence is proven.",
+      "tests": [
+        "Tools/test-save-thumbnail-option.py:223-236 saves a dirty Widget Blueprint with only Assets, checks '1 saved', 'without the thumbnail draw' and 'did not run', and checks that the editor-save phrase is absent; :239-252 checks the dirty list immediately and after 14 seconds.",
+        "The suite does not test a failed no-thumbnail save, a non-/Game package, a map, an external package, a new asset's source-control state, duplicates, multiple assets or read-only files.",
+        "The suite's own header says the non-/Game branch is not exercised and that no thumbnail draw can be observed in logs."
+      ],
+      "source_findings": [
+        "R04-SAVE-01",
+        "R04-SAVE-03",
+        "R04-SAVE-04",
+        "R04-SAVE-05",
+        "R04-SAVE-06",
+        "R04-SAVE-07",
+        "R04-SAVE-08",
+        "R04-CALL-04",
+        "R04-CALL-06"
+      ]
     },
     {
       "id": "EditTurboMCPStructFields",
@@ -3656,6 +3793,150 @@
       "observed_source_behavior": "A short slash-free name can resolve through a loaded object with no /Game or uniqueness check; a package path can fall back to a sole asset without checking the requested object member; the normal generated-class shape is not matched by the stated suffix condition. Invalid/ambiguous input is not universally refused by every route, and a multi-asset package is not a universal refusal for a loaded direct object.",
       "existing_assertions": "test-vcs.py uses simple short names and does not distinguish a loaded-object route from the /Game registry fallback; it has no loaded-object-first, absent-member, normal generated-class or multi-asset-package case.",
       "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-SAVE-01",
+      "status": "confirmed_source",
+      "checkpoint": "save-contracts",
+      "scope": [
+        "EditTurboMCPSave",
+        "EditTurboMCPSaveWithoutThumbnail"
+      ],
+      "title": "Source-control preflight runs before per-asset write eligibility",
+      "evidence": [
+        "TurboMCPCompile.cpp:405-406 calls FTurboMCPSourceControlWrite::EnsureCheckedOut(Plan(Parts), 'E-SAVE') before the save loop, which begins at :419.",
+        "The loop's dirty check is :432-437, package lookup :439-449, asset load :456-467, and the no-thumbnail /Game refusal :479-491. All of these happen after Plan/GetState/EnsureCheckedOut.",
+        "TurboMCPSourceControlWrite.cpp:254-343 builds one row per input and calls the base VCS Plan; :371-460 issues Provider.Execute(FCheckOut) for every row the plan allows. TurboMCPSourceControl.cpp:269-317 verifies only that a file exists and reads provider state; it does not probe the local read-only attribute.",
+        "TurboMCPAssetResolver.cpp:182-206 preserves duplicates, so duplicate inputs repeat the state operation and can repeat the checkout operation."
+      ],
+      "observed_source_behavior": "A clean asset, a package the selected tool will refuse (non-/Game for EditTurboMCPSaveWithoutThumbnail), an object that later fails to load, and a duplicate input all receive the source-control preflight before the code decides whether to write. A call that reports 'unchanged: nothing to save' can still have issued GetState(ForceUpdate) and FCheckOut. The preflight is a report, not a gate, which is D-57 behavior; the defect is its placement before write eligibility.",
+      "existing_assertions": "test-vcs-write.py:423-449 covers a brand-new asset with no provider (the preflight refuses because there is no file), and :623-636 covers E-SAVE under Git (the preflight is the failed no-op). It does not save a clean asset, a non-/Game asset, an unloadable object, or a duplicate and count provider operations.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-SAVE-02",
+      "status": "confirmed_source",
+      "checkpoint": "save-contracts",
+      "scope": [
+        "EditTurboMCPSave"
+      ],
+      "title": "E-SAVE performs a second, unreported checkout inside the editor save path",
+      "evidence": [
+        "TurboMCPCompile.cpp:405-406 issues the tool's FCheckOut before the loop; :516 then calls UEditorAssetLibrary::SaveLoadedAsset.",
+        "EditorAssetSubsystem.cpp:1290-1310 forwards to UEditorLoadingAndSavingUtils::SavePackages; FileHelpers.cpp:6019-6022 calls InternalCheckoutAndSavePackages.",
+        "FileHelpers.cpp:5925-5929 calls FEditorFileUtils::CheckoutPackages for every non-temp package whenever ISourceControlModule::Get().IsEnabled(), and does not use its result. :5949-5951 calls CheckoutPackages again to mark saved new files for add. SaveAsset also calls SaveExternalPackages at :1321, which can recurse into checkout/save for external packages.",
+        "The appended block is built only from the tool's own Plan/EnsureCheckedOut (TurboMCPSourceControlWrite.cpp:345-460); it has no field for the engine's second pass."
+      ],
+      "observed_source_behavior": "On an enabled provider, E-SAVE can reach CheckoutPackages both before and inside SaveLoadedAsset. The engine may decide the file is already checked out and perform no second provider FCheckOut, but the path and its result are outside the tool's report. A new asset that the tool's plan refuses for having no file can still be marked for add by the engine after the save. The result block cannot distinguish the two passes.",
+      "existing_assertions": "test-vcs-write.py:430-449 checks only the tool's appended block and the save count; :713-732 checks that EnsureCheckedOut is called. No test counts provider operations or shows the engine's checkout pass; no live provider is available.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-SAVE-03",
+      "status": "confirmed_source",
+      "checkpoint": "save-contracts",
+      "scope": [
+        "EditTurboMCPSaveWithoutThumbnail"
+      ],
+      "title": "The direct write does not preserve E-SAVE's package semantics beyond the thumbnail",
+      "evidence": [
+        "TurboMCPCompile.cpp:479-495 always builds a /Game relative path with FPackageName::GetAssetPackageExtension(); it has no ContainsMap/GetMapPackageExtension branch. :533 calls UPackage::SavePackage directly.",
+        "The engine's own package save chooses GetMapPackageExtension for a world package (FileHelpers.cpp:3747-3775) and SaveAsset calls SaveExternalPackages before the write (:1318-1332). E-SAVE's SaveLoadedAsset also calls IsARegisteredAsset (EditorAssetSubsystem.cpp:1299-1309), then the SavePackages checkout/mark-for-add path (FileHelpers.cpp:5925-5951).",
+        "The tool header at TurboMCPToolsets.h:1623-1647 describes the tool as the same save minus the thumbnail and says everything else is E-SAVE's behavior."
+      ],
+      "observed_source_behavior": "A World package is given a .uasset filename instead of the engine's .umap choice. Packages with external packages are not sent through SaveExternalPackages. A newly written file is not marked for add by this tool. A loaded asset that E-SAVE's registered-asset check would reject can still reach the direct SavePackage call. Whether UPackage::SavePackage refuses or writes the mismatched map filename is not runtime-verified; either result is not E-SAVE-equivalent.",
+      "existing_assertions": "test-save-thumbnail-option.py uses only a Blueprint and a Widget Blueprint under /Game/Tests. Its own header says the non-/Game refusal is not exercised. No test uses a map, a World package, an external package, a loaded unregistered asset, or a new asset's mark-for-add path.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-SAVE-04",
+      "status": "confirmed_source",
+      "checkpoint": "save-contracts",
+      "scope": [
+        "EditTurboMCPSaveWithoutThumbnail"
+      ],
+      "title": "The direct write still executes asset PreSave/PostSave code",
+      "evidence": [
+        "TurboMCPCompile.cpp:523-533 calls UPackage::SavePackage(Package, AssetObject, Filename, SaveArgs) with the asset object.",
+        "SavePackage2.cpp:4050-4060 calls PreSavePackage and CallPreSaveRoot on the asset; :4117-4129 calls CallPostSaveRoot and PostSavePackage; the package path serializes objects and can invoke their Serialize overrides.",
+        "WidgetBlueprint.cpp:705-713 overrides UWidgetBlueprint::PreSave and clears/updates the generated class widget tree. This is asset code, not thumbnail drawing.",
+        "TurboMCPToolsets.h:1623-1633 says the tool is minus the part that can run the asset's own code and that a direct package write calls none of that."
+      ],
+      "observed_source_behavior": "EditTurboMCPSaveWithoutThumbnail skips the editor thumbnail step but still runs SavePackage's PreSave/PreSaveRoot/PostSaveRoot/PostSave and serialization hooks on the asset and its objects. It cannot be described as a save that does not run the asset's own code. Whether a particular project override has external effects is asset-specific and unverified.",
+      "existing_assertions": "test-save-thumbnail-option.py:231-236 checks result text saying the design-time code did not run for a draw. It does not use an asset with an observable PreSave/PreSaveRoot override, and no test observes asset code during the direct write.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-SAVE-05",
+      "status": "confirmed_source",
+      "checkpoint": "save-contracts",
+      "scope": [
+        "EditTurboMCPSave",
+        "EditTurboMCPSaveWithoutThumbnail"
+      ],
+      "title": "Per-input counters are not per-package write outcomes",
+      "evidence": [
+        "TurboMCPCompile.cpp:419-428 loops over Parts and increments SavedCount/NoChangeCount/FailedCount per input; :553-558 increments SavedCount for each input whose package is clean after the save; :624-639 prints those input counts.",
+        "E-SAVE's SaveLoadedAsset saves the package (EditorAssetSubsystem.cpp:1305-1309) and can save external packages (FileHelpers.cpp:1321). The direct path saves one package (TurboMCPCompile.cpp:533).",
+        "SplitList preserves duplicates (TurboMCPAssetResolver.cpp:182-206), so the same package can appear more than once; the first row can save it and the later row then reports 'had no changes'."
+      ],
+      "observed_source_behavior": "With two assets in one package, the first row may save the package and the second row reports no changes: the headline 'saved 1 of 2 asset(s)' does not say that both assets were in the package that was written. Duplicate inputs have the same shape. E-SAVE can write external packages that are never named in the counts. When several inputs fail against one package, the count reports several failures for one package write. There is no package result, unattempted list, or explicit partial outcome.",
+      "existing_assertions": "test-save-thumbnail-option.py saves one asset per call. test-vcs-write.py repeats E-SAVE on the same asset in separate calls but does not pass duplicates in one call or use a multi-asset package. No test asserts a package-level saved/failed/unattempted map.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-SAVE-06",
+      "status": "confirmed_source",
+      "checkpoint": "save-contracts",
+      "scope": [
+        "EditTurboMCPSave",
+        "EditTurboMCPSaveWithoutThumbnail"
+      ],
+      "title": "Mechanism narration is not conditioned on the observed outcome",
+      "evidence": [
+        "TurboMCPCompile.cpp:553-561 prints 'thumbnail/design-time work: ran through the editor's save path' for every successful E-SAVE asset. The engine generates a thumbnail only when the cached thumbnail is missing or dirty and not in automation (UnrealEdSrv.cpp:438-446,478-491); it may only load/keep an existing thumbnail.",
+        "The Widget Blueprint explanation at TurboMCPCompile.cpp:591-601 is outside the success/failure branch. On a failed no-thumbnail widget save, it still says 'the package was written directly, so the engine's thumbnail step did not run for this save, and this widget's design-time code did not run for a draw.' The failure branch is :563-579.",
+        "The success branch at :553-561 is the only place that says the write happened; the widget block does not consult bStillDirty."
+      ],
+      "observed_source_behavior": "A failed EditTurboMCPSaveWithoutThumbnail on a Widget Blueprint can print both 'is still unsaved after two attempts' and 'the package was written directly'. A successful E-SAVE can say thumbnail/design-time work ran when no draw was needed, because the code does not observe the thumbnail cache or the renderer. The widget sentence is true only when a draw actually ran; the code only knows that the editor save path was selected.",
+      "existing_assertions": "test-save-thumbnail-option.py asserts the success strings at :181, :191-197 and :231-235. Its own header says a thumbnail draw cannot be observed in logs. No test forces a failed no-thumbnail widget save or a fresh cached-thumbnail E-SAVE.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-SAVE-07",
+      "status": "confirmed_source",
+      "checkpoint": "save-contracts",
+      "scope": [
+        "EditTurboMCPSave",
+        "EditTurboMCPSaveWithoutThumbnail"
+      ],
+      "title": "No read-only preflight and no structured read-only failure cause",
+      "evidence": [
+        "TurboMCPCompile.cpp:50-74 WriteRefusalReason checks GIsEditor, GEditor, PIE and simulate only; it does not check the package file's read-only attribute.",
+        "The VCS plan used for preflight checks file existence and provider state but not IFileManager::IsReadOnly (TurboMCPSourceControl.cpp:269-317; TurboMCPSourceControlWrite.h:96-153). A checkout may clear read-only, but the tool does not re-probe after checkout.",
+        "The save failure branch at TurboMCPCompile.cpp:563-579 collapses the engine result and dirty flag into 'still unsaved after two attempts' and guesses 'The asset may be read only, or another program may hold the file.' The direct path has no file-attribute check either."
+      ],
+      "observed_source_behavior": "A read-only package with no usable provider is attempted twice and reported with a speculative cause. A provider checkout that succeeds but leaves the file read-only is not distinguished from any other save failure. A provider checkout that fails is not allowed to gate the write, so the save can still fail on read-only and the report does not identify which condition held.",
+      "existing_assertions": "test-vcs-write.py has no read-only case; it uses no-provider and Git refusals. Tests/acceptance.json F08 ('Force save refusal on an owned read-only scratch package') is not_mapped at :981-994. No test forces a read-only file or a checkout that succeeds without clearing read-only.",
+      "runtime_status": "not_run"
+    },
+    {
+      "id": "R04-SAVE-08",
+      "status": "contract_gap",
+      "checkpoint": "save-contracts",
+      "scope": [
+        "EditTurboMCPSave",
+        "EditTurboMCPSaveWithoutThumbnail"
+      ],
+      "title": "Saved means the dirty flag cleared, not verified persistence",
+      "evidence": [
+        "TurboMCPCompile.cpp:548-558 decides success from Package->IsDirty(). The returned bSaved is used only to choose the failure wording at :568-570.",
+        "UPackage::SavePackage clears the dirty flag only after ESavePackageResult::Success (SavePackage2.cpp:3599-3607). That is an in-process engine success signal, not a readback of the file or a reload.",
+        "Neither tool reloads the package or compares its contents after the write. test-struct.py:287-309 checks only that the file exists and contains field bytes; test-save-thumbnail-option.py:210-252 checks the dirty list. Tests/acceptance.json F07 ('Save owned fixture, unload/reload it') is not_mapped at :967-980."
+      ],
+      "observed_source_behavior": "The output 'package write: saved' and 'changed: saved N of M asset(s)' claims a successful package write on the basis of an in-memory dirty flag. No durable persistence, file-byte verification, reload or multi-file atomicity is established. ARC05 requires a successful engine write result and durable verification appropriate to the path; this checkpoint can confirm the engine success signal, not the durable result.",
+      "existing_assertions": "No current engine suite reloads a saved fixture and compares contents. test-struct.py checks file existence and bytes; test-save-thumbnail-option.py checks the dirty list after 14 seconds. F07 remains not_mapped.",
+      "runtime_status": "not_run"
     }
   ],
   "repairs": [
@@ -4091,6 +4372,193 @@
       "fixture_gap": "Tests need a loaded-only object, an unloaded asset, a normal class path and a multi-asset package; current test-vcs.py uses two simple short names.",
       "validation": "No current resolver/route assertion covers these forms. Proposed test-vcs.py extension; exact engine command unavailable until fixtures are selected.",
       "rollback": "Revert TurboMCPAssetResolver.cpp and test-vcs.py only."
+    },
+    {
+      "id": "R04-REPAIR-20",
+      "finding": "R04-SAVE-01",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlWrite.cpp",
+        "Tools/test-vcs-write.py",
+        "Tools/test-save-thumbnail-option.py"
+      ],
+      "preserved_behavior": [
+        "empty/separator-only and >25-part refusals",
+        "PIE/simulate refusal before any provider call",
+        "per-asset source-control rows and provider answers",
+        "checkout is report-only and never gates the write",
+        "Git no-op and unavailable-provider behavior",
+        "duplicate policy remains unresolved until separately decided"
+      ],
+      "synthetic_probe": "Use a provider fixture that counts GetState and FCheckOut calls. Save, in separate calls: a dirty fixture, a clean fixture, a duplicate of the dirty fixture, an unloadable object, and a non-/Game package through EditTurboMCPSaveWithoutThumbnail.",
+      "expected": "The source-control preflight runs only for an input that will reach a write attempt. No checkout is issued for a clean asset, an unloadable object, or a package the selected tool refuses. If a state read is still wanted for diagnosis, it is labeled and does not issue FCheckOut. Checkout failure remains non-gating for a writable target.",
+      "negative_control": "A dirty normal asset still receives exactly the existing per-asset checkout attempt; a Git no-op still repeats the provider's refusal; a checkout failure still does not turn a writable save into a failure.",
+      "fixture_gap": "No provider fixture counts operations, and no clean/non-/Game/unloadable/duplicate fixture is used by the save suites. The current test only covers a new file with no provider and a Git no-op.",
+      "validation": "Proposed extension of test-vcs-write.py plus a save-suite case; no current suite asserts provider operation counts. Exact engine command unavailable until the provider seam exists.",
+      "rollback": "Revert TurboMCPCompile.cpp, TurboMCPSourceControlWrite.cpp and the two test files only."
+    },
+    {
+      "id": "R04-REPAIR-21",
+      "finding": "R04-SAVE-02",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "Tools/test-vcs-write.py",
+        "Tools/test-save-thumbnail-option.py"
+      ],
+      "preserved_behavior": [
+        "E-SAVE continues to use SaveLoadedAsset and the editor thumbnail path",
+        "the preflight block remains a report and never gates the write",
+        "direct no-thumbnail path keeps its own preflight",
+        "Git no-op and unavailable-provider wording"
+      ],
+      "synthetic_probe": "With a provider fixture that counts FCheckOut and CheckoutPackages, save an existing dirty package through E-SAVE and through EditTurboMCPSaveWithoutThumbnail; count every checkout pass and inspect the appended report.",
+      "expected": "The result and the test account for the engine's second checkout pass, or the implementation uses exactly one checkout path. The tool must not imply that its appended block is the only source-control operation E-SAVE performed. New files continue to be marked for add by the engine path.",
+      "negative_control": "The direct path still makes only its preflight checkout; with no provider, neither path reaches a provider; a clean file still does not become a save.",
+      "fixture_gap": "The current suite has no provider operation counter and no live provider; it checks only the first block's text.",
+      "validation": "Proposed provider-counter test; no current assertion. Engine command depends on the fixture.",
+      "rollback": "Revert TurboMCPCompile.cpp and the two test files only."
+    },
+    {
+      "id": "R04-REPAIR-22",
+      "finding": "R04-SAVE-03",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "Tools/test-save-thumbnail-option.py",
+        "Tools/test-vcs-write.py"
+      ],
+      "preserved_behavior": [
+        "normal /Game .uasset Blueprint and Widget Blueprint path",
+        "non-/Game refusal with the E-SAVE suggestion",
+        "same direct SavePackage mechanism and one retry",
+        "automatic-checkout report remains non-gating"
+      ],
+      "synthetic_probe": "Call EditTurboMCPSaveWithoutThumbnail on a World package under /Game/Maps, a package with external packages, a newly created asset, and a loaded asset that E-SAVE's registered-asset check rejects.",
+      "expected": "The direct tool either supports the engine's map extension, external-package save and registered-asset semantics, or refuses those kinds with a stable reason before writing. It must not describe itself as the same save minus the thumbnail when it skips those operations.",
+      "negative_control": "A normal dirty Widget Blueprint under /Game still saves and still skips the thumbnail draw; a non-/Game package still refuses without writing.",
+      "fixture_gap": "Current tests use only Blueprint/Widget Blueprint under /Game/Tests. No map, external package, loaded-unregistered asset or new-file source-control fixture exists.",
+      "validation": "Proposed save-suite extension; no current map/external assertion. No engine suite run in this checkpoint.",
+      "rollback": "Revert TurboMCPCompile.cpp and the two test files only."
+    },
+    {
+      "id": "R04-REPAIR-23",
+      "finding": "R04-SAVE-04",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "Tools/test-save-thumbnail-option.py"
+      ],
+      "preserved_behavior": [
+        "direct package write and retry",
+        "no editor thumbnail render",
+        "/Game refusal",
+        "the successful no-thumbnail result remains distinguishable from E-SAVE"
+      ],
+      "synthetic_probe": "Save a Widget Blueprint and an asset class with an observable PreSave/PreSaveRoot override through EditTurboMCPSaveWithoutThumbnail; compare with E-SAVE.",
+      "expected": "The help and result say the direct write skips the editor thumbnail renderer but can still run PreSave/PreSaveRoot/PostSave/serialization code. No text claims the asset's own code cannot run. The successful no-thumbnail result still says the thumbnail draw did not run.",
+      "negative_control": "E-SAVE still names the editor thumbnail path and the widget draw possibility; a plain asset without an overriding PreSave still saves.",
+      "fixture_gap": "No fixture exposes PreSave/PreSaveRoot execution to the save suite; the current test checks only result text.",
+      "validation": "Proposed focused asset/test seam; no current code-execution assertion. No engine run in this checkpoint.",
+      "rollback": "Revert the header, TurboMCPCompile.cpp and the save-suite test only."
+    },
+    {
+      "id": "R04-REPAIR-24",
+      "finding": "R04-SAVE-05",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "Tools/test-save-thumbnail-option.py",
+        "Tools/test-vcs-write.py"
+      ],
+      "preserved_behavior": [
+        "per-input ordering and resolve failures",
+        "one retry per package failure",
+        "duplicate policy remains unresolved",
+        "E-SAVE external-package and direct-path behavior"
+      ],
+      "synthetic_probe": "Save two assets that share one package, the same asset twice in one Assets value, a package with an external package, and a mix of one saving and one failing package.",
+      "expected": "Package-level write results are named separately from input rows: saved, failed, and unattempted packages, with assets mapped to each. Duplicate inputs do not inflate package outcomes. A partial save is explicit rather than only 'saved N of M'.",
+      "negative_control": "One clean single-asset package still reports '1 saved'; the input order and per-input error text are preserved.",
+      "fixture_gap": "No multi-asset package or external-package fixture is used; the save suites save one asset at a time and never duplicate an input in one call.",
+      "validation": "Proposed save-suite extension; no current package-level assertion. No engine run in this checkpoint.",
+      "rollback": "Revert TurboMCPCompile.cpp and the two test files only."
+    },
+    {
+      "id": "R04-REPAIR-25",
+      "finding": "R04-SAVE-06",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "Tools/test-save-thumbnail-option.py"
+      ],
+      "preserved_behavior": [
+        "successful E-SAVE text and widget warning",
+        "successful no-thumbnail 'skipped' text",
+        "failure count and save-count lines",
+        "same save mechanisms and retry"
+      ],
+      "synthetic_probe": "Force a failed Widget Blueprint save through each tool (read-only file or test failpoint), and save a widget whose cached thumbnail is fresh through E-SAVE; inspect the mechanism text.",
+      "expected": "A failed save never says the package was written. The no-thumbnail success sentence is emitted only on success. Thumbnail text distinguishes 'the editor save path was selected' from 'a thumbnail draw was observed'; a cached/fresh thumbnail is not reported as design-time work that ran.",
+      "negative_control": "A successful no-thumbnail widget save still says the thumbnail draw was skipped; a successful E-SAVE widget save still warns about design-time code.",
+      "fixture_gap": "No failure injection or thumbnail-cache-state fixture exists; the current suite checks only successful text and says a draw cannot be observed.",
+      "validation": "Proposed save-suite failure/cache cases; no current assertion. No engine run in this checkpoint.",
+      "rollback": "Revert TurboMCPCompile.cpp and the save-suite test only."
+    },
+    {
+      "id": "R04-REPAIR-26",
+      "finding": "R04-SAVE-07",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "Tools/test-vcs-write.py",
+        "Tools/test-save-thumbnail-option.py"
+      ],
+      "preserved_behavior": [
+        "checkout is report-only and does not gate the write",
+        "a writable target saves even when the provider refuses checkout",
+        "one retry of the selected save mechanism",
+        "existing per-input error and count text for other failures"
+      ],
+      "synthetic_probe": "Save a read-only scratch package with no provider, with a provider whose checkout fails, and with a provider whose checkout succeeds and clears read-only; add a writable control.",
+      "expected": "After the checkout attempt, the tool probes local read-only state. If the file is still read-only, it reports one explicit read-only failure (stable reason) and does not make a second blind write attempt; if the checkout made it writable, the save proceeds. Provider failure alone still does not gate a writable save.",
+      "negative_control": "A writable no-provider package still saves; a read-only file whose checkout clears the attribute still saves; a provider refusal on a writable file still does not become a save failure.",
+      "fixture_gap": "No read-only fixture and no provider that clears read-only are available; F08 is not_mapped. The current suites cover no-provider and Git only.",
+      "validation": "Proposed read-only/provider tests; no current assertion. No engine run in this checkpoint.",
+      "rollback": "Revert TurboMCPCompile.cpp and the two test files only."
+    },
+    {
+      "id": "R04-REPAIR-27",
+      "finding": "R04-SAVE-08",
+      "status": "proposed_unapproved",
+      "owner": "R04",
+      "allowed_files": [
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+        "Tools/test-struct.py",
+        "Tools/test-save-thumbnail-option.py",
+        "Tests/acceptance.json"
+      ],
+      "preserved_behavior": [
+        "dirty-flag verdict and one retry",
+        "no automatic reload over unsaved editor state",
+        "existing file-byte and dirty-list assertions",
+        "failure text remains a failure"
+      ],
+      "synthetic_probe": "Save an owned fixture, unload its package, reload it from disk, and compare the intended fields/objects; repeat with a forced failed save and a clean no-op.",
+      "expected": "The focused acceptance test proves durable persistence by reload and comparison (F07), and the tool's text says the engine write was accepted without claiming verified persistence until that readback exists. A failed save never reports saved; a clean input still reports no changes.",
+      "negative_control": "A read-only/failed save still fails and does not produce a saved row; a clean fixture still reports no changes; existing file-byte checks still pass.",
+      "fixture_gap": "F07 is not_mapped and no test reloads a saved package. The current suite checks file existence/bytes and the dirty list only.",
+      "validation": "Proposed test and acceptance mapping; no engine run in this checkpoint. This is a contract/test proposal, not an implemented behavior change.",
+      "rollback": "Revert TurboMCPCompile.cpp, the two test files and the acceptance mapping only."
     }
   ],
   "probe_gaps": [
@@ -4118,7 +4586,14 @@
     "VCS successful live checkout, post-operation read-back, partial failure and multi-asset atomicity.",
     "VCS Preview/Edit behavior after a state change between calls.",
     "Preview/Edit branch order for UsesCheckout false + null state, and readable checked-out/added on a no-checkout provider.",
-    "Resolver route precedence: loaded-object-first vs /Game registry fallback vs package fallback; normal Package.Object_C and absent member."
+    "Resolver route precedence: loaded-object-first vs /Game registry fallback vs package fallback; normal Package.Object_C and absent member.",
+    "Save omitted/separator-only/duplicate/malformed input, the 25-part boundary, and duplicate provider/save work.",
+    "Save clean asset, unsaved package, package with no loaded object, loaded subobject and package outside /Game.",
+    "Save source-control preflight ordering: clean/refused/unloadable assets and duplicate operations; E-SAVE's engine checkout pass.",
+    "Save read-only file, checkout that fails, checkout that succeeds but leaves read-only, and a writable control.",
+    "Save map/World, external package, loaded unregistered asset, and new-asset mark-for-add behavior.",
+    "Save failure and partial-success text, widget failure text, cached/fresh thumbnail state, and multi-asset-per-package counts.",
+    "Save durable persistence: unload/reload and compare; F07 is not_mapped."
   ],
   "validation": {
     "audit_inventory_check": {
@@ -4158,7 +4633,16 @@
     "Whether a checkout success must be verified by post-state read-back, and how a partial multi-asset result should be summarized.",
     "How to represent provider freshness and non-null unknown/checked-out-other/read-only state without inventing a provider-independent result.",
     "How Preview should describe a null-state/no-checkout row while preserving the readable no-op branch.",
-    "How the resolver should reconcile loaded-object, package fallback and generated-class routes without changing the accepted simple path forms."
+    "How the resolver should reconcile loaded-object, package fallback and generated-class routes without changing the accepted simple path forms.",
+    "Whether save preflight should move after dirty/mechanism eligibility or retain a labeled state read; no policy is approved.",
+    "Whether the E-SAVE engine checkout pass should be suppressed or reported; both change a safety/observability boundary.",
+    "Whether EditTurboMCPSaveWithoutThumbnail should support maps/external packages or refuse them; no asset-kind scope is approved.",
+    "Whether the direct save can honestly promise any project-code-free behavior; PreSave/PostSave overrides remain asset-specific.",
+    "How to report per-package outcomes without a new public schema.",
+    "Whether read-only should be a preflight refusal or an explicit post-checkout failure code; D-57's non-gating rule still applies to writable targets.",
+    "How to verify durable persistence without automatic reload over unsaved editor state.",
+    "The existing R04-CALL-04/R04-CALL-06 result and recorder gaps apply; no ARC02 line is added by this checkpoint.",
+    "Resolver route caveats from R04-VCS-07 apply to these tools; no top-level asset check is added, and no save-specific subobject fixture exists."
   ],
   "schema_validation": {
     "status": "source_traced_not_runtime",
@@ -4300,5 +4784,56 @@
     "remaining_tools": 91,
     "offline_run": "b95fc842c1f543f1a8cffcb220780597",
     "limitations": "Runtime checkout and provider fixtures remain unverified. Repair proposals require approval."
+  },
+  "checkpoint_4": {
+    "name": "save-contracts",
+    "approved_base": "15ab395ac88eaa52ea31d7628d032446c90fddb6",
+    "plugin_tree": "590661ec45c829264ea1743fccea994edb748092",
+    "engine": {
+      "version": "5.8.3",
+      "commit": "396c9f059903aed5fec78ecd3d437a40c6415368"
+    },
+    "claim": {
+      "id": "613fbd8768e04378859aad03a5a26bb6",
+      "owner": "dsh-r04-save-01",
+      "worktree": "C:\\ExampleDev\\SampleRoot005\\r04-vcs",
+      "store_sha256": "1e4930ce16f30f4623d50de4721fbb36e7b82ca7e230c9d71dd30ee0e9343473"
+    },
+    "reviewed_ids": [
+      "EditTurboMCPSave",
+      "EditTurboMCPSaveWithoutThumbnail"
+    ],
+    "scope": "Source/offline audit of the two save tools, shared resolver, write/VCS guards, recorder, client decoding and pinned engine save callees; no engine/build/editor/MCP execution.",
+    "validation": {
+      "audit_inventory_check": {
+        "command": "python Tools/audit-inventory.py --check",
+        "exit": 0,
+        "summary": "101 definitions; 95 parsed_call, 6 name_reference_only."
+      },
+      "test_result_contract": {
+        "command": "python Tools/test-result-contract.py",
+        "exit": 0,
+        "summary": "PASS; C03-C08."
+      },
+      "test_client_retry": {
+        "command": "python Tools/test-client-retry.py",
+        "exit": 0,
+        "summary": "PASS; C01/C02."
+      },
+      "offline_profile": {
+        "command": "python Tools/execute-tests.py --profile offline --execute",
+        "exit": 0,
+        "report": ".local/executions/ae2ab8e8470b4db9b82ac2424f27cf10/report.json",
+        "request_commit": "15ab395ac88eaa52ea31d7628d032446c90fddb6",
+        "tree_digest": "e592621bb9cf46b48299d71ccd2749ddd32882f4e63b3bc38a4b30e0a6dfb6de",
+        "summary": "PASSED; the offline profile ran Tools/validate.py. This is the pre-commit working-tree run after the checkpoint-4 report edits; candidate-bound evidence is obtained after the checkpoint commit and returned separately."
+      }
+    },
+    "reviewed_tools": 12,
+    "remaining_tools": 89,
+    "review": {
+      "status": "pending_integration_review",
+      "note": "Checkpoint 4 adds two source-reviewed save rows; R04 remains incomplete and every repair proposal remains unapproved."
+    }
   }
 }
