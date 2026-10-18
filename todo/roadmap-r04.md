@@ -264,6 +264,40 @@ Unresolved: save-on-compile policy; compile-side source mutation/transaction pol
 
 Correction after review: this commit preserves candidate `5da62367fc473d0edce262a08b66c6da9a7372b9` and addresses request `7074def1-119b-4017-a8aa-163e8ed71ce6` (verified report SHA-256 `44b2d56a520cca97167122a8e29bae722e0e18fb6641a6cface7d1fd9e152502`). The reopen plan now requires a supervisor-owned restart with old-PID-exit/new-PID/server-owner proof; `tmcp_editor.stop_editor`/`ensure_editor` is ineffective under the runner. The persistence plan now uses a reversible `TitleText` `IsVariable` edit plus an otherwise identical no-save control with `SaveOnCompile` observed as Never; file hashes are supplementary. Compiler-error assets, compiler-warning assets and engine-diagnostic counts are now named separately; treating every engine Error as compile failure remains an owner decision. All repairs remain unapproved.
 
+### Checkpoint 6: persistence prerequisite contract
+
+Task R04 checkpoint 6, claim `66394016d7b64f77a5106c8b316f43bd` (owner `dsh-r04-persistence-01`). Approved base `633c86cd6871f69bd997eefe6bae2176306b13f1`; branch `task/r04-persistence-design`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the checkpoint commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+
+Source identity:
+- Engine 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`; local engine HEAD verified equal to the pin.
+- Claim store: `c:\ExampleDev\turbomcp\.git\turbomcp\task-claims.json`, SHA-256 `f83d96d0b67c3e34e22265ed4bdb19a9f247d46a35011a111717f1f81cbdd67a`; active R04 claim inspected in this worktree.
+- Checkpoint 5 accepted candidate: `1c0cb15f737d619bd9777136366d141d75da8cd9`; all its findings and repairs are unchanged.
+
+Design decision:
+- Delivered one design in `docs/audit/widget-persistence-prerequisites.md`: a supervisor-owned **two-pass persistence transaction** plus a test-project `UBlueprintEditorSettings::SaveOnCompile` observation seam.
+- Phase A observes effective `Never`, makes the reversible `TitleText` `IsVariable` edit, compiles, saves or deliberately omits the save, writes a strict state file and exits `75`. The supervisor stops only its owned editor, proves old PID/start-time exit, starts a fresh owned editor, proves new PID/start-time and server ownership, then runs phase B as a new client. The saved trial keeps bytes until readback; the no-save control must lose the edit.
+- The current `tmcp_editor.stop_editor`/`ensure_editor` pair is explicitly rejected under the runner: `run-suites.ps1:643` sets `TURBOMCP_RUNNER_OWNS_FIXTURES=1`, `tmcp_editor.py:81-82` no-ops stop, `:203-217` reuses an answering server, and `start-editor.ps1:130-131` refuses a direct start. No ownership flag is cleared and no direct helper is substituted.
+- `SaveOnCompile` is the config property at `BlueprintEditorSettings.h:242`; the manager reads it at `BlueprintCompilationManager.cpp:458-490`. No existing Python/MCP API exposes it. The design adds a test-project fixture/automation readback that sets the effective value in memory, logs the enum and exact config path/hash, and requires `effective=Never` before any mutation in each trial. The config file is never written; its hash/existence must remain unchanged, so user configuration is preserved by construction.
+
+Proposed subtasks (all `proposed_unapproved`):
+- P1: test-project `TurboMCPTestPersistenceSettings` fixture and automation tests; `TurboMCPTest.Build.cs` adds `BlueprintGraph`.
+- P2: process identity/start-time and foreign-listener proof in `Tools/ownership.ps1` and `Tools/check-mcp-server.py`.
+- P3: `Tools/persistence_supervisor.ps1` pure state/identity module, two-pass mode in `Tools/run-suites.ps1`, and `Tools/test-persistence-supervisor.py`.
+- P4: `persistence` profile in `Tools/execute-tests.py` and catalog entry.
+- P5: proposed `Tools/test-widget-compile-save-reopen.py`; phase A/B state protocol and exact assertions.
+- P6: supervisor-only live acceptance; no source. Monday recommendation is **no-go for automated acceptance now**, conditional go after P1-P6 and exact supervisor evidence; manual supervised fallback is not an automated gate.
+
+Validation:
+- `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
+- `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
+- `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 on the pre-commit report tree: report `.local/executions/f79179ea0da34139a0db2a46ef85097b/report.json`, request commit `633c86cd6871f69bd997eefe6bae2176306b13f1`, tree digest `410c0bb04e794336050729e47af33d9134071340b574378e430323aab9b07c2e`.
+- No engine/editor/build/MCP/recovery command was run. The proposed live acceptance is unexecuted.
+
+Changed files: `docs/audit/widget-persistence-prerequisites.md` (new) and this Completion evidence only. No code, test, fixture, config, task status/readiness, TODO, routing, release or scope-policy change.
+
+Unresolved: whether the `BlueprintGraph` test dependency and automation seam can be built; whether the runner profile can own the two-pass restart without broadening normal suites; whether process start-time identity/foreign listener proof is accepted; whether the effective in-memory setting can be observed without writing the user config and its file hash/existence remains unchanged; whether the no-save control can be kept isolated from unrelated unsaved assets. If any is absent, the plan is blocked, not passed. R04 remains incomplete; no merge, push, completion marking or claim release.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)
