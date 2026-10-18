@@ -14,10 +14,11 @@
           ],
           "new_files": []
         },
-        "widget-persistence-contract": {
+        "widget-persistence-acceptance": {
           "files": [],
           "new_files": [
-            "docs/audit/widget-persistence-contract.md"
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPersistenceTest.cpp",
+            "Tools/test-widget-persistence.py"
           ]
         }
       },
