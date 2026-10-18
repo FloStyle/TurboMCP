@@ -30,12 +30,14 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "docs/audit/persistence-collector-contract.md",
+        "Tools/persistence_collector.py",
+        "Tools/test-persistence-collector.py",
+        "Tests/catalog.json",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "4fa6f36fcbcf52e6b622acca87874158de79f5c9",
-      "checkpoint": "8: trusted identity collection contract; dispatch base includes this contract commit"
+      "approved_base": "e54fc9c6c2ef1781eaf07f017d06d7e15cc54b09",
+      "checkpoint": "9: pure offline collector orchestration; dispatch base includes this contract commit"
     }
   }
 }
