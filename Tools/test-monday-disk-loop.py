@@ -129,8 +129,14 @@ def main():
             demand("1 saved" in written, "explicit save wrote fixture")
             expected = read()
             demand(saved in expected, "saved connected marker visible")
-            demand("InString (-> " in expected and "ReturnValue" in expected,
-                   "fresh read keeps the connected data link")
+            # THE PURE SOURCE IS RENDERED INLINE on its single consumer, which is the
+            # shared-value reader's documented form. The link is proved by the source
+            # type appearing in InString's value position and by its output pin
+            # reporting exactly one link, not by a `(-> ...)` token.
+            demand("InString (" + CONCAT_TYPE_ID in expected,
+                   "fresh read keeps the connected data source inline")
+            demand("ReturnValue -> 1 link(s)" in expected,
+                   "fresh read shows the source output linked once")
             widget_after = call(READ_TOOLSET, "ReadTurboMCPWidgetTree", {"asset": asset})
             demand(widget_after == widget_before, "widget hierarchy unchanged by the graph edit")
             layout_after = layout_state(call(LOOK_TOOLSET, "LookTurboMCPLayoutReport",
