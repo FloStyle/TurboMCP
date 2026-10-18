@@ -76,6 +76,96 @@ namespace
 		return const_cast<UEdGraphNode*>(InNode);
 	}
 
+	/** The real upstream node and the exact output pin its consumer reads. */
+	struct FValueSourceEndpoint
+	{
+		const UEdGraphNode* Node = nullptr;
+		UEdGraphPin* Pin = nullptr;
+		bool bResolved = false;
+	};
+
+	/**
+	 * Resolve an input pin to the real node/output pin behind any number of knots.
+	 *
+	 * This walks UPSTREAM: a consumer input links to the nearest knot's output,
+	 * the knot's single input links to the next upstream pin, and so on. It is
+	 * distinct from `ResolveThroughKnots`, which follows an exec chain DOWNSTREAM.
+	 * Nulls, multiple links, non-output pins, cycles and depth >64 are unresolved.
+	 */
+	FValueSourceEndpoint ResolveUpstreamValueSource(const UEdGraphPin* InConsumerPin)
+	{
+		if (InConsumerPin == nullptr || InConsumerPin->LinkedTo.Num() != 1)
+		{
+			return FValueSourceEndpoint();
+		}
+
+		UEdGraphPin* Current = InConsumerPin->LinkedTo[0];
+		TSet<const UEdGraphPin*> SeenPins;
+		TSet<const UEdGraphNode*> SeenKnots;
+
+		for (int32 Depth = 0; Depth < 64; ++Depth)
+		{
+			if (Current == nullptr || SeenPins.Contains(Current))
+			{
+				return FValueSourceEndpoint();
+			}
+			SeenPins.Add(Current);
+
+			UEdGraphNode* Owner = Current->GetOwningNode();
+			if (Owner == nullptr || Current->Direction != EGPD_Output)
+			{
+				return FValueSourceEndpoint();
+			}
+
+			if (!IsKnot(Owner))
+			{
+				FValueSourceEndpoint Endpoint;
+				Endpoint.Node = Owner;
+				Endpoint.Pin = Current;
+				Endpoint.bResolved = true;
+				return Endpoint;
+			}
+
+			if (SeenKnots.Contains(Owner))
+			{
+				return FValueSourceEndpoint();
+			}
+			SeenKnots.Add(Owner);
+
+			UEdGraphPin* KnotInput = nullptr;
+			for (UEdGraphPin* Pin : Owner->Pins)
+			{
+				if (Pin != nullptr && Pin->Direction == EGPD_Input)
+				{
+					if (KnotInput != nullptr)
+					{
+						// A knot with more than one input is malformed; refuse to guess.
+						return FValueSourceEndpoint();
+					}
+					KnotInput = Pin;
+				}
+			}
+			if (KnotInput == nullptr || KnotInput->LinkedTo.Num() != 1)
+			{
+				return FValueSourceEndpoint();
+			}
+			Current = KnotInput->LinkedTo[0];
+		}
+
+		return FValueSourceEndpoint();
+	}
+
+	/** The supported link form for an existing pure value: `(-> node-id:output-pin)`. */
+	FString SourcePinLink(const FValueSourceEndpoint& InSource)
+	{
+		if (!InSource.bResolved || InSource.Node == nullptr || InSource.Pin == nullptr)
+		{
+			return FString();
+		}
+		return FString::Printf(TEXT("(-> %s:%s)"),
+			*TurboMCPNodeId::MakeForNode(InSource.Node), *InSource.Pin->PinName.ToString());
+	}
+
 	/** A bounded inline expression must retain a stable node reference when expansion stops. */
 	FString InlineStopReference(const UEdGraphNode* InNode, const TCHAR* InReason)
 	{
@@ -305,10 +395,12 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 	TSet<const UEdGraphNode*>& InOutPrinted,
 	TSet<const UEdGraphNode*>& InOutSharedValues,
 	TSet<const UEdGraphNode*>& InOutInlineNodes,
-	TArray<FString>& OutNotes) const
+	TArray<FString>& OutNotes, EFormEvidence& OutEvidence) const
 {
+	OutEvidence = EFormEvidence::Complete;
 	if (InPin == nullptr)
 	{
+		OutEvidence = EFormEvidence::None;
 		return FString();
 	}
 
@@ -324,11 +416,33 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 				*TurboMCPNodeId::MakeForNode(Target));
 		}
 
-		UEdGraphNode* RealTarget = ResolveThroughKnots(Target);
-		if (RealTarget == nullptr)
+		// At bodies, resolve the exact upstream pin behind any knots. At full a
+		// non-knot target is direct; the knot case returned above.
+		FValueSourceEndpoint Source;
+		if (bFull)
 		{
-			return FString();
+			Source.Node = Target;
+			Source.Pin = InPin->LinkedTo.Num() == 1 ? InPin->LinkedTo[0] : nullptr;
+			Source.bResolved = Source.Pin != nullptr
+				&& Source.Pin->GetOwningNode() == Target
+				&& Source.Pin->Direction == EGPD_Output;
 		}
+		else
+		{
+			Source = ResolveUpstreamValueSource(InPin);
+		}
+
+		if (!Source.bResolved || Source.Node == nullptr || Source.Pin == nullptr)
+		{
+			const FString Note = FString::Printf(
+				TEXT("; error: value source for pin '%s' has an unresolved knot chain\n"),
+				*InPin->PinName.ToString());
+			OutNotes.Add(Note);
+			OutEvidence = EFormEvidence::Partial;
+			return Note;
+		}
+
+		const UEdGraphNode* RealTarget = Source.Node;
 
 		// A self node is implied by the entry point, so it is not printed.
 		if (RealTarget->IsA<UK2Node_Self>())
@@ -342,11 +456,14 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 			{
 				// The value graph is cyclic. Keep the node reference so the caller can
 				// identify the offending node, but do not enter the cycle again.
+				OutEvidence = EFormEvidence::Partial;
 				return InlineStopReference(RealTarget, TEXT("value cycle"));
 			}
 
-			// `2.1.6`: a pure node used by more than one consumer is defined once
-			// and referred to by name. Used once it is written inline.
+			// A pure node used by more than one consumer is printed inline on its
+			// first complete use and referred to by its EXISTING node ID and exact
+			// output pin later. This format has no shared-definition token, so no
+			// `$id` is emitted.
 			int32 Consumers = 0;
 			for (const UEdGraphPin* OutPin : RealTarget->Pins)
 			{
@@ -356,37 +473,57 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 				}
 			}
 
-			if (Consumers > 1)
+			if (Consumers > 1 && InOutSharedValues.Contains(RealTarget))
 			{
-				if (HasValueCycle(RealTarget))
+				const FString Link = SourcePinLink(Source);
+				if (Link.IsEmpty())
 				{
-					return InlineStopReference(RealTarget, TEXT("value cycle"));
+					OutEvidence = EFormEvidence::Partial;
+					return InlineStopReference(RealTarget, TEXT("unresolved source pin"));
 				}
+				return Link;
+			}
 
-				InOutSharedValues.Add(RealTarget);
-				// Named by node ID, which is stable, rather than by a made up
-				// variable name that could collide.
-				return FString::Printf(TEXT("$%s"),
-					*TurboMCPNodeId::MakeForNode(RealTarget));
+			if (Consumers > 1 && HasValueCycle(RealTarget))
+			{
+				OutEvidence = EFormEvidence::Partial;
+				return InlineStopReference(RealTarget, TEXT("value cycle"));
 			}
 
 			if (InInlineDepth >= MaxInlineDepth)
 			{
 				// Depth is measured in inline value nodes, not in exec statements.
 				// The declared limit is a second defence for a very deep acyclic graph.
+				OutEvidence = EFormEvidence::Partial;
 				return InlineStopReference(RealTarget, TEXT("depth limit"));
 			}
 
 			InOutInlineNodes.Add(RealTarget);
+			EFormEvidence ChildEvidence = EFormEvidence::Complete;
 			const FString Inline = RenderNode(RealTarget, InDetail, InAssetPath,
 				InInlineDepth + 1, InOutPrinted, InOutSharedValues,
-				InOutInlineNodes, OutNotes);
+				InOutInlineNodes, OutNotes, ChildEvidence);
 			InOutInlineNodes.Remove(RealTarget);
-			if (!Inline.IsEmpty())
+
+			OutEvidence = ChildEvidence;
+			if (ChildEvidence == EFormEvidence::Complete && !Inline.IsEmpty())
 			{
 				InOutPrinted.Add(RealTarget);
+				if (Consumers > 1)
+				{
+					InOutSharedValues.Add(RealTarget);
+				}
 				return Inline;
 			}
+			if (!Inline.IsEmpty())
+			{
+				// A partial child form is returned so the caller sees the damage,
+				// but it is NEVER marked as a reusable shared definition.
+				return Inline;
+			}
+
+			OutEvidence = EFormEvidence::Partial;
+			return InlineStopReference(RealTarget, TEXT("form not emitted"));
 		}
 
 		// An exec or impure node is a separate statement, so the pin refers to it
@@ -427,10 +564,12 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 	TSet<const UEdGraphNode*>& InOutPrinted,
 	TSet<const UEdGraphNode*>& InOutSharedValues,
 	TSet<const UEdGraphNode*>& InOutInlineNodes,
-	TArray<FString>& OutNotes) const
+	TArray<FString>& OutNotes, EFormEvidence& OutEvidence) const
 {
+	OutEvidence = EFormEvidence::Complete;
 	if (InNode == nullptr)
 	{
+		OutEvidence = EFormEvidence::None;
 		return FString();
 	}
 
@@ -438,6 +577,7 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 	// the form, so it is never rendered as a node.
 	if (InNode->IsA<UK2Node_FunctionEntry>())
 	{
+		OutEvidence = EFormEvidence::None;
 		return FString();
 	}
 
@@ -445,12 +585,14 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 	if (TypeId.IsEmpty())
 	{
 		// `2.1.12`: a node that cannot be printed becomes a comment line in its
-		// place, never a silent gap.
+		// place, never a silent gap. It is PARTIAL evidence: text was emitted, but
+		// no usable form was produced.
 		const FString Note = FString::Printf(
 			TEXT("; error: %s has no node type ID, so it cannot be written back. ")
 			TEXT("Its class is %s."),
 			*TurboMCPNodeId::MakeForNode(InNode), *InNode->GetClass()->GetName());
 		OutNotes.Add(Note);
+		OutEvidence = EFormEvidence::Partial;
 		return Note;
 	}
 
@@ -523,13 +665,20 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 		{
 			Out += FString::Printf(TEXT("\n    ; %d more pin(s) not shown"),
 				InNode->Pins.Num() - Printed);
+			OutEvidence = EFormEvidence::Partial;
 			break;
 		}
 
 		// `2.1.5`: use the pin's real name, not its display name.
 		FString PinLabel = Pin->PinName.ToString();
+		EFormEvidence PinEvidence = EFormEvidence::Complete;
 		FString PinValue = RenderPinValue(Pin, InDetail, InAssetPath,
-			InInlineDepth, InOutPrinted, InOutSharedValues, InOutInlineNodes, OutNotes);
+			InInlineDepth, InOutPrinted, InOutSharedValues, InOutInlineNodes, OutNotes,
+			PinEvidence);
+		if (PinEvidence != EFormEvidence::Complete)
+		{
+			OutEvidence = EFormEvidence::Partial;
+		}
 
 		if (PinValue.IsEmpty() && Pin->LinkedTo.Num() == 0)
 		{
@@ -599,9 +748,10 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 			break;
 		}
 
+		EFormEvidence NodeEvidence = EFormEvidence::Complete;
 		const FString Rendered = RenderNode(Current, InDetail, InAssetPath,
 			/*InInlineDepth=*/0, InOutPrinted, InOutSharedValues,
-			InlineNodes, OutNotes);
+			InlineNodes, OutNotes, NodeEvidence);
 		InOutPrinted.Add(Current);
 
 		if (!Rendered.IsEmpty())
@@ -670,15 +820,14 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 FString FTurboMCPGraphText::RenderEntryBody(const UEdGraph* InGraph,
 	const FEntryPoint& InEntry, EDetail InDetail, const FString& InAssetPath,
 	TSet<const UEdGraphNode*>& InOutPrinted,
+	TSet<const UEdGraphNode*>& InOutSharedValues,
 	TArray<FString>& OutNotes) const
 {
-	TSet<const UEdGraphNode*> SharedValues;
-
 	UEdGraphPin* FirstOut = FindExecOut(InEntry.Node);
 	const UEdGraphNode* First = FirstOut != nullptr ? LinkedNode(FirstOut) : nullptr;
 
 	FString Body = RenderChain(First, InDetail, /*InDepth=*/0, InAssetPath,
-		InOutPrinted, SharedValues, OutNotes);
+		InOutPrinted, InOutSharedValues, OutNotes);
 
 	if (Body.IsEmpty())
 	{
@@ -770,6 +919,11 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 
 	TSet<const UEdGraphNode*> Printed;
 
+	// Shared represented values are tracked ACROSS entries, in the stable sorted
+	// entry order below. A value first rendered completely in one entry is linked
+	// by ID in later entries; a partial first form is never added here.
+	TSet<const UEdGraphNode*> SharedValues;
+
 	// The entry nodes are marked before any body is walked, because each of them
 	// is printed as the head of its own form rather than as a node. Leaving them
 	// out made every event appear twice: once as its form, and again in the
@@ -786,7 +940,7 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 		const FString Head = FString::Printf(TEXT("\n(%s %s"),
 			*Entry.Kind, *Entry.Name);
 		const FString Body = RenderEntryBody(InGraph, Entry, InDetail, InAssetPath,
-			Printed, OutNotes);
+			Printed, SharedValues, OutNotes);
 		Out += Head + Body + TEXT(")");
 	}
 

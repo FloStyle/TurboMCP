@@ -38,6 +38,21 @@ A reviewed specification and evidence record for each confirmed repair, with dup
 
 ## Completion evidence
 
+### Shared-value reader repair (R04-SHARED-VALUE-01)
+
+Task R04, shared-value reader, claim `21e8dac84b6843df8adb0a1466d8db80` (owner `dsh-r04-shared-value-02`). Approved base `315a264a83bfe63d222e59e4cd149a890d7f4a13`; branch `task/r04-shared-value-reader`; worktree `C:\ExampleDev\SampleRoot005\conhost-integrator`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete and this assignment does not accept it.
+
+Changed files (the recorded five-file allowlist; nothing else):
+- `Public/TurboMCPGraphText.h`: private `EFormEvidence`, evidence out-parameters, cross-entry shared set, and corrected shared-value comments. No public tool signature change.
+- `TurboMCPGraphText.cpp`: removes the undefined `$id` emission; renders the first complete shared pure value inline and later uses the existing supported `(-> node-id:output-pin)` link; adds bounded upstream pin-preserving knot resolution; propagates Complete/Partial/None from child renders; a pin cap, unresolved source, unsupported node, cycle or depth stop cannot mark a reusable form.
+- `TurboMCPGraphTextSharedValueTest.cpp` (new): transient compiled synthetic automation for direct and rerouted multi-output values, cross-entry sharing, depth/cycle partials, malformed knots and exact single-use stability.
+- `Tools/test-graph-text-guards.py`: runs the compiled test through the pinned `AutomationTestToolset` JSON report and strictly validates one Success entry with no errors.
+- This Completion evidence only.
+
+Checks run in this worker: `python Tools/validate.py` passed all 26 offline checks; `python -m py_compile Tools/test-graph-text-guards.py` exited 0; `git diff --check` exited 0. No build, editor, MCP, native or recovery operation was run; the compiled automation and engine-suite result are integration-owned.
+
+Preserved: normal single-use pure-node rendering, full-detail `via knot` behavior, the exec-chain knot helper, cycle/depth guards, pin-cap honesty and unrelated text. Limitations: the compiled test is not executed here; the unsupported-node first form was not separately fixtured and uses the same Partial propagation path as depth/cycle; combined reader-text writer round-trip is not certified by link-syntax acceptance; macro/no-entry omissions and reader completeness remain separate debt. No writer, lexer, GraphCheck, dialect, pagination or macro change.
+
 ### Integrator acceptance: Append placement
 
 Accepted `8ebe1a00fef4bf3b0382c35a266d262d8a8e3814` from approved base `479c9df0fbc8e1e5d31c9ac760da69bb75323b13`; trusted seven-file scope passed. Append Preview/Edit opt into a deterministic column while shared callers keep legacy placement. Positive stored dimensions are preserved independently; missing dimensions and new nodes use estimates. Overflow and malformed requested-position indexes refuse before mutation.

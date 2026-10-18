@@ -103,16 +103,33 @@ private:
 		TArray<FString>& OutNotes) const;
 
 	/**
+	 * Whether one node render produced a usable definition.
+	 *
+	 * `None` means nothing was emitted, `Partial` means text was emitted but a
+	 * child failed, stopped at a guard, or the node has no type ID, and `Complete`
+	 * means every part of the form was rendered. Only Complete may be reused as a
+	 * shared-value definition; nonempty text is not evidence of success.
+	 */
+	enum class EFormEvidence : uint8
+	{
+		None,
+		Partial,
+		Complete,
+	};
+
+	/**
 	 * Prints one entry point with its body.
 	 *
 	 * Exec nodes are walked in execution order, which is what makes a chain read
-	 * top to bottom (`2.1.3`). Value nodes feeding a used pin are printed inline,
-	 * and a value node feeding more than one consumer is defined once and
-	 * referred to by name (`2.1.6`).
+	 * top to bottom (`2.1.3`). Value nodes feeding a used pin are printed inline;
+	 * a value feeding more than one consumer is printed inline at its first
+	 * complete use and referred to by its existing node ID and output pin later.
+	 * The text format has no shared-definition token, so no `$id` is emitted.
 	 */
 	FString RenderEntryBody(const UEdGraph* InGraph, const FEntryPoint& InEntry,
 		EDetail InDetail, const FString& InAssetPath,
 		TSet<const UEdGraphNode*>& InOutPrinted,
+		TSet<const UEdGraphNode*>& InOutSharedValues,
 		TArray<FString>& OutNotes) const;
 
 	/**
@@ -124,13 +141,15 @@ private:
 	 * @param InOutInlineNodes Active inline recursion path only. The target is
 	 *        added immediately before recursive RenderNode and removed on return.
 	 *        It must remain separate from Printed and SharedValues.
+	 * @param OutEvidence Whether this call produced a usable form, a partial one,
+	 *        or nothing. Callers must propagate Partial/None to their own parent.
 	 */
 	FString RenderNode(const UEdGraphNode* InNode, EDetail InDetail,
 		const FString& InAssetPath, int32 InInlineDepth,
 		TSet<const UEdGraphNode*>& InOutPrinted,
 		TSet<const UEdGraphNode*>& InOutSharedValues,
 		TSet<const UEdGraphNode*>& InOutInlineNodes,
-		TArray<FString>& OutNotes) const;
+		TArray<FString>& OutNotes, EFormEvidence& OutEvidence) const;
 
 	/**
 	 * A pin's value: the link target, the literal default, or nothing.
@@ -145,7 +164,7 @@ private:
 		TSet<const UEdGraphNode*>& InOutPrinted,
 		TSet<const UEdGraphNode*>& InOutSharedValues,
 		TSet<const UEdGraphNode*>& InOutInlineNodes,
-		TArray<FString>& OutNotes) const;
+		TArray<FString>& OutNotes, EFormEvidence& OutEvidence) const;
 
 	/** True when this pin is one the format hides when it is at its default. */
 	static bool IsImplicitPin(const UEdGraphPin* InPin);
