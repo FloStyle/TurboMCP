@@ -46,6 +46,18 @@ Supervised pinned-5.8.3 engine run `dfa84d6a98d842d2b9ba55b4b9c52afa` passed bui
 
 Earlier failed fixture runs remain local evidence; they were corrected without weakening the definition-count or exact-output-pin assertions. This acceptance covers the tested reader cases, not a complete reader/writer round trip, macro/no-entry completeness, Widget Blueprint acceptance, saved assets or fresh reopen. R04 remains incomplete.
 
+### Widget Blueprint append acceptance (R04-WIDGET-APPEND-01)
+
+Task R04, Widget Blueprint append acceptance, claim `679fbb03335d42c0bb3e4cfe27133ef2` (owner `dsh-r04-widget-02`). Approved base `ce76ffee1e86ca3c35f5bdb71873575c7d51f47a`; branch `task/r04-widget-append-acceptance`; worktree `C:\ExampleDev\SampleRoot005\conhost-integrator`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. This slice is not accepted and does not certify persistence, save/reopen or editor-session behavior.
+
+Changed files (the recorded four-file allowlist; nothing else):
+- `Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetAppendAcceptanceTest.cpp` (new): transient Widget Blueprint fixture with CanvasPanel root, `TitleText`/`StatusText` variables and non-default Canvas slots, a function graph with entry and two sequential PrintString nodes with forced positions/GUIDs, and an untouched sibling function graph. It snapshots target and sibling graphs, widget tree/slot state and dirty state; drives the real Append Plan/Apply with exactly one new node and one link; checks Plan/refusal immutability, deterministic placement, Apply deltas, comparator negative controls with restore, and cleanup.
+- `Tools/test-widget-append-acceptance.py` (new): invokes the exact compiled automation through `AutomationTestToolset` and strictly parses one matching Success entry with no errors or warnings.
+- `Tests/catalog.json`: adds only the `test-widget-append-acceptance` engine suite; all other entries preserved.
+- This Completion evidence only.
+
+Checks run in this worker: `python -m py_compile Tools/test-widget-append-acceptance.py` exited 0; `Tests/catalog.json` parsed as JSON; `python Tools/validate.py` exited 1 with 25 of 26 checks passing and only `validate-repo` failing at `Tools/audit-inventory.py --check` with `Stale capability inventory`. The generated inventory was not regenerated because it is integrator-owned. The trusted base scope gate passed with exactly the four allowed files. No build, editor, MCP, native or recovery operation was run; compiled/engine acceptance remains integration-owned. The fixture is transient and never saved; save-on-compile, fresh reopen and on-disk persistence are not certified. The Plan dirty-state assertion may expose a production immutability defect if it fails under the supervised run; it was not relaxed.
+
 ### Shared-value reader repair (R04-SHARED-VALUE-01)
 
 Task R04, shared-value reader, claim `21e8dac84b6843df8adb0a1466d8db80` (owner `dsh-r04-shared-value-02`). Approved base `315a264a83bfe63d222e59e4cd149a890d7f4a13`; branch `task/r04-shared-value-reader`; worktree `C:\ExampleDev\SampleRoot005\conhost-integrator`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete and this assignment does not accept it.

@@ -275,6 +275,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-widget-append-acceptance",
+      "path": "Tools/test-widget-append-acceptance.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-graph-tidy",
       "path": "Tools/test-graph-tidy.py",
       "tier": "engine",
