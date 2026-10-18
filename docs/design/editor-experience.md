@@ -35,3 +35,15 @@ The owner approved the compact web prototype as the direction for native impleme
 First implementation slice should repair monitoring freshness at the log cap and clear/refill boundary, unknown totals and ambiguous in-flight states before adding presentation. Then add compact Monitor/Tools navigation and inspector, followed by bounded controls/menu/icon changes. Changed-asset attribution is a separate slice if new telemetry is required. The mockup is not a license to invent telemetry or expand editing scope.
 
 Implementation readiness still requires exact file ownership, source-backed contracts, negative controls and regression coverage for each slice. Validate narrow docked and wide floating panels, keyboard/focus, scaling, empty/unavailable/pending/refused/error states, and no unintended execution. R18 as a whole is not marked complete by design approval.
+
+## Queued monitoring-correctness slice
+
+Reviewed on 18 October 2026. Implementation waits for a dedicated scope and claim after the active Widget Blueprint acceptance task. The approved direction is an isolated per-test log, not replacement/restoration of the production singleton.
+
+Add a mutex-protected revision increment for memory Write and Clear, and a coherent entries/revision snapshot. Disabled writes leave both unchanged. The panel refreshes against revision rather than count and retains the revision of the snapshot actually rendered. Verify cap trimming, same-count clear/refill, unchanged-state no rebuild, measured zero versus separate unknown character/token counts, and completion-not-observed wording. Keep filtering and record JSON compatibility; count call rows separately from headings. Update affected shared timeline text and existing probe assertions together.
+
+Test-only private access may construct a separate log with no disk sink and an explicit enabled state, and bind an isolated panel to it before initial reads. Production uses its existing singleton and settings. Route recording controls through the same instance or disable them for the isolated panel: no test control may write production settings. The instance must outlive every panel reference. No global override, history replacement, revision rollback, settings reset or file suppression is allowed.
+
+Use deterministic sequential snapshot and refresh tests in this first slice; source-review lock coverage explicitly. The proposed unbounded writer/join concurrency loop is excluded. This acceptance must not claim exhaustive concurrent scheduling or race-detector proof. A future concurrency test needs a separately reviewed bounded lifecycle. Duplicate pending-call protection is a separate repair with its own runner-level contract and deterministic test seam.
+
+Expected file owners: CallLog header/implementation, panel header/implementation, CallTimeline header/implementation, existing panel probe and Python assertions, a new isolated compiled history test and engine-suite wrapper, catalog registration and task evidence. Exact allowlist and base must be issued at dispatch. No general layout, menus, server controls, default-setting migration or agent-turn attribution belongs to this slice.
