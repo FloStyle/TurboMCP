@@ -278,8 +278,17 @@ def _wait_for_exit(proc, deadline):
     return False
 
 
-def _write_stdin_bounded(proc, data, deadline):
+def _write_stdin_bounded(proc, data, deadline, clock=time.monotonic, thread_factory=None):
     result = []
+    try:
+        expired = clock() >= deadline
+    except Exception as exc:
+        return ["stdin-clock:" + str(exc)]
+    if expired:
+        result.append("stdin-deadline-expired")
+        result.extend(_close_bounded(proc.stdin, deadline, clock))
+        return result
+
     def write():
         try:
             if data is not None:
@@ -290,40 +299,63 @@ def _write_stdin_bounded(proc, data, deadline):
                 proc.stdin.flush()
         except Exception as exc:
             result.append("stdin:" + str(exc))
-    thread = threading.Thread(target=write, daemon=True)
+
+    factory = thread_factory or threading.Thread
+    try:
+        thread = factory(target=write, daemon=True)
+    except Exception as exc:
+        result.append("stdin-thread:" + str(exc))
+        result.extend(_close_bounded(proc.stdin, deadline, clock))
+        return result
     HELPER_THREADS.append(thread)
     try:
         thread.start()
     except Exception as exc:
         result.append("stdin-thread:" + str(exc))
     else:
-        while thread.is_alive() and time.monotonic() < deadline:
-            thread.join(min(0.05, max(0, deadline - time.monotonic())))
+        while thread.is_alive() and clock() < deadline:
+            remaining = max(0, deadline - clock())
+            thread.join(min(0.05, remaining / 1_000_000_000))
         if thread.is_alive():
             result.append("stdin-timeout")
-    result.extend(_close_bounded(proc.stdin, deadline))
+        elif clock() >= deadline:
+            result.append("stdin-completion-after-deadline")
+    result.extend(_close_bounded(proc.stdin, deadline, clock))
     return result
 
 
-def _close_bounded(stream, deadline, clock=time.monotonic, sleeper=time.sleep):
+def _close_bounded(stream, deadline, clock=time.monotonic, sleeper=time.sleep,
+                   thread_factory=None):
     if stream is None:
         return []
+    try:
+        if clock() >= deadline:
+            return ["close-deadline-expired"]
+    except Exception as exc:
+        return ["close-clock:" + str(exc)]
     error = []
     def close():
         try:
             stream.close()
         except Exception as exc:
             error.append("close:" + str(exc))
-    thread = threading.Thread(target=close, daemon=True)
+    factory = thread_factory or threading.Thread
+    try:
+        thread = factory(target=close, daemon=True)
+    except Exception as exc:
+        return ["close-thread:" + str(exc)]
     HELPER_THREADS.append(thread)
     try:
         thread.start()
     except Exception as exc:
         return ["close-thread:" + str(exc)]
     while thread.is_alive() and clock() < deadline:
-        thread.join(min(0.05, max(0, deadline - clock())))
+        remaining = max(0, deadline - clock())
+        thread.join(min(0.05, remaining / 1_000_000_000))
     if thread.is_alive():
         return ["close-timeout"]
+    if clock() >= deadline:
+        return ["close-completion-after-deadline"]
     return error
 
 
@@ -811,7 +843,10 @@ def _case_add_type(work):
 
 def _teardown_sentinel(sentinel, deadline):
     errors = []
-    errors.extend(_write_stdin_bounded(sentinel, None, deadline))
+    try:
+        errors.extend(_write_stdin_bounded(sentinel, None, deadline))
+    except Exception as exc:
+        errors.append("sentinel-stdin:" + str(exc))
     try:
         remaining = max(0, deadline - time.monotonic())
         sentinel.wait(timeout=remaining)
@@ -827,8 +862,14 @@ def _teardown_sentinel(sentinel, deadline):
         except Exception as exc:
             errors.append("sentinel-fallback-wait:" + str(exc))
     for stream in (sentinel.stdout, sentinel.stderr):
-        errors.extend(_close_bounded(stream, deadline))
-    errors.extend(_join_helper_threads(deadline))
+        try:
+            errors.extend(_close_bounded(stream, deadline))
+        except Exception as exc:
+            errors.append("sentinel-close:" + str(exc))
+    try:
+        errors.extend(_join_helper_threads(deadline))
+    except Exception as exc:
+        errors.append("sentinel-helper-join:" + str(exc))
     return errors
 
 

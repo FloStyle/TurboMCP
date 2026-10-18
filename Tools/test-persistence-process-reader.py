@@ -1256,7 +1256,16 @@ class AcceptanceHarnessTests(unittest.TestCase):
             stdout = FakeStream(); stderr = FakeStream()
             def poll(self): return 2
             def wait(self, timeout=None): return 2
-        errors = self.acceptance._write_stdin_bounded(Proc(), b"go\n", 10)
+        class WThread:
+            def __init__(self, target=None, daemon=None): self.target = target; self.alive = True
+            def start(self): pass
+            def join(self, timeout=None): self.target(); self.alive = False
+            def is_alive(self): return self.alive
+        proc = Proc()
+        with mock.patch.object(self.acceptance, "_close_bounded", return_value=[]):
+            errors = self.acceptance._write_stdin_bounded(
+                proc, b"go\n", 100, clock=lambda: 0, thread_factory=WThread
+            )
         self.assertIn("stdin-write-not-confirmed", errors)
 
         class Job:
@@ -1358,18 +1367,67 @@ class AcceptanceHarnessTests(unittest.TestCase):
             def close(self): self.closed = True
         class Proc:
             def __init__(self, result): self.stdin = Stdin(result)
-        for value in (None, 0, 1, True, -1, "go"):
-            proc = Proc(value)
-            errors = self.acceptance._write_stdin_bounded(proc, b"go\n", 10)
-            with self.subTest(value=value):
-                self.assertTrue(errors, value)
-                self.assertTrue(proc.stdin.closed)
-        proc = Proc(RuntimeError("write failed"))
-        self.assertTrue(self.acceptance._write_stdin_bounded(proc, b"go\n", 10))
-        self.assertTrue(proc.stdin.closed)
-        proc = Proc(3)
-        self.assertEqual(self.acceptance._write_stdin_bounded(proc, b"go\n", 10), [])
-        self.assertTrue(proc.stdin.closed)
+        class WThread:
+            def __init__(self, target=None, daemon=None): self.target = target; self.alive = True; self.joins = []
+            def start(self): pass
+            def join(self, timeout=None): self.joins.append(timeout); self.target(); self.alive = False
+            def is_alive(self): return self.alive
+        closes = []
+        clock = lambda: 0
+        with mock.patch.object(self.acceptance, "_close_bounded", side_effect=lambda stream, deadline, *a: closes.append(deadline) or []):
+            for value in (None, 0, 1, True, -1, "go"):
+                proc = Proc(value)
+                errors = self.acceptance._write_stdin_bounded(
+                    proc, b"go\n", 100, clock=clock, thread_factory=WThread
+                )
+                with self.subTest(value=value):
+                    self.assertTrue(errors, value)
+                    self.assertTrue(closes)
+            proc = Proc(RuntimeError("write failed"))
+            self.assertTrue(self.acceptance._write_stdin_bounded(proc, b"go\n", 100, clock=clock, thread_factory=WThread))
+            proc = Proc(3)
+            self.assertEqual(self.acceptance._write_stdin_bounded(proc, b"go\n", 100, clock=clock, thread_factory=WThread), [])
+
+            expired = Proc(3)
+            factory_calls = []
+            def factory(**kwargs): factory_calls.append(kwargs); return WThread(**kwargs)
+            errors = self.acceptance._write_stdin_bounded(expired, b"go\n", 100, clock=lambda: 100, thread_factory=factory)
+            self.assertIn("stdin-deadline-expired", errors)
+            self.assertEqual(factory_calls, [])
+
+            budget = Proc(3)
+            thread_holder = []
+            def budget_factory(**kwargs):
+                thread = WThread(**kwargs); thread_holder.append(thread); return thread
+            errors = self.acceptance._write_stdin_bounded(
+                budget, b"go\n", 10_000_000, clock=lambda: 0, thread_factory=budget_factory
+            )
+            self.assertEqual(errors, [])
+            self.assertLessEqual(thread_holder[0].joins[0], 0.05)
+            self.assertLessEqual(thread_holder[0].joins[0], 0.01)
+
+            crossing = Proc(3)
+            times = iter([0, 0, 0, 10_000_000])
+            errors = self.acceptance._write_stdin_bounded(
+                crossing, b"go\n", 10_000_000, clock=lambda: next(times), thread_factory=WThread
+            )
+            self.assertIn("stdin-completion-after-deadline", errors)
+        self.assertTrue(closes)
+
+    def test_write_and_close_thread_construction_failures_are_reported(self):
+        class Proc:
+            stdin = object()
+        close_calls = []
+        with mock.patch.object(self.acceptance, "_close_bounded", side_effect=lambda *a: close_calls.append(a) or ["close-error"]):
+            errors = self.acceptance._write_stdin_bounded(
+                Proc(), b"go\n", 100, clock=lambda: 0,
+                thread_factory=lambda **kwargs: (_ for _ in ()).throw(RuntimeError("ctor")),
+            )
+        self.assertTrue(any("stdin-thread" in e for e in errors))
+        self.assertEqual(len(close_calls), 1)
+        with mock.patch.object(self.acceptance.threading, "Thread", side_effect=RuntimeError("ctor")):
+            errors = self.acceptance._close_bounded(FakeStream(), 100, clock=lambda: 0)
+        self.assertTrue(any("close-thread" in e for e in errors))
 
     def test_sentinel_teardown_reports_all_failures_and_uses_one_budget(self):
         class Sentinel:
@@ -1400,6 +1458,39 @@ class AcceptanceHarnessTests(unittest.TestCase):
             self.acceptance._teardown_sentinel(sentinel, 123)
         self.assertTrue(deadlines)
         self.assertEqual(set(deadlines), {123})
+
+    def test_sentinel_teardown_exceptions_do_not_skip_remaining_steps(self):
+        calls = []
+        class Sentinel:
+            pid = 1
+            stdin = object(); stdout = FakeStream(); stderr = FakeStream()
+            def wait(self, timeout=None):
+                calls.append("wait")
+                raise RuntimeError("wait")
+            def kill(self):
+                calls.append("kill")
+                raise RuntimeError("kill")
+        count = [0]
+        def close(stream, deadline):
+            count[0] += 1
+            calls.append("close%d" % count[0])
+            if count[0] == 1:
+                raise RuntimeError("close")
+            return ["close-error"]
+        with mock.patch.object(self.acceptance, "_write_stdin_bounded", side_effect=RuntimeError("thread constructor failed")), \
+             mock.patch.object(self.acceptance, "_close_bounded", side_effect=close), \
+             mock.patch.object(self.acceptance, "_join_helper_threads", side_effect=RuntimeError("join")):
+            errors = self.acceptance._teardown_sentinel(Sentinel(), 123)
+        self.assertEqual(calls.count("wait"), 2)
+        self.assertEqual(calls.count("kill"), 1)
+        self.assertEqual(calls.count("close1"), 1)
+        self.assertEqual(calls.count("close2"), 1)
+        self.assertTrue(any("sentinel-stdin" in e for e in errors))
+        self.assertTrue(any("sentinel-wait" in e for e in errors))
+        self.assertTrue(any("sentinel-kill" in e for e in errors))
+        self.assertTrue(any("sentinel-fallback-wait" in e for e in errors))
+        self.assertTrue(any("sentinel-close" in e for e in errors))
+        self.assertTrue(any("sentinel-helper-join" in e for e in errors))
 
     def test_run_cases_teardown_failure_forces_failed_even_when_cases_pass(self):
         class Sentinel:
