@@ -4,18 +4,18 @@
 
 Use one reviewed task, one isolated worktree and one durable claim per worker.
 The integration owner records a full approved base commit before dispatch.
-R13 and R16 are accepted. R04 checkpoints 1-5 are accepted as source evidence and checkpoint 6 as a bounded design investigation. Checkpoint 7 is accepted as a pure offline identity validator. Checkpoint 8 is accepted as a design. The active assignment is checkpoint 9: pure offline collector orchestration.
+R13 and R16 are accepted. R04 checkpoints 1-5 are accepted as source evidence and checkpoint 6 as a bounded design investigation. Checkpoint 7 is accepted as a pure offline identity validator. Checkpoint 8 is accepted as a design. Checkpoint 9 is accepted as pure offline orchestration. The active assignment is checkpoint 10: a bounded Windows process reader with offline-only worker validation.
 
 ## Approved scope
 
 [worker-scopes.json](../roadmap/worker-scopes.json) contains exact writable paths
 for R13, R16 and the active R04 checkpoint. Everything else is outside scope. R13 may update the six listed
 comparison/evidence files. R16 may write its two dependency reports and task
-evidence. R04 checkpoint 9 may write only its two new Python files, one offline catalog row and task Completion evidence, as listed in worker-scopes.json. In a task file, only the Completion evidence section may change.
+evidence. R04 checkpoint 10 may write only its two new Python files, one fixed PowerShell reader, one offline catalog row and task Completion evidence, as listed in worker-scopes.json. In a task file, only the Completion evidence section may change.
 The reviewer owns task status, review registers, generated TODO and queue updates.
 Unknown tasks fail closed until the integration owner supplies a reviewed scope.
 
-Checkpoint 9 permits only injected-backend orchestration and offline tests. No Windows adapter or production caller is approved. No plugin edits, engine edits, baseline upgrades, existing-test changes, dependency changes,
+Checkpoint 10 permits only the process-reading backend slice and offline tests. No live worker collection or production caller is approved. No plugin edits, engine edits, baseline upgrades, existing-test changes, dependency changes,
 release changes or broad refactors are authorized by these investigation scopes.
 Use the existing supervisor for the exact checks specified in the task. Keep raw
 logs and licensed or workplace source outside Git. Do not copy engine bodies into

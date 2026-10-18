@@ -691,7 +691,7 @@ Read source and run the existing offline profile and full-base scope gate. Commi
 and retain candidate-bound evidence. Stop for review without merge/push/release.
 
 
-## Active dispatch checkpoint 9: offline collector orchestration
+## Completed dispatch checkpoint 9: offline collector orchestration
 
 Implement only the pure first slice of docs/audit/persistence-collector-contract.md.
 The contract is accepted as a design; no live Windows adapter or launch seam is
@@ -741,3 +741,60 @@ Register exactly one offline catalog entry with 30-second timeout and
 acceptance not_mapped. Run focused test, offline profile and full-base scope gate;
 commit, retain candidate-bound evidence, and stop for review. No merge, push,
 claim release, task completion or additional task.
+
+
+## Active dispatch checkpoint 10: bounded Windows process reader
+
+Checkpoint 9 is accepted as pure offline orchestration. Implement only the
+read_process portion of the future Windows backend. This is implementation
+permission for the files below, not permission to execute live collection.
+
+Allowed: Tools/persistence_process_reader.py, Tools/read-persistence-process.ps1,
+Tools/test-persistence-process-reader.py, Tests/catalog.json (one offline row),
+and this task's Completion evidence. Existing collector/validator and all
+production callers remain read-only. No listener/path/parser adapter, launch
+record, runner integration, settings, engine or lifecycle changes.
+
+Provide read_process(pid, deadline_ns) -> ReadResult[ProcessRead] compatible with
+the collector contract. Use standard library, injectable runner and monotonic
+clock; no side effects at import. Validate positive uint32 PID (not bool) and
+integer deadline before spawning. Refuse expired budgets without a child.
+Invoke only the fixed checked-in PowerShell script using an argument list,
+-NoProfile -NonInteractive, no shell=True or interpolated command strings.
+Use hidden child startup on Windows. No arbitrary command or script parameter.
+
+The fixed script accepts only PID, uses strict terminating error handling, emits
+one small versioned JSON result and never raw provider errors or command lines
+outside its result channel. Command line is required data in ProcessRead; Python
+must not log it or include it in a refusal. Query only that PID through CIM.
+Open a native process handle with limited-query rights; get creation FILETIME
+and exit state before and after the CIM read using that same handle. Confirm
+PID/executable/command line data is present and well typed; process exit,
+ambiguous/multiple/missing CIM rows or any error refuses. Native handles must
+close on every path. Do not infer ownership from this read or upgrade a lease.
+Retained-handle checks reduce races but do not certify identity of future reads.
+
+The Python runner owns only its collection child, enforces remaining monotonic
+deadline, rechecks after return, and always reaps its child on timeout/error.
+No editor termination and no process-tree enumeration. The fixed script must
+not launch children. Bound captured stdout/stderr (suggest 64 KiB each) during
+collection, not just after unlimited buffering; overflow refuses and cleans up
+only its child. Specify/test EOF, nonzero exit, invalid UTF-8, extra JSON/output,
+malformed schema, size overflow, deadline equality, early process exit and
+cleanup failures. Never accept partial output. Preserve integer FILETIME ticks;
+no floating point/CIM timestamp conversion. Returned fields are exactly the
+existing ProcessRead shape. Non-Windows execution returns unsupported/unknown
+refusal without spawning. Do not add dependencies or change the ReadResult error
+taxonomy; map errors to the existing categories.
+
+Offline tests use injected runner/clock and script inspection where appropriate;
+never spawn PowerShell, enumerate processes, query CIM or read actual command
+lines. Tests must verify the precise fixed command construction and narrow
+cleanup target, not merely mock successful results. Document what offline tests
+cannot prove. No live validation is authorized for the worker. Any unavailable
+native/API guarantee must be reported explicitly, not invented.
+
+Register one offline test row with timeout_seconds 30 and acceptance not_mapped.
+Run focused test, offline profile and full-base scope gate. Commit, retain
+candidate-bound evidence, report full SHA/limits and stop. No merge/push, claim
+release, readiness/task completion or next task.

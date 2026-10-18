@@ -30,14 +30,15 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "Tools/persistence_collector.py",
-        "Tools/test-persistence-collector.py",
+        "Tools/persistence_process_reader.py",
+        "Tools/read-persistence-process.ps1",
+        "Tools/test-persistence-process-reader.py",
         "Tests/catalog.json",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "e54fc9c6c2ef1781eaf07f017d06d7e15cc54b09",
-      "checkpoint": "9: pure offline collector orchestration; dispatch base includes this contract commit"
+      "approved_base": "f7a797c14d9ca29a921b40c3623ab767829ac8e5",
+      "checkpoint": "10: bounded process reader; dispatch base includes this contract commit"
     }
   }
 }

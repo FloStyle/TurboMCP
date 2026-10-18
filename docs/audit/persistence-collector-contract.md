@@ -422,3 +422,12 @@ Accepted as a design investigation. Checkpoint 9 in roadmap-r04 authorizes only
 the pure offline slice and supplies binding file-ID and time-conversion
 clarifications. All Windows adapter, launch-record and lifecycle work remains
 proposed and unapproved. Offline tests cannot certify live ownership.
+
+
+### Offline orchestration integration
+
+Candidate f7a797c14d9ca29a921b40c3623ab767829ac8e5 is accepted with 59 focused
+checks and independent offline validation. It fixes malformed result handling,
+policy-derived payload bounds and call-order UTC rollback checks. The collector
+still has no production caller or live backend. Only the checkpoint 10 process
+reader slice is now approved; other adapter and lifecycle work stays deferred.
