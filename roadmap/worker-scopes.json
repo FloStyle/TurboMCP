@@ -4,13 +4,6 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "assignments": {
-        "widget-connected-input": {
-          "files": [
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp",
-            "Tools/test-widget-roundtrip.py"
-          ],
-          "new_files": []
-        },
         "panel-layout": {
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp",
@@ -18,6 +11,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelProbeCommandlet.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelHistoryTest.cpp",
             "Tools/test-panel.py"
+          ],
+          "new_files": []
+        },
+        "widget-postwrite-compile": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp",
+            "Tools/test-widget-roundtrip.py"
           ],
           "new_files": []
         }
