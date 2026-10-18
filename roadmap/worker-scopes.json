@@ -30,15 +30,16 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetAppendAcceptanceTest.cpp",
-        "Tools/test-widget-append-acceptance.py",
-        "Tests/catalog.json",
-        "todo/roadmap-r04.md",
-        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
+        "Tools/task_claim.py",
+        "Tools/next-task.py",
+        "Tools/check-worker-scope.py",
+        "Tools/test-task-claims.py",
+        "Tools/test-worker-scope.py",
+        "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "a8e8d8065a2ef66d6eb9492d52b8ea547089a6c3",
-      "checkpoint": "Widget acceptance and isolated Append Plan probe repair"
+      "approved_base": "b6760a8",
+      "checkpoint": "Parallel assignment claims implementation, disposable tests only"
     }
   }
 }
