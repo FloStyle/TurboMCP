@@ -497,37 +497,52 @@ namespace
 			OutFixture.LastError = TEXT("comparator CanvasPanel root is missing");
 			return false;
 		}
+		// Keep the same construction order as the acceptance fixture: each widget
+		// is constructed, added and toggled before the next is constructed.
+		FText WidgetError;
 		OutFixture.Title = OutFixture.Tree->ConstructWidget<UTextBlock>(
 			UTextBlock::StaticClass(), TEXT("ComparatorTitle"));
-		OutFixture.Status = OutFixture.Tree->ConstructWidget<UTextBlock>(
-			UTextBlock::StaticClass(), TEXT("ComparatorStatus"));
-		if (OutFixture.Title == nullptr || OutFixture.Status == nullptr)
+		if (OutFixture.Title == nullptr
+			|| !FWidgetBlueprintOperationUtils::AddWidget(OutFixture.Blueprint, OutFixture.Title,
+				OutFixture.Root, 0, WidgetError))
 		{
-			OutFixture.LastError = TEXT("comparator TextBlocks were not constructed");
-			return false;
-		}
-		FText WidgetError;
-		if (!FWidgetBlueprintOperationUtils::AddWidget(OutFixture.Blueprint, OutFixture.Title,
-				OutFixture.Root, 0, WidgetError)
-			|| !FWidgetBlueprintOperationUtils::AddWidget(OutFixture.Blueprint, OutFixture.Status,
-				OutFixture.Root, 1, WidgetError))
-		{
-			OutFixture.LastError = TEXT("comparator AddWidget failed: ") + WidgetError.ToString();
+			OutFixture.LastError = TEXT("comparator Title add failed: ") + WidgetError.ToString();
 			return false;
 		}
 		OutFixture.TitleSlot = Cast<UCanvasPanelSlot>(OutFixture.Title->Slot);
-		OutFixture.StatusSlot = Cast<UCanvasPanelSlot>(OutFixture.Status->Slot);
-		if (OutFixture.TitleSlot == nullptr || OutFixture.StatusSlot == nullptr)
+		if (OutFixture.TitleSlot == nullptr)
 		{
-			OutFixture.LastError = TEXT("comparator slot is missing");
+			OutFixture.LastError = TEXT("comparator Title slot is missing");
 			return false;
 		}
 		OutFixture.TitleSlot->SetZOrder(4);
-		OutFixture.StatusSlot->SetZOrder(1);
 		FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(OutFixture.Blueprint,
 			OutFixture.Title, true);
+
+		OutFixture.Status = OutFixture.Tree->ConstructWidget<UTextBlock>(
+			UTextBlock::StaticClass(), TEXT("ComparatorStatus"));
+		if (OutFixture.Status == nullptr
+			|| !FWidgetBlueprintOperationUtils::AddWidget(OutFixture.Blueprint, OutFixture.Status,
+				OutFixture.Root, 1, WidgetError))
+		{
+			OutFixture.LastError = TEXT("comparator Status add failed: ") + WidgetError.ToString();
+			return false;
+		}
+		OutFixture.StatusSlot = Cast<UCanvasPanelSlot>(OutFixture.Status->Slot);
+		if (OutFixture.StatusSlot == nullptr)
+		{
+			OutFixture.LastError = TEXT("comparator Status slot is missing");
+			return false;
+		}
+		OutFixture.StatusSlot->SetZOrder(1);
 		FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(OutFixture.Blueprint,
 			OutFixture.Status, false);
+		if (!OutFixture.Blueprint->WidgetVariableNameToGuidMap.Contains(OutFixture.Title->GetFName())
+			|| !OutFixture.Blueprint->WidgetVariableNameToGuidMap.Contains(OutFixture.Status->GetFName()))
+		{
+			OutFixture.LastError = TEXT("comparator widgets did not receive GUIDs before compilation");
+			return false;
+		}
 		{
 			TArray<UWidget*> AllWidgets;
 			OutFixture.Tree->GetAllWidgets(AllWidgets);
@@ -621,32 +636,25 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
+	// AddWidget calls MarkBlueprintAsStructurallyModified, which can flush the
+	// compilation queue immediately. A widget constructed but not yet added is
+	// still visible to the compiler's source sweep, so construct, add and toggle
+	// each widget in sequence instead of constructing both before the first add.
+	FText WidgetError;
 	Fixture.Title = Fixture.Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),
 		TEXT("TitleText"));
-	Fixture.Status = Fixture.Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),
-		TEXT("StatusText"));
-	if (Fixture.Title == nullptr || Fixture.Status == nullptr)
+	if (Fixture.Title == nullptr
+		|| !FWidgetBlueprintOperationUtils::AddWidget(Fixture.Blueprint, Fixture.Title,
+			Fixture.Root, 0, WidgetError))
 	{
-		AddError(TEXT("widget fixture: TitleText or StatusText could not be constructed"));
+		AddError(TEXT("widget fixture: TitleText add failed: ") + WidgetError.ToString());
 		return false;
 	}
 	Fixture.Title->SetText(FText::FromString(TEXT("Title")));
-	Fixture.Status->SetText(FText::FromString(TEXT("Status")));
-
-	FText WidgetError;
-	if (!FWidgetBlueprintOperationUtils::AddWidget(Fixture.Blueprint, Fixture.Title,
-			Fixture.Root, 0, WidgetError)
-		|| !FWidgetBlueprintOperationUtils::AddWidget(Fixture.Blueprint, Fixture.Status,
-			Fixture.Root, 1, WidgetError))
-	{
-		AddError(TEXT("widget fixture: AddWidget failed: ") + WidgetError.ToString());
-		return false;
-	}
 	Fixture.TitleSlot = Cast<UCanvasPanelSlot>(Fixture.Title->Slot);
-	Fixture.StatusSlot = Cast<UCanvasPanelSlot>(Fixture.Status->Slot);
-	if (Fixture.TitleSlot == nullptr || Fixture.StatusSlot == nullptr)
+	if (Fixture.TitleSlot == nullptr)
 	{
-		AddError(TEXT("widget fixture: CanvasPanelSlot is missing"));
+		AddError(TEXT("widget fixture: TitleText CanvasPanelSlot is missing"));
 		return false;
 	}
 	Fixture.TitleSlot->SetAnchors(FAnchors(0.0f, 0.0f, 0.0f, 0.0f));
@@ -654,14 +662,34 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 	Fixture.TitleSlot->SetAlignment(FVector2D(0.25, 0.5));
 	Fixture.TitleSlot->SetAutoSize(false);
 	Fixture.TitleSlot->SetZOrder(3);
+	FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(Fixture.Blueprint, Fixture.Title, true);
+	TestTrue(TEXT("TitleText has a GUID before the next widget is constructed"),
+		Fixture.Blueprint->WidgetVariableNameToGuidMap.Contains(Fixture.Title->GetFName()));
+
+	Fixture.Status = Fixture.Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),
+		TEXT("StatusText"));
+	if (Fixture.Status == nullptr
+		|| !FWidgetBlueprintOperationUtils::AddWidget(Fixture.Blueprint, Fixture.Status,
+			Fixture.Root, 1, WidgetError))
+	{
+		AddError(TEXT("widget fixture: StatusText add failed: ") + WidgetError.ToString());
+		return false;
+	}
+	Fixture.Status->SetText(FText::FromString(TEXT("Status")));
+	Fixture.StatusSlot = Cast<UCanvasPanelSlot>(Fixture.Status->Slot);
+	if (Fixture.StatusSlot == nullptr)
+	{
+		AddError(TEXT("widget fixture: StatusText CanvasPanelSlot is missing"));
+		return false;
+	}
 	Fixture.StatusSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 0.0f));
 	Fixture.StatusSlot->SetOffsets(FMargin(0.0f, 120.0f, 0.0f, 24.0f));
 	Fixture.StatusSlot->SetAlignment(FVector2D(0.5, 0.0));
 	Fixture.StatusSlot->SetAutoSize(false);
 	Fixture.StatusSlot->SetZOrder(2);
-
-	FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(Fixture.Blueprint, Fixture.Title, true);
 	FWidgetBlueprintOperationUtils::ToggleWidgetAsVariable(Fixture.Blueprint, Fixture.Status, true);
+	TestTrue(TEXT("StatusText has a GUID before compilation"),
+		Fixture.Blueprint->WidgetVariableNameToGuidMap.Contains(Fixture.Status->GetFName()));
 	{
 		TArray<UWidget*> AllWidgets;
 		Fixture.Tree->GetAllWidgets(AllWidgets);
