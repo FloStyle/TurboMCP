@@ -4,26 +4,20 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "assignments": {
-        "monitor-correctness": {
-          "files": [
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLog.cpp",
-            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallLog.h",
-            "Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp",
-            "Plugins/TurboMCP/Source/TurboMCP/Public/Panel/STurboMCPPanel.h",
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallTimeline.cpp",
-            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCallTimeline.h",
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelProbeCommandlet.cpp",
-            "Tools/test-panel.py"
-          ],
-          "new_files": [
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelHistoryTest.cpp",
-            "Tools/test-panel-history.py"
-          ]
-        },
         "widget-connected-input": {
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp",
             "Tools/test-widget-roundtrip.py"
+          ],
+          "new_files": []
+        },
+        "panel-layout": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Panel/STurboMCPPanel.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelProbeCommandlet.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelHistoryTest.cpp",
+            "Tools/test-panel.py"
           ],
           "new_files": []
         }
