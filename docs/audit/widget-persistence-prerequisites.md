@@ -308,3 +308,13 @@ the isolation-versus-detachment choice and setting observation are not approved
 implementation contracts. Only checkpoint 7 in roadmap-r04 is now authorized:
 a pure offline identity validator with injected-data tests. No live collection,
 ownership wiring, restart or P1-P6 collective implementation is authorized.
+
+
+### Checkpoint 7 integration
+
+Candidate 4fa6f36fcbcf52e6b622acca87874158de79f5c9 passed independent offline
+run 1bac7355e9dd4c53ac3bfe9a6dd889ad and the full-base scope gate. The pure
+validator and 69 injected-data tests are accepted. Unicode identity comparison
+preserves non-ASCII code points. No collector or production caller is wired.
+Checkpoint 8 authorizes only the trusted collection contract; live ownership,
+restart and persistence remain unverified.

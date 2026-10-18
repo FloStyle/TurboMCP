@@ -542,7 +542,7 @@ MCP/recovery execution. Run offline validation and full-base scope gate; commit,
 retain candidate-bound evidence and stop for integration review.
 
 
-## Active dispatch checkpoint 7: offline identity validator implementation
+## Completed dispatch checkpoint 7: offline identity validator implementation
 
 Checkpoint 6 candidate ec370326 is accepted as a design investigation only.
 The complete lifecycle remains blocked; P1-P6 are not collectively approved.
@@ -599,3 +599,45 @@ it engine or weaken validate-repo. Candidate e8adf04 remains unaccepted.
 Fix future process/listener start times relative to observation time, reject
 invalid Win32 path characters/control codes, and refuse non-string dictionary
 keys without raising. Add adversarial regression tests and preserve pure behavior.
+
+
+## Active dispatch checkpoint 8: trusted identity collection contract
+
+Checkpoint 7 candidate 4fa6f36fcbcf52e6b622acca87874158de79f5c9 is accepted
+as a pure supplied-evidence validator only. R04 remains incomplete. No live
+ownership, persistence or Monday readiness is certified.
+
+Write docs/audit/persistence-collector-contract.md. This is one bounded source
+investigation and implementation specification, not collector implementation.
+Read persistence_identity.py, existing process/listener checks, ownership/leases,
+runner and Windows process helpers. Specify the smallest read-only collector
+that can supply the validator honestly on Windows. Choose concrete existing
+APIs and trace available repository code. Do not invent guarantees.
+
+Define sources for PID, creation time with its actual precision, executable path,
+project identity and complete relevant TCP rows. Expected identity must originate
+from the trusted supervisor launch record, not be copied from the observations.
+Explain command-line parsing, quoted paths, canonicalization, aliases/junctions,
+case-sensitive directories, and why string comparison alone cannot prove file
+identity. Refuse unsupported ambiguity. Do not fabricate 100 ns precision from
+a coarser source; identify a schema adaptation if needed, without implementing it.
+
+Bound each collection attempt and the entire pair. Specify time measurement,
+partial enumeration/permission failures, process exit/PID reuse between reads,
+listener replacement, wildcard families and overflow. Map fields to schema v1;
+if v1 cannot represent truthful evidence, record an exact proposed adjustment.
+No validation pass grants permission to connect, mutate, stop or restart. State
+the residual race and what a future caller must recheck.
+
+Give one minimal proposed implementation slice with exact file allowlist,
+injected-backend offline cases, success and negative acceptance, privacy/log
+redaction, and rollback. Keep live acceptance supervisor-owned and explicitly
+unexecuted. Do not implement lifecycle/restart/settings work or propose a general
+framework rewrite. Keep the report concise and implementable. All implementation
+steps remain proposed_unapproved until review.
+
+Only this new report and roadmap-r04 Completion evidence may change. No code,
+tests, catalog, engine/config, status, TODO, scope or release edits. Do not inspect
+live process command lines, enumerate sockets, launch an editor or run builds.
+Read source and run the existing offline profile and full-base scope gate. Commit
+and retain candidate-bound evidence. Stop for review without merge/push/release.

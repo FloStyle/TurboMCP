@@ -30,14 +30,12 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "Tools/persistence_identity.py",
-        "Tools/test-persistence-identity.py",
-        "todo/roadmap-r04.md",
-        "Tests/catalog.json"
+        "docs/audit/persistence-collector-contract.md",
+        "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "ec370326dfd3175a5c111ae3bd6098a7fe74ee44",
-      "checkpoint": "7 correction: offline catalog registration and input-validation repairs; dispatch includes this contract commit"
+      "approved_base": "4fa6f36fcbcf52e6b622acca87874158de79f5c9",
+      "checkpoint": "8: trusted identity collection contract; dispatch base includes this contract commit"
     }
   }
 }

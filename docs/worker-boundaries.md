@@ -4,18 +4,18 @@
 
 Use one reviewed task, one isolated worktree and one durable claim per worker.
 The integration owner records a full approved base commit before dispatch.
-R13 and R16 are accepted. R04 checkpoints 1-5 are accepted as source evidence and checkpoint 6 as a bounded design investigation. The active assignment is checkpoint 7: a pure offline identity validator.
+R13 and R16 are accepted. R04 checkpoints 1-5 are accepted as source evidence and checkpoint 6 as a bounded design investigation. Checkpoint 7 is accepted as a pure offline identity validator. The active assignment is checkpoint 8: the trusted collection contract.
 
 ## Approved scope
 
 [worker-scopes.json](../roadmap/worker-scopes.json) contains exact writable paths
 for R13, R16 and the active R04 checkpoint. Everything else is outside scope. R13 may update the six listed
 comparison/evidence files. R16 may write its two dependency reports and task
-evidence. R04 checkpoint 7 may write only the two new Python files named in worker-scopes.json and task Completion evidence. In a task file, only the Completion evidence section may change.
+evidence. R04 checkpoint 8 may write only the new collector contract named in worker-scopes.json and task Completion evidence. In a task file, only the Completion evidence section may change.
 The reviewer owns task status, review registers, generated TODO and queue updates.
 Unknown tasks fail closed until the integration owner supplies a reviewed scope.
 
-Checkpoint 7 permits its new offline test only. No plugin edits, engine edits, baseline upgrades, existing-test changes, dependency changes,
+Checkpoint 8 permits source investigation and documentation only. No plugin edits, engine edits, baseline upgrades, existing-test changes, dependency changes,
 release changes or broad refactors are authorized by these investigation scopes.
 Use the existing supervisor for the exact checks specified in the task. Keep raw
 logs and licensed or workplace source outside Git. Do not copy engine bodies into
