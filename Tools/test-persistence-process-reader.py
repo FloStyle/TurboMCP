@@ -2025,6 +2025,74 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertEqual(result["accounting_status"], "passed")
         self.assertFalse(result["clean_run"])
 
+    def test_job_observation_thread_is_stoppable_and_reports_errors(self):
+        job = object.__new__(self.acceptance.ObservedJob)
+        seen = []
+        def drain(deadline, callback, clock=None, stop_event=None):
+            callback(901)
+            stop_event.wait(0.5)
+            return None
+        job.drain_messages = drain
+        stop, thread, errors = job.start_observation(10, lambda pid: seen.append(pid))
+        stop.set()
+        thread.join(1)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(seen, [901])
+        self.assertEqual(errors, [])
+
+        job.drain_messages = lambda deadline, callback, clock=None, stop_event=None: "completion-port:5"
+        _, thread, errors = job.start_observation(10, None)
+        thread.join(1)
+        self.assertEqual(errors, ["completion-port:5"])
+
+    def test_preassignment_notification_identity_is_captured_without_late_lookup(self):
+        class DummyThread:
+            def is_alive(self): return False
+            def join(self, timeout=None): return None
+        class Observer:
+            def __init__(self, callback_pid=None, observer_errors=None):
+                self.values = [(0, 0), (1, 1), (1, 0)]
+                self.callback_pid = callback_pid; self.errors = observer_errors or []
+            def accounting(self): return self.values.pop(0)
+            def assign(self, launch): pass
+            def is_process_in_job(self, launch): return True
+            def start_observation(self, deadline, callback, clock):
+                if self.callback_pid is not None:
+                    callback(self.callback_pid)
+                return type("Stop", (), {"set": lambda s: None})(), DummyThread(), self.errors
+            def drain_messages(self, deadline, callback, clock=None, stop_event=None): return None
+            def close_checked(self): pass
+        class Launch:
+            pid = 900; exit_code = 2
+            def resume(self): pass
+            def close_stdin(self): pass
+            def wait(self, timeout): return True
+            def close_process(self): pass
+            def close(self, deadline=None, clock=None): return []
+        with mock.patch.object(self.acceptance, "process_evidence",
+                               return_value=({"pid": 901, "image": "child.exe", "created": 1}, None)):
+            result = self.acceptance._preassignment_attempt(
+                "worker", Observer(callback_pid=901), launcher=lambda mode: Launch(),
+                clock=lambda: 100.0
+            )
+        self.assertEqual(result["status"], "failed", result)
+        self.assertEqual(result["unexpected_processes"][0]["identity"]["image"], "child.exe")
+
+        with mock.patch.object(self.acceptance, "process_evidence", return_value=(None, "open:5")):
+            result = self.acceptance._preassignment_attempt(
+                "worker", Observer(callback_pid=901), launcher=lambda mode: Launch(),
+                clock=lambda: 100.0
+            )
+        self.assertEqual(result["unexpected_processes"][0]["identity_error"], "open:5")
+        self.assertNotEqual(result["status"], "passed", result)
+
+        result = self.acceptance._preassignment_attempt(
+            "worker", Observer(observer_errors=["observer:api"]),
+            launcher=lambda mode: Launch(), clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertEqual(result["port_api_error"], "observer:observer:api")
+
     def test_preassignment_deadline_late_stages_fail_closed(self):
         class Clock:
             value = 100.0

@@ -236,19 +236,26 @@ class ObservedJob:
         if errors:
             raise RuntimeError(";".join(errors))
 
-    def drain_messages(self, deadline, on_new_process=None, clock=time.monotonic):
+    def drain_messages(self, deadline, on_new_process=None, clock=time.monotonic,
+                       stop_event=None):
         error = None
         while self.handle and clock() < deadline:
+            if stop_event is not None and stop_event.is_set():
+                break
             remaining = max(0, int((deadline - clock()) * 1000))
             if remaining == 0:
                 break
+            if stop_event is not None:
+                remaining = min(remaining, 50)
             count = W.DWORD()
             key = ctypes.c_size_t()
             overlay = ctypes.c_void_p()
             if not self.api.GetQueuedCompletionStatus(self.port, ctypes.byref(count), ctypes.byref(key), ctypes.byref(overlay), remaining):
                 code = ctypes.get_last_error()
                 if code == 258:
-                    break
+                    if stop_event is None:
+                        break
+                    continue
                 error = "completion-port:" + str(code)
                 break
             message = int(count.value)
@@ -257,6 +264,22 @@ class ObservedJob:
             if message == JOB_OBJECT_MSG_NEW_PROCESS and on_new_process is not None:
                 on_new_process(pid)
         return error
+
+
+    def start_observation(self, deadline, callback, clock=time.monotonic):
+        stop = threading.Event()
+        errors = []
+        def observe():
+            try:
+                error = self.drain_messages(deadline, callback, clock=clock, stop_event=stop)
+                if error:
+                    errors.append(error)
+            except Exception as exc:
+                errors.append("observer:" + str(exc))
+        thread = threading.Thread(target=observe, daemon=True)
+        HELPER_THREADS.append(thread)
+        thread.start()
+        return stop, thread, errors
 
 
 def process_evidence(pid, job):
@@ -1173,6 +1196,17 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     cleanup_errors = []
     operation_error = False
     detail = "not-observed"
+    observer_stop = None
+    observer_thread = None
+    observer_errors = []
+    seen_notifications = set()
+
+    def observed(pid):
+        if pid in seen_notifications or pid == (launch.pid if launch is not None else None):
+            return
+        seen_notifications.add(pid)
+        identity, identity_error = process_evidence(pid, observer)
+        unexpected.append({"pid": pid, "identity": identity, "identity_error": identity_error})
 
     def setup_remaining():
         if clock() >= setup_deadline:
@@ -1210,6 +1244,9 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
             raise RuntimeError("baseline-accounting-not-one")
         setup_remaining()
         observation_deadline = clock() + observation_seconds
+        if hasattr(observer, "start_observation"):
+            observer_stop, observer_thread, observer_errors = observer.start_observation(
+                observation_deadline, observed, clock)
         launch.resume()
         ordering["resumed"] = True
         launch.close_stdin()
@@ -1220,6 +1257,15 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
             raise RuntimeError("worker-wait-timeout")
         ordering["worker_exited"] = True
         observation_remaining()
+        if observer_stop is not None:
+            observer_stop.set()
+        if observer_thread is not None:
+            while observer_thread.is_alive() and clock() < observation_deadline:
+                observer_thread.join(min(0.05, max(0, observation_deadline - clock())))
+            if observer_thread.is_alive():
+                raise RuntimeError("observer-thread-timeout")
+        if observer_errors:
+            port_error = "observer:" + ";".join(str(item) for item in observer_errors)
         exit_code = launch.exit_code
         launch.close_process()
         ordering["process_released_before_final"] = True
@@ -1227,21 +1273,28 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
         final = observer.accounting()
         observation_remaining()
 
-        def observed(pid):
-            if pid != launch.pid:
-                unexpected.append(pid)
         observation_remaining()
         remaining = max(0.0, observation_deadline - clock())
         try:
-            port_error = observer.drain_messages(clock() + min(2.0, remaining), observed, clock=clock)
+            late_error = observer.drain_messages(clock() + min(2.0, remaining), observed, clock=clock)
+            if late_error and port_error is None:
+                port_error = late_error
         except Exception as exc:
-            port_error = "completion-port:" + str(exc)
+            if port_error is None:
+                port_error = "completion-port:" + str(exc)
         observation_remaining()
     except Exception as exc:
         detail = type(exc).__name__ + ": " + str(exc)
         operation_error = True
     finally:
         cleanup_deadline = clock() + CLEANUP_LIMIT_SECONDS
+        if observer_stop is not None:
+            observer_stop.set()
+        if observer_thread is not None:
+            while observer_thread.is_alive() and clock() < cleanup_deadline:
+                observer_thread.join(min(0.05, max(0, cleanup_deadline - clock())))
+            if observer_thread.is_alive():
+                cleanup_errors.append("observer-thread-timeout")
         if launch is not None:
             try:
                 cleanup_errors.extend(launch.close(cleanup_deadline, clock))
@@ -1261,7 +1314,10 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     )
     decision.update(mode=mode, ordering=ordering, exit_code=exit_code,
                     cleanup_errors=cleanup_errors, operation_detail=detail,
-                    operation_error=operation_error)
+                    operation_error=operation_error, unexpected_processes=unexpected,
+                    initial_observation=initial, baseline_observation=baseline,
+                    final_pre_cleanup=final,
+                    post_cleanup_accounting="not-queried-after-job-close")
     if operation_error:
         if decision.get("detail") == "extra-associated-process":
             pass
