@@ -85,9 +85,9 @@ If launch metadata cannot be captured after `Start-Process` returned, admission 
 
 `collect_pair(expected_record, endpoint, backend, policy)` performs only:
 
-- schema/type checks of the expected record and endpoint;
-- deadline calculation from `backend.monotonic_ticks()`;
-- calls to the backend with an absolute deadline and a per-call limit;
+- schema/type checks of the expected record, endpoint and policy;
+- deadline calculation from `backend.monotonic_ns()` and `backend.utc_now()`;
+- calls to the backend with an absolute monotonic deadline and a per-call limit;
 - project-parse result handling (the adapter returns the parsed project or a refusal);
 - canonical path/file-ID result handling;
 - process creation <= collection checks;
@@ -98,19 +98,73 @@ If launch metadata cannot be captured after `Start-Process` returned, admission 
 
 It performs no process, TCP, filesystem, PowerShell or engine call.
 
+### Public record and result contract
+
+`ExpectedRecord` has exactly these keys:
+
+```text
+schema: "turbomcp.persistence-expected/1"   # string, exact
+launch_id: str                              # non-empty, bounded
+pid: int                                    # positive, not bool
+editor_start_ticks: int                     # FILETIME ticks, positive, not bool
+project: {path: str, file_id: FileId}
+engine:  {path: str, file_id: FileId}
+endpoint: {host: "127.0.0.1"|"::1", port: 1..65535}
+
+FileId:
+  volume_serial: int
+  file_index_high: int
+  file_index_low: int
+  link_count: int              # >= 1; > 1 is a path refusal
+```
+
+`link_count` zero/missing is invalid evidence, not a pass. All FileId fields are integers and never bool; unreadable/missing values are a refusal.
+
+`collect_pair(expected_record, endpoint, backend, policy)` also takes a separate `endpoint` argument. It must be byte-for-byte identical in host and integer-identical in port to `expected_record.endpoint`; otherwise `endpoint_mismatch` is returned before any backend call. This duplication is intentional: the launch record and supervisor configuration must agree.
+
+`Policy` has exactly these keys and defaults:
+
+```text
+per_call_ns: int            default 2_000_000_000, range 1..5_000_000_000
+attempt_ns: int             default 5_000_000_000, range 1..10_000_000_000
+pair_ns: int                default 15_000_000_000, range 1..30_000_000_000
+snapshot_gap_ns: int        default 5_000_000_000, range 0..10_000_000_000
+age_ns: int                 default 10_000_000_000, range 1..30_000_000_000
+max_listener_rows: int      default 32, range 1..32
+```
+
+All policy values are positive integers (except `snapshot_gap_ns`, which may be zero) and never bool. `pair_ns` must be at least `attempt_ns`; otherwise `invalid_policy`.
+
+Public result:
+
+```text
+success:
+  {ok: true, reason: "consistent_evidence", payload: <schema-v1 object>}
+
+refusal:
+  {ok: false, reason: <public_code>, category: one of
+     clock|deadline|backend|identity|schema|validator}
+```
+
+Public codes include `invalid_expected`, `invalid_policy`, `endpoint_mismatch`, `backend_timeout`, `backend_permission`, `backend_provider_error`, `backend_incomplete`, `backend_ambiguous`, `backend_malformed`, `clock_rollback`, `deadline_exceeded`, `process_mismatch`, `path_mismatch`, `listener_missing`, `listener_foreign`, `listener_multiple_owners`, `observation_changed` and `validator_refused`. Unknown fields, wrong types and bool-as-int in the expected record/policy are refusals; they are not ignored, coerced or raised.
+
+The backend `ReadResult` is internal. It is not returned to the public caller and its raw error text, command line or provider dump is never placed in the public result. A malformed backend result, including a missing value, unknown error, non-bool `ok` or wrong field type, becomes `backend_malformed`; it never propagates an exception or partial data. `parse_project` fake tests prove only the orchestration's handling of injected parser outcomes, not the correctness of `CommandLineToArgvW`.
+
 ### Injected backend contract
 
 The backend is a protocol with typed results. Every method receives an absolute monotonic deadline and must return `ReadResult`; it must not return partial data as success.
 
 ```text
-monotonic_ticks() -> int
+monotonic_ns() -> int          # integer nanoseconds, arbitrary epoch
 utc_now() -> canonical UTC string
 
-read_process(pid, deadline_ticks) -> ReadResult[ProcessRead]
-read_listeners(port, deadline_ticks) -> ReadResult[ListenerReadList]
-read_path(path, deadline_ticks) -> ReadResult[PathRead]
-parse_project(command_line, deadline_ticks) -> ReadResult[ProjectRead]
+read_process(pid, deadline_ns) -> ReadResult[ProcessRead]
+read_listeners(port, deadline_ns) -> ReadResult[ListenerReadList]
+read_path(path, deadline_ns) -> ReadResult[PathRead]
+parse_project(command_line, deadline_ns) -> ReadResult[ProjectRead]
 ```
+
+`monotonic_ns` and `utc_now` are injected, immediate and nonblocking. The monotonic value is an integer nanosecond counter with an arbitrary epoch (it may be large and nonzero). It is never compared with FILETIME ticks or UTC values. All duration and deadline arithmetic uses `monotonic_ns`; all calendar comparisons use canonical UTC converted by integer arithmetic.
 
 ```text
 ProcessRead:
@@ -149,6 +203,8 @@ ReadResult[T]:
 
 A clean empty listener list is `ok=true, value=[]`; it is not a provider error. The validator then refuses with `listener_missing`. A provider failure is `ok=false, provider_error`; the orchestrator must not substitute an empty list. Timeout or unknown completion is `ok=false`.
 
+`PathRead` is malformed unless `has_reparse_component`/`has_short_name_component` are bool, `link_count` is an integer greater than zero, and the file-ID fields are integers. `link_count > 1` is a path refusal; `link_count == 0`, missing flags or unreadable values are `backend_malformed`/`path_mismatch`, never silently passed. A missing or zero file-ID field is likewise a refusal.
+
 ### Future Windows adapter (separate, not implemented)
 
 A separately reviewed adapter implements the four methods. Exact proposed file: `Tools/persistence_collector_windows.py`. It is **not** in the first slice and must not be inferred from fake-backend tests.
@@ -165,17 +221,35 @@ The adapter:
 
 It returns `ReadResult` only. It never calls a stop/restart, never connects to the port, and never terminates the editor.
 
-## Deadline and cancellation contract
+## Clock domains and deadline contract
 
 A stopwatch checked only after a call returns does not bound a hung CIM or TCP call. The deadline must be enforced by the layer that owns the blocking operation.
 
-- Orchestration computes a **pair deadline** and an **attempt deadline** from `monotonic_ticks()`.
-- Each backend call receives `min(attempt_deadline, pair_deadline, now + per_call_budget)`.
-- The future adapter must run each blocking read in its own child process (or a cancellable native call) and enforce the absolute deadline there.
-- On timeout it terminates **only its own collection child/tree**. It must never terminate the editor or another process.
-- A child that exits without a complete structured result is `unknown`/`timeout`, never success.
-- Aggregate remaining budget is checked before every call and after every return. If the remaining budget is zero, the attempt is refused without another read.
-- A timeout, cancellation, unknown completion or partial result is a refusal. No partial row is retained.
+There are two distinct clock domains:
+
+| Use | Field/source | Unit/epoch | Arithmetic |
+| --- | --- | --- | --- |
+| Budgets and durations | `attempt_start_monotonic_ns`, `pair_start_monotonic_ns`, `backend.monotonic_ns()` | Integer nanoseconds, arbitrary monotonic epoch | Addition/subtraction only |
+| Calendar evidence | `attempt_start_utc`, `collected_at_utc`, `evaluated_at_utc` | Canonical UTC, 100 ns ticks since Unix epoch | Integer tick conversion only |
+
+`monotonic_ns` is never compared with FILETIME or UTC and never formatted as a date. `utc_now()` is immediate and nonblocking; it is not used for deadlines. The monotonic epoch is arbitrary and may be nonzero; tests must use a large nonzero epoch.
+
+For each attempt:
+
+```text
+attempt_start_monotonic_ns = backend.monotonic_ns()
+attempt_start_utc = backend.utc_now()
+attempt_deadline_ns = attempt_start_monotonic_ns + policy.attempt_ns
+pair_deadline_ns = pair_start_monotonic_ns + policy.pair_ns
+```
+
+Before each call, `now_ns = backend.monotonic_ns()`. If `now_ns >= attempt_deadline_ns` or `now_ns >= pair_deadline_ns`, refuse `deadline_exceeded` without starting the call. A call deadline is `min(attempt_deadline_ns, pair_deadline_ns, now_ns + policy.per_call_ns)`. Equality at a deadline is refusal, not a grant. The adapter enforces that absolute deadline in its child; the orchestrator also rejects a returned call whose end `monotonic_ns` is at or beyond the deadline.
+
+All duration checks use monotonic ns. `attempt_elapsed_ns = end_ns - attempt_start_monotonic_ns`; `pair_elapsed_ns = pair_end_ns - pair_start_monotonic_ns`. Equality with `attempt_ns`/`pair_ns` is refusal. Calendar age/gap checks use canonical UTC ticks: equality at `snapshot_gap_ns` or `age_ns` is allowed, consistent with validator v1; a later snapshot before an earlier one is `observation_order`. An observed UTC value earlier than `attempt_start_utc`, or a monotonic value lower than its previous value, is `clock_rollback`.
+
+On timeout the adapter terminates only its own collection child/tree; it never terminates the editor or another process. A child that exits without a complete structured result is `unknown`/`timeout`, never success. No partial row is retained.
+
+There is no implicit sleep between snapshots. Attempts are started back-to-back after their reads; if the backend is slow, the budget refuses rather than sleeping. The adapter must not add a delay to "wait for" a listener or process.
 
 The adapter's child PowerShell must use `-NoProfile -NonInteractive`, `$ErrorActionPreference='Stop'`, and `-ErrorAction Stop` on each cmdlet. It must clear/inspect `$Error`; non-terminating errors are not covered by a `try/catch` alone. See [about_CommonParameters](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_commonparameters?view=powershell-5.1). The child must write one structured result file only at the end, after the error count and command exit checks are clean; the parent discards stdout/partial files on nonzero exit, timeout or unknown completion.
 
@@ -231,23 +305,34 @@ Proposed pure orchestration:
 collect_pair(expected_record, endpoint, backend, policy)
 ```
 
+Before the attempts, capture `pair_start_monotonic_ns = backend.monotonic_ns()`, `pair_start_utc = backend.utc_now()` and `pair_deadline_ns = pair_start_monotonic_ns + policy.pair_ns`. After the second attempt capture `pair_end_monotonic_ns` and `pair_end_utc`.
+
 For each of two attempts:
 
-1. Compute `attempt_deadline` and `attempt_start` from monotonic ticks.
+1. Capture `attempt_start_monotonic_ns = backend.monotonic_ns()` and `attempt_start_utc = backend.utc_now()`; compute `attempt_deadline_ns` and `pair_deadline_ns`.
 2. Read and validate the expected process within the remaining per-call deadline.
 3. Read/parse the observed command line; require exactly one project; canonicalize and compare file identity.
 4. Read all listeners for the configured port; require a complete `ReadResult`, not a partial list.
-5. For every distinct owner PID, read its process identity; any unreadable/foreign owner is represented or the attempt fails.
-6. Re-read the expected process and listener set; any change fails the attempt.
-7. Set `collected_at_utc` at completion; reject if before process start, before attempt start, or beyond `max_attempt_seconds` (proposed 5 s).
+5. For every distinct owner PID, read its process identity. In the conservative first slice, any owner identity that does not equal the expected identity is refused immediately as `listener_foreign`; no foreign row is represented as acceptable evidence.
+6. Re-read the expected process including PID, creation ticks, executable, project parse and project/engine file IDs; re-read the listener set. Any change fails the attempt.
+7. Set `collected_at_utc = backend.utc_now()` at completion. Reject if its UTC tick is before `attempt_start_utc`, before the process creation ticks, or if the monotonic attempt duration is at or beyond `attempt_ns`.
 8. Emit `collection_ok=true` only when every read and recheck succeeded.
 
 After both attempts:
 
-- reject pair duration over 15 s, reversed/equal-invalid ordering, or gap over 5 s;
-- set `evaluated_at_utc` after the pair; use `max_age_seconds=10`;
+- reject pair monotonic duration at or beyond `pair_ns`;
+- reject `pair_end_utc < pair_start_utc` as `clock_rollback`;
+- allow equal UTC timestamps; reject only `second.utc < first.utc` as `observation_order`;
+- require `0 <= second.utc - first.utc <= snapshot_gap_ns`; equality at the bound is allowed;
+- set `evaluated_at_utc` after the pair; require `eval.utc - second.utc <= age_ns`; equality is allowed;
 - emit one schema-v1 payload;
 - any timeout, unknown completion, partial output, permission failure, process exit/PID reuse, listener replacement, overflow or ambiguity is a refusal.
+
+Recheck comparison is exact:
+
+- process recheck compares normalized `(pid, creation_ticks, executable_path, file_id, parsed_project_path, project_file_id)`; a raw PID match alone is insufficient;
+- listener rows are compared as a normalized multiset, not a list: sort or count the tuple `(family, address, port, state, owner_pid, owner_start_ticks, owner_executable, owner_file_id, owner_project, owner_project_file_id)` while preserving duplicates. Reordering identical rows is equal; a duplicate-count change fails; a PID match with changed owner creation/path identity fails;
+- a changed path/file ID at final recheck fails.
 
 The pure orchestrator uses the same `validate_evidence` function after building the payload. A validator pass is not permission.
 
@@ -298,14 +383,20 @@ No `start-editor.ps1`, lease, runner, lifecycle, restart, settings or persistenc
 ### Offline cases
 
 - Valid IPv4 exact and IPv6 exact; wildcard and same-owner multiple rows.
-- Intended editor alive with a foreign listener; multiple owners; missing listener; wrong port.
+- Intended editor alive with a foreign listener; multiple owners; missing listener; wrong port. Foreign owner rows are refused immediately.
 - PID reuse/different creation ticks; process exit between reads; changed executable/project/file ID.
+- Final-recheck changes in PID, creation, executable, parsed project or path/file ID.
+- Reordered identical listener rows pass; duplicate-count change fails.
 - Listener replacement between reads; >32 rows; partial/error enumeration.
 - Successful empty enumeration versus provider failure versus timeout/unknown completion.
-- Quoted/`-Project=`/positional project; multiple/ambiguous tokens; parser failure.
+- Quoted/`-Project=`/positional project; multiple/ambiguous tokens; parser failure (injected outcomes only, not parser correctness).
 - Reparse component, short/8.3 alias, hardlink count >1, case-sensitive directory/file-ID mismatch.
+- Missing/zero link counts, missing flags, bad booleans and malformed path records.
 - Creation time after collection, one-tick-boundary and coarser-source refusal.
-- Pair timeout, per-call timeout, aggregate budget exhaustion, clock rollback.
+- Nonzero monotonic epoch with a much larger/smaller UTC value; a bug that mixes domains must fail.
+- Equal UTC timestamps allowed with zero gap; attempt/pair deadline equality refused; monotonic and UTC rollback refused.
+- Pair timeout, per-call timeout, aggregate budget exhaustion, no implicit sleep.
+- Unknown expected/policy fields, bool-as-int, endpoint duplication mismatch and malformed backend results.
 - Clean success becomes validator `consistent_evidence`; every refusal returns no payload.
 - Backend error taxonomy preserved; no partial success; no side effect.
 

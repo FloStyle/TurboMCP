@@ -332,6 +332,9 @@ Deliverable: `docs/audit/persistence-collector-contract.md` specifies a read-onl
 Key limits recorded:
 - Expected identity comes from the trusted launch record, never from observations. The proposed record binds creation time to the `Start-Process -PassThru` process handle, verifies exit/PID reuse and captures file IDs before admission. Existing leases lack these fields; reused editors with missing provenance refuse rather than being upgraded from observations.
 - Deadline enforcement belongs to the adapter: each blocking read runs in its own child process with the aggregate remaining budget; timeout/unknown completion is refusal and only the collection child may be terminated, never the editor. Child PowerShell uses `-ErrorAction Stop`/`$ErrorActionPreference='Stop'`, inspects `$Error`, and writes structured output only on clean completion. A clean empty listener result, provider failure and incomplete/unknown output are distinct.
+- Clock domains are separate: integer monotonic nanoseconds with an arbitrary epoch for deadlines/durations, canonical UTC for calendar evidence, never cross-compared. Policy defaults/bounds are explicit; deadline equality refuses, equal UTC snapshot timestamps are allowed, clock rollback refuses, and there is no implicit sleep.
+- The public contract fixes expected-record/file-ID keys, endpoint duplication, policy types/defaults and separate success/refusal results. Backend `ReadResult` stays internal; unknown fields, bool-as-int, malformed results and endpoint mismatch are structured refusals with no raw dumps.
+- Rechecks compare listener rows as a normalized multiset preserving duplicates, and process recheck includes parsed project/path/file IDs, not only PID. Foreign owner rows are refused immediately; missing/zero link counts or unreadable flags refuse.
 - Path checks walk every component for reparse points, reject 8.3/short-name substitution and refuse `nNumberOfLinks > 1`; file-ID equality does not reject hardlinks. Aliases are rejected, not resolved, and the open-by-path engine file is not claimed to be the loaded image. FILETIME's 100 ns representation is not claimed as physical clock resolution.
 - Schema v1 cannot carry auditable file IDs. A future `turbomcp.persistence-identity/2` with `project_file_id`/`engine_file_id` volume/file-index fields is the exact proposed adjustment if file identity must be auditable.
 - The collector refuses unreadable/partial process or TCP enumeration, PID reuse, process exit, listener replacement, unsupported addresses, owner 0/4 and more than 32 rows. CIM/TCP completeness is not atomic and is not overclaimed.
@@ -340,7 +343,7 @@ Key limits recorded:
 
 Validation:
 - Source/docs review only; no live process, socket, command line, editor, build, MCP or recovery operation was run.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/8d219a49977a4be0b3c634d5c015250f/report.json`; all offline checks passed.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/b0b4d32b64b247bebf05de12e97b55e6/report.json`; all offline checks passed.
 - Candidate-bound offline evidence and the full-base scope gate are recorded in the submission after the commit. All collector/launch-record steps remain `proposed_unapproved`.
 
 Rollback: remove the new report and this evidence only. No existing file or caller is changed.
