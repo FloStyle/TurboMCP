@@ -850,7 +850,7 @@ candidate-bound evidence, report full SHA/limits and stop. No merge/push, claim
 release, readiness/task completion or next task.
 
 
-## Active dispatch checkpoint 11: process-reader lifecycle admission
+## Completed dispatch checkpoint 11: process-reader lifecycle admission
 
 Checkpoint 10 is accepted only as an offline-tested process-reader implementation.
 Live use remains blocked. Resolve the helper-process lifecycle question before
@@ -891,3 +891,51 @@ No code/test/catalog/scope/status/TODO/lease/config changes, no live processes,
 PowerShell/native calls, sockets, editor, builds or recovery. Existing offline
 profile and full-base scope gate only. Commit and retain candidate-bound evidence;
 report full SHA and blockers, keep claim, stop for review. No merge/push/release.
+
+
+## Active dispatch checkpoint 12: offline job containment
+
+Implement only the offline containment phase of process-reader-lifecycle.md.
+Allowed files: Tools/persistence_process_reader.py, Tools/execution_runtime.py,
+Tools/test-persistence-process-reader.py, and this task's Completion evidence.
+No native profile/suite, catalog, PowerShell script, collector/validator, engine,
+lease or production caller changes. Live admission remains blocked.
+
+Add checked job termination/accounting/membership/close methods while preserving
+existing WindowsJob.close, run_owned and generic --worker semantics. Use exact
+Win32 prototypes, structure layouts and checked return values. Expose injection
+seams for fake API/job/clock tests without executing native operations on import.
+Only new --persistence-worker accepts a bounded complete UTF-8 request (<=512
+bytes) with exact integer schema=1 and positive uint32 pid, then EOF. Empty EOF,
+extra objects/bytes, duplicate keys, nonfinite constants and malformed fields
+refuse before launching anything. Parent assigns and verifies membership before
+writing; parent closes the sole writer. No arbitrary argv or executable input.
+
+Worker derives fixed PowerShell/script paths locally. Avoid recursive invocation
+of the public reader from the worker. Preserve strict output/encoding/error
+contract and hidden startup. Parent owns all deadlines and contained descendants;
+worker accepts one request only. A stalled request writer is bounded by the
+parent deadline/job termination. No global replay-protection claim.
+
+Contain the collection bootstrap and descendants in a fresh non-inheritable
+KILL_ON_JOB_CLOSE job with no breakaway. Refuse assignment/verification failure
+without authorization. Track exact owned handles; never enumerate/kill unrelated
+processes or shared CIM/WMI services. Preserve bounded capture during reads.
+Use one monotonic cleanup deadline, maximum five seconds, shared by termination,
+active-process polling, worker wait and drains. Query while the job handle is
+open, then close it. Every failure refuses; abnormal death cannot report success.
+No live-verified containment claim from mocks.
+
+Test actual orchestration under fake process/job/API/streams/clock: assignment
+before send, failed assignment, request completion, expiry at each boundary,
+constructor/thread-start/drain failures, active-count changes/query failure,
+terminate/close failure, single shared grace deadline, output overflow and exact
+handle cleanup. Repair FakeThread.join to match unstarted-thread RuntimeError;
+verify cleanup classification honestly. Keep legacy run_owned/--worker behavior
+unchanged; add focused compatibility assertions in the allowed test file.
+Do not weaken tests or use broad catch-all exceptions to hide defects.
+
+Run focused test, existing offline profile and full-base scope gate. Commit and
+retain candidate-bound evidence, report full SHA and blockers. No live native
+calls/subprocess tests, editor/build/recovery, merge/push/claim release or task
+completion. Native harness implementation and supervised execution are deferred.

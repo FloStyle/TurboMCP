@@ -30,12 +30,14 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "docs/audit/process-reader-lifecycle.md",
+        "Tools/persistence_process_reader.py",
+        "Tools/execution_runtime.py",
+        "Tools/test-persistence-process-reader.py",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "c76fe48363bd0a880c6e2704e0696204283bb99e",
-      "checkpoint": "11: process-reader lifecycle admission; dispatch base includes contract commit"
+      "approved_base": "6861d8e959f0dcd2e331a2931397e70b7d7d56e4",
+      "checkpoint": "12: offline job containment; dispatch base includes contract commit"
     }
   }
 }

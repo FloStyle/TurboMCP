@@ -148,3 +148,10 @@ Revert the reader/job/worker test changes, remove the `persistence-native` profi
 - Real PowerShell script parsing/API/UTF-8/handle behavior remains unverified.
 - Shared CIM/WMI services are outside containment and must not be killed.
 - Live process-reader admission remains blocked until the supervisor-only synthetic suite establishes the job and compiler facts.
+
+
+## Integration decision
+
+Accepted as a lifecycle design investigation. Only the checkpoint 12 offline
+containment phase is authorized. The synthetic profile and native suite remain
+proposed; no live admission follows from this document or mocked tests.
