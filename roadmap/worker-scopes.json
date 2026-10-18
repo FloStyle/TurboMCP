@@ -32,11 +32,12 @@
       "files": [
         "Tools/persistence_identity.py",
         "Tools/test-persistence-identity.py",
-        "todo/roadmap-r04.md"
+        "todo/roadmap-r04.md",
+        "Tests/catalog.json"
       ],
       "preserve_rows": [],
       "approved_base": "ec370326dfd3175a5c111ae3bd6098a7fe74ee44",
-      "checkpoint": "7: offline identity validator; dispatch includes integration contract commit"
+      "checkpoint": "7 correction: offline catalog registration and input-validation repairs; dispatch includes this contract commit"
     }
   }
 }

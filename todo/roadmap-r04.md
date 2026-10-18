@@ -526,8 +526,8 @@ Checkpoint 6 candidate ec370326 is accepted as a design investigation only.
 The complete lifecycle remains blocked; P1-P6 are not collectively approved.
 Integration owner now authorizes this narrow implementation prerequisite.
 
-Add Tools/persistence_identity.py and Tools/test-persistence-identity.py only,
-plus Completion evidence here. No existing production caller or helper changes.
+Add Tools/persistence_identity.py and Tools/test-persistence-identity.py,
+one offline catalog entry in Tests/catalog.json, plus Completion evidence here. No existing production caller or helper changes.
 The module validates supplied evidence; it must perform no process/network/file
 collection, launch, termination, config writes, lease changes or engine calls.
 Use standard-library Python and explicit structured pass/refusal reason codes.
@@ -563,6 +563,17 @@ observations, malformed schema, booleans-as-integers, and valid cases. Inject da
 only; never enumerate actual processes or bind sockets. Keep prior APIs unchanged.
 
 Run python Tools/test-persistence-identity.py and the existing offline profile;
-commit, retain candidate-bound runs and full-base R04 scope gate. The new test is
-explicitly invoked; catalog/validator wiring is outside scope. No new dependency.
+commit, retain candidate-bound runs and full-base R04 scope gate. Register only this test in Tests/catalog.json with tier offline, a bounded
+timeout of 30 seconds and acceptance not_mapped. Preserve all existing rows and
+validator behavior. Run it explicitly and through the offline profile. No new dependency.
 Rollback removes only the two new files. Stop for review; no merge/push/claim release.
+
+
+### Checkpoint 7 correction decision
+
+The original scope omitted a mandatory test catalog row. The integration owner
+now authorizes only one new offline row for test-persistence-identity; do not label
+it engine or weaken validate-repo. Candidate e8adf04 remains unaccepted.
+Fix future process/listener start times relative to observation time, reject
+invalid Win32 path characters/control codes, and refuse non-string dictionary
+keys without raising. Add adversarial regression tests and preserve pure behavior.
