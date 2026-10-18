@@ -2,7 +2,8 @@
 
 The C++ fixture builds a transient Widget Blueprint in memory, obtains the
 production graph-text reader output, targets one new PrintString link from that
-read text, plans and applies the append, and reads the graph again. This wrapper
+read text, and also exercises a connected data input from an emitted pure-value
+source before planning/applying and reading the graph again. This wrapper
 only discovers and runs the exact test through the pinned AutomationTestToolset
 and strictly parses its single report entry.
 """

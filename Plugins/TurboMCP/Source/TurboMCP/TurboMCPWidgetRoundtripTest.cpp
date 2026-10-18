@@ -11,6 +11,7 @@
 
 #include "TurboMCPGraphAppend.h"
 #include "TurboMCPGraphText.h"
+#include "TurboMCPGraphTextLex.h"
 #include "TurboMCPNodeId.h"
 
 #include "Blueprint/UserWidget.h"
@@ -30,6 +31,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/CompilerResultsLog.h"
@@ -56,6 +58,7 @@ namespace
 		UEdGraph* Sibling = nullptr;
 		UK2Node_CallFunction* PrintA = nullptr;
 		UK2Node_CallFunction* PrintB = nullptr;
+		UK2Node_CallFunction* Source = nullptr;
 		UK2Node_FunctionEntry* Entry = nullptr;
 		FString AssetPath;
 		FString LastError;
@@ -545,6 +548,52 @@ namespace
 		return IsValidEmittedRef(OutRef);
 	}
 
+	bool ExtractValueLink(const FString& InForm, const FString& InPinName,
+		FString& OutNode, FString& OutPin, FString& OutError)
+	{
+		OutNode.Empty();
+		OutPin.Empty();
+		OutError.Empty();
+		const FString PinPrefix = InPinName + TEXT(" (-> ");
+		const int32 PinStart = InForm.Find(PinPrefix);
+		if (PinStart == INDEX_NONE)
+		{
+			OutError = TEXT("the selected form has no connected value on the requested pin");
+			return false;
+		}
+		if (InForm.Find(PinPrefix, ESearchCase::IgnoreCase, ESearchDir::FromStart,
+				PinStart + PinPrefix.Len()) != INDEX_NONE)
+		{
+			OutError = TEXT("the selected form has ambiguous connected value fields");
+			return false;
+		}
+		const int32 ValueStart = InForm.Find(TEXT("(-> "), ESearchCase::IgnoreCase,
+			ESearchDir::FromStart, PinStart);
+		const int32 ValueEnd = InForm.Find(TEXT(")"), ESearchCase::IgnoreCase,
+			ESearchDir::FromStart, ValueStart + 4);
+		if (ValueStart == INDEX_NONE || ValueEnd == INDEX_NONE)
+		{
+			OutError = TEXT("the connected value has no closed link form");
+			return false;
+		}
+		const FString Value = InForm.Mid(ValueStart, ValueEnd - ValueStart + 1);
+		TurboMCPGraphTextLex::FLinkForm Link;
+		FString Reason;
+		if (!TurboMCPGraphTextLex::ParseLinkValue(Value, Link, Reason))
+		{
+			OutError = Reason;
+			return false;
+		}
+		if (!IsValidEmittedRef(Link.FromNode) || Link.FromPin.IsEmpty())
+		{
+			OutError = TEXT("the connected value has a malformed source identity or pin");
+			return false;
+		}
+		OutNode = Link.FromNode;
+		OutPin = Link.FromPin;
+		return true;
+	}
+
 	UEdGraph* AddFunctionGraph(FFixture& Fixture, const TCHAR* InName)
 	{
 		UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(
@@ -599,6 +648,27 @@ namespace
 		return Node;
 	}
 
+	UK2Node_CallFunction* AddConcat(UEdGraph* InGraph, int32 InX, int32 InY, uint32 InGuid)
+	{
+		if (InGraph == nullptr)
+		{
+			return nullptr;
+		}
+		UK2Node_CallFunction* Node = NewObject<UK2Node_CallFunction>(InGraph);
+		if (Node == nullptr)
+		{
+			return nullptr;
+		}
+		Node->SetFromFunction(UKismetStringLibrary::StaticClass()->
+			FindFunctionByName(TEXT("Concat_StrStr")));
+		Node->NodePosX = InX;
+		Node->NodePosY = InY;
+		InGraph->AddNode(Node, /*bUserAction=*/false, /*bSelectNewNode=*/false);
+		Node->AllocateDefaultPins();
+		ForceGuid(Node, InGuid);
+		return Node;
+	}
+
 	bool Link(UEdGraph* InGraph, UEdGraphPin* InFrom, UEdGraphPin* InTo)
 	{
 		return InGraph != nullptr && InGraph->GetSchema() != nullptr
@@ -606,7 +676,7 @@ namespace
 			&& InGraph->GetSchema()->TryCreateConnection(InFrom, InTo);
 	}
 
-	bool BuildFixture(FFixture& OutFixture)
+	bool BuildFixture(FFixture& OutFixture, bool bConnectedData = false)
 	{
 		const FString Suffix = FGuid::NewGuid().ToString(EGuidFormats::DigitsLower);
 		const FString Leaf = FString::Printf(TEXT("TurboMCPWidgetRoundtrip_%s"), *Suffix);
@@ -715,12 +785,35 @@ namespace
 			OutFixture.LastError = TEXT("graph nodes are missing");
 			return false;
 		}
+		if (bConnectedData)
+		{
+			OutFixture.Source = AddConcat(OutFixture.Target, 100, 360, 0x44440001);
+			if (OutFixture.Source == nullptr)
+			{
+				OutFixture.LastError = TEXT("connected source node was not created");
+				return false;
+			}
+			UEdGraphPin* Duration = OutFixture.PrintB->FindPin(TEXT("Duration"), EGPD_Input);
+			if (Duration == nullptr)
+			{
+				OutFixture.LastError = TEXT("connected fixture PrintB Duration pin is missing");
+				return false;
+			}
+			Duration->DefaultValue = TEXT("7.25");
+		}
 		if (!Link(OutFixture.Target, OutFixture.Entry->FindPin(TEXT("then"), EGPD_Output),
 				OutFixture.PrintA->FindPin(TEXT("execute"), EGPD_Input))
 			|| !Link(OutFixture.Target, OutFixture.PrintA->FindPin(TEXT("then"), EGPD_Output),
 				OutFixture.PrintB->FindPin(TEXT("execute"), EGPD_Input))
 			|| !Link(OutFixture.Sibling, SiblingEntry->FindPin(TEXT("then"), EGPD_Output),
-				SiblingPrint->FindPin(TEXT("execute"), EGPD_Input)))
+				SiblingPrint->FindPin(TEXT("execute"), EGPD_Input))
+			|| (bConnectedData
+				&& (!Link(OutFixture.Target,
+						OutFixture.Source->FindPin(TEXT("ReturnValue"), EGPD_Output),
+						OutFixture.PrintA->FindPin(TEXT("InString"), EGPD_Input))
+					|| !Link(OutFixture.Target,
+						OutFixture.Source->FindPin(TEXT("ReturnValue"), EGPD_Output),
+						OutFixture.PrintB->FindPin(TEXT("InString"), EGPD_Input)))))
 		{
 			OutFixture.LastError = TEXT("seeded links could not be made");
 			return false;
@@ -1047,8 +1140,230 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 				CaptureWidgetIdentity(Fixture.Blueprint)));
 	}
 
+	// One connected-data-input case: an existing supported pure Concat_StrStr
+	// feeds two existing PrintString consumers, so the reader emits the second
+	// consumer's value as a link. The append creates another consumer of that
+	// emitted source, not a literal-only PrintString.
+	FFixture Connected;
+	FScopedFixtureCleanup ConnectedCleanup(Connected);
+	if (!BuildFixture(Connected, /*bConnectedData=*/true))
+	{
+		AddError(TEXT("connected fixture: ") + Connected.LastError);
+		return false;
+	}
+	Connected.Package->SetDirtyFlag(false);
+	const FGraphSnapshot ConnectedTarget = CaptureGraph(Connected.Target);
+	const FGraphSnapshot ConnectedSibling = CaptureGraph(Connected.Sibling);
+	const FString ConnectedWidgets = CaptureWidgets(Connected.Blueprint);
+	const FWidgetIdentity ConnectedWidgetIdentity = CaptureWidgetIdentity(Connected.Blueprint);
+
+	TArray<FString> ConnectedReadNotes;
+	const FTurboMCPGraphText ConnectedReader;
+	const FString ConnectedRead = ConnectedReader.Render(Connected.Target,
+		FTurboMCPGraphText::EDetail::Bodies, Connected.AssetPath, ConnectedReadNotes);
+	FString ConnectedPrintBRef, ConnectedPrintBForm, ConnectedExtractError;
+	TestTrue(TEXT("the reader emits the second consumer form"),
+		ExtractFormByMarker(ConnectedRead, TEXT("Duration 7.25"), ConnectedPrintBRef,
+			ConnectedPrintBForm, ConnectedExtractError));
+	FString ConnectedSourceRef, ConnectedSourcePin, ConnectedValueError;
+	TestTrue(TEXT("the second consumer's InString is a connected value"),
+		ExtractValueLink(ConnectedPrintBForm, TEXT("InString"), ConnectedSourceRef,
+			ConnectedSourcePin, ConnectedValueError));
+	const FString ConnectedSourceOracle = TurboMCPNodeId::MakeForNode(Connected.Source);
+	TestEqual(TEXT("the connected source reference is the reader-emitted source"),
+		ConnectedSourceRef, ConnectedSourceOracle);
+	TestEqual(TEXT("the connected source pin is ReturnValue"), ConnectedSourcePin,
+		FString(TEXT("ReturnValue")));
+	if (ConnectedPrintBRef.IsEmpty() || ConnectedSourceRef.IsEmpty()
+		|| ConnectedSourcePin.IsEmpty())
+	{
+		return false;
+	}
+
+	// Invalid source must refuse without mutation on the same clean fixture.
+	{
+		const FString InvalidText = FString::Printf(
+			TEXT("(Development|PrintString\n    execute (-> %s:then)\n")
+			TEXT("    InString (-> DefinitelyMissing:ReturnValue)\n    Duration 8.5)"),
+			*ConnectedPrintBRef);
+		FTurboMCPGraphAppend::FPlan InvalidPlan;
+		FString InvalidError;
+		TestTrue(TEXT("the invalid data source form plans"),
+			FTurboMCPGraphAppend::Plan(Connected.AssetPath, Connected.Target->GetName(),
+				InvalidText, InvalidPlan, InvalidError, /*bRequestPlacement=*/true));
+		TestFalse(TEXT("the invalid data source form is not acceptable"),
+			InvalidPlan.bAcceptable());
+		TestTrue(TEXT("the invalid data source form records a refusal"),
+			InvalidPlan.Refusals.Num() > 0);
+		if (InvalidPlan.Refusals.Num() == 0)
+		{
+			AddError(TEXT("invalid connected source did not produce a refusal"));
+			return false;
+		}
+		TestTrue(TEXT("an invalid data source did not mutate the target graph"),
+			SameGraph(ConnectedTarget, CaptureGraph(Connected.Target)));
+		TestTrue(TEXT("an invalid data source did not mutate the sibling graph"),
+			SameGraph(ConnectedSibling, CaptureGraph(Connected.Sibling)));
+		TestEqual(TEXT("an invalid data source did not mutate the widget tree"),
+			CaptureWidgets(Connected.Blueprint), ConnectedWidgets);
+		TestTrue(TEXT("an invalid data source preserved widget/tree/slot identities"),
+			SameWidgetIdentity(ConnectedWidgetIdentity,
+				CaptureWidgetIdentity(Connected.Blueprint)));
+		TestFalse(TEXT("an invalid data source left the clean fixture clean"),
+			Connected.Package->IsDirty());
+
+		FString InvalidReport;
+		FString InvalidApplyError;
+		const bool bInvalidDirtyBefore = Connected.Package->IsDirty();
+		TestTrue(TEXT("Apply on the invalid data source plan returns a preview"),
+			FTurboMCPGraphAppend::Apply(InvalidPlan, InvalidReport, InvalidApplyError));
+		TestEqual(TEXT("Apply on the invalid data source reports no execution error"),
+			InvalidApplyError, FString());
+		TestTrue(TEXT("Apply on the invalid data source reports unchanged"),
+			InvalidReport.StartsWith(TEXT("unchanged:")));
+		TestTrue(TEXT("refused connected Apply did not mutate the target graph"),
+			SameGraph(ConnectedTarget, CaptureGraph(Connected.Target)));
+		TestTrue(TEXT("refused connected Apply did not mutate the sibling graph"),
+			SameGraph(ConnectedSibling, CaptureGraph(Connected.Sibling)));
+		TestEqual(TEXT("refused connected Apply did not mutate the widget tree"),
+			CaptureWidgets(Connected.Blueprint), ConnectedWidgets);
+		TestTrue(TEXT("refused connected Apply preserved widget/tree/slot identities"),
+			SameWidgetIdentity(ConnectedWidgetIdentity,
+				CaptureWidgetIdentity(Connected.Blueprint)));
+		TestEqual(TEXT("refused connected Apply did not change dirty state"),
+			Connected.Package->IsDirty(), bInvalidDirtyBefore);
+	}
+
+	const FString ConnectedAppendText = FString::Printf(
+		TEXT("(Development|PrintString\n    execute (-> %s:then)\n")
+		TEXT("    InString (-> %s:%s)\n    Duration 8.5)"),
+		*ConnectedPrintBRef, *ConnectedSourceRef, *ConnectedSourcePin);
+	FTurboMCPGraphAppend::FPlan ConnectedPlan;
+	FString ConnectedPlanError;
+	TestTrue(TEXT("Plan accepts the connected-data-input form"),
+		FTurboMCPGraphAppend::Plan(Connected.AssetPath, Connected.Target->GetName(),
+			ConnectedAppendText, ConnectedPlan, ConnectedPlanError, /*bRequestPlacement=*/true));
+	TestTrue(TEXT("the connected plan is acceptable"), ConnectedPlan.bAcceptable());
+	TestEqual(TEXT("the connected plan creates one node"), ConnectedPlan.Nodes.Num(), 1);
+	TestEqual(TEXT("the connected plan creates two links"), ConnectedPlan.Links.Num(), 2);
+	TestEqual(TEXT("the connected plan records one position"),
+		ConnectedPlan.PlannedPositions.Num(), 1);
+	if (!ConnectedPlan.bAcceptable() || ConnectedPlan.Nodes.Num() != 1
+		|| ConnectedPlan.Links.Num() != 2 || ConnectedPlan.PlannedPositions.Num() != 1)
+	{
+		AddError(TEXT("connected plan did not meet the expected counts"));
+		return false;
+	}
+	TestTrue(TEXT("the connected Plan did not mutate the target graph"),
+		SameGraph(ConnectedTarget, CaptureGraph(Connected.Target)));
+	TestTrue(TEXT("the connected Plan did not mutate the sibling graph"),
+		SameGraph(ConnectedSibling, CaptureGraph(Connected.Sibling)));
+	TestEqual(TEXT("the connected Plan did not mutate the widget tree"),
+		CaptureWidgets(Connected.Blueprint), ConnectedWidgets);
+	TestTrue(TEXT("the connected Plan preserved widget/tree/slot identities"),
+		SameWidgetIdentity(ConnectedWidgetIdentity,
+			CaptureWidgetIdentity(Connected.Blueprint)));
+	TestFalse(TEXT("the connected Plan left the clean fixture clean"),
+		Connected.Package->IsDirty());
+
+	FString ConnectedReport;
+	FString ConnectedApplyError;
+	const bool bConnectedApplied = FTurboMCPGraphAppend::Apply(
+		ConnectedPlan, ConnectedReport, ConnectedApplyError);
+	TestTrue(TEXT("Apply accepts the connected plan"), bConnectedApplied);
+	if (!bConnectedApplied)
+	{
+		return false;
+	}
+	TestTrue(TEXT("connected Apply reports changed"),
+		ConnectedReport.StartsWith(TEXT("changed:")));
+	TestTrue(TEXT("connected Apply marks the fixture dirty"), Connected.Package->IsDirty());
+	const FGraphSnapshot ConnectedAfter = CaptureGraph(Connected.Target);
+	TArray<FString> ConnectedNewGuids;
+	TestTrue(TEXT("connected Apply preserves every existing node"),
+		ExistingPreserved(ConnectedTarget, ConnectedAfter, ConnectedNewGuids));
+	TestEqual(TEXT("connected Apply adds exactly one node"), ConnectedNewGuids.Num(), 1);
+	TestEqual(TEXT("connected Apply adds exactly two links"),
+		ConnectedAfter.Links.Num(), ConnectedTarget.Links.Num() + 2);
+	TestTrue(TEXT("connected Apply preserves the sibling graph"),
+		SameGraph(ConnectedSibling, CaptureGraph(Connected.Sibling)));
+	TestEqual(TEXT("connected Apply preserves the widget tree"),
+		CaptureWidgets(Connected.Blueprint), ConnectedWidgets);
+	TestTrue(TEXT("connected Apply preserves widget/tree/slot identities"),
+		SameWidgetIdentity(ConnectedWidgetIdentity,
+			CaptureWidgetIdentity(Connected.Blueprint)));
+
+	UEdGraphNode* ConnectedNewNode = nullptr;
+	if (ConnectedNewGuids.Num() == 1)
+	{
+		for (UEdGraphNode* Node : Connected.Target->Nodes)
+		{
+			if (Node != nullptr
+				&& Node->NodeGuid.ToString(EGuidFormats::DigitsLower) == ConnectedNewGuids[0])
+			{
+				ConnectedNewNode = Node;
+				break;
+			}
+		}
+	}
+	TestTrue(TEXT("the connected new node exists"), ConnectedNewNode != nullptr);
+	if (ConnectedNewNode == nullptr)
+	{
+		return false;
+	}
+	{
+		UK2Node_CallFunction* ConnectedNewPrint = Cast<UK2Node_CallFunction>(ConnectedNewNode);
+		TestTrue(TEXT("the connected new node is the intended PrintString"),
+			ConnectedNewPrint != nullptr && ConnectedNewPrint->GetTargetFunction() != nullptr
+			&& ConnectedNewPrint->GetTargetFunction()->GetName() == TEXT("PrintString"));
+		UEdGraphPin* InString = ConnectedNewNode->FindPin(TEXT("InString"), EGPD_Input);
+		TestTrue(TEXT("the connected new node has one ReturnValue data source"),
+			InString != nullptr && InString->LinkedTo.Num() == 1
+			&& InString->LinkedTo[0] != nullptr
+			&& InString->LinkedTo[0]->GetOwningNode() == Connected.Source
+			&& InString->LinkedTo[0]->PinName == FName(TEXT("ReturnValue")));
+		UEdGraphPin* Exec = ConnectedNewNode->FindPin(TEXT("execute"), EGPD_Input);
+		TestTrue(TEXT("the connected new node has the intended then exec source"),
+			Exec != nullptr && Exec->LinkedTo.Num() == 1
+			&& Exec->LinkedTo[0] != nullptr
+			&& Exec->LinkedTo[0]->GetOwningNode() == Connected.PrintB
+			&& Exec->LinkedTo[0]->PinName == FName(TEXT("then")));
+		UEdGraphPin* Duration = ConnectedNewNode->FindPin(TEXT("Duration"), EGPD_Input);
+		TestEqual(TEXT("the connected new node carries the duration literal"),
+			Duration != nullptr ? Duration->DefaultValue : FString(),
+			FString(TEXT("8.5")));
+		TestEqual(TEXT("the connected new node is at the planned X"),
+			ConnectedNewNode->NodePosX, ConnectedPlan.PlannedPositions[0].X);
+		TestEqual(TEXT("the connected new node is at the planned Y"),
+			ConnectedNewNode->NodePosY, ConnectedPlan.PlannedPositions[0].Y);
+
+		TArray<FString> FreshNotes;
+		const FString ConnectedFresh = ConnectedReader.Render(Connected.Target,
+			FTurboMCPGraphText::EDetail::Bodies, Connected.AssetPath, FreshNotes);
+		FString ConnectedFreshRef, ConnectedFreshForm, ConnectedFreshError;
+		TestTrue(TEXT("the fresh reader emits the connected new form"),
+			ExtractFormByMarker(ConnectedFresh, TEXT("Duration 8.5"), ConnectedFreshRef,
+				ConnectedFreshForm, ConnectedFreshError));
+		TestEqual(TEXT("the fresh connected form is the new node"),
+			ConnectedFreshRef, TurboMCPNodeId::MakeForNode(ConnectedNewNode));
+		FString FreshSourceRef, FreshSourcePin, FreshValueError;
+		TestTrue(TEXT("the fresh connected form exposes its data source"),
+			ExtractValueLink(ConnectedFreshForm, TEXT("InString"), FreshSourceRef,
+				FreshSourcePin, FreshValueError));
+		TestEqual(TEXT("the fresh read-back source is the reader source"),
+			FreshSourceRef, ConnectedSourceRef);
+		TestEqual(TEXT("the fresh read-back source pin is preserved"),
+			FreshSourcePin, ConnectedSourcePin);
+		FString FreshExecRef;
+		TestTrue(TEXT("the fresh connected form exposes its exec source"),
+			ExtractFormLink(ConnectedFreshForm, FreshExecRef));
+		TestEqual(TEXT("the fresh connected form's exec source is the consumer"),
+			FreshExecRef, ConnectedPrintBRef);
+	}
+
 	TestTrue(TEXT("roundtrip fixture retirement completed"), Cleanup.Retire());
 	TestTrue(TEXT("refusal fixture retirement completed"), RefusalCleanup.Retire());
+	TestTrue(TEXT("connected fixture retirement completed"), ConnectedCleanup.Retire());
 	return true;
 }
 
