@@ -468,7 +468,7 @@ Validation:
 - `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 71 tests ... OK`.
 - `python Tools/validate-repo.py` — exit 0.
 - `python Tools/check-language.py` — exit 0.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/a081bc35ebb04c15867c4bc879a752c9/report.json`; all offline checks passed.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/c28e38c9d4834739b82c056616b58aee/report.json`; all offline checks passed.
 - Candidate-bound evidence and full-base scope gate are recorded in the submission.
 
 Rollback: remove the `persistence-native` profile branch and `Tools/persistence-job-acceptance.py`, remove the additive harness tests and this evidence. No catalog, production reader/runtime, PowerShell, engine or production caller changes are included.
