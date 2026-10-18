@@ -779,20 +779,27 @@ namespace
 		UK2Node_FunctionEntry* SiblingEntry = FindEntry(OutFixture.Sibling);
 		UK2Node_CallFunction* SiblingPrint = AddPrint(OutFixture.Sibling, TEXT("sibling"),
 			100, 100, 0x33330001);
-		if (bConnectedData)
-		{
-			OutFixture.Source = AddConcat(OutFixture.Target, 100, 360, 0x44440001);
-			if (UEdGraphPin* Duration = OutFixture.PrintB->FindPin(TEXT("Duration"), EGPD_Input))
-			{
-				Duration->DefaultValue = TEXT("7.25");
-			}
-		}
 		if (OutFixture.Entry == nullptr || OutFixture.PrintA == nullptr
-			|| OutFixture.PrintB == nullptr || SiblingEntry == nullptr || SiblingPrint == nullptr
-			|| (bConnectedData && OutFixture.Source == nullptr))
+			|| OutFixture.PrintB == nullptr || SiblingEntry == nullptr || SiblingPrint == nullptr)
 		{
 			OutFixture.LastError = TEXT("graph nodes are missing");
 			return false;
+		}
+		if (bConnectedData)
+		{
+			OutFixture.Source = AddConcat(OutFixture.Target, 100, 360, 0x44440001);
+			if (OutFixture.Source == nullptr)
+			{
+				OutFixture.LastError = TEXT("connected source node was not created");
+				return false;
+			}
+			UEdGraphPin* Duration = OutFixture.PrintB->FindPin(TEXT("Duration"), EGPD_Input);
+			if (Duration == nullptr)
+			{
+				OutFixture.LastError = TEXT("connected fixture PrintB Duration pin is missing");
+				return false;
+			}
+			Duration->DefaultValue = TEXT("7.25");
 		}
 		if (!Link(OutFixture.Target, OutFixture.Entry->FindPin(TEXT("then"), EGPD_Output),
 				OutFixture.PrintA->FindPin(TEXT("execute"), EGPD_Input))
@@ -1188,14 +1195,43 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 			InvalidPlan.bAcceptable());
 		TestTrue(TEXT("the invalid data source form records a refusal"),
 			InvalidPlan.Refusals.Num() > 0);
+		if (InvalidPlan.Refusals.Num() == 0)
+		{
+			AddError(TEXT("invalid connected source did not produce a refusal"));
+			return false;
+		}
 		TestTrue(TEXT("an invalid data source did not mutate the target graph"),
 			SameGraph(ConnectedTarget, CaptureGraph(Connected.Target)));
 		TestTrue(TEXT("an invalid data source did not mutate the sibling graph"),
 			SameGraph(ConnectedSibling, CaptureGraph(Connected.Sibling)));
 		TestEqual(TEXT("an invalid data source did not mutate the widget tree"),
 			CaptureWidgets(Connected.Blueprint), ConnectedWidgets);
+		TestTrue(TEXT("an invalid data source preserved widget/tree/slot identities"),
+			SameWidgetIdentity(ConnectedWidgetIdentity,
+				CaptureWidgetIdentity(Connected.Blueprint)));
 		TestFalse(TEXT("an invalid data source left the clean fixture clean"),
 			Connected.Package->IsDirty());
+
+		FString InvalidReport;
+		FString InvalidApplyError;
+		const bool bInvalidDirtyBefore = Connected.Package->IsDirty();
+		TestTrue(TEXT("Apply on the invalid data source plan returns a preview"),
+			FTurboMCPGraphAppend::Apply(InvalidPlan, InvalidReport, InvalidApplyError));
+		TestEqual(TEXT("Apply on the invalid data source reports no execution error"),
+			InvalidApplyError, FString());
+		TestTrue(TEXT("Apply on the invalid data source reports unchanged"),
+			InvalidReport.StartsWith(TEXT("unchanged:")));
+		TestTrue(TEXT("refused connected Apply did not mutate the target graph"),
+			SameGraph(ConnectedTarget, CaptureGraph(Connected.Target)));
+		TestTrue(TEXT("refused connected Apply did not mutate the sibling graph"),
+			SameGraph(ConnectedSibling, CaptureGraph(Connected.Sibling)));
+		TestEqual(TEXT("refused connected Apply did not mutate the widget tree"),
+			CaptureWidgets(Connected.Blueprint), ConnectedWidgets);
+		TestTrue(TEXT("refused connected Apply preserved widget/tree/slot identities"),
+			SameWidgetIdentity(ConnectedWidgetIdentity,
+				CaptureWidgetIdentity(Connected.Blueprint)));
+		TestEqual(TEXT("refused connected Apply did not change dirty state"),
+			Connected.Package->IsDirty(), bInvalidDirtyBefore);
 	}
 
 	const FString ConnectedAppendText = FString::Printf(
@@ -1210,19 +1246,35 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the connected plan is acceptable"), ConnectedPlan.bAcceptable());
 	TestEqual(TEXT("the connected plan creates one node"), ConnectedPlan.Nodes.Num(), 1);
 	TestEqual(TEXT("the connected plan creates two links"), ConnectedPlan.Links.Num(), 2);
+	TestEqual(TEXT("the connected plan records one position"),
+		ConnectedPlan.PlannedPositions.Num(), 1);
+	if (!ConnectedPlan.bAcceptable() || ConnectedPlan.Nodes.Num() != 1
+		|| ConnectedPlan.Links.Num() != 2 || ConnectedPlan.PlannedPositions.Num() != 1)
+	{
+		AddError(TEXT("connected plan did not meet the expected counts"));
+		return false;
+	}
 	TestTrue(TEXT("the connected Plan did not mutate the target graph"),
 		SameGraph(ConnectedTarget, CaptureGraph(Connected.Target)));
 	TestTrue(TEXT("the connected Plan did not mutate the sibling graph"),
 		SameGraph(ConnectedSibling, CaptureGraph(Connected.Sibling)));
 	TestEqual(TEXT("the connected Plan did not mutate the widget tree"),
 		CaptureWidgets(Connected.Blueprint), ConnectedWidgets);
+	TestTrue(TEXT("the connected Plan preserved widget/tree/slot identities"),
+		SameWidgetIdentity(ConnectedWidgetIdentity,
+			CaptureWidgetIdentity(Connected.Blueprint)));
 	TestFalse(TEXT("the connected Plan left the clean fixture clean"),
 		Connected.Package->IsDirty());
 
 	FString ConnectedReport;
 	FString ConnectedApplyError;
-	TestTrue(TEXT("Apply accepts the connected plan"),
-		FTurboMCPGraphAppend::Apply(ConnectedPlan, ConnectedReport, ConnectedApplyError));
+	const bool bConnectedApplied = FTurboMCPGraphAppend::Apply(
+		ConnectedPlan, ConnectedReport, ConnectedApplyError);
+	TestTrue(TEXT("Apply accepts the connected plan"), bConnectedApplied);
+	if (!bConnectedApplied)
+	{
+		return false;
+	}
 	TestTrue(TEXT("connected Apply reports changed"),
 		ConnectedReport.StartsWith(TEXT("changed:")));
 	TestTrue(TEXT("connected Apply marks the fixture dirty"), Connected.Package->IsDirty());
@@ -1255,18 +1307,27 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestTrue(TEXT("the connected new node exists"), ConnectedNewNode != nullptr);
-	if (ConnectedNewNode != nullptr)
+	if (ConnectedNewNode == nullptr)
 	{
+		return false;
+	}
+	{
+		UK2Node_CallFunction* ConnectedNewPrint = Cast<UK2Node_CallFunction>(ConnectedNewNode);
+		TestTrue(TEXT("the connected new node is the intended PrintString"),
+			ConnectedNewPrint != nullptr && ConnectedNewPrint->GetTargetFunction() != nullptr
+			&& ConnectedNewPrint->GetTargetFunction()->GetName() == TEXT("PrintString"));
 		UEdGraphPin* InString = ConnectedNewNode->FindPin(TEXT("InString"), EGPD_Input);
-		TestTrue(TEXT("the connected new node has one data source"),
+		TestTrue(TEXT("the connected new node has one ReturnValue data source"),
 			InString != nullptr && InString->LinkedTo.Num() == 1
 			&& InString->LinkedTo[0] != nullptr
-			&& InString->LinkedTo[0]->GetOwningNode() == Connected.Source);
+			&& InString->LinkedTo[0]->GetOwningNode() == Connected.Source
+			&& InString->LinkedTo[0]->PinName == FName(TEXT("ReturnValue")));
 		UEdGraphPin* Exec = ConnectedNewNode->FindPin(TEXT("execute"), EGPD_Input);
-		TestTrue(TEXT("the connected new node has the intended exec source"),
+		TestTrue(TEXT("the connected new node has the intended then exec source"),
 			Exec != nullptr && Exec->LinkedTo.Num() == 1
 			&& Exec->LinkedTo[0] != nullptr
-			&& Exec->LinkedTo[0]->GetOwningNode() == Connected.PrintB);
+			&& Exec->LinkedTo[0]->GetOwningNode() == Connected.PrintB
+			&& Exec->LinkedTo[0]->PinName == FName(TEXT("then")));
 		UEdGraphPin* Duration = ConnectedNewNode->FindPin(TEXT("Duration"), EGPD_Input);
 		TestEqual(TEXT("the connected new node carries the duration literal"),
 			Duration != nullptr ? Duration->DefaultValue : FString(),
