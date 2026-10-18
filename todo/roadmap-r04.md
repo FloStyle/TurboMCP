@@ -211,6 +211,55 @@ Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contract
 
 Unresolved: preflight placement/policy; E-SAVE engine checkout reporting or suppression; map/external-package scope; honest project-code wording; package-level outcomes without a new public schema; read-only preflight versus post-checkout failure, with no live read-only failure or final attribute/provider outcome established; durable persistence verification without automatic reload; warning provenance for `:604-611`; `R04-CALL-04`/`R04-CALL-06`; resolver route caveats and the absence of a top-level asset check; the 89 unreviewed rows. R04 remains incomplete; no merge, push, completion marking or claim release.
 
+### Checkpoint 5: compile contract for Monday widgets
+
+Task R04 checkpoint 5, claim `88f668a66d8740acae6454d27e162c28` (owner `dsh-r04-compile-01`). Approved base `a92cae75abd5c4a8e65179fa8b1ad32f5aef436f`; branch `task/r04-compile-audit`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the checkpoint commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+
+Source identity:
+- Engine 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`; local engine HEAD verified equal to the pin.
+- Plugin tree: `590661ec45c829264ea1743fccea994edb748092`.
+- Claim store: `c:\ExampleDev\turbomcp\.git\turbomcp\task-claims.json`, SHA-256 `929824eba2c75c020eb20d3ca00fabe2d27efd27cbfc7a27f287aaaa2f34acd3`; active R04 claim inspected in this worktree.
+
+Scope and inventory:
+- `docs/audit/callable-contracts.json` retains all 101 IDs and prior checkpoint rows/findings/proposals. One row is added as `reviewed_source`: `EditTurboMCPCompile`. Current totals are 13 reviewed and 88 `not_reviewed`; prior checkpoints remain 4/97, 7/94, 10/91 and 12/89.
+- Checkpoint-specific base/claim/validation identities are stored under `checkpoint_5`; earlier base, claim, validation and acceptance text are preserved.
+- The audit traces declaration, `EditTurboMCPCompile`, resolver, refuses, recorder, client and pinned 5.8.3 compile/widget compiler callees. No runtime behavior is claimed.
+
+Contract notes:
+- `Assets` is required; omitted fields are rejected before the body. Explicit empty/separator-only is the whole-call no-asset error. Comma/pipe separators are trimmed and empty parts culled; order is preserved and duplicates are not deduplicated. More than 25 parts is refused before compiling.
+- The tool accepts any resolved `UBlueprint`; other asset classes are refused per row. It does not read `Blueprint->Status`; errors are based on `CompileLog.NumErrors`, while captured engine errors are counted in the warning branch.
+- `CompileBlueprint` can rewrite Widget Blueprint generated classes, widget trees, animations, named slots and runtime bindings; it can run project `UWidgetCompilerRule`/extension code and reinstance classes/instances. No transaction/undo wrapper is created.
+- Compile may auto-save/checkout when `UBlueprintEditorSettings::SaveOnCompile` is enabled; the tool passes no `SkipSave`. The manager restores the pre-compile package dirty flag after compiler-side source work, so `saved` is not proof of persistence. The effective project setting is unverified.
+- Compile success, package write and durable persistence are separate; no reload/readback or generated-class/binding reader exists. Common UI/Input support is not established from `UBlueprint`/`UWidgetBlueprint` inheritance.
+- No ARC02 line. Body `error:`/refusal is a value to the recorder; `Edit*` is a client mutation, so a lost response is unknown and is not replayed.
+
+New findings (`R04-COMPILE-01` through `07`):
+- `R04-COMPILE-01`: conditional auto-save/source-control write through `SaveOnCompile`; not distinguished from compile-only.
+- `R04-COMPILE-02`: compiler-side source binding/graph mutation with the prior dirty flag restored; no transaction.
+- `R04-COMPILE-03`: status ignored and engine errors folded into warning counts.
+- `R04-COMPILE-04`: Widget Blueprint generated-class/binding/reinstancing/project-code effects are real but unreported and untested.
+- `R04-COMPILE-05`: Common UI/Input support is unverified; class inheritance is not evidence.
+- `R04-COMPILE-06`: partial/all-error batches still say `changed: compiled`; no aggregate outcome.
+- `R04-COMPILE-07`: compile success, package write and durable persistence are not separately established.
+Each has an unapproved proposal `R04-REPAIR-28` through `34` with exact files, preserved behavior, synthetic probe, expected result, negative control, fixture gap, validation and rollback. No repair is implemented or approved.
+
+Proposed Widget Blueprint acceptance plan:
+- Existing owned fixtures: `/Game/Tests/WBP_NodeTest` (plain UMG; used by `test-save-thumbnail-option.py` and `test-widget-tree.py`) and `/Game/Tests/BP_NodeTest` (plain Blueprint control; used by `test-compile-ensure.py` and `test-uncovered-tools.py`).
+- Proposed sequence: compile `WBP_NodeTest`; record `ReadTurboMCPAssetDescribe` and `ReadTurboMCPWidgetTree`; save explicitly; restart the editor via existing `Tools/tmcp_editor.py` stop/ensure; re-read the asset/tree and verify loaded/on-disk/no-unsaved equality. `Tools/test-widget-compile-save-reopen.py` is proposed, not present.
+- Missing seams: no per-asset unload/reload MCP tool, no generated-class/binding reader, no controlled `SaveOnCompile`/compiler-rule/error fixture. Manual fallback is `Tools/start-editor.ps1 -Stop`, start the editor, reconnect and read the asset; no persistence claim without restart/readback.
+- Existing tests are assertions only; no widget compile test exists. Candidate-bound engine evidence is required before this plan is called passed.
+
+Validation:
+- `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
+- `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
+- `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 on the pre-commit tree (request commit `a92cae75`): report `.local/executions/66d2df8b38694b0aa9aa125d216b02c1/report.json`, tree digest `d1b83bf562efe2358bfd663e192fcf0aa71d00a95e0c38550ee4a1a6b3d977cd`; `Tools/validate.py` passed.
+- No engine suite, editor, build, direct MCP call, packaging or recovery command was run. `test-compile-ensure.py`, `test-uncovered-tools.py`, `test-graph-knots.py`, `test-save-thumbnail-option.py` and `test-widget-tree.py` are existing assertions only.
+
+Changed files: `docs/audit/callable-contracts.md`, `docs/audit/callable-contracts.json`, and this Completion evidence only. No plugin, engine, test, helper, dependency, pin, routing preference, task status/readiness, TODO, review register or release control was changed.
+
+Unresolved: save-on-compile policy; compile-side source mutation/transaction policy; status/error/warning representation; Widget Blueprint generated-class/binding/reinstancing visibility; Common UI/Input support; partial/all-error outcome; compile-vs-save-vs-persistence contract; the 88 unreviewed rows. R04 remains incomplete; no merge, push, completion marking or claim release.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)

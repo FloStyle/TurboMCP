@@ -1,6 +1,6 @@
-# R04 callable contracts — checkpoints 1–4
+# R04 callable contracts — checkpoints 1–5
 
-Source/offline investigation only. Checkpoint 1 audits four call-log tools; checkpoint 2 adds status/help/schema; checkpoint 3 adds source-control state and checkout; checkpoint 4 adds the two save tools. None completes R04.
+Source/offline investigation only. Checkpoint 1 audits four call-log tools; checkpoint 2 adds status/help/schema; checkpoint 3 adds source-control state and checkout; checkpoint 4 adds the two save tools; checkpoint 5 adds the compile tool. None completes R04.
 
 - **Checkpoint 1 base:** `1180c6d43655195dc2772b6d1f0b80588e4b466a`
 - **Checkpoint 1 claim:** `ab2cf6535c584bc6a9419c79e85d0b04` (`dsh-r04-01`)
@@ -10,23 +10,25 @@ Source/offline investigation only. Checkpoint 1 audits four call-log tools; chec
 - **Checkpoint 3 claim:** `c44cc6b13e824f5682e53c43bee3cd5d` (`dsh-r04-vcs-01`)
 - **Checkpoint 4 base:** `15ab395ac88eaa52ea31d7628d032446c90fddb6`
 - **Checkpoint 4 claim:** `613fbd8768e04378859aad03a5a26bb6` (`dsh-r04-save-01`)
+- **Checkpoint 5 base:** `a92cae75abd5c4a8e65179fa8b1ad32f5aef436f`
+- **Checkpoint 5 claim:** `88f668a66d8740acae6454d27e162c28` (`dsh-r04-compile-01`)
 - **Plugin tree:** `590661ec45c829264ea1743fccea994edb748092`
 - **Engine:** 5.8.3 at `396c9f059903aed5fec78ecd3d437a40c6415368`
 - **Machine-readable inventory:** [callable-contracts.json](callable-contracts.json)
 
 ## Scope and coverage
 
-`docs/audit/capabilities.json` contains **101 unique tool IDs**. Checkpoint 1 created the four-row baseline; checkpoint 2 added three; checkpoint 3 added three VCS rows; checkpoint 4 adds the two save rows.
+`docs/audit/capabilities.json` contains **101 unique tool IDs**. Checkpoint 1 created the four-row baseline; checkpoint 2 added three; checkpoint 3 added three VCS rows; checkpoint 4 added two save rows; checkpoint 5 adds `EditTurboMCPCompile`.
 
 | Audit status | Count |
 | --- | ---: |
-| `reviewed_source` | 12 |
-| `not_reviewed` | 89 |
+| `reviewed_source` | 13 |
+| `not_reviewed` | 88 |
 | **Total** | **101** |
 
-Checkpoint 1 snapshot: 4 reviewed/97 not reviewed. Checkpoint 2: 7/94. Checkpoint 3: 10/91. Checkpoint 4 adds `EditTurboMCPSave` and `EditTurboMCPSaveWithoutThumbnail`. The 89 unreviewed rows retain their capability source/test references and are explicitly marked. No conclusion is implied for them.
+Checkpoint 1 snapshot: 4 reviewed/97 not reviewed. Checkpoint 2: 7/94. Checkpoint 3: 10/91. Checkpoint 4: 12/89. Checkpoint 5 adds `EditTurboMCPCompile`. The 88 unreviewed rows retain their capability source/test references and are explicitly marked. No conclusion is implied for them.
 
-Reviewed tools: `ReadTurboMCPCallCost`, `ReadTurboMCPCallLog`, `EditTurboMCPCallLog`, `EditTurboMCPCallLogClear`, `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp`, `ReadTurboMCPToolSchema`, `ReadTurboMCPVcsState`, `PreviewTurboMCPVcsCheckout`, `EditTurboMCPVcsCheckout`, `EditTurboMCPSave`, `EditTurboMCPSaveWithoutThumbnail`.
+Reviewed tools: `ReadTurboMCPCallCost`, `ReadTurboMCPCallLog`, `EditTurboMCPCallLog`, `EditTurboMCPCallLogClear`, `ReadTurboMCPStatus`, `ReadTurboMCPToolHelp`, `ReadTurboMCPToolSchema`, `ReadTurboMCPVcsState`, `PreviewTurboMCPVcsCheckout`, `EditTurboMCPVcsCheckout`, `EditTurboMCPSave`, `EditTurboMCPSaveWithoutThumbnail`, `EditTurboMCPCompile`.
 
 ## Reviewed contracts
 
@@ -512,6 +514,181 @@ No engine suite, editor, build, direct MCP, packaging or recovery command was ru
 - Resolver route caveats from `R04-VCS-07` apply; no top-level asset check is added, and no save-specific subobject fixture exists.
 - The 89 unreviewed rows remain unreviewed; R04 is incomplete.
 
+## Checkpoint 5: compile contract for Monday widgets
+
+Checkpoint 5 is source/offline evidence at base `a92cae75abd5c4a8e65179fa8b1ad32f5aef436f`; it does not certify a live compile, generated class, package write or reopen. Reviewed tool: `EditTurboMCPCompile`. Claim `88f668a66d8740acae6454d27e162c28` (`dsh-r04-compile-01`) was inspected in this worktree; the claim store SHA-256 was `929824eba2c75c020eb20d3ca00fabe2d27efd27cbfc7a27f287aaaa2f34acd3`.
+
+### Reviewed contract
+
+| Item | Source and behavior |
+| --- | --- |
+| Declaration | `TurboMCPToolsets.h:1577-1578`; one required `FString` `Assets`, no C++ default. Omitted is rejected before the body; explicit empty reaches the body and is the no-asset error. |
+| Input parsing | `TurboMCPCompile.cpp:143-155` uses the shared `SplitList`: comma/pipe separators, trim, cull empties, preserve order, no dedup, 25-part cap. A malformed/resolve/load/non-Blueprint part is refused per row; other parts continue. A duplicate compiles the asset again. |
+| Compile call | `:220-225` calls `FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::None, &CompileLog)`. The tool does not pass `SkipSave`; it does not create a transaction or call `Modify`. |
+| Result classification | `:227-270`: errors are `CompileLog.NumErrors`; compiler warnings and captured engine messages select the warning branch. Captured engine errors do not increment `ErrorCount`. `Blueprint->Status` is not read. |
+| Dirty/saved text | `:272-277` prints `saved` or `not saved yet` from `HasUnsavedChanges`, which is only `Package->IsDirty()` (`:136-140`). |
+| Messages | `:279-298` prints up to six compiler messages and separately summarizes captured engine warnings/errors. |
+| Summary | `:301-351` prints clean/warning/error/refused counts and `changed: compiled N of M` whenever `CleanCount+WarningCount+ErrorCount > 0`; all-error batches still take that headline. |
+| Wrapper/client | `FRecordingToolset` (`TurboMCPCallRecorder.cpp:103-130`) records start/end when logging is on. No ARC02 line; `call_structured` would require one unless `requires_result=False`. Body `error:`/refusal is a value, so `bError=false` (`R04-CALL-06`). `Edit*` is a client mutation; a lost response is unknown and is not replayed. |
+
+### Compile effects and result limits
+
+- **Class/status:** `CompileBlueprint` forwards to `FBlueprintCompilationManager::CompileSynchronously` (`Kismet2.cpp:798-807`). The manager sets `BS_UpToDate`, `BS_UpToDateWithWarnings` or `BS_Error` (`BlueprintCompilationManager.cpp:1660,1675,1853-1859`) and may reinstance classes/dependent instances, broadcast compile/reinstance events, and collect garbage (`:342-491,1702-1722`). The tool reads none of that status or event data.
+- **Widget generated class:** `FWidgetBlueprintCompiler::CanCompile` accepts any `UWidgetBlueprint` (`WidgetBlueprintCompiler.cpp:147-150`). Compilation duplicates/replaces the generated widget tree (`:844-938`), sanitises editor bindings and emits runtime bindings (`:711-747,1044-1053`), clones animations, rebuilds named slots, and runs `UWidgetCompilerRule::ExecuteRule` plus extension callbacks (`:705-708,1103-1107`). These are project-supplied hooks, not merely data formatting.
+- **Possible package write:** `CompileSynchronouslyImpl` adds compiled packages to `PackagesToSave` when `UBlueprintEditorSettings::SaveOnCompile` is `Always` or `SuccessOnly`, then calls `FEditorFileUtils::PromptForCheckoutAndSave(..., bCheckDirty=true)` (`BlueprintCompilationManager.cpp:458-490`). The enum default is `SoC_Never` (`BlueprintEditorSettings.h:41-45`), with a legacy `bSaveOnCompile` migration to `SuccessOnly` (`BlueprintEditorSettings.cpp:100-105`). The project's effective setting was not found in the worktree; no auto-save is assumed.
+- **Dirty reset:** the manager records `bPackageWasDirty` before compiling and restores that flag afterward (`BlueprintCompilationManager.cpp:524-538,1904-1907`). Source-side widget binding/graph work can therefore coexist with a clean package flag; the tool's `saved` text is not proof that the compiler's in-memory source edits reached disk.
+- **No transaction:** neither the tool nor the compiler path begins an undo transaction for compiler-side source edits. The Edit toolset's one-undo contract is not met by this implementation path.
+- **Common UI/Input:** the source proves only `UBlueprint`/`UWidgetBlueprint` acceptance. No fixture tests Common UI or Input; inheritance is not evidence of support.
+
+### Findings
+
+- **`R04-COMPILE-01` (confirmed source, conditional; compile).** Compile can trigger an unreported package write or source-control checkout through `SaveOnCompile`. The tool passes `EBlueprintCompileOptions::None` (`TurboMCPCompile.cpp:225`), so `CompileSynchronouslyImpl` may build `PackagesToSave` and call `PromptForCheckoutAndSave` (`BlueprintCompilationManager.cpp:458-490`). No test controls the setting; the effective project value is unverified. Compile-only and compile+save are not distinguished.
+- **`R04-COMPILE-02` (confirmed source; compile).** Widget compile can mutate source-side bindings/graphs while restoring the prior dirty flag. `CreateFunctionList` can create `__Get` graphs and update `EditorBinding.FunctionName` (`WidgetBlueprintCompiler.cpp:238-298`); `SanitizeBindings` removes stale entries and changes `PropertyBindings` (`:711-747`); the manager restores `bPackageWasDirty` (`BlueprintCompilationManager.cpp:1904-1907`). The tool then reads that flag for `saved`. No transaction/rollback exists for these compiler-side source changes.
+- **`R04-COMPILE-03` (confirmed source; compile).** Error classification ignores `Blueprint->Status` and folds engine errors into warnings. `bHasErrors` is only `CompileLog.NumErrors` (`TurboMCPCompile.cpp:227`); `bEngineLoggedSomething` includes `CapturedErrors`, but the branch increments `WarningCount` (`:236-254`). The manager's `BS_Error` path (`BlueprintCompilationManager.cpp:1675,1853-1859`) is never read. Engine-only errors produce a summary with zero errors even while the final text reports engine errors. The tool has no independent status check; whether a status error can occur with an empty compiler log remains a probe gap, not a proven case.
+- **`R04-COMPILE-04` (confirmed source; compile).** Widget compile has generated-class, binding, reinstancing and project-code effects beyond the result text. The compiler duplicates the widget tree, writes runtime bindings and named slots, runs custom widget compiler rules/extensions and may reinstance live classes/instances (`WidgetBlueprintCompiler.cpp:705-708,844-938,1006-1107`; `BlueprintCompilationManager.cpp:1702-1722`). The tool reports only counts and dirty text; no existing test compiles `WBP_NodeTest` or observes these effects.
+- **`R04-COMPILE-05` (contract gap; compile).** Common UI and Input support is unverified and cannot be inferred from `UBlueprint`/`UWidgetBlueprint` inheritance. The plugin accepts any `UBlueprint` (`TurboMCPCompile.cpp:76-81,206-215`); the widget compiler accepts any `UWidgetBlueprint` (`WidgetBlueprintCompiler.cpp:147-150`). `WBP_NodeTest` is plain UMG; there is no plugin-specific fixture or compile test. The error text "Only Blueprints and widgets compile" is broader than the tested path.
+- **`R04-COMPILE-06` (confirmed source; compile).** Partial and all-error batches are summarized as `changed: compiled N of M`. `CompiledCount` includes `ErrorCount` (`TurboMCPCompile.cpp:301-322`); errors continue the loop and are counted alongside clean attempts. There is no aggregate success/failure/partial outcome and no distinction between attempted, succeeded, warned, errored and refused in one machine-readable result.
+- **`R04-COMPILE-07` (contract gap; compile).** Compile success, package write and durable persistence are not separately established. `saved`/`not saved yet` is `Package->IsDirty()` (`:272-277`); compile may auto-save under `SaveOnCompile` or restore the pre-compile dirty flag (`BlueprintCompilationManager.cpp:458-490,1904-1907`). The tool never reloads, hashes or compares the package. No ARC02 outcome/code/operation id exists.
+
+### Bounded repair proposals
+
+All proposals are unapproved and do not authorize implementation or a new test hook.
+
+#### `R04-REPAIR-28` — prevent or report hidden compile-time package writes
+
+- **Finding / owner:** `R04-COMPILE-01`; owner R04.
+- **Exact files:** `Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp`; `Tools/test-widget-compile-save-reopen.py` (proposed new file).
+- **Preserved:** compile result/per-asset rows; clean/warning/error/refused text; one attempt per input; explicit save remains the write operation.
+- **Synthetic probe:** set `SaveOnCompile` to Never and SuccessOnly in a disposable fixture; compile `WBP_NodeTest`; record dirty flag, file hash and source-control operations.
+- **Expected:** compile passes `SkipSave` and never writes, or reports the package write/checkout explicitly; compile-only and compile+save are distinct; the effective setting is recorded.
+- **Negative control:** Never produces no file/source-control change; explicit `EditTurboMCPSave` still writes; a clean no-op compile does not claim a write.
+- **Fixture gap:** no setting control, hash-around-compile or source-control observer; proposed test file does not exist.
+- **Validation:** proposed setting/hash test; no current assertion.
+- **Rollback:** revert the compile file and proposed test only.
+
+#### `R04-REPAIR-29` — report compiler-side source changes and dirty state truthfully
+
+- **Finding / owner:** `R04-COMPILE-02`; owner R04.
+- **Exact files:** `Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp`; `Tools/test-widget-compile-save-reopen.py`.
+- **Preserved:** compile result; explicit save; ordinary package dirty semantics; no automatic project rollback.
+- **Synthetic probe:** compile `WBP_NodeTest` with a property binding/stale binding; snapshot `Bindings`, `PropertyBindings`, generated class and dirty state before/after.
+- **Expected:** compiler-side source changes are reported and left dirty for explicit save, or restored under a documented transaction; `saved` is never based only on a restored pre-compile dirty flag.
+- **Negative control:** a clean compile with no binding mutation remains no-change; explicit save writes; plain BP control unaffected.
+- **Fixture gap:** no binding/stale-binding WBP fixture or binding reader; proposed test file does not exist.
+- **Validation:** proposed binding/dirty test; no current assertion.
+- **Rollback:** revert the compile file and proposed test only.
+
+#### `R04-REPAIR-30` — make status/error/warning classification consistent
+
+- **Finding / owner:** `R04-COMPILE-03`; owner R04.
+- **Exact files:** `Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp`; `Tools/test-compile-ensure.py`.
+- **Preserved:** per-asset compiler message lines, six-message bound, captured warning/error text, refusals, clean/warning/error headline structure.
+- **Synthetic probe:** compile disposable fixtures with a compiler warning, compiler error, engine-log-only error and, if producible, status-error/empty-log; inspect counts and headline.
+- **Expected:** `Blueprint->Status` and engine errors are reflected consistently; engine errors do not count as zero; a clean status/no-message compile remains clean; warning and error controls remain distinct.
+- **Negative control:** clean -> clean/zero errors; warning-only -> warning; compiler-error -> error.
+- **Fixture gap:** no engine-log-only/status-empty-log/warning matrix fixture.
+- **Validation:** proposed `test-compile-ensure` extension; no current count/status assertion.
+- **Rollback:** revert the compile file and test only.
+
+#### `R04-REPAIR-31` — cover Widget Blueprint generated-class and binding effects
+
+- **Finding / owner:** `R04-COMPILE-04`; owner R04.
+- **Exact files:** `Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp`; `Tools/test-widget-compile-save-reopen.py`; `Tools/test-widget-tree.py`.
+- **Preserved:** plain WBP compile/result; generated class creation; source widget tree; existing WBP save/read behavior.
+- **Synthetic probe:** compile `WBP_NodeTest`; read source tree with `ReadTurboMCPWidgetTree`, generated class identity with `ReadTurboMCPAssetDescribe`, and a controlled binding/tree change; compare before/after and check live instances.
+- **Expected:** report names generated class and binding effects where a reader exists and records unobservable binding/reinstancing effects as missing; project compiler-rule execution is not inferred as safe.
+- **Negative control:** `BP_NodeTest` compile still reports its status; unchanged WBP tree text matches.
+- **Fixture gap:** no WBP compile test, binding reader, custom rule fixture or live-instance observer; proposed test file does not exist.
+- **Validation:** proposed WBP compile/save/reopen suite; no current WBP compile assertion.
+- **Rollback:** revert the compile file, proposed test and any `test-widget-tree.py` addition only.
+
+#### `R04-REPAIR-32` — state the Common UI/Input support boundary
+
+- **Finding / owner:** `R04-COMPILE-05`; owner R04.
+- **Exact files:** `Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp`; `Tools/test-widget-compile-save-reopen.py`.
+- **Preserved:** plain UMG WBP compile; generic Blueprint acceptance; no new authoring feature.
+- **Synthetic probe:** compile plain `WBP_NodeTest`, then an approved Common UI or Input widget fixture if one exists; do not infer support from inheritance.
+- **Expected:** claims only the tested plain UMG path; Common UI/Input is documented unsupported or unverified until an owned fixture/test exists; a stable refusal is preferable to an inheritance-based promise.
+- **Negative control:** plain WBP still compiles; a non-widget BP follows its actual compiler.
+- **Fixture gap:** no Common UI/Input asset in tracked fixtures; proposed test file and approved plugin-specific fixture do not exist.
+- **Validation:** proposed fixture/test only; no current assertion.
+- **Rollback:** revert the compile wording/guard and proposed test only.
+
+#### `R04-REPAIR-33` — distinguish partial and all-error batches
+
+- **Finding / owner:** `R04-COMPILE-06`; owner R04.
+- **Exact files:** `Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp`; `Tools/test-compile-ensure.py`.
+- **Preserved:** per-asset lines/messages; refused rows; clean/warning/error counts; continue after a failure.
+- **Synthetic probe:** compile `WBP_NodeTest`/`BP_NodeTest` with a compiler-error asset and an invalid name; add all-error and duplicate batches.
+- **Expected:** headline/counts distinguish attempted, clean, warning, error and refused; error compiles are not successful "compiled" assets; mixed batches have a partial outcome; all-refused is unchanged and all-error is not success.
+- **Negative control:** single clean asset remains one compiled/clean; unknown name refuses; duplicates remain visible pending policy.
+- **Fixture gap:** no compiler-error asset or mixed/all-error batch fixture; duplicates/malformed batches untested.
+- **Validation:** proposed `test-compile-ensure` extension; no current partial/error headline assertion.
+- **Rollback:** revert the compile file and test only.
+
+#### `R04-REPAIR-34` — separate compile, explicit save and durable reopen
+
+- **Finding / owner:** `R04-COMPILE-07`; owner R04.
+- **Exact files:** `Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp`; `Tools/test-widget-compile-save-reopen.py`; `Tools/test-widget-tree.py`.
+- **Preserved:** compile status/dirty text; explicit save; no automatic reload over unsaved state; existing WBP read/save semantics.
+- **Synthetic probe:** compile `WBP_NodeTest`, save explicitly, stop/restart editor, then read `ReadTurboMCPAssetDescribe` and `ReadTurboMCPWidgetTree`; repeat with a failed compile and no-save control.
+- **Expected:** compile success, package write and durable reload are separate claims; after explicit save+restart the asset says loaded/on disk and the tree matches; failed compile/save never claims persistence; a dirty flag alone is not durable proof.
+- **Negative control:** no-save dirty compile is not durable; clean no-op reports no changes; failed compile remains failed.
+- **Fixture gap:** no per-asset reload MCP tool; reopen needs an editor restart; proposed test and generated-class/binding readback do not exist.
+- **Validation:** proposed WBP compile/save/reopen suite and manual restart evidence; no current compile persistence assertion.
+- **Rollback:** revert the compile file, proposed test and any `test-widget-tree.py` addition only.
+
+### Minimal proposed Widget Blueprint compile -> save -> reopen plan
+
+This is a proposed acceptance sequence, not an executed result. It uses only existing owned fixtures and tools; the new test file is proposed, not present.
+
+| Step | Existing fixture/tool | Assertion |
+| --- | --- | --- |
+| 1 | `/Game/Tests/WBP_NodeTest` (`TestProject/Content/Tests/WBP_NodeTest.uasset`) | Snapshot/restore the owned fixture; no new asset is authored. |
+| 2 | `Tools/tmcp.py` `Session.call`; `ReadTurboMCPWidgetTree` | Record the source widget-tree text before compiling. |
+| 3 | `ReadTurboMCPAssetDescribe` | Record package/object, generated class, loaded, unsaved and on-disk fields. |
+| 4 | `EditTurboMCPCompile` with `assets=/Game/Tests/WBP_NodeTest` | Require a per-asset line, a recognised clean/warning/error verdict, and the saved/dirty text. |
+| 5 | `EditTurboMCPSaveWithoutThumbnail` (or `EditTurboMCPSave` only when thumbnail/design-time execution is allowed) | Require one saved/no-change outcome and a changed `.uasset` hash when the package was dirty. |
+| 6 | `ReadTurboMCPDirtyList` | Require the package absent after an explicit successful save. |
+| 7 | `Tools/tmcp_editor.py` `stop_editor` then `ensure_editor` | Reopen from disk; this is the existing restart seam, not a per-asset reload. |
+| 8 | `ReadTurboMCPAssetDescribe`; `ReadTurboMCPWidgetTree` | Require loaded/on disk, generated-class path, no unsaved changes, and equality of the source widget-tree text. |
+
+**Existing assertions:** `Tools/test-save-thumbnail-option.py:92-94,187-197` uses `WBP_NodeTest` for save; `Tools/test-widget-tree.py:28` reads it; `Tools/test-compile-ensure.py:77-79,173` compiles `BP_NodeTest` only; `Tools/test-uncovered-tools.py:138-150` compiles `BP_NodeTest`; `Tools/test-graph-knots.py:286-300` compiles `BP_NodeTest` before/after a knot edit. No current test compiles `WBP_NodeTest`.
+
+**Missing seams:** no MCP per-asset unload/reload; no reader for `UWidgetBlueprintGeneratedClass::Bindings` or reinstanced instances; no controlled `SaveOnCompile`, compiler-error or custom-rule fixture; no proposed test file exists. The generated-class path in `ReadTurboMCPAssetDescribe` is not proof of runtime bindings.
+
+**Manual fallback:** use `Tools/start-editor.ps1 -Stop`, then start the editor with the existing start script and reconnect with `Tools/tmcp.py`/`Session`; read the asset and tree after restart. If the editor is not restarted and the package not read back, report persistence as unverified, not passed.
+
+**Required candidate-bound evidence:** the proposed `Tools/test-widget-compile-save-reopen.py` must run against the exact candidate with an owned `WBP_NodeTest` restore and record request commit/tree digest, setting, compile text, save text, file hash, restart evidence and post-reopen tree. No such engine evidence exists in this checkpoint; only the offline profile is run.
+
+### Existing assertions vs unrun probes
+
+- `Tools/test-compile-ensure.py` (engine, T-STRUCT-7) compiles `BP_NodeTest` through `EditTurboMCPCompile` and checks shape/saved/verdict and the C++ ensure fixture; it does not compile a Widget Blueprint, inspect generated class/bindings, control `SaveOnCompile`, or reopen.
+- `Tools/test-uncovered-tools.py:138-150` compiles `BP_NodeTest` and checks a per-asset line, saved/unsaved text and unknown-name refusal.
+- `Tools/test-graph-knots.py:286-300` compiles `BP_NodeTest` before/after a knot edit and compares a substring verdict; no package write/persistence assertion.
+- `Tools/test-save-thumbnail-option.py:92-94,187-197` saves `WBP_NodeTest`, not compile.
+- `Tools/test-widget-tree.py:28` reads `WBP_NodeTest`, not compile.
+- No test covers `EditTurboMCPCompile` omitted/empty/duplicate/malformed input, all-error or mixed batches, widget compiler rules, Common UI/Input, `SaveOnCompile`, generated bindings or reopen.
+
+### Checkpoint 5 validation
+
+| Command | Result |
+| --- | --- |
+| `python Tools/audit-inventory.py --check` | exit 0; 101 definitions; 95 `parsed_call`, 6 `name_reference_only` |
+| `python Tools/test-result-contract.py` | exit 0; PASS (C03–C08) |
+| `python Tools/test-client-retry.py` | exit 0; PASS (C01/C02) |
+| `python Tools/execute-tests.py --profile offline --execute` | exit 0 on the pre-commit tree (request commit `a92cae75`): report `.local/executions/66d2df8b38694b0aa9aa125d216b02c1/report.json`, tree `d1b83bf5…`; `Tools/validate.py` passed. Candidate-bound evidence is obtained after this commit and returned separately. |
+
+### Checkpoint 5 unresolved questions
+
+- Whether `EditTurboMCPCompile` should pass `EBlueprintCompileOptions::SkipSave` or report auto-save/checkout side effects; the effective `SaveOnCompile` setting is unverified.
+- Whether compiler-side widget binding/graph changes should be restored, left dirty, or reported as source changes; no transaction/undo policy is approved.
+- How to represent `Blueprint->Status`, compiler-log errors and engine-log errors consistently without a new public schema.
+- How to expose or verify Widget Blueprint generated-class/binding/reinstancing effects; no current reader exists.
+- Whether Common UI/Input widget classes are supported; no fixture/test exists, and inheritance is not evidence.
+- How to define partial/all-error batch outcomes and whether `changed` is ever correct for an error-only compile.
+- How to distinguish compile success, auto-save, explicit package write and durable reopen without a new result contract.
+
 ## Integration review
 
-Checkpoint 1 was accepted as a source-only checkpoint at candidate `12d515ac46b58e42e83fffb9b577181fb4e68b55`. That acceptance covered four reviewed tools and 97 not reviewed; all repair rows remain unapproved proposals. The toggle end-after-disable exception and any state/header expansion require an explicit reviewed lifecycle contract before implementation. Checkpoint 2 is accepted at candidate `f10dc74ca4569ca449c0e598fe76abe042a0e7b7`: it adds three source-reviewed rows, for a cumulative seven reviewed and 94 not reviewed. Checkpoint 3 was accepted at candidate `39c229306f1e5d56cf156be9de3b7891af7382e8`: it adds three VCS rows, for ten reviewed and 91 not reviewed. Checkpoint 4 is pending review: it adds the two save rows, for a current total of twelve reviewed and 89 not reviewed. R04 remains incomplete. No runtime outcome or repair is certified.
+Checkpoint 1 was accepted as a source-only checkpoint at candidate `12d515ac46b58e42e83fffb9b577181fb4e68b55`. That acceptance covered four reviewed tools and 97 not reviewed; all repair rows remain unapproved proposals. The toggle end-after-disable exception and any state/header expansion require an explicit reviewed lifecycle contract before implementation. Checkpoint 2 is accepted at candidate `f10dc74ca4569ca449c0e598fe76abe042a0e7b7`: it adds three source-reviewed rows, for a cumulative seven reviewed and 94 not reviewed. Checkpoint 3 was accepted at candidate `39c229306f1e5d56cf156be9de3b7891af7382e8`: it adds three VCS rows, for ten reviewed and 91 not reviewed. Checkpoint 4 was accepted at candidate `8bd3a449d178bdcc266df9eaf3067e22462719fd`: it adds two save rows, for twelve reviewed and 89 not reviewed. Checkpoint 5 is pending review: it adds the compile row, for a current total of thirteen reviewed and 88 not reviewed. R04 remains incomplete. No runtime outcome or repair is certified.
