@@ -44,6 +44,8 @@ Accepted candidate `fcfc8b722162c71366ca4e89ddfecae0c4969157` from approved base
 
 Independent parser checks passed 17/17. Supervised 5.8.3 build `ebfddfcbe49644eb8606712002b66997` passed at candidate digest `2f485c68e0ca9649ad0addbee0679021da87c15b21b4a91ef5c4576bc7a50bb0`. The focused engine run `861cbb06c5434fe8b136bd0490e1886c` passed `test-graph-append`, including `TurboMCP.GraphAppend.AliasCollision` with Success and no errors or warnings. The runner restored fixtures. The DLL SHA-256 was `D86A53F1F5C1DC4043BAB1A34FE9AD6A59E8759DD64286841F5AEB047AF6794C` (3,782,144 bytes).
 
+Integration offline run `38c9535495ae4d03906678c2c160c46b` passed after refreshing only the generated inventory plugin-tree identity; all 101 tool rows were unchanged.
+
 Evidence applies to this candidate and bounded append checks. It does not certify save/reopen, Widget Blueprint coverage, graph-dump completeness, automatic placement or all of R04. The existing suite's final disk-save assertion checks response wording rather than a fresh disk fingerprint; do not treat it as persistence evidence. Placement and reader completeness remain separate work. Worker history is preserved on its branch; integration copies the reviewed implementation and records acceptance here.
 
 
@@ -53,7 +55,7 @@ The synthetic harness through de899f52 is accepted for its bounded test-infrastr
 
 Remaining harness debt: actual_worker_path is a static field even on blocked attempts; consumers must use case/attempt status. Non-proof is conservatively blocked, including failed negative attempts; per-case exit codes are partial. Context admission is accidental-execution protection, not an OS security boundary. Four cases are synthetic analogues; preassignment and sentinel cases are not marked analogues. No additional native run was needed for the test-only correction.
 
-Accepted Blueprint audit corrections through 907c802 are source/planning evidence only. The current separately owned worker scope is the Append alias repair at base 6b00fa4. That implementation has not been accepted or merged.
+Accepted Blueprint audit corrections through 907c802 are source/planning evidence only. The Append alias repair was subsequently accepted as recorded above. The next separately owned implementation is Append placement; its exact base and scope are recorded at dispatch.
 Task R04, first dispatch checkpoint (`call-log-contracts`), claim `ab2cf6535c584bc6a9419c79e85d0b04` (owner `dsh-r04-01`). Approved base `1180c6d43655195dc2772b6d1f0b80588e4b466a`; branch `task/r04-call-log-audit`; worktree `C:\ExampleDev\SampleRoot005\r04`. The candidate is the correction commit containing this evidence; its full SHA is returned in the submission message. R04 is not complete.
 
 Source identity:

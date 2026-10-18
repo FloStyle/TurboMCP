@@ -39,7 +39,7 @@
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "a36a5c7",
+      "approved_base": "a36a5c797aa73d640f0da5f31b2becb4c2a77a52",
       "checkpoint": "Append placement preserving existing layout; exact dispatch base is the subsequent integrator scope commit recorded in claim and prompt"
     }
   }
