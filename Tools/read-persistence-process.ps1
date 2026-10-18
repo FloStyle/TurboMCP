@@ -107,7 +107,7 @@ public static class TurboMCPProcessNative
                 else {
                     $row = $rows[0]
                     if (
-                        ($row.ProcessId -isnot [uint32] -and $row.ProcessId -isnot [int]) -or
+                        (($row.ProcessId -isnot [uint32]) -and ($row.ProcessId -isnot [int])) -or
                         [uint32]$row.ProcessId -ne [uint32]$ProcessId -or
                         $row.ExecutablePath -isnot [string] -or
                         [string]::IsNullOrWhiteSpace([string]$row.ExecutablePath) -or
@@ -145,12 +145,13 @@ public static class TurboMCPProcessNative
                         }
                         else {
                             [long] $ticks = ([long]$beforeCreation.dwHighDateTime -shl 32) -bor [long]$beforeCreation.dwLowDateTime
+                            [string] $executablePath = ([string]$row.ExecutablePath).Replace('/', '\')
                             $result = [pscustomobject]@{
                                 schema = $schema
                                 ok = $true
                                 pid = [uint32]$ProcessId
                                 start_ticks = [long]$ticks
-                                executable_path = [string]$row.ExecutablePath
+                                executable_path = [string]$executablePath
                                 command_line = [string]$row.CommandLine
                             }
                         }

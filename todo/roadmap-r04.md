@@ -389,7 +389,7 @@ Limits:
 
 Validation:
 - `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 20 tests ... OK`.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/20fc3bc6476f43e3a8ddbb81500b66f4/report.json`; aggregate log records `PASS: test-persistence-process-reader` and all other offline checks passed.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/4b90488410fe4f8781042138a86f7348/report.json`; aggregate log records `PASS: test-persistence-process-reader` and all other offline checks passed.
 - Candidate-bound evidence and full-base scope gate are recorded in the submission.
 
 Rollback: remove the two new tools, the one catalog row and this evidence. Existing collector/validator and production callers remain unchanged.

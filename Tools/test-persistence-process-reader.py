@@ -192,6 +192,11 @@ class ProcessReaderTests(unittest.TestCase):
             stdout=json.dumps({"schema": 1, "ok": False, "error": "raw"}).encode()
         ))
         self.assert_failure(out, "unknown")
+        for bad_error in ([], {}, None, 1, True):
+            out, _, _ = self.read(runner_result(
+                stdout=json.dumps({"schema": 1, "ok": False, "error": bad_error}).encode()
+            ))
+            self.assert_failure(out, "unknown")
 
     def test_early_process_exit_is_not_found(self):
         out, _, _ = self.read(runner_result(
@@ -230,6 +235,7 @@ class ProcessReaderTests(unittest.TestCase):
         self.assertIn("GetProcessTimes", text)
         self.assertIn("GetExitCodeProcess", text)
         self.assertIn("CloseHandle", text)
+        self.assertIn(".Replace('/', '\\')", text)
         self.assertIn("finally", text)
         self.assertNotIn("Start-Process", text)
         self.assertNotIn("taskkill", text)

@@ -28,13 +28,13 @@ _ERRORS = {"timeout", "permission", "not_found", "provider_error", "incomplete",
 
 
 def _failure(error):
-    if error not in _ERRORS:
+    if not isinstance(error, str) or error not in _ERRORS:
         error = "unknown"
     return {"ok": False, "error": error}
 
 
 def _runner_failure(error):
-    if error not in _ERRORS:
+    if not isinstance(error, str) or error not in _ERRORS:
         error = "unknown"
     return {
         "returncode": None,
