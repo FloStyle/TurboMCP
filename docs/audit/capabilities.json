@@ -128,6 +128,7 @@
       "test_references": [
         "Tools/test-compile-ensure.py",
         "Tools/test-graph-knots.py",
+        "Tools/test-monday-disk-loop.py",
         "Tools/test-uncovered-tools.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -250,7 +251,8 @@
       ],
       "test_references": [
         "Tools/test-graph-append-chain.py",
-        "Tools/test-graph-append.py"
+        "Tools/test-graph-append.py",
+        "Tools/test-monday-disk-loop.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -718,6 +720,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-monday-disk-loop.py",
         "Tools/test-save-thumbnail-option.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1128,7 +1131,8 @@
         }
       ],
       "test_references": [
-        "Tools/test-graph-append.py"
+        "Tools/test-graph-append.py",
+        "Tools/test-monday-disk-loop.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2021,6 +2025,7 @@
         "Tools/test-graph-swap-call.py",
         "Tools/test-graph-text-guards.py",
         "Tools/test-graph-tidy-scope.py",
+        "Tools/test-monday-disk-loop.py",
         "Tools/test-trace.py",
         "Tools/test-uncovered-tools.py"
       ],
@@ -2176,7 +2181,8 @@
       ],
       "test_references": [
         "Tools/test-capture-selectors.py",
-        "Tools/test-capture.py"
+        "Tools/test-capture.py",
+        "Tools/test-monday-disk-loop.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",

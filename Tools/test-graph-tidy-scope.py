@@ -42,10 +42,16 @@ def graph_text(session):
 
 def marker_key(text, marker):
     """The key on the PrintString form that owns this unique marker."""
-    pattern = r":%s:([0-9a-f]{6}).{0,900}?InString \"%s\"" % (
-        re.escape(GRAPH), re.escape(marker))
-    match = re.search(pattern, text, re.DOTALL)
-    return match.group(1) if match else None
+    # Bind the literal to its own PrintString header; never scan across nodes.
+    headers = list(re.finditer(r"(?m)^\s*\(Development\|PrintString ; ([^ ;\r\n]+)", text))
+    matches = []
+    for index, header in enumerate(headers):
+        end = headers[index + 1].start() if index + 1 < len(headers) else len(text)
+        body = text[header.end():end]
+        if re.search(r'(?m)^\s+InString "' + re.escape(marker) + r'"(?=\s|\)|$)', body):
+            matches.append(header.group(1))
+    return matches[0] if len(matches) == 1 else None
+
 
 
 def score_pair(text):
@@ -58,11 +64,13 @@ def main():
     session.connect()
 
     before = graph_text(session)
+    print(before)
     selected = [marker_key(before, marker) for marker in SELECTED]
     anchors = [marker_key(before, marker) for marker in ANCHORS]
     check("the focused fixture exists and exposes two selected ids", all(selected), str(selected))
     check("the focused fixture exposes fixed surrounding anchor ids", all(anchors), str(anchors))
-    if not all(selected) or not all(anchors):
+    check("selected nodes and anchors are distinct", len(set(selected + anchors)) == 4)
+    if not all(selected) or not all(anchors) or len(set(selected + anchors)) != 4:
         return 1
 
     args = {"asset": ASSET, "graphName": GRAPH, "bForce": True, "nodeIds": selected}
@@ -75,9 +83,9 @@ def main():
 
     preview_moves = re.search(r"scope moves only:\s*(.*)", preview)
     listed_preview_moves = preview_moves.group(1) if preview_moves else ""
-    check("the preview names every selected move", all(key in listed_preview_moves for key in selected),
+    check("the preview names every selected move", all(key.rsplit(".", 1)[-1] in listed_preview_moves for key in selected),
           listed_preview_moves)
-    check("the preview does not offer an anchor for movement", not any(key in listed_preview_moves for key in anchors),
+    check("the preview does not offer an anchor for movement", not any(key.rsplit(".", 1)[-1] in listed_preview_moves for key in anchors),
           listed_preview_moves)
 
     # Preview is required to be observational: ids remain available before the edit.
@@ -91,8 +99,8 @@ def main():
     applied_moves = re.search(r"scope moved:\s*(.*)", edited)
     listed_applied_moves = applied_moves.group(1) if applied_moves else ""
     check("the edit reports only the selected node ids as moved",
-          all(key in listed_applied_moves for key in selected)
-          and not any(key in listed_applied_moves for key in anchors), listed_applied_moves)
+          all(key.rsplit(".", 1)[-1] in listed_applied_moves for key in selected)
+          and not any(key.rsplit(".", 1)[-1] in listed_applied_moves for key in anchors), listed_applied_moves)
     check("the edit states that surrounding nodes and comment boxes stayed anchored",
           "remained fixed anchors" in edited, edited[-500:])
 
