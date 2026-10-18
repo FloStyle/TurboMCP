@@ -30,6 +30,19 @@ JOB_OBJECT_MSG_NEW_PROCESS = 6
 JOB_OBJECT_MSG_EXIT_PROCESS = 7
 JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS = 8
 JOB_OBJECT_ASSOCIATE_COMPLETION_PORT_INFORMATION = 7
+HELPER_THREADS = []
+
+
+def _join_helper_threads(deadline):
+    errors = []
+    for thread in list(HELPER_THREADS):
+        while thread.is_alive() and time.monotonic() < deadline:
+            thread.join(min(0.05, max(0, deadline - time.monotonic())))
+        if thread.is_alive():
+            errors.append("helper-thread-timeout")
+        elif thread in HELPER_THREADS:
+            HELPER_THREADS.remove(thread)
+    return errors
 
 
 class JOBOBJECT_ASSOCIATE_COMPLETION_PORT(ctypes.Structure):
@@ -58,6 +71,8 @@ def _win():
     api.QueryFullProcessImageNameW.restype = W.BOOL
     api.GetProcessTimes.argtypes = [W.HANDLE, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     api.GetProcessTimes.restype = W.BOOL
+    api.IsProcessInJob.argtypes = [W.HANDLE, W.HANDLE, ctypes.POINTER(W.BOOL)]
+    api.IsProcessInJob.restype = W.BOOL
     api.CloseHandle.argtypes = [W.HANDLE]
     api.CloseHandle.restype = W.BOOL
     return api
@@ -85,24 +100,32 @@ class ObservedJob:
                     self.handle, JOB_OBJECT_ASSOCIATE_COMPLETION_PORT_INFORMATION,
                     ctypes.byref(assoc), ctypes.sizeof(assoc)):
                 raise ctypes.WinError(ctypes.get_last_error())
-        except Exception:
-            self.close_best_effort()
+        except Exception as original:
+            cleanup_errors = self.close_best_effort()
+            if cleanup_errors:
+                raise RuntimeError(str(original) + "; cleanup:" + ";".join(cleanup_errors)) from original
             raise
         self.messages = []
 
     def close_best_effort(self):
+        errors = []
         if self.port:
             try:
                 if self.api.CloseHandle(self.port):
                     self.port = None
-            except Exception:
-                pass
+                else:
+                    errors.append("completion-port-close:" + str(ctypes.get_last_error()))
+            except Exception as exc:
+                errors.append("completion-port-close:" + str(exc))
         if self.handle:
             try:
                 if self.api.CloseHandle(self.handle):
                     self.handle = None
-            except Exception:
-                pass
+                else:
+                    errors.append("job-close:" + str(ctypes.get_last_error()))
+            except Exception as exc:
+                errors.append("job-close:" + str(exc))
+        return errors
 
     def assign(self, proc):
         if not self.api.AssignProcessToJobObject(self.handle, W.HANDLE(int(proc._handle))):
@@ -120,19 +143,27 @@ class ObservedJob:
             raise ctypes.WinError(ctypes.get_last_error())
         return bool(present.value)
 
+    def is_process_in_job(self, process):
+        return self.in_job(W.HANDLE(int(process._handle)))
+
     def terminate_checked(self):
         if not self.api.TerminateJobObject(self.handle, 125):
             raise ctypes.WinError(ctypes.get_last_error())
 
     def close_checked(self):
+        errors = []
         if self.port:
             if not self.api.CloseHandle(self.port):
-                raise ctypes.WinError(ctypes.get_last_error())
-            self.port = None
+                errors.append("completion-port-close:" + str(ctypes.get_last_error()))
+            else:
+                self.port = None
         if self.handle:
             if not self.api.CloseHandle(self.handle):
-                raise ctypes.WinError(ctypes.get_last_error())
-            self.handle = None
+                errors.append("job-close:" + str(ctypes.get_last_error()))
+            else:
+                self.handle = None
+        if errors:
+            raise RuntimeError(";".join(errors))
 
     def drain_messages(self, deadline, on_new_process=None):
         error = None
@@ -158,11 +189,13 @@ class ObservedJob:
 
 
 def process_evidence(pid, job):
-    """Immediate retained-handle evidence for one NEW_PROCESS notification."""
+    """Immediate handle-scoped identity; the handle is closed after observation."""
     api = _win()
     handle = api.OpenProcess(0x101000, False, pid)
     if not handle:
         return None, "open:" + str(ctypes.get_last_error())
+    identity = None
+    error = None
     try:
         try:
             if hasattr(job, "in_job"):
@@ -172,24 +205,29 @@ def process_evidence(pid, job):
                     _handle = handle
                 member = job.is_process_in_job(HandleHolder())
             if not member:
-                return None, "membership"
+                error = "membership"
+            else:
+                size = W.DWORD(32768)
+                buffer = ctypes.create_unicode_buffer(size.value)
+                if not api.QueryFullProcessImageNameW(handle, 0, buffer, ctypes.byref(size)):
+                    error = "image:" + str(ctypes.get_last_error())
+                else:
+                    created = ctypes.c_ulonglong()
+                    exited = ctypes.c_ulonglong()
+                    kernel = ctypes.c_ulonglong()
+                    user = ctypes.c_ulonglong()
+                    if not api.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(exited), ctypes.byref(kernel), ctypes.byref(user)):
+                        error = "times:" + str(ctypes.get_last_error())
+                    elif created.value == 0:
+                        error = "creation-zero"
+                    else:
+                        identity = {"pid": int(pid), "image": buffer.value, "created": int(created.value), "handle_closed": True}
         except Exception as exc:
-            return None, "membership:" + str(exc)
-        size = W.DWORD(32768)
-        buffer = ctypes.create_unicode_buffer(size.value)
-        if not api.QueryFullProcessImageNameW(handle, 0, buffer, ctypes.byref(size)):
-            return None, "image:" + str(ctypes.get_last_error())
-        created = ctypes.c_ulonglong()
-        exited = ctypes.c_ulonglong()
-        kernel = ctypes.c_ulonglong()
-        user = ctypes.c_ulonglong()
-        if not api.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(exited), ctypes.byref(kernel), ctypes.byref(user)):
-            return None, "times:" + str(ctypes.get_last_error())
-        if created.value == 0:
-            return None, "creation-zero"
-        return {"pid": int(pid), "image": buffer.value, "created": int(created.value)}, None
+            error = "membership:" + str(exc)
     finally:
-        api.CloseHandle(handle)
+        if not api.CloseHandle(handle) and error is None:
+            error = "close:" + str(ctypes.get_last_error())
+    return identity, error
 
 
 def validate_admission(env, repo, parent_resolver=parent_ids):
@@ -238,6 +276,29 @@ def _wait_for_exit(proc, deadline):
     return False
 
 
+def _write_stdin_bounded(proc, data, deadline):
+    result = []
+    def write():
+        try:
+            if data is not None:
+                proc.stdin.write(data)
+                proc.stdin.flush()
+            proc.stdin.close()
+        except Exception as exc:
+            result.append("stdin:" + str(exc))
+    thread = threading.Thread(target=write, daemon=True)
+    HELPER_THREADS.append(thread)
+    try:
+        thread.start()
+    except Exception as exc:
+        return ["stdin-thread:" + str(exc)]
+    while thread.is_alive() and time.monotonic() < deadline:
+        thread.join(min(0.05, max(0, deadline - time.monotonic())))
+    if thread.is_alive():
+        return ["stdin-timeout"]
+    return result
+
+
 def _close_bounded(stream, deadline, clock=time.monotonic, sleeper=time.sleep):
     if stream is None:
         return []
@@ -248,6 +309,7 @@ def _close_bounded(stream, deadline, clock=time.monotonic, sleeper=time.sleep):
         except Exception as exc:
             error.append("close:" + str(exc))
     thread = threading.Thread(target=close, daemon=True)
+    HELPER_THREADS.append(thread)
     try:
         thread.start()
     except Exception as exc:
@@ -267,6 +329,7 @@ def _read_all_bounded(stream, deadline):
         except Exception as exc:
             result["error"] = str(exc)
     thread = threading.Thread(target=read, daemon=True)
+    HELPER_THREADS.append(thread)
     try:
         thread.start()
     except Exception as exc:
@@ -321,6 +384,8 @@ def cleanup_job(job, proc, deadline, uncontained=False, clock=time.monotonic,
             complete, detail = _read_all_bounded(proc.stdout, deadline)
             if not complete:
                 errors.append(detail)
+        if proc.stdin is not None:
+            errors.extend(_close_bounded(proc.stdin, deadline, clock, sleeper))
         for stream in (proc.stdout, proc.stderr):
             errors.extend(_close_bounded(stream, deadline, clock, sleeper))
     return errors
@@ -356,7 +421,7 @@ def _identity_from_handle(handle):
 
 def _open_process_handle(pid):
     api = _win()
-    handle = api.OpenProcess(0x00100000, False, pid)  # SYNCHRONIZE only
+    handle = api.OpenProcess(0x101000, False, pid)  # SYNCHRONIZE | QUERY_LIMITED
     if not handle:
         return None, api
     return handle, api
@@ -389,6 +454,7 @@ def _read_handshake(proc, deadline):
             result["error"] = str(exc)
 
     thread = threading.Thread(target=read, daemon=True)
+    HELPER_THREADS.append(thread)
     thread.start()
     thread.join(max(0, deadline - time.monotonic()))
     if thread.is_alive():
@@ -454,7 +520,7 @@ def _synthetic_helper(mode, *args):
         if not sys.stdin.buffer.readline():
             return 3
         powershell = str(Path(os.environ.get("SystemRoot", "")) / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe")
-        source = "$null=[Console]::In.ReadLine(); Add-Type -TypeDefinition 'public class SyntheticAcceptanceType { public static int Value = 1; }'; Start-Sleep -Milliseconds 250"
+        source = "$ErrorActionPreference='Stop'; try { Add-Type -TypeDefinition 'public class SyntheticAcceptanceType { public static int Value = 1; }' -ErrorAction Stop; if ([SyntheticAcceptanceType]::Value -ne 1) { exit 20 }; exit 0 } catch { exit 21 }"
         code = subprocess.call([powershell, "-NoProfile", "-NonInteractive", "-Command", source], stdin=subprocess.DEVNULL, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
         Path(args[0]).write_text(str(code), encoding="utf8")
         return code
@@ -475,7 +541,9 @@ def _case_timeout_descendant(work):
         if not assigned:
             result = {"status": "failed", "detail": "membership"}
         else:
-            proc.stdin.write(b"go\n"); proc.stdin.close()
+            write_errors = _write_stdin_bounded(proc, b"go\n", time.monotonic() + 5)
+            if write_errors:
+                result = {"status": "blocked", "detail": write_errors[0]}
             line = _read_handshake(proc, time.monotonic() + 10)
             if not line or not line.startswith("READY "):
                 result = {"status": "blocked", "detail": "no-handshake"}
@@ -488,9 +556,16 @@ def _case_timeout_descendant(work):
                     deadline = time.monotonic() + 1.0
                     while time.monotonic() < deadline and proc.poll() is None:
                         time.sleep(0.01)
-                    result = {"status": "passed" if not marker.exists() else "failed",
-                              "detail": "forced-timeout", "owned": [proc.pid, child_pid],
-                              "descendant": child_identity}
+                    timed_out = time.monotonic() >= deadline and proc.poll() is None
+                    try:
+                        descendant_alive = job.active_processes() > 1
+                    except Exception:
+                        descendant_alive = False
+                    result = {"status": "passed" if timed_out and descendant_alive and not marker.exists() else "failed",
+                              "detail": "forced-timeout" if timed_out and descendant_alive else "timeout-evidence-missing",
+                              "owned": [proc.pid, child_pid], "descendant": child_identity}
+    except Exception as exc:
+        result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
         cleanup_errors = cleanup_job(job, proc, time.monotonic() + CLEANUP_LIMIT_SECONDS,
                                      uncontained=not assigned)
@@ -512,9 +587,14 @@ def _case_pipe_holder(work):
         if not assigned:
             result = {"status": "failed", "detail": "membership"}
         else:
-            proc.stdin.write(b"go\n"); proc.stdin.close()
+            write_errors = _write_stdin_bounded(proc, b"go\n", time.monotonic() + 5)
+            if write_errors:
+                result = {"status": "blocked", "detail": write_errors[0]}
+            pipe_line = _read_handshake(proc, time.monotonic() + 10)
             line = _read_handshake(proc, time.monotonic() + 10)
-            if not line or not line.startswith("READY "):
+            if pipe_line != "SYNTHETIC-PIPE":
+                result = {"status": "failed", "detail": "stdout-missing-or-partial"}
+            elif not line or not line.startswith("READY "):
                 result = {"status": "blocked", "detail": "no-handshake"}
             else:
                 child_pid = int(line.split()[1])
@@ -522,10 +602,10 @@ def _case_pipe_holder(work):
                 if error:
                     result = {"status": "blocked", "detail": "descendant-identity:" + error}
                 else:
-                    pipe_line = _read_handshake(proc, time.monotonic() + 5)
-                    result = {"status": "passed" if pipe_line == "SYNTHETIC-PIPE" else "failed",
-                              "detail": "pipe-complete" if pipe_line == "SYNTHETIC-PIPE" else "pipe-partial",
+                    result = {"status": "passed", "detail": "stdout-observed",
                               "owned": [proc.pid, child_pid], "descendant": child_identity}
+    except Exception as exc:
+        result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
         cleanup_errors = cleanup_job(job, proc, time.monotonic() + CLEANUP_LIMIT_SECONDS,
                                      uncontained=not assigned, drain=True)
@@ -567,12 +647,15 @@ def _case_parent_death(work):
                     proc.kill(); proc.wait(timeout=5)
                     status, detail = _wait_process_handle(child_handle, child_api, time.monotonic() + 10)
                     result = {"status": status, "detail": detail, "owned": [proc.pid, child_pid]}
+    except Exception as exc:
+        result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
         if child_handle:
             try:
-                child_api.CloseHandle(child_handle)
-            except Exception:
-                result = finalize_case(result, ["child-handle-close"])
+                if not child_api.CloseHandle(child_handle):
+                    result = finalize_case(result, ["child-handle-close:" + str(ctypes.get_last_error())])
+            except Exception as exc:
+                result = finalize_case(result, ["child-handle-close:" + str(exc)])
         if proc is not None and proc.poll() is None:
             proc.kill()
             try:
@@ -592,18 +675,31 @@ def _case_preassignment_eof(work):
         worker = Path(__file__).resolve().with_name("execution_runtime.py")
         job = WindowsJob()
         proc = subprocess.Popen([sys.executable, str(worker), "--persistence-worker"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        proc.stdin.close()
+        bounded_close = _write_stdin_bounded(proc, None, time.monotonic() + 5)
         try:
             job.assign(proc)
             assigned = job.is_process_in_job(proc)
         except Exception:
             assigned = False
         exited = _wait_for_exit(proc, time.monotonic() + 10)
-        result = {"status": "passed" if exited and proc.returncode == 2 else "blocked",
-                  "detail": "empty-eof-refused" if exited else "eof-timeout",
-                  "owned": [proc.pid], "assigned": assigned,
+        active = None
+        if assigned:
+            try:
+                active = job.active_processes()
+            except Exception:
+                active = None
+        no_descendants = assigned and active == 0
+        result = {"status": "passed" if no_descendants and exited and proc.returncode == 2 else "blocked",
+                  "detail": "empty-eof-refused-and-no-descendants" if no_descendants else "no-descendant-observation",
+                  "owned": [proc.pid], "assigned": assigned, "active_processes": active,
+                  "stdin_errors": bounded_close,
                   "synthetic_analogue": False, "actual_worker_path": True,
                   "reader_path_evidence": False}
+        if bounded_close:
+            result["status"] = "blocked"
+            result["detail"] = "stdin-close-failed"
+    except Exception as exc:
+        result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
         cleanup_errors = cleanup_job(job, proc, time.monotonic() + CLEANUP_LIMIT_SECONDS,
                                      uncontained=not assigned)
@@ -625,7 +721,9 @@ def _case_add_type(work):
         if not assigned:
             result = {"status": "failed", "detail": "membership"}
         else:
-            proc.stdin.write(b"go\n"); proc.stdin.close()
+            write_errors = _write_stdin_bounded(proc, b"go\n", time.monotonic() + 5)
+            if write_errors:
+                result = {"status": "blocked", "detail": write_errors[0]}
             evidence = []
             evidence_errors = []
             def new_process(pid):
@@ -653,6 +751,8 @@ def _case_add_type(work):
                 result = {"status": "failed", "detail": "compile-code:" + str(compile_code), "compiler": compiler, "observed": evidence}
             else:
                 result = {"status": "passed", "detail": "compiler-observed", "compiler": compiler, "observed": evidence}
+    except Exception as exc:
+        result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
         cleanup_errors = cleanup_job(job, proc, time.monotonic() + CLEANUP_LIMIT_SECONDS,
                                      uncontained=not assigned)
@@ -693,13 +793,14 @@ def run_cases(work):
     finally:
         if sentinel.poll() is None:
             try:
-                sentinel.stdin.close()
+                _write_stdin_bounded(sentinel, None, time.monotonic() + 5)
             except Exception:
                 pass
             try:
                 sentinel.wait(timeout=5)
             except Exception:
                 sentinel.kill(); sentinel.wait(timeout=5)
+        _join_helper_threads(time.monotonic() + CLEANUP_LIMIT_SECONDS)
     required = ["timeout_descendant", "inherited_pipe", "parent_death", "preassignment_eof", "add_type_compiler", "unrelated_sentinel"]
     status, missing = aggregate(results, required)
     return {"schema": 1, "status": status, "missing": missing, "cases": results,

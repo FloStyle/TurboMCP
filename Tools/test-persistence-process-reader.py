@@ -1166,6 +1166,102 @@ class AcceptanceHarnessTests(unittest.TestCase):
         clean = FakeJob()
         self.assertEqual(self.acceptance.cleanup_job(clean, FakeProcess(returncode=0), 100, clock=lambda: 0, sleeper=lambda _: None), [])
 
+    def test_add_type_case_full_orchestration_and_cleanup_failure(self):
+        class Stdin:
+            def __init__(self): self.closed = False
+            def write(self, data): self.closed = False
+            def flush(self): pass
+            def close(self): self.closed = True
+        class Proc:
+            pid = 700
+            _handle = 1
+            def __init__(self):
+                self.stdin = Stdin(); self.stdout = FakeStream(); self.stderr = FakeStream()
+                self.returncode = 0
+            def poll(self): return 0
+            def wait(self, timeout=None): return 0
+        class Observed:
+            def __init__(self, api=None): self.closed = 0
+            def assign(self, proc): pass
+            def is_process_in_job(self, proc): return True
+            def drain_messages(self, deadline, callback): callback(701); return None
+            def terminate_checked(self): pass
+            def active_processes(self): return 0
+            def close_checked(self): self.closed += 1
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", Observed), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 701, "image": "csc.exe", "created": 1}, None)):
+            work = Path(folder)
+            (work / "add-type.result").write_text("0", encoding="utf8")
+            result = self.acceptance._case_add_type(work)
+        self.assertEqual(result["status"], "passed", result)
+        self.assertEqual(result["compiler"][0]["pid"], 701)
+
+        class Failing(Observed):
+            def close_checked(self): raise RuntimeError("close failed")
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", Failing), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 701, "image": "csc.exe", "created": 1}, None)):
+            work = Path(folder)
+            (work / "add-type.result").write_text("0", encoding="utf8")
+            result = self.acceptance._case_add_type(work)
+        self.assertEqual(result["status"], "failed", result)
+        self.assertTrue(result["cleanup_errors"])
+
+    def test_pipe_case_uses_ordered_handshake_and_reports_missing_output(self):
+        class Stream:
+            def __init__(self, lines):
+                self.lines = list(lines); self.closed = False
+            def readline(self):
+                return (self.lines.pop(0) if self.lines else b"")
+            def read(self, size=-1):
+                return b""
+            def close(self): self.closed = True
+        class Stdin:
+            def write(self, data): pass
+            def flush(self): pass
+            def close(self): pass
+        class Proc:
+            pid = 800
+            _handle = 1
+            def __init__(self, lines):
+                self.stdin = Stdin(); self.stdout = Stream(lines); self.stderr = Stream([])
+                self.returncode = None
+            def poll(self): return 0
+            def wait(self, timeout=None): return 0
+        class Job:
+            def assign(self, proc): pass
+            def is_process_in_job(self, proc): return True
+            def terminate_checked(self): pass
+            def active_processes(self): return 0
+            def close_checked(self): pass
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "WindowsJob", Job), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc([b"SYNTHETIC-PIPE\n", b"READY 801\n"])), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 801, "image": "python.exe", "created": 1}, None)):
+            result = self.acceptance._case_pipe_holder(Path(folder))
+        self.assertEqual(result["status"], "passed", result)
+        self.assertEqual(result["detail"], "stdout-observed")
+
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "WindowsJob", Job), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc([b""])), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 801, "image": "python.exe", "created": 1}, None)):
+            result = self.acceptance._case_pipe_holder(Path(folder))
+        self.assertEqual(result["status"], "failed", result)
+
+        class FailingJob(Job):
+            def close_checked(self): raise RuntimeError("job close failed")
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "WindowsJob", FailingJob), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc([b"SYNTHETIC-PIPE\n", b"READY 801\n"])), \
+             mock.patch.object(self.acceptance, "process_evidence", side_effect=RuntimeError("identity failed")):
+            result = self.acceptance._case_pipe_holder(Path(folder))
+        self.assertEqual(result["status"], "failed", result)
+        self.assertTrue(any("job-close" in value for value in result["cleanup_errors"]))
+
     def test_helper_entry_refuses_every_mode_without_supervisor_context(self):
         called = []
         for mode in ("timeout-descendant", "pipe-holder", "supervisor-death", "wait-for-go", "add-type-wait"):
@@ -1173,6 +1269,23 @@ class AcceptanceHarnessTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     self.acceptance.helper_entry(mode, [], {}, self.root, action=lambda *a, **k: called.append(a))
         self.assertEqual(called, [])
+
+    def test_open_process_handle_uses_query_and_synchronize_rights(self):
+        class Api:
+            def __init__(self): self.access = None
+            def OpenProcess(self, access, inherit, pid):
+                self.access = access
+                return 1
+        api = Api()
+        with mock.patch.object(self.acceptance, "_win", return_value=api):
+            handle, returned = self.acceptance._open_process_handle(900)
+        self.assertEqual(handle, 1)
+        self.assertEqual(api.access, 0x101000)
+
+    def test_win_binds_is_process_in_job_abi(self):
+        text = Path(self.acceptance.__file__).read_text(encoding="utf8")
+        self.assertIn("api.IsProcessInJob.argtypes", text)
+        self.assertIn("api.IsProcessInJob.restype", text)
 
     def test_observed_job_acquisition_failures_close_exactly_acquired_handles(self):
         class Api:
@@ -1210,7 +1323,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
         with self.assertRaises(Exception):
             job.close_checked()
         self.assertEqual(job.port, 22)
-        self.assertEqual(job.handle, 11)
+        self.assertIsNone(job.handle)
 
 
 if __name__ == "__main__":
