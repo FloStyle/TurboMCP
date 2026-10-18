@@ -74,3 +74,7 @@ Cross-harness execution-lock visibility is still unverified; the integration
 owner supplies the required supervised baseline-build evidence during review.
 An absent build report remains pending, never passed. The exact report-file
 allowlist and completion-review requirements remain unchanged.
+
+## Current integrator assignment: offline test isolation
+
+This narrower assignment supersedes checkpoint 13 worker permissions for the next dispatch. The integration owner permits changes only to Tools/test-persistence-process-reader.py, limited to test_preassignment_case_stays_blocked_without_launcher and its narrowly required fixtures. Correct mocks at ObservedJob/launch_suspended so inherited supervisor context cannot launch native work. Preserve refusal assertions; no skips, weaker outcomes, production changes or engine/native runs. Run the focused test file and complete offline profile. The exact dispatch base and durable owner are recorded in the claim and approved prompt. Session 1 is idle after reviewed documentation; one worker claim remains in force. The integration owner retains the unmerged audit and native evidence separately. This assignment does not accept the accumulated branch or complete R04.

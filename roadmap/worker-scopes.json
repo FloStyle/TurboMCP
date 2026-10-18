@@ -30,14 +30,11 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "Tools/execute-tests.py",
-        "Tools/persistence-job-acceptance.py",
-        "Tools/test-persistence-process-reader.py",
-        "todo/roadmap-r04.md"
+        "Tools/test-persistence-process-reader.py"
       ],
       "preserve_rows": [],
-      "approved_base": "6677350a67b63a0c6e857821c357146d3d5904e3",
-      "checkpoint": "13: synthetic harness implementation and offline mocks; dispatch base includes scope commit"
+      "approved_base": "8b33ac0c2e517697f17478e0b48dda8e9a221ef9",
+      "checkpoint": "Integrator-approved offline isolation repair; dispatch base is the scope commit containing this policy; exact SHA recorded in worker claim and prompt."
     }
   }
 }
