@@ -30,7 +30,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
 {
 	FTurboMCPGraphAppend::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error))
+	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
@@ -45,7 +45,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphAppend(
 	// refused first with the same words, because both reach this same construction.
 	FTurboMCPGraphAppend::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error))
+	if (!FTurboMCPGraphAppend::Plan(Asset, GraphName, Text, Plan, Error, /*bRequestPlacement=*/true))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}

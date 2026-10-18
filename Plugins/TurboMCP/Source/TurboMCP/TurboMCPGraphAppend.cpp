@@ -84,10 +84,55 @@ namespace
 		}
 		return nullptr;
 	}
+
+	/**
+	 * A requested placement must name every created form exactly once. A missing, duplicated, link-only or
+	 * out-of-range entry refuses before the caller opens a transaction.
+	 */
+	bool ValidatePlannedPositions(const FTurboMCPGraphAppend::FPlan& InPlan, FString& OutError)
+	{
+		int32 Expected = 0;
+		for (const FTurboMCPGraphAppend::FNewNode& Form : InPlan.Nodes)
+		{
+			if (!Form.bLinksToExisting)
+			{
+				++Expected;
+			}
+		}
+
+		TSet<int32> Seen;
+		for (const FTurboMCPGraphAppend::FPlannedPosition& Position : InPlan.PlannedPositions)
+		{
+			if (!InPlan.Nodes.IsValidIndex(Position.FormIndex)
+				|| InPlan.Nodes[Position.FormIndex].bLinksToExisting)
+			{
+				OutError = FString::Printf(
+					TEXT("placement: planned position %d does not address a node-creating form"),
+					Position.FormIndex);
+				return false;
+			}
+			if (Seen.Contains(Position.FormIndex))
+			{
+				OutError = FString::Printf(
+					TEXT("placement: form %d has more than one planned position"), Position.FormIndex);
+				return false;
+			}
+			Seen.Add(Position.FormIndex);
+		}
+
+		if (Seen.Num() != Expected)
+		{
+			OutError = FString::Printf(
+				TEXT("placement: %d node(s) would be created but %d position(s) were planned"),
+				Expected, Seen.Num());
+			return false;
+		}
+		return true;
+	}
 }
 
 bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphName,
-	const FString& InText, FPlan& OutPlan, FString& OutError)
+	const FString& InText, FPlan& OutPlan, FString& OutError, bool bRequestPlacement)
 {
 	OutError.Empty();
 	OutPlan = FPlan();
@@ -546,6 +591,22 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 	}
 	OutPlan.bNothingToDo = !bAnyCreation;
 
+	// Placement is opt-in so the shared callers keep their previous behavior. It runs only on the actual
+	// graph, after the probes are gone, and refuses here rather than at apply time.
+	if (bRequestPlacement)
+	{
+		OutPlan.bPlacementRequested = true;
+		if (OutPlan.Refusals.Num() == 0 && !OutPlan.bNothingToDo)
+		{
+			FString PlacementRefusal;
+			if (!PlanPlacement(Graph, OutPlan.Nodes, OutPlan.PlannedPositions,
+				OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal))
+			{
+				OutPlan.Refusals.Add(PlacementRefusal);
+			}
+		}
+	}
+
 	return true;
 }
 
@@ -611,6 +672,23 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 		}
 	}
 
+	if (InPlan.bPlacementRequested && InPlan.PlannedPositions.Num() > 0)
+	{
+		Out += TEXT("\nplacement:");
+		for (const FPlannedPosition& Position : InPlan.PlannedPositions)
+		{
+			if (!InPlan.Nodes.IsValidIndex(Position.FormIndex))
+			{
+				continue;
+			}
+			const FNewNode& Form = InPlan.Nodes[Position.FormIndex];
+			Out += FString::Printf(TEXT("\n  line %d: %s at (%d,%d)"),
+				Form.Line, *Form.TypeId, Position.X, Position.Y);
+		}
+		Out += TEXT("\n; stored/estimated geometry, not a measured Slate footprint; no visual ");
+		Out += TEXT("non-overlap is claimed.");
+	}
+
 	Out += TEXT("\n; the preview changes NOTHING. Call the edit to write it.");
 	return Out;
 }
@@ -631,6 +709,14 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 	{
 		OutReport = RenderPreview(InPlan);
 		return true;
+	}
+
+	// A REQUESTED PLACEMENT IS CHECKED BEFORE THE TRANSACTION. A plan with missing, duplicated or invalid
+	// positions must never fall back to the origin or create anything.
+	if (InPlan.bPlacementRequested && !ValidatePlannedPositions(InPlan, OutError))
+	{
+		OutError = FString::Printf(TEXT("%s NOTHING was written."), *OutError);
+		return false;
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;
@@ -672,6 +758,18 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 	int32 PinsWritten = 0;
 	int32 LinksMade = 0;
 	TArray<UEdGraphNode*> Created;
+	TArray<const FPlannedPosition*> PositionByForm;
+	if (InPlan.bPlacementRequested)
+	{
+		PositionByForm.SetNumZeroed(InPlan.Nodes.Num());
+		for (const FPlannedPosition& Position : InPlan.PlannedPositions)
+		{
+			if (PositionByForm.IsValidIndex(Position.FormIndex))
+			{
+				PositionByForm[Position.FormIndex] = &Position;
+			}
+		}
+	}
 
 	for (int32 FormIndex = 0; FormIndex < InPlan.Nodes.Num(); ++FormIndex)
 	{
@@ -696,6 +794,22 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 				TEXT("NOTHING was written."),
 				Form.Line, *Form.TypeId, *SpawnNote);
 			return false;
+		}
+
+		if (InPlan.bPlacementRequested)
+		{
+			const FPlannedPosition* Position = PositionByForm.IsValidIndex(FormIndex)
+				? PositionByForm[FormIndex] : nullptr;
+			if (Position == nullptr)
+			{
+				FTurboMCPRollback::EndAndUndoActiveTransaction();
+				OutError = FString::Printf(
+					TEXT("placement: form %d has no planned position at apply time. NOTHING was written."),
+					FormIndex);
+				return false;
+			}
+			Made->NodePosX = Position->X;
+			Made->NodePosY = Position->Y;
 		}
 
 		CreatedByForm[FormIndex] = Made;
@@ -982,6 +1096,30 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 	else
 	{
 		Out += TEXT("\nthe read back matches: every node the plan created is in the graph.");
+	}
+
+	// Placement evidence is appended only when the caller asked for it, so the legacy report is unchanged.
+	if (InPlan.bPlacementRequested)
+	{
+		Out += TEXT("\nplacement:");
+		for (int32 FormIndex = 0; FormIndex < InPlan.Nodes.Num(); ++FormIndex)
+		{
+			if (InPlan.Nodes[FormIndex].bLinksToExisting
+				|| !CreatedByForm.IsValidIndex(FormIndex) || CreatedByForm[FormIndex] == nullptr)
+			{
+				continue;
+			}
+			const FPlannedPosition* Position = PositionByForm.IsValidIndex(FormIndex)
+				? PositionByForm[FormIndex] : nullptr;
+			if (Position == nullptr)
+			{
+				continue;
+			}
+			Out += FString::Printf(TEXT("\n  node %s at (%d,%d)"),
+				*TurboMCPNodeId::MakeForNode(CreatedByForm[FormIndex]), Position->X, Position->Y);
+		}
+		Out += TEXT("\n; positions use stored existing sizes where positive and a 320x160 estimate ");
+		Out += TEXT("otherwise; this is not a measured Slate footprint.");
 	}
 
 	// THE REPORT IS HANDED BACK. IT WAS NOT AT FIRST, AND THE BUG WAS INVISIBLE FROM OUTSIDE., AND THE BUG WAS INVISIBLE FROM OUTSIDE.

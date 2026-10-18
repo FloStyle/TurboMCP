@@ -15,9 +15,9 @@ WHAT THIS SUITE IS ACTUALLY ASKING, AND EACH IS A SEPARATE WAY TO BE WRONG:
   4. A REFUSAL WRITES NOTHING. The preview and the edit must refuse the SAME input with the same words, and
      a refused edit must leave the graph untouched - checked by the node count AND by the asset's mtime.
   5. THE FIRST LINE IS `changed` OR `unchanged`, as the spec requires of every write entry point.
-  6. THE AMBIGUOUS SIX-CHARACTER ALIAS REFUSES. A compiled editor automation test drives the real `Plan`
-     with forced-GUID in-memory fixtures, where two nodes share six GUID characters; this suite discovers
-     and runs it, and a missing or failed test FAILS here rather than passing vacuously.
+  6. THE COMPILED APPEND TESTS. Alias collision and placement run through the automation toolset against
+     forced-GUID, forced-position in-memory fixtures; a missing or failed test FAILS here rather than
+     passing vacuously.
 
 THE SUITE MUTATES A GRAPH, SO IT MUST BE RE-RUNNABLE. It records the node ids present BEFORE the append and
 asserts every one of them is still there afterwards; it does not try to remove what it added, because
@@ -44,10 +44,11 @@ EDIT_TOOLSET = "TurboMCP.TurboMCPEditToolset"
 READ_TOOLSET = "TurboMCP.TurboMCPReadToolset"
 AUTO_TOOLSET = "AutomationTestToolset.AutomationTestToolset"
 
-# THE COMPILED TEST THAT PROVES THE ALIAS REFUSAL. It lives in the plugin beside the node-id test because it
-# drives `FTurboMCPGraphAppend::Plan` directly; it builds in-memory Blueprints with forced GUIDs and never
-# saves, applies or opens an editor window.
+# THE COMPILED TESTS THAT DRIVE THE APPEND PLAN/APPLY. They live in the plugin beside the node-id test
+# because they call `FTurboMCPGraphAppend` directly; they build in-memory Blueprints with forced GUIDs,
+# positions and stored sizes, and never save or open an editor window.
 APPEND_ALIAS_TEST = "TurboMCP.GraphAppend.AliasCollision"
+APPEND_PLACEMENT_TEST = "TurboMCP.GraphAppend.Placement"
 
 # THE FIXTURE IS A GRAPH THIS SUITE CAN REBUILD, AND THAT IS THE WHOLE POINT OF THE CHANGE.
 #
@@ -597,41 +598,50 @@ def main():
           empty.startswith("error:"), empty[:160])
 
     print()
-    print("=== 6b. the compiled automation test: an ambiguous six-character alias refuses ===")
+    print("=== 6b. the compiled automation tests: alias refusal and placement ===")
     #
     # THIS IS A DIFFERENT KIND OF EVIDENCE FROM THE TOOL CHECKS ABOVE. The alias collision needs two nodes
-    # whose GUIDs share six characters, which no fixture asset carries; the compiled test forces those GUIDs
-    # on disposable in-memory Blueprints and calls the real `FTurboMCPGraphAppend::Plan`. It is run here
-    # through the engine's automation toolset, and a MISSING or FAILED test is a failure: the run is
-    # otherwise easy to mistake for "nothing to check".
+    # whose GUIDs share six characters, and placement needs forced positions and stored sizes; the compiled
+    # tests build disposable in-memory Blueprints and call the real Plan/Apply. They run here through the
+    # engine's automation toolset, and a MISSING or FAILED test is a failure: the run is otherwise easy to
+    # mistake for "nothing to check".
     session.call(AUTO_TOOLSET, "DiscoverTests", {})
     listed = str(session.call(AUTO_TOOLSET, "ListTests",
                               {"nameFilter": "TurboMCP.GraphAppend", "tagFilter": ""}))
     print(listed[:400])
-    check("the append alias automation test is discovered",
-          APPEND_ALIAS_TEST in listed, listed[:240])
 
-    if APPEND_ALIAS_TEST in listed:
-        raw = session.call(AUTO_TOOLSET, "RunTests", {"testNames": [APPEND_ALIAS_TEST]})
+    automation_tests = (
+        (APPEND_ALIAS_TEST,
+         "the append alias automation test is discovered",
+         "the RunTests answer is the pinned report for exactly the requested test",
+         "the requested test reported Success",
+         "the requested test reported no errors"),
+        (APPEND_PLACEMENT_TEST,
+         "the append placement automation test is discovered",
+         "the placement RunTests answer is the pinned report for exactly the requested test",
+         "the placement test reported Success",
+         "the placement test reported no errors"),
+    )
+    for test_path, discovered_name, report_name, success_name, errors_name in automation_tests:
+        check(discovered_name, test_path in listed, listed[:240])
+        if test_path not in listed:
+            check(report_name, False, "the test is not registered, so no check ran")
+            continue
+
+        raw = session.call(AUTO_TOOLSET, "RunTests", {"testNames": [test_path]})
         print(str(raw)[:900])
         # THE PINNED JSON IS PARSED, NOT SEARCHED FOR WORDS. A report that merely quotes "Success" in an
         # error, omits the requested test, duplicates it, or disagrees with its own counts fails here.
         try:
-            entry, report = parse_run_tests_report(raw, APPEND_ALIAS_TEST)
+            entry, report = parse_run_tests_report(raw, test_path)
         except (ValueError, TypeError) as exc:
-            check("the RunTests answer is the pinned report for exactly the requested test",
-                  False, str(exc)[:240])
+            check(report_name, False, str(exc)[:240])
         else:
-            check("the RunTests answer is the pinned report for exactly the requested test", True,
+            check(report_name, True,
                   "passed=%d failed=%d skipped=%d total=%d"
                   % (report["passed"], report["failed"], report["skipped"], report["total"]))
-            check("the requested test reported Success",
-                  entry["state"] == "Success", entry["state"])
-            check("the requested test reported no errors",
-                  not entry["errors"], entry["errors"][:1])
-    else:
-        check("the ambiguous-alias automation test ran", False,
-              "the test is not registered, so no alias check ran")
+            check(success_name, entry["state"] == "Success", entry["state"])
+            check(errors_name, not entry["errors"], entry["errors"][:1])
 
     print()
     print("=== 7. the asset on disk is untouched, because nothing saved it ===")

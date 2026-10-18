@@ -99,6 +99,19 @@ public:
 		int32 Column = 0;
 	};
 
+	/** One planned top-left position, keyed by the index of the form it creates. */
+	struct FPlannedPosition
+	{
+		/** Index into `FPlan::Nodes`. Only forms that create a node have an entry. */
+		int32 FormIndex = INDEX_NONE;
+
+		int32 X = 0;
+		int32 Y = 0;
+
+		/** True when the node's footprint is the 320x160 estimate rather than a stored size. */
+		bool bEstimatedSize = true;
+	};
+
 	/** What the plan decided, so `Apply` can act without deciding anything. */
 	struct FPlan
 	{
@@ -120,6 +133,18 @@ public:
 		/** True when there is nothing to do: no forms at all, or every form is a link to an existing node. */
 		bool bNothingToDo = false;
 
+		/**
+		 * True when the caller asked for placement. Preview and Edit set it; shared callers such as Replace
+		 * leave it false and keep the legacy origin placement.
+		 */
+		bool bPlacementRequested = false;
+
+		/** One entry per created form, in input order. Empty when placement was not requested. */
+		TArray<FPlannedPosition> PlannedPositions;
+
+		/** True when an existing node had no stored positive size, so 320x160 had to be estimated. */
+		bool bPlacementUsedEstimatedSize = false;
+
 		/** True when the text would be applied: no refusals AND something to do. */
 		bool bAcceptable() const { return Refusals.Num() == 0 && !bNothingToDo; }
 	};
@@ -131,9 +156,23 @@ public:
 	 * refuses whatever the checker refuses rather than re-deciding the same questions differently.
 	 *
 	 * @param OutError  Why the plan could not even be attempted, such as a missing asset. Empty on success.
+	 * @param bRequestPlacement  When true, plan deterministic positions for the created forms. False keeps
+	 *                           the legacy behavior and no positions are computed.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, const FString& InText,
-		FPlan& OutPlan, FString& OutError);
+		FPlan& OutPlan, FString& OutError, bool bRequestPlacement = false);
+
+	/**
+	 * Plans one deterministic column to the right of the existing stored/estimated bounds.
+	 *
+	 * Every edge, extent and addition is widened to int64 and checked before the int32 cast; a position
+	 * outside the node coordinate range refuses. The result is stored/estimated geometry, not a measured
+	 * Slate footprint, so it does not prove visual non-overlap.
+	 *
+	 * @param OutRefusal  Why the geometry cannot be represented. Empty on success.
+	 */
+	static bool PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,
+		TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal);
 
 	/**
 	 * Applies an accepted plan: one transaction, create, link, lay out, compile, then read back and compare.
