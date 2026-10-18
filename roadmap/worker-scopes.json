@@ -20,12 +20,12 @@
             "Tools/test-panel-history.py"
           ]
         },
-        "widget-roundtrip-acceptance": {
-          "files": [],
-          "new_files": [
+        "widget-connected-input": {
+          "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp",
             "Tools/test-widget-roundtrip.py"
-          ]
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

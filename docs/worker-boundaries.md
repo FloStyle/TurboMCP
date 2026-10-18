@@ -26,3 +26,7 @@ Only the integration owner records acceptance, updates shared catalog/task evide
 ## Execution and privacy
 
 Engine builds and editor tests remain serialized using existing shared kernel locks and supervisor ownership. Never kill another owner's process or touch workplace assets. Keep raw private logs and engine source outside Git. Do not weaken tests to pass. Required server-side CI remains R15 debt; scope checks are not an OS sandbox.
+
+## Next Widget acceptance case
+
+widget-connected-input supersedes the completed roundtrip assignment. Extend only its compiled fixture and wrapper with one supported connected-data-input case through the real reader and targeted Append path. Derive the data source reference from emitted output, assert the exact intended consumer/data link and read-back, preserve unrelated graph/widget identities and state, and prove invalid source refusal without mutation. Use existing supported node/pin syntax confirmed in source; report a missing contract before inventing one. Do not change production, save assets or widen to all node types. The monitoring assignment remains unchanged. Offline checks only; native acceptance is integrator-owned.

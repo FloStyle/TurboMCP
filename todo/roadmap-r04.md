@@ -38,6 +38,8 @@ A reviewed specification and evidence record for each confirmed repair, with dup
 
 ## Completion evidence
 
+Widget targeted reader/append/read-back acceptance: worker e60a0dd94d2c7b2640ffbbde90e294b5553b80ae integrated with catalog at 649efbbe71ed5eb7ea91844d00199b15babc8e68. Independent scope passed. Full offline gate 9c472ed87a7e44bbaa294ddca28da0be passed. Supervised pinned 5.8.3 build and test-widget-roundtrip passed in 64589b84a6e84258a04bbee4e711b9dc (375.803 seconds; 16 content files restored). Test derives the append identity from production reader output, checks exact new PrintString/link and fresh form, and preserves existing node/widget/tree/slot identities and state. Refusal and malformed extraction controls pass. This certifies one synthetic in-memory case only, not all nodes, save/reopen or public release readiness.
+
 Integrator accepted parallel-claim candidate 8856969ba9998e9c34964d0cbc25a0e3b0fa9960 after independent 14-test claim regression, worker-scope regression and full offline gate. Canonical aliases refuse before mutation; exact legacy fixture no longer depends on private Git history. Production migration and disjoint dispatch are separately applied by the integrator. This accepts coordination helpers, not engine concurrency or R04 completion.
 
 ### Integrator acceptance: Widget append and Plan isolation
