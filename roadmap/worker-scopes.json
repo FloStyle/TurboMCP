@@ -4,22 +4,18 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "assignments": {
-        "panel-layout": {
-          "files": [
-            "Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp",
-            "Plugins/TurboMCP/Source/TurboMCP/Public/Panel/STurboMCPPanel.h",
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelProbeCommandlet.cpp",
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelHistoryTest.cpp",
-            "Tools/test-panel.py"
-          ],
-          "new_files": []
-        },
         "widget-persistence-acceptance": {
           "files": [],
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPersistenceTest.cpp",
             "Tools/test-widget-persistence.py"
           ]
+        },
+        "panel-menu": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

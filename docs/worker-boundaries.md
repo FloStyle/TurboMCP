@@ -50,3 +50,7 @@ widget-persistence-acceptance implements docs/audit/widget-persistence-contract.
 ### Persistence first checkpoint
 
 The first implementation checkpoint covers the positive literal/connected save-unload-reload paths, containment/cleanup and collision refusal only. Unknown runtime unload behavior is measured by a strict failing assertion, not a prerequisite for authoring that assertion. Deliberate save-write failure and missing-file reload controls are deferred until the integrator observes their exact log contract; no broad expected-error suppression is permitted. The full persistence acceptance remains incomplete until those controls pass. Existing two-file scope and approved worker base remain unchanged.
+
+## Panel menu affordances
+
+panel-menu adds the requested Window-menu icon and a dedicated TurboMCP section in Tools using existing engine style resources. Only STurboMCPPanel.cpp may change. Preserve tab identity, opening behavior and registration/unregistration lifecycle; no duplicate entries or new server actions. Worker performs source/offline checks only, reports pinned style key/API evidence and visual limitations. No binary/icon assets or dependencies. Rendered visual sign-off for the compact panel remains pending.
