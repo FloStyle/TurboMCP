@@ -82,10 +82,10 @@ Use the existing bootstrap pattern, without a broad runner rewrite:
 
 Not implemented here:
 
-- `Tools/persistence_process_reader.py` — `_PopenRunner` job/bootstrap launch, assignment-before-command, job-based timeout/cleanup, job accounting, bounded drains.
-- `Tools/execution_runtime.py` — only if the existing `WindowsJob`/worker cannot be reused unchanged; a small worker mode may be needed to preserve hidden startup for the PowerShell child. Do not rewrite `run_owned`.
-- `Tools/test-persistence-process-reader.py` — injectable Job/worker mocks and the unstarted-join fidelity fix.
-- `Tools/test-execution-runtime.py` — extend the existing synthetic job pattern if a real Job test is required by the future supervisor.
+- `Tools/persistence_process_reader.py` — create `WindowsJob`, launch a fixed bootstrap worker, assign it before sending the fixed command, retain bounded drains, terminate/close the job on timeout/error and query job accounting before reporting cleanup.
+- `Tools/execution_runtime.py` — add one fixed `--persistence-worker` mode that reads the one command and launches it with `CREATE_NO_WINDOW`, or expose the same hidden-launch behavior without changing `run_owned` semantics. Reuse `WindowsJob`; do not rewrite `run_owned`.
+- `Tools/test-persistence-process-reader.py` — injectable Job/worker mocks, assignment-order/deadline/cleanup tests, and the unstarted-join fidelity fix.
+- `Tools/test-execution-runtime.py` — add the supervisor-only synthetic Job acceptance cases if they are not kept in the test reader.
 
 No change to the PowerShell script, collector/validator, catalog or production caller is proposed for this lifecycle slice.
 

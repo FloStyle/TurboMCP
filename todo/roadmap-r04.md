@@ -412,7 +412,7 @@ All implementation remains `proposed_unapproved`; no code, test, catalog, lease,
 
 Validation:
 - Source/docs review only; no live processes, PowerShell, native calls, CIM, editor, build or recovery.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/afd7c6594934479f8c0bbde1aa0e0322/report.json`; all offline checks passed.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/dc6f83e4681141ccbe637368bf1ba368/report.json`; all offline checks passed.
 - Candidate-bound evidence and full-base scope gate are recorded in the submission.
 
 Rollback: remove the new report and this evidence only.
