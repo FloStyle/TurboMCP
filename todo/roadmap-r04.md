@@ -447,6 +447,32 @@ Rollback: remove the containment methods, worker mode and orchestration changes 
 Integration review accepted checkpoint 12 candidate `6677350a67b63a0c6e857821c357146d3d5904e3` for offline containment behavior. Full-base scope gate passed; independent offline execution `bd8793a3694e402998756c1481f9a88b` passed. The report hash and retained claim matched. Deadline-capped waits and bounded no-drain closes resolve the requested corrections. No native containment, compiler observation, parent-death or live reader admission is certified. R04 remains incomplete; checkpoint 13 authorizes harness implementation and offline tests only.
 
 
+### Checkpoint 13: synthetic containment acceptance harness
+
+Task R04 checkpoint 13, claim `231a91e08a4042099baca8161417f0c4` (owner `dsh-r04-native-harness-01`). Approved base `9fe2615bb974b3a06b637cb0bfd2ab606ace3e96`; branch `task/r04-native-harness`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. Native execution and live admission remain incomplete and were not performed by this worker.
+
+Implementation:
+- `Tools/execute-tests.py` adds only the fixed `persistence-native` profile. It maps to exactly `Tools/persistence-job-acceptance.py`, rejects suite selection, leaves `engine=''`, and bypasses engine resolution, preflight, build, fixture snapshot/recovery, `run-suites.ps1`, editor startup and port resources. Existing profiles are unchanged.
+- `Tools/persistence-job-acceptance.py` is a new synthetic supervisor-only harness. Import is process/native-free. `main` requires the execute-tests supervisor context, including matching repo, empty engine, live-ancestor PID and token; malformed or unsupervised invocation refuses before live work. The fixed helper modes cover timeout descendant containment, inherited stdout/stderr holding, supervisor death with a retained child handle, pre-assignment stdin EOF, harmless Add-Type compiler observation via job completion notifications, and an unrelated test-owned sentinel. All inner jobs are fresh `KILL_ON_JOB_CLOSE` jobs; cleanup uses checked terminate/accounting/close and bounded deadlines. No global process search, name-based kill or real command-line inspection is used.
+- `Tools/test-persistence-process-reader.py` adds additive offline mocks for profile command selection/no engine path, suite-selection refusal, malformed/unsupervised admission, aggregation of missing/blocked evidence and unsupervised main refusal. Existing 58 assertions are preserved; the file now runs 64 offline tests.
+
+Limitations:
+- No native acceptance execution, engine, editor, build, PowerShell, CIM, subprocess-native or live collection was performed. All evidence for checkpoint 13 is offline.
+- Every acceptance case is a **synthetic analogue**, not production-reader-path evidence. `reader_path_evidence` is false in the harness results.
+- Add-Type compiler observation depends on job completion notifications and retained executable identity. A missing/short-lived compiler or unavailable identity is BLOCKED, never passed. Job NEW_PROCESS alone is not executable identity.
+- Supervisor death uses a retained child handle; marker absence is not used as proof. PID reuse and parent-death race windows remain native limitations.
+- The `ObservedJob` completion-port code is a synthetic harness seam, not a modification or proof of the production `WindowsJob`.
+- Native harness execution, parent-death/Add-Type results and live admission remain integration-owner work.
+
+Validation:
+- `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 64 tests ... OK`.
+- `python Tools/validate-repo.py` — exit 0.
+- `python Tools/check-language.py` — exit 0.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/fc53761d363047c794ed2b1ef0807213/report.json`; all offline checks passed.
+- Candidate-bound evidence and full-base scope gate are recorded in the submission.
+
+Rollback: remove the `persistence-native` profile branch and `Tools/persistence-job-acceptance.py`, remove the additive harness tests and this evidence. No catalog, production reader/runtime, PowerShell, engine or production caller changes are included.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)

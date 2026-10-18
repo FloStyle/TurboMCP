@@ -10,7 +10,12 @@ from __future__ import annotations
 import json
 import os
 import ctypes
+import importlib.util
+import io
+import sys
+import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -1072,6 +1077,83 @@ class PopenRunnerTests(unittest.TestCase):
         self.assertEqual(job.closed, 1)
         self.assertTrue(proc.stdout.closed)
         self.assertTrue(proc.stderr.closed)
+
+
+class AcceptanceHarnessTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.root = Path(__file__).resolve().parents[1]
+        spec = importlib.util.spec_from_file_location("acceptance", cls.root / "Tools/persistence-job-acceptance.py")
+        cls.acceptance = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.acceptance)
+        spec = importlib.util.spec_from_file_location("executor", cls.root / "Tools/execute-tests.py")
+        cls.executor = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.executor)
+
+    def context(self, **changes):
+        value = {"repo": runtime.canonical(self.root), "engine": "", "pid": 4242, "token": "secret"}
+        value.update(changes)
+        return value
+
+    def test_profile_is_fixed_and_has_no_engine_or_editor_path(self):
+        request = {"profile": "persistence-native", "suites": []}
+        commands = self.executor.commands(request, "")
+        self.assertEqual(commands, [[self.executor.sys.executable, "Tools/persistence-job-acceptance.py"]])
+        joined = " ".join(commands[0])
+        for forbidden in ("build.ps1", "run-suites", "doctor.py", "start-editor", "make-acceptance-asset"):
+            self.assertNotIn(forbidden, joined)
+
+    def test_profile_rejects_suite_selection(self):
+        request = {
+            "schema": 1, "commit": "x", "tree_digest": "x",
+            "profile": "persistence-native", "suites": ["anything"], "max_seconds": 30,
+        }
+        with self.assertRaises(ValueError):
+            self.executor.validate_request(request, self.root)
+
+    def test_admission_refuses_missing_malformed_and_unsupervised_context(self):
+        with self.assertRaises(ValueError):
+            self.acceptance.validate_admission({}, self.root, lambda: {4242})
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "context.json"
+            path.write_text("{}", encoding="utf8")
+            env = {"TURBOMCP_EXECUTION_CONTEXT": str(path), "TURBOMCP_EXECUTION_TOKEN": "secret"}
+            with self.assertRaises(ValueError):
+                self.acceptance.validate_admission(env, self.root, lambda: {4242})
+            path.write_text(json.dumps(self.context(engine="engine")), encoding="utf8")
+            with self.assertRaises(ValueError):
+                self.acceptance.validate_admission(env, self.root, lambda: {4242})
+            path.write_text(json.dumps(self.context(token="other")), encoding="utf8")
+            with self.assertRaises(ValueError):
+                self.acceptance.validate_admission(env, self.root, lambda: {4242})
+            path.write_text(json.dumps(self.context()), encoding="utf8")
+            with self.assertRaises(ValueError):
+                self.acceptance.validate_admission(env, self.root, lambda: {1})
+
+    def test_admission_accepts_only_matching_live_context(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "context.json"
+            path.write_text(json.dumps(self.context()), encoding="utf8")
+            env = {"TURBOMCP_EXECUTION_CONTEXT": str(path), "TURBOMCP_EXECUTION_TOKEN": "secret"}
+            self.assertEqual(
+                self.acceptance.validate_admission(env, self.root, lambda: {4242})["pid"], 4242
+            )
+
+    def test_aggregation_blocks_missing_and_blocked_evidence(self):
+        passed = [{"case": "a", "status": "passed"}, {"case": "b", "status": "passed"}]
+        self.assertEqual(self.acceptance.aggregate(passed, ["a", "b"]), ("passed", []))
+        self.assertEqual(self.acceptance.aggregate(passed[:1], ["a", "b"]), ("blocked", ["b"]))
+        blocked = [{"case": "a", "status": "blocked"}]
+        self.assertEqual(self.acceptance.aggregate(blocked, ["a"]), ("blocked", []))
+        failed = [{"case": "a", "status": "failed"}]
+        self.assertEqual(self.acceptance.aggregate(failed, ["a"]), ("failed", []))
+
+    def test_unsupervised_main_refuses_without_native_action(self):
+        with mock.patch.dict(os.environ, {}, clear=True), \
+             mock.patch.object(sys, "argv", ["acceptance"]), \
+             redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(self.acceptance.main(), 2)
+        self.assertIn('"blocked"', output.getvalue())
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ def identity(root):
 def validate_request(request, root=ROOT):
     required={'schema','commit','tree_digest','profile','suites','max_seconds'}
     if set(request)!=required or request['schema']!=1:raise ValueError('Unknown or missing request fields')
-    if request['profile'] not in ('fast','offline','engine','fixture','build'):raise ValueError('Unknown profile')
+    if request['profile'] not in ('fast','offline','engine','fixture','build','persistence-native'):raise ValueError('Unknown profile')
     if type(request['max_seconds']) is not int or not 1<=request['max_seconds']<=7200:raise ValueError('Run deadline must be 1..7200 seconds')
     if not isinstance(request['suites'],list) or any(not isinstance(x,str) for x in request['suites']):raise ValueError('Suites must be a list of names')
     if len(request['suites'])!=len(set(request['suites'])):raise ValueError('Duplicate suite')
@@ -49,6 +49,7 @@ def validate_request(request, root=ROOT):
 def commands(request, engine):
     if request['profile']=='fast':return [[sys.executable,'Tools/validate-repo.py'],[sys.executable,'Tools/check-language.py']]
     if request['profile']=='offline':return [[sys.executable,'Tools/validate.py']]
+    if request['profile']=='persistence-native':return [[sys.executable,'Tools/persistence-job-acceptance.py']]
     pwsh=shutil.which('pwsh')
     if not pwsh:raise ValueError('PowerShell 7 is required')
     steps=[[sys.executable,'Tools/doctor.py'],
@@ -64,7 +65,7 @@ def commands(request, engine):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--profile',choices=['fast','offline','engine','fixture','build'],default='fast')
+    parser.add_argument('--profile',choices=['fast','offline','engine','fixture','build','persistence-native'],default='fast')
     parser.add_argument('--suites',default='')
     parser.add_argument('--max-seconds',type=int,default=1800)
     parser.add_argument('--request',type=Path)
