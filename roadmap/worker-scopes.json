@@ -30,14 +30,17 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
+        "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h",
         "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
-        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendAliasTest.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
+        "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacementTest.cpp",
         "Tools/test-graph-append.py",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "907c80296df8e4845a7c83ed50a5d4be1497045f",
-      "checkpoint": "Append alias ambiguity repair; dispatch base is this integrator scope commit, recorded exactly in claim and prompt"
+      "approved_base": "a36a5c7",
+      "checkpoint": "Append placement preserving existing layout; exact dispatch base is the subsequent integrator scope commit recorded in claim and prompt"
     }
   }
 }
