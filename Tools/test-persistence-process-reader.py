@@ -1827,7 +1827,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertTrue(api.flags & self.acceptance.CREATE_NO_WINDOW)
         self.assertTrue(api.flags & self.acceptance.EXTENDED_STARTUPINFO_PRESENT)
         self.assertEqual(api.startup_flags, self.acceptance.STARTF_USESTDHANDLES)
-        self.assertEqual(api.inherit, [101, 102, 104])
+        self.assertEqual(api.inherit, [101, 102, 104, 500, 501])
         self.assertEqual(api.closed, [100, 103, 105])
         self.assertEqual(api.handle_list_size, 3 * ctypes.sizeof(ctypes.c_void_p))
         launch.resume()

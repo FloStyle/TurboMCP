@@ -597,7 +597,9 @@ class SuspendedLaunch:
             if deadline is not None and self.process_handle:
                 remaining = max(0, int((deadline - clock()) * 1000))
                 try:
-                    self.api.WaitForSingleObject(self.process_handle, remaining)
+                    result = self.api.WaitForSingleObject(self.process_handle, remaining)
+                    if result != WAIT_OBJECT_0:
+                        errors.append("terminate-wait-not-signaled")
                 except Exception as exc:
                     errors.append("terminate-wait:" + str(exc))
         for name in ("thread_handle", "process_handle", "stdin_write", "stdout_read", "stderr_read"):
@@ -674,11 +676,15 @@ def launch_suspended(mode, api=None):
             raise ctypes.WinError(ctypes.get_last_error())
         launch = SuspendedLaunch(api, process_info.hProcess, process_info.hThread,
                                  int(process_info.dwProcessId), stdin_write, stdout_read, stderr_read)
+        if not api.SetHandleInformation(process_info.hProcess, HANDLE_FLAG_INHERIT, 0):
+            raise ctypes.WinError(ctypes.get_last_error())
+        if not api.SetHandleInformation(process_info.hThread, HANDLE_FLAG_INHERIT, 0):
+            raise ctypes.WinError(ctypes.get_last_error())
         parent_handles = []
         for handle in list(child_handles):
+            child_handles.remove(handle)
             if not api.CloseHandle(handle):
                 raise ctypes.WinError(ctypes.get_last_error())
-            child_handles.remove(handle)
         child_handles = []
         if attr_buffer is not None:
             api.DeleteProcThreadAttributeList(ctypes.cast(attr_buffer, ctypes.c_void_p))
@@ -687,6 +693,7 @@ def launch_suspended(mode, api=None):
     except Exception:
         if launch is not None:
             launch.close()
+            parent_handles = []
         for handle in child_handles + parent_handles:
             try:
                 api.CloseHandle(handle)
@@ -1122,6 +1129,12 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     cleanup_errors = []
     detail = "not-observed"
     try:
+        observer_api = getattr(observer, "api", None)
+        for handle_name in ("handle", "port"):
+            handle = getattr(observer, handle_name, None)
+            if observer_api is not None and handle:
+                if not observer_api.SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0):
+                    raise ctypes.WinError(ctypes.get_last_error())
         initial = observer.accounting()
         ordering["initial_zero"] = initial == (0, 0)
         launch = launcher(mode)
