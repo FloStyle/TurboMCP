@@ -4057,15 +4057,16 @@
       "scope": [
         "EditTurboMCPCompile"
       ],
-      "title": "Error classification ignores Blueprint status and folds engine errors into warnings",
+      "title": "Compiler failures and engine diagnostics are not separately named; Blueprint status is unread",
       "evidence": [
         "TurboMCPCompile.cpp:227 sets bHasErrors solely from CompileLog.NumErrors. Blueprint->Status is never read.",
-        "TurboMCPCompile.cpp:236-254 counts CapturedErrors in bEngineLoggedSomething but selects the WarningCount branch whenever compiler errors are absent; CapturedErrors is not added to ErrorCount.",
-        "BlueprintCompilationManager.cpp:1660,1675 set BS_UpToDate/BS_UpToDateWithWarnings/BS_Error; :1853-1859 can set BS_Error after CDO/validation checks. A status error not represented by CompileLog.NumErrors is invisible to the tool.",
-        "The summary at TurboMCPCompile.cpp:301-329 can say zero assets with errors while the final text reports engine errors. The tool never reads Blueprint->Status; whether a status error can occur with an empty compiler log is not established and remains a probe gap."
+        "TurboMCPCompile.cpp:236-254 keeps compiler warnings and captured engine diagnostics in one composite warning branch: bHasWarnings includes CompileLog.NumWarnings and CapturedWarnings; bEngineLoggedSomething includes CapturedWarnings and CapturedErrors; ErrorCount is compiler-error assets only, while WarningCount can represent compiler warnings, engine warnings, engine errors, or a mix.",
+        "TurboMCPCompile.cpp:264-270 deliberately prints 'error (...)' for compiler errors, 'clean with warning(s)' for compiler/captured warnings, and 'not clean, the compiler reported nothing but the engine log did' for engine-only diagnostics; :286-298 prints separate engine warning/error counts. The tool does not declare an asset's compiler failed merely because the engine log contains an Error.",
+        "BlueprintCompilationManager.cpp:1660,1675 set BS_UpToDate/BS_UpToDateWithWarnings/BS_Error; :1853-1859 can add validation errors. The tool does not consult that status. A status-error/empty-log case is not established and remains a probe gap.",
+        "The summary at TurboMCPCompile.cpp:301-329 can say zero assets with errors while the final text reports engine errors. The units are ambiguous: 'with errors' is compiler-error count, not engine-diagnostic count."
       ],
-      "observed_source_behavior": "Engine-log errors are reported as warnings in the clean/warning/error counts, and the authoritative Blueprint status is not consulted. The source proves the engine-error misclassification; it does not prove a status-error/empty-log case, which remains a fixture gap. The summary and per-asset verdict can disagree on engine-only errors.",
-      "existing_assertions": "test-compile-ensure checks only the report shape and that an engine-log count is accompanied by counts. It does not create a Blueprint status error with an empty compiler log, an engine-only error, or a warning-vs-error count assertion.",
+      "observed_source_behavior": "The tool intentionally treats engine-log-only errors as 'not clean' without declaring a compiler failure, and prints separate captured engine warning/error counts. Its composite WarningCount still mixes compiler warnings with engine diagnostics, and the summary label 'with errors' counts compiler-error assets only. This is an observability/naming gap, not evidence that every engine Error must become a compile failure. Blueprint status consistency is a separate unproven probe; the existing ensure-handling contract must remain.",
+      "existing_assertions": "test-compile-ensure checks report shape and that an engine-log count is accompanied by counts; it preserves the ensure contract. It does not create an engine-only error, a compiler-error asset, a warning-only asset or a status-error/empty-log case, and it does not assert the units of the counts.",
       "runtime_status": "not_run"
     },
     {
@@ -4131,9 +4132,10 @@
       "evidence": [
         "TurboMCPCompile.cpp:272-277 reports 'saved'/'not saved yet' from HasUnsavedChanges, which is only Package->IsDirty() (TurboMCPCompile.cpp:136-140).",
         "Compile can auto-save under SaveOnCompile (BlueprintCompilationManager.cpp:458-490) or restore the prior dirty flag after source-side compiler work (:1904-1907).",
-        "The tool never reloads the package, reads the file back or compares on-disk content. The result has no ARC02 outcome, code or operation id."
+        "The tool never reloads the package, reads the file back or compares on-disk content. The result has no ARC02 outcome, code or operation id.",
+        "Under the suite runner, Tools/run-suites.ps1:643 sets TURBOMCP_RUNNER_OWNS_FIXTURES=1; Tools/tmcp_editor.py:81-82 makes stop_editor return success without stopping, and :203-217 makes ensure_editor return success when the existing server answers. There is no supervisor request for a per-suite editor restart, so the previously proposed stop/ensure step can leave the same editor alive."
       ],
-      "observed_source_behavior": "The result cannot distinguish (a) a successful compile with no package write, (b) a compile that auto-saved, (c) a compile whose source-side effects were left in memory while the dirty flag was restored, and (d) a durable package that matches the compiled state. The dirty flag is not a persistence proof.",
+      "observed_source_behavior": "The result cannot distinguish (a) a successful compile with no package write, (b) a compile that auto-saved, (c) a compile whose source-side effects were left in memory while the dirty flag was restored, and (d) a durable package that matches the compiled state. The dirty flag is not a persistence proof. The suite cannot prove a disk reopen with its current helpers: the runner reuses one healthy editor and has no restart request channel; a direct start-editor call under the runner is explicitly refused by Tools/start-editor.ps1:130-131. A supervisor-owned restart boundary is an implementation prerequisite, not an existing capability.",
       "existing_assertions": "test-compile-ensure and test-uncovered-tools check text shape only. No compile suite saves, unloads/reopens a Widget Blueprint, or compares compiled/generated data after restart. F07-style reload acceptance is not mapped for compile.",
       "runtime_status": "not_run"
     }
@@ -4819,16 +4821,17 @@
         "Tools/test-compile-ensure.py"
       ],
       "preserved_behavior": [
-        "per-asset compiler message lines and six-message bound",
-        "engine warning/error capture and counts",
-        "refusal and unknown-name text",
-        "clean/warning/error headline structure"
+        "compiler errors remain compiler failures",
+        "engine-log-only errors remain 'not clean' and are not silently called compiler success",
+        "separate compiler message and captured engine warning/error text/counts",
+        "per-asset clean/warning/error shape and six-message bound",
+        "the existing ensure-handling contract and test-compile-ensure checks"
       ],
-      "synthetic_probe": "Compile a disposable BP_NodeTest fixture with a compiler warning, a compiler error, an engine-log-only error, and a status-error/empty-log control if the engine can produce one; inspect ErrorCount and the summary.",
-      "expected": "Blueprint->Status and engine-log errors are reflected separately and consistently: engine errors contribute to an error/not-clean outcome, compiler errors remain errors, and a clean status with no messages remains clean. The summary never says zero errors while reporting engine errors.",
-      "negative_control": "A clean Blueprint still reports clean with zero errors; a warning-only compile still reports warning; a compiler error still reports error.",
-      "fixture_gap": "No engine-log-only, status-error/empty-log or warning/error matrix fixture exists for the tool. The current test only checks report shape on BP_NodeTest.",
-      "validation": "Proposed extension of test-compile-ensure; no current assertion of count/status consistency. No engine run in this checkpoint.",
+      "synthetic_probe": "Compile disposable fixtures with: a compiler warning, a compiler error, an engine-log-only Error with no compiler error, a clean no-message asset, and if producible a Blueprint status error with an empty compiler log. Record CompilerErrorAssets, CompilerWarningAssets, EngineDiagnosticAssets/warnings/errors and Blueprint->Status separately.",
+      "expected": "The report names each count and its unit separately: compiler-error assets (CompileLog.NumErrors > 0), compiler-warning assets, engine-diagnostic warnings/errors, refused assets, and Blueprint status. An engine-log-only Error remains 'not clean' but is not called a compiler failure; whether every engine Error should become a compile failure requires an explicit owner decision. A status-error/empty-log case is a separate probe; do not infer it.",
+      "negative_control": "A compiler error remains a compiler error; a warning-only asset remains warning; a clean asset remains clean/zero errors; an engine-only Error remains not clean without being counted as a compiler-error asset; the ensure fixture still records its engine diagnostics.",
+      "fixture_gap": "No engine-only error, compiler-error asset, warning-only asset, or status-error/empty-log fixture exists. test-compile-ensure covers the ensure shape, not these count units.",
+      "validation": "Proposed test-compile-ensure/error-matrix extension; no current assertion distinguishes compiler-error assets from engine-diagnostic counts. No engine run in this checkpoint.",
       "rollback": "Revert TurboMCPCompile.cpp and test-compile-ensure.py only."
     },
     {
@@ -4905,20 +4908,37 @@
       "allowed_files": [
         "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
         "Tools/test-widget-compile-save-reopen.py",
-        "Tools/test-widget-tree.py"
+        "Tools/test-widget-tree.py",
+        "Tools/test-widgets-as-vars.py",
+        "Tools/run-suites.ps1",
+        "Tools/tmcp_editor.py",
+        "Tools/start-editor.ps1",
+        "Tools/check-mcp-server.py"
       ],
       "preserved_behavior": [
         "compile status text and dirty line",
         "explicit save as a separate operation",
         "no automatic reload over unsaved editor state",
-        "existing WBP read/save semantics"
+        "existing WBP read/save semantics",
+        "supervisor ownership of the editor, fixture snapshot/restore and unrelated editors/unsaved state",
+        "reversible IsVariable edit through the existing EditTurboMCPWidgetsAsVars tool"
       ],
-      "synthetic_probe": "Compile WBP_NodeTest, save it explicitly, stop and restart the editor, then read the asset description and widget tree. Repeat with a forced compile status error and a no-save control.",
-      "expected": "The plan reports compile success separately from package write and durable reload. After an explicit save and restart, the asset description says loaded/on disk and the widget tree matches the pre-restart tree; a failed compile/save does not claim persistence. The tool text does not call a dirty flag durable proof.",
-      "negative_control": "Without an explicit save, a dirty compile is not reported as durable; a clean no-op still reports no changes; a failed compile remains failed.",
-      "fixture_gap": "No current per-asset reload MCP tool; reopen requires an editor restart via Tools/tmcp_editor.py or a manual stop/start. WBP_NodeTest exists; the proposed test file and generated-class/binding readback do not.",
-      "validation": "Proposed WBP compile/save/reopen suite and manual restart evidence; no current compile persistence assertion. No engine run in this checkpoint.",
-      "rollback": "Revert TurboMCPCompile.cpp, the proposed test and any test-widget-tree.py addition only."
+      "synthetic_probe": "Two trials on restored WBP_NodeTest. Trial A: ReadTurboMCPWidgetTree baseline; EditTurboMCPWidgetsAsVars sets TitleText=true; compile; explicit save; supervisor-owned restart with old-PID-dead/new-PID-alive/server-owner proof; ReadTurboMCPWidgetTree must contain a (widget TitleText ...) line carrying :variable, and ReadTurboMCPBlueprintLoad must report TitleText variable. Trial B: the same edit and compile with SaveOnCompile observed as Never, no save; the same supervisor restart must show TitleText not marked. Repeat the control from a restored baseline. File hashes are supplementary only.",
+      "expected": "The test proves a discriminating, reversible edit persisted after a verified new editor read the package from disk, and an otherwise identical unsaved control loses the edit. Compile success, explicit package write and durable reopen are separate claims. A dirty package with unchanged serialized content need not change its hash; hash inequality is not required. The tool result does not call a dirty flag durable proof.",
+      "negative_control": "The no-save trial loses the TitleText variable flag after restart; the saved trial retains it. If SaveOnCompile is not demonstrably Never, the control is invalid and must be reported blocked, not passed. A failed compile/save never claims persistence; a clean no-op remains no changes.",
+      "fixture_gap": "WBP_NodeTest and its TitleText widget exist, and EditTurboMCPWidgetsAsVars, ReadTurboMCPWidgetTree and ReadTurboMCPBlueprintLoad expose the reversible edit/flag. Missing: a supervisor-owned restart request, an observed SaveOnCompile=Never setting, and the proposed test file. No per-asset reload MCP tool and no generated-class/binding reader exist.",
+      "validation": "Proposed dual-trial WBP compile/save/restart test with old/new PID and server-owner proof; no current compile persistence assertion. No engine run in this checkpoint.",
+      "rollback": "Revert TurboMCPCompile.cpp, the proposed test, any test-widget-tree.py/test-widgets-as-vars.py addition and the supervisor prerequisite files only.",
+      "implementation_prerequisite": {
+        "owner": "integration-owner / R02 supervisor scope",
+        "files": [
+          "Tools/run-suites.ps1",
+          "Tools/tmcp_editor.py",
+          "Tools/start-editor.ps1",
+          "Tools/check-mcp-server.py"
+        ],
+        "required": "A runner-owned per-suite restart request that stops only the owned editor, verifies the old PID exited, starts a new owned editor, records a new PID, checks check-mcp-server.py --editor-pid and project/engine identity, and returns a new session. A suite must not call stop_editor/ensure_editor, clear TURBOMCP_RUNNER_OWNS_FIXTURES or invoke start-editor directly."
+      }
     }
   ],
   "probe_gaps": [
@@ -4961,7 +4981,10 @@
     "Widget Blueprint compile of WBP_NodeTest; generated class, bindings, widget tree, compiler rules, reinstancing and live instances.",
     "Widget compile -> explicit save -> editor restart/reopen evidence; no per-asset reload MCP seam exists.",
     "Common UI/Input fixtures and compiler tests; no inheritance-based support claim.",
-    "Durable persistence and file hash after compile/save/reopen, separate from compile success."
+    "Durable persistence and file hash after compile/save/reopen, separate from compile success.",
+    "Supervisor-owned per-suite editor restart: old-PID exit, new owned PID, check-mcp-server --editor-pid and new-session disk read; no current helper exposes it.",
+    "Discriminating reversible Widget Blueprint edit (TitleText IsVariable) with a no-save control and observed SaveOnCompile=Never; hashes are supplementary only.",
+    "Compiler-error assets versus engine-diagnostic warning/error counts and Blueprint status as separate units; owner decision required before treating every engine Error as compile failure."
   ],
   "validation": {
     "audit_inventory_check": {
@@ -5019,7 +5042,10 @@
     "How to expose or verify Widget Blueprint generated-class/binding/reinstancing effects; no current reader.",
     "Whether Common UI/Input widget classes are supported; no fixture or test exists, and inheritance is not evidence.",
     "How to define partial/all-error batch outcomes and whether 'changed' is ever correct for an error-only compile.",
-    "How to distinguish compile success, auto-save, explicit package write and durable reopen without a new result contract."
+    "How to distinguish compile success, auto-save, explicit package write and durable reopen without a new result contract.",
+    "Whether the supervisor owner will implement a runner-owned per-suite restart request; without it the WBP persistence plan is blocked.",
+    "Whether every engine-log Error should become a compile failure, or remain a separate not-clean diagnostic fact; the current tool separates the facts but labels the composite count ambiguously.",
+    "How to observe SaveOnCompile=Never and compare a reversible IsVariable edit against a memory-only no-save control without bypassing supervisor ownership."
   ],
   "schema_validation": {
     "status": "source_traced_not_runtime",
@@ -5281,34 +5307,47 @@
     "scope": "Source/offline audit of EditTurboMCPCompile, widget compiler effects, tests, recorder/client and pinned 5.8.3 compile callees; no engine/build/editor/MCP execution.",
     "acceptance_plan": {
       "name": "Minimal Widget Blueprint compile -> save -> reopen",
-      "status": "proposed_not_run",
+      "status": "proposed_blocked_on_supervisor_restart",
       "fixtures": [
         "/Game/Tests/WBP_NodeTest (tracked TestProject/Content/Tests/WBP_NodeTest.uasset; plain UMG Widget Blueprint; used by test-save-thumbnail-option.py and test-widget-tree.py)",
         "/Game/Tests/BP_NodeTest (tracked control; test-compile-ensure.py and test-uncovered-tools.py compile it)"
       ],
       "sequence": [
-        "Snapshot/restore WBP_NodeTest with the existing fixture runner; do not use an unowned asset.",
-        "Start an editor and connect with Tools/tmcp.py Session.call.",
-        "Read the baseline with ReadTurboMCPWidgetTree and ReadTurboMCPAssetDescribe.",
-        "Call EditTurboMCPCompile with assets=/Game/Tests/WBP_NodeTest; assert one per-asset line, status wording, saved/dirty wording, and record whether the package dirty flag changed.",
-        "If the package is dirty, call EditTurboMCPSaveWithoutThumbnail (or EditTurboMCPSave if thumbnail/design-time execution is explicitly allowed); assert the save text and file hash.",
-        "Stop and restart the editor through existing Tools/tmcp_editor.py stop_editor/ensure_editor, then re-read ReadTurboMCPAssetDescribe and ReadTurboMCPWidgetTree.",
-        "Assert loaded/on disk, the generated class path, no unsaved changes, and equality of the source widget tree; record generated-class/binding checks as missing unless a reader is added."
+        "Snapshot/restore WBP_NodeTest with the existing supervisor fixture runner; preserve unrelated editor state.",
+        "Read the baseline with ReadTurboMCPWidgetTree, ReadTurboMCPAssetDescribe and ReadTurboMCPBlueprintLoad; confirm the chosen widget (TitleText) is not marked.",
+        "Apply the reversible edit with EditTurboMCPWidgetsAsVars(asset=WBP_NodeTest, widgets=TitleText, bIsVariable=true); ReadTurboMCPWidgetTree must contain a (widget TitleText ...) line carrying :variable and ReadTurboMCPBlueprintLoad must report TitleText variable and the package must be dirty.",
+        "Call EditTurboMCPCompile with assets=/Game/Tests/WBP_NodeTest; assert one per-asset line, status wording, dirty/saved wording and record the observed SaveOnCompile setting.",
+        "Call EditTurboMCPSaveWithoutThumbnail (or EditTurboMCPSave only when thumbnail/design-time execution is allowed); assert one saved/no-change outcome. A file hash is supplementary, not a universal requirement.",
+        "Supervisor-owned restart: the runner must stop only its owned editor, prove the old PID exited, start a new owned editor, record a different live PID, and have check-mcp-server.py --editor-pid pass for the project/engine. No suite-side stop/ensure/direct start.",
+        "New session re-reads ReadTurboMCPAssetDescribe, ReadTurboMCPWidgetTree and ReadTurboMCPBlueprintLoad from disk; require loaded/on disk/no unsaved and the TitleText variable flag.",
+        "Run an otherwise identical no-save control from a restored baseline with SaveOnCompile observed as Never; after the same supervisor restart, require TitleText not marked. If SaveOnCompile is not demonstrably Never, the control is blocked and no persistence claim passes."
       ],
       "existing_assertions": [
         "Tools/test-save-thumbnail-option.py:92-94,187-197 saves WBP_NodeTest and checks widget save text; it does not compile it.",
         "Tools/test-widget-tree.py:28 reads WBP_NodeTest; it does not compile or reopen it.",
+        "Tools/test-widgets-as-vars.py:27,57-75 uses WBP_NodeTest TitleText/TitleText2 and reads the IsVariable flag through ReadTurboMCPBlueprintLoad; it does not compile or persist the edit.",
         "Tools/test-compile-ensure.py:77-79,173 compiles BP_NodeTest and checks report shape; test-uncovered-tools.py:138-150 does the same.",
         "Tools/test-graph-knots.py:286-300 compiles TurboMCPAcceptance before/after a knot edit."
       ],
       "missing_seams": [
-        "No MCP tool or Python helper unloads/reloads one asset without restarting the editor; reopening requires an editor restart or manual restart.",
-        "No MCP reader exposes UWidgetBlueprintGeneratedClass::Bindings, runtime bindings, generated widget-tree archetype or reinstanced live instances.",
-        "No controlled SaveOnCompile setting, compiler-rule fixture or widget compile error/warning fixture exists.",
+        "No supervisor-owned per-suite restart request: Tools/run-suites.ps1:643 owns fixtures, Tools/tmcp_editor.py:81-82 no-ops stop, ensure_editor:203-217 reuses an answering server, and Tools/start-editor.ps1:130-131 refuses a direct start under the runner.",
+        "No controlled SaveOnCompile=Never setting or observed-setting seam.",
+        "No per-asset unload/reload MCP tool; reopen requires the supervisor restart above.",
+        "No reader for UWidgetBlueprintGeneratedClass::Bindings, runtime bindings or reinstanced live instances.",
         "No proposed test file exists; Tools/test-widget-compile-save-reopen.py is a proposal only."
       ],
-      "manual_fallback": "If the automated editor restart is unavailable, stop the editor with Tools/start-editor.ps1 -Stop, start it with the existing start-editor.ps1, then use Tools/tmcp.py or Session.call to read the asset. Do not claim persistence if the editor was not restarted and the package was not read back.",
-      "candidate_bound_evidence": "The proposed suite must run against the exact candidate commit, record the request commit and tree digest, and use an owned WBP_NodeTest restore. Until that suite and the setting seam exist, only the offline profile is evidence; no compile/persistence result is certified."
+      "manual_fallback": "A supervised operator may ask the runner owner to perform the same restart through the supervisor and must supply old-PID-exit, new-PID/server-owner and new-session read evidence. Do not call start-editor directly, clear TURBOMCP_RUNNER_OWNS_FIXTURES, stop a foreign editor, or discard unrelated unsaved state. If the supervisor cannot perform the restart, report the persistence step BLOCKED/unverified.",
+      "candidate_bound_evidence": "The proposed dual-trial suite must run against the exact candidate under a supervisor that can restart its owned editor, with owned WBP_NodeTest restore, observed SaveOnCompile, old/new PID proof, request commit/tree digest, compile/save text, expected TitleText variable flag after restart and its absence in the no-save control. No such engine evidence exists in this checkpoint; only the offline profile is run.",
+      "implementation_prerequisite": {
+        "owner": "integration-owner / R02 supervisor scope",
+        "files": [
+          "Tools/run-suites.ps1",
+          "Tools/tmcp_editor.py",
+          "Tools/start-editor.ps1",
+          "Tools/check-mcp-server.py"
+        ],
+        "required": "Runner-owned restart API with old-PID exit, new owned PID, server owner/project/engine verification and new-session read. Without it the compile/save/reopen plan is blocked; no unattended direct start workaround is permitted."
+      }
     },
     "validation": {
       "audit_inventory_check": {
@@ -5329,15 +5368,26 @@
       "offline_profile": {
         "command": "python Tools/execute-tests.py --profile offline --execute",
         "exit": 0,
-        "report": ".local/executions/66d2df8b38694b0aa9aa125d216b02c1/report.json",
-        "request_commit": "a92cae75abd5c4a8e65179fa8b1ad32f5aef436f",
-        "tree_digest": "d1b83bf562efe2358bfd663e192fcf0aa71d00a95e0c38550ee4a1a6b3d977cd",
-        "summary": "PASSED; the offline profile ran Tools/validate.py. This is the pre-commit checkpoint-5 run; candidate-bound evidence is obtained after the checkpoint commit and returned separately."
+        "report": ".local/executions/4c41e7fec10b4c6393c7d65037eb2ad3/report.json",
+        "request_commit": "5da62367fc473d0edce262a08b66c6da9a7372b9",
+        "tree_digest": "3cf0270b5baaefaee93cc38fa4e251872265ec1f966c409cdc9d4fdfd8a26b83",
+        "summary": "PASSED; the offline profile ran Tools/validate.py on the checkpoint 5 correction tree. This is the pre-commit correction run; candidate-bound evidence is obtained after the correction commit and returned separately."
       }
     },
     "review": {
       "status": "pending_integration_review",
       "note": "Checkpoint 5 adds one source-reviewed compile row; R04 remains incomplete and all repairs remain unapproved."
+    },
+    "correction": {
+      "prior_candidate": "5da62367fc473d0edce262a08b66c6da9a7372b9",
+      "request": "7074def1-119b-4017-a8aa-163e8ed71ce6",
+      "review_report_sha256": "44b2d56a520cca97167122a8e29bae722e0e18fb6641a6cface7d1fd9e152502",
+      "status": "documentation_corrections_submitted",
+      "changes": [
+        "The reopen plan now requires a supervisor-owned restart with old-PID-exit/new-PID/server-owner proof; the tmcp_editor stop/ensure pair is documented as ineffective under the runner.",
+        "The persistence plan now uses a reversible TitleText IsVariable edit and an otherwise identical no-save control with observed SaveOnCompile=Never; hashes are supplementary.",
+        "R04-COMPILE-03/R04-REPAIR-30 now name compiler-error assets, compiler-warning assets and engine-diagnostic counts separately and defer any engine-Error-as-failure policy to the owner."
+      ]
     }
   }
 }
