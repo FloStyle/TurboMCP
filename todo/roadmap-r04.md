@@ -404,15 +404,19 @@ Task R04 checkpoint 11, claim `b3223a4a39b04b599d4ab4bf14029a78` (owner `dsh-r04
 
 Deliverable: `docs/audit/process-reader-lifecycle.md` records the bounded source investigation. Windows PowerShell 5.1 Add-Type exposes CodeDom/compiler parameters; the .NET Framework C# CodeDom compiler names `csc.exe` and its Executor uses Process/CreateProcess, so Add-Type can create a compiler child. Whether this host actually spawns it and whether it inherits the PowerShell result pipes remain unverified. The current runner cleans up only its direct Popen child, so compiler-descendant survival on timeout/parent death is not excluded. CIM/WMI is a shared external service, not an owned child.
 
-Decision: choose Job Object containment of the dedicated collection process and its descendants; reject avoiding Add-Type because it would require a precompiled helper/dependency or persistent service. Reuse the existing `WindowsJob` KILL_ON_JOB_CLOSE pattern and the `execution_runtime.py --worker` bootstrap that waits for assignment before running a command. Assignment failure, nested-job failure, job accounting or any unproven compiler containment refuses; shared services and unrelated processes are never killed. The report covers suspended-launch alternative, handle inheritance, bounded drains, grace versus request deadline, hard supervisor death, orphan accounting and the supervisor-only synthetic acceptance recipe.
+Decision: select Job Object containment of the dedicated collection process and its descendants for this scope. This is a scoped choice, not a claim that every narrower compiler-free alternative was disproved. Use a new fixed `execution_runtime.py --persistence-worker` (not generic `--worker`) that accepts only `{"schema":1,"pid":<uint32>}`, derives the fixed PowerShell executable/script locally, and waits for assignment before authorization. Add checked Job methods (`terminate_checked`, `active_processes`, `close_checked`, `is_process_in_job`) without changing `run_owned`; one shared cleanup deadline bounds polling, worker wait and drains. Assignment/nested-job failure, nonzero active count, query/close/wait failure or unproven compiler containment refuses. Generic `--worker` and shared CIM/WMI/unrelated processes are untouched.
+
+Compiler observation: polling can miss a short-lived `csc.exe`; absence of an observed child is not proof. The supervisor-only synthetic suite must use Job completion-port new-process notifications while compiling a harmless synthetic Add-Type class. If no compiler child or its job membership can be established, admission remains blocked, not passed. The current direct-child cleanup is offline-tested, with native/pipe limitations.
 
 Mock fidelity: the current fake `Thread.join` treats unstarted joins as a no-op; real Python `Thread.join` raises before start. This affects cleanup_failed classification in thread-start-failure mocks and is not proof of a child leak. The proposed test-only repair is recorded. The fixed PowerShell script's real parsing/API/UTF-8/handle behavior remains unverified.
+
+Test placement: offline mocks stay in `Tools/test-persistence-process-reader.py`; the native suite is a new `Tools/test-persistence-job-acceptance.py` with one proposed `tier=engine`, `timeout_seconds=60`, `acceptance=not_mapped` catalog row, selected only by `python Tools/execute-tests.py --profile engine --suites test-persistence-job-acceptance --execute`. It is not added to `Tools/test-execution-runtime.py` or ordinary offline execution.
 
 All implementation remains `proposed_unapproved`; no code, test, catalog, lease, status, routing, scope or release change was made. No live process, PowerShell, CIM, native, editor, build or recovery operation was run.
 
 Validation:
 - Source/docs review only; no live processes, PowerShell, native calls, CIM, editor, build or recovery.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/dc6f83e4681141ccbe637368bf1ba368/report.json`; all offline checks passed.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/a21a45ae612e4d438e3aa4837e588ac1/report.json`; all offline checks passed.
 - Candidate-bound evidence and full-base scope gate are recorded in the submission.
 
 Rollback: remove the new report and this evidence only.

@@ -9,106 +9,122 @@ Status: `proposed_unapproved`. Source investigation only. No code, test, catalog
 
 ## Question
 
-Can the current `read_process` runner guarantee that Add-Type's compiler work is gone after timeout, error or parent death? If not, what is the smallest admission strategy that contains the dedicated collection process and its own descendants without touching shared CIM/WMI services or unrelated processes?
+Can the current `read_process` runner guarantee that Add-Type's compiler work is gone after timeout, error or parent death? What is the smallest admission strategy that contains the dedicated collection process and its own descendants without touching shared CIM/WMI services or unrelated processes?
 
 ## Known facts
 
 1. **Windows PowerShell 5.1 Add-Type uses CodeDom and can start a compiler child.**
    - Add-Type's 5.1 syntax exposes `-CodeDomProvider` and `-CompilerParameters` and documents source compilation into an in-memory assembly: <https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/add-type?view=powershell-5.1>.
    - .NET Framework `CSharpCodeProvider` delegates to the CodeDom compiler. The Microsoft reference source names the compiler `csc.exe` (`CompilerName`) and its `Executor` uses `Process`/`CreateProcess` to wait for the compiler: <https://github.com/microsoft/referencesource/blob/main/System/compmod/microsoft/csharp/csharpcodeprovider.cs>, <https://github.com/microsoft/referencesource/blob/main/System/compmod/system/codedom/compiler/Executor.cs>.
-   - Therefore Add-Type **can** create a compiler child. Whether this exact Windows build/PS 5.1 invocation spawns `csc.exe` rather than compiling another way is **unverified** without live execution.
+   - Therefore Add-Type **can** create a compiler child. Whether this exact Windows build/PS 5.1 invocation spawns `csc.exe` rather than compiling another way is **unverified**.
 
-2. **Whether the compiler child inherits the PowerShell result pipes is unverified.**
-   - The CodeDom Executor captures compiler output through its own files/streams; that suggests it may not write to the PowerShell stdout/stderr pipes.
-   - This is not established from repository code. Treat the compiler as a possible pipe-holder and as an owned descendant, not as a proven independent process.
+2. **Compiler pipe inheritance is unverified.**
+   - CodeDom captures compiler output through its own files/streams, suggesting it may not use the PowerShell result pipes.
+   - This is not established. Treat the compiler as a possible pipe-holder and an owned descendant; do not assume independence.
 
 3. **The current runner cleans up only its direct Popen child.**
-   - `Tools/persistence_process_reader.py:192-341` drains bounded pipes, kills/reaps `proc`, and joins drain threads.
-   - It has no Job Object. It cannot prove a `csc.exe` child of PowerShell is gone. On timeout/parent death, a compiler child that inherited or shared a pipe can outlive the PowerShell child; closing the pipe in Python does not kill it.
-   - Its cleanup is otherwise sound for the direct child: `_cleanup` kills, waits, closes pipes and bounds joins (`:196-242`).
+   - `Tools/persistence_process_reader.py:192-341` drains bounded pipes, kills/reaps `proc`, closes pipes, and bounds joins (`:196-242`).
+   - This is **offline-tested direct-child cleanup**, not native proof for compiler descendants. It has no Job Object; a compiler child that shares a pipe or survives PowerShell is outside its guarantee.
 
-4. **CIM/WMI is not a child process.**
-   - `Get-CimInstance Win32_Process` talks to the shared WMI/CIM service/provider host. The service is external and must never be killed or treated as an owned descendant.
-   - Only the dedicated PowerShell process and processes it creates for the collection are in scope.
+4. **CIM/WMI is a shared external service.**
+   - `Get-CimInstance Win32_Process` talks to WMI/CIM. It is not an owned child and must never be killed or treated as a descendant.
 
-5. **An existing Job Object helper is available.**
+5. **An existing Job Object helper exists.**
    - `Tools/execution_runtime.py:70-92` creates a Job Object with `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` (`0x2000`), assigns a process, and terminates the job on close.
-   - `run_owned` (`:95-117`) launches a Python worker, assigns it to the job **before** writing the command, and the worker waits on stdin before calling `subprocess.call` (`:155-158`). This is the existing “bootstrap waits for assignment” pattern.
-   - The existing synthetic test at `Tools/test-execution-runtime.py:52-64` proves a timed-out worker's descendant is killed and an unrelated sentinel survives. It is evidence for the helper pattern, not for Add-Type or the process reader.
+   - `run_owned` (`:95-117`) launches a Python worker, assigns it before writing the command, and the worker waits on stdin before `subprocess.call` (`:155-158`).
+   - The existing synthetic test at `Tools/test-execution-runtime.py:52-64` proves a timed-out worker descendant is killed and an unrelated sentinel survives. It is helper evidence, not Add-Type evidence.
+   - `WindowsJob.close` (`:89-92`) calls `TerminateJobObject` then `CloseHandle`, ignores both results and sets `handle=None`; it has no active-process accounting. It cannot support a post-close query.
 
 ## Decision
 
-Choose **(a) Job Object containment of the dedicated collection process and its descendants**. Reject **(b) avoiding the compiler child**: removing Add-Type would require a precompiled helper or managed API that still supplies exact native FILETIME/process handles; that would add a binary/dependency or a persistent service, both outside this slice. A narrower alternative does not exist without weakening the evidence.
+Select **(a) Job Object containment** of the dedicated collection process and its descendants for this scope. This is a scoped choice, not a claim that every narrower compiler-free alternative has been disproved. **(b)** is not selected because replacing Add-Type would require a different native/helper mechanism with its own unverified containment and dependency cost.
 
-The containment must be established **before PowerShell executes any script code**, not merely before the Python `Popen` returns.
+Containment must be established before PowerShell executes any Add-Type code.
 
-## Proposed admission strategy
+## Admission strategy
 
-Use the existing bootstrap pattern, without a broad runner rewrite:
+Use a new **fixed persistence worker**, not the generic `--worker`:
 
-1. Create a fresh Job Object with `KILL_ON_JOB_CLOSE` before launching the collection process.
-2. Launch the fixed Python worker (`execution_runtime.py --worker`) with hidden/no-window startup and bounded stdin/stdout/stderr pipes. The worker waits for one JSON command before doing anything else.
-3. Assign the worker to the job immediately. If assignment fails, terminate the worker and refuse; do not feed a command and do not fall back to killing a process tree.
-4. Send exactly the fixed `[powershell.exe, -NoProfile, -NonInteractive, -File, fixed-script, -ProcessId, pid]` command. The worker launches PowerShell; PowerShell and any `csc.exe` child created by Add-Type inherit the job by default.
-5. Keep the existing 64 KiB bounded drains and monotonic deadline. On timeout/overflow/error, terminate/close the job, then wait a bounded time for the worker and pipes. Do not collect a new child or enumerate the process tree.
-6. On all exits close the job handle and both pipes. If cleanup cannot be proven (job still has active processes, worker wait failed, pipe close/join failed), report `cleanup_failed`/unknown.
+1. Create a fresh Job Object with `KILL_ON_JOB_CLOSE`; no breakaway limits.
+2. Launch `execution_runtime.py --persistence-worker` with hidden/no-window startup and bounded stdin/stdout/stderr pipes.
+3. Assign the worker to the job. If `AssignProcessToJobObject` or `IsProcessInJob` verification fails, terminate the worker and refuse before sending a request.
+4. Only after successful assignment, send one strict request:
+   `{"schema": 1, "pid": <positive uint32>}`
+   The worker derives the fixed PowerShell executable (`%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe`) and fixed script path locally. It accepts no executable, script, argv, shell text, launch path or arbitrary metadata. Only the PID is necessary for this read contract; no expected-launch metadata is supplied to the worker.
+5. The worker reads exactly one bounded line (maximum 512 bytes), validates exact keys/types/schema/PID, rejects duplicate keys, nonfinite values, unknown fields, extra bytes, malformed JSON, oversized input, EOF and a second/replayed request, then launches the fixed command.
+6. The worker waits for that request before any PowerShell/Add-Type code. Parent death before assignment leaves it waiting on stdin; EOF exits without a child. This is an assumption to verify, not a proven no-orphan guarantee.
+7. Keep 64 KiB bounded drains and the existing monotonic deadline. The parent sends the request only if the deadline is still open; delayed admission is terminated/refused without a request.
 
-### Why not suspended launch
+The generic `--worker` and `run_owned` remain unchanged.
 
-`CREATE_SUSPENDED` plus `ResumeThread` would also establish assignment before execution, but Python's `Popen` does not expose the primary thread handle; the implementation would need a second native launcher. The worker already waits before spawning, so it provides the same ordering with the existing helper. No suspended/resume code is proposed.
+### Suspended launch and ownership
 
-### Nested jobs, assignment and containment
+A suspended alternative would create the process with `CREATE_SUSPENDED`, assign the job, verify `IsProcessInJob`, then call `ResumeThread`; failure before resume terminates the process, closes the thread/process handles and does not run PowerShell. The fixed worker is selected instead because it waits for the request before spawning, so it provides assignment-before-code with the existing bootstrap pattern and fewer native handles.
 
-- Windows 8/Server 2012 and later allow nested jobs; older Windows permits only one job per process. The outer `execute-tests`/`run_owned` job may already contain the supervisor.
-- If `AssignProcessToJobObject` fails, the bootstrap worker is killed and the call refuses. No fallback, no process-tree enumeration.
-- `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` terminates job members when the last handle closes. The job handle must stay in the Python supervisor and must not be inherited by the worker or PowerShell.
-- `JOB_OBJECT_LIMIT_BREAKAWAY_OK`/`SILENT_BREAKAWAY_OK` are **not** set; descendants inherit the job unless a child uses an explicit breakaway path.
-- A compiler child created by `CreateProcess` inherits the job. A child created through `Win32_Process.Create` would not; the reference-source CodeDom path uses `CreateProcess`, but this is not proven on the target host. The supervisor-only acceptance must prove the actual Add-Type descendant is in the job. If it cannot, live use remains blocked.
-- Shared CIM/WMI services are outside the job and are never terminated.
+Ownership invariants: the Python supervisor owns the job handle, worker process, request and result pipes; the worker owns only its stdin request and its PowerShell child; PowerShell owns only its own children. The job handle is non-inheritable, the worker closes request stdin after one line, PowerShell receives only the intended stdout/stderr pipe ends, and no unintended pipe end or job handle is inherited. CIM/WMI remains an external shared service outside this ownership. A failed assignment, authorization, cleanup query, terminate, wait, drain join or close is a refusal, never a success report.
 
-### Timeout, grace and abnormal exit
+## Job cleanup and accounting
 
-- The request deadline is authoritative. On expiry, terminate/close the job immediately; a cleanup grace of at most 5 seconds is allowed for the worker/pipes, never an extension of the collection budget.
-- On overflow or any collection error, close the job and reap the worker; drains remain bounded.
-- Hard supervisor death closes the job handle in the OS; `KILL_ON_JOB_CLOSE` terminates worker, PowerShell and in-job compiler descendants. If death occurs before assignment/command, the worker is blocked reading stdin; pipe EOF prevents Add-Type from running.
-- The supervisor should query the job's active-process count before declaring cleanup success. A nonzero count is `cleanup_failed`; it is not retried by probing unrelated processes.
-- Orphan detection is job-based. No shared service, editor or unrelated process is stopped.
+Do not use `WindowsJob.close` for the proposed admission path. Add additive, separately tested methods while preserving `run_owned`/`close` behavior:
 
-## Mock fidelity correction
+- `terminate_checked()`: call `TerminateJobObject`; any failure is cleanup failure; keep the handle open.
+- `active_processes()`: call `QueryInformationJobObject` with `JobObjectBasicAccountingInformation` and return `ActiveProcesses`; query failure is unknown/cleanup failure.
+- `close_checked()`: call `CloseHandle`; failure is reported honestly; only clear the handle on success.
+- `is_process_in_job()`: verify assignment with `IsProcessInJob` before authorization.
 
-`Tools/test-persistence-process-reader.py:384-405` currently has `FakeThread.join` return without error for an unstarted thread. Real Python `Thread.join` raises `RuntimeError` before start. This affects `_cleanup`'s `cleanup_failed` classification in the thread-start-failure mocks; it is **not** proof that the real runner leaks a child. The proposed implementation scope includes changing the fake to raise on unstarted `join`, then asserting the runner reports cleanup failure honestly.
+One shared cleanup deadline bounds all cleanup work: job polling, worker wait and drain joins. There are no successive independent five-second waits. Terminate/close within that deadline; if active count is nonzero, the worker wait or drain join fails, or any close/terminate/query fails, report `cleanup_failed`/unknown. Do not retry by probing unrelated processes.
+
+`JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` handles abnormal supervisor death: the OS closes the job handle and terminates job members. That path cannot produce a cleanup success report; no worker code runs after parent death. If death occurs before assignment/request, the worker sees stdin EOF and must exit without spawning; handle inheritance must ensure the job handle is non-inheritable and no unintended pipe end is inherited.
+
+Nested jobs are supported on Windows 8/Server 2012 and later; assignment failure on other environments refuses. Shared CIM/WMI services are outside the job and are never terminated.
+
+## Compiler-child observation
+
+Polling the job's active count can miss a short-lived `csc.exe`. Absence of a child from polling is **not proof** that none exists. The supervisor-only acceptance must use Job Object completion-port notifications (`JOB_OBJECT_MSG_NEW_PROCESS`/assignment notifications) while running a synthetic Add-Type compile, recording every new process ID and its job membership. If no compiler child is observed or its membership cannot be established, live admission remains **blocked**, not passed. The report does not demand an impossible inference from absence.
+
+## Test placement
+
+- **Offline mocks:** `Tools/test-persistence-process-reader.py`. It must test strict request parsing, assignment-before-authorization ordering, EOF/malformed/duplicate/replayed input, delayed admission, cleanup state transitions, and the mock-fidelity repair. Mocks do not certify native containment.
+- **Supervisor-only native suite:** new `Tools/test-persistence-job-acceptance.py`, registered in `Tests/catalog.json` as one `tier=engine`, `timeout_seconds=60`, `acceptance=not_mapped` row. It is selected only through the supervisor:
+  `python Tools/execute-tests.py --profile engine --suites test-persistence-job-acceptance --execute`.
+  It must not be added to `Tools/test-execution-runtime.py` or ordinary offline execution.
 
 ## Proposed implementation files
 
 Not implemented here:
 
-- `Tools/persistence_process_reader.py` — create `WindowsJob`, launch a fixed bootstrap worker, assign it before sending the fixed command, retain bounded drains, terminate/close the job on timeout/error and query job accounting before reporting cleanup.
-- `Tools/execution_runtime.py` — add one fixed `--persistence-worker` mode that reads the one command and launches it with `CREATE_NO_WINDOW`, or expose the same hidden-launch behavior without changing `run_owned` semantics. Reuse `WindowsJob`; do not rewrite `run_owned`.
-- `Tools/test-persistence-process-reader.py` — injectable Job/worker mocks, assignment-order/deadline/cleanup tests, and the unstarted-join fidelity fix.
-- `Tools/test-execution-runtime.py` — add the supervisor-only synthetic Job acceptance cases if they are not kept in the test reader.
+- `Tools/persistence_process_reader.py` — job/bootstrap launch, strict request, fixed command, shared cleanup deadline and job accounting.
+- `Tools/execution_runtime.py` — additive `--persistence-worker` mode and checked job methods; preserve generic `--worker` and `run_owned`.
+- `Tools/test-persistence-process-reader.py` — offline mocks and unstarted-join fidelity fix.
+- `Tools/test-persistence-job-acceptance.py` — new supervisor-only synthetic suite.
+- `Tests/catalog.json` — one new engine-tier row for that suite.
 
-No change to the PowerShell script, collector/validator, catalog or production caller is proposed for this lifecycle slice.
+No PowerShell/collector/validator/production caller change is proposed.
 
 ## Supervisor-only synthetic acceptance (proposal, unexecuted)
 
-Use only newly created harmless test children and synthetic strings; never an editor, existing editor process or real command line.
+Use only newly created harmless test children and synthetic strings; never an editor, existing process or real command line.
 
-1. **Forced timeout / descendant containment:** a synthetic worker under a new job creates a Python grandchild that writes a unique marker after sleeping. Force the request timeout; verify worker and grandchild are gone, marker absent, job active count zero, and an unrelated synthetic process survives.
-2. **Inherited-pipe child:** a synthetic child writes to an inherited stdout pipe and sleeps past the deadline. Verify bounded drains return, the job termination closes the pipe, no partial result is accepted, and the child is gone.
-3. **Parent death:** start a synthetic supervisor that creates the job and child; hard-terminate the supervisor; verify the child/grandchild are gone and no orphan holds the pipe or output file.
-4. **Add-Type compiler descendant:** run a synthetic PowerShell script containing only a harmless `Add-Type` class and a marker; record whether a compiler descendant exists and whether it is in the job. Refuse live admission if this cannot be proven.
-5. **Negative control:** an unrelated synthetic Python process outside the job remains alive and unchanged.
+1. **Forced timeout / descendant containment:** synthetic worker under a new job creates a Python grandchild that sleeps then writes a unique marker. Force timeout; verify job termination, active count zero, marker absent, worker reaped, and an unrelated synthetic sentinel survives.
+2. **Inherited-pipe child:** synthetic child writes to an inherited stdout/stderr pipe and sleeps past the deadline. Verify bounded drains return, no partial result is accepted, pipes close, and the child is gone.
+3. **Parent death:** synthetic supervisor creates the job and child; hard-terminate the supervisor; verify child/grandchild are gone and no orphan holds the pipe or output file. Record before-assignment EOF behavior separately.
+4. **Add-Type observation:** synthetic PowerShell compiles only a harmless synthetic class while the job completion port records process creations. Verify any compiler child is in the job; if none is observed or membership cannot be established, report blocked.
+5. **Negative control:** unrelated synthetic process outside the job remains alive.
 
-All tests must run only under the supervisor, with unique temp paths and no existing process/command-line inspection.
+All runs are supervisor-only with unique temp paths; no existing process/command-line inspection.
+
+## Mock fidelity correction
+
+`Tools/test-persistence-process-reader.py:384-405` has `FakeThread.join` return without error for an unstarted thread; real Python `Thread.join` raises `RuntimeError` before start. This affects `cleanup_failed` classification in thread-start-failure mocks, not proof of a real child leak. The proposed test-only repair makes unstarted `join` raise and updates the expected cleanup classification.
 
 ## Rollback
 
-Revert the bounded reader/job changes and test-fidelity change together. No catalog or production caller is added by this slice. Job handles and worker processes are closed/terminated on rollback.
+Revert the reader/job/worker test changes, remove the new engine catalog row and native suite, and return to the offline-only process reader. No production caller is added.
 
 ## Blockers and unverified facts
 
-- No live validation exists for Add-Type creating `csc.exe`, for job inheritance by the compiler, for nested-job assignment, or for parent-death containment.
+- No live validation exists for Add-Type compiler creation, compiler pipe inheritance, job assignment/nesting, completion-port observation or parent-death containment.
 - The current direct-child runner cannot guarantee compiler-descendant cleanup.
-- The worker's hidden-startup behavior for its PowerShell child and the script's real parsing/API/UTF-8/handle behavior are unverified.
+- Real PowerShell script parsing/API/UTF-8/handle behavior remains unverified.
 - Shared CIM/WMI services are outside containment and must not be killed.
-- Live process-reader admission remains blocked until the supervisor-only synthetic acceptance proves the job path and compiler containment.
+- Live process-reader admission remains blocked until the supervisor-only synthetic suite establishes the job and compiler facts.
