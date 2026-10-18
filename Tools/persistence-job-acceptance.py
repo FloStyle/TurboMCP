@@ -31,6 +31,7 @@ JOB_OBJECT_MSG_EXIT_PROCESS = 7
 JOB_OBJECT_MSG_ABNORMAL_EXIT_PROCESS = 8
 JOB_OBJECT_ASSOCIATE_COMPLETION_PORT_INFORMATION = 7
 HELPER_THREADS = []
+UNRESOLVED_OBSERVERS = []
 
 
 def _join_helper_threads(deadline):
@@ -306,10 +307,19 @@ class ObservedJob:
             if thread is not None and thread in HELPER_THREADS:
                 HELPER_THREADS.remove(thread)
             if cleanup_errors:
-                raise RuntimeError(str(original) + "; cleanup:" +
-                                   ";".join(cleanup_errors) +
-                                   "; observer-unresolved") from original
+                raise ObserverOwnershipError(original, view, cleanup_errors) from original
             raise
+
+
+class ObserverOwnershipError(RuntimeError):
+    """Typed unresolved observer ownership; view handles are retained, not retried."""
+
+    def __init__(self, original, view, close_errors):
+        self.original = original
+        self.view = view
+        self.close_errors = list(close_errors)
+        super().__init__(str(original) + "; cleanup:" + ";".join(self.close_errors) +
+                         "; observer-unresolved")
 
 
 class ObservationView:
@@ -317,6 +327,8 @@ class ObservationView:
 
     def __init__(self, api, handle, port):
         self.api = api; self.handle = handle; self.port = port; self.messages = []
+        self.close_failed = False; self.close_errors = []; self.unresolved_handles = []
+        self.close_attempted = False
 
     @classmethod
     def duplicate(cls, api, handle, port):
@@ -335,17 +347,20 @@ class ObservationView:
             acquired.append(("observer-port-duplicate", port_copy))
             return cls(api, job, port_copy)
         except Exception as original:
-            cleanup_errors = []
+            view = cls(api, job if any(name == "observer-job-duplicate" for name, _ in acquired) else None,
+                       port_copy if any(name == "observer-port-duplicate" for name, _ in acquired) else None)
+            errors = []
             for name, acquired_handle in acquired:
                 try:
                     if not api.CloseHandle(acquired_handle):
-                        cleanup_errors.append(name + "-close:" + str(ctypes.get_last_error()))
+                        errors.append(name + "-close:" + str(ctypes.get_last_error()))
+                        view.unresolved_handles.append(name)
                 except Exception as exc:
-                    cleanup_errors.append(name + "-close:" + str(exc))
-            if cleanup_errors:
-                raise RuntimeError(str(original) + "; cleanup:" +
-                                   ";".join(cleanup_errors) +
-                                   "; observer-unresolved") from original
+                    errors.append(name + "-close:" + str(exc))
+                    view.unresolved_handles.append(name)
+            if errors:
+                view.close_failed = True; view.close_errors = list(errors)
+                raise ObserverOwnershipError(original, view, errors) from original
             raise
 
     def in_job(self, handle):
@@ -362,7 +377,9 @@ class ObservationView:
         return ObservedJob.drain_messages(self, deadline, on_new_process, clock, stop_event)
 
     def close(self):
-        errors = []
+        if self.close_attempted:
+            return list(self.close_errors)
+        self.close_attempted = True
         for name in ("port", "handle"):
             handle = getattr(self, name)
             if not handle:
@@ -371,10 +388,14 @@ class ObservationView:
                 if self.api.CloseHandle(handle):
                     setattr(self, name, None)
                 else:
-                    errors.append("observer-" + name + "-close:" + str(ctypes.get_last_error()))
+                    self.close_errors.append("observer-" + name + "-close:" +
+                                             str(ctypes.get_last_error()))
+                    self.unresolved_handles.append(name)
             except Exception as exc:
-                errors.append("observer-" + name + "-close:" + str(exc))
-        return errors
+                self.close_errors.append("observer-" + name + "-close:" + str(exc))
+                self.unresolved_handles.append(name)
+        self.close_failed = bool(self.close_errors)
+        return list(self.close_errors)
 
 
 def process_evidence(pid, job):
@@ -1296,6 +1317,7 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     observer_errors = []
     observer_start_attempted = False
     observer_unresolved = False
+    observation_view = None
     seen_notifications = set()
 
     def observed(pid, identity_job=None):
@@ -1364,10 +1386,6 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
             if observer_thread.is_alive():
                 observer_unresolved = True
                 raise RuntimeError("observer-thread-timeout")
-        if observer_errors:
-            port_error = "observer:" + ";".join(str(item) for item in observer_errors)
-            if any("close" in str(item) for item in observer_errors):
-                observer_unresolved = True
         exit_code = launch.exit_code
         launch.close_process()
         ordering["process_released_before_final"] = True
@@ -1386,6 +1404,11 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
             if port_error is None:
                 port_error = "completion-port:" + str(exc)
         observation_remaining()
+    except ObserverOwnershipError as exc:
+        detail = type(exc).__name__ + ": " + str(exc)
+        operation_error = True
+        observer_unresolved = True
+        observation_view = exc.view
     except Exception as exc:
         detail = type(exc).__name__ + ": " + str(exc)
         operation_error = True
@@ -1417,7 +1440,14 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
             if alive:
                 observer_unresolved = True
                 cleanup_errors.append("observer-thread-timeout")
+        if observation_view is not None and observation_view.close_failed:
+            observer_unresolved = True
+            cleanup_errors.extend(observation_view.close_errors)
+        if observer_errors:
+            port_error = "observer:" + ";".join(str(item) for item in observer_errors)
         if observer_unresolved:
+            if observation_view is not None and observation_view not in UNRESOLVED_OBSERVERS:
+                UNRESOLVED_OBSERVERS.append(observation_view)
             if hasattr(observer, "terminate_checked"):
                 try:
                     observer.terminate_checked()
@@ -1447,6 +1477,9 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
                     operation_error=operation_error, unexpected_processes=unexpected,
                     initial_observation=initial, baseline_observation=baseline,
                     final_pre_cleanup=final,
+                    unresolved_observer=observer_unresolved,
+                    unresolved_handles=(list(observation_view.unresolved_handles)
+                                        if observation_view is not None else []),
                     post_cleanup_accounting="not-queried-after-job-close")
     if operation_error:
         if decision.get("detail") == "extra-associated-process":

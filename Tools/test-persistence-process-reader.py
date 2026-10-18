@@ -2159,24 +2159,70 @@ class AcceptanceHarnessTests(unittest.TestCase):
         with self.assertRaises(Exception):
             self.acceptance.ObservationView.duplicate(Api(duplicate_fail=1), 11, 22)
         api = Api(duplicate_fail=2, close_ok=False)
-        with self.assertRaises(Exception) as caught:
+        with self.assertRaises(self.acceptance.ObserverOwnershipError) as caught:
             self.acceptance.ObservationView.duplicate(api, 11, 22)
         self.assertIn("observer-job-duplicate-close", str(caught.exception))
         self.assertIn("observer-unresolved", str(caught.exception))
+        self.assertEqual(caught.exception.view.unresolved_handles, ["observer-job-duplicate"])
         self.assertEqual(api.closed, [701])
 
         job = object.__new__(self.acceptance.ObservedJob)
         job.api = Api(close_ok=False); job.handle = 11; job.port = 22
         bad_thread = mock.Mock(); bad_thread.start.side_effect = RuntimeError("start failed")
         with mock.patch.object(self.acceptance.threading, "Thread", return_value=bad_thread):
-            with self.assertRaises(Exception) as caught:
+            with self.assertRaises(self.acceptance.ObserverOwnershipError) as caught:
                 job.start_observation(10, None)
         text = str(caught.exception)
+        self.assertEqual(caught.exception.view.unresolved_handles, ["port", "handle"])
         self.assertIn("start failed", text)
         self.assertIn("observer-port-close", text)
         self.assertIn("observer-handle-close", text)
         self.assertIn("observer-unresolved", text)
         self.assertNotIn(bad_thread, self.acceptance.HELPER_THREADS)
+
+    def test_observer_late_close_failure_after_operation_error_is_retained(self):
+        class Stop:
+            def set(self): pass
+        class View:
+            def __init__(self):
+                self.close_failed = True
+                self.unresolved_handles = ["port"]
+                self.close_errors = ["observer-port-close:5"]
+        view = View()
+        errors = []
+        class Thread:
+            def __init__(self): self.alive = True
+            def is_alive(self): return self.alive
+            def join(self, timeout=None):
+                self.alive = False
+                errors.append("observer-port-close:5")
+        class Observer:
+            def __init__(self): self.values = [(0, 0), (1, 1)]; self.terminated = 0; self.closed = 0
+            def accounting(self): return self.values.pop(0)
+            def assign(self, launch): pass
+            def is_process_in_job(self, launch): return True
+            def start_observation(self, deadline, callback, clock): return Stop(), Thread(), errors, view
+            def terminate_checked(self): self.terminated += 1
+            def close_checked(self): self.closed += 1
+        class Launch:
+            pid = 900
+            def __init__(self): self.closed = 0
+            def resume(self): raise RuntimeError("resume failed")
+            def close_stdin(self): pass
+            def wait(self, timeout): return False
+            def close_process(self): pass
+            def close(self, deadline=None, clock=None): self.closed += 1; return []
+        observer = Observer(); launch = Launch()
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertTrue(result["unresolved_observer"])
+        self.assertEqual(result["unresolved_handles"], ["port"])
+        self.assertEqual(observer.terminated, 1)
+        self.assertEqual(observer.closed, 1)
+        self.assertEqual(launch.closed, 1)
+        self.assertTrue(any("observer-port-close" in e for e in result["cleanup_errors"]))
 
     def test_unresolved_observer_terminates_owned_job(self):
         class BadThread:
