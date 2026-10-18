@@ -1,13 +1,14 @@
 """Bounded Windows read_process backend for the persistence collector.
 
-The Python layer validates the request, constructs one fixed argv, runs the
-checked-in PowerShell script as a hidden child, enforces the caller's monotonic
-deadline, bounds stdout/stderr while reading, reaps the child, and validates one
-complete JSON result. It never enumerates processes or reads a command line
-itself and never launches an editor.
+The Python layer validates the request, runs one fixed one-shot Python worker in
+a fresh kill-on-close Job Object, sends only the validated PID, enforces the
+caller's monotonic deadline, bounds stdout/stderr while reading, terminates and
+accounts for the job, and validates one complete JSON result. It never
+enumerates processes or reads a command line itself and never launches an
+editor.
 
-Tests use an injected runner and clock. The default runner is not exercised by
-offline tests and no live collection is authorized by this module.
+Tests use an injected runner, job, streams and clock. The default runner is not
+exercised by offline tests and no live collection is authorized by this module.
 """
 
 from __future__ import annotations
@@ -189,54 +190,103 @@ def _parse_result(pid, stdout):
     return _failure("unknown")
 
 
+CLEANUP_LIMIT_NS = 5_000_000_000
+
+
+def _default_job():
+    from execution_runtime import WindowsJob
+    return WindowsJob()
+
+
 class _PopenRunner:
-    """Default bounded subprocess runner. Not executed by offline tests."""
+    """Bounded worker orchestration; no native operation on import."""
 
-    @staticmethod
-    def _cleanup(proc, threads):
+    def __init__(self, job_factory=None, worker_script=None, sleeper=None):
+        self.job_factory = job_factory or _default_job
+        self.worker_script = Path(worker_script) if worker_script else Path(__file__).with_name("execution_runtime.py")
+        self.sleeper = sleeper or time.sleep
+
+    def _cleanup(self, job, proc, threads, request, clock, contained):
         failed = False
-        if proc is None:
-            return True
         try:
-            if proc.poll() is None:
-                try:
-                    proc.kill()
-                except Exception:
-                    failed = True
-        except Exception:
-            failed = True
-        try:
-            proc.wait(timeout=5)
-        except Exception:
+            started = clock()
+            cleanup_deadline = started + CLEANUP_LIMIT_NS
+        except _ClockError:
+            cleanup_deadline = None
             failed = True
 
-        alive = []
-        for thread in threads:
-            if thread is None:
-                continue
+        if job is not None:
             try:
-                thread.join(timeout=1.0)
-                if thread.is_alive():
-                    alive.append(thread)
+                job.terminate_checked()
             except Exception:
                 failed = True
-        if alive:
-            failed = True
+            if cleanup_deadline is not None:
+                while True:
+                    try:
+                        active = job.active_processes()
+                    except Exception:
+                        failed = True
+                        break
+                    if active == 0:
+                        break
+                    try:
+                        now = clock()
+                    except _ClockError:
+                        failed = True
+                        break
+                    if now >= cleanup_deadline:
+                        failed = True
+                        break
+                    try:
+                        self.sleeper(min(0.05, (cleanup_deadline - now) / 1_000_000_000))
+                    except Exception:
+                        failed = True
+                        break
+            try:
+                job.close_checked()
+            except Exception:
+                failed = True
+
+        if request is not None:
+            try:
+                request.close()
+            except Exception:
+                failed = True
+        if proc is not None:
+            if not contained:
+                try:
+                    if proc.poll() is None:
+                        proc.kill()
+                except Exception:
+                    failed = True
             for stream in (proc.stdout, proc.stderr):
+                if stream is None:
+                    continue
                 try:
                     stream.close()
                 except Exception:
                     failed = True
-            for thread in alive:
-                try:
-                    thread.join(timeout=1.0)
-                    if thread.is_alive():
-                        failed = True
-                except Exception:
-                    failed = True
-        for stream in (proc.stdout, proc.stderr):
             try:
-                stream.close()
+                if cleanup_deadline is None:
+                    proc.wait(timeout=0)
+                else:
+                    now = clock()
+                    remaining = max(0, cleanup_deadline - now) / 1_000_000_000
+                    proc.wait(timeout=remaining)
+            except Exception:
+                failed = True
+        for thread in threads:
+            if thread is None:
+                continue
+            try:
+                if cleanup_deadline is None:
+                    thread.join(timeout=0)
+                else:
+                    now = clock()
+                    remaining = max(0, cleanup_deadline - now) / 1_000_000_000
+                    thread.join(timeout=remaining)
+                if thread.is_alive():
+                    failed = True
             except Exception:
                 failed = True
         return failed
@@ -247,15 +297,25 @@ class _PopenRunner:
         if not isinstance(clock, _ClockTracker):
             clock = _ClockTracker(clock)
         try:
+            pid = int(argv[-1])
+        except (TypeError, ValueError, IndexError):
+            return _runner_failure("unknown")
+        if not _valid_pid(pid):
+            return _runner_failure("unknown")
+        try:
             now = clock()
         except _ClockError:
             return _runner_failure("unknown")
         if now >= deadline_ns:
             return _runner_failure("timeout")
-        startup = subprocess.STARTUPINFO()
-        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startup.wShowWindow = subprocess.SW_HIDE
-        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+        try:
+            job = self.job_factory()
+        except Exception:
+            return _runner_failure("unknown")
+        if job is None:
+            return _runner_failure("unknown")
+
         out = bytearray()
         err = bytearray()
         out_thread = None
@@ -265,6 +325,14 @@ class _PopenRunner:
         thread_failure = threading.Event()
         error = None
         cleanup_failed = False
+        proc = None
+        request = None
+        contained = False
+        startup = subprocess.STARTUPINFO()
+        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startup.wShowWindow = subprocess.SW_HIDE
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        worker_argv = [sys.executable, str(self.worker_script), "--persistence-worker"]
 
         def drain(stream, target):
             try:
@@ -285,15 +353,9 @@ class _PopenRunner:
                     pass
 
         try:
-            now = clock()
-        except _ClockError:
-            return _runner_failure("unknown")
-        if now >= deadline_ns:
-            return _runner_failure("timeout")
-        try:
             proc = subprocess.Popen(
-                argv,
-                stdin=subprocess.DEVNULL,
+                worker_argv,
+                stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 shell=False,
@@ -301,37 +363,64 @@ class _PopenRunner:
                 startupinfo=startup,
                 creationflags=flags,
             )
-        except OSError as exc:
-            return _runner_failure("permission" if getattr(exc, "winerror", None) == 5 else "unknown")
-
-        try:
-            out_thread = threading.Thread(target=drain, args=(proc.stdout, out), daemon=True)
-            err_thread = threading.Thread(target=drain, args=(proc.stderr, err), daemon=True)
-            out_thread.start()
-            err_thread.start()
-            while proc.poll() is None:
-                if overflow.is_set() or thread_failure.is_set():
-                    break
+            request = proc.stdin
+            job.assign(proc)
+            if not job.is_process_in_job(proc):
+                raise RuntimeError("worker is not assigned to the job")
+            contained = True
+            try:
                 now = clock()
+            except _ClockError:
+                error = "unknown"
+            else:
                 if now >= deadline_ns:
                     timed_out = True
-                    break
-                remaining = max(0.001, min(0.05, (deadline_ns - now) / 1_000_000_000))
-                try:
-                    proc.wait(timeout=remaining)
-                except subprocess.TimeoutExpired:
-                    continue
-        except Exception:
+                else:
+                    payload = json.dumps(
+                        {"schema": 1, "pid": pid}, separators=(",", ":")
+                    ).encode("utf-8")
+                    try:
+                        request.write(payload)
+                        request.close()
+                    except Exception:
+                        error = "unknown"
+                    else:
+                        request = None
+                        out_thread = threading.Thread(target=drain, args=(proc.stdout, out), daemon=True)
+                        err_thread = threading.Thread(target=drain, args=(proc.stderr, err), daemon=True)
+                        out_thread.start()
+                        err_thread.start()
+                        while proc.poll() is None:
+                            if overflow.is_set() or thread_failure.is_set():
+                                break
+                            try:
+                                now = clock()
+                            except _ClockError:
+                                error = "unknown"
+                                break
+                            if now >= deadline_ns:
+                                timed_out = True
+                                break
+                            remaining = max(0.001, min(0.05, (deadline_ns - now) / 1_000_000_000))
+                            try:
+                                proc.wait(timeout=remaining)
+                            except subprocess.TimeoutExpired:
+                                continue
+        except OSError as exc:
+            error = "permission" if getattr(exc, "winerror", None) == 5 else "unknown"
+        except (RuntimeError, ValueError, TypeError):
             error = "unknown"
         finally:
-            cleanup_failed = self._cleanup(proc, [out_thread, err_thread])
+            cleanup_failed = self._cleanup(
+                job, proc, [out_thread, err_thread], request, clock, contained
+            )
 
         if error is not None:
             result = _runner_failure(error)
             result["cleanup_failed"] = cleanup_failed
             return result
         return {
-            "returncode": proc.returncode,
+            "returncode": proc.returncode if proc is not None else None,
             "stdout": bytes(out),
             "stderr": bytes(err),
             "timed_out": timed_out,

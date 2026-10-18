@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import json
 import os
+import ctypes
 import unittest
 from pathlib import Path
 from unittest import mock
 
+import execution_runtime as runtime
 import persistence_process_reader as reader
 
 
@@ -309,16 +311,182 @@ class ProcessReaderTests(unittest.TestCase):
     def test_python_runner_is_bounded_and_child_only(self):
         text = MODULE.read_text(encoding="utf-8")
         self.assertIn("MAX_CAPTURE = 64 * 1024", text)
+        self.assertIn("CLEANUP_LIMIT_NS = 5_000_000_000", text)
         self.assertIn("CREATE_NO_WINDOW", text)
         self.assertIn("STARTF_USESHOWWINDOW", text)
         self.assertIn("shell=False", text)
-        self.assertIn("proc.kill()", text)
+        self.assertIn("terminate_checked", text)
+        self.assertIn("active_processes", text)
+        self.assertIn("close_checked", text)
+        self.assertIn("--persistence-worker", text)
+        self.assertIn("job_factory", text)
         self.assertIn("proc.wait", text)
         self.assertIn("_powershell_path", text)
         self.assertIn("SystemRoot", text)
+        self.assertIn("proc.kill()", text)
         self.assertNotIn("taskkill", text)
         self.assertNotIn("shell=True", text)
         self.assertNotIn("process tree", text)
+
+
+class WorkerProtocolTests(unittest.TestCase):
+    def valid(self, **changes):
+        value = {"schema": 1, "pid": PID}
+        value.update(changes)
+        return json.dumps(value).encode("utf-8")
+
+    def test_complete_request_and_fixed_command(self):
+        self.assertEqual(runtime.parse_persistence_request(self.valid()), PID)
+        command = runtime.persistence_command(PID)
+        self.assertEqual(command[-2:], ["-ProcessId", str(PID)])
+        self.assertTrue(command[4].endswith("read-persistence-process.ps1"))
+        self.assertTrue(command[0].endswith("powershell.exe"))
+
+    def test_empty_oversized_trailing_and_second_request_refused(self):
+        for raw in (
+            b"",
+            b" " * 513,
+            self.valid() + b" ",
+            self.valid() + b"\n",
+            self.valid() + self.valid(),
+            b'{"schema":1,"pid":1} {"schema":1,"pid":2}',
+        ):
+            with self.subTest(raw=raw[:40]):
+                with self.assertRaises(ValueError):
+                    runtime.parse_persistence_request(raw)
+
+    def test_duplicate_nonfinite_and_malformed_fields_refused(self):
+        cases = (
+            b'{"schema":1,"pid":1,"pid":2}',
+            b'{"schema":1,"pid":NaN}',
+            b'{"schema":1,"pid":Infinity}',
+            b'{"schema":1.0,"pid":1}',
+            b'{"schema":true,"pid":1}',
+            b'{"schema":1,"pid":true}',
+            b'{"schema":1,"pid":0}',
+            b'{"schema":1,"pid":4294967296}',
+            b'{"schema":1,"pid":"1"}',
+            b'{"schema":1}',
+            b'{"schema":1,"pid":1,"x":2}',
+            b"not json",
+        )
+        for raw in cases:
+            with self.subTest(raw=raw):
+                with self.assertRaises(ValueError):
+                    runtime.parse_persistence_request(raw)
+
+    def test_worker_refuses_before_launcher(self):
+        for raw in (b"", b"{}", b"{"):
+            launched = []
+            code = runtime.persistence_worker(stream=mock.Mock(read=lambda n, raw=raw: raw),
+                                               launcher=lambda *a, **k: launched.append((a, k)) or 0)
+            self.assertEqual(code, 2)
+            self.assertEqual(launched, [])
+
+    def test_worker_refuses_trailing_byte_before_launcher(self):
+        launched = []
+        stream = mock.Mock()
+        stream.read.side_effect = [self.valid(), b"x"]
+        code = runtime.persistence_worker(
+            stream=stream,
+            launcher=lambda *a, **k: launched.append((a, k)) or 0,
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(launched, [])
+
+    def test_worker_launches_fixed_command_after_complete_request(self):
+        launched = []
+        stream = mock.Mock()
+        stream.read.side_effect = [self.valid(), b""]
+        code = runtime.persistence_worker(
+            stream=stream,
+            launcher=lambda command, **kwargs: launched.append((command, kwargs)) or 0,
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(launched[0][0][-2:], ["-ProcessId", str(PID)])
+        self.assertEqual(launched[0][1]["stdin"], reader.subprocess.DEVNULL)
+        self.assertIn("creationflags", launched[0][1])
+
+
+class LegacyJobTests(unittest.TestCase):
+    class Api:
+        def __init__(self):
+            self.closed = 0
+            self.terminated = 0
+            self.close_result = 1
+            self.terminate_result = 1
+            self.query_result = 1
+            self.active = 3
+
+        def CreateJobObjectW(self, *args):
+            return 1
+
+        def SetInformationJobObject(self, *args):
+            return 1
+
+        def AssignProcessToJobObject(self, *args):
+            return 1
+
+        def IsProcessInJob(self, process, job, out):
+            import ctypes
+            ctypes.cast(out, ctypes.POINTER(runtime.W.BOOL)).contents.value = 1
+            return 1
+
+        def TerminateJobObject(self, *args):
+            self.terminated += 1
+            return self.terminate_result
+
+        def QueryInformationJobObject(self, job, cls, info, size, used):
+            import ctypes
+            ctypes.cast(info, ctypes.POINTER(runtime.BASIC_ACCOUNTING)).contents.ActiveProcesses = self.active
+            return self.query_result
+
+        def CloseHandle(self, *args):
+            self.closed += 1
+            return self.close_result
+
+    def test_checked_job_methods_and_legacy_close(self):
+        self.assertEqual(ctypes.sizeof(runtime.BASIC_ACCOUNTING), 48)
+        api = self.Api()
+        job = runtime.WindowsJob(api=api)
+        self.assertTrue(job.is_process_in_job(FakeProcess()))
+        self.assertEqual(job.active_processes(), 3)
+        job.terminate_checked()
+        self.assertEqual(api.terminated, 1)
+        job.close_checked()
+        self.assertIsNone(job.handle)
+
+        job = runtime.WindowsJob(api=self.Api())
+        job.close()
+        self.assertIsNone(job.handle)
+
+    def test_checked_failures_leave_or_report_handle_state(self):
+        api = self.Api()
+        api.close_result = 0
+        job = runtime.WindowsJob(api=api)
+        with self.assertRaises(Exception):
+            job.close_checked()
+        self.assertEqual(job.handle, 1)
+        api.terminate_result = 0
+        with self.assertRaises(Exception):
+            job.terminate_checked()
+        api.query_result = 0
+        with self.assertRaises(Exception):
+            job.active_processes()
+
+    def test_generic_worker_and_run_owned_remain_present(self):
+        text = Path(runtime.__file__).read_text(encoding="utf-8")
+        self.assertIn("sys.argv[1:] == ['--worker']", text)
+        self.assertIn("sys.argv[1:] == ['--persistence-worker']", text)
+        self.assertIn("subprocess.call(command)", text)
+        self.assertIn("def run_owned", text)
+        self.assertIn("QueryInformationJobObject", text)
+        self.assertIn("IsProcessInJob", text)
+        self.assertIn("BASIC_ACCOUNTING", text)
+        self.assertIn("terminate_checked", text)
+        self.assertIn("active_processes", text)
+        self.assertIn("close_checked", text)
+        self.assertIn("0x2000", text)
 
 
 class FakeStream:
@@ -341,13 +509,81 @@ class FakeStream:
         self.closed = True
 
 
+class FakeStdin:
+    def __init__(self, write_raises=False, close_raises=False, events=None):
+        self.written = []
+        self.closed = False
+        self.write_raises = write_raises
+        self.close_raises = close_raises
+        self.events = events if events is not None else []
+
+    def write(self, data):
+        self.events.append(("request-write",))
+        if self.write_raises:
+            raise RuntimeError("write failed")
+        self.written.append(bytes(data))
+
+    def close(self):
+        self.events.append(("request-close",))
+        if self.close_raises:
+            raise RuntimeError("close failed")
+        self.closed = True
+
+
+class FakeJob:
+    def __init__(self, active=(0,), assign_raises=False, member=True,
+                 terminate_raises=False, active_raises=False,
+                 close_raises=False):
+        self.active = list(active)
+        self.assign_raises = assign_raises
+        self.member = member
+        self.terminate_raises = terminate_raises
+        self.active_raises = active_raises
+        self.close_raises = close_raises
+        self.assigned = []
+        self.terminated = 0
+        self.closed = 0
+        self.events = []
+
+    def assign(self, proc):
+        self.events.append(("assign", proc))
+        if self.assign_raises:
+            raise RuntimeError("assign failed")
+        self.assigned.append(proc)
+
+    def is_process_in_job(self, proc):
+        self.events.append(("member", proc))
+        return self.member
+
+    def terminate_checked(self):
+        self.events.append(("terminate",))
+        self.terminated += 1
+        if self.terminate_raises:
+            raise RuntimeError("terminate failed")
+
+    def active_processes(self):
+        self.events.append(("active",))
+        if self.active_raises:
+            raise RuntimeError("query failed")
+        if len(self.active) > 1:
+            return self.active.pop(0)
+        return self.active[0] if self.active else 0
+
+    def close_checked(self):
+        self.events.append(("close",))
+        self.closed += 1
+        if self.close_raises:
+            raise RuntimeError("close failed")
+
+
 class FakeProcess:
     def __init__(self, returncode=0, stdout=None, stderr=None, poll_raises=False,
                  timeout_once=False, wait_fail=False, kill_fail=False,
-                 close_fail=False):
+                 close_fail=False, stdin=None):
         self.returncode = returncode
         self.stdout = stdout if stdout is not None else FakeStream()
         self.stderr = stderr if stderr is not None else FakeStream()
+        self.stdin = stdin if stdin is not None else FakeStdin()
         self.poll_raises = poll_raises
         self.timeout_once = timeout_once
         self.wait_fail = wait_fail
@@ -356,6 +592,7 @@ class FakeProcess:
         self.killed = 0
         self.waits = []
         self.polls = 0
+        self._handle = 1
 
     def poll(self):
         self.polls += 1
@@ -398,7 +635,7 @@ class FakeThread:
 
     def join(self, timeout=None):
         if not self.started:
-            return
+            raise RuntimeError("cannot join thread before it is started")
         self.joined = True
 
     def is_alive(self):
@@ -418,9 +655,11 @@ class ThreadFactory:
 
 
 class PopenRunnerTests(unittest.TestCase):
-    def run_with(self, proc, threads, clock=None):
-        clock = clock if clock is not None else Clock([0, 10, 20, 30])
+    def run_with(self, proc, threads, clock=None, job=None):
+        clock = clock if clock is not None else Clock([0, 10, 20, 30, 40, 50])
         calls = []
+        sleeps = []
+        job = job if job is not None else FakeJob()
 
         def fake_popen(argv, **kwargs):
             calls.append({"argv": list(argv), "kwargs": dict(kwargs)})
@@ -428,109 +667,264 @@ class PopenRunnerTests(unittest.TestCase):
 
         with mock.patch("persistence_process_reader.subprocess.Popen", side_effect=fake_popen), \
              mock.patch("persistence_process_reader.threading.Thread", side_effect=threads):
-            result = reader._PopenRunner().run(["fixed"], 1000, clock)
-        return result, calls
+            result = reader._PopenRunner(
+                job_factory=lambda: job,
+                worker_script="worker.py",
+                sleeper=lambda seconds: sleeps.append(seconds),
+            ).run(["fixed", str(PID)], 1000, clock)
+        return result, calls, job, sleeps
 
-    def test_runner_starts_both_drains_and_closes_pipes(self):
-        proc = FakeProcess(returncode=0, stdout=FakeStream([b'{"schema":1,"ok":false,"error":"not_found"}']))
-        threads = ThreadFactory(["run", "run"])
-        result, calls = self.run_with(proc, threads)
+    def test_assignment_before_request_and_fixed_worker(self):
+        job = FakeJob()
+        proc = FakeProcess(returncode=0, stdin=FakeStdin(events=job.events))
+        result, calls, job, _ = self.run_with(proc, ThreadFactory(["run", "run"]), job=job)
         self.assertEqual(result["returncode"], 0)
-        self.assertFalse(result["cleanup_failed"])
+        self.assertFalse(result["cleanup_failed"], result)
         self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["argv"], [reader.sys.executable, "worker.py", "--persistence-worker"])
         self.assertFalse(calls[0]["kwargs"]["shell"])
+        self.assertEqual(proc.stdin.written, [b'{"schema":1,"pid":1234}'])
+        self.assertTrue(proc.stdin.closed)
+        self.assertEqual(job.assigned, [proc])
+        kinds = [event[0] for event in job.events]
+        self.assertLess(kinds.index("assign"), kinds.index("request-write"))
+        self.assertLess(kinds.index("member"), kinds.index("request-write"))
+        self.assertGreaterEqual(job.terminated, 1)
+        self.assertEqual(job.closed, 1)
         self.assertTrue(proc.stdout.closed)
         self.assertTrue(proc.stderr.closed)
 
-    def test_first_and_second_thread_start_failures_still_clean_child(self):
-        for behaviors in (["raise", "run"], ["run", "raise"]):
-            proc = FakeProcess(returncode=None)
-            result, _ = self.run_with(proc, ThreadFactory(behaviors))
-            with self.subTest(behaviors=behaviors):
-                self.assertGreaterEqual(proc.killed, 1)
-                self.assertTrue(proc.waits)
-                self.assertTrue(proc.stdout.closed)
-                self.assertTrue(proc.stderr.closed)
-                self.assertFalse(result["cleanup_failed"])
-                self.assertEqual(result["error"], "unknown")
-
-    def test_clock_and_read_exceptions_clean_child(self):
-        proc = FakeProcess(returncode=None, stdout=FakeStream(read_raises=True))
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]))
-        self.assertGreaterEqual(proc.killed, 1)
-        self.assertTrue(result["overflow"])
-        self.assertTrue(proc.stdout.closed)
-
-    def test_setup_deadline_does_not_spawn(self):
-        proc = FakeProcess(returncode=0)
-        result, calls = self.run_with(
-            proc, ThreadFactory(["run", "run"]), Clock([0, 1000])
-        )
-        self.assertEqual(result["error"], "timeout")
-        self.assertEqual(calls, [])
-
-    def test_clock_exception_or_rollback_after_spawn_cleans_child(self):
-        for values in ([0, 10, RuntimeError("clock failed")], [0, 10, 5]):
-            proc = FakeProcess(returncode=None)
-            result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), Clock(values))
-            with self.subTest(values=values):
-                self.assertEqual(result["error"], "unknown")
-                self.assertGreaterEqual(proc.killed, 1)
-                self.assertTrue(proc.stdout.closed)
-
-    def test_clock_exception_before_spawn_has_no_child(self):
-        proc = FakeProcess(returncode=0)
-        result, calls = self.run_with(
-            proc, ThreadFactory(["run", "run"]), Clock([RuntimeError("clock failed")])
-        )
+    def test_failed_assignment_refuses_without_request(self):
+        job = FakeJob(assign_raises=True)
+        proc = FakeProcess(returncode=None, stdin=FakeStdin(events=job.events))
+        result, calls, job, _ = self.run_with(proc, ThreadFactory(["run", "run"]), job=job)
         self.assertEqual(result["error"], "unknown")
-        self.assertEqual(calls, [])
-
-    def test_timeout_kills_and_reaps_only_child(self):
-        proc = FakeProcess(returncode=None, timeout_once=True)
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), Clock([0, 10, 1000]))
-        self.assertTrue(result["timed_out"])
+        self.assertEqual(proc.stdin.written, [])
+        self.assertEqual(len(calls), 1)
         self.assertGreaterEqual(proc.killed, 1)
-        self.assertGreaterEqual(len(proc.waits), 1)
+        self.assertGreaterEqual(job.terminated, 1)
+        self.assertEqual(job.closed, 1)
         self.assertTrue(proc.stdout.closed)
 
-    def test_overflow_cleans_child(self):
+    def test_membership_failure_refuses_without_request(self):
+        job = FakeJob(member=False)
+        proc = FakeProcess(returncode=None, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(proc, ThreadFactory(["run", "run"]), job=job)
+        self.assertEqual(result["error"], "unknown")
+        self.assertEqual(proc.stdin.written, [])
+        self.assertGreaterEqual(proc.killed, 1)
+        self.assertGreaterEqual(job.terminated, 1)
+        self.assertEqual(job.closed, 1)
+
+    def test_job_constructor_failure_does_not_spawn(self):
+        proc = FakeProcess(returncode=0)
+
+        def fail_job():
+            raise RuntimeError("job failed")
+
+        with mock.patch("persistence_process_reader.subprocess.Popen") as popen:
+            result = reader._PopenRunner(
+                job_factory=fail_job, worker_script="worker.py", sleeper=lambda _: None
+            ).run(["fixed", str(PID)], 1000, Clock([0]))
+        self.assertEqual(result["error"], "unknown")
+        self.assertFalse(popen.called)
+
+    def test_expired_before_spawn_does_not_create_job(self):
+        jobs = []
+        with mock.patch("persistence_process_reader.subprocess.Popen") as popen:
+            result = reader._PopenRunner(
+                job_factory=lambda: jobs.append(FakeJob()) or jobs[-1],
+                worker_script="worker.py",
+                sleeper=lambda _: None,
+            ).run(["fixed", str(PID)], 1000, Clock([1000]))
+        self.assertEqual(result["error"], "timeout")
+        self.assertEqual(jobs, [])
+        self.assertFalse(popen.called)
+
+    def test_thread_constructor_failure_reports_cleanup(self):
+        job = FakeJob()
+        proc = FakeProcess(returncode=None, stdin=FakeStdin(events=job.events))
+        clock = Clock([0, 10, 20, 30, 40])
+        with mock.patch("persistence_process_reader.subprocess.Popen", return_value=proc), \
+             mock.patch("persistence_process_reader.threading.Thread", side_effect=RuntimeError("ctor failed")):
+            result = reader._PopenRunner(
+                job_factory=lambda: job, worker_script="worker.py", sleeper=lambda _: None
+            ).run(["fixed", str(PID)], 1000, clock)
+        self.assertEqual(result["error"], "unknown")
+        self.assertFalse(result["cleanup_failed"])
+        self.assertEqual(job.closed, 1)
+        self.assertTrue(proc.stdout.closed)
+
+    def test_drain_exception_and_clock_rollback_cleanup(self):
+        job = FakeJob()
         proc = FakeProcess(
             returncode=None,
-            stdout=FakeStream([b"x" * (reader.MAX_CAPTURE + 1)]),
+            stdin=FakeStdin(events=job.events),
+            stdout=FakeStream(read_raises=True),
         )
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]))
+        result, _, job, _ = self.run_with(
+            proc, ThreadFactory(["run", "run"]), Clock([0, 10, 20, 30, 40, 50, 60]), job
+        )
         self.assertTrue(result["overflow"])
-        self.assertGreaterEqual(proc.killed, 1)
+        self.assertEqual(job.closed, 1)
         self.assertTrue(proc.stdout.closed)
 
-    def test_early_exit_is_reaped_without_kill(self):
-        proc = FakeProcess(returncode=0)
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]))
-        self.assertEqual(result["returncode"], 0)
-        self.assertEqual(proc.killed, 0)
-        self.assertTrue(proc.waits)
+        job = FakeJob()
+        proc = FakeProcess(returncode=None, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(
+            proc, ThreadFactory(["run", "run"]), Clock([0, 10, 5, 20, 30, 40, 50]), job
+        )
+        self.assertEqual(result["error"], "unknown")
+        self.assertEqual(job.closed, 1)
 
-    def test_wait_and_kill_failures_are_reported(self):
-        proc = FakeProcess(returncode=0, wait_fail=True)
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]))
+    def test_expired_after_assignment_does_not_authorize(self):
+        job = FakeJob()
+        proc = FakeProcess(returncode=None, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(
+            proc, ThreadFactory(["run", "run"]), Clock([0, 1000, 1010, 1020, 1030, 1040]), job
+        )
+        self.assertTrue(result["timed_out"])
+        self.assertEqual(proc.stdin.written, [])
+        self.assertGreaterEqual(job.terminated, 1)
+        self.assertEqual(job.closed, 1)
+
+    def test_thread_start_failures_report_cleanup_failure(self):
+        for behaviors in (["raise", "run"], ["run", "raise"]):
+            job = FakeJob()
+            proc = FakeProcess(returncode=None, stdin=FakeStdin(events=job.events))
+            result, _, job, _ = self.run_with(proc, ThreadFactory(behaviors), job=job)
+            with self.subTest(behaviors=behaviors):
+                self.assertEqual(result["error"], "unknown")
+                self.assertTrue(result["cleanup_failed"])
+                self.assertEqual(proc.stdin.written, [b'{"schema":1,"pid":1234}'])
+                self.assertGreaterEqual(job.terminated, 1)
+                self.assertEqual(job.closed, 1)
+                self.assertTrue(proc.stdout.closed)
+
+    def test_stuck_drains_report_cleanup_failure(self):
+        job = FakeJob()
+        proc = FakeProcess(returncode=0, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(proc, ThreadFactory(["stuck", "stuck"]), job=job)
         self.assertTrue(result["cleanup_failed"])
+        self.assertEqual(job.closed, 1)
+        self.assertTrue(proc.stdout.closed)
+        self.assertTrue(proc.stderr.closed)
+
+    def test_timeout_uses_job_and_shared_cleanup(self):
+        job = FakeJob(active=[1, 1, 0])
+        proc = FakeProcess(returncode=None, timeout_once=True, stdin=FakeStdin(events=job.events))
+        result, _, job, sleeps = self.run_with(
+            proc,
+            ThreadFactory(["run", "run"]),
+            Clock([0, 10, 20, 1000, 1010, 1020, 1030, 1040, 1050, 1060]),
+            job,
+        )
+        self.assertTrue(result["timed_out"])
+        self.assertFalse(result["cleanup_failed"], result)
+        self.assertGreaterEqual(job.terminated, 1)
+        self.assertEqual(job.closed, 1)
+        self.assertTrue(sleeps)
+        self.assertTrue(all(0 <= value <= 0.05 for value in sleeps))
         self.assertTrue(proc.stdout.closed)
 
-        proc = FakeProcess(returncode=None, timeout_once=True, kill_fail=True)
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), Clock([0, 10, 1000]))
+    def test_active_count_deadline_and_query_failure_refuse(self):
+        job = FakeJob(active=[1], terminate_raises=False)
+        proc = FakeProcess(returncode=None, timeout_once=True, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(
+            proc,
+            ThreadFactory(["run", "run"]),
+            Clock([0, 10, 20, 1000, 1010, 6_000_000_000, 6_000_000_000, 6_000_000_000, 6_000_000_000]),
+            job,
+        )
         self.assertTrue(result["timed_out"])
         self.assertTrue(result["cleanup_failed"])
-        self.assertTrue(proc.stdout.closed)
+        self.assertEqual(job.closed, 1)
 
-    def test_stuck_drains_and_close_failures_are_reported(self):
+        job = FakeJob(active_raises=True)
+        proc = FakeProcess(returncode=None, timeout_once=True, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(
+            proc,
+            ThreadFactory(["run", "run"]),
+            Clock([0, 10, 20, 1000, 1010, 1020, 1030, 1040]),
+            job,
+        )
+        self.assertTrue(result["cleanup_failed"])
+        self.assertEqual(job.closed, 1)
+
+    def test_terminate_and_close_failures_refuse(self):
+        job = FakeJob(terminate_raises=True, close_raises=True)
+        proc = FakeProcess(returncode=None, timeout_once=True, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(
+            proc,
+            ThreadFactory(["run", "run"]),
+            Clock([0, 10, 20, 1000, 1010, 1020, 1030, 1040, 1050]),
+            job,
+        )
+        self.assertTrue(result["cleanup_failed"])
+        self.assertGreaterEqual(job.terminated, 1)
+        self.assertEqual(job.closed, 1)
+
+    def test_worker_failure_and_overflow_cleanup(self):
+        job = FakeJob()
+        proc = FakeProcess(returncode=2, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(proc, ThreadFactory(["run", "run"]), job=job)
+        self.assertEqual(result["returncode"], 2)
+        self.assertFalse(result["cleanup_failed"])
+        self.assertEqual(job.closed, 1)
+
+        job = FakeJob()
         proc = FakeProcess(
             returncode=0,
-            stdout=FakeStream(close_raises=True),
+            stdin=FakeStdin(events=job.events),
+            stdout=FakeStream([b"x" * (reader.MAX_CAPTURE + 1)]),
         )
-        result, _ = self.run_with(proc, ThreadFactory(["stuck", "stuck"]))
+        result, _, job, _ = self.run_with(proc, ThreadFactory(["run", "run"]), job=job)
+        self.assertTrue(result["overflow"])
+        self.assertEqual(job.closed, 1)
+        self.assertTrue(proc.stdout.closed)
+
+    def test_wait_failure_and_kill_failure_refuse(self):
+        job = FakeJob()
+        proc = FakeProcess(returncode=0, wait_fail=True, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(proc, ThreadFactory(["run", "run"]), job=job)
         self.assertTrue(result["cleanup_failed"])
-        self.assertTrue(proc.stdout.closed is False)
+        self.assertEqual(job.closed, 1)
+
+        job = FakeJob(assign_raises=True)
+        proc = FakeProcess(returncode=None, kill_fail=True, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(proc, ThreadFactory(["run", "run"]), job=job)
+        self.assertTrue(result["cleanup_failed"])
+        self.assertEqual(job.closed, 1)
+
+    def test_clock_error_before_and_after_assignment_cleans(self):
+        with mock.patch("persistence_process_reader.subprocess.Popen") as popen:
+            result = reader._PopenRunner(
+                job_factory=FakeJob, worker_script="worker.py", sleeper=lambda _: None
+            ).run(["fixed", str(PID)], 1000, Clock([RuntimeError("clock failed")]))
+        self.assertEqual(result["error"], "unknown")
+        self.assertFalse(popen.called)
+
+        job = FakeJob()
+        proc = FakeProcess(returncode=None, stdin=FakeStdin(events=job.events))
+        result, _, job, _ = self.run_with(
+            proc,
+            ThreadFactory(["run", "run"]),
+            Clock([0, RuntimeError("clock failed"), 20, 30, 40, 50]),
+            job,
+        )
+        self.assertEqual(result["error"], "unknown")
+        self.assertEqual(job.closed, 1)
+        self.assertTrue(proc.stdout.closed)
+
+    def test_request_write_failure_still_closes_job_and_pipes(self):
+        job = FakeJob()
+        proc = FakeProcess(returncode=None, stdin=FakeStdin(write_raises=True, events=job.events))
+        result, _, job, _ = self.run_with(proc, ThreadFactory(["run", "run"]), job=job)
+        self.assertEqual(result["error"], "unknown")
+        self.assertGreaterEqual(job.terminated, 1)
+        self.assertEqual(job.closed, 1)
+        self.assertTrue(proc.stdout.closed)
+        self.assertTrue(proc.stderr.closed)
 
 
 if __name__ == "__main__":

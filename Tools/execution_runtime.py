@@ -67,29 +67,172 @@ class EXTENDED(ctypes.Structure):
                 ('JobMemoryLimit', ctypes.c_size_t), ('PeakProcessMemoryUsed', ctypes.c_size_t), ('PeakJobMemoryUsed', ctypes.c_size_t)]
 
 
+class BASIC_ACCOUNTING(ctypes.Structure):
+    _fields_ = [
+        ('TotalUserTime', ctypes.c_longlong),
+        ('TotalKernelTime', ctypes.c_longlong),
+        ('ThisPeriodTotalUserTime', ctypes.c_longlong),
+        ('ThisPeriodTotalKernelTime', ctypes.c_longlong),
+        ('TotalPageFaultCount', W.DWORD),
+        ('TotalProcesses', W.DWORD),
+        ('ActiveProcesses', W.DWORD),
+        ('TotalTerminatedProcesses', W.DWORD),
+    ]
+
+
 class WindowsJob:
-    def __init__(self):
-        self.api = ctypes.WinDLL('kernel32', use_last_error=True)
-        self.api.CreateJobObjectW.argtypes = [ctypes.c_void_p, W.LPCWSTR]
-        self.api.CreateJobObjectW.restype = W.HANDLE
-        self.api.SetInformationJobObject.argtypes = [W.HANDLE, ctypes.c_int, ctypes.c_void_p, W.DWORD]
-        self.api.AssignProcessToJobObject.argtypes = [W.HANDLE, W.HANDLE]
-        self.api.TerminateJobObject.argtypes = [W.HANDLE, W.UINT]
-        self.api.CloseHandle.argtypes = [W.HANDLE]
-        self.handle = self.api.CreateJobObjectW(None, None)
-        if not self.handle: raise ctypes.WinError(ctypes.get_last_error())
-        info = EXTENDED(); info.BasicLimitInformation.LimitFlags = 0x2000  # KILL_ON_JOB_CLOSE
-        if not self.api.SetInformationJobObject(self.handle, 9, ctypes.byref(info), ctypes.sizeof(info)):
-            self.close(); raise ctypes.WinError(ctypes.get_last_error())
+    def __init__(self, api=None, handle=None):
+        self.api = api or ctypes.WinDLL('kernel32', use_last_error=True)
+        if api is None:
+            self.api.CreateJobObjectW.argtypes = [ctypes.c_void_p, W.LPCWSTR]
+            self.api.CreateJobObjectW.restype = W.HANDLE
+            self.api.SetInformationJobObject.argtypes = [W.HANDLE, ctypes.c_int, ctypes.c_void_p, W.DWORD]
+            self.api.SetInformationJobObject.restype = W.BOOL
+            self.api.AssignProcessToJobObject.argtypes = [W.HANDLE, W.HANDLE]
+            self.api.AssignProcessToJobObject.restype = W.BOOL
+            self.api.TerminateJobObject.argtypes = [W.HANDLE, W.UINT]
+            self.api.TerminateJobObject.restype = W.BOOL
+            self.api.QueryInformationJobObject.argtypes = [W.HANDLE, ctypes.c_int, ctypes.c_void_p, W.DWORD, ctypes.POINTER(W.DWORD)]
+            self.api.QueryInformationJobObject.restype = W.BOOL
+            self.api.IsProcessInJob.argtypes = [W.HANDLE, W.HANDLE, ctypes.POINTER(W.BOOL)]
+            self.api.IsProcessInJob.restype = W.BOOL
+            self.api.CloseHandle.argtypes = [W.HANDLE]
+            self.api.CloseHandle.restype = W.BOOL
+        self.handle = handle
+        if self.handle is None:
+            self.handle = self.api.CreateJobObjectW(None, None)
+            if not self.handle: raise ctypes.WinError(ctypes.get_last_error())
+            info = EXTENDED(); info.BasicLimitInformation.LimitFlags = 0x2000  # KILL_ON_JOB_CLOSE
+            if not self.api.SetInformationJobObject(self.handle, 9, ctypes.byref(info), ctypes.sizeof(info)):
+                self.close(); raise ctypes.WinError(ctypes.get_last_error())
 
     def assign(self, process):
         if not self.api.AssignProcessToJobObject(self.handle, W.HANDLE(int(process._handle))):
             raise ctypes.WinError(ctypes.get_last_error())
 
+    def is_process_in_job(self, process):
+        present = W.BOOL()
+        if not self.api.IsProcessInJob(W.HANDLE(int(process._handle)), self.handle, ctypes.byref(present)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return bool(present.value)
+
+    def terminate_checked(self, exit_code=125):
+        if not self.handle:
+            raise RuntimeError('Job handle is closed')
+        if not self.api.TerminateJobObject(self.handle, exit_code):
+            raise ctypes.WinError(ctypes.get_last_error())
+
+    def active_processes(self):
+        if not self.handle:
+            raise RuntimeError('Job handle is closed')
+        info = BASIC_ACCOUNTING()
+        if not self.api.QueryInformationJobObject(
+                self.handle, 1, ctypes.byref(info), ctypes.sizeof(info), None):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return int(info.ActiveProcesses)
+
+    def close_checked(self):
+        if self.handle:
+            if not self.api.CloseHandle(self.handle):
+                raise ctypes.WinError(ctypes.get_last_error())
+            self.handle = None
+
     def close(self):
         if self.handle:
             self.api.TerminateJobObject(self.handle, 125)
             self.api.CloseHandle(self.handle); self.handle = None
+
+
+PERSISTENCE_REQUEST_LIMIT = 512
+PERSISTENCE_SCHEMA = 1
+
+
+def _persistence_unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError('duplicate JSON key')
+        result[key] = value
+    return result
+
+
+def _persistence_reject_constant(value):
+    raise ValueError('nonfinite JSON constant')
+
+
+def parse_persistence_request(raw):
+    """Parse the one complete UTF-8 request accepted by --persistence-worker."""
+    if not isinstance(raw, (bytes, bytearray)) or not raw or len(raw) > PERSISTENCE_REQUEST_LIMIT:
+        raise ValueError('request must be one bounded nonempty message')
+    try:
+        text = bytes(raw).decode('utf-8')
+    except UnicodeDecodeError:
+        raise ValueError('request is not UTF-8')
+    decoder = json.JSONDecoder(
+        object_pairs_hook=_persistence_unique_object,
+        parse_constant=_persistence_reject_constant,
+    )
+    try:
+        value, end = decoder.raw_decode(text)
+    except (ValueError, TypeError, RecursionError):
+        raise ValueError('request is not one JSON value')
+    if end != len(text):
+        raise ValueError('request has trailing bytes')
+    if not isinstance(value, dict) or set(value) != {'schema', 'pid'}:
+        raise ValueError('request has unknown or missing fields')
+    schema = value['schema']
+    pid = value['pid']
+    if isinstance(schema, bool) or type(schema) is not int or schema != PERSISTENCE_SCHEMA:
+        raise ValueError('unsupported request schema')
+    if isinstance(pid, bool) or type(pid) is not int or not 1 <= pid <= 0xFFFFFFFF:
+        raise ValueError('invalid process id')
+    return pid
+
+
+def persistence_command(pid):
+    """Derive the fixed collection command; no request-supplied paths or argv."""
+    root = os.environ.get('SystemRoot') or os.environ.get('WINDIR')
+    if not root:
+        raise ValueError('Windows installation is unavailable')
+    powershell = str(Path(root) / 'System32' / 'WindowsPowerShell' / 'v1.0' / 'powershell.exe')
+    script = Path(__file__).resolve().with_name('read-persistence-process.ps1')
+    return [
+        powershell,
+        '-NoProfile',
+        '-NonInteractive',
+        '-File',
+        str(script),
+        '-ProcessId',
+        str(pid),
+    ]
+
+
+def persistence_worker(stream=None, launcher=None):
+    """One-shot worker: complete request plus EOF, then the fixed hidden child."""
+    if os.name != 'nt':
+        return 2
+    source = stream if stream is not None else sys.stdin.buffer
+    try:
+        raw = source.read(PERSISTENCE_REQUEST_LIMIT + 1)
+        if 0 < len(raw) <= PERSISTENCE_REQUEST_LIMIT:
+            if source.read(1):
+                return 2
+    except Exception:
+        return 2
+    try:
+        pid = parse_persistence_request(raw)
+        command = persistence_command(pid)
+    except ValueError:
+        return 2
+    call = launcher if launcher is not None else subprocess.call
+    try:
+        return call(
+            command,
+            stdin=subprocess.DEVNULL,
+            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0),
+        )
+    except OSError:
+        return 2
 
 
 def run_owned(command, cwd, env, log, timeout):
@@ -153,6 +296,8 @@ def require_context(repo, engine):
 
 
 if __name__ == '__main__':
+    if sys.argv[1:] == ['--persistence-worker']:
+        sys.exit(persistence_worker())
     if sys.argv[1:] == ['--worker']:
         command=json.loads(sys.stdin.buffer.readline())
         sys.exit(subprocess.call(command))

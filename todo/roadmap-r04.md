@@ -421,6 +421,29 @@ Validation:
 
 Rollback: remove the new report and this evidence only.
 
+### Checkpoint 12: offline job containment
+
+Task R04 checkpoint 12, claim `6da779ef16204e8a82c3a64a8aa9cb56` (owner `dsh-r04-containment-01`). Approved base `d2759a8d0341e2f44c9af6cfdfc20487eaa13261`; branch `task/r04-job-containment`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. Live admission and native harness execution remain blocked.
+
+Implementation:
+- `Tools/execution_runtime.py` adds `BASIC_ACCOUNTING`, exact checked Win32 bindings for `QueryInformationJobObject`/`IsProcessInJob`, and checked `terminate_checked`, `active_processes`, `close_checked` and `is_process_in_job` methods. Existing `WindowsJob.close`, `run_owned` and generic `--worker` semantics are preserved.
+- The new `--persistence-worker` accepts one complete UTF-8 request of at most 512 bytes, requires parent EOF, and accepts exactly `{"schema":1,"pid":<positive uint32>}`. It rejects empty EOF, additional bytes/objects, duplicate keys, nonfinite constants, malformed fields, oversized input and non-integer/bool schema or PID before launching. It derives the fixed PowerShell executable and checked-in script locally; no argv/executable/script request input is accepted and it does not invoke the public reader.
+- `Tools/persistence_process_reader.py` creates a fresh non-inheritable `KILL_ON_JOB_CLOSE` job, launches the fixed worker hidden, assigns and verifies membership before writing the sole request, closes the write end, bounds captures, and uses one shared five-second cleanup deadline for checked termination, active-process polling, worker wait and drain joins. It queries while the job handle is open, then closes it; assignment/membership/authorization/wait/query/close failures refuse. Direct child termination is used only when assignment/membership failed and the worker is not contained. No process tree or shared service is enumerated.
+- `Tools/test-persistence-process-reader.py` has 52 offline tests with fake job/API/process/streams/clock. It covers assignment-before-send, failed assignment/membership, request completion, expiry before/after spawn and at the loop, constructor/thread-start/drain failures, active-count transitions/query failure, terminate/close/wait/kill failures, shared cleanup deadline, overflow, exact job/request/pipe cleanup, strict worker request parsing/EOF, and legacy `close`/`run_owned`/`--worker` compatibility. `FakeThread.join` now raises for unstarted threads, and thread-start cleanup classification is asserted honestly.
+
+Limits:
+- No live process, PowerShell, native, CIM, editor, build, recovery or subprocess-native test was run. All containment evidence is mocked.
+- The checked methods are offline-tested only; actual Win32 behavior, nested-job assignment, job accounting, hidden startup, inherited-pipe behavior, parent-death cleanup and Add-Type compiler containment remain unverified.
+- The new worker and cleanup are not wired into production callers beyond the existing process-reader path. The native profile/suite and supervised acceptance remain deferred.
+- No live containment claim is made.
+
+Validation:
+- `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 52 tests ... OK`.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/488d2151e70647308080ffee81d78f2b/report.json`; all offline checks passed.
+- Candidate-bound evidence and full-base scope gate are recorded in the submission.
+
+Rollback: remove the containment methods, worker mode and orchestration changes from the three allowed tools, restore the previous runner semantics, and remove this evidence. No catalog, script, production caller or native harness is added.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)
