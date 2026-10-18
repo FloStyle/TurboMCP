@@ -160,7 +160,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
-					SNew(SButton)
+					SAssignNew(RefreshButton, SButton)
 					.Text(LOCTEXT("Refresh", "Refresh"))
 					.ToolTipText(LOCTEXT("RefreshTip",
 						"Read the server state and the toolset list again."))
@@ -192,7 +192,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.VAlign(VAlign_Center)
 				.Padding(0.0f, 0.0f, 6.0f, 0.0f)
 				[
-					SNew(SCheckBox)
+					SAssignNew(RecordCheckBox, SCheckBox)
 					.IsChecked(this, &STurboMCPPanel::GetCallLogCheckState)
 					.OnCheckStateChanged(this, &STurboMCPPanel::OnCallLogCheckStateChanged)
 					.ToolTipText(LOCTEXT("CallLogTip",
@@ -230,7 +230,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.AutoWidth()
 				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
 				[
-					SNew(SButton)
+					SAssignNew(MonitorButton, SButton)
 					.Text(this, &STurboMCPPanel::GetMonitorButtonText)
 					.ToolTipText(LOCTEXT("MonitorViewTip", "Show recent calls and the selected-call inspector."))
 					.OnClicked_Lambda([this]()
@@ -243,7 +243,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				[
-					SNew(SButton)
+					SAssignNew(ToolsButton, SButton)
 					.Text(this, &STurboMCPPanel::GetToolsButtonText)
 					.ToolTipText(LOCTEXT("ToolsViewTip", "Show tool discovery, example arguments and call results."))
 					.OnClicked_Lambda([this]()
@@ -318,7 +318,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.FillWidth(0.16f)
 				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
 				[
-					SNew(SComboBox<TSharedPtr<FString>>)
+					SAssignNew(TimelineStatusComboBox, SComboBox<TSharedPtr<FString>>)
 					.OptionsSource(&TimelineStatusOptions)
 					.InitiallySelectedItem(SelectedTimelineStatus)
 					.OnSelectionChanged_Lambda([this](TSharedPtr<FString> InItem, ESelectInfo::Type)
@@ -353,7 +353,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.AutoHeight()
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SBorder)
+				SAssignNew(HistoryListBorder, SBorder)
 				.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 				.Padding(4.0f)
 				[
@@ -394,7 +394,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.FillHeight(0.55f)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SBorder)
+				SAssignNew(InspectorBorder, SBorder)
 				.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 				.Padding(4.0f)
 				[
@@ -443,7 +443,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.AutoHeight()
 				.Padding(0.0f, 0.0f, 0.0f, 4.0f)
 				[
-					SNew(SComboBox<TSharedPtr<FString>>)
+					SAssignNew(ToolsetComboBox, SComboBox<TSharedPtr<FString>>)
 					// `SLATE_ITEMS_SOURCE_ARGUMENT(OptionType, OptionsSource)` -
 					// `Slate/Public/Widgets/Input/SComboBox.h:151`.
 					.OptionsSource(&ToolsetOptions)
@@ -466,7 +466,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.AutoHeight()
 				.Padding(0.0f, 0.0f, 0.0f, 4.0f)
 				[
-					SNew(SComboBox<TSharedPtr<FString>>)
+					SAssignNew(ToolComboBox, SComboBox<TSharedPtr<FString>>)
 					.OptionsSource(&ToolOptions)
 					.InitiallySelectedItem(SelectedTool)
 					.OnSelectionChanged(this, &STurboMCPPanel::OnToolChanged)
@@ -489,7 +489,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 
 					+ SWrapBox::Slot()
 					[
-						SNew(SButton)
+						SAssignNew(FillExampleButton, SButton)
 						.Text(LOCTEXT("FillExample", "Fill example arguments"))
 						.ToolTipText(LOCTEXT("FillExampleTip",
 							"Fill the arguments box with schema scaffolding from this tool. It is a valid "
@@ -499,7 +499,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 
 					+ SWrapBox::Slot()
 					[
-						SNew(SButton)
+						SAssignNew(CallButton, SButton)
 						.Text(LOCTEXT("Call", "Call"))
 						.ToolTipText(LOCTEXT("CallTip",
 							"Call the tool through the registry, which is the same entry point the MCP "
@@ -515,7 +515,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.FillHeight(0.4f)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SBorder)
+				SAssignNew(ArgumentsBorder, SBorder)
 				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 				.Padding(4.0f)
 				[
@@ -553,7 +553,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			.FillHeight(0.6f)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
-				SNew(SBorder)
+				SAssignNew(ResultBorder, SBorder)
 				.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 				.Padding(4.0f)
 				[

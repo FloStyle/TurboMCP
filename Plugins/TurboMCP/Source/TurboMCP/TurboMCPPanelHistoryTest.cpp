@@ -14,6 +14,10 @@
 #include "Layout/Geometry.h"
 #include "Rendering/SlateLayoutTransform.h"
 #include "Widgets/SWidget.h"
+#include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SCheckBox.h"
+#include "Widgets/Input/SComboBox.h"
+#include "Widgets/Layout/SBorder.h"
 // The panel owns FTurboMCPPanelToolRunner by value, and that runner owns
 // TStrongObjectPtr<UToolCallAsyncResultString>. The defining UCLASS header must
 // be complete before the panel header is instantiated; the forward declaration
@@ -76,6 +80,20 @@ struct FTurboMCPPanelHistoryTestAccess
 		Panel.TimelineToolFilter = Tool;
 		Panel.RebuildTimelineRows();
 	}
+
+	static SWidget* StatusCombo(const STurboMCPPanel& Panel) { return Panel.TimelineStatusComboBox.Get(); }
+	static SWidget* ToolsetCombo(const STurboMCPPanel& Panel) { return Panel.ToolsetComboBox.Get(); }
+	static SWidget* ToolCombo(const STurboMCPPanel& Panel) { return Panel.ToolComboBox.Get(); }
+	static SWidget* HistoryArea(const STurboMCPPanel& Panel) { return Panel.HistoryListBorder.Get(); }
+	static SWidget* InspectorArea(const STurboMCPPanel& Panel) { return Panel.InspectorBorder.Get(); }
+	static SWidget* ArgumentsArea(const STurboMCPPanel& Panel) { return Panel.ArgumentsBorder.Get(); }
+	static SWidget* ResultArea(const STurboMCPPanel& Panel) { return Panel.ResultBorder.Get(); }
+	static SWidget* RefreshControl(const STurboMCPPanel& Panel) { return Panel.RefreshButton.Get(); }
+	static SWidget* MonitorControl(const STurboMCPPanel& Panel) { return Panel.MonitorButton.Get(); }
+	static SWidget* ToolsControl(const STurboMCPPanel& Panel) { return Panel.ToolsButton.Get(); }
+	static SWidget* FillExampleControl(const STurboMCPPanel& Panel) { return Panel.FillExampleButton.Get(); }
+	static SWidget* CallControl(const STurboMCPPanel& Panel) { return Panel.CallButton.Get(); }
+	static SWidget* RecordControl(const STurboMCPPanel& Panel) { return Panel.RecordCheckBox.Get(); }
 };
 
 namespace
@@ -147,36 +165,16 @@ namespace
 		Log.Write(Entry);
 	}
 
-	void CollectArrangedControls(SWidget& Widget, const FGeometry& Geometry, int32& Buttons,
-		int32& Combos, int32& Lists, int32& Editables, TArray<FSlateRect>& Rects)
+	void CollectArrangedControls(SWidget& Widget, const FGeometry& Geometry,
+		TArray<FArrangedWidget>& Rects)
 	{
 		FArrangedChildren Arranged(EVisibility::Visible);
 		Widget.ArrangeChildren(Geometry, Arranged, false);
 		for (int32 Index = 0; Index < Arranged.Num(); ++Index)
 		{
 			const FArrangedWidget& Child = Arranged[Index];
-			const FString Type = Child.GetWidgetPtr()->GetType().ToString();
-			if (Type == TEXT("SButton"))
-			{
-				++Buttons;
-			}
-			else if (Type == TEXT("SComboBox"))
-			{
-				++Combos;
-			}
-			else if (Type == TEXT("SListView"))
-			{
-				++Lists;
-			}
-			else if (Type == TEXT("SMultiLineEditableText"))
-			{
-				++Editables;
-			}
-			if (Type == TEXT("SButton") || Type == TEXT("SComboBox"))
-			{
-				Rects.Add(Child.Geometry.GetLayoutBoundingRect());
-			}
-			CollectArrangedControls(*Child.GetWidgetPtr(), Child.Geometry, Buttons, Combos, Lists, Editables, Rects);
+			Rects.Add(Child);
+			CollectArrangedControls(*Child.GetWidgetPtr(), Child.Geometry, Rects);
 		}
 	}
 
@@ -189,6 +187,11 @@ namespace
 		FArrangedChildren RootChildren(EVisibility::Visible);
 		const FGeometry Root = FGeometry::MakeRoot(Size, FSlateLayoutTransform());
 		Panel.ArrangeChildren(Root, RootChildren, true);
+		// A second pass lets SWrapBox and AutoWrapText consume the allotted width before the
+		// geometry below is read. This is still not a painter or font-metric test.
+		Panel.SlatePrepass(1.0f);
+		RootChildren.Empty();
+		Panel.ArrangeChildren(Root, RootChildren, true);
 		const FString Context = FString::Printf(TEXT("panel layout at %.0fx%.0f"),
 			Size.X, Size.Y);
 		Test.TestTrue(Context + TEXT(" arranges a root child"), RootChildren.Num() > 0);
@@ -200,34 +203,71 @@ namespace
 		}
 		Test.TestTrue(Context + TEXT(" gives the active view usable space"), bPositiveRoot);
 
-		int32 Buttons = 0;
-		int32 Combos = 0;
-		int32 Lists = 0;
-		int32 Editables = 0;
-		TArray<FSlateRect> Rects;
+		TArray<FArrangedWidget> Rects;
 		for (int32 Index = 0; Index < RootChildren.Num(); ++Index)
 		{
-			CollectArrangedControls(*RootChildren[Index].GetWidgetPtr(), RootChildren[Index].Geometry,
-				Buttons, Combos, Lists, Editables, Rects);
+			CollectArrangedControls(*RootChildren[Index].GetWidgetPtr(), RootChildren[Index].Geometry, Rects);
 		}
-		Test.TestTrue(Context + TEXT(" has interactive buttons"), Buttons > 0);
-		for (const FSlateRect& Rect : Rects)
+
+		auto CheckControl = [&](SWidget* Control, const TCHAR* Name, bool bExpectedVisible)
 		{
-			Test.TestTrue(Context + TEXT(" gives each interactive control positive area"),
-				Rect.Right > Rect.Left && Rect.Bottom > Rect.Top);
-			Test.TestTrue(Context + TEXT(" keeps controls within the horizontal window"),
-				Rect.Left >= -1.0f && Rect.Right <= Size.X + 1.0f);
-		}
+			Test.TestTrue(Context + TEXT(" has a ") + Name + TEXT(" widget"), Control != nullptr);
+			if (Control == nullptr)
+			{
+				return;
+			}
+			const FArrangedWidget* Found = Rects.FindByPredicate(
+				[Control](const FArrangedWidget& Candidate)
+				{
+					return Candidate.GetWidgetPtr() == Control;
+				});
+			if (!bExpectedVisible)
+			{
+				Test.TestFalse(Context + TEXT(" collapses the ") + Name, Found != nullptr);
+				return;
+			}
+			Test.TestTrue(Context + TEXT(" arranges the ") + Name, Found != nullptr);
+			if (Found == nullptr)
+			{
+				return;
+			}
+			const auto ControlSize = Found->Geometry.GetLocalSize();
+			Test.TestTrue(Context + TEXT(" gives the ") + Name + TEXT(" usable area"),
+				ControlSize.X > 0.0f && ControlSize.Y > 0.0f);
+			const FSlateRect Rect = Found->Geometry.GetLayoutBoundingRect();
+			Test.TestTrue(Context + TEXT(" keeps the ") + Name + TEXT(" within the window"),
+				Rect.Left >= -1.0f && Rect.Right <= Size.X + 1.0f
+				&& Rect.Top >= -1.0f && Rect.Bottom <= Size.Y + 1.0f);
+		};
+
+		CheckControl(FTurboMCPPanelHistoryTestAccess::RefreshControl(Panel), TEXT("Refresh button"), true);
+		CheckControl(FTurboMCPPanelHistoryTestAccess::MonitorControl(Panel), TEXT("Monitor button"), true);
+		CheckControl(FTurboMCPPanelHistoryTestAccess::ToolsControl(Panel), TEXT("Tools button"), true);
+		CheckControl(FTurboMCPPanelHistoryTestAccess::RecordControl(Panel), TEXT("recording control"), true);
+
 		if (View == STurboMCPPanel::ETurboMCPView::Monitor)
 		{
-			Test.TestTrue(Context + TEXT(" shows the history list"), Lists >= 1);
-			Test.TestTrue(Context + TEXT(" hides the tool controls"), Combos == 0 && Editables == 0);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::StatusCombo(Panel), TEXT("status filter"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::HistoryArea(Panel), TEXT("history area"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::InspectorArea(Panel), TEXT("inspector area"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ToolsetCombo(Panel), TEXT("toolset selector"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ToolCombo(Panel), TEXT("tool selector"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::FillExampleControl(Panel), TEXT("Fill example button"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::CallControl(Panel), TEXT("Call button"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ArgumentsArea(Panel), TEXT("arguments area"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ResultArea(Panel), TEXT("result area"), false);
 		}
 		else
 		{
-			Test.TestTrue(Context + TEXT(" hides the history list"), Lists == 0);
-			Test.TestTrue(Context + TEXT(" shows both tool selectors and the argument/result editors"),
-				Combos >= 2 && Editables >= 2);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::StatusCombo(Panel), TEXT("status filter"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::HistoryArea(Panel), TEXT("history area"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::InspectorArea(Panel), TEXT("inspector area"), false);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ToolsetCombo(Panel), TEXT("toolset selector"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ToolCombo(Panel), TEXT("tool selector"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::FillExampleControl(Panel), TEXT("Fill example button"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::CallControl(Panel), TEXT("Call button"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ArgumentsArea(Panel), TEXT("arguments area"), true);
+			CheckControl(FTurboMCPPanelHistoryTestAccess::ResultArea(Panel), TEXT("result area"), true);
 		}
 	}
 }
