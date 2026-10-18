@@ -313,9 +313,9 @@ def main():
     check("an engine-only call says so rather than pretending to have a start",
           any("engine-only" in r and "call_tool" in r for r in rows),
           "; ".join(r[:70] for r in rows))
-    check("a start with no end reads `running`, which is the shape a crash leaves",
-          any(r.endswith("running") for r in rows) and tl.get("panel-timeline-running") == ["1"],
-          str(tl.get("panel-timeline-running")))
+    check("a start with no end reads `completion not observed`, which is the shape a crash leaves",
+          any(r.endswith("completion not observed") for r in rows) and tl.get("panel-timeline-unfinished") == ["1"],
+          str(tl.get("panel-timeline-unfinished")))
 
     # THE FOUR FILTERS, EACH WITH AN EXPECTED COUNT DERIVED FROM THE LITERAL RECORDS:
     #   toolset  "ReadToolset"      -> the one merged Read call

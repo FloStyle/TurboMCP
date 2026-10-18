@@ -65,6 +65,13 @@ namespace
 
 void STurboMCPPanel::Construct(const FArguments& InArgs)
 {
+#if WITH_DEV_AUTOMATION_TESTS
+	if (InArgs._TestCallLog != nullptr)
+	{
+		CallLogProvider = InArgs._TestCallLog;
+	}
+#endif
+
 	// Read once up front so the window is never blank, then on every refresh.
 	CachedStatus = GetTurboMCPStatusText();
 
@@ -502,7 +509,7 @@ ECheckBoxState STurboMCPPanel::GetCallLogCheckState() const
 {
 	// Read from the log, which reads the settings, so there is ONE source of truth rather than the
 	// panel keeping its own copy that a tool call could invalidate.
-	return FTurboMCPCallLog::Get().IsEnabled()
+	return GetCallLog().IsEnabled()
 		? ECheckBoxState::Checked
 		: ECheckBoxState::Unchecked;
 }
@@ -511,13 +518,14 @@ void STurboMCPPanel::OnCallLogCheckStateChanged(ECheckBoxState InState)
 {
 	// Through the log object, which persists the choice in the editor settings, exactly as
 	// `E-CALL-LOG` does. Writing the setting here directly would be a second writer for one fact.
-	FTurboMCPCallLog::Get().SetEnabled(InState == ECheckBoxState::Checked);
+	GetCallLog().SetEnabled(InState == ECheckBoxState::Checked);
 }
 
 FText STurboMCPPanel::GetCallLogSummary() const
 {
-	const FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
-	const TArray<FTurboMCPCallLog::FEntry> Entries = Log.GetEntries();
+	const FTurboMCPCallLog& Log = GetCallLog();
+	const FTurboMCPCallLog::FSnapshot Snapshot = Log.GetSnapshot();
+	const TArray<FTurboMCPCallLog::FEntry>& Entries = Snapshot.Entries;
 
 	// *** TWO NUMBERS CALLED "CALLS" IS THE DEFECT THIS METHOD HAD, AND THE CAPTURE SHOWED IT: the
 	// summary counted `end` RECORDS and printed `15 calls` while the timeline below it printed `11 of
@@ -527,24 +535,28 @@ FText STurboMCPPanel::GetCallLogSummary() const
 	const TArray<FTurboMCPCallLog::FEntry> Calls = FTurboMCPCallTimeline::RepresentativeRecords(Entries);
 	// The figures come from the calls themselves rather than from a running counter, so a number shown
 	// here is a number that was measured.
-	int32 FinishedCalls = 0;
-	int32 RunningCalls = 0;
+	int32 UnfinishedCalls = 0;
 	int32 Tokens = 0;
 	int32 Chars = 0;
+	int32 UnknownChars = 0;
+	int32 UnknownTokens = 0;
+	int32 MeasuredZeroCalls = 0;
 	int32 SlowCalls = 0;
 	int32 LargeCalls = 0;
 	for (const FTurboMCPCallLog::FEntry& Call : Calls)
 	{
-		// A `start` WITH NO `end` IS THE CALL IN FLIGHT - or the one a crash took with it - so it is
-		// COUNTED and kept out of the size sums, which have nothing to add for it.
+		// A `start` WITH NO `end` MEANS COMPLETION WAS NOT OBSERVED. The log cannot prove the
+		// tool is alive, so it is counted separately and contributes no size.
 		if (Call.Phase == TEXT("start"))
 		{
-			++RunningCalls;
+			++UnfinishedCalls;
 			continue;
 		}
-		++FinishedCalls;
-		Tokens += Call.MeasuredTokens();
-		Chars += Call.MeasuredChars();
+		if (Call.ResultChars == FTurboMCPCallLog::FEntry::NotMeasured) { ++UnknownChars; }
+		else { Chars += Call.ResultChars; }
+		if (Call.TokenEstimate == FTurboMCPCallLog::FEntry::NotMeasured) { ++UnknownTokens; }
+		else { Tokens += Call.TokenEstimate; }
+		if (Call.ResultChars == 0 && Call.TokenEstimate == 0) { ++MeasuredZeroCalls; }
 		// MARKED HERE SO THE SUMMARY CAN SAY HOW MANY, RATHER THAN LEAVING A READER TO SCAN THE TIMELINE FOR THEM.
 		if (Call.IsSlow()) { ++SlowCalls; }
 		if (Call.IsLarge()) { ++LargeCalls; }
@@ -568,14 +580,10 @@ FText STurboMCPPanel::GetCallLogSummary() const
 	// the log is written - two writers, up to four records a call - and hiding it would make the file's
 	// own line count look wrong to whoever opens it next.
 	FString Out = FString::Printf(
-		TEXT("on  |  %d record%s, %d call%s, %d characters, ~%d tokens (estimate), %d slow, %d large"),
+		TEXT("on  |  %d record%s, %d call%s, %d measured zero, %d chars known, %d chars unknown, ~%d tokens estimated, %d tokens unknown, %d completion not observed, %d slow, %d large"),
 		Entries.Num(), Entries.Num() == 1 ? TEXT("") : TEXT("s"),
 		Calls.Num(), Calls.Num() == 1 ? TEXT("") : TEXT("s"),
-		Chars, Tokens, SlowCalls, LargeCalls);
-	if (RunningCalls > 0)
-	{
-		Out += FString::Printf(TEXT(", %d still running"), RunningCalls);
-	}
+		MeasuredZeroCalls, Chars, UnknownChars, Tokens, UnknownTokens, UnfinishedCalls, SlowCalls, LargeCalls);
 	return FText::FromString(Out);
 }
 
@@ -583,7 +591,7 @@ FSlateColor STurboMCPPanel::GetCallLogSummaryColor() const
 {
 	// Green while recording, muted when not, so the state reads at a glance without parsing the
 	// text. Same intent as the server dot above it.
-	return FTurboMCPCallLog::Get().IsEnabled()
+	return GetCallLog().IsEnabled()
 		? FSlateColor(FLinearColor(0.1f, 0.8f, 0.1f))
 		: FSlateColor(FLinearColor(0.6f, 0.6f, 0.6f));
 }
@@ -595,7 +603,7 @@ FText STurboMCPPanel::GetCallTimelineText() const
 	// read is bounded by the log's own `MaxEntries`, which is the same bound the summary above pays.
 	//
 	// *** IT IS THE PANE'S EMPTY STATE NOW THAT THE ROWS ARE A LIST, AND THAT KEEPS IT REACHABLE. ***
-	return FText::FromString(FTurboMCPCallLog::Get().RenderTimeline());
+	return FText::FromString(GetCallLog().RenderTimeline());
 }
 
 EVisibility STurboMCPPanel::GetTimelineTextVisibility() const
@@ -609,16 +617,18 @@ void STurboMCPPanel::Tick(const FGeometry& InAllottedGeometry, const double InCu
 	const float InDeltaTime)
 {
 	SCompoundWidget::Tick(InAllottedGeometry, InCurrentTime, InDeltaTime);
+	RefreshTimelineIfChanged();
+}
 
-	// A CALL THAT FINISHED WROTE AN END RECORD, so the count moving is the signal. `NumEntries` is the
-	// cheap accessor on purpose: copying up to 1000 structs once a frame to look at their number is a
-	// cost nobody asked for.
-	const int32 Count = FTurboMCPCallLog::Get().NumEntries();
-	if (Count != LastTimelineRecordCount)
+bool STurboMCPPanel::RefreshTimelineIfChanged()
+{
+	const uint64 Revision = GetCallLog().GetRevision();
+	if (bHasTimelineRevision && Revision == LastTimelineRevision)
 	{
-		LastTimelineRecordCount = Count;
-		RebuildTimelineRows();
+		return false;
 	}
+	RebuildTimelineRows();
+	return true;
 }
 
 void STurboMCPPanel::OnTimelineFilterChanged(const FText& InText, FString* InField)
@@ -633,7 +643,11 @@ void STurboMCPPanel::OnTimelineFilterChanged(const FText& InText, FString* InFie
 
 void STurboMCPPanel::RebuildTimelineRows()
 {
-	const TArray<FTurboMCPCallLog::FEntry> Records = FTurboMCPCallLog::Get().GetEntries();
+	const FTurboMCPCallLog::FSnapshot Snapshot = GetCallLog().GetSnapshot();
+	const TArray<FTurboMCPCallLog::FEntry>& Records = Snapshot.Entries;
+	LastTimelineRevision = Snapshot.Revision;
+	bHasTimelineRevision = true;
+	++TimelineRebuildCount;
 
 	// THE DENOMINATOR FIRST, because a list that is short looks the same whether the filter removed the
 	// rows or nothing was recorded - and those two need different actions from a reader.
