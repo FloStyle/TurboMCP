@@ -82,3 +82,7 @@ This assignment supersedes checkpoint 13 write permissions for its worker. Imple
 ## Current integrator assignment: Append placement
 
 This supersedes the alias assignment above, which passed source review, a pinned 5.8.3 build and the focused append engine suite. The seven-file scope in worker-scopes.json permits opt-in placement for Append Preview/Edit only. Preserve shared Replace behavior, existing nodes, links except requested deltas, defaults and comment bounds. Use deterministic stored/estimated geometry with checked widened arithmetic; requested but missing/invalid placement must refuse before mutation. No visual no-overlap guarantee is claimed. The worker may run offline checks only; engine validation remains integration-owned. Session 2 remains read-only. The exact base and placement contract accompany the dispatch; R04 as a whole remains incomplete.
+
+## Current integration state
+
+Append placement through 8ebe1a0 is accepted with pinned-engine and offline evidence in R04. Both worker follow-ups are read-only acceptance/design investigations until a new implementation scope and claim are explicitly issued. The placement allowlist is historical permission for its completed assignment, not authorization for further edits.

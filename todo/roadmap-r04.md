@@ -38,6 +38,15 @@ A reviewed specification and evidence record for each confirmed repair, with dup
 
 ## Completion evidence
 
+### Integrator acceptance: Append placement
+
+Accepted `8ebe1a00fef4bf3b0382c35a266d262d8a8e3814` from approved base `479c9df0fbc8e1e5d31c9ac760da69bb75323b13`; trusted seven-file scope passed. Append Preview/Edit opt into a deterministic column while shared callers keep legacy placement. Positive stored dimensions are preserved independently; missing dimensions and new nodes use estimates. Overflow and malformed requested-position indexes refuse before mutation.
+
+Supervised pinned-5.8.3 run `6dbd8f4ab6654f719602cc90e36af652` passed build and `test-graph-append` at candidate digest `5c302a10967e96da6259215e5a63525728a33dc18a119bcb8adee810f28c3a96`. Both `TurboMCP.GraphAppend.Placement` and `TurboMCP.GraphAppend.AliasCollision` returned Success with no errors or warnings. Sixteen fixture files were restored. DLL SHA-256: `C3BA623BD8D786B267774645F970755485CEA4A43CD0A04528247CCD28349DA4`, 3,853,824 bytes. Integration offline run `545ca142cb064d8eb48fd3261babfa25` passed after the generated inventory identity refresh.
+
+This proves the tested stored/estimated placement and preservation cases, not measured Slate overlap, full Widget Blueprint coverage, compile/save/fresh-reopen or complete graph dumping. Session 1 next prepares a read-only Widget Blueprint acceptance specification; Session 2 owns a read-only shared-value reader investigation. No new mutation scope is authorized by this evidence. R04 remains incomplete.
+
+
 ### Integrator acceptance: Append alias refusal
 
 Accepted candidate `fcfc8b722162c71366ca4e89ddfecae0c4969157` from approved base `6b00fa4acdaa539d504d48294c7848188395581c`. The trusted four-file scope gate passed. Ambiguous six-character existing-node aliases now refuse per reference; qualified IDs, unique aliases and label/type-ID fallback remain supported.
