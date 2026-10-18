@@ -73,6 +73,8 @@ def _win():
     api.GetProcessTimes.restype = W.BOOL
     api.IsProcessInJob.argtypes = [W.HANDLE, W.HANDLE, ctypes.POINTER(W.BOOL)]
     api.IsProcessInJob.restype = W.BOOL
+    api.TerminateProcess.argtypes = [W.HANDLE, W.UINT]
+    api.TerminateProcess.restype = W.BOOL
     api.CloseHandle.argtypes = [W.HANDLE]
     api.CloseHandle.restype = W.BOOL
     return api
@@ -281,7 +283,10 @@ def _write_stdin_bounded(proc, data, deadline):
     def write():
         try:
             if data is not None:
-                proc.stdin.write(data)
+                written = proc.stdin.write(data)
+                if written is not None and written != len(data):
+                    result.append("stdin-short-write")
+                    return
                 proc.stdin.flush()
             proc.stdin.close()
         except Exception as exc:
@@ -325,7 +330,16 @@ def _read_all_bounded(stream, deadline):
     result = {}
     def read():
         try:
-            result["data"] = stream.read()
+            data = bytearray()
+            while len(data) <= 65536:
+                chunk = stream.read(4096)
+                if not chunk:
+                    break
+                data.extend(chunk)
+            if len(data) > 65536:
+                result["error"] = "drain-overflow"
+            else:
+                result["data"] = bytes(data)
         except Exception as exc:
             result["error"] = str(exc)
     thread = threading.Thread(target=read, daemon=True)
@@ -388,6 +402,7 @@ def cleanup_job(job, proc, deadline, uncontained=False, clock=time.monotonic,
             errors.extend(_close_bounded(proc.stdin, deadline, clock, sleeper))
         for stream in (proc.stdout, proc.stderr):
             errors.extend(_close_bounded(stream, deadline, clock, sleeper))
+    errors.extend(_join_helper_threads(deadline))
     return errors
 
 
@@ -421,7 +436,7 @@ def _identity_from_handle(handle):
 
 def _open_process_handle(pid):
     api = _win()
-    handle = api.OpenProcess(0x101000, False, pid)  # SYNCHRONIZE | QUERY_LIMITED
+    handle = api.OpenProcess(0x101001, False, pid)  # SYNCHRONIZE | QUERY_LIMITED | TERMINATE
     if not handle:
         return None, api
     return handle, api
@@ -449,7 +464,7 @@ def _read_handshake(proc, deadline):
 
     def read():
         try:
-            result["line"] = proc.stdout.readline().decode("utf-8", "replace").strip()
+            result["line"] = proc.stdout.readline(4096).decode("utf-8", "replace").strip()
         except Exception as exc:
             result["error"] = str(exc)
 
@@ -543,7 +558,7 @@ def _case_timeout_descendant(work):
         else:
             write_errors = _write_stdin_bounded(proc, b"go\n", time.monotonic() + 5)
             if write_errors:
-                result = {"status": "blocked", "detail": write_errors[0]}
+                raise RuntimeError("authorization-failed:" + write_errors[0])
             line = _read_handshake(proc, time.monotonic() + 10)
             if not line or not line.startswith("READY "):
                 result = {"status": "blocked", "detail": "no-handshake"}
@@ -589,21 +604,22 @@ def _case_pipe_holder(work):
         else:
             write_errors = _write_stdin_bounded(proc, b"go\n", time.monotonic() + 5)
             if write_errors:
-                result = {"status": "blocked", "detail": write_errors[0]}
+                raise RuntimeError("authorization-failed:" + write_errors[0])
             pipe_line = _read_handshake(proc, time.monotonic() + 10)
-            line = _read_handshake(proc, time.monotonic() + 10)
             if pipe_line != "SYNTHETIC-PIPE":
                 result = {"status": "failed", "detail": "stdout-missing-or-partial"}
-            elif not line or not line.startswith("READY "):
-                result = {"status": "blocked", "detail": "no-handshake"}
             else:
-                child_pid = int(line.split()[1])
-                child_identity, error = process_evidence(child_pid, job)
-                if error:
-                    result = {"status": "blocked", "detail": "descendant-identity:" + error}
+                line = _read_handshake(proc, time.monotonic() + 10)
+                if not line or not line.startswith("READY "):
+                    result = {"status": "blocked", "detail": "no-handshake"}
                 else:
-                    result = {"status": "passed", "detail": "stdout-observed",
-                              "owned": [proc.pid, child_pid], "descendant": child_identity}
+                    child_pid = int(line.split()[1])
+                    child_identity, error = process_evidence(child_pid, job)
+                    if error:
+                        result = {"status": "blocked", "detail": "descendant-identity:" + error}
+                    else:
+                        result = {"status": "passed", "detail": "stdout-observed",
+                                  "owned": [proc.pid, child_pid], "descendant": child_identity}
     except Exception as exc:
         result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
@@ -611,6 +627,16 @@ def _case_pipe_holder(work):
                                      uncontained=not assigned, drain=True)
         result = finalize_case(result, cleanup_errors)
     return result
+
+
+def _terminate_process_handle(handle, api, deadline):
+    errors = []
+    if not api.TerminateProcess(handle, 125):
+        errors.append("terminate-child:" + str(ctypes.get_last_error()))
+    status, detail = _wait_process_handle(handle, api, deadline)
+    if status != "passed":
+        errors.append("child-wait:" + detail)
+    return errors
 
 
 def _read_json_bounded(path, deadline):
@@ -650,19 +676,25 @@ def _case_parent_death(work):
     except Exception as exc:
         result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
+        cleanup_errors = []
         if child_handle:
+            if result.get("status") != "passed":
+                cleanup_errors.extend(_terminate_process_handle(child_handle, child_api, time.monotonic() + CLEANUP_LIMIT_SECONDS))
             try:
                 if not child_api.CloseHandle(child_handle):
-                    result = finalize_case(result, ["child-handle-close:" + str(ctypes.get_last_error())])
+                    cleanup_errors.append("child-handle-close:" + str(ctypes.get_last_error()))
             except Exception as exc:
-                result = finalize_case(result, ["child-handle-close:" + str(exc)])
-        if proc is not None and proc.poll() is None:
-            proc.kill()
-            try:
-                proc.wait(timeout=5)
-            except Exception:
-                result = finalize_case(result, ["supervisor-exit"])
-        result = finalize_case(result, [])
+                cleanup_errors.append("child-handle-close:" + str(exc))
+        if proc is not None:
+            if proc.poll() is None:
+                proc.kill()
+                try:
+                    proc.wait(timeout=5)
+                except Exception:
+                    cleanup_errors.append("supervisor-exit")
+            for stream in (proc.stdout, proc.stderr):
+                cleanup_errors.extend(_close_bounded(stream, time.monotonic() + CLEANUP_LIMIT_SECONDS))
+        result = finalize_case(result, cleanup_errors)
     return result
 
 
@@ -689,8 +721,10 @@ def _case_preassignment_eof(work):
             except Exception:
                 active = None
         no_descendants = assigned and active == 0
-        result = {"status": "passed" if no_descendants and exited and proc.returncode == 2 else "blocked",
-                  "detail": "empty-eof-refused-and-no-descendants" if no_descendants else "no-descendant-observation",
+        result = {"status": "blocked",
+                  "detail": "worker-refused; preassignment interval not independently observed",
+                  "worker_refused": exited and proc.returncode == 2,
+                  "no_descendant_end_snapshot": no_descendants,
                   "owned": [proc.pid], "assigned": assigned, "active_processes": active,
                   "stdin_errors": bounded_close,
                   "synthetic_analogue": False, "actual_worker_path": True,
@@ -723,7 +757,7 @@ def _case_add_type(work):
         else:
             write_errors = _write_stdin_bounded(proc, b"go\n", time.monotonic() + 5)
             if write_errors:
-                result = {"status": "blocked", "detail": write_errors[0]}
+                raise RuntimeError("authorization-failed:" + write_errors[0])
             evidence = []
             evidence_errors = []
             def new_process(pid):
@@ -791,18 +825,27 @@ def run_cases(work):
                         "synthetic_analogue": False, "reader_path_evidence": False,
                         "owned": [sentinel.pid]})
     finally:
+        suite_errors = []
         if sentinel.poll() is None:
-            try:
-                _write_stdin_bounded(sentinel, None, time.monotonic() + 5)
-            except Exception:
-                pass
+            suite_errors.extend(_write_stdin_bounded(sentinel, None, time.monotonic() + CLEANUP_LIMIT_SECONDS))
             try:
                 sentinel.wait(timeout=5)
             except Exception:
                 sentinel.kill(); sentinel.wait(timeout=5)
-        _join_helper_threads(time.monotonic() + CLEANUP_LIMIT_SECONDS)
+                suite_errors.append("sentinel-wait")
+        for stream in (sentinel.stdout, sentinel.stderr):
+            suite_errors.extend(_close_bounded(stream, time.monotonic() + CLEANUP_LIMIT_SECONDS))
+        suite_errors.extend(_join_helper_threads(time.monotonic() + CLEANUP_LIMIT_SECONDS))
     required = ["timeout_descendant", "inherited_pipe", "parent_death", "preassignment_eof", "add_type_compiler", "unrelated_sentinel"]
     status, missing = aggregate(results, required)
+    if suite_errors:
+        for item in results:
+            if item.get("case") == "unrelated_sentinel":
+                item["status"] = "failed"
+                item["detail"] = suite_errors
+        results.append({"case": "suite_cleanup", "status": "failed", "detail": suite_errors,
+                        "synthetic_analogue": False, "reader_path_evidence": False})
+        status = "failed"
     return {"schema": 1, "status": status, "missing": missing, "cases": results,
             "limitations": ["synthetic analogues only", "no production reader path evidence",
                             "job NEW_PROCESS alone is not executable identity",

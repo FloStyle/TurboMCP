@@ -1210,11 +1210,52 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed", result)
         self.assertTrue(result["cleanup_errors"])
 
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", Observed), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 701, "image": "csc.exe", "created": 1}, None)), \
+             mock.patch.object(self.acceptance, "_write_stdin_bounded", return_value=["stdin-timeout"]):
+            work = Path(folder)
+            (work / "add-type.result").write_text("0", encoding="utf8")
+            result = self.acceptance._case_add_type(work)
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertNotIn("compiler", result)
+
+    def test_short_write_and_preassignment_empty_snapshot_are_not_success(self):
+        class Stdin:
+            def write(self, data): return 1
+            def flush(self): pass
+            def close(self): pass
+        class Proc:
+            pid = 900
+            _handle = 1
+            returncode = 2
+            stdin = Stdin()
+            stdout = FakeStream(); stderr = FakeStream()
+            def poll(self): return 2
+            def wait(self, timeout=None): return 2
+        errors = self.acceptance._write_stdin_bounded(Proc(), b"go\n", 10)
+        self.assertIn("stdin-short-write", errors)
+
+        class Job:
+            def assign(self, proc): pass
+            def is_process_in_job(self, proc): return True
+            def active_processes(self): return 0
+            def terminate_checked(self): pass
+            def close_checked(self): pass
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "WindowsJob", Job), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()):
+            result = self.acceptance._case_preassignment_eof(Path(folder))
+        self.assertEqual(result["status"], "blocked", result)
+        self.assertTrue(result["worker_refused"])
+        self.assertFalse(result["no_descendant_end_snapshot"] is False and result["status"] == "passed")
+
     def test_pipe_case_uses_ordered_handshake_and_reports_missing_output(self):
         class Stream:
             def __init__(self, lines):
                 self.lines = list(lines); self.closed = False
-            def readline(self):
+            def readline(self, size=-1):
                 return (self.lines.pop(0) if self.lines else b"")
             def read(self, size=-1):
                 return b""
@@ -1280,7 +1321,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
         with mock.patch.object(self.acceptance, "_win", return_value=api):
             handle, returned = self.acceptance._open_process_handle(900)
         self.assertEqual(handle, 1)
-        self.assertEqual(api.access, 0x101000)
+        self.assertEqual(api.access, 0x101001)
 
     def test_win_binds_is_process_in_job_abi(self):
         text = Path(self.acceptance.__file__).read_text(encoding="utf8")
