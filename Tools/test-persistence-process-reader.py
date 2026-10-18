@@ -1769,23 +1769,83 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertEqual(api_error["notification_corroboration"], "api-error")
 
     def test_preassignment_case_stays_blocked_without_launcher(self):
-        class Job:
-            def assign(self, proc): pass
-            def is_process_in_job(self, proc): return True
-            def active_processes(self): return 0
-            def terminate_checked(self): pass
-            def close_checked(self): pass
-        class Proc:
-            pid = 900; _handle = 1; returncode = 2
-            stdin = FakeStdin(); stdout = FakeStream(); stderr = FakeStream()
-            def poll(self): return 2
-            def wait(self, timeout=None): return 2
-        with tempfile.TemporaryDirectory() as folder, \
-             mock.patch.object(self.acceptance, "WindowsJob", Job), \
-             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()):
-            result = self.acceptance._case_preassignment_eof(Path(folder))
+        """The real preassignment seams must refuse before any native call.
+
+        The case used to patch WindowsJob and Popen, which the harness no longer
+        uses. Under the offline supervisor that stale boundary let the real
+        ObservedJob/launch_suspended path run and create a suspended process.
+        The inherited supervisor credentials are reproduced here so the mocked
+        boundary still proves a deterministic unavailable-launcher refusal.
+        """
+        class Observer:
+            def __init__(self):
+                self.accounting_calls = 0
+                self.assigned = []
+                self.closed = 0
+            def accounting(self):
+                self.accounting_calls += 1
+                return (0, 0)
+            def assign(self, launch):
+                self.assigned.append(launch)
+            def is_process_in_job(self, launch):
+                raise AssertionError("membership must not be queried")
+            def close_checked(self):
+                self.closed += 1
+
+        class LauncherUnavailable(OSError):
+            pass
+
+        with tempfile.TemporaryDirectory() as folder:
+            work = Path(folder)
+            context = self.context(pid=os.getpid(), token="inherited-supervisor-token")
+            context_path = work / "context.json"
+            context_path.write_text(json.dumps(context), encoding="utf8")
+            inherited = {
+                "TURBOMCP_EXECUTION_CONTEXT": str(context_path),
+                "TURBOMCP_EXECUTION_TOKEN": context["token"],
+            }
+            observers = []
+
+            def new_observer():
+                observer = Observer()
+                observers.append(observer)
+                return observer
+
+            launcher = mock.Mock(side_effect=LauncherUnavailable("launcher unavailable"))
+            popen = mock.Mock(side_effect=AssertionError("process creation attempted"))
+            win = mock.Mock(side_effect=AssertionError("native API attempted"))
+            with mock.patch.dict(os.environ, inherited), \
+                 mock.patch.object(self.acceptance, "ObservedJob", side_effect=new_observer), \
+                 mock.patch.object(self.acceptance, "launch_suspended", launcher), \
+                 mock.patch.object(self.acceptance.subprocess, "Popen", popen), \
+                 mock.patch.object(self.acceptance, "_win", win):
+                self.assertEqual(os.environ["TURBOMCP_EXECUTION_TOKEN"], context["token"])
+                result = self.acceptance._case_preassignment_eof(work)
+
         self.assertEqual(result["status"], "blocked", result)
+        self.assertEqual(result["detail"], "preassignment-not-proved", result)
         self.assertNotIn("accounting_property", result)
+        self.assertNotIn("attempt_errors", result)
+        self.assertEqual(launcher.call_args_list, [mock.call("worker"), mock.call("control")])
+        popen.assert_not_called()
+        win.assert_not_called()
+        self.assertEqual(len(observers), 2)
+        for observer in observers:
+            self.assertEqual(observer.accounting_calls, 1)
+            self.assertEqual(observer.assigned, [])
+            self.assertEqual(observer.closed, 1)
+        for attempt in (result["negative"], result["positive_control"]):
+            self.assertEqual(attempt["status"], "blocked", attempt)
+            self.assertEqual(attempt["detail"], "operation-error", attempt)
+            self.assertEqual(attempt["operation_detail"],
+                             "LauncherUnavailable: launcher unavailable", attempt)
+            self.assertTrue(attempt["operation_error"], attempt)
+            self.assertFalse(attempt["clean_run"], attempt)
+            self.assertIsNone(attempt["exit_code"], attempt)
+            self.assertEqual(attempt["unexpected_processes"], [], attempt)
+            self.assertEqual(attempt["cleanup_errors"], [], attempt)
+            self.assertFalse(attempt["ordering"]["worker_suspended"], attempt)
+            self.assertFalse(attempt["ordering"]["resumed"], attempt)
 
     def test_suspended_launch_uses_explicit_handle_list_and_fixed_command(self):
         class Api:
