@@ -644,6 +644,13 @@
       "tier": "offline",
       "timeout_seconds": 120,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-roundtrip",
+      "path": "Tools/test-widget-roundtrip.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
     }
   ]
 }
