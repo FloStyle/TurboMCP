@@ -626,7 +626,7 @@ invalid Win32 path characters/control codes, and refuse non-string dictionary
 keys without raising. Add adversarial regression tests and preserve pure behavior.
 
 
-## Active dispatch checkpoint 8: trusted identity collection contract
+## Completed dispatch checkpoint 8: trusted identity collection contract
 
 Checkpoint 7 candidate 4fa6f36fcbcf52e6b622acca87874158de79f5c9 is accepted
 as a pure supplied-evidence validator only. R04 remains incomplete. No live
@@ -666,3 +666,55 @@ tests, catalog, engine/config, status, TODO, scope or release edits. Do not insp
 live process command lines, enumerate sockets, launch an editor or run builds.
 Read source and run the existing offline profile and full-base scope gate. Commit
 and retain candidate-bound evidence. Stop for review without merge/push/release.
+
+
+## Active dispatch checkpoint 9: offline collector orchestration
+
+Implement only the pure first slice of docs/audit/persistence-collector-contract.md.
+The contract is accepted as a design; no live Windows adapter or launch seam is
+approved. R04 and Monday persistence acceptance remain incomplete.
+
+Allowed files: Tools/persistence_collector.py, Tools/test-persistence-collector.py,
+Tests/catalog.json (one new offline test row only), and this task's Completion
+evidence. Existing persistence_identity.py is read-only. No production caller,
+Windows adapter, subprocess, process/socket/filesystem collection, sleeps,
+launch/restart/kill, config, lease, dependency or engine changes.
+
+Use standard-library Python with injected backend and clocks, exact record
+validation, deterministic structured refusals, and no raw diagnostic leakage.
+Implement the contract's identity/path gates, independent process rechecks,
+normalized listener multisets, aggregate/per-call deadlines and final v1
+validation. Backend deadline enforcement is a precondition; this pure module
+cannot interrupt a backend that never returns. Tests prove orchestration only.
+
+Integration clarifications take precedence over earlier prose:
+- File-ID volume_serial/index_high/index_low are unsigned 32-bit integers; zero
+  components are valid. Compare all components exactly. Missing, negative,
+  out-of-range and bool values refuse. link_count must be exactly 1.
+- Compare UTC differences in integer 100 ns ticks converted to nanoseconds
+  (multiply by 100), never against FILETIME or monotonic epochs directly.
+  Enforce age_ns on BOTH snapshots, gap_ns on their difference, and nonnegative
+  ages before v1 validation. Convert v1 max_age_seconds to max(1, ceil(age_ns/1e9))
+  and max_snapshot_gap_seconds to ceil(snapshot_gap_ns/1e9). Exact ns enforcement
+  happens first; rounding must never weaken it. No floats or timestamp truncation.
+- Canonicalize FILETIME-to-UTC using integer arithmetic; reject dates outside
+  validator's representable range. Bound launch_id to 128 printable ASCII chars,
+  paths to the existing validator limits, command_line to 32768 characters.
+- policy is a complete dict with all documented keys. Provide a named default
+  policy constant or factory; reject partial dicts and unknown fields.
+- Foreign owner PID refuses immediately; do not inspect unrelated command lines.
+  For matching owners, verify identity and path IDs again on final recheck.
+- Treat malformed backend values as backend_malformed. Catch ordinary exceptions
+  at backend invocation boundaries as backend_unknown without exception text;
+  do not hide internal implementation defects with a function-wide catch-all.
+- Do not mutate caller inputs or return backend-owned mutable records by alias.
+
+Tests must exercise all contract cases and zero file-ID components, uint32 limits,
+sub-second and non-multiple-second policies, both-snapshot age, equality/one-tick
+boundaries, FILETIME epoch conversion, malformed records at each layer, backend
+exceptions, no further calls after refusal, input immutability and output aliasing.
+Use a scripted fake backend; no live probes. Keep tests small and behavior-driven.
+Register exactly one offline catalog entry with 30-second timeout and
+acceptance not_mapped. Run focused test, offline profile and full-base scope gate;
+commit, retain candidate-bound evidence, and stop for review. No merge, push,
+claim release, task completion or additional task.

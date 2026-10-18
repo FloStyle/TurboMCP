@@ -203,7 +203,7 @@ ReadResult[T]:
 
 A clean empty listener list is `ok=true, value=[]`; it is not a provider error. The validator then refuses with `listener_missing`. A provider failure is `ok=false, provider_error`; the orchestrator must not substitute an empty list. Timeout or unknown completion is `ok=false`.
 
-`PathRead` is malformed unless `has_reparse_component`/`has_short_name_component` are bool, `link_count` is an integer greater than zero, and the file-ID fields are integers. `link_count > 1` is a path refusal; `link_count == 0`, missing flags or unreadable values are `backend_malformed`/`path_mismatch`, never silently passed. A missing or zero file-ID field is likewise a refusal.
+`PathRead` is malformed unless `has_reparse_component`/`has_short_name_component` are bool, `link_count` is an integer greater than zero, and the file-ID fields are integers. `link_count > 1` is a path refusal; `link_count == 0`, missing flags or unreadable values are `backend_malformed`/`path_mismatch`, never silently passed. File-ID components are unsigned 32-bit integers, including zero. Missing, negative, out-of-range or bool components refuse; equality compares the full tuple.
 
 ### Future Windows adapter (separate, not implemented)
 
@@ -323,8 +323,8 @@ After both attempts:
 - reject pair monotonic duration at or beyond `pair_ns`;
 - reject `pair_end_utc < pair_start_utc` as `clock_rollback`;
 - allow equal UTC timestamps; reject only `second.utc < first.utc` as `observation_order`;
-- require `0 <= second.utc - first.utc <= snapshot_gap_ns`; equality at the bound is allowed;
-- set `evaluated_at_utc` after the pair; require `eval.utc - second.utc <= age_ns`; equality is allowed;
+- require `0 <= (second.utc - first.utc) * 100 <= snapshot_gap_ns`; equality at the bound is allowed;
+- set `evaluated_at_utc` after the pair; require nonnegative age for BOTH snapshots and `age_ticks * 100 <= age_ns`; equality is allowed;
 - emit one schema-v1 payload;
 - any timeout, unknown completion, partial output, permission failure, process exit/PID reuse, listener replacement, overflow or ambiguity is a refusal.
 
@@ -414,3 +414,11 @@ Success acceptance is a typed schema-v1 payload accepted by `persistence_identit
 Live acceptance is supervisor-owned and **unexecuted**. It requires the proposed launch-record fields and a reviewed Windows adapter. It must prove handle-bound creation time, PID-reuse refusal, complete listener ownership, file-ID/path gates and pair bounds without connecting, mutating, stopping or restarting. No live editor, process, socket, build or engine command was executed for this checkpoint.
 
 Open blockers: launch-record fields are absent; the Windows adapter is unimplemented; v1 lacks auditable file IDs; path/alias and loaded-image identity cannot be fully established; CIM/TCP completeness is not atomic; and all remaining work is `proposed_unapproved`.
+
+
+## Integration decision
+
+Accepted as a design investigation. Checkpoint 9 in roadmap-r04 authorizes only
+the pure offline slice and supplies binding file-ID and time-conversion
+clarifications. All Windows adapter, launch-record and lifecycle work remains
+proposed and unapproved. Offline tests cannot certify live ownership.
