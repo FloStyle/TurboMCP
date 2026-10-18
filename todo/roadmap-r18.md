@@ -39,6 +39,8 @@ Do not patch engine source, change the pinned baseline, add a competing server, 
 A reviewable editor UX specification, annotated layouts and bounded implementation proposals. A design artifact does not certify an implemented UI.
 
 ## Completion evidence
+
+The owner approved the compact prototype direction on 18 October 2026. See the approved first pass in docs/design/editor-experience.md. Native implementation and runtime acceptance remain pending; monitoring correctness precedes layout work and the Monday Blueprint/Widget loop retains priority.
 Pending. Record exact source and engine identities, commands, exits, evidence locations, tested binary hashes where applicable, changed files and unresolved limits. Integration review is required before marking done.
 
 ## Current review
