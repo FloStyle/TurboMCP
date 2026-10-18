@@ -284,11 +284,10 @@ def _write_stdin_bounded(proc, data, deadline):
         try:
             if data is not None:
                 written = proc.stdin.write(data)
-                if written is not None and written != len(data):
-                    result.append("stdin-short-write")
+                if type(written) is not int or isinstance(written, bool) or written != len(data):
+                    result.append("stdin-write-not-confirmed")
                     return
                 proc.stdin.flush()
-            proc.stdin.close()
         except Exception as exc:
             result.append("stdin:" + str(exc))
     thread = threading.Thread(target=write, daemon=True)
@@ -296,11 +295,13 @@ def _write_stdin_bounded(proc, data, deadline):
     try:
         thread.start()
     except Exception as exc:
-        return ["stdin-thread:" + str(exc)]
-    while thread.is_alive() and time.monotonic() < deadline:
-        thread.join(min(0.05, max(0, deadline - time.monotonic())))
-    if thread.is_alive():
-        return ["stdin-timeout"]
+        result.append("stdin-thread:" + str(exc))
+    else:
+        while thread.is_alive() and time.monotonic() < deadline:
+            thread.join(min(0.05, max(0, deadline - time.monotonic())))
+        if thread.is_alive():
+            result.append("stdin-timeout")
+    result.extend(_close_bounded(proc.stdin, deadline))
     return result
 
 
@@ -808,14 +809,42 @@ def _case_add_type(work):
     return result
 
 
+def _teardown_sentinel(sentinel, deadline):
+    errors = []
+    errors.extend(_write_stdin_bounded(sentinel, None, deadline))
+    try:
+        remaining = max(0, deadline - time.monotonic())
+        sentinel.wait(timeout=remaining)
+    except Exception:
+        errors.append("sentinel-wait")
+        try:
+            sentinel.kill()
+        except Exception as exc:
+            errors.append("sentinel-kill:" + str(exc))
+        try:
+            remaining = max(0, deadline - time.monotonic())
+            sentinel.wait(timeout=remaining)
+        except Exception as exc:
+            errors.append("sentinel-fallback-wait:" + str(exc))
+    for stream in (sentinel.stdout, sentinel.stderr):
+        errors.extend(_close_bounded(stream, deadline))
+    errors.extend(_join_helper_threads(deadline))
+    return errors
+
+
 def run_cases(work):
     results = []
     sentinel = subprocess.Popen(
         [sys.executable, "-c", "import sys;sys.stdout.write('SENTINEL-READY\\n');sys.stdout.flush();sys.stdin.buffer.read()"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
     )
-    sentinel_ready = _read_handshake(sentinel, time.monotonic() + 10) == "SENTINEL-READY"
+    sentinel_ready = False
+    suite_errors = []
     try:
+        try:
+            sentinel_ready = _read_handshake(sentinel, time.monotonic() + 10) == "SENTINEL-READY"
+        except Exception as exc:
+            suite_errors.append("sentinel-read:" + str(exc))
         for name, function in (
             ("timeout_descendant", _case_timeout_descendant),
             ("inherited_pipe", _case_pipe_holder),
@@ -839,17 +868,11 @@ def run_cases(work):
                         "synthetic_analogue": False, "reader_path_evidence": False,
                         "owned": [sentinel.pid]})
     finally:
-        suite_errors = []
-        if sentinel.poll() is None:
-            suite_errors.extend(_write_stdin_bounded(sentinel, None, time.monotonic() + CLEANUP_LIMIT_SECONDS))
-            try:
-                sentinel.wait(timeout=5)
-            except Exception:
-                sentinel.kill(); sentinel.wait(timeout=5)
-                suite_errors.append("sentinel-wait")
-        for stream in (sentinel.stdout, sentinel.stderr):
-            suite_errors.extend(_close_bounded(stream, time.monotonic() + CLEANUP_LIMIT_SECONDS))
-        suite_errors.extend(_join_helper_threads(time.monotonic() + CLEANUP_LIMIT_SECONDS))
+        cleanup_deadline = time.monotonic() + CLEANUP_LIMIT_SECONDS
+        try:
+            suite_errors.extend(_teardown_sentinel(sentinel, cleanup_deadline))
+        except Exception as exc:
+            suite_errors.append("sentinel-teardown:" + str(exc))
     required = ["timeout_descendant", "inherited_pipe", "parent_death", "preassignment_eof", "add_type_compiler", "unrelated_sentinel"]
     status, missing = aggregate(results, required)
     if suite_errors:

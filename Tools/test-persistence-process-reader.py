@@ -1169,7 +1169,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
     def test_add_type_case_full_orchestration_and_cleanup_failure(self):
         class Stdin:
             def __init__(self): self.closed = False
-            def write(self, data): self.closed = False
+            def write(self, data): self.closed = False; return len(data)
             def flush(self): pass
             def close(self): self.closed = True
         class Proc:
@@ -1221,6 +1221,28 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertNotEqual(result["status"], "passed", result)
         self.assertNotIn("compiler", result)
 
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", Observed), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=(None, "membership")):
+            work = Path(folder)
+            (work / "add-type.result").write_text("0", encoding="utf8")
+            result = self.acceptance._case_add_type(work)
+        self.assertEqual(result["status"], "blocked", result)
+
+        class PortFailure(Observed):
+            def drain_messages(self, deadline, callback):
+                callback(701)
+                return "completion-port:5"
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "ObservedJob", PortFailure), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "process_evidence", return_value=({"pid": 701, "image": "csc.exe", "created": 1}, None)):
+            work = Path(folder)
+            (work / "add-type.result").write_text("0", encoding="utf8")
+            result = self.acceptance._case_add_type(work)
+        self.assertEqual(result["status"], "blocked", result)
+
     def test_short_write_and_preassignment_empty_snapshot_are_not_success(self):
         class Stdin:
             def write(self, data): return 1
@@ -1235,7 +1257,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
             def poll(self): return 2
             def wait(self, timeout=None): return 2
         errors = self.acceptance._write_stdin_bounded(Proc(), b"go\n", 10)
-        self.assertIn("stdin-short-write", errors)
+        self.assertIn("stdin-write-not-confirmed", errors)
 
         class Job:
             def assign(self, proc): pass
@@ -1326,6 +1348,111 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertTrue(deadlines)
         self.assertEqual(len({value for _, value in deadlines}), 1)
 
+    def test_write_stdin_requires_exact_integer_and_always_closes(self):
+        class Stdin:
+            def __init__(self, result): self.result = result; self.closed = False
+            def write(self, data):
+                if isinstance(self.result, BaseException): raise self.result
+                return self.result
+            def flush(self): pass
+            def close(self): self.closed = True
+        class Proc:
+            def __init__(self, result): self.stdin = Stdin(result)
+        for value in (None, 0, 1, True, -1, "go"):
+            proc = Proc(value)
+            errors = self.acceptance._write_stdin_bounded(proc, b"go\n", 10)
+            with self.subTest(value=value):
+                self.assertTrue(errors, value)
+                self.assertTrue(proc.stdin.closed)
+        proc = Proc(RuntimeError("write failed"))
+        self.assertTrue(self.acceptance._write_stdin_bounded(proc, b"go\n", 10))
+        self.assertTrue(proc.stdin.closed)
+        proc = Proc(3)
+        self.assertEqual(self.acceptance._write_stdin_bounded(proc, b"go\n", 10), [])
+        self.assertTrue(proc.stdin.closed)
+
+    def test_sentinel_teardown_reports_all_failures_and_uses_one_budget(self):
+        class Sentinel:
+            pid = 1
+            def __init__(self):
+                self.stdin = type("Stdin", (), {"write": lambda s, d: len(d), "flush": lambda s: None, "close": lambda s: None})()
+                self.stdout = FakeStream(close_raises=True); self.stderr = FakeStream(close_raises=True)
+                self.waits = 0
+            def wait(self, timeout=None): self.waits += 1; raise RuntimeError("wait")
+            def kill(self): raise RuntimeError("kill")
+        sentinel = Sentinel()
+        errors = self.acceptance._teardown_sentinel(sentinel, 10)
+        self.assertTrue(any("sentinel-wait" in e for e in errors))
+        self.assertTrue(any("sentinel-kill" in e for e in errors))
+        self.assertTrue(any("sentinel-fallback-wait" in e for e in errors))
+        self.assertGreaterEqual(sentinel.waits, 2)
+        self.assertTrue(any("close" in e for e in errors))
+
+        deadlines = []
+        sentinel = type("S", (), {
+            "stdin": type("Stdin", (), {"close": lambda s: None})(),
+            "stdout": FakeStream(), "stderr": FakeStream(),
+            "wait": lambda s, timeout=None: 0, "kill": lambda s: None,
+        })()
+        with mock.patch.object(self.acceptance, "_write_stdin_bounded", side_effect=lambda *a: deadlines.append(a[2]) or []), \
+             mock.patch.object(self.acceptance, "_close_bounded", side_effect=lambda *a: deadlines.append(a[1]) or []), \
+             mock.patch.object(self.acceptance, "_join_helper_threads", side_effect=lambda deadline: deadlines.append(deadline) or []):
+            self.acceptance._teardown_sentinel(sentinel, 123)
+        self.assertTrue(deadlines)
+        self.assertEqual(set(deadlines), {123})
+
+    def test_run_cases_teardown_failure_forces_failed_even_when_cases_pass(self):
+        class Sentinel:
+            pid = 1; stdout = FakeStream(); stderr = FakeStream()
+            def poll(self): return None
+        passed = lambda work: {"status": "passed"}
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Sentinel()), \
+             mock.patch.object(self.acceptance, "_read_handshake", return_value="SENTINEL-READY"), \
+             mock.patch.object(self.acceptance, "_case_timeout_descendant", passed), \
+             mock.patch.object(self.acceptance, "_case_pipe_holder", passed), \
+             mock.patch.object(self.acceptance, "_case_parent_death", passed), \
+             mock.patch.object(self.acceptance, "_case_preassignment_eof", passed), \
+             mock.patch.object(self.acceptance, "_case_add_type", passed), \
+             mock.patch.object(self.acceptance, "_teardown_sentinel", return_value=["sentinel-fail"]):
+            result = self.acceptance.run_cases(Path(folder))
+        self.assertEqual(result["status"], "failed", result)
+        self.assertTrue(any(item.get("case") == "suite_cleanup" for item in result["cases"]))
+
+    def test_run_cases_readiness_exception_does_not_skip_teardown(self):
+        class Sentinel:
+            pid = 1; stdout = FakeStream(); stderr = FakeStream()
+            def poll(self): return None
+        calls = []
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Sentinel()), \
+             mock.patch.object(self.acceptance, "_read_handshake", side_effect=RuntimeError("read")), \
+             mock.patch.object(self.acceptance, "_teardown_sentinel", side_effect=lambda *a: calls.append(a) or []):
+            result = self.acceptance.run_cases(Path(folder))
+        self.assertEqual(len(calls), 1)
+        self.assertNotEqual(result["status"], "passed", result)
+
+    def test_timeout_authorization_failure_is_terminal(self):
+        class Job:
+            def assign(self, proc): pass
+            def is_process_in_job(self, proc): return True
+            def active_processes(self): return 0
+            def terminate_checked(self): pass
+            def close_checked(self): pass
+        class Proc:
+            pid = 1; _handle = 1
+            stdin = FakeStdin(); stdout = FakeStream(); stderr = FakeStream()
+            returncode = 0
+            def poll(self): return 0
+            def wait(self, timeout=None): return 0
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "WindowsJob", Job), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()), \
+             mock.patch.object(self.acceptance, "_write_stdin_bounded", return_value=["stdin-timeout"]):
+            result = self.acceptance._case_timeout_descendant(Path(folder))
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertNotIn("descendant", result)
+
     def test_pipe_case_uses_ordered_handshake_and_reports_missing_output(self):
         class Stream:
             def __init__(self, lines):
@@ -1336,7 +1463,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
                 return b""
             def close(self): self.closed = True
         class Stdin:
-            def write(self, data): pass
+            def write(self, data): return len(data)
             def flush(self): pass
             def close(self): pass
         class Proc:
@@ -1377,6 +1504,14 @@ class AcceptanceHarnessTests(unittest.TestCase):
             result = self.acceptance._case_pipe_holder(Path(folder))
         self.assertEqual(result["status"], "failed", result)
         self.assertTrue(any("job-close" in value for value in result["cleanup_errors"]))
+
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "WindowsJob", Job), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc([b"SYNTHETIC-PIPE\n", b"READY 801\n"])), \
+             mock.patch.object(self.acceptance, "_write_stdin_bounded", return_value=["stdin-timeout"]):
+            result = self.acceptance._case_pipe_holder(Path(folder))
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertNotIn("descendant", result)
 
     def test_helper_entry_refuses_every_mode_without_supervisor_context(self):
         called = []
