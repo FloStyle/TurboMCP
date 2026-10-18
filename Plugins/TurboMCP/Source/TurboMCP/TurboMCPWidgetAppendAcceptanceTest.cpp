@@ -573,7 +573,7 @@ namespace
 		FCompilerResultsLog CompilerLog;
 		FKismetEditorUtilities::CompileBlueprint(OutFixture.Blueprint,
 			EBlueprintCompileOptions::None, &CompilerLog);
-		if (CompilerLog.NumErrors != 0 || OutFixture.Blueprint->Status != BS_Successful)
+		if (CompilerLog.NumErrors != 0 || !OutFixture.Blueprint->IsUpToDate())
 		{
 			OutFixture.LastError = FString::Printf(
 				TEXT("comparator compilation failed with %d error(s)"), CompilerLog.NumErrors);
@@ -709,9 +709,9 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 	FKismetEditorUtilities::CompileBlueprint(Fixture.Blueprint,
 		EBlueprintCompileOptions::None, &CompilerLog);
 	TestEqual(TEXT("widget fixture compiles without errors"), CompilerLog.NumErrors, 0);
-	TestEqual(TEXT("widget fixture compilation status is successful"),
-		static_cast<int32>(Fixture.Blueprint->Status), static_cast<int32>(BS_Successful));
-	if (CompilerLog.NumErrors != 0 || Fixture.Blueprint->Status != BS_Successful)
+	TestTrue(TEXT("widget fixture compilation status is successful/up to date"),
+		Fixture.Blueprint->IsUpToDate());
+	if (CompilerLog.NumErrors != 0 || !Fixture.Blueprint->IsUpToDate())
 	{
 		return false;
 	}
