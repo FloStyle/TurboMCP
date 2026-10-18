@@ -792,6 +792,20 @@ Validation:
 
 Rollback: remove the `persistence-native` profile branch and `Tools/persistence-job-acceptance.py`, remove the additive harness tests and this evidence. No catalog, production reader/runtime, PowerShell, engine or production caller changes are included.
 
+### Parallel assignment claims implementation
+
+Implementation commit `309b5f2ccb0940add462cc20ab9f7c9774599f8f` from approved base `682ebe1f13ce0256003bce74c5ac8e5d33af13fa`, five Python files only: `Tools/task_claim.py`, `Tools/next-task.py`, `Tools/check-worker-scope.py`, `Tools/test-task-claims.py`, `Tools/test-worker-scope.py`.
+
+Schema 2 stores an active list of per-assignment records with a distinct random `claim_id`, explicit assignment name, full approved base commit, canonical registered worktree/common-dir identity, and exact validated files. Claims load the assignment manifest from that immutable base, reject case/slash aliases, traversal, absolute/glob/directory entries, symlink/junction paths, prefix overlaps, protected shared files and a second claim in the same worktree. Claim/release/migrate/rollback use the existing bounded kernel lock and atomic JSON write. Schema 1 remains readable and the legacy `claim`/`release`/`next-task` path remains operable; schema 2 requires an explicit assignment claim. Migration refuses an active legacy claim with the store unchanged and requires schema-1 `active` explicitly null. Rollback is allowed only before any schema-2 mutation and is refused after claim-then-release. No heartbeat, stale recovery, engine/port lock, policy, registry, catalog or real-ledger change was made. The retained live claim remains schema 1 and was not migrated or released.
+
+Validation (offline, disposable repositories/stores):
+- `python Tools/test-task-claims.py` — exit 0; 9 tests, including concurrent disjoint claims in separate worktrees, concurrent overlap (one winner), wrong-ID no-op, malformed stores, protected/path rejection, legacy-active migration refusal, rollback-after-release refusal and old-client fail-closed on schema 2 with empty and active lists.
+- `python Tools/test-worker-scope.py` — exit 0; retains the schema-1 scope controls and adds schema-2 assignment/base-manifest controls.
+- `python Tools/validate.py` — exit 0; all offline checks passed, including `test-task-claims` and `test-worker-scope`.
+- `git diff --check` — exit 0.
+
+Limits: no real ledger migration or candidate CLI use on the live store; no native/build/editor/MCP execution; production schema-2 assignment manifests and protected policy installation remain integrator-owned. `next-task.py` still refuses while any active claim exists; same-task disjoint dispatch is exposed through `task_claim.claim_assignment` after an approved schema-2 assignment exists. Full-base scope-gate evidence is returned with the final candidate SHA.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)
