@@ -45,6 +45,12 @@ template <typename ItemType> class SListView;
 class STurboMCPPanel : public SCompoundWidget
 {
 public:
+	enum class ETurboMCPView : uint8
+	{
+		Monitor,
+		Tools
+	};
+
 	SLATE_BEGIN_ARGS(STurboMCPPanel)
 #if WITH_DEV_AUTOMATION_TESTS
 		: _TestCallLog(nullptr)
@@ -72,28 +78,25 @@ public:
 	FTurboMCPPanelToolRunner& GetToolRunner() { return ToolRunner; }
 
 	// ---------------------------------------------------------------------------------------
-	// THE CALL TIMELINE: ITS TEXT, ITS LIST, ITS FOUR FILTERS AND ITS EXPANDING ROWS.
+	// THE CALL TIMELINE: ITS TEXT, ITS LIST, ITS FOUR FILTERS AND THE SELECTED-CALL INSPECTOR.
 	//
 	// *** THE LOGIC IS NOT HERE, AND THESE ARE PUBLIC FOR THE SAME REASON `GetToolRunner` IS. ***
 	// `QUESTIONS.md` Q-11 records that the widget tree cannot be inspected. The answers this project
 	// uses are (a) leave as little as possible inside the widget - the one-row-per-call assembly, the
-	// four filters and the expansion text all live in `FTurboMCPCallTimeline`, plain C++ - and (b) let
-	// the probe commandlet CONSTRUCT this widget and read back what it renders, so the window is not
-	// the one part of the plugin that never runs until a human opens it.
+	// four filters and the selected-call detail all live in `FTurboMCPCallTimeline`, plain C++ - and
+	// (b) let the probe commandlet CONSTRUCT this widget and read back what it renders, so the window
+	// is not the one part of the plugin that never runs until a human opens it.
 	// ---------------------------------------------------------------------------------------
 
 	/** Rebuilds the rows from the log through the current filter. */
 	void RebuildTimelineRows();
 
-	/** One row: the call's line, plus its detail when the row is expanded. */
+	/** One row: the call's line, with a neutral selected marker. */
 	TSharedRef<ITableRow> MakeTimelineRow(TSharedPtr<FTurboMCPCallTimeline::FListEntry> InItem,
 		const TSharedRef<STableViewBase>& InOwnerTable);
 
-	/** Expands or collapses one row and repaints the list. */
+	/** Selects one call for the inspector; it never executes anything. */
 	void ToggleTimelineRow(const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem);
-
-	/** True when that row is expanded. */
-	bool IsTimelineRowExpanded(const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem) const;
 
 	/** How many calls the filter kept, out of how many there are - the denominator `P1` asks for. */
 	FText GetTimelineCountText() const;
@@ -108,6 +111,30 @@ private:
 
 	/** The log this panel renders; production defaults to the singleton. */
 	FTurboMCPCallLog& GetCallLog() const { return CallLogProvider ? *CallLogProvider : FTurboMCPCallLog::Get(); }
+
+	/** Switches between the compact monitor and the tool workbench; no tool or setting is touched. */
+	void SetView(ETurboMCPView InView)
+	{
+		if (ActiveView != InView)
+		{
+			ActiveView = InView;
+			Invalidate(EInvalidateWidgetReason::Layout);
+		}
+	}
+	EVisibility GetMonitorVisibility() const { return ActiveView == ETurboMCPView::Monitor ? EVisibility::Visible : EVisibility::Collapsed; }
+	EVisibility GetToolsVisibility() const { return ActiveView == ETurboMCPView::Tools ? EVisibility::Visible : EVisibility::Collapsed; }
+	FText GetMonitorButtonText() const;
+	FText GetToolsButtonText() const;
+
+	/** The selected call's actual fields; absent fields are named unavailable. */
+	FText GetSelectedCallHeader() const;
+	FText GetSelectedCallDetail() const;
+
+	/** True when that row is the one selected for the inspector. */
+	bool IsTimelineRowSelected(const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem) const;
+
+	/** Reattaches the pinned selection only when exactly one full recorded call matches. */
+	void RestoreSelectedCall();
 
 	/** Rebuilds only when the log revision changed, and says whether it did. */
 	bool RefreshTimelineIfChanged();
@@ -149,14 +176,12 @@ private:
 	 */
 	FText GetCallTimelineText() const;
 
-	/**
-	 * What identifies one call in the list, for the expansion set.
-	 *
-	 * The stamp and the name. Two calls to one tool inside the same millisecond would collide, and the
-	 * honest fix would be a record index; a collision costs one row that opens with another's detail,
-	 * which is a smaller defect than an index that has to be kept in step with a filtered list.
-	 */
-	static FString TimelineRowKey(const FTurboMCPCallTimeline::FListEntry& InRow);
+	/** The selected call's inspector state. Pinned as a full record, never matched by name alone. */
+	TSharedPtr<FTurboMCPCallTimeline::FListEntry> SelectedTimelineRow;
+	FTurboMCPCallLog::FEntry SelectedTimelineCall;
+	bool bHasSelectedCall = false;
+	bool bSelectedCallInCurrentView = false;
+	bool bSelectedCallAmbiguous = false;
 
 	/** The status combo's face. */
 	FText GetSelectedTimelineStatusText() const;
@@ -175,8 +200,8 @@ private:
 	TArray<TSharedPtr<FTurboMCPCallTimeline::FListEntry>> TimelineRows;
 	TSharedPtr<SListView<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>> TimelineListView;
 
-	/** The keys of the expanded rows. A key is a call's identity, which is its stamp and its name. */
-	TSet<FString> ExpandedTimelineRows;
+	/** The current compact view; Monitor is the default. */
+	ETurboMCPView ActiveView = ETurboMCPView::Monitor;
 
 	/** The three text filters, as typed. */
 	FString TimelineToolsetFilter;
@@ -239,6 +264,9 @@ private:
 	 *  `.Text(FText::FromString(CachedStatus))` it used to carry kept the string the panel was built
 	 *  with, so a refresh could never change what was on screen. */
 	FText GetStatusText() const { return FText::FromString(CachedStatus); }
+
+	/** The first status line for the compact header; the full body lives in Tools. */
+	FText GetStatusSummary() const;
 
 	/** The toolset combo box's options. */
 	TArray<TSharedPtr<FString>> ToolsetOptions;
