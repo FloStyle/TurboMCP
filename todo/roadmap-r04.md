@@ -133,7 +133,7 @@ Scope and inventory:
 
 Contract notes:
 - `Assets` is required; omitted fields are rejected before the body. Explicit empty means provider/module facts with no asset rows. Comma/pipe separators are trimmed and empty parts culled; order is preserved and duplicates are not deduplicated.
-- Each input resolves through the shared resolver. Invalid/ambiguous/missing/multiple-asset-package/unsaved-package inputs are refused per row; a resolved package without a verified file is refused before any provider state query.
+- One row per nonempty input. Resolution failures and missing verified package files produce per-row refusals. Loaded-object and sole-package fallback routes do not universally reject ambiguous names or absent object members; multi-asset refusal belongs to the package fallback. An unsaved package may resolve but has no verified file, so it is refused before provider state. Duplicate inputs remain duplicate rows.
 - Disabled, unavailable and module-missing runs refuse every resolved asset with the engine string/module reason and do not call per-asset `GetState`.
 - Null provider state is reported as UNKNOWN. A non-null `IsUnknown` state is not checked; Perforce `DontCare` defaults can print as source-controlled true with provider text `Unknown`.
 - `ForceUpdate` does not prove refresh success: the single-file helper returns a state only when the array call returns `Succeeded` and is nonempty (otherwise null) and does not expose the result; pinned Perforce ignores `FUpdateStatus` failure and returns cached state with `Succeeded`.
@@ -155,7 +155,7 @@ Validation:
 - `python Tools/audit-inventory.py --check` exited 0: 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
 - `python Tools/test-result-contract.py` exited 0: PASS, C03-C08.
 - `python Tools/test-client-retry.py` exited 0: PASS, C01/C02.
-- `python Tools/execute-tests.py --profile offline --execute` exited 0 after corrections (request commit `861ef46`): report `.local/executions/4500325719d74722a50a67edbc702f38/report.json`, tree digest `6f3f2dfbb67e1750019cd52f20ac6fcd975d70162c68f69147462d0b9fa35045`; all offline suites passed.
+- `python Tools/execute-tests.py --profile offline --execute` exited 0 after consistency corrections (request commit `aa4cf84`): report `.local/executions/5c23c907de3b4e08995eb1b890ff84cb/report.json`, tree digest `969a2a37287f63d5e73d3f898ee7fa560606a1770c6ee1af5149f2abb821f90d`; all offline suites passed.
 - No engine suite, editor, build, direct MCP call, source-control checkout, packaging or recovery command was run. `test-vcs.py` and `test-vcs-write.py` are existing engine-suite assertions only, not results here.
 - Candidate-bound offline evidence is obtained after this commit and returned separately.
 

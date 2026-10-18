@@ -987,7 +987,7 @@
           "name": "Assets",
           "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
           "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate. Resolve tries direct forms first: loaded FindObject for slash-free names, then mounted object/package forms. The /Game-only FindAllByName registry fallback is later. Duplicate parts remain duplicate rows.",
-          "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
+          "effect": "One row per nonempty input. Resolution failures and missing verified package files produce per-row refusals. Loaded-object and sole-package fallback routes do not universally reject ambiguous names or absent object members; see R04-VCS-07. Duplicate inputs remain duplicate rows."
         }
       ],
       "source_reference": {
@@ -1934,7 +1934,7 @@
           "name": "Assets",
           "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
           "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate. Resolve tries direct forms first: loaded FindObject for slash-free names, then mounted object/package forms. The /Game-only FindAllByName registry fallback is later. Duplicate parts remain duplicate rows.",
-          "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
+          "effect": "One row per nonempty input. Resolution failures and missing verified package files produce per-row refusals. Loaded-object and sole-package fallback routes do not universally reject ambiguous names or absent object members; see R04-VCS-07. Duplicate inputs remain duplicate rows."
         }
       ],
       "source_reference": {
@@ -3078,7 +3078,7 @@
           "name": "Assets",
           "default": "explicit empty string = provider/module facts only, no asset rows; omitted is rejected by the engine schema",
           "parsing": "trimmed; SplitList splits on comma or pipe, culls empty parts, preserves order, and does not deduplicate. Resolve tries direct forms first: loaded FindObject for slash-free names, then mounted object/package forms. The /Game-only FindAllByName registry fallback is later. Duplicate parts remain duplicate rows.",
-          "effect": "one plan row per nonempty part; invalid/ambiguous/missing inputs are refused per row; duplicate parts remain duplicate rows and can cause duplicate provider state queries/checkouts."
+          "effect": "One row per nonempty input. Resolution failures and missing verified package files produce per-row refusals. Loaded-object and sole-package fallback routes do not universally reject ambiguous names or absent object members; see R04-VCS-07. Duplicate inputs remain duplicate rows."
         }
       ],
       "source_reference": {
@@ -4080,14 +4080,14 @@
         "Tools/test-vcs.py"
       ],
       "preserved_behavior": [
-        "four accepted path forms for simple assets",
+        "Simple accepted path forms",
         "case-insensitive short-name fallback",
-        "ambiguous short-name refusal",
+        "ambiguous short-name refusal in the /Game registry fallback",
         "package/file refusal before provider"
       ],
       "synthetic_probe": "Resolve a loaded asset by short name, an unloaded Package.Object path, a normal Package.Object_C class path, a package containing multiple assets, and a package path whose requested object member is absent.",
       "expected": "Document and test the actual route precedence. The loaded-object route must not be described as /Game-only; a package fallback must either match the requested member or say it selected the sole asset; the normal generated-class form is recognized or explicitly refused, not silently treated as another asset.",
-      "negative_control": "A genuine ambiguous short name still refuses with candidates; a normal sole-asset package still resolves; an invalid path still refuses.",
+      "negative_control": "A genuine ambiguous short name in the /Game registry fallback still refuses with candidates; a normal sole-asset package still resolves; an invalid path still refuses.",
       "fixture_gap": "Tests need a loaded-only object, an unloaded asset, a normal class path and a multi-asset package; current test-vcs.py uses two simple short names.",
       "validation": "No current resolver/route assertion covers these forms. Proposed test-vcs.py extension; exact engine command unavailable until fixtures are selected.",
       "rollback": "Revert TurboMCPAssetResolver.cpp and test-vcs.py only."
@@ -4284,10 +4284,10 @@
       "offline_profile": {
         "command": "python Tools/execute-tests.py --profile offline --execute",
         "exit": 0,
-        "report": ".local/executions/4500325719d74722a50a67edbc702f38/report.json",
-        "request_commit": "861ef46fafec4c7e31b3cc83aa89ac2cd6069339",
-        "tree_digest": "6f3f2dfbb67e1750019cd52f20ac6fcd975d70162c68f69147462d0b9fa35045",
-        "summary": "PASSED after checkpoint-3 corrections; all offline suites passed."
+        "report": ".local/executions/5c23c907de3b4e08995eb1b890ff84cb/report.json",
+        "request_commit": "aa4cf84b44b0c703a92ea6b134e50b335bb7e486",
+        "tree_digest": "969a2a37287f63d5e73d3f898ee7fa560606a1770c6ee1af5149f2abb821f90d",
+        "summary": "PASSED after consistency corrections; all offline suites passed."
       }
     }
   }
