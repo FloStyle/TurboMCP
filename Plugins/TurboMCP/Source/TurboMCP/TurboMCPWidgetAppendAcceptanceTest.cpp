@@ -480,7 +480,9 @@ namespace
 			OutFixture.LastError = TEXT("comparator package was not created");
 			return false;
 		}
-		OutFixture.Package->SetFlags(RF_Transient);
+		// Never set RF_Transient here: UObjectBaseUtility::MarkPackageDirty returns
+		// early for any transient outer and Apply's dirty signal would be hidden.
+		// The package is unique and is never saved.
 		OutFixture.Blueprint = FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(
 			OutFixture.Package, FName(*Leaf), BPTYPE_Normal, UUserWidget::StaticClass(),
 			UCanvasPanel::StaticClass(), TEXT("TurboMCPWidgetAppendAcceptanceTest"), false);
@@ -489,7 +491,6 @@ namespace
 			OutFixture.LastError = TEXT("comparator WidgetBlueprint was not created");
 			return false;
 		}
-		OutFixture.Blueprint->SetFlags(RF_Transient);
 		OutFixture.Tree = OutFixture.Blueprint->WidgetTree;
 		OutFixture.Root = Cast<UCanvasPanel>(OutFixture.Tree->RootWidget);
 		if (OutFixture.Root == nullptr)
@@ -615,7 +616,8 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 		AddError(TEXT("widget fixture: package could not be created"));
 		return false;
 	}
-	Package->SetFlags(RF_Transient);
+	// Keep the package non-transient so Apply can mark it dirty. The unique
+	// /Game/Tests path is never saved and no pre-existing asset is touched.
 	Fixture.Package = Package;
 	Fixture.Blueprint = FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(
 		Package, FName(*Leaf), BPTYPE_Normal, UUserWidget::StaticClass(),
@@ -626,7 +628,6 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 		AddError(TEXT("widget fixture: WidgetBlueprint or WidgetTree was not created"));
 		return false;
 	}
-	Fixture.Blueprint->SetFlags(RF_Transient);
 	Fixture.AssetPath = Fixture.Blueprint->GetPathName();
 	Fixture.Tree = Fixture.Blueprint->WidgetTree;
 	Fixture.Root = Cast<UCanvasPanel>(Fixture.Tree->RootWidget);
