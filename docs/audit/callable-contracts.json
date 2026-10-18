@@ -320,7 +320,7 @@
       "tests": [
         "Tools/test-compile-ensure.py:77-79 imports the C++ fixture for BP_NodeTest and BP_TestAlpha; :173 calls EditTurboMCPCompile on BP_NodeTest and checks only shape, saved text and a recognised verdict. It does not compile a Widget Blueprint or check generated class, bindings or persistence.",
         "Tools/test-uncovered-tools.py:138-150 calls EditTurboMCPCompile on BP_NodeTest and checks a per-asset line, saved/unsaved text and an unknown-name refusal.",
-        "Tools/test-graph-knots.py:286-300 compiles BP_NodeTest before/after a knot edit and compares a substring verdict; it does not assert package write or WBP compilation.",
+        "Tools/test-graph-knots.py:286-300 compiles TurboMCPAcceptance before/after a knot edit and compares a substring verdict; it does not assert package write or WBP compilation.",
         "Tools/test-save-thumbnail-option.py:92-94,187-197 and Tools/test-widget-tree.py:28 use WBP_NodeTest for save/read, not compile.",
         "No current test sets SaveOnCompile, compiles WBP_NodeTest, controls a widget compiler rule/error/warning, or reopens a compiled Widget Blueprint."
       ],
@@ -5299,7 +5299,7 @@
         "Tools/test-save-thumbnail-option.py:92-94,187-197 saves WBP_NodeTest and checks widget save text; it does not compile it.",
         "Tools/test-widget-tree.py:28 reads WBP_NodeTest; it does not compile or reopen it.",
         "Tools/test-compile-ensure.py:77-79,173 compiles BP_NodeTest and checks report shape; test-uncovered-tools.py:138-150 does the same.",
-        "Tools/test-graph-knots.py:286-300 compiles BP_NodeTest before/after a knot edit."
+        "Tools/test-graph-knots.py:286-300 compiles TurboMCPAcceptance before/after a knot edit."
       ],
       "missing_seams": [
         "No MCP tool or Python helper unloads/reloads one asset without restarting the editor; reopening requires an editor restart or manual restart.",

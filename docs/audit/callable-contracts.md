@@ -653,7 +653,7 @@ This is a proposed acceptance sequence, not an executed result. It uses only exi
 | 7 | `Tools/tmcp_editor.py` `stop_editor` then `ensure_editor` | Reopen from disk; this is the existing restart seam, not a per-asset reload. |
 | 8 | `ReadTurboMCPAssetDescribe`; `ReadTurboMCPWidgetTree` | Require loaded/on disk, generated-class path, no unsaved changes, and equality of the source widget-tree text. |
 
-**Existing assertions:** `Tools/test-save-thumbnail-option.py:92-94,187-197` uses `WBP_NodeTest` for save; `Tools/test-widget-tree.py:28` reads it; `Tools/test-compile-ensure.py:77-79,173` compiles `BP_NodeTest` only; `Tools/test-uncovered-tools.py:138-150` compiles `BP_NodeTest`; `Tools/test-graph-knots.py:286-300` compiles `BP_NodeTest` before/after a knot edit. No current test compiles `WBP_NodeTest`.
+**Existing assertions:** `Tools/test-save-thumbnail-option.py:92-94,187-197` uses `WBP_NodeTest` for save; `Tools/test-widget-tree.py:28` reads it; `Tools/test-compile-ensure.py:77-79,173` compiles `BP_NodeTest` only; `Tools/test-uncovered-tools.py:138-150` compiles `BP_NodeTest`; `Tools/test-graph-knots.py:286-300` compiles `TurboMCPAcceptance` before/after a knot edit. No current test compiles `WBP_NodeTest`.
 
 **Missing seams:** no MCP per-asset unload/reload; no reader for `UWidgetBlueprintGeneratedClass::Bindings` or reinstanced instances; no controlled `SaveOnCompile`, compiler-error or custom-rule fixture; no proposed test file exists. The generated-class path in `ReadTurboMCPAssetDescribe` is not proof of runtime bindings.
 
@@ -665,7 +665,7 @@ This is a proposed acceptance sequence, not an executed result. It uses only exi
 
 - `Tools/test-compile-ensure.py` (engine, T-STRUCT-7) compiles `BP_NodeTest` through `EditTurboMCPCompile` and checks shape/saved/verdict and the C++ ensure fixture; it does not compile a Widget Blueprint, inspect generated class/bindings, control `SaveOnCompile`, or reopen.
 - `Tools/test-uncovered-tools.py:138-150` compiles `BP_NodeTest` and checks a per-asset line, saved/unsaved text and unknown-name refusal.
-- `Tools/test-graph-knots.py:286-300` compiles `BP_NodeTest` before/after a knot edit and compares a substring verdict; no package write/persistence assertion.
+- `Tools/test-graph-knots.py:286-300` compiles `TurboMCPAcceptance` before/after a knot edit and compares a substring verdict; no package write/persistence assertion.
 - `Tools/test-save-thumbnail-option.py:92-94,187-197` saves `WBP_NodeTest`, not compile.
 - `Tools/test-widget-tree.py:28` reads `WBP_NodeTest`, not compile.
 - No test covers `EditTurboMCPCompile` omitted/empty/duplicate/malformed input, all-error or mixed batches, widget compiler rules, Common UI/Input, `SaveOnCompile`, generated bindings or reopen.
