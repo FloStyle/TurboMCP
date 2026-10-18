@@ -38,6 +38,14 @@ A reviewed specification and evidence record for each confirmed repair, with dup
 
 ## Completion evidence
 
+### Integrator acceptance: shared-value reader
+
+Accepted candidate `83d3443f03eadcbf5a8353df400b47119b3672c4` from base `315a264a83bfe63d222e59e4cd149a890d7f4a13`; trusted five-file scope passed. The first complete shared pure value is rendered inline; subsequent references retain the exact output pin. Partial, unsupported and malformed forms cannot become reusable definitions.
+
+Supervised pinned-5.8.3 engine run `dfa84d6a98d842d2b9ba55b4b9c52afa` passed build and `test-graph-text-guards`. `TurboMCP.GraphText.SharedValueRepair` returned Success with no errors or warnings. The supervisor restored sixteen files. Candidate engine tree digest: `2621352f3c3c2007b45fbbd45bdcf822555b233efdc6127f8b55ec8eabc798ba`. Offline run `e1587e485d2f4e108c68a954da1a1f5c` passed after the integrator refreshed only the generated capability plugin identity (101 tools unchanged).
+
+Earlier failed fixture runs remain local evidence; they were corrected without weakening the definition-count or exact-output-pin assertions. This acceptance covers the tested reader cases, not a complete reader/writer round trip, macro/no-entry completeness, Widget Blueprint acceptance, saved assets or fresh reopen. R04 remains incomplete.
+
 ### Shared-value reader repair (R04-SHARED-VALUE-01)
 
 Task R04, shared-value reader, claim `21e8dac84b6843df8adb0a1466d8db80` (owner `dsh-r04-shared-value-02`). Approved base `315a264a83bfe63d222e59e4cd149a890d7f4a13`; branch `task/r04-shared-value-reader`; worktree `C:\ExampleDev\SampleRoot005\conhost-integrator`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete and this assignment does not accept it.
