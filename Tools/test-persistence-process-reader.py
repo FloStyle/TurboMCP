@@ -1850,6 +1850,19 @@ class AcceptanceHarnessTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.acceptance._fixed_launch_command("arbitrary")
 
+        api = Api()
+        launch = self.acceptance.launch_suspended("worker", api=api)
+        api.ResumeThread = lambda handle: 0
+        with self.assertRaises(RuntimeError):
+            launch.resume()
+        launch.close()
+        api = Api()
+        launch = self.acceptance.launch_suspended("worker", api=api)
+        api.ResumeThread = lambda handle: 2
+        with self.assertRaises(RuntimeError):
+            launch.resume()
+        launch.close()
+
     def test_preassignment_attempt_orders_lifecycle_and_refuses_setup_failure(self):
         class Observer:
             def __init__(self, values, events): self.values = list(values); self.events = events
@@ -1962,6 +1975,26 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertNotEqual(result["status"], "passed", result)
         self.assertIn("observer-close", events)
 
+        events = []
+        observer = Observer([(1, 0)], events)
+        launched = []
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launched.append(mode),
+            clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertEqual(launched, [])
+        self.assertNotIn("assign", events)
+
+        events = []
+        observer = Observer([(0, 0)], events)
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: None,
+            clock=lambda: 100.0, setup_seconds=0.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertIn("setup-deadline", result["operation_detail"])
+
         class MembershipFailure(Observer):
             def is_process_in_job(self, launch): self.events.append("membership"); return False
         events = []
@@ -1985,6 +2018,28 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertEqual(result["status"], "blocked", result)
         self.assertEqual(result["accounting_status"], "passed")
         self.assertFalse(result["clean_run"])
+
+    def test_preassignment_control_requires_clean_positive_evidence(self):
+        base = {
+            "status": "failed", "detail": "extra-associated-process",
+            "exit_code": 0, "operation_error": False, "final": (2, 0),
+            "cleanup_errors": [], "port_api_error": None,
+            "ordering": {"worker_suspended": True, "process_released_before_final": True},
+        }
+        self.assertTrue(self.acceptance.preassignment_control_success(base))
+        for key, value in (
+            ("exit_code", 1),
+            ("operation_error", True),
+            ("final", (2, 1)),
+            ("final", (1, 0)),
+            ("cleanup_errors", ["close"]),
+            ("port_api_error", "completion-port:5"),
+            ("ordering", {"worker_suspended": True, "process_released_before_final": False}),
+            ("status", "blocked"),
+        ):
+            control = dict(base); control[key] = value
+            with self.subTest(key=key, value=value):
+                self.assertFalse(self.acceptance.preassignment_control_success(control))
 
     def test_preassignment_case_requires_negative_and_positive_control(self):
         class Observer:
@@ -2020,6 +2075,73 @@ class AcceptanceHarnessTests(unittest.TestCase):
              mock.patch.object(self.acceptance, "launch_suspended", side_effect=lambda mode: next(launches)):
             result = self.acceptance._case_preassignment_eof(Path(folder))
         self.assertEqual(result["status"], "blocked", result)
+
+    def test_suspended_launch_acquisition_failures_preserve_cleanup_errors(self):
+        class Api:
+            def __init__(self, fail=None, close_fail=None):
+                self.fail = fail; self.close_fail = close_fail
+                self.pipe_no = 0; self.closed = []; self.deleted = 0
+                self.terminated = []; self.waited = []
+            def _v(self, handle):
+                try: return ctypes.cast(handle, ctypes.c_void_p).value
+                except Exception: return int(handle)
+            def CreatePipe(self, read, write, sa, size):
+                self.pipe_no += 1
+                if self.fail == "pipe%d" % self.pipe_no: return 0
+                read._obj.value = 100 + (self.pipe_no - 1) * 2
+                write._obj.value = 101 + (self.pipe_no - 1) * 2
+                return 1
+            def SetHandleInformation(self, handle, mask, flags):
+                if self.fail == "inherit" and self._v(handle) == 101: return 0
+                if self.fail == "process-inherit" and self._v(handle) == 500: return 0
+                if self.fail == "thread-inherit" and self._v(handle) == 501: return 0
+                return 1
+            def InitializeProcThreadAttributeList(self, attr, count, flags, size):
+                if attr is None:
+                    size._obj.value = 0 if self.fail == "sizing" else 64
+                    return 0
+                if self.fail == "init": return 0
+                return 1
+            def UpdateProcThreadAttribute(self, *args): return 0 if self.fail == "update" else 1
+            def CreateProcessW(self, *args):
+                if self.fail == "create": return 0
+                info = args[-1]
+                info._obj.hProcess = 500; info._obj.hThread = 501
+                info._obj.dwProcessId = 777; info._obj.dwThreadId = 778
+                return 1
+            def CloseHandle(self, handle):
+                value = self._v(handle)
+                self.closed.append(value)
+                if self.close_fail == value: return 0
+                return 1
+            def DeleteProcThreadAttributeList(self, attr): self.deleted += 1
+            def ResumeThread(self, handle): return 1
+            def WaitForSingleObject(self, handle, timeout): self.waited.append(handle); return 0
+            def GetExitCodeProcess(self, handle, code): code._obj.value = 2; return 1
+            def TerminateProcess(self, handle, code): self.terminated.append(handle); return 1
+        for fail, expected_deleted, expected_closed in (
+            ("pipe2", 0, [100, 101]),
+            ("inherit", 0, [100, 101]),
+            ("sizing", 0, [100, 101, 102, 103, 104, 105]),
+            ("init", 0, [100, 101, 102, 103, 104, 105]),
+            ("update", 1, [100, 101, 102, 103, 104, 105]),
+            ("create", 1, [100, 101, 102, 103, 104, 105]),
+            ("process-inherit", 1, [100, 101, 102, 103, 104, 105, 500, 501]),
+            ("thread-inherit", 1, [100, 101, 102, 103, 104, 105, 500, 501]),
+        ):
+            api = Api(fail=fail)
+            with self.subTest(fail=fail), self.assertRaises(Exception):
+                self.acceptance.launch_suspended("worker", api=api)
+            self.assertEqual(api.deleted, expected_deleted, fail)
+            self.assertEqual(sorted(api.closed), sorted(expected_closed), fail)
+            self.assertEqual(api.terminated, [500] if fail in ("process-inherit", "thread-inherit") else [], fail)
+
+        api = Api(close_fail=100)
+        with self.assertRaises(Exception) as caught:
+            self.acceptance.launch_suspended("worker", api=api)
+        self.assertIn("child-handle-close", str(caught.exception))
+        self.assertIn(100, api.closed)
+        self.assertEqual(api.deleted, 1)
 
     def test_process_evidence_handle_scoped_failures(self):
         class Job:

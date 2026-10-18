@@ -550,8 +550,8 @@ class SuspendedLaunch:
         if not self.thread_handle:
             raise RuntimeError("resume:thread-handle-missing")
         result = self.api.ResumeThread(self.thread_handle)
-        if result == 0xFFFFFFFF:
-            raise ctypes.WinError(ctypes.get_last_error())
+        if result != 1:
+            raise RuntimeError("resume-unexpected-suspend-count:" + str(result))
         self.resumed = True
         errors = self._close("thread_handle")
         if errors:
@@ -621,10 +621,35 @@ def launch_suspended(mode, api=None):
     api = api or _win()
     command = _fixed_launch_command(mode)
     command_line = ctypes.create_unicode_buffer(subprocess.list2cmdline(command))
-    parent_handles = []
-    child_handles = []
+    ledger = []
     attr_buffer = None
+    attr_initialized = False
     launch = None
+
+    def acquire(handle, name):
+        entry = {"handle": handle, "name": name, "closed": False, "attempted": False,
+                 "transferred": False}
+        ledger.append(entry)
+        return entry
+
+    def close_entry(entry):
+        if entry["closed"] or entry["attempted"] or entry["transferred"]:
+            return []
+        entry["attempted"] = True
+        try:
+            if api.CloseHandle(entry["handle"]):
+                entry["closed"] = True
+                return []
+            return [entry["name"] + ":" + str(ctypes.get_last_error())]
+        except Exception as exc:
+            return [entry["name"] + ":" + str(exc)]
+
+    def close_ledger():
+        errors = []
+        for entry in list(ledger):
+            errors.extend(close_entry(entry))
+        return errors
+
     try:
         def pipe(child_is_read):
             read = W.HANDLE()
@@ -632,29 +657,37 @@ def launch_suspended(mode, api=None):
             sa = SECURITY_ATTRIBUTES(ctypes.sizeof(SECURITY_ATTRIBUTES), None, True)
             if not api.CreatePipe(ctypes.byref(read), ctypes.byref(write), ctypes.byref(sa), 0):
                 raise ctypes.WinError(ctypes.get_last_error())
+            read_entry = acquire(read, "pipe-read")
+            write_entry = acquire(write, "pipe-write")
             child = read if child_is_read else write
             parent = write if child_is_read else read
+            child_entry = read_entry if child_is_read else write_entry
+            parent_entry = write_entry if child_is_read else read_entry
             if not api.SetHandleInformation(parent, HANDLE_FLAG_INHERIT, 0):
-                api.CloseHandle(read); api.CloseHandle(write)
-                raise ctypes.WinError(ctypes.get_last_error())
-            return child, parent
+                error = ctypes.WinError(ctypes.get_last_error())
+                cleanup = close_entry(read_entry) + close_entry(write_entry)
+                if cleanup:
+                    raise RuntimeError(str(error) + "; cleanup:" + ";".join(cleanup)) from error
+                raise error
+            return child_entry, parent_entry
 
         stdin_read, stdin_write = pipe(True)
-        child_handles.append(stdin_read); parent_handles.append(stdin_write)
         stdout_write, stdout_read = pipe(False)
-        parent_handles.append(stdout_read); child_handles.append(stdout_write)
         stderr_write, stderr_read = pipe(False)
-        parent_handles.append(stderr_read); child_handles.append(stderr_write)
+        child_entries = [stdin_read, stdout_write, stderr_write]
+        parent_entries = [stdin_write, stdout_read, stderr_read]
 
         size = ctypes.c_size_t()
         api.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
+        sizing_error = ctypes.get_last_error()
         if size.value == 0:
-            raise ctypes.WinError(ctypes.get_last_error())
+            raise ctypes.WinError(sizing_error or 122)
         attr_buffer = ctypes.create_string_buffer(size.value)
         attr_list = ctypes.cast(attr_buffer, ctypes.c_void_p)
         if not api.InitializeProcThreadAttributeList(attr_list, 1, 0, ctypes.byref(size)):
             raise ctypes.WinError(ctypes.get_last_error())
-        inherited = (W.HANDLE * 3)(stdin_read, stdout_write, stderr_write)
+        attr_initialized = True
+        inherited = (W.HANDLE * 3)(stdin_read["handle"], stdout_write["handle"], stderr_write["handle"])
         if not api.UpdateProcThreadAttribute(
                 attr_list, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
                 ctypes.cast(inherited, ctypes.c_void_p), ctypes.sizeof(inherited),
@@ -664,9 +697,9 @@ def launch_suspended(mode, api=None):
         startup = STARTUPINFOEXW()
         startup.StartupInfo.cb = ctypes.sizeof(STARTUPINFOEXW)
         startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES
-        startup.StartupInfo.hStdInput = stdin_read
-        startup.StartupInfo.hStdOutput = stdout_write
-        startup.StartupInfo.hStdError = stderr_write
+        startup.StartupInfo.hStdInput = stdin_read["handle"]
+        startup.StartupInfo.hStdOutput = stdout_write["handle"]
+        startup.StartupInfo.hStdError = stderr_write["handle"]
         startup.lpAttributeList = attr_list
         process_info = PROCESS_INFORMATION()
         if not api.CreateProcessW(
@@ -675,32 +708,40 @@ def launch_suspended(mode, api=None):
                 None, str(ROOT), ctypes.byref(startup), ctypes.byref(process_info)):
             raise ctypes.WinError(ctypes.get_last_error())
         launch = SuspendedLaunch(api, process_info.hProcess, process_info.hThread,
-                                 int(process_info.dwProcessId), stdin_write, stdout_read, stderr_read)
+                                 int(process_info.dwProcessId), stdin_write["handle"],
+                                 stdout_read["handle"], stderr_read["handle"])
+        for entry in parent_entries:
+            entry["transferred"] = True
         if not api.SetHandleInformation(process_info.hProcess, HANDLE_FLAG_INHERIT, 0):
             raise ctypes.WinError(ctypes.get_last_error())
         if not api.SetHandleInformation(process_info.hThread, HANDLE_FLAG_INHERIT, 0):
             raise ctypes.WinError(ctypes.get_last_error())
-        parent_handles = []
-        for handle in list(child_handles):
-            child_handles.remove(handle)
-            if not api.CloseHandle(handle):
-                raise ctypes.WinError(ctypes.get_last_error())
-        child_handles = []
-        if attr_buffer is not None:
+        child_errors = []
+        for entry in child_entries:
+            child_errors.extend(close_entry(entry))
+        if child_errors:
+            raise RuntimeError("child-handle-close:" + ";".join(child_errors))
+        if attr_initialized:
             api.DeleteProcThreadAttributeList(ctypes.cast(attr_buffer, ctypes.c_void_p))
+            attr_initialized = False
             attr_buffer = None
         return launch
-    except Exception:
+    except Exception as primary:
+        cleanup_errors = []
+        deadline = time.monotonic() + CLEANUP_LIMIT_SECONDS
         if launch is not None:
-            launch.close()
-            parent_handles = []
-        for handle in child_handles + parent_handles:
             try:
-                api.CloseHandle(handle)
-            except Exception:
-                pass
-        if attr_buffer is not None:
-            api.DeleteProcThreadAttributeList(ctypes.cast(attr_buffer, ctypes.c_void_p))
+                cleanup_errors.extend(launch.close(deadline))
+            except Exception as exc:
+                cleanup_errors.append("launch-close:" + str(exc))
+        cleanup_errors.extend(close_ledger())
+        if attr_initialized:
+            try:
+                api.DeleteProcThreadAttributeList(ctypes.cast(attr_buffer, ctypes.c_void_p))
+            except Exception as exc:
+                cleanup_errors.append("attribute-delete:" + str(exc))
+        if cleanup_errors:
+            raise RuntimeError(str(primary) + "; cleanup:" + ";".join(cleanup_errors)) from primary
         raise
 
 
@@ -1106,13 +1147,15 @@ def preassignment_accounting_decision(initial, baseline, final, ordering_valid=N
 
 
 def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
-                           wait_seconds=10.0):
+                           wait_seconds=10.0, setup_seconds=10.0,
+                           observation_seconds=10.0):
     launcher = launcher or launch_suspended
     launch = None
     initial = None
     baseline = None
     final = None
     exit_code = None
+    setup_deadline = clock() + setup_seconds
     ordering = {
         "worker_suspended": False,
         "initial_zero": False,
@@ -1127,7 +1170,12 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     unexpected = []
     port_error = None
     cleanup_errors = []
+    operation_error = False
     detail = "not-observed"
+
+    def setup_remaining():
+        if clock() >= setup_deadline:
+            raise RuntimeError("setup-deadline")
     try:
         observer_api = getattr(observer, "api", None)
         for handle_name in ("handle", "port"):
@@ -1135,24 +1183,36 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
             if observer_api is not None and handle:
                 if not observer_api.SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0):
                     raise ctypes.WinError(ctypes.get_last_error())
+        setup_remaining()
         initial = observer.accounting()
         ordering["initial_zero"] = initial == (0, 0)
+        if initial != (0, 0):
+            raise RuntimeError("initial-accounting-not-zero")
+        setup_remaining()
         launch = launcher(mode)
         ordering["worker_suspended"] = True
+        setup_remaining()
         observer.assign(launch)
         ordering["assigned_before_resume"] = True
+        setup_remaining()
         if not observer.is_process_in_job(launch):
             raise RuntimeError("membership-not-verified")
         ordering["membership_verified"] = True
+        setup_remaining()
         baseline = observer.accounting()
         ordering["baseline_one"] = baseline == (1, 1)
         if not ordering["baseline_one"]:
             raise RuntimeError("baseline-accounting-not-one")
+        setup_remaining()
+        observation_deadline = clock() + observation_seconds
         launch.resume()
         ordering["resumed"] = True
         launch.close_stdin()
         ordering["eof_after_assignment"] = True
-        if not launch.wait(int(wait_seconds * 1000)):
+        remaining = max(0.0, observation_deadline - clock())
+        if remaining <= 0:
+            raise RuntimeError("observation-deadline")
+        if not launch.wait(min(wait_seconds, remaining) * 1000):
             raise RuntimeError("worker-wait-timeout")
         ordering["worker_exited"] = True
         exit_code = launch.exit_code
@@ -1163,12 +1223,16 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
         def observed(pid):
             if pid != launch.pid:
                 unexpected.append(pid)
+        remaining = max(0.0, observation_deadline - clock())
+        if remaining <= 0:
+            raise RuntimeError("observation-deadline")
         try:
-            port_error = observer.drain_messages(clock() + 2.0, observed, clock=clock)
+            port_error = observer.drain_messages(clock() + min(2.0, remaining), observed, clock=clock)
         except Exception as exc:
             port_error = "completion-port:" + str(exc)
     except Exception as exc:
         detail = type(exc).__name__ + ": " + str(exc)
+        operation_error = True
     finally:
         cleanup_deadline = clock() + CLEANUP_LIMIT_SECONDS
         if launch is not None:
@@ -1189,12 +1253,37 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
         port_api_error=port_error,
     )
     decision.update(mode=mode, ordering=ordering, exit_code=exit_code,
-                    cleanup_errors=cleanup_errors, operation_detail=detail)
+                    cleanup_errors=cleanup_errors, operation_detail=detail,
+                    operation_error=operation_error)
     if decision["status"] == "passed" and port_error is not None:
         decision["status"] = "blocked"
         decision["detail"] = "accounting-proved-with-port-api-error"
         decision["accounting_status"] = "passed"
     return decision
+
+
+def preassignment_control_success(control):
+    """A control is successful only when it exercised a clean extra-association refusal."""
+    if not isinstance(control, dict):
+        return False
+    ordering = control.get("ordering")
+    if not isinstance(ordering, dict) or not ordering or not all(ordering.values()):
+        return False
+    if control.get("status") != "failed" or control.get("detail") != "extra-associated-process":
+        return False
+    if control.get("exit_code") != 0 or control.get("operation_error") is not False:
+        return False
+    final = control.get("final")
+    if (not isinstance(final, tuple) or len(final) != 2
+            or any(isinstance(value, bool) or type(value) is not int for value in final)):
+        return False
+    if final[0] < 2 or final[1] != 0:
+        return False
+    if control.get("cleanup_errors"):
+        return False
+    if control.get("port_api_error") is not None:
+        return False
+    return True
 
 
 def _case_preassignment_eof(work):
@@ -1210,9 +1299,7 @@ def _case_preassignment_eof(work):
         control = {"status": "blocked", "detail": "control-setup:" + str(exc)}
         attempt_errors.append(str(exc))
     negative_ok = negative.get("status") == "passed"
-    control_ok = (control.get("status") == "failed"
-                  and control.get("detail") == "extra-associated-process"
-                  and not control.get("cleanup_errors"))
+    control_ok = preassignment_control_success(control)
     result = {
         "status": "passed" if negative_ok and control_ok and not attempt_errors else "blocked",
         "detail": "preassignment-accounting-and-control" if negative_ok and control_ok else "preassignment-not-proved",

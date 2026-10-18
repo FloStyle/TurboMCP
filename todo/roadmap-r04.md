@@ -553,6 +553,8 @@ Implementation slice B (reviewer-approved; offline validation only):
 - The case now requires both the real-worker negative (exit 2, baseline 1/1, final 1/0, clean accounting/ordering/cleanup) and a fixed short-lived-child control whose lifetime total reaches at least two with active zero. The control succeeds only when the detector refuses it; its expected refusal is not an unconditional suite failure. Missing positive evidence blocks the case.
 - Accounting remains primary; notifications are positive corroboration. A port/API error is retained and downgrades an otherwise proved accounting result to a non-clean blocked result rather than claiming an entirely clean pass. The five previously passing cases are unchanged.
 - Offline tests use fake APIs, handles, processes and clocks: exact create→assign→baseline→resume→EOF→wait→release→query order; restricted handle list; setup failures without resume; resume/EOF/wait/query/close failure cleanup; extra total two with notifications omitted; true negative; positive control; missing control; suspended launch command/flags and no native operation at import.
+- Slice B correction: raw launcher acquisition now uses an explicit ledger. Handles are removed/transferred only after confirmed close or ownership transfer, failed closes are retained and reported, the original Win32 error is preserved, and one launcher-failure cleanup deadline terminates and bounded-waits the exact suspended process without resuming it. `DeleteProcThreadAttributeList` is called only after successful attribute-list initialization.
+- Slice B correction: initial accounting is rejected before launch unless `0/0`; setup/observation deadlines use remaining budgets; `ResumeThread` requires the expected previous suspend count of one; and control success is a dedicated predicate requiring validated ordering, exit zero, final total at least two with active zero, clean required queries/cleanup and no API/operation error. Detector refusal remains separately visible.
 - This slice is offline-only. No native suspended launch, accounting or positive-control run was performed. Integrator evidence remains tied to exact candidate `29560ec…`; it does not certify this new code. The later supervisor-only command remains `python Tools/execute-tests.py --profile persistence-native --max-seconds 180 --execute`, after independent review.
 
 Offline tests and later supervisor-only command:
@@ -560,7 +562,7 @@ Offline tests and later supervisor-only command:
 - After review and implementation, the later supervisor-only command is exactly `python Tools/execute-tests.py --profile persistence-native --max-seconds 180 --execute`. A pass of `preassignment_eof` would remain synthetic supervisor evidence, not production-reader certification; the harness overall remains unaccepted until separately reviewed.
 
 Validation:
-- `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 94 tests ... OK`.
+- `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 96 tests ... OK`.
 - `python Tools/validate-repo.py` — exit 0.
 - `python Tools/check-language.py` — exit 0.
 - `python Tools/execute-tests.py --profile offline --execute` — exit 0; the candidate-bound report path and its request commit are returned in the submission after the final commit; all offline checks passed.
