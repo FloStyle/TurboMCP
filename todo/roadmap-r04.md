@@ -465,6 +465,68 @@ Limitations:
 - Native harness execution, parent-death/Add-Type results and live admission remain integration-owner work.
 - Remaining debt: preassignment interval proof remains blocked; native harness/teardown and native compiler observation remain unexecuted. Timeout end-to-end and compiler observation now have injected offline coverage.
 
+Integrator-owned native evidence (not worker execution or acceptance):
+- Exact candidate `29560ec3abf1b41389bf04b1fe27130d689eadb7`, tree `c9fe57732716710d852a4de4d403796341180ef8330fe6dad51a360b64405358`.
+- Integrator ran exactly `python Tools/execute-tests.py --profile persistence-native --max-seconds 180 --execute`. Evidence: `.local/executions/e1be5b01bb3248fbb78427d0dba4ce19/report.json` and `00.log`; duration 32.373s, child exit code 2, no timeout, `engine` empty.
+- Supervisor status was `failed` because the harness status was `blocked`; this is not a native acceptance pass. Passed cases were timeout_descendant (active count two), inherited_pipe (stdout and cleanup), parent_death (verified retained child signaled), add_type_compiler (csc.exe with membership/creation/image plus cvtres.exe and compile result zero), and unrelated_sentinel.
+- `preassignment_eof` remained BLOCKED: the real worker refused empty EOF, membership was assigned, and the final active snapshot was zero. The preassignment interval was not observed. No production-reader path, Unreal, editor or build was certified.
+
+### Preassignment observation design (proposal only; no implementation)
+
+Required property:
+- Prove that during the interval from the first instruction of the fixed worker to the observed worker exit, the worker created no process other than itself. This is stronger than “no surviving owned descendant” and stronger than an empty final ActiveProcesses snapshot.
+- A child that starts and exits before an active-count sample must still be detected. The final active count proves only absence of a survivor, not absence of a launch.
+
+Chosen smallest viable design: suspended worker plus an owner-created observation/containment job with a completion port.
+1. The harness creates a fresh `KILL_ON_JOB_CLOSE` job and associates a completion port before the worker exists. This is the observer/containment job; it is not the worker's production inner assignment and does not claim to be one.
+2. Launch the fixed worker suspended (`CREATE_SUSPENDED`) so no worker code runs before containment is installed. The harness owns the process and thread handles, the stdin pipe handles and the observer job/port.
+3. Assign the suspended worker to the observer job and verify membership. Keep the worker's exact PID and process handle; the worker is the only expected `NEW_PROCESS` identity. Assignment of the suspended worker itself may produce a `NEW_PROCESS` message; it is accepted only for the exact worker PID and is separately recorded.
+4. Resume the worker, then close the owned stdin pipe to release EOF only after assignment and observer readiness. Do not use a fixed sleep as readiness.
+5. Drain `JOB_OBJECT_MSG_NEW_PROCESS` notifications from before resume through observed worker exit. Any non-worker PID is an unexpected child creation, even if that process is already gone and the job active count is zero. Do not later open or certify that PID; the message is the evidence.
+6. After exit, drain the port until idle under the same observation budget and query active processes while the job handle remains open. Job close is the containment cleanup. A port timeout, API error, lost message, assignment/resume/EOF failure, or nonzero unexpected-process count is BLOCKED, never passed.
+
+Exact property and evidence:
+- `worker_suspended`, `observer_job_created`, `assigned_before_resume`, `membership_verified`, `resumed`, `eof_after_assignment`, `worker_refused` (exit code 2), `new_process_messages` with worker identity separated, `unexpected_new_process_count == 0`, `active_at_exit == 0`, `port_drained_after_exit`, `observer_cleanup`.
+- Pass only when the ordering flags are true, the worker refused empty EOF, there are zero non-worker `NEW_PROCESS` messages, the post-exit port drain is clean, active count is zero while the handle is open, and cleanup succeeds.
+- The final active count is retained as a secondary containment check, never as the primary “no child ever launched” proof.
+
+Ownership and deadlines:
+- Harness owns the observer job, completion port, suspended worker process handle, primary thread handle until resume, stdin write handle and stdout/stderr read handles.
+- One setup deadline covers create/assign/resume/EOF. One observation deadline covers worker exit and post-exit port drain. One cleanup deadline covers resume fallback, worker wait/kill, pipe closes, port drain/close, job close and thread join.
+- Every handle is closed in `finally`; job close terminates any surviving observer-owned descendant. No global process search, name match, bare-PID kill or later PID lookup is used.
+
+Expected controls:
+- Negative control: the real fixed worker with empty EOF exits 2 and produces no non-worker `NEW_PROCESS`; this is the only path that may become a reviewed pass.
+- Positive control: a synthetic helper that launches a short-lived child before reading EOF and then exits must produce a non-worker `NEW_PROCESS` and fail, even though the final active count is zero. This proves the detector is not relying on survival.
+- Additional failures: suspended creation/assignment/resume/EOF failure, membership failure, port timeout versus non-timeout API error, unexpected `NEW_PROCESS`, cleanup failure.
+
+Unobservable interval and limits:
+- The worker cannot execute before resume, so loader work while suspended is not a worker child-launch interval. If `CREATE_SUSPENDED` or resume is unavailable or fails, the case remains BLOCKED.
+- Normal Windows child creation inherits the observer job and is covered by `NEW_PROCESS`. A child deliberately created outside the job via job breakaway or an explicit job list, or created by another process on the worker's behalf, is not proven by this design. The fixed worker does not use those mechanisms; this is stated as a limit, not generalized to arbitrary processes.
+- Completion-port delivery failure or an unobserved port interval cannot certify absence; it blocks.
+- This observer is harness evidence, not production reader admission and not a general process monitor. It does not certify the production reader's own job assignment or native parent-death behavior.
+
+Alternatives and tradeoffs:
+- Observer job without suspension: simpler, but the worker can launch before assignment; rejected because it leaves the exact race this case is meant to close.
+- Final active count or marker absence: cheap, but cannot distinguish “never launched” from “launched and exited”; rejected as proof.
+- ETW or a general process monitor: broader permissions, loss and lifetime surface; rejected as disproportionate.
+- Instrumenting the worker to report before child creation: tests a reporting path rather than independent observation, and would touch production code; rejected.
+
+Proposed files (not permission to edit in this dispatch):
+- `Tools/persistence-job-acceptance.py` — suspended worker creation, observer job/port ordering, EOF release, drain, cleanup and preassignment evidence.
+- `Tools/test-persistence-process-reader.py` — deterministic fake Win32/job/port/process/clock tests for ordering, short-lived positive child, only-worker negative, port errors and cleanup failures.
+- `todo/roadmap-r04.md` — Completion evidence only.
+- `Tools/execute-tests.py` — no change expected; current `persistence-native` mapping remains.
+- No production reader/runtime, PowerShell, catalog, engine or profile change is proposed.
+
+Allowlist check:
+- The current four-file allowlist is sufficient for this proposal because the suspended-launch/observer logic belongs in the existing harness and its offline tests. No production seam is required.
+- If implementation were restricted to `Popen`-only spawning with no suspended/resume control, the exact missing seam would be a harness-owned suspended launch plus resume/thread-handle capability; without it the interval cannot be proven and must stay BLOCKED.
+
+Offline tests and later supervisor-only command:
+- Offline tests must inject fake `CreateProcessW`/resume, job/port, process, pipe and seconds clocks; assert create→assign→verify→resume→EOF ordering, only-worker messages pass, short-lived non-worker message fails, active count zero cannot override a non-worker message, and all cleanup paths close every owned handle.
+- After review and implementation, the later supervisor-only command is exactly `python Tools/execute-tests.py --profile persistence-native --max-seconds 180 --execute`. A pass of `preassignment_eof` is still synthetic supervisor evidence, not production-reader certification; the harness overall remains unaccepted until separately reviewed.
+
 Validation:
 - `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 88 tests ... OK`.
 - `python Tools/validate-repo.py` — exit 0.
