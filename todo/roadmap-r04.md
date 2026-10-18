@@ -1393,3 +1393,12 @@ Run focused offline tests, full offline profile and full-base scope gate. Commit
 and retain candidate-bound evidence; report SHA, claim, exact changed files and
 unresolved native prerequisites. Stop with claim retained. No merge, push,
 release, task completion, engine/build/editor/recovery or live native action.
+
+## Deferred review tasks (owner-requested integration)
+
+These candidates are merged at the owner's request, not accepted as runtime-certified.
+
+- [ ] R04-FOLLOWUP-PERSISTENCE: Review the disabled Widget persistence candidate 8b4fe3cdf2cdb40e8075f87e7d3ed353ba4c4af6 before enabling it. Keep the unconditional admission refusal. Repair per-generation cleanup without clearing dirty flags or marking objects garbage to force success; use exact acquired fixture ownership instead of a directory-prefix exemption; prove exclusive directory acquisition and ancestor/reparse confinement; correct retirement after pointers are cleared; track partial reload generations. Review supervisor admission, then build and run the bounded persistence contract with success, refusal, failure and cleanup evidence. Scope: TurboMCPWidgetPersistenceTest.cpp and test-widget-persistence.py; admission changes need a separately reviewed scope. This is not Monday's passing MCP package-reload smoke test.
+- [ ] R04-FOLLOWUP-MENUS: Review menu candidate b2e535f27b6176dd176c4c6ed6f936fb288e5702 in the pinned editor. Verify Window icon, dedicated TurboMCP Tools section, both open actions, single entry after re-registration, and safe shutdown/reload removal. Check narrow-window rendering and keyboard navigation. Scope: STurboMCPPanel.cpp menu registration only. Source review does not establish visual/lifecycle acceptance.
+
+Verification: supervised build first; menu follow-up uses the owned editor and focused panel suites. The catalog lists the merged wrapper for inventory completeness; it remains disabled and is expected to report BLOCKED. Do not execute the persistence suite until its blockers above are resolved. Neither checkbox is completed by merging source.

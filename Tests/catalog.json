@@ -665,6 +665,14 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-persistence",
+      "path": "Tools/test-widget-persistence.py",
+      "tier": "engine",
+      "timeout_seconds": 900,
+      "acceptance": "not_mapped",
+      "note": "Disabled native admission; expected BLOCKED until R04-FOLLOWUP-PERSISTENCE is resolved. Not acceptance evidence."
     }
   ]
 }
