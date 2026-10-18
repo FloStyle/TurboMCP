@@ -268,10 +268,12 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the inspector shows known characters"), Detail.Contains(TEXT("characters: 12")));
 		TestTrue(TEXT("the inspector labels the token estimate"), Detail.Contains(TEXT("tokens (estimate): 3")));
 	}
+	bool bFoundUnfinished = false;
 	for (const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& Row : FTurboMCPPanelHistoryTestAccess::Rows(*Panel))
 	{
 		if (Row.IsValid() && !Row->bHeading && Row->Call.Tool == TEXT("unfinished"))
 		{
+			bFoundUnfinished = true;
 			Panel->ToggleTimelineRow(Row);
 			TestTrue(TEXT("an unfinished inspector header says completion not observed"),
 				FTurboMCPPanelHistoryTestAccess::InspectorHeader(*Panel).ToString().Contains(TEXT("completion not observed")));
@@ -281,10 +283,14 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 			break;
 		}
 	}
+	TestTrue(TEXT("the unfinished history prerequisite is present"), bFoundUnfinished);
+
+	bool bFoundEngineOnly = false;
 	for (const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& Row : FTurboMCPPanelHistoryTestAccess::Rows(*Panel))
 	{
 		if (Row.IsValid() && !Row->bHeading && Row->Call.Tool == TEXT("engine-only"))
 		{
+			bFoundEngineOnly = true;
 			Panel->ToggleTimelineRow(Row);
 			TestTrue(TEXT("an engine-only inspector says the request is unavailable"),
 				FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString().Contains(
@@ -295,6 +301,7 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 			break;
 		}
 	}
+	TestTrue(TEXT("the engine-only history prerequisite is present"), bFoundEngineOnly);
 	TestFalse(TEXT("selecting history starts no call"), Panel->GetToolRunner().IsCallPending());
 	TestTrue(TEXT("selecting history leaves the call result unset"),
 		Panel->GetToolRunner().GetResult().bIsComplete == bCompleteBeforeSelection);
