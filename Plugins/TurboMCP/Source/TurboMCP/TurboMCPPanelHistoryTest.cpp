@@ -58,6 +58,30 @@ namespace
 		return Count;
 	}
 
+	const FTurboMCPCallTimeline::FListEntry* LastCallRow(
+		FAutomationTestBase& Test, const STurboMCPPanel& Panel, const TCHAR* Context)
+	{
+		const TArray<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>& Rows =
+			FTurboMCPPanelHistoryTestAccess::Rows(Panel);
+		if (Rows.Num() == 0)
+		{
+			Test.AddError(FString::Printf(TEXT("%s: the panel history has no rows"), Context));
+			return nullptr;
+		}
+		const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& Row = Rows.Last();
+		if (!Row.IsValid())
+		{
+			Test.AddError(FString::Printf(TEXT("%s: the last history row is invalid"), Context));
+			return nullptr;
+		}
+		if (Row->bHeading)
+		{
+			Test.AddError(FString::Printf(TEXT("%s: the last history row is a heading, not a call"), Context));
+			return nullptr;
+		}
+		return Row.Get();
+	}
+
 	void AddCall(FTurboMCPCallLog& Log, const TCHAR* Tool, const TCHAR* Phase,
 		const TCHAR* Source, int32 ResultChars, int32 TokenEstimate)
 	{
@@ -113,7 +137,10 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the panel refreshes at the cap"), FTurboMCPPanelHistoryTestAccess::Refresh(*Panel));
 	TestEqual(TEXT("the panel rendered the new revision"), FTurboMCPPanelHistoryTestAccess::RenderedRevision(*Panel), Log->GetRevision());
 	TestEqual(TEXT("the capped list still holds one call per record"), CallRows(*Panel), 1000);
-	TestEqual(TEXT("the newest capped row is visible"), FTurboMCPPanelHistoryTestAccess::Rows(*Panel).Last()->Call.Tool, FString(TEXT("tool-newest")));
+	if (const FTurboMCPCallTimeline::FListEntry* Newest = LastCallRow(*this, *Panel, TEXT("capped history")))
+	{
+		TestEqual(TEXT("the newest capped row is visible"), Newest->Call.Tool, FString(TEXT("tool-newest")));
+	}
 
 	// An unchanged revision must not rebuild.
 	const uint64 CapRebuilds = FTurboMCPPanelHistoryTestAccess::Rebuilds(*Panel);
@@ -130,7 +157,10 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("the refill returns to the same entry count"), Log->NumEntries(), 1000);
 	TestTrue(TEXT("a clear/refill revision change refreshes"), FTurboMCPPanelHistoryTestAccess::Refresh(*Panel));
-	TestEqual(TEXT("the refill rows are the new calls"), FTurboMCPPanelHistoryTestAccess::Rows(*Panel).Last()->Call.Tool, FString(TEXT("refill-999")));
+	if (const FTurboMCPCallTimeline::FListEntry* Refilled = LastCallRow(*this, *Panel, TEXT("refilled history")))
+	{
+		TestEqual(TEXT("the refill rows are the new calls"), Refilled->Call.Tool, FString(TEXT("refill-999")));
+	}
 
 	// Measured zero, unknown sizes and completion-not-observed are distinct.
 	Log->Clear();
@@ -152,9 +182,11 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 		Summary.ToString().Contains(TEXT("1 completion not observed")));
 	TestFalse(TEXT("an unmatched start is not reported as running"),
 		Summary.ToString().Contains(TEXT("running")));
-	TestTrue(TEXT("the unfinished row is rendered honestly"),
-		FTurboMCPCallTimeline::RenderRow(FTurboMCPPanelHistoryTestAccess::Rows(*Panel).Last()->Call)
-			.Contains(TEXT("completion not observed")));
+	if (const FTurboMCPCallTimeline::FListEntry* Unfinished = LastCallRow(*this, *Panel, TEXT("unfinished history")))
+	{
+		TestTrue(TEXT("the unfinished row is rendered honestly"),
+			FTurboMCPCallTimeline::RenderRow(Unfinished->Call).Contains(TEXT("completion not observed")));
+	}
 
 	// A disabled write changes neither entries nor revision.
 	Log->SetEnabled(false);
