@@ -242,17 +242,14 @@ namespace
 			UKismetStringLibrary::StaticClass()->FindFunctionByName(TEXT("BuildString_Double")));
 	}
 
-	UK2Node_BreakStruct* AddBreakVector(UEdGraph* InGraph)
+	UK2Node_CallFunction* AddBreakVector(UEdGraph* InGraph)
 	{
-		UK2Node_BreakStruct* Node = NewObject<UK2Node_BreakStruct>(InGraph);
-		if (Node == nullptr)
-		{
-			return nullptr;
-		}
-		Node->StructType = TBaseStructure<FVector>::Get();
-		InGraph->AddNode(Node, /*bUserAction=*/false, /*bSelectNewNode=*/false);
-		Node->AllocateDefaultPins();
-		return Node;
+		// `UK2Node_BreakStruct` has no dependable reader type ID in this build
+		// (the automation run produced an empty ID). The pinned math library
+		// exposes `BreakVector` as a BlueprintPure multi-output function with a
+		// real menu category and fixed X/Y/Z output pins.
+		return AddCall(InGraph,
+			UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("BreakVector")));
 	}
 
 	UK2Node_Knot* AddKnot(UEdGraph* InGraph)
@@ -402,7 +399,7 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 	// ---- direct and rerouted multi-output shared value -------------------
 	{
 		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("SharedMultiOutput"));
-		UK2Node_BreakStruct* Break = Graph != nullptr ? AddBreakVector(Graph) : nullptr;
+		UK2Node_CallFunction* Break = Graph != nullptr ? AddBreakVector(Graph) : nullptr;
 		UK2Node_CallFunction* BuildA = Graph != nullptr ? AddBuildString(Graph) : nullptr;
 		UK2Node_CallFunction* BuildB = Graph != nullptr ? AddBuildString(Graph) : nullptr;
 		UK2Node_CallFunction* PrintA = Graph != nullptr ? AddPrintString(Graph) : nullptr;
@@ -416,7 +413,7 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		}
 		if (Break == nullptr)
 		{
-			AddError(TEXT("shared multi-output fixture: UK2Node_BreakStruct(FVector) was not created"));
+			AddError(TEXT("shared multi-output fixture: BreakVector call node was not created"));
 			return false;
 		}
 		if (BuildA == nullptr || BuildB == nullptr)
@@ -464,13 +461,25 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		const FString Text = RenderBodies(Graph, AssetPath, Notes);
 		const FString BreakId = TurboMCPNodeId::MakeForNode(Break);
 		const FString BreakType = TurboMCPNodeId::GetNodeTypeId(Break);
+		TestFalse(TEXT("multi-output fixture source has a supported type ID"), BreakType.IsEmpty());
+		if (BreakType.IsEmpty())
+		{
+			AddError(TEXT("multi-output fixture source has no type ID; the renderer cannot represent it"));
+			AddInfo(FString::Printf(TEXT("emitted text (first 1200 chars): %s"), *Text.Left(1200)));
+			return false;
+		}
+		const int32 BreakTypeCount = CountText(Text, FString::Printf(TEXT("(%s"), *BreakType));
+		const bool bHasYLink = Text.Contains(FString::Printf(TEXT("(-> %s:Y)"), *BreakId));
 		TestFalse(TEXT("multi-output shared value emits no $id token"), Text.Contains(TEXT("$")));
-		TestEqual(TEXT("multi-output shared value is defined exactly once"),
-			CountText(Text, FString::Printf(TEXT("(%s"), *BreakType)), 1);
-		TestTrue(TEXT("the rerouted use links the real shared node and its Y pin"),
-			Text.Contains(FString::Printf(TEXT("(-> %s:Y)"), *BreakId)));
+		TestEqual(TEXT("multi-output shared value is defined exactly once"), BreakTypeCount, 1);
+		TestTrue(TEXT("the rerouted use links the real shared node and its Y pin"), bHasYLink);
 		TestFalse(TEXT("the direct use is not emitted as an X link"),
 			Text.Contains(FString::Printf(TEXT("(-> %s:X)"), *BreakId)));
+		if (BreakTypeCount != 1 || !bHasYLink)
+		{
+			AddInfo(FString::Printf(TEXT("multi-output emitted text (first 1600 chars): %s"),
+				*Text.Left(1600)));
+		}
 
 		TArray<FString> FullNotes;
 		const FString FullText = RenderFull(Graph, AssetPath, FullNotes);
