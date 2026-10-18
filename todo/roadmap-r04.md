@@ -327,18 +327,20 @@ Rollback: remove `Tools/persistence_identity.py`, `Tools/test-persistence-identi
 
 Task R04 checkpoint 8, claim `8dfd55914dce466ea7d0a6de64edc3a6` (owner `dsh-r04-collector-01`). Approved base `577fdaafed023485adb4e1d3f65c4d6218c5eef3`; branch `task/r04-collector-contract`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
 
-Deliverable: `docs/audit/persistence-collector-contract.md` specifies a read-only Windows collector for the accepted validator. It uses a trusted supervisor launch record for the expected PID, `GetProcessTimes` FILETIME creation time (100 ns, no padded CIM precision), `Win32_Process` executable/command line, `CommandLineToArgvW` tokenization, complete `Get-NetTCPConnection` rows for the configured port, and owner-process reads for every row. Two attempts are bounded (5 s each, 15 s pair) and recheck process identity and listener rows before accepting a snapshot.
+Deliverable: `docs/audit/persistence-collector-contract.md` specifies a read-only Windows collector for the accepted validator. The first slice is pure orchestration with an injected typed backend and no Windows adapter: process, listener, path and command-line reads return `ReadResult` values; orchestration owns deadlines, identity matching, snapshot assembly and validator invocation. A future adapter is separately described with `GetProcessTimes`, `Win32_Process`, `CommandLineToArgvW`, `Get-NetTCPConnection`, `GetFileInformationByHandle`, path-component checks and bounded child-process calls.
 
 Key limits recorded:
-- Expected identity comes from the launch record, never from observations.
-- Path equality is canonical string consistency, not file identity; the collector adds a launch/observation `GetFileInformationByHandle` volume/file-index gate where possible, but schema v1 does not carry that identity. Symlinks/junctions/hardlinks/8.3 aliases and case-sensitive directories remain below v1. A future `turbomcp.persistence-identity/2` with `project_file_id`/`engine_file_id` volume/file-index fields is the exact proposed adjustment if file identity must be auditable.
-- The collector refuses unreadable/partial process or TCP enumeration, PID reuse, process exit, listener replacement, unsupported addresses, owner 0/4 and more than 32 rows.
+- Expected identity comes from the trusted launch record, never from observations. The proposed record binds creation time to the `Start-Process -PassThru` process handle, verifies exit/PID reuse and captures file IDs before admission. Existing leases lack these fields; reused editors with missing provenance refuse rather than being upgraded from observations.
+- Deadline enforcement belongs to the adapter: each blocking read runs in its own child process with the aggregate remaining budget; timeout/unknown completion is refusal and only the collection child may be terminated, never the editor. Child PowerShell uses `-ErrorAction Stop`/`$ErrorActionPreference='Stop'`, inspects `$Error`, and writes structured output only on clean completion. A clean empty listener result, provider failure and incomplete/unknown output are distinct.
+- Path checks walk every component for reparse points, reject 8.3/short-name substitution and refuse `nNumberOfLinks > 1`; file-ID equality does not reject hardlinks. Aliases are rejected, not resolved, and the open-by-path engine file is not claimed to be the loaded image. FILETIME's 100 ns representation is not claimed as physical clock resolution.
+- Schema v1 cannot carry auditable file IDs. A future `turbomcp.persistence-identity/2` with `project_file_id`/`engine_file_id` volume/file-index fields is the exact proposed adjustment if file identity must be auditable.
+- The collector refuses unreadable/partial process or TCP enumeration, PID reuse, process exit, listener replacement, unsupported addresses, owner 0/4 and more than 32 rows. CIM/TCP completeness is not atomic and is not overclaimed.
 - A validation pass is evidence consistency only; it never authorizes connection, mutation, stop, restart or a persistence claim. The residual race remains.
-- The proposed implementation slice is `Tools/persistence_collector.py`, `Tools/test-persistence-collector.py` and one `Tests/catalog.json` offline row, with injected-backend tests only. No caller, launch-record, lifecycle, settings or persistence work is included.
+- The proposed first slice is `Tools/persistence_collector.py`, `Tools/test-persistence-collector.py` and one `Tests/catalog.json` offline row, with fake-backend tests only. No caller, launch-record, lifecycle, settings or persistence work is included.
 
 Validation:
-- Source review only; no live process, socket, editor, build, MCP or recovery operation was run.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/ac0e2a9600574486b5b580ba01421586/report.json`; all offline checks passed.
+- Source/docs review only; no live process, socket, command line, editor, build, MCP or recovery operation was run.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/8d219a49977a4be0b3c634d5c015250f/report.json`; all offline checks passed.
 - Candidate-bound offline evidence and the full-base scope gate are recorded in the submission after the commit. All collector/launch-record steps remain `proposed_unapproved`.
 
 Rollback: remove the new report and this evidence only. No existing file or caller is changed.
