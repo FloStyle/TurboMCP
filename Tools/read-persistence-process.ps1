@@ -49,12 +49,17 @@ function New-NativeFailure([int] $Code) {
     return New-Failure 'unknown'
 }
 
-function Test-StillRunning($ExitCode, $ExitTime) {
-    # An active process has exit code 259 (STILL_ACTIVE) and a zero exit FILETIME.
-    # An application that actually exits with code 259 still has a nonzero exit time.
-    return ($ExitCode -eq 259 -and
-        $ExitTime.dwLowDateTime -eq 0 -and
-        $ExitTime.dwHighDateTime -eq 0)
+function Get-Liveness($Handle) {
+    # Microsoft documents GetProcessTimes lpExitTime as undefined while the
+    # process is active, so liveness uses a zero-time wait on the same retained
+    # handle. WAIT_TIMEOUT=0x102; WAIT_OBJECT_0=0 means exited, even for exit
+    # code 259; any other result is a refusal.
+    # https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getprocesstimes
+    # https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject
+    $wait = [TurboMCPProcessNative]::WaitForSingleObject($Handle, 0)
+    if ($wait -eq 0x102) { return 'running' }
+    if ($wait -eq 0) { return 'exited' }
+    return 'failed'
 }
 
 try {
@@ -87,14 +92,16 @@ public static class TurboMCPProcessNative
         out FILETIME user);
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    public static extern bool GetExitCodeProcess(IntPtr process, out uint exitCode);
+    public static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
 
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern bool CloseHandle(IntPtr handle);
 }
 '@ -ErrorAction Stop
 
-        $handle = [TurboMCPProcessNative]::OpenProcess(0x1000, $false, [uint32]$ProcessId)
+        # SYNCHRONIZE (0x00100000) is required for WaitForSingleObject;
+        # PROCESS_QUERY_LIMITED_INFORMATION (0x1000) is required for GetProcessTimes.
+        $handle = [TurboMCPProcessNative]::OpenProcess(0x101000, $false, [uint32]$ProcessId)
         if ($handle -eq [IntPtr]::Zero) {
             $result = New-NativeFailure ([Runtime.InteropServices.Marshal]::GetLastWin32Error())
         }
@@ -103,7 +110,7 @@ public static class TurboMCPProcessNative
             $beforeExitTime = New-Object 'TurboMCPProcessNative+FILETIME'
             $beforeKernel = New-Object 'TurboMCPProcessNative+FILETIME'
             $beforeUser = New-Object 'TurboMCPProcessNative+FILETIME'
-            [uint32] $beforeExitCode = 0
+            $beforeLiveness = Get-Liveness $handle
 
             if (-not [TurboMCPProcessNative]::GetProcessTimes(
                     $handle,
@@ -113,10 +120,10 @@ public static class TurboMCPProcessNative
                     [ref]$beforeUser)) {
                 $result = New-NativeFailure ([Runtime.InteropServices.Marshal]::GetLastWin32Error())
             }
-            elseif (-not [TurboMCPProcessNative]::GetExitCodeProcess($handle, [ref]$beforeExitCode)) {
-                $result = New-NativeFailure ([Runtime.InteropServices.Marshal]::GetLastWin32Error())
+            elseif ($beforeLiveness -eq 'failed') {
+                $result = New-Failure 'unknown'
             }
-            elseif (-not (Test-StillRunning $beforeExitCode $beforeExitTime)) {
+            elseif ($beforeLiveness -eq 'exited') {
                 $result = New-Failure 'not_found'
             }
             else {
@@ -144,7 +151,7 @@ public static class TurboMCPProcessNative
                         $afterExitTime = New-Object 'TurboMCPProcessNative+FILETIME'
                         $afterKernel = New-Object 'TurboMCPProcessNative+FILETIME'
                         $afterUser = New-Object 'TurboMCPProcessNative+FILETIME'
-                        [uint32] $afterExitCode = 0
+                        $afterLiveness = Get-Liveness $handle
 
                         if (-not [TurboMCPProcessNative]::GetProcessTimes(
                                 $handle,
@@ -154,10 +161,10 @@ public static class TurboMCPProcessNative
                                 [ref]$afterUser)) {
                             $result = New-NativeFailure ([Runtime.InteropServices.Marshal]::GetLastWin32Error())
                         }
-                        elseif (-not [TurboMCPProcessNative]::GetExitCodeProcess($handle, [ref]$afterExitCode)) {
-                            $result = New-NativeFailure ([Runtime.InteropServices.Marshal]::GetLastWin32Error())
+                        elseif ($afterLiveness -eq 'failed') {
+                            $result = New-Failure 'unknown'
                         }
-                        elseif (-not (Test-StillRunning $afterExitCode $afterExitTime)) {
+                        elseif ($afterLiveness -eq 'exited') {
                             $result = New-Failure 'not_found'
                         }
                         elseif (

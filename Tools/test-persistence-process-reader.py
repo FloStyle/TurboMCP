@@ -70,11 +70,14 @@ class Clock:
         self.calls += 1
         if not self.values:
             raise AssertionError("clock exhausted")
-        return self.values.pop(0)
+        value = self.values.pop(0)
+        if isinstance(value, BaseException):
+            raise value
+        return value
 
 
 class ProcessReaderTests(unittest.TestCase):
-    def read(self, result=None, *, values=(100, 200), pid=PID, deadline=1000,
+    def read(self, result=None, *, values=(100, 101, 200), pid=PID, deadline=1000,
              platform="win32", runner=None):
         fake = FakeRunner(result) if runner is None else runner
         clock = Clock(values)
@@ -135,9 +138,25 @@ class ProcessReaderTests(unittest.TestCase):
         self.assertEqual(fake.calls, [])
 
     def test_deadline_after_return_refuses(self):
-        out, fake, _ = self.read(values=(100, 1000), deadline=1000)
+        out, fake, _ = self.read(values=(100, 150, 1000), deadline=1000)
         self.assert_failure(out, "timeout")
         self.assertEqual(len(fake.calls), 1)
+
+    def test_setup_exhausted_deadline_does_not_spawn(self):
+        out, fake, _ = self.read(values=(100, 1000), deadline=1000)
+        self.assert_failure(out, "timeout")
+        self.assertEqual(fake.calls, [])
+
+    def test_after_return_clock_rollback_refused(self):
+        out, fake, _ = self.read(values=(100, 101, 99))
+        self.assert_failure(out, "unknown")
+        self.assertEqual(len(fake.calls), 1)
+
+    def test_clock_rollback_and_malformed_refuse(self):
+        for values in ((100, 99), (True,), (100, "later")):
+            out, fake, _ = self.read(values=values)
+            self.assert_failure(out, "unknown")
+            self.assertEqual(fake.calls, [])
 
     # Successful result ---------------------------------------------------
     def test_success_returns_exact_process_read(self):
@@ -267,14 +286,16 @@ class ProcessReaderTests(unittest.TestCase):
         self.assertIn("[uint32] $ProcessId", text)
         self.assertIn("Get-CimInstance Win32_Process", text)
         self.assertIn('ProcessId=$ProcessId', text)
-        self.assertIn("OpenProcess(0x1000", text)
+        self.assertIn("OpenProcess(0x101000", text)
         self.assertIn("GetProcessTimes", text)
-        self.assertIn("GetExitCodeProcess", text)
+        self.assertIn("WaitForSingleObject", text)
+        self.assertIn("0x101000", text)
+        self.assertIn("Get-Liveness", text)
+        self.assertIn("0x102", text)
         self.assertIn("CloseHandle", text)
         self.assertIn(".Replace('/', '\\')", text)
-        self.assertIn("Test-StillRunning", text)
-        self.assertIn("$beforeExitTime", text)
-        self.assertIn("$afterExitTime", text)
+        self.assertNotIn("GetExitCodeProcess", text)
+        self.assertNotIn("Test-StillRunning", text)
         self.assertIn("System.Text.UTF8Encoding", text)
         self.assertIn("-ArgumentList $false", text)
         self.assertIn("OpenStandardOutput", text)
@@ -434,27 +455,43 @@ class PopenRunnerTests(unittest.TestCase):
                 self.assertEqual(result["error"], "unknown")
 
     def test_clock_and_read_exceptions_clean_child(self):
-        def bad_clock():
-            raise RuntimeError("clock failed")
-
-        proc = FakeProcess(returncode=None)
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), bad_clock)
-        self.assertGreaterEqual(proc.killed, 1)
-        self.assertTrue(proc.stdout.closed)
-        self.assertEqual(result["error"], "unknown")
-
         proc = FakeProcess(returncode=None, stdout=FakeStream(read_raises=True))
         result, _ = self.run_with(proc, ThreadFactory(["run", "run"]))
         self.assertGreaterEqual(proc.killed, 1)
         self.assertTrue(result["overflow"])
         self.assertTrue(proc.stdout.closed)
 
+    def test_setup_deadline_does_not_spawn(self):
+        proc = FakeProcess(returncode=0)
+        result, calls = self.run_with(
+            proc, ThreadFactory(["run", "run"]), Clock([0, 1000])
+        )
+        self.assertEqual(result["error"], "timeout")
+        self.assertEqual(calls, [])
+
+    def test_clock_exception_or_rollback_after_spawn_cleans_child(self):
+        for values in ([0, 10, RuntimeError("clock failed")], [0, 10, 5]):
+            proc = FakeProcess(returncode=None)
+            result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), Clock(values))
+            with self.subTest(values=values):
+                self.assertEqual(result["error"], "unknown")
+                self.assertGreaterEqual(proc.killed, 1)
+                self.assertTrue(proc.stdout.closed)
+
+    def test_clock_exception_before_spawn_has_no_child(self):
+        proc = FakeProcess(returncode=0)
+        result, calls = self.run_with(
+            proc, ThreadFactory(["run", "run"]), Clock([RuntimeError("clock failed")])
+        )
+        self.assertEqual(result["error"], "unknown")
+        self.assertEqual(calls, [])
+
     def test_timeout_kills_and_reaps_only_child(self):
         proc = FakeProcess(returncode=None, timeout_once=True)
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), Clock([0, 1000]))
+        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), Clock([0, 10, 1000]))
         self.assertTrue(result["timed_out"])
         self.assertGreaterEqual(proc.killed, 1)
-        self.assertGreaterEqual(len(proc.waits), 2)
+        self.assertGreaterEqual(len(proc.waits), 1)
         self.assertTrue(proc.stdout.closed)
 
     def test_overflow_cleans_child(self):
@@ -481,7 +518,7 @@ class PopenRunnerTests(unittest.TestCase):
         self.assertTrue(proc.stdout.closed)
 
         proc = FakeProcess(returncode=None, timeout_once=True, kill_fail=True)
-        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), Clock([0, 1000]))
+        result, _ = self.run_with(proc, ThreadFactory(["run", "run"]), Clock([0, 10, 1000]))
         self.assertTrue(result["timed_out"])
         self.assertTrue(result["cleanup_failed"])
         self.assertTrue(proc.stdout.closed)

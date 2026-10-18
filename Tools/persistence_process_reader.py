@@ -72,6 +72,28 @@ def _valid_deadline(value):
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+class _ClockError(Exception):
+    pass
+
+
+class _ClockTracker:
+    def __init__(self, clock):
+        self.clock = clock
+        self.last = None
+
+    def __call__(self):
+        try:
+            value = self.clock()
+        except Exception:
+            raise _ClockError()
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise _ClockError()
+        if self.last is not None and value < self.last:
+            raise _ClockError()
+        self.last = value
+        return value
+
+
 def _script_path():
     return Path(__file__).resolve().with_name(SCRIPT_NAME)
 
@@ -222,6 +244,14 @@ class _PopenRunner:
     def run(self, argv, deadline_ns, clock):
         if os.name != "nt":
             return _runner_failure("unknown")
+        if not isinstance(clock, _ClockTracker):
+            clock = _ClockTracker(clock)
+        try:
+            now = clock()
+        except _ClockError:
+            return _runner_failure("unknown")
+        if now >= deadline_ns:
+            return _runner_failure("timeout")
         startup = subprocess.STARTUPINFO()
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startup.wShowWindow = subprocess.SW_HIDE
@@ -254,6 +284,12 @@ class _PopenRunner:
                 except Exception:
                     pass
 
+        try:
+            now = clock()
+        except _ClockError:
+            return _runner_failure("unknown")
+        if now >= deadline_ns:
+            return _runner_failure("timeout")
         try:
             proc = subprocess.Popen(
                 argv,
@@ -311,21 +347,19 @@ class ProcessReader:
         self.clock = clock if clock is not None else time.monotonic_ns
         self.platform = platform if platform is not None else sys.platform
 
-    def _now(self):
+    def _now(self, clock):
         try:
-            value = self.clock()
-        except Exception:
+            return clock()
+        except _ClockError:
             return None
-        if isinstance(value, bool) or not isinstance(value, int):
-            return None
-        return value
 
     def read_process(self, pid, deadline_ns):
         if not _valid_pid(pid) or not _valid_deadline(deadline_ns):
             return _failure("unknown")
         if self.platform != "win32":
             return _failure("unknown")
-        now = self._now()
+        clock = _ClockTracker(self.clock)
+        now = self._now(clock)
         if now is None:
             return _failure("unknown")
         if now >= deadline_ns:
@@ -333,9 +367,17 @@ class ProcessReader:
         powershell = _powershell_path()
         if not powershell:
             return _failure("unknown")
-        argv = _argv(pid, powershell)
         try:
-            raw = self.runner.run(argv, deadline_ns, self.clock)
+            argv = _argv(pid, powershell)
+        except Exception:
+            return _failure("unknown")
+        now = self._now(clock)
+        if now is None:
+            return _failure("unknown")
+        if now >= deadline_ns:
+            return _failure("timeout")
+        try:
+            raw = self.runner.run(argv, deadline_ns, clock)
         except Exception:
             return _failure("unknown")
         if not _valid_runner_result(raw):
@@ -352,7 +394,7 @@ class ProcessReader:
             return _failure("provider_error")
         if raw["stderr"]:
             return _failure("provider_error")
-        now = self._now()
+        now = self._now(clock)
         if now is None:
             return _failure("unknown")
         if now >= deadline_ns:
