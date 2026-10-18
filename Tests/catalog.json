@@ -436,6 +436,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-persistence-process-reader",
+      "path": "Tools/test-persistence-process-reader.py",
+      "tier": "offline",
+      "timeout_seconds": 30,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-play-check",
       "path": "Tools/test-play-check.py",
       "tier": "engine",

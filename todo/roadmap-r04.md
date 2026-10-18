@@ -371,6 +371,29 @@ Validation:
 
 Rollback: remove `Tools/persistence_collector.py`, `Tools/test-persistence-collector.py`, the one catalog row and this evidence. Existing `Tools/persistence_identity.py` and all callers are unchanged.
 
+### Checkpoint 10: bounded Windows process reader
+
+Task R04 checkpoint 10, claim `62c5510de89244cc947e188b9a4237fc` (owner `dsh-r04-process-01`). Approved base `509e9537566d9f425c480fa8884adb8ec96d8758`; branch `task/r04-process-reader`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 remains incomplete.
+
+Implementation:
+- `Tools/persistence_process_reader.py` adds `read_process(pid, deadline_ns, *, runner=None, clock=None, platform=None)` and `ProcessReader`. It validates positive uint32 PID and integer deadline, refuses non-Windows and expired/equal deadlines without spawning, invokes only the fixed checked-in PowerShell script with an exact argument list, uses hidden/no-window startup, bounds child stdout/stderr while reading (64 KiB each), enforces/rechecks the monotonic deadline, rejects partial/extra/malformed/invalid-UTF-8 output, and reaps only its collection child.
+- `Tools/read-persistence-process.ps1` accepts only `ProcessId`, uses strict terminating errors, queries one PID through CIM, opens a same-process limited-query handle, reads creation FILETIME and exit state before and after CIM, requires well-typed PID/executable/command line data, closes the handle on every path, and emits one versioned JSON result. It does not launch children.
+- `Tools/test-persistence-process-reader.py` contains 20 offline tests with an injected runner/clock. It verifies exact command construction, no spawn on invalid/non-Windows/expired requests, deadline equality/after-return refusal, EOF/nonzero/invalid UTF-8/extra JSON/schema/shape/overflow/timeout/cleanup/provider taxonomy, early exit, output aliasing, and fixed script/runner source constraints. It never spawns PowerShell, queries CIM or reads a real command line.
+- `Tests/catalog.json` adds one offline row: `test-persistence-process-reader`, 30-second timeout, `acceptance=not_mapped`.
+
+Limits:
+- No live process, CIM, PowerShell, editor, build, socket or engine execution was authorized or performed.
+- Offline tests prove request construction, deadline/runner protocol, wire validation and source constraints; they cannot prove native API behavior, actual CIM results, race reduction, FILETIME values on a real process, child startup/reaping behavior, or script syntax/execution on Windows.
+- `read_process` returns only the existing `ProcessRead` shape. It does not infer ownership, upgrade a lease, or certify identity of future reads. Retained-handle checks reduce but do not eliminate races.
+- The listener/path/parser adapter, launch record and caller integration remain unimplemented.
+
+Validation:
+- `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 20 tests ... OK`.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/20fc3bc6476f43e3a8ddbb81500b66f4/report.json`; aggregate log records `PASS: test-persistence-process-reader` and all other offline checks passed.
+- Candidate-bound evidence and full-base scope gate are recorded in the submission.
+
+Rollback: remove the two new tools, the one catalog row and this evidence. Existing collector/validator and production callers remain unchanged.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)
