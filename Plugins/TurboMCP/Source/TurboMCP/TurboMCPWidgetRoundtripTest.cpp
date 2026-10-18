@@ -417,6 +417,17 @@ namespace
 	 * one form by a unique InString marker and extracts the emitted node identity
 	 * from its header comment. No fallback to fixture MakeForNode is allowed.
 	 */
+	bool IsValidEmittedRef(const FString& InRef)
+	{
+		if (InRef.IsEmpty())
+		{
+			return false;
+		}
+		const TurboMCPNodeId::FParsed Parsed = TurboMCPNodeId::Parse(InRef);
+		return Parsed.IsComplete()
+			&& !TurboMCPNodeId::NormaliseKey(Parsed.NodeKey).IsEmpty();
+	}
+
 	bool ExtractFormByMarker(const FString& InText, const FString& InMarker,
 		FString& OutRef, FString& OutForm, FString& OutError)
 	{
@@ -466,6 +477,11 @@ namespace
 				break;
 			}
 		}
+		if (HeaderIndex >= Matches[0] || EndIndex <= Matches[0])
+		{
+			OutError = TEXT("selected form boundaries do not contain the marker");
+			return false;
+		}
 		TArray<FString> FormLines;
 		for (int32 Index = HeaderIndex; Index < EndIndex; ++Index)
 		{
@@ -479,6 +495,14 @@ namespace
 			OutError = TEXT("the selected form has no emitted identity comment");
 			return false;
 		}
+		const int32 ExtraSeparator = Header.Find(TEXT(" ; "), ESearchCase::IgnoreCase,
+			ESearchDir::FromStart, Separator + 3);
+		if (ExtraSeparator != INDEX_NONE
+			&& !Header.Mid(ExtraSeparator + 3).TrimStartAndEnd().StartsWith(TEXT("target ")))
+		{
+			OutError = TEXT("the selected form has ambiguous identity fields");
+			return false;
+		}
 		FString Ref = Header.Mid(Separator + 3);
 		const int32 Space = Ref.Find(TEXT(" "));
 		if (Space != INDEX_NONE)
@@ -486,9 +510,9 @@ namespace
 			Ref = Ref.Left(Space);
 		}
 		Ref = Ref.TrimStartAndEnd();
-		if (Ref.IsEmpty())
+		if (!IsValidEmittedRef(Ref))
 		{
-			OutError = TEXT("the selected form emitted an empty identity");
+			OutError = TEXT("the selected form emitted a malformed identity");
 			return false;
 		}
 		OutRef = Ref;
@@ -504,6 +528,13 @@ namespace
 		{
 			return false;
 		}
+		if (InForm.Find(Prefix, ESearchCase::IgnoreCase, ESearchDir::FromStart,
+				Start + Prefix.Len()) != INDEX_NONE)
+		{
+			// More than one link field in one form is ambiguous; refuse rather
+			// than selecting the first.
+			return false;
+		}
 		const int32 RefStart = Start + Prefix.Len();
 		const int32 End = InForm.Find(TEXT(")"), ESearchCase::IgnoreCase, ESearchDir::FromStart, RefStart);
 		if (End == INDEX_NONE)
@@ -511,7 +542,7 @@ namespace
 			return false;
 		}
 		OutRef = InForm.Mid(RefStart, End - RefStart).TrimStartAndEnd();
-		return !OutRef.IsEmpty();
+		return IsValidEmittedRef(OutRef);
 	}
 
 	UEdGraph* AddFunctionGraph(FFixture& Fixture, const TCHAR* InName)
@@ -779,6 +810,15 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 			ExtractFormByMarker(TEXT("(Development|PrintString\n    InString \"second\")"),
 				TEXT("InString \"second\""), CorruptRef, CorruptForm, CorruptError));
 		TestTrue(TEXT("a corrupted form yields no fallback identity"), CorruptRef.IsEmpty());
+	}
+	{
+		FString MalformedRef, MalformedForm, MalformedError;
+		TestFalse(TEXT("extraction refuses a nonempty malformed identity"),
+			ExtractFormByMarker(
+				TEXT("(Development|PrintString ; Asset:Graph:zzzzzz\n    InString \"second\")"),
+				TEXT("InString \"second\""), MalformedRef, MalformedForm, MalformedError));
+		TestTrue(TEXT("a malformed nonempty identity yields no fallback identity"),
+			MalformedRef.IsEmpty());
 	}
 
 	// A targeted append form, not the whole dump: one new PrintString linked from
