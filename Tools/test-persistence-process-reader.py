@@ -1685,6 +1685,98 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertNotEqual(result["status"], "passed", result)
         self.assertTrue(result["cleanup_errors"])
 
+    def test_observed_job_accounting_returns_both_fields_or_refuses(self):
+        class Api:
+            def __init__(self, ok=True): self.ok = ok
+            def QueryInformationJobObject(self, handle, info_class, info, size, returned):
+                if not self.ok: return 0
+                info._obj.TotalUserTime = 0
+                info._obj.TotalKernelTime = 0
+                info._obj.TotalProcesses = 1
+                info._obj.ActiveProcesses = 0
+                return 1
+        job = object.__new__(self.acceptance.ObservedJob)
+        job.handle = 1; job.api = Api()
+        self.assertEqual(job.accounting(), (1, 0))
+        job.api = Api(ok=False)
+        with self.assertRaises(Exception):
+            job.accounting()
+
+    def test_preassignment_accounting_decision_refuses_bad_states(self):
+        valid = dict(ordering_valid=True, worker_refused=True, cleanup_ok=True)
+        decision = self.acceptance.preassignment_accounting_decision(
+            (0, 0), (1, 1), (1, 0), **valid
+        )
+        self.assertEqual(decision["status"], "passed", decision)
+        self.assertTrue(decision["clean_run"])
+        self.assertEqual(decision["notification_corroboration"], "no-unexpected-notifications")
+
+        failed = self.acceptance.preassignment_accounting_decision(
+            (0, 0), (1, 1), (2, 0), **valid
+        )
+        self.assertEqual(failed["status"], "failed", failed)
+        self.assertEqual(failed["detail"], "extra-associated-process")
+
+        for initial, baseline, final, detail in (
+            ((1, 0), (1, 1), (1, 0), "initial-accounting-not-zero"),
+            ((0, 0), (0, 0), (1, 0), "baseline-accounting-not-one"),
+            ((0, 0), (1, 1), (0, 0), "inconsistent-lifetime-total"),
+            ((0, 0), (1, 1), (1, 1), "final-active-not-zero"),
+            (None, (1, 1), (1, 0), "malformed-accounting"),
+            ((0, 0), (1, 1), (True, 0), "malformed-accounting"),
+            ((0, 0), (1, 1), (0x1_0000_0000, 0), "malformed-accounting"),
+        ):
+            with self.subTest(detail=detail):
+                result = self.acceptance.preassignment_accounting_decision(
+                    initial, baseline, final, **valid
+                )
+                self.assertNotEqual(result["status"], "passed", result)
+                self.assertEqual(result["detail"], detail)
+
+        for flags, detail in (
+            (dict(ordering_valid=False, worker_refused=True, cleanup_ok=True), "ordering-not-validated"),
+            (dict(ordering_valid=True, worker_refused=False, cleanup_ok=True), "worker-refusal-not-observed"),
+            (dict(ordering_valid=True, worker_refused=True, cleanup_ok=False), "cleanup-not-successful"),
+            (dict(ordering_valid=None, worker_refused=True, cleanup_ok=True), "malformed-flags"),
+        ):
+            with self.subTest(detail=detail):
+                result = self.acceptance.preassignment_accounting_decision(
+                    (0, 0), (1, 1), (1, 0), **flags
+                )
+                self.assertEqual(result["detail"], detail)
+                self.assertNotEqual(result["status"], "passed")
+
+        notification = self.acceptance.preassignment_accounting_decision(
+            (0, 0), (1, 1), (1, 0), unexpected_notifications=1, **valid
+        )
+        self.assertEqual(notification["status"], "failed", notification)
+
+        api_error = self.acceptance.preassignment_accounting_decision(
+            (0, 0), (1, 1), (1, 0), port_api_error="completion-port:5", **valid
+        )
+        self.assertEqual(api_error["status"], "passed", api_error)
+        self.assertFalse(api_error["clean_run"])
+        self.assertEqual(api_error["notification_corroboration"], "api-error")
+
+    def test_preassignment_case_stays_blocked_without_launcher(self):
+        class Job:
+            def assign(self, proc): pass
+            def is_process_in_job(self, proc): return True
+            def active_processes(self): return 0
+            def terminate_checked(self): pass
+            def close_checked(self): pass
+        class Proc:
+            pid = 900; _handle = 1; returncode = 2
+            stdin = FakeStdin(); stdout = FakeStream(); stderr = FakeStream()
+            def poll(self): return 2
+            def wait(self, timeout=None): return 2
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance, "WindowsJob", Job), \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=Proc()):
+            result = self.acceptance._case_preassignment_eof(Path(folder))
+        self.assertEqual(result["status"], "blocked", result)
+        self.assertNotIn("accounting_property", result)
+
     def test_process_evidence_handle_scoped_failures(self):
         class Job:
             def __init__(self, member=True, raises=False): self.member = member; self.raises = raises

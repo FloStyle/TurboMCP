@@ -139,6 +139,12 @@ class ObservedJob:
             raise ctypes.WinError(ctypes.get_last_error())
         return int(info.ActiveProcesses)
 
+    def accounting(self):
+        info = BASIC_ACCOUNTING()
+        if not self.api.QueryInformationJobObject(self.handle, 1, ctypes.byref(info), ctypes.sizeof(info), None):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return int(info.TotalProcesses), int(info.ActiveProcesses)
+
     def in_job(self, handle):
         present = W.BOOL()
         if not self.api.IsProcessInJob(handle, self.handle, ctypes.byref(present)):
@@ -756,6 +762,84 @@ def _case_parent_death(work):
                     cleanup_errors.append("pipe-close:" + str(exc))
         cleanup_errors.extend(_join_helper_threads(cleanup_deadline))
         result = finalize_case(result, cleanup_errors)
+    return result
+
+
+def preassignment_accounting_decision(initial, baseline, final, ordering_valid=None,
+                                      worker_refused=None, cleanup_ok=None,
+                                      unexpected_notifications=0, port_api_error=None):
+    """Narrow decision for one fresh, controlled, no-breakaway observer job."""
+    result = {
+        "accounting_property": "no-additional-associated-process-in-fresh-no-breakaway-job",
+        "initial": initial, "baseline": baseline, "final": final,
+        "ordering_valid": ordering_valid, "worker_refused": worker_refused,
+        "cleanup_ok": cleanup_ok,
+        "unexpected_notifications": unexpected_notifications,
+        "port_api_error": port_api_error,
+    }
+
+    def pair(value):
+        if not isinstance(value, tuple) or len(value) != 2:
+            return None
+        total, active = value
+        if any(isinstance(item, bool) or type(item) is not int for item in (total, active)):
+            return None
+        if not (0 <= total <= 0xFFFFFFFF and 0 <= active <= 0xFFFFFFFF):
+            return None
+        return total, active
+
+    if any(flag is not True and flag is not False
+           for flag in (ordering_valid, worker_refused, cleanup_ok)):
+        result.update(status="blocked", detail="malformed-flags")
+        return result
+    if any(pair(value) is None for value in (initial, baseline, final)):
+        result.update(status="blocked", detail="malformed-accounting")
+        return result
+    if (isinstance(unexpected_notifications, bool)
+            or type(unexpected_notifications) is not int or unexpected_notifications < 0):
+        result.update(status="blocked", detail="malformed-notifications")
+        return result
+
+    initial_total, initial_active = pair(initial)
+    baseline_total, baseline_active = pair(baseline)
+    final_total, final_active = pair(final)
+    if not ordering_valid:
+        result.update(status="blocked", detail="ordering-not-validated")
+        return result
+    if initial_total != 0 or initial_active != 0:
+        result.update(status="blocked", detail="initial-accounting-not-zero")
+        return result
+    if baseline_total != 1 or baseline_active != 1:
+        result.update(status="blocked", detail="baseline-accounting-not-one")
+        return result
+    if final_total > baseline_total:
+        result.update(status="failed", detail="extra-associated-process",
+                      final_total=final_total, final_active=final_active)
+        return result
+    if final_total < baseline_total:
+        result.update(status="blocked", detail="inconsistent-lifetime-total",
+                      final_total=final_total, final_active=final_active)
+        return result
+    if final_active != 0:
+        result.update(status="blocked", detail="final-active-not-zero",
+                      final_total=final_total, final_active=final_active)
+        return result
+    if unexpected_notifications > 0:
+        result.update(status="failed", detail="unexpected-new-process-notification",
+                      final_total=final_total, final_active=final_active)
+        return result
+    if not worker_refused:
+        result.update(status="blocked", detail="worker-refusal-not-observed")
+        return result
+    if not cleanup_ok:
+        result.update(status="blocked", detail="cleanup-not-successful")
+        return result
+
+    notification_state = "api-error" if port_api_error is not None else "no-unexpected-notifications"
+    result.update(status="passed", detail="single-associated-process",
+                  final_total=final_total, final_active=final_active,
+                  notification_corroboration=notification_state,
+                  clean_run=port_api_error is None)
     return result
 
 
