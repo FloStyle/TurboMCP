@@ -85,6 +85,7 @@ PROC_THREAD_ATTRIBUTE_HANDLE_LIST = 0x00020002
 WAIT_OBJECT_0 = 0
 WAIT_TIMEOUT = 258
 INFINITE = 0xFFFFFFFF
+DUPLICATE_SAME_ACCESS = 0x00000002
 
 
 def _win():
@@ -138,6 +139,11 @@ def _win():
     api.WaitForSingleObject.restype = W.DWORD
     api.GetExitCodeProcess.argtypes = [W.HANDLE, ctypes.POINTER(W.DWORD)]
     api.GetExitCodeProcess.restype = W.BOOL
+    api.GetCurrentProcess.argtypes = []
+    api.GetCurrentProcess.restype = W.HANDLE
+    api.DuplicateHandle.argtypes = [W.HANDLE, W.HANDLE, W.HANDLE,
+                                    ctypes.POINTER(W.HANDLE), W.DWORD, W.BOOL, W.DWORD]
+    api.DuplicateHandle.restype = W.BOOL
     api.CloseHandle.argtypes = [W.HANDLE]
     api.CloseHandle.restype = W.BOOL
     return api
@@ -269,17 +275,88 @@ class ObservedJob:
     def start_observation(self, deadline, callback, clock=time.monotonic):
         stop = threading.Event()
         errors = []
-        def observe():
+        view = None
+        thread = None
+        try:
+            view = ObservationView.duplicate(self.api, self.handle, self.port)
+            def observe():
+                try:
+                    error = view.drain_messages(deadline, lambda pid: callback(pid, view),
+                                                clock=clock, stop_event=stop)
+                    if error:
+                        errors.append(error)
+                except Exception as exc:
+                    errors.append("observer:" + str(exc))
+                finally:
+                    try:
+                        errors.extend(view.close())
+                    except Exception as exc:
+                        errors.append("observer-close:" + str(exc))
+            thread = threading.Thread(target=observe, daemon=True)
+            thread.start()
+            HELPER_THREADS.append(thread)
+            return stop, thread, errors, view
+        except Exception:
+            if view is not None:
+                errors.extend(view.close())
+            if thread is not None and thread in HELPER_THREADS:
+                HELPER_THREADS.remove(thread)
+            raise
+
+
+class ObservationView:
+    """Observer-owned duplicate job/port handles; closed only by its thread."""
+
+    def __init__(self, api, handle, port):
+        self.api = api; self.handle = handle; self.port = port; self.messages = []
+
+    @classmethod
+    def duplicate(cls, api, handle, port):
+        current = api.GetCurrentProcess()
+        job = W.HANDLE()
+        port_copy = W.HANDLE()
+        try:
+            if not api.DuplicateHandle(current, handle, current, ctypes.byref(job), 0,
+                                        False, DUPLICATE_SAME_ACCESS):
+                raise ctypes.WinError(ctypes.get_last_error())
+            if not api.DuplicateHandle(current, port, current, ctypes.byref(port_copy), 0,
+                                        False, DUPLICATE_SAME_ACCESS):
+                raise ctypes.WinError(ctypes.get_last_error())
+            return cls(api, job, port_copy)
+        except Exception:
+            if job:
+                api.CloseHandle(job)
+            if port_copy:
+                api.CloseHandle(port_copy)
+            raise
+
+    def in_job(self, handle):
+        present = W.BOOL()
+        if not self.api.IsProcessInJob(handle, self.handle, ctypes.byref(present)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return bool(present.value)
+
+    def is_process_in_job(self, process):
+        return self.in_job(W.HANDLE(int(process._handle)))
+
+    def drain_messages(self, deadline, on_new_process=None, clock=time.monotonic,
+                       stop_event=None):
+        return ObservedJob.drain_messages(self, deadline, on_new_process, clock, stop_event)
+
+    def close(self):
+        errors = []
+        for name in ("port", "handle"):
+            handle = getattr(self, name)
+            if not handle:
+                continue
             try:
-                error = self.drain_messages(deadline, callback, clock=clock, stop_event=stop)
-                if error:
-                    errors.append(error)
+                if self.api.CloseHandle(handle):
+                    setattr(self, name, None)
+                else:
+                    errors.append("observer-" + name + "-close:" + str(ctypes.get_last_error()))
             except Exception as exc:
-                errors.append("observer:" + str(exc))
-        thread = threading.Thread(target=observe, daemon=True)
-        HELPER_THREADS.append(thread)
-        thread.start()
-        return stop, thread, errors
+                errors.append("observer-" + name + "-close:" + str(exc))
+        return errors
 
 
 def process_evidence(pid, job):
@@ -1201,11 +1278,11 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     observer_errors = []
     seen_notifications = set()
 
-    def observed(pid):
+    def observed(pid, identity_job=None):
         if pid in seen_notifications or pid == (launch.pid if launch is not None else None):
             return
         seen_notifications.add(pid)
-        identity, identity_error = process_evidence(pid, observer)
+        identity, identity_error = process_evidence(pid, identity_job or observer)
         unexpected.append({"pid": pid, "identity": identity, "identity_error": identity_error})
 
     def setup_remaining():
@@ -1245,7 +1322,7 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
         setup_remaining()
         observation_deadline = clock() + observation_seconds
         if hasattr(observer, "start_observation"):
-            observer_stop, observer_thread, observer_errors = observer.start_observation(
+            observer_stop, observer_thread, observer_errors, observation_view = observer.start_observation(
                 observation_deadline, observed, clock)
         launch.resume()
         ordering["resumed"] = True
@@ -1276,7 +1353,8 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
         observation_remaining()
         remaining = max(0.0, observation_deadline - clock())
         try:
-            late_error = observer.drain_messages(clock() + min(2.0, remaining), observed, clock=clock)
+            late_error = observer.drain_messages(clock() + min(2.0, remaining),
+                                                  lambda pid: observed(pid, observer), clock=clock)
             if late_error and port_error is None:
                 port_error = late_error
         except Exception as exc:
@@ -1289,11 +1367,27 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     finally:
         cleanup_deadline = clock() + CLEANUP_LIMIT_SECONDS
         if observer_stop is not None:
-            observer_stop.set()
+            try:
+                observer_stop.set()
+            except Exception as exc:
+                cleanup_errors.append("observer-stop:" + str(exc))
         if observer_thread is not None:
-            while observer_thread.is_alive() and clock() < cleanup_deadline:
-                observer_thread.join(min(0.05, max(0, cleanup_deadline - clock())))
-            if observer_thread.is_alive():
+            alive = True
+            while alive and clock() < cleanup_deadline:
+                try:
+                    alive = observer_thread.is_alive()
+                except Exception as exc:
+                    cleanup_errors.append("observer-is-alive:" + str(exc))
+                    alive = True
+                    break
+                if not alive:
+                    break
+                try:
+                    observer_thread.join(min(0.05, max(0, cleanup_deadline - clock())))
+                except Exception as exc:
+                    cleanup_errors.append("observer-join:" + str(exc))
+                    break
+            if alive:
                 cleanup_errors.append("observer-thread-timeout")
         if launch is not None:
             try:

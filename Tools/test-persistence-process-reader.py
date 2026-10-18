@@ -2026,24 +2026,86 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertFalse(result["clean_run"])
 
     def test_job_observation_thread_is_stoppable_and_reports_errors(self):
+        class Api:
+            def __init__(self): self.closed = []
+            def GetCurrentProcess(self): return 1
+            def DuplicateHandle(self, source, handle, target, out, access, inherit, flags):
+                value = ctypes.cast(handle, ctypes.c_void_p).value
+                out._obj.value = 700 + (0 if value == 11 else 1); return 1
+            def CloseHandle(self, handle): self.closed.append(ctypes.cast(handle, ctypes.c_void_p).value); return 1
         job = object.__new__(self.acceptance.ObservedJob)
+        job.api = Api(); job.handle = 11; job.port = 22
         seen = []
-        def drain(deadline, callback, clock=None, stop_event=None):
+        def drain(self, deadline, callback, clock=None, stop_event=None):
             callback(901)
             stop_event.wait(0.5)
             return None
-        job.drain_messages = drain
-        stop, thread, errors = job.start_observation(10, lambda pid: seen.append(pid))
-        stop.set()
-        thread.join(1)
-        self.assertFalse(thread.is_alive())
-        self.assertEqual(seen, [901])
-        self.assertEqual(errors, [])
+        with mock.patch.object(self.acceptance.ObservedJob, "drain_messages", drain):
+            stop, thread, errors, view = job.start_observation(10, lambda pid, origin: seen.append((pid, ctypes.cast(origin.handle, ctypes.c_void_p).value)))
+            stop.set()
+            thread.join(1)
+            self.assertFalse(thread.is_alive())
+            self.assertEqual(seen, [(901, 700)])
+            self.assertEqual(errors, [])
+            self.assertEqual(view.handle, None)
 
-        job.drain_messages = lambda deadline, callback, clock=None, stop_event=None: "completion-port:5"
-        _, thread, errors = job.start_observation(10, None)
-        thread.join(1)
-        self.assertEqual(errors, ["completion-port:5"])
+            job.api = Api(); job.handle = 11; job.port = 22
+            def failing(self, deadline, callback, clock=None, stop_event=None): return "completion-port:5"
+            with mock.patch.object(self.acceptance.ObservedJob, "drain_messages", failing):
+                _, thread, errors, _ = job.start_observation(10, None)
+                thread.join(1)
+            self.assertEqual(errors, ["completion-port:5"])
+
+            job.api = Api(); job.handle = 11; job.port = 22
+            def callback_failure(self, deadline, callback, clock=None, stop_event=None):
+                callback(902)
+                raise RuntimeError("callback failed")
+            with mock.patch.object(self.acceptance.ObservedJob, "drain_messages", callback_failure):
+                _, thread, errors, _ = job.start_observation(10, lambda pid, origin: None)
+                thread.join(1)
+            self.assertTrue(any("callback failed" in e for e in errors))
+
+        bad_thread = mock.Mock()
+        bad_thread.start.side_effect = RuntimeError("start failed")
+        job.api = Api(); job.handle = 11; job.port = 22
+        with mock.patch.object(self.acceptance.threading, "Thread", return_value=bad_thread):
+            with self.assertRaises(RuntimeError):
+                job.start_observation(10, None)
+        self.assertNotIn(bad_thread, self.acceptance.HELPER_THREADS)
+        self.assertEqual(job.api.closed, [701, 700])
+
+    def test_observer_cleanup_exceptions_do_not_skip_process_cleanup(self):
+        class BadStop:
+            def set(self): raise RuntimeError("stop failed")
+        class BadThread:
+            def is_alive(self): raise RuntimeError("alive failed")
+            def join(self, timeout=None): raise RuntimeError("join failed")
+        class Observer:
+            def __init__(self): self.values = [(0, 0), (1, 1), (1, 0)]; self.closed = 0
+            def accounting(self): return self.values.pop(0)
+            def assign(self, launch): pass
+            def is_process_in_job(self, launch): return True
+            def start_observation(self, deadline, callback, clock): return BadStop(), BadThread(), [], None
+            def drain_messages(self, deadline, callback, clock=None, stop_event=None): return None
+            def close_checked(self): self.closed += 1
+        class Launch:
+            pid = 900; exit_code = 2
+            def __init__(self): self.closed = 0
+            def resume(self): pass
+            def close_stdin(self): pass
+            def wait(self, timeout): return True
+            def close_process(self): pass
+            def close(self, deadline=None, clock=None): self.closed += 1; return []
+        observer = Observer(); launch = Launch()
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertEqual(launch.closed, 1)
+        self.assertEqual(observer.closed, 1)
+        self.assertTrue(any("observer-stop" in e for e in result["cleanup_errors"]))
+        self.assertTrue(any("observer-is-alive" in e for e in result["cleanup_errors"]))
+        self.assertTrue(any("observer-thread-timeout" in e for e in result["cleanup_errors"]))
 
     def test_preassignment_notification_identity_is_captured_without_late_lookup(self):
         class DummyThread:
@@ -2059,7 +2121,7 @@ class AcceptanceHarnessTests(unittest.TestCase):
             def start_observation(self, deadline, callback, clock):
                 if self.callback_pid is not None:
                     callback(self.callback_pid)
-                return type("Stop", (), {"set": lambda s: None})(), DummyThread(), self.errors
+                return type("Stop", (), {"set": lambda s: None})(), DummyThread(), self.errors, None
             def drain_messages(self, deadline, callback, clock=None, stop_event=None): return None
             def close_checked(self): pass
         class Launch:
