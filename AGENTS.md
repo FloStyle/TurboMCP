@@ -4,12 +4,12 @@
 
 ## Current handoff gate
 
-The local execution framework is verified for bounded work on the pinned 5.8.3 engine. Start one reviewed roadmap task at a time in a clean isolated worktree. Read [the execution and handoff guide](docs/audit/infrastructure-review.md). This does not make imported feedback implementation-ready or certify the full plugin.
+The local execution framework is verified for bounded work on the pinned 5.8.3 engine. Start one reviewed assignment per clean isolated worktree. Concurrent assignments require disjoint schema-2 scopes and explicit integrator dispatch. Read [the execution and handoff guide](docs/audit/infrastructure-review.md). This does not make imported feedback implementation-ready or certify the full plugin.
 
 ## Start a task
 
 1. Read README.md and docs/contributing.md.
-2. For an unassigned next-task request, run `python Tools/next-task.py --claim <owner-name>` and retain the claim ID. Refusal means stop; never skip to another task.
+2. For a dispatched assignment, run `python Tools/next-task.py --claim <owner-name> --assignment <name> --base <full-approved-sha>` and retain the claim ID. The integration owner supplies both name and base. An unassigned request must wait for a reviewed scope; do not choose another assignment. Refusal means stop.
 3. Read the returned task, its linked design and the affected contracts in docs/architecture.md.
 4. Implement only work marked `Readiness: ready`. Read its Current review and the linked repair contract before historical evidence. Review status is not implementation permission.
 
@@ -52,7 +52,5 @@ Use English for all working text. Follow [the language policy](docs/language.md)
 Before dispatch, the integration owner records the approved base SHA and exact
 file scope in [worker-scopes.json](roadmap/worker-scopes.json). Follow
 [the submission gate](docs/worker-boundaries.md). Workers may not widen their
-scope or self-approve task completion. For R13/R16/R04 update only allowed reports
-and the task Completion evidence section; the reviewer updates status, review
-records and TODO after acceptance. Record newly discovered debt in the review
+scope or self-approve task completion. For schema-2 assignments, change only the exact existing and new file targets. Shared task evidence, status, catalog registration, review records and TODO are integrator-owned; return evidence in the submission report. Record newly discovered debt in the review
 packet; [the debt index](docs/audit/technical-debt.md) identifies existing owners.

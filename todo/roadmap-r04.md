@@ -38,6 +38,8 @@ A reviewed specification and evidence record for each confirmed repair, with dup
 
 ## Completion evidence
 
+Integrator accepted parallel-claim candidate 8856969ba9998e9c34964d0cbc25a0e3b0fa9960 after independent 14-test claim regression, worker-scope regression and full offline gate. Canonical aliases refuse before mutation; exact legacy fixture no longer depends on private Git history. Production migration and disjoint dispatch are separately applied by the integrator. This accepts coordination helpers, not engine concurrency or R04 completion.
+
 ### Integrator acceptance: Widget append and Plan isolation
 
 Accepted repair candidate `9e6878b038ca14b64c0a399eef9edd097f9151e6`. Plan now probes on the existing transient scratch-graph path instead of modifying the target graph; no user dirty-state restoration masks mutation. Widget fixture independently verifies clean/repeated/already-dirty Plan, refused Plan/Apply, exact appended node/link, existing layout/defaults, sibling graph and widget-tree preservation.
