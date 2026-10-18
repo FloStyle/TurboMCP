@@ -729,7 +729,7 @@ class PopenRunnerTests(unittest.TestCase):
         self.assertEqual(result["error"], "unknown")
         self.assertFalse(popen.called)
 
-    def test_expired_before_spawn_does_not_create_job(self):
+    def test_expired_before_spawn_does_not_popen(self):
         jobs = []
         with mock.patch("persistence_process_reader.subprocess.Popen") as popen:
             result = reader._PopenRunner(
@@ -738,7 +738,8 @@ class PopenRunnerTests(unittest.TestCase):
                 sleeper=lambda _: None,
             ).run(["fixed", str(PID)], 1000, Clock([1000]))
         self.assertEqual(result["error"], "timeout")
-        self.assertEqual(jobs, [])
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].closed, 1)
         self.assertFalse(popen.called)
 
     def test_thread_constructor_failure_reports_cleanup(self):

@@ -439,7 +439,7 @@ Limits:
 
 Validation:
 - `python Tools/test-persistence-process-reader.py` — exit 0; `Ran 52 tests ... OK`.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/488d2151e70647308080ffee81d78f2b/report.json`; all offline checks passed.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/a30db317d9984b6790b79256cee0116c/report.json`; all offline checks passed.
 - Candidate-bound evidence and full-base scope gate are recorded in the submission.
 
 Rollback: remove the containment methods, worker mode and orchestration changes from the three allowed tools, restore the previous runner semantics, and remove this evidence. No catalog, script, production caller or native harness is added.

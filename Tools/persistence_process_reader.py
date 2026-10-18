@@ -303,17 +303,10 @@ class _PopenRunner:
         if not _valid_pid(pid):
             return _runner_failure("unknown")
         try:
-            now = clock()
-        except _ClockError:
+            pid = int(argv[-1])
+        except (TypeError, ValueError, IndexError):
             return _runner_failure("unknown")
-        if now >= deadline_ns:
-            return _runner_failure("timeout")
-
-        try:
-            job = self.job_factory()
-        except Exception:
-            return _runner_failure("unknown")
-        if job is None:
+        if not _valid_pid(pid):
             return _runner_failure("unknown")
 
         out = bytearray()
@@ -328,6 +321,7 @@ class _PopenRunner:
         proc = None
         request = None
         contained = False
+        job = None
         startup = subprocess.STARTUPINFO()
         startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         startup.wShowWindow = subprocess.SW_HIDE
@@ -351,6 +345,26 @@ class _PopenRunner:
                     stream.close()
                 except Exception:
                     pass
+
+        try:
+            job = self.job_factory()
+        except Exception:
+            return _runner_failure("unknown")
+        if job is None:
+            return _runner_failure("unknown")
+
+        try:
+            now = clock()
+        except _ClockError:
+            cleanup_failed = self._cleanup(job, None, [None, None], None, clock, False)
+            result = _runner_failure("unknown")
+            result["cleanup_failed"] = cleanup_failed
+            return result
+        if now >= deadline_ns:
+            cleanup_failed = self._cleanup(job, None, [None, None], None, clock, False)
+            result = _runner_failure("timeout")
+            result["cleanup_failed"] = cleanup_failed
+            return result
 
         try:
             proc = subprocess.Popen(
