@@ -38,6 +38,14 @@ A reviewed specification and evidence record for each confirmed repair, with dup
 
 ## Completion evidence
 
+### Integrator acceptance: Widget append and Plan isolation
+
+Accepted repair candidate `9e6878b038ca14b64c0a399eef9edd097f9151e6`. Plan now probes on the existing transient scratch-graph path instead of modifying the target graph; no user dirty-state restoration masks mutation. Widget fixture independently verifies clean/repeated/already-dirty Plan, refused Plan/Apply, exact appended node/link, existing layout/defaults, sibling graph and widget-tree preservation.
+
+Pinned 5.8.3 supervised run `754dc0a636da405895b7237e7f3eeb36` passed build and Widget acceptance with no errors or warnings; sixteen files restored. Append regressions passed in `afc09af42ce44ffeac3c9526784f9d14` at `1705e181baa812e22016d27b59dd5b6323fced19`; the later correction changed only Python reporting and evidence. That earlier overall run failed due to an HTTP warning and reporting bug and is not represented as wholly passing. Integration offline run `486c21d562d04231af95fb77f5ab28b5` passed after merging current main documentation and refreshing only capability plugin identity.
+
+Fixtures are unique never-saved packages, deliberately non-transient to exercise dirty tracking; retirement is not proof of garbage collection. Full read/write round-trip, save/reopen, all spawner classes, measured visual overlap and installed-engine support remain unverified. R04 remains incomplete.
+
 ### Integrator acceptance: shared-value reader
 
 Accepted candidate `83d3443f03eadcbf5a8353df400b47119b3672c4` from base `315a264a83bfe63d222e59e4cd149a890d7f4a13`; trusted five-file scope passed. The first complete shared pure value is rendered inline; subsequent references retain the exact output pin. Partial, unsupported and malformed forms cannot become reusable definitions.
