@@ -70,7 +70,17 @@ namespace
 	struct FGraphSnapshot
 	{
 		TArray<FNodeSnapshot> Nodes;
+		TArray<const UEdGraphNode*> Objects;
 		TSet<FString> Links;
+	};
+
+	struct FWidgetIdentity
+	{
+		const UWidgetTree* Tree = nullptr;
+		const UWidget* Root = nullptr;
+		TArray<const UWidget*> Widgets;
+		TArray<const UPanelSlot*> Slots;
+		TArray<const UObject*> Parents;
 	};
 
 	struct FScopedFixtureCleanup
@@ -205,6 +215,7 @@ namespace
 			}
 			Row.Text = Text;
 			Snapshot.Nodes.Add(Row);
+			Snapshot.Objects.Add(Node);
 			for (const UEdGraphPin* Pin : Node->Pins)
 			{
 				if (Pin == nullptr)
@@ -225,14 +236,16 @@ namespace
 
 	bool SameGraph(const FGraphSnapshot& InA, const FGraphSnapshot& InB)
 	{
-		if (InA.Nodes.Num() != InB.Nodes.Num() || InA.Links.Num() != InB.Links.Num())
+		if (InA.Nodes.Num() != InB.Nodes.Num() || InA.Links.Num() != InB.Links.Num()
+			|| InA.Objects.Num() != InB.Objects.Num())
 		{
 			return false;
 		}
 		for (int32 Index = 0; Index < InA.Nodes.Num(); ++Index)
 		{
 			if (InA.Nodes[Index].Guid != InB.Nodes[Index].Guid
-				|| InA.Nodes[Index].Text != InB.Nodes[Index].Text)
+				|| InA.Nodes[Index].Text != InB.Nodes[Index].Text
+				|| InA.Objects[Index] != InB.Objects[Index])
 			{
 				return false;
 			}
@@ -250,17 +263,20 @@ namespace
 	bool ExistingPreserved(const FGraphSnapshot& InBefore, const FGraphSnapshot& InAfter,
 		TArray<FString>& OutNewGuids)
 	{
-		TMap<FString, const FNodeSnapshot*> AfterByGuid;
-		for (const FNodeSnapshot& Node : InAfter.Nodes)
+		TMap<FString, int32> AfterByGuid;
+		for (int32 Index = 0; Index < InAfter.Nodes.Num(); ++Index)
 		{
-			AfterByGuid.Add(Node.Guid, &Node);
+			AfterByGuid.Add(InAfter.Nodes[Index].Guid, Index);
 		}
 		TSet<FString> BeforeGuids;
-		for (const FNodeSnapshot& Node : InBefore.Nodes)
+		for (int32 BeforeIndex = 0; BeforeIndex < InBefore.Nodes.Num(); ++BeforeIndex)
 		{
+			const FNodeSnapshot& Node = InBefore.Nodes[BeforeIndex];
 			BeforeGuids.Add(Node.Guid);
-			const FNodeSnapshot* const* Found = AfterByGuid.Find(Node.Guid);
-			if (Found == nullptr || (*Found)->Text != Node.Text)
+			const int32* Found = AfterByGuid.Find(Node.Guid);
+			if (Found == nullptr
+				|| InAfter.Nodes[*Found].Text != Node.Text
+				|| InAfter.Objects[*Found] != InBefore.Objects[BeforeIndex])
 			{
 				return false;
 			}
@@ -348,6 +364,154 @@ namespace
 					.ToString(EGuidFormats::DigitsLower));
 		}
 		return Out;
+	}
+
+	FWidgetIdentity CaptureWidgetIdentity(const UWidgetBlueprint* InBlueprint)
+	{
+		FWidgetIdentity Identity;
+		if (InBlueprint == nullptr || InBlueprint->WidgetTree == nullptr)
+		{
+			return Identity;
+		}
+		Identity.Tree = InBlueprint->WidgetTree;
+		Identity.Root = Identity.Tree->RootWidget;
+		TArray<UWidget*> Widgets;
+		Identity.Tree->GetAllWidgets(Widgets);
+		Widgets.RemoveAll([](const UWidget* Widget) { return Widget == nullptr; });
+		Widgets.Sort([](const UWidget& A, const UWidget& B)
+		{
+			return A.GetName() < B.GetName();
+		});
+		for (const UWidget* Widget : Widgets)
+		{
+			Identity.Widgets.Add(Widget);
+			Identity.Slots.Add(Widget->Slot);
+			Identity.Parents.Add(Widget->Slot != nullptr ? Widget->Slot->Parent.Get() : nullptr);
+		}
+		return Identity;
+	}
+
+	bool SameWidgetIdentity(const FWidgetIdentity& InA, const FWidgetIdentity& InB)
+	{
+		if (InA.Tree != InB.Tree || InA.Root != InB.Root
+			|| InA.Widgets.Num() != InB.Widgets.Num()
+			|| InA.Slots.Num() != InB.Slots.Num()
+			|| InA.Parents.Num() != InB.Parents.Num())
+		{
+			return false;
+		}
+		for (int32 Index = 0; Index < InA.Widgets.Num(); ++Index)
+		{
+			if (InA.Widgets[Index] != InB.Widgets[Index]
+				|| InA.Slots[Index] != InB.Slots[Index]
+				|| InA.Parents[Index] != InB.Parents[Index])
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Fixture-specific extraction from production reader text. Selects exactly
+	 * one form by a unique InString marker and extracts the emitted node identity
+	 * from its header comment. No fallback to fixture MakeForNode is allowed.
+	 */
+	bool ExtractFormByMarker(const FString& InText, const FString& InMarker,
+		FString& OutRef, FString& OutForm, FString& OutError)
+	{
+		OutRef.Empty();
+		OutForm.Empty();
+		OutError.Empty();
+		TArray<FString> Lines;
+		InText.ParseIntoArrayLines(Lines, /*bCullEmpty=*/false);
+		TArray<int32> Matches;
+		for (int32 Index = 0; Index < Lines.Num(); ++Index)
+		{
+			if (Lines[Index].Contains(InMarker))
+			{
+				Matches.Add(Index);
+			}
+		}
+		if (Matches.Num() == 0)
+		{
+			OutError = TEXT("marker is absent from the reader text");
+			return false;
+		}
+		if (Matches.Num() != 1)
+		{
+			OutError = TEXT("marker is ambiguous in the reader text");
+			return false;
+		}
+		int32 HeaderIndex = INDEX_NONE;
+		for (int32 Index = Matches[0] - 1; Index >= 0; --Index)
+		{
+			if (Lines[Index].TrimStartAndEnd().StartsWith(TEXT("(")))
+			{
+				HeaderIndex = Index;
+				break;
+			}
+		}
+		if (HeaderIndex == INDEX_NONE)
+		{
+			OutError = TEXT("no form header precedes the marker");
+			return false;
+		}
+		int32 EndIndex = Lines.Num();
+		for (int32 Index = HeaderIndex + 1; Index < Lines.Num(); ++Index)
+		{
+			if (Lines[Index].TrimStartAndEnd().StartsWith(TEXT("(")))
+			{
+				EndIndex = Index;
+				break;
+			}
+		}
+		TArray<FString> FormLines;
+		for (int32 Index = HeaderIndex; Index < EndIndex; ++Index)
+		{
+			FormLines.Add(Lines[Index]);
+		}
+		OutForm = FString::Join(FormLines, TEXT("\n"));
+		const FString Header = Lines[HeaderIndex].TrimStartAndEnd();
+		const int32 Separator = Header.Find(TEXT(" ; "));
+		if (Separator == INDEX_NONE)
+		{
+			OutError = TEXT("the selected form has no emitted identity comment");
+			return false;
+		}
+		FString Ref = Header.Mid(Separator + 3);
+		const int32 Space = Ref.Find(TEXT(" "));
+		if (Space != INDEX_NONE)
+		{
+			Ref = Ref.Left(Space);
+		}
+		Ref = Ref.TrimStartAndEnd();
+		if (Ref.IsEmpty())
+		{
+			OutError = TEXT("the selected form emitted an empty identity");
+			return false;
+		}
+		OutRef = Ref;
+		return true;
+	}
+
+	bool ExtractFormLink(const FString& InForm, FString& OutRef)
+	{
+		OutRef.Empty();
+		const FString Prefix = TEXT("execute (-> ");
+		const int32 Start = InForm.Find(Prefix);
+		if (Start == INDEX_NONE)
+		{
+			return false;
+		}
+		const int32 RefStart = Start + Prefix.Len();
+		const int32 End = InForm.Find(TEXT(")"), ESearchCase::IgnoreCase, ESearchDir::FromStart, RefStart);
+		if (End == INDEX_NONE)
+		{
+			return false;
+		}
+		OutRef = InForm.Mid(RefStart, End - RefStart).TrimStartAndEnd();
+		return !OutRef.IsEmpty();
 	}
 
 	UEdGraph* AddFunctionGraph(FFixture& Fixture, const TCHAR* InName)
@@ -562,6 +726,7 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 	const FGraphSnapshot TargetBefore = CaptureGraph(Fixture.Target);
 	const FGraphSnapshot SiblingBefore = CaptureGraph(Fixture.Sibling);
 	const FString WidgetsBefore = CaptureWidgets(Fixture.Blueprint);
+	const FWidgetIdentity WidgetIdentityBefore = CaptureWidgetIdentity(Fixture.Blueprint);
 
 	// Real production reader: this is the supported read text, not a whole-dump
 	// append input. Only the source node identity needed to target one new form
@@ -573,17 +738,54 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the real reader produced text"), ReadBefore.IsEmpty());
 	TestFalse(TEXT("the read text contains no reader error"),
 		ReadBefore.Contains(TEXT("; error:")));
-	const FString SourceLongId = TurboMCPNodeId::MakeForNode(Fixture.PrintB,
-		/*bLongForm=*/true);
-	const FString SourceShortId = TurboMCPNodeId::MakeForNode(Fixture.PrintB);
-	TestTrue(TEXT("the read text names the target source node"),
-		ReadBefore.Contains(SourceShortId));
+	const FString SourceOracle = TurboMCPNodeId::MakeForNode(Fixture.PrintB);
+	FString ExtractedSource;
+	FString ExtractedForm;
+	FString ExtractError;
+	TestTrue(TEXT("the reader form carrying the unique second literal yields an identity"),
+		ExtractFormByMarker(ReadBefore, TEXT("InString \"second\""), ExtractedSource,
+			ExtractedForm, ExtractError));
+	if (ExtractedSource.IsEmpty())
+	{
+		AddError(TEXT("reader extraction failed: ") + ExtractError);
+		return false;
+	}
+	TestEqual(TEXT("the extracted reader identity matches the fixture oracle"),
+		ExtractedSource, SourceOracle);
+	TestTrue(TEXT("the extracted form contains the second literal"),
+		ExtractedForm.Contains(TEXT("InString \"second\"")));
+
+	// Negative controls for extraction: missing, ambiguous and corrupted emitted
+	// identity must all refuse rather than fall back to fixture identity.
+	{
+		FString MissingRef, MissingForm, MissingError;
+		TestFalse(TEXT("extraction refuses a missing marker"),
+			ExtractFormByMarker(ReadBefore, TEXT("InString \"absent\""), MissingRef,
+				MissingForm, MissingError));
+		TestTrue(TEXT("a missing marker yields no fallback identity"), MissingRef.IsEmpty());
+	}
+	{
+		const FString Ambiguous = ReadBefore
+			+ TEXT("\n  (Development|PrintString ; deadbeef\n      InString \"second\")\n");
+		FString AmbiguousRef, AmbiguousForm, AmbiguousError;
+		TestFalse(TEXT("extraction refuses an ambiguous marker"),
+			ExtractFormByMarker(Ambiguous, TEXT("InString \"second\""), AmbiguousRef,
+				AmbiguousForm, AmbiguousError));
+		TestTrue(TEXT("an ambiguous marker yields no fallback identity"), AmbiguousRef.IsEmpty());
+	}
+	{
+		FString CorruptRef, CorruptForm, CorruptError;
+		TestFalse(TEXT("extraction refuses a corrupted emitted identity"),
+			ExtractFormByMarker(TEXT("(Development|PrintString\n    InString \"second\")"),
+				TEXT("InString \"second\""), CorruptRef, CorruptForm, CorruptError));
+		TestTrue(TEXT("a corrupted form yields no fallback identity"), CorruptRef.IsEmpty());
+	}
 
 	// A targeted append form, not the whole dump: one new PrintString linked from
-	// the existing source node's then pin.
+	// the identity extracted from the production reader output.
 	const FString AppendText = FString::Printf(
 		TEXT("(Development|PrintString\n    execute (-> %s:then)\n    InString \"roundtrip\")"),
-		*SourceLongId);
+		*ExtractedSource);
 
 	FTurboMCPGraphAppend::FPlan Plan;
 	FString PlanError;
@@ -601,6 +803,8 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
 	TestEqual(TEXT("Plan did not mutate the widget tree"),
 		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
+	TestTrue(TEXT("Plan did not replace any widget, tree, slot or parent"),
+		SameWidgetIdentity(WidgetIdentityBefore, CaptureWidgetIdentity(Fixture.Blueprint)));
 	TestFalse(TEXT("Plan left the clean fixture clean"), Fixture.Package->IsDirty());
 	if (!Plan.bAcceptable() || Plan.PlannedPositions.Num() != 1)
 	{
@@ -626,6 +830,8 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		SameGraph(SiblingBefore, CaptureGraph(Fixture.Sibling)));
 	TestEqual(TEXT("Apply preserves the widget tree"),
 		CaptureWidgets(Fixture.Blueprint), WidgetsBefore);
+	TestTrue(TEXT("Apply preserves every widget, tree, slot and parent identity"),
+		SameWidgetIdentity(WidgetIdentityBefore, CaptureWidgetIdentity(Fixture.Blueprint)));
 	TestEqual(TEXT("Apply adds exactly one link"),
 		TargetAfter.Links.Num(), TargetBefore.Links.Num() + 1);
 
@@ -669,12 +875,20 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		const FString NewShortId = TurboMCPNodeId::MakeForNode(NewNode);
 		TestFalse(TEXT("the fresh read contains no reader error"),
 			ReadAfter.Contains(TEXT("; error:")));
-		TestTrue(TEXT("the fresh read contains the new node identity"),
-			ReadAfter.Contains(NewShortId));
-		TestTrue(TEXT("the fresh read contains the append literal"),
-			ReadAfter.Contains(TEXT("InString \"roundtrip\"")));
-		TestTrue(TEXT("the fresh read shows the new node linked from the source"),
-			ReadAfter.Contains(FString::Printf(TEXT("execute (-> %s)"), *SourceShortId)));
+		FString FreshRef;
+		FString FreshForm;
+		FString FreshError;
+		TestTrue(TEXT("the fresh reader yields the intended new form by its literal"),
+			ExtractFormByMarker(ReadAfter, TEXT("InString \"roundtrip\""), FreshRef,
+				FreshForm, FreshError));
+		TestEqual(TEXT("the fresh form identity is the new node"), FreshRef, NewShortId);
+		TestTrue(TEXT("the fresh form carries the append literal"),
+			FreshForm.Contains(TEXT("InString \"roundtrip\"")));
+		FString FreshLink;
+		TestTrue(TEXT("the fresh form exposes one execute source"), ExtractFormLink(
+			FreshForm, FreshLink));
+		TestEqual(TEXT("the fresh form's execute source is the reader source identity"),
+			FreshLink, SourceOracle);
 	}
 
 	// Refusal must not mutate a fresh fixture. It is built separately so it
@@ -690,6 +904,7 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 	const FGraphSnapshot RefusalTarget = CaptureGraph(RefusalFixture.Target);
 	const FGraphSnapshot RefusalSibling = CaptureGraph(RefusalFixture.Sibling);
 	const FString RefusalWidgets = CaptureWidgets(RefusalFixture.Blueprint);
+	const FWidgetIdentity RefusalWidgetIdentity = CaptureWidgetIdentity(RefusalFixture.Blueprint);
 	FTurboMCPGraphAppend::FPlan RefusalPlan;
 	FString RefusalError;
 	TestTrue(TEXT("the refusal form plans"),
@@ -704,6 +919,9 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		SameGraph(RefusalSibling, CaptureGraph(RefusalFixture.Sibling)));
 	TestEqual(TEXT("a refused Plan did not mutate the widget tree"),
 		CaptureWidgets(RefusalFixture.Blueprint), RefusalWidgets);
+	TestTrue(TEXT("a refused Plan preserved widget, tree, slot and parent identity"),
+		SameWidgetIdentity(RefusalWidgetIdentity,
+			CaptureWidgetIdentity(RefusalFixture.Blueprint)));
 	TestFalse(TEXT("a refused Plan left the fresh fixture clean"),
 		RefusalFixture.Package->IsDirty());
 	FString RefusalReport;
@@ -718,6 +936,9 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		SameGraph(RefusalSibling, CaptureGraph(RefusalFixture.Sibling)));
 	TestEqual(TEXT("a refused Apply did not mutate the widget tree"),
 		CaptureWidgets(RefusalFixture.Blueprint), RefusalWidgets);
+	TestTrue(TEXT("a refused Apply preserved widget, tree, slot and parent identity"),
+		SameWidgetIdentity(RefusalWidgetIdentity,
+			CaptureWidgetIdentity(RefusalFixture.Blueprint)));
 	TestFalse(TEXT("a refused Apply left the fresh fixture clean"),
 		RefusalFixture.Package->IsDirty());
 
@@ -725,6 +946,7 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 	// contaminate the clean Plan evidence.
 	const FGraphSnapshot TargetAfterControls = CaptureGraph(Fixture.Target);
 	const FString WidgetsAfterControls = CaptureWidgets(Fixture.Blueprint);
+	const FWidgetIdentity WidgetIdentityAfterControls = CaptureWidgetIdentity(Fixture.Blueprint);
 	{
 		const int32 OriginalX = Fixture.PrintA->NodePosX;
 		Fixture.PrintA->NodePosX = OriginalX + 1;
@@ -736,31 +958,43 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 	}
 	{
 		UEdGraphPin* InString = Fixture.PrintA->FindPin(TEXT("InString"), EGPD_Input);
-		const FString Original = InString != nullptr ? InString->DefaultValue : FString();
-		if (InString != nullptr)
+		TestTrue(TEXT("the default control prerequisite pin exists"), InString != nullptr);
+		if (InString == nullptr)
 		{
-			InString->DefaultValue = TEXT("perturbed");
-			TestFalse(TEXT("the graph comparator detects a changed default"),
-				SameGraph(TargetAfterControls, CaptureGraph(Fixture.Target)));
-			InString->DefaultValue = Original;
-			TestTrue(TEXT("the changed-default control restores exactly"),
-				SameGraph(TargetAfterControls, CaptureGraph(Fixture.Target)));
+			return false;
 		}
+		const FString Original = InString->DefaultValue;
+		InString->DefaultValue = TEXT("perturbed");
+		TestFalse(TEXT("the graph comparator detects a changed default"),
+			SameGraph(TargetAfterControls, CaptureGraph(Fixture.Target)));
+		InString->DefaultValue = Original;
+		TestTrue(TEXT("the changed-default control restores exactly"),
+			SameGraph(TargetAfterControls, CaptureGraph(Fixture.Target)));
 	}
 	{
 		UEdGraphPin* Then = Fixture.PrintA->FindPin(TEXT("then"), EGPD_Output);
 		UEdGraphPin* Exec = Fixture.PrintB->FindPin(TEXT("execute"), EGPD_Input);
-		if (Then != nullptr && Exec != nullptr && Fixture.Target->GetSchema() != nullptr)
+		TestTrue(TEXT("the link control prerequisite pins and schema exist"),
+			Then != nullptr && Exec != nullptr && Fixture.Target->GetSchema() != nullptr);
+		if (Then == nullptr || Exec == nullptr || Fixture.Target->GetSchema() == nullptr)
 		{
-			Fixture.Target->GetSchema()->BreakSinglePinLink(Then, Exec);
-			TestFalse(TEXT("the graph comparator detects a removed link"),
-				SameGraph(TargetAfterControls, CaptureGraph(Fixture.Target)));
-			Fixture.Target->GetSchema()->TryCreateConnection(Then, Exec);
-			TestTrue(TEXT("the removed-link control restores exactly"),
-				SameGraph(TargetAfterControls, CaptureGraph(Fixture.Target)));
+			return false;
 		}
+		Fixture.Target->GetSchema()->BreakSinglePinLink(Then, Exec);
+		TestFalse(TEXT("the graph comparator detects a removed link"),
+			SameGraph(TargetAfterControls, CaptureGraph(Fixture.Target)));
+		TestTrue(TEXT("the removed link is recreated"),
+			Fixture.Target->GetSchema()->TryCreateConnection(Then, Exec));
+		TestTrue(TEXT("the removed-link control restores exactly"),
+			SameGraph(TargetAfterControls, CaptureGraph(Fixture.Target)));
 	}
 	{
+		TestTrue(TEXT("the widget-slot control prerequisite slot exists"),
+			Fixture.TitleSlot != nullptr);
+		if (Fixture.TitleSlot == nullptr)
+		{
+			return false;
+		}
 		const int32 OriginalZ = Fixture.TitleSlot->GetZOrder();
 		Fixture.TitleSlot->SetZOrder(OriginalZ + 1);
 		TestFalse(TEXT("the widget comparator detects a changed slot property"),
@@ -768,6 +1002,9 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		Fixture.TitleSlot->SetZOrder(OriginalZ);
 		TestEqual(TEXT("the widget-slot control restores exactly"),
 			CaptureWidgets(Fixture.Blueprint), WidgetsAfterControls);
+		TestTrue(TEXT("the widget-slot control preserves object identities"),
+			SameWidgetIdentity(WidgetIdentityAfterControls,
+				CaptureWidgetIdentity(Fixture.Blueprint)));
 	}
 
 	TestTrue(TEXT("roundtrip fixture retirement completed"), Cleanup.Retire());
