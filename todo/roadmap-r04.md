@@ -348,6 +348,29 @@ Validation:
 
 Rollback: remove the new report and this evidence only. No existing file or caller is changed.
 
+### Checkpoint 9: offline collector orchestration
+
+Task R04 checkpoint 9, claim `23c37940f4314c4cbd8a14d451b09773` (owner `dsh-r04-collector-02`). Approved base `f89114d15f63cda336cf7b86260533c217cb2c88`; branch `task/r04-collector-offline`; worktree `C:\ExampleDev\SampleRoot005\r04-vcs`. The candidate is the commit containing this evidence; its full SHA is returned in the submission message. R04 and Monday persistence acceptance remain incomplete.
+
+Implementation:
+- `Tools/persistence_collector.py` adds the pure `collect_pair(expected_record, endpoint, backend, policy)` orchestration and a named `default_policy()` factory. It validates the exact expected/policy records, enforces separate monotonic-ns deadlines and canonical UTC age/gap checks, reads process/project/path/listener evidence only through the injected backend, performs independent final rechecks, compares listener multisets, builds two v1 observations and calls `persistence_identity.validate_evidence`.
+- File IDs are exact unsigned 32-bit components including zero; `link_count` must be exactly one. Foreign owner PIDs refuse immediately without reading unrelated command lines. Missing/zero link counts, reparse/short flags, path/file-ID changes and malformed backend records refuse.
+- `Tools/test-persistence-collector.py` contains 56 deterministic fake-backend tests covering valid zero/uint32 file IDs, sub-second and non-multiple-second policies, both-snapshot ages, age/gap equality and one-tick boundaries, FILETIME epoch conversion, malformed records at each layer, backend exceptions, no further reads after refusal, foreign-listener behavior, reordered/duplicated listener rows, final process/path changes, endpoint duplication, policy/schema strictness, input immutability and output aliasing.
+- `Tests/catalog.json` adds exactly one offline row: `test-persistence-collector`, 30-second timeout, `acceptance=not_mapped`.
+
+Limits:
+- This slice is pure orchestration only. No Windows adapter, launch seam, subprocess, process/socket/filesystem collection, sleep, launch/restart/kill, caller, lease, config or engine change was implemented.
+- The backend must enforce the absolute deadline it receives; this pure module cannot interrupt a backend that never returns.
+- Passing proves supplied evidence consistency only, not live ownership, future connection safety or persistence.
+- All implementation remains `proposed_unapproved`; the Windows adapter and launch record are still blockers.
+
+Validation:
+- `python Tools/test-persistence-collector.py` — exit 0; `Ran 56 tests ... OK`.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0; `.local/executions/72fe1978188946fd80abad1374a96766/report.json`; aggregate log records `PASS: test-persistence-collector` and all other offline checks passed.
+- Candidate-bound focused/offline evidence and the full-base scope gate are recorded in the submission after the commit. No live engine/process/network action was run.
+
+Rollback: remove `Tools/persistence_collector.py`, `Tools/test-persistence-collector.py`, the one catalog row and this evidence. Existing `Tools/persistence_identity.py` and all callers are unchanged.
+
 ## Related findings
 - [019cf7af-dfe5-4cda-91b9-1ca706ace4e5](019cf7af.md)
 - [7de8d185-a025-4485-837e-2d03975691b0](7de8d185.md)

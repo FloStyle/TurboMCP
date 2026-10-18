@@ -422,6 +422,13 @@
       "acceptance": "not_mapped"
     },
     {
+      "id": "test-persistence-collector",
+      "path": "Tools/test-persistence-collector.py",
+      "tier": "offline",
+      "timeout_seconds": 30,
+      "acceptance": "not_mapped"
+    },
+    {
       "id": "test-persistence-identity",
       "path": "Tools/test-persistence-identity.py",
       "tier": "offline",
