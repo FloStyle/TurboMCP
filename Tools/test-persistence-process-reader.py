@@ -1251,6 +1251,81 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertTrue(result["worker_refused"])
         self.assertFalse(result["no_descendant_end_snapshot"] is False and result["status"] == "passed")
 
+    def parent_case(self, data, identity, wait_result, terminate_errors=None,
+                    close_result=True, supervisor_wait_fail=False):
+        class Proc:
+            pid = 500
+            def __init__(self):
+                self.returncode = None; self.killed = 0
+                self.stdout = FakeStream(); self.stderr = FakeStream()
+            def kill(self):
+                self.killed += 1
+                if not supervisor_wait_fail: self.returncode = -9
+            def poll(self): return self.returncode
+            def wait(self, timeout=None):
+                if supervisor_wait_fail: raise RuntimeError("supervisor wait failed")
+                return self.returncode
+        class Api:
+            def __init__(self): self.closed = []
+            def CloseHandle(self, handle): self.closed.append(handle); return close_result
+        proc = Proc(); api = Api(); terminated = []; closes = []; deadlines = []
+        def terminate(handle, child_api, deadline):
+            terminated.append(handle); deadlines.append(("terminate", deadline))
+            return list(terminate_errors or [])
+        def close(stream, deadline):
+            deadlines.append(("close", deadline)); return []
+        with tempfile.TemporaryDirectory() as folder, \
+             mock.patch.object(self.acceptance.subprocess, "Popen", return_value=proc), \
+             mock.patch.object(self.acceptance, "_read_json_bounded", return_value=data), \
+             mock.patch.object(self.acceptance, "_open_process_handle", return_value=(555, api)), \
+             mock.patch.object(self.acceptance, "_identity_from_handle", return_value=identity), \
+             mock.patch.object(self.acceptance, "_wait_process_handle", return_value=wait_result), \
+             mock.patch.object(self.acceptance, "_terminate_process_handle", side_effect=terminate), \
+             mock.patch.object(self.acceptance, "_close_bounded", side_effect=close):
+            result = self.acceptance._case_parent_death(Path(folder))
+        return result, proc, api, terminated, deadlines
+
+    def test_parent_death_does_not_terminate_mismatched_or_missing_identity(self):
+        for data, identity in (
+            ({"pid": 501, "created": 100}, {"created": 200}),
+            ({"pid": 501, "created": 100}, None),
+        ):
+            result, proc, api, terminated, _ = self.parent_case(data, identity, ("passed", "child-signaled"))
+            self.assertEqual(result["status"], "blocked", result)
+            self.assertEqual(terminated, [])
+            self.assertIn(555, api.closed)
+            self.assertGreaterEqual(proc.killed, 1)
+
+    def test_parent_death_verified_failure_uses_same_handle_fallback(self):
+        result, proc, api, terminated, _ = self.parent_case(
+            {"pid": 501, "created": 100}, {"created": 100}, ("failed", "child-timeout")
+        )
+        self.assertEqual(result["status"], "failed", result)
+        self.assertEqual(result["detail"], "child-timeout")
+        self.assertEqual(terminated, [555])
+        self.assertIn(555, api.closed)
+
+    def test_parent_death_fallback_and_supervisor_cleanup_failures_are_reported(self):
+        result, proc, api, terminated, _ = self.parent_case(
+            {"pid": 501, "created": 100}, {"created": 100}, ("failed", "child-timeout"),
+            terminate_errors=["terminate-child"], close_result=False, supervisor_wait_fail=True
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertTrue(any("terminate-child" in value for value in result["cleanup_errors"]))
+        self.assertTrue(any("child-handle-close" in value for value in result["cleanup_errors"]))
+        self.assertTrue(any("supervisor-exit" in value for value in result["cleanup_errors"]))
+        self.assertEqual(terminated, [555])
+
+    def test_parent_death_verified_success_and_single_cleanup_budget(self):
+        result, proc, api, terminated, deadlines = self.parent_case(
+            {"pid": 501, "created": 100}, {"created": 100}, ("passed", "child-signaled")
+        )
+        self.assertEqual(result["status"], "passed", result)
+        self.assertEqual(terminated, [])
+        self.assertIn(555, api.closed)
+        self.assertTrue(deadlines)
+        self.assertEqual(len({value for _, value in deadlines}), 1)
+
     def test_pipe_case_uses_ordered_handshake_and_reports_missing_output(self):
         class Stream:
             def __init__(self, lines):

@@ -653,6 +653,8 @@ def _case_parent_death(work):
     proc = None
     child_handle = None
     child_api = None
+    verified = False
+    child_pid = None
     result = {"status": "blocked", "detail": "not-observed"}
     try:
         proc = subprocess.Popen(_helper_command("supervisor-death", ready), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -668,32 +670,44 @@ def _case_parent_death(work):
                 created = data.get("created")
                 identity = _identity_from_handle(child_handle)
                 if type(created) is not int or created == 0 or not identity or identity["created"] != created:
-                    result = {"status": "blocked", "detail": "missing-or-mismatched-created-identity"}
+                    result = {"status": "blocked", "detail": "missing-or-mismatched-created-identity",
+                              "owned": [proc.pid, child_pid], "termination_authorized": False}
                 else:
+                    verified = True
                     proc.kill(); proc.wait(timeout=5)
                     status, detail = _wait_process_handle(child_handle, child_api, time.monotonic() + 10)
-                    result = {"status": status, "detail": detail, "owned": [proc.pid, child_pid]}
+                    result = {"status": status, "detail": detail, "owned": [proc.pid, child_pid],
+                              "termination_authorized": True}
     except Exception as exc:
         result = {"status": "blocked", "detail": type(exc).__name__ + ": " + str(exc)}
     finally:
         cleanup_errors = []
+        cleanup_deadline = time.monotonic() + CLEANUP_LIMIT_SECONDS
         if child_handle:
-            if result.get("status") != "passed":
-                cleanup_errors.extend(_terminate_process_handle(child_handle, child_api, time.monotonic() + CLEANUP_LIMIT_SECONDS))
+            if verified and result.get("status") != "passed":
+                try:
+                    cleanup_errors.extend(_terminate_process_handle(child_handle, child_api, cleanup_deadline))
+                except Exception as exc:
+                    cleanup_errors.append("terminate-child:" + str(exc))
             try:
                 if not child_api.CloseHandle(child_handle):
                     cleanup_errors.append("child-handle-close:" + str(ctypes.get_last_error()))
             except Exception as exc:
                 cleanup_errors.append("child-handle-close:" + str(exc))
         if proc is not None:
-            if proc.poll() is None:
-                proc.kill()
-                try:
-                    proc.wait(timeout=5)
-                except Exception:
-                    cleanup_errors.append("supervisor-exit")
+            try:
+                if proc.poll() is None:
+                    proc.kill()
+                    remaining = max(0, cleanup_deadline - time.monotonic())
+                    proc.wait(timeout=remaining)
+            except Exception as exc:
+                cleanup_errors.append("supervisor-exit:" + str(exc))
             for stream in (proc.stdout, proc.stderr):
-                cleanup_errors.extend(_close_bounded(stream, time.monotonic() + CLEANUP_LIMIT_SECONDS))
+                try:
+                    cleanup_errors.extend(_close_bounded(stream, cleanup_deadline))
+                except Exception as exc:
+                    cleanup_errors.append("pipe-close:" + str(exc))
+        cleanup_errors.extend(_join_helper_threads(cleanup_deadline))
         result = finalize_case(result, cleanup_errors)
     return result
 
