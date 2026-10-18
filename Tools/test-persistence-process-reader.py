@@ -2074,6 +2074,40 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertNotIn(bad_thread, self.acceptance.HELPER_THREADS)
         self.assertEqual(job.api.closed, [701, 700])
 
+    def test_observer_clock_timeout_is_bounded_and_terminates_job(self):
+        class Clock:
+            value = 100.0
+            def __call__(self): return self.value
+        class Stop:
+            def set(self): pass
+        class Thread:
+            def is_alive(self): return True
+            def join(self, timeout=None): clock.value += 10.0
+        class Observer:
+            def __init__(self): self.values = [(0, 0), (1, 1), (1, 0)]; self.terminated = 0; self.closed = 0
+            def accounting(self): return self.values.pop(0)
+            def assign(self, launch): pass
+            def is_process_in_job(self, launch): return True
+            def start_observation(self, deadline, callback, clock): return Stop(), Thread(), [], None
+            def drain_messages(self, deadline, callback, clock=None, stop_event=None): return None
+            def terminate_checked(self): self.terminated += 1
+            def close_checked(self): self.closed += 1
+        class Launch:
+            pid = 900; exit_code = 2
+            def resume(self): pass
+            def close_stdin(self): pass
+            def wait(self, timeout): return True
+            def close_process(self): pass
+            def close(self, deadline=None, clock=None): return []
+        clock = Clock(); observer = Observer()
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: Launch(), clock=clock
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertEqual(observer.terminated, 1)
+        self.assertEqual(observer.closed, 1)
+        self.assertTrue(any("observer-thread-timeout" in e for e in result["cleanup_errors"]))
+
     def test_observer_cleanup_exceptions_do_not_skip_process_cleanup(self):
         class BadStop:
             def set(self): raise RuntimeError("stop failed")
@@ -2105,6 +2139,77 @@ class AcceptanceHarnessTests(unittest.TestCase):
         self.assertEqual(observer.closed, 1)
         self.assertTrue(any("observer-stop" in e for e in result["cleanup_errors"]))
         self.assertTrue(any("observer-is-alive" in e for e in result["cleanup_errors"]))
+        self.assertTrue(any("observer-thread-timeout" in e for e in result["cleanup_errors"]))
+
+    def test_observation_duplicate_and_start_failures_preserve_cleanup(self):
+        class Api:
+            def __init__(self, duplicate_fail=0, close_ok=True):
+                self.duplicate_fail = duplicate_fail; self.close_ok = close_ok
+                self.duplicates = 0; self.closed = []
+            def GetCurrentProcess(self): return 1
+            def DuplicateHandle(self, source, handle, target, out, access, inherit, flags):
+                self.duplicates += 1
+                if self.duplicates == self.duplicate_fail:
+                    ctypes.set_last_error(5); return 0
+                out._obj.value = 700 + self.duplicates; return 1
+            def CloseHandle(self, handle):
+                self.closed.append(ctypes.cast(handle, ctypes.c_void_p).value)
+                if not self.close_ok: ctypes.set_last_error(5)
+                return 1 if self.close_ok else 0
+        with self.assertRaises(Exception):
+            self.acceptance.ObservationView.duplicate(Api(duplicate_fail=1), 11, 22)
+        api = Api(duplicate_fail=2, close_ok=False)
+        with self.assertRaises(Exception) as caught:
+            self.acceptance.ObservationView.duplicate(api, 11, 22)
+        self.assertIn("observer-job-duplicate-close", str(caught.exception))
+        self.assertIn("observer-unresolved", str(caught.exception))
+        self.assertEqual(api.closed, [701])
+
+        job = object.__new__(self.acceptance.ObservedJob)
+        job.api = Api(close_ok=False); job.handle = 11; job.port = 22
+        bad_thread = mock.Mock(); bad_thread.start.side_effect = RuntimeError("start failed")
+        with mock.patch.object(self.acceptance.threading, "Thread", return_value=bad_thread):
+            with self.assertRaises(Exception) as caught:
+                job.start_observation(10, None)
+        text = str(caught.exception)
+        self.assertIn("start failed", text)
+        self.assertIn("observer-port-close", text)
+        self.assertIn("observer-handle-close", text)
+        self.assertIn("observer-unresolved", text)
+        self.assertNotIn(bad_thread, self.acceptance.HELPER_THREADS)
+
+    def test_unresolved_observer_terminates_owned_job(self):
+        class BadThread:
+            def is_alive(self): return True
+            def join(self, timeout=None): raise RuntimeError("join failed")
+        class Stop:
+            def set(self): pass
+        class Observer:
+            def __init__(self): self.values = [(0, 0), (1, 1), (1, 0)]; self.terminated = 0; self.closed = 0
+            def accounting(self): return self.values.pop(0)
+            def assign(self, launch): pass
+            def is_process_in_job(self, launch): return True
+            def start_observation(self, deadline, callback, clock): return Stop(), BadThread(), [], None
+            def drain_messages(self, deadline, callback, clock=None, stop_event=None): return None
+            def terminate_checked(self): self.terminated += 1
+            def close_checked(self): self.closed += 1
+        class Launch:
+            pid = 900; exit_code = 2
+            def __init__(self): self.closed = 0
+            def resume(self): pass
+            def close_stdin(self): pass
+            def wait(self, timeout): return True
+            def close_process(self): pass
+            def close(self, deadline=None, clock=None): self.closed += 1; return []
+        observer = Observer(); launch = Launch()
+        result = self.acceptance._preassignment_attempt(
+            "worker", observer, launcher=lambda mode: launch, clock=lambda: 100.0
+        )
+        self.assertNotEqual(result["status"], "passed", result)
+        self.assertEqual(observer.terminated, 1)
+        self.assertEqual(observer.closed, 1)
+        self.assertEqual(launch.closed, 1)
+        self.assertTrue(any("observer-join" in e for e in result["cleanup_errors"]))
         self.assertTrue(any("observer-thread-timeout" in e for e in result["cleanup_errors"]))
 
     def test_preassignment_notification_identity_is_captured_without_late_lookup(self):

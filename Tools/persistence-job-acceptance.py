@@ -296,11 +296,19 @@ class ObservedJob:
             thread.start()
             HELPER_THREADS.append(thread)
             return stop, thread, errors, view
-        except Exception:
+        except Exception as original:
+            cleanup_errors = []
             if view is not None:
-                errors.extend(view.close())
+                try:
+                    cleanup_errors.extend(view.close())
+                except Exception as exc:
+                    cleanup_errors.append("observer-close:" + str(exc))
             if thread is not None and thread in HELPER_THREADS:
                 HELPER_THREADS.remove(thread)
+            if cleanup_errors:
+                raise RuntimeError(str(original) + "; cleanup:" +
+                                   ";".join(cleanup_errors) +
+                                   "; observer-unresolved") from original
             raise
 
 
@@ -315,19 +323,29 @@ class ObservationView:
         current = api.GetCurrentProcess()
         job = W.HANDLE()
         port_copy = W.HANDLE()
+        acquired = []
         try:
             if not api.DuplicateHandle(current, handle, current, ctypes.byref(job), 0,
                                         False, DUPLICATE_SAME_ACCESS):
                 raise ctypes.WinError(ctypes.get_last_error())
+            acquired.append(("observer-job-duplicate", job))
             if not api.DuplicateHandle(current, port, current, ctypes.byref(port_copy), 0,
                                         False, DUPLICATE_SAME_ACCESS):
                 raise ctypes.WinError(ctypes.get_last_error())
+            acquired.append(("observer-port-duplicate", port_copy))
             return cls(api, job, port_copy)
-        except Exception:
-            if job:
-                api.CloseHandle(job)
-            if port_copy:
-                api.CloseHandle(port_copy)
+        except Exception as original:
+            cleanup_errors = []
+            for name, acquired_handle in acquired:
+                try:
+                    if not api.CloseHandle(acquired_handle):
+                        cleanup_errors.append(name + "-close:" + str(ctypes.get_last_error()))
+                except Exception as exc:
+                    cleanup_errors.append(name + "-close:" + str(exc))
+            if cleanup_errors:
+                raise RuntimeError(str(original) + "; cleanup:" +
+                                   ";".join(cleanup_errors) +
+                                   "; observer-unresolved") from original
             raise
 
     def in_job(self, handle):
@@ -1276,6 +1294,8 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     observer_stop = None
     observer_thread = None
     observer_errors = []
+    observer_start_attempted = False
+    observer_unresolved = False
     seen_notifications = set()
 
     def observed(pid, identity_job=None):
@@ -1322,8 +1342,10 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
         setup_remaining()
         observation_deadline = clock() + observation_seconds
         if hasattr(observer, "start_observation"):
+            observer_start_attempted = True
             observer_stop, observer_thread, observer_errors, observation_view = observer.start_observation(
                 observation_deadline, observed, clock)
+            observer_start_attempted = False
         launch.resume()
         ordering["resumed"] = True
         launch.close_stdin()
@@ -1340,9 +1362,12 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
             while observer_thread.is_alive() and clock() < observation_deadline:
                 observer_thread.join(min(0.05, max(0, observation_deadline - clock())))
             if observer_thread.is_alive():
+                observer_unresolved = True
                 raise RuntimeError("observer-thread-timeout")
         if observer_errors:
             port_error = "observer:" + ";".join(str(item) for item in observer_errors)
+            if any("close" in str(item) for item in observer_errors):
+                observer_unresolved = True
         exit_code = launch.exit_code
         launch.close_process()
         ordering["process_released_before_final"] = True
@@ -1364,6 +1389,8 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
     except Exception as exc:
         detail = type(exc).__name__ + ": " + str(exc)
         operation_error = True
+        if observer_start_attempted and observer_thread is None:
+            observer_unresolved = True
     finally:
         cleanup_deadline = clock() + CLEANUP_LIMIT_SECONDS
         if observer_stop is not None:
@@ -1388,7 +1415,16 @@ def _preassignment_attempt(mode, observer, launcher=None, clock=time.monotonic,
                     cleanup_errors.append("observer-join:" + str(exc))
                     break
             if alive:
+                observer_unresolved = True
                 cleanup_errors.append("observer-thread-timeout")
+        if observer_unresolved:
+            if hasattr(observer, "terminate_checked"):
+                try:
+                    observer.terminate_checked()
+                except Exception as exc:
+                    cleanup_errors.append("observer-terminate:" + str(exc))
+            else:
+                cleanup_errors.append("observer-terminate-unavailable")
         if launch is not None:
             try:
                 cleanup_errors.extend(launch.close(cleanup_deadline, clock))
