@@ -4,7 +4,7 @@
 
 The local Windows framework is ready for one claimed roadmap task at a time.
 This is not certification of every TurboMCP feature, a public release or an
-installed-engine package. The next assignment is R16, an integration-constraints investigation.
+installed-engine package. The active R04 assignment is defined in todo/roadmap-r04.md and the worker scope policy.
 Imported reports still need reconciliation before product implementation.
 
 ## Commands

@@ -338,7 +338,7 @@ Retain the new checkpoint claim and stop for review; no merge, push, completion,
 claim release or next-family work.
 
 
-## Active dispatch checkpoint 4: save contracts
+## Completed dispatch checkpoint 4: save contracts
 
 Checkpoints 1-3 are accepted source evidence. Checkpoint 3 candidate:
 39c229306f1e5d56cf156be9de3b7891af7382e8. Independent offline run:
@@ -366,3 +366,30 @@ Proposals remain unapproved. Run audit-inventory --check, test-result-contract,
 test-client-retry and the offline profile. Commit, obtain candidate-bound offline
 evidence and run the approved-base-to-candidate scope gate. Retain claim and stop
 for review. No merge, push, completion marking, claim release or next-family work.
+
+
+## Active dispatch checkpoint 5: compile contract for Monday widgets
+
+Checkpoint 4 is accepted as source evidence at 8bd3a449, with independent offline
+run 96579e7ca2514b09818f78ce413a27a6. R04 remains incomplete; all repairs unapproved.
+
+Audit only EditTurboMCPCompile. Preserve all 101 tool IDs, 12 reviewed rows and
+27 findings/repairs. Expected inventory: 13 reviewed_source, 88 not_reviewed.
+Use R04-COMPILE-xx finding IDs and continue repair IDs without collisions.
+Trace declaration, implementation, resolver, recorder, client and pinned engine
+calls. Cover valid/invalid inputs, dirty state, compile errors versus warnings,
+partial batches, widget-generated classes, bindings, reinstancing, execution
+side effects, refusal guards and truthful results. Existing tests are assertions,
+not runtime evidence. Do not claim Common UI/Input support from inheritance alone.
+
+In the same reports, specify the smallest synthetic Widget Blueprint compile ->
+save -> reopen acceptance sequence. Identify existing fixtures and missing seams,
+exact candidate-bound evidence needed and manual fallbacks. This is a proposed
+acceptance plan, not new feature scope or authorization to run an editor.
+
+Only callable-contracts.md/json and this task's Completion evidence may change.
+No implementation, engine/editor/build/MCP/packaging/recovery commands. Repairs
+need exact files, preserved behavior, expected outcomes, negative controls,
+fixture gaps, validation and rollback. No broad tool audit beyond compile.
+Run inventory, result-contract, client-retry and offline checks; commit and retain
+candidate-bound offline evidence and full-base scope result. Stop for review.

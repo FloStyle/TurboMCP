@@ -4867,5 +4867,15 @@
         "R04-SAVE-06 now states the failure, draw and error-attribution limitations consistently with the complete proposal."
       ]
     }
+  },
+  "checkpoint_4_integration_review": {
+    "candidate": "8bd3a449d178bdcc266df9eaf3067e22462719fd",
+    "decision": "accepted_source_checkpoint_only",
+    "task_complete": false,
+    "repairs_approved": false,
+    "reviewed_tools": 12,
+    "remaining_tools": 89,
+    "offline_run": "96579e7ca2514b09818f78ce413a27a6",
+    "limitations": "No runtime, persistence or release certification."
   }
 }

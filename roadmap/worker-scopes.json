@@ -35,8 +35,8 @@
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "39c229306f1e5d56cf156be9de3b7891af7382e8",
-      "checkpoint": "4: save contracts; dispatch must include the integration contract commit"
+      "approved_base": "8bd3a449d178bdcc266df9eaf3067e22462719fd",
+      "checkpoint": "5: compile contract for Monday widgets; dispatch must include the integration contract commit"
     }
   }
 }

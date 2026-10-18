@@ -4,7 +4,7 @@
 
 Use one reviewed task, one isolated worktree and one durable claim per worker.
 The integration owner records a full approved base commit before dispatch.
-R13 and R16 are accepted. R04 checkpoints 1-3 are accepted; the active assignment is checkpoint 4 (save contracts) in its task.
+R13 and R16 are accepted. R04 checkpoints 1-4 are accepted as source evidence; the active assignment is checkpoint 5 (compile contract for Monday widgets) in its task.
 
 ## Approved scope
 
