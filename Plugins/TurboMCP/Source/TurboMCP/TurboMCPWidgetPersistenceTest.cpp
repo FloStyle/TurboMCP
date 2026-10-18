@@ -73,6 +73,9 @@ namespace
 		FString PackageName;
 		FString RootDir;
 		FString FilePath;
+		bool bOwnsRoot = false;
+		bool bOwnsManifest = false;
+		bool bSafeToDeleteFiles = false;
 		FString LastError;
 	};
 
@@ -165,20 +168,45 @@ namespace
 				Fixture.Package->SetDirtyFlag(false);
 				RetireObject(Fixture.Package);
 			}
-			// File cleanup is limited to the owned persistence root.
-			const FString OwnedRoot = Fixture.RootDir;
-			const FString ContentTests = FPaths::Combine(FPaths::ProjectContentDir(),
-				TEXT("Tests/WidgetPersistenceContract"));
-			if (!OwnedRoot.IsEmpty() && OwnedRoot.StartsWith(ContentTests))
+			// File cleanup is limited to independently acquired ownership and
+			// exact files. Never delete an unowned path or recurse.
+			if (Fixture.bOwnsRoot && Fixture.bOwnsManifest && Fixture.bSafeToDeleteFiles)
 			{
-				const FString Quarantine = Fixture.FilePath + TEXT(".quarantine");
-				IFileManager::Get().Delete(*Quarantine, false, true, true);
-				IFileManager::Get().Delete(*Fixture.FilePath, false, true, true);
-				IFileManager::Get().Delete(*FPaths::Combine(OwnedRoot, TEXT("owned.json")),
-					false, true, true);
-				IFileManager::Get().DeleteDirectory(*OwnedRoot, false, true);
+				const FString ContentRoot = FPaths::ConvertRelativePathToFull(
+					FPaths::Combine(FPaths::ProjectContentDir(),
+						TEXT("Tests/WidgetPersistenceContract")));
+				const FString OwnedRoot = FPaths::ConvertRelativePathToFull(Fixture.RootDir);
+				const bool bConfined = !OwnedRoot.IsEmpty()
+					&& OwnedRoot.StartsWith(ContentRoot + TEXT("/"))
+					&& !IFileManager::Get().IsSymlink(*OwnedRoot);
+				if (bConfined)
+				{
+					const FString Quarantine = Fixture.FilePath + TEXT(".quarantine");
+					if (IFileManager::Get().FileExists(*Quarantine))
+					{
+						bSkippedRooted |= !IFileManager::Get().Delete(*Quarantine, true, true, true);
+					}
+					if (IFileManager::Get().FileExists(*Fixture.FilePath))
+					{
+						bSkippedRooted |= !IFileManager::Get().Delete(*Fixture.FilePath, true, true, true);
+					}
+					const FString Manifest = FPaths::Combine(OwnedRoot, TEXT("owned.json"));
+					if (IFileManager::Get().FileExists(*Manifest))
+					{
+						bSkippedRooted |= !IFileManager::Get().Delete(*Manifest, true, true, true);
+					}
+					if (!IFileManager::Get().FileExists(*Fixture.FilePath)
+						&& !IFileManager::Get().FileExists(*Manifest)
+						&& !IFileManager::Get().FileExists(*Quarantine))
+					{
+						// Non-recursive: removal succeeds only when empty.
+						bSkippedRooted |= !IFileManager::Get().DeleteDirectory(*OwnedRoot, false, false);
+					}
+				}
 			}
-			bRetireSucceeded = bHadOwnedObject && !bSkippedRooted;
+			bRetireSucceeded = bHadOwnedObject && !bSkippedRooted
+				&& (!Fixture.bOwnsRoot || (Fixture.bSafeToDeleteFiles
+					&& IFileManager::Get().DirectoryExists(*Fixture.RootDir) == false));
 			return bRetireSucceeded;
 		}
 
@@ -684,6 +712,78 @@ namespace
 		return true;
 	}
 
+	bool HasUnrelatedDirtyGamePackage(UPackage* OwnedPackage)
+	{
+		TArray<UObject*> Packages;
+		GetObjectsOfClass(UPackage::StaticClass(), Packages, false);
+		for (UObject* Object : Packages)
+		{
+			UPackage* Package = Cast<UPackage>(Object);
+			if (Package == nullptr || Package == OwnedPackage
+				|| Package->GetName().StartsWith(TEXT("/Game/Tests/WidgetPersistenceContract/"))
+				|| !Package->GetName().StartsWith(TEXT("/Game/"))
+				|| Package->HasAnyFlags(RF_Transient) || !Package->IsDirty())
+			{
+				continue;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	bool UnloadCurrentGeneration(FAutomationTestBase& Test, FFixture& Fixture)
+	{
+		if (Fixture.Package == nullptr)
+		{
+			return true;
+		}
+		if (HasUnrelatedDirtyGamePackage(Fixture.Package))
+		{
+			Test.AddError(TEXT("unrelated dirty /Game package blocks owned unload"));
+			return false;
+		}
+		TWeakObjectPtr<UPackage> OldPackage(Fixture.Package);
+		TWeakObjectPtr<UWidgetBlueprint> OldBlueprint(Fixture.Blueprint);
+		TWeakObjectPtr<UClass> OldClass(Fixture.Blueprint != nullptr
+			? Fixture.Blueprint->GeneratedClass.Get() : nullptr);
+		Fixture.Blueprint = nullptr;
+		Fixture.Package = nullptr;
+		Fixture.Tree = nullptr;
+		Fixture.Root = nullptr;
+		Fixture.Title = nullptr;
+		Fixture.Status = nullptr;
+		Fixture.TitleSlot = nullptr;
+		Fixture.StatusSlot = nullptr;
+		Fixture.Target = nullptr;
+		Fixture.Sibling = nullptr;
+		Fixture.Entry = nullptr;
+		Fixture.PrintA = nullptr;
+		Fixture.PrintB = nullptr;
+		Fixture.Source = nullptr;
+		if (HasUnrelatedDirtyGamePackage(OldPackage.Get()))
+		{
+			Test.AddError(TEXT("unrelated dirty /Game package blocks persistence unload"));
+			return false;
+		}
+		TArray<UPackage*> ToUnload;
+		ToUnload.Add(OldPackage.Get());
+		UPackageTools::FUnloadPackageParams Params(ToUnload);
+		Params.bUnloadDirtyPackages = false;
+		Params.bResetTransBuffer = false;
+		const bool bUnloaded = UPackageTools::UnloadPackages(Params);
+		Test.TestTrue(TEXT("current owned generation unload returned true"), bUnloaded);
+		Test.TestTrue(TEXT("current owned generation unload reported no error"),
+			Params.OutErrorMessage.IsEmpty());
+		Test.TestFalse(TEXT("current old Blueprint weak identity invalidated"),
+			OldBlueprint.IsValid());
+		Test.TestFalse(TEXT("current old generated-class weak identity invalidated"),
+			OldClass.IsValid());
+		const bool bSafe = bUnloaded && Params.OutErrorMessage.IsEmpty()
+			&& !OldBlueprint.IsValid() && !OldClass.IsValid();
+		Fixture.bSafeToDeleteFiles = bSafe;
+		return bSafe;
+	}
+
 	bool PersistAndReload(FAutomationTestBase& Test, FFixture& Fixture,
 		const FGraphSnapshot& InTarget, const FGraphSnapshot& InSibling,
 		const FString& InWidgets, const FString& InTargetGraphName,
@@ -700,10 +800,11 @@ namespace
 		Test.TestFalse(TEXT("production save did not report a failure"),
 			SaveResult.Contains(TEXT("failed")) && !SaveResult.Contains(TEXT("0 failed")));
 		Test.TestFalse(TEXT("saved package is no longer dirty"), Fixture.Package->IsDirty());
-		Test.TestTrue(TEXT("saved asset file exists"),
-			IFileManager::Get().FileExists(*Fixture.FilePath));
-		if (Fixture.Package->IsDirty()
-			|| !IFileManager::Get().FileExists(*Fixture.FilePath))
+		const bool bFileExists = IFileManager::Get().FileExists(*Fixture.FilePath);
+		const int64 FileSize = bFileExists ? IFileManager::Get().FileSize(*Fixture.FilePath) : 0;
+		Test.TestTrue(TEXT("saved asset file exists"), bFileExists);
+		Test.TestTrue(TEXT("saved asset file is nonzero"), FileSize > 0);
+		if (Fixture.Package->IsDirty() || !bFileExists || FileSize <= 0)
 		{
 			return false;
 		}
@@ -755,6 +856,13 @@ namespace
 		{
 			return false;
 		}
+		Test.TestFalse(TEXT("old Blueprint stays invalid after reload"),
+			OldBlueprint.IsValid());
+		Test.TestFalse(TEXT("old generated class stays invalid after reload"),
+			OldClass.IsValid());
+		Test.TestEqual(TEXT("reloaded Blueprint owns the exact package path"),
+			Reloaded->GetOutermost() != nullptr ? Reloaded->GetOutermost()->GetName() : FString(),
+			Fixture.PackageName);
 		Test.TestTrue(TEXT("reloaded package is fully loaded"), ReloadedPackage->IsFullyLoaded());
 		Test.TestTrue(TEXT("reloaded Blueprint is up to date"), Reloaded->IsUpToDate());
 		Test.TestTrue(TEXT("reloaded generated class is usable"),
@@ -887,20 +995,33 @@ namespace
 	{
 		const FString Suffix = FGuid::NewGuid().ToString(EGuidFormats::DigitsLower);
 		const FString Leaf = FString::Printf(TEXT("WBP_%s"), *Suffix);
-		OutFixture.PackageName = FString::Printf(
+		const FString CandidatePackage = FString::Printf(
 			TEXT("/Game/Tests/WidgetPersistenceContract/%s/%s"), *Suffix, *Leaf);
-		OutFixture.RootDir = FPaths::Combine(FPaths::ProjectContentDir(),
+		const FString CandidateRoot = FPaths::Combine(FPaths::ProjectContentDir(),
 			TEXT("Tests/WidgetPersistenceContract"), Suffix);
-		OutFixture.FilePath = FPaths::Combine(OutFixture.RootDir, Leaf + TEXT(".uasset"));
-		if (FPackageName::DoesPackageExist(OutFixture.PackageName)
-			|| FindPackage(nullptr, *OutFixture.PackageName) != nullptr
-			|| FindObject<UObject>(nullptr, *OutFixture.PackageName) != nullptr
-			|| IFileManager::Get().DirectoryExists(*OutFixture.RootDir)
-			|| IFileManager::Get().FileExists(*OutFixture.FilePath))
+		const FString CandidateFile = FPaths::Combine(CandidateRoot, Leaf + TEXT(".uasset"));
+		if (FPackageName::DoesPackageExist(CandidatePackage)
+			|| FindPackage(nullptr, *CandidatePackage) != nullptr
+			|| FindObject<UObject>(nullptr, *CandidatePackage) != nullptr
+			|| IFileManager::Get().DirectoryExists(*CandidateRoot)
+			|| IFileManager::Get().FileExists(*CandidateFile)
+			|| IFileManager::Get().IsSymlink(*CandidateRoot))
 		{
 			OutFixture.LastError = TEXT("persistence package path or file already exists");
 			return false;
 		}
+		if (!IFileManager::Get().MakeDirectory(*CandidateRoot, true)
+			|| !IFileManager::Get().DirectoryExists(*CandidateRoot)
+			|| IFileManager::Get().IsSymlink(*CandidateRoot))
+		{
+			OutFixture.LastError = TEXT("exclusive persistence root could not be acquired");
+			return false;
+		}
+		// Ownership begins only after the unique root exists and is ours.
+		OutFixture.PackageName = CandidatePackage;
+		OutFixture.RootDir = CandidateRoot;
+		OutFixture.FilePath = CandidateFile;
+		OutFixture.bOwnsRoot = true;
 		OutFixture.Package = CreatePackage(*OutFixture.PackageName);
 		if (OutFixture.Package == nullptr)
 		{
@@ -926,6 +1047,7 @@ namespace
 			OutFixture.LastError = TEXT("owned manifest could not be written");
 			return false;
 		}
+		OutFixture.bOwnsManifest = true;
 		OutFixture.Tree = OutFixture.Blueprint->WidgetTree;
 		OutFixture.Root = Cast<UCanvasPanel>(OutFixture.Tree->RootWidget);
 		if (OutFixture.Root == nullptr)
@@ -1074,6 +1196,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FTurboMCPWidgetPersistenceTest::RunTest(const FString& Parameters)
 {
+	// FAIL-CLOSED gateway. C++ automation has no equivalent of
+	// Tools/execution_runtime.py:require_context (canonical repo/engine, token
+	// and live-ancestor verification). This is a deliberate temporary refusal,
+	// not an environment bypass. A separately reviewed admission seam must
+	// replace this before native execution.
+	AddError(TEXT("admission-not-implemented: C++ supervisor context verification is unavailable"));
+	return false;
+
 	// This test performs a global package unload. It must only run inside the
 	// disposable TestProject editor owned by the suite runner.
 	const FString RunnerOwned = FPlatformMisc::GetEnvironmentVariable(
@@ -1733,6 +1863,10 @@ bool FTurboMCPWidgetPersistenceTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("literal reload reader preserves the exec source"),
 			PersistRead.Contains(FString::Printf(TEXT("execute (-> %s)"), *SourceOracle)));
 	}
+	if (!UnloadCurrentGeneration(*this, Fixture))
+	{
+		return false;
+	}
 
 	const FString ConnectedGraphName = Connected.Target->GetName();
 	const FString ConnectedSiblingName = Connected.Sibling->GetName();
@@ -1753,6 +1887,14 @@ bool FTurboMCPWidgetPersistenceTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("connected reload reader preserves the source pin link"),
 			PersistRead.Contains(FString::Printf(TEXT("(-> %s:%s)"),
 				*ConnectedSourceRef, *ConnectedSourcePin)));
+	}
+	if (!UnloadCurrentGeneration(*this, Connected))
+	{
+		return false;
+	}
+	if (!UnloadCurrentGeneration(*this, RefusalFixture))
+	{
+		return false;
 	}
 
 	TestTrue(TEXT("roundtrip fixture retirement completed"), Cleanup.Retire());

@@ -126,6 +126,16 @@ def main():
         raw = session.call(AUTO_TOOLSET, "RunTests", {"testNames": [ROUNDTRIP_TEST]})
         print(str(raw)[:1600])
         try:
+            preview = json.loads(raw)
+            first = preview["tests"][0]
+            if (first.get("state") == "Fail"
+                    and any("admission-not-implemented" in error
+                            for error in first.get("errors", []))):
+                print("RESULT: BLOCKED (native admission seam not implemented)")
+                return 2
+        except (ValueError, TypeError, KeyError, IndexError):
+            pass
+        try:
             entry, report = parse_run_tests_report(raw, ROUNDTRIP_TEST)
         except (ValueError, TypeError) as exc:
             check("the Widget persistence RunTests answer is the pinned report",
