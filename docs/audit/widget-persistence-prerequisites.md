@@ -16,7 +16,7 @@ Choose one design: a **supervisor-owned two-pass persistence transaction** in th
 This is smaller than a named-pipe/IPC service and does not clear ownership flags or call `start-editor.ps1` from a suite. The suite runs twice:
 
 1. **phase A (mutate):** observe effective `SaveOnCompile == Never` before any mutation, make the reversible `TitleText` `IsVariable` edit, compile, save or deliberately not save, write a validated state file, and exit `75` to request a restart.
-2. **supervisor restart:** only the supervisor stops its owned editor, proves the old process identity is gone, starts a new owned editor, proves the new identity and server ownership, and writes a validated response.
+2. **supervisor restart:** only the supervisor stops its owned editor, proves the old process identity is gone, starts a new owned editor, proves the new identity and listener ownership, and writes a validated response.
 3. **phase B (readback):** reconnect as a new client, read the expected tree/flag from disk, and exit `0`.
 
 The saved trial preserves package bytes from phase A through phase B. The no-save control is an otherwise identical trial with `SaveOnCompile` observed as Never and no save; phase B must show the edit was discarded. Fixture bytes are restored only between independent trials and at safe cleanup.
@@ -43,7 +43,8 @@ Current status is **no-go for automated Monday persistence acceptance**. The des
 - `UBlueprintEditorSettings` is `UCLASS(config=EditorPerProjectUserSettings)` (`Engine/Source/Editor/BlueprintGraph/Public/BlueprintEditorSettings.h:89`); `SaveOnCompile` is the config property at `:242`.
 - `FBlueprintCompilationManagerImpl::CompileSynchronouslyImpl` reads `GetMutableDefault<UBlueprintEditorSettings>()->SaveOnCompile` and, for `SoC_Always` or `SoC_SuccessOnly`, adds `PackagesToSave` and calls `FEditorFileUtils::PromptForCheckoutAndSave(..., bCheckDirty=true)` (`BlueprintCompilationManager.cpp:458-490`). The same setting is read at `:1560-1561` in the reinstancer path.
 - The enum is `SoC_Never`, `SoC_SuccessOnly`, `SoC_Always` (`BlueprintEditorSettings.h:41-45`). The constructor migrates a legacy `bSaveOnCompile=true` to `SoC_SuccessOnly` (`BlueprintEditorSettings.cpp:100-105`); the effective value depends on the loaded editor/user configuration.
-- There is **no existing Python or MCP reader** for this editor settings object. `AutomationTestToolset.RunTests` and `GetLogEntries` are existing test surfaces, used by `Tools/test-compile-ensure.py:112-173`; they do not expose the setting directly.
+- `UObject::GetDefaultConfigFilename()` (`Engine/Source/Runtime/CoreUObject/Private/UObject/Obj.cpp:3958-3986`) returns the **source default-config path** (with platform handling), not the complete loaded user/generated hierarchy. The actual final load destination is `GEditorPerProjectIni`, set from `FConfigContext`/`GetDestIniFilename` while loading `EditorPerProjectUserSettings` (`ConfigContext.cpp:449-489`; `ConfigCacheIni.cpp:6648`). A single default-file hash cannot prove preservation of all user configuration.
+- There is **no existing Python or MCP reader** for this editor settings object. `AutomationTestToolset.RunTests` and `GetLogEntries` are existing test surfaces, used by `Tools/test-compile-ensure.py:112-173`; they do not expose the setting directly. The test must not assume the automation runner restores settings between requests.
 
 ### Why the old plan was not runnable
 
@@ -93,7 +94,8 @@ Supervisor response:
   "oldEditorStartUtc": "2026-10-18T01:23:45.678Z",
   "newEditorPid": 23456,
   "newEditorStartUtc": "2026-10-18T01:24:31.112Z",
-  "serverOwner": true,
+  "listenerOwner": true,
+  "listenerPid": 23456,
   "fixture": "/Game/Tests/WBP_NodeTest",
   "expected": {"titleTextVariable": true}
 }
@@ -101,7 +103,7 @@ Supervisor response:
 
 `phase B` may write a `readback_complete` record with the observed value for evidence. The supervisor rejects `mutate_complete`/`readback` states with the wrong token/trial/phase, any unknown field, a non-absolute state path, a state file larger than a small fixed limit, or a second request after a response.
 
-### Process identity, PID reuse and foreign refusal
+### Process identity, listener ownership and foreign refusal
 
 Extend the existing ownership checks rather than inventing a new service:
 
@@ -110,19 +112,36 @@ Extend the existing ownership checks rather than inventing a new service:
   - no process with the old PID **and the old start time** remains;
   - `Test-TurboMCPAnyOwnedEditorRunning -Project -Engine` is false for this project;
   - the old PID is not merely reused by a different process: if the PID exists with a different start time, it is a different identity and the old identity is gone.
-- Start a **fresh** editor with a new `Start-FreshOwnedEditor` path. It must not reuse an answering server. Before starting, if `check-mcp-server.py` answers with no owned identity, or with an identity for another project/engine, refuse without stopping it.
+- Start a **fresh** editor with a new `Start-FreshOwnedEditor` path. It must not reuse an answering server. Before starting, if the endpoint answers with no owned identity, or with an identity for another project/engine, refuse without stopping it.
 - Require the new identity to have a different `{pid, startTimeUtc}` from the old identity. The same PID with a different start time is a new process only after the old identity is proved gone; the safer default is to refuse same-PID replacement.
-- Extend `Tools/check-mcp-server.py` with an optional `--editor-start-utc` (or equivalent identity parameter) and verify it against the process creation time. `--editor-pid` alone is insufficient because it checks only the process name (`:114-132`).
-- Phase B establishes a **new `Session`** through `Tools/tmcp.py` and requires the new server to answer; the supervisor records `serverOwner=true` only after `check-mcp-server.py` passes with the new identity and project/engine.
-- Foreign listeners/processes are never stopped. A healthy server without a proved owned identity is a refusal, not a reusable editor. Lease conflicts preserve the foreign editor and block the trial.
+- **Bind the listening endpoint to the verified process, not to a same-named process.** The configured MCP URL (default `http://localhost:8000/mcp`) must resolve to a loopback host. For the configured port, enumerate listeners with Windows `Get-NetTCPConnection -State Listen -LocalPort <port>` (IPv4 and IPv6; include wildcard and loopback binds). Require exactly one listener owner and require its `OwningProcess` identity to match the expected editor `{pid, startTimeUtc}` plus the canonical project/engine executable/command line. A process with a matching name or command line that does not own the listening socket is not the server.
+- Failure behavior:
+  - permission/CIM/`Get-NetTCPConnection` denial, an unreadable owner, or an ambiguous multi-owner/multi-address result: **refuse/block**, never infer ownership;
+  - no listener: refuse the mutation/readback, report unavailable;
+  - foreign listener: refuse without stopping it, even if the intended editor is alive;
+  - listener disappears, changes PID/start time, or is replaced between the pre-phase and pre-mutation probe: refuse and revalidate; do not reuse the earlier result;
+  - a server answering on the configured port while the listener owner is another process is the required negative control.
+- Recheck listener ownership immediately before **each client mutation** (phase A edit, compile and save) and again after restart before phase B. `serverOwner=true` must not be recorded from the existing `check-mcp-server.py --editor-pid` path, which only checks that a process name is alive (`check-mcp-server.py:114-132`). Record `listenerOwner=true` only after the socket-owner identity and project/engine checks pass.
+- Extend `Tools/check-mcp-server.py` with an optional `--editor-start-utc` and listener-owner verification (or a small `Tools/ownership.ps1` helper it calls). `--editor-pid` alone is insufficient.
+- Phase B establishes a **new `Session`** through `Tools/tmcp.py`; the supervisor records the new listener identity after it passes the socket check and project/engine checks.
+- Foreign listeners/processes are never stopped. A healthy server without a proved owned listener is a refusal, not a reusable editor. Lease conflicts preserve the foreign editor and block the trial.
 
-### Deadlines, interruption and cleanup
+### Deadlines, cleanup eligibility and hard interruption
 
 - Phase A suite deadline: 300 s; stop deadline: 30 s; start deadline: 240 s; phase B deadline: 300 s; total trial deadline bounded by the existing `execute-tests.py --max-seconds` (default 1800).
 - A timed-out child is killed only through its own process tree (`Invoke-SuiteProcess`); an owned editor is stopped only through `Stop-Editor`; no name-based global kill.
-- `try/finally` cleanup stops the owned editor if needed, verifies the config file is unchanged, restores the fixture at a safe point, preserves the state/log, and marks the trial blocked/failed. A supervisor process death is handled by the existing `execute-tests.py` recovery snapshot/restore; no automatic replay of a save or readback.
+- **Cleanup eligibility is a state, not a promise.** Before any mutation, the supervisor records `CLEAN` only when all of these hold:
+  - the editor identity is owned and matches the lease/project/engine;
+  - the configured loopback listener is owned by that identity;
+  - `ReadTurboMCPDirtyList` contains only the owned `WBP_NodeTest` package (no unrelated unsaved package).
+  If any condition fails, the state is `REFUSED_DIRTY` or `REFUSED_OWNER`: **no mutation, no stop, no fixture restore**. The run reports blocked and preserves the editor and its unsaved assets.
+- The current outer `execute-tests.py`/`execution_runtime.run_owned` Job Object is `KILL_ON_JOB_CLOSE`. Therefore a `REFUSED_DIRTY`/`REFUSED_OWNER` result on a live editor cannot preserve unrelated unsaved assets merely by skipping the supervisor's `finally`; the outer job still tears the editor down. **This is a concrete blocker, not a claim of preservation.** The persistence profile must not be admitted until either:
+  - exclusive disposable-editor isolation is proved before the editor is placed in the job (no unrelated unsaved assets and no foreign listener), or
+  - the outer lifecycle is changed to detach/leave the editor alive on refusal and to recover it explicitly. That requires a bounded change in `Tools/execute-tests.py`, `Tools/execution_runtime.py` and the recovery journal; it is not present today.
+- If `EXECUTING` later observes an unrelated dirty package or foreign listener, transition to `BLOCKED_KEEP_EDITOR`: do not stop/restore/overwrite it. The same outer-job limitation applies; fail closed and report the blocker.
+- A `try/finally` cleanup is executed only for a normal exception/return: it stops the owned editor, restores the fixture at a safe point, preserves the state/log, and marks the trial blocked/failed. A **hard supervisor death does not execute `finally`**. The run journal (state file, old/new identities, fixture backup, observed file set) must remain in the run directory; `Tools/recover-tests.py` must restore only explicit recovery, refuse a live/foreign owner, and fail closed. The existing recovery snapshot covers `TestProject/Content` but not the settings files or editor; those require the journal/outer lifecycle above.
 - The execution lease and resource locks remain held for the whole two-pass trial. A restart must reuse the same `TURBOMCP_OWNER_ID` and must not release the lease between passes. `start-editor.ps1`'s same-project lease takeover is used only by the supervisor.
-- Do not restore fixture bytes between phase A and phase B. A failure before readback restores at safe cleanup and reports **not saved/not persisted**, never a pass.
+- Do not restore fixture bytes between phase A and phase B. Preserve the saved-trial bytes and log as evidence before any restoration. If phase B cannot prove the expected state, report **persistence unverified** (the save may already have succeeded), not "not saved/not persisted". A `CLEAN` failure cleanup may restore the fixture only after that evidence is captured.
 
 ### Save and discard semantics
 
@@ -136,16 +155,19 @@ Extend the existing ownership checks rather than inventing a new service:
 No existing Python/MCP API reads the setting. Add a **test-project-only** C++ fixture and automation tests; this is the tiny missing seam, not a new production tool:
 
 - Fixture functions:
-  - `ReadEffectiveSaveOnCompile()` returns `effective=<Never|SuccessOnly|Always>; config=<absolute path>; configHash=<sha256>; exists=<0|1>`.
-  - `SetSaveOnCompileNeverForTest()` reads `GetDefault<UBlueprintEditorSettings>()->SaveOnCompile`, sets the mutable default to `SoC_Never` **in memory only**, then re-reads and returns `before=...; effective=Never; config=<path>; configHash=<sha256>`. It must not call `SaveConfig`/`TryUpdateDefaultConfigFile`.
-  - `RestoreSaveOnCompileForTest()` restores the prior in-memory enum for failure cleanup in the same editor. A restart naturally reloads the user's unchanged config.
+  - `ReadEffectiveSaveOnCompile()` returns `effective=<Never|SuccessOnly|Always>; token=<trial token>; pid=<editor pid>; generatedConfig=<GEditorPerProjectIni>; sourceDefault=<GetDefaultConfigFilename()>; projectUser=<GetProjectUserConfigFilename()>; globalUser=<GetGlobalUserConfigFilename()>` and existence/hash of each observed file.
+  - `SetSaveOnCompileNeverForTest()` reads `GetDefault<UBlueprintEditorSettings>()->SaveOnCompile`, sets the mutable default to `SoC_Never` **in memory only**, then re-reads and returns `token=...; before=...; effective=Never`. It must not call `SaveConfig`/`TryUpdateDefaultConfigFile`.
+  - `RestoreSaveOnCompileForTest()` restores the captured in-memory enum and reports the restored effective value. It must be called on every same-process success or failure path, including a phase A abort, before the editor is stopped.
 - Automation tests:
-  - `TurboMCP.T06.SaveOnCompileRead` logs the effective value, exact config path, existence and hash.
-  - `TurboMCP.T06.SaveOnCompileSetNever` logs `before=...`, `after=Never`, `effective=Never`, `config=<path>` and `configHash=<same hash>` from the live `GetDefault<UBlueprintEditorSettings>()`.
+  - `TurboMCP.T06.SaveOnCompileRead` logs effective value, token, editor PID, `GEditorPerProjectIni`, source-default/project-user/global-user paths, existence and hashes.
+  - `TurboMCP.T06.SaveOnCompileSetNever` logs token/PID, `before=...`, `after=Never`, `effective=Never`, and the same file-observation fields.
+  - `TurboMCP.T06.SaveOnCompileRestore` logs token/PID and the restored effective value.
 - The persistence suite invokes these through the existing `AutomationTestToolset.RunTests`/`GetLogEntries` pattern (`test-compile-ensure.py:112-173`), not a new Python object API.
-- Per trial, before any `EditTurboMCPWidgetsAsVars` call, the suite requires a fresh log line `effective=Never`. Setting the object alone is not accepted: the same test must read the in-editor default after the assignment. If the setting is already Never, no assignment is needed; still require the live read.
-- **The chosen design never writes the user's config file.** The supervisor hashes the exact config path before phase A and again after phase B and requires equality; a change by any third party blocks the trial and is preserved. This keeps user configuration recoverable and restored by construction, rather than writing and then repairing it.
-- The config path is discovered, never assumed to be a project-only path; base/default and user layers are whatever `GetDefaultConfigFilename()` reports. The effective value comes from `GetDefault<UBlueprintEditorSettings>()`, the same object the compilation manager reads.
+- The supervisor sets a fresh `TURBOMCP_PERSISTENCE_TOKEN` and phase/trial env for each editor/trial. The tests read that token from the process environment and log it. The Python suite requires the **current** `RunTests` result (fresh `GetLogEntries` slice) to contain the same token, trial, PID and `effective=Never`; an old log line containing `effective=Never` is rejected. No API is assumed to clear automation state between requests: the test itself sets and reads in the same editor, and a reset/failed read is a failure.
+- Per trial, before any `EditTurboMCPWidgetsAsVars` call, the suite requires a fresh `effective=Never` observation for the current token and editor PID. Setting the object alone is not accepted. If the setting is already Never, no assignment is needed; still require the live read.
+- **The chosen design never writes the user's config file.** `GEditorPerProjectIni` is the actual generated/saved load destination; the source-default/project-user/global-user paths are additional observed layers, not one authoritative file. The test logs them for diagnostics only; no hash of a single default file is used as proof that all user configuration is preserved. The file set is hashed before phase A and after phase B and must be unchanged; no file is overwritten. External changes are preserved and block the trial.
+- In-memory assignment could be persisted later by shutdown or unrelated code; the design prevents that claim by restoring the previous enum before stop on every same-process path and by never calling `SaveConfig`. If the restore fails or its effective readback is not the prior value, transition to `BLOCKED_KEEP_EDITOR` and do not stop; the outer lifecycle blocker applies. If the observed file set changes, the trial is blocked and the change is preserved, not overwritten.
+- The effective value comes from `GetDefault<UBlueprintEditorSettings>()`, the same object the compilation manager reads.
 
 ## Implementation subtasks (dependency order, all proposed_unapproved)
 
@@ -153,29 +175,30 @@ No existing Python/MCP API reads the setting. Add a **test-project-only** C++ fi
 
 - **Exact files:** `TestProject/Source/TurboMCPTest/TurboMCPTestPersistenceSettings.h` (new), `.cpp` (new), `TestProject/Source/TurboMCPTest/Private/TurboMCPTestPersistenceSettingsTest.cpp` (new), `TestProject/Source/TurboMCPTest/TurboMCPTest.Build.cs`.
 - **Build scope:** add `BlueprintGraph` as a private dependency for `UBlueprintEditorSettings`; no plugin dependency and no production source.
-- **Preserved:** no normal editor/tool behavior; setting is changed only in memory during the owned persistence trial; the user config file is never written and its hash must remain unchanged.
+- **Preserved:** no normal editor/tool behavior; setting is changed only in memory during the owned persistence trial and restored in the same process; the observed settings file set (`GEditorPerProjectIni`, source-default, project-user, global-user, absent files included) is never written and must remain unchanged.
 - **Offline checks:** source-level review that the seam is test-only; no engine execution in this task. Build verification is deferred to a supervisor-only live prerequisite.
-- **Negative controls:** read reports the actual enum/path/hash; set reports `effective=Never` only after a live re-read; absence of a readable config path blocks rather than guessing; the config hash is unchanged before/after.
+- **Negative controls:** read reports the actual effective enum, token/PID and observed paths/hashes; set reports `effective=Never` only after a live re-read; absence of a readable path blocks rather than guessing; files are unchanged before/after; stale `effective=Never` logs are rejected.
 - **Rollback:** remove the two new files/test and revert `TurboMCPTest.Build.cs` only.
 
-### P2 — Process identity and foreign-listener proof
+### P2 — Process identity, listener ownership and foreign-listener proof
 
 - **Exact files:** `Tools/ownership.ps1`; `Tools/check-mcp-server.py`; `Tools/test-ownership.py`.
-- **Functions:** `Get-TurboMCPProcessIdentity` (`pid`, `startTimeUtc`, command-line/project/engine); `Test-TurboMCPProcessIdentity`; `--editor-start-utc` validation in the server probe. Reuse `Test-TurboMCPOwnsProcess`.
+- **Functions:** `Get-TurboMCPProcessIdentity` (`pid`, `startTimeUtc`, command-line/project/engine); `Test-TurboMCPProcessIdentity`; `Get-TurboMCPListenerOwner` for the configured loopback port; `--editor-start-utc` and listener-owner validation in the server probe. Reuse `Test-TurboMCPOwnsProcess`.
 - **Preserved:** current foreign-editor refusal, lease behavior, owned-descendant cleanup, and `--editor-pid` compatibility.
-- **Offline fault injection:** mock process records for same PID/different start time, old PID alive, foreign project, unreadable command line, and server answering without an owned identity.
-- **Negative controls:** a current owned PID/start time still passes; a foreign editor still refuses; no process is killed.
+- **Offline fault injection:** mock process records for same PID/different start time, old PID alive, foreign project, unreadable command line, server answering without an owned identity, intended editor alive while a different process owns the listening socket, IPv4/IPv6 or wildcard listeners, multiple listeners, permission denial and listener replacement between probes.
+- **Negative controls:** a current owned PID/start time and its socket still passes; a foreign editor still refuses; the intended editor being alive while another process serves the port refuses; no process is killed.
 - **Rollback:** revert the two code files and test additions only.
 
 ### P3 — Two-pass persistence supervisor and state validation
 
-- **Exact files:** `Tools/persistence_supervisor.ps1` (new pure module); `Tools/run-suites.ps1`; `Tools/test-persistence-supervisor.py` (new offline suite).
-- **Functions:** `Invoke-PersistenceSuite`, `Start-FreshOwnedEditor`, `Stop-OwnedEditorForRestart`, `Read/Write/Test-PersistenceState`, `Assert-PersistenceConfigUnchanged`.
+- **Exact files:** `Tools/persistence_supervisor.ps1` (new pure module); `Tools/run-suites.ps1`; `Tools/execute-tests.py`; `Tools/execution_runtime.py`; `Tools/execution_recovery.py`; `Tools/recover-tests.py`; `Tools/test-persistence-supervisor.py` (new offline suite).
+- **Functions:** `Invoke-PersistenceSuite`, `Start-FreshOwnedEditor`, `Stop-OwnedEditorForRestart`, `Read/Write/Test-PersistenceState`, `Test-CleanupEligibility`, `Invoke-PersistenceRecovery`.
+- **Cleanup eligibility:** `CLEAN` only with an owned editor, owned loopback listener and only the `WBP_NodeTest` package dirty. `REFUSED_DIRTY`/`REFUSED_OWNER` must not stop, restore or overwrite; the existing KILL_ON_JOB_CLOSE outer job is a blocker for this refusal path. The mode is not admitted until exclusive disposable-editor isolation is proved or the outer lifecycle gets a non-destructive detach/recovery path.
 - **Protocol:** validate the schema/token/trial/suite/phase/expected fields; only the configured persistence suite may exit `75`; reject phase A exit `0`; write a response only after a proved restart.
 - **Preserved:** normal `run-suites` suites, one-editor reuse, existing timeouts, fixture snapshot/restore and verdicts. No normal suite enters the new path.
-- **Offline fault injection:** malformed/missing/extra fields, wrong token/trial/phase, duplicate/replayed request, phase A exit `0`, old process alive, same PID reused, foreign listener, phase/stop/start timeout, interrupted supervisor, fixture bytes preserved between passes, config path/hash unchanged (external change blocks), unrelated dirty package.
-- **Negative controls:** normal suite still passes; no-save control is not reported saved; a refused restart leaves the foreign editor and state preserved.
-- **Rollback:** remove the new helper/test and revert `run-suites.ps1` only.
+- **Offline fault injection:** malformed/missing/extra fields, wrong token/trial/phase, duplicate/replayed request, phase A exit `0`, old process alive, same PID reused, foreign listener, intended editor alive with a different listener owner, IPv4/IPv6/wildcard/multiple listeners, permission denial, listener replacement, phase/stop/start timeout, interrupted supervisor, fixture bytes preserved between passes, settings file set unchanged, unrelated dirty package, refusal cleanup eligibility, hard-death journal recovery.
+- **Negative controls:** normal suite still passes; no-save control is not reported saved; a refused restart leaves the foreign editor and state preserved; a refused dirty run does not enter the destructive path.
+- **Rollback:** remove the new helper/test and revert `run-suites.ps1`, `execute-tests.py`, `execution_runtime.py`, `execution_recovery.py` and `recover-tests.py` only.
 
 ### P4 — Supervised persistence profile and catalog entry
 
@@ -190,18 +213,18 @@ No existing Python/MCP API reads the setting. Add a **test-project-only** C++ fi
 
 - **Exact files:** `Tools/test-widget-compile-save-reopen.py` (new); `Tests/catalog.json`.
 - **Inputs:** owned `/Game/Tests/WBP_NodeTest`, `TitleText`; existing `EditTurboMCPWidgetsAsVars`, `EditTurboMCPCompile`, `EditTurboMCPSaveWithoutThumbnail` (or `EditTurboMCPSave` when allowed), `ReadTurboMCPWidgetTree`, `ReadTurboMCPBlueprintLoad`, `ReadTurboMCPAssetDescribe`, `ReadTurboMCPDirtyList`, `AutomationTestToolset.RunTests`/`GetLogEntries`.
-- **Behavior:** phase A observes effective `SaveOnCompile=Never`, applies the reversible edit, compiles, saves or (control) does not save, validates state and exits `75`; phase B reconnects after the new editor, re-reads the expected flag, writes `readback_complete`, exits `0`. Saved trial expects `true`; no-save control expects `false`.
-- **Preserved:** existing tools, fixture names, save and widget-tree semantics; no production authoring feature.
-- **Offline fault injection:** state/token/trial errors, missing setting log, wrong expected flag, no-save control accidentally saved, unrelated dirty package, missing phase B.
-- **Negative controls:** no-save control must fail if it persists the edit; saved trial must fail if the flag was not observed after restart; a failed compile/save must not be called persistence.
+- **Behavior:** phase A observes effective `SaveOnCompile=Never` (fresh token/PID, in-memory only), applies the reversible edit, compiles, saves or (control) does not save, restores the prior setting in a `finally` before stop, validates state and exits `75`; phase B reconnects after the new editor, re-reads the expected flag, writes `readback_complete`, exits `0`. Saved trial expects `true`; no-save control expects `false`.
+- **Preserved:** existing tools, fixture names, save and widget-tree semantics; no production authoring feature; user settings files unchanged.
+- **Offline fault injection:** state/token/trial errors, missing or stale setting log, `RunTests` reset/no log, setting restore failure, wrong expected flag, no-save control accidentally saved, unrelated dirty package, refused cleanup eligibility, missing phase B, listener replacement.
+- **Negative controls:** no-save control must fail if it persists the edit; saved trial must fail if the flag was not observed after restart; a failed compile/save must be reported **persistence unverified**, not "not saved"; an old `effective=Never` log must be rejected.
 - **Rollback:** remove the new test and catalog entry only.
 
 ### P6 — Supervisor-only live acceptance (no new source)
 
 - **Scope:** no code; integration owner runs the P1-P5 build/test path under the existing supervisor.
 - **Command:** `python Tools/execute-tests.py --profile persistence --suites test-widget-compile-save-reopen --execute` (proposed; unavailable until P4/P5).
-- **Acceptance:** saved trial retains `TitleText` variable after new PID/new session; no-save control loses it; old PID/start time gone; new PID/start time owned; server owner/project/engine match; config path/hash/existence unchanged; fixture restored only after readback; no unrelated dirty package touched; exact report/request/tree digest recorded.
-- **Manual fallback:** a supervised operator may perform the same two phases manually through the runner owner, supplying old-PID-exit, new-PID/server-owner and new-session read evidence. It is not an automated gate and must preserve unrelated editors/unsaved state. If the supervisor cannot restart, report persistence **blocked**, never passed.
+- **Acceptance:** saved trial retains `TitleText` variable after new PID/new session; no-save control loses it; old PID/start time gone; new PID/start time owned; listener-owning PID/start time and project/engine match; observed settings file set unchanged; cleanup eligibility was CLEAN before mutation; fixture restored only after readback; no unrelated dirty package touched; exact report/request/tree digest recorded.
+- **Manual fallback:** a supervised operator may perform the same two phases manually through the runner owner, supplying old-PID-exit, new-PID/listener-owner and new-session read evidence. It is not an automated gate; it cannot claim unrelated-unsaved preservation under the current KILL_ON_JOB_CLOSE path, and if the supervisor cannot restart, persistence is **blocked**, never passed.
 - **Rollback:** none; this is evidence/acceptance only.
 
 ## Offline fault-injection matrix
@@ -215,11 +238,14 @@ No existing Python/MCP API reads the setting. Add a **test-project-only** C++ fi
 | Old PID reused by different start time | Treat old identity gone, but require explicit new identity proof; never accept the recycled PID as old |
 | New PID same as old, new start absent, foreign project/engine, unreadable command line | Refuse; preserve foreign process |
 | Server answers with no owned identity | Refuse; do not measure it |
+| Intended editor alive while another process owns the listening socket | Refuse; current `--editor-pid` would pass, so this is the required negative control |
+| IPv4/IPv6/wildcard listeners, multiple owners, permission/CIM denial, listener replacement between probes | Refuse/block; never infer ownership |
 | Phase A/B/stop/start timeout | Kill only child tree/owned editor; restore at safe cleanup; mark blocked |
-| Interrupted supervisor after save before readback | Preserve evidence; restore baseline at recovery; no persistence claim |
+| Interrupted supervisor after save before readback | Journal retained; explicit recover-tests.py recovery; **persistence unverified**, not "not saved" |
 | Fixture restore before phase B | Test must fail: saved bytes are not to be restored until readback |
-| Config file absent/present/changed externally | File is never written; hash/existence must match before/after. An external change blocks and is preserved |
-| Unrelated dirty package before stop | Refuse/block; do not discard unrelated unsaved work |
+| Settings file set absent/present/changed externally | No file is written; observed paths/hashes must match before/after. An external change blocks and is preserved; one default-file hash is not full-hierarchy proof |
+| Unrelated dirty package before mutation | Cleanup ineligible: no mutation, no stop, no restore; blocked. The current KILL_ON_JOB_CLOSE outer job is a lifecycle blocker, not a preservation claim |
+| Hard supervisor death | No `finally`: journal/recovery only; refuse live/foreign owners; do not claim persistence |
 | No-save control shows `TitleText` marked | Fail the control (it persisted); not a pass |
 | Normal suite through normal path | Unchanged one-editor reuse/verdict behavior |
 
@@ -229,8 +255,8 @@ Only the integration owner may run engine work. The sequence is:
 
 1. Build the test module dependency changes and the plugin under the existing supervisor; confirm provenance.
 2. Run P2/P3/P4 offline fault suites; all must pass and must not start an editor.
-3. Run the exact candidate with `persistence` profile. The report must name the candidate commit, tree digest, suite name, old/new identities, config path/hash, fixture bytes between phases, saved/no-save results and final restore.
-4. Reject a run that cannot prove a new editor process (same PID/start time), a new client session, effective `SaveOnCompile=Never` before mutation, or the no-save control's lost edit.
+3. Run the exact candidate with `persistence` profile. The report must name the candidate commit, tree digest, suite name, old/new identities, listener-owner identity, observed settings file set/hashes, fixture bytes between phases, cleanup eligibility, saved/no-save results and final restore.
+4. Reject a run that cannot prove a new editor process (same PID/start time), a new client session **and the listener's owning PID**, effective `SaveOnCompile=Never` before mutation from the current token/PID, or the no-save control's lost edit.
 5. Do not mark Monday persistence accepted from an offline-only or manual-only run.
 
 ## Validation
@@ -238,7 +264,7 @@ Only the integration owner may run engine work. The sequence is:
 - `python Tools/audit-inventory.py --check` — exit 0; 101 definitions; 95 `parsed_call`, 6 `name_reference_only`.
 - `python Tools/test-result-contract.py` — exit 0; PASS, C03-C08.
 - `python Tools/test-client-retry.py` — exit 0; PASS, C01/C02.
-- `python Tools/execute-tests.py --profile offline --execute` — exit 0 on the pre-commit report tree; report `.local/executions/f79179ea0da34139a0db2a46ef85097b/report.json`; request commit `633c86cd6871f69bd997eefe6bae2176306b13f1`; tree digest `410c0bb04e794336050729e47af33d9134071340b574378e430323aab9b07c2e`.
+- `python Tools/execute-tests.py --profile offline --execute` — exit 0 on the pre-commit correction tree; report `.local/executions/4e57b11fc68f4d22b42c5bc742d78758/report.json`; request commit `f9aa39fff11368622b72fde9a4a6a2218aae1b0c`; tree digest `08662611d28ae011c46da76173be9784270f2212420412675b1861871d1e5b79`.
 - No engine/editor/build/MCP/recovery command was run. The proposed live acceptance is unexecuted.
 
 ## Missing seams and blockers
@@ -250,14 +276,22 @@ Only the integration owner may run engine work. The sequence is:
 - No existing `Tools/test-widget-compile-save-reopen.py`; P5 adds it.
 - No existing full-suite run proves the save/no-save behavior. If the `BlueprintGraph` test dependency, automation fixture, supervisor mode or observed setting cannot be built/reviewed, the automated plan is **blocked**. Do not substitute a direct `start-editor` call, clear `TURBOMCP_RUNNER_OWNS_FIXTURES`, or treat setting intent as effective observation.
 
+## Correction after review
+
+This revision preserves candidate `f9aa39fff11368622b72fde9a4a6a2218aae1b0c` and addresses the review of report SHA-256 `66b4b2ec3637b04233a653fd38ac26ed92c9c4d23c8ee0d71634c699e0fbea55`:
+
+- The accepted probe is now **loopback socket-owner identity plus process start-time**, not `--editor-pid` or a same-named process. It checks IPv4/IPv6/wildcard listeners, permission/ambiguous failure, replacement between probes and the intended-editor-alive/foreign-server negative control, and rechecks before each mutation.
+- `GetDefaultConfigFilename()` is documented as only the source default path. The design observes `GEditorPerProjectIni` plus source/project/global paths, never writes them, restores the in-memory setting on every same-process path and requires a fresh token/PID `effective=Never` result rather than a stale log.
+- Cleanup eligibility is explicit. `REFUSED_DIRTY`/`REFUSED_OWNER` never stop or restore; the current `KILL_ON_JOB_CLOSE` outer job is recorded as a blocking lifecycle gap, not as unrelated-unsaved preservation. Hard supervisor death uses the journal/recovery path; a failed readback is **persistence unverified**, since the save may have succeeded.
+
 ## Monday go/no-go
 
 **No-go for automated Monday persistence acceptance now.** The current supervisor cannot restart under the suite runner and there is no effective `SaveOnCompile` observation. The smallest viable path is P1-P5, followed by the supervisor-only P6 acceptance.
 
-**Conditional go after P1-P6:** one saved trial and one no-save control on the owned `TitleText`/`WBP_NodeTest` fixture, with new-PID/start-time proof, new-session disk read, effective `Never` before mutation, config path/hash unchanged, unrelated assets untouched, and exact candidate-bound evidence. This is a narrow compile/save/reopen check, not general persistence certification.
+**Conditional go after P1-P6:** one saved trial and one no-save control on the owned `TitleText`/`WBP_NodeTest` fixture, with new-PID/start-time proof, listener-owner proof, new-session disk read, effective `Never` before mutation from the current token/PID, observed settings file set unchanged, cleanup eligibility CLEAN, unrelated assets untouched under a proved outer lifecycle, and exact candidate-bound evidence. This is a narrow compile/save/reopen check, not general persistence certification.
 
-**Fallback:** a supervised operator may run the same two phases manually through the runner owner. It must supply the same process, server-owner, config, fixture and readback evidence; it is not an automated gate and remains **unverified** until that evidence exists. No direct helper workaround is approved.
+**Fallback:** a supervised operator may run the same two phases manually through the runner owner. It must supply the same process/listener, settings, fixture and readback evidence; it is not an automated gate and cannot claim unrelated-unsaved preservation under the current KILL_ON_JOB_CLOSE path. No direct helper workaround is approved.
 
 ## Rollback summary
 
-Each implementation subtask is independently revertible by its listed files. P1 has no production effect. P2/P3/P4 preserve the normal suite path and can be removed without changing existing tools. P5 is a new test only. If any step discovers a foreign editor, an unreadable lease/lock, a missing config path, an unprovable process identity, or an unrelated dirty package, stop and report the blocker; do not kill, clear, overwrite or replay.
+Each implementation subtask is independently revertible by its listed files. P1 has no production effect. P2/P3/P4 preserve the normal suite path and can be removed without changing existing tools. P5 is a new test only. If any step discovers a foreign editor, an unreadable lease/lock, an unprovable listener owner, an unreadable settings path, or an unrelated dirty package, stop and report the blocker; do not kill, clear, overwrite or replay. If the outer Job Object still kills the editor on a refusal path, the persistence mode is not admitted.
