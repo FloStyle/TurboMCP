@@ -4,14 +4,14 @@
 
 Use one reviewed task, one isolated worktree and one durable claim per worker.
 The integration owner records a full approved base commit before dispatch.
-R13 and R16 are accepted. R04 checkpoints 1-4 are accepted as source evidence; the active assignment is checkpoint 5 (compile contract for Monday widgets) in its task.
+R13 and R16 are accepted. R04 checkpoints 1-5 are accepted as source evidence; the active assignment is checkpoint 6 (persistence prerequisite contract).
 
 ## Approved scope
 
 [worker-scopes.json](../roadmap/worker-scopes.json) contains exact writable paths
 for R13, R16 and the active R04 checkpoint. Everything else is outside scope. R13 may update the six listed
 comparison/evidence files. R16 may write its two dependency reports and task
-evidence. R04 may write its two callable-contract reports and task evidence. In a task file, only the Completion evidence section may change.
+evidence. R04 checkpoint 6 may write its persistence prerequisite report and task evidence. In a task file, only the Completion evidence section may change.
 The reviewer owns task status, review registers, generated TODO and queue updates.
 Unknown tasks fail closed until the integration owner supplies a reviewed scope.
 

@@ -30,13 +30,12 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "docs/audit/callable-contracts.md",
-        "docs/audit/callable-contracts.json",
+        "docs/audit/widget-persistence-prerequisites.md",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "8bd3a449d178bdcc266df9eaf3067e22462719fd",
-      "checkpoint": "5: compile contract for Monday widgets; dispatch must include the integration contract commit"
+      "approved_base": "1c0cb15f737d619bd9777136366d141d75da8cd9",
+      "checkpoint": "6: supervisor-owned persistence design; dispatch includes integration contract commit"
     }
   }
 }

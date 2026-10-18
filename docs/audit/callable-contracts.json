@@ -5389,5 +5389,15 @@
         "R04-COMPILE-03/R04-REPAIR-30 now name compiler-error assets, compiler-warning assets and engine-diagnostic counts separately and defer any engine-Error-as-failure policy to the owner."
       ]
     }
+  },
+  "checkpoint_5_integration_review": {
+    "candidate": "1c0cb15f737d619bd9777136366d141d75da8cd9",
+    "decision": "accepted_source_checkpoint_only",
+    "task_complete": false,
+    "repairs_approved": false,
+    "reviewed_tools": 13,
+    "remaining_tools": 88,
+    "offline_run": "cab5c12cb1ce47c7bf702748c146b172",
+    "limitations": "Persistence plan blocked on supervisor restart and setting observation; no runtime certification."
   }
 }

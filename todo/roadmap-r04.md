@@ -421,7 +421,7 @@ evidence and run the approved-base-to-candidate scope gate. Retain claim and sto
 for review. No merge, push, completion marking, claim release or next-family work.
 
 
-## Active dispatch checkpoint 5: compile contract for Monday widgets
+## Completed dispatch checkpoint 5: compile contract for Monday widgets
 
 Checkpoint 4 is accepted as source evidence at 8bd3a449, with independent offline
 run 96579e7ca2514b09818f78ce413a27a6. R04 remains incomplete; all repairs unapproved.
@@ -446,3 +446,38 @@ need exact files, preserved behavior, expected outcomes, negative controls,
 fixture gaps, validation and rollback. No broad tool audit beyond compile.
 Run inventory, result-contract, client-retry and offline checks; commit and retain
 candidate-bound offline evidence and full-base scope result. Stop for review.
+
+
+## Active dispatch checkpoint 6: persistence prerequisite contract
+
+Checkpoint 5 is accepted as source evidence at 1c0cb15; independent offline run
+cab5c12cb1ce47c7bf702748c146b172 passed. R04 remains incomplete.
+
+Write docs/audit/widget-persistence-prerequisites.md: the smallest implementable
+supervisor-owned restart and SaveOnCompile observation contract needed by the
+accepted Widget Blueprint persistence plan. This is a design task, not code.
+Inspect run-suites, tmcp_editor, start-editor, check-mcp-server, execution locks,
+leases, timeouts, recovery and fixture restoration. Choose one minimal approach;
+do not produce a menu of speculative alternatives. Identify exact files and
+functions, IPC/request shape if needed, ownership validation, bounded deadlines,
+process identity including PID reuse, old-process exit and new-session proof,
+foreign-listener refusal, save versus discard semantics for the owned fixture,
+crash/interruption recovery, cleanup and lock retention. Never restore fixture
+bytes between saved-trial write and readback; restore between isolated trials.
+
+Trace actual setting ownership and a minimal readback mechanism for effective
+SaveOnCompile=Never before any mutation in each trial. Separate configuration
+intent from observed effective value. Preserve user config; list missing seams.
+No project-only setting assumptions or unsupported Python APIs.
+
+Produce implementation-ready subtasks in dependency order, with exact allowlists,
+preserved behavior, offline fault-injection tests, supervisor-only live acceptance,
+negative controls and rollback. Every status remains proposed_unapproved. Include
+a concise go/no-go assessment for Monday and existing supervised fallback if
+provable. No plugin feature expansion, engine patch, general runner rewrite or
+new cloud service. Do not revisit the full tool audit.
+
+Only the new prerequisite report and this task's Completion evidence may change.
+No code/test/config/fixture/status/TODO/routing/release edits or engine/editor/build/
+MCP/recovery execution. Run offline validation and full-base scope gate; commit,
+retain candidate-bound evidence and stop for integration review.
