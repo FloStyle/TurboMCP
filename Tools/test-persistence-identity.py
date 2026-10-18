@@ -497,6 +497,35 @@ class PersistenceIdentityTests(unittest.TestCase):
         )
         self.refuse(payload, identity.INVALID_VALUE)
 
+    def test_forbidden_path_characters_in_both_fields_at_each_level(self):
+        cases = {
+            "expected_engine": (
+                "expected",
+                "engine_executable",
+                r"C:\Bad?Name\UnrealEditor.exe",
+            ),
+            "process_engine": (
+                "process",
+                "engine_executable",
+                r"C:\Bad>Name\UnrealEditor.exe",
+            ),
+            "listener_project": (
+                "listener",
+                "project_path",
+                r"C:\Bad*Name\Test.uproject",
+            ),
+        }
+        for label, (level, field, value) in cases.items():
+            payload = evidence()
+            if level == "expected":
+                payload["expected"][field] = value
+            elif level == "process":
+                payload["observations"][0]["process"][field] = value
+            else:
+                payload["observations"][0]["listeners"][0][field] = value
+            with self.subTest(level=label):
+                self.refuse(payload, identity.INVALID_VALUE)
+
     def test_valid_unicode_paths_allowed(self):
         payload = evidence()
         project = "C:\\Donn\u00e9es\\T\u00e9st.uproject"
