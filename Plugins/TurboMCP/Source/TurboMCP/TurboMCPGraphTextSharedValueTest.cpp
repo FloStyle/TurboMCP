@@ -119,6 +119,19 @@ namespace
 		return true;
 	}
 
+	UEdGraph* AddUbergraphPage(FFixture& Fixture, const TCHAR* InName)
+	{
+		UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(
+			Fixture.Blueprint, FName(InName), UEdGraph::StaticClass(), UEdGraphSchema_K2::StaticClass());
+		if (Graph == nullptr)
+		{
+			return nullptr;
+		}
+		FBlueprintEditorUtils::AddUbergraphPage(Fixture.Blueprint, Graph);
+		Fixture.Graphs.Add(Graph);
+		return Graph;
+	}
+
 	UEdGraph* AddFunctionGraph(FFixture& Fixture, const TCHAR* InName)
 	{
 		UEdGraph* Graph = FBlueprintEditorUtils::CreateNewGraph(
@@ -223,8 +236,10 @@ namespace
 
 	UK2Node_CallFunction* AddBuildString(UEdGraph* InGraph)
 	{
+		// Pinned 5.8 has BuildString_Double (DisplayName "Build String (Float)").
+		// There is no BuildString_Float symbol in this engine source.
 		return AddCall(InGraph,
-			UKismetStringLibrary::StaticClass()->FindFunctionByName(TEXT("BuildString_Float")));
+			UKismetStringLibrary::StaticClass()->FindFunctionByName(TEXT("BuildString_Double")));
 	}
 
 	UK2Node_BreakStruct* AddBreakVector(UEdGraph* InGraph)
@@ -376,6 +391,14 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 	}
 	const FString AssetPath = Fixture.Blueprint->GetPathName();
 
+	// A fixture prerequisite names the exact missing object instead of a single
+	// combined message, so a construction failure is diagnosable from the report.
+	auto Missing = [this](const TCHAR* InDetail)
+	{
+		AddError(FString::Printf(TEXT("fixture prerequisite missing: %s"), InDetail));
+		return false;
+	};
+
 	// ---- direct and rerouted multi-output shared value -------------------
 	{
 		UEdGraph* Graph = AddFunctionGraph(Fixture, TEXT("SharedMultiOutput"));
@@ -386,19 +409,43 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UK2Node_Knot* Knot = Graph != nullptr ? AddKnot(Graph) : nullptr;
 		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
-		if (Break == nullptr || BuildA == nullptr || BuildB == nullptr || PrintA == nullptr
-			|| PrintB == nullptr || Knot == nullptr || Entry == nullptr)
+		if (Graph == nullptr)
 		{
-			AddError(TEXT("shared multi-output fixture nodes are missing"));
+			AddError(TEXT("shared multi-output fixture: function graph was not created"));
+			return false;
+		}
+		if (Break == nullptr)
+		{
+			AddError(TEXT("shared multi-output fixture: UK2Node_BreakStruct(FVector) was not created"));
+			return false;
+		}
+		if (BuildA == nullptr || BuildB == nullptr)
+		{
+			AddError(TEXT("shared multi-output fixture: BuildString_Double call node was not created"));
+			return false;
+		}
+		if (PrintA == nullptr || PrintB == nullptr)
+		{
+			AddError(TEXT("shared multi-output fixture: PrintString call node was not created"));
+			return false;
+		}
+		if (Knot == nullptr)
+		{
+			AddError(TEXT("shared multi-output fixture: knot node was not created"));
+			return false;
+		}
+		if (Entry == nullptr)
+		{
+			AddError(TEXT("shared multi-output fixture: function entry was not created"));
 			return false;
 		}
 
 		const bool bLinks =
 			LinkEntryToPrint(Graph, Entry, PrintA)
 			&& LinkNodes(Graph, PrintA, TEXT("then"), PrintB, TEXT("execute"))
-			&& LinkNodes(Graph, Break, TEXT("X"), BuildA, TEXT("InFloat"))
+			&& LinkNodes(Graph, Break, TEXT("X"), BuildA, TEXT("InDouble"))
 			&& Link(Graph, PinOf(Break, TEXT("Y"), EGPD_Output), Knot->GetInputPin())
-			&& Link(Graph, Knot->GetOutputPin(), PinOf(BuildB, TEXT("InFloat"), EGPD_Input))
+			&& Link(Graph, Knot->GetOutputPin(), PinOf(BuildB, TEXT("InDouble"), EGPD_Input))
 			&& LinkNodes(Graph, BuildA, TEXT("ReturnValue"), PrintA, TEXT("InString"))
 			&& LinkNodes(Graph, BuildB, TEXT("ReturnValue"), PrintB, TEXT("InString"));
 		if (!bLinks)
@@ -433,19 +480,17 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 
 	// ---- cross-entry sharing --------------------------------------------
 	{
-		UEdGraph* Graph = Fixture.Blueprint->UbergraphPages.Num() > 0
-			? Fixture.Blueprint->UbergraphPages[0].Get() : nullptr;
+		UEdGraph* Graph = AddUbergraphPage(Fixture, TEXT("SharedEntries"));
 		UK2Node_CustomEvent* Alpha = Graph != nullptr ? AddCustomEvent(Graph, TEXT("Alpha")) : nullptr;
 		UK2Node_CustomEvent* Beta = Graph != nullptr ? AddCustomEvent(Graph, TEXT("Beta")) : nullptr;
 		UK2Node_CallFunction* Shared = Graph != nullptr ? AddConcat(Graph) : nullptr;
 		UK2Node_CallFunction* PrintA = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
-		if (Graph == nullptr || Alpha == nullptr || Beta == nullptr || Shared == nullptr
-			|| PrintA == nullptr || PrintB == nullptr)
-		{
-			AddError(TEXT("cross-entry fixture nodes are missing"));
-			return false;
-		}
+		if (Graph == nullptr) { return Missing(TEXT("cross-entry EventGraph")); }
+		if (Alpha == nullptr) { return Missing(TEXT("cross-entry Alpha custom event")); }
+		if (Beta == nullptr) { return Missing(TEXT("cross-entry Beta custom event")); }
+		if (Shared == nullptr) { return Missing(TEXT("cross-entry Concat_StrStr")); }
+		if (PrintA == nullptr || PrintB == nullptr) { return Missing(TEXT("cross-entry PrintString")); }
 		const bool bLinks =
 			LinkEntryToPrint(Graph, Alpha, PrintA)
 			&& LinkEntryToPrint(Graph, Beta, PrintB)
@@ -481,11 +526,10 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		UK2Node_CallFunction* PrintA = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
-		if (Graph == nullptr || Top == nullptr || PrintA == nullptr || PrintB == nullptr || Entry == nullptr)
-		{
-			AddError(TEXT("depth fixture nodes are missing"));
-			return false;
-		}
+		if (Graph == nullptr) { return Missing(TEXT("depth function graph")); }
+		if (Top == nullptr) { return Missing(TEXT("depth top Concat_StrStr")); }
+		if (PrintA == nullptr || PrintB == nullptr) { return Missing(TEXT("depth PrintString")); }
+		if (Entry == nullptr) { return Missing(TEXT("depth function entry")); }
 
 		UK2Node_CallFunction* Previous = Top;
 		for (int32 Index = 0; Index < 14; ++Index)
@@ -532,12 +576,10 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		UK2Node_CallFunction* PrintA = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
-		if (Graph == nullptr || A == nullptr || B == nullptr || PrintA == nullptr
-			|| PrintB == nullptr || Entry == nullptr)
-		{
-			AddError(TEXT("cycle fixture nodes are missing"));
-			return false;
-		}
+		if (Graph == nullptr) { return Missing(TEXT("cycle function graph")); }
+		if (A == nullptr || B == nullptr) { return Missing(TEXT("cycle Concat_StrStr")); }
+		if (PrintA == nullptr || PrintB == nullptr) { return Missing(TEXT("cycle PrintString")); }
+		if (Entry == nullptr) { return Missing(TEXT("cycle function entry")); }
 		UEdGraphPin* AOut = PinOf(A, TEXT("ReturnValue"), EGPD_Output);
 		UEdGraphPin* AIn = PinOf(A, TEXT("A"), EGPD_Input);
 		UEdGraphPin* BOut = PinOf(B, TEXT("ReturnValue"), EGPD_Output);
@@ -584,11 +626,10 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		UK2Node_CallFunction* Print = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UK2Node_Knot* Knot = Graph != nullptr ? AddKnot(Graph) : nullptr;
 		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
-		if (Graph == nullptr || Print == nullptr || Knot == nullptr || Entry == nullptr)
-		{
-			AddError(TEXT("malformed-knot fixture nodes are missing"));
-			return false;
-		}
+		if (Graph == nullptr) { return Missing(TEXT("malformed-knot function graph")); }
+		if (Print == nullptr) { return Missing(TEXT("malformed-knot PrintString")); }
+		if (Knot == nullptr) { return Missing(TEXT("malformed-knot knot node")); }
+		if (Entry == nullptr) { return Missing(TEXT("malformed-knot function entry")); }
 		if (!LinkEntryToPrint(Graph, Entry, Print)
 			|| !Link(Graph, Knot->GetOutputPin(), PinOf(Print, TEXT("InString"), EGPD_Input)))
 		{
@@ -615,11 +656,10 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
 		UEdGraphNode* Bad = Graph != nullptr ? NewObject<UEdGraphNode>(Graph) : nullptr;
-		if (Graph == nullptr || PrintA == nullptr || PrintB == nullptr || Entry == nullptr || Bad == nullptr)
-		{
-			AddError(TEXT("unsupported-node fixture nodes are missing"));
-			return false;
-		}
+		if (Graph == nullptr) { return Missing(TEXT("unsupported-node function graph")); }
+		if (PrintA == nullptr || PrintB == nullptr) { return Missing(TEXT("unsupported-node PrintString")); }
+		if (Entry == nullptr) { return Missing(TEXT("unsupported-node function entry")); }
+		if (Bad == nullptr) { return Missing(TEXT("unsupported-node plain UEdGraphNode")); }
 		Graph->AddNode(Bad, /*bUserAction=*/false, /*bSelectNewNode=*/false);
 		UEdGraphPin* BadOut = Bad->CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_String,
 			FName(TEXT("BadOut")));
@@ -658,12 +698,11 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
 		UEdGraphNode* Bad = Graph != nullptr ? NewObject<UEdGraphNode>(Graph) : nullptr;
-		if (Graph == nullptr || Shared == nullptr || PrintA == nullptr || PrintB == nullptr
-			|| Entry == nullptr || Bad == nullptr)
-		{
-			AddError(TEXT("unsupported-child fixture nodes are missing"));
-			return false;
-		}
+		if (Graph == nullptr) { return Missing(TEXT("unsupported-child function graph")); }
+		if (Shared == nullptr) { return Missing(TEXT("unsupported-child Concat_StrStr")); }
+		if (PrintA == nullptr || PrintB == nullptr) { return Missing(TEXT("unsupported-child PrintString")); }
+		if (Entry == nullptr) { return Missing(TEXT("unsupported-child function entry")); }
+		if (Bad == nullptr) { return Missing(TEXT("unsupported-child plain UEdGraphNode")); }
 		Graph->AddNode(Bad, /*bUserAction=*/false, /*bSelectNewNode=*/false);
 		UEdGraphPin* BadOut = Bad->CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_String,
 			FName(TEXT("BadOut")));
@@ -707,12 +746,10 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		UK2Node_CallFunction* PrintA = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UK2Node_CallFunction* PrintB = Graph != nullptr ? AddPrintString(Graph) : nullptr;
 		UEdGraphNode* Entry = Graph != nullptr ? FindFunctionEntry(Graph) : nullptr;
-		if (Graph == nullptr || Shared == nullptr || PrintA == nullptr
-			|| PrintB == nullptr || Entry == nullptr)
-		{
-			AddError(TEXT("malformed-link fixture nodes are missing"));
-			return false;
-		}
+		if (Graph == nullptr) { return Missing(TEXT("malformed-link function graph")); }
+		if (Shared == nullptr) { return Missing(TEXT("malformed-link Concat_StrStr")); }
+		if (PrintA == nullptr || PrintB == nullptr) { return Missing(TEXT("malformed-link PrintString")); }
+		if (Entry == nullptr) { return Missing(TEXT("malformed-link function entry")); }
 		if (!LinkEntryToPrint(Graph, Entry, PrintA)
 			|| !LinkNodes(Graph, PrintA, TEXT("then"), PrintB, TEXT("execute"))
 			|| !LinkNodes(Graph, Shared, TEXT("ReturnValue"), PrintA, TEXT("InString"))
@@ -754,11 +791,10 @@ bool FTurboMCPGraphTextSharedValueTest::RunTest(const FString& Parameters)
 		FBlueprintEditorUtils::AddMemberVariable(Fixture.Blueprint, FName(TEXT("ExactValue")), StringType,
 			TEXT("seed"));
 		UK2Node_VariableGet* Getter = Graph != nullptr ? NewObject<UK2Node_VariableGet>(Graph) : nullptr;
-		if (Graph == nullptr || Print == nullptr || Entry == nullptr || Getter == nullptr)
-		{
-			AddError(TEXT("exact single-use fixture nodes are missing"));
-			return false;
-		}
+		if (Graph == nullptr) { return Missing(TEXT("exact single-use function graph")); }
+		if (Print == nullptr) { return Missing(TEXT("exact single-use PrintString")); }
+		if (Entry == nullptr) { return Missing(TEXT("exact single-use function entry")); }
+		if (Getter == nullptr) { return Missing(TEXT("exact single-use variable getter")); }
 		Getter->VariableReference.SetSelfMember(FName(TEXT("ExactValue")));
 		Graph->AddNode(Getter, /*bUserAction=*/false, /*bSelectNewNode=*/false);
 		Getter->AllocateDefaultPins();
