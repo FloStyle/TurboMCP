@@ -127,6 +127,17 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				]
 
 				+ SHorizontalBox::Slot()
+				.FillWidth(1.6f)
+				.VAlign(VAlign_Center)
+				.Padding(0.0f, 0.0f, 6.0f, 0.0f)
+				[
+					SNew(STextBlock)
+					.Text(this, &STurboMCPPanel::GetStatusSummary)
+					.ToolTipText(this, &STurboMCPPanel::GetStatusText)
+					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
+				]
+
+				+ SHorizontalBox::Slot()
 				.AutoWidth()
 				.VAlign(VAlign_Center)
 				[
@@ -187,16 +198,53 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				]
 			]
 
+			// One compact view at a time. The buttons only change which section is visible; they
+			// never call a tool or write a setting.
+			+ SVerticalBox::Slot()
+			.AutoHeight()
+			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
+			[
+				SNew(SHorizontalBox)
+
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
+				[
+					SNew(SButton)
+					.Text(this, &STurboMCPPanel::GetMonitorButtonText)
+					.ToolTipText(LOCTEXT("MonitorViewTip", "Show recent calls and the selected-call inspector."))
+					.OnClicked_Lambda([this]()
+					{
+						SetView(ETurboMCPView::Monitor);
+						return FReply::Handled();
+					})
+				]
+
+				+ SHorizontalBox::Slot()
+				.AutoWidth()
+				[
+					SNew(SButton)
+					.Text(this, &STurboMCPPanel::GetToolsButtonText)
+					.ToolTipText(LOCTEXT("ToolsViewTip", "Show tool discovery, example arguments and call results."))
+					.OnClicked_Lambda([this]()
+					{
+						SetView(ETurboMCPView::Tools);
+						return FReply::Handled();
+					})
+				]
+			]
+
 			// *** THE LIVE CALL TIMELINE, WHICH IS THE OTHER HALF OF `T02`'s ITEM 3 AND ALL OF ITEM 4b. ***
 			// `RenderTimeline` was written for this pane and then left PRIVATE WITH NO CALLER, so the
 			// capability was recorded as done while nothing could reach it.
 			//
-			// ONE ROW PER CALL, FILTERED BY TOOLSET, TOOL, ASSET AND STATUS, AND A ROW EXPANDS TO ITS
-			// ARGUMENTS AND THE FIRST LINES OF ITS RESULT. The rows, the filter and the expansion text
-			// all come from `FTurboMCPCallTimeline` - plain C++, exercised by the panel probe commandlet
-			// on literal records - so what is here is only which rows are shown and which are open.
+			// ONE ROW PER CALL, FILTERED BY TOOLSET, TOOL, ASSET AND STATUS; ONE ROW IS SELECTED FOR THE
+			// INSPECTOR. The rows, the filter and the selected detail all come from
+			// `FTurboMCPCallTimeline` - plain C++, exercised by the panel probe commandlet on literal
+			// records - so what is here is only which rows are shown and which one is selected.
 			+ SVerticalBox::Slot()
 			.AutoHeight()
+			.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 2.0f)
 			[
 				SNew(SHorizontalBox)
@@ -283,6 +331,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 
 			+ SVerticalBox::Slot()
 			.AutoHeight()
+			.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SBorder)
@@ -319,6 +368,43 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				]
 			]
 
+			// ONE selected-call inspector for the Monitor view. It reads only the fields the log
+			// actually recorded; selecting a row never calls a tool or changes a setting.
+			+ SVerticalBox::Slot()
+			.FillHeight(0.55f)
+			.Visibility(this, &STurboMCPPanel::GetMonitorVisibility)
+			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
+			[
+				SNew(SBorder)
+				.Padding(4.0f)
+				[
+					SNew(SVerticalBox)
+
+					+ SVerticalBox::Slot()
+					.AutoHeight()
+					.Padding(0.0f, 0.0f, 0.0f, 2.0f)
+					[
+						SNew(STextBlock)
+						.Text(this, &STurboMCPPanel::GetSelectedCallHeader)
+						.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), BodyTextSize))
+					]
+
+					+ SVerticalBox::Slot()
+					.FillHeight(1.0f)
+					[
+						SNew(SScrollBox)
+
+						+ SScrollBox::Slot()
+						[
+							SNew(STextBlock)
+							.Text(this, &STurboMCPPanel::GetSelectedCallDetail)
+							.AutoWrapText(true)
+							.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
+						]
+					]
+				]
+			]
+
 			// CALL ANY TOOL. This is the section that makes every MCP feature testable by hand,
 			// including the engine's own tools, because both lists come from the registry.
 			//
@@ -326,6 +412,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// later, which is the failure this window exists to make visible.
 			+ SVerticalBox::Slot()
 			.AutoHeight()
+			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SHorizontalBox)
@@ -379,11 +466,10 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 				.Padding(0.0f, 0.0f, 4.0f, 0.0f)
 				[
 					SNew(SButton)
-					.Text(LOCTEXT("Sample", "Sample"))
-					.ToolTipText(LOCTEXT("SampleTip",
-						"Fill the arguments box from this tool's own schema, so you do not have to "
-						"know one to try it. A field whose type the schema does not declare is "
-						"flagged in the result line rather than silently guessed."))
+					.Text(LOCTEXT("FillExample", "Fill example arguments"))
+					.ToolTipText(LOCTEXT("FillExampleTip",
+						"Fill the arguments box with schema scaffolding from this tool. It is a valid "
+						"shape, not a validated runnable request; review every field before calling."))
 					.OnClicked(this, &STurboMCPPanel::OnSampleClicked)
 				]
 
@@ -404,6 +490,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// arguments are JSON and its answer is text, and neither fits on one line.
 			+ SVerticalBox::Slot()
 			.FillHeight(0.4f)
+			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SBorder)
@@ -415,8 +502,8 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 					.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 					.HintText(LOCTEXT("ArgumentsHint", "arguments, as JSON"))
 					.ToolTipText(LOCTEXT("ArgumentsTip",
-						"The tool's arguments as a JSON object. SAMPLE fills this from the tool's own "
-						"schema."))
+						"The tool's arguments as a JSON object. Fill example arguments creates schema "
+						"scaffolding, not a validated runnable request."))
 				]
 			]
 
@@ -426,6 +513,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// size before deciding to scroll.
 			+ SVerticalBox::Slot()
 			.AutoHeight()
+			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 2.0f)
 			[
 				SNew(STextBlock)
@@ -439,6 +527,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// wrapper around it.
 			+ SVerticalBox::Slot()
 			.FillHeight(0.6f)
+			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			.Padding(0.0f, 0.0f, 0.0f, 6.0f)
 			[
 				SNew(SBorder)
@@ -463,6 +552,7 @@ void STurboMCPPanel::Construct(const FArguments& InArgs)
 			// exactly what this window is for.
 			+ SVerticalBox::Slot()
 			.FillHeight(1.0f)
+			.Visibility(this, &STurboMCPPanel::GetToolsVisibility)
 			[
 				SNew(SScrollBox)
 
@@ -589,11 +679,9 @@ FText STurboMCPPanel::GetCallLogSummary() const
 
 FSlateColor STurboMCPPanel::GetCallLogSummaryColor() const
 {
-	// Green while recording, muted when not, so the state reads at a glance without parsing the
-	// text. Same intent as the server dot above it.
-	return GetCallLog().IsEnabled()
-		? FSlateColor(FLinearColor(0.1f, 0.8f, 0.1f))
-		: FSlateColor(FLinearColor(0.6f, 0.6f, 0.6f));
+	// Neutral: recording on/off is an operation state, not a success or failure. The checkbox and
+	// the summary text carry the state; green is reserved for successful outcomes.
+	return FSlateColor(FLinearColor(0.72f, 0.72f, 0.72f));
 }
 
 FText STurboMCPPanel::GetCallTimelineText() const
@@ -648,6 +736,7 @@ void STurboMCPPanel::RebuildTimelineRows()
 	LastTimelineRevision = Snapshot.Revision;
 	bHasTimelineRevision = true;
 	++TimelineRebuildCount;
+	SelectedTimelineRow.Reset();
 
 	// THE DENOMINATOR FIRST, because a list that is short looks the same whether the filter removed the
 	// rows or nothing was recorded - and those two need different actions from a reader.
@@ -680,47 +769,127 @@ void STurboMCPPanel::RebuildTimelineRows()
 	}
 }
 
-FString STurboMCPPanel::TimelineRowKey(const FTurboMCPCallTimeline::FListEntry& InRow)
-{
-	if (InRow.bHeading)
-	{
-		return TEXT("heading|") + InRow.SessionId;
-	}
-	// THE STAMP AND THE NAME, which is what identifies one call in a list where the same tool can be
-	// called twice in the same millisecond... in which case this collides, and the honest fix would be
-	// a record index. A collision costs one row that opens with another, not a wrong answer.
-	return InRow.Call.Timestamp + TEXT("|") + InRow.Call.Toolset + TEXT(".") + InRow.Call.Tool;
-}
-
-bool STurboMCPPanel::IsTimelineRowExpanded(
+bool STurboMCPPanel::IsTimelineRowSelected(
 	const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem) const
 {
-	return InItem.IsValid() && !InItem->bHeading && ExpandedTimelineRows.Contains(TimelineRowKey(*InItem));
+	return InItem.IsValid() && !InItem->bHeading && SelectedTimelineRow.Get() == InItem.Get();
 }
 
 void STurboMCPPanel::ToggleTimelineRow(const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& InItem)
 {
-	// A HEADING IS NOT A CALL AND HAS NOTHING TO OPEN, so clicking one does nothing rather than
-	// expanding an empty row.
+	// A HEADING IS NOT A CALL AND HAS NOTHING TO INSPECT.
 	if (!InItem.IsValid() || InItem->bHeading)
 	{
 		return;
 	}
-	const FString Key = TimelineRowKey(*InItem);
-	if (ExpandedTimelineRows.Contains(Key))
+	SelectedTimelineRow = InItem;
+	if (TimelineListView.IsValid())
 	{
-		ExpandedTimelineRows.Remove(Key);
+		TimelineListView->RequestListRefresh();
+	}
+}
+
+FText STurboMCPPanel::GetMonitorButtonText() const
+{
+	return FText::FromString(ActiveView == ETurboMCPView::Monitor ? TEXT("Monitor (current)") : TEXT("Monitor"));
+}
+
+FText STurboMCPPanel::GetToolsButtonText() const
+{
+	return FText::FromString(ActiveView == ETurboMCPView::Tools ? TEXT("Tools (current)") : TEXT("Tools"));
+}
+
+FText STurboMCPPanel::GetSelectedCallHeader() const
+{
+	if (!SelectedTimelineRow.IsValid() || SelectedTimelineRow->bHeading)
+	{
+		return LOCTEXT("NoInspectorSelection", "No call selected");
+	}
+	const FTurboMCPCallLog::FEntry& Call = SelectedTimelineRow->Call;
+	const FString Status = Call.Phase == TEXT("start")
+		? TEXT("completion not observed")
+		: (Call.bError ? TEXT("error") : TEXT("ok"));
+	return FText::FromString(FString::Printf(TEXT("%s  %s.%s  %s  source %s"),
+		*Call.Timestamp, *Call.Toolset, *Call.Tool, *Status,
+		Call.Source.IsEmpty() ? TEXT("unavailable") : *Call.Source));
+}
+
+FText STurboMCPPanel::GetSelectedCallDetail() const
+{
+	if (!SelectedTimelineRow.IsValid() || SelectedTimelineRow->bHeading)
+	{
+		return LOCTEXT("InspectorEmpty",
+			"Select one call to inspect its actual request and result. No tool is called by selecting a row.");
+	}
+	const FTurboMCPCallLog::FEntry& Call = SelectedTimelineRow->Call;
+
+	FString Out = TEXT("request: ");
+	if (Call.Arguments.IsEmpty())
+	{
+		Out += TEXT("unavailable (not recorded)");
 	}
 	else
 	{
-		ExpandedTimelineRows.Add(Key);
+		Out += Call.Arguments;
 	}
-	if (TimelineListView.IsValid())
+	Out += TEXT("\nresult: ");
+	if (Call.Phase == TEXT("start"))
 	{
-		// THE LIST HAS TO BE TOLD. The row is taller now, and a list view caches its rows rather than
-		// re-asking for them - which is exactly why the timeline is a list and not a bound text block.
-		TimelineListView->RequestListRefresh();
+		Out += TEXT("unavailable (completion not observed)");
 	}
+	else if (Call.ResultChars == FTurboMCPCallLog::FEntry::NotMeasured)
+	{
+		Out += TEXT("unavailable (not recorded)");
+	}
+	else if (Call.Result.IsEmpty() && Call.ResultChars == 0)
+	{
+		Out += TEXT("(empty result)");
+	}
+	else if (Call.Result.IsEmpty())
+	{
+		Out += TEXT("unavailable (not recorded)");
+	}
+	else
+	{
+		TArray<FString> Lines;
+		Call.Result.ParseIntoArrayLines(Lines, /*bCullEmpty=*/false);
+		const int32 Shown = FMath::Min(8, Lines.Num());
+		for (int32 Index = 0; Index < Shown; ++Index)
+		{
+			if (Index > 0)
+			{
+				Out += TEXT("\n  ");
+			}
+			Out += Lines[Index];
+		}
+		if (Lines.Num() > Shown)
+		{
+			Out += FString::Printf(TEXT("\n  ... and %d more line(s)"), Lines.Num() - Shown);
+		}
+	}
+	Out += TEXT("\nsession: ");
+	if (Call.SessionId.IsEmpty())
+	{
+		Out += TEXT("unavailable (not recorded)");
+	}
+	else
+	{
+		Out += Call.SessionId;
+	}
+	Out += TEXT("\nduration: ");
+	if (Call.Phase == TEXT("start"))
+	{
+		Out += TEXT("unavailable (completion not observed)");
+	}
+	else
+	{
+		Out += FString::Printf(TEXT("%.1f ms"), Call.DurationMs);
+	}
+	Out += TEXT("\ncharacters: ");
+	Out += FTurboMCPCallLog::FEntry::DescribeSize(Call.ResultChars);
+	Out += TEXT("\ntokens (estimate): ");
+	Out += FTurboMCPCallLog::FEntry::DescribeSize(Call.TokenEstimate);
+	return FText::FromString(Out);
 }
 
 TSharedRef<ITableRow> STurboMCPPanel::MakeTimelineRow(
@@ -743,48 +912,36 @@ TSharedRef<ITableRow> STurboMCPPanel::MakeTimelineRow(
 				.Text(FText::FromString(FString::Printf(TEXT("; session %s"),
 					InItem->SessionId.IsEmpty() ? TEXT("(none)") : *InItem->SessionId)))
 				.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
-				.ColorAndOpacity(FSlateColor(FLinearColor(0.45f, 0.75f, 0.45f)))
+				.ColorAndOpacity(FSlateColor(FLinearColor(0.65f, 0.65f, 0.65f)))
 			];
 	}
 
-	const bool bExpanded = IsTimelineRowExpanded(InItem);
+	const bool bSelected = IsTimelineRowSelected(InItem);
+	FString RowText = bSelected ? TEXT("  > ") : TEXT("    ");
+	RowText += FTurboMCPCallTimeline::RenderRow(InItem->Call);
 
-	// ONE LINE ALWAYS, PLUS THE DETAIL WHEN THE ROW IS OPEN. The line is
-	// `FTurboMCPCallTimeline::RenderRow`, the same text the timeline prints, so a reader who copies a
-	// row out of the window and one who reads it through the log are looking at one rendering.
+	// ONE LINE, WITH A NEUTRAL TEXT MARKER WHEN SELECTED. The line is
+	// `FTurboMCPCallTimeline::RenderRow`, the same text the timeline prints; selection only chooses
+	// which call the single inspector reads.
 	TSharedRef<SVerticalBox> Body = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		[
 			SNew(STextBlock)
-			.Text(FText::FromString(FTurboMCPCallTimeline::RenderRow(InItem->Call)))
+			.Text(FText::FromString(RowText))
 			.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
 		];
-
-	if (bExpanded)
-	{
-		Body->AddSlot()
-		.AutoHeight()
-		[
-			SNew(STextBlock)
-			.Text(FText::FromString(FTurboMCPCallTimeline::Expand(InItem->Call)))
-			.Font(FCoreStyle::GetDefaultFontStyle(TEXT("Mono"), BodyTextSize))
-			.ColorAndOpacity(FSlateColor(FLinearColor(0.75f, 0.75f, 0.75f)))
-		];
-	}
 
 	return SNew(STableRow<TSharedPtr<FTurboMCPCallTimeline::FListEntry>>, InOwnerTable)
 		[
 			// A BORDERLESS BUTTON IS HOW A ROW IS MADE CLICKABLE, rather than a `SButton` that looks
-			// like a button: the row already reads as a row, and what the click does is open it.
+			// like a button: the row already reads as a row, and the click selects its inspector.
 			SNew(SButton)
 			.ButtonStyle(FCoreStyle::Get(), "NoBorder")
 			.ContentPadding(FMargin(2.0f, 1.0f))
 			.HAlign(HAlign_Left)
-			.ToolTipText(bExpanded
-				? LOCTEXT("TimelineCollapseTip", "Click to close this call's arguments and result.")
-				: LOCTEXT("TimelineExpandTip",
-					"Click to open this call's full arguments and the first lines of its result."))
+			.ToolTipText(LOCTEXT("TimelineSelectTip",
+				"Select this call for the inspector. Selecting a row never calls a tool or changes a setting."))
 			.OnClicked_Lambda([this, InItem]()
 			{
 				ToggleTimelineRow(InItem);
@@ -848,7 +1005,7 @@ void STurboMCPPanel::ReloadToolLists()
 	}
 
 	// The first toolset is selected, so the tool list is never empty on a fresh window and a caller
-	// can press SAMPLE without choosing anything first.
+	// can press Fill example arguments without choosing anything first.
 	if (ToolsetOptions.Num() > 0)
 	{
 		SelectedToolset = ToolsetOptions[0];
@@ -919,7 +1076,7 @@ void STurboMCPPanel::OnToolsetChanged(TSharedPtr<FString> InItem, ESelectInfo::T
 		ToolOptions.Add(MakeShared<FString>(Tool.BareName));
 	}
 
-	// The first tool is selected and its sample filled in, so the window is immediately usable and a
+	// The first tool is selected and its example arguments filled in, so the window is immediately usable and a
 	// human sees what an argument list looks like before typing one.
 	if (ToolOptions.Num() > 0)
 	{
@@ -966,7 +1123,7 @@ void STurboMCPPanel::OnArgumentsChanged(const FText& InText)
 
 FReply STurboMCPPanel::OnSampleClicked()
 {
-	// The sample is DERIVED FROM THE SCHEMA rather than stored, so re-pressing it after the registry
+	// The example arguments are DERIVED FROM THE SCHEMA rather than stored, so re-pressing it after the registry
 	// changed gives the current shape rather than a stale one.
 	if (!SelectedToolset.IsValid() || !SelectedTool.IsValid())
 	{
@@ -981,9 +1138,11 @@ FReply STurboMCPPanel::OnSampleClicked()
 		*SelectedToolset, *SelectedTool, bIsPartial, Error);
 	ResultText = FText::FromString(Error.IsEmpty()
 		? (bIsPartial
-			? FString(TEXT("sample filled from the schema. AT LEAST ONE PARAMETER'S TYPE IS NOT "
-				"DECLARED, so those fields are empty strings rather than guesses."))
-			: FString(TEXT("sample filled from the schema.")))
+			? FString(TEXT("example arguments filled from the schema; scaffolding, not a validated "
+				"runnable request. AT LEAST ONE PARAMETER'S TYPE IS NOT DECLARED, so those fields "
+				"are empty strings rather than guesses."))
+			: FString(TEXT("example arguments filled from the schema; scaffolding, not a validated "
+				"runnable request.")))
 		: Error);
 
 	if (Error.IsEmpty())
@@ -1039,6 +1198,17 @@ FSlateColor STurboMCPPanel::GetResultColor() const
 	return Result.bIsError
 		? FSlateColor(FLinearColor(0.9f, 0.3f, 0.3f))
 		: FSlateColor(FLinearColor(0.4f, 0.8f, 0.4f));
+}
+
+FText STurboMCPPanel::GetStatusSummary() const
+{
+	FString FirstLine = CachedStatus;
+	int32 Newline = INDEX_NONE;
+	if (FirstLine.FindChar(TEXT('\n'), Newline))
+	{
+		FirstLine = FirstLine.Left(Newline);
+	}
+	return FText::FromString(FirstLine);
 }
 
 FText STurboMCPPanel::GetResultHeader() const

@@ -46,6 +46,26 @@ struct FTurboMCPPanelHistoryTestAccess
 	{
 		return Panel.LastTimelineRevision;
 	}
+
+	static STurboMCPPanel::ETurboMCPView View(const STurboMCPPanel& Panel)
+	{
+		return Panel.ActiveView;
+	}
+
+	static void SetView(STurboMCPPanel& Panel, STurboMCPPanel::ETurboMCPView InView)
+	{
+		Panel.SetView(InView);
+	}
+
+	static FText InspectorHeader(const STurboMCPPanel& Panel)
+	{
+		return Panel.GetSelectedCallHeader();
+	}
+
+	static FText InspectorDetail(const STurboMCPPanel& Panel)
+	{
+		return Panel.GetSelectedCallDetail();
+	}
 };
 
 namespace
@@ -100,6 +120,22 @@ namespace
 		Entry.TokenEstimate = TokenEstimate;
 		Log.Write(Entry);
 	}
+
+	void AddDetailedCall(FTurboMCPCallLog& Log, const TCHAR* Tool)
+	{
+		FTurboMCPCallLog::FEntry Entry;
+		Entry.Timestamp = TEXT("2026-10-18T00:00:05.000Z");
+		Entry.Phase = TEXT("end");
+		Entry.Source = TEXT("plugin");
+		Entry.Toolset = TEXT("SyntheticToolset");
+		Entry.Tool = Tool;
+		Entry.Arguments = TEXT("{\"asset\":\"BP_NodeTest\"}");
+		Entry.Result = TEXT("known result");
+		Entry.ResultChars = 12;
+		Entry.TokenEstimate = 3;
+		Entry.DurationMs = 5.0;
+		Log.Write(Entry);
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -134,6 +170,19 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 
 	TSharedRef<STurboMCPPanel> Panel = SNew(STurboMCPPanel).TestCallLog(Log.Get());
 	TestEqual(TEXT("the panel bound the isolated log before its initial read"), CallRows(*Panel), 1000);
+
+	const bool bLogWasEnabled = Log->IsEnabled();
+	TestTrue(TEXT("the default view is Monitor"),
+		FTurboMCPPanelHistoryTestAccess::View(*Panel) == STurboMCPPanel::ETurboMCPView::Monitor);
+	FTurboMCPPanelHistoryTestAccess::SetView(*Panel, STurboMCPPanel::ETurboMCPView::Tools);
+	TestTrue(TEXT("the view switches to Tools"),
+		FTurboMCPPanelHistoryTestAccess::View(*Panel) == STurboMCPPanel::ETurboMCPView::Tools);
+	TestFalse(TEXT("switching views starts no call"), Panel->GetToolRunner().IsCallPending());
+	TestFalse(TEXT("switching views leaves the call result unset"), Panel->GetToolRunner().GetResult().bIsComplete);
+	TestTrue(TEXT("switching views does not change the recording setting"), Log->IsEnabled() == bLogWasEnabled);
+	FTurboMCPPanelHistoryTestAccess::SetView(*Panel, STurboMCPPanel::ETurboMCPView::Monitor);
+	TestTrue(TEXT("the view switches back to Monitor"),
+		FTurboMCPPanelHistoryTestAccess::View(*Panel) == STurboMCPPanel::ETurboMCPView::Monitor);
 
 	// At the cap a new write changes the revision but not the entry count.
 	AddCall(*Log, TEXT("tool-newest"), TEXT("end"), TEXT("plugin"), 4, 1);
@@ -192,6 +241,59 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the unfinished row is rendered honestly"),
 			FTurboMCPCallTimeline::RenderRow(Unfinished->Call).Contains(TEXT("completion not observed")));
 	}
+
+	// The selected-call inspector reads actual fields and never executes. Selecting twice must leave
+	// the runner and recording setting untouched.
+	AddDetailedCall(*Log, TEXT("detailed"));
+	TestTrue(TEXT("the detail fixture refreshes"), FTurboMCPPanelHistoryTestAccess::Refresh(*Panel));
+	const bool bLogBeforeSelection = Log->IsEnabled();
+	const bool bPendingBeforeSelection = Panel->GetToolRunner().IsCallPending();
+	const bool bCompleteBeforeSelection = Panel->GetToolRunner().GetResult().bIsComplete;
+	if (LastCallRow(*this, *Panel, TEXT("detailed history")) != nullptr)
+	{
+		const TSharedPtr<FTurboMCPCallTimeline::FListEntry> Selected =
+			FTurboMCPPanelHistoryTestAccess::Rows(*Panel).Last();
+		Panel->ToggleTimelineRow(Selected);
+		TestTrue(TEXT("the detailed inspector shows ok"),
+			FTurboMCPPanelHistoryTestAccess::InspectorHeader(*Panel).ToString().Contains(TEXT("ok")));
+		const FString Detail = FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString();
+		TestTrue(TEXT("the inspector shows the actual request"), Detail.Contains(TEXT("{\"asset\":\"BP_NodeTest\"}")));
+		TestTrue(TEXT("the inspector shows the actual result"), Detail.Contains(TEXT("known result")));
+		TestTrue(TEXT("the inspector shows known characters"), Detail.Contains(TEXT("characters: 12")));
+		TestTrue(TEXT("the inspector labels the token estimate"), Detail.Contains(TEXT("tokens (estimate): 3")));
+	}
+	for (const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& Row : FTurboMCPPanelHistoryTestAccess::Rows(*Panel))
+	{
+		if (Row.IsValid() && !Row->bHeading && Row->Call.Tool == TEXT("unfinished"))
+		{
+			Panel->ToggleTimelineRow(Row);
+			TestTrue(TEXT("an unfinished inspector header says completion not observed"),
+				FTurboMCPPanelHistoryTestAccess::InspectorHeader(*Panel).ToString().Contains(TEXT("completion not observed")));
+			TestTrue(TEXT("an unfinished inspector says the result is unavailable"),
+				FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString().Contains(
+					TEXT("unavailable (completion not observed)")));
+			break;
+		}
+	}
+	for (const TSharedPtr<FTurboMCPCallTimeline::FListEntry>& Row : FTurboMCPPanelHistoryTestAccess::Rows(*Panel))
+	{
+		if (Row.IsValid() && !Row->bHeading && Row->Call.Tool == TEXT("engine-only"))
+		{
+			Panel->ToggleTimelineRow(Row);
+			TestTrue(TEXT("an engine-only inspector says the request is unavailable"),
+				FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString().Contains(
+					TEXT("request: unavailable (not recorded)")));
+			TestTrue(TEXT("an engine-only inspector says the result is unavailable"),
+				FTurboMCPPanelHistoryTestAccess::InspectorDetail(*Panel).ToString().Contains(
+					TEXT("result: unavailable (not recorded)")));
+			break;
+		}
+	}
+	TestFalse(TEXT("selecting history starts no call"), Panel->GetToolRunner().IsCallPending());
+	TestTrue(TEXT("selecting history leaves the call result unset"),
+		Panel->GetToolRunner().GetResult().bIsComplete == bCompleteBeforeSelection);
+	TestFalse(TEXT("selecting history leaves no call pending"), bPendingBeforeSelection);
+	TestTrue(TEXT("selecting history does not change the recording setting"), Log->IsEnabled() == bLogBeforeSelection);
 
 	// A disabled write changes neither entries nor revision.
 	Log->SetEnabled(false);
