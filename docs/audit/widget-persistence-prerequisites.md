@@ -298,3 +298,13 @@ This revision preserves candidate `f9aa39fff11368622b72fde9a4a6a2218aae1b0c` and
 ## Rollback summary
 
 Each implementation subtask is independently revertible by its listed files. P1 has no production effect. P2/P3/P4 preserve the normal suite path and can be removed without changing existing tools. P5 is a new test only. If any step discovers a foreign editor, an unreadable lease/lock, an unprovable listener owner, an unreadable settings path, or an unrelated dirty package, stop and report the blocker; do not kill, clear, overwrite or replay. If the outer Job Object still kills the editor on a refusal path, the persistence mode is not admitted.
+
+
+## Integration review
+
+Candidate ec370326 accepted as a bounded design investigation. Independent offline
+run 2c89df288d2548bca274d05367c0a015 passed. Lifecycle admission remains blocked;
+the isolation-versus-detachment choice and setting observation are not approved
+implementation contracts. Only checkpoint 7 in roadmap-r04 is now authorized:
+a pure offline identity validator with injected-data tests. No live collection,
+ownership wiring, restart or P1-P6 collective implementation is authorized.

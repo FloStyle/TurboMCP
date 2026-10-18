@@ -30,12 +30,13 @@
     "R04": {
       "task_file": "todo/roadmap-r04.md",
       "files": [
-        "docs/audit/widget-persistence-prerequisites.md",
+        "Tools/persistence_identity.py",
+        "Tools/test-persistence-identity.py",
         "todo/roadmap-r04.md"
       ],
       "preserve_rows": [],
-      "approved_base": "1c0cb15f737d619bd9777136366d141d75da8cd9",
-      "checkpoint": "6: supervisor-owned persistence design; dispatch includes integration contract commit"
+      "approved_base": "ec370326dfd3175a5c111ae3bd6098a7fe74ee44",
+      "checkpoint": "7: offline identity validator; dispatch includes integration contract commit"
     }
   }
 }

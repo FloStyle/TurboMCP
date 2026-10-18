@@ -485,7 +485,7 @@ Run inventory, result-contract, client-retry and offline checks; commit and reta
 candidate-bound offline evidence and full-base scope result. Stop for review.
 
 
-## Active dispatch checkpoint 6: persistence prerequisite contract
+## Completed dispatch checkpoint 6: persistence prerequisite contract
 
 Checkpoint 5 is accepted as source evidence at 1c0cb15; independent offline run
 cab5c12cb1ce47c7bf702748c146b172 passed. R04 remains incomplete.
@@ -518,3 +518,51 @@ Only the new prerequisite report and this task's Completion evidence may change.
 No code/test/config/fixture/status/TODO/routing/release edits or engine/editor/build/
 MCP/recovery execution. Run offline validation and full-base scope gate; commit,
 retain candidate-bound evidence and stop for integration review.
+
+
+## Active dispatch checkpoint 7: offline identity validator implementation
+
+Checkpoint 6 candidate ec370326 is accepted as a design investigation only.
+The complete lifecycle remains blocked; P1-P6 are not collectively approved.
+Integration owner now authorizes this narrow implementation prerequisite.
+
+Add Tools/persistence_identity.py and Tools/test-persistence-identity.py only,
+plus Completion evidence here. No existing production caller or helper changes.
+The module validates supplied evidence; it must perform no process/network/file
+collection, launch, termination, config writes, lease changes or engine calls.
+Use standard-library Python and explicit structured pass/refusal reason codes.
+
+Define a small strict versioned schema for expected identity and two collected
+snapshots: PID (positive integer, not bool), exact normalized UTC creation time,
+canonical absolute Windows project and engine-executable paths, configured
+literal loopback endpoint/port, process observation, TCP listener records and
+collection-success status. Validate lengths/types/unknown fields; refuse missing
+or unreadable evidence. Windows path comparison must not depend on the OS where
+offline tests execute. Reject relative/device/UNC paths and dot-segment ambiguity;
+do not resolve symlinks or claim string normalization proves filesystem identity.
+Inputs must be described as already canonicalized by a future trusted collector.
+
+Only literal 127.0.0.1 and ::1 loopback endpoints are supported initially; reject
+hostnames and remote hosts instead of doing DNS. Define TCP listener matching
+by address family: exact loopback or same-family wildcard. Reject competing
+owners on relevant matching listeners; allow dual-stack rows for one verified
+owner without calling multiple rows multiple owners. Do not infer IPv6 wildcard
+dual-stack behavior without evidence; refuse ambiguous family coverage.
+
+Both observations must bind the matching listener PID to the expected process
+PID/start time/project/engine path, with bounded collection timing supplied by
+the caller. Reject stale/out-of-order observations and any identity/ownership
+change between them. Include a documented residual race: validating snapshots
+cannot guarantee ownership after return or secure a future connection. Passing
+means supplied evidence agrees, not live ownership certification or permission.
+
+Tests must cover intended editor alive but foreign listener, PID reuse, changed
+project/engine, failed collection, missing listener, remote/hostname endpoints,
+IPv4/IPv6/wildcard and same-owner dual-stack rows, multiple owners, stale/reversed
+observations, malformed schema, booleans-as-integers, and valid cases. Inject data
+only; never enumerate actual processes or bind sockets. Keep prior APIs unchanged.
+
+Run python Tools/test-persistence-identity.py and the existing offline profile;
+commit, retain candidate-bound runs and full-base R04 scope gate. The new test is
+explicitly invoked; catalog/validator wiring is outside scope. No new dependency.
+Rollback removes only the two new files. Stop for review; no merge/push/claim release.
