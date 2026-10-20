@@ -305,16 +305,47 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 		return false;
 	}
 
-	// Reader errors are completeness failures, not disposable editing comments.
-	// Refuse before loading the target so all writers using this gate agree.
+	// Validate the whole document before resolving assets or interpreting node forms.
+	// Reader diagnostics and truncated forms must never become partial writes.
+	int32 FormDepth = 0;
+	bool bInString = false;
+	bool bEscaped = false;
 	for (const FLine& Line : SplitLines(InText))
 	{
-		if (Line.Text.TrimStartAndEnd().StartsWith(TEXT("; error:"), ESearchCase::IgnoreCase))
+		const FString Trimmed = Line.Text.TrimStartAndEnd();
+		if (!bInString && FormDepth == 0 && Trimmed.StartsWith(TEXT("read: "))) continue;
+		if (!bInString && Trimmed.StartsWith(TEXT("; error:"), ESearchCase::IgnoreCase))
 		{
-			OutError = FString::Printf(TEXT("line %d: graph text contains a reader error; obtain a complete, valid dump before write-back. %s"),
-				Line.Number, *Line.Text.TrimStartAndEnd());
+			OutError = FString::Printf(TEXT("line %d: graph text contains a reader error; obtain a complete, valid dump before write-back. %s"), Line.Number, *Trimmed);
 			return false;
 		}
+		for (int32 Index = 0; Index < Line.Text.Len(); ++Index)
+		{
+			const TCHAR Ch = Line.Text[Index];
+			if (bInString)
+			{
+				if (bEscaped) { bEscaped = false; continue; }
+				if (Ch == TEXT('\\')) { bEscaped = true; continue; }
+				if (Ch == TEXT('"')) bInString = false;
+				continue;
+			}
+			if (Ch == TEXT(';')) break;
+			if (Ch == TEXT('"')) { bInString = true; continue; }
+			if (Ch == TEXT('(')) ++FormDepth;
+			else if (Ch == TEXT(')') && --FormDepth < 0)
+			{
+				OutError = FString::Printf(TEXT("line %d, column %d: unexpected closing parenthesis; nothing was written"), Line.Number, Index + 1);
+				return false;
+			}
+		}
+		// A physical newline consumes a preceding escape, not the next line's first character.
+		bEscaped = false;
+	}
+	if (bInString || FormDepth != 0)
+	{
+		OutError = bInString ? TEXT("graph text ends inside a quoted value; obtain complete text before write-back")
+			: FString::Printf(TEXT("graph text has %d unclosed form(s); obtain complete text before write-back"), FormDepth);
+		return false;
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;
