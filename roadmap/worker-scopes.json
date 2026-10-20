@@ -198,6 +198,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
           ],
           "new_files": []
+        },
+        "field-signature-description": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDescribe.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
