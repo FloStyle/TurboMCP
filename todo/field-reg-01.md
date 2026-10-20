@@ -20,3 +20,11 @@ Implementation task closure means source changes committed only. Build and runti
 
 ## Completion evidence
 None. Pending; no tests or build run for the latest source batches.
+
+## Dependencies
+
+FIELD-FIX-01 source implementation; owner authorization to resume testing.
+
+## Verification
+
+Deferred by owner. See FIELD-REG-01; implementation completion is not runtime acceptance.

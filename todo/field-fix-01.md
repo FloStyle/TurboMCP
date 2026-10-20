@@ -20,3 +20,11 @@ Implementation task closure means source changes committed only. Build and runti
 
 ## Completion evidence
 Source commit 6defafdabf7e5a97345555963e4cbcc52f95e4ab. Implementation closed; unbuilt and untested.
+
+## Dependencies
+
+FIELD-04 reviewed source scope.
+
+## Verification
+
+Deferred by owner. See FIELD-REG-01; implementation completion is not runtime acceptance.
