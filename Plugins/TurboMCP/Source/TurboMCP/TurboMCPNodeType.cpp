@@ -545,6 +545,7 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	// is what makes the two generators comparable: the database form is the engine's, the
 	// canonical form is this plugin's writer, and where a node is present both are known.
 	TMap<FString, FString> CanonicalByTitle;
+	TSet<FString> AmbiguousTitles;
 	for (const UEdGraphNode* Node : Graph->Nodes)
 	{
 		if (Node == nullptr)
@@ -554,7 +555,17 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 		const FString Canonical = CanonicalIdOf(Node);
 		if (!Canonical.IsEmpty())
 		{
-			CanonicalByTitle.Add(TitleOf(Canonical), Canonical);
+			const FString Title = TitleOf(Canonical);
+			if (AmbiguousTitles.Contains(Title)) continue;
+			if (const FString* Existing = CanonicalByTitle.Find(Title))
+			{
+				if (*Existing != Canonical)
+				{
+					CanonicalByTitle.Remove(Title);
+					AmbiguousTitles.Add(Title);
+				}
+			}
+			else CanonicalByTitle.Add(Title, Canonical);
 		}
 	}
 
