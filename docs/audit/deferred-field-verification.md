@@ -342,3 +342,7 @@ Default-on recorder: verify fresh config, persisted false and manual toggle late
 ### Pin default refusal diagnostics
 
 fb328d9 replaces the combined refusal with separate missing-input, orphaned, execution, connected, read-only and ignored-default reasons. Schema validation errors include pin name and category/subcategory. Implemented, unbuilt_untested. This improves the TurboMCP replacement diagnostics; it does not add arbitrary struct literal or by-reference support to native tools. Deferred: each refusal reason and unchanged asset state; valid default edits unchanged. No tests/builds run.
+
+
+### FIELD-FIX-27
+54b7ed9: verify standard member getter/setter canonical IDs versus reader, boolean prefixes, spaces, widget members, categories, locale and legacy aliases. Done, unbuilt_untested. Full DSL whitespace handling not claimed.

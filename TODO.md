@@ -186,8 +186,9 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (6)</summary>
+<summary>done (7)</summary>
 
+- **P1** [Member variable reader and spawner identity alignment](todo/field-fix-27.md)
 - **P2** [Blueprint summary completeness and graph labels](todo/field-fix-21.md)
 - **P2** [Toolset help continuation](todo/field-fix-22.md)
 - **P2** [Concise and accurate save reporting](todo/field-fix-23.md)

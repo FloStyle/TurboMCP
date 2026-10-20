@@ -169,14 +169,20 @@
       "id": "X-43",
       "title": "The getter id of a boolean variable drops its \"b\" prefix (low)",
       "owner": "FIELD-05",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "implementation": "FIELD-FIX-27",
+      "validation": "unbuilt_untested",
+      "implementation_limits": "Standard member spawner IDs now preserve real names and match reader category rules. Local/custom spawners and downstream whitespace grammar remain separate; original end-to-end workflow unverified."
     },
     {
       "report": "2026-10-18_S1",
       "id": "X-47",
       "title": "Variable getter ids drop the spaces of the display name (low)",
       "owner": "FIELD-05",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "implementation": "FIELD-FIX-27",
+      "validation": "unbuilt_untested",
+      "implementation_limits": "Standard member spawner IDs now preserve real names and match reader category rules. Local/custom spawners and downstream whitespace grammar remain separate; original end-to-end workflow unverified."
     },
     {
       "report": "2026-10-18_S1",
@@ -341,7 +347,10 @@
       "id": "X-53",
       "title": "The getter id that node resolve prints for a widget variable cannot be created (medium)",
       "owner": "FIELD-05",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "implementation": "FIELD-FIX-27",
+      "validation": "unbuilt_untested",
+      "implementation_limits": "Standard member spawner IDs now preserve real names and match reader category rules. Local/custom spawners and downstream whitespace grammar remain separate; original end-to-end workflow unverified."
     },
     {
       "report": "2026-10-20_S1",
