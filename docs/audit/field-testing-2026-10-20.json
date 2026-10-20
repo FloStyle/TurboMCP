@@ -29,7 +29,11 @@
       "id": "X-35",
       "title": "No tool reports the plugin revision or build (low)",
       "owner": "FIELD-08",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-24",
+      "implementation_limits": "Descriptor version and status translation-unit compile timestamp exposed. Git revision remains unknown; timestamp is not a whole-module source hash."
     },
     {
       "report": "2026-10-18_S1",
@@ -71,7 +75,10 @@
       "id": "TH-09",
       "title": "A tool that starts a play session is in the Read toolset (medium)",
       "owner": "FIELD-08",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "implementation": "FIELD-FIX-24",
+      "validation": "unbuilt_untested",
+      "implementation_limits": "Discovery labels now say Execute and name PIE effects. Legacy Read callable/toolset remains for compatibility; physical migration not implemented."
     },
     {
       "report": "2026-10-18_S1",
