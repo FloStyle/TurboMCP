@@ -268,3 +268,8 @@ bbd54b9 positions split getter copies beside the consumer planned destination ra
 ### Getter-copy collision placement
 
 c1d4447 reserves planned non-comment node rectangles and previously placed getter copies. New copies shift below intersecting rectangles without moving existing nodes; positions round before collision calculation and refuse coordinates outside int32 limits. Implemented, unbuilt_untested. Deferred evidence: multiple getter copies and occupied consumer-side space avoid node intersections. Comment containment, runtime copy geometry and overall layout remain open; this does not certify overlap-free Tidy. No tests/builds run.
+
+
+### Getter split failure handling
+
+e6615fb revalidates planned getter/consumer membership and reciprocal links before mutation. Copy creation/type/link failures stop later changes and enter rollback even under Force. No silent skipped splits are reported as successful layout. Implemented, unbuilt_untested. Deferred evidence: stale pin plans refuse, failed allocation/type/link outcomes restore prior graph, Force does not bypass failure. No tests/builds run.

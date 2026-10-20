@@ -1437,7 +1437,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		bool bConsumerLive = false;
 		for (const UEdGraphNode* Node : Graph->Nodes)
 			if (Node && Copy.ConsumerPin && Node->Pins.Contains(Copy.ConsumerPin)) { bConsumerLive = true; break; }
-		if (!Graph->Nodes.Contains(Copy.Original) || !CanSplitGetter(Copy.Original)
+		if (!Copy.OriginalValuePin || !Graph->Nodes.Contains(Copy.Original) || !CanSplitGetter(Copy.Original)
 			|| Copy.Original->GetValuePin() != Copy.OriginalValuePin || !bConsumerLive
 			|| !Copy.OriginalValuePin->LinkedTo.Contains(Copy.ConsumerPin)
 			|| !Copy.ConsumerPin->LinkedTo.Contains(Copy.OriginalValuePin))
