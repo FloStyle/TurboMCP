@@ -176,14 +176,15 @@ public:
 		TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal);
 
 	/**
-	 * Applies an accepted plan: one transaction, create, link, lay out, compile, then read back and compare.
+	 * Applies an accepted plan: one transaction, create, link, lay out, then read back and compare. Compile is separate.
 	 *
 	 * THE CALLER MUST HAVE CALLED `Plan` AND CHECKED `bAcceptable`. This function does not re-decide, and it
 	 * returns a report whose FIRST LINE is `changed` or `unchanged` as the spec requires.
 	 *
 	 * @param OutError  Why it could not be applied at all. Empty when a report was produced.
 	 */
-	static bool Apply(const FPlan& InPlan, FString& OutReport, FString& OutError);
+	// Internal composition only: the caller owns the sole active transaction and handles early failures.
+	static bool Apply(const FPlan& InPlan, FString& OutReport, FString& OutError, bool bJoinCallerTransaction = false);
 
 	/** Renders a plan for a Preview, which prints the same refusals an Edit would act on. */
 	static FString RenderPreview(const FPlan& InPlan);

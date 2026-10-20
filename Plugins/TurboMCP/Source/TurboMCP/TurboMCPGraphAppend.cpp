@@ -22,6 +22,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ScopedTransaction.h"
 #include "Editor.h"
+#include "Editor/TransBuffer.h"
 #include "UObject/Package.h"
 
 namespace
@@ -746,11 +747,15 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 	return Out;
 }
 
-bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FString& OutError)
+bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FString& OutError, bool bJoinCallerTransaction)
 {
 	OutReport.Empty();
 	OutError.Empty();
-    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+    UTransBuffer* Buffer = GEditor ? Cast<UTransBuffer>(GEditor->Trans) : nullptr;
+    const bool TransactionAllowed = bJoinCallerTransaction
+        ? Buffer && Buffer->ActiveCount == 1
+        : GEditor && !GEditor->IsTransactionActive();
+    if (!IsInGameThread() || !GEditor || !TransactionAllowed || GEditor->IsPlaySessionInProgress())
     {
         OutError = TEXT("unchanged: graph write requires an idle editor outside an active transaction");
         return false;
@@ -801,7 +806,9 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 	}
 
 	// ---- ONE TRANSACTION, as the spec requires, so a refusal anywhere leaves the graph as it was ---------
-	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphAppend", "TurboMCP append to graph"));
+	TUniquePtr<FScopedTransaction> Transaction;
+    if (!bJoinCallerTransaction)
+        Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "GraphAppend", "TurboMCP append to graph"));
 	Blueprint->Modify();
 	Graph->Modify();
 

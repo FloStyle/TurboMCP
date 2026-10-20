@@ -262,7 +262,7 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 
 	// ---- 1. THE ADD HALF, THROUGH APPEND'S OWN APPLY ---------------------------------------------------
 	//
-	// IT IS CALLED RATHER THAN REIMPLEMENTED, so the creation, the linking, the layout, the compile and the
+	// IT IS CALLED RATHER THAN REIMPLEMENTED, so the creation, the linking, the layout and the
 	// read-back comparison are the SAME CODE the append tool uses. Two implementations of one write path is how
 	// the two tools come to disagree about the format, which is the failure this project has recorded twice.
     // Validate destructive identities before the append phase can change anything.
@@ -280,12 +280,21 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
         if (Matches != 1)
         { OutError = TEXT("unchanged: replacement removal target is missing, ambiguous or protected"); return false; }
     }
+    FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphReplace", "TurboMCP replace a graph body"));
+    UBlueprint* Blueprint = PreflightBlueprint;
+    UEdGraph* Graph = PreflightGraph;
+    Blueprint->Modify();
+    Graph->Modify();
 	FString AppendReport;
 	FString AppendError;
-	if (!FTurboMCPGraphAppend::Apply(InPlan.Append, AppendReport, AppendError))
+	if (!FTurboMCPGraphAppend::Apply(InPlan.Append, AppendReport, AppendError, true))
 	{
-		OutError = AppendError;
-		return false;
+        // Append may already have undone the shared transaction. Never undo earlier history.
+        if (GEditor->IsTransactionActive() && !FTurboMCPRollback::EndAndUndoActiveTransaction())
+            OutError = TEXT("partial: replacement append failed and rollback failed; inspect graph before retrying. ") + AppendError;
+        else
+            OutError = AppendError;
+        return false;
 	}
 
 	// ---- 2. THE REMOVE HALF, WHICH IS THE PART ONLY REPLACE DOES ---------------------------------------
@@ -302,33 +311,6 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 			InPlan.NodeCountBefore);
 		return true;
 	}
-
-	FTurboMCPAssetResolver::FResolved Resolved;
-	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InPlan.Append.Asset, Resolved);
-	if (!ResolveError.IsEmpty())
-	{
-		OutError = ResolveError;
-		return false;
-	}
-	UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
-	if (Blueprint == nullptr)
-	{
-		OutError = FString::Printf(TEXT("'%s' is not a Blueprint"), *Resolved.PackagePath);
-		return false;
-	}
-	UEdGraph* Graph = FindGraphLocal(Blueprint, InPlan.Append.GraphName);
-	if (Graph == nullptr)
-	{
-		OutError = FString::Printf(TEXT("no graph named '%s' in '%s'"),
-			*InPlan.Append.GraphName, *Resolved.PackagePath);
-		return false;
-	}
-
-	// ONE TRANSACTION FOR THE REMOVALS. The append half has its own, which is correct: they are two acts and a
-	// failure in one must not leave the other half-applied.
-	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphReplace", "TurboMCP replace a graph body"));
-	Blueprint->Modify();
-	Graph->Modify();
 
 	TSet<FString> Wanted;
 	for (const FRemoval& Removal : InPlan.Removals)
@@ -396,7 +378,7 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 			Survived.Add(Key);
 		}
 	}
-	const int32 FailedToRemove = ActuallyRemoved.Num() - Survived.Num();
+	const int32 FailedToRemove = Wanted.Num() - Survived.Num();
 
 	// ---- 4. THE REPORT, FIRST LINE `changed`, WITH EVERY REMOVAL LISTED ---------------------------------
 	FString Out = FString::Printf(TEXT("changed: replaced the body of %s in %s : %d node(s) removed, %d -> %d"),
@@ -451,12 +433,12 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
     if (FailedToRemove > 0 || NotRemoved.Num() > 0)
     {
         const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
-        OutError = Undone ? TEXT("partial: removal verification failed; removal rollback=complete; preceding append remains applied")
-                          : TEXT("partial: removal verification failed; rollback=failed; preceding append remains applied");
+        OutError = Undone ? TEXT("unchanged: replacement verification failed; append and removal rollback=complete")
+                          : TEXT("partial: replacement verification failed; rollback=failed; inspect graph before retrying");
         OutReport = TEXT("save=not_requested; inspect the graph before retrying replacement");
         return false;
     }
-    Out += TEXT("\nundo=two_phases_when_appending_and_removing; replacement is not atomic");
+    Out += TEXT("\nundo=one_transaction_for_append_and_removal");
 	OutReport = Out;
 	return true;
 }
