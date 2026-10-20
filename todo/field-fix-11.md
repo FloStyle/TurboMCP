@@ -17,7 +17,7 @@ Urgent field fixes require implementation completion to be distinguished from ru
 GL-15: multiple valid exec predecessors are listed as execution sources instead of malformed value links. Validate direction/category/reciprocity; data-input rules unchanged. Partial evidence explicitly retains the unsupported multi-source round-trip limitation.
 
 ## Acceptance
-Implementation task closure means source changes committed only. Build and runtime acceptance remain open under FIELD-REG-01. The owner explicitly deferred all tests; this record does not authorize running them now.
+Implementation task closure means source changes committed only. Build and runtime acceptance remain open in the deferred verification ledger. The owner explicitly deferred all tests; this record does not authorize running them now.
 
 ## Completion evidence
 Source commit 1887125ba4e1cc319281b930193ab35c5bf41530. Implementation closed; unbuilt and untested.
@@ -28,7 +28,7 @@ FIELD-04 reviewed source scope.
 
 ## Verification
 
-Deferred by owner. See FIELD-REG-01; implementation completion is not runtime acceptance.
+Deferred by owner. See [deferred verification ledger](../docs/audit/deferred-field-verification.md); implementation completion is not runtime acceptance.
 
 ## Stop conditions
 

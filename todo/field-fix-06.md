@@ -17,7 +17,7 @@ Urgent field fixes require implementation completion to be distinguished from ru
 Graph Copy checks schema connection responses and refuses implicit conversion/breaking existing links. Missing planned links or wrong node count fail with owned rollback. Capture existing node undo state, refuse unsafe editor contexts and remove implicit structural compilation.
 
 ## Acceptance
-Implementation task closure means source changes committed only. Build and runtime acceptance remain open under FIELD-REG-01. The owner explicitly deferred all tests; this record does not authorize running them now.
+Implementation task closure means source changes committed only. Build and runtime acceptance remain open in the deferred verification ledger. The owner explicitly deferred all tests; this record does not authorize running them now.
 
 ## Completion evidence
 Source commit ede2dab739effcbc67aaa2e6b22135578374c9af. Implementation closed; unbuilt and untested.
@@ -28,7 +28,7 @@ FIELD-04 reviewed source scope.
 
 ## Verification
 
-Deferred by owner. See FIELD-REG-01; implementation completion is not runtime acceptance.
+Deferred by owner. See [deferred verification ledger](../docs/audit/deferred-field-verification.md); implementation completion is not runtime acceptance.
 
 ## Stop conditions
 

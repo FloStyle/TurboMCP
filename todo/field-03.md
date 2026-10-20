@@ -66,4 +66,4 @@ No build or tests run, per owner instruction. Runtime acceptance remains pending
 
 ## Pin-default rollback implementation
 
-FIELD-FIX-05 closed at 3de18d0: failed readback attempts owned undo and GUID-based identity survives title changes. Save/reload acceptance remains pending under FIELD-REG-01.
+FIELD-FIX-05 closed at 3de18d0: failed readback attempts owned undo and GUID-based identity survives title changes. Save/reload acceptance remains pending in the deferred verification ledger.

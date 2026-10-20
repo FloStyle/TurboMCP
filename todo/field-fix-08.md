@@ -17,7 +17,7 @@ Urgent field fixes require implementation completion to be distinguished from ru
 X-41: compile output lists structurally unreachable execution-input nodes with graph names and node IDs; capped details retain the full count. Compiler verdict remains separate. Reuses existing reachability analysis, not proof of runtime behavior. GL-16 and writer enforcement remain open.
 
 ## Acceptance
-Implementation task closure means source changes committed only. Build and runtime acceptance remain open under FIELD-REG-01. The owner explicitly deferred all tests; this record does not authorize running them now.
+Implementation task closure means source changes committed only. Build and runtime acceptance remain open in the deferred verification ledger. The owner explicitly deferred all tests; this record does not authorize running them now.
 
 ## Completion evidence
 Source commit 9dc07d083dbc1aaa4b3380f76334fa79aa1b048c. Implementation closed; unbuilt and untested.
@@ -28,7 +28,7 @@ FIELD-04 reviewed source scope.
 
 ## Verification
 
-Deferred by owner. See FIELD-REG-01; implementation completion is not runtime acceptance.
+Deferred by owner. See [deferred verification ledger](../docs/audit/deferred-field-verification.md); implementation completion is not runtime acceptance.
 
 ## Stop conditions
 

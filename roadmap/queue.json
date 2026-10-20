@@ -191,16 +191,6 @@
       "track": "monday"
     },
     {
-      "id": "FIELD-REG-01",
-      "path": "todo/field-reg-01.md",
-      "kind": "verification",
-      "workstream": "field-emergency",
-      "depends_on": [
-        "FIELD-FIX-01"
-      ],
-      "track": "monday"
-    },
-    {
       "id": "FIELD-FIX-02",
       "path": "todo/field-fix-02.md",
       "kind": "implementation",

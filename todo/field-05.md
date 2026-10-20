@@ -56,12 +56,12 @@ No build or tests run, per owner instruction. Runtime acceptance remains pending
 
 ## Call Swap scoped implementation
 
-FIELD-FIX-03 implementation closed; regression tracked in FIELD-REG-01. Literal-default migration remains unresolved: current swap migrates links, not unconnected input values. Full round-trip acceptance remains open.
+FIELD-FIX-03 implementation closed; regression tracked in [deferred verification ledger](../docs/audit/deferred-field-verification.md). Literal-default migration remains unresolved: current swap migrates links, not unconnected input values. Full round-trip acceptance remains open.
 
 ## Default preservation implementation
 
-FIELD-FIX-04 supersedes the missing-default limitation: same-named/type unlinked inputs preserve validated values; split/missing/incompatible inputs refuse. Full runtime acceptance remains in FIELD-REG-01.
+FIELD-FIX-04 supersedes the missing-default limitation: same-named/type unlinked inputs preserve validated values; split/missing/incompatible inputs refuse. Full runtime acceptance remains in [deferred verification ledger](../docs/audit/deferred-field-verification.md).
 
 ## Graph Copy follow-up
 
-FIELD-FIX-06 source implementation closed. Planned copy links now use schema checks and failure rolls back; full copy/default/layout acceptance remains pending in FIELD-REG-01.
+FIELD-FIX-06 source implementation closed. Planned copy links now use schema checks and failure rolls back; full copy/default/layout acceptance remains pending in [deferred verification ledger](../docs/audit/deferred-field-verification.md).

@@ -62,8 +62,8 @@ No build or tests run, per owner instruction. Runtime acceptance remains pending
 
 ## Replacement implementation closure
 
-FIELD-FIX-01 is closed at 6defafd: append and removal share one transaction, and all planned removal targets must be accounted for. This supersedes the two-phase limitation above. Build and runtime verification are pending in FIELD-REG-01. FIELD-04 remains open for timeout/duplicate-write investigations.
+FIELD-FIX-01 is closed at 6defafd: append and removal share one transaction, and all planned removal targets must be accounted for. This supersedes the two-phase limitation above. Build and runtime verification are pending in [deferred verification ledger](../docs/audit/deferred-field-verification.md). FIELD-04 remains open for timeout/duplicate-write investigations.
 
 ## Repoint implementation closure
 
-FIELD-FIX-02 closed at aad28b7: actual owned undo replaces transaction cancellation, batch joins its caller transaction, node link state captured, implicit compile/save removed. FIELD-REG-01 retains all runtime acceptance. Broad timeout and duplicate-execution investigation remains open.
+FIELD-FIX-02 closed at aad28b7: actual owned undo replaces transaction cancellation, batch joins its caller transaction, node link state captured, implicit compile/save removed. [deferred verification ledger](../docs/audit/deferred-field-verification.md) retains all runtime acceptance. Broad timeout and duplicate-execution investigation remains open.

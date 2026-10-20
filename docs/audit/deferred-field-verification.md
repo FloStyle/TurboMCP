@@ -1,12 +1,12 @@
-# Deferred regression for urgent plugin fixes
+# Deferred field verification ledger (not a product task)
 
 ID: FIELD-REG-01
-Status: todo
+Verification: deferred by owner
 Priority: P0
 Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
-Kind: verification
+Kind: evidence-ledger
 Review: source-reviewed
 
 ## Problem

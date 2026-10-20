@@ -16,7 +16,7 @@ Urgent field fixes require implementation completion to be distinguished from ru
 Standalone Repoint restores its owned transaction on failure; Batch owns the shared transaction. Pin-link state is captured before edits. Implicit compile/structural compile and false save reporting removed; explicit compile/save required. Ambiguous graph names refuse.
 
 ## Acceptance
-Implementation task closure means source changes committed only. Build and runtime acceptance remain open under FIELD-REG-01. The owner explicitly deferred all tests; this record does not authorize running them now.
+Implementation task closure means source changes committed only. Build and runtime acceptance remain open in the deferred verification ledger. The owner explicitly deferred all tests; this record does not authorize running them now.
 
 ## Completion evidence
 Source commit aad28b7. Implementation closed; unbuilt and untested.
@@ -27,7 +27,7 @@ FIELD-04 reviewed source scope.
 
 ## Verification
 
-Deferred by owner. See FIELD-REG-01; implementation completion is not runtime acceptance.
+Deferred by owner. See [deferred verification ledger](../docs/audit/deferred-field-verification.md); implementation completion is not runtime acceptance.
 
 ## Stop conditions
 
