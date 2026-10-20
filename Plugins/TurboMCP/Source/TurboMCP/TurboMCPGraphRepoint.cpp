@@ -53,13 +53,17 @@ UEdGraphPin* FindPin(UEdGraphNode* N, const FString& Name, EEdGraphPinDirection 
   { if (Match) return nullptr; Match = P; }
  return Match;
 }
-FString BoolText(const FString& S) { return S.TrimStartAndEnd().IsEmpty() || !S.Equals(TEXT("false"), ESearchCase::IgnoreCase) && !S.Equals(TEXT("0"), ESearchCase::CaseSensitive) ? TEXT("true") : TEXT("false"); }
+
 }
 
 bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName, const FString& SourceNodeId,
  const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId, const FString& TargetPin,
  const FString& KeepSource, FPlan& Out, FString& Error) {
- Out = FPlan(); Error.Empty(); Out.Asset=Asset; Out.GraphName=GraphName; Out.SourceNodeId=SourceNodeId; Out.SourcePin=SourcePin; Out.TargetNodeId=TargetNodeId; Out.TargetTypeId=TargetTypeId; Out.TargetPin=TargetPin; Out.bKeepSource=BoolText(KeepSource)==TEXT("true");
+ Out = FPlan(); Error.Empty(); Out.Asset=Asset; Out.GraphName=GraphName; Out.SourceNodeId=SourceNodeId; Out.SourcePin=SourcePin; Out.TargetNodeId=TargetNodeId; Out.TargetTypeId=TargetTypeId; Out.TargetPin=TargetPin; 
+ const FString Keep = KeepSource.TrimStartAndEnd();
+ if (Keep.IsEmpty() || Keep.Equals(TEXT("true"), ESearchCase::IgnoreCase) || Keep == TEXT("1")) Out.bKeepSource = true;
+ else if (Keep.Equals(TEXT("false"), ESearchCase::IgnoreCase) || Keep == TEXT("0")) Out.bKeepSource = false;
+ else { Error = TEXT("unchanged: keepSource must be true/false or 1/0; empty defaults to true"); return false; }
  FTurboMCPAssetResolver::FResolved R; Error=FTurboMCPAssetResolver::Resolve(Asset,R); if (!Error.IsEmpty()) return false;
  UBlueprint* B=LoadObject<UBlueprint>(nullptr,*R.ObjectPath); if (!B) { Error=FString::Printf(TEXT("'%s' is not a Blueprint"),*R.PackagePath); return false; }
  int32 GraphMatches = 0;
