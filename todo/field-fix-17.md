@@ -50,3 +50,8 @@ Shared signature descriptions now use the stock K2Node_CallFunction input rule: 
 ### Blueprint type eligibility
 
 338c78a rejects loaded enum and class types that stock IsAllowableBlueprintVariableType excludes, before returning a usable pin type. FIELD-FIX-17 remains implemented and unbuilt_untested; FIELD-09 generic operator inference remains open. Deferred verification: allowed user enums/classes and all four reference forms still resolve; non-Blueprint enums/classes refuse without graph mutation. No tests or builds run.
+
+
+### Signature name bounds
+
+888f221 rejects names at or above NAME_SIZE and the case-insensitive None sentinel before FName construction for function and signature pin names. This guards the engine fatal length path and avoids empty-name authoring. Implemented; unbuilt_untested. Deferred checks: oversized ASCII names refuse without mutation; ordinary names remain accepted; None/none refuse. No test/build was run. This is not a diagnosis of the reported DataTable crash.
