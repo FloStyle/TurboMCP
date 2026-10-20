@@ -142,3 +142,5 @@ FIELD-FIX-16: function signature pin failure and cleanup read-back, plus success
 FIELD-FIX-16 targeted refresh: newly resolved self-call pins/links, external same-name call preservation, unrelated graphs and transaction refusal remain untested.
 
 FIELD-FIX-16 removal: successful and failed deletion, duplicate-name refusal and inherited-name diagnostics remain untested.
+
+FIELD-FIX-16 partial outcome classification and successful-result distinction remain untested.

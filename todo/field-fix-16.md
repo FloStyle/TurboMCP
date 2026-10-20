@@ -49,3 +49,7 @@ FunctionAdd retains the skeleton update but reconstructs only self-call nodes na
 ## Removal outcome
 
 9360665 checks actual graph absence before reporting removal, distinguishes it from name-reuse eligibility, and refuses ambiguous names or unsafe editor contexts. Implementation closed; unbuilt and untested.
+
+## Partial outcome reporting
+
+cc8121f reports partial rather than changed when caller links are lost or function implementation read-back fails. Such results no longer recommend immediate compile/save and explicitly state that changes remain in memory. This closes false-success reporting only; it does not restore lost links. Unbuilt and untested.
