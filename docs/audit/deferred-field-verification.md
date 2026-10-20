@@ -373,3 +373,7 @@ Implemented slice, unbuilt/untested: enumerate ordinary/entry execution endpoint
 ## 2026-10-21 — Reroute traversal (`cb782dc`)
 
 Untested: execution reroute fan-out, long chains, cycles/shared reroutes, malformed reciprocal edges, normal linear chains and upstream data reroutes. Full-mode knot identity remains open under d3897f07. No tests/builds run.
+
+## 2026-10-21 — Variable names (`4dfe394`)
+
+VA-04 implemented / untested. Verify digit-leading variables, case-only duplicates, overlength input, and collisions with functions/graphs/components before mutation. Existing alphanumeric/underscore grammar otherwise retained. No tests/builds.

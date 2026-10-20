@@ -518,7 +518,11 @@
       "id": "VA-04",
       "title": "TurboMCP refuses a variable name that starts with a digit (low)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "4dfe394",
+      "implementation_limits": "Allows leading digits within existing alphanumeric/underscore grammar; engine name validation precedes mutation. No build or runtime verification."
     },
     {
       "report": "2026-10-20_S3",
