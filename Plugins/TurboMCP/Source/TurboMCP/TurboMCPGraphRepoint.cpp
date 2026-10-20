@@ -227,7 +227,7 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 
     UTransBuffer* Buffer = GEditor ? Cast<UTransBuffer>(GEditor->Trans) : nullptr;
     const bool AllowedTransaction = bJoinCallerTransaction ? Buffer && Buffer->ActiveCount == 1 : GEditor && !GEditor->IsTransactionActive();
-    if (!IsInGameThread() || !GEditor || !AllowedTransaction || GEditor->IsPlaySessionInProgress() || Context.bCompile || Context.bSave)
+    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || !AllowedTransaction || GEditor->IsPlaySessionInProgress() || Context.bCompile || Context.bSave)
     {
         Error = TEXT("unchanged: repoint requires an idle editor and separate explicit compile/save operations");
         Out.Outcome = ETurboMCPResultOutcome::Refused;
@@ -287,12 +287,23 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
     TUniquePtr<FScopedTransaction> Tx;
     if (!bJoinCallerTransaction)
         Tx = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "GraphRepoint", "TurboMCP repoint graph readers"));
+    const FGuid OwnedId = !bJoinCallerTransaction && Tx && Tx->IsOutstanding()
+        && Buffer && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
+        ? Buffer->UndoBuffer.Last()->GetId() : FGuid();
+    if (!bJoinCallerTransaction && !OwnedId.IsValid())
+    {
+        Tx.Reset();
+        Error = TEXT("unchanged: repoint could not acquire an owned undo record");
+        Out.Outcome = ETurboMCPResultOutcome::Refused;
+        Out.Code = TEXT("undo_unavailable");
+        Out.Rollback = ETurboMCPResultRollback::NotNeeded;
+        return false;
+    }
     auto FailEdit = [&]()
     {
         bool Restored = false;
-        if (!bJoinCallerTransaction && Buffer && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty())
+        if (!bJoinCallerTransaction && OwnedId.IsValid() && Buffer && Buffer->ActiveCount == 1)
         {
-            const FGuid OwnedId = Buffer->UndoBuffer.Last()->GetId();
             Tx.Reset(); // Finalize exactly once before undoing our own record.
             const int32 Index = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
             const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
