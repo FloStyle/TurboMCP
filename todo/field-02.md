@@ -51,3 +51,7 @@ Candidate 4b70306e12289c3d47cc62859280b1da831e677f: supervised build plus test-w
 ## Additional native containment candidate
 
 Native ToolsetRegistry compile helper now queries the actual editor transaction and refuses before invoking compilation. This source-batch candidate has not been built or tested; direct calls bypassing the helper and the dependent-parent loss reproduction remain open.
+
+## Superseding delivery requirement: stock engine, plugin only
+
+Owner explicitly rejects custom-engine deployment. Engine source and three Python dependencies restored to pinned stock revision, dependency SHA-1 verified. Previous engine commits retained as diagnostic evidence only. Source batch continues in TurboMCP with no test runs: in-place DataTable prevalidation, validated pin-default tool with dirty/undo handling, transaction/save safeguards and bounded batch outcomes. Registry filters disable only named unsafe native alternatives and direct users to plugin tools; general script batching has no equivalent and remains unavailable through the protected registry. Direct Python/editor code is outside this protection. Engine binaries must be rebuilt after stock source restoration; no engine patch is a deployment prerequisite. Exact assignment field-plugin-only owns the implementation files.

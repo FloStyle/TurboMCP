@@ -45,3 +45,7 @@ Engine file Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/ed
 ## Source batch implemented; not validated
 
 Native script completion now unwinds before publishing results, checks the undo return, reports uncertain cleanup outcomes, and releases runner resources through finally. TurboMCP saves refuse active transactions. Duplicate execution, timeout cancellation and native save entrypoints remain unverified. No build or tests run for this batch.
+
+## Superseding delivery requirement: stock engine, plugin only
+
+Owner explicitly rejects custom-engine deployment. Engine source and three Python dependencies restored to pinned stock revision, dependency SHA-1 verified. Previous engine commits retained as diagnostic evidence only. Source batch continues in TurboMCP with no test runs: in-place DataTable prevalidation, validated pin-default tool with dirty/undo handling, transaction/save safeguards and bounded batch outcomes. Registry filters disable only named unsafe native alternatives and direct users to plugin tools; general script batching has no equivalent and remains unavailable through the protected registry. Direct Python/editor code is outside this protection. Engine binaries must be rebuilt after stock source restoration; no engine patch is a deployment prerequisite. Exact assignment field-plugin-only owns the implementation files.

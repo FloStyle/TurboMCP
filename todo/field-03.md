@@ -49,3 +49,7 @@ FIELD-02 native containment scope: ToolsetRegistry/Public/ToolsetRegistry/Toolse
 ## Source batch implemented; not validated
 
 Native pin setter now validates the proposed value before mutation, refuses non-editable pins, captures node undo state and marks the Blueprint modified. Pin validity now resolves the actual pin; stale-index fallback requires a unique exact name. Plugin compile reports dirty state without claiming disk equality; explicit save no longer skips clean packages and requires both successful API return and clean state. No build or tests have run for these changes.
+
+## Superseding delivery requirement: stock engine, plugin only
+
+Owner explicitly rejects custom-engine deployment. Engine source and three Python dependencies restored to pinned stock revision, dependency SHA-1 verified. Previous engine commits retained as diagnostic evidence only. Source batch continues in TurboMCP with no test runs: in-place DataTable prevalidation, validated pin-default tool with dirty/undo handling, transaction/save safeguards and bounded batch outcomes. Registry filters disable only named unsafe native alternatives and direct users to plugin tools; general script batching has no equivalent and remains unavailable through the protected registry. Direct Python/editor code is outside this protection. Engine binaries must be rebuilt after stock source restoration; no engine patch is a deployment prerequisite. Exact assignment field-plugin-only owns the implementation files.
