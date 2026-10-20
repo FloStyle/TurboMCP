@@ -186,8 +186,9 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (1)</summary>
+<summary>done (2)</summary>
 
 - **P2** [Blueprint summary completeness and graph labels](todo/field-fix-21.md)
+- **P2** [Toolset help continuation](todo/field-fix-22.md)
 
 </details>

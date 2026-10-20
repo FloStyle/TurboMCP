@@ -78,7 +78,11 @@
       "id": "TH-10",
       "title": "The tool list of a toolset is capped at 12 lines, with no way to see the rest (medium)",
       "owner": "FIELD-08",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-22",
+      "implementation_limits": "TurboMCP help now supplies paginated continuation; native engine description and dynamic registry snapshots are not changed."
     },
     {
       "report": "2026-10-18_S1",

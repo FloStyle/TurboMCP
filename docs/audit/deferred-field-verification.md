@@ -313,3 +313,7 @@ Reconciled the existing cbe1585 implementation: NodeResolve prints unlinked Defa
 ### FIELD-FIX-21 summary completeness
 
 aa15bdb: verify function inventory with empty/missing entry nodes, unavailable reflection labels, graph kind and event owner labels. Implemented, unbuilt_untested. BL-13 reproduction remains unresolved. No tests/builds run.
+
+
+### FIELD-FIX-22
+Toolset help pagination, offset refusal, deterministic ordering, description budget and unchanged full help require later verification. Done, unbuilt_untested. No tests/builds run.
