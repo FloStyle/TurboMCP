@@ -239,7 +239,10 @@
       "id": "LT-07",
       "title": "The unconnected-pin check flags hidden world-context pins in a function library (low)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "source_review": "RunUnconnectedPins already skips unlinked bHidden pins; present since b41bee4. The reported 31 warnings therefore cannot be explained by absence of that guard alone.",
+      "remaining_problem": "Identify the reported pins and their visibility/world-context metadata or deployed revision; avoid blanket exclusion of visible world-context inputs that actually require wiring. Original cause remains unconfirmed.",
+      "state": "open"
     },
     {
       "report": "2026-10-18_S1",

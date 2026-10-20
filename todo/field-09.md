@@ -57,3 +57,8 @@ Source-only, no build or test run at owner request. Not runtime acceptance.
 ## BL-12 follow-up
 
 BL-12 scoped implementation FIELD-FIX-10 closed: stored local defaults now visible in graph body/full reads. Runtime default evaluation and full schema features remain open.
+
+
+### LT-07 source reconciliation
+
+RunUnconnectedPins already excludes unlinked bHidden pins (history b41bee4), so the field report is not fixed by adding that same exclusion. Keep open: determine whether the reported world-context pins were logically hidden through metadata, had bHidden false, or came from a different deployed revision. Do not suppress every world-context parameter; visible required inputs may legitimately need wiring. Source inspection only; no tests/builds and no closure claim.
