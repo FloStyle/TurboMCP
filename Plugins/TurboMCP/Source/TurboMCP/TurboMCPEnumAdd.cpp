@@ -56,6 +56,7 @@ bool FTurboMCPEnumAdd::Plan(const FString& InPath, const FString& InValues,
 	FPlan& OutPlan, FString& OutError)
 {
 	OutError.Empty();
+	OutPlan = FPlan();
 
 	const FString Path = InPath.TrimStartAndEnd();
 	if (Path.IsEmpty())
@@ -83,11 +84,8 @@ bool FTurboMCPEnumAdd::Plan(const FString& InPath, const FString& InValues,
 	// The values, as `Name` or `Name=Display Name`, separated by commas or pipes. The same
 	// separators the rest of the plugin accepts, so a caller does not learn a second set.
 	TArray<FString> Parts;
-	InValues.TrimStartAndEnd().ParseIntoArray(Parts, TEXT(","), /*CullEmpty=*/true);
-	if (Parts.Num() == 0)
-	{
-		InValues.TrimStartAndEnd().ParseIntoArray(Parts, TEXT("|"), /*CullEmpty=*/true);
-	}
+	const TCHAR* Separators[] = { TEXT(","), TEXT("|") };
+	InValues.TrimStartAndEnd().ParseIntoArray(Parts, Separators, UE_ARRAY_COUNT(Separators), true);
 
 	if (Parts.Num() == 0)
 	{
@@ -98,7 +96,7 @@ bool FTurboMCPEnumAdd::Plan(const FString& InPath, const FString& InValues,
 		return false;
 	}
 
-	TSet<FString> Seen;
+	TSet<FName> Seen;
 	for (const FString& Raw : Parts)
 	{
 		FString Name = Raw.TrimStartAndEnd();
@@ -120,7 +118,7 @@ bool FTurboMCPEnumAdd::Plan(const FString& InPath, const FString& InValues,
 			return false;
 		}
 
-		if (Seen.Contains(Name))
+		if (Seen.Contains(FName(*Name)))
 		{
 			// A duplicate would produce an enum the engine cannot look up reliably, so it
 			// is refused by name rather than silently collapsed.
@@ -128,7 +126,7 @@ bool FTurboMCPEnumAdd::Plan(const FString& InPath, const FString& InValues,
 				TEXT("'%s' is given twice. Each value must have its own name."), *Name);
 			return false;
 		}
-		Seen.Add(Name);
+		Seen.Add(FName(*Name));
 
 		FValue Value;
 		Value.Name = Name;
@@ -272,34 +270,54 @@ FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 			TEXT("and is editable; set the values in the enum editor."), *InPlan.AssetName);
 	}
 
-	int32 Renamed = NewNames.Num();
+	int32 Renamed = 0;
 
 	// The display names, through the engine's own setter, which validates them.
 	int32 ShownAs = 0;
+	int32 RequestedDisplays = 0;
 	for (int32 Index = 0; Index < InPlan.Values.Num(); ++Index)
 	{
 		if (InPlan.Values[Index].DisplayName.IsEmpty())
 		{
 			continue;
 		}
-		if (FEnumEditorUtils::SetEnumeratorDisplayName(UserEnum, Index,
-				FText::FromString(InPlan.Values[Index].DisplayName)))
+		++RequestedDisplays;
+		FEnumEditorUtils::SetEnumeratorDisplayName(UserEnum, Index,
+			FText::FromString(InPlan.Values[Index].DisplayName));
+	}
+
+	FEnumEditorUtils::EnsureAllDisplayNamesExist(UserEnum);
+
+	// Count observed identities, values and display strings, not requested writes.
+	for (int32 Index = 0; Index < NewNames.Num(); ++Index)
+	{
+		if (Index < UserEnum->NumEnums()
+			&& UserEnum->GetNameByIndex(Index) == NewNames[Index].Key
+			&& UserEnum->GetValueByIndex(Index) == NewNames[Index].Value)
+		{
+			++Renamed;
+		}
+		if (!InPlan.Values[Index].DisplayName.IsEmpty() && Index < UserEnum->NumEnums()
+			&& UserEnum->GetDisplayNameTextByIndex(Index).ToString() == InPlan.Values[Index].DisplayName)
 		{
 			++ShownAs;
 		}
 	}
+	const bool bVerified = Renamed == NewNames.Num()
+		&& UserEnum->NumEnums() == NewNames.Num() + 1 && ShownAs == RequestedDisplays;
 
-	FEnumEditorUtils::EnsureAllDisplayNamesExist(UserEnum);
 
 	// The asset registry has to learn about the new asset, and the package has to be saved,
 	// or the enum dies with the editor exactly as the first test assets did.
 	FAssetRegistryModule::AssetCreated(UserEnum);
 	Package->MarkPackageDirty();
 
-	FString Out = FString::Printf(TEXT("changed: created enum %s"), *InPlan.PackagePath);
-	Out += FString::Printf(TEXT("\nvalues: %d"), InPlan.Values.Num());
+	FString Out = bVerified
+		? FString::Printf(TEXT("changed: created enum %s"), *InPlan.PackagePath)
+		: FString::Printf(TEXT("error: enum %s was created but its names, values or display names did not match the request; the unsaved asset remains for inspection"), *InPlan.PackagePath);
+	Out += FString::Printf(TEXT("\nrequested values: %d; observed entries including _MAX: %d"), InPlan.Values.Num(), UserEnum->NumEnums());
 	Out += FString::Printf(TEXT("\nnames set: %d"), Renamed);
-	if (ShownAs > 0)
+	if (RequestedDisplays > 0)
 	{
 		Out += FString::Printf(TEXT("\ndisplay names set: %d"), ShownAs);
 	}

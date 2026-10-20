@@ -112,16 +112,9 @@ namespace
 				continue;
 			}
 
-			// A property that holds an OBJECT is skipped. `Slot` is the case that forced
-			// this: it is a reference to this placed copy's own slot, so it differs from
-			// the class default on every widget in the tree and buries the properties a
-			// caller actually wants. The spec is asking for the instance-editable VALUES a
-			// placed copy stores, not for the identity of its slot.
-			//
-			// One check covers the family: `FSoftObjectProperty`, `FWeakObjectProperty` and
-			// `FObjectProperty` all derive from `FObjectPropertyBase` through
-			// `TFObjectPropertyBase`. `FInterfaceProperty` does not, so it is named.
-			if (It->IsA<FObjectPropertyBase>() || It->IsA<FInterfaceProperty>())
+			// Suppress only the engine-owned placement slot, not editable asset,
+			// class, soft-object or interface reference overrides.
+			if (*It == FindFProperty<FProperty>(UWidget::StaticClass(), TEXT("Slot")))
 			{
 				continue;
 			}
