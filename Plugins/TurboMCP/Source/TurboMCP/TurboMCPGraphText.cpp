@@ -843,7 +843,7 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 			break;
 		}
 
-		if (ExecOuts.Num() == 1)
+		if (ExecOuts.Num() == 1 && ExecOuts[0]->LinkedTo.Num() == 1)
 		{
 			// The ordinary case: one output, so the chain simply continues in the
 			// same block.
@@ -857,8 +857,25 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 		for (const UEdGraphPin* Pin : ExecOuts)
 		{
 			Body += FString::Printf(TEXT("\n%s(:%s"), *Indent, *Pin->PinName.ToString());
-			Body += RenderChain(LinkedNode(Pin), InDetail, InDepth + 1,
-				InAssetPath, InOutPrinted, InOutSharedValues, OutNotes);
+			if (Pin->LinkedTo.Num() > 1)
+			{
+				const FString Note = TEXT("; error: execution output has multiple endpoints; all are shown, but fan-out is not round-trip representable");
+				OutNotes.Add(Note);
+				Body += TEXT("\n") + Indent + Note;
+			}
+			for (const UEdGraphPin* Endpoint : Pin->LinkedTo)
+			{
+				if (Endpoint == nullptr || Endpoint->GetOwningNode() == nullptr
+					|| Endpoint->Direction != EGPD_Input || !Endpoint->LinkedTo.Contains(Pin))
+				{
+					const FString Note = TEXT("; error: malformed execution endpoint");
+					OutNotes.Add(Note);
+					Body += TEXT("\n") + Indent + Note;
+					continue;
+				}
+				Body += RenderChain(Endpoint->GetOwningNode(), InDetail, InDepth + 1,
+					InAssetPath, InOutPrinted, InOutSharedValues, OutNotes);
+			}
 			Body += TEXT(")");
 		}
 		break;
@@ -873,11 +890,34 @@ FString FTurboMCPGraphText::RenderEntryBody(const UEdGraph* InGraph,
 	TSet<const UEdGraphNode*>& InOutSharedValues,
 	TArray<FString>& OutNotes) const
 {
-	UEdGraphPin* FirstOut = FindExecOut(InEntry.Node);
-	const UEdGraphNode* First = FirstOut != nullptr ? LinkedNode(FirstOut) : nullptr;
-
-	FString Body = RenderChain(First, InDetail, /*InDepth=*/0, InAssetPath,
-		InOutPrinted, InOutSharedValues, OutNotes);
+	FString Body;
+	if (InEntry.Node != nullptr)
+	{
+		for (const UEdGraphPin* Pin : InEntry.Node->Pins)
+		{
+			if (Pin == nullptr || Pin->Direction != EGPD_Output
+				|| Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec) { continue; }
+			if (Pin->LinkedTo.Num() > 1)
+			{
+				const FString Note = TEXT("; error: entry execution output has multiple endpoints; all are shown, but fan-out is not round-trip representable");
+				OutNotes.Add(Note);
+				Body += TEXT("\n  ") + Note;
+			}
+			for (const UEdGraphPin* Endpoint : Pin->LinkedTo)
+			{
+				if (Endpoint == nullptr || Endpoint->GetOwningNode() == nullptr
+					|| Endpoint->Direction != EGPD_Input || !Endpoint->LinkedTo.Contains(Pin))
+				{
+					const FString Note = TEXT("; error: malformed entry execution endpoint");
+					OutNotes.Add(Note);
+					Body += TEXT("\n  ") + Note;
+					continue;
+				}
+				Body += RenderChain(Endpoint->GetOwningNode(), InDetail, 0, InAssetPath,
+					InOutPrinted, InOutSharedValues, OutNotes);
+			}
+		}
+	}
 
 	if (Body.IsEmpty())
 	{
