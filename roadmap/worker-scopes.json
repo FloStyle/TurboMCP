@@ -160,6 +160,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
           ],
           "new_files": []
+        },
+        "field-datatable-prepared": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
