@@ -12,6 +12,7 @@
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
+#include "EdGraphUtilities.h"
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_FunctionEntry.h"
@@ -89,7 +90,8 @@ namespace
 		return true;
 	}
 
-	struct FCallLink { FString PinName; UEdGraphPin* Pin = nullptr; UEdGraphPin* LinkedPin = nullptr; };
+	// RefreshAllNodes reconstructs pins: raw pin addresses cannot survive it.
+	struct FCallLink { FString PinName; FWeakGraphPinPtr Pin; FWeakGraphPinPtr LinkedPin; };
 	void CaptureCallLinks(UBlueprint* InBlueprint, const FString& InFunction, TArray<FCallLink>& OutLinks, int32& OutCalls)
 	{
 		TArray<UK2Node_CallFunction*> Calls; FBlueprintEditorUtils::GetAllNodesOfClass(InBlueprint, Calls); OutCalls = 0;
@@ -363,9 +365,12 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	CaptureCallLinks(Blueprint, Wanted, PreviousLinks, RefreshedCalls);
 	FBlueprintEditorUtils::RefreshAllNodes(Blueprint);
 	TArray<FString> LostLinks;
-	for (const FCallLink& Link : PreviousLinks)
+	for (FCallLink& Link : PreviousLinks)
 	{
-		if (Link.Pin == nullptr || Link.LinkedPin == nullptr || !Link.Pin->LinkedTo.Contains(Link.LinkedPin))
+        UEdGraphPin* Pin = Link.Pin.Get();
+        UEdGraphPin* LinkedPin = Link.LinkedPin.Get();
+		if (Pin == nullptr || LinkedPin == nullptr || !Pin->LinkedTo.Contains(LinkedPin)
+            || !LinkedPin->LinkedTo.Contains(Pin))
 		{
 			LostLinks.Add(Link.PinName);
 		}
