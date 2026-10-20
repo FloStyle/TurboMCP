@@ -42,15 +42,26 @@ FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
             }
         }
     }
-    if (!Pin || Pin->bOrphanedPin || Pin->bDefaultValueIsReadOnly || Pin->bDefaultValueIsIgnored
-        || Pin->LinkedTo.Num() || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-        return TEXT("unchanged: refused; pin is missing, connected or cannot accept a default");
+    if (!Pin)
+        return FString::Printf(TEXT("unchanged: refused; input pin '%s' was not found on node '%s'; use the exact reader node ID and pin name, not a display label or numeric index"), *PinName, *NodeId);
+    if (Pin->bOrphanedPin)
+        return TEXT("unchanged: refused; pin is orphaned; repair or reconstruct the node before setting its default");
+    if (Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+        return TEXT("unchanged: refused; execution pins accept connections, not literal defaults");
+    if (Pin->LinkedTo.Num())
+        return FString::Printf(TEXT("unchanged: refused; pin has %d connection(s); a literal default is inactive while connected"), Pin->LinkedTo.Num());
+    if (Pin->bDefaultValueIsReadOnly)
+        return TEXT("unchanged: refused; the node marks this pin's default read-only; use a supported connection or the node's own editing operation");
+    if (Pin->bDefaultValueIsIgnored)
+        return TEXT("unchanged: refused; the node ignores this pin's default; supply its value through a supported connection");
     FString Parsed;
     TObjectPtr<UObject> Object = nullptr;
     FText Text;
     Schema->GetPinDefaultValuesFromString(Pin->PinType, Pin->GetOwningNode(), Value, Parsed, Object, Text, false);
     const FString Invalid = Schema->IsPinDefaultValid(Pin, Parsed, Object, Text);
-    if (!Invalid.IsEmpty()) return FString::Printf(TEXT("unchanged: refused; %s"), *Invalid);
+    if (!Invalid.IsEmpty())
+        return FString::Printf(TEXT("unchanged: refused; pin '%s' (category=%s, subcategory=%s) rejected the literal: %s"),
+            *Pin->PinName.ToString(), *Pin->PinType.PinCategory.ToString(), *Pin->PinType.PinSubCategory.ToString(), *Invalid);
     if (Pin->DefaultValue == Parsed && Pin->DefaultObject == Object && Pin->DefaultTextValue.EqualTo(Text))
         return TEXT("unchanged: pin already has the requested default");
     const FGuid EditedNodeGuid = Pin->GetOwningNode()->NodeGuid;
