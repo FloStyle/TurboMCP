@@ -104,3 +104,7 @@ FIELD-FIX-17 implemented, unbuilt and untested. Later check supported array/set/
 ## Reader IDs in targeted edits - deferred evidence
 
 FIELD-FIX-18 implemented, unbuilt and untested. Later check NodeFind short IDs and long IDs through Swap/PinDefault, missing IDs, duplicate GUIDs, custom-node class refusal and wrong-asset IDs. No fuzzy matching is authorized.
+
+## Repoint replacement - deferred evidence
+
+FIELD-FIX-19 implemented, unbuilt and untested. Later check scalar consumer rewiring, exact reader IDs, source-target alias, stale links, conversion refusal, reciprocal read-back and owned rollback.
