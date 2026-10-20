@@ -352,7 +352,16 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	for (const FSignaturePin& Pin : Inputs)
 	{
 		Entry->Modify();
-		Entry->CreateUserDefinedPin(FName(*Pin.Name), Pin.Type, EGPD_Output, /*bUseUniqueName=*/false);
+		UEdGraphPin* CreatedPin = Entry->CreateUserDefinedPin(FName(*Pin.Name), Pin.Type, EGPD_Output, /*bUseUniqueName=*/false);
+        if (!CreatedPin || CreatedPin->PinName != FName(*Pin.Name)
+            || CreatedPin->Direction != EGPD_Output || CreatedPin->PinType != Pin.Type)
+        {
+            UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
+            const bool bRemoved = !Blueprint->FunctionGraphs.Contains(Graph);
+            return FString::Printf(TEXT("%s: signature pin '%s' could not be created with the requested name/type/direction; new function cleanup=%s"),
+                bRemoved ? TEXT("error") : TEXT("partial"), *Pin.Name,
+                bRemoved ? TEXT("removed") : TEXT("not_confirmed"));
+        }
 	}
 	UK2Node_FunctionResult* Result = nullptr;
 	if (Outputs.Num() > 0)
@@ -366,7 +375,16 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 		for (const FSignaturePin& Pin : Outputs)
 		{
 			Result->Modify();
-			Result->CreateUserDefinedPin(FName(*Pin.Name), Pin.Type, EGPD_Input, /*bUseUniqueName=*/false);
+			UEdGraphPin* CreatedPin = Result->CreateUserDefinedPin(FName(*Pin.Name), Pin.Type, EGPD_Input, /*bUseUniqueName=*/false);
+        if (!CreatedPin || CreatedPin->PinName != FName(*Pin.Name)
+            || CreatedPin->Direction != EGPD_Input || CreatedPin->PinType != Pin.Type)
+        {
+            UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
+            const bool bRemoved = !Blueprint->FunctionGraphs.Contains(Graph);
+            return FString::Printf(TEXT("%s: signature pin '%s' could not be created with the requested name/type/direction; new function cleanup=%s"),
+                bRemoved ? TEXT("error") : TEXT("partial"), *Pin.Name,
+                bRemoved ? TEXT("removed") : TEXT("not_confirmed"));
+        }
 		}
 	}
 
