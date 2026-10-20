@@ -261,6 +261,16 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 		return false;
 	}
 	UEdGraphNode* DeleteCandidate = FindNode(G, P.SourceNodeId);
+	UEdGraphPin* PlannedOutput = FindPin(DeleteCandidate, P.SourcePin, EGPD_Output);
+	if (!PlannedOutput || PlannedOutput->LinkedTo.Num() != P.Readers.Num())
+	{
+		Error = TEXT("unchanged: source reader set changed since planning; request a fresh plan");
+		Out.Outcome = ETurboMCPResultOutcome::Refused;
+		Out.Code = TEXT("stale_readers");
+		Out.Rollback = ETurboMCPResultRollback::NotNeeded;
+		return false;
+	}
+
 	if (!P.bKeepSource && DeleteCandidate && !DeleteCandidate->CanUserDeleteNode())
 	{
 		Error = TEXT("unchanged: source node is protected from deletion; use keepSource=true");
