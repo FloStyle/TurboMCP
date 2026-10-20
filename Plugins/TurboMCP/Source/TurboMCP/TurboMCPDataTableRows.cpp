@@ -317,6 +317,8 @@ namespace
 
 FString Parse(const TArray<FString>& Lines, TArray<FRowOp>& Out)
 {
+	Out.Reset();
+	TArray<FRowOp> Parsed;
 	if (Lines.Num() == 0)
 	{
 		return TEXT("error: no row operations given. Each line is `name = field=value, field=value` to set a row ")
@@ -344,7 +346,7 @@ FString Parse(const TArray<FString>& Lines, TArray<FRowOp>& Out)
 			{
 				return FString::Printf(TEXT("error: '%s' removes a row but names none."), *Line);
 			}
-			Out.Add(MoveTemp(Op));
+			Parsed.Add(MoveTemp(Op));
 			continue;
 		}
 
@@ -403,20 +405,24 @@ FString Parse(const TArray<FString>& Lines, TArray<FRowOp>& Out)
 		{
 			return TEXT("error: a set operation must contain at least one field=value pair; separators alone do not create a row.");
 		}
-		Out.Add(MoveTemp(Op));
+		Parsed.Add(MoveTemp(Op));
 	}
 
-	if (Out.Num() == 0)
+	if (Parsed.Num() == 0)
 	{
 		return TEXT("error: every line was empty, so there is nothing to do.");
 	}
+	Out = MoveTemp(Parsed);
 	return FString();
 }
 
 FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 {
+	// Preserve input even if the caller replans from Out.Ops.
+	const TArray<FRowOp> RequestedOps = Ops;
+	Out = FPlan();
 	// FName conversion can terminate the editor for oversized caller input.
-	if (!NamesFit(Ops))
+	if (!NamesFit(RequestedOps))
 	{
 		const FString Error = FString::Printf(TEXT("error: row and field names must be shorter than %d characters; nothing was written."), NAME_SIZE);
 		Out.Refusals.Add(Error);
@@ -425,12 +431,14 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 
 	if (Table == nullptr)
 	{
+		Out.Refusals.Add(TEXT("No data table"));
 		return TEXT("error: no data table.");
 	}
 
 	const UScriptStruct* Struct = Table->GetRowStruct();
 	if (Struct == nullptr)
 	{
+		Out.Refusals.Add(TEXT("The table has no row struct"));
 		return TEXT("error: the table has no row struct, which happens when the struct it was built from was ")
 			TEXT("deleted. Its rows cannot be interpreted, so nothing can be written.");
 	}
@@ -443,7 +451,7 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 	TSet<FName> PlannedAdditions;
 	TMap<FName, ERowOp> SeenOperations;
 
-	for (const FRowOp& Op : Ops)
+	for (const FRowOp& Op : RequestedOps)
 	{
 		Out.Ops.Add(Op);
 		if (Op.Op == ERowOp::Set && Op.Fields.IsEmpty())
@@ -540,6 +548,7 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 
 FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 {
+	OutReport.Reset();
 	if (!NamesFit(Plan.Ops)) return TEXT("error: oversized row or field name; nothing was written.");
 	for (const FString& Name : Plan.Removals)
 	{
