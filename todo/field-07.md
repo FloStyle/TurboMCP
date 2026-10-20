@@ -55,3 +55,7 @@ FIELD-FIX-08 implements X-41 compile diagnostics only. GL-16 reader already uses
 ## Append reachability follow-up
 
 FIELD-FIX-09 implements X-41 Append rejection of new unreachable exec-input nodes; applies through Replace too. Other writers, GL-16 reader controls and runtime execution correctness remain open. Disconnected staging now refuses; connect new execution paths in the same request.
+
+## GL-15 follow-up
+
+GL-15 classification implemented in FIELD-FIX-11. All execution predecessors listed; complete multi-source DSL round-trip remains unsupported and explicit. Runtime verification deferred.

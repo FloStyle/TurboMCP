@@ -72,3 +72,7 @@ FIELD-FIX-09: disconnected new impure chain with shared entry data refuses and r
 ## BL-12 follow-up
 
 FIELD-FIX-10: local float/string/struct defaults, unset values, newline escaping and graph DSL comment handling. Unbuilt and untested.
+
+## GL-15 follow-up
+
+FIELD-FIX-11: two branch outputs into one exec input, reroutes, invalid endpoints, and multi-source data refusal; confirm partial evidence survives output. Unbuilt/untested.

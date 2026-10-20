@@ -39,6 +39,7 @@ Generated from task files and the approved queue. After editing task status, run
 | [X-41 compile execution-reachability diagnostics](todo/field-fix-08.md) | monday | implementation | done |
 | [X-41 append execution-reachability guard](todo/field-fix-09.md) | monday | implementation | done |
 | [BL-12 stored local default visibility](todo/field-fix-10.md) | monday | implementation | done |
+| [GL-15 execution merge reader classification](todo/field-fix-11.md) | monday | implementation | done |
 
 ## Historical findings
 
