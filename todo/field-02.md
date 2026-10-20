@@ -65,3 +65,7 @@ Owner explicitly rejects custom-engine deployment. Engine source and three Pytho
 cbe1585: shared rollback refuses missing/nested transactions and checks transaction identity after finalization before undo. MCP asset edits refuse active transactions and PIE; diagnostics remain usable. Full dependent-widget loss is not reproduced or certified fixed.
 
 Source-only, no build or test run at owner request. Not runtime acceptance.
+
+## Approved graph-writer follow-up
+
+Owner-authorized source-only batch: remove implicit structural compilation from Append/Patch/Replace transactions, preserve undo before pin mutation, validate K2 defaults, propagate rollback failures, and fail node-set comparisons. Explicit compile/save remain separate. No tests or engine changes; full widget-loss acceptance remains open.
