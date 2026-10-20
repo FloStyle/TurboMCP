@@ -429,8 +429,9 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 		}
 	}
 
-	FString Out = FString::Printf(TEXT("changed: added function '%s' to %s"),
-		*Wanted, *Resolved.ObjectPath);
+	const bool bComplete = bNowImplemented && LostLinks.IsEmpty();
+	FString Out = FString::Printf(TEXT("%s: added function '%s' to %s"),
+        bComplete ? TEXT("changed") : TEXT("partial"), *Wanted, *Resolved.ObjectPath);
 	Out += FString::Printf(TEXT("\ncreated: graph '%s'"), *Graph->GetName());
 	Out += FString::Printf(TEXT("\ncreated inputs: %s"), Inputs.Num() > 0 ? *FString::JoinBy(Inputs, TEXT(", "), [](const FSignaturePin& Pin) { return Pin.Name; }) : TEXT("(none)"));
 	Out += FString::Printf(TEXT("\ncreated outputs: %s"), Outputs.Num() > 0 ? *FString::JoinBy(Outputs, TEXT(", "), [](const FSignaturePin& Pin) { return Pin.Name; }) : TEXT("(none)"));
@@ -441,9 +442,11 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 
 	if (!bNowImplemented)
 	{
-		Out += TEXT("\n; the graph was created but the editor does not list it as implemented ");
-		Out += TEXT("yet. It may need a compile, which E-COMPILE does.");
+		Out += TEXT("\n; implementation read-back failed; inspect the created graph before compiling or saving.");
 	}
+
+    if (!LostLinks.IsEmpty())
+        Out += TEXT("\n; caller links were lost during refresh; do not save or retry creation blindly. Inspect the listed pins; rollback was not performed.");
 
 	if (Check.OtherUsers.Num() > 0)
 	{
@@ -453,7 +456,8 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 			*FString::Join(Check.OtherUsers, TEXT(", ")));
 	}
 
-	Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+	Out += bComplete ? TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.")
+        : TEXT("\n; partial change remains in memory; save=not_requested.");
 	return Out;
 }
 
