@@ -997,6 +997,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		for (UEdGraphPin* Candidate : FromNode->Pins)
 		{
 			if (Candidate != nullptr
+				&& Candidate->Direction == EGPD_Output
 				&& Candidate->PinName.ToString().Equals(Link.FromPin, ESearchCase::CaseSensitive))
 			{
 				FromPin = Candidate;
@@ -1007,6 +1008,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		for (UEdGraphPin* Candidate : ToNode->Pins)
 		{
 			if (Candidate != nullptr
+				&& Candidate->Direction == EGPD_Input
 				&& Candidate->PinName.ToString().Equals(Link.ToPin, ESearchCase::CaseSensitive))
 			{
 				ToPin = Candidate;
@@ -1033,6 +1035,23 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		// feed a node: K2 then REPLACES that wire when it accepts this one. That is an INSERTION, not merely
 		// an append, so the displaced continuation must be carried through the new node or restored on failure.
 		const UEdGraphSchema* Schema = Graph->GetSchema();
+		if (Schema != nullptr)
+		{
+			const FPinConnectionResponse Response = Schema->CanCreateConnection(FromPin, ToPin);
+			if (Response.Response == CONNECT_RESPONSE_MAKE_WITH_CONVERSION_NODE)
+			{
+				// Do not let a plain link request silently introduce a cast/conversion node.
+				const FString Reason = FString::Printf(TEXT("line %d: link '%s' -> '%s' requires an automatic conversion (%s). Add an explicit conversion node or use compatible typed pins; no implicit conversion was requested."),
+					Link.Line, *Link.FromPin, *Link.ToPin, *Response.Message.ToString());
+				if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+				{
+					OutError = TEXT("partial: conversion link refused and rollback failed; inspect graph before retrying; save=not_requested. ") + Reason;
+					return false;
+				}
+				OutError = TEXT("unchanged: graph write rolled back. ") + Reason;
+				return false;
+			}
+		}
 		const TArray<UEdGraphPin*> OriginalTargets = FromPin->LinkedTo;
 		const bool bSchemaMadeLink = Schema != nullptr && Schema->TryCreateConnection(FromPin, ToPin);
 		if (!bSchemaMadeLink || !HasLink(FromPin, ToPin))
