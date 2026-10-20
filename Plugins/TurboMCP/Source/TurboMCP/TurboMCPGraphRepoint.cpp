@@ -14,6 +14,8 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "Kismet2/CompilerResultsLog.h"
 #include "ScopedTransaction.h"
+#include "Editor.h"
+#include "Editor/TransBuffer.h"
 
 namespace {
 // *** ONE RESOLUTION POLICY, NOT TWO THAT CAN DRIFT. ***
@@ -29,7 +31,9 @@ namespace {
 // changes. The ambiguity refusal belongs in the shared resolver; until that lands, this is one resolver instead
 // of two that can disagree.
 UEdGraph* FindGraph(UBlueprint* B, const FString& Name) {
- return TurboMCPNodeId::FindGraphByName(B, Name);
+ int32 Matches = 0;
+ UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(B, Name, Matches);
+ return Matches == 1 ? Graph : nullptr;
 }
 
 UEdGraphNode* FindNode(UEdGraph* G, const FString& Id) {
@@ -195,11 +199,21 @@ namespace
 }
 
 bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext& Context, FApplyOutcome& Out,
-	FString& Report, FString& Error)
+	FString& Report, FString& Error, bool bJoinCallerTransaction)
 {
 	Out = FApplyOutcome();
 	Report.Empty(); Error.Empty();
 	const double StartSeconds = FPlatformTime::Seconds();
+
+    UTransBuffer* Buffer = GEditor ? Cast<UTransBuffer>(GEditor->Trans) : nullptr;
+    const bool AllowedTransaction = bJoinCallerTransaction ? Buffer && Buffer->ActiveCount == 1 : GEditor && !GEditor->IsTransactionActive();
+    if (!IsInGameThread() || !GEditor || !AllowedTransaction || GEditor->IsPlaySessionInProgress() || Context.bCompile || Context.bSave)
+    {
+        Error = TEXT("unchanged: repoint requires an idle editor and separate explicit compile/save operations");
+        Out.Outcome = ETurboMCPResultOutcome::Refused;
+        Out.Code = TEXT("unsafe_edit_context");
+        return false;
+    }
 
 	// A plan that refused changes nothing and is not a failure. Reporting `failed` here would tell a caller
 	// that a refusal was an error, which is the distinction ARC02's vocabulary exists to keep.
@@ -218,7 +232,7 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 
 	UBlueprint* B = LoadObject<UBlueprint>(nullptr, *R.ObjectPath);
 	UEdGraph* G = FindGraph(B, P.GraphName);
-	if (!B || !G)
+	if (!B || !G || !G->GetSchema())
 	{
 		Error = TEXT("graph disappeared before apply");
 		Out.Outcome = ETurboMCPResultOutcome::Failed;
@@ -228,65 +242,41 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 	}
 	Out.Assets.Add(R.PackagePath);
 
-	// --- ARC04: the diagnostics BEFORE the edit, on the same object ---
-	//
-	// The baseline is read by COMPILING once WITH a results log. ARC04 allows exactly that ("Use an explicit
-	// Compile operation to establish a baseline when no valid baseline exists"), and it is done here rather than
-	// once per mutation because this write is about to compile anyway. The cross-call cache ARC04 asks for is
-	// NOT implemented yet, and that limit is recorded rather than implied: this compares within one edit.
-	TArray<FString> Before;
-	TArray<FString> After;
-	FCompilerResultsLog Log;
-	// ARC05: the forced baseline read marks the blueprint dirty. A refusal must leave the package exactly as
-	// it was found, so the flag is captured here and restored by this guard unless the edit commits.
-	const bool bDirtyBefore = B->GetOutermost()->IsDirty();
-	Out.bDirtyBefore = bDirtyBefore;
-	FDirtyFlagGuard DirtyGuard(B->GetOutermost(), bDirtyBefore);
-	if (Context.bCompile)
-	{
-		// *** THE BASELINE MUST BE FORCED, AND THE FIRST VERSION DID NOT FORCE IT. ***
-		//
-		// MEASURED: this baseline returned ZERO messages while the identical call in the after-edit position
-		// returned six, and the independent `EditTurboMCPCompile` tool reported SEVEN errors for the same asset.
-		// The edit's refusal then blamed the caller's change: "the edit introduced 6 new compile diagnostic(s)",
-		// when all six were already there.
-		//
-		// The cause is that `CompileBlueprint` recompiles what is DIRTY and reports only that. On a freshly loaded
-		// blueprint whose generated class already exists and whose graphs are untouched, the compile is a NO-OP:
-		// nothing is scheduled, nothing is reported, `Log.Messages` is empty. The after-edit read runs on a
-		// structurally modified graph, so the compile is real and the pre-existing errors surface - which is why
-		// the baseline looked like zero and the after-read looked like six.
-		//
-		// So the blueprint is marked structurally modified BEFORE the baseline read, which is what makes the
-		// compile do the work the diagnostics describe. This does not change the edit: the transaction has not
-		// opened yet, and `MarkBlueprintAsStructurallyModified` sets a dirty flag rather than altering a graph.
-		//
-		// The first compile's count is logged rather than discarded, because the difference between the two
-		// numbers IS the mechanism - a silent skip would otherwise be invisible exactly as it was here.
-		FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(B);
-		FKismetEditorUtilities::CompileBlueprint(B, EBlueprintCompileOptions::None, &Log);
-		Before = NormalizeDiagnostics(Log);
-		UE_LOG(LogTemp, Display,
-			TEXT("[TurboMCP] baseline diagnostics for %s: %d message(s), %d error(s) - read after forcing the "
-			     "compile; without the force this read returned none"),
-			*B->GetName(), Log.Messages.Num(), Log.NumErrors);
-		Log.Messages.Reset();
-	}
-
-	FScopedTransaction Tx(NSLOCTEXT("TurboMCP", "GraphRepoint", "TurboMCP repoint graph readers"));
+    const bool bDirtyBefore = B->GetOutermost()->IsDirty();
+    Out.bDirtyBefore = bDirtyBefore;
+    FDirtyFlagGuard DirtyGuard(B->GetOutermost(), bDirtyBefore);
+    TUniquePtr<FScopedTransaction> Tx;
+    if (!bJoinCallerTransaction)
+        Tx = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "GraphRepoint", "TurboMCP repoint graph readers"));
+    auto FailEdit = [&]()
+    {
+        bool Restored = false;
+        if (!bJoinCallerTransaction && Buffer && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty())
+        {
+            const FGuid OwnedId = Buffer->UndoBuffer.Last()->GetId();
+            Tx.Reset(); // Finalize exactly once before undoing our own record.
+            const int32 Index = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
+            const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
+            Restored = Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
+        }
+        Out.Rollback = Restored ? ETurboMCPResultRollback::Complete : ETurboMCPResultRollback::NotSupported;
+        Out.bChanged = !Restored;
+        Out.Changed = Restored ? 0 : 2;
+        DirtyGuard.bKeepChange = !Restored;
+        Error += Restored ? TEXT("; rollback=complete") : TEXT("; rollback=not_confirmed; caller must restore before retrying");
+    };
 	B->Modify();
 	G->Modify();
+    for (UEdGraphNode* Node : G->Nodes) if (Node) Node->Modify();
 
 	UEdGraphNode* Source = FindNode(G, P.SourceNodeId);
 	UEdGraphPin* SourceOut = FindPin(Source, P.SourcePin, EGPD_Output);
 	if (!SourceOut)
 	{
 		Error = TEXT("source disappeared before apply");
-		Tx.Cancel();
+		FailEdit();
 		Out.Outcome = ETurboMCPResultOutcome::Failed;
 		Out.Code = TEXT("source_missing");
-		Out.Rollback = ETurboMCPResultRollback::Complete;
-		Out.bChanged = false;
 		return false;
 	}
 
@@ -298,11 +288,9 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 		if (FTurboMCPNodeType::SpawnNodeOfType(B, G, P.TargetTypeId, Target, Note) != FTurboMCPNodeType::ESpawnResult::Spawned)
 		{
 			Error = FString::Printf(TEXT("could not create target: %s"), *Note);
-			Tx.Cancel();
+			FailEdit();
 			Out.Outcome = ETurboMCPResultOutcome::Failed;
 			Out.Code = TEXT("target_not_created");
-			Out.Rollback = ETurboMCPResultRollback::Complete;
-			Out.bChanged = false;
 			return false;
 		}
 		Out.Effects.Add(TEXT("graph_node_created"));
@@ -315,11 +303,9 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 	if (!TargetOut)
 	{
 		Error = TEXT("target disappeared before apply");
-		Tx.Cancel();
+		FailEdit();
 		Out.Outcome = ETurboMCPResultOutcome::Failed;
 		Out.Code = TEXT("target_missing");
-		Out.Rollback = ETurboMCPResultRollback::Complete;
-		Out.bChanged = false;
 		return false;
 	}
 
@@ -330,22 +316,18 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 		if (!ConsumerPin)
 		{
 			Error = TEXT("reader disappeared before apply");
-			Tx.Cancel();
+			FailEdit();
 			Out.Outcome = ETurboMCPResultOutcome::Failed;
 			Out.Code = TEXT("reader_missing");
-			Out.Rollback = ETurboMCPResultRollback::Complete;
-			Out.bChanged = false;
 			return false;
 		}
 		G->GetSchema()->BreakSinglePinLink(SourceOut, ConsumerPin);
 		if (!G->GetSchema()->TryCreateConnection(TargetOut, ConsumerPin))
 		{
 			Error = FString::Printf(TEXT("connection refused for reader %s.%s"), *Item.ConsumerNodeId, *Item.ConsumerPin);
-			Tx.Cancel();
+			FailEdit();
 			Out.Outcome = ETurboMCPResultOutcome::Failed;
 			Out.Code = TEXT("connection_refused");
-			Out.Rollback = ETurboMCPResultRollback::Complete;
-			Out.bChanged = false;
 			return false;
 		}
 	}
@@ -358,12 +340,10 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 		UEdGraphPin* ConsumerPin = FindPin(Consumer, Item.ConsumerPin, EGPD_Input);
 		if (!ConsumerPin || !ConsumerPin->LinkedTo.Contains(TargetOut))
 		{
-			Error = TEXT("readback mismatch; all original links restored");
-			Tx.Cancel();
+			Error = TEXT("readback mismatch");
+			FailEdit();
 			Out.Outcome = ETurboMCPResultOutcome::Failed;
 			Out.Code = TEXT("readback_mismatch");
-			Out.Rollback = ETurboMCPResultRollback::Complete;
-			Out.bChanged = false;
 			return false;
 		}
 	}
@@ -372,89 +352,23 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 	{
 		if (Source->Pins.Num() > 0)
 		{
-			G->RemoveNode(Source);
+			FBlueprintEditorUtils::RemoveNode(B, Source, true);
 			Out.Effects.Add(TEXT("graph_node_removed"));
 		}
 	}
 
-	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(B);
-	Out.bChanged = true;
+    FBlueprintEditorUtils::MarkBlueprintAsModified(B);
+    Out.bChanged = true;
+    Out.Changed = 1;
+    Out.Compile = ETurboMCPResultCompile::NotRun;
+    // Standalone edits commit here; batch edits remain owned by the outer transaction.
+    Tx.Reset();
 
-	// Step 10: compile ONCE per affected compilable asset, and read the diagnostics the engine reported.
-	if (Context.bCompile)
-	{
-		FKismetEditorUtilities::CompileBlueprint(B, EBlueprintCompileOptions::None, &Log);
-		After = NormalizeDiagnostics(Log);
-		Out.bCompileRan = true;
-		Out.Compile = ETurboMCPResultCompile::Passed;
-		Out.BaselineDiagnosticCount = Before.Num();
-		Out.AfterDiagnosticCount = After.Num();
-
-		// *** THE COMPARISON IS PACKAGE-WIDE AND MULTIPLICITY-AWARE. THE EARLIER VERSION WEAKENED IT. ***
-		//
-		// This is the rule ARC04 states without qualification: "Pre-existing diagnostics may remain. Any new
-		// error or warning causes rollback." It was narrowed in an earlier pass to diagnostics whose TEXT NAMED
-		// THE EDITED GRAPH, on the finding that a package-wide comparison refused every edit of the acceptance
-		// asset. That finding was a symptom of a DIFFERENT defect in the same block: the baseline was discarded
-		// (`Before.Reset()`) immediately before the comparison, so every diagnostic the compiler reported looked
-		// new. The narrowing made the symptom disappear and turned a real new error elsewhere in the package
-		// into a success report - the exact failure mode this contract exists to prevent.
-		//
-		// The baseline is now kept, so pre-existing diagnostics compare equal and do not refuse an edit. The
-		// multiplicity check is why duplicates are preserved in NormalizeDiagnostics: one instance before and
-		// two after is a new diagnostic even though the normalized set is unchanged.
-		//
-		// The rule lives in ONE pure function so a native case can prove it fires; a rule that cannot fail has
-		// been this project's most repeated defect.
-		const TArray<FString> New = FTurboMCPResult::NewDiagnosticsSince(Before, After);
-
-		Out.NewDiagnostics = New;
-		if (New.Num() > 0)
-		{
-			// AND THE MESSAGE MUST NOT BLAME THE CALLER FOR WHAT WAS ALREADY THERE. MEASURED: this once said "the
-			// edit introduced 6 new compile diagnostic(s)" for six errors the asset already had, because the
-			// baseline read had returned none. Both totals are now named, so "the asset was already failing" is
-			// distinguishable from "this edit broke it".
-			Error = FString::Printf(
-				TEXT("the edit adds %d compile diagnostic(s) to an asset that already had %d. The comparison covers "
-				     "the whole asset (%d before, %d after), so a new error in any graph rolls the edit back. "
-				     "New from this edit: %s"),
-				New.Num(), Before.Num(), Before.Num(), After.Num(), *FString::Join(New, TEXT(" | ")));
-			Tx.Cancel();
-			Out.Outcome = ETurboMCPResultOutcome::Failed;
-			Out.Code = TEXT("new_compile_diagnostics");
-			Out.Compile = ETurboMCPResultCompile::Failed;
-			Out.Rollback = ETurboMCPResultRollback::Complete;
-			Out.bChanged = false;
-			Out.bCompileBaselineUsed = true;
-			return false;
-		}
-		Out.bCompileBaselineUsed = true;
-	}
-	else
-	{
-		Out.Compile = ETurboMCPResultCompile::NotRun;
-	}
-
-	// -----------------------------------------------------------------------------------------------
-	// *** THE SUCCESS PATH IS SCOPED SO THE COMMIT HAPPENS BEFORE THE GRAPH IS VERIFIED. ***
-	//
-	// MEASURED, and it is why this block exists: `FScopedTransaction Tx` lives until the FUNCTION returns, and on
-	// this engine a transaction is committed by being DESTROYED WITHOUT `Cancel()`. So the commit happened AFTER
-	// the report was built - which meant the report described a state nobody had checked. `TargetId` was computed
-	// from a LIVE POINTER before the commit, and the tool then reported "changed ... compile: passed" while the
-	// graph, measured afterwards by node CLASS, was missing the created node AND had lost another one (3 -> 2
-	// K2Node_CallFunction, id 554569 gone).
-	//
-	// A node-count check placed inside the old success block would have read the graph at the one moment it could
-	// not be wrong. Closing the scope here destroys `Tx`, which IS the commit, so everything below runs against
-	// the committed graph.
-	// -----------------------------------------------------------------------------------------------
 	{
 		Out.Outcome = ETurboMCPResultOutcome::Changed;
 		Out.Code = TEXT("ok");
 		Out.Rollback = ETurboMCPResultRollback::NotNeeded;
-		Out.Save = Context.bSave ? ETurboMCPResultSave::Saved : ETurboMCPResultSave::NotRequested;
+		Out.Save = ETurboMCPResultSave::NotRequested;
 		Out.ElapsedMs = (FPlatformTime::Seconds() - StartSeconds) * 1000.0;
 
 		CreatedTargetId = P.bCreateTarget ? TurboMCPNodeId::MakeForNode(Target, true) : P.TargetNodeId;
@@ -487,7 +401,6 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 			// happened" from an unverified outcome.
 			Out.Outcome = ETurboMCPResultOutcome::OutcomeUnknown;
 			Out.Code = TEXT("graph_nodecount_mismatch");
-			Out.bChanged = false;
 			Out.Changed = 2;  // tri-state: 2 == unknown
 			Out.Rollback = ETurboMCPResultRollback::NotSupported;
 			Error = FString::Printf(
@@ -519,19 +432,20 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 				                   Out.BaselineDiagnosticCount, Out.AfterDiagnosticCount)
 				: TEXT(""));
 	}
+    Report += TEXT("\nsave=not_requested; run EditTurboMCPCompile explicitly after editing");
 	return true;
 }
 
 bool FTurboMCPGraphRepoint::ApplyCore(const FPlan& P, const FApplyContext& Context, FString& Report, FString& Error) {
 	FApplyOutcome Outcome;
-	return ApplyTransacted(P, Context, Outcome, Report, Error);
+	return ApplyTransacted(P, Context, Outcome, Report, Error, true);
 }
 
 bool FTurboMCPGraphRepoint::Apply(const FPlan& P, FString& Report, FString& Error) {
 	// ONE transaction, armed by ONE entry point. The old version opened its own transaction and then called a
 	// core that resolved the asset and called Modify() again, so the same edit had two transaction owners.
 	FApplyContext Context;
-	Context.bCompile = true;
+	Context.bCompile = false;
 	FApplyOutcome Outcome;
 	return ApplyTransacted(P, Context, Outcome, Report, Error);
 }

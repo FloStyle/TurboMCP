@@ -40,7 +40,7 @@ public:
  /** Options used by the transaction-free apply core. */
  struct FApplyContext
  {
-  bool bCompile = true;
+  bool bCompile = false;
   bool bSave = false;
  };
 
@@ -81,19 +81,19 @@ public:
   const FString& TargetPin, const FString& KeepSource, FPlan& OutPlan, FString& OutError);
  static FString RenderPreview(const FPlan& Plan);
  /**
-  * ONE transaction for the whole public edit: resolve, Modify, apply, compile once, compare, commit-or-restore.
+  * ONE transaction for the whole public edit: resolve, Modify, apply, compare, commit-or-restore. Compile/save must be separate.
   *
   * MEASURED: the previous pair of entry points gave one edit two transaction owners. `ApplyCore` remains as a
   * thin wrapper so existing callers keep compiling, and it now delegates here.
   */
  static bool ApplyTransacted(const FPlan& Plan, const FApplyContext& Context, FApplyOutcome& OutOutcome,
-  FString& OutReport, FString& OutError);
+  FString& OutReport, FString& OutError, bool bJoinCallerTransaction = false);
  /** Read the compile diagnostics of one Blueprint, normalized to stable identity strings (ARC04). */
  static TArray<FString> ReadCompileDiagnostics(UBlueprint* Blueprint);
  /** Severity + message text for every error and warning, sorted. Duplicates are KEPT, so the comparison counts multiplicity: two identical errors before and three after is one new diagnostic (ARC04). Extends the identity-only rule to multiplicity. */
  static TArray<FString> NormalizeDiagnostics(const class FCompilerResultsLog& Log);
  /** Apply using a caller-owned transaction; never starts or rolls back a transaction. */
  static bool ApplyCore(const FPlan& Plan, const FApplyContext& Context, FString& OutReport, FString& OutError);
- /** Preserve the standalone edit-tool transaction and compile behavior. */
+ /** Standalone edit transaction; compilation and saving are explicit separate operations. */
  static bool Apply(const FPlan& Plan, FString& OutReport, FString& OutError);
 };

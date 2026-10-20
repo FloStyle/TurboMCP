@@ -83,10 +83,9 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphRepoint(const FString& Asset,cons
   return WithResult(FTurboMCPToolError::AsError(Error), RefusedResult(TEXT("plan_unavailable")));
  }
 
- // ARC04: the write compiles ONCE and compares the diagnostics around it. ARC05: a memory edit does not save
- // unless its public contract says so, and this one's does not.
+ // Graph edits do not compile or save. Explicit compile runs after the transaction ends.
  FTurboMCPGraphRepoint::FApplyContext Context;
- Context.bCompile = true;
+ Context.bCompile = false;
  Context.bSave = false;
  FTurboMCPGraphRepoint::FApplyOutcome Outcome;
  FString Report;
