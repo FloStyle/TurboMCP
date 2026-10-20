@@ -144,7 +144,11 @@
       "id": "X-37",
       "title": "Node resolve does not give the value of an object pin (low)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-12",
+      "implementation_limits": "Unlinked object pins expose DefaultObject full paths; linked pins report link count instead. Source cbe1585. Runtime rendering remains unverified."
     },
     {
       "report": "2026-10-18_S1",

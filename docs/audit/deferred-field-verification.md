@@ -303,3 +303,8 @@ e07223a makes GraphCheck refuse standalone reader error comment lines before ass
 ### Ambiguous graph validation target
 
 9a1d039 makes GraphCheck use the shared FindGraphByName resolver and refuse multiple distinct matches instead of checking an arbitrary first graph. The append writer already used this resolver; this closes the preflight inconsistency, not a proven wrong-target mutation. Implemented; unbuilt_untested. Deferred: duplicate graph names refuse, a graph referenced in multiple arrays counts once, and unique names still validate. No tests/builds run.
+
+
+### X-37 object pin values
+
+Reconciled the existing cbe1585 implementation: NodeResolve prints unlinked DefaultObject values as object:<full path>, with linked pins retaining link counts. X-37 implementation is done, unbuilt_untested. Deferred evidence: an assigned object pin shows its correct path and a connected pin reports its connections. No tests/builds run; no new runtime claim.

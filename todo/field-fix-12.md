@@ -62,3 +62,8 @@ NodeResolve now reports subtype object paths, reference/const qualifiers and map
 ## Search result asset identity
 
 NodeFind results and NodeResolve ambiguity suggestions now emit long node IDs containing the asset path. This avoids returning another ambiguous short ID when different assets share a name. Implementation done; unbuilt and untested. Deferred evidence: same-named assets in different folders resolve via returned IDs.
+
+
+### X-37 object pin values
+
+Reconciled the existing cbe1585 implementation: NodeResolve prints unlinked DefaultObject values as object:<full path>, with linked pins retaining link counts. X-37 implementation is done, unbuilt_untested. Deferred evidence: an assigned object pin shows its correct path and a connected pin reports its connections. No tests/builds run; no new runtime claim.
