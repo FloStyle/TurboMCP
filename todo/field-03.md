@@ -57,3 +57,9 @@ Owner explicitly rejects custom-engine deployment. Engine source and three Pytho
 ## Plugin-only batch evidence
 
 Plugin-owned EditTurboMCPPinDefault validates exact input pin identity, records undo, marks dirty and reacquires the pin for read-back. Native set_pin_value is filtered. No automatic compile/save. Stock build passed; runtime regression deferred.
+
+## Graph-writer source pass
+
+b0753f2 removes raw pin assignment before Modify in Append/Patch. K2 defaults are parsed/validated before mutation; undo captured first; post-callback pin identity/default read-back required. Linked/read-only/output/exec/orphaned pins refuse literal writes.
+
+No build or tests run, per owner instruction. Runtime acceptance remains pending.

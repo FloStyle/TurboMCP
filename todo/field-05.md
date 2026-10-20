@@ -47,3 +47,9 @@ Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch re
 cbe1585: ordinary call-function readers and spawners share Function|reflected-path IDs. Blueprint function identities normalize skeleton/generated classes through the owning asset. Existing display IDs remain accepted when unambiguous. Duplicate graph references no longer produce false ambiguity. Inline expressions, specialized/custom nodes and whole reader/write round-trip remain open.
 
 Source-only, no build or test run at owner request. Not runtime acceptance.
+
+## Graph-writer source pass
+
+b0753f2 unifies graph lookup with the reader and rejects ambiguous graph names in Append/Patch/Replace. Replace checks removal identity and graph node count before any append.
+
+No build or tests run, per owner instruction. Runtime acceptance remains pending.

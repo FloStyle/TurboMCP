@@ -158,3 +158,9 @@ Ordinary function-call type IDs now use `Function|` plus the reflected function 
 Tidy now reads graph-panel bounds without writing geometry into the asset. It still needs a graphical editor when stored bounds are missing. Edit calls through the MCP wrapper refuse PIE and active transactions; call-log, tracing and checkout controls remain available. Direct C++/Python calls bypass this wrapper.
 
 The fast batch was merged at owner request without build or regression. Keep the dependent-widget loss, execution-chain and visual layout acceptance tasks open.
+
+### Graph editing and compilation
+
+Append, Patch and Replace defer compilation and saving. After editing, call EditTurboMCPCompile outside any transaction; inspect the result, then explicitly save. This avoids recording compilation/reinstancing inside graph-edit undo.
+
+Replace remains two-phase: append, then removal. A removal failure can leave the append applied; the tool reports partial state. Re-read before retrying. This source change has not been built or regression-tested.

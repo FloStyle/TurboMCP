@@ -69,3 +69,9 @@ Source-only, no build or test run at owner request. Not runtime acceptance.
 ## Approved graph-writer follow-up
 
 Owner-authorized source-only batch: remove implicit structural compilation from Append/Patch/Replace transactions, preserve undo before pin mutation, validate K2 defaults, propagate rollback failures, and fail node-set comparisons. Explicit compile/save remain separate. No tests or engine changes; full widget-loss acceptance remains open.
+
+## Graph-writer source pass
+
+b0753f2 removes explicit CompileBlueprint and structural marking from Append/Patch/Replace edit transactions. These tools now mark modified and report compile=not_run; explicit compile/save are separate. Apply also refuses PIE/nested transactions directly. This closes identified plugin compile-in-transaction paths, not every dependent-widget loss cause.
+
+No build or tests run, per owner instruction. Runtime acceptance remains pending.

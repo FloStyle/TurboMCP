@@ -53,3 +53,9 @@ Owner explicitly rejects custom-engine deployment. Engine source and three Pytho
 ## Plugin-only batch evidence
 
 Batch refuses PIE/nested transactions and reports rollback failure as partial. It checks transaction identity before undo so an empty failed batch cannot undo a previous user edit. Arbitrary native script batching is filtered; only graphRepoint is supported by the bounded replacement. Stock build passed; runtime regression deferred.
+
+## Graph-writer source pass
+
+b0753f2 checks rollback return values and returns failure on graph node-set mismatch. Replace preflights destructive targets before append. Replacement remains two-phase and can retain the append if removals fail; report labels this partial rather than unchanged.
+
+No build or tests run, per owner instruction. Runtime acceptance remains pending.
