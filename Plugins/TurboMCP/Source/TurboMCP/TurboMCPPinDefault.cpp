@@ -4,6 +4,7 @@
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
 #include "Editor.h"
+#include "Editor/TransBuffer.h"
 #include "Engine/Blueprint.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -15,7 +16,7 @@
 FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
     const FString& GraphName, const FString& NodeId, const FString& PinName, const FString& Value)
 {
-    if (!GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
         return TEXT("unchanged: refused; requires an idle editor outside an active transaction");
     FTurboMCPAssetResolver::FResolved Resolved;
     const FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
@@ -51,17 +52,35 @@ FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
     if (!Invalid.IsEmpty()) return FString::Printf(TEXT("unchanged: refused; %s"), *Invalid);
     if (Pin->DefaultValue == Parsed && Pin->DefaultObject == Object && Pin->DefaultTextValue.EqualTo(Text))
         return TEXT("unchanged: pin already has the requested default");
-    FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "PinDefault", "TurboMCP pin default"));
+    const FGuid EditedNodeGuid = Pin->GetOwningNode()->NodeGuid;
+    TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "PinDefault", "TurboMCP pin default"));
     Blueprint->Modify(); Graph->Modify(); Pin->GetOwningNode()->Modify();
     Schema->TrySetDefaultValue(*Pin, Value, true);
     FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
-    // Schema callbacks may reconstruct the node. Reacquire instead of dereferencing the old pin.
+    // Schema callbacks may reconstruct pins or change display-derived node identities.
+    int32 Matches = 0;
+    bool ValueMatches = false;
     for (UEdGraphNode* Node : Graph->Nodes)
-        if (Node && TurboMCPNodeId::MakeForNode(Node, true) == NodeId)
+        if (Node && Node->NodeGuid == EditedNodeGuid)
             for (UEdGraphPin* Current : Node->Pins)
-                if (Current && Current->Direction == EGPD_Input && Current->PinName.ToString() == PinName
-                    && Current->DefaultValue == Parsed && Current->DefaultObject == Object
-                    && Current->DefaultTextValue.EqualTo(Text))
-                    return TEXT("changed: pin default verified; undo=one; compile=not_run; save=not_requested");
-    return TEXT("partial: pin default read-back differs or pin was reconstructed; inspect or undo before retrying; save=not_requested");
+                if (Current && Current->Direction == EGPD_Input && Current->PinName.ToString() == PinName)
+                {
+                    ++Matches;
+                    ValueMatches = !Current->bOrphanedPin && Current->LinkedTo.IsEmpty()
+                        && Current->DefaultValue == Parsed && Current->DefaultObject == Object
+                        && Current->DefaultTextValue.EqualTo(Text);
+                }
+    if (Matches == 1 && ValueMatches)
+        return TEXT("changed: pin default verified; undo=one; compile=not_run; save=not_requested");
+
+    UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+    const FGuid OwnedId = Buffer && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
+        ? Buffer->UndoBuffer.Last()->GetId() : FGuid();
+    Transaction.Reset(); // Finalize once, then undo only the record created by this edit.
+    const int32 Index = Buffer ? Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1 : -1;
+    const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
+    const bool Restored = OwnedId.IsValid() && Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
+    return Restored
+        ? TEXT("unchanged: pin default read-back failed; rollback=complete; save=not_requested")
+        : TEXT("partial: pin default read-back failed; rollback=not_confirmed; inspect before retrying; save=not_requested");
 }
