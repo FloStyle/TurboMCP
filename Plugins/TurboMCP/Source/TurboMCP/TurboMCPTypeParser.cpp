@@ -71,21 +71,37 @@ namespace
 		return true;
 	}
 
+	bool ResolveStruct(UScriptStruct* Struct, FEdGraphPinType& Out, FString& OutWhy)
+	{
+		// The stock helper returns int on refusal. Never report that fallback as
+		// a successful resolution of the requested struct.
+		const FEdGraphPinType Resolved = UBlueprintEditorLibrary::GetStructType(Struct);
+		if (Resolved.PinCategory != UEdGraphSchema_K2::PC_Struct
+			|| Resolved.PinSubCategoryObject.Get() != Struct)
+		{
+			OutWhy = FString::Printf(TEXT("struct '%s' is not an allowable Blueprint variable/signature type; no substitute type was selected"), *Struct->GetPathName());
+			return false;
+		}
+		Out = Resolved;
+		return true;
+	}
+
 	bool ResolveBare(const FString& InText, FEdGraphPinType& Out, FString& OutWhy)
 	{
 		const FString Lower = InText.ToLower();
 		if (const FName* Basic = BasicTypes().Find(Lower))
 		{
 			Out = UBlueprintEditorLibrary::GetBasicTypeByName(*Basic);
+			if (Lower == TEXT("float")) Out.PinSubCategory = UEdGraphSchema_K2::PC_Float;
 			return true;
 		}
 		if (const FString* StructPath = StructTypes().Find(Lower))
 		{
-			if (UScriptStruct* Struct = FindObject<UScriptStruct>(nullptr, **StructPath)) { Out = UBlueprintEditorLibrary::GetStructType(Struct); return true; }
+			if (UScriptStruct* Struct = FindObject<UScriptStruct>(nullptr, **StructPath)) { return ResolveStruct(Struct, Out, OutWhy); }
 			OutWhy = FString::Printf(TEXT("the engine struct '%s' could not be found"), **StructPath); return false;
 		}
 		UObject* Object = LoadObject<UObject>(nullptr, *InText);
-		if (UScriptStruct* Struct = Cast<UScriptStruct>(Object)) { Out = UBlueprintEditorLibrary::GetStructType(Struct); return true; }
+		if (UScriptStruct* Struct = Cast<UScriptStruct>(Object)) { return ResolveStruct(Struct, Out, OutWhy); }
 		if (UEnum* Enum = Cast<UEnum>(Object)) { Out.PinCategory = UEdGraphSchema_K2::PC_Byte; Out.PinSubCategoryObject = Enum; return true; }
 		OutWhy = Object == nullptr
 			? FString::Printf(TEXT("'%s' is not a type or a loadable class path"), *InText)
