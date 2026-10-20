@@ -111,6 +111,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp"
           ],
           "new_files": []
+        },
+        "field-vars-preflight": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAdd.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
