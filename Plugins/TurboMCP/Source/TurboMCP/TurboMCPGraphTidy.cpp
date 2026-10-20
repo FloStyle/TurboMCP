@@ -1432,6 +1432,17 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	// THE PLAN IS READ-ONLY, so the copies this function makes are recorded in a LOCAL array. `Plan`
 	// decided WHERE each copy goes and wrote nothing; `Apply` is the half that creates, so the handle to
 	// each created node lives here rather than being written back into a const plan.
+	for (const FGetterCopy& Copy : InPlan.GetterCopies)
+	{
+		bool bConsumerLive = false;
+		for (const UEdGraphNode* Node : Graph->Nodes)
+			if (Node && Copy.ConsumerPin && Node->Pins.Contains(Copy.ConsumerPin)) { bConsumerLive = true; break; }
+		if (!Graph->Nodes.Contains(Copy.Original) || !CanSplitGetter(Copy.Original)
+			|| Copy.Original->GetValuePin() != Copy.OriginalValuePin || !bConsumerLive
+			|| !Copy.OriginalValuePin->LinkedTo.Contains(Copy.ConsumerPin)
+			|| !Copy.ConsumerPin->LinkedTo.Contains(Copy.OriginalValuePin))
+			return TEXT("unchanged: getter split plan is stale; preview again before applying");
+	}
 	const bool bWasDirtyBefore = Graph->GetOutermost()->IsDirty();
 	const int32 NodesBefore = Graph->Nodes.Num();
     FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphTidy", "TurboMCP tidy graph"));
@@ -1441,19 +1452,22 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
     // Capture both ends of rewired links as well as moved nodes and comments.
     for (UEdGraphNode* Node : Graph->Nodes) if (Node) Node->Modify();
 	TArray<FGetterCopy> Created = InPlan.GetterCopies;
+	FString CopyFailure;
 
 	// Create the getter copies. Each one takes over ONE consumer from the original.
 	for (FGetterCopy& Entry : Created)
 	{
 		if (!CanSplitGetter(Entry.Original) || Entry.ConsumerPin == nullptr)
 		{
-			continue;
+			CopyFailure = TEXT("a planned getter copy could not be created");
+			break;
 		}
 
 		UK2Node_VariableGet* Copy = NewObject<UK2Node_VariableGet>(Graph, NAME_None, RF_Transactional);
 		if (Copy == nullptr)
 		{
-			continue;
+			CopyFailure = TEXT("a planned getter copy could not be created");
+			break;
 		}
 
 		Copy->CreateNewGuid();
@@ -1477,13 +1491,14 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		Copy->AllocateDefaultPins();
 
 		UEdGraphPin* CopyValuePin = Copy->GetValuePin();
-		if (CopyValuePin == nullptr)
+		if (CopyValuePin == nullptr || CopyValuePin->PinType != Entry.OriginalValuePin->PinType)
 		{
 			// REFUSED RATHER THAN HALF-DONE. A copy with no value pin cannot take the consumer, and
 			// destroying the original's link without somewhere to put it would sever the graph. So the
 			// copy is removed and the consumer is left exactly as it was.
 			Copy->DestroyNode();
-			continue;
+			CopyFailure = TEXT("a planned getter copy could not be created");
+			break;
 		}
 
 		UEdGraphPin* OriginalValuePin = Entry.OriginalValuePin != nullptr
@@ -1495,6 +1510,13 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		CopyValuePin->MakeLinkTo(Entry.ConsumerPin);
 
 		Entry.Copy = Copy;
+		if (!CopyValuePin->LinkedTo.Contains(Entry.ConsumerPin)
+			|| !Entry.ConsumerPin->LinkedTo.Contains(CopyValuePin)
+			|| Entry.ConsumerPin->LinkedTo.Contains(OriginalValuePin))
+		{
+			CopyFailure = TEXT("getter-copy connection read-back failed");
+			break;
+		}
 	}
 
 	// -----------------------------------------------------------------------------------------
@@ -1506,6 +1528,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	TArray<FString> ActuallyMovedKeys;
 	for (const FNode& Entry : InPlan.Nodes)
 	{
+		if (!CopyFailure.IsEmpty()) break;
 		if (Entry.Node == nullptr || Entry.bIsComment || Entry.bUnreachable
 			|| (InPlan.SelectedNodeKeys.Num() > 0 && !InPlan.SelectedNodeKeys.Contains(Entry.Key)))
 		{
@@ -1543,7 +1566,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	}
 
 	const bool bBetter = MeasuredAfter < InPlan.WireLengthBefore;
-	if (!bBetter && !InPlan.bForce)
+	if (!CopyFailure.IsEmpty() || (!bBetter && !InPlan.bForce))
 	{
 		// ROLLBACK. The positions are put back EXACTLY, and every copy is destroyed with the consumer it
 		// took restored to the original getter. Then the result is RE-MEASURED AND COMPARED, because a
@@ -1614,7 +1637,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		const bool bRollbackComplete = bRestored && RestorationFailed == 0
 			&& bPositionsRestored && Graph->Nodes.Num() == NodesBefore;
 		if (bRollbackComplete && !bWasDirtyBefore) Graph->GetOutermost()->SetDirtyFlag(false);
-		FString Out = FString::Printf(TEXT("%s: %s in %s would be worse (total wire length %.1f -> %.1f), so rollback was attempted. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), bRollbackComplete ? TEXT("unchanged") : TEXT("partial"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
+		FString Out = FString::Printf(TEXT("%s: %s in %s did not complete an acceptable layout (total wire length %.1f -> %.1f), so rollback was attempted. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), bRollbackComplete ? TEXT("unchanged") : TEXT("partial"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
 		if (InPlan.SelectedNodeKeys.Num() > 0)
 		{
 			Out += FString::Printf(TEXT(" Scope was %d selected node(s); %d surrounding node(s) and all comment boxes were fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount);
@@ -1631,6 +1654,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 				TEXT("came back but those readers were left severed, which is a defect in this tool and not ")
 				TEXT("a clean rollback. ***"), RestorationFailed);
 		}
+		if (!CopyFailure.IsEmpty()) Out += TEXT(" Cause: ") + CopyFailure + TEXT(". Force does not bypass split failures.");
 		if (!bRollbackComplete) Out += TEXT(" rollback=incomplete; package remains dirty; inspect before retrying or saving.");
 		return Out;
 	}
