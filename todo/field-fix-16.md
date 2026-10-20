@@ -41,3 +41,7 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## Signature creation result
 
 FunctionAdd checks each created pin name, direction and exact type. A missing or altered result removes the newly created function and reports whether cleanup removed the graph, rather than reporting the requested signature as successfully created. Implementation closed; unbuilt and untested.
+
+## Targeted caller refresh
+
+FunctionAdd retains the skeleton update but reconstructs only self-call nodes naming the newly created function; external same-named calls and unrelated graph nodes are excluded. Add also refuses PIE, off-game-thread and active-transaction invocation before mutation. This closes the broad reconstruction scope defect, not dependent Widget-loss root cause. Unbuilt and untested.

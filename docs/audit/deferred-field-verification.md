@@ -138,3 +138,5 @@ FIELD-FIX-15: original DataTable undo identity, unavailable undo refusal, and ch
 FIELD-FIX-19 keepSource: supported boolean spellings, whitespace and invalid-input refusal remain untested.
 
 FIELD-FIX-16: function signature pin failure and cleanup read-back, plus successful input/output creation, remain untested.
+
+FIELD-FIX-16 targeted refresh: newly resolved self-call pins/links, external same-name call preservation, unrelated graphs and transaction refusal remain untested.
