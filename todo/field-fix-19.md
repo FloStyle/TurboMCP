@@ -57,3 +57,7 @@ FIELD-FIX-19 checks CanUserDeleteNode in planning and before apply mutation when
 ## Repoint stale reader counts
 
 FIELD-FIX-19 refuses before mutation when the source output reader count differs from its plan. Existing per-reader identity checks still apply. This prevents newly added consumers being silently excluded when retaining the source. Implementation done; unbuilt and untested. Deferred evidence: added/removed readers between plan and apply refuse unchanged; unchanged reader sets repoint normally.
+
+## Repoint undo ownership
+
+Standalone repoint validates transaction availability and captures its owned undo ID before mutation. Failure uses that original identity rather than adopting the active record at failure time. Caller-owned batch rollback remains caller-owned. Implementation done; unbuilt and untested. Deferred evidence: undo unavailable refuses unchanged; forced failure restores only its owned transaction.
