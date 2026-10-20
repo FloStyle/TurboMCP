@@ -8,6 +8,9 @@
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 
 #include "Misc/AutomationTest.h"
+#include "Editor.h"
+#include "ScopedTransaction.h"
+#include "Tools/TurboMCPToolsets.h"
 
 #include "TurboMCPGraphAppend.h"
 #include "TurboMCPGraphText.h"
@@ -993,6 +996,34 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	Fixture.Package->SetDirtyFlag(false);
+	// FIELD-02: exercise the public compile wrapper inside an enclosing edit scope.
+	// Refusing before compilation prevents reinstance side effects from entering undo.
+	if (GEditor == nullptr || GEditor->IsTransactionActive())
+	{
+		AddError(TEXT("compile guard fixture requires an editor without an enclosing transaction"));
+		return false;
+	}
+	const FGraphSnapshot GuardGraph = CaptureGraph(Fixture.Target);
+	const FString GuardWidgets = CaptureWidgets(Fixture.Blueprint);
+	const FWidgetIdentity GuardIdentity = CaptureWidgetIdentity(Fixture.Blueprint);
+	UClass* const GuardClass = Fixture.Blueprint->GeneratedClass;
+	{
+		FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP compile refusal fixture")));
+		TestTrue(TEXT("compile guard negative control owns an active transaction"), GEditor->IsTransactionActive());
+		const FString Refused = UTurboMCPEditToolset::EditTurboMCPCompile(Fixture.AssetPath);
+		TestTrue(TEXT("public compile refuses inside a transaction"), Refused.StartsWith(TEXT("error: compile refused")));
+		TestTrue(TEXT("compile refusal preserves the caller transaction"), GEditor->IsTransactionActive());
+		TestTrue(TEXT("compile refusal keeps graph objects and contents"), SameGraph(GuardGraph, CaptureGraph(Fixture.Target)));
+		TestEqual(TEXT("compile refusal keeps widget hierarchy"), CaptureWidgets(Fixture.Blueprint), GuardWidgets);
+		TestTrue(TEXT("compile refusal keeps widget identities"), SameWidgetIdentity(GuardIdentity, CaptureWidgetIdentity(Fixture.Blueprint)));
+		TestTrue(TEXT("compile refusal keeps the generated class"), Fixture.Blueprint->GeneratedClass == GuardClass);
+		TestFalse(TEXT("compile refusal leaves the package clean"), Fixture.Package->IsDirty());
+	}
+	TestFalse(TEXT("test transaction ends normally"), GEditor->IsTransactionActive());
+	const FString CompiledOutside = UTurboMCPEditToolset::EditTurboMCPCompile(Fixture.AssetPath);
+	TestTrue(TEXT("public compile still works outside a transaction"), CompiledOutside.Contains(TEXT("1 clean, 0 with warnings, 0 with errors")));
+	Fixture.Package->SetDirtyFlag(false);
+
 
 	const FGraphSnapshot TargetBefore = CaptureGraph(Fixture.Target);
 	const FGraphSnapshot SiblingBefore = CaptureGraph(Fixture.Sibling);

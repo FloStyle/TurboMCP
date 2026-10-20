@@ -161,6 +161,15 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 		return FString::Printf(TEXT("error: %s."), *WriteRefusalReason());
 	}
 
+	// Compilation can reinstance dependent Widget classes. An enclosing script's
+	// undo cannot reliably restore that object graph, so refuse before loading assets.
+	if (GEditor->IsTransactionActive())
+	{
+		return TEXT("error: compile refused while an editor transaction is active. ")
+			TEXT("Finish the edit batch and verify its outcome, then compile in a separate call. ")
+			TEXT("Nothing was compiled; the caller's transaction was not ended or undone.");
+	}
+
 	FString Result = FString::Printf(TEXT("compiling %d asset(s)"), Parts.Num());
 
 	int32 CleanCount = 0;
