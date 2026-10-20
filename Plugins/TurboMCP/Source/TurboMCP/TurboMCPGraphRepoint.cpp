@@ -100,6 +100,10 @@ bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName,
    && ConsumerPin->LinkedTo.Num() == 1 && ConsumerPin->LinkedTo.Contains(SourceOut);
   if (Check.Response != CONNECT_RESPONSE_MAKE && !ReplacesOnlySource) Out.Refusals.Add(FString::Printf(TEXT("target '%s' cannot connect to reader '%s.%s': %s"),*TargetPin,*Out.Readers.Last().ConsumerNodeId,*Out.Readers.Last().ConsumerPin,*Check.Message.ToString()));
  }
+ if (!Out.bKeepSource)
+  for (const UEdGraphPin* Pin : Source->Pins)
+   if (Pin && Pin != SourceOut && !Pin->LinkedTo.IsEmpty())
+    Out.Refusals.Add(FString::Printf(TEXT("source pin '%s' has connections outside this repoint; keepSource=true preserves them"), *Pin->PinName.ToString()));
  if (Out.Readers.Num()==0) Out.Refusals.Add(TEXT("source output has no linked readers; nothing would change"));
  return true;
 }
@@ -360,6 +364,19 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 
 	if (!P.bKeepSource)
 	{
+        // Recheck after schema callbacks: never delete a node with links that
+        // were not moved by this operation (including newly added readers).
+        for (const UEdGraphPin* Pin : Source->Pins)
+        {
+            if (Pin && !Pin->LinkedTo.IsEmpty())
+            {
+                Error = TEXT("source still has connections outside the completed repoint; deletion refused");
+                FailEdit();
+                Out.Outcome = ETurboMCPResultOutcome::Failed;
+                Out.Code = TEXT("source_connections_remaining");
+                return false;
+            }
+        }
 		if (Source->Pins.Num() > 0)
 		{
 			FBlueprintEditorUtils::RemoveNode(B, Source, true);
