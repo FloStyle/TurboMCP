@@ -229,6 +229,14 @@ namespace
 				}
 			}
 
+			Entry.Tools.Sort([](const TSharedPtr<FJsonObject>& A, const TSharedPtr<FJsonObject>& B)
+			{
+				FString AName, BName;
+				A->TryGetStringField(TEXT("name"), AName);
+				B->TryGetStringField(TEXT("name"), BName);
+				return AName.Compare(BName, ESearchCase::CaseSensitive) < 0;
+			});
+
 			if (!Entry.Name.IsEmpty())
 			{
 				OutEntries.Add(MoveTemp(Entry));
