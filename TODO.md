@@ -34,16 +34,16 @@ Generated from task files and the approved queue. After editing task status, run
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>in progress (1)</summary>
+<summary>in progress (2)</summary>
 
+- **P0** [Reproduce and contain native DataTable JSON-write crashes](todo/field-01.md)
 - **P0** [Prevent dependent Widget loss around compile and batch rollback](todo/field-02.md)
 
 </details>
 
 <details>
-<summary>todo (77)</summary>
+<summary>todo (76)</summary>
 
-- **P0** [Reproduce and contain native DataTable JSON-write crashes](todo/field-01.md)
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
 - **P1** [Make explicit both references equal in plus out](todo/484d5638.md)

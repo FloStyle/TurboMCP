@@ -1,9 +1,9 @@
 # Reproduce and contain native DataTable JSON-write crashes
 
 ID: FIELD-01
-Status: todo
+Status: in_progress
 Priority: P0
-Readiness: needs_reconciliation
+Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
 Kind: investigation
@@ -37,3 +37,9 @@ Obtain exact build and crash artifacts; reproduce on a disposable table with a s
 
 ## Handoff
 Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch remains paused.
+
+## Approved synthetic reproduction
+
+Use a disposable transient DataTable with FTableRowBase to isolate object lifetime from private row fields. Exercise FillDataTableFromJSONString first without and then with a TStrongObjectPtr. Record a crash as diagnostic failure, not acceptance. No engine changes or production assets in this assignment. The reference-bearing row and open/closed editor variants remain follow-ups. Private crash artifacts are unavailable; the owner authorizes synthetic reproduction without work code.
+
+Exact assignment: field-datatable-repro. Supervisor command: `python Tools/execute-tests.py --profile engine --suites test-datatable-import-repro --execute --max-seconds 600`.

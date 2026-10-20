@@ -23,6 +23,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp"
           ],
           "new_files": []
+        },
+        "field-datatable-repro": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableImportTest.cpp",
+            "Tools/test-datatable-import-repro.py"
+          ]
         }
       },
       "preserve_rows": []
