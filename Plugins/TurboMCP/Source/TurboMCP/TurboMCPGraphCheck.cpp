@@ -305,6 +305,18 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 		return false;
 	}
 
+	// Reader errors are completeness failures, not disposable editing comments.
+	// Refuse before loading the target so all writers using this gate agree.
+	for (const FLine& Line : SplitLines(InText))
+	{
+		if (Line.Text.TrimStartAndEnd().StartsWith(TEXT("; error:"), ESearchCase::IgnoreCase))
+		{
+			OutError = FString::Printf(TEXT("line %d: graph text contains a reader error; obtain a complete, valid dump before write-back. %s"),
+				Line.Number, *Line.Text.TrimStartAndEnd());
+			return false;
+		}
+	}
+
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(OutPlan.Asset, Resolved);
 	if (!ResolveError.IsEmpty())
