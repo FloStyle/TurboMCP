@@ -360,3 +360,8 @@ fb328d9 replaces the combined refusal with separate missing-input, orphaned, exe
 
 - 1256778b: implemented, unbuilt/untested. Check changed editable object, soft/class/interface references against class defaults, including null, without placement-slot noise.
 - 214d6e7a: implemented, unbuilt/untested. Check qualified names/value/order/count, display-name refusals, comma/pipe input, case-only duplicates and reused plans. Failed read-back must report retained unsaved partial state.
+
+## 2026-10-21 — Trace locations and loaded struct readers (`73befe8`)
+
+- 02674939: unbuilt/untested. Exercise different armed nodes in one function; verify exact opcode mapping, missing debug data and arm lifetime separately. Arm-loss root cause remains unresolved.
+- 7bd81b84: unbuilt/untested. Make/break-only usage, split pins, map value structs, member and DataTable readers, one asset listing per Blueprint; verify force count changes. Unloaded/transitive dependencies are outside this direct loaded scan.

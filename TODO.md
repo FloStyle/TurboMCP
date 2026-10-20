@@ -82,9 +82,8 @@ The linked records distinguish implemented containment from unresolved causes. V
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>todo (65)</summary>
+<summary>todo (63)</summary>
 
-- **P1** [Map trace events to actual executing nodes](todo/02674939.md)
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
 - **P1** [Verify append node structure and compile outcomes](todo/4f1bfd61.md)
 - **P1** [Verify session-report completeness and stable IDs](todo/51678b9f.md)
@@ -124,7 +123,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P3** [Distinguish struct dependents from proven breakage](todo/1f5fe672.md)
 - **P3** [Preserve ten positive regression workflows](todo/2f066e6c.md)
 - **P3** [Retire the legacy release-run container](todo/5f2cee78.md)
-- **P3** [Include struct make/break usage in removal checks](todo/7bd81b84.md)
 - **P3** [Provide valid help examples for graph and trace tools](todo/9263bd95.md)
 - **P3** [Separate table creation from nested row correctness](todo/a4eed2e1.md)
 - **P3** [Define field syntax without changing value semantics](todo/abdd2c08.md)
@@ -182,8 +180,9 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (12)</summary>
+<summary>done (14)</summary>
 
+- **P1** [Map trace events to actual executing nodes](todo/02674939.md)
 - **P1** [Verify enum names after creation](todo/214d6e7a.md)
 - **P1** [Make explicit both references equal in plus out](todo/484d5638.md)
 - **P1** [Avoid false unnecessary-cast warnings](todo/7bbe9c3c.md)
@@ -196,5 +195,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P2** [Default-on tool call recording](todo/field-fix-26.md)
 - **P2** [Schema-aware missing-default lint](todo/field-fix-28.md)
 - **P3** [Report editable widget reference overrides](todo/1256778b.md)
+- **P3** [Include struct make/break usage in removal checks](todo/7bd81b84.md)
 
 </details>
