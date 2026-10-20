@@ -533,6 +533,12 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 
 				if (PinIsInside(SelectedSet, Linked))
 				{
+					// LinkedTo is reciprocal. Record a normal internal wire from its output
+					// only; replaying the input-side duplicate can request BREAK_OTHERS
+					// after the first connection and incorrectly roll back the whole copy.
+					if (Pin->Direction == EGPD_Input && Linked->Direction == EGPD_Output
+						&& Linked->LinkedTo.Contains(Pin))
+						continue;
 					// BOTH ENDS INSIDE: an internal wire, re-made between the copies.
 					Crossing.OutsideNodeKey = KeyOf(Linked->GetOwningNode());
 					Crossing.OutsidePin = Linked->PinName.ToString();
