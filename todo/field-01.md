@@ -74,4 +74,4 @@ Native DataTable add/set/rename MCP entry points are filtered while TurboMCP is 
 
 ## Plugin-only batch evidence
 
-DataTable text splitting now respects escaped quotes, keeping embedded commas/parentheses inside strings. Stock-engine build e09c5e1cbcd34d899ec8342d81db6c4a passed at 85d2f11; this final parser adjustment awaits rebuild. Runtime regression deferred.
+DataTable text splitting now respects escaped quotes, keeping embedded commas/parentheses inside strings. Stock-engine build e09c5e1cbcd34d899ec8342d81db6c4a passed at 85d2f11; final parser candidate 328eb7e also passed build f0607c22016c40a3a4f0a1535ff62d01. Runtime regression deferred.
