@@ -164,9 +164,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPRefs(
 	// The direction is validated before anything is looked up, so a typo costs
 	// nothing and the error names both accepted values.
 	const FString Wanted = Direction.TrimStartAndEnd().ToLower();
-	const bool bWantOut = Wanted.IsEmpty() || Wanted == TEXT("out");
-	const bool bWantIn = Wanted.IsEmpty() || Wanted == TEXT("in");
 	const bool bWantBoth = Wanted.IsEmpty() || Wanted == TEXT("both");
+	const bool bWantOut = bWantBoth || Wanted == TEXT("out");
+	const bool bWantIn = bWantBoth || Wanted == TEXT("in");
 
 	if (!bWantOut && !bWantIn && !bWantBoth)
 	{

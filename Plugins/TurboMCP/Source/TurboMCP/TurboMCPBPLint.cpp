@@ -17,6 +17,7 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "K2Node.h"
+#include "K2Node_DynamicCast.h"
 #include "Misc/AssetRegistryInterface.h"
 
 #include "TurboMCPAssetResolver.h"
@@ -213,81 +214,44 @@ static void RunDeadNodes(const UBlueprint* InBlueprint, const TArray<UEdGraph*>&
 // unnecessary-casts
 // ---------------------------------------------------------------------------------------------------
 //
-// A CAST IS UNNECESSARY IN TWO NAMED CASES, AND ONLY THOSE TWO, BECAUSE THE SPEC NAMES THEM:
-//   (a) its result is only used to call something that is already on the class, and
-//   (b) it is a cast on an object whose type is already known at that point.
-// CASE (b) CANNOT BE DECIDED WITHOUT A TYPE ANALYSIS THIS TOOL DOES NOT DO, so it is NOT claimed. Reporting
-// it by guessing would be exactly the "strong claim that is wrong" `D-05` was written about. What IS done is
-// (a) plus the one sub-case of (b) this pass can PROVE from the graph alone: a cast whose target class is
-// the class the Blueprint already is, which makes the cast a no-op on every path.
+// A cast can be useful through its typed result, boolean result, or execution branches.
+// Do not infer the input object's type from the enclosing Blueprint's class: other
+// objects (including null) can reach this node. Report only observable unused outputs.
 static void RunUnnecessaryCasts(const UBlueprint* InBlueprint, const TArray<UEdGraph*>& InGraphs,
 	FTurboMCPBPLint::FCheckResult& Out)
 {
 	Out.Name = TEXT("unnecessary-casts");
 	Out.bRan = true;
 
-	UClass* const BlueprintClass = InBlueprint->GeneratedClass;
-
 	for (UEdGraph* Graph : InGraphs)
 	{
+		if (Graph == nullptr) { continue; }
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
-			UK2Node* const K2 = Cast<UK2Node>(Node);
-			// ONLY CAST NODES ARE THIS CHECK'S SUBJECT, so the denominator counts cast nodes and NOT every
-			// node. `P1`'s point is that the denominator says what was EXAMINED, and counting all nodes here
-			// would inflate it into a number that means nothing.
-			if (K2 == nullptr) { continue; }
-			if (!Node->GetClass()->GetName().Contains(TEXT("DynamicCast"))) { continue; }
-
+			const UK2Node_DynamicCast* CastNode = Cast<UK2Node_DynamicCast>(Node);
+			if (CastNode == nullptr) { continue; }
 			++Out.Scanned;
 
-			// (a) THE RESULT IS ONLY USED TO CALL SOMETHING ALREADY ON THE CLASS.
-			//
-			// Read the cast's output pin, follow it to what consumes it, and ask whether the same function
-			// is reachable without the cast. The conservative version of that, which needs no call graph:
-			// the cast's target class is on the Blueprint's own class chain, so the cast cannot be adding
-			// anything the caller did not already have.
-			UEdGraphPin* const AsPin = K2->FindPin(TEXT("AsObject"), EGPD_Output);
-			const int32 Consumers = AsPin != nullptr ? AsPin->LinkedTo.Num() : 0;
-
-			if (BlueprintClass != nullptr && Node->GetClass()->GetName().Contains(TEXT("DynamicCast")))
+			// Missing result pins indicate an incomplete/custom node, not proof of disuse.
+			if (CastNode->GetCastResultPin() == nullptr) { continue; }
+			bool bHasConsumer = false;
+			for (const UEdGraphPin* Pin : Node->Pins)
 			{
-				// The cast's class is in the node's own title, so it is read from the node rather than
-				// parsed out of text - see the note in `unnecessary-casts` above about not guessing.
-				FString TargetClassName;
-				if (const UEdGraphPin* const ClassPin = K2->FindPin(TEXT("Class"), EGPD_Output))
+				if (Pin != nullptr && Pin->Direction == EGPD_Output && Pin->LinkedTo.Num() > 0)
 				{
-					TargetClassName = ClassPin->DefaultObject != nullptr
-						? ClassPin->DefaultObject->GetName() : FString();
-				}
-
-				if (!TargetClassName.IsEmpty() && BlueprintClass->GetName() == TargetClassName)
-				{
-					FTurboMCPBPLint::FFinding Finding;
-					Finding.Check = Out.Name;
-					Finding.NodeKey = KeyOf(Node);
-					Finding.GraphName = Graph->GetName();
-					Finding.Severity = TEXT("warning");
-					Finding.Why = FString::Printf(
-						TEXT("casts to %s, which is this Blueprint's own class, so the cast cannot fail or narrow anything"),
-						*TargetClassName);
-					Out.Findings.Add(Finding);
-					continue;
+					bHasConsumer = true;
+					break;
 				}
 			}
+			if (bHasConsumer) { continue; }
 
-			// A cast whose result NOTHING CONSUMES is also worth saying, and it is provable here: zero
-			// consumers means the check's whole purpose is gone.
-			if (Consumers == 0)
-			{
-				FTurboMCPBPLint::FFinding Finding;
-				Finding.Check = Out.Name;
-				Finding.NodeKey = KeyOf(Node);
-				Finding.GraphName = Graph->GetName();
-				Finding.Severity = TEXT("warning");
-				Finding.Why = TEXT("its result reaches nothing, so the cast decides nothing");
-				Out.Findings.Add(Finding);
-			}
+			FTurboMCPBPLint::FFinding Finding;
+			Finding.Check = Out.Name;
+			Finding.NodeKey = KeyOf(Node);
+			Finding.GraphName = Graph->GetName();
+			Finding.Severity = TEXT("warning");
+			Finding.Why = TEXT("no cast output is connected (typed result, success value or execution branches); review whether this cast is intended");
+			Out.Findings.Add(Finding);
 		}
 	}
 }
