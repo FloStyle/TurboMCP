@@ -298,3 +298,8 @@ e07223a makes GraphCheck refuse standalone reader error comment lines before ass
 ### Function graph latent-node validation
 
 235b961 replaces the graph-class-name heuristic with Blueprint FunctionGraphs membership. Stock Unreal creates ordinary function graphs as UEdGraph, so the prior check could bypass the existing IsLatentForMacros refusal. Implemented; unbuilt_untested. Deferred: ordinary function rejects latent nodes, event graph remains permitted, non-latent function nodes remain accepted. This is a source-level preflight correction, not proof of crash resolution or full graph round-trip correctness. No tests or builds run.
+
+
+### Ambiguous graph validation target
+
+9a1d039 makes GraphCheck use the shared FindGraphByName resolver and refuse multiple distinct matches instead of checking an arbitrary first graph. The append writer already used this resolver; this closes the preflight inconsistency, not a proven wrong-target mutation. Implemented; unbuilt_untested. Deferred: duplicate graph names refuse, a graph referenced in multiple arrays counts once, and unique names still validate. No tests/builds run.
