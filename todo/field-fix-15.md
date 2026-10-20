@@ -45,3 +45,8 @@ Failed RemoveRow or a row still present after removal now enters the batch rollb
 ## Original undo ownership
 
 DataTable edits acquire and capture their undo identity before mutation. Failure finalizes the scope once and only undoes that same record with no transaction active, rather than adopting whichever transaction is active at failure time. Implementation closed; unbuilt and untested. Crash root cause remains open.
+
+
+### DataTable name bounds
+
+afd3d63 rejects oversized row/field identifiers before planning FName conversion and checks operation/removal identifiers again before apply. Refusal precedes mutation and enters the plan refusal list. Implemented; unbuilt_untested. Deferred evidence: oversized set/remove row and field identifiers refuse with unchanged rows, while normal names work. Original field crash remains unproven; this guard is not a root-cause claim. No tests/builds run.

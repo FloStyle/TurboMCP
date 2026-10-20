@@ -238,3 +238,8 @@ NodeFind results and NodeResolve ambiguity suggestions now emit long node IDs co
 ### Signature name bounds
 
 888f221 rejects names at or above NAME_SIZE and the case-insensitive None sentinel before FName construction for function and signature pin names. This guards the engine fatal length path and avoids empty-name authoring. Implemented; unbuilt_untested. Deferred checks: oversized ASCII names refuse without mutation; ordinary names remain accepted; None/none refuse. No test/build was run. This is not a diagnosis of the reported DataTable crash.
+
+
+### DataTable name bounds
+
+afd3d63 rejects oversized row/field identifiers before planning FName conversion and checks operation/removal identifiers again before apply. Refusal precedes mutation and enters the plan refusal list. Implemented; unbuilt_untested. Deferred evidence: oversized set/remove row and field identifiers refuse with unchanged rows, while normal names work. Original field crash remains unproven; this guard is not a root-cause claim. No tests/builds run.
