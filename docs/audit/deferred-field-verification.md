@@ -258,3 +258,8 @@ afd3d63 rejects oversized row/field identifiers before planning FName conversion
 ### Tidy rollback result and dirty baseline
 
 12b65cc captures dirty state and node count before Modify or node creation. Rollback now requires matching wire length, restored consumer links/positions and node count before reporting unchanged or restoring a clean flag. Incomplete recovery reports partial and retains dirty state. Implemented, unbuilt_untested; visual layout acceptance remains open. Deferred evidence: clean/dirty starting assets and forced rollback failures report accurately. No tests/builds run.
+
+
+### Getter destination and preview score
+
+bbd54b9 positions split getter copies beside the consumer planned destination rather than its old coordinates. Planned wire length substitutes the copy location for each rewired consumer instead of continuing to score the original getter connection. Implemented; unbuilt_untested. Deferred evidence: a moved multi-consumer getter graph places copies near moved consumers and preview accounts for split links. Rendered overlap and skipped-copy behavior remain unverified; FIELD-06 stays open. No tests/builds run.
