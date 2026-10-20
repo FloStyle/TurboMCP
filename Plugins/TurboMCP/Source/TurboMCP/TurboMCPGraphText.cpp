@@ -765,7 +765,7 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 	TSet<const UEdGraphNode*>& InOutSharedValues,
 	TArray<FString>& OutNotes) const
 {
-	if (InDepth >= 64)
+	if (InFirst != nullptr && InDepth >= 64)
 	{
 		const FString Note = TEXT("; error: execution branch depth limit reached; graph dump is incomplete");
 		OutNotes.Add(Note);

@@ -278,3 +278,8 @@ e6615fb revalidates planned getter/consumer membership and reciprocal links befo
 ### Reroute reader endpoint guard
 
 34c545e checks the first reroute link for null, input direction, matching category and reciprocal membership before dereferencing/following it. A broken endpoint leaves the reroute in the reader path instead of crashing or silently following an invalid edge. Implemented; unbuilt_untested. Deferred evidence: malformed/null reroute links do not crash; valid exec reroutes still traverse. Separate from X-39 continuation diagnosis, which remains open. No tests/builds run.
+
+
+### Reader branch depth and truncation
+
+49421e1 bounds recursive execution-branch rendering at depth 64 and emits an explicit incomplete-dump error. The 2000-node linear limit now warns only if traversal actually attempts another node, avoiding a false error at exact completion. Empty branch continuations do not trigger depth warnings. Implemented; unbuilt_untested. Deferred evidence: deeply nested branches terminate with a clear warning, exactly 2000 linear nodes complete, longer chains report truncation. No tests/builds run.
