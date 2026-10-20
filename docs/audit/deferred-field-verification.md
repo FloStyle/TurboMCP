@@ -124,3 +124,5 @@ Graph Copy defaults (302c405, FIELD-FIX-06): deferred evidence for literal/objec
 Exact type preservation (0a5e7d0, FIELD-FIX-17): deferred checks for allowed/refused structs, float versus double/real, and container/signature propagation. Verification debt only; no new product task.
 
 FIELD-FIX-06 external static library calls: cross-asset copy, retained function owner, defaults and links remain untested. Self-call missing-member refusal still requires later evidence.
+
+FIELD-FIX-17 signature description: const-reference, mutable-reference, ordinary output and return directions await verification; implementation follows the stock K2 pin rule.
