@@ -229,6 +229,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp"
           ],
           "new_files": []
+        },
+        "field-help-pages": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
