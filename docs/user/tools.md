@@ -150,3 +150,11 @@ TurboMCP filters selected native MCP tools while loaded. Refresh discovery after
 | ProgrammaticToolset.execute_tool_script | Sequential tool calls, or Preview/EditTurboMCPBatchEdit for supported graphRepoint operations only. Arbitrary script batching has no equivalent. |
 
 These filters do not intercept direct Python calls or editor actions. They contain known MCP routes; they do not repair Unreal globally. Pin edits mark the Blueprint dirty and capture undo but do not compile or save automatically.
+
+### Fast field batch: pending regression
+
+Ordinary function-call type IDs now use `Function|` plus the reflected function path. Blueprint calls use the owning Blueprint asset path and function name, avoiding skeleton-class prefixes. Existing display aliases remain accepted when unambiguous; refresh node-type discovery after updating. Specialized node classes and inline graph expressions are not covered by this change.
+
+Tidy now reads graph-panel bounds without writing geometry into the asset. It still needs a graphical editor when stored bounds are missing. Edit calls through the MCP wrapper refuse PIE and active transactions; call-log, tracing and checkout controls remain available. Direct C++/Python calls bypass this wrapper.
+
+The fast batch was merged at owner request without build or regression. Keep the dependent-widget loss, execution-chain and visual layout acceptance tasks open.

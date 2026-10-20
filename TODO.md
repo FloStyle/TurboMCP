@@ -34,17 +34,21 @@ Generated from task files and the approved queue. After editing task status, run
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>in progress (4)</summary>
+<summary>in progress (8)</summary>
 
 - **P0** [Reproduce and contain native DataTable JSON-write crashes](todo/field-01.md)
 - **P0** [Prevent dependent Widget loss around compile and batch rollback](todo/field-02.md)
 - **P1** [Verify pin-only changes persist and report save state accurately](todo/field-03.md)
 - **P1** [Reconcile batch failures timeouts and possible duplicate writes](todo/field-04.md)
+- **P1** [Make graph read and targeted write identities round-trip](todo/field-05.md)
+- **P1** [Make targeted layout usable on newly built graphs](todo/field-06.md)
+- **P2** [Improve field diagnostics build identity and tool effect visibility](todo/field-08.md)
+- **P2** [Triage remaining Blueprint schema and editing gaps](todo/field-09.md)
 
 </details>
 
 <details>
-<summary>todo (74)</summary>
+<summary>todo (70)</summary>
 
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
@@ -55,8 +59,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P1** [Compare function creation and signature gaps](todo/63d5c9e2.md)
 - **P1** [Avoid false unnecessary-cast warnings](todo/7bbe9c3c.md)
 - **P1** [Separate result decoding from compile-fixture verdicts](todo/7de8d185.md)
-- **P1** [Make graph read and targeted write identities round-trip](todo/field-05.md)
-- **P1** [Make targeted layout usable on newly built graphs](todo/field-06.md)
 - **P1** [Detect broken execution paths and duplicate graph chains](todo/field-07.md)
 - **P1** [Keep general multi-asset batch outside v1 scope](todo/bbb63d1e.md)
 - **P1** [Preserve all graph nodes and link endpoints in reads](todo/d3897f07.md)
@@ -76,8 +78,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P2** [Distinguish fixture serialization drift from semantic drift](todo/9935c0ea.md)
 - **P2** [Design explicit unsaved-asset revert separately](todo/9c47994b.md)
 - **P2** [Make task-to-tool discovery bounded and evidence-based](todo/9e5d5c9a.md)
-- **P2** [Improve field diagnostics build identity and tool effect visibility](todo/field-08.md)
-- **P2** [Triage remaining Blueprint schema and editing gaps](todo/field-09.md)
 - **P2** [Separate project capture GPU failures from tool crashes](todo/field-10.md)
 - **P2** [Make usage analysis conservative about delegates and self](todo/a28a09fd.md)
 - **P2** [Make layout counts name their populations](todo/a8341453.md)

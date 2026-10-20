@@ -1,7 +1,7 @@
 # Improve field diagnostics build identity and tool effect visibility
 
 ID: FIELD-08
-Status: todo
+Status: in_progress
 Priority: P2
 Readiness: needs_reconciliation
 Owner: Codex
@@ -41,3 +41,9 @@ Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch re
 ## Owner-authorized fast source pass
 
 2026-10-20: owner requests fast plugin-only urgent fixes without tests. Integrator approves field-fast-followup: transaction rollback ownership, central MCP write refusal during PIE/nested transactions, actual Slate outline measurement without changing stored node sizes, exact function-spawner identities, and honest tool effect/status diagnostics. No engine changes, DSH dispatch or runtime certification. Remaining feature requests and unproven crash causes stay open.
+
+## Fast batch result (2026-10-20)
+
+cbe1585: status includes engine version, module binary path and file timestamp, explicitly not source-revision proof; reports source revision unknown. Help flags PlayCheck execution effects and directs truncated summaries to the full tool index. Exact embedded source revision and pagination remain open.
+
+Source-only, no build or test run at owner request. Not runtime acceptance.

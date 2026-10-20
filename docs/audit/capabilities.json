@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "6f6abd417017b5f0b46535b83d0b9c04792fb6f5",
+  "plugin_tree": "289f3dbbeb4162da91576c3a5fec8bfbc7f42fce",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 102,
@@ -1006,7 +1006,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 202
+          "line": 210
         }
       ],
       "test_references": [
@@ -1666,7 +1666,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 248
+          "line": 256
         }
       ],
       "test_references": [
@@ -2002,7 +2002,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 309
+          "line": 317
         }
       ],
       "test_references": [
@@ -2202,7 +2202,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 481
+          "line": 487
         }
       ],
       "test_references": [
@@ -2226,7 +2226,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 246
+          "line": 252
         }
       ],
       "test_references": [
@@ -2340,7 +2340,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 179
+          "line": 182
         }
       ],
       "test_references": [

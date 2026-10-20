@@ -1,7 +1,7 @@
 # Make targeted layout usable on newly built graphs
 
 ID: FIELD-06
-Status: todo
+Status: in_progress
 Priority: P1
 Readiness: needs_reconciliation
 Owner: Codex
@@ -41,3 +41,9 @@ Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch re
 ## Owner-authorized fast source pass
 
 2026-10-20: owner requests fast plugin-only urgent fixes without tests. Integrator approves field-fast-followup: transaction rollback ownership, central MCP write refusal during PIE/nested transactions, actual Slate outline measurement without changing stored node sizes, exact function-spawner identities, and honest tool effect/status diagnostics. No engine changes, DSH dispatch or runtime certification. Remaining feature requests and unproven crash causes stay open.
+
+## Fast batch result (2026-10-20)
+
+cbe1585: Tidy uses SGraphEditor measured bounds in its plan rather than requiring stored K2 node dimensions. No node-size mutation during measurement. Adds macro/event graph enumeration and refuses ambiguous graph names. Visual overlap and all target-only layout guarantees remain unverified; truly headless sizing remains unsupported.
+
+Source-only, no build or test run at owner request. Not runtime acceptance.

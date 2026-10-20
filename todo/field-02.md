@@ -59,3 +59,9 @@ Owner explicitly rejects custom-engine deployment. Engine source and three Pytho
 ## Owner-authorized fast source pass
 
 2026-10-20: owner requests fast plugin-only urgent fixes without tests. Integrator approves field-fast-followup: transaction rollback ownership, central MCP write refusal during PIE/nested transactions, actual Slate outline measurement without changing stored node sizes, exact function-spawner identities, and honest tool effect/status diagnostics. No engine changes, DSH dispatch or runtime certification. Remaining feature requests and unproven crash causes stay open.
+
+## Fast batch result (2026-10-20)
+
+cbe1585: shared rollback refuses missing/nested transactions and checks transaction identity after finalization before undo. MCP asset edits refuse active transactions and PIE; diagnostics remain usable. Full dependent-widget loss is not reproduced or certified fixed.
+
+Source-only, no build or test run at owner request. Not runtime acceptance.

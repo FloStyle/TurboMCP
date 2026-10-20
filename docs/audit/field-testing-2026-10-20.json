@@ -656,5 +656,20 @@
       "owner": "R04"
     }
   ],
-  "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused."
+  "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
+  "fast_source_batch": {
+    "commit": "cbe1585",
+    "build": "not_run_owner_request",
+    "tests": "not_run_owner_request",
+    "engine_changes": false,
+    "dispatch": "paused",
+    "task_notes": {
+      "02": "cbe1585: shared rollback refuses missing/nested transactions and checks transaction identity after finalization before undo. MCP asset edits refuse active transactions and PIE; diagnostics remain usable. Full dependent-widget loss is not reproduced or certified fixed.",
+      "05": "cbe1585: ordinary call-function readers and spawners share Function|reflected-path IDs. Blueprint function identities normalize skeleton/generated classes through the owning asset. Existing display IDs remain accepted when unambiguous. Duplicate graph references no longer produce false ambiguity. Inline expressions, specialized/custom nodes and whole reader/write round-trip remain open.",
+      "06": "cbe1585: Tidy uses SGraphEditor measured bounds in its plan rather than requiring stored K2 node dimensions. No node-size mutation during measurement. Adds macro/event graph enumeration and refuses ambiguous graph names. Visual overlap and all target-only layout guarantees remain unverified; truly headless sizing remains unsupported.",
+      "07": "Source batch prevents nested script writes through the protected plugin registry and warns compile does not prove reachability. No new execution-chain analysis or runtime proof; task stays open.",
+      "08": "cbe1585: status includes engine version, module binary path and file timestamp, explicitly not source-revision proof; reports source revision unknown. Help flags PlayCheck execution effects and directs truncated summaries to the full tool index. Exact embedded source revision and pagination remain open.",
+      "09": "cbe1585: NodeResolve includes stable pin category/subcategory/container and object/text defaults. NodeFind result cap now applies across all graphs. Remaining schema authoring features are not implemented."
+    }
+  }
 }
