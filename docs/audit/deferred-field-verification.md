@@ -243,3 +243,8 @@ NodeFind results and NodeResolve ambiguity suggestions now emit long node IDs co
 ### DataTable name bounds
 
 afd3d63 rejects oversized row/field identifiers before planning FName conversion and checks operation/removal identifiers again before apply. Refusal precedes mutation and enters the plan refusal list. Implemented; unbuilt_untested. Deferred evidence: oversized set/remove row and field identifiers refuse with unchanged rows, while normal names work. Original field crash remains unproven; this guard is not a root-cause claim. No tests/builds run.
+
+
+### DataTable empty sets and failure stop
+
+535280a rejects separator-only/empty set operations in Parse and Plan; they can no longer silently create default rows. Apply stops later removals/sets after the first failed mutation and checks row schema before invoking another AddRow callback. Existing owned rollback handles the failure. Implemented; unbuilt_untested. Deferred evidence: empty-set refusal preserves table, injected removal/addition failure skips later mutations and rolls back; ordinary multirow edits remain valid. Original reported crash remains open. No tests/builds run.
