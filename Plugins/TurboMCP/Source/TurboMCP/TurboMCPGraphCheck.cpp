@@ -405,13 +405,15 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 		return false;
 	}
 
-	for (UEdGraph* Candidate : Graphs)
+	// Match the reader/writer identity policy; never validate an arbitrary first graph.
+	int32 GraphMatches = 0;
+	Graph = TurboMCPNodeId::FindGraphByName(Blueprint, OutPlan.GraphName, GraphMatches);
+	if (GraphMatches > 1)
 	{
-		if (Candidate->GetName().Equals(OutPlan.GraphName, ESearchCase::IgnoreCase))
-		{
-			Graph = Candidate;
-			break;
-		}
+		OutError = FString::Printf(
+			TEXT("graph name '%s' is ambiguous in %s (%d distinct graphs); use a unique graph name before checking or writing"),
+			*OutPlan.GraphName, *Resolved.ObjectPath, GraphMatches);
+		return false;
 	}
 	if (Graph == nullptr)
 	{
