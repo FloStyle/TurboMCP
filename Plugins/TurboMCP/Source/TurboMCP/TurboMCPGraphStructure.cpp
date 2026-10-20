@@ -457,6 +457,8 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 	for (int32 Index = 0; Index < Selected.Num(); ++Index)
 	{
 		UEdGraphNode* Node = Selected[Index];
+		if (Node->NodePosX > MAX_int32 - 40 || Node->NodePosY > MAX_int32 - 40)
+			OutPlan.Refusals.Add(FString::Printf(TEXT("node '%s' exceeds the safe copy coordinate range"), *KeyOf(Node)));
 		if (!Node->CanDuplicateNode() || !Node->CanPasteHere(TargetGraphObject))
 		{
 			OutPlan.Refusals.Add(FString::Printf(
@@ -821,6 +823,11 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	// have changed since preview, and creation helpers do not enforce paste rules.
 	for (UEdGraphNode* Node : Selected)
 	{
+		if (Node->NodePosX > MAX_int32 - 40 || Node->NodePosY > MAX_int32 - 40)
+		{
+			OutError = TEXT("unchanged: source node exceeds the safe copy coordinate range");
+			return false;
+		}
 		if (!Node->CanDuplicateNode() || !Node->CanPasteHere(TargetGraph))
 		{
 			OutError = FString::Printf(TEXT("unchanged: node '%s' is not eligible for copy into graph '%s'"),
@@ -882,7 +889,9 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 			return false;
 		}
 
-		const FVector2D Location(Source->NodePosX + 40.0f, Source->NodePosY + 40.0f);
+		const int32 CopyX = Source->NodePosX + 40;
+		const int32 CopyY = Source->NodePosY + 40;
+		const FVector2D Location(CopyX, CopyY);
 		UEdGraphNode* Made = FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate<UK2Node>(
 			TargetGraph, Template, Location, /*bSelectNewNode=*/false);
 
@@ -897,6 +906,11 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
             OutError += Restored ? TEXT(" rollback=complete") : TEXT(" partial: rollback=not_confirmed");
 			return false;
 		}
+
+		// Spawn snaps each node independently. Restore the exact common translation
+		// so off-grid source spacing is preserved without float rounding.
+		Made->NodePosX = CopyX;
+		Made->NodePosY = CopyY;
 
 		if (!PreserveCopyDefaults(Source, Made, true))
 		{
