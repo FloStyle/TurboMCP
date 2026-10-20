@@ -46,3 +46,7 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## External static library calls
 
 Cross-asset member preflight no longer requires a resolved external static function to be declared on the destination Blueprint. Its external FunctionReference remains intact. Self/unresolved/instance calls retain existing checks. This closes the false destination-member refusal slice of the S3 ED-06 report, not full library-copy runtime acceptance. Unbuilt and untested.
+
+## Undo acquisition before mutation
+
+Graph Copy now requires CanTransact and an outstanding owned undo record before any Modify or node creation. Rollback uses that captured identity instead of adopting the active identity at failure time. Source-confirmed recovery gap closed; unbuilt and untested.

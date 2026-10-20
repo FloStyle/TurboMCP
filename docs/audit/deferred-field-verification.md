@@ -126,3 +126,5 @@ Exact type preservation (0a5e7d0, FIELD-FIX-17): deferred checks for allowed/ref
 FIELD-FIX-06 external static library calls: cross-asset copy, retained function owner, defaults and links remain untested. Self-call missing-member refusal still requires later evidence.
 
 FIELD-FIX-17 signature description: const-reference, mutable-reference, ordinary output and return directions await verification; implementation follows the stock K2 pin rule.
+
+FIELD-FIX-06: Graph Copy undo-unavailable refusal and captured-record rollback remain untested; no verification task created.
