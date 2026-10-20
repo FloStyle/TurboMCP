@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+Loaded source revision identity and complete human-readable discovery remain product gaps. Re-running already implemented logging checks is verification, not a new feature task.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 Field reports lack call logs and exact loaded build identity. Help truncation and Read-tool side-effect categorization impede diagnosis.
 

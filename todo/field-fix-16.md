@@ -8,6 +8,7 @@ Owner: Codex
 Design: docs/design/mutations.md
 Kind: implementation
 Review: source-reviewed
+Validation: unbuilt_untested
 
 ## Problem
 FunctionAdd captured raw call-pin pointers, refreshed all Blueprint nodes, then dereferenced those pointers. Node reconstruction can replace pins. This source-confirmed lifetime defect belongs to the FIELD-05 targeted-edit workstream; it is not proof of the reported DataTable or Widget loss cause.
@@ -35,4 +36,4 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 
 ## Deliverable
 
-Committed implementation evidence and a separate pending regression record.
+Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.

@@ -8,6 +8,7 @@ Owner: Codex
 Design: docs/design/mutations.md
 Kind: implementation
 Review: source-reviewed
+Validation: unbuilt_untested
 
 ## Problem
 Urgent field fixes require implementation completion to be distinguished from runtime acceptance.
@@ -35,4 +36,4 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 
 ## Deliverable
 
-Committed implementation evidence and a separate pending regression record.
+Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.

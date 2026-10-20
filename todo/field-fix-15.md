@@ -8,6 +8,7 @@ Owner: Codex
 Design: docs/design/mutations.md
 Kind: implementation
 Review: source-reviewed
+Validation: unbuilt_untested
 
 ## Problem
 DataTable apply parsed validated text a second time directly into live storage and retained AddRow's pointer across editor callbacks. This repair reduces avoidable live-mutation risk; the reported work-machine crash is not reproduced or closed.
@@ -35,4 +36,4 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 
 ## Deliverable
 
-Committed implementation evidence and a separate pending regression record.
+Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.

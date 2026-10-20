@@ -8,6 +8,7 @@ Owner: Codex
 Design: docs/design/mutations.md
 Kind: implementation
 Review: source-reviewed
+Validation: unbuilt_untested
 
 ## Problem
 OV-03: locally authored functions were counted as overrides with an unknown declaring class.
@@ -36,4 +37,4 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 
 ## Deliverable
 
-Committed implementation evidence and a separate pending regression record.
+Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.

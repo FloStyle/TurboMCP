@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+This is a causality investigation, not a confirmed TurboMCP defect. Project capture GPU exhaustion was reported outside tool calls; do not claim a plugin fix.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 Two GPU out-of-memory crashes are reported during project capture execution outside tool calls. No tool causality is established.
 

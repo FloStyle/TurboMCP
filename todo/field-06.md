@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+The unresolved product requirement is predictable targeted layout on tool-built graphs. Geometry containment does not establish overlap-free layout.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 Tidy refused six of six graphs without measured outlines. Native fallback overlapped blocks and was not visually checked. Existing numeric fixture checks do not certify rendered layout.
 

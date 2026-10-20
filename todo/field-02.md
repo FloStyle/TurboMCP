@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+The remaining product problem is dependent Widget-tree loss across compilation/rollback. Existing guards are containment, not root-cause closure.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 A failed batch containing compile reportedly removed 23 child widgets from three dependent assets in memory. Restart without saving recovered them; persistent loss was not reported.
 

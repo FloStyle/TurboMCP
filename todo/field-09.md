@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+BL-12, NF-08 and OV-03 implementation slices are closed in FIELD-FIX-10/12/13. Other schema/editing limitations remain open; inspect current source before creating another fix.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 Reports identify missing defaults, parameter types, overrides, naming and struct-value support. Missing empty graph and wrong equality type remain uncertain or confounded.
 

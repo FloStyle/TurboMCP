@@ -1,9 +1,7 @@
 # Deferred field verification ledger (not a product task)
 
-ID: FIELD-REG-01
+Legacy reference: FIELD-REG-01 (not a task ID)
 Verification: deferred by owner
-Priority: P0
-Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
 Kind: evidence-ledger
@@ -16,7 +14,7 @@ Urgent field fixes require implementation completion to be distinguished from ru
 Build the stock-engine plugin, then verify DataTable edits with editor open and closed; Widget compile/save preservation; graph append/patch/replace failure rollback and single undo; validated pin writes; layout and stable node identities.
 
 ## Acceptance
-Implementation task closure means source changes committed only. Build and runtime acceptance remain open under FIELD-REG-01. The owner explicitly deferred all tests; this record does not authorize running them now.
+Implementation task closure means source changes committed only. Build and runtime acceptance remain deferred in this evidence ledger. The owner explicitly deferred all tests; this record does not authorize running them now.
 
 ## Completion evidence
 None. Pending; no tests or build run for the latest source batches.

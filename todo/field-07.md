@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+FIELD-FIX-08/09/11 implement reachability diagnostics, Append disconnected-chain refusal and exec-merge classification. Whole-writer duplicate prevention and complete multi-source round-trip remain open.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 Clean compilation coexisted with disconnected or duplicated execution chains. Reader reachability and multi-source exec interpretation need focused acceptance.
 

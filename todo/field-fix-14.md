@@ -8,6 +8,7 @@ Owner: Codex
 Design: docs/design/mutations.md
 Kind: implementation
 Review: source-reviewed
+Validation: unbuilt_untested
 
 ## Problem
 The plugin BatchEdit failure path manually ended a still-live scoped transaction, causing its destructor to end again. This is a concrete rollback lifetime defect in the FIELD-04 lost-edit workstream, not proof of the native script or Widget crash root cause.
@@ -35,4 +36,4 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 
 ## Deliverable
 
-Committed implementation evidence and a separate pending regression record.
+Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.

@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+FIELD-FIX-03/04/06/16 close Swap safety/defaults, Copy schema checks and FunctionAdd pin lifetime. Inline/custom-node round-trip and complete identity coverage remain open.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 External library calls and inline reader forms fail round-trip; localized type IDs and numeric pin indices can disagree. Full paths worked around one misleading empty-graph refusal.
 

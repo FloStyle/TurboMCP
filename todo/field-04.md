@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+FIELD-FIX-01/02/14 close bounded graph rollback implementation slices. Native script timeouts, duplicate-execution suspicion and late outcomes remain unresolved; the protected registry does not provide general script batching.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 Reports describe inconsistent partial application, stale log errors and late timeout completion. Duplicate execution is suspected, not established. S2 X-64 and S3 X-66 are one incident.
 

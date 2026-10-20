@@ -9,6 +9,12 @@ Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
 
+## Current product state
+
+Dirty marking, explicit save and pin read-back implementations are recorded below and in FIELD-FIX-05. Persistence acceptance belongs to the deferred ledger, not a new defect; reopen a concrete repair only from a demonstrated remaining source or runtime failure.
+
+All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+
 ## Problem
 Two pin-only edits reportedly changed memory without dirtying the package. Compile status uses the dirty flag and save skips clean packages; this is not disk equality proof.
 
