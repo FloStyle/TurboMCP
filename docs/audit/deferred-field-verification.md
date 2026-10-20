@@ -220,3 +220,7 @@ Commits f46efa6, 6c20991 and d62d639 modified TurboMCPNodeType.cpp while claimin
 ## NodeResolve bounded readable output
 
 The pin counter now increments so the advertised 40-pin cap is effective, with remaining count excluding null entries. String/text default values escape backslashes and line separators to preserve one pin per report line. Implementation done; unbuilt and untested. Deferred evidence: more than 40 pins, null slots and multiline defaults.
+
+## Concrete pin type visibility
+
+NodeResolve now reports subtype object paths, reference/const qualifiers and map-value category/subcategory/object paths. This removes category-only ambiguity for object, enum, struct and map pins. Implementation done; unbuilt and untested. Deferred evidence: reflected object/enum/struct and map pins agree with editor signatures.
