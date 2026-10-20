@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "plugin_tree": "77a1f6ebf06f9bb2558bf81132780eb6ee2d8a7f",
+  "plugin_tree": "6f6abd417017b5f0b46535b83d0b9c04792fb6f5",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 101,
+    "tools": 102,
     "by_toolset": {
-      "UTurboMCPEditToolset": 38,
+      "UTurboMCPEditToolset": 39,
       "UTurboMCPLookToolset": 4,
       "UTurboMCPPreviewToolset": 29,
       "UTurboMCPReadToolset": 30
@@ -22,7 +22,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
-          "line": 66
+          "line": 68
         }
       ],
       "test_references": [
@@ -675,6 +675,30 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "EditTurboMCPPinDefault",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId",
+        "PinName",
+        "Value"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp",
+          "line": 15
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "EditTurboMCPSave",
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
@@ -1029,7 +1053,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
-          "line": 62
+          "line": 64
         }
       ],
       "test_references": [

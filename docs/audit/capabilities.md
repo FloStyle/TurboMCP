@@ -31,6 +31,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPMaterialTidy | [TurboMCPMaterialTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPOverrideAdd | [TurboMCPOverrideAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPOverrideRemove | [TurboMCPOverrideRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPPinDefault | [TurboMCPPinDefault.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPSave | [TurboMCPCompile.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPSaveWithoutThumbnail | [TurboMCPCompile.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPStructFields | [TurboMCPStructTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
