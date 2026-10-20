@@ -37,3 +37,7 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 ## Deliverable
 
 Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.
+
+## Signature creation result
+
+FunctionAdd checks each created pin name, direction and exact type. A missing or altered result removes the newly created function and reports whether cleanup removed the graph, rather than reporting the requested signature as successfully created. Implementation closed; unbuilt and untested.

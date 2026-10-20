@@ -136,3 +136,5 @@ FIELD-FIX-15 removal failure: removal-only and mixed batches, callback re-additi
 FIELD-FIX-15: original DataTable undo identity, unavailable undo refusal, and changed/nested transaction failure paths remain untested.
 
 FIELD-FIX-19 keepSource: supported boolean spellings, whitespace and invalid-input refusal remain untested.
+
+FIELD-FIX-16: function signature pin failure and cleanup read-back, plus successful input/output creation, remain untested.
