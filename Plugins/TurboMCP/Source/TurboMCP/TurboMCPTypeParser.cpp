@@ -68,6 +68,12 @@ namespace
 			OutWhy = FString::Printf(TEXT("'%s' is not a known class. Pass a loadable class object path, for example /Script/Engine.Actor."), *InName);
 			return false;
 		}
+		if (!UEdGraphSchema_K2::IsAllowableBlueprintVariableType(OutClass))
+		{
+			OutWhy = FString::Printf(TEXT("class '%s' is not an allowable Blueprint variable/signature type"), *OutClass->GetPathName());
+			OutClass = nullptr;
+			return false;
+		}
 		return true;
 	}
 
@@ -102,7 +108,17 @@ namespace
 		}
 		UObject* Object = LoadObject<UObject>(nullptr, *InText);
 		if (UScriptStruct* Struct = Cast<UScriptStruct>(Object)) { return ResolveStruct(Struct, Out, OutWhy); }
-		if (UEnum* Enum = Cast<UEnum>(Object)) { Out.PinCategory = UEdGraphSchema_K2::PC_Byte; Out.PinSubCategoryObject = Enum; return true; }
+		if (UEnum* Enum = Cast<UEnum>(Object))
+		{
+			if (!UEdGraphSchema_K2::IsAllowableBlueprintVariableType(Enum))
+			{
+				OutWhy = FString::Printf(TEXT("enum '%s' is not an allowable Blueprint variable/signature type"), *Enum->GetPathName());
+				return false;
+			}
+			Out.PinCategory = UEdGraphSchema_K2::PC_Byte;
+			Out.PinSubCategoryObject = Enum;
+			return true;
+		}
 		OutWhy = Object == nullptr
 			? FString::Printf(TEXT("'%s' is not a type or a loadable class path"), *InText)
 			: FString::Printf(TEXT("%s is a %s, and is not a struct or enum"), *InText, *Object->GetClass()->GetName());
