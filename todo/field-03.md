@@ -45,3 +45,7 @@ Plugin scope: TurboMCPCompile.cpp. Compile must describe dirty state without cla
 Separate engine scope: Engine/Source/Editor/BlueprintEditorLibrary/Private/BlueprintEditorLibrary/BlueprintGraphPin.cpp. Validate the proposed default before mutation, reject unsupported output/exec/read-only/connected pins, capture node transaction state, mark successful edits modified, and resolve stale pin indices only by unique exact name. Do not reset a previous valid value on refusal.
 
 FIELD-02 native containment scope: ToolsetRegistry/Public/ToolsetRegistry/ToolsetLibrary.h and Private/ToolsetRegistry/ToolsetLibrary.cpp under Engine/Plugins/Experimental/ToolsetRegistry/Source; expose active editor transaction query. Its Content/Python/toolset_registry/helpers.py must refuse compile inside a transaction before compilation. Engine changes remain outside plugin export. No tests or build during this source batch; full acceptance remains open.
+
+## Source batch implemented; not validated
+
+Native pin setter now validates the proposed value before mutation, refuses non-editable pins, captures node undo state and marks the Blueprint modified. Pin validity now resolves the actual pin; stale-index fallback requires a unique exact name. Plugin compile reports dirty state without claiming disk equality; explicit save no longer skips clean packages and requires both successful API return and clean state. No build or tests have run for these changes.

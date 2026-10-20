@@ -283,7 +283,8 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 		const bool bDirty = HasUnsavedChanges(Resolved.PackagePath);
 
 		Lines += FString::Printf(TEXT("\n%s  [%s]"), *Resolved.ObjectPath, *Status);
-		Lines += bDirty ? TEXT("  not saved yet") : TEXT("  saved");
+		Lines += bDirty ? TEXT("  unsaved changes; compile did not save")
+			: TEXT("  package not marked dirty; disk content not verified; compile did not save");
 
 		// THE COMPILER'S OWN MESSAGES ARE TIED TO THEIR NODE IDS; THE ENGINE'S ARE TIED TO THEIR SPAN.
 		// Both are listed, because a count with no text cannot be acted on and `T04` asks for each one.
@@ -390,6 +391,12 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 	{
 		return FString::Printf(TEXT("unchanged: %s."), *Refusal);
 	}
+	if (GEditor->IsTransactionActive())
+	{
+		return TEXT("error: save refused while an editor transaction is active. ")
+			TEXT("Finish the batch and verify its outcome, then save separately. Nothing was saved.");
+	}
+
 
 	// =============================================================================================
 	// ROW 10.2 / D-57: THE AUTOMATIC CHECKOUT THIS WRITE TOOL PERFORMS BEFORE IT WRITES.
@@ -436,14 +443,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			continue;
 		}
 
-		// An asset with no unsaved changes is reported as such and never saved,
-		// so the result cannot claim work that did not happen.
-		if (!HasUnsavedChanges(Resolved.PackagePath))
-		{
-			Lines += FString::Printf(TEXT("\n%s  had no changes"), *Resolved.ObjectPath);
-			++NoChangeCount;
-			continue;
-		}
+		// Explicit save requests also write packages whose dirty flag is clear.
+        // Native pin setters can change memory without setting that flag.
 
 		UPackage* Package = FindPackage(nullptr, *Resolved.PackagePath);
 		if (Package == nullptr)
@@ -543,9 +544,8 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			};
 			bSaved = SaveOnce();
 
-			// The unsaved flag decides the result, never the call's return value.
-			// D-33: an engine save once returned an error when it had worked.
-			if (Package->IsDirty())
+			// A failed return is not proof of a write, even if the dirty flag cleared.
+			if (!bSaved || Package->IsDirty())
 			{
 				// Retry once, which the spec asks for, in case the first attempt lost a race with a
 				// background writer. THE SAME MECHANISM: a retry that quietly went back to the thumbnail
@@ -559,10 +559,9 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		const int32 WarningsHere = Capture.WarningCountSince(MarkBeforeSave);
 		const int32 ErrorsHere = Capture.ErrorCountSince(ErrorMarkBeforeSave);
 
-		if (!bStillDirty)
+		if (bSaved && !bStillDirty)
 		{
-			// The package write is independently proven by the dirty flag. Keep it separate from the editor's
-			// thumbnail/design-time phase, whose script errors can happen after a successful package write.
+			// Report the save API outcome plus dirty state; this is not reload verification.
 			Lines += FString::Printf(TEXT("\n%s  package write: saved"), *Resolved.ObjectPath);
 			++SavedCount;
 			Lines += bWithoutThumbnail
@@ -579,7 +578,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 				: TEXT("the save reported failure");
 
 			Errors += FString::Printf(
-				TEXT("\nerror: %s is still unsaved after two attempts. %s. ")
+				TEXT("\nerror: %s has no confirmed successful save. %s. ")
 				TEXT("The asset may be read only, or another program may hold the file.%s"),
 				*Resolved.ObjectPath,
 				CallOutcome,

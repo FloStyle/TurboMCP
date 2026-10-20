@@ -47,3 +47,7 @@ Verification: `python Tools/execute-tests.py --profile engine --suites test-widg
 ## Safeguard evidence
 
 Candidate 4b70306e12289c3d47cc62859280b1da831e677f: supervised build plus test-widget-roundtrip and test-monday-disk-loop passed (execution ba0d5ab258634d9d95243ef0556fd0cf; 16 fixture files restored). Offline validation d8e1534797b54b9e9353030d851b6769 passed all 26 checks. This does not reproduce or certify recovery of the reported dependent-parent widget loss.
+
+## Additional native containment candidate
+
+Native ToolsetRegistry compile helper now queries the actual editor transaction and refuses before invoking compilation. This source-batch candidate has not been built or tested; direct calls bypassing the helper and the dependent-parent loss reproduction remain open.

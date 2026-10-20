@@ -1,9 +1,9 @@
 # Reconcile batch failures timeouts and possible duplicate writes
 
 ID: FIELD-04
-Status: todo
+Status: in_progress
 Priority: P1
-Readiness: needs_reconciliation
+Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
 Kind: investigation
@@ -37,3 +37,11 @@ Correlate request identities and per-call logs with graph deltas; reproduce mixe
 
 ## Handoff
 Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch remains paused.
+
+## Approved source-batch scope; tests deferred
+
+Engine file Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/editor_toolset/toolsets/programmatic.py: finish transaction unwind before publishing asynchronous result, surface failed undo as unknown partial outcome, and always release runner resources when transaction cleanup raises. This does not claim duplicate execution is reproduced or fixed. Plugin TurboMCPCompile.cpp: refuse saves in an active transaction because disk writes cannot be undone by editor rollback. No tests during this pass.
+
+## Source batch implemented; not validated
+
+Native script completion now unwinds before publishing results, checks the undo return, reports uncertain cleanup outcomes, and releases runner resources through finally. TurboMCP saves refuse active transactions. Duplicate execution, timeout cancellation and native save entrypoints remain unverified. No build or tests run for this batch.
