@@ -108,3 +108,5 @@ FIELD-FIX-18 implemented, unbuilt and untested. Later check NodeFind short IDs a
 ## Repoint replacement - deferred evidence
 
 FIELD-FIX-19 implemented, unbuilt and untested. Later check scalar consumer rewiring, exact reader IDs, source-target alias, stale links, conversion refusal, reciprocal read-back and owned rollback.
+
+FIELD-FIX-19 source-removal follow-up: later check connected exec pins, other outputs and incoming data links, keepSource=true, and callbacks adding readers before removal. No regression run yet.
