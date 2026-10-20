@@ -781,15 +781,11 @@ bool FTurboMCPNodePins::Plan(const FString& InAsset, const FString& InGraphName,
 	OutPlan.Asset = TypePlan.Asset;
 	OutPlan.GraphName = TypePlan.GraphName;
 
-	bool bExact = false;
-	for (const FTurboMCPNodeType::FMatch& Match : TypePlan.Matches)
+	// Search ranking and display limits must not determine whether an exact ID exists.
+	const bool bExact = TypePlan.AllTypeIds.ContainsByPredicate([&](const FString& TypeId)
 	{
-		if (Match.TypeId.Equals(OutPlan.TypeId, ESearchCase::CaseSensitive))
-		{
-			bExact = true;
-			break;
-		}
-	}
+		return TypeId.Equals(OutPlan.TypeId, ESearchCase::CaseSensitive);
+	});
 	if (!bExact)
 	{
 		TArray<FString> NearIds;
