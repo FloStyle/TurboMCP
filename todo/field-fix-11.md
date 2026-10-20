@@ -58,3 +58,8 @@ e07223a makes GraphCheck refuse standalone reader error comment lines before ass
 ### Whole graph text completeness
 
 59004c8 scans graph text for balanced parentheses and closed double-quoted values before asset loading. Escapes, comments and the top-level read envelope are handled; unexpected closing delimiters include line/column. Reader error markers inside quoted content are not treated as diagnostics. Implemented, unbuilt_untested. Deferred evidence: truncated forms/strings refuse without writes, balanced reader output and quoted delimiters remain usable. This is structural completeness, not full semantic round-trip support. No tests/builds run.
+
+
+### Function graph latent-node validation
+
+235b961 replaces the graph-class-name heuristic with Blueprint FunctionGraphs membership. Stock Unreal creates ordinary function graphs as UEdGraph, so the prior check could bypass the existing IsLatentForMacros refusal. Implemented; unbuilt_untested. Deferred: ordinary function rejects latent nodes, event graph remains permitted, non-latent function nodes remain accepted. This is a source-level preflight correction, not proof of crash resolution or full graph round-trip correctness. No tests or builds run.
