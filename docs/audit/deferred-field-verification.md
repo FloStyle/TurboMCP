@@ -273,3 +273,8 @@ c1d4447 reserves planned non-comment node rectangles and previously placed gette
 ### Getter split failure handling
 
 e6615fb revalidates planned getter/consumer membership and reciprocal links before mutation. Copy creation/type/link failures stop later changes and enter rollback even under Force. No silent skipped splits are reported as successful layout. Implemented, unbuilt_untested. Deferred evidence: stale pin plans refuse, failed allocation/type/link outcomes restore prior graph, Force does not bypass failure. No tests/builds run.
+
+
+### Reroute reader endpoint guard
+
+34c545e checks the first reroute link for null, input direction, matching category and reciprocal membership before dereferencing/following it. A broken endpoint leaves the reroute in the reader path instead of crashing or silently following an invalid edge. Implemented; unbuilt_untested. Deferred evidence: malformed/null reroute links do not crash; valid exec reroutes still traverse. Separate from X-39 continuation diagnosis, which remains open. No tests/builds run.

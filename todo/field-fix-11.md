@@ -38,3 +38,8 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 ## Deliverable
 
 Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.
+
+
+### Reroute reader endpoint guard
+
+34c545e checks the first reroute link for null, input direction, matching category and reciprocal membership before dereferencing/following it. A broken endpoint leaves the reroute in the reader path instead of crashing or silently following an invalid edge. Implemented; unbuilt_untested. Deferred evidence: malformed/null reroute links do not crash; valid exec reroutes still traverse. Separate from X-39 continuation diagnosis, which remains open. No tests/builds run.
