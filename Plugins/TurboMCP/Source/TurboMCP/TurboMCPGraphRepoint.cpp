@@ -87,6 +87,7 @@ bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName,
  UEdGraphNode* Target=nullptr;
  if (!TargetNodeId.IsEmpty()) { Target=FindNode(G,TargetNodeId); if (!Target) { Out.Refusals.Add(FString::Printf(TEXT("target node '%s' was not found"),*TargetNodeId)); return true; } }
  else { FString Note; Target=FTurboMCPNodeType::BuildProbeNode(B,G,TargetTypeId,Note); Out.bCreateTarget=true; if (!Target) { Out.Refusals.Add(FString::Printf(TEXT("could not build target type '%s': %s"),*TargetTypeId,*Note)); return true; } }
+ if (Target == Source) { Out.Refusals.Add(TEXT("source and target must be different nodes; deleting the source must not delete the target")); return true; }
  UEdGraphPin* TargetOut=FindPin(Target,TargetPin,EGPD_Output); if (!TargetOut) {
   TArray<FString> Outputs; for (UEdGraphPin* P:Target->Pins) if(P&&P->Direction==EGPD_Output) Outputs.Add(P->PinName.ToString());
   Out.Refusals.Add(FString::Printf(TEXT("target has no output pin named '%s'; outputs: %s"),*TargetPin,Outputs.Num()?*FString::Join(Outputs,TEXT(", ")):TEXT("(none)"))); return true;
