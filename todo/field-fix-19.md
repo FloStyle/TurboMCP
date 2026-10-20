@@ -41,3 +41,7 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## Source removal follow-up
 
 99ea6450b3268781e1e57875dba11924c12dcb57: preview refuses source deletion when other pins still have connections; apply rechecks every source pin before removal and rolls back if links remain. KeepSource=true remains available. Implementation closed, unbuilt and untested.
+
+## Unique pin identity
+
+Repoint now resolves a unique name-and-direction pin in both Plan and Apply. Duplicate matches refuse instead of silently rewiring the first matching pin. Missing/ambiguous output diagnostics say no unique output. Implementation closed, unbuilt and untested.

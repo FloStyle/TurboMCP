@@ -128,3 +128,5 @@ FIELD-FIX-06 external static library calls: cross-asset copy, retained function 
 FIELD-FIX-17 signature description: const-reference, mutable-reference, ordinary output and return directions await verification; implementation follows the stock K2 pin rule.
 
 FIELD-FIX-06: Graph Copy undo-unavailable refusal and captured-record rollback remain untested; no verification task created.
+
+FIELD-FIX-19: Repoint duplicate pin-name refusal and unique controls remain untested. This is evidence debt attached to the implemented fix.
