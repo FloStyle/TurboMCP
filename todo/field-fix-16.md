@@ -45,3 +45,7 @@ FunctionAdd checks each created pin name, direction and exact type. A missing or
 ## Targeted caller refresh
 
 FunctionAdd retains the skeleton update but reconstructs only self-call nodes naming the newly created function; external same-named calls and unrelated graph nodes are excluded. Add also refuses PIE, off-game-thread and active-transaction invocation before mutation. This closes the broad reconstruction scope defect, not dependent Widget-loss root cause. Unbuilt and untested.
+
+## Removal outcome
+
+9360665 checks actual graph absence before reporting removal, distinguishes it from name-reuse eligibility, and refuses ambiguous names or unsafe editor contexts. Implementation closed; unbuilt and untested.
