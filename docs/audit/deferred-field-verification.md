@@ -172,3 +172,7 @@ FIELD-FIX-06 restores exact integer source positions plus the common copy offset
 ## Copy anchor refusal
 
 FIELD-FIX-06 implemented, unbuilt and untested: nonempty anchors refuse before mutation in preview and apply. Deferred evidence: anchor request leaves target unchanged; empty-anchor copy retains existing behavior. Feature support remains FIELD-05 work.
+
+## Copied node result identities
+
+Copy results now include explicit source-to-target canonical long node IDs, retaining object names as supplementary text. Follow-up tools no longer need to infer target IDs from UObject names. Implementation done; unbuilt and untested. Deferred evidence: returned target IDs resolve to the copied nodes in the destination graph.

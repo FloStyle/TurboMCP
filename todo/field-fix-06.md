@@ -74,3 +74,7 @@ FIELD-FIX-06 restores exact integer source positions plus the common copy offset
 ## Ignored anchor instruction
 
 Planning and apply now explicitly refuse nonempty AnchorNodeId because the writer never implemented anchor wiring. This closes silent instruction loss, not anchor support. Unbuilt and untested. Full anchor behavior remains open under FIELD-05.
+
+## Copied node result identities
+
+Copy results now include explicit source-to-target canonical long node IDs, retaining object names as supplementary text. Follow-up tools no longer need to infer target IDs from UObject names. Implementation done; unbuilt and untested. Deferred evidence: returned target IDs resolve to the copied nodes in the destination graph.
