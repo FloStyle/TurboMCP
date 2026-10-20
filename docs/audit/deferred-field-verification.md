@@ -148,3 +148,7 @@ FIELD-FIX-16 partial outcome classification and successful-result distinction re
 FIELD-FIX-03 unique Call Swap pin matching: duplicate name cases and ordinary default/link transfer remain untested.
 
 FIELD-FIX-06 copy link endpoint ambiguity refusal and rollback remain untested.
+
+## Graph Copy directional endpoints — f2baa7a
+
+FIELD-FIX-06 implementation done; unbuilt and untested by owner request. Deferred evidence: copy a block with same-named input/output pins and confirm exact links; duplicate same-direction endpoints must refuse with restoration. This is a verification flag on the existing fix, not a new product task.

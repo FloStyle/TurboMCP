@@ -53,4 +53,4 @@ Graph Copy now requires CanTransact and an outstanding owned undo record before 
 
 ## Link endpoint identity
 
-Copy link endpoint lookup now requires a unique pin name. The current serialized link lacks direction, so ambiguous names refuse through existing rollback instead of selecting a first pin. Supporting those ambiguous shapes requires richer link identity and remains unsupported. Unbuilt and untested.
+f2baa7a carries source pin direction in every planned link and resolves endpoints by unique name plus direction. Inputs and outputs sharing a name no longer cause a false ambiguity refusal. Duplicate names within the same direction still refuse through owned rollback. Implementation done; unbuilt and untested.
