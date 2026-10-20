@@ -255,6 +255,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPSettings.h"
           ],
           "new_files": []
+        },
+        "field-lint-defaults": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
