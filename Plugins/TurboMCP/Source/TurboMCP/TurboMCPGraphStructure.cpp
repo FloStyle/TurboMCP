@@ -933,7 +933,8 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		}
 
 		MadeFrom.Add(Source, Made);
-		MadeLines.Add(FString::Printf(TEXT("  %s  %s"), *KeyOf(Source), *Made->GetName()));
+		MadeLines.Add(FString::Printf(TEXT("  source=%s -> target=%s (object=%s)"),
+			*KeyOf(Source), *KeyOf(Made), *Made->GetName()));
 	}
 
 	// ---- THE WIRES, MADE HERE BECAUSE BOTH ENDS EXIST ONLY NOW ------------------------------------------
