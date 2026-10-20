@@ -48,11 +48,16 @@ namespace
 	UEdGraphPin* PinByName(UEdGraphNode* Node, const FString& Name, EEdGraphPinDirection Direction)
 	{
 		if (Node == nullptr) return nullptr;
+        UEdGraphPin* Match = nullptr;
 		for (UEdGraphPin* Pin : Node->Pins)
 		{
-			if (Pin != nullptr && Pin->Direction == Direction && Pin->PinName.ToString() == Name) return Pin;
+            if (Pin != nullptr && Pin->Direction == Direction && Pin->PinName.ToString() == Name)
+            {
+                if (Match != nullptr) return nullptr;
+                Match = Pin;
+            }
 		}
-		return nullptr;
+		return Match;
 	}
 
     // Keep all three default representations, including FText namespace/key identity.
