@@ -143,6 +143,18 @@ namespace
 
             Lines += FString::Printf(TEXT(" [category=%s subcategory=%s container=%d]"),
                 *Pin->PinType.PinCategory.ToString(), *Pin->PinType.PinSubCategory.ToString(), static_cast<int32>(Pin->PinType.ContainerType));
+            if (const UObject* TypeObject = Pin->PinType.PinSubCategoryObject.Get())
+                Lines += FString::Printf(TEXT(" type=%s"), *TypeObject->GetPathName());
+            if (Pin->PinType.bIsReference) Lines += TEXT(" reference");
+            if (Pin->PinType.bIsConst) Lines += TEXT(" const");
+            if (Pin->PinType.ContainerType == EPinContainerType::Map)
+            {
+                const FEdGraphTerminalType& ValueType = Pin->PinType.PinValueType;
+                Lines += FString::Printf(TEXT(" map-value=[category=%s subcategory=%s]"),
+                    *ValueType.TerminalCategory.ToString(), *ValueType.TerminalSubCategory.ToString());
+                if (const UObject* ValueObject = ValueType.TerminalSubCategoryObject.Get())
+                    Lines += FString::Printf(TEXT(" map-value-type=%s"), *ValueObject->GetPathName());
+            }
 			const bool bLinked = Pin->LinkedTo.Num() > 0;
 			if (bLinked)
 			{
