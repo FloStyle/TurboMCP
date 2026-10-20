@@ -673,6 +673,13 @@
       "timeout_seconds": 900,
       "acceptance": "not_mapped",
       "note": "Disabled native admission; expected BLOCKED until R04-FOLLOWUP-PERSISTENCE is resolved. Not acceptance evidence."
+    },
+    {
+      "id": "test-datatable-import-repro",
+      "path": "Tools/test-datatable-import-repro.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
     }
   ]
 }
