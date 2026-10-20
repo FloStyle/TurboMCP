@@ -308,3 +308,8 @@ e07223a makes GraphCheck refuse standalone reader error comment lines before ass
 ### X-37 object pin values
 
 Reconciled the existing cbe1585 implementation: NodeResolve prints unlinked DefaultObject values as object:<full path>, with linked pins retaining link counts. X-37 implementation is done, unbuilt_untested. Deferred evidence: an assigned object pin shows its correct path and a connected pin reports its connections. No tests/builds run; no new runtime claim.
+
+
+### FIELD-FIX-21 summary completeness
+
+aa15bdb: verify function inventory with empty/missing entry nodes, unavailable reflection labels, graph kind and event owner labels. Implemented, unbuilt_untested. BL-13 reproduction remains unresolved. No tests/builds run.

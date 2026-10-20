@@ -127,7 +127,10 @@
       "id": "BL-13",
       "title": "The Blueprint reader may have missed one empty function graph (medium)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_available_pending_field_confirmation",
+      "implementation": "FIELD-FIX-21",
+      "validation": "unbuilt_untested",
+      "implementation_limits": "Function inventory no longer depends on entry nodes; graph kind and event owner are explicit. Original runtime observations have not been reproduced."
     },
     {
       "report": "2026-10-18_S1",
@@ -378,7 +381,10 @@
       "id": "BL-14",
       "title": "ReadTurboMCPBlueprintLoad lists events as graphs (low)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_available_pending_field_confirmation",
+      "implementation": "FIELD-FIX-21",
+      "validation": "unbuilt_untested",
+      "implementation_limits": "Function inventory no longer depends on entry nodes; graph kind and event owner are explicit. Original runtime observations have not been reproduced."
     },
     {
       "report": "2026-10-20_S1",

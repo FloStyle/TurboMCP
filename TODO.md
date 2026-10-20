@@ -184,3 +184,10 @@ These records preserve original requirements and evidence. Their status does not
 - **P6** [Retain pure-helper regression evidence](todo/a6a86af7.md)
 
 </details>
+
+<details>
+<summary>done (1)</summary>
+
+- **P2** [Blueprint summary completeness and graph labels](todo/field-fix-21.md)
+
+</details>
