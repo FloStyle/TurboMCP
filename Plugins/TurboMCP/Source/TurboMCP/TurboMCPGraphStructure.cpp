@@ -313,13 +313,20 @@ namespace
 		for (const FString& Key : InNodeKeys)
 		{
 			UEdGraphNode* Found = nullptr;
+			int32 Matches = 0;
 			for (UEdGraphNode* Node : InGraph->Nodes)
 			{
 				if (NodeAnswersToKey(Node, Key))
 				{
 					Found = Node;
-					break;
+					++Matches;
 				}
+			}
+			if (Matches > 1)
+			{
+				OutRefusals.Add(FString::Printf(TEXT("ambiguous node id '%s' matches %d nodes in graph '%s'"),
+					*Key, Matches, *InGraph->GetName()));
+				continue;
 			}
 			if (Found == nullptr)
 			{
@@ -340,6 +347,11 @@ namespace
 				OutRefusals.Add(FString::Printf(
 					TEXT("no node with id '%s' in graph '%s' (the graph's own ids look like: %s)"),
 					*Key, *InGraph->GetName(), *FString::Join(Samples, TEXT(", "))));
+				continue;
+			}
+			if (OutNodes.Contains(Found))
+			{
+				OutRefusals.Add(FString::Printf(TEXT("node '%s' was selected more than once; supply each node once"), *Key));
 				continue;
 			}
 			OutNodes.Add(Found);
