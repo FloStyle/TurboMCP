@@ -71,6 +71,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp"
           ],
           "new_files": []
+        },
+        "field-replace-atomic": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
