@@ -223,6 +223,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheck.cpp"
           ],
           "new_files": []
+        },
+        "field-blueprint-summary": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
