@@ -34,15 +34,16 @@ Generated from task files and the approved queue. After editing task status, run
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>in progress (2)</summary>
+<summary>in progress (3)</summary>
 
 - **P0** [Reproduce and contain native DataTable JSON-write crashes](todo/field-01.md)
 - **P0** [Prevent dependent Widget loss around compile and batch rollback](todo/field-02.md)
+- **P1** [Verify pin-only changes persist and report save state accurately](todo/field-03.md)
 
 </details>
 
 <details>
-<summary>todo (76)</summary>
+<summary>todo (75)</summary>
 
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
@@ -53,7 +54,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P1** [Compare function creation and signature gaps](todo/63d5c9e2.md)
 - **P1** [Avoid false unnecessary-cast warnings](todo/7bbe9c3c.md)
 - **P1** [Separate result decoding from compile-fixture verdicts](todo/7de8d185.md)
-- **P1** [Verify pin-only changes persist and report save state accurately](todo/field-03.md)
 - **P1** [Reconcile batch failures timeouts and possible duplicate writes](todo/field-04.md)
 - **P1** [Make graph read and targeted write identities round-trip](todo/field-05.md)
 - **P1** [Make targeted layout usable on newly built graphs](todo/field-06.md)

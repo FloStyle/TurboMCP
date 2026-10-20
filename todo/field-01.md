@@ -49,3 +49,7 @@ Exact assignment: field-datatable-repro. Supervisor command: `python Tools/execu
 Execution 5dc032a4dbd7443796e5f51dcc6b4466 failed with the reported UObjectArray.cpp:405 refcount assertion on a transient FTableRowBase table. The deliberately held object isolates lifetime; it does not establish which reference holder existed at work.
 
 Integrator scope: at pinned engine base 396c9f059903aed5fec78ecd3d437a40c6415368, change only Engine/Source/Editor/UnrealEd/Private/Factories/CSVImportFactory.cpp in the separate engine checkout. Reuse ExistingTable instead of reconstructing it with NewObject; preserve the existing row-import, options and delegate flow. No CurveTable changes. Retain the engine patch outside the plugin export and report that plugin-only deployment does not include this fix. Rerun only the synthetic import diagnostic before broader deferred regression. This explicit repair scope supersedes the earlier no-engine-change restriction for this file only.
+
+## Focused repair result
+
+Native execution 9f90e8fe6b46468d9d6a45f74f4a49d8 passed after the one-file engine patch (6 insertions, 2 removals), including the held import that previously asserted. Engine HEAD stayed at the pinned base with that explicit working-tree modification. This proves the synthetic lifetime path only; private reference-bearing rows, editor-open variant and save/reload remain untested.

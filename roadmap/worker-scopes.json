@@ -30,6 +30,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableImportTest.cpp",
             "Tools/test-datatable-import-repro.py"
           ]
+        },
+        "field-urgent-source-batch": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

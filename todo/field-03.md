@@ -1,9 +1,9 @@
 # Verify pin-only changes persist and report save state accurately
 
 ID: FIELD-03
-Status: todo
+Status: in_progress
 Priority: P1
-Readiness: needs_reconciliation
+Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
 Kind: investigation
@@ -37,3 +37,11 @@ Trace the native setter and reproduce pin-only mutation. Verify dirty state, sav
 
 ## Handoff
 Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch remains paused.
+
+## Approved source batch; regression deferred by owner
+
+Plugin scope: TurboMCPCompile.cpp. Compile must describe dirty state without claiming disk equality. An explicit save must not skip a clean package: native mutations may omit its dirty flag. Require successful save return and clean state; no false saved result on a failed write.
+
+Separate engine scope: Engine/Source/Editor/BlueprintEditorLibrary/Private/BlueprintEditorLibrary/BlueprintGraphPin.cpp. Validate the proposed default before mutation, reject unsupported output/exec/read-only/connected pins, capture node transaction state, mark successful edits modified, and resolve stale pin indices only by unique exact name. Do not reset a previous valid value on refusal.
+
+FIELD-02 native containment scope: ToolsetRegistry/Public/ToolsetRegistry/ToolsetLibrary.h and Private/ToolsetRegistry/ToolsetLibrary.cpp under Engine/Plugins/Experimental/ToolsetRegistry/Source; expose active editor transaction query. Its Content/Python/toolset_registry/helpers.py must refuse compile inside a transaction before compilation. Engine changes remain outside plugin export. No tests or build during this source batch; full acceptance remains open.
