@@ -33,10 +33,10 @@ class TURBOMCP_API UTurboMCPSettings : public UDeveloperSettings
 public:
 	UTurboMCPSettings();
 
-	/** True when every tool call is written to the call log. Starts off, per the spec. */
+	/** Record tool calls by default for field diagnostics. Saved user preferences override this default. */
 	UPROPERTY(EditAnywhere, config, Category = "Call log",
 		meta = (DisplayName = "Record every tool call"))
-	bool bEnableCallLog = false;
+	bool bEnableCallLog = true;
 
 	/** The settings object, or null when it could not be created. */
 	static UTurboMCPSettings* GetMutable();
