@@ -351,7 +351,11 @@
       "id": "X-61",
       "title": "Pin numbers differ between ReadTurboMCPNodeResolve and the engine pin tools (medium)",
       "owner": "FIELD-05",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-12",
+      "implementation_limits": "Direction-local index now labelled; raw array index and pin GUID also exposed. Native selectors may use different conventions; no cross-tool numeric equivalence promised."
     },
     {
       "report": "2026-10-20_S1",

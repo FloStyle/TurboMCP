@@ -325,3 +325,7 @@ Toolset help pagination, offset refusal, deterministic ordering, description bud
 
 ### FIELD-FIX-24
 c05d159: status version/compile stamp and PlayCheck execution labels. Verify on a later build and all discovery surfaces. Implemented, unbuilt_untested. No revision provenance or toolset migration claim.
+
+
+### Pin readout identifiers and flags
+2e1c0eb: verify direction-local vs raw pin-array indices, GUIDs, null slots, and default editing flags. Implemented, unbuilt_untested; no tests/builds.

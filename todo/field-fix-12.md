@@ -67,3 +67,8 @@ NodeFind results and NodeResolve ambiguity suggestions now emit long node IDs co
 ### X-37 object pin values
 
 Reconciled the existing cbe1585 implementation: NodeResolve prints unlinked DefaultObject values as object:<full path>, with linked pins retaining link counts. X-37 implementation is done, unbuilt_untested. Deferred evidence: an assigned object pin shows its correct path and a connected pin reports its connections. No tests/builds run; no new runtime claim.
+
+
+### Pin identity and default edit diagnostics
+
+2e1c0eb labels direction-local indices explicitly and adds raw node pin-array indices and pin GUIDs. It also exposes hidden/orphaned/read-only/ignored/connected-default flags. Implemented, unbuilt_untested. X-61: no longer presents direction-local numbering as an unspecified index. This does not promise every native tool uses the raw array order; use named pins or that tool's documented selector. Deferred: mixed input/output ordering, null slots and reconstructed pins; flags match live pin state.
