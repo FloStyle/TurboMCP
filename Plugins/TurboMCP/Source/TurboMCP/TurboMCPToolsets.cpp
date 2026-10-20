@@ -10,6 +10,7 @@
 #include "Containers/UnrealString.h"
 #include "Editor.h"
 #include "Misc/EngineVersion.h"
+#include "Interfaces/IPluginManager.h"
 #include "Modules/ModuleManager.h"
 #include "HAL/FileManager.h"
 #include "Editor/EditorEngine.h"
@@ -189,6 +190,13 @@ FString UTurboMCPReadToolset::ReadTurboMCPStatus()
 	FString Result = FString::Printf(
 		TEXT("read: TurboMCP status, %d toolsets\n"), ToolsetCount);
 
+    if (const TSharedPtr<IPlugin> Plugin = IPluginManager::Get().FindPlugin(TEXT("TurboMCP")))
+    {
+        const FPluginDescriptor& Descriptor = Plugin->GetDescriptor();
+        Result += FString::Printf(TEXT("plugin descriptor version: %s (%d)\n"), *Descriptor.VersionName, Descriptor.Version);
+    }
+    else Result += TEXT("plugin descriptor version: unavailable\n");
+    Result += TEXT("status code compiled: " __DATE__ " " __TIME__ " (compiler-local time; not a Git revision)\n");
     const FString Binary = FModuleManager::Get().GetModuleFilename(TEXT("TurboMCP"));
     Result += FString::Printf(TEXT("engine: %s\nbinary: %s\nbinary file timestamp (not revision proof): %s\nsource revision: unknown\n"),
         *FEngineVersion::Current().ToString(), *Binary, *IFileManager::Get().GetTimeStamp(*Binary).ToIso8601());

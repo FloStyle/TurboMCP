@@ -68,6 +68,13 @@ namespace
 		return TEXT("Engine");
 	}
 
+	FString KindForTool(const FString& Toolset, const FString& Bare)
+	{
+		if (Toolset.StartsWith(TEXT("TurboMCP.")) && Bare == TEXT("ReadTurboMCPPlayCheck"))
+			return TEXT("Execute (starts PIE / runs project code)");
+		return KindOf(Toolset);
+	}
+
 	/**
 	 * The bare tool name.
 	 *
@@ -294,7 +301,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolIndex()
 			const FString Description = Field(Tool, TEXT("description"));
 
 			Lines += FString::Printf(TEXT("\n  %s %s - %s - %s"),
-				*KindOf(Toolset.Name), *Bare, *SourceOf(Toolset.Name),
+				*KindForTool(Toolset.Name, Bare), *Bare, *SourceOf(Toolset.Name),
 				*FirstSentence(Description));
 			++ToolCount;
 		}
@@ -427,7 +434,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 				Description.ReplaceInline(TEXT("\r"), TEXT(" "));
 				Description.ReplaceInline(TEXT("\n"), TEXT(" "));
 				if (Description.Len() > 120) Description = Description.Left(117) + TEXT("...");
-				const FString Row = FString::Printf(TEXT("\n%s %s - %s"), *KindOf(Entry.Name), *Bare, *Description);
+				const FString Row = FString::Printf(TEXT("\n%s %s - %s"), *KindForTool(Entry.Name, Bare), *Bare, *Description);
 				// Reserve space for the continuation, never cut a tool name in half.
 				if (Summary.Len() + Row.Len() > HelpBudgetChars - 250)
 				{
@@ -469,7 +476,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 
 			FString Help = FString::Printf(TEXT("read: %s.%s"), *Entry.Name, *Bare);
 			Help += FString::Printf(TEXT("\nkind: %s   source: %s"),
-				*KindOf(Entry.Name), *SourceOf(Entry.Name));
+				*KindForTool(Entry.Name, Bare), *SourceOf(Entry.Name));
             if (Bare == TEXT("ReadTurboMCPPlayCheck"))
                 Help += TEXT("\neffects: starts PIE and executes project code; NOT a passive read.");
 			Help += FString::Printf(TEXT("\nwhat: %s"),
