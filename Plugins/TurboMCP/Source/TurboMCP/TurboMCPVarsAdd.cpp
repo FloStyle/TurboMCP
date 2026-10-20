@@ -11,6 +11,7 @@
 #include "BlueprintEditorLibrary.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
+#include "Editor.h"
 #include "Engine/MemberReference.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -483,6 +484,11 @@ FString FTurboMCPVarsAdd::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 {
+    // Stock AddMemberVariable performs structural compilation; never put it inside rollback scope.
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: variable creation requires an idle editor outside a transaction; structural compilation cannot be rolled back safely");
+    if (InPlan.Variables.IsEmpty()) return TEXT("unchanged: no variables requested");
+
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InPlan.Asset, Resolved);
 	if (!ResolveError.IsEmpty())
@@ -502,9 +508,13 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 	// variables and then refused would leave the Blueprint in a state the caller did not
 	// ask for, which is what `P8` forbids.
 	TArray<FString> Clashes;
+    TSet<FName> RequestedNames;
 	for (const FVar& Variable : InPlan.Variables)
 	{
 		const FName Name(*Variable.Name);
+        if (Name.IsNone() || RequestedNames.Contains(Name))
+        { Clashes.Add(Variable.Name + TEXT(" (empty or duplicate name)")); continue; }
+        RequestedNames.Add(Name);
 		if (FBlueprintEditorUtils::FindMemberVariableGuidByName(Blueprint, Name).IsValid())
 		{
 			Clashes.Add(FString::Printf(TEXT("%s (already a variable)"), *Variable.Name));
@@ -525,6 +535,7 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 	}
 
 	int32 Added = 0;
+    TArray<FEdGraphPinType> ResolvedTypes;
 	for (const FVar& Variable : InPlan.Variables)
 	{
 		// THE TYPE RESOLVER IS THE ENGINE'S OWN, AND IT CANNOT REPORT FAILURE.
@@ -658,16 +669,18 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 			}
 		}
 
-		if (!FBlueprintEditorUtils::AddMemberVariable(
-				Blueprint, FName(*Variable.Name), PinType, Variable.Default))
-		{
-			return FString::Printf(
-				TEXT("error: the engine refused to add '%s' of type '%s'. %d variable(s) ")
-				TEXT("before it were added."),
-				*Variable.Name, *Variable.TypeText, Added);
-		}
-		++Added;
-	}
+        ResolvedTypes.Add(PinType);
+    }
+
+    // Type resolution above is read-only. Do not partially apply a list with an invalid later type.
+    for (int32 Index = 0; Index < InPlan.Variables.Num(); ++Index)
+    {
+        const FVar& Variable = InPlan.Variables[Index];
+        if (!FBlueprintEditorUtils::AddMemberVariable(Blueprint, FName(*Variable.Name), ResolvedTypes[Index], Variable.Default))
+            return FString::Printf(TEXT("%s: engine refused variable '%s'; added=%d; rollback=not_attempted; structural compilation may have run; inspect before retrying"),
+                Added ? TEXT("partial") : TEXT("unchanged"), *Variable.Name, Added);
+        ++Added;
+    }
 
 	// The flags and the category live on the description rather than on the add call, so
 	// they are set after, by finding the entry the add created.
