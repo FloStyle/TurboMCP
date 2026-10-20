@@ -206,7 +206,12 @@ FString FTurboMCPBlueprintRead::RenderManifest(const UBlueprint* InBlueprint)
 	}
 	for (int32 Index = 0; Index < Graphs.Num() && Index < MaxManifestNames; ++Index)
 	{
-		Out += FString::Printf(TEXT("\n    %s"), *Graphs[Index]->GetName());
+		UEdGraph* Graph = Graphs[Index];
+		const TCHAR* Kind = InBlueprint->FunctionGraphs.Contains(Graph) ? TEXT("function")
+			: InBlueprint->MacroGraphs.Contains(Graph) ? TEXT("macro")
+			: (InBlueprint->UbergraphPages.Contains(Graph) || InBlueprint->EventGraphs.Contains(Graph))
+				? TEXT("event graph") : TEXT("graph");
+		Out += FString::Printf(TEXT("\n    %s [%s]"), *Graph->GetName(), Kind);
 	}
 	if (Graphs.Num() > MaxManifestNames)
 	{
@@ -349,6 +354,13 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 
 	for (UEdGraph* Graph : Graphs)
 	{
+		// A function exists even when its entry node is missing or its body is empty.
+		if (RealFunctionGraphs.Contains(Graph))
+		{
+			const UFunction* Function = SkeletonClass != nullptr
+				? SkeletonClass->FindFunctionByName(Graph->GetFName()) : nullptr;
+			OutFunctions.Add(FString::Printf(TEXT("%s%s"), *Graph->GetName(), Function ? *FunctionParameters(Function) : TEXT(" [signature unavailable]")));
+		}
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
 			if (const UK2Node_CustomEvent* Custom = Cast<UK2Node_CustomEvent>(Node))
@@ -358,8 +370,8 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 				const UFunction* Function = SkeletonClass != nullptr
 					? SkeletonClass->FindFunctionByName(Name) : nullptr;
 				const FString Label = Name.ToString();
-				OutEvents.Add(FString::Printf(TEXT("%s%s"),
-					*Label, *FunctionParameters(Function)));
+				OutEvents.Add(FString::Printf(TEXT("%s%s [event in graph: %s]"),
+					*Label, *FunctionParameters(Function), *Graph->GetName()));
 			}
 			else if (const UK2Node_Event* Event = Cast<UK2Node_Event>(Node))
 			{
@@ -376,21 +388,10 @@ void FTurboMCPBlueprintRead::CollectEventsAndFunctions(const UBlueprint* InBluep
 					Function = SkeletonClass->FindFunctionByName(Name);
 				}
 				const FString Label = Name.ToString();
-				OutEvents.Add(FString::Printf(TEXT("%s%s"),
-					*Label, *FunctionParameters(Function)));
+				OutEvents.Add(FString::Printf(TEXT("%s%s [event in graph: %s]"),
+					*Label, *FunctionParameters(Function), *Graph->GetName()));
 			}
-			else if (Cast<UK2Node_FunctionEntry>(Node) != nullptr && RealFunctionGraphs.Contains(Graph))
-			{
-				// The graph is named for its function, so the graph name is the function
-				// name. FindFunctionByName wants an FName, not a string.
-				const FName FunctionName(*Graph->GetName());
-				const UFunction* Function = SkeletonClass != nullptr
-					? SkeletonClass->FindFunctionByName(FunctionName) : nullptr;
-				// The name a caller writes back is the function's, which is the graph's.
-				const FString Label = Graph->GetName();
-				OutFunctions.Add(FString::Printf(TEXT("%s%s"),
-					*Label, *FunctionParameters(Function)));
-			}
+
 		}
 	}
 }
