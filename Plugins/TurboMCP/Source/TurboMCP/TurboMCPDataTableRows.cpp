@@ -595,13 +595,19 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
     FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "DataTableRows", "TurboMCP DataTable rows"));
 	Table->Modify();
 
+	TArray<FString> Failures;
 	int32 Removed = 0;
 	for (const FString& Name : Plan.Removals)
 	{
-		if (FDataTableEditorUtils::RemoveRow(Table, FName(*Name)))
+		if (FDataTableEditorUtils::RemoveRow(Table, FName(*Name))
+            && !Table->GetRowMap().Contains(FName(*Name)))
 		{
 			++Removed;
 		}
+        else
+        {
+            Failures.Add(FString::Printf(TEXT("row '%s' could not be removed"), *Name));
+        }
 	}
 
 	// *** THE FAILURES ARE COLLECTED, NOT RETURNED ON, AND THAT IS WHAT MAKES THE COMMENT ABOVE TRUE. *** Until
@@ -610,7 +616,6 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	// and the caller received an `error:` line with no way to learn that part of the request had landed. The
 	// sentence "a failure part-way is REPORTED rather than silently leaving half the request applied" was false
 	// as written; it is true now.
-	TArray<FString> Failures;
 	int32 Written = 0;
 	for (const TPair<FName, FString>& Pair : FinalText)
 	{
@@ -653,6 +658,9 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	// re-reads the row names and each changed value back from the table."*
 	FString ReadBack;
 	TArray<FString> VerificationFailures;
+    for (const FString& Name : Plan.Removals)
+        if (Table->GetRowMap().Contains(FName(*Name)))
+            VerificationFailures.Add(FString::Printf(TEXT("removed row '%s' is still present after edits"), *Name));
 	for (const FString& Name : Order)
 	{
         if (Table->GetRowStruct() != Struct)
