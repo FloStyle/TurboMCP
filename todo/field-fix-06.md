@@ -62,3 +62,7 @@ FIELD-FIX-06: planner now classifies an external endpoint against the destinatio
 ## Duplicate internal copy wires
 
 FIELD-FIX-06: reciprocal internal wires are planned once from the output side. Previously the second replay could receive a break-existing connection response and roll back an otherwise valid copy. Implementation done; unbuilt and untested. Deferred evidence: connected exec and data blocks copy successfully with exact wire counts; conflicting connections must still refuse.
+
+## Destination copy eligibility
+
+FIELD-FIX-06 now checks CanDuplicateNode and CanPasteHere during planning and before the apply transaction. Ineligible graph nodes refuse before mutation instead of bypassing Unreal copy/paste restrictions. Implementation done; unbuilt and untested. Deferred evidence: eligible ordinary calls still copy; nonduplicable nodes and destination-incompatible calls refuse without mutation.
