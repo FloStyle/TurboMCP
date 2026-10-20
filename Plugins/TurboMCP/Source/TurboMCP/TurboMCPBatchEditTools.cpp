@@ -10,6 +10,7 @@
 #include "ScopedTransaction.h"
 #include "Editor.h"
 #include "Editor/Transactor.h"
+#include "Editor/TransBuffer.h"
 
 namespace
 {
@@ -67,23 +68,27 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPBatchEdit(const FString& Operati
 }
 FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
 {
- if (!GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()) return Refusal(TEXT("requires an idle editor outside an active transaction"));
+ if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()) return Refusal(TEXT("requires an idle editor outside an active transaction"));
  TArray<FBatchOperation> Ops; FString Error; if (!ParseBatch(Operations, Ops, Error)) return Refusal(Error);
- const int32 PreviousIndex = GEditor->Trans ? GEditor->Trans->GetQueueLength() - GEditor->Trans->GetUndoCount() - 1 : -1;
- const FTransaction* Previous = PreviousIndex >= 0 ? GEditor->Trans->GetTransaction(PreviousIndex) : nullptr;
- const FGuid PreviousId = Previous ? Previous->GetId() : FGuid();
- FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "BatchEdit", "TurboMCP batch edit"));
+ UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+ if (!Buffer) return Refusal(TEXT("requires an editor transaction buffer"));
+ TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "BatchEdit", "TurboMCP batch edit"));
+ if (!Transaction->IsOutstanding() || Buffer->ActiveCount != 1 || Buffer->UndoBuffer.IsEmpty())
+  return Refusal(TEXT("could not establish one owned transaction"));
+ const FGuid OwnedId = Buffer->UndoBuffer.Last()->GetId();
  TArray<FString> Applied;
  for (FBatchOperation& Op : Ops)
  {
   FString Report; FTurboMCPGraphRepoint::FApplyContext Context; Context.bCompile = false; Context.bSave = false;
   if (!FTurboMCPGraphRepoint::ApplyCore(Op.Repoint, Context, Report, Error))
   {
-   GEditor->EndTransaction();
-   const int32 CurrentIndex = GEditor->Trans ? GEditor->Trans->GetQueueLength() - GEditor->Trans->GetUndoCount() - 1 : -1;
-   const FTransaction* Current = CurrentIndex >= 0 ? GEditor->Trans->GetTransaction(CurrentIndex) : nullptr;
-   // Never undo a user's previous edit when this batch failed before recording changes.
-   const bool bRolledBack = Current && Current->GetId() != PreviousId && GEditor->UndoTransaction(false);
+   // Destroy the scope before undo: a manual EndTransaction leaves its destructor
+   // outstanding and would end the transaction a second time on return.
+   Transaction.Reset();
+   const int32 CurrentIndex = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
+   const FTransaction* Current = CurrentIndex >= 0 ? Buffer->GetTransaction(CurrentIndex) : nullptr;
+   const bool bRolledBack = OwnedId.IsValid() && Buffer->ActiveCount == 0
+    && Current && Current->GetId() == OwnedId && GEditor->UndoTransaction(false);
    return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollback=%s\nerror=%s"), bRolledBack ? TEXT("unchanged") : TEXT("partial"), *Op.Id, *Op.Kind, *FString::Join(Applied, TEXT(",")), bRolledBack ? TEXT("complete") : TEXT("failed"), *Error);
   }
   Applied.Add(Op.Id);
