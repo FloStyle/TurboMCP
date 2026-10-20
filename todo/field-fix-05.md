@@ -38,3 +38,8 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 ## Deliverable
 
 Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.
+
+
+### Pin default refusal diagnostics
+
+fb328d9 replaces the combined refusal with separate missing-input, orphaned, execution, connected, read-only and ignored-default reasons. Schema validation errors include pin name and category/subcategory. Implemented, unbuilt_untested. This improves the TurboMCP replacement diagnostics; it does not add arbitrary struct literal or by-reference support to native tools. Deferred: each refusal reason and unchanged asset state; valid default edits unchanged. No tests/builds run.

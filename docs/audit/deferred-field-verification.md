@@ -337,3 +337,8 @@ ee12e2d object/interface type parsing: verify generated widget class paths, nati
 
 ### FIELD-FIX-26
 Default-on recorder: verify fresh config, persisted false and manual toggle later. Implemented, unbuilt_untested. No tests/builds run.
+
+
+### Pin default refusal diagnostics
+
+fb328d9 replaces the combined refusal with separate missing-input, orphaned, execution, connected, read-only and ignored-default reasons. Schema validation errors include pin name and category/subcategory. Implemented, unbuilt_untested. This improves the TurboMCP replacement diagnostics; it does not add arbitrary struct literal or by-reference support to native tools. Deferred: each refusal reason and unchanged asset state; valid default edits unchanged. No tests/builds run.
