@@ -408,6 +408,29 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 
 	if (InPin->LinkedTo.Num() > 0)
 	{
+        // GL-15: execution inputs may merge multiple valid predecessors; data inputs may not.
+        if (InPin->Direction == EGPD_Input && InPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec && InPin->LinkedTo.Num() > 1)
+        {
+            TArray<FString> Sources;
+            for (const UEdGraphPin* SourcePin : InPin->LinkedTo)
+            {
+                if (!SourcePin || !SourcePin->GetOwningNode() || SourcePin->Direction != EGPD_Output
+                    || SourcePin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec || !SourcePin->LinkedTo.Contains(InPin))
+                {
+                    OutEvidence = EFormEvidence::Partial;
+                    const FString Note = TEXT("; error: execution merge contains an invalid endpoint\n");
+                    OutNotes.Add(Note);
+                    return Note;
+                }
+                Sources.Add(FString::Printf(TEXT("%s.%s"), *TurboMCPNodeId::MakeForNode(SourcePin->GetOwningNode(), true), *SourcePin->PinName.ToString()));
+            }
+            Sources.Sort();
+            const FString Note = FString::Printf(TEXT("; execution merge '%s': sources=[%s]; multiple execution sources are valid; merge round-trip is not represented by this value form\n"),
+                *InPin->PinName.ToString(), *FString::Join(Sources, TEXT(", ")));
+            OutNotes.Add(Note);
+            OutEvidence = EFormEvidence::Partial;
+            return Note;
+        }
 		// A nonempty link array is not proof of a usable source. A null first
 		// element or a null owner must not fall through to the default-value path
 		// with Complete evidence.
