@@ -1566,7 +1566,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		const bool bRollbackComplete = bRestored && RestorationFailed == 0
 			&& bPositionsRestored && Graph->Nodes.Num() == NodesBefore;
 		if (bRollbackComplete && !bWasDirtyBefore) Graph->GetOutermost()->SetDirtyFlag(false);
-		FString Out = FString::Printf(TEXT("%s: %s in %s would be worse (total wire length %.1f -> %.1f), so it was rolled back. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), bRollbackComplete ? TEXT("unchanged") : TEXT("partial"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
+		FString Out = FString::Printf(TEXT("%s: %s in %s would be worse (total wire length %.1f -> %.1f), so rollback was attempted. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), bRollbackComplete ? TEXT("unchanged") : TEXT("partial"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
 		if (InPlan.SelectedNodeKeys.Num() > 0)
 		{
 			Out += FString::Printf(TEXT(" Scope was %d selected node(s); %d surrounding node(s) and all comment boxes were fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount);

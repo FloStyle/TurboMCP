@@ -45,3 +45,8 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## Getter splitting preservation
 
 Source c2e4894 restricts Tidy getter splitting to exact, pure VariableGet nodes with a single unsplit value output. Target/input-bearing getters, validated getters, split pins and subclasses stay intact because copying only VariableReference cannot preserve their complete semantics. The same eligibility guard applies during planning and application. This implementation slice is closed; unbuilt and untested. Targeted overlap-free layout remains open.
+
+
+### Tidy rollback result and dirty baseline
+
+12b65cc captures dirty state and node count before Modify or node creation. Rollback now requires matching wire length, restored consumer links/positions and node count before reporting unchanged or restoring a clean flag. Incomplete recovery reports partial and retains dirty state. Implemented, unbuilt_untested; visual layout acceptance remains open. Deferred evidence: clean/dirty starting assets and forced rollback failures report accurately. No tests/builds run.

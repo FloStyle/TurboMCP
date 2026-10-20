@@ -253,3 +253,8 @@ afd3d63 rejects oversized row/field identifiers before planning FName conversion
 ### DataTable reusable outputs
 
 6520c0f resets parse/plan/report outputs; parsing publishes operations only after complete success. Replanning preserves aliased input but replaces the prior plan. Missing table/schema records a refusal as well as returning an error. Current MCP wrapper already uses fresh locals; this closes helper-level stale/partial output behavior, not a reproduced field crash. Implemented, unbuilt_untested. Deferred evidence: sequential reuse, late parse error, aliased replan and early apply refusal cannot expose prior operations or success reports. No tests/builds run.
+
+
+### Tidy rollback result and dirty baseline
+
+12b65cc captures dirty state and node count before Modify or node creation. Rollback now requires matching wire length, restored consumer links/positions and node count before reporting unchanged or restoring a clean flag. Incomplete recovery reports partial and retains dirty state. Implemented, unbuilt_untested; visual layout acceptance remains open. Deferred evidence: clean/dirty starting assets and forced rollback failures report accurately. No tests/builds run.
