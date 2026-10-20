@@ -1100,6 +1100,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	// This is one of the two irreversible steps and it is why the rollback exists as CODE rather than
 	// as a design property. What is created is recorded so `Apply` can destroy exactly it.
 	// -----------------------------------------------------------------------------------------
+	struct FOccupiedGetterRect { double X, Y, Width, Height; };
+	TArray<FOccupiedGetterRect> GetterObstacles;
+	for (const FNode& Node : OutPlan.Nodes)
+	{
+		if (!Node.bIsComment)
+			GetterObstacles.Add({FMath::RoundToDouble(Node.PlannedX), FMath::RoundToDouble(Node.PlannedY), Node.Width, Node.Height});
+	}
 	for (int32 NodeIndex = 0; NodeIndex < OutPlan.Nodes.Num(); ++NodeIndex)
 	{
 		FNode& Entry = OutPlan.Nodes[NodeIndex];
@@ -1169,7 +1176,32 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
 			Planned.PlannedX = ConsumerPlan.PlannedX
 				- Entry.Width - FTurboMCPGraphTidy::HorizontalNodeGap;
-			Planned.PlannedY = ConsumerPlan.PlannedY;
+			Planned.PlannedY = FMath::RoundToDouble(ConsumerPlan.PlannedY);
+			Planned.PlannedX = FMath::RoundToDouble(Planned.PlannedX);
+			// Keep existing/planned nodes fixed. Move only this new copy below
+			// intersecting rectangles, reserving its space for subsequent copies.
+			for (int32 Pass = 0; Pass <= GetterObstacles.Num(); ++Pass)
+			{
+				double NextY = Planned.PlannedY;
+				for (const FOccupiedGetterRect& Obstacle : GetterObstacles)
+				{
+					if (Planned.PlannedX < Obstacle.X + Obstacle.Width
+						&& Planned.PlannedX + Entry.Width > Obstacle.X
+						&& Planned.PlannedY < Obstacle.Y + Obstacle.Height
+						&& Planned.PlannedY + Entry.Height > Obstacle.Y)
+						NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + VerticalNodeGap));
+				}
+				if (NextY == Planned.PlannedY) break;
+				Planned.PlannedY = NextY;
+			}
+			if (!FMath::IsFinite(Planned.PlannedX) || !FMath::IsFinite(Planned.PlannedY)
+				|| Planned.PlannedX < MIN_int32 || Planned.PlannedX > MAX_int32
+				|| Planned.PlannedY < MIN_int32 || Planned.PlannedY > MAX_int32)
+			{
+				OutError = TEXT("Getter-copy placement exceeds graph coordinate limits; no nodes moved.");
+				return false;
+			}
+			GetterObstacles.Add({Planned.PlannedX, Planned.PlannedY, Entry.Width, Entry.Height});
 			OutPlan.GetterCopies.Add(Planned);
 		}
 	}
