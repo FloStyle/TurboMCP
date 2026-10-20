@@ -12,6 +12,9 @@
 #include "BlueprintEditorLibrary.h"
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraphPin.h"
+#include "EdGraph/EdGraph.h"
+#include "EdGraph/EdGraphNode.h"
+#include "K2Node_StructOperation.h"
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "Engine/DataTable.h"
@@ -588,21 +591,9 @@ void FTurboMCPStruct::FindReaders(const UUserDefinedStruct* InStruct,
 		return;
 	}
 
-	// WHAT A "READER" IS, SAID PLAINLY BECAUSE THE REFUSAL IS BUILT ON IT: a LOADED asset that HOLDS THE STRUCT,
-	// and therefore has a member whose shape a field removal would break. A Blueprint carries one as a variable; a
-	// DataTable carries one as its row struct. Each is LISTED by path and class rather than totalled, because
-	// `D-45` says a writer that removes anything "lists each removal by key with its class and title, never a
-	// count" - "a count says how much is gone and a list says what".
-	//
-	// *** THE COUNT IS PER STRUCT AND NOT PER FIELD, AND THAT IS STATED RATHER THAN HIDDEN. *** An earlier
-	// version of this function took the field name as a parameter and NEVER READ IT - a silently unused argument
-	// that made the signature claim a per-field count the body did not compute. Every field of a struct shares
-	// one shape and one set of readers, so the honest signature has no field name in it, and a caller cannot be
-	// misled into thinking a removal of field A is safer than a removal of field B.
-	//
-	// IT IS ALSO DELIBERATELY CONSERVATIVE. It counts assets that would be STRUCTURALLY broken, which is the harm
-	// the spec's refusal clause exists for. It does NOT claim to count every graph that reads a field by name, and
-	// `RenderPreviewFields` says so rather than presenting its number as a total.
+	// Readers are loaded assets, not a complete registry-wide dependency scan.
+	// Count member declarations and graph nodes carrying the struct (including
+	// make/break operations and map-value pin types), then list each asset once.
 	for (TObjectIterator<UObject> It; It; ++It)
 	{
 		UObject* Object = *It;
@@ -616,9 +607,34 @@ void FTurboMCPStruct::FindReaders(const UUserDefinedStruct* InStruct,
 			int32 Uses = 0;
 			for (const FBPVariableDescription& Variable : Blueprint->NewVariables)
 			{
-				if (Variable.VarType.PinSubCategoryObject == InStruct)
+				if (Variable.VarType.PinSubCategoryObject == InStruct
+					|| Variable.VarType.PinValueType.TerminalSubCategoryObject == InStruct)
 				{
 					++Uses;
+				}
+			}
+			TArray<UEdGraph*> Graphs;
+			Blueprint->GetAllGraphs(Graphs);
+			TSet<const UEdGraphNode*> SeenNodes;
+			for (const UEdGraph* Graph : Graphs)
+			{
+				if (Graph == nullptr) { continue; }
+				for (const UEdGraphNode* Node : Graph->Nodes)
+				{
+					if (Node == nullptr || SeenNodes.Contains(Node)) { continue; }
+					SeenNodes.Add(Node);
+					const UK2Node_StructOperation* Operation = Cast<UK2Node_StructOperation>(Node);
+					bool bUsesStruct = Operation != nullptr && Operation->StructType == InStruct;
+					for (const UEdGraphPin* Pin : Node->Pins)
+					{
+						if (Pin != nullptr && (Pin->PinType.PinSubCategoryObject == InStruct
+							|| Pin->PinType.PinValueType.TerminalSubCategoryObject == InStruct))
+						{
+							bUsesStruct = true;
+							break;
+						}
+					}
+					if (bUsesStruct) { ++Uses; }
 				}
 			}
 			if (Uses > 0)

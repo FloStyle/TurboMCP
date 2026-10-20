@@ -120,11 +120,21 @@ namespace TurboMCPTrace
 				return;
 			}
 
-			// The node is found from the FUNCTION the frame names, through the engine's own locator. Writing a
-			// second lookup would be a second opinion about the debug information, and this project has
-			// recorded twice what two implementations of one format cost.
+			// Match the engine debugger: Code points just past the executed opcode.
+			if (ActiveObject == nullptr || StackFrame.Node == nullptr || StackFrame.Code == nullptr
+				|| StackFrame.Node->Script.Num() == 0)
+			{
+				return;
+			}
+			const UPTRINT ScriptStart = reinterpret_cast<UPTRINT>(StackFrame.Node->Script.GetData());
+			const UPTRINT CodeAddress = reinterpret_cast<UPTRINT>(StackFrame.Code);
+			if (CodeAddress <= ScriptStart || CodeAddress - ScriptStart > static_cast<UPTRINT>(StackFrame.Node->Script.Num()))
+			{
+				return;
+			}
+			const int32 OpcodeOffset = static_cast<int32>(CodeAddress - ScriptStart - 1);
 			UEdGraphNode* Node = FKismetDebugUtilities::FindSourceNodeForCodeLocation(
-				ActiveObject, StackFrame.Node, /*DebugOpcodeOffset=*/0, /*bAllowImpreciseHit=*/true);
+				ActiveObject, StackFrame.Node, OpcodeOffset, /*bAllowImpreciseHit=*/false);
 			if (Node == nullptr)
 			{
 				return;
