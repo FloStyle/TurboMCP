@@ -186,6 +186,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp"
           ],
           "new_files": []
+        },
+        "field-repoint-connections": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
