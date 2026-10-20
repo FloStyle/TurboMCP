@@ -44,45 +44,6 @@ namespace
 		return InNode != nullptr && InNode->IsA<UEdGraphNode_Comment>();
 	}
 
-	/**
-	 * Follows a chain of knots to the real node behind them.
-	 *
-	 * `2.1.7` says a plain reroute is invisible at `bodies`, so a link reads as
-	 * direct. At `full` the knots are named instead, because an agent breaking the
-	 * link has to break it at the knot.
-	 */
-	UEdGraphNode* ResolveThroughKnots(const UEdGraphNode* InNode, int32 InDepth = 0)
-	{
-		if (InNode == nullptr || InDepth > 64)
-		{
-			return const_cast<UEdGraphNode*>(InNode);
-		}
-		if (!IsKnot(InNode))
-		{
-			return const_cast<UEdGraphNode*>(InNode);
-		}
-
-		// A knot passes through on its single output pin.
-		for (const UEdGraphPin* Pin : InNode->Pins)
-		{
-			if (Pin != nullptr && Pin->Direction == EGPD_Output && Pin->LinkedTo.Num() > 0)
-			{
-				const UEdGraphPin* Linked = Pin->LinkedTo[0];
-				if (!Linked || Linked->Direction != EGPD_Input
-					|| Linked->PinType.PinCategory != Pin->PinType.PinCategory
-					|| !Linked->LinkedTo.Contains(Pin))
-				{
-					// Keep the reroute visible rather than crashing or traversing a broken edge.
-					return const_cast<UEdGraphNode*>(InNode);
-				}
-				if (const UEdGraphNode* Next = Linked->GetOwningNode())
-				{
-					return ResolveThroughKnots(Next, InDepth + 1);
-				}
-			}
-		}
-		return const_cast<UEdGraphNode*>(InNode);
-	}
 
 	/** The real upstream node and the exact output pin its consumer reads. */
 	struct FValueSourceEndpoint
@@ -97,7 +58,7 @@ namespace
 	 *
 	 * This walks UPSTREAM: a consumer input links to the nearest knot's output,
 	 * the knot's single input links to the next upstream pin, and so on. It is
-	 * distinct from `ResolveThroughKnots`, which follows an exec chain DOWNSTREAM.
+	 * distinct from RenderChain, which follows execution edges DOWNSTREAM.
 	 * Nulls, multiple links, non-output pins, cycles and depth >64 are unresolved.
 	 */
 	FValueSourceEndpoint ResolveUpstreamValueSource(const UEdGraphPin* InConsumerPin)
@@ -108,12 +69,13 @@ namespace
 		}
 
 		UEdGraphPin* Current = InConsumerPin->LinkedTo[0];
+		const UEdGraphPin* Consumer = InConsumerPin;
 		TSet<const UEdGraphPin*> SeenPins;
 		TSet<const UEdGraphNode*> SeenKnots;
 
 		for (int32 Depth = 0; Depth < 64; ++Depth)
 		{
-			if (Current == nullptr || SeenPins.Contains(Current))
+			if (Current == nullptr || SeenPins.Contains(Current) || !Current->LinkedTo.Contains(Consumer))
 			{
 				return FValueSourceEndpoint();
 			}
@@ -157,6 +119,7 @@ namespace
 			{
 				return FValueSourceEndpoint();
 			}
+			Consumer = KnotInput;
 			Current = KnotInput->LinkedTo[0];
 		}
 
@@ -796,19 +759,26 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 			continue;
 		}
 
-		Current = ResolveThroughKnots(Current);
-
 		if (InOutPrinted.Contains(Current))
 		{
 			// `2.1.3`: where two exec paths join, the join is printed once and the
 			// other path jumps to it by name.
-			Body += FString::Printf(TEXT("\n%s(goto %s)"),
-				*Indent, *TurboMCPNodeId::MakeForNode(Current));
+			if (IsKnot(Current))
+			{
+				const FString Note = TEXT("; error: execution reroute is revisited (cycle or shared path); continuation is incomplete");
+				OutNotes.Add(Note);
+				Body += TEXT("\n") + Indent + Note;
+			}
+			else
+			{
+				Body += FString::Printf(TEXT("\n%s(goto %s)"),
+					*Indent, *TurboMCPNodeId::MakeForNode(Current));
+			}
 			break;
 		}
 
 		EFormEvidence NodeEvidence = EFormEvidence::Complete;
-		const FString Rendered = RenderNode(Current, InDetail, InAssetPath,
+		const FString Rendered = IsKnot(Current) ? FString() : RenderNode(Current, InDetail, InAssetPath,
 			/*InInlineDepth=*/0, InOutPrinted, InOutSharedValues,
 			InlineNodes, OutNotes, NodeEvidence);
 		InOutPrinted.Add(Current);
@@ -847,7 +817,17 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 		{
 			// The ordinary case: one output, so the chain simply continues in the
 			// same block.
-			Current = LinkedNode(ExecOuts[0]);
+			const UEdGraphPin* Endpoint = ExecOuts[0]->LinkedTo[0];
+			if (Endpoint == nullptr || Endpoint->GetOwningNode() == nullptr
+				|| Endpoint->Direction != EGPD_Input || Endpoint->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec
+				|| !Endpoint->LinkedTo.Contains(ExecOuts[0]))
+			{
+				const FString Note = TEXT("; error: malformed execution endpoint");
+				OutNotes.Add(Note);
+				Body += TEXT("\n") + Indent + Note;
+				break;
+			}
+			Current = Endpoint->GetOwningNode();
 			continue;
 		}
 
@@ -866,7 +846,8 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 			for (const UEdGraphPin* Endpoint : Pin->LinkedTo)
 			{
 				if (Endpoint == nullptr || Endpoint->GetOwningNode() == nullptr
-					|| Endpoint->Direction != EGPD_Input || !Endpoint->LinkedTo.Contains(Pin))
+					|| Endpoint->Direction != EGPD_Input || Endpoint->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec
+					|| !Endpoint->LinkedTo.Contains(Pin))
 				{
 					const FString Note = TEXT("; error: malformed execution endpoint");
 					OutNotes.Add(Note);
@@ -906,7 +887,8 @@ FString FTurboMCPGraphText::RenderEntryBody(const UEdGraph* InGraph,
 			for (const UEdGraphPin* Endpoint : Pin->LinkedTo)
 			{
 				if (Endpoint == nullptr || Endpoint->GetOwningNode() == nullptr
-					|| Endpoint->Direction != EGPD_Input || !Endpoint->LinkedTo.Contains(Pin))
+					|| Endpoint->Direction != EGPD_Input || Endpoint->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec
+					|| !Endpoint->LinkedTo.Contains(Pin))
 				{
 					const FString Note = TEXT("; error: malformed entry execution endpoint");
 					OutNotes.Add(Note);
