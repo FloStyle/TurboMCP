@@ -122,3 +122,5 @@ Tidy getter preservation (c2e4894): deferred evidence for external-target, valid
 Graph Copy defaults (302c405, FIELD-FIX-06): deferred evidence for literal/object/localized-text defaults, pin shape mismatch refusal and rollback, and values after wiring. No test execution; not a new product task.
 
 Exact type preservation (0a5e7d0, FIELD-FIX-17): deferred checks for allowed/refused structs, float versus double/real, and container/signature propagation. Verification debt only; no new product task.
+
+FIELD-FIX-06 external static library calls: cross-asset copy, retained function owner, defaults and links remain untested. Self-call missing-member refusal still requires later evidence.
