@@ -99,7 +99,11 @@
       "id": "GL-15",
       "title": "The graph reader prints \"malformed link\" on an exec pin that has two sources (medium)",
       "owner": "FIELD-07",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-11",
+      "implementation_limits": "Reader classifies valid execution merges and lists sources. Complete multi-source DSL write-back remains open."
     },
     {
       "report": "2026-10-18_S1",
@@ -182,7 +186,11 @@
       "id": "X-41",
       "title": "A clean compile hides a broken exec chain (high)",
       "owner": "FIELD-07",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-08",
+      "implementation_limits": "Compile output exposes structurally unreachable execution-input nodes separately from compiler verdict. Runtime behavior and whole-writer duplicate prevention remain open."
     },
     {
       "report": "2026-10-18_S1",

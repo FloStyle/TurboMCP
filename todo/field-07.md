@@ -65,3 +65,8 @@ FIELD-FIX-09 implements X-41 Append rejection of new unreachable exec-input node
 ## GL-15 follow-up
 
 GL-15 classification implemented in FIELD-FIX-11. All execution predecessors listed; complete multi-source DSL round-trip remains unsupported and explicit. Runtime verification deferred.
+
+
+## Report reconciliation
+
+GL-15 malformed-merge classification and X-41 missing compile reachability diagnostics are implemented and untested, linked to FIELD-FIX-11 and FIELD-FIX-08 in the report intake. This closes those diagnostic observations only. Whole-writer duplicate prevention, complete multi-source round-trip and runtime behavior remain open. Source inspected at 47fa099; no tests/builds run.
