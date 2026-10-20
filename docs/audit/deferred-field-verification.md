@@ -329,3 +329,7 @@ c05d159: status version/compile stamp and PlayCheck execution labels. Verify on 
 
 ### Pin readout identifiers and flags
 2e1c0eb: verify direction-local vs raw pin-array indices, GUIDs, null slots, and default editing flags. Implemented, unbuilt_untested; no tests/builds.
+
+
+### FIELD-FIX-25
+ee12e2d object/interface type parsing: verify generated widget class paths, native object classes, Blueprint interfaces, invalid wrapper/class combinations and container types. Done, unbuilt_untested. No tests/builds run.

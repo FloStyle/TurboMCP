@@ -186,11 +186,12 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (4)</summary>
+<summary>done (5)</summary>
 
 - **P2** [Blueprint summary completeness and graph labels](todo/field-fix-21.md)
 - **P2** [Toolset help continuation](todo/field-fix-22.md)
 - **P2** [Concise and accurate save reporting](todo/field-fix-23.md)
 - **P2** [Tool build identification and execution labels](todo/field-fix-24.md)
+- **P2** [Object and interface signature type support](todo/field-fix-25.md)
 
 </details>

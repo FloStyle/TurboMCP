@@ -239,7 +239,11 @@
       "id": "FA-07",
       "title": "Function add refuses object-reference parameters (medium)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-25",
+      "implementation_limits": "Bare class object paths and interface<> now supported alongside existing object/class/soft wrappers. Engine eligibility and exact loadable class paths required; runtime unverified."
     },
     {
       "report": "2026-10-18_S1",
