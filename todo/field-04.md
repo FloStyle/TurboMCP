@@ -59,3 +59,7 @@ Batch refuses PIE/nested transactions and reports rollback failure as partial. I
 b0753f2 checks rollback return values and returns failure on graph node-set mismatch. Replace preflights destructive targets before append. Replacement remains two-phase and can retain the append if removals fail; report labels this partial rather than unchanged.
 
 No build or tests run, per owner instruction. Runtime acceptance remains pending.
+
+## Replacement implementation closure
+
+FIELD-FIX-01 is closed at 6defafd: append and removal share one transaction, and all planned removal targets must be accounted for. This supersedes the two-phase limitation above. Build and runtime verification are pending in FIELD-REG-01. FIELD-04 remains open for timeout/duplicate-write investigations.

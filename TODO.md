@@ -28,6 +28,8 @@ Generated from task files and the approved queue. After editing task status, run
 | [R15: Activate gated private CI and release preparation](todo/roadmap-r15.md) | v1 | implementation | todo |
 | [R12: Validate installed-engine packages on the exact target](todo/roadmap-r12.md) | compatibility | investigation | todo |
 | [R14: Implement only an approved compatibility adapter](todo/roadmap-r14.md) | compatibility | implementation | todo |
+| [Graph replacement single-transaction implementation](todo/field-fix-01.md) | monday | implementation | done |
+| [Deferred regression for urgent plugin fixes](todo/field-reg-01.md) | monday | verification | todo |
 
 ## Historical findings
 
