@@ -1,14 +1,21 @@
 # Avoid false unnecessary-cast warnings
 
 ID: 7bbe9c3c-19c2-4b62-aad2-9cd098d0fedf
-Status: todo
+Status: done
 Priority: P1
-Readiness: needs_reconciliation
-Owner: unassigned
+Readiness: ready
+Owner: Codex
 Design: docs/design/protocol.md
 Review: source-reviewed
+Validation: unbuilt_untested
 
-## Current review
+## Implementation update — 2026-10-21
+
+Implemented in `22e4545`. Cast lint uses UK2Node_DynamicCast and its real result accessor, counts every connected output including execution/boolean outputs, and skips incomplete nodes. Removed the unsupported enclosing-Blueprint class inference. Only unused-output observations are reported; redundant connected casts are not inferred without reliable input/nullability evidence.
+
+Done means implemented, not verified. No tests or builds per owner; original acceptance cases remain deferred.
+
+## Current review (historical diagnosis)
 
 **Decision:** confirmed. **Follow-up owner:** [R06](roadmap-r06.md).
 

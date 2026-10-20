@@ -350,3 +350,8 @@ fb328d9 replaces the combined refusal with separate missing-input, orphaned, exe
 
 ### FIELD-FIX-28
 4c4a38e: verify schema-valid empty defaults, invalid empty defaults and split parent/child pin linting. Done, unbuilt_untested. LT-07 remains unresolved; no tests/builds run.
+
+## 2026-10-21 — Reference direction and cast lint (`22e4545`)
+
+- 484d5638: implemented, unbuilt/untested. Check explicit both against the union of in/out and empty direction on saved known dependencies across accepted path forms.
+- 7bbe9c3c: implemented, unbuilt/untested. Check typed result consumers, boolean and success/failure execution consumers, incomplete cast nodes and truly unused outputs. No input-type/nullability redundancy claim or deletion recommendation.
