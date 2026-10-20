@@ -76,3 +76,7 @@ FIELD-FIX-10: local float/string/struct defaults, unset values, newline escaping
 ## GL-15 follow-up
 
 FIELD-FIX-11: two branch outputs into one exec input, reroutes, invalid endpoints, and multi-source data refusal; confirm partial evidence survives output. Unbuilt/untested.
+
+## NF-08 NodeFind word search — deferred evidence
+
+Implementation closed in FIELD-FIX-12. Unbuilt and untested. Later check spaces, tabs/newlines, commas/pipes, empty terms, AND matching and reported parsed terms. This is verification evidence debt, not a product task.
