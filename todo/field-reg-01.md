@@ -44,3 +44,7 @@ Verify failure after the first rewired reader restores all original links, faile
 ## Call Swap regression pending
 
 Verify rejected migration restores links/nodes without undoing previous work; final link and node count verification; no implicit compile; replacement retains position; overflow and ambiguous graph refusal. Source 019a1c05d6e046809a3e8b8ef170af3453164a0f is unbuilt and untested.
+
+## Swap defaults regression pending
+
+FIELD-FIX-04: string, numeric, object and localized-text preservation; incompatible/split pin refusal; callback readback; rollback after default transfer and link failure. No build/tests run.
