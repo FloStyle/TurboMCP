@@ -130,3 +130,5 @@ FIELD-FIX-17 signature description: const-reference, mutable-reference, ordinary
 FIELD-FIX-06: Graph Copy undo-unavailable refusal and captured-record rollback remain untested; no verification task created.
 
 FIELD-FIX-19: Repoint duplicate pin-name refusal and unique controls remain untested. This is evidence debt attached to the implemented fix.
+
+FIELD-FIX-15 removal failure: removal-only and mixed batches, callback re-addition and owned rollback remain untested. Not a separate task.

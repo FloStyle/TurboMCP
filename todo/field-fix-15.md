@@ -37,3 +37,7 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 ## Deliverable
 
 Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.
+
+## Removal failures
+
+Failed RemoveRow or a row still present after removal now enters the batch rollback path instead of returning success. Final read-back also checks every requested removal. Implementation closed, unbuilt and untested; original DataTable crash cause remains open.
