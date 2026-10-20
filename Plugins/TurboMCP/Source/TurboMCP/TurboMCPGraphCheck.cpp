@@ -448,8 +448,9 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 		}
 	}
 
-	const bool bInsideFunction = Graph->GetSchema() != nullptr
-		&& Graph->GetClass()->GetName().Contains(TEXT("Function"));
+	// Standard function graphs are UEdGraph, not a class named "Function".
+	// Use the owning Blueprint collection so latent-node refusal also covers them.
+	const bool bInsideFunction = Blueprint->FunctionGraphs.Contains(Graph);
 
 	const TArray<FLine> Lines = SplitLines(InText);
 
