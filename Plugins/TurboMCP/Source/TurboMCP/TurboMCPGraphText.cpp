@@ -905,6 +905,23 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 		return Out;
 	}
 
+    // BL-12: declarations are stored on the function entry, not on variable-get nodes.
+    for (const UEdGraphNode* Node : InGraph->Nodes)
+    {
+        const UK2Node_FunctionEntry* Entry = Cast<UK2Node_FunctionEntry>(Node);
+        if (!Entry) continue;
+        for (const FBPVariableDescription& Variable : Entry->LocalVariables)
+        {
+            FString Default = Variable.DefaultValue;
+            Default.ReplaceInline(TEXT("\\"), TEXT("\\\\"));
+            Default.ReplaceInline(TEXT("\r"), TEXT("\\r"));
+            Default.ReplaceInline(TEXT("\n"), TEXT("\\n"));
+            Out += FString::Printf(TEXT("\n; local %s type=%s stored-default=%s"),
+                *Variable.VarName.ToString(), *Variable.VarType.PinCategory.ToString(),
+                Default.IsEmpty() ? TEXT("<unset; runtime/type default not evaluated>") : *Default);
+        }
+    }
+
 	// Bodies and full. A comment box is printed as a note about the region it
 	// covers, because it groups nodes an agent may want to know about, but it is
 	// not part of the flow.
