@@ -113,7 +113,10 @@
       "id": "BL-12",
       "title": "No reader gives the default value of a local variable (medium)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-10"
     },
     {
       "report": "2026-10-18_S1",
@@ -344,7 +347,10 @@
       "id": "OV-03",
       "title": "ReadTurboMCPOverrides lists the Blueprint's own functions as overrides from an unknown class (low)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-13"
     },
     {
       "report": "2026-10-20_S1",
