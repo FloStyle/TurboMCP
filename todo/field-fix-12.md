@@ -42,3 +42,7 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## Ambiguous canonical ID hints
 
 NodeFind no longer picks the last canonical ID when multiple graph node types share a display title. It omits that ambiguous hint while retaining search results. Implementation done; unbuilt and untested. Deferred evidence: repeated identical IDs retain hints, conflicting IDs suppress them. This is not confirmation or closure of the ED-08 generic equality-node diagnosis.
+
+## Exact node ID precedence
+
+Probe and spawn resolution now prefer exact type IDs before considering legacy aliases. Unrelated legacy alias collisions no longer make an exact ID ambiguous. Legacy-only ambiguous requests still refuse. Implementation done; unbuilt and untested. Deferred evidence: exact/legacy collision and ambiguous legacy-only controls.
