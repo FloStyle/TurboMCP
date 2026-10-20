@@ -38,8 +38,12 @@ UEdGraph* FindGraph(UBlueprint* B, const FString& Name) {
 
 UEdGraphNode* FindNode(UEdGraph* G, const FString& Id) {
  if (!G || Id.IsEmpty()) return nullptr;
- for (UEdGraphNode* N : G->Nodes) if (N && TurboMCPNodeId::MakeForNode(N, true) == Id) return N;
- return nullptr;
+ UEdGraphNode* Match = nullptr;
+ const FString Wanted = Id.TrimStartAndEnd();
+ for (UEdGraphNode* N : G->Nodes)
+  if (N && (TurboMCPNodeId::MakeForNode(N, true) == Wanted || TurboMCPNodeId::MakeForNode(N, false) == Wanted))
+  { if (Match && Match != N) return nullptr; Match = N; }
+ return Match;
 }
 UEdGraphPin* FindPin(UEdGraphNode* N, const FString& Name, EEdGraphPinDirection Direction) {
  if (!N) return nullptr;
@@ -91,7 +95,9 @@ bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName,
   if (!ConsumerPin || !ConsumerPin->GetOwningNode()) continue;
   FReader Item; Item.ConsumerNodeId=TurboMCPNodeId::MakeForNode(ConsumerPin->GetOwningNode(),true); Item.ConsumerPin=ConsumerPin->PinName.ToString(); Item.OldSourceNodeId=SourceNodeId; Item.OldSourcePin=SourcePin; Out.Readers.Add(MoveTemp(Item));
   const FPinConnectionResponse Check=G->GetSchema()->CanCreateConnection(TargetOut,ConsumerPin);
-  if (Check.Response != CONNECT_RESPONSE_MAKE) Out.Refusals.Add(FString::Printf(TEXT("target '%s' cannot connect to reader '%s.%s': %s"),*TargetPin,*Out.Readers.Last().ConsumerNodeId,*Out.Readers.Last().ConsumerPin,*Check.Message.ToString()));
+  const bool ReplacesOnlySource = Check.Response == CONNECT_RESPONSE_BREAK_OTHERS_B
+   && ConsumerPin->LinkedTo.Num() == 1 && ConsumerPin->LinkedTo.Contains(SourceOut);
+  if (Check.Response != CONNECT_RESPONSE_MAKE && !ReplacesOnlySource) Out.Refusals.Add(FString::Printf(TEXT("target '%s' cannot connect to reader '%s.%s': %s"),*TargetPin,*Out.Readers.Last().ConsumerNodeId,*Out.Readers.Last().ConsumerPin,*Check.Message.ToString()));
  }
  if (Out.Readers.Num()==0) Out.Refusals.Add(TEXT("source output has no linked readers; nothing would change"));
  return true;
@@ -313,16 +319,17 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 	{
 		UEdGraphNode* Consumer = FindNode(G, Item.ConsumerNodeId);
 		UEdGraphPin* ConsumerPin = FindPin(Consumer, Item.ConsumerPin, EGPD_Input);
-		if (!ConsumerPin)
+		if (!ConsumerPin || !ConsumerPin->LinkedTo.Contains(SourceOut) || !SourceOut->LinkedTo.Contains(ConsumerPin))
 		{
-			Error = TEXT("reader disappeared before apply");
+			Error = TEXT("reader or its planned source link changed before apply");
 			FailEdit();
 			Out.Outcome = ETurboMCPResultOutcome::Failed;
 			Out.Code = TEXT("reader_missing");
 			return false;
 		}
 		G->GetSchema()->BreakSinglePinLink(SourceOut, ConsumerPin);
-		if (!G->GetSchema()->TryCreateConnection(TargetOut, ConsumerPin))
+		if (G->GetSchema()->CanCreateConnection(TargetOut, ConsumerPin).Response != CONNECT_RESPONSE_MAKE
+            || !G->GetSchema()->TryCreateConnection(TargetOut, ConsumerPin))
 		{
 			Error = FString::Printf(TEXT("connection refused for reader %s.%s"), *Item.ConsumerNodeId, *Item.ConsumerPin);
 			FailEdit();
@@ -338,7 +345,9 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 	{
 		UEdGraphNode* Consumer = FindNode(G, Item.ConsumerNodeId);
 		UEdGraphPin* ConsumerPin = FindPin(Consumer, Item.ConsumerPin, EGPD_Input);
-		if (!ConsumerPin || !ConsumerPin->LinkedTo.Contains(TargetOut))
+		if (!ConsumerPin || !ConsumerPin->LinkedTo.Contains(TargetOut)
+            || !TargetOut->LinkedTo.Contains(ConsumerPin)
+            || (SourceOut != TargetOut && ConsumerPin->LinkedTo.Contains(SourceOut)))
 		{
 			Error = TEXT("readback mismatch");
 			FailEdit();
