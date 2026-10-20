@@ -43,3 +43,9 @@ Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch re
 Use a disposable transient DataTable with FTableRowBase to isolate object lifetime from private row fields. Exercise FillDataTableFromJSONString first without and then with a TStrongObjectPtr. Record a crash as diagnostic failure, not acceptance. No engine changes or production assets in this assignment. The reference-bearing row and open/closed editor variants remain follow-ups. Private crash artifacts are unavailable; the owner authorizes synthetic reproduction without work code.
 
 Exact assignment: field-datatable-repro. Supervisor command: `python Tools/execute-tests.py --profile engine --suites test-datatable-import-repro --execute --max-seconds 600`.
+
+## Reproduced lifetime failure and approved engine repair
+
+Execution 5dc032a4dbd7443796e5f51dcc6b4466 failed with the reported UObjectArray.cpp:405 refcount assertion on a transient FTableRowBase table. The deliberately held object isolates lifetime; it does not establish which reference holder existed at work.
+
+Integrator scope: at pinned engine base 396c9f059903aed5fec78ecd3d437a40c6415368, change only Engine/Source/Editor/UnrealEd/Private/Factories/CSVImportFactory.cpp in the separate engine checkout. Reuse ExistingTable instead of reconstructing it with NewObject; preserve the existing row-import, options and delegate flow. No CurveTable changes. Retain the engine patch outside the plugin export and report that plugin-only deployment does not include this fix. Rerun only the synthetic import diagnostic before broader deferred regression. This explicit repair scope supersedes the earlier no-engine-change restriction for this file only.
