@@ -508,6 +508,7 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 
 FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 {
+    if (!IsInGameThread()) return TEXT("unchanged: DataTable edits require the game thread");
 	if (Table == nullptr)
 	{
 		return TEXT("error: no data table.");
@@ -576,18 +577,20 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	// ONE TRANSACTION: the removals and the sets, with no early exit, so a failure part-way is REPORTED rather than
 	// silently leaving half the request applied.
     // Validate every full row on initialized scratch memory before any removal or write.
+    TMap<FName, TUniquePtr<FStructOnScope>> PreparedRows;
     for (const TPair<FName, FString>& Pair : FinalText)
     {
-        FStructOnScope Scratch(Struct);
+        TUniquePtr<FStructOnScope> Scratch = MakeUnique<FStructOnScope>(Struct);
         FString ValidationError;
-        if (!ImportRow(Struct, Scratch.GetStructMemory(), Table, Pair.Value, ValidationError))
+        if (!ImportRow(Struct, Scratch->GetStructMemory(), Table, Pair.Value, ValidationError))
             return FString::Printf(TEXT("unchanged: invalid row '%s': %s"), *Pair.Key.ToString(), *ValidationError);
         // Compare read-back with the engine's canonical representation, not input spelling.
         if (TMap<FName, FString>* Fields = ExpectedFields.Find(Pair.Key))
             for (TPair<FName, FString>& Field : *Fields)
-                Field.Value = OneFieldText(Struct, Scratch.GetStructMemory(), Field.Key.ToString());
+                Field.Value = OneFieldText(Struct, Scratch->GetStructMemory(), Field.Key.ToString());
+        PreparedRows.Add(Pair.Key, MoveTemp(Scratch));
     }
-    if (!GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
         return TEXT("unchanged: DataTable edit requires an idle editor outside an active transaction");
     FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "DataTableRows", "TurboMCP DataTable rows"));
 	Table->Modify();
@@ -616,7 +619,9 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 		{
 			// `AddRow` initialises the new row from the struct's OWN defaults, which is what the engine's editor
 			// does, so an unmentioned field of a NEW row gets its default rather than an indeterminate value.
-			Row = FDataTableEditorUtils::AddRow(Table, Pair.Key);
+			FDataTableEditorUtils::AddRow(Table, Pair.Key);
+            // Editor callbacks may replace row storage; never retain their returned pointer.
+            Row = Table->GetRowMap().FindRef(Pair.Key);
 		}
 		if (Row == nullptr)
 		{
@@ -624,21 +629,20 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 			continue;
 		}
 
-		FString ImportError;
-		if (!ImportRow(Struct, Row, Table, Pair.Value, ImportError))
-		{
-			TArray<FString> RequestedFields;
-			if (const TMap<FName, FString>* ExpectedForRow = ExpectedFields.Find(Pair.Key))
-			{
-				for (const TPair<FName, FString>& Expected : *ExpectedForRow)
-				{
-					RequestedFields.Add(Expected.Key.ToString());
-				}
-			}
-			Failures.Add(FString::Printf(TEXT("row '%s', failed fields: %s: %s"), *Pair.Key.ToString(),
-				*FString::Join(RequestedFields, TEXT(", ")), *ImportError));
-			continue;
-		}
+        if (Table->GetRowStruct() != Struct)
+        {
+            Failures.Add(TEXT("row struct changed during editor callbacks; remaining writes stopped"));
+            break;
+        }
+        // Import once, before mutation. Copy from initialized, validated storage
+        // using reflected assignment (never memcpy for strings/arrays/objects).
+        const TUniquePtr<FStructOnScope>* Prepared = PreparedRows.Find(Pair.Key);
+        if (!Prepared || !Prepared->IsValid())
+        {
+            Failures.Add(TEXT("prepared row data missing; remaining writes stopped"));
+            break;
+        }
+        Struct->CopyScriptStruct(Row, (*Prepared)->GetStructMemory());
 		++Written;
 	}
 
@@ -651,6 +655,11 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	TArray<FString> VerificationFailures;
 	for (const FString& Name : Order)
 	{
+        if (Table->GetRowStruct() != Struct)
+        {
+            VerificationFailures.Add(TEXT("row struct changed; read-back stopped"));
+            break;
+        }
 		const FName RowName(*Name);
 		const uint8* Row = Table->GetRowMap().FindRef(RowName);
 		ReadBack += FString::Printf(TEXT("\n  %s = %s"), *Name,
