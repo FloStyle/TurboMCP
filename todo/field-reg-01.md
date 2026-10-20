@@ -56,3 +56,7 @@ FIELD-FIX-05: callback reconstruction, title-changing values, duplicate pin refu
 ## Graph Copy follow-up
 
 FIELD-FIX-06: internal and crossing links, refused destructive/conversion connections, failure rollback, node count, previous undo history, and no implicit compile. Unbuilt and untested.
+
+## Variable-add field-note follow-up
+
+FIELD-FIX-07: invalid later type must add zero variables; duplicate/case names; transaction/PIE refusal; dependent Widget survival and actual partial engine refusal. Unbuilt and untested.

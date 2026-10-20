@@ -75,3 +75,7 @@ Owner-authorized source-only batch: remove implicit structural compilation from 
 b0753f2 removes explicit CompileBlueprint and structural marking from Append/Patch/Replace edit transactions. These tools now mark modified and report compile=not_run; explicit compile/save are separate. Apply also refuses PIE/nested transactions directly. This closes identified plugin compile-in-transaction paths, not every dependent-widget loss cause.
 
 No build or tests run, per owner instruction. Runtime acceptance remains pending.
+
+## Variable-add field-note follow-up
+
+X-45 containment FIELD-FIX-07 implemented: direct variable-add refuses active transactions; all types resolve before adding. Stock API still structurally compiles outside a transaction. Dependent Widget loss remains unverified; do not close the investigation.
