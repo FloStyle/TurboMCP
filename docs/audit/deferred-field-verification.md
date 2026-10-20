@@ -146,3 +146,5 @@ FIELD-FIX-16 removal: successful and failed deletion, duplicate-name refusal and
 FIELD-FIX-16 partial outcome classification and successful-result distinction remain untested.
 
 FIELD-FIX-03 unique Call Swap pin matching: duplicate name cases and ordinary default/link transfer remain untested.
+
+FIELD-FIX-06 copy link endpoint ambiguity refusal and rollback remain untested.

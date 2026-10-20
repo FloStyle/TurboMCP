@@ -50,3 +50,7 @@ Cross-asset member preflight no longer requires a resolved external static funct
 ## Undo acquisition before mutation
 
 Graph Copy now requires CanTransact and an outstanding owned undo record before any Modify or node creation. Rollback uses that captured identity instead of adopting the active identity at failure time. Source-confirmed recovery gap closed; unbuilt and untested.
+
+## Link endpoint identity
+
+Copy link endpoint lookup now requires a unique pin name. The current serialized link lacks direction, so ambiguous names refuse through existing rollback instead of selecting a first pin. Supporting those ambiguous shapes requires richer link identity and remains unsupported. Unbuilt and untested.
