@@ -322,7 +322,7 @@
       "report": "2026-10-20_S1",
       "id": "ED-05",
       "title": "The engine graph DSL writer refuses a function body that its own reader printed (medium)",
-      "owner": "FIELD-09",
+      "owner": "FIELD-05",
       "disposition": "reported_pending_reproduction"
     },
     {
@@ -566,7 +566,16 @@
       "Aggregate layout extent does not prove all old nodes stayed fixed; separate C++ snapshot assertions cover the synthetic case.",
       "No new overlap finding is not proof of rendered non-overlap when dimensions are zero.",
       "Native reports inspected independently; final integration validation recorded separately."
-    ]
+    ],
+    "integration_validation": {
+      "candidate": "0321323",
+      "native_run": "875a4c319c2c494eb206114ce0d91648",
+      "native_report_sha256": "86364717bbaf2ba482ea1d418cb54169c47b0ef901c3323d6c7e63f236d2e25f",
+      "offline_run": "fe6615df18694db5a95a2c21435f8175",
+      "offline_report_sha256": "d0f226e965bdd2d7dc151075555366a1b1da6f1394ead7c9eee7996d55a13af0",
+      "offline_checks": 26,
+      "limitations": "Initial concurrent offline run 8290595b03e049b3bec08eae78ccd8f4 failed the passing-suite-log assertion; serial rerun passed without a code change. Cause not established. Native supervisor recovered an unresponsive owned editor before suites; no field crash reproduction performed."
+    }
   },
   "feature_proposals": [
     {
@@ -647,5 +656,5 @@
       "owner": "R04"
     }
   ],
-  "integrationStatus": "DSH completed three test improvements; reviewed code integrated into a candidate, awaiting final validation. Urgent fixes remain open. Auto-dispatch paused."
+  "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused."
 }
