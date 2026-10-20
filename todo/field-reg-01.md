@@ -60,3 +60,7 @@ FIELD-FIX-06: internal and crossing links, refused destructive/conversion connec
 ## Variable-add field-note follow-up
 
 FIELD-FIX-07: invalid later type must add zero variables; duplicate/case names; transaction/PIE refusal; dependent Widget survival and actual partial engine refusal. Unbuilt and untested.
+
+## Field-note diagnostic follow-up
+
+FIELD-FIX-08: live/dead exec chains sharing data, function results, macro tunnels and capped diagnostics. No build/tests run.

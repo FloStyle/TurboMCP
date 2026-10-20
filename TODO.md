@@ -36,6 +36,7 @@ Generated from task files and the approved queue. After editing task status, run
 | [Pin-default failure rollback and stable readback](todo/field-fix-05.md) | monday | implementation | done |
 | [Graph Copy link and rollback safeguards](todo/field-fix-06.md) | monday | implementation | done |
 | [Variable creation preflight and transaction guard](todo/field-fix-07.md) | monday | implementation | done |
+| [X-41 compile execution-reachability diagnostics](todo/field-fix-08.md) | monday | implementation | done |
 
 ## Historical findings
 

@@ -47,3 +47,7 @@ Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch re
 Source batch prevents nested script writes through the protected plugin registry and warns compile does not prove reachability. No new execution-chain analysis or runtime proof; task stays open.
 
 Source-only, no build or test run at owner request. Not runtime acceptance.
+
+## Field-note diagnostic follow-up
+
+FIELD-FIX-08 implements X-41 compile diagnostics only. GL-16 reader already uses shared execution-aware reachability; needs regression evidence, not a speculative rewrite. Writer enforcement and full semantic acceptance remain open.
