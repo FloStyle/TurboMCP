@@ -23,6 +23,7 @@
 #include "K2Node_CustomEvent.h"
 #include "K2Node_Event.h"
 #include "UObject/Class.h"
+#include "UObject/NameTypes.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
 #include "WidgetBlueprint.h"
@@ -44,6 +45,18 @@ namespace
 		if (InName.IsEmpty())
 		{
 			OutWhy = TEXT("it is empty");
+			return false;
+		}
+		// Validate before constructing FName: oversized user input can reach the
+		// engine's fatal name-length guard, and None is its empty-name sentinel.
+		if (InName.Len() >= NAME_SIZE)
+		{
+			OutWhy = FString::Printf(TEXT("it exceeds the maximum of %d characters"), NAME_SIZE - 1);
+			return false;
+		}
+		if (InName.Equals(TEXT("None"), ESearchCase::IgnoreCase))
+		{
+			OutWhy = TEXT("None is reserved as Unreal's empty name");
 			return false;
 		}
 		if (!FChar::IsAlpha(InName[0]) && InName[0] != TEXT('_'))
