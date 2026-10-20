@@ -317,3 +317,7 @@ aa15bdb: verify function inventory with empty/missing entry nodes, unavailable r
 
 ### FIELD-FIX-22
 Toolset help pagination, offset refusal, deterministic ordering, description budget and unchanged full help require later verification. Done, unbuilt_untested. No tests/builds run.
+
+
+### FIELD-FIX-23
+9c20aac: concise acting checkout header/footer and corrected successful-save conditions. Verify failure with clean package, successful widget save, no-provider and checkout errors later. Implemented, unbuilt_untested; no tests/builds run.

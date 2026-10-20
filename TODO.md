@@ -186,9 +186,10 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (2)</summary>
+<summary>done (3)</summary>
 
 - **P2** [Blueprint summary completeness and graph labels](todo/field-fix-21.md)
 - **P2** [Toolset help continuation](todo/field-fix-22.md)
+- **P2** [Concise and accurate save reporting](todo/field-fix-23.md)
 
 </details>
