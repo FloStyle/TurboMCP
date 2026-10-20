@@ -634,7 +634,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		// thumbnail is missing or stale (`:439-446`, `:478-485`); for a Widget Blueprint the renderer
 		// instantiates the widget with `Designing | ExecutePreConstruct`
 		// (`WidgetBlueprintThumbnailRenderer.cpp:189-191`). The direct write calls none of it.
-		if (Cast<UWidgetBlueprint>(AssetObject) != nullptr)
+		if (bSaved && !bStillDirty && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
 		{
 			Lines += bWithoutThumbnail
 				? TEXT("\n    ; the package was written directly, so the engine's thumbnail step did not")
@@ -646,7 +646,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 					TEXT(" `EditTurboMCPSaveWithoutThumbnail` writes the package without it.");
 		}
 
-		if (!bStillDirty && !bWithoutThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr && ErrorsHere > 0)
+		if (bSaved && !bStillDirty && !bWithoutThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr && ErrorsHere > 0)
 		{
 			// The write is already proven above. A widget thumbnail may execute design-time script, so report
 			// that work as a warning instead of allowing its error to obscure the saved package.

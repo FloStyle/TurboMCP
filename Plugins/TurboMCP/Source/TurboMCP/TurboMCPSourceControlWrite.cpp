@@ -75,6 +75,12 @@ namespace
 	void AddHeaderLines(TArray<FString>& Out, const FTurboMCPWriteCheckoutPlan& InPlan,
 		const FString& InWriteTool, const bool bActing)
 	{
+		if (bActing)
+		{
+			Out.Add(FString::Printf(TEXT("source control: %s; provider: %s; policy: attempt and report"), *InWriteTool, *InPlan.ProviderName));
+			if (!InPlan.RunRefusal.IsEmpty()) AddField(Out, TEXT("checkout not attempted"), InPlan.RunRefusal);
+			return;
+		}
 		Out.Add(FString::Printf(TEXT("=== automatic checkout before the write (D-57): %s ==="),
 			*InWriteTool));
 		Out.Add(TEXT("WHAT THIS IS: the source control half of this write tool. D-57 requires the"));
@@ -240,6 +246,12 @@ namespace
 	/** The closing statement, identical in both paths, so the contract is never only in the code. */
 	void AddClosingLines(TArray<FString>& Out, const bool bActing)
 	{
+		if (bActing)
+		{
+			Out.Add(TEXT("Checkout is separate from the package write and does not gate it."));
+			return;
+		}
+
 		Out.Add(TEXT("    THE CHECKOUT ANSWER NEVER GATES THE WRITE. It is reported beside the write's"));
 		Out.Add(TEXT("    own result, so a provider that cannot take a lock cannot turn a working write"));
 		Out.Add(TEXT("    into a failed one - which is the outcome D-57 exists to prevent."));
