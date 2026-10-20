@@ -268,6 +268,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp"
           ],
           "new_files": []
+        },
+        "field-widget-enum-readback": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTree.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAdd.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
