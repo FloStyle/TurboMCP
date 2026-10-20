@@ -15,6 +15,7 @@
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphNode_Comment.h"
 #include "Editor.h"
+#include "ScopedTransaction.h"
 #include "Engine/Blueprint.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GraphEditor.h"
@@ -1328,6 +1329,8 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 {
+    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: tidy requires an idle editor with undo available, outside PIE and active transactions");
 	// A GRAPH IS NEEDED TO CREATE ANYTHING, and the plan carries the live nodes rather than the graph,
 	// so it is taken from the first node that has one.
 	UEdGraph* Graph = nullptr;
@@ -1363,6 +1366,12 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	// THE PLAN IS READ-ONLY, so the copies this function makes are recorded in a LOCAL array. `Plan`
 	// decided WHERE each copy goes and wrote nothing; `Apply` is the half that creates, so the handle to
 	// each created node lives here rather than being written back into a const plan.
+    FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphTidy", "TurboMCP tidy graph"));
+    if (!Transaction.IsOutstanding()) return TEXT("unchanged: could not open tidy undo transaction");
+    if (UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForGraph(Graph)) Blueprint->Modify();
+    Graph->Modify();
+    // Capture both ends of rewired links as well as moved nodes and comments.
+    for (UEdGraphNode* Node : Graph->Nodes) if (Node) Node->Modify();
 	TArray<FGetterCopy> Created = InPlan.GetterCopies;
 
 	// Create the getter copies. Each one takes over ONE consumer from the original.
@@ -1373,7 +1382,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			continue;
 		}
 
-		UK2Node_VariableGet* Copy = NewObject<UK2Node_VariableGet>(Graph);
+		UK2Node_VariableGet* Copy = NewObject<UK2Node_VariableGet>(Graph, NAME_None, RF_Transactional);
 		if (Copy == nullptr)
 		{
 			continue;
@@ -1617,6 +1626,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	}
 	Lines.Add(TEXT("geometry: every node had a Slate-measured size; no estimate was used."));
 	Lines.Add(TEXT("no knots were added: P/E-GRAPH-KNOTS owns that rule and tidy is measured on total wire length, which a knot lengthens."));
+	Lines.Add(TEXT("undo=one; compile=not_run; save=not_requested"));
 	Lines.Add(TEXT("; the change is in memory and NOT saved. Call E-SAVE."));
 
 	return FString::Join(Lines, TEXT("\n"));
