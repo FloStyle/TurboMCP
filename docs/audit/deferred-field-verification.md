@@ -224,3 +224,7 @@ The pin counter now increments so the advertised 40-pin cap is effective, with r
 ## Concrete pin type visibility
 
 NodeResolve now reports subtype object paths, reference/const qualifiers and map-value category/subcategory/object paths. This removes category-only ambiguity for object, enum, struct and map pins. Implementation done; unbuilt and untested. Deferred evidence: reflected object/enum/struct and map pins agree with editor signatures.
+
+## Search result asset identity
+
+NodeFind results and NodeResolve ambiguity suggestions now emit long node IDs containing the asset path. This avoids returning another ambiguous short ID when different assets share a name. Implementation done; unbuilt and untested. Deferred evidence: same-named assets in different folders resolve via returned IDs.
