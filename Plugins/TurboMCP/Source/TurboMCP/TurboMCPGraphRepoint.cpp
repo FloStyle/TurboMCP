@@ -427,8 +427,7 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
     Out.bChanged = true;
     Out.Changed = 1;
     Out.Compile = ETurboMCPResultCompile::NotRun;
-    // Standalone edits commit here; batch edits remain owned by the outer transaction.
-    Tx.Reset();
+    // Keep the owned transaction open through final readback.
 
 	{
 		Out.Outcome = ETurboMCPResultOutcome::Changed;
@@ -440,8 +439,7 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 		CreatedTargetId = P.bCreateTarget ? TurboMCPNodeId::MakeForNode(Target, true) : P.TargetNodeId;
 	}
 
-	// The transaction is committed, so the package really is modified: the dirty flag stays as the edit left it.
-	DirtyGuard.bKeepChange = true;
+	// Final readback must pass before committing or retaining the dirty flag.
 
 	// *** THE GUARD: THE PLAN'S NodeCountBefore IS USED, AND BOTH COUNTS ARE REPORTED. ***
 	//
@@ -463,25 +461,12 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 
 		if (NodeCountAfter < 0 || NodeCountAfter != NodeCountExpected)
 		{
-			// ARC05: the change may or may not have landed, and a caller must never be able to read "nothing
-			// happened" from an unverified outcome.
-			Out.Outcome = ETurboMCPResultOutcome::OutcomeUnknown;
+			Error = FString::Printf(TEXT("graph node count mismatch: expected %d, found %d"),
+				NodeCountExpected, NodeCountAfter);
+			FailEdit();
+			Out.Outcome = ETurboMCPResultOutcome::Failed;
 			Out.Code = TEXT("graph_nodecount_mismatch");
-			Out.Changed = 2;  // tri-state: 2 == unknown
-			Out.Rollback = ETurboMCPResultRollback::NotSupported;
-			Error = FString::Printf(
-				TEXT("the graph's node count does not match the plan, so the outcome cannot be vouched for. ")
-				TEXT("Expected %d (before %d, +%d created, -%d removed); found %s. ")
-				TEXT("A count that disagrees with the plan means nodes were created or destroyed that the ")
-				TEXT("report cannot account for."),
-				NodeCountExpected, P.NodeCountBefore, P.bCreateTarget ? 1 : 0, P.bKeepSource ? 0 : 1,
-				NodeCountAfter < 0 ? TEXT("(the graph could not be resolved after the edit)") : *FString::FromInt(NodeCountAfter));
-			Report = FString::Printf(
-				TEXT("outcome_unknown: the edit completed but the graph's node count does not match the plan\n")
-				TEXT("nodes: before %d, created %d, removed %d, expected %d, found %d\n")
-				TEXT("target the report would have named: %s"),
-				P.NodeCountBefore, P.bCreateTarget ? 1 : 0, P.bKeepSource ? 0 : 1, NodeCountExpected,
-				NodeCountAfter, *CreatedTargetId);
+			Report = Error;
 			return false;
 		}
 
@@ -498,6 +483,9 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 				                   Out.BaselineDiagnosticCount, Out.AfterDiagnosticCount)
 				: TEXT(""));
 	}
+    // Commit only after the complete result has been checked.
+    Tx.Reset();
+    DirtyGuard.bKeepChange = true;
     Report += TEXT("\nsave=not_requested; run EditTurboMCPCompile explicitly after editing");
 	return true;
 }
