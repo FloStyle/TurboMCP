@@ -180,3 +180,7 @@ Copy results now include explicit source-to-target canonical long node IDs, reta
 ## Selection identity integrity
 
 The shared structural selection reader now rejects multiple matching nodes and repeated references to the same node, including short/long aliases. This prevents duplicate creation followed by overwritten copy-map entries. Implementation done; unbuilt and untested. Deferred evidence: repeated IDs and ambiguous IDs refuse without mutation, while unique selections retain order.
+
+## Protected repoint source deletion
+
+FIELD-FIX-19 checks CanUserDeleteNode in planning and before apply mutation when keepSource=false. Protected sources refuse and advise keepSource=true. Implementation done; unbuilt and untested. Deferred evidence: protected source deletion refuses unchanged; retaining source and deleting ordinary eligible sources retain expected behavior.

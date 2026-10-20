@@ -49,3 +49,7 @@ Repoint now resolves a unique name-and-direction pin in both Plan and Apply. Dup
 ## Explicit deletion option
 
 5cce82e parses trimmed true/false and 1/0 explicitly, retaining the empty keepSource=true default. Invalid values refuse before loading assets instead of silently choosing true; whitespace no longer changes false into true. Implementation closed; unbuilt and untested.
+
+## Protected repoint source deletion
+
+FIELD-FIX-19 checks CanUserDeleteNode in planning and before apply mutation when keepSource=false. Protected sources refuse and advise keepSource=true. Implementation done; unbuilt and untested. Deferred evidence: protected source deletion refuses unchanged; retaining source and deleting ordinary eligible sources retain expected behavior.
