@@ -179,7 +179,10 @@
       "id": "X-39",
       "title": "A node whose exec output has a capitalized \"Then\" name ends the DSL flow (low)",
       "owner": "FIELD-07",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "source_review": "Stock UBlueprintEditorLibrary::FindThenPin compares FName to PN_Then, so capitalization alone is not established as the cause. It only selects the conventional Then pin rather than any sole exec output. The report concerns sequential graph DSL after a custom node; TurboMCP Append uses explicit links and is not the same parser.",
+      "remaining_problem": "Determine the sequential DSL continuation selector and support a unique execution output without confusing branch outputs. No engine modification is authorized.",
+      "workaround": "Use the explicitly named output block, as reported successful in field testing."
     },
     {
       "report": "2026-10-18_S1",

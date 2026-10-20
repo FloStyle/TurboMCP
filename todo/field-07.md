@@ -70,3 +70,8 @@ GL-15 classification implemented in FIELD-FIX-11. All execution predecessors lis
 ## Report reconciliation
 
 GL-15 malformed-merge classification and X-41 missing compile reachability diagnostics are implemented and untested, linked to FIELD-FIX-11 and FIELD-FIX-08 in the report intake. This closes those diagnostic observations only. Whole-writer duplicate prevention, complete multi-source round-trip and runtime behavior remain open. Source inspected at 47fa099; no tests/builds run.
+
+
+## X-39 source distinction
+
+Stock FindThenPin uses case-insensitive FName identity, so capitalization alone is not a confirmed cause. It selects PN_Then rather than any sole exec output. The field failure is sequential DSL continuation after a custom node; TurboMCP Append explicit-link parsing is a different surface. Keep X-39 open pending the actual continuation selector; do not apply an unrelated reader change or engine patch. Named output blocks remain the field-proven workaround. Source inspection only; no tests.
