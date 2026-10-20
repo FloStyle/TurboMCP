@@ -68,6 +68,7 @@ The linked records distinguish implemented containment from unresolved causes. V
 | [DataTable prepared row application](todo/field-fix-15.md) | monday | implementation | done | unbuilt / untested |
 | [FunctionAdd reconstructed pin lifetime](todo/field-fix-16.md) | monday | implementation | done | unbuilt / untested |
 | [Signature type and parameter identity preflight](todo/field-fix-17.md) | monday | implementation | done | unbuilt / untested |
+| [Reader node IDs in targeted edits](todo/field-fix-18.md) | monday | implementation | done | unbuilt / untested |
 ## Verification and release gates - not product defects
 
 | Task | Track | Kind | State | Evidence |
