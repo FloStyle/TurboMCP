@@ -74,6 +74,17 @@ namespace
 		return Cast<UK2Node_VariableGet>(InNode) != nullptr;
 	}
 
+	// Splitting copies only VariableReference, not target/default/exec/split-pin state.
+	// Keep all nontrivial getters intact rather than changing their meaning for layout.
+	bool CanSplitGetter(UK2Node_VariableGet* Getter)
+	{
+		if (!Getter || Getter->GetClass() != UK2Node_VariableGet::StaticClass()
+			|| !Getter->IsNodePure()) return false;
+		UEdGraphPin* Value = Getter->GetValuePin();
+		if (!Value || Getter->Pins.Num() != 1 || Getter->Pins[0] != Value) return false;
+		return Value->Direction == EGPD_Output && Value->SubPins.Num() == 0;
+	}
+
 	/** Accept both node-id forms emitted by the graph readers. */
 	bool NodeAnswersToId(const UEdGraphNode* InNode, const FString& InId)
 	{
@@ -1099,7 +1110,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		}
 
 		UK2Node_VariableGet* Getter = Cast<UK2Node_VariableGet>(Entry.Node);
-		if (Getter == nullptr)
+		if (!CanSplitGetter(Getter))
 		{
 			continue;
 		}
@@ -1384,7 +1395,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	// Create the getter copies. Each one takes over ONE consumer from the original.
 	for (FGetterCopy& Entry : Created)
 	{
-		if (Entry.Original == nullptr || Entry.ConsumerPin == nullptr)
+		if (!CanSplitGetter(Entry.Original) || Entry.ConsumerPin == nullptr)
 		{
 			continue;
 		}
