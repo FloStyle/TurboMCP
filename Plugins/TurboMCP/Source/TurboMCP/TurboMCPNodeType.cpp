@@ -296,9 +296,10 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 	// `CollectEntries` prevents a type ID from being offered by one tool and rejected by another.
 	TArray<FEntry> Entries;
 	CollectEntries(InBlueprint, InGraph, Entries);
+    const bool bHasExactId = Entries.ContainsByPredicate([&](const FEntry& Entry) { return Entry.TypeId == InTypeId; });
     TSet<FString> MatchingTypes;
     for (const FEntry& Entry : Entries)
-        if (Entry.TypeId == InTypeId || Entry.LegacyTypeId == InTypeId) MatchingTypes.Add(Entry.TypeId);
+        if (Entry.TypeId == InTypeId || (!bHasExactId && Entry.LegacyTypeId == InTypeId)) MatchingTypes.Add(Entry.TypeId);
     if (MatchingTypes.Num() > 1)
     {
         OutNote = TEXT("ambiguous display type ID; use the exact Function|path ID from node-type discovery");
@@ -306,7 +307,7 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
     }
 	for (const FEntry& Entry : Entries)
 	{
-		if (Entry.TypeId != InTypeId && Entry.LegacyTypeId != InTypeId)
+		if (Entry.TypeId != InTypeId && (bHasExactId || Entry.LegacyTypeId != InTypeId))
 		{
 			continue;
 		}
@@ -354,9 +355,10 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 	// to graph append, so all five operations consume this one filtered action list.
 	TArray<FEntry> Entries;
 	CollectEntries(InBlueprint, InGraph, Entries);
+    const bool bHasExactId = Entries.ContainsByPredicate([&](const FEntry& Entry) { return Entry.TypeId == InTypeId; });
     TSet<FString> MatchingTypes;
     for (const FEntry& Entry : Entries)
-        if (Entry.TypeId == InTypeId || Entry.LegacyTypeId == InTypeId) MatchingTypes.Add(Entry.TypeId);
+        if (Entry.TypeId == InTypeId || (!bHasExactId && Entry.LegacyTypeId == InTypeId)) MatchingTypes.Add(Entry.TypeId);
     if (MatchingTypes.Num() > 1)
     {
         OutNote = TEXT("ambiguous display type ID; use the exact Function|path ID from node-type discovery");
@@ -364,7 +366,7 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
     }
 	for (const FEntry& Entry : Entries)
 	{
-		if (Entry.TypeId != InTypeId && Entry.LegacyTypeId != InTypeId)
+		if (Entry.TypeId != InTypeId && (bHasExactId || Entry.LegacyTypeId != InTypeId))
 		{
 			continue;
 		}
