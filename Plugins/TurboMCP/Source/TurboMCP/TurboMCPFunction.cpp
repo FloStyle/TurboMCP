@@ -75,17 +75,17 @@ namespace
 			else if (InText[Index] == TEXT(',') && Depth == 0) { Items.Add(InText.Mid(Start, Index - Start)); Start = Index + 1; }
 		}
 		Items.Add(InText.Mid(Start));
-		TSet<FString> Names;
+		TSet<FName> Names;
 		for (const FString& Raw : Items)
 		{
 			FString Name; FString TypeText;
 			if (!Raw.Split(TEXT(":"), &Name, &TypeText)) { OutWhy = FString::Printf(TEXT("%s '%s' must be 'Name: Type'"), InKind, *Raw.TrimStartAndEnd()); return false; }
 			Name = Name.TrimStartAndEnd(); TypeText = TypeText.TrimStartAndEnd();
 			FString NameWhy;
-			if (!IsValidFunctionName(Name, NameWhy) || Names.Contains(Name)) { OutWhy = FString::Printf(TEXT("%s pin '%s' is invalid or duplicated"), InKind, *Name); return false; }
+			if (!IsValidFunctionName(Name, NameWhy) || Names.Contains(FName(*Name))) { OutWhy = FString::Printf(TEXT("%s pin '%s' is invalid or duplicated"), InKind, *Name); return false; }
 			FSignaturePin& Pin = OutPins.AddDefaulted_GetRef(); Pin.Name = Name;
 			if (!FTurboMCPTypeParser::Resolve(TypeText, Pin.Type, OutWhy)) { OutWhy = FString::Printf(TEXT("%s pin '%s' has invalid type '%s': %s"), InKind, *Name, *TypeText, *OutWhy); return false; }
-			Names.Add(Name);
+			Names.Add(FName(*Name));
 		}
 		return true;
 	}
@@ -257,6 +257,16 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	{
 		return FString::Printf(TEXT("unchanged: %s."), *SignatureWhy);
 	}
+
+    // Inputs and outputs share one reflected function parameter namespace.
+    TSet<FName> ParameterNames;
+    for (const FSignaturePin& Pin : Inputs) ParameterNames.Add(FName(*Pin.Name));
+    for (const FSignaturePin& Pin : Outputs)
+    {
+        if (ParameterNames.Contains(FName(*Pin.Name)))
+            return FString::Printf(TEXT("unchanged: parameter '%s' occurs in both inputs and outputs"), *Pin.Name);
+        ParameterNames.Add(FName(*Pin.Name));
+    }
 
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InAsset, Resolved);

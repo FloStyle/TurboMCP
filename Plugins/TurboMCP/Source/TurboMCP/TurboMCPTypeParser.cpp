@@ -5,6 +5,7 @@
 
 #include "BlueprintEditorLibrary.h"
 #include "EdGraphSchema_K2.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "UObject/Class.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -95,6 +96,8 @@ namespace
 
 bool FTurboMCPTypeParser::Resolve(const FString& InType, FEdGraphPinType& OutPinType, FString& OutWhy)
 {
+	OutPinType = FEdGraphPinType();
+	OutWhy.Empty();
 	const FString Text = Trim(InType);
 	if (Text.IsEmpty()) { OutWhy = TEXT("no type given"); return false; }
 	if (!BracketsBalance(Text, OutWhy)) { OutWhy = FString::Printf(TEXT("the type '%s' is not balanced: %s"), *Text, *OutWhy); return false; }
@@ -112,9 +115,16 @@ bool FTurboMCPTypeParser::Resolve(const FString& InType, FEdGraphPinType& OutPin
 		if ((Container.Kind == EPinContainerType::Map && Parts.Num() != 2) || (Container.Kind != EPinContainerType::Map && Parts.Num() != 1))
 		{ OutWhy = FString::Printf(TEXT("'%s' has the wrong number of contained types"), *Text); return false; }
 		FEdGraphPinType Key; if (!Resolve(Trim(Parts[0]), Key, OutWhy)) { return false; }
+        // Stock helper failures return scalar int, not an error. Refuse first
+        // rather than silently authoring a different variable/function signature.
+        if (Key.IsContainer())
+        { OutWhy = TEXT("nested containers are not supported; wrap the inner container in a struct"); return false; }
+        if (Container.Kind != EPinContainerType::Array && !FBlueprintEditorUtils::HasGetTypeHash(Key))
+        { OutWhy = TEXT("set elements and map keys require a hashable type"); return false; }
 		if (Container.Kind == EPinContainerType::Array) { OutPinType = UBlueprintEditorLibrary::GetArrayType(Key); return true; }
 		if (Container.Kind == EPinContainerType::Set) { OutPinType = UBlueprintEditorLibrary::GetSetType(Key); return true; }
 		FEdGraphPinType Value; if (!Resolve(Trim(Parts[1]), Value, OutWhy)) { return false; }
+		if (Value.IsContainer()) { OutWhy = TEXT("map values cannot be containers; wrap the value in a struct"); return false; }
 		OutPinType = UBlueprintEditorLibrary::GetMapType(Key, Value); return true;
 	}
 
