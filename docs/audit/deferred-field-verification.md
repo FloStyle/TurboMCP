@@ -100,3 +100,7 @@ FIELD-FIX-16 implemented, unbuilt and untested. Later check an unresolved call b
 ## Signature preflight - deferred evidence
 
 FIELD-FIX-17 implemented, unbuilt and untested. Later check supported array/set/map types, nested containers, unhashable keys, fresh output types, case aliases and cross-direction parameter collisions. Refused signatures must not mutate assets.
+
+## Reader IDs in targeted edits - deferred evidence
+
+FIELD-FIX-18 implemented, unbuilt and untested. Later check NodeFind short IDs and long IDs through Swap/PinDefault, missing IDs, duplicate GUIDs, custom-node class refusal and wrong-asset IDs. No fuzzy matching is authorized.

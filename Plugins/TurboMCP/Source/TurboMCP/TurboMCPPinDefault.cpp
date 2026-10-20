@@ -30,7 +30,8 @@ FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
     UEdGraphPin* Pin = nullptr;
     for (UEdGraphNode* Node : Graph->Nodes)
     {
-        if (!Node || TurboMCPNodeId::MakeForNode(Node, true) != NodeId) continue;
+        if (!Node || (TurboMCPNodeId::MakeForNode(Node, true) != NodeId.TrimStartAndEnd()
+            && TurboMCPNodeId::MakeForNode(Node, false) != NodeId.TrimStartAndEnd())) continue;
         for (UEdGraphPin* Candidate : Node->Pins)
         {
             if (Candidate && Candidate->Direction == EGPD_Input
