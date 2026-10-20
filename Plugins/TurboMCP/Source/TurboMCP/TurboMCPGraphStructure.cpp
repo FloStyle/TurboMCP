@@ -477,7 +477,7 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 		// three suites whose counts overstated their coverage for exactly that reason.
 		const bool bSameAsset = SourceResolved.ObjectPath.Equals(TargetResolved.ObjectPath,
 			ESearchCase::CaseSensitive);
-		if (bSameAsset)
+		if (bEndpointInTarget)
 		{
 			continue;
 		}
@@ -547,12 +547,10 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 				Crossing.OutsidePin = Linked->PinName.ToString();
 				Crossing.bOutsideInput = Linked->Direction == EGPD_Input;
 
-				// A LINK THAT LEAVES THE SELECTION CAN ONLY BE RE-MADE IF ITS FAR END IS REACHABLE FROM THE
-				// TARGET. Inside one Blueprint that is always true, because both graphs belong to the same
-				// asset. Across assets it is true only when the far node is itself being copied - which the
-				// loop above already excluded - so a cross-asset crossing link is REPORTED rather than made.
-				const bool bSameAsset = SourceResolved.ObjectPath.Equals(TargetResolved.ObjectPath,
-					ESearchCase::CaseSensitive);
+				// A wire can reconnect only to an endpoint in the actual destination graph.
+				// Sharing a Blueprint does not permit cross-graph pin connections.
+				const bool bEndpointInTarget = OutsideNode && OutsideNode->GetGraph() == TargetGraphObject
+					&& TargetGraphObject->Nodes.Contains(OutsideNode);
 				if (bSameAsset)
 				{
 					Crossing.bHasTarget = true;
@@ -565,9 +563,9 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 					// node left behind needs to be selected too, while a missing member needs the member
 					// declared in the target. Collapsing them into "unlinked" would hide which one to act on.
 					Crossing.Reason = FString::Printf(
-						TEXT("its other end is %s, which is not in the target asset - select it as well, or ")
-						TEXT("declare what it needs in '%s'"),
-						*KeyOf(OutsideNode), *TargetResolved.PackagePath);
+						TEXT("its other end is %s, which is not in destination graph '%s' of '%s'; ")
+						TEXT("select that node as well to copy this wire"),
+						*KeyOf(OutsideNode), *InTargetGraph, *TargetResolved.PackagePath);
 					OutPlan.Unlinkable.Add(Crossing);
 				}
 			}
