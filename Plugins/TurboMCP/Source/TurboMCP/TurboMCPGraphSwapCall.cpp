@@ -32,11 +32,17 @@ namespace
 	UEdGraphNode* NodeById(UEdGraph* Graph, const FString& Id)
 	{
 		if (Graph == nullptr) return nullptr;
+        UEdGraphNode* Match = nullptr;
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
-			if (Node != nullptr && TurboMCPNodeId::MakeForNode(Node, true) == Id) return Node;
+            if (Node && (TurboMCPNodeId::MakeForNode(Node, true) == Id
+                || TurboMCPNodeId::MakeForNode(Node, false) == Id))
+            {
+                if (Match && Match != Node) return nullptr;
+                Match = Node;
+            }
 		}
-		return nullptr;
+		return Match;
 	}
 
 	UEdGraphPin* PinByName(UEdGraphNode* Node, const FString& Name, EEdGraphPinDirection Direction)
@@ -141,7 +147,7 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 	UEdGraphNode* Old = NodeById(Graph, OutPlan.OldNodeId);
 	if (Old == nullptr)
 	{
-		OutError = FString::Printf(TEXT("node '%s' is not in graph '%s'"), *OutPlan.OldNodeId, *OutPlan.GraphName);
+		OutError = FString::Printf(TEXT("node '%s' is missing or ambiguous in graph '%s'; use an exact reader node ID"), *OutPlan.OldNodeId, *OutPlan.GraphName);
 		return false;
 	}
 	UK2Node_CallFunction* OldCall = Cast<UK2Node_CallFunction>(Old);
