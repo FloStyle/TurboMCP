@@ -38,6 +38,7 @@ Generated from task files and the approved queue. After editing task status, run
 | [Variable creation preflight and transaction guard](todo/field-fix-07.md) | monday | implementation | done |
 | [X-41 compile execution-reachability diagnostics](todo/field-fix-08.md) | monday | implementation | done |
 | [X-41 append execution-reachability guard](todo/field-fix-09.md) | monday | implementation | done |
+| [BL-12 stored local default visibility](todo/field-fix-10.md) | monday | implementation | done |
 
 ## Historical findings
 

@@ -47,3 +47,7 @@ Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch re
 cbe1585: NodeResolve includes stable pin category/subcategory/container and object/text defaults. NodeFind result cap now applies across all graphs. Remaining schema authoring features are not implemented.
 
 Source-only, no build or test run at owner request. Not runtime acceptance.
+
+## BL-12 follow-up
+
+BL-12 scoped implementation FIELD-FIX-10 closed: stored local defaults now visible in graph body/full reads. Runtime default evaluation and full schema features remain open.

@@ -68,3 +68,7 @@ FIELD-FIX-08: live/dead exec chains sharing data, function results, macro tunnel
 ## Append reachability follow-up
 
 FIELD-FIX-09: disconnected new impure chain with shared entry data refuses and restores; live chain succeeds; pre-existing dead nodes/pure nodes excluded; macro/tunnel roots; Replace composition. Unbuilt and untested.
+
+## BL-12 follow-up
+
+FIELD-FIX-10: local float/string/struct defaults, unset values, newline escaping and graph DSL comment handling. Unbuilt and untested.
