@@ -34,6 +34,7 @@ Generated from task files and the approved queue. After editing task status, run
 | [Call Swap transaction and replacement-position safeguards](todo/field-fix-03.md) | monday | implementation | done |
 | [Call Swap default value preservation](todo/field-fix-04.md) | monday | implementation | done |
 | [Pin-default failure rollback and stable readback](todo/field-fix-05.md) | monday | implementation | done |
+| [Graph Copy link and rollback safeguards](todo/field-fix-06.md) | monday | implementation | done |
 
 ## Historical findings
 

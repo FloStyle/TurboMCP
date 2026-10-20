@@ -52,3 +52,7 @@ FIELD-FIX-04: string, numeric, object and localized-text preservation; incompati
 ## Pin-default rollback regression pending
 
 FIELD-FIX-05: callback reconstruction, title-changing values, duplicate pin refusal, restoration on readback failure, failed undo reports partial, and prior user undo history remains untouched. Unbuilt and untested.
+
+## Graph Copy follow-up
+
+FIELD-FIX-06: internal and crossing links, refused destructive/conversion connections, failure rollback, node count, previous undo history, and no implicit compile. Unbuilt and untested.

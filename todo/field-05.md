@@ -61,3 +61,7 @@ FIELD-FIX-03 implementation closed; regression tracked in FIELD-REG-01. Literal-
 ## Default preservation implementation
 
 FIELD-FIX-04 supersedes the missing-default limitation: same-named/type unlinked inputs preserve validated values; split/missing/incompatible inputs refuse. Full runtime acceptance remains in FIELD-REG-01.
+
+## Graph Copy follow-up
+
+FIELD-FIX-06 source implementation closed. Planned copy links now use schema checks and failure rolls back; full copy/default/layout acceptance remains pending in FIELD-REG-01.
