@@ -129,6 +129,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
           ],
           "new_files": []
+        },
+        "field-local-default-read": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
