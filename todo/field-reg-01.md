@@ -28,3 +28,11 @@ FIELD-FIX-01 source implementation; owner authorization to resume testing.
 ## Verification
 
 Deferred by owner. See FIELD-REG-01; implementation completion is not runtime acceptance.
+
+## Stop conditions
+
+Do not run builds or tests until owner resumes verification. Do not claim runtime acceptance.
+
+## Deliverable
+
+Committed implementation evidence and a separate pending regression record.
