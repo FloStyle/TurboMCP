@@ -45,3 +45,7 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## Unique pin identity
 
 Repoint now resolves a unique name-and-direction pin in both Plan and Apply. Duplicate matches refuse instead of silently rewiring the first matching pin. Missing/ambiguous output diagnostics say no unique output. Implementation closed, unbuilt and untested.
+
+## Explicit deletion option
+
+5cce82e parses trimmed true/false and 1/0 explicitly, retaining the empty keepSource=true default. Invalid values refuse before loading assets instead of silently choosing true; whitespace no longer changes false into true. Implementation closed; unbuilt and untested.

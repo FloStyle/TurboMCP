@@ -134,3 +134,5 @@ FIELD-FIX-19: Repoint duplicate pin-name refusal and unique controls remain unte
 FIELD-FIX-15 removal failure: removal-only and mixed batches, callback re-addition and owned rollback remain untested. Not a separate task.
 
 FIELD-FIX-15: original DataTable undo identity, unavailable undo refusal, and changed/nested transaction failure paths remain untested.
+
+FIELD-FIX-19 keepSource: supported boolean spellings, whitespace and invalid-input refusal remain untested.
