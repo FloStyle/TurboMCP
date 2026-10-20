@@ -191,7 +191,7 @@ namespace
 			if (SameField(It->GetName(), FieldName))
 			{
 				FString Text;
-				It->ExportText_InContainer(0, Text, Row, nullptr, nullptr, CopyFlags);
+				It->ExportTextItem_Direct(Text, It->ContainerPtrToValuePtr<void>(Row), nullptr, nullptr, CopyFlags);
 				return Text;
 			}
 		}

@@ -822,6 +822,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 	TArray<FString> Unmatched;
 	int32 PinsWritten = 0;
 	int32 LinksMade = 0;
+	TArray<FString> MovedLinkReports;
 	TArray<UEdGraphNode*> Created;
 	TArray<const FPlannedPosition*> PositionByForm;
 	if (InPlan.bPlacementRequested)
@@ -1131,13 +1132,18 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			bool bContinued = Continuation != nullptr;
 			for (UEdGraphPin* OriginalTarget : ReplacedTargets)
 			{
-				if (OriginalTarget == nullptr || !Schema->TryCreateConnection(Continuation, OriginalTarget)
+				if (Continuation == nullptr || OriginalTarget == nullptr || !Schema->TryCreateConnection(Continuation, OriginalTarget)
 					|| !HasLink(Continuation, OriginalTarget))
 				{
 					bContinued = false;
 					break;
 				}
 				Continuations.Add(TPair<UEdGraphPin*, UEdGraphPin*>(Continuation, OriginalTarget));
+				MovedLinkReports.Add(FString::Printf(TEXT("moved existing wire: %s:%s -> %s:%s; now %s:%s -> %s:%s"),
+					*TurboMCPNodeId::MakeForNode(FromNode, true), *FromPin->PinName.ToString(),
+					*TurboMCPNodeId::MakeForNode(OriginalTarget->GetOwningNode(), true), *OriginalTarget->PinName.ToString(),
+					*TurboMCPNodeId::MakeForNode(Continuation->GetOwningNode(), true), *Continuation->PinName.ToString(),
+					*TurboMCPNodeId::MakeForNode(OriginalTarget->GetOwningNode(), true), *OriginalTarget->PinName.ToString()));
 			}
 			if (!bContinued)
 			{
@@ -1189,6 +1195,10 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		*InPlan.GraphName, *InPlan.Asset, Survived, InPlan.NodeCountBefore, Graph->Nodes.Num());
 
 	Out += FString::Printf(TEXT("\n%d pin value(s) written across those node(s)"), PinsWritten);
+	for (const FString& MovedLink : MovedLinkReports)
+	{
+		Out += TEXT("\n") + MovedLink;
+	}
 	// THE WIRE COUNT IS REPORTED because a wire is the part most easily dropped in silence, and a caller
 	// comparing this against the number of link lines it submitted is the cheapest way to notice that.
 	Out += FString::Printf(TEXT("\n%d wire(s) made, of %d the text described"),
