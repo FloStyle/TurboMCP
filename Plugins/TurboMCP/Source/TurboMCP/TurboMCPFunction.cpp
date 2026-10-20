@@ -12,6 +12,8 @@
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphSchema.h"
+#include "Editor.h"
 #include "EdGraphUtilities.h"
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
@@ -90,15 +92,15 @@ namespace
 		return true;
 	}
 
-	// RefreshAllNodes reconstructs pins: raw pin addresses cannot survive it.
+	// Caller reconstruction replaces pins: retain weak pin references.
 	struct FCallLink { FString PinName; FWeakGraphPinPtr Pin; FWeakGraphPinPtr LinkedPin; };
-	void CaptureCallLinks(UBlueprint* InBlueprint, const FString& InFunction, TArray<FCallLink>& OutLinks, int32& OutCalls)
+	void CaptureCallLinks(UBlueprint* InBlueprint, const FString& InFunction, TArray<FCallLink>& OutLinks, TArray<UK2Node_CallFunction*>& OutCalls)
 	{
-		TArray<UK2Node_CallFunction*> Calls; FBlueprintEditorUtils::GetAllNodesOfClass(InBlueprint, Calls); OutCalls = 0;
+		TArray<UK2Node_CallFunction*> Calls; FBlueprintEditorUtils::GetAllNodesOfClass(InBlueprint, Calls); OutCalls.Reset();
 		for (UK2Node_CallFunction* Call : Calls)
 		{
-			if (Call == nullptr || !NameMatches(Call->GetFunctionName(), InFunction)) { continue; }
-			++OutCalls;
+			if (Call == nullptr || !Call->FunctionReference.IsSelfContext() || !NameMatches(Call->GetFunctionName(), InFunction)) { continue; }
+			OutCalls.Add(Call);
 			for (UEdGraphPin* Pin : Call->Pins) { if (Pin != nullptr) for (UEdGraphPin* Linked : Pin->LinkedTo) { OutLinks.Add({ Pin->PinName.ToString(), Pin, Linked }); } }
 		}
 	}
@@ -242,6 +244,8 @@ FTurboMCPFunction::FNameCheck FTurboMCPFunction::CheckName(
 FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	const FString& InInputs, const FString& InOutputs)
 {
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: function creation requires an idle editor outside PIE and active transactions");
 	const FString Wanted = InName.TrimStartAndEnd();
 	if (Wanted.IsEmpty())
 	{
@@ -389,9 +393,17 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	}
 
 	TArray<FCallLink> PreviousLinks;
-	int32 RefreshedCalls = 0;
+	TArray<UK2Node_CallFunction*> RefreshedCalls;
 	CaptureCallLinks(Blueprint, Wanted, PreviousLinks, RefreshedCalls);
-	FBlueprintEditorUtils::RefreshAllNodes(Blueprint);
+	// Publish the completed signature before refreshing only its self-call sites.
+    // Unrelated graphs and external same-named calls must not be reconstructed.
+    FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+    for (UK2Node_CallFunction* Call : RefreshedCalls)
+    {
+        Call->Modify();
+        if (const UEdGraphSchema* Schema = Call->GetGraph()->GetSchema())
+            Schema->ReconstructNode(*Call, true);
+    }
 	TArray<FString> LostLinks;
 	for (FCallLink& Link : PreviousLinks)
 	{
@@ -422,7 +434,7 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	Out += FString::Printf(TEXT("\ncreated: graph '%s'"), *Graph->GetName());
 	Out += FString::Printf(TEXT("\ncreated inputs: %s"), Inputs.Num() > 0 ? *FString::JoinBy(Inputs, TEXT(", "), [](const FSignaturePin& Pin) { return Pin.Name; }) : TEXT("(none)"));
 	Out += FString::Printf(TEXT("\ncreated outputs: %s"), Outputs.Num() > 0 ? *FString::JoinBy(Outputs, TEXT(", "), [](const FSignaturePin& Pin) { return Pin.Name; }) : TEXT("(none)"));
-	Out += FString::Printf(TEXT("\nrefreshed call nodes: %d"), RefreshedCalls);
+	Out += FString::Printf(TEXT("\nrefreshed call nodes: %d"), RefreshedCalls.Num());
 	Out += FString::Printf(TEXT("\nlost links by pin name: %s"), LostLinks.Num() > 0 ? *FString::Join(LostLinks, TEXT(", ")) : TEXT("(none)"));
 	Out += FString::Printf(TEXT("\nthe editor now reports it as implemented: %s"),
 		bNowImplemented ? TEXT("yes") : TEXT("no"));
