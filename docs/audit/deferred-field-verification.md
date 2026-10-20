@@ -355,3 +355,8 @@ fb328d9 replaces the combined refusal with separate missing-input, orphaned, exe
 
 - 484d5638: implemented, unbuilt/untested. Check explicit both against the union of in/out and empty direction on saved known dependencies across accepted path forms.
 - 7bbe9c3c: implemented, unbuilt/untested. Check typed result consumers, boolean and success/failure execution consumers, incomplete cast nodes and truly unused outputs. No input-type/nullability redundancy claim or deletion recommendation.
+
+## 2026-10-21 — Widget references and enum creation
+
+- 1256778b: implemented, unbuilt/untested. Check changed editable object, soft/class/interface references against class defaults, including null, without placement-slot noise.
+- 214d6e7a: implemented, unbuilt/untested. Check qualified names/value/order/count, display-name refusals, comma/pipe input, case-only duplicates and reused plans. Failed read-back must report retained unsaved partial state.

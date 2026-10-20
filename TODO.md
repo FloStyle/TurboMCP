@@ -82,7 +82,7 @@ The linked records distinguish implemented containment from unresolved causes. V
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>todo (66)</summary>
+<summary>todo (65)</summary>
 
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
@@ -121,7 +121,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P3** [Retire obsolete public-branch reconciliation](todo/081329d2.md)
 - **P3** [Specify complete node-link and widget-detail reads](todo/0b84b1d8.md)
 - **P3** [Verify focused search and parameter help](todo/0e4658ad.md)
-- **P3** [Report editable widget reference overrides](todo/1256778b.md)
 - **P3** [Distinguish struct dependents from proven breakage](todo/1f5fe672.md)
 - **P3** [Preserve ten positive regression workflows](todo/2f066e6c.md)
 - **P3** [Retire the legacy release-run container](todo/5f2cee78.md)
@@ -154,10 +153,9 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>backlog (24)</summary>
+<summary>backlog (23)</summary>
 
 - **P1** [Validate call-cost caps without hiding invalid input](todo/019cf7af.md)
-- **P1** [Verify enum names after creation](todo/214d6e7a.md)
 - **P1** [Verify override removal preserves unrelated overrides](todo/c4485ba2.md)
 - **P1** [Require accepted evidence before fresh-history publication](todo/public-cutover.md)
 - **P1** [Gate recorder adaptation on exact registry API evidence](todo/ue59-recorder.md)
@@ -184,8 +182,9 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (10)</summary>
+<summary>done (12)</summary>
 
+- **P1** [Verify enum names after creation](todo/214d6e7a.md)
 - **P1** [Make explicit both references equal in plus out](todo/484d5638.md)
 - **P1** [Avoid false unnecessary-cast warnings](todo/7bbe9c3c.md)
 - **P1** [Member variable reader and spawner identity alignment](todo/field-fix-27.md)
@@ -196,5 +195,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P2** [Object and interface signature type support](todo/field-fix-25.md)
 - **P2** [Default-on tool call recording](todo/field-fix-26.md)
 - **P2** [Schema-aware missing-default lint](todo/field-fix-28.md)
+- **P3** [Report editable widget reference overrides](todo/1256778b.md)
 
 </details>
