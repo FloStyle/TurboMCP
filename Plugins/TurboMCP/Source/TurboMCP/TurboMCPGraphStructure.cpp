@@ -56,18 +56,19 @@ namespace
 	/** Finds a pin by name with the CASE THE ENGINE USES, rather than a case-insensitive guess. */
 	UEdGraphPin* FindPinByName(UEdGraphNode* InNode, const FString& InPinName)
 	{
-		if (InNode == nullptr)
-		{
-			return nullptr;
-		}
-		for (UEdGraphPin* Pin : InNode->Pins)
-		{
-			if (Pin != nullptr && Pin->PinName.ToString().Equals(InPinName, ESearchCase::CaseSensitive))
-			{
-				return Pin;
-			}
-		}
-		return nullptr;
+        if (!InNode) return nullptr;
+        UEdGraphPin* Match = nullptr;
+        for (UEdGraphPin* Pin : InNode->Pins)
+        {
+            if (Pin && Pin->PinName.ToString().Equals(InPinName, ESearchCase::CaseSensitive))
+            {
+                // The serialized link contains no direction; duplicate names cannot
+                // be disambiguated safely and must enter the existing rollback path.
+                if (Match) return nullptr;
+                Match = Pin;
+            }
+        }
+        return Match;
 	}
 
 	// Allocation can recreate defaults. Match complete pin identity before copying values;
