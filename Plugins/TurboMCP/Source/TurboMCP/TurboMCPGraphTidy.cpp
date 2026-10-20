@@ -1030,23 +1030,30 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 		if (Free.Num() > 0)
 		{
-			double FreeStartX = 0.0;
-			bool bAnyBoundary = false;
+            // Moving nodes are not fixed obstacles: including their old right
+            // edges makes each forced repeat push the group farther right.
+            double FreeStartX = OutPlan.Nodes[Free[0]].X;
+            double FreeStartY = OutPlan.Nodes[Free[0]].Y;
+            TSet<const UEdGraphNode*> MovingNodes;
+            for (const int32 Index : Free)
+            {
+                FreeStartX = FMath::Min(FreeStartX, OutPlan.Nodes[Index].X);
+                FreeStartY = FMath::Min(FreeStartY, OutPlan.Nodes[Index].Y);
+                MovingNodes.Add(OutPlan.Nodes[Index].Node);
+            }
 			for (const FNode& Candidate : OutPlan.Nodes)
 			{
-				if (Candidate.bIsComment)
+				if (Candidate.bIsComment || MovingNodes.Contains(Candidate.Node))
 				{
 					continue;
 				}
 				const double Right = Candidate.X + Candidate.Width + FTurboMCPGraphTidy::BoxGap;
-				FreeStartX = bAnyBoundary ? FMath::Max(FreeStartX, Right) : Right;
-				bAnyBoundary = true;
+				FreeStartX = FMath::Max(FreeStartX, Right);
 			}
 			for (const FBox& Box : OutPlan.Boxes)
 			{
 				const double Right = Box.X + Box.PlannedWidth + FTurboMCPGraphTidy::BoxGap;
-				FreeStartX = bAnyBoundary ? FMath::Max(FreeStartX, Right) : Right;
-				bAnyBoundary = true;
+				FreeStartX = FMath::Max(FreeStartX, Right);
 			}
 
 			Free.Sort([&OutPlan](const int32 InLeft, const int32 InRight)
@@ -1069,7 +1076,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			{
 				FNode& Entry = OutPlan.Nodes[NodeIndex];
 				Entry.PlannedX = CursorX;
-				Entry.PlannedY = 0.0;
+				Entry.PlannedY = FreeStartY;
 				CursorX += Entry.Width + FTurboMCPGraphTidy::HorizontalNodeGap;
 			}
 		}
