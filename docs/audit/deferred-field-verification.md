@@ -333,3 +333,7 @@ c05d159: status version/compile stamp and PlayCheck execution labels. Verify on 
 
 ### FIELD-FIX-25
 ee12e2d object/interface type parsing: verify generated widget class paths, native object classes, Blueprint interfaces, invalid wrapper/class combinations and container types. Done, unbuilt_untested. No tests/builds run.
+
+
+### FIELD-FIX-26
+Default-on recorder: verify fresh config, persisted false and manual toggle later. Implemented, unbuilt_untested. No tests/builds run.

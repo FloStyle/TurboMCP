@@ -414,7 +414,11 @@
       "id": "X-63",
       "title": "The call log is off by default (low)",
       "owner": "FIELD-08",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-26",
+      "implementation_limits": "Default on for fresh settings; existing saved false is preserved and can be changed through the panel or call-log tool."
     },
     {
       "report": "2026-10-20_S1",
