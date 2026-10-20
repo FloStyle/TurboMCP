@@ -346,3 +346,7 @@ fb328d9 replaces the combined refusal with separate missing-input, orphaned, exe
 
 ### FIELD-FIX-27
 54b7ed9: verify standard member getter/setter canonical IDs versus reader, boolean prefixes, spaces, widget members, categories, locale and legacy aliases. Done, unbuilt_untested. Full DSL whitespace handling not claimed.
+
+
+### FIELD-FIX-28
+4c4a38e: verify schema-valid empty defaults, invalid empty defaults and split parent/child pin linting. Done, unbuilt_untested. LT-07 remains unresolved; no tests/builds run.

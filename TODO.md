@@ -186,7 +186,7 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (7)</summary>
+<summary>done (8)</summary>
 
 - **P1** [Member variable reader and spawner identity alignment](todo/field-fix-27.md)
 - **P2** [Blueprint summary completeness and graph labels](todo/field-fix-21.md)
@@ -195,5 +195,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P2** [Tool build identification and execution labels](todo/field-fix-24.md)
 - **P2** [Object and interface signature type support](todo/field-fix-25.md)
 - **P2** [Default-on tool call recording](todo/field-fix-26.md)
+- **P2** [Schema-aware missing-default lint](todo/field-fix-28.md)
 
 </details>
