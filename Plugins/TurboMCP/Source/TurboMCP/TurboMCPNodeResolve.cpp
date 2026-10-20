@@ -100,6 +100,17 @@ namespace
 		int32 InputIndex = 0;
 		int32 OutputIndex = 0;
 		int32 Shown = 0;
+		int32 TotalPins = 0;
+		for (const UEdGraphPin* Pin : InNode->Pins) if (Pin) ++TotalPins;
+		auto SingleLine = [](FString Value)
+		{
+			Value.ReplaceInline(TEXT("\\"), TEXT("\\\\"));
+			Value.ReplaceInline(TEXT("\r"), TEXT("\\r"));
+			Value.ReplaceInline(TEXT("\n"), TEXT("\\n"));
+			Value.ReplaceInline(TEXT("\t"), TEXT("\\t"));
+			return Value;
+		};
+
 
 		for (const UEdGraphPin* Pin : InNode->Pins)
 		{
@@ -111,10 +122,11 @@ namespace
 			if (Shown >= MaxPinsPerNode)
 			{
 				Lines += FString::Printf(TEXT("\n      (%d more pin(s) not shown)"),
-					InNode->Pins.Num() - Shown);
+					TotalPins - Shown);
 				break;
 			}
 
+			++Shown;
 			const bool bIsInput = Pin->Direction == EGPD_Input;
 			const int32 Index = bIsInput ? InputIndex++ : OutputIndex++;
 
@@ -139,10 +151,10 @@ namespace
             else if (Pin->DefaultObject)
                 Lines += FString::Printf(TEXT("  = object:%s"), *Pin->DefaultObject->GetPathName());
             else if (!Pin->DefaultTextValue.IsEmpty())
-                Lines += FString::Printf(TEXT("  = text:%s"), *Pin->DefaultTextValue.ToString());
+                Lines += FString::Printf(TEXT("  = text:%s"), *SingleLine(Pin->DefaultTextValue.ToString()));
 			else if (!Pin->DefaultValue.IsEmpty())
 			{
-				Lines += FString::Printf(TEXT("  = %s"), *Pin->DefaultValue);
+				Lines += FString::Printf(TEXT("  = %s"), *SingleLine(Pin->DefaultValue));
 			}
 		}
 
