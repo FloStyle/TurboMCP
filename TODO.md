@@ -37,6 +37,7 @@ Generated from task files and the approved queue. After editing task status, run
 | [Graph Copy link and rollback safeguards](todo/field-fix-06.md) | monday | implementation | done |
 | [Variable creation preflight and transaction guard](todo/field-fix-07.md) | monday | implementation | done |
 | [X-41 compile execution-reachability diagnostics](todo/field-fix-08.md) | monday | implementation | done |
+| [X-41 append execution-reachability guard](todo/field-fix-09.md) | monday | implementation | done |
 
 ## Historical findings
 

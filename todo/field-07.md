@@ -51,3 +51,7 @@ Source-only, no build or test run at owner request. Not runtime acceptance.
 ## Field-note diagnostic follow-up
 
 FIELD-FIX-08 implements X-41 compile diagnostics only. GL-16 reader already uses shared execution-aware reachability; needs regression evidence, not a speculative rewrite. Writer enforcement and full semantic acceptance remain open.
+
+## Append reachability follow-up
+
+FIELD-FIX-09 implements X-41 Append rejection of new unreachable exec-input nodes; applies through Replace too. Other writers, GL-16 reader controls and runtime execution correctness remain open. Disconnected staging now refuses; connect new execution paths in the same request.

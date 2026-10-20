@@ -64,3 +64,7 @@ FIELD-FIX-07: invalid later type must add zero variables; duplicate/case names; 
 ## Field-note diagnostic follow-up
 
 FIELD-FIX-08: live/dead exec chains sharing data, function results, macro tunnels and capped diagnostics. No build/tests run.
+
+## Append reachability follow-up
+
+FIELD-FIX-09: disconnected new impure chain with shared entry data refuses and restores; live chain succeeds; pre-existing dead nodes/pure nodes excluded; macro/tunnel roots; Replace composition. Unbuilt and untested.
