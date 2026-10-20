@@ -67,7 +67,15 @@ namespace
 		{
 			if (Pin != nullptr && Pin->Direction == EGPD_Output && Pin->LinkedTo.Num() > 0)
 			{
-				if (const UEdGraphNode* Next = Pin->LinkedTo[0]->GetOwningNode())
+				const UEdGraphPin* Linked = Pin->LinkedTo[0];
+				if (!Linked || Linked->Direction != EGPD_Input
+					|| Linked->PinType.PinCategory != Pin->PinType.PinCategory
+					|| !Linked->LinkedTo.Contains(Pin))
+				{
+					// Keep the reroute visible rather than crashing or traversing a broken edge.
+					return const_cast<UEdGraphNode*>(InNode);
+				}
+				if (const UEdGraphNode* Next = Linked->GetOwningNode())
 				{
 					return ResolveThroughKnots(Next, InDepth + 1);
 				}
