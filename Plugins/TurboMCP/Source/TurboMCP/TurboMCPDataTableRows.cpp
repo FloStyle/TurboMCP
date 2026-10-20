@@ -11,7 +11,7 @@
 #include "Editor.h"
 #include "ScopedTransaction.h"
 #include "UObject/StructOnScope.h"
-#include "TurboMCPRollback.h"
+#include "Editor/TransBuffer.h"
 #include "Engine/DataTable.h"
 #include "Misc/OutputDevice.h"
 #include "UObject/Class.h"
@@ -592,7 +592,21 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
     }
     if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
         return TEXT("unchanged: DataTable edit requires an idle editor outside an active transaction");
-    FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "DataTableRows", "TurboMCP DataTable rows"));
+    TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "DataTableRows", "TurboMCP DataTable rows"));
+    UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+    const FGuid OwnedId = Transaction->IsOutstanding() && Buffer && Buffer->ActiveCount == 1
+        && !Buffer->UndoBuffer.IsEmpty() ? Buffer->UndoBuffer.Last()->GetId() : FGuid();
+    if (!OwnedId.IsValid())
+        return TEXT("unchanged: DataTable edit could not acquire an owned undo record");
+    auto RollbackRows = [&]()
+    {
+        // Finalize this scope exactly once. Never adopt another edit's record.
+        Transaction.Reset();
+        const int32 Index = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
+        const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
+        return Buffer->ActiveCount == 0 && Record && Record->GetId() == OwnedId
+            && GEditor->UndoTransaction(false);
+    };
 	Table->Modify();
 
 	TArray<FString> Failures;
@@ -710,7 +724,7 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	Failures.Append(VerificationFailures);
 	if (Failures.Num() > 0)
 	{
-        const bool bUndone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        const bool bUndone = RollbackRows();
         OutReport = bUndone ? TEXT("rollback=complete; attempted read-back discarded; save=not_requested")
                             : TEXT("rollback=failed; partial changes may remain; inspect before retrying");
         return FString::Printf(TEXT("%s: %s"), bUndone ? TEXT("unchanged") : TEXT("partial"),
