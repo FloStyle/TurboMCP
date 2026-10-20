@@ -217,6 +217,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp"
           ],
           "new_files": []
+        },
+        "field-reader-error-gate": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheck.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
