@@ -249,6 +249,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
           ],
           "new_files": []
+        },
+        "field-recorder-default": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPSettings.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
