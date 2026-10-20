@@ -107,6 +107,8 @@ bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName,
    && ConsumerPin->LinkedTo.Num() == 1 && ConsumerPin->LinkedTo.Contains(SourceOut);
   if (Check.Response != CONNECT_RESPONSE_MAKE && !ReplacesOnlySource) Out.Refusals.Add(FString::Printf(TEXT("target '%s' cannot connect to reader '%s.%s': %s"),*TargetPin,*Out.Readers.Last().ConsumerNodeId,*Out.Readers.Last().ConsumerPin,*Check.Message.ToString()));
  }
+ if (!Out.bKeepSource && !Source->CanUserDeleteNode())
+  Out.Refusals.Add(TEXT("source node is protected from deletion; use keepSource=true"));
  if (!Out.bKeepSource)
   for (const UEdGraphPin* Pin : Source->Pins)
    if (Pin && Pin != SourceOut && !Pin->LinkedTo.IsEmpty())
@@ -256,6 +258,15 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
 		Out.Outcome = ETurboMCPResultOutcome::Failed;
 		Out.Code = TEXT("graph_missing");
 		Out.Rollback = ETurboMCPResultRollback::NotNeeded;  // nothing was touched
+		return false;
+	}
+	UEdGraphNode* DeleteCandidate = FindNode(G, P.SourceNodeId);
+	if (!P.bKeepSource && DeleteCandidate && !DeleteCandidate->CanUserDeleteNode())
+	{
+		Error = TEXT("unchanged: source node is protected from deletion; use keepSource=true");
+		Out.Outcome = ETurboMCPResultOutcome::Refused;
+		Out.Code = TEXT("source_protected");
+		Out.Rollback = ETurboMCPResultRollback::NotNeeded;
 		return false;
 	}
 	Out.Assets.Add(R.PackagePath);
