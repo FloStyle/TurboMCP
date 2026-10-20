@@ -1,9 +1,9 @@
 # Prevent dependent Widget loss around compile and batch rollback
 
 ID: FIELD-02
-Status: todo
+Status: in_progress
 Priority: P0
-Readiness: needs_reconciliation
+Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
 Kind: investigation
@@ -37,3 +37,9 @@ Reproduce with a child Widget and two parent fixtures. Compare hierarchy, bindin
 
 ## Handoff
 Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch remains paused.
+
+## Approved immediate safeguard
+
+Refuse EditTurboMCPCompile whenever GEditor reports an active transaction, before resolving or loading assets. Do not end or undo the caller transaction. Test the real wrapper on a synthetic Widget fixture: refusal, unchanged graph/widget identities and dirty state, transaction remains active, then normal compile succeeds after the scope ends. This is containment of the TurboMCP entry point, not proof that native compile or every reinstance route is protected. Reproduce the full nested-widget failure separately.
+
+Verification: `python Tools/execute-tests.py --profile engine --suites test-widget-roundtrip,test-monday-disk-loop --execute --max-seconds 900`.

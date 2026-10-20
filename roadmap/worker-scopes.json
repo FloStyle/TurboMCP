@@ -16,6 +16,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/STurboMCPPanel.cpp"
           ],
           "new_files": []
+        },
+        "field-widget-compile-guard": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
