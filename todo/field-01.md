@@ -57,3 +57,9 @@ Native execution 9f90e8fe6b46468d9d6a45f74f4a49d8 passed after the one-file engi
 ## Engine delivery
 
 Separate engine branch fix/field-emergency-2026-10-20 contains verified lifetime repair commit 1ab08f9b290 and untested pin/transaction batch 0144a1931f3b8034d6fe953b676d0edaf4f4ef6f. These engine commits are local only and are not in the TurboMCP plugin. engine.lock.json intentionally remains at the supported upstream baseline; the doctor gate will reject the local custom engine HEAD until integration explicitly reconciles the tested engine revision. Do not bypass that gate or overwrite the modified Python dependency files with GitDependencies --force.
+
+## Additional untested native DataTable source batch
+
+Approved engine scope also includes Engine/Plugins/Experimental/Toolsets/EditorToolset/Content/Python/editor_toolset/toolsets/data_table.py: reject empty/None row names and case-colliding requests before mutation; resolve requested row names consistently with case-insensitive existence checks in get/set/rename; reject duplicate property aliases; refuse schema/export mismatches before native write. No test run during this pass.
+
+Native DataTable input follow-up committed as cc5b062305f3201d4f27ee8497bd54e9671efd1e (untested). The engine repair branch now includes the Python dependency files explicitly, because they were previously ignored by Content/. GitDependencies must not overwrite these local changes. Engine delivery and regression remain integration work, not completed release evidence.
