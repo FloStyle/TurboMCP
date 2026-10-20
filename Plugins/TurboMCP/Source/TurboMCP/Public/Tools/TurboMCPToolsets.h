@@ -212,7 +212,7 @@ public:
 	/**
 	 * Find nodes in a Blueprint by what they say.
 	 *
-	 * Pass the asset, one or more words separated by commas or pipes, and
+	 * Pass the asset, one or more words separated by whitespace, commas or pipes, and
 	 * optionally one graph name. Every word must appear, which is what makes a
 	 * two word search narrow rather than widen.
 	 *

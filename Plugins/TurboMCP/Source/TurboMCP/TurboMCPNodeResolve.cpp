@@ -494,10 +494,20 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 		return TEXT("error: no asset given. Pass the Blueprint to search, in any path form.");
 	}
 
-	const TArray<FString> WordList = FTurboMCPAssetResolver::SplitList(Words);
+	// Search words are AND terms, not implicit multi-word phrases. Keep list
+	// delimiters local to this tool so asset/path list parsing is unchanged.
+	FString SearchWords = Words;
+	for (int32 Index = 0; Index < SearchWords.Len(); ++Index)
+	{
+		if (FChar::IsWhitespace(SearchWords[Index]) || SearchWords[Index] == TEXT('|'))
+		{
+			SearchWords[Index] = TEXT(',');
+		}
+	}
+	const TArray<FString> WordList = FTurboMCPAssetResolver::SplitList(SearchWords);
 	if (WordList.Num() == 0)
 	{
-		return TEXT("error: no words given. Pass one or more words separated by commas ")
+		return TEXT("error: no words given. Pass one or more words separated by whitespace, commas ")
 			TEXT("or pipes, for example PrintString, or MyVar.");
 	}
 
@@ -530,8 +540,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 			*Resolved.ObjectPath, *GraphName, *ListGraphNames(Blueprint));
 	}
 
-	FString Result = FString::Printf(TEXT("read: nodes in %s matching '%s', in %s"),
-		*Resolved.ObjectPath, *Words, *Scope);
+	FString Result = FString::Printf(TEXT("read: nodes in %s matching all words [%s], in %s"),
+		*Resolved.ObjectPath, *FString::Join(WordList, TEXT(", ")), *Scope);
 
 	TArray<FString> Lines;
 	int32 TotalMatched = 0;
