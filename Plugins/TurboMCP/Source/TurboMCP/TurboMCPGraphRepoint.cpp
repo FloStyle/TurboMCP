@@ -47,8 +47,11 @@ UEdGraphNode* FindNode(UEdGraph* G, const FString& Id) {
 }
 UEdGraphPin* FindPin(UEdGraphNode* N, const FString& Name, EEdGraphPinDirection Direction) {
  if (!N) return nullptr;
- for (UEdGraphPin* P : N->Pins) if (P && P->PinName.ToString().Equals(Name, ESearchCase::CaseSensitive) && P->Direction == Direction) return P;
- return nullptr;
+ UEdGraphPin* Match = nullptr;
+ for (UEdGraphPin* P : N->Pins)
+  if (P && P->PinName.ToString().Equals(Name, ESearchCase::CaseSensitive) && P->Direction == Direction)
+  { if (Match) return nullptr; Match = P; }
+ return Match;
 }
 FString BoolText(const FString& S) { return S.TrimStartAndEnd().IsEmpty() || !S.Equals(TEXT("false"), ESearchCase::IgnoreCase) && !S.Equals(TEXT("0"), ESearchCase::CaseSensitive) ? TEXT("true") : TEXT("false"); }
 }
@@ -82,7 +85,7 @@ bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName,
  }
  Out.GraphName=G->GetName(); Out.NodeCountBefore=G->Nodes.Num();
  UEdGraphNode* Source=FindNode(G,SourceNodeId); if (!Source) { Out.Refusals.Add(FString::Printf(TEXT("source node '%s' was not found"),*SourceNodeId)); return true; }
- UEdGraphPin* SourceOut=FindPin(Source,SourcePin,EGPD_Output); if (!SourceOut) { Out.Refusals.Add(FString::Printf(TEXT("source '%s' has no output pin named '%s'"),*SourceNodeId,*SourcePin)); return true; }
+ UEdGraphPin* SourceOut=FindPin(Source,SourcePin,EGPD_Output); if (!SourceOut) { Out.Refusals.Add(FString::Printf(TEXT("source '%s' has no unique output pin named '%s'"),*SourceNodeId,*SourcePin)); return true; }
  if (TargetNodeId.IsEmpty() && TargetTypeId.IsEmpty()) { Out.Refusals.Add(TEXT("targetTypeId is required when targetNodeId is empty")); return true; }
  UEdGraphNode* Target=nullptr;
  if (!TargetNodeId.IsEmpty()) { Target=FindNode(G,TargetNodeId); if (!Target) { Out.Refusals.Add(FString::Printf(TEXT("target node '%s' was not found"),*TargetNodeId)); return true; } }
@@ -90,7 +93,7 @@ bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName,
  if (Target == Source) { Out.Refusals.Add(TEXT("source and target must be different nodes; deleting the source must not delete the target")); return true; }
  UEdGraphPin* TargetOut=FindPin(Target,TargetPin,EGPD_Output); if (!TargetOut) {
   TArray<FString> Outputs; for (UEdGraphPin* P:Target->Pins) if(P&&P->Direction==EGPD_Output) Outputs.Add(P->PinName.ToString());
-  Out.Refusals.Add(FString::Printf(TEXT("target has no output pin named '%s'; outputs: %s"),*TargetPin,Outputs.Num()?*FString::Join(Outputs,TEXT(", ")):TEXT("(none)"))); return true;
+  Out.Refusals.Add(FString::Printf(TEXT("target has no unique output pin named '%s'; outputs: %s"),*TargetPin,Outputs.Num()?*FString::Join(Outputs,TEXT(", ")):TEXT("(none)"))); return true;
  }
  for (UEdGraphPin* ConsumerPin : SourceOut->LinkedTo) {
   if (!ConsumerPin || !ConsumerPin->GetOwningNode()) continue;
