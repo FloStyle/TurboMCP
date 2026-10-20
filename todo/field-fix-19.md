@@ -53,3 +53,7 @@ Repoint now resolves a unique name-and-direction pin in both Plan and Apply. Dup
 ## Protected repoint source deletion
 
 FIELD-FIX-19 checks CanUserDeleteNode in planning and before apply mutation when keepSource=false. Protected sources refuse and advise keepSource=true. Implementation done; unbuilt and untested. Deferred evidence: protected source deletion refuses unchanged; retaining source and deleting ordinary eligible sources retain expected behavior.
+
+## Repoint stale reader counts
+
+FIELD-FIX-19 refuses before mutation when the source output reader count differs from its plan. Existing per-reader identity checks still apply. This prevents newly added consumers being silently excluded when retaining the source. Implementation done; unbuilt and untested. Deferred evidence: added/removed readers between plan and apply refuse unchanged; unchanged reader sets repoint normally.
