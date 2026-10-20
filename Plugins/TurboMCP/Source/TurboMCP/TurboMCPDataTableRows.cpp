@@ -15,6 +15,7 @@
 #include "Engine/DataTable.h"
 #include "Misc/OutputDevice.h"
 #include "UObject/Class.h"
+#include "UObject/NameTypes.h"
 #include "UObject/Package.h"
 #include "UObject/UnrealType.h"
 #include "TurboMCPAssetResolver.h"
@@ -25,6 +26,20 @@ namespace
 {
 	/** The engine's own port flags for a copy, which is what the data table editor's paste path uses. */
 	constexpr int32 CopyFlags = PPF_Copy;
+
+	bool NamesFit(const TArray<FRowOp>& Ops)
+	{
+		for (const FRowOp& Op : Ops)
+		{
+			if (Op.RowName.Len() >= NAME_SIZE) return false;
+			for (const FFieldEdit& Edit : Op.Fields)
+			{
+				if (Edit.Name.Len() >= NAME_SIZE) return false;
+			}
+		}
+		return true;
+	}
+
 
 	/**
 	 * CAPTURES WHAT THE ENGINE'S IMPORTER SAYS, INSTEAD OF PRINTING IT TO THE LOG.
@@ -396,6 +411,14 @@ FString Parse(const TArray<FString>& Lines, TArray<FRowOp>& Out)
 
 FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 {
+	// FName conversion can terminate the editor for oversized caller input.
+	if (!NamesFit(Ops))
+	{
+		const FString Error = FString::Printf(TEXT("error: row and field names must be shorter than %d characters; nothing was written."), NAME_SIZE);
+		Out.Refusals.Add(Error);
+		return Error;
+	}
+
 	if (Table == nullptr)
 	{
 		return TEXT("error: no data table.");
@@ -508,6 +531,12 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 
 FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 {
+	if (!NamesFit(Plan.Ops)) return TEXT("error: oversized row or field name; nothing was written.");
+	for (const FString& Name : Plan.Removals)
+	{
+		if (Name.Len() >= NAME_SIZE) return TEXT("error: oversized removal name; nothing was written.");
+	}
+
     if (!IsInGameThread()) return TEXT("unchanged: DataTable edits require the game thread");
 	if (Table == nullptr)
 	{
