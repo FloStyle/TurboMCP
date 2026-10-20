@@ -123,6 +123,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp"
           ],
           "new_files": []
+        },
+        "field-append-reachability": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
