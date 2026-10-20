@@ -130,6 +130,14 @@ namespace TurboMCPToolsets
 				: TEXT(" tool search: off, so every tool is listed directly.");
 		}
 
+		if (Settings != nullptr && Settings->bEnableToolSearch)
+		{
+			State += TEXT("\ncall_tool arguments example: {\"toolset_name\":\"TurboMCP.TurboMCPReadToolset\",\"tool_name\":\"ReadTurboMCPStatus\",\"arguments\":{}}");
+			State += TEXT("\nUse separate toolset_name and bare tool_name fields. Omitting toolset_name searches top-level MCP tools only; a joined Toolset.Tool name is not a substitute. For Tool not found, check these fields and discovery before restarting.");
+		}
+		State += TEXT("\nTurboMCP safety policy filters native DataTableTools.add_rows/set_rows/rename_rows, BlueprintTools.set_pin_value/compile_blueprint and ProgrammaticToolset.execute_tool_script. They may be absent from discovery; this is intentional.");
+		State += TEXT("\nReplacements: Preview/EditTurboMCPDataTableRows, EditTurboMCPPinDefault (or Preview/EditTurboMCPGraphPatch), EditTurboMCPCompile and EditTurboMCPSave. For supported graph batches use Preview/EditTurboMCPBatchEdit; arbitrary scripts have no equivalent. Discover exact schemas before calling.");
+
 		return State;
 	}
 

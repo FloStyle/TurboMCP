@@ -308,27 +308,25 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 
 	// ---- 4. EACH FORM IS RESOLVED: LINK TO AN EXISTING NODE, OR BUILD A NEW ONE ----------------------
 	//
-	// THE IDS PRESENT IN THE GRAPH ARE COLLECTED ONCE. Building them per form would walk the graph once per
-	// node, and on a large graph that is the difference between a tool that answers and one that appears to
-	// hang - a failure mode this project has already recorded once.
-	TSet<FString> ExistingIds;
-	for (const UEdGraphNode* Node : Graph->Nodes)
-	{
-		if (Node != nullptr)
-		{
-			ExistingIds.Add(TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true));
-		}
-	}
-
+	// Resolve reader-emitted short keys through the shared identity rules and
+	// retain only full keys in the mutation plan. Ambiguity must never pick a node.
 	for (FNewNode& Form : OutPlan.Nodes)
 	{
-		if (!Form.ExistingNodeId.IsEmpty() && ExistingIds.Contains(Form.ExistingNodeId))
+		if (!Form.ExistingNodeId.IsEmpty())
 		{
-			// THE SPEC'S "links them to existing nodes by node ID". A form naming a node that is ALREADY there
-			// is a link target, not a second copy - making a copy is what would turn an append into a
-			// duplicate-the-graph operation.
-			Form.bLinksToExisting = true;
-			continue;
+			TArray<UEdGraphNode*> Matches;
+			const int32 Count = TurboMCPNodeId::FindNodesByKey(Graph, Form.ExistingNodeId, Matches);
+			if (Count == 1)
+			{
+				Form.ExistingNodeId = TurboMCPNodeId::MakeForNode(Matches[0], true);
+				Form.bLinksToExisting = true;
+				continue;
+			}
+			if (Count > 1)
+			{
+				OutPlan.Refusals.Add(FString::Printf(TEXT("node key '%s' is ambiguous (%d matches); use a full node ID"), *Form.ExistingNodeId, Count));
+				continue;
+			}
 		}
 
 		// A FORM THAT NAMES AN ID THE GRAPH DOES NOT HAVE is refused rather than created, because the caller

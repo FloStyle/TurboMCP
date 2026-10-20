@@ -251,8 +251,15 @@ FString FTurboMCPGraphPatch::RenderPreview(const FPlan& InPlan)
 	FString Out = FString::Printf(TEXT("preview: patch %s in %s"),
 		*InPlan.Append.GraphName, *InPlan.Append.Asset);
 
-	Out += FString::Printf(TEXT("\n%d node(s) in the graph now, %d named by the text"),
-		InPlan.NodeCountBefore, InPlan.Updates.Num());
+	if (InPlan.Append.Refusals.Num() > 0)
+	{
+		Out += TEXT("\ngraph node count not collected: planning refused before patch inspection");
+	}
+	else
+	{
+		Out += FString::Printf(TEXT("\n%d node(s) in the graph now, %d named by the text"),
+			InPlan.NodeCountBefore, InPlan.Updates.Num());
+	}
 
 	// THE COUNT THAT MATTERS FOR `T-WRITE-5`, STATED IN THE PREVIEW SO A CALLER CAN SEE IT BEFORE WRITING:
 	// a patch that would touch more nodes than the caller intended is visible here rather than after the fact.
