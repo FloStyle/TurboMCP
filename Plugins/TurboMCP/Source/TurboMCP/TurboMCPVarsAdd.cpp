@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPVarsAdd.h"
+#include "Kismet2/Kismet2NameValidators.h"
 #include "TurboMCPTypeParser.h"
 
 #include "BlueprintEditorLibrary.h"
@@ -197,7 +198,7 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 	TArray<FString> Items;
 	SplitTopLevel(InVariables, TEXT(','), Items);
 
-	TSet<FString> Seen;
+	TSet<FName> Seen;
 	for (const FString& RawItem : Items)
 	{
 		const FString Item = Trim(RawItem);
@@ -231,9 +232,10 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 		{
 			FString Why;
 			bool bNameOk = !Variable.Name.IsEmpty();
-			if (bNameOk && !FChar::IsAlpha(Variable.Name[0]) && Variable.Name[0] != TEXT('_'))
+			// Blueprint names are FNames, not C++ identifiers: a leading digit is legal.
+			if (Variable.Name.Len() > FKismetNameValidator::GetMaximumNameLength())
 			{
-				Why = TEXT("it does not start with a letter or underscore");
+				Why = TEXT("it exceeds the Blueprint name length limit");
 				bNameOk = false;
 			}
 			for (const TCHAR Character : Variable.Name)
@@ -254,14 +256,14 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 			}
 		}
 
-		if (Seen.Contains(Variable.Name))
+		if (Seen.Contains(FName(*Variable.Name)))
 		{
 			OutError = FString::Printf(
 				TEXT("'%s' is given twice. Each variable needs its own name."),
 				*Variable.Name);
 			return false;
 		}
-		Seen.Add(Variable.Name);
+		Seen.Add(FName(*Variable.Name));
 
 		// The fields, split on spaces at depth 0. The first token is the type; the rest are
 		// `key=value` pairs.
@@ -509,9 +511,16 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 	// ask for, which is what `P8` forbids.
 	TArray<FString> Clashes;
     TSet<FName> RequestedNames;
+    FKismetNameValidator NameValidator(Blueprint);
 	for (const FVar& Variable : InPlan.Variables)
 	{
-		const FName Name(*Variable.Name);
+		const EValidatorResult NameResult = NameValidator.IsValid(Variable.Name);
+        if (NameResult != EValidatorResult::Ok)
+        {
+            Clashes.Add(Variable.Name + TEXT(" (") + INameValidatorInterface::GetErrorString(Variable.Name, NameResult) + TEXT(")"));
+            continue;
+        }
+        const FName Name(*Variable.Name);
         if (Name.IsNone() || RequestedNames.Contains(Name))
         { Clashes.Add(Variable.Name + TEXT(" (empty or duplicate name)")); continue; }
         RequestedNames.Add(Name);
@@ -530,7 +539,7 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 	if (Clashes.Num() > 0)
 	{
 		return FString::Printf(
-			TEXT("unchanged: %d name(s) already exist, so nothing was added: %s"),
+			TEXT("unchanged: %d name(s) are invalid or already used, so nothing was added: %s"),
 			Clashes.Num(), *FString::Join(Clashes, TEXT(", ")));
 	}
 
