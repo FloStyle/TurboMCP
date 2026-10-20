@@ -107,6 +107,14 @@ namespace
 			OutWhy = FString::Printf(TEXT("the engine struct '%s' could not be found"), **StructPath); return false;
 		}
 		UObject* Object = LoadObject<UObject>(nullptr, *InText);
+		if (UClass* Class = Cast<UClass>(Object))
+		{
+			if (!ResolveClass(InText, Class, OutWhy)) return false;
+			Out.PinCategory = Class->HasAnyClassFlags(CLASS_Interface)
+				? UEdGraphSchema_K2::PC_Interface : UEdGraphSchema_K2::PC_Object;
+			Out.PinSubCategoryObject = Class;
+			return true;
+		}
 		if (UScriptStruct* Struct = Cast<UScriptStruct>(Object)) { return ResolveStruct(Struct, Out, OutWhy); }
 		if (UEnum* Enum = Cast<UEnum>(Object))
 		{
@@ -121,7 +129,7 @@ namespace
 		}
 		OutWhy = Object == nullptr
 			? FString::Printf(TEXT("'%s' is not a type or a loadable class path"), *InText)
-			: FString::Printf(TEXT("%s is a %s, and is not a struct or enum"), *InText, *Object->GetClass()->GetName());
+			: FString::Printf(TEXT("%s is a %s, and is not a class, struct or enum"), *InText, *Object->GetClass()->GetName());
 		return false;
 	}
 }
@@ -161,7 +169,7 @@ bool FTurboMCPTypeParser::Resolve(const FString& InType, FEdGraphPinType& OutPin
 	}
 
 	struct FReference { const TCHAR* Prefix; const FName Category; };
-	static const FReference References[] = { { TEXT("object<"), UEdGraphSchema_K2::PC_Object }, { TEXT("class<"), UEdGraphSchema_K2::PC_Class }, { TEXT("softobject<"), UEdGraphSchema_K2::PC_SoftObject }, { TEXT("softclass<"), UEdGraphSchema_K2::PC_SoftClass } };
+	static const FReference References[] = { { TEXT("interface<"), UEdGraphSchema_K2::PC_Interface }, { TEXT("object<"), UEdGraphSchema_K2::PC_Object }, { TEXT("class<"), UEdGraphSchema_K2::PC_Class }, { TEXT("softobject<"), UEdGraphSchema_K2::PC_SoftObject }, { TEXT("softclass<"), UEdGraphSchema_K2::PC_SoftClass } };
 	for (const FReference& Reference : References)
 	{
 		const FString Prefix(Reference.Prefix);
@@ -170,6 +178,11 @@ bool FTurboMCPTypeParser::Resolve(const FString& InType, FEdGraphPinType& OutPin
 		const FString ClassName = Trim(Text.Mid(Prefix.Len(), Text.Len() - Prefix.Len() - 1));
 		if (ClassName.IsEmpty()) { OutWhy = FString::Printf(TEXT("'%s' names no class"), *Text); return false; }
 		UClass* Class = nullptr; if (!ResolveClass(ClassName, Class, OutWhy)) { return false; }
+		const bool bInterface = Class->HasAnyClassFlags(CLASS_Interface);
+		if (Reference.Category == UEdGraphSchema_K2::PC_Interface && !bInterface)
+		{ OutWhy = FString::Printf(TEXT("'%s' is not an interface class"), *ClassName); return false; }
+		if (bInterface && Reference.Category != UEdGraphSchema_K2::PC_Interface)
+		{ OutWhy = FString::Printf(TEXT("'%s' is an interface; use interface<%s>"), *ClassName, *ClassName); return false; }
 		OutPinType.PinCategory = Reference.Category;
 		OutPinType.PinSubCategoryObject = Class;
 		return true;
