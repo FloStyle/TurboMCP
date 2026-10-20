@@ -168,3 +168,7 @@ FIELD-FIX-06 now checks CanDuplicateNode and CanPasteHere during planning and be
 ## Copy spacing preservation
 
 FIELD-FIX-06 restores exact integer source positions plus the common copy offset after the spawn helper snaps nodes independently. Planning and apply refuse coordinates that would overflow the offset. Implementation done; unbuilt and untested. Deferred evidence: off-grid block relative spacing and coordinate limits. Destination overlap avoidance remains unresolved under FIELD-06.
+
+## Copy anchor refusal
+
+FIELD-FIX-06 implemented, unbuilt and untested: nonempty anchors refuse before mutation in preview and apply. Deferred evidence: anchor request leaves target unchanged; empty-anchor copy retains existing behavior. Feature support remains FIELD-05 work.

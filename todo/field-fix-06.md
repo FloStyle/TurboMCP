@@ -70,3 +70,7 @@ FIELD-FIX-06 now checks CanDuplicateNode and CanPasteHere during planning and be
 ## Copy spacing preservation
 
 FIELD-FIX-06 restores exact integer source positions plus the common copy offset after the spawn helper snaps nodes independently. Planning and apply refuse coordinates that would overflow the offset. Implementation done; unbuilt and untested. Deferred evidence: off-grid block relative spacing and coordinate limits. Destination overlap avoidance remains unresolved under FIELD-06.
+
+## Ignored anchor instruction
+
+Planning and apply now explicitly refuse nonempty AnchorNodeId because the writer never implemented anchor wiring. This closes silent instruction loss, not anchor support. Unbuilt and untested. Full anchor behavior remains open under FIELD-05.

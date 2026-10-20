@@ -71,3 +71,7 @@ FIELD-FIX-04 supersedes the missing-default limitation: same-named/type unlinked
 ## Graph Copy follow-up
 
 FIELD-FIX-06 source implementation closed. Planned copy links now use schema checks and failure rolls back; full copy/default/layout acceptance remains pending in [deferred verification ledger](../docs/audit/deferred-field-verification.md).
+
+## Remaining: Graph Copy anchor wiring
+
+AnchorNodeId was rendered but never applied. Requests now refuse explicitly; actual anchor placement/wiring remains unimplemented and must define entry-pin selection and preserve existing connections. Do not close this feature based on the refusal safeguard.
