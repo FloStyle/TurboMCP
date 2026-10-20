@@ -457,6 +457,12 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 	for (int32 Index = 0; Index < Selected.Num(); ++Index)
 	{
 		UEdGraphNode* Node = Selected[Index];
+		if (!Node->CanDuplicateNode() || !Node->CanPasteHere(TargetGraphObject))
+		{
+			OutPlan.Refusals.Add(FString::Printf(
+				TEXT("node '%s' (%s) cannot be copied into graph '%s' under Unreal's copy/paste rules"),
+				*KeyOf(Node), *Node->GetClass()->GetName(), *InTargetGraph));
+		}
 
 		FCopiedNode Copied;
 		Copied.SourceKey = InNodeKeys.IsValidIndex(Index) ? InNodeKeys[Index] : KeyOf(Node);
@@ -809,6 +815,18 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		OutError = FString::Printf(TEXT("the graph changed between the plan and the apply, so NOTHING was ")
 			TEXT("written: %s"), *FString::Join(SelectedRefusals, TEXT("; ")));
 		return false;
+	}
+
+	// Recheck destination eligibility before opening the transaction: the graph may
+	// have changed since preview, and creation helpers do not enforce paste rules.
+	for (UEdGraphNode* Node : Selected)
+	{
+		if (!Node->CanDuplicateNode() || !Node->CanPasteHere(TargetGraph))
+		{
+			OutError = FString::Printf(TEXT("unchanged: node '%s' is not eligible for copy into graph '%s'"),
+				*KeyOf(Node), *InPlan.TargetGraph);
+			return false;
+		}
 	}
 
 	// ---- ONE TRANSACTION, as the spec requires, so a refusal anywhere leaves the graph as it was --------
