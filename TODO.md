@@ -42,6 +42,7 @@ Generated from task files and the approved queue. After editing task status, run
 | [NF-08 NodeFind whitespace search](todo/field-fix-12.md) | monday | implementation | done |
 | [OV-03 override origin classification](todo/field-fix-13.md) | monday | implementation | done |
 | [BatchEdit rollback transaction lifetime](todo/field-fix-14.md) | monday | implementation | done |
+| [DataTable prepared row application](todo/field-fix-15.md) | monday | implementation | done |
 
 ## Historical findings
 

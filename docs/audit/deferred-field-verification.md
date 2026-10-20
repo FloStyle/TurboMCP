@@ -88,3 +88,9 @@ FIELD-FIX-13 implementation closed, unbuilt and untested. Later check local func
 ## BatchEdit rollback lifetime — deferred evidence
 
 FIELD-FIX-14 source implementation closed, unbuilt and untested. Later check failure before first write, failure after an applied operation, exact owned undo, preservation of previous user undo history, and successful single undo. Native script rollback and Widget loss remain separate open problems.
+
+## DataTable prepared rows — deferred evidence
+
+FIELD-FIX-15 implemented, unbuilt and untested. Later check native row structs with strings/arrays/object references, existing and new rows, editor-open callbacks, rollback and read-back. Work-machine crash cause remains open.
+
+Source clarification: stock UTransBuffer::End guards ActiveCount >= 1, so the second BatchEdit end was normally a no-op, not a proven crash. FIELD-FIX-14 removes redundant finalization and strengthens exact transaction ownership; it is not crash reproduction evidence.
