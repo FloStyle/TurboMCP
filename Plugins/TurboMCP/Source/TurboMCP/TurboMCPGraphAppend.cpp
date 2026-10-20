@@ -10,6 +10,7 @@
 #include "TurboMCPRollback.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPGraphCheck.h"
+#include "TurboMCPGraphReachability.h"
 #include "TurboMCPNodeId.h"
 #include "TurboMCPNodeType.h"
 
@@ -1235,6 +1236,30 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
         OutReport = TEXT("save=not_requested; attempted read-back is not final state");
         return false;
     }
+    // X-41: existence alone does not prove that newly written impure nodes can execute.
+    TSet<const UEdGraphNode*> Reachable;
+    TurboMCPGraphReachability::MarkReachable(Graph, Reachable);
+    TArray<FString> UnreachableCreated;
+    for (const UEdGraphNode* Node : Created)
+    {
+        if (!Node || !Graph->Nodes.Contains(Node) || Reachable.Contains(Node)) continue;
+        bool HasExecutionInput = false;
+        for (const UEdGraphPin* Pin : Node->Pins)
+            if (Pin && !Pin->bOrphanedPin && Pin->Direction == EGPD_Input
+                && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                HasExecutionInput = true;
+        if (HasExecutionInput) UnreachableCreated.Add(TurboMCPNodeId::MakeForNode(Node, true));
+    }
+    if (!UnreachableCreated.IsEmpty())
+    {
+        const FString NodeList = FString::Join(UnreachableCreated, TEXT(", "));
+        const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        OutError = FString::Printf(TEXT("%s: newly created execution nodes have no path from recognized entries: %s; rollback=%s"),
+            Undone ? TEXT("unchanged") : TEXT("partial"), *NodeList, Undone ? TEXT("complete") : TEXT("failed"));
+        OutReport = TEXT("compile=not_run; save=not_requested; connect new execution chains to an entry before applying");
+        return false;
+    }
+    Out += TEXT("\nnew_execution_nodes=structurally_reachable; runtime_behavior=not_verified");
 	OutReport = Out;
 	return true;
 }
