@@ -1414,3 +1414,7 @@ Planning only: these are not dispatched assignments or changes to task readiness
 - [ ] WEEK-05 / P3 / Persistence harness: complete R04-FOLLOWUP-PERSISTENCE cleanup/ownership review while retaining the disabled entry. Not a prerequisite for the passing MCP package-reload smoke test.
 
 Current integrated field-test baseline: e1c71699d8fcba6719050f5e331647ddddf15445. Final build passed in 17dd2e2b537a4e1e8a7390ea095488ed. Basic Blueprint/Widget MCP disk loop passed in 0163b414b2c046d59ae20641f4e9ab77, with all 16 fixture files restored. This is not a bug-free or complete workflow certificate. Restart is an optional durability check, not required after every normal edit. Menu visual checks and disabled persistence review remain pending despite source integration.
+
+## Field feedback intake: 20 October 2026
+
+Urgent follow-up is owned by Codex; auto-dispatch remains paused. FIELD-01 and FIELD-02 are P0 investigations; FIELD-03 through FIELD-07 cover persistence, batch outcomes, identity, layout and semantic verification. FIELD-08 through FIELD-10 retain diagnostics, smaller gaps and the separate GPU investigation. See [complete intake](../docs/audit/field-testing-2026-10-20.json). These records do not claim fixes or grant unbounded implementation scope.

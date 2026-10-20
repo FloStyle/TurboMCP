@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "950eec3b884a2e61b73f38d69115048467b899aa",
+  "plugin_tree": "3b67d6bd1e06dce61b98b1f1e96794a51751c495",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 101,
@@ -965,7 +965,8 @@
         "Tools/test-capture.py",
         "Tools/test-graph-fix-backward.py",
         "Tools/test-graph-tidy.py",
-        "Tools/test-layout.py"
+        "Tools/test-layout.py",
+        "Tools/test-monday-disk-loop.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1528,6 +1529,7 @@
       ],
       "test_references": [
         "Tools/test-batch-tools.py",
+        "Tools/test-monday-disk-loop.py",
         "Tools/test-node-pins-owner.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -2483,6 +2485,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-monday-disk-loop.py",
         "Tools/test-widget-tree-sync.py"
       ],
       "static_call_evidence": "parsed_call",

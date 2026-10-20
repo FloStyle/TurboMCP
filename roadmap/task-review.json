@@ -3250,6 +3250,266 @@
       "verification_commands": [
         "python Tools/execute-tests.py --profile engine --suites test-call-log --execute"
       ]
+    },
+    {
+      "id": "FIELD-01",
+      "path": "todo/field-01.md",
+      "title": "Reproduce and contain native DataTable JSON-write crashes",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "Two crashes are reported, including a direct one-row call after restart. Native add/set/rename share a whole-table JSON rewrite; the exact assertion cause is unverified.",
+      "action": "Obtain exact build and crash artifacts; reproduce on a disposable table with a sanitized reference-bearing row struct. Avoid the affected native JSON-write path pending diagnosis. Preserve existing rows and references through save/read-back.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp",
+          "line": null,
+          "sha256": "e37ea71c14b3a85b84317bea9a3114e1c3117549266a0d948f27df86fa7fc982"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-02",
+      "path": "todo/field-02.md",
+      "title": "Prevent dependent Widget loss around compile and batch rollback",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "A failed batch containing compile reportedly removed 23 child widgets from three dependent assets in memory. Restart without saving recovered them; persistent loss was not reported.",
+      "action": "Reproduce with a child Widget and two parent fixtures. Compare hierarchy, bindings, defaults and dirty state after deliberate failure. Keep compile outside edit transactions; specify a guard before changing rollback behavior.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+          "line": null,
+          "sha256": "c7f8a2c170f042646f794db28d3bd73d3684b213cdd7b29a9ff61635fcce0eff"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-03",
+      "path": "todo/field-03.md",
+      "title": "Verify pin-only changes persist and report save state accurately",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "Two pin-only edits reportedly changed memory without dirtying the package. Compile status uses the dirty flag and save skips clean packages; this is not disk equality proof.",
+      "action": "Trace the native setter and reproduce pin-only mutation. Verify dirty state, save outcome and reload read-back. Distinguish no dirty flag from verified persisted content.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+          "line": null,
+          "sha256": "c7f8a2c170f042646f794db28d3bd73d3684b213cdd7b29a9ff61635fcce0eff"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-04",
+      "path": "todo/field-04.md",
+      "title": "Reconcile batch failures timeouts and possible duplicate writes",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "Reports describe inconsistent partial application, stale log errors and late timeout completion. Duplicate execution is suspected, not established. S2 X-64 and S3 X-66 are one incident.",
+      "action": "Correlate request identities and per-call logs with graph deltas; reproduce mixed-operation failure and timeout completion. Report applied, rolled-back or unknown outcomes and prevent blind retries. Treat modal stalls separately from crashes.",
+      "source_refs": [
+        {
+          "path": "Tools/tmcp.py",
+          "line": null,
+          "sha256": "d0d64ba6534660fb602ac9d388fb62ae0f72a29145228dff1504feae3a219ebb"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-05",
+      "path": "todo/field-05.md",
+      "title": "Make graph read and targeted write identities round-trip",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "External library calls and inline reader forms fail round-trip; localized type IDs and numeric pin indices can disagree. Full paths worked around one misleading empty-graph refusal.",
+      "action": "Build a small pure/impure external-library fixture. Verify read, append and copy preserve target identity, types, defaults and links. Test stable pin names and another locale; explicitly reject unsupported forms without mutation.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+          "line": null,
+          "sha256": "10da5125cb10d351bfad5e49f26ade0186eabf19fd30db015148b020b9168d29"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-06",
+      "path": "todo/field-06.md",
+      "title": "Make targeted layout usable on newly built graphs",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "Tidy refused six of six graphs without measured outlines. Native fallback overlapped blocks and was not visually checked. Existing numeric fixture checks do not certify rendered layout.",
+      "action": "Verify newly built and mixed old/new graphs. Keep untouched nodes fixed, place requested nodes without overlap, and inspect rendered output. Specify asynchronous measurement or honestly labeled estimated geometry.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+          "line": null,
+          "sha256": "c1e076db249531073259b19af27e5c20cf8cef4f448252d1fa59d7d2f0ade21d"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-07",
+      "path": "todo/field-07.md",
+      "title": "Detect broken execution paths and duplicate graph chains",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "Clean compilation coexisted with disconnected or duplicated execution chains. Reader reachability and multi-source exec interpretation need focused acceptance.",
+      "action": "Use live/dead-chain controls with shared data dependencies. Verify intended event-to-action reachability and untouched nodes. Separate append semantics from replacement and do not infer behavior from compile alone.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDead.cpp",
+          "line": null,
+          "sha256": "0335a5af7519f0b1860d8ff05c84eb45ac1bff8740ba153b22aed5098103ccec"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-08",
+      "path": "todo/field-08.md",
+      "title": "Improve field diagnostics build identity and tool effect visibility",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "Field reports lack call logs and exact loaded build identity. Help truncation and Read-tool side-effect categorization impede diagnosis.",
+      "action": "Expose loaded build identity and bounded call evidence, paginate discovery and identify execution-capable tools. Preserve unknown metrics rather than inventing estimates or proof.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+          "line": null,
+          "sha256": "101431b4d61d041c07bc8efb0dd90eb7a1273e9559194de9a0123e92f4178463"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-09",
+      "path": "todo/field-09.md",
+      "title": "Triage remaining Blueprint schema and editing gaps",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "Reports identify missing defaults, parameter types, overrides, naming and struct-value support. Missing empty graph and wrong equality type remain uncertain or confounded.",
+      "action": "Specify small independent reproductions and link existing owners before implementation. Preserve successful native workarounds; do not widen crash fixes into a feature rewrite.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+          "line": null,
+          "sha256": "101431b4d61d041c07bc8efb0dd90eb7a1273e9559194de9a0123e92f4178463"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "FIELD-10",
+      "path": "todo/field-10.md",
+      "title": "Separate project capture GPU failures from tool crashes",
+      "decision": "investigate",
+      "owners": [
+        "R04"
+      ],
+      "finding": "Two GPU out-of-memory crashes are reported during project capture execution outside tool calls. No tool causality is established.",
+      "action": "Collect GPU logs, capture dimensions and memory evidence separately. Reproduce reduced capture workloads before attributing failure to TurboMCP.",
+      "source_refs": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+          "line": null,
+          "sha256": "33568c1ab3e83a97830bbf25ee7d42a54f416c39c07c96822e90ad4b21b858b5"
+        },
+        {
+          "path": "docs/audit/field-testing-2026-10-20.json",
+          "line": null,
+          "sha256": "ac2d58bacf81ad536339dc7f424ad54b1c7a1b4b656700a1ba2bddf8cdcf6fce"
+        }
+      ],
+      "verification_commands": [
+        "python Tools/validate.py"
+      ]
     }
   ]
 }

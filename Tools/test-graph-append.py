@@ -28,6 +28,7 @@ rather than silent.
 OFFLINE PARSER CHECKS: `python Tools/test-graph-append.py --parser-only` runs the pure RunTests report
 parser checks and exits before any Session, socket or fixture work.
 """
+import hashlib
 import json
 import os
 import re
@@ -222,13 +223,15 @@ def node_ids(session):
 
 
 def asset_fingerprint():
-    """The saved asset's size and mtime, which no in-memory claim can fake."""
+    """Saved content digest plus metadata; missing fixtures fail explicitly."""
     path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                         "TestProject", "Content", "Tests", ASSET_FILE)
     if not os.path.isfile(path):
-        return None
+        raise RuntimeError("Required refusal fixture is missing: " + path)
     stat = os.stat(path)
-    return (stat.st_size, stat.st_mtime_ns)
+    with open(path, "rb") as stream:
+        digest = hashlib.sha256(stream.read()).hexdigest()
+    return (stat.st_size, stat.st_mtime_ns, digest)
 
 
 def refusal_pair(session, label, asset, graph, text, expected_prefix="unchanged:"):

@@ -1,0 +1,651 @@
+{
+  "schema": 1,
+  "date": "2026-10-20",
+  "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
+  "limits": "Report triage and selective source inspection; not runtime reproduction. S3 extends S2 and S4 adds layout. Raw reports remain local.",
+  "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
+  "priority_order": [
+    "FIELD-01",
+    "FIELD-02",
+    "FIELD-03",
+    "FIELD-04",
+    "FIELD-05",
+    "FIELD-06",
+    "FIELD-07",
+    "FIELD-08",
+    "FIELD-09",
+    "FIELD-10"
+  ],
+  "findings": [
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-36",
+      "title": "The server went down during an engine create-Blueprint request (high)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-35",
+      "title": "No tool reports the plugin revision or build (low)",
+      "owner": "FIELD-08",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-40",
+      "title": "A failing request in a batch script rolls back the earlier edits, with no message (medium)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-45",
+      "title": "A rollback that undoes a compile breaks other Blueprints in memory (high)",
+      "owner": "FIELD-02",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-48",
+      "title": "A failed script keeps the graph DSL writes made before the failure (high)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-46",
+      "title": "Node type ids and pin types follow the editor language (high)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-50",
+      "title": "After the language change, only some ids were translated (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "TH-09",
+      "title": "A tool that starts a play session is in the Read toolset (medium)",
+      "owner": "FIELD-08",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "TH-10",
+      "title": "The tool list of a toolset is capped at 12 lines, with no way to see the rest (medium)",
+      "owner": "FIELD-08",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "TH-11",
+      "title": "The engine component-bound-event tool refuses widgets, while the engine widget tool works (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "GL-14",
+      "title": "Plugin custom nodes print as errors and have an empty type id (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "GL-15",
+      "title": "The graph reader prints \"malformed link\" on an exec pin that has two sources (medium)",
+      "owner": "FIELD-07",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "GL-16",
+      "title": "The graph reader does not flag a dead chain that still has data links (high)",
+      "owner": "FIELD-07",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "BL-12",
+      "title": "No reader gives the default value of a local variable (medium)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "BL-13",
+      "title": "The Blueprint reader may have missed one empty function graph (medium)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "NF-08",
+      "title": "Node find treats two words with a space as one word (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-37",
+      "title": "Node resolve does not give the value of an object pin (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-43",
+      "title": "The getter id of a boolean variable drops its \"b\" prefix (low)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-47",
+      "title": "Variable getter ids drop the spaces of the display name (low)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-44",
+      "title": "The reader's ids for math operators cannot be created (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-38",
+      "title": "The graph DSL cannot wire the generic compare and select operators (medium)",
+      "owner": "FIELD-07",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-39",
+      "title": "A node whose exec output has a capitalized \"Then\" name ends the DSL flow (low)",
+      "owner": "FIELD-07",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-41",
+      "title": "A clean compile hides a broken exec chain (high)",
+      "owner": "FIELD-07",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-42",
+      "title": "The graph DSL adds to a graph that already has nodes, so a second write makes copies (high)",
+      "owner": "FIELD-07",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "X-49",
+      "title": "The graph DSL cannot fill an override graph, and no tool adds a second return node (medium)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "FA-06",
+      "title": "Function add takes a typed signature in one request, also in a batch script (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "FA-07",
+      "title": "Function add refuses object-reference parameters (medium)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "ED-03",
+      "title": "Call swap refuses a plugin custom node, with a wrong reason (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "LT-07",
+      "title": "The unconnected-pin check flags hidden world-context pins in a function library (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "SV-10",
+      "title": "Every save result carries about 2,500 characters of fixed source-control text (low)",
+      "owner": "FIELD-08",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "TD-08",
+      "title": "Tidy refuses a graph built by a tool (medium)",
+      "owner": "FIELD-06",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "TD-09",
+      "title": "Built graphs do not follow the user's layout rules (medium)",
+      "owner": "FIELD-06",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "AD-02",
+      "title": "Duplicate plus property set made a new input mapping context with no dialog (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-57",
+      "title": "The batch-script tool runs each script twice (high)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-51",
+      "title": "A modal editor dialog makes the server look down, and a timed-out call may still have done its edit (high)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-52",
+      "title": "After a failed script, the earlier edits are sometimes kept and sometimes undone (medium)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-54",
+      "title": "Batch-script sandbox rules are found only by failing (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-60",
+      "title": "The engine property setter fails with no reason when the values are given as an object (medium)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-62",
+      "title": "Setting a by-reference text pin fails with no reason (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-53",
+      "title": "The getter id that node resolve prints for a widget variable cannot be created (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-58",
+      "title": "Several node type ids can only be found with the node-type search (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-61",
+      "title": "Pin numbers differ between ReadTurboMCPNodeResolve and the engine pin tools (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "ED-04",
+      "title": "Setting a pin default does not mark the asset as changed (high)",
+      "owner": "FIELD-03",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "ED-05",
+      "title": "The engine graph DSL writer refuses a function body that its own reader printed (medium)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "ED-06",
+      "title": "Writing a function body with the engine graph DSL leaves the old body as unreachable nodes (medium)",
+      "owner": "FIELD-07",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "DT-07",
+      "title": "Adding rows to a data table crashed the editor (critical)",
+      "owner": "FIELD-01",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "OV-03",
+      "title": "ReadTurboMCPOverrides lists the Blueprint's own functions as overrides from an unknown class (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "BL-14",
+      "title": "ReadTurboMCPBlueprintLoad lists events as graphs (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "X-63",
+      "title": "The call log is off by default (low)",
+      "owner": "FIELD-08",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "WT-08",
+      "title": "Widget rename through the engine widget tree tool kept all bindings (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "AD-03",
+      "title": "Duplicate plus property set made new input assets with no dialog (positive, recurs AD-02)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "X-64",
+      "title": "The engine batch script tool returned an error made of unrelated lines after a successful run (medium)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "GL-17",
+      "title": "Calls to functions of an editor function library print as errors (medium, recurs GL-13)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "GC-14",
+      "title": "Append refuses library function calls and inline getters (medium, recurs GC-10 and GC-06)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "GC-15",
+      "title": "Patch with a short node ID saw an empty graph (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "ED-06",
+      "title": "Graph copy refuses a library function call node (medium)",
+      "owner": "FIELD-05",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "VC-07",
+      "title": "Checkout of 3 assets in one call (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "VA-03",
+      "title": "Two variables, one of them an array, added in one call (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "SV-11",
+      "title": "Save without thumbnail for a widget and two other Blueprints (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "X-65",
+      "title": "The engine batch script tool does not say which writes stayed after an error (high)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "X-66",
+      "title": "An error result that holds only unrelated lines (medium, recurs X-64)",
+      "owner": "FIELD-04",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "VA-04",
+      "title": "TurboMCP refuses a variable name that starts with a digit (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "ED-07",
+      "title": "Function parameters cannot be enums or user structs (medium)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "ED-08",
+      "title": "A generic equality node picked an unrelated type (medium)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "ED-09",
+      "title": "A struct pin refuses a text value (low)",
+      "owner": "FIELD-09",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "ED-10",
+      "title": "Engine node tools built every graph that the TurboMCP writers could not (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "GL-18",
+      "title": "The reader confirmed new graphs end to end (positive, recurs GL-17 for its gaps)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "TH-12",
+      "title": "One engine toolset description is too large for the client (low)",
+      "owner": "FIELD-08",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "SV-12",
+      "title": "Save without thumbnail stayed safe through 14 saves (positive, recurs SV-11)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "CO-09",
+      "title": "Compile caught a half-wired function at once (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "VC-08",
+      "title": "Checkout before a property change on a render target (positive, recurs VC-07)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-20_S4",
+      "id": "TD-10",
+      "title": "Tidy refuses every graph that a tool built or changed (medium, recurs TD-08 and TD-07)",
+      "owner": "FIELD-06",
+      "disposition": "reported_pending_reproduction"
+    },
+    {
+      "report": "2026-10-20_S4",
+      "id": "TD-11",
+      "title": "The engine arrange tool laid out built graphs headless (positive)",
+      "owner": null,
+      "disposition": "positive_evidence"
+    }
+  ],
+  "prototype": {
+    "branch": "proto/week-2026-10-19",
+    "candidate": "85bb112",
+    "disposition": "Three test changes reviewed for integration; production defects remain open",
+    "limitations": [
+      "Estimated geometry, not rendered overlap proof",
+      "In-session reload, not fresh process",
+      "Ambiguous identity MCP fixture remains deferred"
+    ],
+    "verified_runs": [
+      {
+        "suite": "build",
+        "run": "b2bfaba800e6468ca723e3483019239b",
+        "status": "passed"
+      },
+      {
+        "suite": "test-widget-roundtrip",
+        "run": "8d9793b0137c4359b2db7d849d32f820",
+        "status": "passed"
+      },
+      {
+        "suite": "test-monday-disk-loop",
+        "run": "7cd916f176b84de9ac3df497901830ce",
+        "status": "passed"
+      },
+      {
+        "suite": "test-graph-append",
+        "run": "c2d12e7a4fb445c7bf9047c3b7757681",
+        "status": "passed"
+      }
+    ],
+    "review_notes": [
+      "Integrated five implementation/correction commits; private HANDOFF and one-off scope setup remain on prototype branch.",
+      "Strengthened saved-bytes refusal assertion with SHA-256 and fail-closed missing fixture.",
+      "Aggregate layout extent does not prove all old nodes stayed fixed; separate C++ snapshot assertions cover the synthetic case.",
+      "No new overlap finding is not proof of rendered non-overlap when dimensions are zero.",
+      "Native reports inspected independently; final integration validation recorded separately."
+    ]
+  },
+  "feature_proposals": [
+    {
+      "report": "2026-10-18_S1",
+      "id": "FT-56",
+      "proposal": "Create a Blueprint asset of any parent class (function library included) with no dialog",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "FT-57",
+      "proposal": "Write a whole function body from graph text, plugin custom nodes included, as a replace",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "FT-58",
+      "proposal": "Duplicate getters per consumer in one request",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-18_S1",
+      "id": "FT-59",
+      "proposal": "Replace a pure node with an impure call inserted before its first user",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "FT-60",
+      "proposal": "Insert a call node into an existing exec chain right after a given node, in one request",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-20_S1",
+      "id": "FT-61",
+      "proposal": "Create a Blueprint function with typed parameters, enum and struct included, in one request",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-20_S2",
+      "id": "FT-62",
+      "proposal": "Create a call node to any reachable Blueprint function library function by its reader type id",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "FT-63",
+      "proposal": "Add a function or event parameter of any type, enum and user struct included",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "FT-64",
+      "proposal": "A transactional batch of node creates, links and pin values with an all-or-nothing result and a list of what was applied",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-20_S3",
+      "id": "FT-65",
+      "proposal": "Create a call node to any reachable Blueprint function from the reader's own id",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-20_S4",
+      "id": "FT-66",
+      "proposal": "Tidy a chosen list of nodes in a graph that is not visible, leaving all other nodes fixed",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    }
+  ],
+  "integrationStatus": "DSH completed three test improvements; reviewed code integrated into a candidate, awaiting final validation. Urgent fixes remain open. Auto-dispatch paused."
+}
