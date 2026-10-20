@@ -216,3 +216,7 @@ Stock SpawnNodeFromTemplate invokes MarkBlueprintAsStructurallyModified for stru
 ## Scope accounting correction — node type follow-ups
 
 Commits f46efa6, 6c20991 and d62d639 modified TurboMCPNodeType.cpp while claiming field-nodefind-words, which covered NodeResolve and the toolset header instead. This was a scope-recording error; the later assignment does not retroactively satisfy that gate. The integrator inspected these bounded changes and retained them under the user-authorized fix pass; they remain unbuilt and untested. Future NodeType changes must use field-node-type-resolution.
+
+## NodeResolve bounded readable output
+
+The pin counter now increments so the advertised 40-pin cap is effective, with remaining count excluding null entries. String/text default values escape backslashes and line separators to preserve one pin per report line. Implementation done; unbuilt and untested. Deferred evidence: more than 40 pins, null slots and multiline defaults.
