@@ -365,3 +365,7 @@ fb328d9 replaces the combined refusal with separate missing-input, orphaned, exe
 
 - 02674939: unbuilt/untested. Exercise different armed nodes in one function; verify exact opcode mapping, missing debug data and arm lifetime separately. Arm-loss root cause remains unresolved.
 - 7bd81b84: unbuilt/untested. Make/break-only usage, split pins, map value structs, member and DataTable readers, one asset listing per Blueprint; verify force count changes. Unloaded/transitive dependencies are outside this direct loaded scan.
+
+## 2026-10-21 — Execution fan-out (`4948232`)
+
+Implemented slice, unbuilt/untested: enumerate ordinary/entry execution endpoints and diagnose unsupported fan-out. Verify branch joins, malformed links, multiple outputs, and reader-error refusal on write-back. Broader d3897f07 remains open for knot/helper coverage.
