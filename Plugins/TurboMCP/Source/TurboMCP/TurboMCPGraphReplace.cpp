@@ -16,7 +16,9 @@
 #include "Engine/Blueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
+#include "TurboMCPRollback.h"
 #include "ScopedTransaction.h"
+#include "Editor.h"
 
 #include "EdGraphNode_Comment.h"
 #include "K2Node_FunctionEntry.h"
@@ -29,30 +31,10 @@ namespace
 	/** Whichever form the text uses, one graph is looked up the same way. A local copy of APPEND's helper. */
 	UEdGraph* FindGraphLocal(UBlueprint* InBlueprint, const FString& InGraphName)
 	{
-		if (InBlueprint == nullptr)
-		{
-			return nullptr;
-		}
-
-		const FString Wanted = InGraphName.TrimStartAndEnd();
-		TArray<UEdGraph*> Candidates;
-		Candidates.Append(InBlueprint->UbergraphPages);
-		Candidates.Append(InBlueprint->FunctionGraphs);
-		Candidates.Append(InBlueprint->MacroGraphs);
-
-		for (UEdGraph* Graph : Candidates)
-		{
-			if (Graph == nullptr)
-			{
-				continue;
-			}
-			if (Wanted.IsEmpty() || Graph->GetName().Equals(Wanted, ESearchCase::IgnoreCase))
-			{
-				return Graph;
-			}
-		}
-		return nullptr;
-	}
+        int32 Matches = 0;
+        UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(InBlueprint, InGraphName.TrimStartAndEnd(), Matches);
+        return Matches == 1 ? Graph : nullptr;
+    }
 
 	/**
 	 * TRUE FOR A NODE THE SPEC SAYS IS NEVER REMOVED: an entry, an event, or a result.
@@ -264,6 +246,12 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 {
 	OutReport.Empty();
 	OutError.Empty();
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+    {
+        OutError = TEXT("unchanged: graph write requires an idle editor outside an active transaction");
+        return false;
+    }
+
 
 	if (InPlan.Append.Refusals.Num() > 0)
 	{
@@ -277,6 +265,21 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 	// IT IS CALLED RATHER THAN REIMPLEMENTED, so the creation, the linking, the layout, the compile and the
 	// read-back comparison are the SAME CODE the append tool uses. Two implementations of one write path is how
 	// the two tools come to disagree about the format, which is the failure this project has recorded twice.
+    // Validate destructive identities before the append phase can change anything.
+    FTurboMCPAssetResolver::FResolved PreflightResolved;
+    const FString PreflightError = FTurboMCPAssetResolver::Resolve(InPlan.Append.Asset, PreflightResolved);
+    UBlueprint* PreflightBlueprint = PreflightError.IsEmpty() ? LoadObject<UBlueprint>(nullptr, *PreflightResolved.ObjectPath) : nullptr;
+    UEdGraph* PreflightGraph = FindGraphLocal(PreflightBlueprint, InPlan.Append.GraphName);
+    if (!PreflightGraph || PreflightGraph->Nodes.Num() != InPlan.NodeCountBefore)
+    { OutError = TEXT("unchanged: replacement graph missing, ambiguous or changed since planning"); return false; }
+    for (const FRemoval& Removal : InPlan.Removals)
+    {
+        int32 Matches = 0;
+        for (UEdGraphNode* Node : PreflightGraph->Nodes)
+            if (Node && TurboMCPNodeId::MakeForNode(Node, true) == Removal.Key && !IsEntryOrResult(Node) && !IsComment(Node)) ++Matches;
+        if (Matches != 1)
+        { OutError = TEXT("unchanged: replacement removal target is missing, ambiguous or protected"); return false; }
+    }
 	FString AppendReport;
 	FString AppendError;
 	if (!FTurboMCPGraphAppend::Apply(InPlan.Append, AppendReport, AppendError))
@@ -369,9 +372,9 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 		ActuallyRemoved.Add(Key);
 	}
 
-	// ---- 3. COMPILE, THEN READ BACK AND COMPARE ---------------------------------------------------------
-	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
-	FKismetEditorUtilities::CompileBlueprint(Blueprint);
+	// ---- 3. MARK DIRTY WITHOUT COMPILING, THEN READ BACK AND COMPARE ---------------------------------------------------------
+	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+	// Compile is explicit and must run after the edit transaction ends.
 
 	// THE READ BACK IS THE CHECK THAT MATTERS MOST FOR REPLACE. A node silently KEPT is invisible to the tool's
 	// own report, and a node silently DROPPED is invisible to it too; reading the graph back through the
@@ -444,6 +447,16 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 	Out += TEXT("\n; the add half reported:");
 	Out += FString::Printf(TEXT("\n    %s"), *AppendReport.Replace(TEXT("\n"), TEXT("\n    ")));
 
+	Out += TEXT("\ncompile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
+    if (FailedToRemove > 0 || NotRemoved.Num() > 0)
+    {
+        const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        OutError = Undone ? TEXT("partial: removal verification failed; removal rollback=complete; preceding append remains applied")
+                          : TEXT("partial: removal verification failed; rollback=failed; preceding append remains applied");
+        OutReport = TEXT("save=not_requested; inspect the graph before retrying replacement");
+        return false;
+    }
+    Out += TEXT("\nundo=two_phases_when_appending_and_removing; replacement is not atomic");
 	OutReport = Out;
 	return true;
 }

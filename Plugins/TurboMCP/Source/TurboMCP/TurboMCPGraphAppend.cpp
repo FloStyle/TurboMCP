@@ -21,10 +21,39 @@
 #include "Engine/Blueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ScopedTransaction.h"
+#include "Editor.h"
 #include "UObject/Package.h"
 
 namespace
 {
+    bool SetLiteral(UEdGraph* Graph, UEdGraphPin* Pin, const FString& Value, bool& Changed, FString& Error)
+    {
+        Changed = false;
+        const UEdGraphSchema_K2* Schema = Graph ? Cast<UEdGraphSchema_K2>(Graph->GetSchema()) : nullptr;
+        if (!Schema || !Pin || Pin->Direction != EGPD_Input || Pin->bOrphanedPin
+            || Pin->bDefaultValueIsReadOnly || Pin->bDefaultValueIsIgnored || Pin->LinkedTo.Num()
+            || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+        { Error = TEXT("pin cannot accept a literal default"); return false; }
+        FString Parsed; TObjectPtr<UObject> Object = nullptr; FText Text;
+        Schema->GetPinDefaultValuesFromString(Pin->PinType, Pin->GetOwningNode(), Value, Parsed, Object, Text, false);
+        Error = Schema->IsPinDefaultValid(Pin, Parsed, Object, Text);
+        if (!Error.IsEmpty()) return false;
+        if (Pin->DefaultValue == Parsed && Pin->DefaultObject == Object && Pin->DefaultTextValue.EqualTo(Text)) return true;
+        const FGuid NodeGuid = Pin->GetOwningNode()->NodeGuid;
+        const FName PinName = Pin->PinName;
+        Pin->GetOwningNode()->Modify();
+        Schema->TrySetDefaultValue(*Pin, Value, true);
+        for (UEdGraphNode* Node : Graph->Nodes)
+            if (Node && Node->NodeGuid == NodeGuid)
+                for (UEdGraphPin* Current : Node->Pins)
+                    if (Current && Current->Direction == EGPD_Input && Current->PinName == PinName
+                        && Current->DefaultValue == Parsed && Current->DefaultObject == Object
+                        && Current->DefaultTextValue.EqualTo(Text))
+                    { Changed = true; return true; }
+        Error = TEXT("pin default read-back failed after schema callback");
+        return false;
+    }
+
 	/** Whichever form the text uses, one graph is looked up the same way. */
 	UEdGraph* FindGraph(UBlueprint* InBlueprint, const FString& InGraphName)
 	{
@@ -35,7 +64,9 @@ namespace
 		// two graphs in different arrays would make this tool EDIT ONE AND REPORT ON ANOTHER, and no
 		// caller could tell. That is the ARC06 family: identity that cannot be verified across calls.
 		// It now delegates, so this tool and the reader resolve a name identically.
-				return TurboMCPNodeId::FindGraphByName(InBlueprint, InGraphName);
+				int32 Matches = 0;
+        UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(InBlueprint, InGraphName, Matches);
+        return Matches == 1 ? Graph : nullptr;
 	}
 
 	/**
@@ -719,6 +750,12 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 {
 	OutReport.Empty();
 	OutError.Empty();
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+    {
+        OutError = TEXT("unchanged: graph write requires an idle editor outside an active transaction");
+        return false;
+    }
+
 
 	if (InPlan.Refusals.Num() > 0)
 	{
@@ -810,7 +847,11 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		{
 			// THE PLAN SAID THIS WOULD WORK AND IT DID NOT. Rolling back and saying so is the spec's rule:
 			// a failed compare, or a failed creation, is a FAILURE rather than a success with a note.
-			FTurboMCPRollback::EndAndUndoActiveTransaction();
+			if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+                {
+                    OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
+                    return false;
+                }
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted '%s' but the graph refused it at apply time: %s. ")
 				TEXT("NOTHING was written."),
@@ -824,7 +865,11 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 				? PositionByForm[FormIndex] : nullptr;
 			if (Position == nullptr)
 			{
-				FTurboMCPRollback::EndAndUndoActiveTransaction();
+				if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+                {
+                    OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
+                    return false;
+                }
 				OutError = FString::Printf(
 					TEXT("placement: form %d has no planned position at apply time. NOTHING was written."),
 					FormIndex);
@@ -860,7 +905,11 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 			if (Target == nullptr)
 			{
-				FTurboMCPRollback::EndAndUndoActiveTransaction();
+				if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+                {
+                    OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
+                    return false;
+                }
 				OutError = FString::Printf(
 					TEXT("line %d: '%s' has no pin named '%s' at apply time. NOTHING was written."),
 					Pin.Line, *Form.TypeId, *Pin.Name);
@@ -871,15 +920,14 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			// would fail silently, which is why the schema's default-value path is used rather than a raw
 			// string assignment.
 			const FString Literal = Unquote(Pin.Value);
-			if (!Target->DefaultValue.Equals(Literal, ESearchCase::CaseSensitive))
-			{
-				Target->DefaultValue = Literal;
-				// The read-back compares what the ENGINE now reports, so the node is marked modified and the
-				// schema is given the chance to reject a literal it cannot hold.
-				Made->Modify();
-				Graph->GetSchema()->TrySetDefaultValue(*Target, Literal);
-				++PinsWritten;
-			}
+            bool Changed = false; FString PinError;
+            if (!SetLiteral(Graph, Target, Literal, Changed, PinError))
+            {
+                const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+                OutError = FString::Printf(TEXT("%s: invalid pin default '%s': %s"), Undone ? TEXT("unchanged; rollback=complete") : TEXT("partial; rollback=failed"), *Pin.Name, *PinError);
+                return false;
+            }
+            if (Changed) ++PinsWritten;
 		}
 	}
 
@@ -927,7 +975,11 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 		if (FromNode == nullptr || ToNode == nullptr)
 		{
-			FTurboMCPRollback::EndAndUndoActiveTransaction();
+			if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+                {
+                    OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
+                    return false;
+                }
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted a link from '%s' to '%s', but one end was not in the graph ")
 				TEXT("at apply time. NOTHING was written."),
@@ -958,7 +1010,11 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 		if (FromPin == nullptr || ToPin == nullptr)
 		{
-			FTurboMCPRollback::EndAndUndoActiveTransaction();
+			if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+                {
+                    OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
+                    return false;
+                }
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted a link '%s' -> '%s', but a pin was missing at apply time ")
 				TEXT("(%s). NOTHING was written."),
@@ -993,7 +1049,11 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 					}
 				}
 			}
-			FTurboMCPRollback::EndAndUndoActiveTransaction();
+			if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+                {
+                    OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
+                    return false;
+                }
 			OutError = FString::Printf(
 				TEXT("line %d: the engine refused the link '%s' -> '%s', or did not retain it. ")
 				TEXT("The original chain was %s before rollback; NOTHING was written."),
@@ -1057,7 +1117,11 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			if (!bContinued)
 			{
 				const bool bRestored = RestoreOriginalChain();
-				FTurboMCPRollback::EndAndUndoActiveTransaction();
+				if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+                {
+                    OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
+                    return false;
+                }
 				OutError = FString::Printf(
 					TEXT("line %d: the new link replaced an existing chain but its continuation could not be made. ")
 					TEXT("The original chain was %s before rollback; NOTHING was written."),
@@ -1069,7 +1133,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 	}
 
 	// ---- COMPILE, THEN READ BACK AND COMPARE, which the spec demands rather than a claim of success --------
-	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 
 	// THE READ BACK USES THE READER, NOT THIS TOOL'S OWN MEMORY. A writer reporting what it just wrote is not
 	// evidence; `FTurboMCPNodeId` reads identity off the live graph, which is what a caller would see.
@@ -1155,6 +1219,15 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 	//
 	// THIS IS THE "A CHECK THAT PASSES WHILE THE THING IT VERIFIES IS BROKEN" SHAPE, and it was caught only by
 	// READING THE RETURN VALUE rather than by reading the graph.
+	Out += TEXT("\ncompile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
+    if (Unmatched.Num() > 0)
+    {
+        const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        OutError = Undone ? TEXT("unchanged: node-set verification failed; rollback=complete")
+                          : TEXT("partial: node-set verification failed; rollback=failed");
+        OutReport = TEXT("save=not_requested; attempted read-back is not final state");
+        return false;
+    }
 	OutReport = Out;
 	return true;
 }
