@@ -385,3 +385,7 @@ Untested fixes: short node IDs canonicalized before patch planning with ambiguou
 ## 2026-10-21 — Strict append conversions (`3470fc2`)
 
 Implemented / untested: refuse CanCreateConnection conversion-node responses before TryCreateConnection and roll back the graph write, reporting rollback failure separately. Check int/bool mismatch, explicit conversion nodes, matching pins, wildcard specialization and rollback. ED-11 remains open because native connector behavior is unchanged.
+
+## 2026-10-21 S2 (`e2ed536`)
+
+DT-10 and FT-69 implemented / untested: verify explicit 0/False old field values and old/new endpoint movement reports after execution insertion. Added null-continuation refusal before schema connection. GC-18 reopens broader patch resolution despite earlier short-key fix; GC-19 operator IDs and X-69 unexplained normal shutdown remain open. GC-20 is scoped positive field evidence only. Exact field build unknown; no tests/builds run.
