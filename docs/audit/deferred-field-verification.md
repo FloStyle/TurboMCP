@@ -208,3 +208,7 @@ Probe and spawn resolution now prefer exact type IDs before considering legacy a
 ## Pin discovery exact membership
 
 Pin discovery validates exact IDs against the full collected type inventory rather than the top-ten ranked suggestions. Unknown IDs still return suggestions. Implementation done; unbuilt and untested. Deferred evidence: a valid ID remains accepted regardless of suggestion ranking or truncation.
+
+## Structural copy containment
+
+Stock SpawnNodeFromTemplate invokes MarkBlueprintAsStructurallyModified for structural K2 nodes (including custom events). Planning and apply now refuse these nodes and non-K2 nodes before mutation, avoiding that implicit compile-inside-undo path. Implementation done; unbuilt and untested. Safe structural-node copying remains unsupported; this does not close FIELD-02 Widget-loss causality. Deferred evidence: structural nodes refuse unchanged; ordinary K2 nodes retain copy behavior.

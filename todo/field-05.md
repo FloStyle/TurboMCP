@@ -75,3 +75,7 @@ FIELD-FIX-06 source implementation closed. Planned copy links now use schema che
 ## Remaining: Graph Copy anchor wiring
 
 AnchorNodeId was rendered but never applied. Requests now refuse explicitly; actual anchor placement/wiring remains unimplemented and must define entry-pin selection and preserve existing connections. Do not close this feature based on the refusal safeguard.
+
+## Remaining: structural-node copy support
+
+Graph Copy now refuses structural K2 nodes because the stock creation helper may compile the skeleton inside its undo transaction. A safe creation path is still required for custom events and other structural nodes; refusal is containment, not feature completion.
