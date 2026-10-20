@@ -54,16 +54,17 @@ namespace
 	}
 
 	/** Finds a pin by name with the CASE THE ENGINE USES, rather than a case-insensitive guess. */
-	UEdGraphPin* FindPinByName(UEdGraphNode* InNode, const FString& InPinName)
+	UEdGraphPin* FindPinByName(UEdGraphNode* InNode, const FString& InPinName, bool bInput)
 	{
         if (!InNode) return nullptr;
         UEdGraphPin* Match = nullptr;
         for (UEdGraphPin* Pin : InNode->Pins)
         {
-            if (Pin && Pin->PinName.ToString().Equals(InPinName, ESearchCase::CaseSensitive))
+            if (Pin && (Pin->Direction == EGPD_Input) == bInput
+                && Pin->PinName.ToString().Equals(InPinName, ESearchCase::CaseSensitive))
             {
-                // The serialized link contains no direction; duplicate names cannot
-                // be disambiguated safely and must enter the existing rollback path.
+                // Duplicate names in the same direction remain ambiguous; refuse
+                // rather than wiring an arbitrary endpoint.
                 if (Match) return nullptr;
                 Match = Pin;
             }
@@ -528,12 +529,14 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 				FCrossingLink Crossing;
 				Crossing.InsideNodeKey = KeyOf(Node);
 				Crossing.InsidePin = Pin->PinName.ToString();
+				Crossing.bInsideInput = Pin->Direction == EGPD_Input;
 
 				if (PinIsInside(SelectedSet, Linked))
 				{
 					// BOTH ENDS INSIDE: an internal wire, re-made between the copies.
 					Crossing.OutsideNodeKey = KeyOf(Linked->GetOwningNode());
 					Crossing.OutsidePin = Linked->PinName.ToString();
+					Crossing.bOutsideInput = Linked->Direction == EGPD_Input;
 					Crossing.bHasTarget = true;
 					OutPlan.InternalLinks.Add(Crossing);
 					continue;
@@ -542,6 +545,7 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 				UEdGraphNode* OutsideNode = Linked->GetOwningNode();
 				Crossing.OutsideNodeKey = KeyOf(OutsideNode);
 				Crossing.OutsidePin = Linked->PinName.ToString();
+				Crossing.bOutsideInput = Linked->Direction == EGPD_Input;
 
 				// A LINK THAT LEAVES THE SELECTION CAN ONLY BE RE-MADE IF ITS FAR END IS REACHABLE FROM THE
 				// TARGET. Inside one Blueprint that is always true, because both graphs belong to the same
@@ -685,8 +689,10 @@ bool FTurboMCPGraphStructure::PlanCollapse(const FString& InAsset, const FString
 				FCrossingLink Crossing;
 				Crossing.InsideNodeKey = KeyOf(Node);
 				Crossing.InsidePin = Pin->PinName.ToString();
+				Crossing.bInsideInput = Pin->Direction == EGPD_Input;
 				Crossing.OutsideNodeKey = KeyOf(Linked->GetOwningNode());
 				Crossing.OutsidePin = Linked->PinName.ToString();
+				Crossing.bOutsideInput = Linked->Direction == EGPD_Input;
 
 				if (PinIsInside(SelectedSet, Linked))
 				{
@@ -909,8 +915,8 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 			continue;
 		}
 
-		UEdGraphPin* FromPin = FindPinByName(MadeFrom[FromSource], Link.InsidePin);
-		UEdGraphPin* ToPin = FindPinByName(MadeFrom[ToSource], Link.OutsidePin);
+		UEdGraphPin* FromPin = FindPinByName(MadeFrom[FromSource], Link.InsidePin, Link.bInsideInput);
+		UEdGraphPin* ToPin = FindPinByName(MadeFrom[ToSource], Link.OutsidePin, Link.bOutsideInput);
 		if (FromPin == nullptr || ToPin == nullptr)
 		{
 			++LeftUnconnected;
@@ -960,8 +966,8 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 			continue;
 		}
 
-		UEdGraphPin* FromPin = FindPinByName(MadeFrom[FromSource], Link.InsidePin);
-		UEdGraphPin* ToPin = FindPinByName(Outside, Link.OutsidePin);
+		UEdGraphPin* FromPin = FindPinByName(MadeFrom[FromSource], Link.InsidePin, Link.bInsideInput);
+		UEdGraphPin* ToPin = FindPinByName(Outside, Link.OutsidePin, Link.bOutsideInput);
 		if (FromPin == nullptr || ToPin == nullptr)
 		{
 			++LeftUnconnected;

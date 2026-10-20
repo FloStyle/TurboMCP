@@ -82,12 +82,14 @@ public:
 
 		/** Pin name on the selected end. */
 		FString InsidePin;
+		bool bInsideInput = false;
 
 		/** Node key of the end outside the selection, when there is one. */
 		FString OutsideNodeKey;
 
 		/** Pin name on the outside end, when there is one. */
 		FString OutsidePin;
+		bool bOutsideInput = false;
 
 		/** True when the outside end exists in the destination and the link can be made. */
 		bool bHasTarget = false;
