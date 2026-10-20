@@ -154,6 +154,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrides.cpp"
           ],
           "new_files": []
+        },
+        "field-batch-finalize": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
