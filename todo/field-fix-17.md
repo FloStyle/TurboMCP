@@ -37,3 +37,7 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 ## Deliverable
 
 Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.
+
+## Exact scalar and struct types
+
+0a5e7d0 prevents stock GetStructType fallback-to-int from being accepted as a resolved struct, for both aliases and asset paths. Explicit float now selects the float subcategory; double/real retain double. This closes a source-confirmed signature/variable type substitution gap, not the generic operator-node inference report. Unbuilt and untested.

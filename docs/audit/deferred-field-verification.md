@@ -120,3 +120,5 @@ FIELD-FIX-20 drift follow-up: later repeat forced Tidy on a boxless graph and se
 Tidy getter preservation (c2e4894): deferred evidence for external-target, validated, split and ordinary getter cases; confirm original semantics and undo. This is verification debt attached to FIELD-FIX-20, not a new product task.
 
 Graph Copy defaults (302c405, FIELD-FIX-06): deferred evidence for literal/object/localized-text defaults, pin shape mismatch refusal and rollback, and values after wiring. No test execution; not a new product task.
+
+Exact type preservation (0a5e7d0, FIELD-FIX-17): deferred checks for allowed/refused structs, float versus double/real, and container/signature propagation. Verification debt only; no new product task.
