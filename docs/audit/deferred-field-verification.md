@@ -144,3 +144,5 @@ FIELD-FIX-16 targeted refresh: newly resolved self-call pins/links, external sam
 FIELD-FIX-16 removal: successful and failed deletion, duplicate-name refusal and inherited-name diagnostics remain untested.
 
 FIELD-FIX-16 partial outcome classification and successful-result distinction remain untested.
+
+FIELD-FIX-03 unique Call Swap pin matching: duplicate name cases and ordinary default/link transfer remain untested.

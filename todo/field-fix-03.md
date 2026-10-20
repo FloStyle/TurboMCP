@@ -37,3 +37,7 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 ## Deliverable
 
 Committed implementation evidence. Deferred checks remain in the verification ledger, not a separate product task.
+
+## Unique pin mapping
+
+901142e requires unique name/direction matches in Call Swap pin lookup, including link and default transfer paths. Duplicate matches no longer select the first pin silently. Implementation closed; unbuilt and untested.
