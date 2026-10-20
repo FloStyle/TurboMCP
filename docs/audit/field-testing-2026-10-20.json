@@ -651,7 +651,7 @@
       "state": "open",
       "validation": "reported",
       "disposition": "reported_pending_reproduction",
-      "implementation_limits": "Needs plugin-owned strict connection path or observable conversion reporting; custom node semantics unknown. Do not claim resolved."
+      "implementation_limits": "3470fc2 adds explicit automatic-conversion refusal to TurboMCP Append (untested). Native connector remains unchanged; custom wildcard reset semantics and conversion reporting remain unresolved. Issue stays open."
     },
     {
       "report": "2026-10-20_S5",

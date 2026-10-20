@@ -381,3 +381,7 @@ VA-04 implemented / untested. Verify digit-leading variables, case-only duplicat
 ## New reports 2026-10-20 S5 / 2026-10-21 S1 (`05cedc3`)
 
 Untested fixes: short node IDs canonicalized before patch planning with ambiguous IDs refused; early refusal no longer reports a measured zero-node graph. Check short/full asset paths and IDs on Widget Blueprints. Status/index now give call_tool JSON and native safety-filter replacements. Native dispatcher error unchanged (X-68 open); strict conversion reporting/custom-node swap ED-11/FT-67 remain open. Positive DT-09, GC-17 and RF-08 are scoped field evidence, not blanket acceptance.
+
+## 2026-10-21 — Strict append conversions (`3470fc2`)
+
+Implemented / untested: refuse CanCreateConnection conversion-node responses before TryCreateConnection and roll back the graph write, reporting rollback failure separately. Check int/bool mismatch, explicit conversion nodes, matching pins, wildcard specialization and rollback. ED-11 remains open because native connector behavior is unchanged.
