@@ -130,7 +130,10 @@
       "id": "NF-08",
       "title": "Node find treats two words with a space as one word (low)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "FIELD-FIX-12"
     },
     {
       "report": "2026-10-18_S1",

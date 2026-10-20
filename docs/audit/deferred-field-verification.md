@@ -212,3 +212,7 @@ Pin discovery validates exact IDs against the full collected type inventory rath
 ## Structural copy containment
 
 Stock SpawnNodeFromTemplate invokes MarkBlueprintAsStructurallyModified for structural K2 nodes (including custom events). Planning and apply now refuse these nodes and non-K2 nodes before mutation, avoiding that implicit compile-inside-undo path. Implementation done; unbuilt and untested. Safe structural-node copying remains unsupported; this does not close FIELD-02 Widget-loss causality. Deferred evidence: structural nodes refuse unchanged; ordinary K2 nodes retain copy behavior.
+
+## Scope accounting correction — node type follow-ups
+
+Commits f46efa6, 6c20991 and d62d639 modified TurboMCPNodeType.cpp while claiming field-nodefind-words, which covered NodeResolve and the toolset header instead. This was a scope-recording error; the later assignment does not retroactively satisfy that gate. The integrator inspected these bounded changes and retained them under the user-authorized fix pass; they remain unbuilt and untested. Future NodeType changes must use field-node-type-resolution.
