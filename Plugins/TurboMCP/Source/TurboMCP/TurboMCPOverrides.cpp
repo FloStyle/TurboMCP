@@ -33,14 +33,9 @@
  * inherited through a natively-implemented interface)", each carrying an
  * `bIsImplemented` flag.
  *
- * That is exactly the required set, from the editor itself, and it covers the case
- * this file would otherwise have got wrong: a natively-implemented interface, whose
- * members are not in `UBlueprint::ImplementedInterfaces` at all.
- *
- * WALKING THE PARENT CHAIN WITH `TFieldIterator<UFunction>` AND FILTERING ON `FUNC_Event` WOULD BE
- * WRONG: it works for a plain Actor Blueprint and cannot see interface members, and it needs a
- * special case to drop `UObject::ExecuteUbergraph`, which carries `FUNC_Event` and
- * is not an override target. All of that is the engine's job.
+ * The editor set also includes local functions. Only entries with a resolved
+ * parent/interface declaration belong in override counts. Unresolved entries are
+ * reported separately rather than guessed to be overrides.
  *
  * What this file adds is what the spec asks for beyond the set: the signature, with
  * inputs and outputs marked, and the class that declares the original so a caller
@@ -93,6 +88,23 @@ namespace
 			if (Class->FindFunctionByName(InName, EIncludeSuperFlag::ExcludeSuper) != nullptr)
 			{
 				return Class;
+			}
+		}
+
+		// Interfaces inherited through a native or Blueprint parent need not be
+		// present in the Blueprint's directly implemented interface list.
+		for (const UClass* Class = InBlueprint->ParentClass; Class != nullptr;
+			Class = Class->GetSuperClass())
+		{
+			for (const FImplementedInterface& Interface : Class->Interfaces)
+			{
+				if (Interface.Class != nullptr)
+				{
+					if (const UFunction* Function = Interface.Class->FindFunctionByName(InName))
+					{
+						return Function->GetOwnerClass();
+					}
+				}
 			}
 		}
 
@@ -267,6 +279,18 @@ FString UTurboMCPReadToolset::ReadTurboMCPOverrides(
 		Entry.DeclaringClass = FindDeclaringClass(Blueprint, Entry.Name);
 	}
 
+	TArray<FString> ExcludedNames;
+	Entries.RemoveAll([&ExcludedNames](const FEntry& Entry)
+	{
+		if (Entry.DeclaringClass != nullptr)
+		{
+			return false;
+		}
+		ExcludedNames.Add(Entry.Name.ToString());
+		return true;
+	});
+	ExcludedNames.Sort();
+
 	// Sorted by name so two reads of an unchanged Blueprint give the same text.
 	Entries.Sort([](const FEntry& A, const FEntry& B)
 	{
@@ -309,7 +333,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPOverrides(
 	}
 
 	Out += TEXT("\n; the set comes from the editor's own ListEvents and ListFunctions, ");
-	Out += TEXT("so a natively-implemented interface is included.");
+	Out += TEXT("filtered to resolved parent/interface declarations.");
+	if (!ExcludedNames.IsEmpty())
+	{
+		Out += FString::Printf(TEXT("\n; excluded from override counts (local or unresolved origin): %s"),
+			*FString::Join(ExcludedNames, TEXT(", ")));
+	}
 
 	Out += FString::Printf(
 		TEXT("\ncounts: %d overridable, %d already overridden here, %d still available"),
