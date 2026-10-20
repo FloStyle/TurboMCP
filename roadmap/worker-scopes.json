@@ -48,6 +48,21 @@
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp"
           ]
+        },
+        "field-fast-followup": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRollback.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPRollback.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

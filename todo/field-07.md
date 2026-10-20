@@ -37,3 +37,7 @@ Use live/dead-chain controls with shared data dependencies. Verify intended even
 
 ## Handoff
 Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch remains paused.
+
+## Owner-authorized fast source pass
+
+2026-10-20: owner requests fast plugin-only urgent fixes without tests. Integrator approves field-fast-followup: transaction rollback ownership, central MCP write refusal during PIE/nested transactions, actual Slate outline measurement without changing stored node sizes, exact function-spawner identities, and honest tool effect/status diagnostics. No engine changes, DSH dispatch or runtime certification. Remaining feature requests and unproven crash causes stay open.
