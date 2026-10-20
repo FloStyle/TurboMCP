@@ -66,3 +66,7 @@ FIELD-FIX-06: reciprocal internal wires are planned once from the output side. P
 ## Destination copy eligibility
 
 FIELD-FIX-06 now checks CanDuplicateNode and CanPasteHere during planning and before the apply transaction. Ineligible graph nodes refuse before mutation instead of bypassing Unreal copy/paste restrictions. Implementation done; unbuilt and untested. Deferred evidence: eligible ordinary calls still copy; nonduplicable nodes and destination-incompatible calls refuse without mutation.
+
+## Copy spacing preservation
+
+FIELD-FIX-06 restores exact integer source positions plus the common copy offset after the spawn helper snaps nodes independently. Planning and apply refuse coordinates that would overflow the offset. Implementation done; unbuilt and untested. Deferred evidence: off-grid block relative spacing and coordinate limits. Destination overlap avoidance remains unresolved under FIELD-06.
