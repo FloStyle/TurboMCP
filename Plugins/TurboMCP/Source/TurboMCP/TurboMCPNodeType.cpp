@@ -132,6 +132,7 @@ namespace
 	struct FEntry
 	{
 		FString TypeId;
+        FString LegacyTypeId;
 		FString OwningClass;
 		bool bOwnedByThisBlueprint = false;
 		bool bPure = false;
@@ -203,6 +204,16 @@ namespace
 
 				FEntry Entry;
 				Entry.TypeId = TypeId;
+                Entry.LegacyTypeId = TypeId;
+                // Ordinary function calls have a locale-independent reflected identity.
+                if (ActionInfo.GetNodeClass() == UK2Node_CallFunction::StaticClass())
+                    if (const UFunction* Function = ActionInfo.GetAssociatedFunction())
+                    {
+                        const UClass* Owner = Function->GetOuterUClass();
+                        const UBlueprint* Source = Owner ? Cast<UBlueprint>(Owner->ClassGeneratedBy) : nullptr;
+                        Entry.TypeId = TEXT("Function|") + (Source
+                            ? Source->GetPathName() + TEXT(".") + Function->GetName() : Function->GetPathName());
+                    }
 				Entry.OwningClass = OwnerClassName(ActionObject);
 				Entry.bOwnedByThisBlueprint = Cast<UBlueprint>(ActionObject) == InBlueprint;
 				Entry.Spawner = NodeSpawner;
@@ -254,6 +265,7 @@ TArray<FString> FTurboMCPNodeType::AvailableTypeIds(UBlueprint* InBlueprint, UEd
 	for (const FEntry& Entry : Entries)
 	{
 		Out.AddUnique(Entry.TypeId);
+        Out.AddUnique(Entry.LegacyTypeId);
 	}
 	Out.Sort();
 	return Out;
@@ -284,9 +296,17 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 	// `CollectEntries` prevents a type ID from being offered by one tool and rejected by another.
 	TArray<FEntry> Entries;
 	CollectEntries(InBlueprint, InGraph, Entries);
+    TSet<FString> MatchingTypes;
+    for (const FEntry& Entry : Entries)
+        if (Entry.TypeId == InTypeId || Entry.LegacyTypeId == InTypeId) MatchingTypes.Add(Entry.TypeId);
+    if (MatchingTypes.Num() > 1)
+    {
+        OutNote = TEXT("ambiguous display type ID; use the exact Function|path ID from node-type discovery");
+        return nullptr;
+    }
 	for (const FEntry& Entry : Entries)
 	{
-		if (!Entry.TypeId.Equals(InTypeId, ESearchCase::CaseSensitive))
+		if (Entry.TypeId != InTypeId && Entry.LegacyTypeId != InTypeId)
 		{
 			continue;
 		}
@@ -334,9 +354,17 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 	// to graph append, so all five operations consume this one filtered action list.
 	TArray<FEntry> Entries;
 	CollectEntries(InBlueprint, InGraph, Entries);
+    TSet<FString> MatchingTypes;
+    for (const FEntry& Entry : Entries)
+        if (Entry.TypeId == InTypeId || Entry.LegacyTypeId == InTypeId) MatchingTypes.Add(Entry.TypeId);
+    if (MatchingTypes.Num() > 1)
+    {
+        OutNote = TEXT("ambiguous display type ID; use the exact Function|path ID from node-type discovery");
+        return ESpawnResult::NoSuchTypeId;
+    }
 	for (const FEntry& Entry : Entries)
 	{
-		if (!Entry.TypeId.Equals(InTypeId, ESearchCase::CaseSensitive))
+		if (Entry.TypeId != InTypeId && Entry.LegacyTypeId != InTypeId)
 		{
 			continue;
 		}
@@ -540,6 +568,7 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	for (const FEntry& Entry : Entries)
 	{
 		const FString NormalisedId = FTurboMCPToolSchema::NormaliseForMatch(Entry.TypeId);
+        const FString LegacyId = FTurboMCPToolSchema::NormaliseForMatch(Entry.LegacyTypeId);
 
 		// RANK 0 is an exact normalised match, 1 a prefix, 2 a contiguous run, 3 every word
 		// present in any order. A lower rank always sorts first, so 'print' cannot be beaten by
@@ -547,17 +576,17 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 		int32 Rank = -1;
 		FString Reason;
 
-		if (NormalisedId == NormalisedGuess)
+		if (NormalisedId == NormalisedGuess || LegacyId == NormalisedGuess)
 		{
 			Rank = 0;
 			Reason = TEXT("exact match");
 		}
-		else if (NormalisedId.StartsWith(NormalisedGuess))
+		else if (NormalisedId.StartsWith(NormalisedGuess) || LegacyId.StartsWith(NormalisedGuess))
 		{
 			Rank = 1;
 			Reason = TEXT("starts with the words");
 		}
-		else if (NormalisedId.Contains(NormalisedGuess))
+		else if (NormalisedId.Contains(NormalisedGuess) || LegacyId.Contains(NormalisedGuess))
 		{
 			Rank = 2;
 			Reason = TEXT("contains the words");
@@ -569,7 +598,7 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 			bool bAllPresent = true;
 			for (const FString& Word : NormalisedWords)
 			{
-				if (!NormalisedId.Contains(Word))
+				if (!NormalisedId.Contains(Word) && !LegacyId.Contains(Word))
 				{
 					bAllPresent = false;
 					break;

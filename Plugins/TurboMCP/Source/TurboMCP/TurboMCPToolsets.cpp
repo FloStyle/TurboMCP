@@ -9,6 +9,9 @@
 
 #include "Containers/UnrealString.h"
 #include "Editor.h"
+#include "Misc/EngineVersion.h"
+#include "Modules/ModuleManager.h"
+#include "HAL/FileManager.h"
 #include "Editor/EditorEngine.h"
 #include "Framework/Application/SlateApplication.h"
 #include "IModelContextProtocolModule.h"
@@ -186,6 +189,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPStatus()
 	FString Result = FString::Printf(
 		TEXT("read: TurboMCP status, %d toolsets\n"), ToolsetCount);
 
+    const FString Binary = FModuleManager::Get().GetModuleFilename(TEXT("TurboMCP"));
+    Result += FString::Printf(TEXT("engine: %s\nbinary: %s\nbinary file timestamp (not revision proof): %s\nsource revision: unknown\n"),
+        *FEngineVersion::Current().ToString(), *Binary, *IFileManager::Get().GetTimeStamp(*Binary).ToIso8601());
+    Result += TEXT("safety: selected native DataTable/pin/compile/script routes are filtered; use TurboMCP replacements. Direct Python is outside this protection.\n");
+    Result += TEXT("effects: ReadTurboMCPPlayCheck starts PIE and runs project code. Compile success does not prove execution reachability or disk persistence.\n");
 	Result += TurboMCPToolsets::DescribeServerState();
 	Result += TurboMCPToolsets::DescribeRegisteredToolsets();
 

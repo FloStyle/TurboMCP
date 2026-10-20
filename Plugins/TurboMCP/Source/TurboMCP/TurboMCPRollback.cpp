@@ -9,6 +9,7 @@
 
 #include "Editor/UnrealEd/Public/Editor.h"
 #include "Logging.h"
+#include "Editor/TransBuffer.h"
 
 bool FTurboMCPRollback::EndAndUndoActiveTransaction()
 {
@@ -24,7 +25,20 @@ bool FTurboMCPRollback::EndAndUndoActiveTransaction()
 		return false;
 	}
 
-	// END FIRST, THEN UNDO. See the header: undoing an ACTIVE transaction reverts the PREVIOUS one.
-	GEditor->EndTransaction();
-	return GEditor->UndoTransaction(/*bCanRedo=*/false);
+    UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+    if (!Buffer || Buffer->ActiveCount != 1 || Buffer->UndoBuffer.IsEmpty())
+    {
+        UE_LOG(LogTurboMCP, Error, TEXT("Rollback refused: no single owned transaction; previous or nested work was not undone."));
+        return false;
+    }
+    const FGuid ActiveId = Buffer->UndoBuffer.Last()->GetId();
+    GEditor->EndTransaction();
+    const int32 Index = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
+    const FTransaction* Current = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
+    if (!Current || Current->GetId() != ActiveId)
+    {
+        UE_LOG(LogTurboMCP, Error, TEXT("Rollback refused: active transaction did not survive finalization; previous work was not undone."));
+        return false;
+    }
+    return GEditor->UndoTransaction(/*bCanRedo=*/false);
 }

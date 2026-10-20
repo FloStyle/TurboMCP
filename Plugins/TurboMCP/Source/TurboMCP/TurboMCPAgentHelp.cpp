@@ -423,7 +423,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 			if (Entry.Tools.Num() > Shown)
 			{
 				Summary += FString::Printf(
-					TEXT("\n(%d more, name one tool to see its parameters and traps)"),
+					TEXT("\n(%d more; call ReadTurboMCPToolIndex for every name, then name one tool here for its parameters and traps)"),
 					Entry.Tools.Num() - Shown);
 			}
 
@@ -455,6 +455,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 			FString Help = FString::Printf(TEXT("read: %s.%s"), *Entry.Name, *Bare);
 			Help += FString::Printf(TEXT("\nkind: %s   source: %s"),
 				*KindOf(Entry.Name), *SourceOf(Entry.Name));
+            if (Bare == TEXT("ReadTurboMCPPlayCheck"))
+                Help += TEXT("\neffects: starts PIE and executes project code; NOT a passive read.");
 			Help += FString::Printf(TEXT("\nwhat: %s"),
 				*FirstSentence(Field(Tool, TEXT("description"))));
 

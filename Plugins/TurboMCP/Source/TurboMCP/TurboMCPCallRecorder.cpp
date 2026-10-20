@@ -8,6 +8,7 @@
 #include "TurboMCPCallRecorder.h"
 
 #include "Async/Future.h"
+#include "Editor.h"
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
 #include "Templates/SharedPointer.h"
@@ -113,6 +114,17 @@ namespace
 			// `start` that reads like a crash.
 			TSharedPtr<FTurboMCPCallLog::FScopedCall> Call =
 				MakeShared<FTurboMCPCallLog::FScopedCall>(RecordedToolset, ToolName, JsonInput);
+
+            const bool bAssetEdit = ToolName.StartsWith(TEXT("EditTurboMCP"))
+                && !ToolName.StartsWith(TEXT("EditTurboMCPCallLog"))
+                && ToolName != TEXT("EditTurboMCPTrace") && ToolName != TEXT("EditTurboMCPVcsCheckout");
+            if (bAssetEdit
+                && (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()))
+            {
+                const FString Error = TEXT("unchanged: edit refused; requires the editor game thread, no play session and no active transaction. Run individual edits outside script transactions.");
+                Call->Finish(Error, true);
+                return MakeFulfilledPromise<FToolResult>(MakeError(Error)).GetFuture();
+            }
 
 			return Inner->ExecuteTool(ToolName, JsonInput).Then(
 				[Call](TFuture<FToolResult> Future) -> FToolResult

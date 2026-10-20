@@ -143,12 +143,16 @@ namespace
 		TArray<UEdGraph*> Graphs;
 		for (UEdGraph* Graph : Blueprint->UbergraphPages)
 		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
+			if (Graph != nullptr) { Graphs.AddUnique(Graph); }
 		}
 		for (UEdGraph* Graph : Blueprint->FunctionGraphs)
 		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
+			if (Graph != nullptr) { Graphs.AddUnique(Graph); }
 		}
+        for (UEdGraph* Graph : Blueprint->MacroGraphs)
+            if (Graph) Graphs.AddUnique(Graph);
+        for (UEdGraph* Graph : Blueprint->EventGraphs)
+            if (Graph) Graphs.AddUnique(Graph);
 		if (Graphs.Num() == 0)
 		{
 			OutError = FString::Printf(TEXT("%s has no graphs to tidy."),
@@ -168,19 +172,29 @@ namespace
 			}
 			if (OutContext.Graph == nullptr)
 			{
-				OutContext.Graph = Graphs[0];
+                if (Graphs.Num() != 1)
+                {
+                    OutError = TEXT("multiple graphs and no EventGraph; pass an explicit graph name");
+                    return false;
+                }
+                OutContext.Graph = Graphs[0];
 			}
 			return true;
 		}
 
-		for (UEdGraph* Candidate : Graphs)
-		{
-			if (NameMatches(Candidate->GetName(), InGraphName))
-			{
-				OutContext.Graph = Candidate;
-				return true;
-			}
-		}
+        for (UEdGraph* Candidate : Graphs)
+        {
+            if (NameMatches(Candidate->GetName(), InGraphName))
+            {
+                if (OutContext.Graph)
+                {
+                    OutError = TEXT("ambiguous graph name; no layout planned or applied");
+                    return false;
+                }
+                OutContext.Graph = Candidate;
+            }
+        }
+        if (OutContext.Graph) return true;
 
 		TArray<FString> Names;
 		for (UEdGraph* Candidate : Graphs) { Names.Add(Candidate->GetName()); }
@@ -191,84 +205,57 @@ namespace
 		return false;
 	}
 
-	/** Return the titles of nodes that still have no Slate-measured outline. */
-	bool UnmeasuredNodeTitles(const UEdGraph* InGraph, FString& OutTitles)
-	{
-		TArray<FString> Titles;
-		for (const UEdGraphNode* Node : InGraph->Nodes)
-		{
-			if (Node != nullptr && (Node->NodeWidth <= 0 || Node->NodeHeight <= 0))
-			{
-				Titles.Add(TurboMCPNodeId::GetNodeTitle(Node));
-			}
-		}
-		OutTitles = FString::Join(Titles, TEXT(", "));
-		return Titles.Num() > 0;
-	}
+    // Most K2 nodes do not persist Slate geometry in NodeWidth/NodeHeight.
+    // Read the graph panel's measured bounds into this plan, never into the asset.
+    bool EnsureMeasuredNodeOutlines(UBlueprint* Blueprint, UEdGraph* Graph,
+        TMap<const UEdGraphNode*, FVector2D>& Sizes, FString& Error)
+    {
+        auto Collect = [&](const TSharedPtr<SGraphEditor>& Panel)
+        {
+            Sizes.Reset();
+            for (const UEdGraphNode* Node : Graph->Nodes)
+            {
+                if (!Node) continue;
+                FSlateRect Bounds;
+                if (Panel.IsValid() && Panel->GetBoundsForNode(Node, Bounds, 0.f)
+                    && Bounds.Right > Bounds.Left && Bounds.Bottom > Bounds.Top)
+                    Sizes.Add(Node, FVector2D(Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top));
+                else if (Node->NodeWidth > 0 && Node->NodeHeight > 0)
+                    Sizes.Add(Node, FVector2D(Node->NodeWidth, Node->NodeHeight));
+                else return false;
+            }
+            return true;
+        };
+        if (Collect(nullptr)) return true;
+        if (!GEditor || !FSlateApplication::IsInitialized())
+        {
+            Error = TEXT("Tidy needs a graphical editor to measure node outlines; no nodes moved.");
+            return false;
+        }
+        UAssetEditorSubsystem* Editors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
+        if (!Editors) { Error = TEXT("Asset editor subsystem unavailable; no nodes moved."); return false; }
+        Editors->OpenEditorForAsset(Blueprint);
+        IAssetEditorInstance* Instance = Editors->FindEditorForAsset(Blueprint, false);
+        if (!Instance || (Instance->GetEditorName() != FName(TEXT("BlueprintEditor"))
+            && Instance->GetEditorName() != FName(TEXT("WidgetBlueprintEditor"))))
+        {
+            Error = TEXT("Asset did not open a supported Blueprint editor; no unsafe editor cast attempted.");
+            return false;
+        }
+        FBlueprintEditor* Editor = static_cast<FBlueprintEditor*>(Instance);
+        TSharedPtr<SGraphEditor> Panel = Editor->OpenGraphAndBringToFront(Graph);
+        if (!Panel.IsValid()) { Error = TEXT("Graph panel unavailable; no nodes moved."); return false; }
+        for (int32 Attempt = 0; Attempt < 8; ++Attempt)
+        {
+            Panel->SlatePrepass(1.0f);
+            if (Collect(Panel)) return true;
+            FSlateApplication::Get().Tick(ESlateTickType::All);
+        }
+        if (Collect(Panel)) return true;
+        Error = TEXT("Some graph widgets still have no measured bounds. Let the editor draw the graph and retry; no nodes moved.");
+        return false;
+    }
 
-	/**
-	 * Ask the real Blueprint graph panel to lay out any nodes that lack stored outlines, then verify
-	 * its result. Opening an asset is only an attempt: no plan is allowed until NodeWidth and
-	 * NodeHeight prove that Slate actually measured every node.
-	 */
-	bool EnsureMeasuredNodeOutlines(UBlueprint* InBlueprint, UEdGraph* InGraph, FString& OutError)
-	{
-		FString Missing;
-		if (!UnmeasuredNodeTitles(InGraph, Missing))
-		{
-			return true;
-		}
-		if (GEditor == nullptr || !FSlateApplication::IsInitialized())
-		{
-			OutError = FString::Printf(
-				TEXT("graph %s has node(s) with no measured outline (%s). Tidy will not plan from estimated sizes. Open the graph in a graphical Unreal Editor, let it finish laying out, and try again."),
-				*InGraph->GetName(), *Missing);
-			return false;
-		}
-
-		UAssetEditorSubsystem* AssetEditors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
-		if (AssetEditors == nullptr)
-		{
-			OutError = TEXT("the asset editor subsystem is unavailable, so Tidy cannot obtain measured node outlines. Open the graph in the Unreal Editor and try again.");
-			return false;
-		}
-		AssetEditors->OpenEditorForAsset(InBlueprint);
-		IAssetEditorInstance* EditorInstance = AssetEditors->FindEditorForAsset(InBlueprint, false);
-		FBlueprintEditor* BlueprintEditor = EditorInstance != nullptr
-			? static_cast<FBlueprintEditor*>(EditorInstance) : nullptr;
-		if (BlueprintEditor == nullptr)
-		{
-			OutError = FString::Printf(TEXT("%s did not open a Blueprint graph editor, so Tidy cannot obtain measured node outlines."), *InGraph->GetName());
-			return false;
-		}
-		TSharedPtr<SGraphEditor> GraphEditor = BlueprintEditor->OpenGraphAndBringToFront(InGraph);
-		if (!GraphEditor.IsValid())
-		{
-			OutError = FString::Printf(TEXT("the graph editor did not provide a panel for %s, so Tidy cannot obtain measured node outlines."), *InGraph->GetName());
-			return false;
-		}
-		TSharedPtr<SWindow> Window = FSlateApplication::Get().FindWidgetWindow(GraphEditor.ToSharedRef());
-		if (!Window.IsValid())
-		{
-			OutError = FString::Printf(TEXT("the graph panel for %s is not in an on-screen window, so Tidy cannot obtain measured node outlines."), *InGraph->GetName());
-			return false;
-		}
-
-		for (int32 Attempt = 0; Attempt < 8; ++Attempt)
-		{
-			FSlateApplication::Get().Tick(ESlateTickType::All);
-			Window->SlatePrepass(1.0f);
-			if (!UnmeasuredNodeTitles(InGraph, Missing))
-			{
-				return true;
-			}
-		}
-
-		OutError = FString::Printf(
-			TEXT("graph %s still has node(s) with no measured outline after Tidy opened and laid out its graph panel (%s). Tidy refuses to plan or edit from estimated sizes. Make the graph tab visible, let the editor finish drawing it, and try again."),
-			*InGraph->GetName(), *Missing);
-		return false;
-	}
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -385,7 +372,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 	// A plan moves nodes, so it must start from Slate-measured outlines. This actively opens and
 	// lays out the graph when needed, but only the postcondition below permits planning.
-	if (!EnsureMeasuredNodeOutlines(Context.Blueprint, Graph, OutError))
+	TMap<const UEdGraphNode*, FVector2D> MeasuredSizes;
+	if (!EnsureMeasuredNodeOutlines(Context.Blueprint, Graph, MeasuredSizes, OutError))
 	{
 		return false;
 	}
@@ -414,8 +402,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		Entry.bIsGetter = IsGetterNode(Node);
 		Entry.bIsPure = !Entry.bIsComment && IsNodePure(Node);
 
-		Entry.Width = static_cast<double>(Node->NodeWidth);
-		Entry.Height = static_cast<double>(Node->NodeHeight);
+		Entry.Width = MeasuredSizes.FindChecked(Node).X;
+		Entry.Height = MeasuredSizes.FindChecked(Node).Y;
 
 		Entry.PlannedX = Entry.X;
 		Entry.PlannedY = Entry.Y;

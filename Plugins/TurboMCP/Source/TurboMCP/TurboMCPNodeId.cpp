@@ -12,6 +12,8 @@
 #include "Engine/Blueprint.h"
 #include "K2Node.h"
 #include "K2Node_CallParentFunction.h"
+#include "K2Node_CallFunction.h"
+#include "UObject/Class.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionResult.h"
 #include "K2Node_Variable.h"
@@ -338,7 +340,7 @@ namespace TurboMCPNodeId
 			{
 				if (Graph != nullptr)
 				{
-					Candidates.Add(Graph);
+					Candidates.AddUnique(Graph);
 				}
 			}
 		};
@@ -495,6 +497,15 @@ namespace TurboMCPNodeId
 		{
 			return FString::Printf(TEXT("Parent|%s"), *Title);
 		}
+
+        if (InNode->GetClass() == UK2Node_CallFunction::StaticClass())
+            if (const UFunction* Function = CastChecked<UK2Node_CallFunction>(InNode)->GetTargetFunction())
+            {
+                const UClass* Owner = Function->GetOuterUClass();
+                const UBlueprint* Source = Owner ? Cast<UBlueprint>(Owner->ClassGeneratedBy) : nullptr;
+                return TEXT("Function|") + (Source
+                    ? Source->GetPathName() + TEXT(".") + Function->GetName() : Function->GetPathName());
+            }
 
 		// Variable get and set nodes are the other special case: they are not
 		// palette nodes, so they have no menu category at all, and the generic rule

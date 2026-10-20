@@ -129,11 +129,17 @@ namespace
 			Lines += FString::Printf(TEXT("\n      %s %-2d %s"),
 				*Direction, Index, *Pin->PinName.ToString());
 
+            Lines += FString::Printf(TEXT(" [category=%s subcategory=%s container=%d]"),
+                *Pin->PinType.PinCategory.ToString(), *Pin->PinType.PinSubCategory.ToString(), static_cast<int32>(Pin->PinType.ContainerType));
 			const bool bLinked = Pin->LinkedTo.Num() > 0;
 			if (bLinked)
 			{
 				Lines += FString::Printf(TEXT("  -> %d link(s)"), Pin->LinkedTo.Num());
 			}
+            else if (Pin->DefaultObject)
+                Lines += FString::Printf(TEXT("  = object:%s"), *Pin->DefaultObject->GetPathName());
+            else if (!Pin->DefaultTextValue.IsEmpty())
+                Lines += FString::Printf(TEXT("  = text:%s"), *Pin->DefaultTextValue.ToString());
 			else if (!Pin->DefaultValue.IsEmpty())
 			{
 				Lines += FString::Printf(TEXT("  = %s"), *Pin->DefaultValue);
@@ -550,7 +556,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 			}
 
 			++HitsInGraph;
-			if (TotalMatched < MaxFindResults)
+			if (Lines.Num() < MaxFindResults)
 			{
 				// 2.1.4 and this tool's own spec: node ID, graph, title, type ID.
 				// The class name is appended because the engine writer's type ID

@@ -46,7 +46,7 @@
  */
 
 /**
- * Read tools: return text about assets. Cannot change anything.
+ * Read tools return information. ReadTurboMCPPlayCheck is an execution-capable exception: it starts PIE and runs project code. Do not authorize the whole toolset as side-effect-free.
  *
  * Phase 1 fills this class with R-TOOL-INDEX, R-TOOL-SCHEMA, R-ASSET-SEARCH,
  * R-ASSET-DESCRIBE, R-TYPE-FIND, R-DIRTY-LIST and E-COMPILE's read half

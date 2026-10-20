@@ -36,7 +36,8 @@
 struct FTurboMCPRollback
 {
 	/**
-	 * Ends the active transaction and undoes it, so the asset is what it was before that transaction.
+	 * Ends and undoes a single active transaction only if its identity survives finalization.
+	 * Refuses nested, missing and discarded transactions rather than undoing unrelated work.
 	 *
 	 * SAFE WHILE A `FScopedTransaction` IS STILL IN SCOPE. `FScopedTransaction::IsOutstanding()` is
 	 * `Index >= 0` (`ScopedTransaction.cpp:54-57`) and `EndTransaction` does not change it, so the scope's
