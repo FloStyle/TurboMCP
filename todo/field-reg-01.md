@@ -48,3 +48,7 @@ Verify rejected migration restores links/nodes without undoing previous work; fi
 ## Swap defaults regression pending
 
 FIELD-FIX-04: string, numeric, object and localized-text preservation; incompatible/split pin refusal; callback readback; rollback after default transfer and link failure. No build/tests run.
+
+## Pin-default rollback regression pending
+
+FIELD-FIX-05: callback reconstruction, title-changing values, duplicate pin refusal, restoration on readback failure, failed undo reports partial, and prior user undo history remains untouched. Unbuilt and untested.

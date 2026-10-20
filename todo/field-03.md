@@ -63,3 +63,7 @@ Plugin-owned EditTurboMCPPinDefault validates exact input pin identity, records 
 b0753f2 removes raw pin assignment before Modify in Append/Patch. K2 defaults are parsed/validated before mutation; undo captured first; post-callback pin identity/default read-back required. Linked/read-only/output/exec/orphaned pins refuse literal writes.
 
 No build or tests run, per owner instruction. Runtime acceptance remains pending.
+
+## Pin-default rollback implementation
+
+FIELD-FIX-05 closed at 3de18d0: failed readback attempts owned undo and GUID-based identity survives title changes. Save/reload acceptance remains pending under FIELD-REG-01.
