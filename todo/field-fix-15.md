@@ -41,3 +41,7 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## Removal failures
 
 Failed RemoveRow or a row still present after removal now enters the batch rollback path instead of returning success. Final read-back also checks every requested removal. Implementation closed, unbuilt and untested; original DataTable crash cause remains open.
+
+## Original undo ownership
+
+DataTable edits acquire and capture their undo identity before mutation. Failure finalizes the scope once and only undoes that same record with no transaction active, rather than adopting whichever transaction is active at failure time. Implementation closed; unbuilt and untested. Crash root cause remains open.
