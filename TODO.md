@@ -43,6 +43,7 @@ Generated from task files and the approved queue. After editing task status, run
 | [OV-03 override origin classification](todo/field-fix-13.md) | monday | implementation | done |
 | [BatchEdit rollback transaction lifetime](todo/field-fix-14.md) | monday | implementation | done |
 | [DataTable prepared row application](todo/field-fix-15.md) | monday | implementation | done |
+| [FunctionAdd reconstructed pin lifetime](todo/field-fix-16.md) | monday | implementation | done |
 
 ## Historical findings
 
