@@ -632,6 +632,16 @@ static void RunUnconnectedPins(const UBlueprint* InBlueprint, const TArray<UEdGr
 				if (!Pin->DefaultValue.IsEmpty()) { continue; }
 				if (Pin->DefaultTextValue.IsEmpty() == false) { continue; }
 				if (Pin->LinkedTo.Num() == 0 && Pin->bHidden) { continue; }
+				// Split parents are represented by their children, not another literal.
+				if (Pin->SubPins.Num() > 0) { continue; }
+				// Empty is a valid value for several types (notably string/text).
+				// Let the K2 schema decide instead of inferring a required input from emptiness.
+				if (const UEdGraphSchema_K2* Schema = Cast<UEdGraphSchema_K2>(Graph->GetSchema()))
+				{
+					if (Schema->IsPinDefaultValid(Pin, Pin->DefaultValue, Pin->DefaultObject, Pin->DefaultTextValue).IsEmpty())
+						continue;
+				}
+
 
 				FTurboMCPBPLint::FFinding Finding;
 				Finding.Check = Out.Name;
