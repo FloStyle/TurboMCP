@@ -58,3 +58,7 @@ f2baa7a carries source pin direction in every planned link and resolves endpoint
 ## Copy boundary across graphs
 
 FIELD-FIX-06: planner now classifies an external endpoint against the destination graph, not merely the Blueprint asset. A wire to a node left in the source graph is reported as unlinked instead of causing apply-time rollback. Implementation done; unbuilt and untested. Deferred verification: partial-block copy between two graphs of one Blueprint, checking reported boundary wires and preserved internal links.
+
+## Duplicate internal copy wires
+
+FIELD-FIX-06: reciprocal internal wires are planned once from the output side. Previously the second replay could receive a break-existing connection response and roll back an otherwise valid copy. Implementation done; unbuilt and untested. Deferred evidence: connected exec and data blocks copy successfully with exact wire counts; conflicting connections must still refuse.
