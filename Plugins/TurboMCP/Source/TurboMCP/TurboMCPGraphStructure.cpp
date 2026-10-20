@@ -724,8 +724,8 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	OutReport.Empty();
 	OutError.Empty();
 
-    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
-    { OutError = TEXT("unchanged: graph copy requires an idle editor outside an active transaction"); return false; }
+    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+    { OutError = TEXT("unchanged: graph copy requires an idle editor with undo available, outside an active transaction"); return false; }
 
 	if (!InPlan.bAcceptable())
 	{
@@ -802,10 +802,20 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 
 	// ---- ONE TRANSACTION, as the spec requires, so a refusal anywhere leaves the graph as it was --------
 	TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "GraphCopy", "TurboMCP copy a graph block"));
+    UTransBuffer* CopyBuffer = Cast<UTransBuffer>(GEditor->Trans);
+    const FGuid CopyUndoId = Transaction->IsOutstanding() && CopyBuffer
+        && CopyBuffer->ActiveCount == 1 && !CopyBuffer->UndoBuffer.IsEmpty()
+        ? CopyBuffer->UndoBuffer.Last()->GetId() : FGuid();
+    if (!CopyUndoId.IsValid())
+    {
+        Transaction.Reset();
+        OutError = TEXT("unchanged: graph copy could not acquire an owned undo record");
+        return false;
+    }
     auto RollbackCopy = [&]()
     {
         UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
-        const FGuid OwnedId = Buffer && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty() ? Buffer->UndoBuffer.Last()->GetId() : FGuid();
+        const FGuid OwnedId = CopyUndoId;
         Transaction.Reset();
         const int32 Index = Buffer ? Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1 : -1;
         const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
