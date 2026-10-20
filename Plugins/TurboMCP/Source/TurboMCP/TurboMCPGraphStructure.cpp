@@ -477,7 +477,7 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 		// three suites whose counts overstated their coverage for exactly that reason.
 		const bool bSameAsset = SourceResolved.ObjectPath.Equals(TargetResolved.ObjectPath,
 			ESearchCase::CaseSensitive);
-		if (bEndpointInTarget)
+		if (bSameAsset)
 		{
 			continue;
 		}
@@ -557,7 +557,7 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 				// Sharing a Blueprint does not permit cross-graph pin connections.
 				const bool bEndpointInTarget = OutsideNode && OutsideNode->GetGraph() == TargetGraphObject
 					&& TargetGraphObject->Nodes.Contains(OutsideNode);
-				if (bSameAsset)
+				if (bEndpointInTarget)
 				{
 					Crossing.bHasTarget = true;
 					OutPlan.ReLinkable.Add(Crossing);
