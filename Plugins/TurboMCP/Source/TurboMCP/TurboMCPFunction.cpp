@@ -459,6 +459,8 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 
 FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
 {
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: function removal requires an idle editor outside PIE and active transactions");
 	const FString Wanted = InName.TrimStartAndEnd();
 	if (Wanted.IsEmpty())
 	{
@@ -479,6 +481,11 @@ FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
 		return FString::Printf(
 			TEXT("error: %s is not a Blueprint."), *Resolved.ObjectPath);
 	}
+
+    int32 Matches = 0;
+    for (UEdGraph* Candidate : Blueprint->FunctionGraphs)
+        if (Candidate && NameMatches(Candidate->GetFName(), Wanted)) ++Matches;
+    if (Matches > 1) return TEXT("unchanged: function name is ambiguous; no graph was removed");
 
 	// ONLY A FUNCTION GRAPH IS REMOVED HERE, and the name is checked against the function list
 	// first. Removing by NAME through the engine's `RemoveFunctionGraph` would be enough, but
@@ -506,13 +513,18 @@ FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
 		//
 		// CLAIMING "the name is free again: yes" ON THAT WEAKER CHECK IS WRONG: the next add creates
 		// `ComputeScore_0` instead of `ComputeScore`.
+        bool bStillPresent = Blueprint->FunctionGraphs.Contains(Graph);
+        for (UEdGraph* Candidate : Blueprint->FunctionGraphs)
+            if (Candidate && NameMatches(Candidate->GetFName(), Wanted)) bStillPresent = true;
+        if (bStillPresent)
+            return FString::Printf(TEXT("partial: function removal did not remove '%s'; inspect the graph before retrying; save=not_requested"), *Wanted);
 		const FNameCheck AfterCheck = CheckName(Blueprint, Wanted);
 
 		FString Out = FString::Printf(TEXT("changed: removed function '%s' from %s"),
 			*Wanted, *Resolved.ObjectPath);
 		Out += FString::Printf(TEXT("\nremoved: graph '%s'"), *RemovedGraph);
 		Out += FString::Printf(TEXT("\nno function graph holds that name now: %s"),
-			AfterCheck.bCanAdd ? TEXT("yes") : TEXT("no"));
+			TEXT("yes"));
 
 		if (!AfterCheck.bCanAdd)
 		{
