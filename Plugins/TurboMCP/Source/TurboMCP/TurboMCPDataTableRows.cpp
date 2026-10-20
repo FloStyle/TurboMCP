@@ -399,6 +399,10 @@ FString Parse(const TArray<FString>& Lines, TArray<FRowOp>& Out)
 			Op.Fields.Add(MoveTemp(Edit));
 		}
 
+		if (Op.Fields.IsEmpty())
+		{
+			return TEXT("error: a set operation must contain at least one field=value pair; separators alone do not create a row.");
+		}
 		Out.Add(MoveTemp(Op));
 	}
 
@@ -442,6 +446,11 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 	for (const FRowOp& Op : Ops)
 	{
 		Out.Ops.Add(Op);
+		if (Op.Op == ERowOp::Set && Op.Fields.IsEmpty())
+		{
+			Out.Refusals.Add(TEXT("Set operations require at least one field=value pair"));
+			continue;
+		}
 
 		const FName RowName(*Op.RowName);
         if (RowName.IsNone())
@@ -650,18 +659,20 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
         else
         {
             Failures.Add(FString::Printf(TEXT("row '%s' could not be removed"), *Name));
+            break;
         }
 	}
 
-	// *** THE FAILURES ARE COLLECTED, NOT RETURNED ON, AND THAT IS WHAT MAKES THE COMMENT ABOVE TRUE. *** Until
-	// this change the two refusals below were EARLY EXITS: they returned before `MarkPackageDirty()`, so the
-	// removals and the earlier rows had already been applied to a package that was NOT EVEN FLAGGED as changed,
-	// and the caller received an `error:` line with no way to learn that part of the request had landed. The
-	// sentence "a failure part-way is REPORTED rather than silently leaving half the request applied" was false
-	// as written; it is true now.
+	// Stop at the first mutation failure; the common failure path undoes this batch.
 	int32 Written = 0;
 	for (const TPair<FName, FString>& Pair : FinalText)
 	{
+		if (!Failures.IsEmpty()) break;
+		if (Table->GetRowStruct() != Struct)
+		{
+			Failures.Add(TEXT("row struct changed during editor callbacks; remaining writes stopped"));
+			break;
+		}
 		uint8* Row = Table->GetRowMap().FindRef(Pair.Key);
 		if (Row == nullptr)
 		{
@@ -674,7 +685,7 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 		if (Row == nullptr)
 		{
 			Failures.Add(FString::Printf(TEXT("the engine refused to add the row '%s'"), *Pair.Key.ToString()));
-			continue;
+			break;
 		}
 
         if (Table->GetRowStruct() != Struct)
