@@ -166,6 +166,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
           ],
           "new_files": []
+        },
+        "field-function-pin-lifetime": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunction.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
