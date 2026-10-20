@@ -5,14 +5,14 @@
   "limits": "Report triage and selective source inspection; not runtime reproduction. S3 extends S2 and S4 adds layout. Raw reports remain local.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
+    "FIELD-05",
+    "FIELD-08",
     "FIELD-01",
     "FIELD-02",
     "FIELD-03",
     "FIELD-04",
-    "FIELD-05",
     "FIELD-06",
     "FIELD-07",
-    "FIELD-08",
     "FIELD-09",
     "FIELD-10"
   ],
@@ -600,6 +600,101 @@
       "title": "The engine arrange tool laid out built graphs headless (positive)",
       "owner": null,
       "disposition": "positive_evidence"
+    },
+    {
+      "report": "2026-10-21_S1",
+      "id": "X-68",
+      "title": "Generic dispatcher reports Tool not found when toolset_name is omitted",
+      "owner": "FIELD-08",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "Guidance implemented in 05cedc3; native dispatcher error remains unchanged. Separate toolset_name/tool_name example now in status/index."
+    },
+    {
+      "report": "2026-10-21_S1",
+      "id": "FT-68",
+      "title": "Show a working dispatcher example in status",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Implemented in 05cedc3; stock engine call shape verified from source.",
+      "implementation": "05cedc3"
+    },
+    {
+      "report": "2026-10-21_S1",
+      "id": "RF-08",
+      "title": "Incoming reference edges correct for two DataTables",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "positive_field_observation",
+      "implementation_limits": "Positive field observation at 131e099; not exhaustive reference coverage."
+    },
+    {
+      "report": "2026-10-20_S5",
+      "id": "X-67",
+      "title": "Explain intentionally filtered native tools and replacements",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Implemented status/index policy and replacements in 05cedc3. Filters remain in place.",
+      "implementation": "05cedc3"
+    },
+    {
+      "report": "2026-10-20_S5",
+      "id": "ED-11",
+      "title": "Native pin connector silently inserts conversion on resolved wildcard node",
+      "owner": "FIELD-05",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "Needs plugin-owned strict connection path or observable conversion reporting; custom node semantics unknown. Do not claim resolved."
+    },
+    {
+      "report": "2026-10-20_S5",
+      "id": "GC-16",
+      "title": "Graph patch rejects short node IDs and reports misleading empty graph",
+      "owner": "FIELD-05",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "05cedc3 uses shared unique short-key resolution and canonical full IDs; refusal no longer claims zero nodes. Runtime reproduction deferred.",
+      "implementation": "05cedc3",
+      "related_issue": "GC-15"
+    },
+    {
+      "report": "2026-10-20_S5",
+      "id": "DT-09",
+      "title": "TurboMCP updated eight rows on previously crashing DataTable without crash",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "positive_field_observation",
+      "implementation_limits": "Positive scoped observation: 16 field changes, read-back and save. Exact updated commit unknown; broader crash task remains open.",
+      "related_issue": "DT-07"
+    },
+    {
+      "report": "2026-10-20_S5",
+      "id": "GC-17",
+      "title": "Append created and read back a correctly valued boolean literal",
+      "owner": "FIELD-05",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "positive_field_observation",
+      "implementation_limits": "Positive observation for this single case; exact updated commit unknown."
+    },
+    {
+      "report": "2026-10-20_S5",
+      "id": "FT-67",
+      "title": "Replace custom node with typed setter and transfer compatible links by name",
+      "owner": "FIELD-05",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "Feature request; existing call swap does not establish arbitrary custom-node replacement."
     }
   ],
   "prototype": {

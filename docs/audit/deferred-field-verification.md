@@ -377,3 +377,7 @@ Untested: execution reroute fan-out, long chains, cycles/shared reroutes, malfor
 ## 2026-10-21 — Variable names (`4dfe394`)
 
 VA-04 implemented / untested. Verify digit-leading variables, case-only duplicates, overlength input, and collisions with functions/graphs/components before mutation. Existing alphanumeric/underscore grammar otherwise retained. No tests/builds.
+
+## New reports 2026-10-20 S5 / 2026-10-21 S1 (`05cedc3`)
+
+Untested fixes: short node IDs canonicalized before patch planning with ambiguous IDs refused; early refusal no longer reports a measured zero-node graph. Check short/full asset paths and IDs on Widget Blueprints. Status/index now give call_tool JSON and native safety-filter replacements. Native dispatcher error unchanged (X-68 open); strict conversion reporting/custom-node swap ED-11/FT-67 remain open. Positive DT-09, GC-17 and RF-08 are scoped field evidence, not blanket acceptance.
