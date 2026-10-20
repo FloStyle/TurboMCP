@@ -36,3 +36,7 @@ Do not run builds or tests until owner resumes verification. Do not claim runtim
 ## Deliverable
 
 Committed implementation evidence and a separate pending regression record.
+
+## Repoint regression pending
+
+Verify failure after the first rewired reader restores all original links, failed target creation leaves no node, batch failure rolls back earlier operations, one successful batch needs one undo, compile/save are not run, and ambiguous graph names refuse. Source aad28b7 is unbuilt and untested.

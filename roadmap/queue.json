@@ -199,6 +199,14 @@
         "FIELD-FIX-01"
       ],
       "track": "monday"
+    },
+    {
+      "id": "FIELD-FIX-02",
+      "path": "todo/field-fix-02.md",
+      "kind": "implementation",
+      "workstream": "field-emergency",
+      "depends_on": [],
+      "track": "monday"
     }
   ]
 }
