@@ -80,3 +80,7 @@ FIELD-FIX-11: two branch outputs into one exec input, reroutes, invalid endpoint
 ## NF-08 NodeFind word search — deferred evidence
 
 Implementation closed in FIELD-FIX-12. Unbuilt and untested. Later check spaces, tabs/newlines, commas/pipes, empty terms, AND matching and reported parsed terms. This is verification evidence debt, not a product task.
+
+## OV-03 override origins — deferred evidence
+
+FIELD-FIX-13 implementation closed, unbuilt and untested. Later check local functions excluded from counts, genuine parent overrides, direct and inherited interface declarations, filters and zero-results wording.

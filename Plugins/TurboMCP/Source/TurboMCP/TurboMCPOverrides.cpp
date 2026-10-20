@@ -412,7 +412,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPOverrides(
 	{
 		// A real answer about the parent chain rather than a failure, and worth
 		// saying plainly so a zero is not read as a broken tool.
-		Out += TEXT("\n; the editor lists nothing overridable for this Blueprint. A ");
+		Out += TEXT("\n; no parent/interface override declaration was resolved. A ");
 		Out += TEXT("parent with no Blueprint-exposed events and no implemented ");
 		Out += TEXT("interfaces is normal.");
 	}
