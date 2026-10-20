@@ -192,3 +192,7 @@ FIELD-FIX-19 refuses before mutation when the source output reader count differs
 ## Repoint undo ownership
 
 Standalone repoint validates transaction availability and captures its owned undo ID before mutation. Failure uses that original identity rather than adopting the active record at failure time. Caller-owned batch rollback remains caller-owned. Implementation done; unbuilt and untested. Deferred evidence: undo unavailable refuses unchanged; forced failure restores only its owned transaction.
+
+## Repoint final count rollback
+
+Final node-count readback now runs before standalone commit. A mismatch invokes owned rollback instead of reporting an unknown committed edit without attempting restoration. Caller-owned batch recovery remains external. Implementation done; unbuilt and untested. Deferred evidence: unexpected node-count change triggers restoration; successful repoint commits once.
