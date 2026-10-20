@@ -45,3 +45,8 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## Signature reader direction
 
 Shared signature descriptions now use the stock K2Node_CallFunction input rule: reference parameters remain inputs despite OutParm; return and non-reference outputs remain outputs. This closes a source-confirmed reader direction mismatch in the type/signature scope. Unbuilt and untested.
+
+
+### Blueprint type eligibility
+
+338c78a rejects loaded enum and class types that stock IsAllowableBlueprintVariableType excludes, before returning a usable pin type. FIELD-FIX-17 remains implemented and unbuilt_untested; FIELD-09 generic operator inference remains open. Deferred verification: allowed user enums/classes and all four reference forms still resolve; non-Blueprint enums/classes refuse without graph mutation. No tests or builds run.
