@@ -1164,9 +1164,12 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			Planned.Original = Getter;
 			Planned.ConsumerPin = ConsumerPin;
 			Planned.OriginalValuePin = ValuePin;
-			Planned.PlannedX = static_cast<double>(ConsumerNode->NodePosX)
+			const int32* ConsumerPlanIndex = IndexByNode.Find(ConsumerNode);
+			if (!ConsumerPlanIndex) continue;
+			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
+			Planned.PlannedX = ConsumerPlan.PlannedX
 				- Entry.Width - FTurboMCPGraphTidy::HorizontalNodeGap;
-			Planned.PlannedY = static_cast<double>(ConsumerNode->NodePosY);
+			Planned.PlannedY = ConsumerPlan.PlannedY;
 			OutPlan.GetterCopies.Add(Planned);
 		}
 	}
@@ -1195,8 +1198,21 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			const FNode& Source = OutPlan.Nodes[Wire.SourceNodeIndex];
 			const FNode& Target = OutPlan.Nodes[Wire.TargetNodeIndex];
 
-			const double SourceX = bUsePlanned ? Source.PlannedX : Source.X;
-			const double SourceY = bUsePlanned ? Source.PlannedY : Source.Y;
+			double SourceX = bUsePlanned ? Source.PlannedX : Source.X;
+			double SourceY = bUsePlanned ? Source.PlannedY : Source.Y;
+			if (bUsePlanned)
+			{
+				// This consumer will read from its copy, not the original getter.
+				for (const FGetterCopy& Copy : OutPlan.GetterCopies)
+				{
+					if (Copy.OriginalValuePin == Wire.OutputPin && Copy.ConsumerPin == Wire.InputPin)
+					{
+						SourceX = Copy.PlannedX;
+						SourceY = Copy.PlannedY;
+						break;
+					}
+				}
+			}
 			const double TargetX = bUsePlanned ? Target.PlannedX : Target.X;
 			const double TargetY = bUsePlanned ? Target.PlannedY : Target.Y;
 
