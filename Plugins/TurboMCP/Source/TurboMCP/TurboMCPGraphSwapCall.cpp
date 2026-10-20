@@ -49,6 +49,46 @@ namespace
 		return nullptr;
 	}
 
+    // Keep all three default representations, including FText namespace/key identity.
+    bool TransferDefaults(UEdGraphNode* Old, UEdGraphNode* Replacement, bool Apply, FString& Error, bool VerifyOnly = false)
+    {
+        const UEdGraphSchema* Schema = Replacement->GetSchema();
+        if (!Schema) { Error = TEXT("replacement has no schema"); return false; }
+        struct FDefault { FString Name; FString Value; UObject* Object; FText Text; };
+        TArray<FDefault> Defaults;
+        for (UEdGraphPin* Pin : Old->Pins)
+        {
+            if (!Pin || Pin->Direction != EGPD_Input || Pin->LinkedTo.Num() || Pin->PinType.PinCategory == TEXT("exec") || Pin->bDefaultValueIsIgnored) continue;
+            UEdGraphPin* Dest = PinByName(Replacement, Pin->PinName.ToString(), EGPD_Input);
+            if (Pin->bOrphanedPin || Pin->ParentPin || Pin->SubPins.Num() || !Dest || Dest->bOrphanedPin || Dest->ParentPin || Dest->SubPins.Num()
+                || !(Dest->PinType == Pin->PinType) || Dest->bDefaultValueIsIgnored)
+            { Error = FString::Printf(TEXT("cannot preserve default for pin '%s': missing, split, orphaned or incompatible pin"), *Pin->PinName.ToString()); return false; }
+            const bool Equal = Dest->DefaultValue == Pin->DefaultValue && Dest->DefaultObject == Pin->DefaultObject && Dest->DefaultTextValue.EqualTo(Pin->DefaultTextValue);
+            if (VerifyOnly && !Equal) { Error = TEXT("default changed during link migration"); return false; }
+            if ((!Equal && Dest->bDefaultValueIsReadOnly) || !Schema->IsPinDefaultValid(Dest, Pin->DefaultValue, Pin->DefaultObject, Pin->DefaultTextValue).IsEmpty())
+            { Error = FString::Printf(TEXT("replacement refuses default for pin '%s'"), *Pin->PinName.ToString()); return false; }
+            Defaults.Add({Pin->PinName.ToString(), Pin->DefaultValue, Pin->DefaultObject, Pin->DefaultTextValue});
+        }
+        if (!Apply) return true;
+        Replacement->Modify();
+        for (const FDefault& Value : Defaults)
+        {
+            UEdGraphPin* Dest = PinByName(Replacement, Value.Name, EGPD_Input);
+            if (!Dest) { Error = TEXT("default pin disappeared during migration"); return false; }
+            Dest->DefaultValue = Value.Value;
+            Dest->DefaultObject = Value.Object;
+            Dest->DefaultTextValue = Value.Text;
+            Replacement->PinDefaultValueChanged(Dest);
+        }
+        for (const FDefault& Value : Defaults)
+        {
+            const UEdGraphPin* Dest = PinByName(Replacement, Value.Name, EGPD_Input);
+            if (!Dest || Dest->DefaultValue != Value.Value || Dest->DefaultObject != Value.Object || !Dest->DefaultTextValue.EqualTo(Value.Text))
+            { Error = TEXT("default readback differs after node callback"); return false; }
+        }
+        return true;
+    }
+
 	bool HasLink(const UEdGraphPin* A, const UEdGraphPin* B)
 	{
 		return A != nullptr && B != nullptr && A->LinkedTo.Contains(B) && B->LinkedTo.Contains(A);
@@ -129,6 +169,8 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 		return true;
 	}
 	OutPlan.NewClass = Probe->GetClass()->GetName();
+    FString DefaultError;
+    if (!TransferDefaults(Old, Probe, false, DefaultError)) OutPlan.Refusals.Add(DefaultError);
 
 	for (UEdGraphPin* OldPin : Old->Pins)
 	{
@@ -194,6 +236,7 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
 	}
 	NewNode->NodePosX = int32(NewX);
 	NewNode->NodePosY = Old->NodePosY;
+    if (!TransferDefaults(Old, NewNode, true, OutError)) return false;
 	for (const FLink& Link : InPlan.Links)
 	{
 		UEdGraphPin* OldPin = PinByName(Old, Link.PinName, Link.bOldPinIsOutput ? EGPD_Output : EGPD_Input);
@@ -217,6 +260,8 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
 			return false;
 		}
 	}
+    // Revalidate defaults after link callbacks, before deleting the source.
+    if (!TransferDefaults(Old, NewNode, false, OutError, true)) return false;
 	if (!InPlan.bKeepOld)
 	{
 		FBlueprintEditorUtils::RemoveNode(Blueprint, Old, true);
@@ -235,7 +280,7 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
 	OutReport = FString::Printf(TEXT("changed: swapped %s to %s; %d link(s) migrated by pin name; old node %s"),
 		*InPlan.OldNodeId, *TurboMCPNodeId::MakeForNode(NewNode, true), InPlan.Links.Num(),
 		InPlan.bKeepOld ? TEXT("retained unplugged") : TEXT("deleted"));
-    OutReport += TEXT("\ncompile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
+    OutReport += TEXT("\ndefaults=preserved; compile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
 	return true;
 }
 
