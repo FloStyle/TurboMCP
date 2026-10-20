@@ -114,3 +114,5 @@ FIELD-FIX-19 source-removal follow-up: later check connected exec pins, other ou
 ## Tidy undo - deferred evidence
 
 FIELD-FIX-20 implemented, unbuilt and untested. Later check one undo restores node positions, comment sizes and getter split links; no-op and worse-layout rollback; PIE/nested refusal. This does not prove overlap-free layout.
+
+FIELD-FIX-20 drift follow-up: later repeat forced Tidy on a boxless graph and selected group with fixed neighbours; compare positions on the second pass and ensure fixed boundaries remain respected.
