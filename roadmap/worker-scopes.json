@@ -79,6 +79,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp"
           ],
           "new_files": []
+        },
+        "field-repoint-safety": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphRepoint.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepointTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
