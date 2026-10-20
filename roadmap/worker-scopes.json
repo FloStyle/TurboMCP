@@ -99,6 +99,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCall.cpp"
           ],
           "new_files": []
+        },
+        "field-pin-rollback": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
