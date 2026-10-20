@@ -25,6 +25,8 @@
 #include "K2Node_VariableSet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ScopedTransaction.h"
+#include "Editor.h"
+#include "Editor/TransBuffer.h"
 #include "UObject/Package.h"
 
 namespace
@@ -683,6 +685,9 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	OutReport.Empty();
 	OutError.Empty();
 
+    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+    { OutError = TEXT("unchanged: graph copy requires an idle editor outside an active transaction"); return false; }
+
 	if (!InPlan.bAcceptable())
 	{
 		// THE PLAN ALREADY DECIDED. Re-deciding here is how a Preview and an Edit come to disagree, which is
@@ -730,7 +735,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 
 	UEdGraph* SourceGraph = FindGraph(SourceBlueprint, InPlan.SourceGraph);
 	UEdGraph* TargetGraph = FindGraph(TargetBlueprint, InPlan.TargetGraph);
-	if (SourceGraph == nullptr || TargetGraph == nullptr)
+	if (SourceGraph == nullptr || TargetGraph == nullptr || !TargetGraph->GetSchema() || TargetGraph->Nodes.Num() != InPlan.TargetNodeCountBefore)
 	{
 		OutError = TEXT("the source or the target graph no longer exists");
 		return false;
@@ -757,9 +762,19 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	}
 
 	// ---- ONE TRANSACTION, as the spec requires, so a refusal anywhere leaves the graph as it was --------
-	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphCopy", "TurboMCP copy a graph block"));
+	TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "GraphCopy", "TurboMCP copy a graph block"));
+    auto RollbackCopy = [&]()
+    {
+        UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+        const FGuid OwnedId = Buffer && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty() ? Buffer->UndoBuffer.Last()->GetId() : FGuid();
+        Transaction.Reset();
+        const int32 Index = Buffer ? Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1 : -1;
+        const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
+        return OwnedId.IsValid() && Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
+    };
 	TargetBlueprint->Modify();
 	TargetGraph->Modify();
+    for (UEdGraphNode* Node : TargetGraph->Nodes) if (Node) Node->Modify();
 
 	// ---- THE COPY ITSELF: THE SOURCE NODE IS THE TEMPLATE -----------------------------------------------
 	TMap<UEdGraphNode*, UEdGraphNode*> MadeFrom;
@@ -781,10 +796,11 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		UK2Node* Template = Cast<UK2Node>(Source);
 		if (Template == nullptr)
 		{
-			FTurboMCPRollback::EndAndUndoActiveTransaction();
+			const bool Restored = RollbackCopy();
 			OutError = FString::Printf(
-				TEXT("'%s' (%s) is not a K2 node, so this tool cannot copy it. NOTHING was written."),
+				TEXT("'%s' (%s) is not a K2 node, so this tool cannot copy it."),
 				*KeyOf(Source), *Source->GetClass()->GetName());
+            OutError += Restored ? TEXT(" rollback=complete") : TEXT(" partial: rollback=not_confirmed");
 			return false;
 		}
 
@@ -796,10 +812,11 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		{
 			// THE PLAN SAID THIS WOULD WORK AND IT DID NOT. Rolling back and saying so is the spec's rule:
 			// a failed creation is a FAILURE rather than a success with a note.
-			FTurboMCPRollback::EndAndUndoActiveTransaction();
+			const bool Restored = RollbackCopy();
 			OutError = FString::Printf(
-				TEXT("the plan accepted '%s' but the graph refused to copy it at apply time. NOTHING was written."),
+				TEXT("the plan accepted '%s' but the graph refused to copy it at apply time."),
 				*Source->GetClass()->GetName());
+            OutError += Restored ? TEXT(" rollback=complete") : TEXT(" partial: rollback=not_confirmed");
 			return false;
 		}
 
@@ -842,7 +859,12 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 			continue;
 		}
 
-		FromPin->MakeLinkTo(ToPin);
+        const UEdGraphSchema* Schema = TargetGraph->GetSchema();
+        // Refuse implicit conversion nodes and breaking existing connections.
+        if (Schema->CanCreateConnection(FromPin, ToPin).Response != CONNECT_RESPONSE_MAKE
+            || !Schema->TryCreateConnection(FromPin, ToPin)
+            || !FromPin->LinkedTo.Contains(ToPin) || !ToPin->LinkedTo.Contains(FromPin))
+        { ++LeftUnconnected; continue; }
 		++InternalMade;
 	}
 
@@ -888,15 +910,28 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 			continue;
 		}
 
-		FromPin->MakeLinkTo(ToPin);
+        const UEdGraphSchema* Schema = TargetGraph->GetSchema();
+        // Refuse implicit conversion nodes and breaking existing connections.
+        if (Schema->CanCreateConnection(FromPin, ToPin).Response != CONNECT_RESPONSE_MAKE
+            || !Schema->TryCreateConnection(FromPin, ToPin)
+            || !FromPin->LinkedTo.Contains(ToPin) || !ToPin->LinkedTo.Contains(FromPin))
+        { ++LeftUnconnected; continue; }
 		++CrossingMade;
 	}
 
-	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(TargetBlueprint);
+	if (LeftUnconnected || TargetGraph->Nodes.Num() != InPlan.TargetNodeCountBefore + Selected.Num())
+    {
+        const bool Restored = RollbackCopy();
+        OutError = Restored ? TEXT("unchanged: graph copy could not satisfy planned links/node count; rollback=complete")
+                            : TEXT("partial: graph copy failed; rollback=not_confirmed; inspect before retrying");
+        return false;
+    }
+    FBlueprintEditorUtils::MarkBlueprintAsModified(TargetBlueprint);
 
 	// ---- THE REPORT, FIRST LINE `changed`, AND THE UNLINKABLE LINKS NAMED RATHER THAN COUNTED -----------
 	TArray<FString> Lines;
 	Lines.Add(TEXT("changed"));
+    Lines.Add(TEXT("compile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing"));
 	Lines.Add(FString::Printf(TEXT("copied %d node(s) from %s / %s to %s / %s"),
 		MadeFrom.Num(), *InPlan.SourceAsset, *InPlan.SourceGraph, *InPlan.TargetAsset, *InPlan.TargetGraph));
 	Lines.Add(FString::Printf(TEXT("target graph nodes: %d before, %d after"),
