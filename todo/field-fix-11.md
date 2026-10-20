@@ -48,3 +48,8 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ### Reader branch depth and truncation
 
 49421e1 bounds recursive execution-branch rendering at depth 64 and emits an explicit incomplete-dump error. The 2000-node linear limit now warns only if traversal actually attempts another node, avoiding a false error at exact completion. Empty branch continuations do not trigger depth warnings. Implemented; unbuilt_untested. Deferred evidence: deeply nested branches terminate with a clear warning, exactly 2000 linear nodes complete, longer chains report truncation. No tests/builds run.
+
+
+### Reader error write-back gate
+
+e07223a makes GraphCheck refuse standalone reader error comment lines before asset resolution, with the source line number. Append and other writers using this gate cannot silently discard an explicit malformed/truncated-reader diagnostic and treat its dump as complete. Implemented, unbuilt_untested. Scope is reader error markers only, not all forms of incomplete or unsupported DSL. Deferred evidence: valid comments/string literals remain accepted; indented reader error comments refuse before mutation. No tests/builds run.
