@@ -84,3 +84,7 @@ Implementation closed in FIELD-FIX-12. Unbuilt and untested. Later check spaces,
 ## OV-03 override origins — deferred evidence
 
 FIELD-FIX-13 implementation closed, unbuilt and untested. Later check local functions excluded from counts, genuine parent overrides, direct and inherited interface declarations, filters and zero-results wording.
+
+## BatchEdit rollback lifetime — deferred evidence
+
+FIELD-FIX-14 source implementation closed, unbuilt and untested. Later check failure before first write, failure after an applied operation, exact owned undo, preservation of previous user undo history, and successful single undo. Native script rollback and Widget loss remain separate open problems.
