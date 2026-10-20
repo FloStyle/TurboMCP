@@ -23,6 +23,12 @@
 #include "UObject/SavePackage.h"
 #include "UObject/UObjectGlobals.h"
 #include "WidgetBlueprint.h"
+#include "EdGraph/EdGraph.h"
+#include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphPin.h"
+#include "EdGraphSchema_K2.h"
+#include "TurboMCPGraphReachability.h"
+#include "TurboMCPNodeId.h"
 
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
@@ -285,6 +291,38 @@ FString UTurboMCPEditToolset::EditTurboMCPCompile(const FString& Assets)
 		Lines += FString::Printf(TEXT("\n%s  [%s]"), *Resolved.ObjectPath, *Status);
 		Lines += bDirty ? TEXT("  unsaved changes; compile did not save")
 			: TEXT("  package not marked dirty; disk content not verified; compile did not save");
+
+        // X-41: compiler success is not evidence of a connected execution path.
+        TArray<UEdGraph*> Graphs;
+        Blueprint->GetAllGraphs(Graphs);
+        TSet<const UEdGraph*> SeenGraphs;
+        int32 UnreachableExecNodes = 0;
+        int32 ShownExecNodes = 0;
+        FString ReachabilityDetails;
+        for (const UEdGraph* Graph : Graphs)
+        {
+            if (!Graph || SeenGraphs.Contains(Graph) || !Cast<UEdGraphSchema_K2>(Graph->GetSchema())) continue;
+            SeenGraphs.Add(Graph);
+            TSet<const UEdGraphNode*> Reachable;
+            TurboMCPGraphReachability::MarkReachable(Graph, Reachable);
+            for (const UEdGraphNode* Node : Graph->Nodes)
+            {
+                if (!Node || Reachable.Contains(Node)) continue;
+                bool HasExecutionInput = false;
+                for (const UEdGraphPin* Pin : Node->Pins)
+                    if (Pin && !Pin->bOrphanedPin && Pin->Direction == EGPD_Input && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                        HasExecutionInput = true;
+                if (!HasExecutionInput) continue;
+                ++UnreachableExecNodes;
+                if (ShownExecNodes++ < 20)
+                    ReachabilityDetails += FString::Printf(TEXT("\n  %s: %s (%s)"), *Graph->GetName(),
+                        *TurboMCPNodeId::MakeForNode(Node, true), *TurboMCPNodeId::GetNodeTitle(Node));
+            }
+        }
+        Lines += FString::Printf(TEXT("\n  structural reachability: %d execution-input node(s) not reached from recognized entries; separate from compiler verdict; not runtime proof"), UnreachableExecNodes);
+        Lines += ReachabilityDetails;
+        if (UnreachableExecNodes > 20)
+            Lines += FString::Printf(TEXT("\n  %d more; use ReadTurboMCPGraphLoad for graph detail"), UnreachableExecNodes - 20);
 
 		// THE COMPILER'S OWN MESSAGES ARE TIED TO THEIR NODE IDS; THE ENGINE'S ARE TIED TO THEIR SPAN.
 		// Both are listed, because a count with no text cannot be acted on and `T04` asks for each one.
