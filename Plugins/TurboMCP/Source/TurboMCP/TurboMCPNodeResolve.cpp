@@ -460,7 +460,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeResolve(const FString& NodeIds)
 			for (const UEdGraphNode* Node : Matches)
 			{
 				Errors += FString::Printf(TEXT("\n      %s"),
-					*TurboMCPNodeId::MakeForNode(Node));
+					*TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true));
 			}
 			++RefusedCount;
 			continue;
@@ -597,7 +597,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 				// carries a localised title half; see the note in R-NODE-RESOLVE.
 				Lines.Add(FString::Printf(
 					TEXT("%s\n    title: %s\n    type ID: %s\n    class: %s"),
-					*TurboMCPNodeId::MakeForNode(Node),
+					*TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true),
 					*TurboMCPNodeId::GetNodeTitle(Node),
 					*TurboMCPNodeId::GetNodeTypeId(Node),
 					*Node->GetClass()->GetName()));
