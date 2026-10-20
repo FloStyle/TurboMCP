@@ -475,6 +475,10 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 	for (int32 Index = 0; Index < Selected.Num(); ++Index)
 	{
 		UEdGraphNode* Node = Selected[Index];
+		const UK2Node* K2 = Cast<UK2Node>(Node);
+		if (!K2 || K2->NodeCausesStructuralBlueprintChange())
+			OutPlan.Refusals.Add(FString::Printf(TEXT("node '%s' requires unsupported or structural creation; copy refuses implicit compilation inside undo"), *KeyOf(Node)));
+
 		if (Node->NodePosX > MAX_int32 - 40 || Node->NodePosY > MAX_int32 - 40)
 			OutPlan.Refusals.Add(FString::Printf(TEXT("node '%s' exceeds the safe copy coordinate range"), *KeyOf(Node)));
 		if (!Node->CanDuplicateNode() || !Node->CanPasteHere(TargetGraphObject))
@@ -847,6 +851,13 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	// have changed since preview, and creation helpers do not enforce paste rules.
 	for (UEdGraphNode* Node : Selected)
 	{
+		const UK2Node* K2 = Cast<UK2Node>(Node);
+		if (!K2 || K2->NodeCausesStructuralBlueprintChange())
+		{
+			OutError = TEXT("unchanged: selected node requires unsupported or structural creation; implicit compile inside undo is refused");
+			return false;
+		}
+
 		if (Node->NodePosX > MAX_int32 - 40 || Node->NodePosY > MAX_int32 - 40)
 		{
 			OutError = TEXT("unchanged: source node exceeds the safe copy coordinate range");
