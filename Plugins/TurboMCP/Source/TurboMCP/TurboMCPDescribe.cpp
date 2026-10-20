@@ -59,10 +59,11 @@ FString TurboMCPDescribe::FunctionParameters(const UFunction* InFunction)
 		++Shown;
 
 		const FProperty* Property = *It;
-		// A return parm and an out parm are both outputs and are printed the same way,
-		// because a caller writing a call node does not distinguish them.
-		if (Property->HasAnyPropertyFlags(CPF_ReturnParm)
-			|| Property->HasAnyPropertyFlags(CPF_OutParm))
+		// Match K2Node_CallFunction pin direction. Reference parameters are inputs
+		// even when reflection also sets OutParm (including const-reference inputs).
+		const bool bIsInput = !Property->HasAnyPropertyFlags(CPF_ReturnParm)
+			&& (!Property->HasAnyPropertyFlags(CPF_OutParm) || Property->HasAnyPropertyFlags(CPF_ReferenceParm));
+		if (!bIsInput)
 		{
 			Outs.Add(FString::Printf(TEXT("%s %s"),
 				*Property->GetCPPType(), *Property->GetName()));
