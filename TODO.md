@@ -70,6 +70,7 @@ The linked records distinguish implemented containment from unresolved causes. V
 | [Signature type and parameter identity preflight](todo/field-fix-17.md) | monday | implementation | done | unbuilt / untested |
 | [Reader node IDs in targeted edits](todo/field-fix-18.md) | monday | implementation | done | unbuilt / untested |
 | [Repoint exact connection replacement](todo/field-fix-19.md) | monday | implementation | done | unbuilt / untested |
+| [Graph Tidy undo ownership](todo/field-fix-20.md) | monday | implementation | done | unbuilt / untested |
 ## Verification and release gates - not product defects
 
 | Task | Track | Kind | State | Evidence |
