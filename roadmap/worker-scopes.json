@@ -87,6 +87,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepointTools.cpp"
           ],
           "new_files": []
+        },
+        "field-swap-safety": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCall.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
