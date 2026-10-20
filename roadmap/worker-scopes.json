@@ -204,6 +204,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDescribe.cpp"
           ],
           "new_files": []
+        },
+        "field-copy-pin-direction": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
