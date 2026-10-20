@@ -765,6 +765,12 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 	TSet<const UEdGraphNode*>& InOutSharedValues,
 	TArray<FString>& OutNotes) const
 {
+	if (InDepth >= 64)
+	{
+		const FString Note = TEXT("; error: execution branch depth limit reached; graph dump is incomplete");
+		OutNotes.Add(Note);
+		return TEXT("\n") + Note;
+	}
 	FString Body;
 	const FString Indent = FString::ChrN(InDepth * 2 + 2, TEXT(' '));
 	TSet<const UEdGraphNode*> InlineNodes;
@@ -772,9 +778,15 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 	const UEdGraphNode* Current = InFirst;
 	int32 Guard = 0;
 
-	while (Current != nullptr && Guard < 2000)
+	while (Current != nullptr)
 	{
-		++Guard;
+		if (Guard++ >= 2000)
+		{
+			const FString Note = TEXT("; error: execution chain exceeds 2000 nodes; graph dump is incomplete");
+			OutNotes.Add(Note);
+			Body += TEXT("\n") + Indent + Note;
+			break;
+		}
 
 		if (IsComment(Current))
 		{
@@ -850,15 +862,6 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 			Body += TEXT(")");
 		}
 		break;
-	}
-
-	if (Guard >= 2000)
-	{
-		// A cycle in exec links should not be possible, but a writer that loops
-		// forever on a malformed graph is worse than one that says so.
-		const FString Note = TEXT("; error: the exec chain did not end after 2000 nodes");
-		OutNotes.Add(Note);
-		Body += TEXT("\n") + Indent + Note;
 	}
 
 	return Body;
