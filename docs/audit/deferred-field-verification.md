@@ -288,3 +288,8 @@ e6615fb revalidates planned getter/consumer membership and reciprocal links befo
 ### Reader error write-back gate
 
 e07223a makes GraphCheck refuse standalone reader error comment lines before asset resolution, with the source line number. Append and other writers using this gate cannot silently discard an explicit malformed/truncated-reader diagnostic and treat its dump as complete. Implemented, unbuilt_untested. Scope is reader error markers only, not all forms of incomplete or unsupported DSL. Deferred evidence: valid comments/string literals remain accepted; indented reader error comments refuse before mutation. No tests/builds run.
+
+
+### Whole graph text completeness
+
+59004c8 scans graph text for balanced parentheses and closed double-quoted values before asset loading. Escapes, comments and the top-level read envelope are handled; unexpected closing delimiters include line/column. Reader error markers inside quoted content are not treated as diagnostics. Implemented, unbuilt_untested. Deferred evidence: truncated forms/strings refuse without writes, balanced reader output and quoted delimiters remain usable. This is structural completeness, not full semantic round-trip support. No tests/builds run.
