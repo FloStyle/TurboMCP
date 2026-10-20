@@ -53,3 +53,7 @@ Native pin setter now validates the proposed value before mutation, refuses non-
 ## Superseding delivery requirement: stock engine, plugin only
 
 Owner explicitly rejects custom-engine deployment. Engine source and three Python dependencies restored to pinned stock revision, dependency SHA-1 verified. Previous engine commits retained as diagnostic evidence only. Source batch continues in TurboMCP with no test runs: in-place DataTable prevalidation, validated pin-default tool with dirty/undo handling, transaction/save safeguards and bounded batch outcomes. Registry filters disable only named unsafe native alternatives and direct users to plugin tools; general script batching has no equivalent and remains unavailable through the protected registry. Direct Python/editor code is outside this protection. Engine binaries must be rebuilt after stock source restoration; no engine patch is a deployment prerequisite. Exact assignment field-plugin-only owns the implementation files.
+
+## Plugin-only batch evidence
+
+Plugin-owned EditTurboMCPPinDefault validates exact input pin identity, records undo, marks dirty and reacquires the pin for read-back. Native set_pin_value is filtered. No automatic compile/save. Stock build passed; runtime regression deferred.

@@ -71,7 +71,10 @@ namespace
 			// A QUOTED STRING MAY CONTAIN COMMAS AND PARENTHESES THAT ARE DATA RATHER THAN STRUCTURE.
 			if (Ch == TCHAR('"'))
 			{
-				bInQuotes = !bInQuotes;
+                int32 Backslashes = 0;
+                for (int32 Previous = Index - 1; Previous >= 0 && Body[Previous] == TCHAR('\\'); --Previous)
+                    ++Backslashes;
+                if ((Backslashes % 2) == 0) bInQuotes = !bInQuotes;
 				Current.AppendChar(Ch);
 				continue;
 			}

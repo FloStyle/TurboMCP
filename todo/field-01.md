@@ -71,3 +71,7 @@ Owner explicitly rejects custom-engine deployment. Engine source and three Pytho
 ### Plugin-only source batch (2026-10-20)
 
 Native DataTable add/set/rename MCP entry points are filtered while TurboMCP is loaded. TurboMCP row edits preserve the existing table object, validate on initialized scratch rows, compare canonical field values, reject conflicting/case-aliased operations and attempt transactional rollback on failure. The intentional native import crash diagnostic was retired from source/catalog; its reproduction and engine patch remain in Git history, not a deployment dependency. Source batch is untested; stock binaries still require rebuilding.
+
+## Plugin-only batch evidence
+
+DataTable text splitting now respects escaped quotes, keeping embedded commas/parentheses inside strings. Stock-engine build e09c5e1cbcd34d899ec8342d81db6c4a passed at 85d2f11; this final parser adjustment awaits rebuild. Runtime regression deferred.
