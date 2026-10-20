@@ -54,3 +54,7 @@ Graph Copy now requires CanTransact and an outstanding owned undo record before 
 ## Link endpoint identity
 
 f2baa7a carries source pin direction in every planned link and resolves endpoints by unique name plus direction. Inputs and outputs sharing a name no longer cause a false ambiguity refusal. Duplicate names within the same direction still refuse through owned rollback. Implementation done; unbuilt and untested.
+
+## Copy boundary across graphs
+
+FIELD-FIX-06: planner now classifies an external endpoint against the destination graph, not merely the Blueprint asset. A wire to a node left in the source graph is reported as unlinked instead of causing apply-time rollback. Implementation done; unbuilt and untested. Deferred verification: partial-block copy between two graphs of one Blueprint, checking reported boundary wires and preserved internal links.

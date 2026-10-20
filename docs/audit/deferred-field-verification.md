@@ -152,3 +152,7 @@ FIELD-FIX-06 copy link endpoint ambiguity refusal and rollback remain untested.
 ## Graph Copy directional endpoints — f2baa7a
 
 FIELD-FIX-06 implementation done; unbuilt and untested by owner request. Deferred evidence: copy a block with same-named input/output pins and confirm exact links; duplicate same-direction endpoints must refuse with restoration. This is a verification flag on the existing fix, not a new product task.
+
+## Copy boundary across graphs
+
+FIELD-FIX-06: planner now classifies an external endpoint against the destination graph, not merely the Blueprint asset. A wire to a node left in the source graph is reported as unlinked instead of causing apply-time rollback. Implementation done; unbuilt and untested. Deferred verification: partial-block copy between two graphs of one Blueprint, checking reported boundary wires and preserved internal links.
