@@ -105,6 +105,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp"
           ],
           "new_files": []
+        },
+        "field-copy-safety": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
