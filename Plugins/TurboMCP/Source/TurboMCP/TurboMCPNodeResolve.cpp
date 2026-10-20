@@ -112,8 +112,9 @@ namespace
 		};
 
 
-		for (const UEdGraphPin* Pin : InNode->Pins)
+		for (int32 RawIndex = 0; RawIndex < InNode->Pins.Num(); ++RawIndex)
 		{
+			const UEdGraphPin* Pin = InNode->Pins[RawIndex];
 			if (Pin == nullptr)
 			{
 				continue;
@@ -138,8 +139,8 @@ namespace
 			// `2.1.8` says pins left at their default are not printed. It is named
 			// here rather than printed, because this tool reports a node's shape,
 			// not its graph text.
-			Lines += FString::Printf(TEXT("\n      %s %-2d %s"),
-				*Direction, Index, *Pin->PinName.ToString());
+			Lines += FString::Printf(TEXT("\n      %s direction-index=%d array-index=%d %s [pin-guid=%s]"),
+				*Direction, Index, RawIndex, *Pin->PinName.ToString(), *Pin->PinId.ToString());
 
             Lines += FString::Printf(TEXT(" [category=%s subcategory=%s container=%d]"),
                 *Pin->PinType.PinCategory.ToString(), *Pin->PinType.PinSubCategory.ToString(), static_cast<int32>(Pin->PinType.ContainerType));
@@ -147,6 +148,12 @@ namespace
                 Lines += FString::Printf(TEXT(" type=%s"), *TypeObject->GetPathName());
             if (Pin->PinType.bIsReference) Lines += TEXT(" reference");
             if (Pin->PinType.bIsConst) Lines += TEXT(" const");
+            if (Pin->bHidden) Lines += TEXT(" hidden");
+            if (Pin->bOrphanedPin) Lines += TEXT(" orphaned");
+            if (Pin->bDefaultValueIsReadOnly) Lines += TEXT(" default-read-only");
+            if (Pin->bDefaultValueIsIgnored) Lines += TEXT(" default-ignored");
+            if (Pin->LinkedTo.Num() > 0) Lines += TEXT(" connected-default-inactive");
+
             if (Pin->PinType.ContainerType == EPinContainerType::Map)
             {
                 const FEdGraphTerminalType& ValueType = Pin->PinType.PinValueType;
