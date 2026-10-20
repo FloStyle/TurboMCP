@@ -248,3 +248,8 @@ afd3d63 rejects oversized row/field identifiers before planning FName conversion
 ### DataTable empty sets and failure stop
 
 535280a rejects separator-only/empty set operations in Parse and Plan; they can no longer silently create default rows. Apply stops later removals/sets after the first failed mutation and checks row schema before invoking another AddRow callback. Existing owned rollback handles the failure. Implemented; unbuilt_untested. Deferred evidence: empty-set refusal preserves table, injected removal/addition failure skips later mutations and rolls back; ordinary multirow edits remain valid. Original reported crash remains open. No tests/builds run.
+
+
+### DataTable reusable outputs
+
+6520c0f resets parse/plan/report outputs; parsing publishes operations only after complete success. Replanning preserves aliased input but replaces the prior plan. Missing table/schema records a refusal as well as returning an error. Current MCP wrapper already uses fresh locals; this closes helper-level stale/partial output behavior, not a reproduced field crash. Implemented, unbuilt_untested. Deferred evidence: sequential reuse, late parse error, aliased replan and early apply refusal cannot expose prior operations or success reports. No tests/builds run.
