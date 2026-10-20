@@ -369,3 +369,7 @@ fb328d9 replaces the combined refusal with separate missing-input, orphaned, exe
 ## 2026-10-21 — Execution fan-out (`4948232`)
 
 Implemented slice, unbuilt/untested: enumerate ordinary/entry execution endpoints and diagnose unsupported fan-out. Verify branch joins, malformed links, multiple outputs, and reader-error refusal on write-back. Broader d3897f07 remains open for knot/helper coverage.
+
+## 2026-10-21 — Reroute traversal (`cb782dc`)
+
+Untested: execution reroute fan-out, long chains, cycles/shared reroutes, malformed reciprocal edges, normal linear chains and upstream data reroutes. Full-mode knot identity remains open under d3897f07. No tests/builds run.
