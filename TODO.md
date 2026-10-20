@@ -31,6 +31,7 @@ Generated from task files and the approved queue. After editing task status, run
 | [Graph replacement single-transaction implementation](todo/field-fix-01.md) | monday | implementation | done |
 | [Deferred regression for urgent plugin fixes](todo/field-reg-01.md) | monday | verification | todo |
 | [Repoint rollback and batch ownership implementation](todo/field-fix-02.md) | monday | implementation | done |
+| [Call Swap transaction and replacement-position safeguards](todo/field-fix-03.md) | monday | implementation | done |
 
 ## Historical findings
 

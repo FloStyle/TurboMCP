@@ -53,3 +53,7 @@ Source-only, no build or test run at owner request. Not runtime acceptance.
 b0753f2 unifies graph lookup with the reader and rejects ambiguous graph names in Append/Patch/Replace. Replace checks removal identity and graph node count before any append.
 
 No build or tests run, per owner instruction. Runtime acceptance remains pending.
+
+## Call Swap scoped implementation
+
+FIELD-FIX-03 implementation closed; regression tracked in FIELD-REG-01. Literal-default migration remains unresolved: current swap migrates links, not unconnected input values. Full round-trip acceptance remains open.

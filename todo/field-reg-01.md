@@ -40,3 +40,7 @@ Committed implementation evidence and a separate pending regression record.
 ## Repoint regression pending
 
 Verify failure after the first rewired reader restores all original links, failed target creation leaves no node, batch failure rolls back earlier operations, one successful batch needs one undo, compile/save are not run, and ambiguous graph names refuse. Source aad28b7 is unbuilt and untested.
+
+## Call Swap regression pending
+
+Verify rejected migration restores links/nodes without undoing previous work; final link and node count verification; no implicit compile; replacement retains position; overflow and ambiguous graph refusal. Source 019a1c05d6e046809a3e8b8ef170af3453164a0f is unbuilt and untested.

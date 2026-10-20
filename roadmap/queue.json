@@ -207,6 +207,14 @@
       "workstream": "field-emergency",
       "depends_on": [],
       "track": "monday"
+    },
+    {
+      "id": "FIELD-FIX-03",
+      "path": "todo/field-fix-03.md",
+      "kind": "implementation",
+      "workstream": "field-emergency",
+      "depends_on": [],
+      "track": "monday"
     }
   ]
 }
