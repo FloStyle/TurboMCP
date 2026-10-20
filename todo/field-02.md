@@ -36,10 +36,14 @@ A failed batch containing compile reportedly removed 23 child widgets from three
 Reproduce with a child Widget and two parent fixtures. Compare hierarchy, bindings, defaults and dirty state after deliberate failure. Keep compile outside edit transactions; specify a guard before changing rollback behavior.
 
 ## Handoff
-Open; no fix or new runtime proof. Codex owns urgent follow-up. Auto-dispatch remains paused.
+Containment implemented and tested: TurboMCP compile refuses active editor transactions before loading assets. Native compile paths and the reported dependent-widget loss remain open. Codex owns urgent follow-up; DSH stays paused.
 
 ## Approved immediate safeguard
 
 Refuse EditTurboMCPCompile whenever GEditor reports an active transaction, before resolving or loading assets. Do not end or undo the caller transaction. Test the real wrapper on a synthetic Widget fixture: refusal, unchanged graph/widget identities and dirty state, transaction remains active, then normal compile succeeds after the scope ends. This is containment of the TurboMCP entry point, not proof that native compile or every reinstance route is protected. Reproduce the full nested-widget failure separately.
 
 Verification: `python Tools/execute-tests.py --profile engine --suites test-widget-roundtrip,test-monday-disk-loop --execute --max-seconds 900`.
+
+## Safeguard evidence
+
+Candidate 4b70306e12289c3d47cc62859280b1da831e677f: supervised build plus test-widget-roundtrip and test-monday-disk-loop passed (execution ba0d5ab258634d9d95243ef0556fd0cf; 16 fixture files restored). Offline validation d8e1534797b54b9e9353030d851b6769 passed all 26 checks. This does not reproduce or certify recovery of the reported dependent-parent widget loss.
