@@ -75,24 +75,28 @@ FIELD-FIX-10: local float/string/struct defaults, unset values, newline escaping
 
 FIELD-FIX-11: two branch outputs into one exec input, reroutes, invalid endpoints, and multi-source data refusal; confirm partial evidence survives output. Unbuilt/untested.
 
-## NF-08 NodeFind word search — deferred evidence
+## NF-08 NodeFind word search â€” deferred evidence
 
 Implementation closed in FIELD-FIX-12. Unbuilt and untested. Later check spaces, tabs/newlines, commas/pipes, empty terms, AND matching and reported parsed terms. This is verification evidence debt, not a product task.
 
-## OV-03 override origins — deferred evidence
+## OV-03 override origins â€” deferred evidence
 
 FIELD-FIX-13 implementation closed, unbuilt and untested. Later check local functions excluded from counts, genuine parent overrides, direct and inherited interface declarations, filters and zero-results wording.
 
-## BatchEdit rollback lifetime — deferred evidence
+## BatchEdit rollback lifetime â€” deferred evidence
 
 FIELD-FIX-14 source implementation closed, unbuilt and untested. Later check failure before first write, failure after an applied operation, exact owned undo, preservation of previous user undo history, and successful single undo. Native script rollback and Widget loss remain separate open problems.
 
-## DataTable prepared rows — deferred evidence
+## DataTable prepared rows â€” deferred evidence
 
 FIELD-FIX-15 implemented, unbuilt and untested. Later check native row structs with strings/arrays/object references, existing and new rows, editor-open callbacks, rollback and read-back. Work-machine crash cause remains open.
 
 Source clarification: stock UTransBuffer::End guards ActiveCount >= 1, so the second BatchEdit end was normally a no-op, not a proven crash. FIELD-FIX-14 removes redundant finalization and strengthens exact transaction ownership; it is not crash reproduction evidence.
 
-## FunctionAdd pin lifetime — deferred evidence
+## FunctionAdd pin lifetime â€” deferred evidence
 
 FIELD-FIX-16 implemented, unbuilt and untested. Later check an unresolved call becoming resolvable through function creation, reconstruction replacing pins, preserved reciprocal links, and genuinely missing endpoint diagnostics.
+
+## Signature preflight - deferred evidence
+
+FIELD-FIX-17 implemented, unbuilt and untested. Later check supported array/set/map types, nested containers, unhashable keys, fresh output types, case aliases and cross-direction parameter collisions. Refused signatures must not mutate assets.
