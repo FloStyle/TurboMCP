@@ -373,6 +373,12 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 	OutPlan.TargetAsset = InTargetAsset;
 	OutPlan.TargetGraph = InTargetGraph;
 	OutPlan.TargetAnchorNodeKey = InAnchorNodeKey;
+	if (!InAnchorNodeKey.IsEmpty())
+	{
+		OutPlan.Refusals.Add(TEXT("anchor wiring is not implemented; omit AnchorNodeId to copy without an anchor"));
+		return true;
+	}
+
 
 	if (InNodeKeys.Num() == 0)
 	{
@@ -745,6 +751,12 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 
     if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
     { OutError = TEXT("unchanged: graph copy requires an idle editor with undo available, outside an active transaction"); return false; }
+
+	if (InPlan.Verb == EVerb::Copy && !InPlan.TargetAnchorNodeKey.IsEmpty())
+	{
+		OutError = TEXT("unchanged: anchor wiring is not implemented; no nodes were copied");
+		return false;
+	}
 
 	if (!InPlan.bAcceptable())
 	{
