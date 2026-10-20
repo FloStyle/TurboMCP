@@ -1384,6 +1384,8 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	// THE PLAN IS READ-ONLY, so the copies this function makes are recorded in a LOCAL array. `Plan`
 	// decided WHERE each copy goes and wrote nothing; `Apply` is the half that creates, so the handle to
 	// each created node lives here rather than being written back into a const plan.
+	const bool bWasDirtyBefore = Graph->GetOutermost()->IsDirty();
+	const int32 NodesBefore = Graph->Nodes.Num();
     FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphTidy", "TurboMCP tidy graph"));
     if (!Transaction.IsOutstanding()) return TEXT("unchanged: could not open tidy undo transaction");
     if (UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForGraph(Graph)) Blueprint->Modify();
@@ -1492,13 +1494,6 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 	}
 
-	// *** WHETHER THE PACKAGE WAS ALREADY DIRTY WHEN THE PASS STARTED, READ BEFORE THE PASS CAN SET IT.
-	// This is the same guard `GraphKnots.cpp` gained, and the reasoning is identical: a rollback must
-	// leave the asset as it found it, so the flag may be cleared ONLY when this pass is what set it.
-	// An earlier operation in the same editor session may own unsaved work, and discarding that is not
-	// this pass's decision to make. ***
-	const bool bWasDirtyBefore = Graph->GetOutermost()->IsDirty();
-
 	const bool bBetter = MeasuredAfter < InPlan.WireLengthBefore;
 	if (!bBetter && !InPlan.bForce)
 	{
@@ -1539,19 +1534,14 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 					++RestorationFailed;
 				}
 			}
+			else
+			{
+				++RestorationFailed;
+			}
 			Entry.Copy->DestroyNode();
 			++Undone;
 		}
 		Graph->MarkPackageDirty();
-
-		// *** THE DIRTY FLAG IS RESTORED TO WHAT IT WAS BEFORE THE PASS, AND ONLY THEN. `MarkPackageDirty`
-		// above runs on a path whose whole purpose is to leave the asset as it was, so a fully rolled-back
-		// pass was leaving the package looking modified and the editor offering to save a change that does
-		// not exist. CLEARED ONLY WHEN THIS PASS IS WHAT SET IT - see `bWasDirtyBefore`. ***
-		if (!bWasDirtyBefore)
-		{
-			Graph->GetOutermost()->SetDirtyFlag(false);
-		}
 
 		double Restored = 0.0;
 		for (const UEdGraphNode* Node : Graph->Nodes)
@@ -1570,7 +1560,13 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			}
 		}
 		const bool bRestored = FMath::IsNearlyEqual(Restored, InPlan.WireLengthBefore, 1.0);
-		FString Out = FString::Printf(TEXT("unchanged: %s in %s would be worse (total wire length %.1f -> %.1f), so it was rolled back. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
+		bool bPositionsRestored = true;
+		for (const auto& Undo : OriginalPositions)
+			bPositionsRestored &= Undo.Key->NodePosX == Undo.Value.Key && Undo.Key->NodePosY == Undo.Value.Value;
+		const bool bRollbackComplete = bRestored && RestorationFailed == 0
+			&& bPositionsRestored && Graph->Nodes.Num() == NodesBefore;
+		if (bRollbackComplete && !bWasDirtyBefore) Graph->GetOutermost()->SetDirtyFlag(false);
+		FString Out = FString::Printf(TEXT("%s: %s in %s would be worse (total wire length %.1f -> %.1f), so it was rolled back. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), bRollbackComplete ? TEXT("unchanged") : TEXT("partial"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
 		if (InPlan.SelectedNodeKeys.Num() > 0)
 		{
 			Out += FString::Printf(TEXT(" Scope was %d selected node(s); %d surrounding node(s) and all comment boxes were fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount);
@@ -1587,6 +1583,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 				TEXT("came back but those readers were left severed, which is a defect in this tool and not ")
 				TEXT("a clean rollback. ***"), RestorationFailed);
 		}
+		if (!bRollbackComplete) Out += TEXT(" rollback=incomplete; package remains dirty; inspect before retrying or saving.");
 		return Out;
 	}
 
