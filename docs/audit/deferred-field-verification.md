@@ -176,3 +176,7 @@ FIELD-FIX-06 implemented, unbuilt and untested: nonempty anchors refuse before m
 ## Copied node result identities
 
 Copy results now include explicit source-to-target canonical long node IDs, retaining object names as supplementary text. Follow-up tools no longer need to infer target IDs from UObject names. Implementation done; unbuilt and untested. Deferred evidence: returned target IDs resolve to the copied nodes in the destination graph.
+
+## Selection identity integrity
+
+The shared structural selection reader now rejects multiple matching nodes and repeated references to the same node, including short/long aliases. This prevents duplicate creation followed by overwritten copy-map entries. Implementation done; unbuilt and untested. Deferred evidence: repeated IDs and ambiguous IDs refuse without mutation, while unique selections retain order.
