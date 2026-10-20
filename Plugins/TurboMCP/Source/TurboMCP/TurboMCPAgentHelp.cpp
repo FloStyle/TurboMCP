@@ -316,6 +316,20 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 	FString WantedTool = ToolName;
 	WantedToolset.TrimStartAndEndInline();
 	WantedTool.TrimStartAndEndInline();
+	// A continuation uses the existing string field, preserving the public call schema.
+	int32 ListOffset = 0;
+	if (WantedTool.StartsWith(TEXT("list:")))
+	{
+		const FString OffsetText = WantedTool.Mid(5);
+		if (WantedToolset.IsEmpty() || OffsetText.IsEmpty() || OffsetText.Len() > 8)
+			return TEXT("error: use ToolsetName with ToolName=list:<nonnegative offset> from the previous page");
+		for (TCHAR Ch : OffsetText)
+			if (Ch < TEXT('0') || Ch > TEXT('9'))
+				return TEXT("error: list offset must contain decimal digits only");
+		ListOffset = FCString::Atoi(*OffsetText);
+		WantedTool.Empty();
+	}
+
 
 	if (WantedToolset.IsEmpty() && WantedTool.IsEmpty())
 	{
@@ -392,40 +406,33 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 				continue;
 			}
 
-			/**
-			 * How many tools one summary may list.
-			 *
-			 * R-TOOL-SCHEMA sets the 2000 character budget for help output, and
-			 * an engine toolset can hold dozens of tools, so an uncapped summary
-			 * would break that budget. The count of what was left out is printed
-			 * so a reader knows the list is short (`P6`).
-			 */
-			constexpr int32 MaxSummaryTools = 12;
-
-			const int32 Shown = FMath::Min(Entry.Tools.Num(), MaxSummaryTools);
-
-			FString Summary = FString::Printf(TEXT("read: %s, %d tools"),
-				*Entry.Name, Entry.Tools.Num());
-			if (Entry.Tools.Num() > Shown)
+			if (ListOffset > 0 && ListOffset >= Entry.Tools.Num())
+				return FString::Printf(TEXT("error: list offset %d is outside this toolset's %d tools; restart with ToolName empty"), ListOffset, Entry.Tools.Num());
+			FString Summary = FString::Printf(TEXT("read: %s, %d tools, offset %d"),
+				*Entry.Name, Entry.Tools.Num(), ListOffset);
+			int32 Next = ListOffset;
+			for (; Next < Entry.Tools.Num() && Next - ListOffset < 12; ++Next)
 			{
-				Summary += FString::Printf(TEXT(", listing the first %d"), Shown);
-			}
-
-			for (int32 Index = 0; Index < Shown; ++Index)
-			{
-				const TSharedPtr<FJsonObject>& Tool = Entry.Tools[Index];
+				const TSharedPtr<FJsonObject>& Tool = Entry.Tools[Next];
 				const FString Bare = BareToolName(Field(Tool, TEXT("name")));
-				Summary += FString::Printf(TEXT("\n%s %s - %s"),
-					*KindOf(Entry.Name), *Bare,
-					*FirstSentence(Field(Tool, TEXT("description"))));
+				FString Description = FirstSentence(Field(Tool, TEXT("description")));
+				Description.ReplaceInline(TEXT("\r"), TEXT(" "));
+				Description.ReplaceInline(TEXT("\n"), TEXT(" "));
+				if (Description.Len() > 120) Description = Description.Left(117) + TEXT("...");
+				const FString Row = FString::Printf(TEXT("\n%s %s - %s"), *KindOf(Entry.Name), *Bare, *Description);
+				// Reserve space for the continuation, never cut a tool name in half.
+				if (Summary.Len() + Row.Len() > HelpBudgetChars - 250)
+				{
+					if (Next == ListOffset)
+						return TEXT("error: a tool name exceeds the summary budget; inspect the registry schema directly");
+					break;
+				}
+				Summary += Row;
 			}
-
-			if (Entry.Tools.Num() > Shown)
-			{
-				Summary += FString::Printf(
-					TEXT("\n(%d more; call ReadTurboMCPToolIndex for every name, then name one tool here for its parameters and traps)"),
-					Entry.Tools.Num() - Shown);
-			}
+			if (Next < Entry.Tools.Num())
+				Summary += FString::Printf(TEXT("\n%d more. Continue with the same ToolsetName and ToolName=\"list:%d\"."), Entry.Tools.Num() - Next, Next);
+			else Summary += TEXT("\nEnd of toolset.");
+			Summary += TEXT("\nPass a listed bare tool name for full parameters and traps.");
 
 			return Summary;
 		}
