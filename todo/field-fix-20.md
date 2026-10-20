@@ -41,3 +41,7 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ## Repeated layout drift implementation
 
 9a0fd05a7cedc9970b0432de040e15e304660c06: moving nodes no longer count as fixed obstacles for boxless/scoped placement. Preserve the group minimum X/Y origin unless a genuine fixed boundary requires moving right. This fixes source-confirmed repeated rightward drift and unwanted Y=0 reset. Unbuilt and untested; complete visual layout acceptance remains open.
+
+## Getter splitting preservation
+
+Source c2e4894 restricts Tidy getter splitting to exact, pure VariableGet nodes with a single unsplit value output. Target/input-bearing getters, validated getters, split pins and subclasses stay intact because copying only VariableReference cannot preserve their complete semantics. The same eligibility guard applies during planning and application. This implementation slice is closed; unbuilt and untested. Targeted overlap-free layout remains open.

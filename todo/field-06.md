@@ -11,7 +11,7 @@ Review: source-reviewed
 
 ## Current product state
 
-The unresolved product requirement is predictable targeted layout on tool-built graphs. Geometry containment does not establish overlap-free layout.
+The unresolved product requirement is predictable targeted layout on tool-built graphs. Geometry containment does not establish overlap-free layout. Getter input/validated/split semantics are now preserved by excluding those nodes from the reference-only splitting optimization (c2e4894, untested).
 
 All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
 
