@@ -8,6 +8,8 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "ScopedTransaction.h"
+#include "Editor.h"
+#include "Editor/Transactor.h"
 
 namespace
 {
@@ -65,7 +67,11 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPBatchEdit(const FString& Operati
 }
 FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
 {
+ if (!GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()) return Refusal(TEXT("requires an idle editor outside an active transaction"));
  TArray<FBatchOperation> Ops; FString Error; if (!ParseBatch(Operations, Ops, Error)) return Refusal(Error);
+ const int32 PreviousIndex = GEditor->Trans ? GEditor->Trans->GetQueueLength() - GEditor->Trans->GetUndoCount() - 1 : -1;
+ const FTransaction* Previous = PreviousIndex >= 0 ? GEditor->Trans->GetTransaction(PreviousIndex) : nullptr;
+ const FGuid PreviousId = Previous ? Previous->GetId() : FGuid();
  FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "BatchEdit", "TurboMCP batch edit"));
  TArray<FString> Applied;
  for (FBatchOperation& Op : Ops)
@@ -73,8 +79,12 @@ FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
   FString Report; FTurboMCPGraphRepoint::FApplyContext Context; Context.bCompile = false; Context.bSave = false;
   if (!FTurboMCPGraphRepoint::ApplyCore(Op.Repoint, Context, Report, Error))
   {
-   const bool bRolledBack = FTurboMCPRollback::EndAndUndoActiveTransaction();
-   return FString::Printf(TEXT("unchanged\nfailed id=%s kind=%s\nappliedAndRolledBack=%s\nrollback=%s\nerror=%s"), *Op.Id, *Op.Kind, *FString::Join(Applied, TEXT(",")), bRolledBack ? TEXT("complete") : TEXT("failed"), *Error);
+   GEditor->EndTransaction();
+   const int32 CurrentIndex = GEditor->Trans ? GEditor->Trans->GetQueueLength() - GEditor->Trans->GetUndoCount() - 1 : -1;
+   const FTransaction* Current = CurrentIndex >= 0 ? GEditor->Trans->GetTransaction(CurrentIndex) : nullptr;
+   // Never undo a user's previous edit when this batch failed before recording changes.
+   const bool bRolledBack = Current && Current->GetId() != PreviousId && GEditor->UndoTransaction(false);
+   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollback=%s\nerror=%s"), bRolledBack ? TEXT("unchanged") : TEXT("partial"), *Op.Id, *Op.Kind, *FString::Join(Applied, TEXT(",")), bRolledBack ? TEXT("complete") : TEXT("failed"), *Error);
   }
   Applied.Add(Op.Id);
  }

@@ -67,3 +67,7 @@ Native DataTable input follow-up committed as cc5b062305f3201d4f27ee8497bd54e967
 ## Superseding delivery requirement: stock engine, plugin only
 
 Owner explicitly rejects custom-engine deployment. Engine source and three Python dependencies restored to pinned stock revision, dependency SHA-1 verified. Previous engine commits retained as diagnostic evidence only. Source batch continues in TurboMCP with no test runs: in-place DataTable prevalidation, validated pin-default tool with dirty/undo handling, transaction/save safeguards and bounded batch outcomes. Registry filters disable only named unsafe native alternatives and direct users to plugin tools; general script batching has no equivalent and remains unavailable through the protected registry. Direct Python/editor code is outside this protection. Engine binaries must be rebuilt after stock source restoration; no engine patch is a deployment prerequisite. Exact assignment field-plugin-only owns the implementation files.
+
+### Plugin-only source batch (2026-10-20)
+
+Native DataTable add/set/rename MCP entry points are filtered while TurboMCP is loaded. TurboMCP row edits preserve the existing table object, validate on initialized scratch rows, compare canonical field values, reject conflicting/case-aliased operations and attempt transactional rollback on failure. The intentional native import crash diagnostic was retired from source/catalog; its reproduction and engine patch remain in Git history, not a deployment dependency. Source batch is untested; stock binaries still require rebuilding.

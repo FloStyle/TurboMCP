@@ -2075,6 +2075,12 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPBatchEdit(const FString& Operations);
 
+    /** Set one unconnected input pin default by exact reader NodeId and pin name. Validates before mutation, captures undo and marks the Blueprint dirty. Does not compile or save. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPPinDefault(const FString& Asset, const FString& GraphName,
+        const FString& NodeId, const FString& PinName, const FString& Value);
+
+
 	/**
 	 * The Edit twin of PreviewTurboMCPGraphPatch. It reaches the SAME plan, so everything it
 	 * refuses the preview refused first, with the same words.

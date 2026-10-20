@@ -137,3 +137,16 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `EditTurboMCPStructNew` | Create a user struct asset, with its fields in one call |
 | `EditTurboMCPStructFields` | Add, change, reorder and remove fields on an existing user struct |
 | `EditTurboMCPVcsCheckout` | Take the lock before a write: check one or more assets out through the project own provider |
+
+## Stock-engine write safeguards (candidate)
+
+TurboMCP filters selected native MCP tools while loaded. Refresh discovery after updating the plugin. No engine source patch is required. This candidate has not completed runtime regression.
+
+| Filtered native tool | Plugin workflow |
+| --- | --- |
+| DataTableTools.add_rows / set_rows / rename_rows | PreviewTurboMCPDataTableRows, then EditTurboMCPDataTableRows; use explicit row operations. Rename is not an automatic drop-in replacement. |
+| BlueprintTools.set_pin_value | EditTurboMCPPinDefault with exact reader node identity and input pin name; unconnected K2 defaults only. |
+| BlueprintTools.compile_blueprint | EditTurboMCPCompile, followed by explicit EditTurboMCPSave when desired. |
+| ProgrammaticToolset.execute_tool_script | Sequential tool calls, or Preview/EditTurboMCPBatchEdit for supported graphRepoint operations only. Arbitrary script batching has no equivalent. |
+
+These filters do not intercept direct Python calls or editor actions. They contain known MCP routes; they do not repair Unreal globally. Pin edits mark the Blueprint dirty and capture undo but do not compile or save automatically.

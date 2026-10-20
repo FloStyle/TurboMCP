@@ -11,6 +11,8 @@
 #include "Modules/ModuleManager.h"
 
 #include "ToolsetRegistry/UToolsetRegistry.h"
+#include "ToolsetRegistry/ToolsetRegistrySubsystem.h"
+#include "ToolsetRegistry/ToolsetRegistry.h"
 
 #include "Logging.h"
 #include "TurboMCPAnalyticsProvider.h"
@@ -74,6 +76,28 @@ void FTurboMCPModule::RegisterToolsets()
 	}
 
 	RegisterTurboMCPToolsets();
+    // Stock-engine containment: these native paths bypass the plugin's write
+    // and rollback safeguards. Exact suffixes avoid blocking unrelated tools.
+    auto RegistryResult = UToolsetRegistrySubsystem::Get();
+    if (!RegistryResult.HasError())
+    {
+        auto& Registry = RegistryResult.GetValue()->ToolsetRegistry;
+        const TArray<FString> Patterns = {
+            TEXT("/(^|\\.)DataTableTools\\.(add_rows|set_rows|rename_rows)$/"),
+            TEXT("/(^|\\.)BlueprintTools\\.(set_pin_value|compile_blueprint)$/"),
+            TEXT("/(^|\\.)ProgrammaticToolset\\.execute_tool_script$/")
+        };
+        for (const FString& Pattern : Patterns)
+        {
+            if (!Registry.GetBlockedNames().Contains(Pattern))
+            {
+                Registry.AddBlockedName(Pattern);
+                InstalledSafetyFilters.Add(Pattern);
+            }
+        }
+        UE_LOG(LogTurboMCP, Warning, TEXT("Native DataTable JSON writes, pin setters, compile and script batches are filtered. Use TurboMCP DataTableRows, PinDefault, Compile/Save and bounded BatchEdit. Direct Python/editor code is not intercepted."));
+    }
+
 
 	InstallAnalyticsProvider();
 
@@ -87,6 +111,16 @@ void FTurboMCPModule::UnregisterToolsets()
 		return;
 	}
 
+    auto RegistryResult = UToolsetRegistrySubsystem::Get();
+    if (!RegistryResult.HasError())
+    {
+        auto& Registry = RegistryResult.GetValue()->ToolsetRegistry;
+        for (const FString& Pattern : InstalledSafetyFilters)
+        {
+            Registry.RemoveBlockedName(Pattern);
+        }
+    }
+    InstalledSafetyFilters.Reset();
 	UnregisterTurboMCPToolsets();
 }
 

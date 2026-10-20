@@ -8,6 +8,10 @@
 #include "TurboMCPDataTableRows.h"
 
 #include "DataTableEditorUtils.h"
+#include "Editor.h"
+#include "ScopedTransaction.h"
+#include "UObject/StructOnScope.h"
+#include "TurboMCPRollback.h"
 #include "Engine/DataTable.h"
 #include "Misc/OutputDevice.h"
 #include "UObject/Class.h"
@@ -406,15 +410,37 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 	// ROWS THIS CALL WOULD ITSELF ADD, so an op later in the same call may address one. THIS IS THE ONLY WAY A NAME
 	// THAT IS NOT IN THE TABLE YET CAN BE LEGITIMATE, and keeping it as a SET OF NAMES rather than as a growing
 	// table is what keeps the plan from depending on writes that have not happened.
-	TSet<FString> PlannedAdditions;
+	TSet<FName> PlannedAdditions;
+	TMap<FName, ERowOp> SeenOperations;
 
 	for (const FRowOp& Op : Ops)
 	{
 		Out.Ops.Add(Op);
 
 		const FName RowName(*Op.RowName);
+        if (RowName.IsNone())
+        {
+            Out.Refusals.Add(TEXT("Empty/None row names are not writable"));
+            continue;
+        }
+        if (const ERowOp* Previous = SeenOperations.Find(RowName))
+        {
+            if (*Previous != Op.Op || Op.Op == ERowOp::Remove)
+            {
+                Out.Refusals.Add(FString::Printf(TEXT("Conflicting/repeated removal for row '%s'; split the operations"), *Op.RowName));
+                continue;
+            }
+        }
+        SeenOperations.Add(RowName, Op.Op);
+        TSet<FName> Fields;
+        for (const FFieldEdit& Edit : Op.Fields)
+        {
+            const FName Field(*Edit.Name);
+            if (Fields.Contains(Field)) Out.Refusals.Add(FString::Printf(TEXT("Duplicate field '%s' in one row operation"), *Edit.Name));
+            Fields.Add(Field);
+        }
 		const bool bExistsNow = Rows.Contains(RowName);
-		const bool bSetEarlier = PlannedAdditions.Contains(Op.RowName);
+		const bool bSetEarlier = PlannedAdditions.Contains(FName(*Op.RowName));
 		const bool bWillExist = bExistsNow || bSetEarlier;
 
 		if (Op.Op == ERowOp::Remove)
@@ -456,7 +482,7 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 				Change.OldText = OneFieldText(Struct, Row, Edit.Name);
 				// A SET THAT CHANGES NOTHING IS REPORTED AND FLAGGED rather than hidden, because a caller who
 				// asked for it should be able to see that the table already agreed.
-				Change.bUnchanged = Change.OldText.Equals(Edit.Text, ESearchCase::IgnoreCase);
+				Change.bUnchanged = Change.OldText.Equals(Edit.Text, ESearchCase::CaseSensitive);
 			}
 			else if (bSetEarlier)
 			{
@@ -471,7 +497,7 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 			Out.Changes.Add(MoveTemp(Change));
 		}
 
-		PlannedAdditions.Add(Op.RowName);
+		PlannedAdditions.Add(FName(*Op.RowName));
 	}
 
 	return FString();
@@ -546,6 +572,21 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 
 	// ONE TRANSACTION: the removals and the sets, with no early exit, so a failure part-way is REPORTED rather than
 	// silently leaving half the request applied.
+    // Validate every full row on initialized scratch memory before any removal or write.
+    for (const TPair<FName, FString>& Pair : FinalText)
+    {
+        FStructOnScope Scratch(Struct);
+        FString ValidationError;
+        if (!ImportRow(Struct, Scratch.GetStructMemory(), Table, Pair.Value, ValidationError))
+            return FString::Printf(TEXT("unchanged: invalid row '%s': %s"), *Pair.Key.ToString(), *ValidationError);
+        // Compare read-back with the engine's canonical representation, not input spelling.
+        if (TMap<FName, FString>* Fields = ExpectedFields.Find(Pair.Key))
+            for (TPair<FName, FString>& Field : *Fields)
+                Field.Value = OneFieldText(Struct, Scratch.GetStructMemory(), Field.Key.ToString());
+    }
+    if (!GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+        return TEXT("unchanged: DataTable edit requires an idle editor outside an active transaction");
+    FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "DataTableRows", "TurboMCP DataTable rows"));
 	Table->Modify();
 
 	int32 Removed = 0;
@@ -649,10 +690,11 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	Failures.Append(VerificationFailures);
 	if (Failures.Num() > 0)
 	{
-		return FString::Printf(
-			TEXT("error: %d row or field request(s) could NOT be applied or verified: %s")
-			TEXT("\n; the read-back above is the engine result. This is a partial write, not success; the package is marked dirty."),
-			Failures.Num(), *FString::Join(Failures, TEXT("; ")));
+        const bool bUndone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        OutReport = bUndone ? TEXT("rollback=complete; attempted read-back discarded; save=not_requested")
+                            : TEXT("rollback=failed; partial changes may remain; inspect before retrying");
+        return FString::Printf(TEXT("%s: %s"), bUndone ? TEXT("unchanged") : TEXT("partial"),
+            *FString::Join(Failures, TEXT("; ")));
 	}
 
 	return FString();

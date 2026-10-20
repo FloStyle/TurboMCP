@@ -60,4 +60,5 @@ private:
 
 	/** True once our analytics provider is the installed one. */
 	bool bInstalledAnalyticsProvider = false;
+	TArray<FString> InstalledSafetyFilters;
 };
