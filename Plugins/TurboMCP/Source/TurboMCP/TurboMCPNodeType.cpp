@@ -10,6 +10,10 @@
 #include "BlueprintActionDatabase.h"
 #include "BlueprintActionFilter.h"
 #include "BlueprintNodeSpawner.h"
+#include "BlueprintVariableNodeSpawner.h"
+#include "K2Node_VariableGet.h"
+#include "K2Node_VariableSet.h"
+#include "Internationalization/Text.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
@@ -214,6 +218,27 @@ namespace
                         Entry.TypeId = TEXT("Function|") + (Source
                             ? Source->GetPathName() + TEXT(".") + Function->GetName() : Function->GetPathName());
                     }
+				// Member-variable IDs must match the reader, not friendly menu labels.
+				if (const UBlueprintVariableNodeSpawner* VariableSpawner = Cast<UBlueprintVariableNodeSpawner>(NodeSpawner))
+				{
+					const UClass* VariableNodeClass = ActionInfo.GetNodeClass();
+					const FProperty* Property = VariableSpawner->GetVarProperty();
+					if (Property && (VariableNodeClass == UK2Node_VariableGet::StaticClass()
+						|| VariableNodeClass == UK2Node_VariableSet::StaticClass()))
+					{
+						FString Category = TEXT("Default");
+						for (const FBPVariableDescription& Variable : InBlueprint->NewVariables)
+							if (Variable.VarName == Property->GetFName())
+							{
+								const FString* Source = FTextInspector::GetSourceString(Variable.Category);
+								const FString Declared = Source ? *Source : Variable.Category.ToString();
+								if (!Declared.IsEmpty()) Category = Declared;
+								break;
+							}
+						const TCHAR* Access = VariableNodeClass == UK2Node_VariableSet::StaticClass() ? TEXT("Set") : TEXT("Get");
+						Entry.TypeId = FString::Printf(TEXT("Variables|%s|%s%s"), *Category, Access, *Property->GetName());
+					}
+				}
 				Entry.OwningClass = OwnerClassName(ActionObject);
 				Entry.bOwnedByThisBlueprint = Cast<UBlueprint>(ActionObject) == InBlueprint;
 				Entry.Spawner = NodeSpawner;
