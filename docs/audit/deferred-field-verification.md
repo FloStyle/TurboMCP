@@ -263,3 +263,8 @@ afd3d63 rejects oversized row/field identifiers before planning FName conversion
 ### Getter destination and preview score
 
 bbd54b9 positions split getter copies beside the consumer planned destination rather than its old coordinates. Planned wire length substitutes the copy location for each rewired consumer instead of continuing to score the original getter connection. Implemented; unbuilt_untested. Deferred evidence: a moved multi-consumer getter graph places copies near moved consumers and preview accounts for split links. Rendered overlap and skipped-copy behavior remain unverified; FIELD-06 stays open. No tests/builds run.
+
+
+### Getter-copy collision placement
+
+c1d4447 reserves planned non-comment node rectangles and previously placed getter copies. New copies shift below intersecting rectangles without moving existing nodes; positions round before collision calculation and refuse coordinates outside int32 limits. Implemented, unbuilt_untested. Deferred evidence: multiple getter copies and occupied consumer-side space avoid node intersections. Comment containment, runtime copy geometry and overall layout remain open; this does not certify overlap-free Tidy. No tests/builds run.
