@@ -311,6 +311,13 @@ bool FTurboMCPGraphTidy::PrepareAlignment(UBlueprint* Blueprint,UEdGraph* Graph,
     TMap<const UEdGraphNode*,FVector2D> Sizes;
     return EnsureMeasuredNodeOutlines(Blueprint,Graph,Sizes,Error);
 }
+FVector2D FTurboMCPGraphTidy::AlignmentNodeSize(const UEdGraphNode* Node)
+{
+    const TSharedPtr<SGraphEditor> Editor=AlignmentEditor.Pin(); FSlateRect Bounds;
+    if(Node && Editor.IsValid() && AlignmentGraph.Get()==Node->GetGraph() && Editor->GetBoundsForNode(Node,Bounds,0.f))
+        return FVector2D(Bounds.Right-Bounds.Left,Bounds.Bottom-Bounds.Top);
+    return Node?FVector2D(Node->NodeWidth,Node->NodeHeight):FVector2D::ZeroVector;
+}
 FVector2D FTurboMCPGraphTidy::AlignmentPinPosition(const UEdGraphPin* Pin)
 {
     const UEdGraphNode* Node=Pin?Pin->GetOwningNodeUnchecked():nullptr;

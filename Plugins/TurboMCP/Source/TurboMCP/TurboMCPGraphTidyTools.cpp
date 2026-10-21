@@ -199,6 +199,16 @@ namespace
   UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*R.ObjectPath); int32 Matches=0;
   UEdGraph* Graph=BP?TurboMCPNodeId::FindGraphByName(BP,GraphName,Matches):nullptr;
   if(!Graph || Matches!=1) return TEXT("error: graph missing or ambiguous; unchanged");
+  FString GeometryError;
+  if(!FTurboMCPGraphTidy::PrepareAlignment(BP,Graph,GeometryError)) return TEXT("error: ")+GeometryError;
+  TMap<UEdGraphNode*,FTurboMCPLayoutReport::FRect> Bounds;
+  for(UEdGraphNode* N:Graph->Nodes) if(N)
+  {
+   const FVector2D Size=FTurboMCPGraphTidy::AlignmentNodeSize(N);
+   if(Size.X<=0 || Size.Y<=0) return TEXT("error: group movement requires measured node bounds; unchanged");
+   auto Rect=FTurboMCPLayoutReport::RectOf(N); Rect.MaxX=Rect.MinX+Size.X; Rect.MaxY=Rect.MinY+Size.Y;
+   Bounds.Add(N,Rect);
+  }
   TSet<UEdGraphNode*> Selected;
   for(const FString& Id:NodeIds)
   {
@@ -210,10 +220,10 @@ namespace
    Selected.Add(Found);
    if(Found->IsA<UEdGraphNode_Comment>())
    {
-    const auto Box=FTurboMCPLayoutReport::RectOf(Found);
+    const auto Box=Bounds[Found];
     for(UEdGraphNode* N:Graph->Nodes) if(N)
     {
-     const auto Rect=FTurboMCPLayoutReport::RectOf(N);
+     const auto Rect=Bounds[N];
      if(Rect.MinX>=Box.MinX && Rect.MinY>=Box.MinY && Rect.MaxX<=Box.MaxX && Rect.MaxY<=Box.MaxY) Selected.Add(N);
     }
    }
@@ -222,11 +232,11 @@ namespace
   {
    const int64 X=int64(N->NodePosX)+DeltaX,Y=int64(N->NodePosY)+DeltaY;
    if(X<MIN_int32 || X>MAX_int32 || Y<MIN_int32 || Y>MAX_int32) return TEXT("error: coordinate overflow; unchanged");
-   auto New=FTurboMCPLayoutReport::RectOf(N); New.MinX+=DeltaX; New.MaxX+=DeltaX; New.MinY+=DeltaY; New.MaxY+=DeltaY;
-   const auto Old=FTurboMCPLayoutReport::RectOf(N);
+   auto New=Bounds[N]; New.MinX+=DeltaX; New.MaxX+=DeltaX; New.MinY+=DeltaY; New.MaxY+=DeltaY;
+   const auto Old=Bounds[N];
    for(UEdGraphNode* Other:Graph->Nodes) if(Other && !Selected.Contains(Other))
    {
-    const auto Rect=FTurboMCPLayoutReport::RectOf(Other);
+    const auto Rect=Bounds[Other];
     if(Other->IsA<UEdGraphNode_Comment>())
     {
      const bool WasInside=Old.MinX>=Rect.MinX && Old.MinY>=Rect.MinY && Old.MaxX<=Rect.MaxX && Old.MaxY<=Rect.MaxY;

@@ -243,6 +243,7 @@ public:
     /** Acquire native node/pin geometry when a graphical editor is available. */
     static bool PrepareAlignment(UBlueprint* Blueprint, UEdGraph* Graph, FString& Error);
     static FVector2D AlignmentPinPosition(const UEdGraphPin* Pin);
+    static FVector2D AlignmentNodeSize(const UEdGraphNode* Node);
 
 	/** What the pass would do, and both numbers, without touching the graph. */
 	static FString RenderPreview(const FPlan& InPlan);
