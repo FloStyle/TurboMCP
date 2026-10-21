@@ -335,6 +335,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp"
           ],
           "new_files": []
+        },
+        "field-schema-defaults": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
