@@ -1,3 +1,4 @@
+#include "K2Node_ExecutionSequence.h"
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 //
@@ -1534,6 +1535,8 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
             for (const UEdGraphPin* Q : P->LinkedTo)
             {
                 if (!Q || !Q->GetOwningNodeUnchecked()) continue;
+                // Sequence outputs define separate rows; do not collapse their starts onto the dispatcher.
+                if(!Kind && Q->GetOwningNodeUnchecked()->IsA<UK2Node_ExecutionSequence>()) continue;
                 const int32 J=IndexOfKey(Index,KeyOf(Q->GetOwningNodeUnchecked()));
                 if (!Nodes.IsValidIndex(J) || J==I) continue;
                 if ((!Kind && Nodes[J].PlannedX >= N.PlannedX) || (Kind && Nodes[J].PlannedX <= N.PlannedX)) continue;

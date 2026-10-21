@@ -509,3 +509,7 @@ Shared JSON keys now convert through FString(*Key); LayoutReport retains the res
 
 ## S8 — X-77 missing header
 Removed nonexistent Misc/LexFromString.h and restored capture own-header-first ordering. LexTryParseString is declared by the existing Containers/UnrealString.h via UnrealString.h.inl. Source inspected only; no build/tests run. S8 reports no recurrence of S7 diagnostics but no successful complete build. FT-82 full compile gate recorded as a proposed workflow change.
+
+
+## S9 field confirmation and follow-up
+703e002 compiled in the field. Images/colours, diagnostic pairs/overlaps, automatic main path and array batches confirmed. New source changes: independent lane cursors and sequence lane preservation, skip dispatcher pin alignment, explicit offset sign and batch preflight limitation. No new build/tests. TD-23 remains partial pending role-column/shared-pure/summary handling; GC-29 sequential planning and FT-83–86 remain open. Engine connector X-78 is not fixed by a plugin patch yet.

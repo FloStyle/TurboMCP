@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "S8 missing-header repair implemented, unbuilt/untested. S8 confirms S7 diagnostics absent, but complete plugin compilation remains unconfirmed.",
+  "limits": "S9 confirms 703e002 builds and S6 images/colours, diagnostics, auto path and batch arrays work. New lane/wording repairs are source-only. TD-23 and GC-29 remain partial; FT-83–86 remain open.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -1108,10 +1108,11 @@
       "title": "The main path option needs explicit node IDs (low)",
       "owner": "FIELD-06",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
       "implementation": "3972ea9",
-      "implementation_limits": "MainPath auto selects the longest acyclic exec path; cycles refuse with an explicit-path instruction. Parameter help documents both forms."
+      "implementation_limits": "MainPath auto selects the longest acyclic exec path; cycles refuse with an explicit-path instruction. Parameter help documents both forms.",
+      "field_evidence": "S9 at 703e002: relevant behaviour confirmed; not a general regression pass."
     },
     {
       "report": "2026-10-21_S6",
@@ -1119,10 +1120,11 @@
       "title": "Tidy preview images are blank (medium, recurs FT-74)",
       "owner": "FIELD-06",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
       "implementation": "3972ea9",
-      "implementation_limits": "Offscreen graph panels explicitly populate native node widgets and perform full-detail layout before framing; missing widgets refuse instead of returning a blank image."
+      "implementation_limits": "Offscreen graph panels explicitly populate native node widgets and perform full-detail layout before framing; missing widgets refuse instead of returning a blank image.",
+      "field_evidence": "S9 at 703e002: relevant behaviour confirmed; not a general regression pass."
     },
     {
       "report": "2026-10-21_S6",
@@ -1141,10 +1143,11 @@
       "title": "New alignment findings repeat one sentence and name no nodes (medium)",
       "owner": "FIELD-06",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
       "implementation": "3972ea9",
-      "implementation_limits": "Alignment findings identify both reader node IDs, pin names and signed vertical offset; findings are grouped once per kind."
+      "implementation_limits": "Alignment findings identify both reader node IDs, pin names and signed vertical offset; findings are grouped once per kind.",
+      "field_evidence": "S9 at 703e002: relevant behaviour confirmed; not a general regression pass."
     },
     {
       "report": "2026-10-21_S6",
@@ -1195,10 +1198,11 @@
       "title": "Batch edit refuses a valid JSON array of repoint operations (medium)",
       "owner": "FIELD-08",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
       "implementation": "3972ea9",
-      "implementation_limits": "Batch accepts JSON arrays and operations envelopes, single-call case-insensitive field names and graphName alias, boolean keepSource, optional generated IDs/kind. Shape errors and schema examples distinguish valid JSON from unsupported input."
+      "implementation_limits": "Batch accepts JSON arrays and operations envelopes, single-call case-insensitive field names and graphName alias, boolean keepSource, optional generated IDs/kind. Shape errors and schema examples distinguish valid JSON from unsupported input.",
+      "field_evidence": "S9 at 703e002: relevant behaviour confirmed; not a general regression pass."
     },
     {
       "report": "2026-10-21_S6",
@@ -1206,10 +1210,11 @@
       "title": "User confirms all capture images have wrong colours, and the graph image is empty (high, recurs CP-08)",
       "owner": "FIELD-08",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
       "implementation": "3972ea9",
-      "implementation_limits": "Capture and preview render into an explicitly linear BGRA target while Slate applies display gamma, avoiding destination sRGB encoding a second time. Blank preview widget population repaired. Visual result requires field confirmation."
+      "implementation_limits": "Capture and preview render into an explicitly linear BGRA target while Slate applies display gamma, avoiding destination sRGB encoding a second time. Blank preview widget population repaired. Visual result requires field confirmation.",
+      "field_evidence": "S9 at 703e002: relevant behaviour confirmed; not a general regression pass."
     },
     {
       "report": "2026-10-21_S6",
@@ -1260,6 +1265,96 @@
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
       "implementation_limits": "Removed nonexistent header. Existing Containers/UnrealString.h supplies LexTryParseString (confirmed in local engine source). Restored own-header-first and removed duplicate include. No build/tests run."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "X-78",
+      "title": "The engine pin connector adds a second link to a data input instead of replacing it (high)",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_implementation",
+      "implementation_limits": "Reported in native engine connector, not TurboMCP. No engine changes. Safe plugin replacement connector remains FT-83; reader malformed-link detection worked."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "LR-14",
+      "title": "Layout report names node pairs, pins and offsets, and reports overlaps (positive, closes LR-13 and FT-79)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Offset text now explicitly says target Y minus source Y, positive target lower. Earlier detailed findings/overlaps field-confirmed."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "TD-22",
+      "title": "Tidy preview images now render the graph (positive, closes TD-18 and CP-10)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation_limits": "Field-confirmed at 703e002."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "GC-28",
+      "title": "Batch edit accepts the JSON array (positive, closes GC-27)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation_limits": "Field-confirmed at 703e002."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "GC-29",
+      "title": "Batch edit plans every operation against the original graph, not the state after earlier operations (medium)",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "unbuilt_untested",
+      "disposition": "partial_fix",
+      "implementation_limits": "Refusal, preview and help now explicitly describe original-graph preflight and dependency splitting. Sequential transient planning is not implemented."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "GC-30",
+      "title": "Patch refuses links with a clear message (positive with a gap)",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_implementation",
+      "implementation_limits": "Literal-only patch refusal field-confirmed; existing-pin connection capability gap remains FT-83."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "TD-23",
+      "title": "Tidy with an automatic main path builds a staircase for a sequence graph (medium, recurs TD-13)",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "unbuilt_untested",
+      "disposition": "partial_fix",
+      "implementation_limits": "Partial source repair: independent horizontal cursors per lane and preserved sequence output lanes stop global-cursor staircase. Full shared role columns, summary placement, and shared-pure splitting remain FT-86/85 scope."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "FB-08",
+      "title": "Fix-backward pin alignment ignores sequence lanes (medium)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Alignment no longer anchors sequence lane starts to dispatcher output pin heights. Downstream alignment retains lane start placement; source only."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "X-79",
+      "title": "The accepted result took about 70 tool calls; the user wants it in a few (proposal)",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "feature_proposal",
+      "implementation_limits": "70-to-5 call workflow target; FT-84/85/86 remain open, not delivered by the bounded lane repair."
     }
   ],
   "prototype": {
@@ -1469,10 +1564,11 @@
       "proposal": "Automatic longest exec main path",
       "owner": "R04",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
       "implementation": "3972ea9",
-      "implementation_limits": "MainPath auto selects the longest acyclic exec path; cycles refuse with an explicit-path instruction. Parameter help documents both forms."
+      "implementation_limits": "MainPath auto selects the longest acyclic exec path; cycles refuse with an explicit-path instruction. Parameter help documents both forms.",
+      "field_evidence": "S9 at 703e002: relevant behaviour confirmed; not a general regression pass."
     },
     {
       "report": "2026-10-21_S6",
@@ -1491,10 +1587,11 @@
       "proposal": "Overlap findings with node pairs",
       "owner": "R04",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
       "implementation": "3972ea9",
-      "implementation_limits": "Tidy caches native node outlines at zoom 1:1, restores the view, and uses those outlines for existing collision guards. Layout report uses the same measured bounds instead of zero persisted dimensions."
+      "implementation_limits": "Tidy caches native node outlines at zoom 1:1, restores the view, and uses those outlines for existing collision guards. Layout report uses the same measured bounds instead of zero persisted dimensions.",
+      "field_evidence": "S9 at 703e002: relevant behaviour confirmed; not a general regression pass."
     },
     {
       "report": "2026-10-21_S6",
@@ -1527,6 +1624,46 @@
       "validation": "reported",
       "disposition": "proposed_workflow_change",
       "implementation_limits": "Report proposal recorded. No build performed under standing no-build/test instruction; not an implemented product defect."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "FT-83",
+      "proposal": "Connect existing pins with replace semantics",
+      "owner": "R04",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "feature_proposal",
+      "implementation_limits": "Plugin replacement connector with schema validation and read-back; engine connector remains unchanged."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "FT-84",
+      "proposal": "Insert Sequence and split explicit execution groups",
+      "owner": "R04",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "feature_proposal",
+      "implementation_limits": "Explicit group refactor with preview, preserved order and safe refusals required."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "FT-85",
+      "proposal": "Split shared trivial values per consumer",
+      "owner": "R04",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "feature_proposal",
+      "implementation_limits": "Self/getter/literal copies only; never duplicate impure settings calls."
+    },
+    {
+      "report": "2026-10-21_S9",
+      "id": "FT-86",
+      "proposal": "Lane-aware role columns and summary layout",
+      "owner": "R04",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "feature_proposal",
+      "implementation_limits": "Partial independent-lane cursor repair; shared columns, pure ownership and summary lane still pending."
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
@@ -1664,6 +1801,18 @@
       "state": "open",
       "evidence": "S6 proposal; not a completed fix",
       "remaining": "Partial: tidy/report/capture now use full-detail measured sizes. Configurable wider gaps and adoption by other layout tools remain."
+    },
+    {
+      "issue": "TD-23",
+      "state": "open",
+      "evidence": "S9 partial implementation, unbuilt_untested",
+      "remaining": "Partial source repair: independent horizontal cursors per lane and preserved sequence output lanes stop global-cursor staircase. Full shared role columns, summary placement, and shared-pure splitting remain FT-86/85 scope."
+    },
+    {
+      "issue": "GC-29",
+      "state": "open",
+      "evidence": "S9 partial implementation, unbuilt_untested",
+      "remaining": "Refusal, preview and help now explicitly describe original-graph preflight and dependency splitting. Sequential transient planning is not implemented."
     }
   ]
 }

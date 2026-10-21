@@ -1305,7 +1305,7 @@ public:
 
 	/** Preview graph repoints without edits. Operations accepts a JSON array or an object with an operations array.
      * Example: [{"asset":"/Game/BP_Example","graphName":"EventGraph","sourceNodeId":"reader ID","sourcePin":"then","targetNodeId":"reader ID","targetPin":"execute","keepSource":true}]
-     * Field names match GraphRepoint (case-insensitive); graph is an alias for graphName. Optional id defaults to operation-N; optional kind defaults to graphRepoint. Other kinds refuse. Compile/save are deferred. */
+     * Field names match GraphRepoint (case-insensitive); graph is an alias for graphName. Optional id defaults to operation-N; optional kind defaults to graphRepoint. Other kinds refuse. Compile/save are deferred. All operations are preflighted against the original graph; split dependent operations into separate batches. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPBatchEdit(const FString& Operations);
 
@@ -2105,7 +2105,7 @@ public:
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
 		const FString& TargetPin, const FString& KeepSource);
 
-	/** Apply the same Operations JSON array/object accepted by PreviewTurboMCPBatchEdit under one transaction; preview first. Compile/save are deferred. */
+	/** Apply the same Operations JSON array/object accepted by PreviewTurboMCPBatchEdit under one transaction; preview first. Compile/save are deferred. All operations are preflighted against the original graph; split dependent operations into separate batches. */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPBatchEdit(const FString& Operations);
 

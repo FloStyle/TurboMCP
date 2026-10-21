@@ -282,7 +282,7 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
                 {
                     FFinding Finding;
                     Finding.Kind = bIsExec ? TEXT("exec-not-straight") : TEXT("pin-not-level");
-                    Finding.Detail = FString::Printf(TEXT("%s.%s -> %s.%s: vertical offset %+.1f graph units (branch lanes may intentionally differ)"), *TurboMCPNodeId::MakeForNode(Source), *Pin->PinName.ToString(), *TurboMCPNodeId::MakeForNode(Target), *Other->PinName.ToString(), FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y-FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y);
+                    Finding.Detail = FString::Printf(TEXT("%s.%s -> %s.%s: vertical offset %+.1f graph units (target Y minus source Y; positive means target is lower; branch lanes may intentionally differ)"), *TurboMCPNodeId::MakeForNode(Source), *Pin->PinName.ToString(), *TurboMCPNodeId::MakeForNode(Target), *Other->PinName.ToString(), FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y-FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y);
                     Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Source));
                     Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Target));
                     Report.Findings.Add(MoveTemp(Finding));

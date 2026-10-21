@@ -23,6 +23,7 @@
 #include "Framework/Application/SlateApplication.h"
 #include "GraphEditor.h"
 #include "K2Node_Knot.h"
+#include "K2Node_ExecutionSequence.h"
 #include "K2Node_VariableGet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/Guid.h"
@@ -974,6 +975,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				double LaneHeight = VerticalNodeGap;
 				for (int32 I : Free) if (RowOf[I] == Row) LaneHeight = FMath::Max(LaneHeight, OutPlan.Nodes[I].Height + VerticalNodeGap);
 				TMap<int32,int32> LaneOf;
+                TMap<int32,double> LaneCursor;
+                LaneCursor.Add(0,FreeStartX);
 				for (int32 I : Free)
 				{
 					FNode& N = OutPlan.Nodes[I];
@@ -987,12 +990,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 							{ if (Pin == W.OutputPin) break; if (Pin && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == TEXT("exec")) ++Branch; }
 							if(W.OutputPin->PinName==TEXT("Completed")) Branch=0;
                             const bool Preferred=MainPredecessor.Contains(I) && MainPredecessor[I]==W.SourceNodeIndex;
-                            if(MainPredecessor.Contains(I) && !Preferred) continue;
-                            if(!Preferred) for(const auto& Edge:MainPredecessor) if(Edge.Value==W.SourceNodeIndex && Edge.Key!=I) Branch=FMath::Max(1,Branch);
-                            const int32 Candidate = Preferred?0:LaneOf[W.SourceNodeIndex] + Branch;
+                            const bool SequenceEdge=OutPlan.Nodes[W.SourceNodeIndex].Node->IsA<UK2Node_ExecutionSequence>();
+                            if(MainPredecessor.Contains(I) && !Preferred && !SequenceEdge) continue;
+                            if(!Preferred && !SequenceEdge) for(const auto& Edge:MainPredecessor) if(Edge.Value==W.SourceNodeIndex && Edge.Key!=I) Branch=FMath::Max(1,Branch);
+                            const int32 Candidate = LaneOf[W.SourceNodeIndex] + (SequenceEdge ? Branch+1 : (Preferred?0:Branch));
 							if (Candidate < Lane) { Lane = Candidate; Incoming = &W; }
 						}
-					if (Lane == MAX_int32 || MainSeen.Contains(I)) Lane = 0;
+					if (Lane == MAX_int32) Lane = 0;
 					LaneOf.Add(I, Lane);
 					double PureSpace=0;
                     TSet<int32> SeenPure;
@@ -1004,7 +1008,14 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             Width=FMath::Max(Width,OutPlan.Nodes[W.SourceNodeIndex].Width+HorizontalNodeGap+Required(W.SourceNodeIndex));
                         return Width;
                     };
-                    PureSpace=Required(I); CursorX+=PureSpace;
+                    PureSpace=Required(I);
+                    // Each lane advances independently; sequence siblings share their left edge.
+                    if(!LaneCursor.Contains(Lane))
+                    {
+                        const double Start=Incoming ? OutPlan.Nodes[Incoming->SourceNodeIndex].PlannedX+OutPlan.Nodes[Incoming->SourceNodeIndex].Width+HorizontalNodeGap : FreeStartX;
+                        LaneCursor.Add(Lane,Start);
+                    }
+                    CursorX=LaneCursor[Lane]+PureSpace;
                     N.PlannedX = CursorX; N.PlannedY = RowY + Lane * LaneHeight;
 					if (Incoming && LaneOf[Incoming->SourceNodeIndex] == Lane)
 					{
@@ -1013,6 +1024,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 							- (FTurboMCPGraphTidy::AlignmentPinPosition(Incoming->InputPin).Y - N.Y);
 					}
 					CursorX += N.Width + HorizontalNodeGap;
+                    LaneCursor[Lane]=CursorX;
 					Bottom = FMath::Max(Bottom, N.PlannedY + N.Height);
 				}
 				// Place pure nodes below-left of consumers, reserving vertical space for each.

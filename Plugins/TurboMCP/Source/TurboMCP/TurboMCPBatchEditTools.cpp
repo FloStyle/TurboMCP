@@ -56,7 +56,7 @@ namespace
    StringArg(TEXT("targetTypeId"), TargetType); StringArg(TEXT("keepSource"), KeepSource);
    for(const auto& Field:Object->Values) if(FString(*Field.Key).Equals(TEXT("keepSource"),ESearchCase::IgnoreCase) && Field.Value.IsValid() && Field.Value->Type==EJson::Boolean) KeepSource=Field.Value->AsBool()?TEXT("true"):TEXT("false"); if (KeepSource.IsEmpty()) KeepSource = TEXT("true");
    if (!FTurboMCPGraphRepoint::Plan(Asset, Graph, SourceNode, SourcePin, TargetNode, TargetType, TargetPin, KeepSource, Op.Repoint, Error)) { Error = FString::Printf(TEXT("operation '%s' plan failed: %s"), *Op.Id, *Error); return false; }
-   if (!Op.Repoint.bAcceptable()) { Error = FString::Printf(TEXT("operation '%s' refused: %s"), *Op.Id, *FString::Join(Op.Repoint.Refusals, TEXT("; "))); return false; }
+   if (!Op.Repoint.bAcceptable()) { Error = FString::Printf(TEXT("operation '%s' refused against the original graph (all operations preflight before any write; split batches at dependencies that free or create links): %s"), *Op.Id, *FString::Join(Op.Repoint.Refusals, TEXT("; "))); return false; }
    Out.Add(MoveTemp(Op));
   }
   if (Out.Num() == 0) { Error = TEXT("operations array is empty"); return false; }
@@ -64,7 +64,7 @@ namespace
  }
  static FString Render(const TArray<FBatchOperation>& Ops)
  {
-  TSet<FString> Assets; FString Result = TEXT("unchanged\nplanned\n");
+  TSet<FString> Assets; FString Result = TEXT("unchanged\nplanned\nplanning=original graph; dependent operations must be split into separate batches\n");
   for (const FBatchOperation& Op : Ops) { Assets.Add(Op.Repoint.Asset); Result += FString::Printf(TEXT("%s [%s]: %s\n"), *Op.Id, *Op.Kind, *FTurboMCPGraphRepoint::RenderPreview(Op.Repoint)); }
   Result += FString::Printf(TEXT("operations=%d\naffectedAssets=%s\nundo=one\ncompile=deferred\nsave=deferred\n"), Ops.Num(), *FString::Join(Assets.Array(), TEXT(",")));
   return Result;
