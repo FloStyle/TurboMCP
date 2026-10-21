@@ -1220,6 +1220,16 @@
       "validation": "reported",
       "disposition": "feature_proposal",
       "implementation_limits": "TD-20: explicit independent-group sequence refactor remains a proposal. TD-21: full-detail sizing repaired; trivial-value splitting and configurable wider gaps remain open."
+    },
+    {
+      "report": "2026-10-21_S6-build-followup",
+      "id": "S6-BUILD-01",
+      "title": "C4459 geometry cache shadows plan-local MeasuredSizes, blocking UBT",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Renamed the namespace geometry cache to CachedAlignmentNodeSizes; retained the separate plan-local map. User reported compiler failure on S6 batch. No rebuild performed."
     }
   ],
   "prototype": {

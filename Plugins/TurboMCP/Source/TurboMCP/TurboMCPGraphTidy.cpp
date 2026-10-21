@@ -46,7 +46,7 @@
 
 namespace
 {
-    TMap<const UEdGraphNode*, FVector2D> MeasuredSizes;
+    TMap<const UEdGraphNode*, FVector2D> CachedAlignmentNodeSizes;
     TMap<const UEdGraphPin*, FVector2D> MeasuredPinOffsets;
     TWeakPtr<SGraphEditor> AlignmentEditor;
     TWeakObjectPtr<UEdGraph> AlignmentGraph;
@@ -222,7 +222,7 @@ namespace
     bool EnsureMeasuredNodeOutlines(UBlueprint* Blueprint, UEdGraph* Graph,
         TMap<const UEdGraphNode*, FVector2D>& Sizes, FString& Error)
     {
-        MeasuredSizes.Reset(); MeasuredPinOffsets.Reset(); AlignmentGraph.Reset();
+        CachedAlignmentNodeSizes.Reset(); MeasuredPinOffsets.Reset(); AlignmentGraph.Reset();
         auto Collect = [&](const TSharedPtr<SGraphEditor>& Panel)
         {
             Sizes.Reset();
@@ -269,7 +269,7 @@ namespace
             if (Attempt < 2) continue;
             if (Collect(Panel))
             {
-                MeasuredSizes=Sizes; MeasuredPinOffsets.Reset();
+                CachedAlignmentNodeSizes=Sizes; MeasuredPinOffsets.Reset();
                 for(UEdGraphNode* Node:Graph->Nodes) if(Node)
                 {
                     const TSharedPtr<SGraphNode> Widget=Panel->GetGraphPanel()->GetNodeWidgetFromGuid(Node->NodeGuid);
@@ -338,7 +338,7 @@ FVector2D FTurboMCPGraphTidy::AlignmentNodeSize(const UEdGraphNode* Node)
 {
     if(Node && Node->IsA<UEdGraphNode_Comment>()) return FVector2D(Node->NodeWidth,Node->NodeHeight);
     if(Node && AlignmentGraph.Get()==Node->GetGraph())
-        if(const FVector2D* Size=MeasuredSizes.Find(Node)) return *Size;
+        if(const FVector2D* Size=CachedAlignmentNodeSizes.Find(Node)) return *Size;
     return Node?FVector2D(Node->NodeWidth,Node->NodeHeight):FVector2D::ZeroVector;
 }
 FVector2D FTurboMCPGraphTidy::AlignmentPinPosition(const UEdGraphPin* Pin)

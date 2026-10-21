@@ -497,3 +497,7 @@ All implemented, unbuilt and untested. No regression or field-success claim. The
 ## 2026-10-21 S6 repair batch — 3972ea9
 
 TD-17/18/19, LR-13, CP-09/10 and GC-27 implemented by source inspection only. No builds/tests/editor runs. Verify full-detail overlap handling at multiple zooms, populated correctly coloured native previews, region/node captures, mainPath auto and array-form repoints in the next field session. These are validation flags on the fixes, not new issue tasks. FT-78 Sequence refactor, FT-80 trivial-value splitting and the unfinished configurable-gap/all-layout-tools portion of FT-81 remain open features. Positive TD-16/FB-07/X-74 evidence applies to field revision 721450c only.
+
+
+### S6 build follow-up: C4459
+User reported a UBT compile failure caused by the namespace MeasuredSizes cache shadowing the Plan-local map. Renamed the cache to CachedAlignmentNodeSizes. Implemented; no build/tests run. Earlier S6 batch is not build-verified.
