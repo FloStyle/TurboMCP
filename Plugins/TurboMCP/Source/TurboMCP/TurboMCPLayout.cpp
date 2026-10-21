@@ -10,6 +10,7 @@
 
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraph.h"
+#include "EdGraph/EdGraphNode.h"
 #include "Engine/Blueprint.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
@@ -201,4 +202,28 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 	}
 
 	return Out;
+}
+
+FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset,const FString& GraphName)
+{
+    FTurboMCPAssetResolver::FResolved Resolved;
+    const FString Error=FTurboMCPAssetResolver::Resolve(Asset,Resolved);
+    if(!Error.IsEmpty()) return Error;
+    UBlueprint* Blueprint=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath);
+    if(!Blueprint || GraphName.IsEmpty()) return TEXT("error: specify a Blueprint and graph name");
+    UEdGraph* Graph=TurboMCPNodeId::FindGraphByName(Blueprint,GraphName);
+    if(!Graph) return TEXT("error: graph not found; read the Blueprint graph list first");
+    FString GeometryError;
+    if(!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Graph,GeometryError)) return TEXT("error: ")+GeometryError;
+    FString Result=TEXT("node positions (graph units; read-only):\n");
+    int32 Count=0;
+    for(const UEdGraphNode* Node:Graph->Nodes) if(Node)
+    {
+        const FVector2D NodeSize=FTurboMCPGraphTidy::AlignmentNodeSize(Node);
+        const FString Line=FString::Printf(TEXT("%s x=%d y=%d width=%.0f height=%.0f\n"),*TurboMCPNodeId::MakeForNode(Node),Node->NodePosX,Node->NodePosY,NodeSize.X,NodeSize.Y);
+        if(Result.Len()+Line.Len()>MaxResultChars) { Result+=TEXT("TRUNCATED: remaining nodes omitted; do not treat this as a complete inventory.\n"); break; }
+        Result+=Line; ++Count;
+    }
+    Result+=FString::Printf(TEXT("listed %d of %d graph entries"),Count,Graph->Nodes.Num());
+    return Result;
 }

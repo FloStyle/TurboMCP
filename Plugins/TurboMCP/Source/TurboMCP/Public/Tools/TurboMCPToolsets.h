@@ -797,6 +797,10 @@ public:
 		const FString& Asset,
 		const FString& GraphName);
 
+    /** Read node IDs, positions and measured sizes without editing the graph. */
+    UFUNCTION(meta = (AICallable))
+    static FString LookTurboMCPGraphPositions(const FString& Asset, const FString& GraphName);
+
 	/**
 	 * Render a Widget Blueprint with sample values and write a PNG.
 	 *

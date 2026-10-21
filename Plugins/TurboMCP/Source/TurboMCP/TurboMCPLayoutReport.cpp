@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPLayoutReport.h"
+#include "K2Node_ExecutionSequence.h"
 #include "TurboMCPGraphTidy.h"
 
 #include "EdGraph/EdGraph.h"
@@ -278,7 +279,18 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 					continue;
 				}
 
-                if (FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y) > 8.0 && Report.Findings.Num() < 128)
+                bool IntentionalSequenceLane=false;
+                if(bIsExec && Source->IsA<UK2Node_ExecutionSequence>())
+                {
+                    int32 OutputIndex=0;
+                    for(const UEdGraphPin* Candidate:Source->Pins)
+                        if(Candidate && Candidate->Direction==EGPD_Output && Candidate->PinType.PinCategory==TEXT("exec"))
+                        {
+                            if(Candidate==Pin) { IntentionalSequenceLane=OutputIndex>0 && FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y>FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y; break; }
+                            ++OutputIndex;
+                        }
+                }
+                if (!IntentionalSequenceLane && FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y) > 8.0 && Report.Findings.Num() < 128)
                 {
                     FFinding Finding;
                     Finding.Kind = bIsExec ? TEXT("exec-not-straight") : TEXT("pin-not-level");

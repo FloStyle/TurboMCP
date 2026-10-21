@@ -1112,23 +1112,23 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 TArray<double> Widths,Reserves,Columns; Widths.Init(0,Stages); Reserves.Init(0,Stages); Columns.Init(0,Stages);
                 auto ReserveFor=[&](int32 Call)
                 {
-                    TSet<int32> Visiting;
-                    TFunction<double(int32)> Depth=[&](int32 Target)->double
-                    {
-                        if(Visiting.Contains(Target)) return 0; Visiting.Add(Target); double Width=0;
-                        for(const FWire& W:OutPlan.Wires) if(W.TargetNodeIndex==Target && PureOwner.FindRef(W.SourceNodeIndex)==Call && PureOwner.Contains(W.SourceNodeIndex))
-                            Width=FMath::Max(Width,OutPlan.Nodes[W.SourceNodeIndex].Width+SpacingX+Depth(W.SourceNodeIndex));
-                        Visiting.Remove(Target); return Width;
-                    };
-                    return Depth(Call);
+                    double Width=0;
+                    // Sibling inputs occupy separate columns, not extra vertical lanes.
+                    for(const auto& Pair:PureOwner) if(Pair.Value==Call)
+                        Width+=OutPlan.Nodes[Pair.Key].Width+SpacingX;
+                    return Width;
                 };
                 for(const auto& Lane:Lanes) for(int32 Stage=0;Stage<Lane.Num();++Stage)
                 { Widths[Stage]=FMath::Max(Widths[Stage],OutPlan.Nodes[Lane[Stage]].Width); Reserves[Stage]=FMath::Max(Reserves[Stage],ReserveFor(Lane[Stage])); }
                 const double Left=SeqNode.PlannedX+SeqNode.Width+SpacingX;
                 double Column=Left;
                 for(int32 Stage=0;Stage<Stages;++Stage) { Column+=Reserves[Stage]; Columns[Stage]=Column; Column+=Widths[Stage]+SpacingX; }
-                double LaneY=SeqNode.PlannedY+SeqNode.Height+SpacingY;
-                double PreviousRight=Left; TSet<int32> EarlierCalls;
+                double LaneY=SeqNode.PlannedY;
+                for(const FWire& W:OutPlan.Wires)
+                    if(W.SourceNodeIndex==SeqIndex && W.TargetNodeIndex==Lanes[0][0] && W.OutputPin->PinType.PinCategory==TEXT("exec"))
+                        LaneY=AlignmentPinPosition(W.OutputPin).Y+SeqNode.PlannedY-SeqNode.Y
+                            -(AlignmentPinPosition(W.InputPin).Y-OutPlan.Nodes[Lanes[0][0]].Y);
+                double PreviousRight=Left,PreviousLaneBottom=LaneY; TSet<int32> EarlierCalls;
                 for(int32 LaneIndex=0;LaneIndex<Lanes.Num();++LaneIndex)
                 {
                     const auto& Lane=Lanes[LaneIndex]; TSet<int32> Members;
@@ -1161,14 +1161,14 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             N.PlannedY=AlignmentPinPosition(W->InputPin).Y+Consumer.PlannedY-Consumer.Y-(AlignmentPinPosition(W->OutputPin).Y-N.Y);
                             for(int32 Pass=0;Pass<Members.Num();++Pass)
                             {
-                                double NextY=N.PlannedY;
+                                double NextX=N.PlannedX;
                                 for(int32 Other:Placed) if(Other!=I)
                                 {
                                     const FNode& O=OutPlan.Nodes[Other];
                                     if(N.PlannedX<O.PlannedX+O.Width+SpacingX && N.PlannedX+N.Width+SpacingX>O.PlannedX && N.PlannedY<O.PlannedY+O.Height+SpacingY && N.PlannedY+N.Height+SpacingY>O.PlannedY)
-                                        NextY=FMath::Max(NextY,O.PlannedY+O.Height+SpacingY);
+                                        NextX=FMath::Min(NextX,O.PlannedX-N.Width-SpacingX);
                                 }
-                                if(NextY==N.PlannedY) break; N.PlannedY=NextY;
+                                if(NextX==N.PlannedX) break; N.PlannedX=NextX;
                             }
                             Bottom=FMath::Max(Bottom,N.PlannedY+N.Height); PlaceInputs(I);
                         }
@@ -1176,10 +1176,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     for(int32 Call:Lane) PlaceInputs(Call);
                     double MinY=LaneY;
                     for(int32 I:Members) MinY=FMath::Min(MinY,OutPlan.Nodes[I].PlannedY);
-                    const double ShiftY=LaneY-MinY;
+                    // Preserve lane zero on the Sequence pin. Later rows may grow only
+                    // when their measured outlines need clearance from the previous row.
+                    const double ShiftY=LaneIndex==0?0.0:FMath::Max(0.0,PreviousLaneBottom+SpacingY-MinY);
                     for(int32 I:Members) { OutPlan.Nodes[I].PlannedY+=ShiftY; PreviousRight=FMath::Max(PreviousRight,OutPlan.Nodes[I].PlannedX+OutPlan.Nodes[I].Width); }
                     for(int32 Call:Lane) EarlierCalls.Add(Call);
-                    LaneY=FMath::Max(LaneY+InLanePitch,Bottom+ShiftY+SpacingY);
+                    PreviousLaneBottom=Bottom+ShiftY;
+                    LaneY=FMath::Max(LaneY+ShiftY+InLanePitch,PreviousLaneBottom+SpacingY);
                 }
             }
 	};

@@ -25,6 +25,7 @@
 #include "GraphEditor.h"
 #include "SGraphPanel.h"
 #include "ImageUtils.h"
+#include "HAL/FileManager.h"
 #include "Input/HittestGrid.h"
 #include "Misc/Base64.h"
 #include "Misc/FileHelper.h"
@@ -42,6 +43,7 @@
 #include "TurboMCPBlueprintRead.h"
 #include "TurboMCPCaptureAsset.h"
 #include "TurboMCPGraphTidy.h"
+#include "TurboMCPGraphScratch.h"
 #include "TurboMCPLayoutReport.h"
 #include "TurboMCPNodeId.h"
 
@@ -747,6 +749,57 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		return FString::Printf(TEXT("error: capture frame height is %.0f for %s, but it must be greater than zero. Open the graph so its node outlines are measured, then try again."),
 			FrameHeight, *FrameLabel);
 	}
+
+    // Explicit picture dimensions render native Slate at that resolution. The live
+    // editor's window size must not limit the available graph pixels (S10 CP-11).
+    if(!Size.TrimStartAndEnd().IsEmpty() && (bWholeGraph || bOneBox || bOneNode || bRegion))
+    {
+        TurboMCPGraphScratch::FCopy CaptureCopy;
+        if(!CaptureCopy.Init(Blueprint,Graph)) return TEXT("error: capture scratch graph unavailable");
+        const TSharedRef<SGraphEditor> CaptureEditor=SNew(SGraphEditor).GraphToEdit(CaptureCopy.Graph).IsEditable(false).ShowGraphStateOverlay(false);
+        const FVector2D PictureSize(Width,Height);
+        TStrongObjectPtr<UTextureRenderTarget2D> PictureTarget(FWidgetRenderer::CreateTargetFor(PictureSize,TF_Bilinear,true));
+        if(!PictureTarget.IsValid()) return TEXT("error: capture render target unavailable");
+        PictureTarget->InitCustomFormat(Width,Height,PF_B8G8R8A8,true);
+        PictureTarget->UpdateResourceImmediate(true);
+        FWidgetRenderer PictureRenderer(true);
+        CaptureEditor->GetGraphPanel()->Update();
+        CaptureEditor->SetViewLocation(FVector2f::ZeroVector,1.0f);
+        for(int32 Pass=0;Pass<2;++Pass)
+        {
+            CaptureEditor->SlatePrepass(1.0f);
+            PictureRenderer.DrawWidget(PictureTarget.Get(),CaptureEditor,PictureSize,0.0f);
+        }
+        for(UEdGraphNode* Node:CaptureCopy.Graph->Nodes)
+            if(Node && !CaptureEditor->GetGraphPanel()->GetNodeWidgetFromGuid(Node->NodeGuid).IsValid())
+                return TEXT("error: capture node widgets unavailable; no blank image returned");
+        const FVector2D CanvasSize=CaptureEditor->GetGraphPanel()->GetTickSpaceGeometry().GetLocalSize();
+        if(CanvasSize.X<=0 || CanvasSize.Y<=0) return TEXT("error: capture canvas unavailable");
+        const float FitZoom=FMath::Min(1.0,FMath::Min(CanvasSize.X/(FrameWidth+64.0),CanvasSize.Y/(FrameHeight+64.0)));
+        float RequestedZoom=FitZoom,NativeZoom=1.0f; FVector2f NativeOffset;
+        for(int32 Attempt=0;Attempt<64;++Attempt)
+        {
+            CaptureEditor->SetViewLocation(FVector2f::ZeroVector,RequestedZoom);
+            CaptureEditor->GetViewLocation(NativeOffset,NativeZoom);
+            if(NativeZoom<=FitZoom+KINDA_SMALL_NUMBER) break;
+            RequestedZoom*=0.9f;
+        }
+        if(NativeZoom<=0 || NativeZoom>FitZoom+KINDA_SMALL_NUMBER)
+            return TEXT("error: frame exceeds native zoom range; capture a smaller region");
+        const FVector2D FrameCentre((Box.MinX+Box.MaxX)/2,(Box.MinY+Box.MaxY)/2);
+        CaptureEditor->SetViewLocation(FVector2f(FrameCentre-CanvasSize/(2*NativeZoom)),NativeZoom);
+        PictureRenderer.DrawWidget(PictureTarget.Get(),CaptureEditor,PictureSize,0.0f);
+        TArray<FColor> PicturePixels; FReadSurfaceDataFlags PictureFlags(RCM_UNorm); PictureFlags.SetLinearToGamma(false);
+        if(!PictureTarget->GameThread_GetRenderTargetResource()->ReadPixels(PicturePixels,PictureFlags) || PicturePixels.Num()!=Width*Height)
+            return TEXT("error: native capture readback failed");
+        for(FColor& Pixel:PicturePixels) Pixel.A=255;
+        TArray64<uint8> PicturePng; FImageUtils::PNGCompressImageArray(Width,Height,PicturePixels,PicturePng);
+        const FString PictureFolder=FPaths::ProjectSavedDir()/TEXT("TurboMCP/Captures");
+        IFileManager::Get().MakeDirectory(*PictureFolder,true);
+        const FString PicturePath=FPaths::ConvertRelativePathToFull(PictureFolder/FString::Printf(TEXT("%s_%s_native_%dx%d.png"),*Blueprint->GetName(),*Graph->GetName(),Width,Height));
+        if(PicturePng.IsEmpty() || !FFileHelper::SaveArrayToFile(PicturePng,*PicturePath)) return TEXT("error: capture PNG could not be saved");
+        return FString::Printf(TEXT("native graph capture: %dx%d; zoom %.3f; independent of editor window size; no raster upscaling\nimage: %s"),Width,Height,NativeZoom,*PicturePath);
+    }
 
 	// The graph editor, opened if it is not already.
 	UAssetEditorSubsystem* AssetEditors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
