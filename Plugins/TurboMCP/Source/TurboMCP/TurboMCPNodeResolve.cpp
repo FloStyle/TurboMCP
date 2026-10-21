@@ -249,20 +249,21 @@ namespace
 			return;
 		}
 
-		auto Add = [&OutGraphs](const TArray<TObjectPtr<UEdGraph>>& InGraphs)
+		TArray<UEdGraph*> AllGraphs;
+		InBlueprint->GetAllGraphs(AllGraphs);
+		// Retain editor event graphs as well as the engine's recursive graph inventory.
+		for (UEdGraph* EventGraph : InBlueprint->EventGraphs)
 		{
-			for (const TObjectPtr<UEdGraph>& Graph : InGraphs)
+			if (EventGraph)
 			{
-				if (Graph != nullptr)
-				{
-					OutGraphs.Add(Graph);
-				}
+				AllGraphs.Add(EventGraph);
+				EventGraph->GetAllChildrenGraphs(AllGraphs);
 			}
-		};
-		Add(InBlueprint->UbergraphPages);
-		Add(InBlueprint->FunctionGraphs);
-		Add(InBlueprint->MacroGraphs);
-		Add(InBlueprint->EventGraphs);
+		}
+		for (UEdGraph* Graph : AllGraphs)
+		{
+			if (Graph) OutGraphs.AddUnique(Graph);
+		}
 	}
 
 	/** The real graph names, for an error that has to name what does exist. */
@@ -482,14 +483,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeResolve(const FString& NodeIds)
 		Lines += FString::Printf(TEXT("\n    reference: %s"), *NodeReference(Node));
 		Lines += FString::Printf(TEXT("\n    title: %s"),
 			*TurboMCPNodeId::GetNodeTitle(Node));
-		// The node type ID is the form the engine's own graph writer accepts, which
-		// is what the spec asks for. Its category is unlocalised, but its title is
-		// built at runtime from localised fragments, so on a non-English editor the
-		// ID reads in that language and is only usable on an editor in the same
-		// language. The C++ class is printed next to it because it is the one
-		// stable name for the node, and it is what disambiguates two nodes whose
-		// localised titles collide.
-		Lines += FString::Printf(TEXT("\n    type ID: %s  (the engine writer's ID; its title half follows the editor's language)"),
+		Lines += FString::Printf(TEXT("\n    type ID: %s  (TurboMCP identity; custom/operator writer support varies, and fallback labels may be localized)"),
 			*TurboMCPNodeId::GetNodeTypeId(Node));
 		Lines += FString::Printf(TEXT("\n    class: %s"), *Node->GetClass()->GetName());
 		Lines += FString::Printf(TEXT("\n    graph: %s"), *Graph->GetName());
