@@ -441,3 +441,7 @@ Implemented, Untested: refuse unsupported query prefixes and empty type/path fil
 ## Tool help requiredness — 4a03957
 
 Implemented, Untested: required/optional labels come directly from inputSchema.required. Broader 0e4658ad remains open for examples and accepted-value details. No tests/build/editor run.
+
+## Published help constraints — 4204098
+
+Implemented, Untested: stable parameter ordering and verbatim JSON schema enums/constants/defaults/bounds/patterns. 0e4658ad remains open for tool-specific examples and unpublished constraints. No tests/build/editor run.

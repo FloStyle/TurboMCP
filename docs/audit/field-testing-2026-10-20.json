@@ -962,7 +962,7 @@
       "issue": "0e4658ad",
       "state": "open",
       "evidence": "untested",
-      "remaining": "Focused widget reads and refusal counts fixed (50f36f5); unsupported/empty asset filters now explain supported syntax (a8c38d7). Parameter-help examples remain. Required/optional parameter flags now shown (4a03957); valid examples and accepted-value details remain."
+      "remaining": "Focused reads, query errors, requiredness and registered constraints/defaults are implemented (50f36f5, a8c38d7, 4a03957, 4204098), untested. Remaining: valid tool-specific examples and constraints absent from registry."
     }
   ]
 }
