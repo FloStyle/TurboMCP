@@ -437,3 +437,7 @@ Implementation follow-ups are tracked in field-testing-2026-10-20.json second_pa
 ## Asset filter diagnostics — a8c38d7
 
 Implemented, Untested: refuse unsupported query prefixes and empty type/path filters instead of misleading no-match or broadened results. 0e4658ad stays open for parameter examples. No tests/build/editor run.
+
+## Tool help requiredness — 4a03957
+
+Implemented, Untested: required/optional labels come directly from inputSchema.required. Broader 0e4658ad remains open for examples and accepted-value details. No tests/build/editor run.
