@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "S9 confirms 703e002 builds and S6 images/colours, diagnostics, auto path and batch arrays work. New lane/wording repairs are source-only. TD-23 and GC-29 remain partial; FT-83–86 remain open.",
+  "limits": "All S9 requested source repairs/capabilities implemented through 2a3bf44 with conservative documented scope. No build/tests/editor execution; not runtime-certified. Positive field evidence remains scoped to 703e002. Engine connector unchanged; plugin replacement supplied.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -1271,10 +1271,11 @@
       "id": "X-78",
       "title": "The engine pin connector adds a second link to a data input instead of replacing it (high)",
       "owner": "FIELD-06",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_implementation",
-      "implementation_limits": "Reported in native engine connector, not TurboMCP. No engine changes. Safe plugin replacement connector remains FT-83; reader malformed-link detection worked."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Preview/EditTurboMCPGraphConnect provides plugin-owned data-input replacement with schema checks, one-source read-back and owned rollback. Native engine connector is unchanged; use the TurboMCP replacement.",
+      "implementation": "2a3bf44"
     },
     {
       "report": "2026-10-21_S9",
@@ -1311,30 +1312,33 @@
       "id": "GC-29",
       "title": "Batch edit plans every operation against the original graph, not the state after earlier operations (medium)",
       "owner": "FIELD-06",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_fix",
-      "implementation_limits": "Refusal, preview and help now explicitly describe original-graph preflight and dependency splitting. Sequential transient planning is not implemented."
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Batch plans and simulates each repoint in order on per-graph transient copies. Later plans see earlier freed links. Live apply uses one owned transaction and existing read-back/rollback. No asset writes in preview.",
+      "implementation": "2a3bf44"
     },
     {
       "report": "2026-10-21_S9",
       "id": "GC-30",
       "title": "Patch refuses links with a clear message (positive with a gap)",
       "owner": "FIELD-06",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_implementation",
-      "implementation_limits": "Literal-only patch refusal field-confirmed; existing-pin connection capability gap remains FT-83."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Patch remains literal-only with an explicit refusal. Existing data-pin linking is now supplied by Preview/EditTurboMCPGraphConnect.",
+      "implementation": "2a3bf44"
     },
     {
       "report": "2026-10-21_S9",
       "id": "TD-23",
       "title": "Tidy with an automatic main path builds a staircase for a sequence graph (medium, recurs TD-13)",
       "owner": "FIELD-06",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_fix",
-      "implementation_limits": "Partial source repair: independent horizontal cursors per lane and preserved sequence output lanes stop global-cursor staircase. Full shared role columns, summary placement, and shared-pure splitting remain FT-86/85 scope."
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Sequence lanes share per-stage call columns and full-detail pure-input reservations; consumer-first pure placement aligns measured pins, grows row pitch for collisions, and shifts a final cross-row summary tree to the right. Non-linear/merged/nested structures retain conservative general layout and guards.",
+      "implementation": "2a3bf44"
     },
     {
       "report": "2026-10-21_S9",
@@ -1351,10 +1355,11 @@
       "id": "X-79",
       "title": "The accepted result took about 70 tool calls; the user wants it in a few (proposal)",
       "owner": "FIELD-06",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "feature_proposal",
-      "implementation_limits": "70-to-5 call workflow target; FT-84/85/86 remain open, not delivered by the bounded lane repair."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Five-step source workflow enabled: read, GraphSequence preview with explicit ordered groups and value splitting, GraphSequence edit, GraphTidy edit, compile. Actual call count and accepted visual result are not field-verified.",
+      "implementation": "2a3bf44"
     }
   ],
   "prototype": {
@@ -1575,11 +1580,11 @@
       "id": "FT-78",
       "proposal": "Sequence refactor for independent call groups",
       "owner": "R04",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "partial_or_proposed",
-      "implementation": null,
-      "implementation_limits": "Not implemented; execution semantics need an explicit bounded group contract, never implicit rewiring by tidy."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2a3bf44",
+      "implementation_limits": "Preview/EditTurboMCPGraphSequence accepts ordered arrays of reader IDs; only a contiguous synchronous single-exec-path call chain. Preserves execution order, continuation last, refuses latent/branch/cyclic/ambiguous shapes. Optional value splitting in same edit."
     },
     {
       "report": "2026-10-21_S6",
@@ -1598,11 +1603,11 @@
       "id": "FT-80",
       "proposal": "Split trivial value nodes per consumer",
       "owner": "R04",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "partial_or_proposed",
-      "implementation": null,
-      "implementation_limits": "Self/literal/general getter splitting not implemented; never duplicate impure calls."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2a3bf44",
+      "implementation_limits": "Preview/EditTurboMCPGraphSplitValue, also optional in GraphSequence: per-consumer pure self, variable-get, object literal and whitelisted primitive literal copies. Keeps defaults and input sources, never duplicates impure calls."
     },
     {
       "report": "2026-10-21_S6",
@@ -1630,40 +1635,44 @@
       "id": "FT-83",
       "proposal": "Connect existing pins with replace semantics",
       "owner": "R04",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "feature_proposal",
-      "implementation_limits": "Plugin replacement connector with schema validation and read-back; engine connector remains unchanged."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Preview/EditTurboMCPGraphConnect; data inputs only, no implicit cast/output replacement, exactly one source verified.",
+      "implementation": "2a3bf44"
     },
     {
       "report": "2026-10-21_S9",
       "id": "FT-84",
       "proposal": "Insert Sequence and split explicit execution groups",
       "owner": "R04",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "feature_proposal",
-      "implementation_limits": "Explicit group refactor with preview, preserved order and safe refusals required."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Preview/EditTurboMCPGraphSequence accepts ordered arrays of reader IDs; only a contiguous synchronous single-exec-path call chain. Preserves execution order, continuation last, refuses latent/branch/cyclic/ambiguous shapes. Optional value splitting in same edit.",
+      "implementation": "2a3bf44"
     },
     {
       "report": "2026-10-21_S9",
       "id": "FT-85",
       "proposal": "Split shared trivial values per consumer",
       "owner": "R04",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "feature_proposal",
-      "implementation_limits": "Self/getter/literal copies only; never duplicate impure settings calls."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Preview/EditTurboMCPGraphSplitValue, also optional in GraphSequence: per-consumer pure self, variable-get, object literal and whitelisted primitive literal copies. Keeps defaults and input sources, never duplicates impure calls.",
+      "implementation": "2a3bf44"
     },
     {
       "report": "2026-10-21_S9",
       "id": "FT-86",
       "proposal": "Lane-aware role columns and summary layout",
       "owner": "R04",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "feature_proposal",
-      "implementation_limits": "Partial independent-lane cursor repair; shared columns, pure ownership and summary lane still pending."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Shared stage/role columns, measured pin alignment, minimum LanePitch expanded for trees, final summary placement, configurable HorizontalGap and VerticalGap. Source implementation for exclusive linear Sequence lanes; general graph safety guards retained.",
+      "implementation": "2a3bf44"
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
@@ -1786,15 +1795,15 @@
     },
     {
       "issue": "FT-78",
-      "state": "open",
-      "evidence": "S6 proposal; not a completed fix",
-      "remaining": "Not implemented; execution semantics need an explicit bounded group contract, never implicit rewiring by tidy."
+      "state": "done",
+      "evidence": "source implemented at 2a3bf44; unbuilt_untested",
+      "remaining": "Preview/EditTurboMCPGraphSequence accepts ordered arrays of reader IDs; only a contiguous synchronous single-exec-path call chain. Preserves execution order, continuation last, refuses latent/branch/cyclic/ambiguous shapes. Optional value splitting in same edit."
     },
     {
       "issue": "FT-80",
-      "state": "open",
-      "evidence": "S6 proposal; not a completed fix",
-      "remaining": "Self/literal/general getter splitting not implemented; never duplicate impure calls."
+      "state": "done",
+      "evidence": "source implemented at 2a3bf44; unbuilt_untested",
+      "remaining": "Preview/EditTurboMCPGraphSplitValue, also optional in GraphSequence: per-consumer pure self, variable-get, object literal and whitelisted primitive literal copies. Keeps defaults and input sources, never duplicates impure calls."
     },
     {
       "issue": "FT-81",
@@ -1804,15 +1813,15 @@
     },
     {
       "issue": "TD-23",
-      "state": "open",
-      "evidence": "S9 partial implementation, unbuilt_untested",
-      "remaining": "Partial source repair: independent horizontal cursors per lane and preserved sequence output lanes stop global-cursor staircase. Full shared role columns, summary placement, and shared-pure splitting remain FT-86/85 scope."
+      "state": "done",
+      "evidence": "source implemented at 2a3bf44; unbuilt_untested",
+      "remaining": "Sequence lanes share per-stage call columns and full-detail pure-input reservations; consumer-first pure placement aligns measured pins, grows row pitch for collisions, and shifts a final cross-row summary tree to the right. Non-linear/merged/nested structures retain conservative general layout and guards."
     },
     {
       "issue": "GC-29",
-      "state": "open",
-      "evidence": "S9 partial implementation, unbuilt_untested",
-      "remaining": "Refusal, preview and help now explicitly describe original-graph preflight and dependency splitting. Sequential transient planning is not implemented."
+      "state": "done",
+      "evidence": "source implemented at 2a3bf44; unbuilt_untested",
+      "remaining": "Batch plans and simulates each repoint in order on per-graph transient copies. Later plans see earlier freed links. Live apply uses one owned transaction and existing read-back/rollback. No asset writes in preview."
     }
   ]
 }

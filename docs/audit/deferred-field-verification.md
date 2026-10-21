@@ -513,3 +513,14 @@ Removed nonexistent Misc/LexFromString.h and restored capture own-header-first o
 
 ## S9 field confirmation and follow-up
 703e002 compiled in the field. Images/colours, diagnostic pairs/overlaps, automatic main path and array batches confirmed. New source changes: independent lane cursors and sequence lane preservation, skip dispatcher pin alignment, explicit offset sign and batch preflight limitation. No new build/tests. TD-23 remains partial pending role-column/shared-pure/summary handling; GC-29 sequential planning and FT-83–86 remain open. Engine connector X-78 is not fixed by a plugin patch yet.
+
+
+## S9 completion — 2a3bf44 (implemented, unbuilt/untested)
+
+- GC-29: sequential transient batch planning; one live transaction remains.
+- X-78 / GC-30 / FT-83: `PreviewTurboMCPGraphConnect` / `EditTurboMCPGraphConnect` replaces one existing data input, validates schema and exact single-source read-back. Native engine connector remains unchanged.
+- FT-84: `PreviewTurboMCPGraphSequence` / `EditTurboMCPGraphSequence`, `Groups=[["reader ID 1","reader ID 2"],["reader ID 3","reader ID 4"]]`, `bSplitValues=true`. Only contiguous ordered synchronous single-path call groups; refuses latent/branch/cycle shapes. Continuation is the final output. Keeps call order, one undo, no compile/save.
+- FT-85: `PreviewTurboMCPGraphSplitValue` / `EditTurboMCPGraphSplitValue` accepts NodeId; pure self/getter/literal whitelist only. Sequence optionally does this for its selected consumers in the same edit.
+- TD-23 / FT-86: tidy uses shared stage columns for exclusive linear Sequence outputs, full-detail pin placement, expanded rows and final cross-row summary placement. Optional `HorizontalGap=120`, `VerticalGap=100`, `LanePitch=280`; bounds validated. Nonlinear/nested/merged outputs retain conservative general layout rather than semantic guesses.
+
+Field-agent workflow: read IDs; preview Sequence with explicit groups (include summary last); edit the same groups; EditGraphTidy with MainPath=auto and chosen spacing; compile. Do not use the native pin connector for replacements. A lower call count and visual acceptance are targets enabled by implementation, not measured results. Runtime rollback, undo, saved persistence, full compilation and visuals remain unverified; no tests/builds run by instruction.
