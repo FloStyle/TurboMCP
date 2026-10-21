@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "S10 source fixes implemented at 60fc383, unbuilt_untested. S10 field evidence confirms c886c7a Sequence no-copy case, one undo and clean compile; no tests/build/editor run for new repairs. DSH remains paused.",
+  "limits": "S11 partially implemented at dfffa92, unbuilt_untested. TD-26 box reflow and X-81 toolset hints remain open; FT-89 is an open feature. S11 observations are from c886c7a, before S10. No tests/build/editor runs; DSH paused.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -1426,6 +1426,116 @@
       "disposition": "positive_field_evidence",
       "implementation": "c886c7a",
       "implementation_limits": "User field evidence only: nine independent calls; no value copies needed; unsaved. Does not validate other refactors or S10 repairs."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "LR-16",
+      "title": "Rendered pin offsets disagree with layout report",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "dfffa92",
+      "implementation_limits": "Native SGraphPin node-relative offset replaces widget coordinate conversion; field confirmation still needed."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "CB-01",
+      "title": "Comment fit clips measured node outlines",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "dfffa92",
+      "implementation_limits": "Fit/create measure full-detail node sizes before computing membership and bounds; explicit node fits use measured rectangles."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "TD-27",
+      "title": "Wire-length rejection gives no useful reason",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "dfffa92",
+      "implementation_limits": "Explains the total-length gate and possible shared-source/cross-group tradeoff without asserting an unproven cause. Does not promise a better candidate."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "DD-07",
+      "title": "Empty event entries missing from review findings",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "dfffa92",
+      "implementation_limits": "Reports empty event entries and containing boxes as review candidates; does not delete potentially intentional empty overrides."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "LR-17",
+      "title": "Oversized sparse comment boxes not reported",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "dfffa92",
+      "implementation_limits": "Adds sparse-comment-box below 20 percent summed measured-node area; advisory only."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "TD-26",
+      "title": "Tidy blocked by comment membership and box collisions",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation": "",
+      "implementation_limits": "Automatic box growth plus relocation of later boxes is not implemented; existing safety refusals remain. Needs a coordinated membership-preserving layout pass."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "X-81",
+      "title": "Wrong toolset errors do not suggest correct family",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation": "",
+      "implementation_limits": "Needs dispatch-level routing diagnostics; not fixed by the new positions tool."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "X-82",
+      "title": "Two graphs cleaned in about 27 calls with manual layout limits",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "positive_field_evidence",
+      "implementation": "c886c7a",
+      "implementation_limits": "Positive S11 observation on older source; does not validate current repairs."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "CB-02",
+      "title": "Comment action discovery and bounded edits worked",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "positive_field_evidence",
+      "implementation": "c886c7a",
+      "implementation_limits": "Positive S11 observation on older source; does not validate current repairs."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "CP-12",
+      "title": "Box-neighbours capture provided readable review detail",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "positive_field_evidence",
+      "implementation": "c886c7a",
+      "implementation_limits": "Positive S11 observation on older source; does not validate current repairs."
     }
   ],
   "prototype": {
@@ -1748,6 +1858,23 @@
       "validation": "unbuilt_untested",
       "implementation": "60fc383",
       "implementation_limits": "LookTurboMCPGraphPositions returns reader IDs, XY and measured width/height; capped output explicitly reports truncation."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "FT-88",
+      "proposal": "Read node positions and sizes",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "60fc383",
+      "implementation_limits": "Duplicate of FT-87; LookTurboMCPGraphPositions shipped after the reported c886c7a build."
+    },
+    {
+      "report": "2026-10-21_S11",
+      "id": "FT-89",
+      "proposal": "Shift all nodes and boxes below a line",
+      "state": "open",
+      "validation": "reported",
+      "implementation_limits": "New feature, not yet implemented; requires explicit scope and membership behavior."
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",

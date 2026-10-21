@@ -530,3 +530,7 @@ Field-agent workflow: read IDs; preview Sequence with explicit groups (include s
 Implemented TD-24/TD-25 compact horizontal pure-input placement and lane-zero pin alignment, LR-15 intentional Sequence fan-out filtering, CP-11 requested-resolution native graph capture, and FT-87 read-only positions. All new changes are **unbuilt_untested**, not runtime-certified. No tests/build/editor runs per user instruction. Lane pitch is a minimum when measured outlines need clearance; shared impure sources remain single and can still have long wires. Capture retains native zoom limits and reports failure instead of clipping oversized frames.
 
 S10 confirms c886c7a Sequence preview/edit agreement, nine ordered lanes, one undo, clean compile, no crash, and roughly 70 to 7 calls. Value-copy behavior, persistence, other refactors and new S10 repairs are not established by that evidence.
+
+## S11 — dfffa92
+
+Implemented native pin offsets, measured comment fit, explicit wire-length rejection explanation, empty-event review candidates and sparse-box findings. Unbuilt/untested; no tests run. S11 was on c886c7a; position reader FT-88 duplicates FT-87 already shipped in 60fc383. TD-26 coordinated box reflow and X-81 toolset hints remain open. FT-89 below-line shift remains a feature request. Empty overrides are never automatically deleted.
