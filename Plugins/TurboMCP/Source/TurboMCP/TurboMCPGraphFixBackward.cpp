@@ -1,4 +1,3 @@
-#include "K2Node_ExecutionSequence.h"
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 //
@@ -7,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPGraphFixBackward.h"
+#include "K2Node_ExecutionSequence.h"
 #include "TurboMCPGraphTidy.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 
