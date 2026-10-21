@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "S5 imported with reported positive evidence at fac37b3. Repair 2dfc786 source-inspected only, no build or tests requested. Implementation states are separate from validation.",
+  "limits": "S4/S5 defect repairs and their tracked layout follow-ups implemented through 46de58c. Source inspection only for new code; no build/editor/tests, per owner. Positive S5 results remain scoped to fac37b3.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -836,8 +836,8 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation_limits": "b71b89c replaces whole-graph strip and boxed column-wrap with execution-component rows, measured-width gaps and compact below-left pure nodes. Existing safe variable-getter copying and regression rollback retained. No arbitrary subsystem-node duplication or automatic delegate-knot routing; those suggested refinements remain separate from the single-strip defect.",
-      "implementation": "b71b89c"
+      "implementation_limits": "Completed native pin alignment, pure-chain space, all-row delegate-weighted ordering and optional explicit MainPath. Guarded refusal remains for impossible collision/membership constraints; no runtime result claimed.",
+      "implementation": "46de58c"
     },
     {
       "report": "2026-10-21_S4",
@@ -880,19 +880,19 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation_limits": "b706a0e uses the actual graph canvas, top-left offset, actual zoom and matching render scale. Visual outcome unverified.",
-      "implementation": "b706a0e"
+      "implementation_limits": "Superseded by S5 CP-07/CP-08 quantized zoom, recenter, gamma and native/aspect-preserving crop fixes; untested.",
+      "implementation": "2dfc786"
     },
     {
       "report": "2026-10-21_S4",
       "id": "NT-06",
       "title": "Common library nodes cannot be found or appended",
       "owner": "FIELD-05",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
-      "implementation_limits": "Partial b71b89c: exact reflected function aliases are accepted by probe and writer; common array/string actions gain aliases and reflected parameter/name search terms. Exact failed field IDs are unavailable; graph-context filtering and wildcard action behavior not reproduced. Do not claim every editor-offered node works.",
-      "implementation": "b71b89c"
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "S5 field-confirmed common library cases. BuildString_IntPoint does not exist in engine (correct refusal). Remaining promotable reader ID round-trip fixed in 2dfc786; new repair untested.",
+      "implementation": "b71b89c + 2dfc786"
     },
     {
       "report": "2026-10-21_S4",
@@ -1000,8 +1000,8 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation": "2dfc786",
-      "implementation_limits": "Related exec rows are ordered by inter-row links; pure placements clamp to row start; planned coordinates round before measurement. Ordering remains a deterministic heuristic, not optimal wire routing."
+      "implementation": "46de58c",
+      "implementation_limits": "Completed native pin alignment, pure-chain space, all-row delegate-weighted ordering and optional explicit MainPath. Guarded refusal remains for impossible collision/membership constraints; no runtime result claimed."
     },
     {
       "report": "2026-10-21_S5",
@@ -1088,8 +1088,8 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation": "2dfc786",
-      "implementation_limits": "Implemented main/secondary exec lanes and pure-pin alignment in tidy; conservative guarded pin alignment in fix-backward; report flags misalignment. Semantic main-path selection and globally optimal shared-input layout remain heuristic."
+      "implementation": "46de58c",
+      "implementation_limits": "Completed native pin alignment, pure-chain space, all-row delegate-weighted ordering and optional explicit MainPath. Guarded refusal remains for impossible collision/membership constraints; no runtime result claimed."
     }
   ],
   "prototype": {
@@ -1268,8 +1268,8 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation": "2dfc786",
-      "implementation_limits": "Read-only SVG schematic from planned rectangles and wires. Node keys shown; not a Slate screenshot; getter copies not drawn."
+      "implementation": "46de58c",
+      "implementation_limits": "46de58c replaces SVG with before/after PNGs rendered by native SGraphEditor widgets on an isolated graph copy, including planned getter copies. No live asset mutation or Blueprint compile. Explicit failure if rendering unavailable."
     },
     {
       "report": "2026-10-21_S5",
@@ -1279,8 +1279,8 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation": "2dfc786",
-      "implementation_limits": "Comment IDs expand membership. Box corners stay fixed; grouped contents are arranged inside. Partial groups and unsafe bounds refuse; this does not translate boxes as a whole."
+      "implementation": "46de58c",
+      "implementation_limits": "46de58c adds Preview/EditTurboMCPGraphGroupMove: selecting a comment includes all contained nodes and nested boxes, translated in one undo step; retains links/sizes/relative spacing, refuses collisions and external membership changes. Scoped tidy remains available for internal arrangement."
     },
     {
       "report": "2026-10-21_S5",
@@ -1290,8 +1290,8 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation": "2dfc786",
-      "implementation_limits": "Exec lane/pure alignment and conservative fix-backward pass implemented; collision/membership conflicts remain unchanged and report diagnostics."
+      "implementation": "46de58c",
+      "implementation_limits": "46de58c uses native pin geometry for alignment when available, reserves space for pure chains, prioritizes top input, keeps secondary lanes below main, treats loop completion as main continuation. Optional MainPath selects a connected exec sequence explicitly. Fix-backward retains collision and membership guards; unavailable native geometry is reported."
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
@@ -1396,21 +1396,21 @@
     },
     {
       "issue": "FT-74 fidelity",
-      "state": "open",
-      "evidence": "source-only",
-      "remaining": "Preview currently produces a keyed SVG schematic; optional exact editor-pixel preview and getter-copy drawing remain."
+      "state": "done",
+      "evidence": "implemented, unbuilt_untested",
+      "remaining": "46de58c replaces SVG with before/after PNGs rendered by native SGraphEditor widgets on an isolated graph copy, including planned getter copies. No live asset mutation or Blueprint compile. Explicit failure if rendering unavailable."
     },
     {
       "issue": "FT-75 translation",
-      "state": "open",
-      "evidence": "source-only",
-      "remaining": "Scoped group tidy preserves fixed box corners. Whole-group translation of boxes and members is not implemented."
+      "state": "done",
+      "evidence": "implemented, unbuilt_untested",
+      "remaining": "46de58c adds Preview/EditTurboMCPGraphGroupMove: selecting a comment includes all contained nodes and nested boxes, translated in one undo step; retains links/sizes/relative spacing, refuses collisions and external membership changes. Scoped tidy remains available for internal arrangement."
     },
     {
       "issue": "TD-15 semantic routing",
-      "state": "open",
-      "evidence": "source-only",
-      "remaining": "Pin alignment is implemented but main path uses pin order and row relation is greedy. User-selected mainline and delegate-aware global routing are not implemented."
+      "state": "done",
+      "evidence": "implemented, unbuilt_untested",
+      "remaining": "46de58c uses native pin geometry for alignment when available, reserves space for pure chains, prioritizes top input, keeps secondary lanes below main, treats loop completion as main continuation. Optional MainPath selects a connected exec sequence explicitly. Fix-backward retains collision and membership guards; unavailable native geometry is reported."
     }
   ]
 }

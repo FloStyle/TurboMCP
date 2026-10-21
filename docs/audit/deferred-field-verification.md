@@ -482,3 +482,13 @@ Implemented: operator reader IDs; enum literals; reroute metrics; grouped tidy m
 Field positives apply to fac37b3, not this repair: dispatcher guidance, library aliases, call-swap map/defaults, batch positions, getter report. Undo was not attempted.
 
 Limits remain explicit in second_pass: SVG is schematic and omits getter copies; comment scopes retain fixed box corners rather than translating groups; semantic main-path/global delegate routing remains heuristic. Undo refuses intervening edits. Revert discards all unsaved changes to the package, may reset undo and reinstance references. Separate preview and single-use confirmation expire after 60 seconds.
+
+
+## S4/S5 completion pass — 46de58c
+
+Supersedes the three open implementation limits in the preceding S5 entry:
+- FT-74: native before/after PNG previews now include planned getter copies. A transient Blueprint shell owns a duplicated graph; the entire Blueprint is not duplicated, avoiding PostDuplicateBlueprint compilation/reinstancing. No live edit is used to make the image.
+- FT-75: PreviewTurboMCPGraphGroupMove / EditTurboMCPGraphGroupMove translate selected comment groups, nested boxes and member nodes together. DeltaX/DeltaY are integer offsets. Preflight rejects new collisions or changed external box membership. One undo transaction, no save or compile.
+- FT-76/TD-15: native pin geometry guides alignment, pure expression chains get reserved horizontal space, delegate-weighted row ordering evaluates all row relationships, loop completion returns to the main lane. Optional comma-separated MainPath reader IDs choose a connected main execution path explicitly. Ordinary tidy defaults remain deterministic. Fix-backward remains conservative and reports collision/geometry limitations.
+
+All implemented, unbuilt and untested. No regression or field-success claim. The original S4 file is no longer at its supplied Desktop path; reconciliation used its preserved tracker findings and the S5 report's detailed corrections and evidence. General scratch-asset deletion and arbitrary side-effecting node duplication remain outside these defect repairs; neither is silently implemented or claimed.
