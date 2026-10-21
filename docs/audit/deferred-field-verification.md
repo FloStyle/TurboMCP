@@ -413,3 +413,7 @@ Implemented, Untested: recursive engine graph enumeration plus editor event grap
 ## Nested graph resolution — 2b16d12
 
 Implemented, Untested: shared graph-name resolver enumerates engine child graphs and editor event graphs, deduplicates pointers, and refuses ambiguous lookup when caller cannot inspect a match count. Broad ca5bbbfc remains open for other readers. No tests/build/editor run. Deferred checks include duplicate nested names and targeted edits to unique nested graphs.
+
+## Blueprint reader graph inventory — 7f85a91
+
+Implemented, Untested: BlueprintRead includes recursive engine graph inventory and editor event graphs, deduplicates graphs, and sorts equal names by object path. No tests/build/editor run. The broad coverage investigation remains open pending reconciliation of other consumers; no claim of whole-plugin coverage.

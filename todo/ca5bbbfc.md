@@ -10,7 +10,7 @@ Review: source-reviewed
 
 ## Current review
 
-Partial repair c6e173a (Untested): unscoped NodeFind now uses UBlueprint::GetAllGraphs plus editor event graphs and deduplicates graph pointers. Nested graphs are included. Follow-up 2b16d12 adds recursive named-graph resolution and refuses ambiguous names for callers without a match count. Other readers still require coverage reconciliation; this broad issue remains open. No tests/build/editor run.
+Partial repair c6e173a (Untested): unscoped NodeFind now uses UBlueprint::GetAllGraphs plus editor event graphs and deduplicates graph pointers. Nested graphs are included. Follow-up 2b16d12 adds recursive named-graph resolution and refuses ambiguous names for callers without a match count. BlueprintRead coverage is also implemented in 7f85a91, including pointer deduplication and stable ordering for equal names. Independent coverage verification remains deferred; this broad issue remains open. No tests/build/editor run.
 
 **Decision:** investigate. **Follow-up owner:** [R06](roadmap-r06.md).
 
