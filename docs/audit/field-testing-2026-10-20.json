@@ -169,10 +169,12 @@
       "id": "X-43",
       "title": "The getter id of a boolean variable drops its \"b\" prefix (low)",
       "owner": "FIELD-05",
-      "disposition": "reported_pending_reproduction",
+      "disposition": "implementation_complete_pending_verification",
       "implementation": "FIELD-FIX-27",
       "validation": "unbuilt_untested",
-      "implementation_limits": "Standard member spawner IDs now preserve real names and match reader category rules. Local/custom spawners and downstream whitespace grammar remain separate; original end-to-end workflow unverified."
+      "implementation_limits": "Standard member spawner IDs now preserve real names and match reader category rules. Local/custom spawners and downstream whitespace grammar remain separate; original end-to-end workflow unverified.",
+      "state": "done",
+      "source_review": "Reconciled at 14c5969: GetVariableNodeTypeId uses VarName.ToString and CollectEntries uses Property->GetName for standard member getters; neither strips the b prefix. Custom/local identity concerns remain separate open records."
     },
     {
       "report": "2026-10-18_S1",
@@ -413,10 +415,12 @@
       "id": "BL-14",
       "title": "ReadTurboMCPBlueprintLoad lists events as graphs (low)",
       "owner": "FIELD-09",
-      "disposition": "implementation_available_pending_field_confirmation",
+      "disposition": "implementation_complete_pending_verification",
       "implementation": "FIELD-FIX-21",
       "validation": "unbuilt_untested",
-      "implementation_limits": "Function inventory no longer depends on entry nodes; graph kind and event owner are explicit. Original runtime observations have not been reproduced."
+      "implementation_limits": "Function inventory no longer depends on entry nodes; graph kind and event owner are explicit. Original runtime observations have not been reproduced.",
+      "state": "done",
+      "source_review": "Reconciled at 14c5969: RenderManifest labels graph kinds; signature collection distinguishes FunctionGraphs from event nodes and labels event owning graph. Runtime confirmation remains an Untested flag, not open implementation work."
     },
     {
       "report": "2026-10-20_S1",
