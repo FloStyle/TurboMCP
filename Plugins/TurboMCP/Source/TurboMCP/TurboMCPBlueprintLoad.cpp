@@ -182,15 +182,17 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 
 		Result += FString::Printf(TEXT("\n\n===== %s ====="), *Resolved.ObjectPath);
 		Result += TEXT("\n") + Read.Text;
+		if (Read.Text.StartsWith(TEXT("error:")))
+		{
+			++RefusedCount;
+			continue;
+		}
 
-		// The widget tree, at `signatures` and above, per `03_TOOLS.md`.
-		//
-		// A Widget Blueprint is a Blueprint, so this section is additive rather than a
-		// separate tool: an agent reading a UI Blueprint wants the tree in the same answer
-		// as its graphs, because the tree is what the graphs act on.
-		if (DetailLevel == FTurboMCPBlueprintRead::EDetail::Signatures
-			|| DetailLevel == FTurboMCPBlueprintRead::EDetail::Bodies
-			|| DetailLevel == FTurboMCPBlueprintRead::EDetail::Full)
+
+		// A graph-focused read excludes unrelated widget data. Respect the effective
+		// detail after budget reduction rather than the originally requested detail.
+		if (Request.GraphFilter.Num() == 0
+			&& Read.DetailUsed != FTurboMCPBlueprintRead::EDetail::Manifest)
 		{
 			if (UBaseWidgetBlueprint* WidgetBlueprint = Cast<UBaseWidgetBlueprint>(Blueprint))
 			{
@@ -205,7 +207,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 				}
 				else if (!TreeText.IsEmpty())
 				{
-					Result += TEXT("\n\n") + TreeText;
+					if (static_cast<int64>(Read.Text.Len()) + TreeText.Len() + 2 <= BudgetChars)
+						Result += TEXT("\n\n") + TreeText;
+					else
+						Result += TEXT("\n; widget tree omitted to fit the character budget; raise TokenBudget to include it.");
 				}
 			}
 		}
