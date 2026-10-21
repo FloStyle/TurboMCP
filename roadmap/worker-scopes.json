@@ -408,6 +408,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphScratch.h"
           ]
+        },
+        "field-s10": {
+          "new_files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ]
         }
       },
       "preserve_rows": []
