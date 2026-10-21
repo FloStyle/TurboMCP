@@ -425,3 +425,7 @@ Implemented, Untested: strict 0..2147483647 force count; warning reports potenti
 ## Reader numeric limits — 4ad7b9b
 
 Implemented, Untested: DirtyList limit and BlueprintLoad character budget reject fractional, malformed, negative, zero and overflowing values; empty preserves defaults. Follows the numeric input defect recorded in 019cf7af. No tests/build/editor run.
+
+## Focused Widget Blueprint reads — 50f36f5
+
+Implemented, Untested: suppress unrelated widget trees for graph-filtered reads, respect effective reduced detail and available character budget for tree inclusion, and count reader errors as refused assets. Broader 0e4658ad remains open for help/query semantics. No tests/build/editor run.
