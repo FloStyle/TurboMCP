@@ -364,6 +364,24 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp"
           ],
           "new_files": []
+        },
+        "field-s5": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphTidy.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackward.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComment.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheck.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCall.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
