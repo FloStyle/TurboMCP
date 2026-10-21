@@ -501,3 +501,7 @@ TD-17/18/19, LR-13, CP-09/10 and GC-27 implemented by source inspection only. No
 
 ### S6 build follow-up: C4459
 User reported a UBT compile failure caused by the namespace MeasuredSizes cache shadowing the Plan-local map. Renamed the cache to CachedAlignmentNodeSizes. Implemented; no build/tests run. Earlier S6 batch is not build-verified.
+
+
+## S7 build blockers (X-75, X-76)
+Shared JSON keys now convert through FString(*Key); LayoutReport retains the resolver mutable graph pointer; comment fitting initializes bounds and uses exclusive assignment branches. All reported compile diagnostics addressed in source. No build/tests run. 721450c remains the last field-confirmed compiling revision; later runtime behavior is not verified.

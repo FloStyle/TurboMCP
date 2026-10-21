@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "S6 urgent defect source repairs implemented at 3972ea9; no build, tests or editor execution per owner. FT-78/80/81 remain explicit unfinished feature scope; S6 positive evidence applies only to 721450c.",
+  "limits": "S7 reported build failure at 8fd54c3. Reported errors/warnings corrected in source; no rebuild/tests. S6 runtime fixes remain unverified.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -1230,6 +1230,26 @@
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
       "implementation_limits": "Renamed the namespace geometry cache to CachedAlignmentNodeSizes; retained the separate plan-local map. User reported compiler failure on S6 batch. No rebuild performed."
+    },
+    {
+      "report": "2026-10-21_S7",
+      "id": "X-75",
+      "title": "S7: plugin build blocked by shared JSON keys and const graph",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Convert JSON keys with FString(*Field.Key), matching existing shared-key compatible code. Retain mutable graph pointer returned by resolver for native geometry preparation. Source correction only; no build or tests run."
+    },
+    {
+      "report": "2026-10-21_S7",
+      "id": "X-76",
+      "title": "S7: comment-fit rectangle possibly uninitialized",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Initialize rectangle outputs and use mutually exclusive explicit-plan / computed-fit branches; failed computed fits continue before mutation. Source correction only; no build or tests run."
     }
   ],
   "prototype": {

@@ -428,7 +428,7 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 		}
 
 		TArray<FString> Missing;
-		double X, Y, Width, Height;
+		double X = 0.0, Y = 0.0, Width = 0.0, Height = 0.0;
 		if (!ComputeEnclosingRect(Graph, OutPlan.NodeKeys, X, Y, Width, Height, Missing))
 		{
 			OutError = FString::Printf(
@@ -827,8 +827,10 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			continue;
 		}
 
-		double X, Y, Width, Height;
-		if (InPlan.NodeKeys.IsEmpty() && !ComputeFit(Comment, X, Y, Width, Height))
+		double X = 0.0, Y = 0.0, Width = 0.0, Height = 0.0;
+		if (!InPlan.NodeKeys.IsEmpty())
+		{ X = InPlan.Planned.X; Y = InPlan.Planned.Y; Width = InPlan.Planned.Width; Height = InPlan.Planned.Height; }
+		else if (!ComputeFit(Comment, X, Y, Width, Height))
 		{
 			// A box with nothing in it has no size to fit to. Reported rather than resized to
 			// zero, which would make it invisible and look like the tool had deleted it.
@@ -836,8 +838,6 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			continue;
 		}
 
-		if (!InPlan.NodeKeys.IsEmpty())
-		{ X = InPlan.Planned.X; Y = InPlan.Planned.Y; Width = InPlan.Planned.Width; Height = InPlan.Planned.Height; }
 		Comment->Modify();
 		const int32 OldWidth = Comment->NodeWidth;
 		const int32 OldHeight = Comment->NodeHeight;

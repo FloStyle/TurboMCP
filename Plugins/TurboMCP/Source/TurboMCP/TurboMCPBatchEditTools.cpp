@@ -45,7 +45,7 @@ namespace
    FString Asset, Graph, SourceNode, SourcePin, TargetNode, TargetType, TargetPin, KeepSource;
    auto StringArg=[&](const TCHAR* Name,FString& Value)
    {
-       for(const auto& Field:Object->Values) if(Field.Key.Equals(Name,ESearchCase::IgnoreCase))
+       for(const auto& Field:Object->Values) if(FString(*Field.Key).Equals(Name,ESearchCase::IgnoreCase))
            return Field.Value.IsValid() && Field.Value->TryGetString(Value);
        return false;
    };
@@ -54,7 +54,7 @@ namespace
     && StringArg(TEXT("targetNodeId"), TargetNode) && StringArg(TEXT("targetPin"), TargetPin);
    if (!bArgs) { Error = FString::Printf(TEXT("operation '%s' has malformed graphRepoint arguments"), *Op.Id); return false; }
    StringArg(TEXT("targetTypeId"), TargetType); StringArg(TEXT("keepSource"), KeepSource);
-   for(const auto& Field:Object->Values) if(Field.Key.Equals(TEXT("keepSource"),ESearchCase::IgnoreCase) && Field.Value.IsValid() && Field.Value->Type==EJson::Boolean) KeepSource=Field.Value->AsBool()?TEXT("true"):TEXT("false"); if (KeepSource.IsEmpty()) KeepSource = TEXT("true");
+   for(const auto& Field:Object->Values) if(FString(*Field.Key).Equals(TEXT("keepSource"),ESearchCase::IgnoreCase) && Field.Value.IsValid() && Field.Value->Type==EJson::Boolean) KeepSource=Field.Value->AsBool()?TEXT("true"):TEXT("false"); if (KeepSource.IsEmpty()) KeepSource = TEXT("true");
    if (!FTurboMCPGraphRepoint::Plan(Asset, Graph, SourceNode, SourcePin, TargetNode, TargetType, TargetPin, KeepSource, Op.Repoint, Error)) { Error = FString::Printf(TEXT("operation '%s' plan failed: %s"), *Op.Id, *Error); return false; }
    if (!Op.Repoint.bAcceptable()) { Error = FString::Printf(TEXT("operation '%s' refused: %s"), *Op.Id, *FString::Join(Op.Repoint.Refusals, TEXT("; "))); return false; }
    Out.Add(MoveTemp(Op));

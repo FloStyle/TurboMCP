@@ -69,7 +69,7 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 			*Resolved.ObjectPath);
 	}
 
-	const UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Blueprint, GraphName);
+	UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(Blueprint, GraphName);
 	if (Graph == nullptr)
 	{
 		// A name that does not exist lists the real ones, as every other graph tool
