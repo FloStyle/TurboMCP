@@ -445,3 +445,7 @@ Implemented, Untested: required/optional labels come directly from inputSchema.r
 ## Published help constraints — 4204098
 
 Implemented, Untested: stable parameter ordering and verbatim JSON schema enums/constants/defaults/bounds/patterns. 0e4658ad remains open for tool-specific examples and unpublished constraints. No tests/build/editor run.
+
+## Compact checkout success — 4a3c3cd
+
+1db73082 implemented, Untested. Compact successful attempted checkout; provider info retained, no-lock providers identified, save independence explicit. Failures and skipped operations remain detailed. No tests/build/editor run.
