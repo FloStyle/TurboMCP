@@ -182,6 +182,14 @@ namespace
 	void AddAssetLines(TArray<FString>& Out, const FTurboMCPWriteCheckoutAsset& InRow,
 		const int32 InIndex, const bool bActing)
 	{
+		if (bActing && InRow.bAttempted && InRow.bSucceeded && InRow.ProviderErrors.Num() == 0)
+		{
+			Out.Add(FString::Printf(TEXT("[%d] %s: checkout operation succeeded; %s; save not performed by checkout"),
+				InIndex, *InRow.Requested, InRow.bNoOpExpected ? TEXT("provider has no checkout lock") : TEXT("provider accepted the operation")));
+			for (const FString& Message : InRow.ProviderInfo)
+				Out.Add(TEXT("  provider info: ") + Message);
+			return;
+		}
 		Out.Add(FString::Printf(TEXT("    [%d] %s"), InIndex, *InRow.Requested));
 		if (!InRow.PackagePath.IsEmpty())
 		{
