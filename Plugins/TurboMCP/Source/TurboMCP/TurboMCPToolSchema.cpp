@@ -13,6 +13,7 @@
 #include "Dom/JsonValue.h"
 #include "Math/UnrealMathUtility.h"
 #include "Serialization/JsonReader.h"
+#include "Policies/CondensedJsonPrintPolicy.h"
 #include "Serialization/JsonSerializer.h"
 #include "ToolsetRegistry/UToolsetRegistry.h"
 
@@ -186,7 +187,15 @@ namespace
 									&& PropObject != nullptr)
 								{
 									Param.Type = Field(*PropObject, TEXT("type"));
-									Param.Default = Field(*PropObject, TEXT("default"));
+									// Preserve JSON type and distinguish an explicit empty string from no default.
+                                    const TSharedPtr<FJsonValue>* DefaultValue = (*PropObject)->Values.Find(TEXT("default"));
+                                    if (DefaultValue && DefaultValue->IsValid())
+                                    {
+                                        FString JsonDefault;
+                                        auto Writer = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&JsonDefault);
+                                        if (FJsonSerializer::Serialize(*DefaultValue, FString(), Writer))
+                                            Param.Default = MoveTemp(JsonDefault);
+                                    }
 									Param.Opening = FTurboMCPToolSchema::OpeningSentence(
 										Field(*PropObject, TEXT("description")));
 								}
