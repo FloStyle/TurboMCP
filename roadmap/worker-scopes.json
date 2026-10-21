@@ -329,6 +329,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp"
           ],
           "new_files": []
+        },
+        "field-asset-filter-errors": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
