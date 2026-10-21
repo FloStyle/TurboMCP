@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "S11 partially implemented at dfffa92, unbuilt_untested. TD-26 box reflow and X-81 toolset hints remain open; FT-89 is an open feature. S11 observations are from c886c7a, before S10. No tests/build/editor runs; DSH paused.",
+  "limits": "S12 include-order repair 587efd2 is unbuilt_untested. Field report confirms d6ca123 build/link success with header-order diagnostic, not editor/runtime acceptance. S11 remaining issues unchanged; DSH paused.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -1536,6 +1536,17 @@
       "disposition": "positive_field_evidence",
       "implementation": "c886c7a",
       "implementation_limits": "Positive S11 observation on older source; does not validate current repairs."
+    },
+    {
+      "report": "2026-10-21_S12",
+      "id": "X-83",
+      "title": "Fix-backward own-header-first diagnostic",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "587efd2",
+      "implementation_limits": "Moved K2Node_ExecutionSequence include below TurboMCPGraphFixBackward.h. Source inspected; no local build/tests. S12 reports d6ca123 built and linked despite the diagnostic; editor load not observed."
     }
   ],
   "prototype": {
@@ -2024,6 +2035,21 @@
       "state": "done",
       "evidence": "source implemented at 2a3bf44; unbuilt_untested",
       "remaining": "Batch plans and simulates each repoint in order on per-graph transient copies. Later plans see earlier freed links. Live apply uses one owned transaction and existing read-back/rollback. No asset writes in preview."
+    },
+    {
+      "issue": "X-83 prevention",
+      "state": "open",
+      "evidence": "S12 suggested source convention check",
+      "remaining": "Add own-header-first enforcement to source checks for files with matching headers; not required to apply the one-line repair."
+    }
+  ],
+  "build_evidence": [
+    {
+      "report": "2026-10-21_S12",
+      "revision": "d6ca1239c6c7e74361da76729db5133ac6605039",
+      "result": "field_build_link_succeeded_with_header_order_diagnostic",
+      "engine": "UE 5.8.3 licensee source, MSVC 14.50",
+      "editor_load": "not_observed"
     }
   ]
 }

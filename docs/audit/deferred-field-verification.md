@@ -534,3 +534,7 @@ S10 confirms c886c7a Sequence preview/edit agreement, nine ordered lanes, one un
 ## S11 — dfffa92
 
 Implemented native pin offsets, measured comment fit, explicit wire-length rejection explanation, empty-event review candidates and sparse-box findings. Unbuilt/untested; no tests run. S11 was on c886c7a; position reader FT-88 duplicates FT-87 already shipped in 60fc383. TD-26 coordinated box reflow and X-81 toolset hints remain open. FT-89 below-line shift remains a feature request. Empty overrides are never automatically deleted.
+
+## S12 — 587efd2
+
+X-83 own-header-first include order repaired. No local tests/build. Field evidence: d6ca123 compiled and linked on UE5.8.3/MSVC14.50 with this diagnostic; no editor load observed. This does not establish runtime correctness. Preventive source-convention enforcement remains tracked separately.
