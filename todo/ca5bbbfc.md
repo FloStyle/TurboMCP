@@ -10,6 +10,8 @@ Review: source-reviewed
 
 ## Current review
 
+Partial repair c6e173a (Untested): unscoped NodeFind now uses UBlueprint::GetAllGraphs plus editor event graphs and deduplicates graph pointers. Nested graphs are included. Other readers and named-graph resolution still require coverage reconciliation; this broad issue remains open. No tests/build/editor run.
+
 **Decision:** investigate. **Follow-up owner:** [R06](roadmap-r06.md).
 
 Several call sites enumerate UbergraphPages, FunctionGraphs and MacroGraphs themselves. Shared graph lookup and graph enumeration are different contracts; recursive/subgraph coverage remains to be proved.

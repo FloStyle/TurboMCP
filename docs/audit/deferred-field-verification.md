@@ -405,3 +405,7 @@ Implemented, untested: node search now includes Unreal action-menu keywords at l
 ## Call-cost cap validation — 9951aaf
 
 019cf7af implemented, Untested. Strict digits, positive value, overflow-safe saturation at 50, validation before empty-log handling, truthful truncation guidance. No tests/build/editor run. Deferred coverage: empty/populated logs, malformed/fractional/zero/huge caps; totals unchanged.
+
+## Node search coverage — c6e173a
+
+Implemented, Untested: recursive engine graph enumeration plus editor event graphs, pointer deduplication. Resolver output no longer promises native writer compatibility for all IDs. ca5bbbfc remains open for other readers/named graph resolution. No tests/build/editor run.
