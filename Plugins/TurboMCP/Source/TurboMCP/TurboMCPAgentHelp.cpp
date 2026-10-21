@@ -13,6 +13,7 @@
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 #include "Serialization/JsonReader.h"
+#include "Policies/CondensedJsonPrintPolicy.h"
 #include "Serialization/JsonSerializer.h"
 #include "ToolsetRegistry/UToolsetRegistry.h"
 
@@ -495,7 +496,9 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 					const int32 ParamCount = (*Properties)->Values.Num();
 					Help += FString::Printf(TEXT("\nparameters: %d"), ParamCount);
 
-					for (const TPair<FString, TSharedPtr<FJsonValue>>& Property : (*Properties)->Values)
+					TMap<FString, TSharedPtr<FJsonValue>> OrderedProperties = (*Properties)->Values;
+					OrderedProperties.KeySort([](const FString& A, const FString& B) { return A < B; });
+					for (const TPair<FString, TSharedPtr<FJsonValue>>& Property : OrderedProperties)
 					{
 						FString Type = TEXT("any");
 						FString PropDescription;
@@ -518,6 +521,23 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 							? FString::Printf(TEXT("\n  %s: %s [%s]"), *Property.Key, *Type, Requirement)
 							: FString::Printf(TEXT("\n  %s: %s [%s] - %s"),
 								*Property.Key, *Type, Requirement, *FirstSentence(PropDescription));
+						if (PropObject && (*PropObject).IsValid())
+						{
+							TSharedRef<FJsonObject> Constraints = MakeShared<FJsonObject>();
+							for (const TCHAR* Key : { TEXT("enum"), TEXT("const"), TEXT("default"), TEXT("minimum"), TEXT("maximum"), TEXT("pattern") })
+							{
+								const TSharedPtr<FJsonValue>* Value = (*PropObject)->Values.Find(Key);
+								if (Value && Value->IsValid()) Constraints->SetField(Key, *Value);
+							}
+							if (Constraints->Values.Num() > 0)
+							{
+								FString ConstraintText;
+								auto Writer = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&ConstraintText);
+								if (FJsonSerializer::Serialize(Constraints, Writer))
+									Help += TEXT("\n    schema: ") + ConstraintText;
+							}
+						}
+
 					}
 
 					if (ParamCount == 0)
