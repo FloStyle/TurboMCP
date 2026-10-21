@@ -429,3 +429,7 @@ Implemented, Untested: DirtyList limit and BlueprintLoad character budget reject
 ## Focused Widget Blueprint reads — 50f36f5
 
 Implemented, Untested: suppress unrelated widget trees for graph-filtered reads, respect effective reduced detail and available character budget for tree inclusion, and count reader errors as refused assets. Broader 0e4658ad remains open for help/query semantics. No tests/build/editor run.
+
+## Second-pass tracking policy
+
+Implementation follow-ups are tracked in field-testing-2026-10-20.json second_pass and remain Open; they are not closed merely because a mitigation landed. The list highlights known partial submissions and is not an exhaustive defect inventory. Verification-only follow-up remains an Untested flag on implemented work, not a new task. Earlier chronological entries describe the state at their commit and may be superseded by later entries.
