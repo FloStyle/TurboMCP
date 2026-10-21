@@ -107,30 +107,28 @@ void FTurboMCPBlueprintRead::CollectGraphs(const UBlueprint* InBlueprint, TArray
 		return;
 	}
 
-	auto Add = [&OutGraphs](const TArray<TObjectPtr<UEdGraph>>& InGraphs)
+	TArray<UEdGraph*> AllGraphs;
+	InBlueprint->GetAllGraphs(AllGraphs);
+	for (UEdGraph* EventGraph : InBlueprint->EventGraphs)
 	{
-		for (const TObjectPtr<UEdGraph>& Graph : InGraphs)
+		if (EventGraph)
 		{
-			if (Graph != nullptr)
-			{
-				OutGraphs.Add(Graph);
-			}
+			AllGraphs.Add(EventGraph);
+			EventGraph->GetAllChildrenGraphs(AllGraphs);
 		}
-	};
-
-	// Every graph kind is collected, because a caller asking about a graph should
-	// not have to know which array the Blueprint keeps it in.
-	Add(InBlueprint->UbergraphPages);
-	Add(InBlueprint->FunctionGraphs);
-	Add(InBlueprint->MacroGraphs);
-	Add(InBlueprint->EventGraphs);
+	}
+	for (UEdGraph* Graph : AllGraphs)
+	{
+		if (Graph) OutGraphs.AddUnique(Graph);
+	}
 
 	// A stable order, so two reads of an unchanged Blueprint give the same text.
 	// The engine's own array order is not guaranteed and a reader that reorders
 	// between calls is hard to compare against.
 	OutGraphs.Sort([](const UEdGraph& A, const UEdGraph& B)
 	{
-		return A.GetName() < B.GetName();
+		return A.GetName() == B.GetName()
+			? A.GetPathName() < B.GetPathName() : A.GetName() < B.GetName();
 	});
 }
 
