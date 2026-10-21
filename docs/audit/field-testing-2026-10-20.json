@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "Report triage and selective source inspection; not runtime reproduction. S3 extends S2 and S4 adds layout. Raw reports remain local.",
+  "limits": "S5 imported with reported positive evidence at fac37b3. Repair 2dfc786 source-inspected only, no build or tests requested. Implementation states are separate from validation.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -621,10 +621,10 @@
       "id": "X-68",
       "title": "Generic dispatcher reports Tool not found when toolset_name is omitted",
       "owner": "FIELD-08",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_reproduction",
-      "implementation_limits": "Guidance implemented in 05cedc3; native dispatcher error remains unchanged. Separate toolset_name/tool_name example now in status/index."
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation_limits": "Confirmed by S5 positive evidence; undo remains untested."
     },
     {
       "report": "2026-10-21_S1",
@@ -803,9 +803,9 @@
       "title": "Call swap lacks input pin mapping for differently named replacement pins",
       "owner": "FIELD-05",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
-      "implementation_limits": "b71b89c adds optional Options JSON pin_map and new_inputs to preview/edit call swap, explicit types/identity/duplicate checks, default preservation and existing rollback.",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation_limits": "Confirmed by S5 positive evidence; undo remains untested.",
       "implementation": "b71b89c"
     },
     {
@@ -867,9 +867,9 @@
       "title": "Below-left getters incorrectly flagged as misplaced",
       "owner": "FIELD-08",
       "state": "done",
-      "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
-      "implementation_limits": "b706a0e accepts below-left separation in report and backward repair.",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation_limits": "Confirmed by S5 positive evidence; undo remains untested.",
       "implementation": "b706a0e"
     },
     {
@@ -903,6 +903,193 @@
       "validation": "field_tested",
       "disposition": "positive",
       "implementation_limits": "Field-confirmed refusal and success after stopping PIE."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "X-72",
+      "title": "The status tool now explains the dispatcher call shape (positive, closes X-68)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "fac37b3 (field evidence)",
+      "implementation_limits": "Positive S5 field evidence on fac37b3. Undo was not attempted."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "NT-07",
+      "title": "Promotable operator nodes do not round-trip through the reader (medium, recurs GC-19)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Promotable operators emit their creatable Utilities|Operators menu ID; lookup explains first typed link."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "NT-08",
+      "title": "Most S4 node-type failures are fixed (positive)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "fac37b3 (field evidence)",
+      "implementation_limits": "Positive S5 field evidence on fac37b3. Undo was not attempted."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "ED-13",
+      "title": "Append cannot set an enum pin default in any written form (medium)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Known enum pins accept names, quoted names and integer enumerant values; canonical name passes schema validation."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "GC-23",
+      "title": "Call swap with a pin map and a new input works (positive, closes GC-21 and FT-70)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "fac37b3 (field evidence)",
+      "implementation_limits": "Positive S5 field evidence on fac37b3. Undo was not attempted."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "GC-24",
+      "title": "Batch positions set 4 nodes in one call (positive, closes FT-71)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "fac37b3 (field evidence)",
+      "implementation_limits": "Positive S5 field evidence on fac37b3. Undo was not attempted."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "LR-11",
+      "title": "Three layout measures, run back to back with no edit between (low, partly closes LR-09)",
+      "owner": "FIELD-03",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Layout report includes reroutes and both segments in the shared pin-distance measure."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "LR-12",
+      "title": "The getter rule no longer flags the hand layout (positive, closes LR-10)",
+      "owner": "FIELD-03",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "fac37b3 (field evidence)",
+      "implementation_limits": "Positive S5 field evidence on fac37b3. Undo was not attempted."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "TD-13",
+      "title": "Tidy on the 7-chain graph shortens wires but splits related rows (medium, recurs TD-12)",
+      "owner": "FIELD-03",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Related exec rows are ordered by inter-row links; pure placements clamp to row start; planned coordinates round before measurement. Ordering remains a deterministic heuristic, not optimal wire routing."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "TD-14",
+      "title": "Tidy on a function graph with comment boxes moves every node out of its boxes (high)",
+      "owner": "FIELD-03",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Resolve comment member object names as well as GUID keys; arrange deepest groups first and refuse escaping membership or new rectangle overlap. Nested boxes retain corners; parent members go below children."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "CP-07",
+      "title": "Graph capture framing is still off-centre (medium, recurs CP-06)",
+      "owner": "FIELD-03",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Step down quantized zoom until it fits, then recenter using actual zoom."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "CP-08",
+      "title": "Capture images are dark, soft and stretched (medium)",
+      "owner": "FIELD-03",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Use gamma-correct widget render, native crop by default and aspect-preserving padding without upscaling. Whole-graph overview cannot guarantee readable labels; use existing comment/node focus."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "X-73",
+      "title": "No way to revert a bad edit on one asset (high)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Added preview/confirmed disk reload and preview/confirmed latest exclusive TurboMCP transaction undo. Undo refuses intervening or cross-package edits. Revert explicitly discards all unsaved package edits and can reset global undo."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "GC-25",
+      "title": "Comment tool refuses the box ID that the comment reader prints (low)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Resolve bare, short and full reader comment IDs before planning."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "GC-26",
+      "title": "Batch positions also move comment boxes, and the manual relayout passed (positive)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "fac37b3 (field evidence)",
+      "implementation_limits": "Positive S5 field evidence on fac37b3. Undo was not attempted."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "DD-06",
+      "title": "Comment fit action fits every box in the graph, not the named box (low)",
+      "owner": "FIELD-01",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Named fit filters to the requested comment and honors supplied member IDs."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "TD-15",
+      "title": "Layout rules from the user review of the GC-26 layout (medium)",
+      "owner": "FIELD-03",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Implemented main/secondary exec lanes and pure-pin alignment in tidy; conservative guarded pin alignment in fix-backward; report flags misalignment. Semantic main-path selection and globally optimal shared-input layout remain heuristic."
     }
   ],
   "prototype": {
@@ -1050,6 +1237,61 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "implementation": "b71b89c"
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "FT-72",
+      "proposal": "Named-asset latest TurboMCP undo",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Implemented exclusive top-of-history undo only; refuses unrelated intervening edits."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "FT-73",
+      "proposal": "Confirmed Blueprint disk revert",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Separate preview produces single-use 60-second confirmation. Discards all unsaved changes in package, may reset undo/reinstance references; explicit owner approval obtained."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "FT-74",
+      "proposal": "Before/after tidy image",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Read-only SVG schematic from planned rectangles and wires. Node keys shown; not a Slate screenshot; getter copies not drawn."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "FT-75",
+      "proposal": "Tidy by comment/group",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Comment IDs expand membership. Box corners stay fixed; grouped contents are arranged inside. Partial groups and unsafe bounds refuse; this does not translate boxes as a whole."
+    },
+    {
+      "report": "2026-10-21_S5",
+      "id": "FT-76",
+      "proposal": "Pin alignment",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "2dfc786",
+      "implementation_limits": "Exec lane/pure alignment and conservative fix-backward pass implemented; collision/membership conflicts remain unchanged and report diagnostics."
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
@@ -1148,9 +1390,27 @@
     },
     {
       "issue": "NT-06 / GC-19",
+      "state": "done",
+      "evidence": "S5 supplied exact IDs; source fix untested",
+      "remaining": "2dfc786 canonicalizes promotable reader IDs. Common library aliases field-confirmed; nonexistent BuildString_IntPoint was a report error."
+    },
+    {
+      "issue": "FT-74 fidelity",
       "state": "open",
-      "evidence": "untested",
-      "remaining": "Partial b71b89c: exact reflected function aliases are accepted by probe and writer; common array/string actions gain aliases and reflected parameter/name search terms. Exact failed field IDs are unavailable; graph-context filtering and wildcard action behavior not reproduced. Do not claim every editor-offered node works."
+      "evidence": "source-only",
+      "remaining": "Preview currently produces a keyed SVG schematic; optional exact editor-pixel preview and getter-copy drawing remain."
+    },
+    {
+      "issue": "FT-75 translation",
+      "state": "open",
+      "evidence": "source-only",
+      "remaining": "Scoped group tidy preserves fixed box corners. Whole-group translation of boxes and members is not implemented."
+    },
+    {
+      "issue": "TD-15 semantic routing",
+      "state": "open",
+      "evidence": "source-only",
+      "remaining": "Pin alignment is implemented but main path uses pin order and row relation is greedy. User-selected mainline and delegate-aware global routing are not implemented."
     }
   ]
 }

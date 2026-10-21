@@ -471,3 +471,14 @@ Source `b71b89c`, unbuilt/untested; no test commands or editor runs. TD-12 singl
 - `EditTurboMCPGraphPositions(Asset, GraphName, Positions)` where Positions is JSON `[{"node":"exact reader ID","x":100,"y":200}]`. All entries validated before mutation; one undo; no compile/save.
 - Preview/EditTurboMCPGraphSwapCall retains its existing arguments and adds optional `Options`: `{"pin_map":{"OldInput":"NewInput"},"new_inputs":{"ExtraInput":{"node":"exact reader ID","pin":"Value"}}}`. Explicit matching only; no implicit conversions. Existing calls with empty Options preserve same-name behavior.
 - Reflected function paths and `Function|` paths now resolve for filtered function actions; exact aliases `Array Length` and `String Append` map to their engine library functions. Build-string and integer-point conversion search includes reflected names/types. This is not evidence that the unidentified field refusal is fully repaired.
+
+
+## S5 urgent source repairs — 2026-10-21
+
+Source: 2dfc786. No build, tests or editor execution, by owner request. Stock engine unchanged; DSH paused.
+
+Implemented: operator reader IDs; enum literals; reroute metrics; grouped tidy membership/refusal; related rows, exec lanes and pure alignment; capture quantized fit, gamma and aspect; comment ID and named fit; mapped defaults in swap preview; safe latest-transaction undo; explicitly authorized preview/confirmed disk revert; before/after SVG schematic.
+
+Field positives apply to fac37b3, not this repair: dispatcher guidance, library aliases, call-swap map/defaults, batch positions, getter report. Undo was not attempted.
+
+Limits remain explicit in second_pass: SVG is schematic and omits getter copies; comment scopes retain fixed box corners rather than translating groups; semantic main-path/global delegate routing remains heuristic. Undo refuses intervening edits. Revert discards all unsaved changes to the package, may reset undo and reinstance references. Separate preview and single-use confirmation expire after 60 seconds.
