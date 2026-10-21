@@ -94,8 +94,9 @@ FTurboMCPLayoutReport::FRect FTurboMCPLayoutReport::RectOf(const UEdGraphNode* I
 
 	Rect.MinX = InNode->NodePosX;
 	Rect.MinY = InNode->NodePosY;
-	Rect.MaxX = InNode->NodePosX + InNode->NodeWidth;
-	Rect.MaxY = InNode->NodePosY + InNode->NodeHeight;
+	const FVector2D Size=FTurboMCPGraphTidy::AlignmentNodeSize(InNode);
+	Rect.MaxX = InNode->NodePosX + Size.X;
+	Rect.MaxY = InNode->NodePosY + Size.Y;
 	return Rect;
 }
 
@@ -281,7 +282,7 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
                 {
                     FFinding Finding;
                     Finding.Kind = bIsExec ? TEXT("exec-not-straight") : TEXT("pin-not-level");
-                    Finding.Detail = TEXT("Pin heights differ; branch lanes and shared inputs may intentionally differ. Review main-path or first-input alignment.");
+                    Finding.Detail = FString::Printf(TEXT("%s.%s -> %s.%s: vertical offset %+.1f graph units (branch lanes may intentionally differ)"), *TurboMCPNodeId::MakeForNode(Source), *Pin->PinName.ToString(), *TurboMCPNodeId::MakeForNode(Target), *Other->PinName.ToString(), FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y-FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y);
                     Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Source));
                     Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Target));
                     Report.Findings.Add(MoveTemp(Finding));

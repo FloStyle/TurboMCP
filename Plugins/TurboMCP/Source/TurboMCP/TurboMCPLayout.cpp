@@ -1,3 +1,4 @@
+#include "TurboMCPGraphTidy.h"
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 //
@@ -87,9 +88,12 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 			Names.Num() > 0 ? *FString::Join(Names, TEXT(", ")) : TEXT("(none)"));
 	}
 
-	const FTurboMCPLayoutReport::FReport Report =
+	FString GeometryError;
+    if(!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Graph,GeometryError)) return TEXT("error: ")+GeometryError;
+    FTurboMCPLayoutReport::FReport Report =
 		FTurboMCPLayoutReport::Measure(Graph, Resolved.ObjectPath);
 
+	Report.Findings.StableSort([](const auto& A,const auto& B) { return A.Kind<B.Kind; });
 	FString Out = FString::Printf(TEXT("look: layout of %s graph %s"),
 		*Resolved.ObjectPath, *Graph->GetName());
 

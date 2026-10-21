@@ -1,3 +1,5 @@
+#include "Misc/LexFromString.h"
+#include "TurboMCPGraphTidy.h"
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 //
@@ -113,6 +115,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	const FString WantedMode = Mode.TrimStartAndEnd().ToLower();
 	const bool bWholeGraph = WantedMode.IsEmpty() || WantedMode == TEXT("graph");
 	const bool bOneBox = WantedMode == TEXT("box");
+	const bool bRegion = WantedMode == TEXT("region");
 	const bool bOneNode = WantedMode == TEXT("node");
 
 	// `screen` IS READ HERE TOO, AND FOR ONE REASON: the graph name must NOT be demanded
@@ -294,7 +297,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// second declaration, because two declarations of one mode flag is how a mode comes
 	// to mean two things.
 
-	if (!bWholeGraph && !bOneBox && !bOneNode && !bDebugWindow
+	if (!bWholeGraph && !bRegion && !bOneBox && !bOneNode && !bDebugWindow
 		&& !bScreen && !bNewSelector && !bRhiState && !bSelectProbe && !bAssetEditor)
 	{
 		// `debug-window` and `rhi-state` are the two diagnostic modes and are NOT
@@ -302,7 +305,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		// diagnostic is not something a caller should be steered into.
 		return FString::Printf(
 			TEXT("error: '%s' is not a capture mode. Accepted: graph, box, node, ")
-			TEXT("selection, neighbours, box-neighbours, screen, asset-editor. Leave it ")
+			TEXT("region (Target=x,y,width,height), selection, neighbours, box-neighbours, screen, asset-editor. Leave it ")
 			TEXT("empty for graph."), *Mode);
 	}
 
@@ -607,7 +610,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		FrameLabel = Selection.FrameLabel;
 		SelectorDefinition = Selection.Definition;
 	}
-	else if (bWholeGraph || bDebugWindow)
+	else if (bWholeGraph || bDebugWindow || bRegion)
 	{
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
@@ -707,6 +710,8 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			TEXT("capture."), *Resolved.ObjectPath, *Graph->GetName());
 	}
 
+	FString GeometryError;
+    if(!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Graph,GeometryError)) return TEXT("error: ")+GeometryError;
 	// The bounding box of the targets, in graph space.
 	FTurboMCPLayoutReport::FRect Box = FTurboMCPLayoutReport::RectOf(Targets[0]);
 	for (const UEdGraphNode* Node : Targets)
@@ -718,6 +723,17 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		Box.MaxY = FMath::Max(Box.MaxY, R.MaxY);
 	}
 
+    if(bRegion)
+    {
+        TArray<FString> Parts; Target.ParseIntoArray(Parts,TEXT(","),false);
+        double V[4];
+        if(Parts.Num()!=4) return TEXT("error: region Target must be x,y,width,height in graph coordinates");
+        for(int32 I=0;I<4;++I) if(!LexTryParseString(V[I],*Parts[I].TrimStartAndEnd()) || !FMath::IsFinite(V[I]) || FMath::Abs(V[I])>10000000)
+            return TEXT("error: region requires four finite graph coordinates within +/-10000000");
+        if(V[2]<=0 || V[3]<=0) return TEXT("error: region width and height must be positive");
+        Box.MinX=V[0]; Box.MinY=V[1]; Box.MaxX=V[0]+V[2]; Box.MaxY=V[1]+V[3];
+        FrameLabel=TEXT("explicit graph-coordinate region");
+    }
 	// A zero or negative graph-space frame has no pixels to capture. Check before the
 	// fit calculation can turn it into an artificial one-unit frame or any image is written.
 	const double FrameWidth = Box.Width();
@@ -1038,6 +1054,9 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	}
 	else
 	{
+        // Slate's shader applies display gamma; PNG readback must not encode it twice.
+        RenderTarget->InitCustomFormat(WindowWidth,WindowHeight,PF_B8G8R8A8,true);
+        RenderTarget->UpdateResourceImmediate(true);
 		FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/true);
 
 		FHittestGrid HitTestGrid;

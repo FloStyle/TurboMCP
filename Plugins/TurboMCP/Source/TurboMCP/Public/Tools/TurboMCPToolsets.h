@@ -1160,7 +1160,7 @@ public:
 	 * space rather than through its anchors. The preview reports the planned score and the edit reports
 	 * the score it actually measured after writing.
 	 *
-	 * MainPath optionally lists a comma-separated connected sequence of reader node IDs for the top exec lane.
+	 * MainPath accepts "auto" for the longest acyclic execution path, or comma-separated connected reader node IDs for the top exec lane. Auto refuses execution cycles.
 	 * The number it prints is the TOTAL WIRE LENGTH, which is what this pass is judged on. `P-GRAPH-KNOTS`
 	 * is judged on WIRES CROSSING NODES instead, and the two numbers are deliberately not comparable.
 	 */
@@ -1303,7 +1303,9 @@ public:
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
 		const FString& TargetPin, const FString& KeepSource);
 
-	/** Preview a batch of graph repoint operations; the batch owns one transaction and defers compile/save. */
+	/** Preview graph repoints without edits. Operations accepts a JSON array or an object with an operations array.
+     * Example: [{"asset":"/Game/BP_Example","graphName":"EventGraph","sourceNodeId":"reader ID","sourcePin":"then","targetNodeId":"reader ID","targetPin":"execute","keepSource":true}]
+     * Field names match GraphRepoint (case-insensitive); graph is an alias for graphName. Optional id defaults to operation-N; optional kind defaults to graphRepoint. Other kinds refuse. Compile/save are deferred. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPBatchEdit(const FString& Operations);
 
@@ -2103,7 +2105,7 @@ public:
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
 		const FString& TargetPin, const FString& KeepSource);
 
-	/** Apply a batch of graph repoint operations under one caller-owned transaction. */
+	/** Apply the same Operations JSON array/object accepted by PreviewTurboMCPBatchEdit under one transaction; preview first. Compile/save are deferred. */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPBatchEdit(const FString& Operations);
 

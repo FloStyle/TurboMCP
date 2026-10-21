@@ -46,6 +46,8 @@
 
 namespace
 {
+    TMap<const UEdGraphNode*, FVector2D> MeasuredSizes;
+    TMap<const UEdGraphPin*, FVector2D> MeasuredPinOffsets;
     TWeakPtr<SGraphEditor> AlignmentEditor;
     TWeakObjectPtr<UEdGraph> AlignmentGraph;
 
@@ -220,6 +222,7 @@ namespace
     bool EnsureMeasuredNodeOutlines(UBlueprint* Blueprint, UEdGraph* Graph,
         TMap<const UEdGraphNode*, FVector2D>& Sizes, FString& Error)
     {
+        MeasuredSizes.Reset(); MeasuredPinOffsets.Reset(); AlignmentGraph.Reset();
         auto Collect = [&](const TSharedPtr<SGraphEditor>& Panel)
         {
             Sizes.Reset();
@@ -256,13 +259,33 @@ namespace
         FBlueprintEditor* Editor = static_cast<FBlueprintEditor*>(Instance);
         TSharedPtr<SGraphEditor> Panel = Editor->OpenGraphAndBringToFront(Graph);
         if (!Panel.IsValid()) { Error = TEXT("Graph panel unavailable; no nodes moved."); return false; }
+        FVector2f SavedView; float SavedZoom; Panel->GetViewLocation(SavedView,SavedZoom);
+        Panel->SetViewLocation(SavedView,1.0f);
+        Panel->GetGraphPanel()->Update();
         for (int32 Attempt = 0; Attempt < 8; ++Attempt)
         {
             Panel->SlatePrepass(1.0f);
             FSlateApplication::Get().Tick(ESlateTickType::All);
-            if (Collect(Panel)) return true;
+            if (Attempt < 2) continue;
+            if (Collect(Panel))
+            {
+                MeasuredSizes=Sizes; MeasuredPinOffsets.Reset();
+                for(UEdGraphNode* Node:Graph->Nodes) if(Node)
+                {
+                    const TSharedPtr<SGraphNode> Widget=Panel->GetGraphPanel()->GetNodeWidgetFromGuid(Node->NodeGuid);
+                    if(!Widget.IsValid()) continue;
+                    for(UEdGraphPin* Pin:Node->Pins) if(Pin)
+                    {
+                        const TSharedPtr<SGraphPin> PW=Widget->FindWidgetForPin(Pin);
+                        if(PW.IsValid() && PW->GetTickSpaceGeometry().GetLocalSize().Y>0)
+                            MeasuredPinOffsets.Add(Pin,Widget->GetTickSpaceGeometry().AbsoluteToLocal(PW->GetTickSpaceGeometry().LocalToAbsolute(PW->GetTickSpaceGeometry().GetLocalSize()*0.5)));
+                    }
+                }
+                Panel->SetViewLocation(SavedView,SavedZoom);
+                return true;
+            }
         }
-        if (Collect(Panel)) return true;
+        Panel->SetViewLocation(SavedView,SavedZoom);
         Error = TEXT("Some graph widgets still have no measured bounds. Let the editor draw the graph and retry; no nodes moved.");
         return false;
     }
@@ -313,29 +336,16 @@ bool FTurboMCPGraphTidy::PrepareAlignment(UBlueprint* Blueprint,UEdGraph* Graph,
 }
 FVector2D FTurboMCPGraphTidy::AlignmentNodeSize(const UEdGraphNode* Node)
 {
-    const TSharedPtr<SGraphEditor> Editor=AlignmentEditor.Pin(); FSlateRect Bounds;
-    if(Node && Editor.IsValid() && AlignmentGraph.Get()==Node->GetGraph() && Editor->GetBoundsForNode(Node,Bounds,0.f))
-        return FVector2D(Bounds.Right-Bounds.Left,Bounds.Bottom-Bounds.Top);
+    if(Node && Node->IsA<UEdGraphNode_Comment>()) return FVector2D(Node->NodeWidth,Node->NodeHeight);
+    if(Node && AlignmentGraph.Get()==Node->GetGraph())
+        if(const FVector2D* Size=MeasuredSizes.Find(Node)) return *Size;
     return Node?FVector2D(Node->NodeWidth,Node->NodeHeight):FVector2D::ZeroVector;
 }
 FVector2D FTurboMCPGraphTidy::AlignmentPinPosition(const UEdGraphPin* Pin)
 {
     const UEdGraphNode* Node=Pin?Pin->GetOwningNodeUnchecked():nullptr;
-    const TSharedPtr<SGraphEditor> Editor=AlignmentEditor.Pin();
-    if(Node && Editor.IsValid() && AlignmentGraph.Get()==Node->GetGraph() && Editor->GetGraphPanel())
-    {
-        const TSharedPtr<SGraphNode> Widget=Editor->GetGraphPanel()->GetNodeWidgetFromGuid(Node->NodeGuid);
-        const TSharedPtr<SGraphPin> PinWidget=Widget.IsValid()?Widget->FindWidgetForPin(const_cast<UEdGraphPin*>(Pin)):nullptr;
-        if(PinWidget.IsValid())
-        {
-            const FGeometry& Geometry=PinWidget->GetTickSpaceGeometry();
-            if(Geometry.GetLocalSize().Y>0 && Widget->GetTickSpaceGeometry().GetLocalSize().Y>0)
-            {
-                const FVector2D Offset=Widget->GetTickSpaceGeometry().AbsoluteToLocal(Geometry.LocalToAbsolute(Geometry.GetLocalSize()*0.5));
-                return FVector2D(Node->NodePosX,Node->NodePosY)+Offset;
-            }
-        }
-    }
+    if(Node && AlignmentGraph.Get()==Node->GetGraph())
+        if(const FVector2D* Offset=MeasuredPinOffsets.Find(Pin)) return FVector2D(Node->NodePosX,Node->NodePosY)+*Offset;
     return FTurboMCPLayoutReport::PinPosition(Pin);
 }
 
@@ -633,6 +643,31 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
     TMap<int32,int32> MainPredecessor;
     TArray<FString> MainIds; MainPath.ParseIntoArray(MainIds,TEXT(","),true);
+    if(MainPath.TrimStartAndEnd().Equals(TEXT("auto"),ESearchCase::IgnoreCase))
+    {
+        MainIds.Reset();
+        TMap<int32,TArray<int32>> Paths; TSet<int32> Visiting;
+        auto Eligible=[&](int32 I) { return !OutPlan.Nodes[I].bIsPure && !OutPlan.Nodes[I].bIsComment && (OutPlan.SelectedNodeKeys.IsEmpty() || OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[I].Key)); };
+        TFunction<bool(int32)> Visit=[&](int32 I)
+        {
+            if(Paths.Contains(I)) return true;
+            if(Visiting.Contains(I)) return false;
+            Visiting.Add(I); TArray<int32> Best;
+            for(const FWire& W:OutPlan.Wires) if(W.SourceNodeIndex==I && W.OutputPin->PinType.PinCategory==TEXT("exec") && Eligible(W.TargetNodeIndex))
+            {
+                if(!Visit(W.TargetNodeIndex)) return false;
+                if(Paths[W.TargetNodeIndex].Num()>Best.Num()) Best=Paths[W.TargetNodeIndex];
+            }
+            Best.Insert(I,0); Paths.Add(I,Best); Visiting.Remove(I); return true;
+        };
+        TArray<int32> Longest;
+        for(int32 I=0;I<OutPlan.Nodes.Num();++I) if(Eligible(I))
+        {
+            if(!Visit(I)) { OutError=TEXT("MainPath auto cannot choose through execution cycles; pass an explicit comma-separated path."); return false; }
+            if(Paths[I].Num()>Longest.Num()) Longest=Paths[I];
+        }
+        for(int32 I:Longest) MainIds.Add(TurboMCPNodeId::MakeForNode(OutPlan.Nodes[I].Node));
+    }
     for(FString& Id:MainIds) Id=Id.TrimStartAndEnd();
     int32 Previous=INDEX_NONE; TSet<int32> MainSeen;
     for(const FString& Id:MainIds)
@@ -1544,9 +1579,20 @@ namespace
    const FVector2D Size(2048,1536);
    TStrongObjectPtr<UTextureRenderTarget2D> Target(FWidgetRenderer::CreateTargetFor(Size,TF_Bilinear,true));
    if(!Target.IsValid()) { Result=TEXT("render target unavailable"); return false; }
+   // Slate applies display gamma; keep the destination linear to avoid a second sRGB encode.
+   Target->InitCustomFormat(2048,1536,PF_B8G8R8A8,true);
+   Target->UpdateResourceImmediate(true);
    FWidgetRenderer Renderer(true);
-   // Initial draw arranges native nodes and establishes the graph canvas geometry.
+   // Offscreen graphs have no active-timer tick: populate their node widgets explicitly.
+   Editor->GetGraphPanel()->Update();
+   Editor->SetViewLocation(FVector2f::ZeroVector,1.0f);
+   Editor->SlatePrepass(1.0f);
    Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+   Editor->SlatePrepass(1.0f);
+   // A second layout pass settles full-detail desired sizes before framing.
+   Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+   for(UEdGraphNode* N:Graph->Nodes) if(N && !Editor->GetGraphPanel()->GetNodeWidgetFromGuid(N->NodeGuid).IsValid())
+   { Result=TEXT("native preview node widgets did not populate; no blank image returned"); return false; }
    double Left=0,Top=0,Right=1,Bottom=1; bool First=true;
    for(UEdGraphNode* N:Graph->Nodes) if(N)
    {

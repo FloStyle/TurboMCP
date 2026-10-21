@@ -24,28 +24,37 @@ namespace
  static bool ParseBatch(const FString& Text, TArray<FBatchOperation>& Out, FString& Error)
  {
   Out.Reset();
-  TSharedPtr<FJsonObject> Root;
+  TSharedPtr<FJsonValue> Root;
   const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Text);
-  if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid()) { Error = TEXT("Operations is not valid JSON"); return false; }
+  if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid()) { Error = TEXT("Operations contains malformed JSON"); return false; }
   const TArray<TSharedPtr<FJsonValue>>* Values = nullptr;
-  if (!Root->TryGetArrayField(TEXT("operations"), Values) || !Values) { Error = TEXT("Operations must contain an operations array"); return false; }
+  if(Root->Type==EJson::Array) Values=&Root->AsArray();
+  else if(Root->Type==EJson::Object) Root->AsObject()->TryGetArrayField(TEXT("operations"),Values);
+  if(!Values) { Error=TEXT("Expected an array or {\"operations\":[...]}. Each entry needs asset, graphName (or graph), sourceNodeId, sourcePin, targetNodeId, targetPin; optional id, kind=graphRepoint, targetTypeId and keepSource."); return false; }
   TSet<FString> Ids;
   for (int32 Index = 0; Index < Values->Num(); ++Index)
   {
-   const TSharedPtr<FJsonObject> Object = (*Values)[Index].IsValid() ? (*Values)[Index]->AsObject() : nullptr;
+   const TSharedPtr<FJsonObject> Object = (*Values)[Index].IsValid() && (*Values)[Index]->Type==EJson::Object ? (*Values)[Index]->AsObject() : nullptr;
    if (!Object.IsValid()) { Error = FString::Printf(TEXT("operation %d is not an object"), Index); return false; }
    FBatchOperation Op;
-   if (!Object->TryGetStringField(TEXT("id"), Op.Id) || Op.Id.IsEmpty()) { Error = FString::Printf(TEXT("operation %d has no stable id"), Index); return false; }
+   if (!Object->TryGetStringField(TEXT("id"), Op.Id) || Op.Id.IsEmpty()) Op.Id=FString::Printf(TEXT("operation-%d"),Index+1);
    if (Ids.Contains(Op.Id)) { Error = FString::Printf(TEXT("duplicate operation id '%s'"), *Op.Id); return false; }
    Ids.Add(Op.Id);
-   if (!Object->TryGetStringField(TEXT("kind"), Op.Kind) || Op.Kind.IsEmpty()) { Error = FString::Printf(TEXT("operation '%s' has no kind"), *Op.Id); return false; }
+   if (!Object->TryGetStringField(TEXT("kind"), Op.Kind) || Op.Kind.IsEmpty()) Op.Kind=TEXT("graphRepoint");
    if (Op.Kind != TEXT("graphRepoint")) { Error = FString::Printf(TEXT("operation '%s' has unknown or unsupported kind '%s'"), *Op.Id, *Op.Kind); return false; }
    FString Asset, Graph, SourceNode, SourcePin, TargetNode, TargetType, TargetPin, KeepSource;
-   const bool bArgs = Object->TryGetStringField(TEXT("asset"), Asset) && Object->TryGetStringField(TEXT("graph"), Graph)
-    && Object->TryGetStringField(TEXT("sourceNodeId"), SourceNode) && Object->TryGetStringField(TEXT("sourcePin"), SourcePin)
-    && Object->TryGetStringField(TEXT("targetNodeId"), TargetNode) && Object->TryGetStringField(TEXT("targetPin"), TargetPin);
+   auto StringArg=[&](const TCHAR* Name,FString& Value)
+   {
+       for(const auto& Field:Object->Values) if(Field.Key.Equals(Name,ESearchCase::IgnoreCase))
+           return Field.Value.IsValid() && Field.Value->TryGetString(Value);
+       return false;
+   };
+   const bool bArgs = StringArg(TEXT("asset"), Asset) && (StringArg(TEXT("graph"), Graph) || StringArg(TEXT("graphName"),Graph))
+    && StringArg(TEXT("sourceNodeId"), SourceNode) && StringArg(TEXT("sourcePin"), SourcePin)
+    && StringArg(TEXT("targetNodeId"), TargetNode) && StringArg(TEXT("targetPin"), TargetPin);
    if (!bArgs) { Error = FString::Printf(TEXT("operation '%s' has malformed graphRepoint arguments"), *Op.Id); return false; }
-   Object->TryGetStringField(TEXT("targetTypeId"), TargetType); Object->TryGetStringField(TEXT("keepSource"), KeepSource); if (KeepSource.IsEmpty()) KeepSource = TEXT("true");
+   StringArg(TEXT("targetTypeId"), TargetType); StringArg(TEXT("keepSource"), KeepSource);
+   for(const auto& Field:Object->Values) if(Field.Key.Equals(TEXT("keepSource"),ESearchCase::IgnoreCase) && Field.Value.IsValid() && Field.Value->Type==EJson::Boolean) KeepSource=Field.Value->AsBool()?TEXT("true"):TEXT("false"); if (KeepSource.IsEmpty()) KeepSource = TEXT("true");
    if (!FTurboMCPGraphRepoint::Plan(Asset, Graph, SourceNode, SourcePin, TargetNode, TargetType, TargetPin, KeepSource, Op.Repoint, Error)) { Error = FString::Printf(TEXT("operation '%s' plan failed: %s"), *Op.Id, *Error); return false; }
    if (!Op.Repoint.bAcceptable()) { Error = FString::Printf(TEXT("operation '%s' refused: %s"), *Op.Id, *FString::Join(Op.Repoint.Refusals, TEXT("; "))); return false; }
    Out.Add(MoveTemp(Op));
