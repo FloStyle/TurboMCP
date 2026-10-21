@@ -342,7 +342,10 @@
       "id": "X-62",
       "title": "Setting a by-reference text pin fails with no reason (low)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "state": "open",
+      "source_review": "At 9b5639e, EditTurboMCPPinDefault parses via K2 schema, returns IsPinDefaultValid reason with pin category/subcategory, refuses connected/read-only/ignored defaults, and verifies read-back. Stock engine TrySetDefaultValue uses the same text-identity parsing mode. No clear missing plugin fix identified from these reports.",
+      "remaining_problem": "Identify exact tool used and pin schema/type plus literal shape (non-private synthetic equivalent); distinguish native setter failure from supported TurboMCP literal handling. Do not equate existing diagnostics with proven support for the reported by-reference/struct case."
     },
     {
       "report": "2026-10-20_S1",
@@ -547,7 +550,10 @@
       "id": "ED-09",
       "title": "A struct pin refuses a text value (low)",
       "owner": "FIELD-09",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "state": "open",
+      "source_review": "At 9b5639e, EditTurboMCPPinDefault parses via K2 schema, returns IsPinDefaultValid reason with pin category/subcategory, refuses connected/read-only/ignored defaults, and verifies read-back. Stock engine TrySetDefaultValue uses the same text-identity parsing mode. No clear missing plugin fix identified from these reports.",
+      "remaining_problem": "Identify exact tool used and pin schema/type plus literal shape (non-private synthetic equivalent); distinguish native setter failure from supported TurboMCP literal handling. Do not equate existing diagnostics with proven support for the reported by-reference/struct case."
     },
     {
       "report": "2026-10-20_S3",
@@ -967,6 +973,12 @@
       "state": "open",
       "evidence": "untested",
       "remaining": "Focused reads, query errors, requiredness and registered constraints/defaults are implemented (50f36f5, a8c38d7, 4a03957, 4204098), untested. Remaining: valid tool-specific examples and constraints absent from registry."
+    },
+    {
+      "issue": "X-62 / ED-09",
+      "state": "open",
+      "evidence": "reported; source inspected",
+      "remaining": "Pin setter already reports schema reasons and verifies values. Need exact tool, pin type and synthetic literal shape to identify the unresolved native/by-reference/struct failure. No speculative fix submitted."
     }
   ]
 }
