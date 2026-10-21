@@ -1,6 +1,7 @@
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 #include "TurboMCPGraphRepoint.h"
+#include "TurboMCPGraphScratch.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
 #include "TurboMCPNodeType.h"
@@ -87,12 +88,31 @@ bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName,
    *GraphName, GraphMatches, *R.PackagePath));
   return true;
  }
+ return PlanOnGraph(B,G,G,Asset,SourceNodeId,SourcePin,TargetNodeId,TargetTypeId,TargetPin,KeepSource,Out,Error);
+}
+
+bool FTurboMCPGraphRepoint::PlanOnGraph(UBlueprint* B,UEdGraph* G,UEdGraph* IdentityGraph,
+ const FString& Asset,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,
+ const FString& TargetTypeId,const FString& TargetPin,const FString& KeepSource,FPlan& Out,FString& Error)
+{
+ Out=FPlan(); Error.Empty(); Out.Asset=Asset; Out.SourceNodeId=SourceNodeId; Out.SourcePin=SourcePin;
+ Out.TargetNodeId=TargetNodeId; Out.TargetTypeId=TargetTypeId; Out.TargetPin=TargetPin;
+ const FString Keep=KeepSource.TrimStartAndEnd();
+ if(Keep.IsEmpty() || Keep.Equals(TEXT("true"),ESearchCase::IgnoreCase) || Keep==TEXT("1")) Out.bKeepSource=true;
+ else if(Keep.Equals(TEXT("false"),ESearchCase::IgnoreCase) || Keep==TEXT("0")) Out.bKeepSource=false;
+ else { Error=TEXT("keepSource must be true/false or 1/0"); return false; }
+ if(!B || !G || !IdentityGraph || !G->GetSchema()) { Error=TEXT("graph or schema unavailable"); return false; }
+ auto Locate=[&](const FString& Id)->UEdGraphNode*
+ {
+     UEdGraphNode* Original=FindNode(IdentityGraph,Id);
+     return Original?TurboMCPGraphScratch::ByGuid(G,Original->NodeGuid):nullptr;
+ };
  Out.GraphName=G->GetName(); Out.NodeCountBefore=G->Nodes.Num();
- UEdGraphNode* Source=FindNode(G,SourceNodeId); if (!Source) { Out.Refusals.Add(FString::Printf(TEXT("source node '%s' was not found"),*SourceNodeId)); return true; }
+ UEdGraphNode* Source=Locate(SourceNodeId); if (!Source) { Out.Refusals.Add(FString::Printf(TEXT("source node '%s' was not found"),*SourceNodeId)); return true; }
  UEdGraphPin* SourceOut=FindPin(Source,SourcePin,EGPD_Output); if (!SourceOut) { Out.Refusals.Add(FString::Printf(TEXT("source '%s' has no unique output pin named '%s'"),*SourceNodeId,*SourcePin)); return true; }
  if (TargetNodeId.IsEmpty() && TargetTypeId.IsEmpty()) { Out.Refusals.Add(TEXT("targetTypeId is required when targetNodeId is empty")); return true; }
  UEdGraphNode* Target=nullptr;
- if (!TargetNodeId.IsEmpty()) { Target=FindNode(G,TargetNodeId); if (!Target) { Out.Refusals.Add(FString::Printf(TEXT("target node '%s' was not found"),*TargetNodeId)); return true; } }
+ if (!TargetNodeId.IsEmpty()) { Target=Locate(TargetNodeId); if (!Target) { Out.Refusals.Add(FString::Printf(TEXT("target node '%s' was not found"),*TargetNodeId)); return true; } }
  else { FString Note; Target=FTurboMCPNodeType::BuildProbeNode(B,G,TargetTypeId,Note); Out.bCreateTarget=true; if (!Target) { Out.Refusals.Add(FString::Printf(TEXT("could not build target type '%s': %s"),*TargetTypeId,*Note)); return true; } }
  if (Target == Source) { Out.Refusals.Add(TEXT("source and target must be different nodes; deleting the source must not delete the target")); return true; }
  UEdGraphPin* TargetOut=FindPin(Target,TargetPin,EGPD_Output); if (!TargetOut) {
@@ -101,7 +121,7 @@ bool FTurboMCPGraphRepoint::Plan(const FString& Asset, const FString& GraphName,
  }
  for (UEdGraphPin* ConsumerPin : SourceOut->LinkedTo) {
   if (!ConsumerPin || !ConsumerPin->GetOwningNode()) continue;
-  FReader Item; Item.ConsumerNodeId=TurboMCPNodeId::MakeForNode(ConsumerPin->GetOwningNode(),true); Item.ConsumerPin=ConsumerPin->PinName.ToString(); Item.OldSourceNodeId=SourceNodeId; Item.OldSourcePin=SourcePin; Out.Readers.Add(MoveTemp(Item));
+  FReader Item; Item.ConsumerNodeId=TurboMCPNodeId::MakeForNode(TurboMCPGraphScratch::ByGuid(IdentityGraph,ConsumerPin->GetOwningNode()->NodeGuid),true); Item.ConsumerPin=ConsumerPin->PinName.ToString(); Item.OldSourceNodeId=SourceNodeId; Item.OldSourcePin=SourcePin; Out.Readers.Add(MoveTemp(Item));
   const FPinConnectionResponse Check=G->GetSchema()->CanCreateConnection(TargetOut,ConsumerPin);
   const bool ReplacesOnlySource = Check.Response == CONNECT_RESPONSE_BREAK_OTHERS_B
    && ConsumerPin->LinkedTo.Num() == 1 && ConsumerPin->LinkedTo.Contains(SourceOut);

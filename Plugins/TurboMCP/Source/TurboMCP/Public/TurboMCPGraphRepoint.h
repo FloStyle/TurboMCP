@@ -79,6 +79,9 @@ public:
  static bool Plan(const FString& Asset, const FString& GraphName, const FString& SourceNodeId,
   const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
   const FString& TargetPin, const FString& KeepSource, FPlan& OutPlan, FString& OutError);
+ static bool PlanOnGraph(UBlueprint* Blueprint, UEdGraph* Graph, UEdGraph* IdentityGraph,
+  const FString& Asset, const FString& SourceNodeId, const FString& SourcePin, const FString& TargetNodeId,
+  const FString& TargetTypeId, const FString& TargetPin, const FString& KeepSource, FPlan& OutPlan, FString& OutError);
  static FString RenderPreview(const FPlan& Plan);
  /**
   * ONE transaction for the whole public edit: resolve, Modify, apply, compare, commit-or-restore. Compile/save must be separate.

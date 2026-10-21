@@ -3,6 +3,10 @@
 
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPGraphRepoint.h"
+#include "TurboMCPGraphScratch.h"
+#include "TurboMCPAssetResolver.h"
+#include "TurboMCPNodeType.h"
+#include "EdGraph/EdGraphPin.h"
 #include "TurboMCPRollback.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
@@ -32,6 +36,7 @@ namespace
   else if(Root->Type==EJson::Object) Root->AsObject()->TryGetArrayField(TEXT("operations"),Values);
   if(!Values) { Error=TEXT("Expected an array or {\"operations\":[...]}. Each entry needs asset, graphName (or graph), sourceNodeId, sourcePin, targetNodeId, targetPin; optional id, kind=graphRepoint, targetTypeId and keepSource."); return false; }
   TSet<FString> Ids;
+  TMap<UEdGraph*,TSharedPtr<TurboMCPGraphScratch::FCopy>> Copies;
   for (int32 Index = 0; Index < Values->Num(); ++Index)
   {
    const TSharedPtr<FJsonObject> Object = (*Values)[Index].IsValid() && (*Values)[Index]->Type==EJson::Object ? (*Values)[Index]->AsObject() : nullptr;
@@ -55,8 +60,29 @@ namespace
    if (!bArgs) { Error = FString::Printf(TEXT("operation '%s' has malformed graphRepoint arguments"), *Op.Id); return false; }
    StringArg(TEXT("targetTypeId"), TargetType); StringArg(TEXT("keepSource"), KeepSource);
    for(const auto& Field:Object->Values) if(FString(*Field.Key).Equals(TEXT("keepSource"),ESearchCase::IgnoreCase) && Field.Value.IsValid() && Field.Value->Type==EJson::Boolean) KeepSource=Field.Value->AsBool()?TEXT("true"):TEXT("false"); if (KeepSource.IsEmpty()) KeepSource = TEXT("true");
-   if (!FTurboMCPGraphRepoint::Plan(Asset, Graph, SourceNode, SourcePin, TargetNode, TargetType, TargetPin, KeepSource, Op.Repoint, Error)) { Error = FString::Printf(TEXT("operation '%s' plan failed: %s"), *Op.Id, *Error); return false; }
-   if (!Op.Repoint.bAcceptable()) { Error = FString::Printf(TEXT("operation '%s' refused against the original graph (all operations preflight before any write; split batches at dependencies that free or create links): %s"), *Op.Id, *FString::Join(Op.Repoint.Refusals, TEXT("; "))); return false; }
+   FTurboMCPAssetResolver::FResolved Resolved;
+   Error=FTurboMCPAssetResolver::Resolve(Asset,Resolved); if(!Error.IsEmpty()) return false;
+   UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath); int32 Matches=0;
+   UEdGraph* Original=BP?TurboMCPNodeId::FindGraphByName(BP,Graph,Matches):nullptr;
+   if(!Original || Matches!=1) { Error=TEXT("batch graph must resolve uniquely"); return false; }
+   TSharedPtr<TurboMCPGraphScratch::FCopy>& Copy=Copies.FindOrAdd(Original);
+   if(!Copy.IsValid()) { Copy=MakeShared<TurboMCPGraphScratch::FCopy>(); if(!Copy->Init(BP,Original)) { Error=TEXT("batch graph copy failed"); return false; } }
+   if(!FTurboMCPGraphRepoint::PlanOnGraph(Copy->Owner.Get(),Copy->Graph,Original,Asset,SourceNode,SourcePin,TargetNode,TargetType,TargetPin,KeepSource,Op.Repoint,Error)) return false;
+   if(!Op.Repoint.bAcceptable()) { Error=FString::Printf(TEXT("operation '%s' refused after earlier simulated operations: %s"),*Op.Id,*FString::Join(Op.Repoint.Refusals,TEXT("; "))); return false; }
+   auto StagedNode=[&](const FString& Id)->UEdGraphNode* { UEdGraphNode* N=TurboMCPGraphScratch::Find(Original,Id); return N?TurboMCPGraphScratch::ByGuid(Copy->Graph,N->NodeGuid):nullptr; };
+   UEdGraphNode* From=StagedNode(SourceNode); UEdGraphNode* To=StagedNode(TargetNode);
+   if(Op.Repoint.bCreateTarget)
+   {
+       FString Why; UEdGraphNode* Probe=FTurboMCPNodeType::BuildProbeNode(Copy->Owner.Get(),Copy->Graph,TargetType,Why);
+       To=Probe?DuplicateObject<UEdGraphNode>(Probe,Copy->Graph):nullptr;
+       if(To) { To->CreateNewGuid(); Copy->Graph->AddNode(To,false,false); }
+   }
+   UEdGraphPin* A=From?From->FindPin(FName(*SourcePin),EGPD_Output):nullptr;
+   UEdGraphPin* B=To?To->FindPin(FName(*TargetPin),EGPD_Output):nullptr;
+   if(!A || !B) { Error=TEXT("batch staging pin unavailable"); return false; }
+   const TArray<UEdGraphPin*> Readers=A->LinkedTo;
+   for(UEdGraphPin* ReaderPin:Readers) { A->BreakLinkTo(ReaderPin); B->MakeLinkTo(ReaderPin); }
+   if(!Op.Repoint.bKeepSource) { From->BreakAllNodeLinks(); Copy->Graph->RemoveNode(From); }
    Out.Add(MoveTemp(Op));
   }
   if (Out.Num() == 0) { Error = TEXT("operations array is empty"); return false; }
@@ -64,7 +90,7 @@ namespace
  }
  static FString Render(const TArray<FBatchOperation>& Ops)
  {
-  TSet<FString> Assets; FString Result = TEXT("unchanged\nplanned\nplanning=original graph; dependent operations must be split into separate batches\n");
+  TSet<FString> Assets; FString Result = TEXT("unchanged\nplanned\nplanning=sequential transient graph; each operation sees preceding staged changes\n");
   for (const FBatchOperation& Op : Ops) { Assets.Add(Op.Repoint.Asset); Result += FString::Printf(TEXT("%s [%s]: %s\n"), *Op.Id, *Op.Kind, *FTurboMCPGraphRepoint::RenderPreview(Op.Repoint)); }
   Result += FString::Printf(TEXT("operations=%d\naffectedAssets=%s\nundo=one\ncompile=deferred\nsave=deferred\n"), Ops.Num(), *FString::Join(Assets.Array(), TEXT(",")));
   return Result;

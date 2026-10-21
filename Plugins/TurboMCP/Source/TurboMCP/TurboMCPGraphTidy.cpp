@@ -351,8 +351,12 @@ FVector2D FTurboMCPGraphTidy::AlignmentPinPosition(const UEdGraphPin* Pin)
 }
 
 bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath)
+	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath, double InHorizontalGap, double InVerticalGap, double InLanePitch)
 {
+    if(!FMath::IsFinite(InHorizontalGap) || !FMath::IsFinite(InVerticalGap) || !FMath::IsFinite(InLanePitch)
+        || InHorizontalGap<40 || InHorizontalGap>2000 || InVerticalGap<40 || InVerticalGap>2000 || InLanePitch<100 || InLanePitch>10000)
+    { OutError=TEXT("layout gaps must be finite 40..2000; lane pitch 100..10000 graph units"); return false; }
+    const double SpacingX=InHorizontalGap, SpacingY=InVerticalGap;
 	OutError.Empty();
 	OutPlan = FPlan();
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
@@ -905,7 +909,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		return OutPlan.Boxes[InLeft].Key < OutPlan.Boxes[InRight].Key;
 	});
 
-	auto ArrangeRows = [&OutPlan, &MainPredecessor, &MainSeen](const TArray<int32>& Free, double FreeStartX, double FreeStartY)
+	auto ArrangeRows = [&OutPlan, &MainPredecessor, SpacingX, SpacingY, InLanePitch](const TArray<int32>& Free, double FreeStartX, double FreeStartY)
 	{
 			// Execution components form separate rows; data sharing must not merge event chains.
 			TMap<int32, int32> RowOf;
@@ -972,8 +976,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			{
 				double CursorX = FreeStartX;
 				double Bottom = RowY;
-				double LaneHeight = VerticalNodeGap;
-				for (int32 I : Free) if (RowOf[I] == Row) LaneHeight = FMath::Max(LaneHeight, OutPlan.Nodes[I].Height + VerticalNodeGap);
+				double LaneHeight = SpacingY;
+				for (int32 I : Free) if (RowOf[I] == Row) LaneHeight = FMath::Max(LaneHeight, OutPlan.Nodes[I].Height + SpacingY);
 				TMap<int32,int32> LaneOf;
                 TMap<int32,double> LaneCursor;
                 LaneCursor.Add(0,FreeStartX);
@@ -1005,14 +1009,14 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         if(SeenPure.Contains(Target)) return 0.0;
                         SeenPure.Add(Target); double Width=0;
                         for(const FWire& W:OutPlan.Wires) if(W.TargetNodeIndex==Target && RowOf.Contains(W.SourceNodeIndex) && OutPlan.Nodes[W.SourceNodeIndex].bIsPure)
-                            Width=FMath::Max(Width,OutPlan.Nodes[W.SourceNodeIndex].Width+HorizontalNodeGap+Required(W.SourceNodeIndex));
+                            Width=FMath::Max(Width,OutPlan.Nodes[W.SourceNodeIndex].Width+SpacingX+Required(W.SourceNodeIndex));
                         return Width;
                     };
                     PureSpace=Required(I);
                     // Each lane advances independently; sequence siblings share their left edge.
                     if(!LaneCursor.Contains(Lane))
                     {
-                        const double Start=Incoming ? OutPlan.Nodes[Incoming->SourceNodeIndex].PlannedX+OutPlan.Nodes[Incoming->SourceNodeIndex].Width+HorizontalNodeGap : FreeStartX;
+                        const double Start=Incoming ? OutPlan.Nodes[Incoming->SourceNodeIndex].PlannedX+OutPlan.Nodes[Incoming->SourceNodeIndex].Width+SpacingX : FreeStartX;
                         LaneCursor.Add(Lane,Start);
                     }
                     CursorX=LaneCursor[Lane]+PureSpace;
@@ -1023,7 +1027,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 						N.PlannedY = FTurboMCPGraphTidy::AlignmentPinPosition(Incoming->OutputPin).Y + Source.PlannedY - Source.Y
 							- (FTurboMCPGraphTidy::AlignmentPinPosition(Incoming->InputPin).Y - N.Y);
 					}
-					CursorX += N.Width + HorizontalNodeGap;
+					CursorX += N.Width + SpacingX;
                     LaneCursor[Lane]=CursorX;
 					Bottom = FMath::Max(Bottom, N.PlannedY + N.Height);
 				}
@@ -1044,7 +1048,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     if(Chosen)
                     {
                         const FNode& Consumer=OutPlan.Nodes[Chosen->TargetNodeIndex];
-                        N.PlannedX=FMath::Max(FreeStartX,Consumer.PlannedX-N.Width-HorizontalNodeGap);
+                        N.PlannedX=FMath::Max(FreeStartX,Consumer.PlannedX-N.Width-SpacingX);
                         N.PlannedY=FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->InputPin).Y+Consumer.PlannedY-Consumer.Y
                             -(FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->OutputPin).Y-N.Y);
                     }
@@ -1054,9 +1058,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 						for (int32 P : PlacedPure)
 						{
 							const FNode& O = OutPlan.Nodes[P];
-							if (N.PlannedX < O.PlannedX + O.Width + HorizontalNodeGap && N.PlannedX + N.Width + HorizontalNodeGap > O.PlannedX
-								&& N.PlannedY < O.PlannedY + O.Height + VerticalNodeGap && N.PlannedY + N.Height + VerticalNodeGap > O.PlannedY)
-								NextY = FMath::Max(NextY, O.PlannedY + O.Height + VerticalNodeGap);
+							if (N.PlannedX < O.PlannedX + O.Width + SpacingX && N.PlannedX + N.Width + SpacingX > O.PlannedX
+								&& N.PlannedY < O.PlannedY + O.Height + SpacingY && N.PlannedY + N.Height + SpacingY > O.PlannedY)
+								NextY = FMath::Max(NextY, O.PlannedY + O.Height + SpacingY);
 						}
 						if (NextY == N.PlannedY) break;
 						N.PlannedY = NextY;
@@ -1068,8 +1072,116 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 for(int32 I:Free) if(RowOf[I]==Row) Minimum=FMath::Min(Minimum,OutPlan.Nodes[I].PlannedY);
                 const double Shift=RowY-Minimum;
                 for(int32 I:Free) if(RowOf[I]==Row) OutPlan.Nodes[I].PlannedY+=Shift;
-                RowY = FMath::Max(Bottom, PureBottom) + Shift + VerticalNodeGap;
+                RowY = FMath::Max(Bottom, PureBottom) + Shift + SpacingY;
 			}
+            // Native Sequence lanes: stage columns are shared across outputs rather than
+            // inherited from graph-wide dependency columns (which include cross-row data).
+            for(int32 SeqIndex:Free)
+            {
+                const FNode& SeqNode=OutPlan.Nodes[SeqIndex];
+                if(!SeqNode.Node->IsA<UK2Node_ExecutionSequence>()) continue;
+                TArray<TArray<int32>> Lanes; TSet<int32> OwnedCalls; bool Supported=true;
+                for(UEdGraphPin* Exec:SeqNode.Node->Pins) if(Exec && Exec->Direction==EGPD_Output && Exec->PinType.PinCategory==TEXT("exec"))
+                {
+                    int32 Next=INDEX_NONE;
+                    for(const FWire& W:OutPlan.Wires) if(W.OutputPin==Exec) { if(Next!=INDEX_NONE) Supported=false; Next=W.TargetNodeIndex; }
+                    TArray<int32> Lane;
+                    while(Supported && Next!=INDEX_NONE)
+                    {
+                        if(!Free.Contains(Next) || OwnedCalls.Contains(Next) || OutPlan.Nodes[Next].bIsPure || OutPlan.Nodes[Next].Node->IsA<UK2Node_ExecutionSequence>()) { Supported=false; break; }
+                        int32 Inputs=0,Outputs=0,Following=INDEX_NONE;
+                        for(const FWire& W:OutPlan.Wires) if(W.OutputPin->PinType.PinCategory==TEXT("exec"))
+                        {
+                            if(W.TargetNodeIndex==Next) ++Inputs;
+                            if(W.SourceNodeIndex==Next) { ++Outputs; Following=W.TargetNodeIndex; }
+                        }
+                        if(Inputs!=1 || Outputs>1) { Supported=false; break; }
+                        Lane.Add(Next); OwnedCalls.Add(Next); Next=Following;
+                    }
+                    if(!Lane.IsEmpty()) Lanes.Add(Lane);
+                }
+                if(!Supported || Lanes.Num()<2) continue; // General branches retain conservative layout/guards.
+                TMap<int32,int32> PureOwner;
+                TFunction<void(int32,int32)> Assign=[&](int32 Target,int32 Owner)
+                {
+                    for(const FWire& W:OutPlan.Wires) if(W.TargetNodeIndex==Target && Free.Contains(W.SourceNodeIndex) && OutPlan.Nodes[W.SourceNodeIndex].bIsPure && !PureOwner.Contains(W.SourceNodeIndex))
+                    { PureOwner.Add(W.SourceNodeIndex,Owner); Assign(W.SourceNodeIndex,Owner); }
+                };
+                for(const TArray<int32>& Lane:Lanes) for(int32 Call:Lane) Assign(Call,Call);
+                int32 Stages=0; for(const auto& Lane:Lanes) Stages=FMath::Max(Stages,Lane.Num());
+                TArray<double> Widths,Reserves,Columns; Widths.Init(0,Stages); Reserves.Init(0,Stages); Columns.Init(0,Stages);
+                auto ReserveFor=[&](int32 Call)
+                {
+                    TSet<int32> Visiting;
+                    TFunction<double(int32)> Depth=[&](int32 Target)->double
+                    {
+                        if(Visiting.Contains(Target)) return 0; Visiting.Add(Target); double Width=0;
+                        for(const FWire& W:OutPlan.Wires) if(W.TargetNodeIndex==Target && PureOwner.FindRef(W.SourceNodeIndex)==Call && PureOwner.Contains(W.SourceNodeIndex))
+                            Width=FMath::Max(Width,OutPlan.Nodes[W.SourceNodeIndex].Width+SpacingX+Depth(W.SourceNodeIndex));
+                        Visiting.Remove(Target); return Width;
+                    };
+                    return Depth(Call);
+                };
+                for(const auto& Lane:Lanes) for(int32 Stage=0;Stage<Lane.Num();++Stage)
+                { Widths[Stage]=FMath::Max(Widths[Stage],OutPlan.Nodes[Lane[Stage]].Width); Reserves[Stage]=FMath::Max(Reserves[Stage],ReserveFor(Lane[Stage])); }
+                const double Left=SeqNode.PlannedX+SeqNode.Width+SpacingX;
+                double Column=Left;
+                for(int32 Stage=0;Stage<Stages;++Stage) { Column+=Reserves[Stage]; Columns[Stage]=Column; Column+=Widths[Stage]+SpacingX; }
+                double LaneY=SeqNode.PlannedY+SeqNode.Height+SpacingY;
+                double PreviousRight=Left; TSet<int32> EarlierCalls;
+                for(int32 LaneIndex=0;LaneIndex<Lanes.Num();++LaneIndex)
+                {
+                    const auto& Lane=Lanes[LaneIndex]; TSet<int32> Members;
+                    for(int32 Call:Lane) Members.Add(Call);
+                    for(const auto& Pair:PureOwner) if(Members.Contains(Pair.Value)) Members.Add(Pair.Key);
+                    bool Summary=false;
+                    if(LaneIndex==Lanes.Num()-1) for(const FWire& W:OutPlan.Wires)
+                        if(EarlierCalls.Contains(W.SourceNodeIndex) && Members.Contains(W.TargetNodeIndex) && W.OutputPin->PinType.PinCategory!=TEXT("exec")) Summary=true;
+                    const double Extra=Summary?FMath::Max(0.0,PreviousRight+SpacingX-Left):0.0;
+                    double Bottom=LaneY;
+                    for(int32 Stage=0;Stage<Lane.Num();++Stage)
+                    {
+                        FNode& N=OutPlan.Nodes[Lane[Stage]]; N.PlannedX=Columns[Stage]+Extra; N.PlannedY=LaneY;
+                        if(Stage>0) for(const FWire& W:OutPlan.Wires) if(W.SourceNodeIndex==Lane[Stage-1] && W.TargetNodeIndex==Lane[Stage] && W.OutputPin->PinType.PinCategory==TEXT("exec"))
+                            N.PlannedY=AlignmentPinPosition(W.OutputPin).Y+OutPlan.Nodes[Lane[Stage-1]].PlannedY-OutPlan.Nodes[Lane[Stage-1]].Y-(AlignmentPinPosition(W.InputPin).Y-N.Y);
+                        Bottom=FMath::Max(Bottom,N.PlannedY+N.Height);
+                    }
+                    TSet<int32> Placed; for(int32 Call:Lane) Placed.Add(Call);
+                    // Consumer-first traversal places pure trees using real pin offsets.
+                    TFunction<void(int32)> PlaceInputs=[&](int32 Target)
+                    {
+                        TArray<const FWire*> Inputs;
+                        for(const FWire& W:OutPlan.Wires) if(W.TargetNodeIndex==Target && Members.Contains(W.SourceNodeIndex) && OutPlan.Nodes[W.SourceNodeIndex].bIsPure) Inputs.Add(&W);
+                        Inputs.Sort([](const FWire& A,const FWire& B) { return AlignmentPinPosition(A.InputPin).Y<AlignmentPinPosition(B.InputPin).Y; });
+                        for(const FWire* W:Inputs)
+                        {
+                            const int32 I=W->SourceNodeIndex; if(Placed.Contains(I)) continue; Placed.Add(I);
+                            FNode& N=OutPlan.Nodes[I]; const FNode& Consumer=OutPlan.Nodes[Target];
+                            N.PlannedX=Consumer.PlannedX-N.Width-SpacingX;
+                            N.PlannedY=AlignmentPinPosition(W->InputPin).Y+Consumer.PlannedY-Consumer.Y-(AlignmentPinPosition(W->OutputPin).Y-N.Y);
+                            for(int32 Pass=0;Pass<Members.Num();++Pass)
+                            {
+                                double NextY=N.PlannedY;
+                                for(int32 Other:Placed) if(Other!=I)
+                                {
+                                    const FNode& O=OutPlan.Nodes[Other];
+                                    if(N.PlannedX<O.PlannedX+O.Width+SpacingX && N.PlannedX+N.Width+SpacingX>O.PlannedX && N.PlannedY<O.PlannedY+O.Height+SpacingY && N.PlannedY+N.Height+SpacingY>O.PlannedY)
+                                        NextY=FMath::Max(NextY,O.PlannedY+O.Height+SpacingY);
+                                }
+                                if(NextY==N.PlannedY) break; N.PlannedY=NextY;
+                            }
+                            Bottom=FMath::Max(Bottom,N.PlannedY+N.Height); PlaceInputs(I);
+                        }
+                    };
+                    for(int32 Call:Lane) PlaceInputs(Call);
+                    double MinY=LaneY;
+                    for(int32 I:Members) MinY=FMath::Min(MinY,OutPlan.Nodes[I].PlannedY);
+                    const double ShiftY=LaneY-MinY;
+                    for(int32 I:Members) { OutPlan.Nodes[I].PlannedY+=ShiftY; PreviousRight=FMath::Max(PreviousRight,OutPlan.Nodes[I].PlannedX+OutPlan.Nodes[I].Width); }
+                    for(int32 Call:Lane) EarlierCalls.Add(Call);
+                    LaneY=FMath::Max(LaneY+InLanePitch,Bottom+ShiftY+SpacingY);
+                }
+            }
 	};
 
 	for (const int32 BoxIndex : BoxOrder)
@@ -1132,7 +1244,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		// box's own corner plus its padding - which is what `P/E-COMMENT`'s fit does.
 		const double StartX = Box.X + FTurboMCPGraphTidy::FitPadding;
 		double StartY = Box.Y + FTurboMCPGraphTidy::TitleBarHeight + FTurboMCPGraphTidy::FitPadding;
-        for (int32 Child : Box.ChildBoxIndices) StartY = FMath::Max(StartY, OutPlan.Boxes[Child].Y + OutPlan.Boxes[Child].PlannedHeight + VerticalNodeGap);
+        for (int32 Child : Box.ChildBoxIndices) StartY = FMath::Max(StartY, OutPlan.Boxes[Child].Y + OutPlan.Boxes[Child].PlannedHeight + SpacingY);
 
 		ArrangeRows(Owned, StartX, StartY);
 
@@ -1353,7 +1465,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			if (!ConsumerPlanIndex || OwnerOfNode[NodeIndex] != INDEX_NONE || OwnerOfNode[*ConsumerPlanIndex] != INDEX_NONE) continue;
 			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
 			Planned.PlannedX = ConsumerPlan.PlannedX
-				- Entry.Width - FTurboMCPGraphTidy::HorizontalNodeGap;
+				- Entry.Width - SpacingX;
 			Planned.PlannedY = FMath::RoundToDouble(ConsumerPlan.PlannedY);
 			Planned.PlannedX = FMath::RoundToDouble(Planned.PlannedX);
 			// Keep existing/planned nodes fixed. Move only this new copy below
@@ -1367,7 +1479,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 						&& Planned.PlannedX + Entry.Width > Obstacle.X
 						&& Planned.PlannedY < Obstacle.Y + Obstacle.Height
 						&& Planned.PlannedY + Entry.Height > Obstacle.Y)
-						NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + VerticalNodeGap));
+						NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + SpacingY));
 				}
 				if (NextY == Planned.PlannedY) break;
 				Planned.PlannedY = NextY;

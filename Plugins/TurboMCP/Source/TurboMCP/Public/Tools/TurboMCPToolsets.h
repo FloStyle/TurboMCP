@@ -1160,7 +1160,7 @@ public:
 	 * space rather than through its anchors. The preview reports the planned score and the edit reports
 	 * the score it actually measured after writing.
 	 *
-	 * MainPath accepts "auto" for the longest acyclic execution path, or comma-separated connected reader node IDs for the top exec lane. Auto refuses execution cycles.
+	 * HorizontalGap/VerticalGap set full-detail clearance; LanePitch is minimum Sequence row spacing, expanded for tall pure trees. MainPath accepts "auto" for the longest acyclic execution path, or comma-separated connected reader node IDs for the top exec lane. Auto refuses execution cycles.
 	 * The number it prints is the TOTAL WIRE LENGTH, which is what this pass is judged on. `P-GRAPH-KNOTS`
 	 * is judged on WIRES CROSSING NODES instead, and the two numbers are deliberately not comparable.
 	 */
@@ -1170,7 +1170,7 @@ public:
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""));
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0);
 
 	/**
 	 * Repair the bad spots in a mostly-good graph, WITHOUT moving anything.
@@ -1305,9 +1305,22 @@ public:
 
 	/** Preview graph repoints without edits. Operations accepts a JSON array or an object with an operations array.
      * Example: [{"asset":"/Game/BP_Example","graphName":"EventGraph","sourceNodeId":"reader ID","sourcePin":"then","targetNodeId":"reader ID","targetPin":"execute","keepSource":true}]
-     * Field names match GraphRepoint (case-insensitive); graph is an alias for graphName. Optional id defaults to operation-N; optional kind defaults to graphRepoint. Other kinds refuse. Compile/save are deferred. All operations are preflighted against the original graph; split dependent operations into separate batches. */
+     * Field names match GraphRepoint (case-insensitive); graph is an alias for graphName. Optional id defaults to operation-N; optional kind defaults to graphRepoint. Other kinds refuse. Compile/save are deferred. Operations are preflighted in order on transient graph copies; later operations see earlier changes. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPBatchEdit(const FString& Operations);
+
+    /** Replace one existing data input source using schema validation and exact one-link read-back. No implicit casts or exec rewires. Preview first. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
+
+    /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
+
+    /** Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows. Groups is JSON [["reader ID 1","reader ID 2"],["reader ID 3"]]. Keeps original execution order and puts continuation last; refuses latent/branching/cyclic groups. Optional trivial-value splitting; one undo, no compile/save. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues = true);
+
 
 	/**
 	 * Change only what changed: name existing nodes by id and give the pins that differ.
@@ -1940,7 +1953,7 @@ public:
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""));
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0);
 
 	/**
 	 * Apply the repairs the preview listed.
@@ -2105,9 +2118,22 @@ public:
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
 		const FString& TargetPin, const FString& KeepSource);
 
-	/** Apply the same Operations JSON array/object accepted by PreviewTurboMCPBatchEdit under one transaction; preview first. Compile/save are deferred. All operations are preflighted against the original graph; split dependent operations into separate batches. */
+	/** Apply the same Operations JSON array/object accepted by PreviewTurboMCPBatchEdit under one transaction; preview first. Compile/save are deferred. Operations are preflighted in order on transient graph copies; later operations see earlier changes. */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPBatchEdit(const FString& Operations);
+
+    /** Replace one existing data input source using schema validation and exact one-link read-back. No implicit casts or exec rewires. Preview first. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
+
+    /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
+
+    /** Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows. Groups is JSON [["reader ID 1","reader ID 2"],["reader ID 3"]]. Keeps original execution order and puts continuation last; refuses latent/branching/cyclic groups. Optional trivial-value splitting; one undo, no compile/save. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues = true);
+
 
     /** Set one unconnected input pin default by exact reader NodeId and pin name. Validates before mutation, captures undo and marks the Blueprint dirty. Does not compile or save. */
     UFUNCTION(meta = (AICallable))
