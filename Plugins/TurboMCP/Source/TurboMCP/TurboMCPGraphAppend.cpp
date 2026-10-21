@@ -315,7 +315,21 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		if (!Form.ExistingNodeId.IsEmpty())
 		{
 			TArray<UEdGraphNode*> Matches;
-			const int32 Count = TurboMCPNodeId::FindNodesByKey(Graph, Form.ExistingNodeId, Matches);
+			const TurboMCPNodeId::FParsed Parsed = TurboMCPNodeId::Parse(Form.ExistingNodeId);
+			FString Key = Form.ExistingNodeId;
+			if (Parsed.IsComplete())
+			{
+				FTurboMCPAssetResolver::FResolved IdAsset;
+				const FString IdError = FTurboMCPAssetResolver::Resolve(Parsed.AssetName, IdAsset);
+				if (!IdError.IsEmpty() || IdAsset.ObjectPath != Blueprint->GetPathName()
+					|| Parsed.GraphName != Graph->GetName())
+				{
+					OutPlan.Refusals.Add(FString::Printf(TEXT("node ID '%s' does not identify the selected asset/graph: %s"), *Form.ExistingNodeId, *IdError));
+					continue;
+				}
+				Key = Parsed.NodeKey;
+			}
+			const int32 Count = TurboMCPNodeId::FindNodesByKey(Graph, Key, Matches);
 			if (Count == 1)
 			{
 				Form.ExistingNodeId = TurboMCPNodeId::MakeForNode(Matches[0], true);

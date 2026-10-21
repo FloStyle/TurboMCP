@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPGraphTextLex.h"
+#include "TurboMCPNodeId.h"
 
 #include "Misc/Char.h"
 
@@ -301,46 +302,24 @@ namespace TurboMCPGraphTextLex
 			Body = Body.RightChop(1).TrimStartAndEnd();
 		}
 
-		// THE LONG FORM IS THE ONE THAT MATCHES, and the reason is a measurement rather than a
-		// preference: `04_FORMATS.md` 3.2 requires the long form `Asset.Object:Graph:Key` at the top of
-		// output, so a submitted form carries the same shape and comparing the two is exact. A short key
-		// on its own would collide between two graphs of one Blueprint, which is the whole reason the
-		// project prints the long form.
-		//
-		// TWO COLONS OR MORE, so a comment that merely contains one colon - a sentence, or an `; error:`
-		// line the reader emits for something it could not print - is not mistaken for an identifier.
-		int32 First = INDEX_NONE;
-		int32 Count = 0;
-		for (int32 Index = 0; Index < Body.Len(); ++Index)
-		{
-			if (Body[Index] == TEXT(':'))
-			{
-				if (First == INDEX_NONE)
-				{
-					First = Index;
-				}
-				++Count;
-			}
-		}
-		if (Count < 2 || First == INDEX_NONE)
-		{
-			return FString();
-		}
-
-		// Everything up to the first space or the end, so a comment that continues in prose still yields
-		// the identifier and nothing else.
+		// Whitespace inside a quoted graph name belongs to the identifier.
+		bool bQuoted = false;
 		int32 End = Body.Len();
 		for (int32 Index = 0; Index < Body.Len(); ++Index)
 		{
-			if (FChar::IsWhitespace(Body[Index]))
-			{
-				End = Index;
-				break;
-			}
+			if (Body[Index] == TEXT('"')) { bQuoted = !bQuoted; }
+			if (!bQuoted && FChar::IsWhitespace(Body[Index])) { End = Index; break; }
 		}
-
+		if (bQuoted) { return FString(); }
 		const FString Candidate = Body.Left(End);
-		return Candidate.Contains(TEXT(":")) ? Candidate : FString();
+		const TurboMCPNodeId::FParsed Parsed = TurboMCPNodeId::Parse(Candidate);
+		if (Parsed.IsComplete() && !TurboMCPNodeId::NormaliseKey(Parsed.NodeKey).IsEmpty())
+		{
+			return Candidate;
+		}
+		// Bare keys are scoped to the explicitly selected graph. Do not interpret
+		// prose or a local-label declaration as a node identity.
+		return !TurboMCPNodeId::NormaliseKey(Candidate).IsEmpty() ? Candidate : FString();
 	}
 
 	FString LocalLabelFromComment(const FString& InComment)
