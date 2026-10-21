@@ -417,3 +417,7 @@ Implemented, Untested: shared graph-name resolver enumerates engine child graphs
 ## Blueprint reader graph inventory — 7f85a91
 
 Implemented, Untested: BlueprintRead includes recursive engine graph inventory and editor event graphs, deduplicates graphs, and sorts equal names by object path. No tests/build/editor run. The broad coverage investigation remains open pending reconciliation of other consumers; no claim of whole-plugin coverage.
+
+## Struct removal count and warnings — a10e537
+
+Implemented, Untested: strict 0..2147483647 force count; warning reports potential dependency impact rather than proven breakage. No tests/build/editor run. Broader 1f5fe672 remains open for dirty-set reporting.
