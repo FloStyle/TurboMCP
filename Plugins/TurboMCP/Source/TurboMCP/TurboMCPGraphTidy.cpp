@@ -279,7 +279,7 @@ namespace
                     {
                         const TSharedPtr<SGraphPin> PW=Widget->FindWidgetForPin(Pin);
                         if(PW.IsValid() && PW->GetTickSpaceGeometry().GetLocalSize().Y>0)
-                            MeasuredPinOffsets.Add(Pin,Widget->GetTickSpaceGeometry().AbsoluteToLocal(PW->GetTickSpaceGeometry().LocalToAbsolute(PW->GetTickSpaceGeometry().GetLocalSize()*0.5)));
+                            MeasuredPinOffsets.Add(Pin,FVector2D(PW->GetNodeOffset()));
                     }
                 }
                 Panel->SetViewLocation(SavedView,SavedZoom);
@@ -1624,7 +1624,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	if (!OutPlan.bWouldApply)
 	{
 		OutPlan.RollbackReason = FString::Printf(
-			TEXT("the layout would leave the wire length at %.1f against %.1f, which is not shorter, so it would be rolled back. Pass force to apply it anyway."),
+			TEXT("the layout would leave the wire length at %.1f against %.1f, which is not shorter, so the candidate is rejected without moving nodes. This is the total wire-length gate, not proof the current layout is good. Shared data sources and cross-group wires can outweigh straighter execution rows. Inspect the preview before choosing force; collision and membership guards still apply."),
 			OutPlan.WireLengthAfter, OutPlan.WireLengthBefore);
 	}
 

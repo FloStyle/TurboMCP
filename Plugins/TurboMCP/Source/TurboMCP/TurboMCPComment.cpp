@@ -19,6 +19,7 @@
 
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPGraphTidy.h"
 
 namespace
 {
@@ -92,8 +93,8 @@ namespace
 
 			const double Left = Node->NodePosX;
 			const double Top = Node->NodePosY;
-			const double Right = Node->NodePosX + Node->NodeWidth;
-			const double Bottom = Node->NodePosY + Node->NodeHeight;
+			const double Right = Node->NodePosX + FTurboMCPGraphTidy::AlignmentNodeSize(Node).X;
+			const double Bottom = Node->NodePosY + FTurboMCPGraphTidy::AlignmentNodeSize(Node).Y;
 
 			// `FSlateRect::IsRectangleContained`, written out: a node counts only when it is
 			// WHOLLY inside, not when it merely overlaps. A partly covered node would be moved out
@@ -169,8 +170,8 @@ namespace
 			{
 				continue;
 			}
-			MaxRight = FMath::Max<double>(MaxRight, Node->NodePosX + Node->NodeWidth);
-			MaxBottom = FMath::Max<double>(MaxBottom, Node->NodePosY + Node->NodeHeight);
+			MaxRight = FMath::Max<double>(MaxRight, Node->NodePosX + FTurboMCPGraphTidy::AlignmentNodeSize(Node).X);
+			MaxBottom = FMath::Max<double>(MaxBottom, Node->NodePosY + FTurboMCPGraphTidy::AlignmentNodeSize(Node).Y);
 		}
 
 		OutX = InComment->NodePosX;
@@ -202,8 +203,8 @@ namespace
 					{
 						MinX = Node->NodePosX;
 						MinY = Node->NodePosY;
-						MaxRight = Node->NodePosX + Node->NodeWidth;
-						MaxBottom = Node->NodePosY + Node->NodeHeight;
+						MaxRight = Node->NodePosX + FTurboMCPGraphTidy::AlignmentNodeSize(Node).X;
+						MaxBottom = Node->NodePosY + FTurboMCPGraphTidy::AlignmentNodeSize(Node).Y;
 						bAny = true;
 					}
 					else
@@ -211,9 +212,9 @@ namespace
 						MinX = FMath::Min<double>(MinX, Node->NodePosX);
 						MinY = FMath::Min<double>(MinY, Node->NodePosY);
 						MaxRight = FMath::Max<double>(
-							MaxRight, Node->NodePosX + Node->NodeWidth);
+							MaxRight, Node->NodePosX + FTurboMCPGraphTidy::AlignmentNodeSize(Node).X);
 						MaxBottom = FMath::Max<double>(
-							MaxBottom, Node->NodePosY + Node->NodeHeight);
+							MaxBottom, Node->NodePosY + FTurboMCPGraphTidy::AlignmentNodeSize(Node).Y);
 					}
 					bFound = true;
 					break;
@@ -351,6 +352,10 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 	{
 		return false;
 	}
+    if(ActionText==TEXT("fit") || ActionText==TEXT("create"))
+    {
+        if(!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Graph,OutError)) return false;
+    }
 	OutPlan.GraphName = Graph->GetName();
 	OutPlan.Asset = Resolved.ObjectPath;
 

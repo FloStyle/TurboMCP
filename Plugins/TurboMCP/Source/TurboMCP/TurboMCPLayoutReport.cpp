@@ -15,6 +15,7 @@
 #include "EdGraphNode_Comment.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_Event.h"
 #include "K2Node_Knot.h"
 #include "K2Node_Variable.h"
 #include "K2Node_VariableGet.h"
@@ -572,6 +573,44 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 
 		Report.Findings.Add(MoveTemp(Finding));
 	}
+
+    // Review candidates only: an empty override/custom event can be intentional.
+    for(const UEdGraphNode* Node:InGraph->Nodes) if(Node && Node->IsA<UK2Node_Event>())
+    {
+        bool HasBody=false;
+        for(const UEdGraphPin* Pin:Node->Pins) if(Pin && Pin->Direction==EGPD_Output && Pin->PinType.PinCategory==TEXT("exec") && !Pin->LinkedTo.IsEmpty()) HasBody=true;
+        if(!HasBody)
+        {
+            FFinding Finding; Finding.Kind=TEXT("empty-event-entry");
+            Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Node));
+            Finding.Detail=TEXT("Event has no execution body; review candidate, not automatically safe to delete (an empty override can suppress parent behavior).");
+            const FRect EventRect=RectOf(Node);
+            for(const UEdGraphNode* Candidate:InGraph->Nodes) if(Candidate && Candidate->IsA<UEdGraphNode_Comment>())
+            {
+                const FRect BoxRect=RectOf(Candidate);
+                if(EventRect.MinX>=BoxRect.MinX && EventRect.MinY>=BoxRect.MinY && EventRect.MaxX<=BoxRect.MaxX && EventRect.MaxY<=BoxRect.MaxY)
+                    Finding.Detail+=TEXT(" Containing box: ")+TurboMCPNodeId::MakeForNode(Candidate)+TEXT(" (")+Candidate->NodeComment+TEXT(").");
+            }
+            Report.Findings.Add(MoveTemp(Finding));
+        }
+    }
+    for(const UEdGraphNode* BoxNode:InGraph->Nodes) if(BoxNode && BoxNode->IsA<UEdGraphNode_Comment>())
+    {
+        const FRect Bounds=RectOf(BoxNode); double OccupiedArea=0; int32 Members=0;
+        for(const UEdGraphNode* Node:InGraph->Nodes) if(Node && !Node->IsA<UEdGraphNode_Comment>())
+        {
+            const FRect R=RectOf(Node);
+            if(R.MinX>=Bounds.MinX && R.MinY>=Bounds.MinY && R.MaxX<=Bounds.MaxX && R.MaxY<=Bounds.MaxY)
+            { OccupiedArea+=(R.MaxX-R.MinX)*(R.MaxY-R.MinY); ++Members; }
+        }
+        const double BoxArea=(Bounds.MaxX-Bounds.MinX)*(Bounds.MaxY-Bounds.MinY);
+        if(Members>0 && BoxArea>0 && OccupiedArea/BoxArea<0.20)
+        {
+            FFinding Finding; Finding.Kind=TEXT("sparse-comment-box"); Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(BoxNode));
+            Finding.Detail=FString::Printf(TEXT("%d contained nodes occupy approximately %.0f%% of box area (summed node rectangles). Review whitespace; fit to explicit member IDs with the comment tool if unwanted."),Members,100.0*OccupiedArea/BoxArea);
+            Report.Findings.Add(MoveTemp(Finding));
+        }
+    }
 
 	if (Report.bHasNoWires)
 	{
