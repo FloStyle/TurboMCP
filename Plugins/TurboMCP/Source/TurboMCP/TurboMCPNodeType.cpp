@@ -24,6 +24,7 @@
 #include "K2Node_CallFunction.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "UObject/Class.h"
+#include "UObject/UnrealType.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -138,6 +139,7 @@ namespace
 		FString TypeId;
         FString LegacyTypeId;
 		FString SearchKeywords;
+		TArray<FString> Aliases;
 		FString OwningClass;
 		bool bOwnedByThisBlueprint = false;
 		bool bPure = false;
@@ -211,6 +213,24 @@ namespace
 				Entry.TypeId = TypeId;
                 Entry.LegacyTypeId = TypeId;
 				Entry.SearchKeywords = UiSpec.Keywords.ToString();
+				if (const UFunction* Fn = ActionInfo.GetAssociatedFunction())
+				{
+					// Include reflected names and parameter types for discovery of compact-title nodes.
+					Entry.SearchKeywords += TEXT(" ") + Fn->GetName() + TEXT(" ") + UiSpec.MenuName.ToString();
+					Entry.Aliases.Add(TEXT("Function|") + Fn->GetPathName());
+					Entry.Aliases.Add(Fn->GetPathName());
+					for (TFieldIterator<FProperty> P(Fn); P; ++P)
+						if (P->HasAnyPropertyFlags(CPF_Parm)) Entry.SearchKeywords += TEXT(" ") + P->GetCPPType();
+					// Exact public names for common compact/wildcard library actions; never fuzzy-spawn.
+					const FString Path = Fn->GetPathName();
+					if (Path == TEXT("/Script/Engine.KismetArrayLibrary:Array_Length")) Entry.Aliases.Add(TEXT("Array Length"));
+					if (Path == TEXT("/Script/Engine.KismetStringLibrary:Concat_StrStr")) Entry.Aliases.Add(TEXT("String Append"));
+					if (Path.StartsWith(TEXT("/Script/Engine.KismetStringLibrary:BuildString_")))
+						Entry.SearchKeywords += TEXT(" build string");
+					if (Path == TEXT("/Script/Engine.KismetStringLibrary:Conv_IntPointToString"))
+						Entry.SearchKeywords += TEXT(" integer point int point to string");
+					for (const FString& Alias : Entry.Aliases) Entry.SearchKeywords += TEXT(" ") + Alias;
+				}
                 // Ordinary function calls have a locale-independent reflected identity.
                 if (ActionInfo.GetNodeClass() == UK2Node_CallFunction::StaticClass())
                     if (const UFunction* Function = ActionInfo.GetAssociatedFunction())
@@ -293,6 +313,7 @@ TArray<FString> FTurboMCPNodeType::AvailableTypeIds(UBlueprint* InBlueprint, UEd
 	{
 		Out.AddUnique(Entry.TypeId);
         Out.AddUnique(Entry.LegacyTypeId);
+        for (const FString& Alias : Entry.Aliases) Out.AddUnique(Alias);
 	}
 	Out.Sort();
 	return Out;
@@ -326,7 +347,7 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
     const bool bHasExactId = Entries.ContainsByPredicate([&](const FEntry& Entry) { return Entry.TypeId == InTypeId; });
     TSet<FString> MatchingTypes;
     for (const FEntry& Entry : Entries)
-        if (Entry.TypeId == InTypeId || (!bHasExactId && Entry.LegacyTypeId == InTypeId)) MatchingTypes.Add(Entry.TypeId);
+        if (Entry.TypeId == InTypeId || (!bHasExactId && (Entry.LegacyTypeId == InTypeId || Entry.Aliases.Contains(InTypeId)))) MatchingTypes.Add(Entry.TypeId);
     if (MatchingTypes.Num() > 1)
     {
         OutNote = TEXT("ambiguous display type ID; use the exact Function|path ID from node-type discovery");
@@ -334,7 +355,7 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
     }
 	for (const FEntry& Entry : Entries)
 	{
-		if (Entry.TypeId != InTypeId && (bHasExactId || Entry.LegacyTypeId != InTypeId))
+		if (Entry.TypeId != InTypeId && (bHasExactId || (Entry.LegacyTypeId != InTypeId && !Entry.Aliases.Contains(InTypeId))))
 		{
 			continue;
 		}
@@ -385,7 +406,7 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
     const bool bHasExactId = Entries.ContainsByPredicate([&](const FEntry& Entry) { return Entry.TypeId == InTypeId; });
     TSet<FString> MatchingTypes;
     for (const FEntry& Entry : Entries)
-        if (Entry.TypeId == InTypeId || (!bHasExactId && Entry.LegacyTypeId == InTypeId)) MatchingTypes.Add(Entry.TypeId);
+        if (Entry.TypeId == InTypeId || (!bHasExactId && (Entry.LegacyTypeId == InTypeId || Entry.Aliases.Contains(InTypeId)))) MatchingTypes.Add(Entry.TypeId);
     if (MatchingTypes.Num() > 1)
     {
         OutNote = TEXT("ambiguous display type ID; use the exact Function|path ID from node-type discovery");
@@ -393,7 +414,7 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
     }
 	for (const FEntry& Entry : Entries)
 	{
-		if (Entry.TypeId != InTypeId && (bHasExactId || Entry.LegacyTypeId != InTypeId))
+		if (Entry.TypeId != InTypeId && (bHasExactId || (Entry.LegacyTypeId != InTypeId && !Entry.Aliases.Contains(InTypeId))))
 		{
 			continue;
 		}
@@ -527,6 +548,7 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	for (const FEntry& Entry : Entries)
 	{
 		OutPlan.AllTypeIds.AddUnique(Entry.TypeId);
+		for (const FString& Alias : Entry.Aliases) OutPlan.AllTypeIds.AddUnique(Alias);
 	}
 	OutPlan.AllTypeIds.Sort();
 

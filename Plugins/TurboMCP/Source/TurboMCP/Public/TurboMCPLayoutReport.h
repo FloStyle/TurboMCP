@@ -68,6 +68,8 @@ public:
 	{
 		int32 NodeCount = 0;
 		int32 WireCount = 0;
+		int32 WireCrossings = 0;
+		bool bCrossingsCapped = false;
 		int32 CommentBoxCount = 0;
 		int32 NestedBoxCount = 0;
 

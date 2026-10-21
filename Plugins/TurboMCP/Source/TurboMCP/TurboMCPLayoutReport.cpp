@@ -342,6 +342,35 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 		Report.Findings.Add(MoveTemp(Finding));
 	}
 
+	struct FSegment { const UEdGraphPin* A; const UEdGraphPin* B; FVector2D P; FVector2D Q; };
+	TArray<FSegment> Segments;
+	for (const UEdGraphNode* N : FlowNodes)
+		for (const UEdGraphPin* P : N->Pins)
+			if (P && P->Direction == EGPD_Output)
+				for (const UEdGraphPin* Q : P->LinkedTo)
+					if (Q && Q->GetOwningNodeUnchecked())
+					{
+						if (Segments.Num() >= 2048) { Report.bCrossingsCapped = true; continue; }
+						Segments.Add({P, Q, PinPosition(P), PinPosition(Q)});
+					}
+	auto Side = [](const FVector2D& A, const FVector2D& B, const FVector2D& C)
+	{ return (B.X-A.X)*(C.Y-A.Y) - (B.Y-A.Y)*(C.X-A.X); };
+	for (int32 I = 0; I < Segments.Num(); ++I)
+		for (int32 J = I+1; J < Segments.Num(); ++J)
+		{
+			const FSegment& A = Segments[I]; const FSegment& B = Segments[J];
+			if (A.A == B.A || A.A == B.B || A.B == B.A || A.B == B.B) continue;
+			if (Side(A.P,A.Q,B.P)*Side(A.P,A.Q,B.Q) < 0 && Side(B.P,B.Q,A.P)*Side(B.P,B.Q,A.Q) < 0)
+				++Report.WireCrossings;
+		}
+	if (Report.WireCrossings || Report.bCrossingsCapped)
+	{
+		FFinding F; F.Kind = TEXT("wire-crossings");
+		F.Detail = FString::Printf(TEXT("%d straight-segment crossings%s; approximate pin geometry, not rendered splines"),
+			Report.WireCrossings, Report.bCrossingsCapped ? TEXT(" in first 2048 wires (capped)") : TEXT(""));
+		Report.Findings.Add(MoveTemp(F));
+	}
+
 	// A getter placed to the right of, or under, its consumer. A getter takes no
 	// input, so it can always sit to the left of what reads it, and a getter to the
 	// right makes the reader follow a wire backwards.

@@ -18,6 +18,9 @@
 #include "Kismet2/KismetEditorUtilities.h"
 #include "ScopedTransaction.h"
 #include "Editor.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 #include "Editor/TransBuffer.h"
 
 namespace
@@ -61,7 +64,7 @@ namespace
 	}
 
     // Keep all three default representations, including FText namespace/key identity.
-    bool TransferDefaults(UEdGraphNode* Old, UEdGraphNode* Replacement, bool Apply, FString& Error, bool VerifyOnly = false)
+    bool TransferDefaults(UEdGraphNode* Old, UEdGraphNode* Replacement, bool Apply, FString& Error, const TMap<FString, FString>& PinMap, bool VerifyOnly = false)
     {
         const UEdGraphSchema* Schema = Replacement->GetSchema();
         if (!Schema) { Error = TEXT("replacement has no schema"); return false; }
@@ -70,7 +73,7 @@ namespace
         for (UEdGraphPin* Pin : Old->Pins)
         {
             if (!Pin || Pin->Direction != EGPD_Input || Pin->LinkedTo.Num() || Pin->PinType.PinCategory == TEXT("exec") || Pin->bDefaultValueIsIgnored) continue;
-            UEdGraphPin* Dest = PinByName(Replacement, Pin->PinName.ToString(), EGPD_Input);
+            UEdGraphPin* Dest = PinByName(Replacement, PinMap.Contains(Pin->PinName.ToString()) ? PinMap[Pin->PinName.ToString()] : Pin->PinName.ToString(), EGPD_Input);
             if (Pin->bOrphanedPin || Pin->ParentPin || Pin->SubPins.Num() || !Dest || Dest->bOrphanedPin || Dest->ParentPin || Dest->SubPins.Num()
                 || !(Dest->PinType == Pin->PinType) || Dest->bDefaultValueIsIgnored)
             { Error = FString::Printf(TEXT("cannot preserve default for pin '%s': missing, split, orphaned or incompatible pin"), *Pin->PinName.ToString()); return false; }
@@ -78,7 +81,7 @@ namespace
             if (VerifyOnly && !Equal) { Error = TEXT("default changed during link migration"); return false; }
             if ((!Equal && Dest->bDefaultValueIsReadOnly) || !Schema->IsPinDefaultValid(Dest, Pin->DefaultValue, Pin->DefaultObject, Pin->DefaultTextValue).IsEmpty())
             { Error = FString::Printf(TEXT("replacement refuses default for pin '%s'"), *Pin->PinName.ToString()); return false; }
-            Defaults.Add({Pin->PinName.ToString(), Pin->DefaultValue, Pin->DefaultObject, Pin->DefaultTextValue});
+            Defaults.Add({Dest->PinName.ToString(), Pin->DefaultValue, Pin->DefaultObject, Pin->DefaultTextValue});
         }
         if (!Apply) return true;
         Replacement->Modify();
@@ -124,7 +127,7 @@ namespace
 
 bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraphName,
 	const FString& InNodeId, const FString& InReplacementTypeId, const FString& InKeepOld,
-	FPlan& OutPlan, FString& OutError)
+	FPlan& OutPlan, FString& OutError, const FString& Options)
 {
 	OutPlan = FPlan();
 	OutError.Empty();
@@ -180,14 +183,55 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 		return true;
 	}
 	OutPlan.NewClass = Probe->GetClass()->GetName();
+	TSharedPtr<FJsonObject> Config;
+	if (!Options.TrimStartAndEnd().IsEmpty())
+	{
+		if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Options), Config) || !Config)
+		{ OutError = TEXT("Options must be a JSON object"); return false; }
+		for (const auto& Field : Config->Values)
+			if (FString(*Field.Key) != TEXT("pin_map") && FString(*Field.Key) != TEXT("new_inputs"))
+			{ OutError = TEXT("unknown Options field; expected pin_map or new_inputs"); return false; }
+		const TSharedPtr<FJsonObject>* Map = nullptr;
+		if (Config->HasField(TEXT("pin_map")))
+		{
+			if (!Config->TryGetObjectField(TEXT("pin_map"), Map) || !Map || !Map->IsValid())
+			{ OutError = TEXT("pin_map must be an object"); return false; }
+			TSet<FString> Targets;
+			for (const auto& Pair : (*Map)->Values)
+			{
+				FString Name;
+				if (!Pair.Value || !Pair.Value->TryGetString(Name) || Name.IsEmpty() || Targets.Contains(Name))
+				{ OutError = TEXT("pin_map requires unique nonempty destination pin names"); return false; }
+				const FString OldName(*Pair.Key);
+				UEdGraphPin* OldPin = PinByName(Old, OldName, EGPD_Input);
+				if (!OldPin) OldPin = PinByName(Old, OldName, EGPD_Output);
+				UEdGraphPin* Dest = OldPin ? PinByName(Probe, Name, OldPin->Direction) : nullptr;
+				if (!Dest || OldPin->bOrphanedPin || Dest->bOrphanedPin || !(OldPin->PinType == Dest->PinType))
+				{ OutError = TEXT("pin_map references missing or incompatible pins"); return false; }
+				Targets.Add(Name); OutPlan.PinMap.Add(OldName, Name);
+			}
+		}
+	}
+
+	TSet<FString> Destinations;
+	for (UEdGraphPin* Pin : Old->Pins)
+	{
+		if (!Pin) continue;
+		const FString Name = Pin->PinName.ToString();
+		const FString Target = OutPlan.PinMap.Contains(Name) ? OutPlan.PinMap[Name] : Name;
+		const FString Key = FString::FromInt(int32(Pin->Direction)) + TEXT(":") + Target;
+		if (Destinations.Contains(Key)) { OutError = TEXT("pin_map merges two source pins; unchanged"); return false; }
+		Destinations.Add(Key);
+	}
     FString DefaultError;
-    if (!TransferDefaults(Old, Probe, false, DefaultError)) OutPlan.Refusals.Add(DefaultError);
+    if (!TransferDefaults(Old, Probe, false, DefaultError, OutPlan.PinMap)) OutPlan.Refusals.Add(DefaultError);
 
 	for (UEdGraphPin* OldPin : Old->Pins)
 	{
 		if (OldPin == nullptr || OldPin->LinkedTo.Num() == 0) continue;
-		UEdGraphPin* NewPin = PinByName(Probe, OldPin->PinName.ToString(), OldPin->Direction);
-		if (NewPin == nullptr)
+		const FString DestName = OutPlan.PinMap.Contains(OldPin->PinName.ToString()) ? OutPlan.PinMap[OldPin->PinName.ToString()] : OldPin->PinName.ToString();
+		UEdGraphPin* NewPin = PinByName(Probe, DestName, OldPin->Direction);
+		if (NewPin == nullptr || OldPin->bOrphanedPin || NewPin->bOrphanedPin || !(NewPin->PinType == OldPin->PinType))
 		{
 			OutPlan.UnmatchedPins.Add(OldPin->PinName.ToString());
 			continue;
@@ -197,15 +241,39 @@ bool FTurboMCPGraphSwapCall::Plan(const FString& InAsset, const FString& InGraph
 			if (Other == nullptr || Other->GetOwningNode() == nullptr) continue;
 			FLink Link;
 			Link.PinName = OldPin->PinName.ToString();
+			Link.NewPinName = DestName;
 			Link.OtherNodeId = TurboMCPNodeId::MakeForNode(Other->GetOwningNode(), true);
 			Link.OtherPinName = Other->PinName.ToString();
 			Link.bOldPinIsOutput = OldPin->Direction == EGPD_Output;
 			OutPlan.Links.Add(MoveTemp(Link));
 		}
 	}
+	if (Config && Config->HasField(TEXT("new_inputs")))
+	{
+		const TSharedPtr<FJsonObject>* Inputs = nullptr;
+		if (!Config->TryGetObjectField(TEXT("new_inputs"), Inputs) || !Inputs || !Inputs->IsValid())
+		{ OutError = TEXT("new_inputs must be an object"); return false; }
+		for (const auto& Pair : (*Inputs)->Values)
+		{
+			const TSharedPtr<FJsonObject>* Spec = nullptr;
+			FString NodeId, PinName; const FString DestName(*Pair.Key);
+			if (!Pair.Value || !Pair.Value->TryGetObject(Spec) || !Spec || !Spec->IsValid() || (*Spec)->Values.Num() != 2
+				|| !(*Spec)->TryGetStringField(TEXT("node"), NodeId) || !(*Spec)->TryGetStringField(TEXT("pin"), PinName))
+			{ OutError = TEXT("new_inputs entries require node and pin strings"); return false; }
+			UEdGraphNode* Source = NodeById(Graph, NodeId);
+			UEdGraphPin* From = PinByName(Source, PinName, EGPD_Output);
+			UEdGraphPin* To = PinByName(Probe, DestName, EGPD_Input);
+			if (!From || !To || Source == Old || From->bOrphanedPin || To->bOrphanedPin
+				|| From->PinType.PinCategory == TEXT("exec") || !(From->PinType == To->PinType)
+				|| OutPlan.Links.ContainsByPredicate([&](const FLink& L) { return !L.bOldPinIsOutput && L.NewPinName == DestName; }))
+			{ OutError = TEXT("new input link is missing, incompatible, or already supplied by the old call"); return false; }
+			FLink L; L.bNewInput = true; L.NewPinName = DestName; L.OtherNodeId = NodeId; L.OtherPinName = PinName;
+			OutPlan.Links.Add(MoveTemp(L));
+		}
+	}
 	for (const FString& Pin : OutPlan.UnmatchedPins)
 	{
-		OutPlan.Refusals.Add(FString::Printf(TEXT("linked pin '%s' has no same-named pin on replacement; its link was not changed"), *Pin));
+		OutPlan.Refusals.Add(FString::Printf(TEXT("linked pin '%s' has no compatible mapped pin on replacement; its link was not changed"), *Pin));
 	}
 	return true;
 }
@@ -247,21 +315,21 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
 	}
 	NewNode->NodePosX = int32(NewX);
 	NewNode->NodePosY = Old->NodePosY;
-    if (!TransferDefaults(Old, NewNode, true, OutError)) return false;
+    if (!TransferDefaults(Old, NewNode, true, OutError, InPlan.PinMap)) return false;
 	for (const FLink& Link : InPlan.Links)
 	{
 		UEdGraphPin* OldPin = PinByName(Old, Link.PinName, Link.bOldPinIsOutput ? EGPD_Output : EGPD_Input);
 		UEdGraphNode* OtherNode = NodeById(Graph, Link.OtherNodeId);
 		UEdGraphPin* OtherPin = PinByName(OtherNode, Link.OtherPinName,
 			Link.bOldPinIsOutput ? EGPD_Input : EGPD_Output);
-		UEdGraphPin* NewPin = PinByName(NewNode, Link.PinName,
+		UEdGraphPin* NewPin = PinByName(NewNode, Link.NewPinName,
 			Link.bOldPinIsOutput ? EGPD_Output : EGPD_Input);
-		if (OldPin == nullptr || OtherPin == nullptr || NewPin == nullptr)
+		if ((!Link.bNewInput && OldPin == nullptr) || OtherPin == nullptr || NewPin == nullptr)
 		{
 			OutError = FString::Printf(TEXT("link migration lost pin '%s'; caller must roll back"), *Link.PinName);
 			return false;
 		}
-		Graph->GetSchema()->BreakSinglePinLink(OldPin, OtherPin);
+		if (!Link.bNewInput) Graph->GetSchema()->BreakSinglePinLink(OldPin, OtherPin);
 		if (!Graph->GetSchema()->TryCreateConnection(
 			Link.bOldPinIsOutput ? NewPin : OtherPin,
 			Link.bOldPinIsOutput ? OtherPin : NewPin)
@@ -272,7 +340,7 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
 		}
 	}
     // Revalidate defaults after link callbacks, before deleting the source.
-    if (!TransferDefaults(Old, NewNode, false, OutError, true)) return false;
+    if (!TransferDefaults(Old, NewNode, false, OutError, InPlan.PinMap, true)) return false;
 	if (!InPlan.bKeepOld)
 	{
 		FBlueprintEditorUtils::RemoveNode(Blueprint, Old, true);
@@ -283,12 +351,12 @@ bool FTurboMCPGraphSwapCall::ApplyCore(const FPlan& InPlan, const FApplyContext&
     { OutError = TEXT("swap node-set readback failed; caller must roll back"); return false; }
     for (const FLink& Link : InPlan.Links)
     {
-        UEdGraphPin* NewPin = PinByName(NewNode, Link.PinName, Link.bOldPinIsOutput ? EGPD_Output : EGPD_Input);
+        UEdGraphPin* NewPin = PinByName(NewNode, Link.NewPinName, Link.bOldPinIsOutput ? EGPD_Output : EGPD_Input);
         UEdGraphPin* OtherPin = PinByName(NodeById(Graph, Link.OtherNodeId), Link.OtherPinName, Link.bOldPinIsOutput ? EGPD_Input : EGPD_Output);
         if (!HasLink(NewPin, OtherPin))
         { OutError = TEXT("swap final link readback failed; caller must roll back"); return false; }
     }
-	OutReport = FString::Printf(TEXT("changed: swapped %s to %s; %d link(s) migrated by pin name; old node %s"),
+	OutReport = FString::Printf(TEXT("changed: swapped %s to %s; %d link(s) migrated or added using explicit pin names; old node %s"),
 		*InPlan.OldNodeId, *TurboMCPNodeId::MakeForNode(NewNode, true), InPlan.Links.Num(),
 		InPlan.bKeepOld ? TEXT("retained unplugged") : TEXT("deleted"));
     OutReport += TEXT("\ndefaults=preserved; compile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
@@ -335,7 +403,7 @@ FString FTurboMCPGraphSwapCall::RenderPreview(const FPlan& InPlan)
 		InPlan.Links.Num(), InPlan.bKeepOld ? TEXT("true") : TEXT("false"));
 	for (const FLink& Link : InPlan.Links)
 	{
-		Out += FString::Printf(TEXT("\n- %s -> %s:%s"), *Link.PinName, *Link.OtherNodeId, *Link.OtherPinName);
+		Out += FString::Printf(TEXT("\n- %s%s => replacement.%s; peer %s:%s"), Link.bNewInput ? TEXT("new input ") : TEXT("migrate "), *Link.PinName, *Link.NewPinName, *Link.OtherNodeId, *Link.OtherPinName);
 	}
 	return Out;
 }

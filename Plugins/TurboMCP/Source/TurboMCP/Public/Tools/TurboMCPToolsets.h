@@ -1272,14 +1272,15 @@ public:
 		const FString& GraphName,
 		const FString& Text);
 
-	/** Preview a localized call-node swap. Links are migrated by exact pin name; keepOld defaults to true. */
+	/** Preview call swap. Options is optional JSON: {"pin_map":{"Old":"New"},"new_inputs":{"NewInput":{"node":"reader node ID","pin":"OutputPin"}}}. Unmapped pins retain exact names; keepOld defaults true. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphSwapCall(
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& NodeId,
 		const FString& ReplacementTypeId,
-		const FString& KeepOld);
+		const FString& KeepOld,
+		const FString& Options = TEXT(""));
 
 	/** Preview repointing every reader of one output to an existing or newly created source. */
 	UFUNCTION(meta = (AICallable))
@@ -2055,6 +2056,10 @@ public:
 		const FString& GraphName,
 		const FString& Text);
 
+	/** Set node positions in one undo step. Positions is a JSON array of {"node":"exact reader node ID","x":100,"y":200}. Validates the entire batch before writing; does not compile or save. */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& Positions);
+
 	/** Apply a localized call-node swap. keepOld=true retains the old node unplugged; false deletes it after verification. */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphSwapCall(
@@ -2062,7 +2067,8 @@ public:
 		const FString& GraphName,
 		const FString& NodeId,
 		const FString& ReplacementTypeId,
-		const FString& KeepOld);
+		const FString& KeepOld,
+		const FString& Options = TEXT(""));
 
 	/** Repoint every reader of one output to an existing or newly created source in one transaction. */
 	UFUNCTION(meta = (AICallable))

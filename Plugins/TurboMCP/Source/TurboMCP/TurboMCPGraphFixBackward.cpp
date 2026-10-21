@@ -269,35 +269,6 @@ namespace
 	 * wire length against `L-LAYOUT-REPORT`'s own number on a graph the pass has not touched. If the two
 	 * ever disagree, the check goes red rather than the disagreement surviving unread.
 	 */
-	FVector2D PlannedPinPosition(const UEdGraphNode* InNode, const UEdGraphPin* InPin,
-		double InNodeX, double InNodeY, double InNodeWidth)
-	{
-		if (InNode == nullptr || InPin == nullptr)
-		{
-			return FVector2D::ZeroVector;
-		}
-
-		const bool bIsInput = InPin->Direction == EGPD_Input;
-
-		int32 Index = 0;
-		for (const UEdGraphPin* Pin : InNode->Pins)
-		{
-			if (Pin == nullptr || Pin->Direction != InPin->Direction)
-			{
-				continue;
-			}
-			if (Pin == InPin)
-			{
-				break;
-			}
-			++Index;
-		}
-
-		const double EdgeX = bIsInput ? InNodeX : InNodeX + InNodeWidth;
-		const double EdgeY = InNodeY + PinRowSpacing * (Index + 1);
-
-		return FVector2D(EdgeX, EdgeY);
-	}
 
 	/**
 	 * The logical pin at the far end of a link, seen THROUGH any knots.
@@ -418,8 +389,7 @@ namespace
 				//
 				// It also means this number IS `L-LAYOUT-REPORT`'s number on any graph, measured or not,
 				// because the report reads `NodeWidth` raw and so does this.
-				const FVector2D From = PlannedPinPosition(Node, Pin, SelfNode.PlannedX,
-					SelfNode.PlannedY, SelfNode.MeasuredWidth);
+				const FVector2D From = FTurboMCPLayoutReport::PinPosition(Pin) + FVector2D(SelfNode.PlannedX - Node->NodePosX, SelfNode.PlannedY - Node->NodePosY);
 
 				for (UEdGraphPin* Link : Pin->LinkedTo)
 				{
@@ -428,7 +398,7 @@ namespace
 						continue;
 					}
 
-					UEdGraphPin* Far = ThroughKnots(Link);
+					UEdGraphPin* Far = Link; // Count each actual reroute segment exactly once.
 					if (Far == nullptr || Far == Pin)
 					{
 						continue;
@@ -442,8 +412,7 @@ namespace
 					}
 
 					const FTurboMCPGraphFixBackward::FNode& FarNode = InNodes[FarIndex];
-					const FVector2D To = PlannedPinPosition(FarOwner, Far, FarNode.PlannedX,
-						FarNode.PlannedY, FarNode.MeasuredWidth);
+					const FVector2D To = FTurboMCPLayoutReport::PinPosition(Far) + FVector2D(FarNode.PlannedX - FarOwner->NodePosX, FarNode.PlannedY - FarOwner->NodePosY);
 
 					Total += FVector2D::Distance(From, To);
 				}
@@ -1805,7 +1774,8 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 	for (const auto& Finding : RemainingLayout.Findings)
 		if (Finding.Kind == TEXT("overlap")) ++OverlapFindings;
 	Out += FString::Printf(TEXT("\n    remaining overlap findings: %d (report may cap individual pairs)"), OverlapFindings);
-	Out += TEXT("\n    scope: backward-wire repair only. Wire crossings and event-chain readability are not evaluated; this is not a whole-graph tidy verdict.");
+	Out += FString::Printf(TEXT("\n    remaining straight-segment crossings: %d%s (approximate, not rendered splines)"), RemainingLayout.WireCrossings, RemainingLayout.bCrossingsCapped ? TEXT("; capped at 2048 wires") : TEXT(""));
+	Out += TEXT("\n    scope: backward-wire repair only; not a whole-graph readability verdict.");
 
 	Out += FString::Printf(TEXT("\n    moved %d node(s), of which %d were pushed along"),
 		Written, InPlan.PushedMoved);

@@ -7,22 +7,22 @@
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSwapCall(
 	const FString& Asset, const FString& GraphName, const FString& NodeId,
-	const FString& ReplacementTypeId, const FString& KeepOld)
+	const FString& ReplacementTypeId, const FString& KeepOld, const FString& Options)
 {
 	FTurboMCPGraphSwapCall::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPGraphSwapCall::Plan(Asset, GraphName, NodeId, ReplacementTypeId, KeepOld, Plan, Error))
+	if (!FTurboMCPGraphSwapCall::Plan(Asset, GraphName, NodeId, ReplacementTypeId, KeepOld, Plan, Error, Options))
 		return FTurboMCPToolError::AsError(Error);
 	return FTurboMCPGraphSwapCall::RenderPreview(Plan);
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPGraphSwapCall(
 	const FString& Asset, const FString& GraphName, const FString& NodeId,
-	const FString& ReplacementTypeId, const FString& KeepOld)
+	const FString& ReplacementTypeId, const FString& KeepOld, const FString& Options)
 {
 	FTurboMCPGraphSwapCall::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPGraphSwapCall::Plan(Asset, GraphName, NodeId, ReplacementTypeId, KeepOld, Plan, Error))
+	if (!FTurboMCPGraphSwapCall::Plan(Asset, GraphName, NodeId, ReplacementTypeId, KeepOld, Plan, Error, Options))
 		return FTurboMCPToolError::AsError(Error);
 	if (!Plan.bAcceptable()) return FTurboMCPGraphSwapCall::RenderPreview(Plan);
 	FString Report;

@@ -36,20 +36,6 @@
 
 namespace
 {
-	/**
-	 * THE PIN ROW PITCH, COPIED FROM THE READER AND NOT REDEFINED.
-	 *
-	 * `FTurboMCPLayoutReport` uses a private `PinRowSpacing = 24.0`
-	 * (`TurboMCPLayoutReport.cpp:31`) and its `PinPosition` is not parameterised on it. Tidy has to
-	 * compute a wire length on PLANNED positions, which the reader cannot do, so it has to reproduce
-	 * the arithmetic - and the reader's total is the number tidy's before-value must equal.
-	 *
-	 * The two are kept in step EMPIRICALLY rather than by hope: `Tools/test-graph-tidy.py` asserts that
-	 * tidy's `WireLengthBefore` EQUALS what `L-LAYOUT-REPORT` reports for the same untouched graph. A
-	 * divergence in this constant turns that check red, which is the only kind of coupling worth having
-	 * across two files that cannot share a private symbol.
-	 */
-	constexpr double PinRowSpacing = 24.0;
 
 	/** Case-folded, whitespace-trimmed comparison, matching the other graph tools. */
 	bool NameMatches(const FString& InLeft, const FString& InRight)
@@ -300,37 +286,7 @@ namespace
 		return (InRect.MaxX - InRect.MinX) * (InRect.MaxY - InRect.MinY);
 	}
 
-	/** A pin's position, computed on a node's PLANNED coordinates instead of its stored ones. */
-	FVector2D PlannedPinPosition(const UEdGraphPin* InPin, const double InNodeX,
-		const double InNodeY, const double InNodeWidth)
-	{
-		if (InPin == nullptr || InPin->GetOwningNodeUnchecked() == nullptr)
-		{
-			return FVector2D::ZeroVector;
-		}
 
-		const UEdGraphNode* Node = InPin->GetOwningNodeUnchecked();
-		const bool bIsInput = InPin->Direction == EGPD_Input;
-
-		// The index counts only pins of the SAME direction, which is what the reader does.
-		int32 Index = 0;
-		for (const UEdGraphPin* Pin : Node->Pins)
-		{
-			if (Pin == nullptr || Pin->Direction != InPin->Direction)
-			{
-				continue;
-			}
-			if (Pin == InPin)
-			{
-				break;
-			}
-			++Index;
-		}
-
-		const double EdgeX = bIsInput ? InNodeX : InNodeX + InNodeWidth;
-		const double EdgeY = InNodeY + PinRowSpacing * (Index + 1);
-		return FVector2D(EdgeX, EdgeY);
-	}
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -841,6 +797,88 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		return OutPlan.Boxes[InLeft].Key < OutPlan.Boxes[InRight].Key;
 	});
 
+	auto ArrangeRows = [&OutPlan](const TArray<int32>& Free, double FreeStartX, double FreeStartY)
+	{
+			// Execution components form separate rows; data sharing must not merge event chains.
+			TMap<int32, int32> RowOf;
+			for (const int32 I : Free) RowOf.Add(I, I);
+			for (int32 Pass = 0; Pass < Free.Num(); ++Pass)
+			{
+				bool Changed = false;
+				for (const FWire& W : OutPlan.Wires)
+				{
+					if (!W.OutputPin || W.OutputPin->PinType.PinCategory != TEXT("exec")
+						|| !RowOf.Contains(W.SourceNodeIndex) || !RowOf.Contains(W.TargetNodeIndex)) continue;
+					const int32 R = FMath::Min(RowOf[W.SourceNodeIndex], RowOf[W.TargetNodeIndex]);
+					Changed |= RowOf[W.SourceNodeIndex] != R || RowOf[W.TargetNodeIndex] != R;
+					RowOf[W.SourceNodeIndex] = RowOf[W.TargetNodeIndex] = R;
+				}
+				if (!Changed) break;
+			}
+			// Attach upstream pure expressions to their first consumer's row, including pure chains.
+			for (int32 Pass = 0; Pass < Free.Num(); ++Pass)
+			{
+				bool Changed = false;
+				for (int32 N = Free.Num() - 1; N >= 0; --N)
+				{
+					const int32 I = Free[N];
+					if (!OutPlan.Nodes[I].bIsPure) continue;
+					for (const FWire& W : OutPlan.Wires)
+						if (W.SourceNodeIndex == I && W.TargetNodeIndex != I && RowOf.Contains(W.TargetNodeIndex))
+						{
+							Changed |= RowOf[I] != RowOf[W.TargetNodeIndex];
+							RowOf[I] = RowOf[W.TargetNodeIndex]; break;
+						}
+				}
+				if (!Changed) break;
+			}
+			TArray<int32> Rows;
+			for (int32 I : Free) Rows.AddUnique(RowOf[I]);
+			double RowY = FreeStartY;
+			for (int32 Row : Rows)
+			{
+				double CursorX = FreeStartX;
+				double Bottom = RowY;
+				for (int32 I : Free)
+				{
+					FNode& N = OutPlan.Nodes[I];
+					if (RowOf[I] != Row || N.bIsPure) continue;
+					N.PlannedX = CursorX; N.PlannedY = RowY;
+					CursorX += N.Width + HorizontalNodeGap;
+					Bottom = FMath::Max(Bottom, RowY + N.Height);
+				}
+				// Place pure nodes below-left of consumers, reserving vertical space for each.
+				double PureBottom = Bottom;
+				TArray<int32> PlacedPure;
+				for (int32 K = Free.Num() - 1; K >= 0; --K)
+				{
+					const int32 I = Free[K]; FNode& N = OutPlan.Nodes[I];
+					if (RowOf[I] != Row || !N.bIsPure) continue;
+					N.PlannedX = FreeStartX;
+					for (const FWire& W : OutPlan.Wires)
+						if (W.SourceNodeIndex == I && W.TargetNodeIndex != I && RowOf.Contains(W.TargetNodeIndex))
+						{ N.PlannedX = OutPlan.Nodes[W.TargetNodeIndex].PlannedX - N.Width - HorizontalNodeGap; break; }
+					N.PlannedY = Bottom + VerticalNodeGap;
+					for (int32 Pass = 0; Pass <= PlacedPure.Num(); ++Pass)
+					{
+						double NextY = N.PlannedY;
+						for (int32 P : PlacedPure)
+						{
+							const FNode& O = OutPlan.Nodes[P];
+							if (N.PlannedX < O.PlannedX + O.Width + HorizontalNodeGap && N.PlannedX + N.Width + HorizontalNodeGap > O.PlannedX
+								&& N.PlannedY < O.PlannedY + O.Height + VerticalNodeGap && N.PlannedY + N.Height + VerticalNodeGap > O.PlannedY)
+								NextY = FMath::Max(NextY, O.PlannedY + O.Height + VerticalNodeGap);
+						}
+						if (NextY == N.PlannedY) break;
+						N.PlannedY = NextY;
+					}
+					PlacedPure.Add(I);
+					PureBottom = FMath::Max(PureBottom, N.PlannedY + N.Height);
+				}
+				RowY = FMath::Max(Bottom, PureBottom) + VerticalNodeGap;
+			}
+	};
+
 	for (const int32 BoxIndex : BoxOrder)
 	{
 		FBox& Box = OutPlan.Boxes[BoxIndex];
@@ -891,65 +929,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		const double StartX = Box.X + FTurboMCPGraphTidy::FitPadding;
 		const double StartY = Box.Y + FTurboMCPGraphTidy::FitPadding;
 
-		int32 CurrentColumn = OutPlan.Nodes[Owned[0]].Column;
-		double CursorX = StartX;
-		double RowY = StartY;
-
-		for (const int32 NodeIndex : Owned)
-		{
-			FNode& Entry = OutPlan.Nodes[NodeIndex];
-			if (Entry.Column != CurrentColumn)
-			{
-				// A NEW COLUMN WRAPS TO A NEW ROW rather than continuing rightward, so a chain reads
-				// top to bottom inside its box instead of running off the side of it.
-				CurrentColumn = Entry.Column;
-				CursorX = StartX;
-				RowY += Entry.Height + FTurboMCPGraphTidy::VerticalNodeGap;
-			}
-
-			Entry.PlannedX = CursorX;
-			Entry.PlannedY = RowY;
-			CursorX += Entry.Width + FTurboMCPGraphTidy::HorizontalNodeGap;
-		}
-
-		// THE PURE-NODE SHIFT: a pure node moves RIGHTWARD until it sits beside the node that uses it.
-		// `max` and not assignment, because a node already further right must not be dragged left - the
-		// spec says "shift rightward". Consumers are visited in DECREASING column order so a chain of
-		// pure nodes settles in one pass.
-		TArray<int32> ByColumnDescending = Owned;
-		ByColumnDescending.Sort([&OutPlan](const int32 InLeft, const int32 InRight)
-		{
-			return OutPlan.Nodes[InLeft].Column > OutPlan.Nodes[InRight].Column;
-		});
-		for (const int32 NodeIndex : ByColumnDescending)
-		{
-			FNode& Entry = OutPlan.Nodes[NodeIndex];
-			if (!Entry.bIsPure || Entry.bIsKnot)
-			{
-				continue;
-			}
-
-			// Its consumers, and only when there is EXACTLY ONE: a getter read by several consumers
-			// has no single node to sit beside.
-			TArray<int32> Consumers;
-			for (const FWire& Wire : OutPlan.Wires)
-			{
-				if (Wire.SourceNodeIndex == NodeIndex && Wire.TargetNodeIndex != INDEX_NONE
-					&& Wire.TargetNodeIndex != NodeIndex)
-				{
-					Consumers.AddUnique(Wire.TargetNodeIndex);
-				}
-			}
-			if (Consumers.Num() != 1)
-			{
-				continue;
-			}
-
-			const FNode& Consumer = OutPlan.Nodes[Consumers[0]];
-			const double TargetX = Consumer.PlannedX - Entry.Width
-				- FTurboMCPGraphTidy::HorizontalNodeGap;
-			Entry.PlannedX = FMath::Max(Entry.PlannedX, TargetX);
-		}
+		ArrangeRows(Owned, StartX, StartY);
 
 		// FIT THE BOX TO ITS CONTENTS, AND ONLY ITS SIZE. A child box is already final because the
 		// deepest boxes were processed first, so a whole child rectangle counts as one block here.
@@ -1082,14 +1062,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				return L.Key < R.Key;
 			});
 
-			double CursorX = FreeStartX;
-			for (const int32 NodeIndex : Free)
-			{
-				FNode& Entry = OutPlan.Nodes[NodeIndex];
-				Entry.PlannedX = CursorX;
-				Entry.PlannedY = FreeStartY;
-				CursorX += Entry.Width + FTurboMCPGraphTidy::HorizontalNodeGap;
-			}
+			ArrangeRows(Free, FreeStartX, FreeStartY);
 		}
 	}
 
@@ -1248,13 +1221,10 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			const double TargetX = bUsePlanned ? Target.PlannedX : Target.X;
 			const double TargetY = bUsePlanned ? Target.PlannedY : Target.Y;
 
-			// Planning is permitted only after every node has a Slate-measured size, so the before
-			// and after values use the same real outline width.
-			const double SourceWidth = Source.Width;
-			const double TargetWidth = Target.Width;
+			// Use exactly the report pin model, translated to planned positions.
 
-			const FVector2D Start = PlannedPinPosition(Wire.OutputPin, SourceX, SourceY, SourceWidth);
-			const FVector2D End = PlannedPinPosition(Wire.InputPin, TargetX, TargetY, TargetWidth);
+			const FVector2D Start = FTurboMCPLayoutReport::PinPosition(Wire.OutputPin) + FVector2D(SourceX - Source.X, SourceY - Source.Y);
+			const FVector2D End = FTurboMCPLayoutReport::PinPosition(Wire.InputPin) + FVector2D(TargetX - Target.X, TargetY - Target.Y);
 			Total += FVector2D::Distance(Start, End);
 		}
 		return Total;

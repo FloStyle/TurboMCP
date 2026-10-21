@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Containers/Array.h"
+#include "Containers/Map.h"
 #include "Containers/UnrealString.h"
 #include "CoreTypes.h"
 
@@ -17,6 +18,8 @@ public:
  struct FLink
  {
   FString PinName;
+  FString NewPinName;
+  bool bNewInput = false;
   FString OtherNodeId;
   FString OtherPinName;
   bool bOldPinIsOutput = false;
@@ -32,6 +35,7 @@ public:
   FString NewClass;
   bool bKeepOld = true;
   TArray<FLink> Links;
+  TMap<FString, FString> PinMap;
   TArray<FString> UnmatchedPins;
   TArray<FString> Refusals;
   int32 NodeCountBefore = 0;
@@ -44,7 +48,7 @@ public:
   bool bSave = false;
  };
  static bool Plan(const FString& InAsset, const FString& InGraphName, const FString& InNodeId,
-  const FString& InReplacementTypeId, const FString& InKeepOld, FPlan& OutPlan, FString& OutError);
+  const FString& InReplacementTypeId, const FString& InKeepOld, FPlan& OutPlan, FString& OutError, const FString& Options = FString());
  /** Apply using a caller-owned transaction; never starts or rolls back a transaction. */
  static bool ApplyCore(const FPlan& InPlan, const FApplyContext& Context, FString& OutReport, FString& OutError);
  /** Preserve the standalone edit-tool transaction behavior. */
