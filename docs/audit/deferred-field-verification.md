@@ -457,3 +457,7 @@ Implemented, Untested: preserve JSON default representation, including false, ze
 ## 2026-10-21 — X-70 build regression
 
 Source fix: `9f0ba2e`. Tool-help sorting now explicitly converts JSON keys into FString array entries, supporting FString and FSharedString storage without incompatible map assignment. Reported C2440 implementation closed; **unbuilt / untested**. No build, tests, or editor run requested. Full compilation remains unverified; report captured only the first compiler error. No engine modifications.
+
+## 2026-10-21 S4 — capture and layout triage
+
+`b706a0e`: CP-06 capture framing now uses actual graph-panel geometry, top-left view offset, quantized zoom and matching render scale. LR-10 below-left getters accepted by report and backward repair. Both implemented, unbuilt/untested. FB-06 partially addressed with overlap findings and explicit limits; remains Open for crossing assessment. No tests/build/editor run. TD-12, LR-09 and NT-06 remain open. X-71/GC-21 are feature limitations linked to FT-71/FT-70. GC-22, DD-05 and ED-12 are positive field observations, not blanket certification. All 13 report IDs retained.

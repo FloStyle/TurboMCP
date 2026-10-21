@@ -785,6 +785,119 @@
       "validation": "unbuilt_untested",
       "implementation": "9f0ba2e",
       "implementation_limits": "Replaced incompatible map copy with explicit string-key conversion into a sorted array. Addresses reported C2440 introduced by 4204098. No build or tests run; subsequent compiler errors, if any, are unknown."
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "X-71",
+      "title": "Manual graph positioning requires many individual calls",
+      "owner": "FIELD-08",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "Feature limitation; linked FT-71, not a crash or regression."
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "GC-21",
+      "title": "Call swap lacks input pin mapping for differently named replacement pins",
+      "owner": "FIELD-05",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "Safe refusal worked; optional pin mapping is FT-70."
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "GC-22",
+      "title": "Append reports the displaced exec wire",
+      "owner": "FIELD-05",
+      "state": "positive",
+      "validation": "field_tested",
+      "disposition": "positive",
+      "implementation_limits": "Field-confirmed moved-wire reporting; links to FT-69."
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "DD-05",
+      "title": "Dead-node cleanup correctly removed the leftover getter",
+      "owner": "FIELD-08",
+      "state": "positive",
+      "validation": "field_tested",
+      "disposition": "positive",
+      "implementation_limits": "Field-confirmed cleanup in the reported case."
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "TD-12",
+      "title": "Whole-graph tidy increases wire length approximately tenfold",
+      "owner": "FIELD-08",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "Rollback guard worked. Event-chain layout algorithm remains unresolved; no automatic getter duplication authorized."
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "FB-06",
+      "title": "Backward repair success can be mistaken for whole-graph readability",
+      "owner": "FIELD-08",
+      "state": "open",
+      "validation": "unbuilt_untested",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "b706a0e adds remaining overlap findings and explicit crossing/readability limits. Crossing detection and whole-chain layout remain unimplemented.",
+      "implementation": "b706a0e"
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "LR-09",
+      "title": "Layout tools report incompatible wire-length totals",
+      "owner": "FIELD-08",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "Need common geometry and edge counting across tidy, backward repair and report."
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "LR-10",
+      "title": "Below-left getters incorrectly flagged as misplaced",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "b706a0e accepts below-left separation in report and backward repair.",
+      "implementation": "b706a0e"
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "CP-06",
+      "title": "Graph capture frames and crops the wrong canvas region",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "b706a0e uses the actual graph canvas, top-left offset, actual zoom and matching render scale. Visual outcome unverified.",
+      "implementation": "b706a0e"
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "NT-06",
+      "title": "Common library nodes cannot be found or appended",
+      "owner": "FIELD-05",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "reported_pending_reproduction",
+      "implementation_limits": "Recurrence of GC-19; array length, string append/build-string and integer-point conversion. Exact IDs unknown; discovery keyword change is not proof of writer support."
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "ED-12",
+      "title": "Edits refuse safely during play",
+      "owner": "FIELD-08",
+      "state": "positive",
+      "validation": "field_tested",
+      "disposition": "positive",
+      "implementation_limits": "Field-confirmed refusal and success after stopping PIE."
     }
   ],
   "prototype": {
@@ -912,6 +1025,20 @@
       "proposal": "Tidy a chosen list of nodes in a graph that is not visible, leaving all other nodes fixed",
       "disposition": "proposal_not_implementation_permission",
       "owner": "R04"
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "FT-70",
+      "proposal": "Optional call-swap pin map and new-input links",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
+    },
+    {
+      "report": "2026-10-21_S4",
+      "id": "FT-71",
+      "proposal": "Batch node positions in one call and undo transaction",
+      "disposition": "proposal_not_implementation_permission",
+      "owner": "R04"
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
@@ -1007,6 +1134,12 @@
       "state": "open",
       "evidence": "untested",
       "remaining": "TurboMCP help offers bounded pages; native toolset descriptions can still be oversized. Workaround only, no native fix claimed."
+    },
+    {
+      "issue": "FB-06",
+      "state": "open",
+      "evidence": "untested",
+      "remaining": "b706a0e reports overlap findings and explicitly disclaims crossing/readability assessment. Remaining: crossing detection; backward repair does not implement whole-graph event-chain layout."
     }
   ]
 }
