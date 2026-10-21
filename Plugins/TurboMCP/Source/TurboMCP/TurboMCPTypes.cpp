@@ -401,28 +401,17 @@ FString UTurboMCPReadToolset::ReadTurboMCPDirtyList(const FString& Limit)
 	 * the cap is a default and not a wall.
 	 */
 	constexpr int32 DefaultLimit = 50;
-	int32 WantedLimit = DefaultLimit;
-	if (!Limit.TrimStartAndEnd().IsEmpty())
+	const FString NumericText = Limit.TrimStartAndEnd();
+	int32 WantedLimit = NumericText.IsEmpty() ? DefaultLimit : 0;
+	for (TCHAR Digit : NumericText)
 	{
-		// *** A LIMIT THAT IS NOT A NUMBER IS REFUSED RATHER THAN REPLACED BY THE DEFAULT. *** The default is
-		// for a caller who LEFT IT EMPTY; a caller who typed `banana` or `0` made a mistake, and answering 50
-		// hides it. The shape is `TurboMCPBlueprintLoad.cpp:100-114`, which does exactly this for the same kind
-		// of parameter - and which refuses the two failures with DIFFERENT sentences, so a caller learns which
-		// mistake they made.
-		if (!Limit.TrimStartAndEnd().IsNumeric())
-		{
-			return FString::Printf(
-				TEXT("error: '%s' is not a limit. Pass a whole number of assets, or leave it empty for the ")
-				TEXT("default of %d."), *Limit, DefaultLimit);
-		}
-		WantedLimit = FCString::Atoi(*Limit);
-		if (WantedLimit <= 0)
-		{
-			return FString::Printf(
-				TEXT("error: a limit of %d is not usable. Pass a positive number of assets, or leave it empty ")
-				TEXT("for the default of %d."), WantedLimit, DefaultLimit);
-		}
+		if (Digit < TEXT('0') || Digit > TEXT('9')
+			|| WantedLimit > (MAX_int32 - (Digit - TEXT('0'))) / 10)
+			return TEXT("error: limit must be a positive whole number no larger than 2147483647; leave empty for the default.");
+		WantedLimit = WantedLimit * 10 + (Digit - TEXT('0'));
 	}
+	if (WantedLimit == 0)
+		return TEXT("error: limit must be positive; leave empty for the default.");
 
 	// The dirty package list is the authoritative source, not a scan of every
 	// asset: an asset with unsaved changes has a dirty package, and asking the

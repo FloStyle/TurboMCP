@@ -92,27 +92,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 			TEXT("error: '%s' is not a format. Accepted: read, json."), *Format);
 	}
 
-	// The budget. Zero, empty or a non-number means the default, and the default
+	// Only an empty budget means the default, and the default
 	// is generous rather than unlimited, so a huge Blueprint cannot flood a caller.
-	int32 BudgetChars = DefaultBudgetChars;
-	if (!TokenBudget.TrimStartAndEnd().IsEmpty())
+	const FString NumericText = TokenBudget.TrimStartAndEnd();
+	int32 BudgetChars = NumericText.IsEmpty() ? DefaultBudgetChars : 0;
+	for (TCHAR Digit : NumericText)
 	{
-		if (!TokenBudget.TrimStartAndEnd().IsNumeric())
-		{
-			return FString::Printf(
-				TEXT("error: '%s' is not a token budget. Pass a whole number of ")
-				TEXT("characters, or leave it empty for the default of %d."),
-				*TokenBudget, DefaultBudgetChars);
-		}
-		BudgetChars = FCString::Atoi(*TokenBudget);
-		if (BudgetChars <= 0)
-		{
-			return FString::Printf(
-				TEXT("error: a token budget of %d is not usable. Pass a positive ")
-				TEXT("number of characters, or leave it empty."),
-				BudgetChars);
-		}
+		if (Digit < TEXT('0') || Digit > TEXT('9')
+			|| BudgetChars > (MAX_int32 - (Digit - TEXT('0'))) / 10)
+			return TEXT("error: character budget must be a positive whole number no larger than 2147483647; leave empty for the default.");
+		BudgetChars = BudgetChars * 10 + (Digit - TEXT('0'));
 	}
+	if (BudgetChars == 0)
+		return TEXT("error: character budget must be positive; leave empty for the default.");
 
 	FTurboMCPBlueprintRead::FRequest Request;
 	Request.Detail = DetailLevel;
