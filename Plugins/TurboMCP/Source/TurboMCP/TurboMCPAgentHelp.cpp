@@ -496,8 +496,14 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 					const int32 ParamCount = (*Properties)->Values.Num();
 					Help += FString::Printf(TEXT("\nparameters: %d"), ParamCount);
 
-					TMap<FString, TSharedPtr<FJsonValue>> OrderedProperties = (*Properties)->Values;
-					OrderedProperties.KeySort([](const FString& A, const FString& B) { return A < B; });
+					// JsonObject keys can be FString or FSharedString depending on engine configuration.
+					TArray<TPair<FString, TSharedPtr<FJsonValue>>> OrderedProperties;
+					OrderedProperties.Reserve(ParamCount);
+					for (const auto& Property : (*Properties)->Values)
+					{
+						OrderedProperties.Emplace(FString(*Property.Key), Property.Value);
+					}
+					OrderedProperties.Sort([](const auto& A, const auto& B) { return A.Key < B.Key; });
 					for (const TPair<FString, TSharedPtr<FJsonValue>>& Property : OrderedProperties)
 					{
 						FString Type = TEXT("any");
