@@ -433,3 +433,7 @@ Implemented, Untested: suppress unrelated widget trees for graph-filtered reads,
 ## Second-pass tracking policy
 
 Implementation follow-ups are tracked in field-testing-2026-10-20.json second_pass and remain Open; they are not closed merely because a mitigation landed. The list highlights known partial submissions and is not an exhaustive defect inventory. Verification-only follow-up remains an Untested flag on implemented work, not a new task. Earlier chronological entries describe the state at their commit and may be superseded by later entries.
+
+## Asset filter diagnostics — a8c38d7
+
+Implemented, Untested: refuse unsupported query prefixes and empty type/path filters instead of misleading no-match or broadened results. 0e4658ad stays open for parameter examples. No tests/build/editor run.

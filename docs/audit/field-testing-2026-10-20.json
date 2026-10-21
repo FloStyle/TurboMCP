@@ -962,7 +962,7 @@
       "issue": "0e4658ad",
       "state": "open",
       "evidence": "untested",
-      "remaining": "Focused widget reads and refusal counts fixed; parameter examples and unsupported search-prefix behavior remain."
+      "remaining": "Focused widget reads and refusal counts fixed (50f36f5); unsupported/empty asset filters now explain supported syntax (a8c38d7). Parameter-help examples remain."
     }
   ]
 }
