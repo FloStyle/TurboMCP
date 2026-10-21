@@ -322,6 +322,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp"
           ],
           "new_files": []
+        },
+        "field-reader-numeric-limits": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
