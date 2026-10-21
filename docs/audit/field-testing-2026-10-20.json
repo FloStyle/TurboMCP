@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "S4/S5 defect repairs and their tracked layout follow-ups implemented through 46de58c. Source inspection only for new code; no build/editor/tests, per owner. Positive S5 results remain scoped to fac37b3.",
+  "limits": "S6 urgent defect source repairs implemented at 3972ea9; no build, tests or editor execution per owner. FT-78/80/81 remain explicit unfinished feature scope; S6 positive evidence applies only to 721450c.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -1090,6 +1090,136 @@
       "disposition": "implementation_complete_pending_verification",
       "implementation": "46de58c",
       "implementation_limits": "Completed native pin alignment, pure-chain space, all-row delegate-weighted ordering and optional explicit MainPath. Guarded refusal remains for impossible collision/membership constraints; no runtime result claimed."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "TD-16",
+      "title": "Tidy with an explicit main path gives a straight main line (positive in measure, see TD-19)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "721450c",
+      "implementation_limits": "S6 field observation only; does not verify the new S6 repair batch."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "TD-17",
+      "title": "The main path option needs explicit node IDs (low)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "MainPath auto selects the longest acyclic exec path; cycles refuse with an explicit-path instruction. Parameter help documents both forms."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "TD-18",
+      "title": "Tidy preview images are blank (medium, recurs FT-74)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "Offscreen graph panels explicitly populate native node widgets and perform full-detail layout before framing; missing widgets refuse instead of returning a blank image."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "FB-07",
+      "title": "Fix backward now aligns pins, and refuses when the result is longer (positive)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "721450c",
+      "implementation_limits": "S6 field observation only; does not verify the new S6 repair batch."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "LR-13",
+      "title": "New alignment findings repeat one sentence and name no nodes (medium)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "Alignment findings identify both reader node IDs, pin names and signed vertical offset; findings are grouped once per kind."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "CP-09",
+      "title": "Graph capture keeps the aspect ratio but cannot zoom into part of a wide graph (low)",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "Node capture obtains full-detail geometry before framing; region mode accepts Target=x,y,width,height for a bounded close-up of a wide graph."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "TD-19",
+      "title": "The main-path tidy result overlaps nodes and was rejected (high)",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "Tidy caches native node outlines at zoom 1:1, restores the view, and uses those outlines for existing collision guards. Layout report uses the same measured bounds instead of zero persisted dimensions."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "TD-20",
+      "title": "Tidy keeps a long chain of independent calls on one line where the user expects a sequence (proposal)",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "feature_proposal",
+      "implementation_limits": "TD-20: explicit independent-group sequence refactor remains a proposal. TD-21: full-detail sizing repaired; trivial-value splitting and configurable wider gaps remain open."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "X-74",
+      "title": "Asset revert and repoint worked for recovery and rewiring (positive)",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "field_confirmed",
+      "implementation": "721450c",
+      "implementation_limits": "S6 field observation only; does not verify the new S6 repair batch."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "GC-27",
+      "title": "Batch edit refuses a valid JSON array of repoint operations (medium)",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "Batch accepts JSON arrays and operations envelopes, single-call case-insensitive field names and graphName alias, boolean keepSource, optional generated IDs/kind. Shape errors and schema examples distinguish valid JSON from unsupported input."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "CP-10",
+      "title": "User confirms all capture images have wrong colours, and the graph image is empty (high, recurs CP-08)",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "Capture and preview render into an explicitly linear BGRA target while Slate applies display gamma, avoiding destination sRGB encoding a second time. Blank preview widget population repaired. Visual result requires field confirmation."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "TD-21",
+      "title": "User review of the manual sequence layout (medium)",
+      "owner": "FIELD-06",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "feature_proposal",
+      "implementation_limits": "TD-20: explicit independent-group sequence refactor remains a proposal. TD-21: full-detail sizing repaired; trivial-value splitting and configurable wider gaps remain open."
     }
   ],
   "prototype": {
@@ -1292,6 +1422,61 @@
       "disposition": "implementation_complete_pending_verification",
       "implementation": "46de58c",
       "implementation_limits": "46de58c uses native pin geometry for alignment when available, reserves space for pure chains, prioritizes top input, keeps secondary lanes below main, treats loop completion as main continuation. Optional MainPath selects a connected exec sequence explicitly. Fix-backward retains collision and membership guards; unavailable native geometry is reported."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "FT-77",
+      "proposal": "Automatic longest exec main path",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "MainPath auto selects the longest acyclic exec path; cycles refuse with an explicit-path instruction. Parameter help documents both forms."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "FT-78",
+      "proposal": "Sequence refactor for independent call groups",
+      "owner": "R04",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "partial_or_proposed",
+      "implementation": null,
+      "implementation_limits": "Not implemented; execution semantics need an explicit bounded group contract, never implicit rewiring by tidy."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "FT-79",
+      "proposal": "Overlap findings with node pairs",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "3972ea9",
+      "implementation_limits": "Tidy caches native node outlines at zoom 1:1, restores the view, and uses those outlines for existing collision guards. Layout report uses the same measured bounds instead of zero persisted dimensions."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "FT-80",
+      "proposal": "Split trivial value nodes per consumer",
+      "owner": "R04",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "partial_or_proposed",
+      "implementation": null,
+      "implementation_limits": "Self/literal/general getter splitting not implemented; never duplicate impure calls."
+    },
+    {
+      "report": "2026-10-21_S6",
+      "id": "FT-81",
+      "proposal": "Zoom-independent sizes and configurable layout gaps",
+      "owner": "R04",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "partial_or_proposed",
+      "implementation": "3972ea9",
+      "implementation_limits": "Partial: tidy/report/capture now use full-detail measured sizes. Configurable wider gaps and adoption by other layout tools remain."
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
@@ -1411,6 +1596,24 @@
       "state": "done",
       "evidence": "implemented, unbuilt_untested",
       "remaining": "46de58c uses native pin geometry for alignment when available, reserves space for pure chains, prioritizes top input, keeps secondary lanes below main, treats loop completion as main continuation. Optional MainPath selects a connected exec sequence explicitly. Fix-backward retains collision and membership guards; unavailable native geometry is reported."
+    },
+    {
+      "issue": "FT-78",
+      "state": "open",
+      "evidence": "S6 proposal; not a completed fix",
+      "remaining": "Not implemented; execution semantics need an explicit bounded group contract, never implicit rewiring by tidy."
+    },
+    {
+      "issue": "FT-80",
+      "state": "open",
+      "evidence": "S6 proposal; not a completed fix",
+      "remaining": "Self/literal/general getter splitting not implemented; never duplicate impure calls."
+    },
+    {
+      "issue": "FT-81",
+      "state": "open",
+      "evidence": "S6 proposal; not a completed fix",
+      "remaining": "Partial: tidy/report/capture now use full-detail measured sizes. Configurable wider gaps and adoption by other layout tools remain."
     }
   ]
 }
