@@ -333,22 +333,21 @@ namespace TurboMCPNodeId
 		// Every graph kind is searched, because an ID names a graph and not a kind
 		// of graph. A caller asking for `EventGraph` should find it whichever
 		// array the Blueprint happens to keep it in.
-		TArray<UEdGraph*> Candidates;
-		auto Collect = [&Candidates](const TArray<TObjectPtr<UEdGraph>>& InGraphs)
+		TArray<UEdGraph*> AllGraphs;
+		InBlueprint->GetAllGraphs(AllGraphs);
+		for (UEdGraph* EventGraph : InBlueprint->EventGraphs)
 		{
-			for (const TObjectPtr<UEdGraph>& Graph : InGraphs)
+			if (EventGraph)
 			{
-				if (Graph != nullptr)
-				{
-					Candidates.AddUnique(Graph);
-				}
+				AllGraphs.Add(EventGraph);
+				EventGraph->GetAllChildrenGraphs(AllGraphs);
 			}
-		};
-
-		Collect(InBlueprint->UbergraphPages);
-		Collect(InBlueprint->FunctionGraphs);
-		Collect(InBlueprint->MacroGraphs);
-		Collect(InBlueprint->EventGraphs);
+		}
+		TArray<UEdGraph*> Candidates;
+		for (UEdGraph* Graph : AllGraphs)
+		{
+			if (Graph) Candidates.AddUnique(Graph);
+		}
 
 		UEdGraph* First = nullptr;
 		for (UEdGraph* Graph : Candidates)
@@ -368,11 +367,12 @@ namespace TurboMCPNodeId
 		return First;
 	}
 
-	// The original entry point, unchanged for every existing caller.
+	// Callers without an ambiguity count must never receive an arbitrary graph.
 	UEdGraph* FindGraphByName(const UBlueprint* InBlueprint, const FString& InGraphName)
 	{
 		int32 MatchCount = 0;
-		return FindGraphByName(InBlueprint, InGraphName, MatchCount);
+		UEdGraph* Graph = FindGraphByName(InBlueprint, InGraphName, MatchCount);
+		return MatchCount == 1 ? Graph : nullptr;
 	}
 
 	FString Unlocalised(const FText& InText)
