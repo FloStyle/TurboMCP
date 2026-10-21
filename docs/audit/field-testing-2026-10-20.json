@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "S7 reported build failure at 8fd54c3. Reported errors/warnings corrected in source; no rebuild/tests. S6 runtime fixes remain unverified.",
+  "limits": "S8 missing-header repair implemented, unbuilt/untested. S8 confirms S7 diagnostics absent, but complete plugin compilation remains unconfirmed.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -1239,7 +1239,7 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation_limits": "Convert JSON keys with FString(*Field.Key), matching existing shared-key compatible code. Retain mutable graph pointer returned by resolver for native geometry preparation. Source correction only; no build or tests run."
+      "implementation_limits": "Convert JSON keys with FString(*Field.Key), matching existing shared-key compatible code. Retain mutable graph pointer returned by resolver for native geometry preparation. Source correction only; no build or tests run. S8 reports these diagnostics did not recur; full build still stopped at X-77."
     },
     {
       "report": "2026-10-21_S7",
@@ -1249,7 +1249,17 @@
       "state": "done",
       "validation": "unbuilt_untested",
       "disposition": "implementation_complete_pending_verification",
-      "implementation_limits": "Initialize rectangle outputs and use mutually exclusive explicit-plan / computed-fit branches; failed computed fits continue before mutation. Source correction only; no build or tests run."
+      "implementation_limits": "Initialize rectangle outputs and use mutually exclusive explicit-plan / computed-fit branches; failed computed fits continue before mutation. Source correction only; no build or tests run. S8 reports these diagnostics did not recur; full build still stopped at X-77."
+    },
+    {
+      "report": "2026-10-21_S8",
+      "id": "X-77",
+      "title": "Capture includes nonexistent Misc/LexFromString.h; plugin build blocked",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "Removed nonexistent header. Existing Containers/UnrealString.h supplies LexTryParseString (confirmed in local engine source). Restored own-header-first and removed duplicate include. No build/tests run."
     }
   ],
   "prototype": {
@@ -1507,6 +1517,16 @@
       "disposition": "partial_or_proposed",
       "implementation": "3972ea9",
       "implementation_limits": "Partial: tidy/report/capture now use full-detail measured sizes. Configurable wider gaps and adoption by other layout tools remain."
+    },
+    {
+      "report": "2026-10-21_S8",
+      "id": "FT-82",
+      "proposal": "Full plugin compile gate before main publication",
+      "owner": "R04",
+      "state": "open",
+      "validation": "reported",
+      "disposition": "proposed_workflow_change",
+      "implementation_limits": "Report proposal recorded. No build performed under standing no-build/test instruction; not an implemented product defect."
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",

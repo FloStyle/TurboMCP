@@ -505,3 +505,7 @@ User reported a UBT compile failure caused by the namespace MeasuredSizes cache 
 
 ## S7 build blockers (X-75, X-76)
 Shared JSON keys now convert through FString(*Key); LayoutReport retains the resolver mutable graph pointer; comment fitting initializes bounds and uses exclusive assignment branches. All reported compile diagnostics addressed in source. No build/tests run. 721450c remains the last field-confirmed compiling revision; later runtime behavior is not verified.
+
+
+## S8 — X-77 missing header
+Removed nonexistent Misc/LexFromString.h and restored capture own-header-first ordering. LexTryParseString is declared by the existing Containers/UnrealString.h via UnrealString.h.inl. Source inspected only; no build/tests run. S8 reports no recurrence of S7 diagnostics but no successful complete build. FT-82 full compile gate recorded as a proposed workflow change.

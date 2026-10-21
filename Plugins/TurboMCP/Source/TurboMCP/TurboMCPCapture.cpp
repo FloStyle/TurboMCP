@@ -1,11 +1,10 @@
-#include "Misc/LexFromString.h"
-#include "TurboMCPGraphTidy.h"
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 
 #include "TurboMCPCapture.h"
 
@@ -41,8 +40,8 @@
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPBlueprintRead.h"
-#include "TurboMCPCapture.h"
 #include "TurboMCPCaptureAsset.h"
+#include "TurboMCPGraphTidy.h"
 #include "TurboMCPLayoutReport.h"
 #include "TurboMCPNodeId.h"
 
