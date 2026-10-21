@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPLayoutReport.h"
+#include "TurboMCPGraphTidy.h"
 
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -276,7 +277,7 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 					continue;
 				}
 
-                if (FMath::Abs(PinPosition(Pin).Y - PinPosition(Other).Y) > 8.0 && Report.Findings.Num() < 128)
+                if (FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y) > 8.0 && Report.Findings.Num() < 128)
                 {
                     FFinding Finding;
                     Finding.Kind = bIsExec ? TEXT("exec-not-straight") : TEXT("pin-not-level");

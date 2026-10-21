@@ -28,12 +28,12 @@
  */
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(const FString& Asset,
-	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds)
+	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds, const FString& MainPath)
 {
 	FTurboMCPGraphTidy::FPlan Plan;
 	FString Error;
 	if (!FTurboMCPGraphTidy::Plan(Asset, GraphName, bForce, /*bInMergeGetters=*/false,
-		NodeIds, Plan, Error))
+		NodeIds, Plan, Error, MainPath))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
@@ -41,12 +41,12 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(const FString& Asset,
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPGraphTidy(const FString& Asset,
-	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds)
+	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds, const FString& MainPath)
 {
 	FTurboMCPGraphTidy::FPlan Plan;
 	FString Error;
 	if (!FTurboMCPGraphTidy::Plan(Asset, GraphName, bForce, /*bInMergeGetters=*/false,
-		NodeIds, Plan, Error))
+		NodeIds, Plan, Error, MainPath))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
@@ -185,3 +185,68 @@ namespace
 }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPAssetRevert(const FString& Asset) { return AssetRevert(Asset, FString(), false); }
 FString UTurboMCPEditToolset::EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm) { return AssetRevert(Asset, Confirm, true); }
+
+#include "EdGraphNode_Comment.h"
+#include "TurboMCPLayoutReport.h"
+namespace
+{
+ FString MoveGroup(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds,int32 DeltaX,int32 DeltaY,bool Edit)
+ {
+  if(!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive()) return TEXT("error: idle editor required; unchanged");
+  if(NodeIds.IsEmpty()) return TEXT("error: explicit node or comment IDs required; unchanged");
+  FTurboMCPAssetResolver::FResolved R; const FString Error=FTurboMCPAssetResolver::Resolve(Asset,R);
+  if(!Error.IsEmpty()) return FTurboMCPToolError::AsError(Error);
+  UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*R.ObjectPath); int32 Matches=0;
+  UEdGraph* Graph=BP?TurboMCPNodeId::FindGraphByName(BP,GraphName,Matches):nullptr;
+  if(!Graph || Matches!=1) return TEXT("error: graph missing or ambiguous; unchanged");
+  TSet<UEdGraphNode*> Selected;
+  for(const FString& Id:NodeIds)
+  {
+   UEdGraphNode* Found=nullptr;
+   for(UEdGraphNode* N:Graph->Nodes)
+    if(N && (TurboMCPNodeId::MakeForNode(N,true)==Id || TurboMCPNodeId::MakeForNode(N,false)==Id))
+    { if(Found) return TEXT("error: ambiguous node ID; unchanged"); Found=N; }
+   if(!Found) return TEXT("error: node ID not found; unchanged");
+   Selected.Add(Found);
+   if(Found->IsA<UEdGraphNode_Comment>())
+   {
+    const auto Box=FTurboMCPLayoutReport::RectOf(Found);
+    for(UEdGraphNode* N:Graph->Nodes) if(N)
+    {
+     const auto Rect=FTurboMCPLayoutReport::RectOf(N);
+     if(Rect.MinX>=Box.MinX && Rect.MinY>=Box.MinY && Rect.MaxX<=Box.MaxX && Rect.MaxY<=Box.MaxY) Selected.Add(N);
+    }
+   }
+  }
+  for(UEdGraphNode* N:Selected)
+  {
+   const int64 X=int64(N->NodePosX)+DeltaX,Y=int64(N->NodePosY)+DeltaY;
+   if(X<MIN_int32 || X>MAX_int32 || Y<MIN_int32 || Y>MAX_int32) return TEXT("error: coordinate overflow; unchanged");
+   auto New=FTurboMCPLayoutReport::RectOf(N); New.MinX+=DeltaX; New.MaxX+=DeltaX; New.MinY+=DeltaY; New.MaxY+=DeltaY;
+   const auto Old=FTurboMCPLayoutReport::RectOf(N);
+   for(UEdGraphNode* Other:Graph->Nodes) if(Other && !Selected.Contains(Other))
+   {
+    const auto Rect=FTurboMCPLayoutReport::RectOf(Other);
+    if(Other->IsA<UEdGraphNode_Comment>())
+    {
+     const bool WasInside=Old.MinX>=Rect.MinX && Old.MinY>=Rect.MinY && Old.MaxX<=Rect.MaxX && Old.MaxY<=Rect.MaxY;
+     const bool IsInside=New.MinX>=Rect.MinX && New.MinY>=Rect.MinY && New.MaxX<=Rect.MaxX && New.MaxY<=Rect.MaxY;
+     if(WasInside!=IsInside) return TEXT("error: move changes membership of an unselected comment; select its group too");
+    }
+    else if(New.MinX<Rect.MaxX && New.MaxX>Rect.MinX && New.MinY<Rect.MaxY && New.MaxY>Rect.MinY)
+     return TEXT("error: moved group would overlap an unselected node; unchanged");
+   }
+  }
+  const FString Summary=FString::Printf(TEXT("%d nodes/comments translated by (%d,%d); internal spacing, sizes, pins and links preserved"),Selected.Num(),DeltaX,DeltaY);
+  if(!Edit) return TEXT("preview: ")+Summary;
+  if(DeltaX==0 && DeltaY==0) return TEXT("unchanged: zero offset");
+  FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP move graph group")));
+  if(!Transaction.IsOutstanding()) return TEXT("error: no undo transaction; unchanged");
+  BP->Modify(); Graph->Modify();
+  for(UEdGraphNode* N:Selected) { N->Modify(); N->NodePosX+=DeltaX; N->NodePosY+=DeltaY; }
+  Graph->NotifyGraphChanged(); FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
+  return TEXT("changed: ")+Summary+TEXT("; undo=one; compile=not_run; save=not_requested");
+ }
+}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupMove(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds,int32 DeltaX,int32 DeltaY) { return MoveGroup(Asset,GraphName,NodeIds,DeltaX,DeltaY,false); }
+FString UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds,int32 DeltaX,int32 DeltaY) { return MoveGroup(Asset,GraphName,NodeIds,DeltaX,DeltaY,true); }

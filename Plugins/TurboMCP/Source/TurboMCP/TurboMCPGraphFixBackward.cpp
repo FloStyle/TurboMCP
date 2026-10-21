@@ -6,6 +6,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPGraphFixBackward.h"
+#include "TurboMCPGraphTidy.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 
 #include "Containers/Map.h"
 #include "Containers/Set.h"
@@ -1510,6 +1512,9 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 				NearestDistance), /*bInPushed=*/false);
 	}
 
+    FString AlignmentError;
+    FTurboMCPGraphTidy::PrepareAlignment(FBlueprintEditorUtils::FindBlueprintForGraph(Graph),Graph,AlignmentError);
+    if(!AlignmentError.IsEmpty()) AddRefusal(OutPlan,TEXT("Native pin geometry unavailable; alignment uses estimated pin rows: ")+AlignmentError);
     // Alignment is conservative: preserve X, membership and collision guards.
     // Process exec from left to right, then pure producers from right to left.
     TArray<UEdGraphNode*> AlignNodes;
@@ -1532,14 +1537,14 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
                 const int32 J=IndexOfKey(Index,KeyOf(Q->GetOwningNodeUnchecked()));
                 if (!Nodes.IsValidIndex(J) || J==I) continue;
                 if ((!Kind && Nodes[J].PlannedX >= N.PlannedX) || (Kind && Nodes[J].PlannedX <= N.PlannedX)) continue;
-                if (!Peer || FTurboMCPLayoutReport::PinPosition(Q).Y < FTurboMCPLayoutReport::PinPosition(Peer).Y) { Own=P; Peer=Q; }
+                if (!Peer || FTurboMCPGraphTidy::AlignmentPinPosition(Q).Y < FTurboMCPGraphTidy::AlignmentPinPosition(Peer).Y) { Own=P; Peer=Q; }
             }
             if (Peer) break;
         }
         if (!Peer) continue;
         const int32 J=IndexOfKey(Index,KeyOf(Peer->GetOwningNodeUnchecked()));
         const double OldY=N.PlannedY;
-        const double ToY=FMath::RoundToDouble(FTurboMCPLayoutReport::PinPosition(Peer).Y+Nodes[J].PlannedY-Nodes[J].Y-(FTurboMCPLayoutReport::PinPosition(Own).Y-N.Y));
+        const double ToY=FMath::RoundToDouble(FTurboMCPGraphTidy::AlignmentPinPosition(Peer).Y+Nodes[J].PlannedY-Nodes[J].Y-(FTurboMCPGraphTidy::AlignmentPinPosition(Own).Y-N.Y));
         if (FMath::IsNearlyEqual(ToY,OldY)) continue;
         N.PlannedY=ToY; FString Blocker;
         if (!MoveStaysInsideItsBox(N,BoxRects) || !PlannedRectIsClear(Nodes,N,Blocker))

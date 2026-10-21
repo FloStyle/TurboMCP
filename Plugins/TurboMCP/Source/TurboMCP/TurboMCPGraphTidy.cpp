@@ -26,6 +26,14 @@
 #include "K2Node_VariableGet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/Guid.h"
+#include "Slate/WidgetRenderer.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "ImageUtils.h"
+#include "UObject/StrongObjectPtr.h"
+#include "SGraphPanel.h"
+#include "SGraphNode.h"
+#include "SGraphPin.h"
+
 #include "Subsystems/AssetEditorSubsystem.h"
 #include "Templates/Function.h"
 #include "UObject/UObjectGlobals.h"
@@ -33,15 +41,13 @@
 
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPComment.h"
-#include "TurboMCPGraphTidy.h"
-#include "Misc/Paths.h"
-#include "Misc/FileHelper.h"
-#include "HAL/FileManager.h"
 #include "TurboMCPLayoutReport.h"
 #include "TurboMCPNodeId.h"
 
 namespace
 {
+    TWeakPtr<SGraphEditor> AlignmentEditor;
+    TWeakObjectPtr<UEdGraph> AlignmentGraph;
 
 	/** Case-folded, whitespace-trimmed comparison, matching the other graph tools. */
 	bool NameMatches(const FString& InLeft, const FString& InRight)
@@ -217,6 +223,7 @@ namespace
         auto Collect = [&](const TSharedPtr<SGraphEditor>& Panel)
         {
             Sizes.Reset();
+            if (Panel.IsValid()) { AlignmentEditor=Panel; AlignmentGraph=Graph; }
             for (const UEdGraphNode* Node : Graph->Nodes)
             {
                 if (!Node) continue;
@@ -230,7 +237,7 @@ namespace
             }
             return true;
         };
-        if (Collect(nullptr)) return true;
+        if ((!GEditor || !FSlateApplication::IsInitialized()) && Collect(nullptr)) return true;
         if (!GEditor || !FSlateApplication::IsInitialized())
         {
             Error = TEXT("Tidy needs a graphical editor to measure node outlines; no nodes moved.");
@@ -252,8 +259,8 @@ namespace
         for (int32 Attempt = 0; Attempt < 8; ++Attempt)
         {
             Panel->SlatePrepass(1.0f);
-            if (Collect(Panel)) return true;
             FSlateApplication::Get().Tick(ESlateTickType::All);
+            if (Collect(Panel)) return true;
         }
         if (Collect(Panel)) return true;
         Error = TEXT("Some graph widgets still have no measured bounds. Let the editor draw the graph and retry; no nodes moved.");
@@ -299,8 +306,34 @@ namespace
 // Plan
 // ---------------------------------------------------------------------------------------------
 
+bool FTurboMCPGraphTidy::PrepareAlignment(UBlueprint* Blueprint,UEdGraph* Graph,FString& Error)
+{
+    TMap<const UEdGraphNode*,FVector2D> Sizes;
+    return EnsureMeasuredNodeOutlines(Blueprint,Graph,Sizes,Error);
+}
+FVector2D FTurboMCPGraphTidy::AlignmentPinPosition(const UEdGraphPin* Pin)
+{
+    const UEdGraphNode* Node=Pin?Pin->GetOwningNodeUnchecked():nullptr;
+    const TSharedPtr<SGraphEditor> Editor=AlignmentEditor.Pin();
+    if(Node && Editor.IsValid() && AlignmentGraph.Get()==Node->GetGraph() && Editor->GetGraphPanel())
+    {
+        const TSharedPtr<SGraphNode> Widget=Editor->GetGraphPanel()->GetNodeWidgetFromGuid(Node->NodeGuid);
+        const TSharedPtr<SGraphPin> PinWidget=Widget.IsValid()?Widget->FindWidgetForPin(const_cast<UEdGraphPin*>(Pin)):nullptr;
+        if(PinWidget.IsValid())
+        {
+            const FGeometry& Geometry=PinWidget->GetTickSpaceGeometry();
+            if(Geometry.GetLocalSize().Y>0 && Widget->GetTickSpaceGeometry().GetLocalSize().Y>0)
+            {
+                const FVector2D Offset=Widget->GetTickSpaceGeometry().AbsoluteToLocal(Geometry.LocalToAbsolute(Geometry.GetLocalSize()*0.5));
+                return FVector2D(Node->NodePosX,Node->NodePosY)+Offset;
+            }
+        }
+    }
+    return FTurboMCPLayoutReport::PinPosition(Pin);
+}
+
 bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError)
+	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath)
 {
 	OutError.Empty();
 	OutPlan = FPlan();
@@ -591,6 +624,27 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	}
 	OutPlan.WireCount = OutPlan.Wires.Num();
 
+    TMap<int32,int32> MainPredecessor;
+    TArray<FString> MainIds; MainPath.ParseIntoArray(MainIds,TEXT(","),true);
+    for(FString& Id:MainIds) Id=Id.TrimStartAndEnd();
+    int32 Previous=INDEX_NONE; TSet<int32> MainSeen;
+    for(const FString& Id:MainIds)
+    {
+        int32 Current=INDEX_NONE;
+        for(int32 I=0;I<OutPlan.Nodes.Num();++I) if(NodeAnswersToId(OutPlan.Nodes[I].Node,Id)) { Current=I; break; }
+        if(Current==INDEX_NONE || MainSeen.Contains(Current) || OutPlan.Nodes[Current].bIsPure || OutPlan.Nodes[Current].bIsComment
+            || (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[Current].Key)))
+        { OutError=TEXT("MainPath requires distinct execution nodes within the selected scope"); return false; }
+        if(Previous!=INDEX_NONE)
+        {
+            bool Connected=false;
+            for(const FWire& W:OutPlan.Wires) if(W.SourceNodeIndex==Previous && W.TargetNodeIndex==Current && W.OutputPin->PinType.PinCategory==TEXT("exec")) { Connected=true; break; }
+            if(!Connected) { OutError=TEXT("MainPath nodes must be connected in order by execution wires"); return false; }
+            MainPredecessor.Add(Current,Previous);
+        }
+        MainSeen.Add(Current); Previous=Current;
+    }
+
 	// -----------------------------------------------------------------------------------------
 	// STEP 4: the columns, by longest incoming chain, over exec AND data links.
 	//
@@ -808,7 +862,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		return OutPlan.Boxes[InLeft].Key < OutPlan.Boxes[InRight].Key;
 	});
 
-	auto ArrangeRows = [&OutPlan](const TArray<int32>& Free, double FreeStartX, double FreeStartY)
+	auto ArrangeRows = [&OutPlan, &MainPredecessor, &MainSeen](const TArray<int32>& Free, double FreeStartX, double FreeStartY)
 	{
 			// Execution components form separate rows; data sharing must not merge event chains.
 			TMap<int32, int32> RowOf;
@@ -845,20 +899,31 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			}
 			TArray<int32> Rows;
 			for (int32 I : Free) Rows.AddUnique(RowOf[I]);
-			for (int32 R = 1; R < Rows.Num(); ++R)
-			{
-				int32 Best = R, BestWeight = -1;
-				for (int32 C = R; C < Rows.Num(); ++C)
-				{
-					int32 Weight = 0;
-					for (const FWire& W : OutPlan.Wires)
-						if (RowOf.Contains(W.SourceNodeIndex) && RowOf.Contains(W.TargetNodeIndex)
-							&& ((RowOf[W.SourceNodeIndex] == Rows[R-1] && RowOf[W.TargetNodeIndex] == Rows[C])
-							|| (RowOf[W.TargetNodeIndex] == Rows[R-1] && RowOf[W.SourceNodeIndex] == Rows[C]))) ++Weight;
-					if (Weight > BestWeight) { Best = C; BestWeight = Weight; }
-				}
-				Rows.Swap(R, Best);
-			}
+            // Optimize all inter-row relationships; delegates carry extra weight.
+            // Adjacent swaps reduce weighted distance without disturbing execution components.
+            TMap<int32,int32> Rank;
+            auto Cost=[&]()
+            {
+                Rank.Empty(); for(int32 I=0;I<Rows.Num();++I) Rank.Add(Rows[I],I);
+                int64 Sum=0;
+                for(const FWire& W:OutPlan.Wires) if(RowOf.Contains(W.SourceNodeIndex) && RowOf.Contains(W.TargetNodeIndex))
+                {
+                    const int32 Weight=W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("delegate")?8:1;
+                    Sum+=int64(Weight)*FMath::Abs(Rank[RowOf[W.SourceNodeIndex]]-Rank[RowOf[W.TargetNodeIndex]]);
+                }
+                return Sum;
+            };
+            int64 Best=Cost();
+            for(int32 Pass=0;Pass<8;++Pass)
+            {
+                bool Changed=false;
+                for(int32 I=1;I<Rows.Num();++I)
+                {
+                    Rows.Swap(I-1,I); const int64 Candidate=Cost();
+                    if(Candidate<Best) { Best=Candidate; Changed=true; } else Rows.Swap(I-1,I);
+                }
+                if(!Changed) break;
+            }
 			double RowY = FreeStartY;
 			for (int32 Row : Rows)
 			{
@@ -878,17 +943,32 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 							int32 Branch = 0;
 							for (const UEdGraphPin* Pin : OutPlan.Nodes[W.SourceNodeIndex].Node->Pins)
 							{ if (Pin == W.OutputPin) break; if (Pin && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == TEXT("exec")) ++Branch; }
-							const int32 Candidate = LaneOf[W.SourceNodeIndex] + Branch;
+							if(W.OutputPin->PinName==TEXT("Completed")) Branch=0;
+                            const bool Preferred=MainPredecessor.Contains(I) && MainPredecessor[I]==W.SourceNodeIndex;
+                            if(MainPredecessor.Contains(I) && !Preferred) continue;
+                            if(!Preferred) for(const auto& Edge:MainPredecessor) if(Edge.Value==W.SourceNodeIndex && Edge.Key!=I) Branch=FMath::Max(1,Branch);
+                            const int32 Candidate = Preferred?0:LaneOf[W.SourceNodeIndex] + Branch;
 							if (Candidate < Lane) { Lane = Candidate; Incoming = &W; }
 						}
-					if (Lane == MAX_int32) Lane = 0;
+					if (Lane == MAX_int32 || MainSeen.Contains(I)) Lane = 0;
 					LaneOf.Add(I, Lane);
-					N.PlannedX = CursorX; N.PlannedY = RowY + Lane * LaneHeight;
+					double PureSpace=0;
+                    TSet<int32> SeenPure;
+                    TFunction<double(int32)> Required=[&](int32 Target)
+                    {
+                        if(SeenPure.Contains(Target)) return 0.0;
+                        SeenPure.Add(Target); double Width=0;
+                        for(const FWire& W:OutPlan.Wires) if(W.TargetNodeIndex==Target && RowOf.Contains(W.SourceNodeIndex) && OutPlan.Nodes[W.SourceNodeIndex].bIsPure)
+                            Width=FMath::Max(Width,OutPlan.Nodes[W.SourceNodeIndex].Width+HorizontalNodeGap+Required(W.SourceNodeIndex));
+                        return Width;
+                    };
+                    PureSpace=Required(I); CursorX+=PureSpace;
+                    N.PlannedX = CursorX; N.PlannedY = RowY + Lane * LaneHeight;
 					if (Incoming && LaneOf[Incoming->SourceNodeIndex] == Lane)
 					{
 						const FNode& Source = OutPlan.Nodes[Incoming->SourceNodeIndex];
-						N.PlannedY = FTurboMCPLayoutReport::PinPosition(Incoming->OutputPin).Y + Source.PlannedY - Source.Y
-							- (FTurboMCPLayoutReport::PinPosition(Incoming->InputPin).Y - N.Y);
+						N.PlannedY = FTurboMCPGraphTidy::AlignmentPinPosition(Incoming->OutputPin).Y + Source.PlannedY - Source.Y
+							- (FTurboMCPGraphTidy::AlignmentPinPosition(Incoming->InputPin).Y - N.Y);
 					}
 					CursorX += N.Width + HorizontalNodeGap;
 					Bottom = FMath::Max(Bottom, N.PlannedY + N.Height);
@@ -902,14 +982,18 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					const int32 I = Free[K]; FNode& N = OutPlan.Nodes[I];
 					if (RowOf[I] != Row || !N.bIsPure) continue;
 					N.PlannedX = FreeStartX; N.PlannedY = RowY;
-					for (const FWire& W : OutPlan.Wires)
-						if (W.SourceNodeIndex == I && W.TargetNodeIndex != I && RowOf.Contains(W.TargetNodeIndex))
-						{
-							const FNode& Consumer = OutPlan.Nodes[W.TargetNodeIndex];
-							N.PlannedX = FMath::Max(FreeStartX, Consumer.PlannedX - N.Width - HorizontalNodeGap);
-							N.PlannedY = FMath::Max(RowY, FTurboMCPLayoutReport::PinPosition(W.InputPin).Y + Consumer.PlannedY - Consumer.Y
-								- (FTurboMCPLayoutReport::PinPosition(W.OutputPin).Y - N.Y)); break;
-						}
+                    const FWire* Chosen=nullptr;
+                    for(const FWire& W:OutPlan.Wires)
+                        if(W.SourceNodeIndex==I && W.TargetNodeIndex!=I && RowOf.Contains(W.TargetNodeIndex))
+                            if(!Chosen || FTurboMCPGraphTidy::AlignmentPinPosition(W.InputPin).Y-OutPlan.Nodes[W.TargetNodeIndex].Y
+                                < FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->InputPin).Y-OutPlan.Nodes[Chosen->TargetNodeIndex].Y) Chosen=&W;
+                    if(Chosen)
+                    {
+                        const FNode& Consumer=OutPlan.Nodes[Chosen->TargetNodeIndex];
+                        N.PlannedX=FMath::Max(FreeStartX,Consumer.PlannedX-N.Width-HorizontalNodeGap);
+                        N.PlannedY=FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->InputPin).Y+Consumer.PlannedY-Consumer.Y
+                            -(FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->OutputPin).Y-N.Y);
+                    }
 					for (int32 Pass = 0; Pass <= PlacedPure.Num(); ++Pass)
 					{
 						double NextY = N.PlannedY;
@@ -926,7 +1010,11 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					PlacedPure.Add(I);
 					PureBottom = FMath::Max(PureBottom, N.PlannedY + N.Height);
 				}
-				RowY = FMath::Max(Bottom, PureBottom) + VerticalNodeGap;
+				double Minimum=RowY;
+                for(int32 I:Free) if(RowOf[I]==Row) Minimum=FMath::Min(Minimum,OutPlan.Nodes[I].PlannedY);
+                const double Shift=RowY-Minimum;
+                for(int32 I:Free) if(RowOf[I]==Row) OutPlan.Nodes[I].PlannedY+=Shift;
+                RowY = FMath::Max(Bottom, PureBottom) + Shift + VerticalNodeGap;
 			}
 	};
 
@@ -1378,6 +1466,114 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 // RenderPreview
 // ---------------------------------------------------------------------------------------------
 
+namespace
+{
+ bool RenderNativePreview(const FTurboMCPGraphTidy::FPlan& Plan, FString& Result)
+ {
+  if (!FSlateApplication::IsInitialized() || !IsInGameThread()) { Result=TEXT("Slate/game thread required"); return false; }
+  UEdGraph* Original=nullptr;
+  for (const auto& N:Plan.Nodes) if (N.Node) { Original=N.Node->GetGraph(); break; }
+  UBlueprint* Blueprint=Original?FBlueprintEditorUtils::FindBlueprintForGraph(Original):nullptr;
+  if (!Blueprint) { Result=TEXT("Blueprint graph unavailable"); return false; }
+  // Copy only graph objects into a transient Blueprint shell. Duplicating the entire
+  // Blueprint would invoke PostDuplicateBlueprint and can compile/reinstance classes.
+  TStrongObjectPtr<UBlueprint> Scratch(NewObject<UBlueprint>(GetTransientPackage(),Blueprint->GetClass(),NAME_None,RF_Transient));
+  if (!Scratch.IsValid()) { Result=TEXT("could not create transient preview owner"); return false; }
+  Scratch->ParentClass=Blueprint->ParentClass;
+  Scratch->GeneratedClass=Blueprint->GeneratedClass;
+  Scratch->SkeletonGeneratedClass=Blueprint->SkeletonGeneratedClass;
+  Scratch->NewVariables=Blueprint->NewVariables;
+  TMap<UObject*,UObject*> Created;
+  FObjectDuplicationParameters Parameters(Original,Scratch.Get());
+  Parameters.ApplyFlags=RF_Transient;
+  Parameters.FlagMask &= ~(RF_Public|RF_Standalone|RF_Transactional);
+  Parameters.bAssignExternalPackages=false;
+  Parameters.DuplicationSeed.Add(Blueprint,Scratch.Get());
+  Parameters.CreatedObjects=&Created;
+  UEdGraph* Graph=Cast<UEdGraph>(StaticDuplicateObjectEx(Parameters));
+  if (!Graph) { Result=TEXT("graph copy failed"); return false; }
+  if(Blueprint->FunctionGraphs.Contains(Original)) Scratch->FunctionGraphs.Add(Graph);
+  else if(Blueprint->MacroGraphs.Contains(Original)) Scratch->MacroGraphs.Add(Graph);
+  else Scratch->UbergraphPages.Add(Graph);
+  TMap<FGuid,UEdGraphNode*> ByGuid;
+  for(const auto& N:Plan.Nodes) if(N.Node)
+  {
+   UEdGraphNode* Copy=Cast<UEdGraphNode>(Created.FindRef(N.Node));
+   if(!Copy || Copy->GetGraph()!=Graph) { Result=TEXT("preview node mapping failed"); return false; }
+   ByGuid.Add(N.Node->NodeGuid,Copy);
+  }
+  auto FindPin=[](UEdGraphNode* N,const UEdGraphPin* P)->UEdGraphPin*
+  {
+   if (!N || !P) return nullptr;
+   for (UEdGraphPin* Q:N->Pins) if(Q && Q->PinId==P->PinId) return Q;
+   return nullptr;
+  };
+  const FString Folder=FPaths::ProjectSavedDir()/TEXT("TurboMCP/Previews");
+  IFileManager::Get().MakeDirectory(*Folder,true);
+  const FString Stem=FGuid::NewGuid().ToString();
+  Result=TEXT("Native graph previews (transient copy; no live asset changes):");
+  for(int32 Side=0;Side<2;++Side)
+  {
+   if(Side)
+   {
+    for(const auto& N:Plan.Nodes) if(N.Node)
+     if(UEdGraphNode** Copy=ByGuid.Find(N.Node->NodeGuid)) { (*Copy)->NodePosX=FMath::RoundToInt(N.PlannedX); (*Copy)->NodePosY=FMath::RoundToInt(N.PlannedY); }
+    for(const auto& B:Plan.Boxes) if(B.Comment)
+     if(UEdGraphNode** Copy=ByGuid.Find(B.Comment->NodeGuid)) { (*Copy)->NodeWidth=FMath::RoundToInt(B.PlannedWidth); (*Copy)->NodeHeight=FMath::RoundToInt(B.PlannedHeight); }
+    for(const auto& C:Plan.GetterCopies)
+    {
+     UK2Node_VariableGet* Source=Cast<UK2Node_VariableGet>(ByGuid.FindRef(C.Original->NodeGuid));
+     UEdGraphPin* Input=FindPin(ByGuid.FindRef(C.ConsumerPin->GetOwningNode()->NodeGuid),C.ConsumerPin);
+     if(!Source || !Input || !Source->GetValuePin() || Source->GetGraph()!=Graph || Input->GetOwningNode()->GetGraph()!=Graph) { Result=TEXT("getter-copy preview mapping failed"); return false; }
+     UK2Node_VariableGet* Copy=NewObject<UK2Node_VariableGet>(Graph,NAME_None,RF_Transient);
+     Copy->VariableReference=Source->VariableReference; Copy->CreateNewGuid();
+     Graph->AddNode(Copy,false,false); Copy->AllocateDefaultPins();
+     if(!Copy->GetValuePin()) { Result=TEXT("getter-copy preview has no value pin"); return false; }
+     Copy->NodePosX=FMath::RoundToInt(C.PlannedX); Copy->NodePosY=FMath::RoundToInt(C.PlannedY);
+     Source->GetValuePin()->BreakLinkTo(Input); Copy->GetValuePin()->MakeLinkTo(Input);
+    }
+   }
+   const TSharedRef<SGraphEditor> Editor=SNew(SGraphEditor).GraphToEdit(Graph).IsEditable(false).ShowGraphStateOverlay(false);
+   const FVector2D Size(2048,1536);
+   TStrongObjectPtr<UTextureRenderTarget2D> Target(FWidgetRenderer::CreateTargetFor(Size,TF_Bilinear,true));
+   if(!Target.IsValid()) { Result=TEXT("render target unavailable"); return false; }
+   FWidgetRenderer Renderer(true);
+   // Initial draw arranges native nodes and establishes the graph canvas geometry.
+   Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+   double Left=0,Top=0,Right=1,Bottom=1; bool First=true;
+   for(UEdGraphNode* N:Graph->Nodes) if(N)
+   {
+    auto Rect=FTurboMCPLayoutReport::RectOf(N);
+    FSlateRect Bounds;
+    if(Editor->GetBoundsForNode(N,Bounds,0.f)) { Rect.MinX=Bounds.Left; Rect.MinY=Bounds.Top; Rect.MaxX=Bounds.Right; Rect.MaxY=Bounds.Bottom; }
+    if(First) { Left=Rect.MinX; Top=Rect.MinY; Right=Rect.MaxX; Bottom=Rect.MaxY; First=false; }
+    else { Left=FMath::Min(Left,Rect.MinX); Top=FMath::Min(Top,Rect.MinY); Right=FMath::Max(Right,Rect.MaxX); Bottom=FMath::Max(Bottom,Rect.MaxY); }
+   }
+   const FVector2D Centre((Left+Right)/2,(Top+Bottom)/2);
+   const FVector2D Canvas=Editor->GetGraphPanel()?Editor->GetGraphPanel()->GetTickSpaceGeometry().GetLocalSize():Size;
+   const float Wanted=FMath::Min(1.0, FMath::Min(Canvas.X/(Right-Left+160),Canvas.Y/(Bottom-Top+160)));
+   float Request=Wanted,Applied=1; FVector2f Offset;
+   for(int32 Try=0;Try<64;++Try)
+   {
+    Editor->SetViewLocation(FVector2f::ZeroVector,Request); Editor->GetViewLocation(Offset,Applied);
+    if(Applied<=Wanted+KINDA_SMALL_NUMBER) break;
+    Request*=0.9f;
+   }
+   if(Applied>Wanted+KINDA_SMALL_NUMBER || Applied<=0) { Result=TEXT("graph exceeds native zoom range; use a smaller graph or selected group"); return false; }
+   Editor->SetViewLocation(FVector2f(Centre-Canvas/(2*Applied)),Applied);
+   Renderer.DrawWidget(Target.Get(),Editor,Size,0.0f);
+   TArray<FColor> Pixels; FReadSurfaceDataFlags Flags(RCM_UNorm); Flags.SetLinearToGamma(false);
+   if(!Target->GameThread_GetRenderTargetResource()->ReadPixels(Pixels,Flags) || Pixels.Num()!=2048*1536) { Result=TEXT("native preview readback failed"); return false; }
+   for(FColor& Pixel:Pixels) Pixel.A=255;
+   TArray64<uint8> Png; FImageUtils::PNGCompressImageArray(2048,1536,Pixels,Png);
+   const FString Path=Folder/(Stem+(Side?TEXT("-after.png"):TEXT("-before.png")));
+   if(Png.IsEmpty() || !FFileHelper::SaveArrayToFile(Png,*Path)) { Result=TEXT("native preview image could not be saved"); return false; }
+   Result+=TEXT("\n")+(Side?FString(TEXT("after: ")):FString(TEXT("before: ")))+FPaths::ConvertRelativePathToFull(Path);
+  }
+  return true;
+ }
+}
+
 FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 {
 	TArray<FString> Lines;
@@ -1446,40 +1642,9 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	Lines.Add(TEXT("geometry: every node has a Slate-measured size; no estimate was used."));
 
 
-    // A schematic is rendered from the immutable plan, never by temporarily moving live nodes.
-    FString Svg = TEXT("<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900' viewBox='0 0 1600 900'><rect width='1600' height='900' fill='#202020'/><g fill='#ddd' font-family='sans-serif' font-size='20'><text x='20' y='28'>Before</text><text x='820' y='28'>Proposed (schematic, not editor pixels)</text></g>");
-    for (int32 Side=0; Side<2; ++Side)
-    {
-        double MinX=0, MinY=0, MaxX=1, MaxY=1; bool First=true;
-        for (const FNode& N : InPlan.Nodes)
-        {
-            const double X=Side?N.PlannedX:N.X, Y=Side?N.PlannedY:N.Y;
-            if (First) { MinX=X; MinY=Y; MaxX=X+N.Width; MaxY=Y+N.Height; First=false; }
-            else { MinX=FMath::Min(MinX,X); MinY=FMath::Min(MinY,Y); MaxX=FMath::Max(MaxX,X+N.Width); MaxY=FMath::Max(MaxY,Y+N.Height); }
-        }
-        const double Scale=FMath::Min(760.0/FMath::Max(1.0,MaxX-MinX),830.0/FMath::Max(1.0,MaxY-MinY));
-        Svg+=FString::Printf(TEXT("<g transform='translate(%d 50) scale(%f) translate(%f %f)'>"),20+Side*800,Scale,-MinX,-MinY);
-        for (const FWire& W : InPlan.Wires)
-        {
-            if (!InPlan.Nodes.IsValidIndex(W.SourceNodeIndex) || !InPlan.Nodes.IsValidIndex(W.TargetNodeIndex)) continue;
-            const FNode& A=InPlan.Nodes[W.SourceNodeIndex]; const FNode& B=InPlan.Nodes[W.TargetNodeIndex];
-            const FVector2D P=FTurboMCPLayoutReport::PinPosition(W.OutputPin)+FVector2D(Side?A.PlannedX-A.X:0,Side?A.PlannedY-A.Y:0);
-            const FVector2D Q=FTurboMCPLayoutReport::PinPosition(W.InputPin)+FVector2D(Side?B.PlannedX-B.X:0,Side?B.PlannedY-B.Y:0);
-            Svg+=FString::Printf(TEXT("<path d='M %f %f L %f %f' stroke='#aaa' stroke-width='2' fill='none'/>"),P.X,P.Y,Q.X,Q.Y);
-        }
-        for (const FNode& N : InPlan.Nodes)
-        {
-            double Width=N.Width, Height=N.Height;
-            if (Side && N.bIsComment) for (const FBox& B : InPlan.Boxes) if (B.Key==N.Key) { Width=B.PlannedWidth; Height=B.PlannedHeight; break; }
-            Svg+=FString::Printf(TEXT("<rect x='%f' y='%f' width='%f' height='%f' fill='%s' fill-opacity='.65' stroke='#bbb' stroke-width='2'/><text x='%f' y='%f' fill='white' font-size='16'>%s</text>"),Side?N.PlannedX:N.X,Side?N.PlannedY:N.Y,Width,Height,N.bIsComment?TEXT("#665b3b"):TEXT("#3b5266"),(Side?N.PlannedX:N.X)+4,(Side?N.PlannedY:N.Y)+18,*N.Key);
-        }
-        Svg+=TEXT("</g>");
-    }
-    Svg+=TEXT("</svg>");
-    const FString Directory=FPaths::ProjectSavedDir()/TEXT("TurboMCP/Previews");
-    IFileManager::Get().MakeDirectory(*Directory,true);
-    const FString Path=Directory/(TEXT("tidy-")+FGuid::NewGuid().ToString()+TEXT(".svg"));
-    if (FFileHelper::SaveStringToFile(Svg,*Path)) Lines.Add(TEXT("before/after schematic: ")+FPaths::ConvertRelativePathToFull(Path)+TEXT(" (node keys; getter copies not drawn; no live graph changes)"));
+    FString Images;
+    if (!RenderNativePreview(InPlan, Images)) Lines.Add(TEXT("preview images unavailable: ") + Images);
+    else Lines.Add(Images);
 	return FString::Join(Lines, TEXT("\n"));
 }
 

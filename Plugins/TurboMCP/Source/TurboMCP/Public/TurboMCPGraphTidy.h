@@ -11,6 +11,7 @@
 #include "Math/Vector2D.h"
 
 class UEdGraph;
+class UEdGraphPin;
 class UEdGraphNode;
 class UEdGraphNode_Comment;
 class UK2Node_Knot;
@@ -237,7 +238,11 @@ public:
 	 * `error:` and names what stopped it.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError);
+		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath = FString());
+
+    /** Acquire native node/pin geometry when a graphical editor is available. */
+    static bool PrepareAlignment(UBlueprint* Blueprint, UEdGraph* Graph, FString& Error);
+    static FVector2D AlignmentPinPosition(const UEdGraphPin* Pin);
 
 	/** What the pass would do, and both numbers, without touching the graph. */
 	static FString RenderPreview(const FPlan& InPlan);

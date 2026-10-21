@@ -1160,6 +1160,7 @@ public:
 	 * space rather than through its anchors. The preview reports the planned score and the edit reports
 	 * the score it actually measured after writing.
 	 *
+	 * MainPath optionally lists a comma-separated connected sequence of reader node IDs for the top exec lane.
 	 * The number it prints is the TOTAL WIRE LENGTH, which is what this pass is judged on. `P-GRAPH-KNOTS`
 	 * is judged on WIRES CROSSING NODES instead, and the two numbers are deliberately not comparable.
 	 */
@@ -1168,7 +1169,8 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		bool bForce,
-		const TArray<FString>& NodeIds);
+		const TArray<FString>& NodeIds,
+		const FString& MainPath = TEXT(""));
 
 	/**
 	 * Repair the bad spots in a mostly-good graph, WITHOUT moving anything.
@@ -1275,6 +1277,10 @@ public:
 	/** Preview latest global undo transaction only if exclusively TurboMCP and the named asset. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetUndo(const FString& Asset);
+
+	/** Translate selected nodes or entire comment groups, including nested boxes; keeps internal layout and wiring. Refuses new collisions or changed external box membership. */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY);
 
 	/** Preview reload of saved Blueprint package; discards all unsaved edits, may reset undo. Edit requires the preview confirmation. */
 	UFUNCTION(meta = (AICallable))
@@ -1921,8 +1927,7 @@ public:
 	 * the write. It re-measures AFTER the write and reports the number it actually achieved rather than
 	 * the one it predicted, because a plan and its result are two different claims.
 	 *
-	 * A COMMENT BOX MOVES WITH ITS CONTENTS and is resized from them, so nesting is preserved. A box is
-	 * never moved on its own.
+	 * Comment corners stay fixed during tidy; GraphGroupMove translates a box and its contents together.
 	 *
 	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
 	 * disagrees with the measure asks for. `NodeIds` has the same fixed-anchor scope as the preview.
@@ -1932,7 +1937,8 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		bool bForce,
-		const TArray<FString>& NodeIds);
+		const TArray<FString>& NodeIds,
+		const FString& MainPath = TEXT(""));
 
 	/**
 	 * Apply the repairs the preview listed.
@@ -2067,6 +2073,10 @@ public:
 	/** Undo only the latest global transaction when exclusively TurboMCP and this asset. Confirm is the transaction GUID from preview. Never skips unrelated edits. Editor Redo remains available. */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPAssetUndo(const FString& Asset, const FString& Confirm);
+
+	/** Translate selected nodes or entire comment groups, including nested boxes; keeps internal layout and wiring. Refuses new collisions or changed external box membership. */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY);
 
 	/** Edit reload of saved Blueprint package; discards all unsaved edits, may reset undo. Edit requires the preview confirmation. */
 	UFUNCTION(meta = (AICallable))
