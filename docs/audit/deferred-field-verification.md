@@ -401,3 +401,7 @@ Implemented / untested: explicit refusal of link-bearing Patch requests before m
 ## Operator keyword discovery — 33f44d8
 
 Implemented, untested: node search now includes Unreal action-menu keywords at lower priority than IDs/titles. No tests/build/editor run by user instruction. GC-19 stays open: writer resolution and the reported gameplay-tag operator identity are not proven fixed.
+
+## Call-cost cap validation — 9951aaf
+
+019cf7af implemented, Untested. Strict digits, positive value, overflow-safe saturation at 50, validation before empty-log handling, truthful truncation guidance. No tests/build/editor run. Deferred coverage: empty/populated logs, malformed/fractional/zero/huge caps; totals unchanged.

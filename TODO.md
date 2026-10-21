@@ -151,9 +151,8 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>backlog (23)</summary>
+<summary>backlog (22)</summary>
 
-- **P1** [Validate call-cost caps without hiding invalid input](todo/019cf7af.md)
 - **P1** [Verify override removal preserves unrelated overrides](todo/c4485ba2.md)
 - **P1** [Require accepted evidence before fresh-history publication](todo/public-cutover.md)
 - **P1** [Gate recorder adaptation on exact registry API evidence](todo/ue59-recorder.md)
@@ -180,8 +179,9 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (14)</summary>
+<summary>done (15)</summary>
 
+- **P1** [Validate call-cost caps without hiding invalid input](todo/019cf7af.md)
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
 - **P1** [Verify enum names after creation](todo/214d6e7a.md)
 - **P1** [Make explicit both references equal in plus out](todo/484d5638.md)
