@@ -196,7 +196,7 @@ namespace
 			bool bFound = false;
 			for (UEdGraphNode* Node : InGraph->Nodes)
 			{
-				if (Node != nullptr && KeyOf(Node).Equals(Key, ESearchCase::IgnoreCase))
+				if (Node != nullptr && (KeyOf(Node).Equals(Key, ESearchCase::IgnoreCase) || TurboMCPNodeId::MakeForNode(Node, true) == Key || TurboMCPNodeId::MakeForNode(Node, false) == Key))
 				{
 					if (!bAny)
 					{
@@ -356,6 +356,17 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 
 	OutPlan.NodeKeys = FTurboMCPAssetResolver::SplitList(InNodes);
 	OutPlan.BoxKey = InBox.TrimStartAndEnd();
+	if (!OutPlan.BoxKey.IsEmpty())
+	{
+		UEdGraphNode* Match = nullptr;
+		for (UEdGraphNode* Node : Graph->Nodes)
+			if (Cast<UEdGraphNode_Comment>(Node) && (KeyOf(Node).Equals(OutPlan.BoxKey, ESearchCase::IgnoreCase)
+				|| TurboMCPNodeId::MakeForNode(Node, true) == OutPlan.BoxKey || TurboMCPNodeId::MakeForNode(Node, false) == OutPlan.BoxKey))
+			{ if (Match) { OutError = TEXT("ambiguous comment ID"); return false; } Match = Node; }
+		if (!Match) { OutError = TEXT("comment ID not found in the requested graph"); return false; }
+		OutPlan.BoxKey = KeyOf(Match);
+	}
+
 	OutPlan.Text = InText;
 	OutPlan.bHasText = !InText.IsEmpty();
 	OutPlan.bHasColor = !InColor.TrimStartAndEnd().IsEmpty();
@@ -496,7 +507,18 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 		return false;
 	}
 
-	// FitAll needs nothing beyond the boxes already read.
+	if (!OutPlan.BoxKey.IsEmpty())
+		OutPlan.Boxes.RemoveAll([&](const FBox& Box) { return Box.Key != OutPlan.BoxKey; });
+	if (!OutPlan.NodeKeys.IsEmpty())
+	{
+		if (OutPlan.BoxKey.IsEmpty()) { OutError = TEXT("fit with nodes requires one Box ID"); return false; }
+		TArray<FString> Missing;
+		if (!ComputeEnclosingRect(Graph, OutPlan.NodeKeys, OutPlan.Planned.X, OutPlan.Planned.Y,
+			OutPlan.Planned.Width, OutPlan.Planned.Height, Missing) || !Missing.IsEmpty())
+		{ OutError = TEXT("fit contains missing or invalid nodes; unchanged"); return false; }
+		OutPlan.Boxes[0].MemberCount = OutPlan.NodeKeys.Num();
+	}
+	// An empty Box keeps the explicit legacy fit-all behavior.
 	return true;
 }
 
@@ -800,13 +822,13 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 	for (UEdGraphNode* Node : Graph->Nodes)
 	{
 		UEdGraphNode_Comment* Comment = Cast<UEdGraphNode_Comment>(Node);
-		if (Comment == nullptr)
+		if (Comment == nullptr || (!InPlan.BoxKey.IsEmpty() && KeyOf(Comment) != InPlan.BoxKey))
 		{
 			continue;
 		}
 
 		double X, Y, Width, Height;
-		if (!ComputeFit(Comment, X, Y, Width, Height))
+		if (InPlan.NodeKeys.IsEmpty() && !ComputeFit(Comment, X, Y, Width, Height))
 		{
 			// A box with nothing in it has no size to fit to. Reported rather than resized to
 			// zero, which would make it invisible and look like the tool had deleted it.
@@ -814,6 +836,9 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			continue;
 		}
 
+		if (!InPlan.NodeKeys.IsEmpty())
+		{ X = InPlan.Planned.X; Y = InPlan.Planned.Y; Width = InPlan.Planned.Width; Height = InPlan.Planned.Height; }
+		Comment->Modify();
 		const int32 OldWidth = Comment->NodeWidth;
 		const int32 OldHeight = Comment->NodeHeight;
 

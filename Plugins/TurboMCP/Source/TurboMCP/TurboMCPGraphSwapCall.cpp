@@ -405,5 +405,19 @@ FString FTurboMCPGraphSwapCall::RenderPreview(const FPlan& InPlan)
 	{
 		Out += FString::Printf(TEXT("\n- %s%s => replacement.%s; peer %s:%s"), Link.bNewInput ? TEXT("new input ") : TEXT("migrate "), *Link.PinName, *Link.NewPinName, *Link.OtherNodeId, *Link.OtherPinName);
 	}
+    FTurboMCPAssetResolver::FResolved R;
+    if (FTurboMCPAssetResolver::Resolve(InPlan.Asset,R).IsEmpty())
+        if (UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*R.ObjectPath))
+            if (UEdGraph* G=FindGraph(BP,InPlan.GraphName))
+                if (UEdGraphNode* N=NodeById(G,InPlan.OldNodeId))
+                    for (const UEdGraphPin* P : N->Pins)
+                        if (P && P->Direction==EGPD_Input && P->LinkedTo.IsEmpty() && P->PinType.PinCategory!=TEXT("exec") && !P->bDefaultValueIsIgnored)
+                        {
+                            const FString Name=P->PinName.ToString();
+                            Out+=TEXT("\n- default ")+Name+TEXT(" => ")+(InPlan.PinMap.Contains(Name)?InPlan.PinMap[Name]:Name);
+                            Out+=TEXT(": ")+P->DefaultValue+TEXT(" ")+P->DefaultTextValue.ToString();
+                            if(P->DefaultObject) Out+=TEXT(" ")+P->DefaultObject->GetPathName();
+                        }
+
 	return Out;
 }

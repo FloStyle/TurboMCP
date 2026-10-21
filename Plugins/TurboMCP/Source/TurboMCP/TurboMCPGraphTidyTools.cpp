@@ -107,3 +107,81 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphPositions(const FString& Asset, c
 	FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
 	return FString::Printf(TEXT("changed: positioned %d nodes in one undo step; compile=not_run; save=not_requested"), Moves.Num());
 }
+
+#include "Editor/TransBuffer.h"
+#include "UObject/Package.h"
+
+namespace
+{
+	FString AssetUndo(const FString& Asset, const FString& Confirm, bool Edit)
+	{
+		if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+			return TEXT("error: undo requires idle editor outside PIE and transactions");
+		FTurboMCPAssetResolver::FResolved R;
+		const FString Error = FTurboMCPAssetResolver::Resolve(Asset, R);
+		if (!Error.IsEmpty()) return FTurboMCPToolError::AsError(Error);
+		UBlueprint* BP = LoadObject<UBlueprint>(nullptr, *R.ObjectPath);
+		if (!BP) return TEXT("error: undo currently supports Blueprint assets only");
+		UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+		const int32 Index = Buffer ? Buffer->GetQueueLength()-Buffer->GetUndoCount()-1 : -1;
+		const FTransaction* Transaction = Index>=0 ? Buffer->GetTransaction(Index) : nullptr;
+		if (!Transaction || !Transaction->GetTitle().ToString().Contains(TEXT("TurboMCP")))
+			return TEXT("error: latest undo entry is not TurboMCP; no unrelated edit was undone");
+		TArray<UObject*> Objects; Transaction->GetTransactionObjects(Objects); bool Found=false;
+		for (UObject* Object : Objects)
+		{
+			if (!Object) continue;
+			UPackage* Owner = Object->GetOutermost();
+			if (Owner == BP->GetOutermost()) Found=true;
+			else if (Owner && Owner != GetTransientPackage()) return TEXT("error: latest transaction touches another package; unchanged");
+		}
+		if (!Found) return TEXT("error: latest transaction does not touch the named asset; unchanged");
+		const FString Id = Transaction->GetId().ToString();
+		if (!Edit) return TEXT("preview: undo ") + Transaction->GetTitle().ToString() + TEXT(" on ") + R.ObjectPath + TEXT("; Confirm=") + Id;
+		if (Confirm != Id) return TEXT("error: undo transaction changed or confirmation absent; preview again");
+		return GEditor->UndoTransaction(false) ? TEXT("changed: latest TurboMCP transaction undone; editor Redo remains available") : TEXT("error: editor refused undo");
+	}
+}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPAssetUndo(const FString& Asset) { return AssetUndo(Asset, FString(), false); }
+FString UTurboMCPEditToolset::EditTurboMCPAssetUndo(const FString& Asset,const FString& Confirm) { return AssetUndo(Asset, Confirm, true); }
+
+#include "PackageTools.h"
+#include "Misc/PackageName.h"
+#include "HAL/PlatformTime.h"
+
+namespace
+{
+ struct FRevertApproval { FString Token; double Expires = 0; };
+ TMap<FString, FRevertApproval> RevertApprovals;
+ FString AssetRevert(const FString& Asset, const FString& Confirm, bool Edit)
+ {
+  if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+   return TEXT("error: revert requires idle editor outside PIE and transactions");
+  FTurboMCPAssetResolver::FResolved R;
+  const FString Error = FTurboMCPAssetResolver::Resolve(Asset, R);
+  if (!Error.IsEmpty()) return FTurboMCPToolError::AsError(Error);
+  UBlueprint* BP = LoadObject<UBlueprint>(nullptr, *R.ObjectPath);
+  if (!BP || !FPackageName::DoesPackageExist(BP->GetOutermost()->GetName()))
+   return TEXT("error: revert requires a Blueprint with an existing saved package; unchanged");
+  if (!Edit)
+  {
+   FRevertApproval Approval;
+   Approval.Token = TEXT("DISCARD ") + R.ObjectPath + TEXT(" ") + FGuid::NewGuid().ToString();
+   Approval.Expires = FPlatformTime::Seconds() + 60.0;
+   RevertApprovals.Add(R.ObjectPath, Approval);
+   return TEXT("preview: discard ALL unsaved changes in package ") + BP->GetOutermost()->GetName()
+    + TEXT(" and reload its saved version. This is not a selective graph undo. References can be reinstanced and global undo history can be reset. Changes made before confirmation are also discarded. No save will run. Confirmation expires in 60 seconds. Confirm=") + Approval.Token;
+  }
+  const FRevertApproval* Approval = RevertApprovals.Find(R.ObjectPath);
+  if (!Approval || Approval->Token != Confirm || FPlatformTime::Seconds() > Approval->Expires)
+   return TEXT("error: matching unexpired preview confirmation required; unchanged");
+  RevertApprovals.Remove(R.ObjectPath);
+  TArray<UPackage*> Packages; Packages.Add(BP->GetOutermost());
+  FText ReloadError;
+  const bool Changed = UPackageTools::ReloadPackages(Packages, ReloadError, EReloadPackagesInteractionMode::AssumePositive);
+  return Changed ? TEXT("changed: requested package reloaded from disk; unsaved changes discarded; re-read asset IDs and references before further edits")
+   : TEXT("error: package reload failed: ") + ReloadError.ToString();
+ }
+}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPAssetRevert(const FString& Asset) { return AssetRevert(Asset, FString(), false); }
+FString UTurboMCPEditToolset::EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm) { return AssetRevert(Asset, Confirm, true); }

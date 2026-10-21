@@ -192,11 +192,6 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 			continue;
 		}
 
-		if (IsIgnored(Node))
-		{
-			// A knot is still part of a wire, but not a node in the layout count.
-			continue;
-		}
 
 		FlowNodes.Add(Node);
 		++Report.NodeCount;
@@ -281,6 +276,15 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 					continue;
 				}
 
+                if (FMath::Abs(PinPosition(Pin).Y - PinPosition(Other).Y) > 8.0 && Report.Findings.Num() < 128)
+                {
+                    FFinding Finding;
+                    Finding.Kind = bIsExec ? TEXT("exec-not-straight") : TEXT("pin-not-level");
+                    Finding.Detail = TEXT("Pin heights differ; branch lanes and shared inputs may intentionally differ. Review main-path or first-input alignment.");
+                    Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Source));
+                    Finding.NodeIds.Add(TurboMCPNodeId::MakeForNode(Target));
+                    Report.Findings.Add(MoveTemp(Finding));
+                }
 				const FRect SourceRect = RectOf(Source);
 				const FRect TargetRect = RectOf(Target);
 

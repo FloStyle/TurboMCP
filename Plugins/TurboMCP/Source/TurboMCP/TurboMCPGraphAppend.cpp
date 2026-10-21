@@ -25,6 +25,7 @@
 #include "Editor.h"
 #include "Editor/TransBuffer.h"
 #include "UObject/Package.h"
+#include "UObject/UnrealType.h"
 
 namespace
 {
@@ -36,15 +37,25 @@ namespace
             || Pin->bDefaultValueIsReadOnly || Pin->bDefaultValueIsIgnored || Pin->LinkedTo.Num()
             || Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
         { Error = TEXT("pin cannot accept a literal default"); return false; }
+        FString Literal = Value;
+        if (const UEnum* Enum = Cast<UEnum>(Pin->PinType.PinSubCategoryObject.Get()))
+        {
+            FString Name = Literal.TrimStartAndEnd();
+            if (Name.StartsWith(TEXT("\"")) && Name.EndsWith(TEXT("\""))) Name = Name.Mid(1, Name.Len()-2);
+            int32 Index = Enum->GetIndexByNameString(Name);
+            if (Index == INDEX_NONE && (Name.IsNumeric() && !Name.Contains(TEXT(".")))) Index = Enum->GetIndexByValue(FCString::Atoi64(*Name));
+            if (Index == INDEX_NONE || Enum->HasMetaData(TEXT("Hidden"), Index)) { Error = TEXT("invalid enumerant"); return false; }
+            Literal = Enum->GetNameStringByIndex(Index);
+        }
         FString Parsed; TObjectPtr<UObject> Object = nullptr; FText Text;
-        Schema->GetPinDefaultValuesFromString(Pin->PinType, Pin->GetOwningNode(), Value, Parsed, Object, Text, false);
+        Schema->GetPinDefaultValuesFromString(Pin->PinType, Pin->GetOwningNode(), Literal, Parsed, Object, Text, false);
         Error = Schema->IsPinDefaultValid(Pin, Parsed, Object, Text);
         if (!Error.IsEmpty()) return false;
         if (Pin->DefaultValue == Parsed && Pin->DefaultObject == Object && Pin->DefaultTextValue.EqualTo(Text)) return true;
         const FGuid NodeGuid = Pin->GetOwningNode()->NodeGuid;
         const FName PinName = Pin->PinName;
         Pin->GetOwningNode()->Modify();
-        Schema->TrySetDefaultValue(*Pin, Value, true);
+        Schema->TrySetDefaultValue(*Pin, Literal, true);
         for (UEdGraphNode* Node : Graph->Nodes)
             if (Node && Node->NodeGuid == NodeGuid)
                 for (UEdGraphPin* Current : Node->Pins)

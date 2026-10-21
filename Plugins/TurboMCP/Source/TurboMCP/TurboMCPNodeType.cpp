@@ -812,6 +812,7 @@ FString FTurboMCPNodeType::Render(const FPlan& InPlan)
 	}
 
 	Out += TEXT("\n; P-NODE-PINS gives the pins of one of these ids.");
+	Out += TEXT("\nPromotable Utilities|Operators nodes acquire their operand type from the first typed link; connect that link before setting typed defaults.");
 	return Out;
 }
 

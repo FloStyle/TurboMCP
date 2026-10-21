@@ -858,6 +858,16 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	FVector2f AppliedLocation = FVector2f::ZeroVector;
 	float AppliedZoom = 0.0f;
 	GraphEditor->GetViewLocation(AppliedLocation, AppliedZoom);
+	// Unreal quantizes to discrete levels. Step down until the actual level fits, never round up.
+	float ZoomRequest = Zoom;
+	for (int32 Attempt = 0; AppliedZoom > Zoom + KINDA_SMALL_NUMBER && Attempt < 64; ++Attempt)
+	{
+		ZoomRequest *= 0.9f;
+		GraphEditor->SetViewLocation(FVector2f(Centre), ZoomRequest);
+		GraphEditor->GetViewLocation(AppliedLocation, AppliedZoom);
+	}
+	if (AppliedZoom > Zoom + KINDA_SMALL_NUMBER)
+		return TEXT("error: graph exceeds the minimum canvas zoom; capture a comment box or node neighbourhood instead");
 	if (AppliedZoom > 0.0f)
 	{
 		// Zoom is quantized by Unreal; recenter using the zoom that actually survived.
@@ -1015,7 +1025,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	if (bCanFrame)
 	{
 		RenderTarget = FWidgetRenderer::CreateTargetFor(
-			FVector2D(WindowWidth, WindowHeight), TF_Bilinear, /*bUseGammaCorrection=*/false);
+			FVector2D(WindowWidth, WindowHeight), TF_Bilinear, /*bUseGammaCorrection=*/true);
 	}
 
 	if (!bCanFrame)
@@ -1028,7 +1038,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	}
 	else
 	{
-		FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/false);
+		FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/true);
 
 		FHittestGrid HitTestGrid;
 		Renderer->DrawWindow(RenderTarget, HitTestGrid, Window.ToSharedRef(),
@@ -1141,25 +1151,20 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 					LostLeft, LostTop, LostRight, LostBottom);
 			}
 
-			TArray<FColor> Pixels;
-			Pixels.Reserve(Width * Height);
-
-			// The crop is scaled to the size asked for, by nearest sample. Scaling rather
-			// than refusing means a small window can still give a large picture, which is
-			// the common case: the graph is bigger than any window.
-			for (int32 Y = 0; Y < Height; ++Y)
-			{
-				const int32 SourceY = CropTop + (Y * CropHeight) / Height;
-				for (int32 X = 0; X < Width; ++X)
+			// Native crop size by default; explicit dimensions letterbox without enlargement.
+			if (Size.TrimStartAndEnd().IsEmpty()) { Width = CropWidth; Height = CropHeight; }
+			const double Scale = FMath::Min(1.0, FMath::Min(double(Width)/CropWidth, double(Height)/CropHeight));
+			const int32 DrawW = FMath::Max(1, FMath::FloorToInt(CropWidth*Scale));
+			const int32 DrawH = FMath::Max(1, FMath::FloorToInt(CropHeight*Scale));
+			const int32 PadX = (Width-DrawW)/2, PadY = (Height-DrawH)/2;
+			TArray<FColor> Pixels; Pixels.Init(FColor(32,32,32,255), Width*Height);
+			for (int32 Y=0; Y<DrawH; ++Y)
+				for (int32 X=0; X<DrawW; ++X)
 				{
-					const int32 SourceX = CropLeft + (X * CropWidth) / Width;
-					FColor Pixel = WindowPixels[SourceY * WindowWidth + SourceX];
-					// A widget background is transparent by default, so the alpha is forced
-					// opaque; a transparent PNG looks empty in most viewers.
-					Pixel.A = 255;
-					Pixels.Add(Pixel);
+					FColor Pixel = WindowPixels[(CropTop+(Y*CropHeight)/DrawH)*WindowWidth + CropLeft+(X*CropWidth)/DrawW];
+					Pixel.A=255; Pixels[(Y+PadY)*Width+X+PadX]=Pixel;
 				}
-			}
+			Out += FString::Printf(TEXT("\noutput: %dx%d; aspect preserved, no upscaling. Use comment or node capture for readable detail."), Width, Height);
 
 			TArray64<uint8> PngData;
 			FImageUtils::PNGCompressImageArray(Width, Height, Pixels, PngData);
@@ -1210,7 +1215,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	Out += FString::Printf(TEXT("\nimage: %s"), *ImagePath);
 	Out += TEXT("\n; the graph widget is rendered directly rather than grabbing ");
 	Out += TEXT("the screen, so the image is exactly the size asked for and ");
-	Out += TEXT("shows the frame that was set.");
+	Out += TEXT("preserves the crop aspect ratio.");
 
 	return Out;
 }

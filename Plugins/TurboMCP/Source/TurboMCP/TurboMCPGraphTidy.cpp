@@ -6,6 +6,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPGraphTidy.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+#include "HAL/FileManager.h"
 
 // NO `BlueprintEditorUtils.h` HERE. The editor's utilities live at `Kismet2/BlueprintEditorUtils.h`
 // and the bare name does not resolve, which was a fatal C1083 on the first build of this file.
@@ -31,6 +34,9 @@
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPComment.h"
 #include "TurboMCPGraphTidy.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
+#include "HAL/FileManager.h"
 #include "TurboMCPLayoutReport.h"
 #include "TurboMCPNodeId.h"
 
@@ -399,11 +405,15 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			}
 			if (Found->bIsComment)
 			{
-				OutError = FString::Printf(TEXT("node id '%s' names a comment box. Scoped tidy moves graph nodes, not user boxes."), *RequestedId);
-				return false;
+				TArray<FString> Members;
+				FTurboMCPComment::MembersOf(CastChecked<UEdGraphNode_Comment>(Found->Node), Members);
+				for (const FNode& N : OutPlan.Nodes)
+					if (N.Node && Members.Contains(N.Node->GetName())) OutPlan.SelectedNodeKeys.Add(N.Key);
+				continue;
 			}
 			OutPlan.SelectedNodeKeys.Add(Found->Key);
 		}
+		if (OutPlan.SelectedNodeKeys.IsEmpty()) { OutError = TEXT("selected boxes contain no nodes; unchanged"); return false; }
 		OutPlan.AnchorCount = 0;
 		for (const FNode& Candidate : OutPlan.Nodes)
 		{
@@ -754,6 +764,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	for (int32 Index = 0; Index < OutPlan.Nodes.Num(); ++Index)
 	{
 		NodeIndexByKey.Add(OutPlan.Nodes[Index].Key, Index);
+		if (OutPlan.Nodes[Index].Node) NodeIndexByKey.Add(OutPlan.Nodes[Index].Node->GetName(), Index);
 	}
 
 	TArray<int32> OwnerOfNode;
@@ -834,31 +845,71 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			}
 			TArray<int32> Rows;
 			for (int32 I : Free) Rows.AddUnique(RowOf[I]);
+			for (int32 R = 1; R < Rows.Num(); ++R)
+			{
+				int32 Best = R, BestWeight = -1;
+				for (int32 C = R; C < Rows.Num(); ++C)
+				{
+					int32 Weight = 0;
+					for (const FWire& W : OutPlan.Wires)
+						if (RowOf.Contains(W.SourceNodeIndex) && RowOf.Contains(W.TargetNodeIndex)
+							&& ((RowOf[W.SourceNodeIndex] == Rows[R-1] && RowOf[W.TargetNodeIndex] == Rows[C])
+							|| (RowOf[W.TargetNodeIndex] == Rows[R-1] && RowOf[W.SourceNodeIndex] == Rows[C]))) ++Weight;
+					if (Weight > BestWeight) { Best = C; BestWeight = Weight; }
+				}
+				Rows.Swap(R, Best);
+			}
 			double RowY = FreeStartY;
 			for (int32 Row : Rows)
 			{
 				double CursorX = FreeStartX;
 				double Bottom = RowY;
+				double LaneHeight = VerticalNodeGap;
+				for (int32 I : Free) if (RowOf[I] == Row) LaneHeight = FMath::Max(LaneHeight, OutPlan.Nodes[I].Height + VerticalNodeGap);
+				TMap<int32,int32> LaneOf;
 				for (int32 I : Free)
 				{
 					FNode& N = OutPlan.Nodes[I];
 					if (RowOf[I] != Row || N.bIsPure) continue;
-					N.PlannedX = CursorX; N.PlannedY = RowY;
+					int32 Lane = MAX_int32; const FWire* Incoming = nullptr;
+					for (const FWire& W : OutPlan.Wires)
+						if (W.TargetNodeIndex == I && W.OutputPin && W.OutputPin->PinType.PinCategory == TEXT("exec") && LaneOf.Contains(W.SourceNodeIndex))
+						{
+							int32 Branch = 0;
+							for (const UEdGraphPin* Pin : OutPlan.Nodes[W.SourceNodeIndex].Node->Pins)
+							{ if (Pin == W.OutputPin) break; if (Pin && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == TEXT("exec")) ++Branch; }
+							const int32 Candidate = LaneOf[W.SourceNodeIndex] + Branch;
+							if (Candidate < Lane) { Lane = Candidate; Incoming = &W; }
+						}
+					if (Lane == MAX_int32) Lane = 0;
+					LaneOf.Add(I, Lane);
+					N.PlannedX = CursorX; N.PlannedY = RowY + Lane * LaneHeight;
+					if (Incoming && LaneOf[Incoming->SourceNodeIndex] == Lane)
+					{
+						const FNode& Source = OutPlan.Nodes[Incoming->SourceNodeIndex];
+						N.PlannedY = FTurboMCPLayoutReport::PinPosition(Incoming->OutputPin).Y + Source.PlannedY - Source.Y
+							- (FTurboMCPLayoutReport::PinPosition(Incoming->InputPin).Y - N.Y);
+					}
 					CursorX += N.Width + HorizontalNodeGap;
-					Bottom = FMath::Max(Bottom, RowY + N.Height);
+					Bottom = FMath::Max(Bottom, N.PlannedY + N.Height);
 				}
 				// Place pure nodes below-left of consumers, reserving vertical space for each.
 				double PureBottom = Bottom;
 				TArray<int32> PlacedPure;
+				for (int32 I : Free) if (RowOf[I] == Row && !OutPlan.Nodes[I].bIsPure) PlacedPure.Add(I);
 				for (int32 K = Free.Num() - 1; K >= 0; --K)
 				{
 					const int32 I = Free[K]; FNode& N = OutPlan.Nodes[I];
 					if (RowOf[I] != Row || !N.bIsPure) continue;
-					N.PlannedX = FreeStartX;
+					N.PlannedX = FreeStartX; N.PlannedY = RowY;
 					for (const FWire& W : OutPlan.Wires)
 						if (W.SourceNodeIndex == I && W.TargetNodeIndex != I && RowOf.Contains(W.TargetNodeIndex))
-						{ N.PlannedX = OutPlan.Nodes[W.TargetNodeIndex].PlannedX - N.Width - HorizontalNodeGap; break; }
-					N.PlannedY = Bottom + VerticalNodeGap;
+						{
+							const FNode& Consumer = OutPlan.Nodes[W.TargetNodeIndex];
+							N.PlannedX = FMath::Max(FreeStartX, Consumer.PlannedX - N.Width - HorizontalNodeGap);
+							N.PlannedY = FMath::Max(RowY, FTurboMCPLayoutReport::PinPosition(W.InputPin).Y + Consumer.PlannedY - Consumer.Y
+								- (FTurboMCPLayoutReport::PinPosition(W.OutputPin).Y - N.Y)); break;
+						}
 					for (int32 Pass = 0; Pass <= PlacedPure.Num(); ++Pass)
 					{
 						double NextY = N.PlannedY;
@@ -884,16 +935,27 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		FBox& Box = OutPlan.Boxes[BoxIndex];
 		if (OutPlan.SelectedNodeKeys.Num() > 0)
 		{
-			// Scoped tidy never resizes a user's box: it is an anchor alongside the unselected nodes.
-			Box.bWouldFit = false;
-			continue;
+			bool AllSelected = !Box.MemberKeys.IsEmpty();
+            for (const FString& Key : Box.MemberKeys)
+            {
+                const int32* Index = NodeIndexByKey.Find(Key);
+                if (Index && !OutPlan.Nodes[*Index].bIsComment && !OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[*Index].Key)) AllSelected = false;
+            }
+            if (!AllSelected)
+            {
+                for (const FString& Key : Box.MemberKeys)
+                    if (const int32* I = NodeIndexByKey.Find(Key))
+                        if (OwnerOfNode[*I] == BoxIndex && !OutPlan.Nodes[*I].bIsComment && OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[*I].Key))
+                        { OutError = TEXT("selection crosses a comment group; select the whole comment box to preserve membership"); return false; }
+                Box.bWouldFit = false; continue;
+            }
 		}
 
 		// The nodes THIS box lays out: its own members, minus those a deeper box owns.
 		TArray<int32> Owned;
 		for (int32 NodeIndex = 0; NodeIndex < OutPlan.Nodes.Num(); ++NodeIndex)
 		{
-			if (OwnerOfNode[NodeIndex] != BoxIndex)
+			if (OwnerOfNode[NodeIndex] != BoxIndex || OutPlan.Nodes[NodeIndex].bIsComment)
 			{
 				continue;
 			}
@@ -927,7 +989,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		// A BOX'S TOP-LEFT CORNER IS NEVER MOVED. Only sizes change, so the start position is the
 		// box's own corner plus its padding - which is what `P/E-COMMENT`'s fit does.
 		const double StartX = Box.X + FTurboMCPGraphTidy::FitPadding;
-		const double StartY = Box.Y + FTurboMCPGraphTidy::FitPadding;
+		double StartY = Box.Y + FTurboMCPGraphTidy::TitleBarHeight + FTurboMCPGraphTidy::FitPadding;
+        for (int32 Child : Box.ChildBoxIndices) StartY = FMath::Max(StartY, OutPlan.Boxes[Child].Y + OutPlan.Boxes[Child].PlannedHeight + VerticalNodeGap);
 
 		ArrangeRows(Owned, StartX, StartY);
 
@@ -1008,7 +1071,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			}
 			if (bScoped)
 			{
-				if (OutPlan.SelectedNodeKeys.Contains(Candidate.Key))
+				if (OutPlan.SelectedNodeKeys.Contains(Candidate.Key) && OwnerOfNode[NodeIndex] == INDEX_NONE)
 				{
 					Free.Add(NodeIndex);
 				}
@@ -1145,7 +1208,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			Planned.ConsumerPin = ConsumerPin;
 			Planned.OriginalValuePin = ValuePin;
 			const int32* ConsumerPlanIndex = IndexByNode.Find(ConsumerNode);
-			if (!ConsumerPlanIndex) continue;
+			if (!ConsumerPlanIndex || OwnerOfNode[NodeIndex] != INDEX_NONE || OwnerOfNode[*ConsumerPlanIndex] != INDEX_NONE) continue;
 			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
 			Planned.PlannedX = ConsumerPlan.PlannedX
 				- Entry.Width - FTurboMCPGraphTidy::HorizontalNodeGap;
@@ -1175,7 +1238,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				return false;
 			}
 			GetterObstacles.Add({Planned.PlannedX, Planned.PlannedY, Entry.Width, Entry.Height});
-			OutPlan.GetterCopies.Add(Planned);
+			if (OwnerOfNode[NodeIndex] == INDEX_NONE) OutPlan.GetterCopies.Add(Planned);
 		}
 	}
 
@@ -1187,6 +1250,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	// asserts that the before-value EQUALS what `L-LAYOUT-REPORT` reports for the untouched graph. That
 	// cross-tool check is what keeps the two implementations in step across a file boundary.
 	// -----------------------------------------------------------------------------------------
+	for (FNode& N : OutPlan.Nodes) { N.PlannedX = FMath::RoundToDouble(N.PlannedX); N.PlannedY = FMath::RoundToDouble(N.PlannedY); }
 	auto TotalLengthOn = [&OutPlan](const bool bUsePlanned)
 	{
 		double Total = 0.0;
@@ -1233,6 +1297,27 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	OutPlan.WireLengthBefore = TotalLengthOn(false);
 	OutPlan.WireLengthAfter = TotalLengthOn(true);
 
+	for (const FBox& Box : OutPlan.Boxes)
+		for (const FString& Member : Box.MemberKeys)
+		{
+			const int32* Index = NodeIndexByKey.Find(Member);
+			if (!Index) { OutError = TEXT("comment membership could not be resolved; tidy refused"); return false; }
+			const FNode& N = OutPlan.Nodes[*Index];
+            if (N.bIsComment) continue;
+			if (N.PlannedX < Box.X || N.PlannedY < Box.Y + TitleBarHeight
+				|| N.PlannedX + N.Width > Box.X + Box.PlannedWidth || N.PlannedY + N.Height > Box.Y + Box.PlannedHeight)
+			{ OutError = TEXT("tidy would move a node outside its original comment box; unchanged. Use a smaller selection or explicit batch positions."); return false; }
+		}
+
+    for (int32 A=0; A<OutPlan.Nodes.Num(); ++A)
+    for (int32 B=A+1; B<OutPlan.Nodes.Num(); ++B)
+    {
+        const FNode& L=OutPlan.Nodes[A]; const FNode& R=OutPlan.Nodes[B];
+        if (L.bIsComment || R.bIsComment) continue;
+        const bool Moved=L.PlannedX!=L.X || L.PlannedY!=L.Y || R.PlannedX!=R.X || R.PlannedY!=R.Y;
+        if (Moved && L.PlannedX<R.PlannedX+R.Width && L.PlannedX+L.Width>R.PlannedX && L.PlannedY<R.PlannedY+R.Height && L.PlannedY+L.Height>R.PlannedY)
+        { OutError=TEXT("planned tidy overlaps node rectangles; unchanged. Use a smaller group."); return false; }
+    }
 	// How many nodes and boxes the plan would actually change.
 	for (const FNode& Entry : OutPlan.Nodes)
 	{
@@ -1305,7 +1390,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 
 	if (InPlan.SelectedNodeKeys.Num() > 0)
 	{
-		Lines.Add(FString::Printf(TEXT("scope: %d selected node(s) would be moved into free space; %d surrounding node(s) and all comment boxes are fixed anchors."),
+		Lines.Add(FString::Printf(TEXT("scope: %d selected node(s) are selected; %d surrounding node(s) stay fixed. Box members stay grouped; selected boxes may grow without moving their corners."),
 			InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount));
 	}
 	else
@@ -1360,6 +1445,41 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	// `Plan` refuses before reaching this point unless the graph panel has measured every outline.
 	Lines.Add(TEXT("geometry: every node has a Slate-measured size; no estimate was used."));
 
+
+    // A schematic is rendered from the immutable plan, never by temporarily moving live nodes.
+    FString Svg = TEXT("<svg xmlns='http://www.w3.org/2000/svg' width='1600' height='900' viewBox='0 0 1600 900'><rect width='1600' height='900' fill='#202020'/><g fill='#ddd' font-family='sans-serif' font-size='20'><text x='20' y='28'>Before</text><text x='820' y='28'>Proposed (schematic, not editor pixels)</text></g>");
+    for (int32 Side=0; Side<2; ++Side)
+    {
+        double MinX=0, MinY=0, MaxX=1, MaxY=1; bool First=true;
+        for (const FNode& N : InPlan.Nodes)
+        {
+            const double X=Side?N.PlannedX:N.X, Y=Side?N.PlannedY:N.Y;
+            if (First) { MinX=X; MinY=Y; MaxX=X+N.Width; MaxY=Y+N.Height; First=false; }
+            else { MinX=FMath::Min(MinX,X); MinY=FMath::Min(MinY,Y); MaxX=FMath::Max(MaxX,X+N.Width); MaxY=FMath::Max(MaxY,Y+N.Height); }
+        }
+        const double Scale=FMath::Min(760.0/FMath::Max(1.0,MaxX-MinX),830.0/FMath::Max(1.0,MaxY-MinY));
+        Svg+=FString::Printf(TEXT("<g transform='translate(%d 50) scale(%f) translate(%f %f)'>"),20+Side*800,Scale,-MinX,-MinY);
+        for (const FWire& W : InPlan.Wires)
+        {
+            if (!InPlan.Nodes.IsValidIndex(W.SourceNodeIndex) || !InPlan.Nodes.IsValidIndex(W.TargetNodeIndex)) continue;
+            const FNode& A=InPlan.Nodes[W.SourceNodeIndex]; const FNode& B=InPlan.Nodes[W.TargetNodeIndex];
+            const FVector2D P=FTurboMCPLayoutReport::PinPosition(W.OutputPin)+FVector2D(Side?A.PlannedX-A.X:0,Side?A.PlannedY-A.Y:0);
+            const FVector2D Q=FTurboMCPLayoutReport::PinPosition(W.InputPin)+FVector2D(Side?B.PlannedX-B.X:0,Side?B.PlannedY-B.Y:0);
+            Svg+=FString::Printf(TEXT("<path d='M %f %f L %f %f' stroke='#aaa' stroke-width='2' fill='none'/>"),P.X,P.Y,Q.X,Q.Y);
+        }
+        for (const FNode& N : InPlan.Nodes)
+        {
+            double Width=N.Width, Height=N.Height;
+            if (Side && N.bIsComment) for (const FBox& B : InPlan.Boxes) if (B.Key==N.Key) { Width=B.PlannedWidth; Height=B.PlannedHeight; break; }
+            Svg+=FString::Printf(TEXT("<rect x='%f' y='%f' width='%f' height='%f' fill='%s' fill-opacity='.65' stroke='#bbb' stroke-width='2'/><text x='%f' y='%f' fill='white' font-size='16'>%s</text>"),Side?N.PlannedX:N.X,Side?N.PlannedY:N.Y,Width,Height,N.bIsComment?TEXT("#665b3b"):TEXT("#3b5266"),(Side?N.PlannedX:N.X)+4,(Side?N.PlannedY:N.Y)+18,*N.Key);
+        }
+        Svg+=TEXT("</g>");
+    }
+    Svg+=TEXT("</svg>");
+    const FString Directory=FPaths::ProjectSavedDir()/TEXT("TurboMCP/Previews");
+    IFileManager::Get().MakeDirectory(*Directory,true);
+    const FString Path=Directory/(TEXT("tidy-")+FGuid::NewGuid().ToString()+TEXT(".svg"));
+    if (FFileHelper::SaveStringToFile(Svg,*Path)) Lines.Add(TEXT("before/after schematic: ")+FPaths::ConvertRelativePathToFull(Path)+TEXT(" (node keys; getter copies not drawn; no live graph changes)"));
 	return FString::Join(Lines, TEXT("\n"));
 }
 

@@ -1510,6 +1510,43 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 				NearestDistance), /*bInPushed=*/false);
 	}
 
+    // Alignment is conservative: preserve X, membership and collision guards.
+    // Process exec from left to right, then pure producers from right to left.
+    TArray<UEdGraphNode*> AlignNodes;
+    for (UEdGraphNode* N : Graph->Nodes) if (N && !N->IsA<UEdGraphNode_Comment>()) AlignNodes.Add(N);
+    AlignNodes.Sort([](const UEdGraphNode& A,const UEdGraphNode& B) { return A.NodePosX < B.NodePosX; });
+    for (int32 Kind=0; Kind<2; ++Kind)
+    for (int32 Step=0; Step<AlignNodes.Num(); ++Step)
+    {
+        UEdGraphNode* Live=AlignNodes[Kind?AlignNodes.Num()-1-Step:Step];
+        const int32 I=IndexOfKey(Index,KeyOf(Live));
+        if (!Nodes.IsValidIndex(I) || Nodes[I].bUnreachable || Nodes[I].bIsKnot || Nodes[I].bIsPure != bool(Kind)) continue;
+        FNode& N=Nodes[I]; const UEdGraphPin* Own=nullptr; const UEdGraphPin* Peer=nullptr;
+        for (const UEdGraphPin* P : Live->Pins)
+        {
+            if (!P || P->Direction != (Kind?EGPD_Output:EGPD_Input) || P->LinkedTo.IsEmpty()) continue;
+            if (!Kind && P->PinType.PinCategory != TEXT("exec")) continue;
+            for (const UEdGraphPin* Q : P->LinkedTo)
+            {
+                if (!Q || !Q->GetOwningNodeUnchecked()) continue;
+                const int32 J=IndexOfKey(Index,KeyOf(Q->GetOwningNodeUnchecked()));
+                if (!Nodes.IsValidIndex(J) || J==I) continue;
+                if ((!Kind && Nodes[J].PlannedX >= N.PlannedX) || (Kind && Nodes[J].PlannedX <= N.PlannedX)) continue;
+                if (!Peer || FTurboMCPLayoutReport::PinPosition(Q).Y < FTurboMCPLayoutReport::PinPosition(Peer).Y) { Own=P; Peer=Q; }
+            }
+            if (Peer) break;
+        }
+        if (!Peer) continue;
+        const int32 J=IndexOfKey(Index,KeyOf(Peer->GetOwningNodeUnchecked()));
+        const double OldY=N.PlannedY;
+        const double ToY=FMath::RoundToDouble(FTurboMCPLayoutReport::PinPosition(Peer).Y+Nodes[J].PlannedY-Nodes[J].Y-(FTurboMCPLayoutReport::PinPosition(Own).Y-N.Y));
+        if (FMath::IsNearlyEqual(ToY,OldY)) continue;
+        N.PlannedY=ToY; FString Blocker;
+        if (!MoveStaysInsideItsBox(N,BoxRects) || !PlannedRectIsClear(Nodes,N,Blocker))
+        { N.PlannedY=OldY; AddRefusal(OutPlan,N.Key+TEXT(": pin alignment blocked by box or collision; kept previous placement")); continue; }
+        CommitMove(OutPlan,Nodes,I,TEXT("alignment"),N.PlannedX,ToY,TEXT("align first connected pins without moving box corners"),false);
+    }
+
 	// ---- 8. THE MEASURE ON THE PLANNED POSITIONS, AND THE ROLL-BACK DECISION ------------------
 	// AFTER is the layout AS PLANNED, whose nodes have no measured size until they are written, so the documented fallback applies.
 		OutPlan.WireLengthAfter = PlannedWireLength(Graph, Nodes, Index);

@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPGraphCheck.h"
+#include "UObject/UnrealType.h"
 
 #include "TurboMCPGraphTextLex.h"
 
@@ -707,6 +708,21 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 			continue;
 		}
 
+		if (const UEnum* Enum = Cast<UEnum>(FoundPin->PinType.PinSubCategoryObject.Get()))
+		{
+			FString Name = PinValue.TrimStartAndEnd();
+			if (IsQuoted(Name)) Name = Name.Mid(1, Name.Len()-2);
+			int32 Index = Enum->GetIndexByNameString(Name);
+			if (Index == INDEX_NONE && (Name.IsNumeric() && !Name.Contains(TEXT(".")))) Index = Enum->GetIndexByValue(FCString::Atoi64(*Name));
+			if (Index == INDEX_NONE || Enum->HasMetaData(TEXT("Hidden"), Index))
+			{
+				FFinding F; F.Kind = EFindingKind::TypeMismatch; F.KindWord = WordFor(F.Kind);
+				F.Line = Line.Number; F.Column = PinColumn; F.Written = PinName;
+				F.Message = FString::Printf(TEXT("'%s' is not a supported enumerant of %s"), *Name, *Enum->GetName());
+				OutPlan.Findings.Add(F);
+			}
+			continue;
+		}
 		const FString PinTypeWord = TypeWordOf(FoundPin);
 
 		const bool bNumericLiteral = LooksNumeric(PinValue);

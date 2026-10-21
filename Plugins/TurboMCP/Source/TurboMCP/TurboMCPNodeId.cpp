@@ -13,6 +13,8 @@
 #include "K2Node.h"
 #include "K2Node_CallParentFunction.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_PromotableOperator.h"
+#include "BlueprintTypePromotion.h"
 #include "UObject/Class.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionResult.h"
@@ -497,6 +499,10 @@ namespace TurboMCPNodeId
 		{
 			return FString::Printf(TEXT("Parent|%s"), *Title);
 		}
+
+		if (const UK2Node_PromotableOperator* Operator = Cast<UK2Node_PromotableOperator>(InNode))
+			return TEXT("Utilities|Operators|") + StripWhitespace(Unlocalised(
+				FTypePromotion::GetUserFacingOperatorName(Operator->GetOperationName())));
 
         if (InNode->GetClass() == UK2Node_CallFunction::StaticClass())
             if (const UFunction* Function = CastChecked<UK2Node_CallFunction>(InNode)->GetTargetFunction())

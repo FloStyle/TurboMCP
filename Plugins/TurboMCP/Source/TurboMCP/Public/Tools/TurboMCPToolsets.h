@@ -1272,6 +1272,14 @@ public:
 		const FString& GraphName,
 		const FString& Text);
 
+	/** Preview latest global undo transaction only if exclusively TurboMCP and the named asset. */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPAssetUndo(const FString& Asset);
+
+	/** Preview reload of saved Blueprint package; discards all unsaved edits, may reset undo. Edit requires the preview confirmation. */
+	UFUNCTION(meta = (AICallable))
+	static FString PreviewTurboMCPAssetRevert(const FString& Asset);
+
 	/** Preview call swap. Options is optional JSON: {"pin_map":{"Old":"New"},"new_inputs":{"NewInput":{"node":"reader node ID","pin":"OutputPin"}}}. Unmapped pins retain exact names; keepOld defaults true. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphSwapCall(
@@ -2055,6 +2063,14 @@ public:
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& Text);
+
+	/** Undo only the latest global transaction when exclusively TurboMCP and this asset. Confirm is the transaction GUID from preview. Never skips unrelated edits. Editor Redo remains available. */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPAssetUndo(const FString& Asset, const FString& Confirm);
+
+	/** Edit reload of saved Blueprint package; discards all unsaved edits, may reset undo. Edit requires the preview confirmation. */
+	UFUNCTION(meta = (AICallable))
+	static FString EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm);
 
 	/** Set node positions in one undo step. Positions is a JSON array of {"node":"exact reader node ID","x":100,"y":200}. Validates the entire batch before writing; does not compile or save. */
 	UFUNCTION(meta = (AICallable))
