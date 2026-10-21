@@ -421,3 +421,7 @@ Implemented, Untested: BlueprintRead includes recursive engine graph inventory a
 ## Struct removal count and warnings — a10e537
 
 Implemented, Untested: strict 0..2147483647 force count; warning reports potential dependency impact rather than proven breakage. No tests/build/editor run. Broader 1f5fe672 remains open for dirty-set reporting.
+
+## Reader numeric limits — 4ad7b9b
+
+Implemented, Untested: DirtyList limit and BlueprintLoad character budget reject fractional, malformed, negative, zero and overflowing values; empty preserves defaults. Follows the numeric input defect recorded in 019cf7af. No tests/build/editor run.
