@@ -461,3 +461,13 @@ Source fix: `9f0ba2e`. Tool-help sorting now explicitly converts JSON keys into 
 ## 2026-10-21 S4 — capture and layout triage
 
 `b706a0e`: CP-06 capture framing now uses actual graph-panel geometry, top-left view offset, quantized zoom and matching render scale. LR-10 below-left getters accepted by report and backward repair. Both implemented, unbuilt/untested. FB-06 partially addressed with overlap findings and explicit limits; remains Open for crossing assessment. No tests/build/editor run. TD-12, LR-09 and NT-06 remain open. X-71/GC-21 are feature limitations linked to FT-71/FT-70. GC-22, DD-05 and ED-12 are positive field observations, not blanket certification. All 13 report IDs retained.
+
+## 2026-10-21 S4 — remaining implementation batch
+
+Source `b71b89c`, unbuilt/untested; no test commands or editor runs. TD-12 single-strip regression addressed with execution-component rows both inside/outside boxes, width-based gaps, below-left pure placement. LR-09 shares pin geometry and reroute segment counting. FB-06 reports overlaps/crossings with approximation and cap disclosed. GC-21/FT-70 adds explicit call swap mapping; X-71/FT-71 adds batch positions. Earlier CP-06/LR-10 remain implemented/untested. NT-06/GC-19 remains OPEN: aliases/search strengthened, but exact failed identities/context unavailable. Suggested arbitrary subsystem duplication and automatic delegate routing are not implemented; safe variable getter copying remains.
+
+### New call shapes
+
+- `EditTurboMCPGraphPositions(Asset, GraphName, Positions)` where Positions is JSON `[{"node":"exact reader ID","x":100,"y":200}]`. All entries validated before mutation; one undo; no compile/save.
+- Preview/EditTurboMCPGraphSwapCall retains its existing arguments and adds optional `Options`: `{"pin_map":{"OldInput":"NewInput"},"new_inputs":{"ExtraInput":{"node":"exact reader ID","pin":"Value"}}}`. Explicit matching only; no implicit conversions. Existing calls with empty Options preserve same-name behavior.
+- Reflected function paths and `Function|` paths now resolve for filtered function actions; exact aliases `Array Length` and `String Append` map to their engine library functions. Build-string and integer-point conversion search includes reflected names/types. This is not evidence that the unidentified field refusal is fully repaired.

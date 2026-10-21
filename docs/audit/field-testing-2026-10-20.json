@@ -791,20 +791,22 @@
       "id": "X-71",
       "title": "Manual graph positioning requires many individual calls",
       "owner": "FIELD-08",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_reproduction",
-      "implementation_limits": "Feature limitation; linked FT-71, not a crash or regression."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "b71b89c adds EditTurboMCPGraphPositions: validates the complete JSON batch then changes positions in one undo transaction; does not compile/save.",
+      "implementation": "b71b89c"
     },
     {
       "report": "2026-10-21_S4",
       "id": "GC-21",
       "title": "Call swap lacks input pin mapping for differently named replacement pins",
       "owner": "FIELD-05",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_reproduction",
-      "implementation_limits": "Safe refusal worked; optional pin mapping is FT-70."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "b71b89c adds optional Options JSON pin_map and new_inputs to preview/edit call swap, explicit types/identity/duplicate checks, default preservation and existing rollback.",
+      "implementation": "b71b89c"
     },
     {
       "report": "2026-10-21_S4",
@@ -831,31 +833,33 @@
       "id": "TD-12",
       "title": "Whole-graph tidy increases wire length approximately tenfold",
       "owner": "FIELD-08",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_reproduction",
-      "implementation_limits": "Rollback guard worked. Event-chain layout algorithm remains unresolved; no automatic getter duplication authorized."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "b71b89c replaces whole-graph strip and boxed column-wrap with execution-component rows, measured-width gaps and compact below-left pure nodes. Existing safe variable-getter copying and regression rollback retained. No arbitrary subsystem-node duplication or automatic delegate-knot routing; those suggested refinements remain separate from the single-strip defect.",
+      "implementation": "b71b89c"
     },
     {
       "report": "2026-10-21_S4",
       "id": "FB-06",
       "title": "Backward repair success can be mistaken for whole-graph readability",
       "owner": "FIELD-08",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "reported_pending_reproduction",
-      "implementation_limits": "b706a0e adds remaining overlap findings and explicit crossing/readability limits. Crossing detection and whole-chain layout remain unimplemented.",
-      "implementation": "b706a0e"
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "b71b89c reports remaining overlap findings and straight-segment crossings after repair, with explicit 2048-wire cap and approximate-geometry label; does not claim whole-graph readability.",
+      "implementation": "b71b89c"
     },
     {
       "report": "2026-10-21_S4",
       "id": "LR-09",
       "title": "Layout tools report incompatible wire-length totals",
       "owner": "FIELD-08",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_reproduction",
-      "implementation_limits": "Need common geometry and edge counting across tidy, backward repair and report."
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation_limits": "b71b89c uses LayoutReport pin positions translated to planned positions in both tidy and backward repair; backward repair counts actual reroute segments instead of skipping knots. Same approximate geometric measure, not rendered spline length.",
+      "implementation": "b71b89c"
     },
     {
       "report": "2026-10-21_S4",
@@ -885,9 +889,10 @@
       "title": "Common library nodes cannot be found or appended",
       "owner": "FIELD-05",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_reproduction",
-      "implementation_limits": "Recurrence of GC-19; array length, string append/build-string and integer-point conversion. Exact IDs unknown; discovery keyword change is not proof of writer support."
+      "validation": "unbuilt_untested",
+      "disposition": "partial_implementation",
+      "implementation_limits": "Partial b71b89c: exact reflected function aliases are accepted by probe and writer; common array/string actions gain aliases and reflected parameter/name search terms. Exact failed field IDs are unavailable; graph-context filtering and wildcard action behavior not reproduced. Do not claim every editor-offered node works.",
+      "implementation": "b71b89c"
     },
     {
       "report": "2026-10-21_S4",
@@ -1030,15 +1035,21 @@
       "report": "2026-10-21_S4",
       "id": "FT-70",
       "proposal": "Optional call-swap pin map and new-input links",
-      "disposition": "proposal_not_implementation_permission",
-      "owner": "R04"
+      "disposition": "implementation_complete_pending_verification",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "b71b89c"
     },
     {
       "report": "2026-10-21_S4",
       "id": "FT-71",
       "proposal": "Batch node positions in one call and undo transaction",
-      "disposition": "proposal_not_implementation_permission",
-      "owner": "R04"
+      "disposition": "implementation_complete_pending_verification",
+      "owner": "R04",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "b71b89c"
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
@@ -1136,10 +1147,10 @@
       "remaining": "TurboMCP help offers bounded pages; native toolset descriptions can still be oversized. Workaround only, no native fix claimed."
     },
     {
-      "issue": "FB-06",
+      "issue": "NT-06 / GC-19",
       "state": "open",
       "evidence": "untested",
-      "remaining": "b706a0e reports overlap findings and explicitly disclaims crossing/readability assessment. Remaining: crossing detection; backward repair does not implement whole-graph event-chain layout."
+      "remaining": "Partial b71b89c: exact reflected function aliases are accepted by probe and writer; common array/string actions gain aliases and reflected parameter/name search terms. Exact failed field IDs are unavailable; graph-context filtering and wildcard action behavior not reproduced. Do not claim every editor-offered node works."
     }
   ]
 }
