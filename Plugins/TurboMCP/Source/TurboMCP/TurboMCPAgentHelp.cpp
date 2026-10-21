@@ -490,6 +490,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 				if ((*InputSchema)->TryGetObjectField(TEXT("properties"), Properties)
 					&& Properties != nullptr)
 				{
+					TArray<FString> RequiredParameters;
+					(*InputSchema)->TryGetStringArrayField(TEXT("required"), RequiredParameters);
 					const int32 ParamCount = (*Properties)->Values.Num();
 					Help += FString::Printf(TEXT("\nparameters: %d"), ParamCount);
 
@@ -510,10 +512,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 							PropDescription = Field(*PropObject, TEXT("description"));
 						}
 
+						const TCHAR* Requirement = RequiredParameters.Contains(Property.Key)
+							? TEXT("required") : TEXT("optional");
 						Help += PropDescription.IsEmpty()
-							? FString::Printf(TEXT("\n  %s: %s"), *Property.Key, *Type)
-							: FString::Printf(TEXT("\n  %s: %s - %s"),
-								*Property.Key, *Type, *FirstSentence(PropDescription));
+							? FString::Printf(TEXT("\n  %s: %s [%s]"), *Property.Key, *Type, Requirement)
+							: FString::Printf(TEXT("\n  %s: %s [%s] - %s"),
+								*Property.Key, *Type, Requirement, *FirstSentence(PropDescription));
 					}
 
 					if (ParamCount == 0)
