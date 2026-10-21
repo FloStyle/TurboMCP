@@ -84,14 +84,17 @@ namespace
 		{
 			return nullptr;
 		}
+		UEdGraphPin* Found = nullptr;
 		for (UEdGraphPin* Candidate : InNode->Pins)
 		{
-			if (Candidate != nullptr && Candidate->PinName.ToString().Equals(InName, ESearchCase::CaseSensitive))
+			if (Candidate != nullptr && Candidate->Direction == EGPD_Input
+				&& !Candidate->bOrphanedPin && Candidate->PinName.ToString().Equals(InName, ESearchCase::CaseSensitive))
 			{
-				return Candidate;
+				if (Found != nullptr) { return nullptr; }
+				Found = Candidate;
 			}
 		}
-		return nullptr;
+		return Found;
 	}
 
 	/** The literal a pin line carries, with the writer's quotes removed. Mirrors APPEND's own unquoting. */
@@ -189,12 +192,13 @@ bool FTurboMCPGraphPatch::Plan(const FString& InAsset, const FString& InGraphNam
 		Update.Line = Form.Line;
 
 		// EACH LITERAL PIN IS CHECKED AGAINST THE PINS THE NODE REALLY HAS, at plan time, so a Preview and an
-		// Edit refuse the same input. A LINK is skipped because it is planned as a link and applied as one;
+		// Edit refuse the same input. A LINK is refused because this apply path does not execute link plans;
 		// writing `(-> A:B)` into a pin as text is the silent corruption `APPEND` already guards against.
 		for (const TurboMCPGraphTextLex::FPinForm& Pin : Form.Pins)
 		{
 			if (TurboMCPGraphTextLex::ValueIsALink(Pin.Value))
 			{
+				OutPlan.Refusals.Add(FString::Printf(TEXT("line %d: Patch currently edits literal defaults only; requested link on '%s' would not be applied. No part of this patch will be written. Use an explicit connection operation and read back its endpoints/types."), Pin.Line, *Pin.Name));
 				continue;
 			}
 
@@ -211,7 +215,7 @@ bool FTurboMCPGraphPatch::Plan(const FString& InAsset, const FString& InGraphNam
 					}
 				}
 				OutPlan.Refusals.Add(FString::Printf(
-					TEXT("line %d, column %d: '%s' has no pin named '%s'. It has: %s."),
+					TEXT("line %d, column %d: '%s' has no unique non-orphaned input pin named '%s'. It has: %s."),
 					Pin.Line, Pin.Column, *Form.TypeId, *Pin.Name,
 					Real.Num() > 0 ? *FString::Join(Real, TEXT(", ")) : TEXT("(no pins)")));
 				continue;
@@ -433,8 +437,7 @@ bool FTurboMCPGraphPatch::Apply(const FPlan& InPlan, FString& OutReport, FString
 		}
 	}
 
-	// THE WIRES ARE MADE HERE, REUSING `APPEND`'S OWN LINK CODE. A link is the part of a write most likely to be
-	// silently dropped, so it goes through the code path that already rolls back and checks.
+	// Link requests are refused during planning; this path applies literal defaults only.
 	if (Missing.Num() > 0)
 	{
 		if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
