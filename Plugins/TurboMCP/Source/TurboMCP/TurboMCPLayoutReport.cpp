@@ -377,7 +377,8 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 				const FRect ConsumerRect = RectOf(ConsumerNode);
 
 				const bool bToTheRight = GetterRect.MinX >= ConsumerRect.MaxX;
-				const bool bUnderneath = GetterRect.MinY >= ConsumerRect.MaxY;
+				const bool bUnderneath = GetterRect.MinY >= ConsumerRect.MaxY
+					&& GetterRect.MaxX > ConsumerRect.MinX; // Below-left is an intentional forward-reading layout.
 
 				if (bToTheRight || bUnderneath)
 				{

@@ -1335,7 +1335,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 		const FTurboMCPLayoutReport::FRect ConsumerRect = RectOf(ConsumerNode);
 
 		// `bUnderneath`, the report's own comparison, reused so the two tools agree.
-		if (GetterRect.MinY < ConsumerRect.MaxY)
+		if (GetterRect.MinY < ConsumerRect.MaxY || GetterRect.MaxX <= ConsumerRect.MinX)
 		{
 			continue;
 		}
@@ -1799,6 +1799,13 @@ FString FTurboMCPGraphFixBackward::Apply(const FPlan& InPlan)
 	{
 		Out += TEXT("  WORSE: Force was set, so a result that is not shorter was applied anyway.");
 	}
+
+	const auto RemainingLayout = FTurboMCPLayoutReport::Measure(Graph, InPlan.Asset);
+	int32 OverlapFindings = 0;
+	for (const auto& Finding : RemainingLayout.Findings)
+		if (Finding.Kind == TEXT("overlap")) ++OverlapFindings;
+	Out += FString::Printf(TEXT("\n    remaining overlap findings: %d (report may cap individual pairs)"), OverlapFindings);
+	Out += TEXT("\n    scope: backward-wire repair only. Wire crossings and event-chain readability are not evaluated; this is not a whole-graph tidy verdict.");
 
 	Out += FString::Printf(TEXT("\n    moved %d node(s), of which %d were pushed along"),
 		Written, InPlan.PushedMoved);

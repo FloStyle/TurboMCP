@@ -22,6 +22,7 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "GraphEditor.h"
+#include "SGraphPanel.h"
 #include "ImageUtils.h"
 #include "Input/HittestGrid.h"
 #include "Misc/Base64.h"
@@ -64,7 +65,7 @@
  *
  * THE FRAME IS COMPUTED, NOT READ
  * -------------------------------
- * `SGraphEditor::SetViewLocation(Location, Zoom)` takes a graph-space centre and a
+ * `SGraphEditor::SetViewLocation(Location, Zoom)` takes a graph-space top-left view offset and a
  * zoom. The target's bounding box comes from the nodes' own rectangles, and the zoom
  * is chosen so that box fits the requested image. `SGraphPanel::GetBoundsForNode`
  * would give on-screen bounds but needs a live panel and a widget geometry pass, so
@@ -767,9 +768,6 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	const double BoxWidth = FrameWidth;
 	const double BoxHeight = FrameHeight;
 
-	const float ZoomFitX = static_cast<float>(Width / (BoxWidth * FramePadding));
-	const float ZoomFitY = static_cast<float>(Height / (BoxHeight * FramePadding));
-	const float Zoom = FMath::Clamp(FMath::Min(ZoomFitX, ZoomFitY), MinZoom, MaxZoom);
 
 	const FVector2D Centre(
 		(Box.MinX + Box.MaxX) * 0.5,
@@ -843,7 +841,15 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
 	// The view is moved only now, with real geometry in place, so the panel keeps the
 	// transform instead of discarding it during its first layout.
-	GraphEditor->SetViewLocation(FVector2f(Centre), Zoom);
+	SGraphPanel* CapturePanel = GraphEditor->GetGraphPanel();
+	if (!CapturePanel) return TEXT("error: graph canvas is unavailable; nothing captured.");
+	const FVector2D CanvasSize = CapturePanel->GetTickSpaceGeometry().GetLocalSize();
+	if (CanvasSize.X <= 0.0 || CanvasSize.Y <= 0.0)
+		return TEXT("error: graph canvas has no usable geometry; nothing captured.");
+	// Fit the live canvas, not the requested output image. Unreal stores a top-left offset.
+	const float Zoom = FMath::Clamp(static_cast<float>(FMath::Min(
+		CanvasSize.X / (BoxWidth * FramePadding), CanvasSize.Y / (BoxHeight * FramePadding))), MinZoom, MaxZoom);
+	GraphEditor->SetViewLocation(FVector2f(Centre - CanvasSize / (2.0 * Zoom)), Zoom);
 
 	// The zoom the engine actually applied is read back, because the request and the
 	// result are not the same thing: the panel clamps the zoom to its own limits, and a
@@ -852,26 +858,30 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	FVector2f AppliedLocation = FVector2f::ZeroVector;
 	float AppliedZoom = 0.0f;
 	GraphEditor->GetViewLocation(AppliedLocation, AppliedZoom);
+	if (AppliedZoom > 0.0f)
+	{
+		// Zoom is quantized by Unreal; recenter using the zoom that actually survived.
+		GraphEditor->SetViewLocation(FVector2f(Centre - CanvasSize / (2.0 * AppliedZoom)), AppliedZoom);
+		GraphEditor->GetViewLocation(AppliedLocation, AppliedZoom);
+	}
 
 	// Where the graph panel sits inside the window, which is what turns a graph-space
 	// frame into a pixel rectangle.
 	FVector2D PanelOrigin = FVector2D::ZeroVector;
 	FVector2D PanelSize = WindowSize;
+	float CanvasScale = 1.0f;
 	FString GeometryNote;
 	{
-		const FGeometry PanelGeometry = GraphEditor->GetTickSpaceGeometry();
+		const FGeometry PanelGeometry = CapturePanel->GetTickSpaceGeometry();
 		const FGeometry WindowGeometry = Window->GetWindowGeometryInScreen();
 
 		const FVector2D PanelScreen = PanelGeometry.GetAbsolutePosition();
 		const FVector2D WindowScreen = WindowGeometry.GetAbsolutePosition();
 		const float PanelScale = PanelGeometry.Scale;
 
-		// The rendered picture is in PIXELS; Slate geometry is in SLATE UNITS, which a
-		// scaled display divides. Dividing by the panel's own scale converts back, and
-		// leaving it out is what put the first crop on the wrong panel entirely.
-		const float SafeScale = PanelScale > 0.0f ? PanelScale : 1.0f;
-
-		PanelOrigin = (PanelScreen - WindowScreen) / SafeScale;
+		// Render at the live window scale so cached canvas geometry matches the image.
+		CanvasScale = PanelScale > 0.0f ? PanelScale : 1.0f;
+		PanelOrigin = PanelScreen - WindowScreen;
 		PanelSize = PanelGeometry.GetAbsoluteSize();
 
 		GeometryNote = FString::Printf(
@@ -1022,7 +1032,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
 		FHittestGrid HitTestGrid;
 		Renderer->DrawWindow(RenderTarget, HitTestGrid, Window.ToSharedRef(),
-			/*Scale=*/1.0f, FVector2D(WindowWidth, WindowHeight),
+			/*Scale=*/Window->GetWindowGeometryInScreen().Scale, FVector2D(WindowWidth, WindowHeight),
 			/*DeltaTime=*/0.0f, /*bDeferRenderTargetUpdate=*/false);
 
 		TArray<FColor> WindowPixels;
@@ -1083,19 +1093,17 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			// WHERE THE FRAME LANDS IN THE PICTURE.
 			//
 			// A graph point maps to the panel like this: screen = (graph - viewCentre) *
-			// zoom + panelCentre. The panel's own origin inside the window is known, so
+			// zoom * canvasScale + panelOrigin. The panel's own origin inside the window is known, so
 			// the frame's rectangle in window pixels follows from the view location and
 			// zoom that were ACTUALLY applied, not the ones asked for.
-			const double PanelCentreX = PanelOrigin.X + PanelSize.X * 0.5;
-			const double PanelCentreY = PanelOrigin.Y + PanelSize.Y * 0.5;
 
 			auto ToWindowX = [&](double GraphX)
 			{
-				return PanelCentreX + (GraphX - AppliedLocation.X) * AppliedZoom;
+				return PanelOrigin.X + (GraphX - AppliedLocation.X) * AppliedZoom * CanvasScale;
 			};
 			auto ToWindowY = [&](double GraphY)
 			{
-				return PanelCentreY + (GraphY - AppliedLocation.Y) * AppliedZoom;
+				return PanelOrigin.Y + (GraphY - AppliedLocation.Y) * AppliedZoom * CanvasScale;
 			};
 
 			const double FrameLeft = ToWindowX(Box.MinX);
