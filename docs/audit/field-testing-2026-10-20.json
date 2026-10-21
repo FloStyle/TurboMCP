@@ -138,10 +138,12 @@
       "id": "BL-13",
       "title": "The Blueprint reader may have missed one empty function graph (medium)",
       "owner": "FIELD-09",
-      "disposition": "implementation_available_pending_field_confirmation",
+      "disposition": "implementation_complete_pending_verification",
       "implementation": "FIELD-FIX-21",
       "validation": "unbuilt_untested",
-      "implementation_limits": "Function inventory no longer depends on entry nodes; graph kind and event owner are explicit. Original runtime observations have not been reproduced."
+      "implementation_limits": "Function inventory no longer depends on entry nodes; graph kind and event owner are explicit. Original runtime observations have not been reproduced.",
+      "state": "done",
+      "source_review": "At 8b672ed, BlueprintRead signature collection enumerates FunctionGraphs independently of entry nodes and prints signature unavailable when reflection is missing. Empty function omission is implemented; field confirmation remains a verification flag."
     },
     {
       "report": "2026-10-18_S1",
@@ -574,7 +576,10 @@
       "id": "TH-12",
       "title": "One engine toolset description is too large for the client (low)",
       "owner": "FIELD-08",
-      "disposition": "reported_pending_reproduction"
+      "disposition": "reported_pending_reproduction",
+      "state": "open",
+      "source_review": "TurboMCP AgentHelp paginates summaries at 12 tools and a character budget. Native toolset description is unchanged.",
+      "remaining_problem": "Native description size remains unresolved; paged TurboMCP help is a workaround, not a native fix."
     },
     {
       "report": "2026-10-20_S3",
@@ -979,6 +984,18 @@
       "state": "open",
       "evidence": "reported; source inspected",
       "remaining": "Pin setter already reports schema reasons and verifies values. Need exact tool, pin type and synthetic literal shape to identify the unresolved native/by-reference/struct failure. No speculative fix submitted."
+    },
+    {
+      "issue": "TH-09",
+      "state": "open",
+      "evidence": "untested",
+      "remaining": "Discovery identifies PlayCheck as executing PIE, but legacy Read callable/toolset remains for compatibility. Physical reclassification is not implemented."
+    },
+    {
+      "issue": "TH-12",
+      "state": "open",
+      "evidence": "untested",
+      "remaining": "TurboMCP help offers bounded pages; native toolset descriptions can still be oversized. Workaround only, no native fix claimed."
     }
   ]
 }
