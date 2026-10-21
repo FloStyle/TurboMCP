@@ -341,6 +341,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp"
           ],
           "new_files": []
+        },
+        "field-s4-layout-capture": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackward.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
