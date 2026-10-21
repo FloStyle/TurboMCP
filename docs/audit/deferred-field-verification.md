@@ -449,3 +449,7 @@ Implemented, Untested: stable parameter ordering and verbatim JSON schema enums/
 ## Compact checkout success — 4a3c3cd
 
 1db73082 implemented, Untested. Compact successful attempted checkout; provider info retained, no-lock providers identified, save independence explicit. Failures and skipped operations remain detailed. No tests/build/editor run.
+
+## Typed discovery defaults — 2a0d153
+
+Implemented, Untested: preserve JSON default representation, including false, zero, null, arrays/objects and explicit empty strings. 0e4658ad remains partial. No tests/build/editor run.

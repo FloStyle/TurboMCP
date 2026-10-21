@@ -972,7 +972,7 @@
       "issue": "0e4658ad",
       "state": "open",
       "evidence": "untested",
-      "remaining": "Focused reads, query errors, requiredness and registered constraints/defaults are implemented (50f36f5, a8c38d7, 4a03957, 4204098), untested. Remaining: valid tool-specific examples and constraints absent from registry."
+      "remaining": "Focused reads, query errors, requiredness and registered constraints/defaults are implemented (50f36f5, a8c38d7, 4a03957, 4204098), untested. Remaining: valid tool-specific examples and constraints absent from registry. Tool discovery default JSON types also preserved (2a0d153), untested."
     },
     {
       "issue": "X-62 / ED-09",
