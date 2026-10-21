@@ -393,3 +393,7 @@ DT-10 and FT-69 implemented / untested: verify explicit 0/False old field values
 ## 2026-10-21 — Full node-ID regression (`31cadfe`)
 
 Implemented / untested: 05cedc3 incorrectly passed full IDs into a hex-key helper. Now parse identity first, verify asset/graph, then match key; comment parser accepts bare keys and quoted graph names. Check full/short asset IDs, bare keys, ambiguity, cross-graph refusal, quoted names and local labels. GC-18 remains open for execution-link patch behavior; no tests/builds run.
+
+## 2026-10-21 — Patch link omission
+
+Implemented / untested: explicit refusal of link-bearing Patch requests before mutation; avoids partial literal-only success for mixed requests. Unique non-orphaned input lookup prevents output/input same-name confusion. Verify link-only, mixed, literal-only and duplicate pin names. GC-18 remains open: native link editing via Patch is not implemented.

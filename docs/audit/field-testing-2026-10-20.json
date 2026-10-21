@@ -713,7 +713,7 @@
       "owner": "FIELD-05",
       "state": "open",
       "validation": "reported",
-      "implementation_limits": "Recurrence with full, short and bare IDs; exact build unknown. Prior short-key fix does not establish resolution; compare exact request/graph identity next. 31cadfe corrects regression from 05cedc3: parse full IDs before hex-key lookup; validate selected asset/graph; accept bare keys and quoted graph names. Untested; execution-link patch semantics still require investigation, so recurrence remains open.",
+      "implementation_limits": "Recurrence with full, short and bare IDs; exact build unknown. Prior short-key fix does not establish resolution; compare exact request/graph identity next. 31cadfe corrects regression from 05cedc3: parse full IDs before hex-key lookup; validate selected asset/graph; accept bare keys and quoted graph names. Untested; execution-link patch semantics still require investigation, so recurrence remains open. Follow-up: patch never applied link expressions; now refuses link/mixed requests before any mutation, rather than silently ignoring wires. Full link editing remains open. Literal lookup now requires a unique non-orphaned input.",
       "disposition": "reported_pending_reproduction",
       "related_issue": "GC-16"
     },
