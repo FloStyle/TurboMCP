@@ -73,6 +73,7 @@ namespace
 		TArray<FString> Words;
 		FString TypeFilter;
 		FString PathFilter;
+		FString Error;
 	};
 
 	/** Splits a query into words and pulls out the two filters. */
@@ -90,10 +91,17 @@ namespace
 				// Filters may appear at any position, and a later one wins so a
 				// caller can correct itself within one query.
 				Parsed.TypeFilter = Token.RightChop(FCString::Strlen(TypeFilterPrefix));
+				if (Parsed.TypeFilter.IsEmpty()) { Parsed.Error = TEXT("error: type: needs a class name, for example type:Blueprint."); return Parsed; }
 			}
 			else if (Token.StartsWith(PathFilterPrefix, ESearchCase::IgnoreCase))
 			{
 				Parsed.PathFilter = Token.RightChop(FCString::Strlen(PathFilterPrefix));
+				if (Parsed.PathFilter.IsEmpty()) { Parsed.Error = TEXT("error: path: needs a folder, for example path:/Game/UI."); return Parsed; }
+			}
+			else if (Token.Contains(TEXT(":")))
+			{
+				Parsed.Error = FString::Printf(TEXT("error: unsupported query filter '%s'. Use type:ClassName or path:/Game/Folder; class: is not supported. Filters may appear before or after search words."), *Token);
+				return Parsed;
 			}
 			else
 			{
@@ -289,6 +297,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPAssetSearch(const FString& Query)
 	}
 
 	const FParsedQuery Parsed = ParseQuery(Query);
+	if (!Parsed.Error.IsEmpty()) return Parsed.Error;
 
 	// P1: a query that is empty says what to pass, rather than listing everything.
 	if (Parsed.Words.Num() == 0 && Parsed.TypeFilter.IsEmpty() && Parsed.PathFilter.IsEmpty())
