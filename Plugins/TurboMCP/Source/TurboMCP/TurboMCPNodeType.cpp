@@ -137,6 +137,7 @@ namespace
 	{
 		FString TypeId;
         FString LegacyTypeId;
+		FString SearchKeywords;
 		FString OwningClass;
 		bool bOwnedByThisBlueprint = false;
 		bool bPure = false;
@@ -209,6 +210,7 @@ namespace
 				FEntry Entry;
 				Entry.TypeId = TypeId;
                 Entry.LegacyTypeId = TypeId;
+				Entry.SearchKeywords = UiSpec.Keywords.ToString();
                 // Ordinary function calls have a locale-independent reflected identity.
                 if (ActionInfo.GetNodeClass() == UK2Node_CallFunction::StaticClass())
                     if (const UFunction* Function = ActionInfo.GetAssociatedFunction())
@@ -647,6 +649,24 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 				Rank = 3;
 				Reason = FString::Printf(TEXT("every one of the %d words is in the id"),
 					NormalisedWords.Num());
+			}
+		}
+
+		// Engine action-menu keywords include operator aliases that are absent from IDs.
+		// Keep these below identity/title matches and never use them for writer resolution.
+		if (Rank < 0 && NormalisedWords.Num() > 0)
+		{
+			const FString SearchText = NormalisedId + TEXT(" ") + LegacyId + TEXT(" ")
+				+ FTurboMCPToolSchema::NormaliseForMatch(Entry.SearchKeywords);
+			bool bAllPresent = true;
+			for (const FString& Word : NormalisedWords)
+			{
+				if (!SearchText.Contains(Word)) { bAllPresent = false; break; }
+			}
+			if (bAllPresent)
+			{
+				Rank = 4;
+				Reason = TEXT("words matched using Unreal action-menu keywords");
 			}
 		}
 
