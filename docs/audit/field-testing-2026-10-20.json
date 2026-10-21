@@ -661,7 +661,7 @@
       "state": "reopened",
       "validation": "unbuilt_untested",
       "disposition": "reported_pending_reproduction",
-      "implementation_limits": "05cedc3 uses shared unique short-key resolution and canonical full IDs; refusal no longer claims zero nodes. Runtime reproduction deferred. New S2 GC-18 recurrence includes full IDs; broader resolution reopened, exact tested commit unknown.",
+      "implementation_limits": "05cedc3 uses shared unique short-key resolution and canonical full IDs; refusal no longer claims zero nodes. Runtime reproduction deferred. New S2 GC-18 recurrence includes full IDs; broader resolution reopened, exact tested commit unknown. 31cadfe corrects regression from 05cedc3: parse full IDs before hex-key lookup; validate selected asset/graph; accept bare keys and quoted graph names. Untested; execution-link patch semantics still require investigation, so recurrence remains open.",
       "implementation": "05cedc3",
       "related_issue": "GC-15"
     },
@@ -713,7 +713,7 @@
       "owner": "FIELD-05",
       "state": "open",
       "validation": "reported",
-      "implementation_limits": "Recurrence with full, short and bare IDs; exact build unknown. Prior short-key fix does not establish resolution; compare exact request/graph identity next.",
+      "implementation_limits": "Recurrence with full, short and bare IDs; exact build unknown. Prior short-key fix does not establish resolution; compare exact request/graph identity next. 31cadfe corrects regression from 05cedc3: parse full IDs before hex-key lookup; validate selected asset/graph; accept bare keys and quoted graph names. Untested; execution-link patch semantics still require investigation, so recurrence remains open.",
       "disposition": "reported_pending_reproduction",
       "related_issue": "GC-16"
     },

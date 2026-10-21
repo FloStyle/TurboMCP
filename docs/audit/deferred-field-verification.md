@@ -389,3 +389,7 @@ Implemented / untested: refuse CanCreateConnection conversion-node responses bef
 ## 2026-10-21 S2 (`e2ed536`)
 
 DT-10 and FT-69 implemented / untested: verify explicit 0/False old field values and old/new endpoint movement reports after execution insertion. Added null-continuation refusal before schema connection. GC-18 reopens broader patch resolution despite earlier short-key fix; GC-19 operator IDs and X-69 unexplained normal shutdown remain open. GC-20 is scoped positive field evidence only. Exact field build unknown; no tests/builds run.
+
+## 2026-10-21 — Full node-ID regression (`31cadfe`)
+
+Implemented / untested: 05cedc3 incorrectly passed full IDs into a hex-key helper. Now parse identity first, verify asset/graph, then match key; comment parser accepts bare keys and quoted graph names. Check full/short asset IDs, bare keys, ambiguity, cross-graph refusal, quoted names and local labels. GC-18 remains open for execution-link patch behavior; no tests/builds run.
