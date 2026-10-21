@@ -1182,15 +1182,25 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 						*Segment);
 					return false;
 				}
-				// A COUNT, PARSED AS A NUMBER. A sentence beside a number is not the number.
-				if (!Trim(Value).IsNumeric())
+				const FString CountText = Trim(Value);
+				int32 ParsedCount = 0;
+				bool bValidCount = !CountText.IsEmpty();
+				for (TCHAR Digit : CountText)
 				{
-					OutError = FString::Printf(
-						TEXT("force='%s' is not a count. force takes the number of loaded readers the ")
-						TEXT("preview reported."), *Trim(Value));
+					if (Digit < TEXT('0') || Digit > TEXT('9')
+						|| ParsedCount > (MAX_int32 - (Digit - TEXT('0'))) / 10)
+					{
+						bValidCount = false;
+						break;
+					}
+					ParsedCount = ParsedCount * 10 + (Digit - TEXT('0'));
+				}
+				if (!bValidCount)
+				{
+					OutError = TEXT("force must be an integer count from 0 to 2147483647 matching the loaded readers reported by preview.");
 					return false;
 				}
-				Change.ForceCount = FCString::Atoi(*Trim(Value));
+				Change.ForceCount = ParsedCount;
 			}
 
 			Change.Op = EFieldOp::Remove;
@@ -1426,8 +1436,8 @@ bool FTurboMCPStruct::PlanFieldEdits(const FString& InStruct, const FString& InC
 		// THE `force` VALUE IS NAMED IN THE REFUSAL, because the caller's next call is the one that works.
 		// The count is printed as the count the caller must pass and is parsed, never matched as a sentence.
 		OutError = FString::Printf(
-			TEXT("removing '%s' from %s would break %d loaded reader(s), and force=%s does not name ")
-			TEXT("that count:%s\n  Preview again with force=%d to proceed."),
+			TEXT("removing '%s' from %s may affect %d loaded dependent asset(s), and force=%s does not name ")
+			TEXT("that count:%s\n  This loaded-asset scan does not prove breakage; dependent compilation has not been run. Preview again with force=%d to proceed."),
 			*Change.Field.Name, *OutPlan.ObjectPath, Readers.Num(),
 			bNamedACount ? *FString::FromInt(Change.ForceCount) : TEXT("(not given)"),
 			*Listed, Readers.Num());
