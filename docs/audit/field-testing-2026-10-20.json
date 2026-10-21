@@ -724,7 +724,7 @@
       "owner": "FIELD-05",
       "state": "open",
       "validation": "reported",
-      "implementation_limits": "Need emitted type ID/operator class to distinguish canonical-ID mismatch from unsupported custom node; no claim fixed.",
+      "implementation_limits": "33f44d8 adds Unreal action-menu keywords to discovery below ID/title matches. Implemented, untested. Reader-to-writer operator identity remains unresolved; exact emitted ID/operator class still needed. This partial search repair does not close the issue.",
       "disposition": "reported_pending_reproduction",
       "related_issue": "X-44"
     },

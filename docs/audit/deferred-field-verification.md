@@ -397,3 +397,7 @@ Implemented / untested: 05cedc3 incorrectly passed full IDs into a hex-key helpe
 ## 2026-10-21 — Patch link omission
 
 Implemented / untested: explicit refusal of link-bearing Patch requests before mutation; avoids partial literal-only success for mixed requests. Unique non-orphaned input lookup prevents output/input same-name confusion. Verify link-only, mixed, literal-only and duplicate pin names. GC-18 remains open: native link editing via Patch is not implemented.
+
+## Operator keyword discovery — 33f44d8
+
+Implemented, untested: node search now includes Unreal action-menu keywords at lower priority than IDs/titles. No tests/build/editor run by user instruction. GC-19 stays open: writer resolution and the reported gameplay-tag operator identity are not proven fixed.
