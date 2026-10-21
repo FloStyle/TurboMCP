@@ -409,3 +409,7 @@ Implemented, untested: node search now includes Unreal action-menu keywords at l
 ## Node search coverage — c6e173a
 
 Implemented, Untested: recursive engine graph enumeration plus editor event graphs, pointer deduplication. Resolver output no longer promises native writer compatibility for all IDs. ca5bbbfc remains open for other readers/named graph resolution. No tests/build/editor run.
+
+## Nested graph resolution — 2b16d12
+
+Implemented, Untested: shared graph-name resolver enumerates engine child graphs and editor event graphs, deduplicates pointers, and refuses ambiguous lookup when caller cannot inspect a match count. Broad ca5bbbfc remains open for other readers. No tests/build/editor run. Deferred checks include duplicate nested names and targeted edits to unique nested graphs.
