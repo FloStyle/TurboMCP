@@ -82,6 +82,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	const FString& Filter,
 	const FString& Cap)
 {
+	// Validate even with an empty log. Saturate only after validating every digit:
+	// arbitrarily large positive caps request the supported maximum without overflow.
+	const FString CapText = Cap.TrimStartAndEnd();
+	int32 ShowRows = CapText.IsEmpty() ? 10 : 0;
+	for (TCHAR Digit : CapText)
+	{
+		if (Digit < TEXT('0') || Digit > TEXT('9'))
+			return TEXT("error: cap must contain positive whole-number digits only, or be empty for default 10.");
+		ShowRows = FMath::Min(50, ShowRows * 10 + (Digit - TEXT('0')));
+	}
+	if (ShowRows == 0)
+		return TEXT("error: cap must be positive; leave it empty for default 10. Maximum displayed rows is 50.");
+
 	FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
 	const TArray<FTurboMCPCallLog::FEntry> Records = Log.GetEntries();
 
@@ -104,6 +117,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	if (All.Num() == 0)
 	{
 		FString Out = TEXT("read: what the calls cost");
+		Out += TEXT("\nrow cap: maximum 50 per list; cap does not limit totals.");
 		Out += FString::Printf(TEXT("\nlog file: %s"), *Log.GetLogFilePath());
 		Out += FString::Printf(TEXT("\nrecording: %s"),
 			Log.IsEnabled() ? TEXT("on") : TEXT("OFF"));
@@ -118,31 +132,6 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	const FString SinceText = Since.TrimStartAndEnd();
 	const FString FilterText = Filter.TrimStartAndEnd();
 
-	// The cap bounds the ANSWER, not the analysis: every entry is counted and only the listed rows are
-	// truncated, so a total is never wrong because a list was short. Default 10 and capped at 50,
-	// because a cost report is a summary and a hundred rows of it is not a summary.
-	constexpr int32 DefaultShowRows = 10;
-	int32 Wanted = DefaultShowRows;
-	if (!Cap.TrimStartAndEnd().IsEmpty())
-	{
-		// *** THE SPLIT THAT MATTERS: A TYPO IS REFUSED, A NUMBER IS CLAMPED. *** The clamp at 50 below is
-		// deliberate and stays - a caller asking for a hundred rows is asking for as much as this tool will
-		// give. `banana` is not a request, and quietly answering with the default would hide the mistake.
-		if (!Cap.TrimStartAndEnd().IsNumeric())
-		{
-			return FString::Printf(
-				TEXT("error: '%s' is not a cap. Pass a whole number of rows, or leave it empty for the default ")
-				TEXT("of %d."), *Cap, DefaultShowRows);
-		}
-		Wanted = FCString::Atoi(*Cap.TrimStartAndEnd());
-		if (Wanted <= 0)
-		{
-			return FString::Printf(
-				TEXT("error: a cap of %d is not usable. Pass a positive number of rows, or leave it empty for ")
-				TEXT("the default of %d."), Wanted, DefaultShowRows);
-		}
-	}
-	const int32 ShowRows = FMath::Min(Wanted, 50);
 
 	// ---------------------------------------------------------------------------------------------
 	// FILTER, and every rejected entry is counted so the answer can say how much it did not look at.
@@ -183,6 +172,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	}
 
 	FString Out = TEXT("read: what the calls cost");
+		Out += TEXT("\nrow cap: maximum 50 per list; cap does not limit totals.");
 	Out += FString::Printf(TEXT("\nlog file: %s"), *Log.GetLogFilePath());
 	Out += FString::Printf(TEXT("\nrecording: %s"),
 		Log.IsEnabled() ? TEXT("on") : TEXT("OFF"));
@@ -375,7 +365,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 	{
 		if (Index >= ShowRows)
 		{
-			Out += FString::Printf(TEXT("\n  ... and %d more. Raise cap to see them."), ToolRows.Num() - ShowRows);
+			Out += FString::Printf(TEXT("\n  ... and %d more. Increase cap up to 50, or narrow the filter; totals include all matching calls."), ToolRows.Num() - ShowRows);
 			break;
 		}
 		const FTurboMCPCallCost::FTotal& Row = ToolRows[Index];
@@ -413,7 +403,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 		{
 			if (Index >= ShowRows)
 			{
-				Out += FString::Printf(TEXT("\n  ... and %d more. Raise cap to see them."), AssetRows.Num() - ShowRows);
+				Out += FString::Printf(TEXT("\n  ... and %d more. Increase cap up to 50, or narrow the filter; totals include all matching calls."), AssetRows.Num() - ShowRows);
 				break;
 			}
 			const FTurboMCPCallCost::FTotal& Row = AssetRows[Index];
