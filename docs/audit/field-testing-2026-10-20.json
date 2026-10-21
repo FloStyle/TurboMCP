@@ -774,6 +774,17 @@
       "implementation_limits": "e2ed536 lists old and new endpoint node IDs and pin names in successful append result.",
       "disposition": "implementation_complete_pending_verification",
       "implementation": "e2ed536"
+    },
+    {
+      "report": "2026-10-21_S3",
+      "id": "X-70",
+      "title": "Plugin build fails in tool help: incompatible JSON property map key type",
+      "owner": "FIELD-08",
+      "disposition": "implementation_complete_pending_verification",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "9f0ba2e",
+      "implementation_limits": "Replaced incompatible map copy with explicit string-key conversion into a sorted array. Addresses reported C2440 introduced by 4204098. No build or tests run; subsequent compiler errors, if any, are unknown."
     }
   ],
   "prototype": {

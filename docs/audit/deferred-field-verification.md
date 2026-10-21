@@ -453,3 +453,7 @@ Implemented, Untested: stable parameter ordering and verbatim JSON schema enums/
 ## Typed discovery defaults — 2a0d153
 
 Implemented, Untested: preserve JSON default representation, including false, zero, null, arrays/objects and explicit empty strings. 0e4658ad remains partial. No tests/build/editor run.
+
+## 2026-10-21 — X-70 build regression
+
+Source fix: `9f0ba2e`. Tool-help sorting now explicitly converts JSON keys into FString array entries, supporting FString and FSharedString storage without incompatible map assignment. Reported C2440 implementation closed; **unbuilt / untested**. No build, tests, or editor run requested. Full compilation remains unverified; report captured only the first compiler error. No engine modifications.
