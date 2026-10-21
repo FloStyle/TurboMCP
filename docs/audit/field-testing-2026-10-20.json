@@ -2,7 +2,7 @@
   "schema": 1,
   "date": "2026-10-20",
   "reviewed_source_base": "de4891209fdfa71a3e96f30ddb699c8f8315192d",
-  "limits": "All S9 requested source repairs/capabilities implemented through 2a3bf44 with conservative documented scope. No build/tests/editor execution; not runtime-certified. Positive field evidence remains scoped to 703e002. Engine connector unchanged; plugin replacement supplied.",
+  "limits": "S10 source fixes implemented at 60fc383, unbuilt_untested. S10 field evidence confirms c886c7a Sequence no-copy case, one undo and clean compile; no tests/build/editor run for new repairs. DSH remains paused.",
   "dispatch": "paused; urgent work assigned to Codex, no DSH dispatch",
   "priority_order": [
     "FIELD-05",
@@ -1360,6 +1360,72 @@
       "disposition": "implementation_complete_pending_verification",
       "implementation_limits": "Five-step source workflow enabled: read, GraphSequence preview with explicit ordered groups and value splitting, GraphSequence edit, GraphTidy edit, compile. Actual call count and accepted visual result are not field-verified.",
       "implementation": "2a3bf44"
+    },
+    {
+      "report": "2026-10-21_S10",
+      "id": "TD-24",
+      "title": "Sequence inputs need compact, pin-level columns",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "60fc383",
+      "implementation_limits": "Pure-input collisions move left into reserved columns, preserving measured pin Y. LanePitch remains configurable (280 default); measured outlines can require larger spacing. Shared impure sources are not duplicated."
+    },
+    {
+      "report": "2026-10-21_S10",
+      "id": "TD-25",
+      "title": "Sequence lane zero leaves the main execution line",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "60fc383",
+      "implementation_limits": "First connected lane aligns to its Sequence output pin; no whole-lane top normalization on lane zero."
+    },
+    {
+      "report": "2026-10-21_S10",
+      "id": "LR-15",
+      "title": "Intentional stacked Sequence lanes pollute alignment findings",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "60fc383",
+      "implementation_limits": "Only downward nonfirst Sequence outputs are excluded from exec-not-straight. First output, backwards wires and overlaps remain checked."
+    },
+    {
+      "report": "2026-10-21_S10",
+      "id": "CP-11",
+      "title": "Requested tall capture padded a small window crop",
+      "owner": "FIELD-08",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "60fc383",
+      "implementation_limits": "Explicit WxH graph/node/box/region captures now render a transient native graph at requested resolution, fit within native zoom range. No raster enlargement. Existing selection/hop and debug capture paths unchanged."
+    },
+    {
+      "report": "2026-10-21_S10",
+      "id": "X-80",
+      "title": "Sequence cleanup reduced from about 70 calls to 7",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "positive_field_evidence",
+      "implementation": "c886c7a",
+      "implementation_limits": "User field evidence only: nine independent calls; no value copies needed; unsaved. Does not validate other refactors or S10 repairs."
+    },
+    {
+      "report": "2026-10-21_S10",
+      "id": "ED-14",
+      "title": "Nine-lane Sequence edit agrees with preview, one undo, compile clean",
+      "owner": "FIELD-06",
+      "state": "done",
+      "validation": "field_tested",
+      "disposition": "positive_field_evidence",
+      "implementation": "c886c7a",
+      "implementation_limits": "User field evidence only: nine independent calls; no value copies needed; unsaved. Does not validate other refactors or S10 repairs."
     }
   ],
   "prototype": {
@@ -1673,6 +1739,15 @@
       "disposition": "implementation_complete_pending_verification",
       "implementation_limits": "Shared stage/role columns, measured pin alignment, minimum LanePitch expanded for trees, final summary placement, configurable HorizontalGap and VerticalGap. Source implementation for exclusive linear Sequence lanes; general graph safety guards retained.",
       "implementation": "2a3bf44"
+    },
+    {
+      "report": "2026-10-21_S10",
+      "id": "FT-87",
+      "proposal": "Read-only node position list",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "implementation": "60fc383",
+      "implementation_limits": "LookTurboMCPGraphPositions returns reader IDs, XY and measured width/height; capped output explicitly reports truncation."
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",

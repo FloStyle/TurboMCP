@@ -524,3 +524,9 @@ Removed nonexistent Misc/LexFromString.h and restored capture own-header-first o
 - TD-23 / FT-86: tidy uses shared stage columns for exclusive linear Sequence outputs, full-detail pin placement, expanded rows and final cross-row summary placement. Optional `HorizontalGap=120`, `VerticalGap=100`, `LanePitch=280`; bounds validated. Nonlinear/nested/merged outputs retain conservative general layout rather than semantic guesses.
 
 Field-agent workflow: read IDs; preview Sequence with explicit groups (include summary last); edit the same groups; EditGraphTidy with MainPath=auto and chosen spacing; compile. Do not use the native pin connector for replacements. A lower call count and visual acceptance are targets enabled by implementation, not measured results. Runtime rollback, undo, saved persistence, full compilation and visuals remain unverified; no tests/builds run by instruction.
+
+## S10 — 2026-10-21 (60fc383)
+
+Implemented TD-24/TD-25 compact horizontal pure-input placement and lane-zero pin alignment, LR-15 intentional Sequence fan-out filtering, CP-11 requested-resolution native graph capture, and FT-87 read-only positions. All new changes are **unbuilt_untested**, not runtime-certified. No tests/build/editor runs per user instruction. Lane pitch is a minimum when measured outlines need clearance; shared impure sources remain single and can still have long wires. Capture retains native zoom limits and reports failure instead of clipping oversized frames.
+
+S10 confirms c886c7a Sequence preview/edit agreement, nine ordered lanes, one undo, clean compile, no crash, and roughly 70 to 7 calls. Value-copy behavior, persistence, other refactors and new S10 repairs are not established by that evidence.
