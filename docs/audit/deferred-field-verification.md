@@ -989,3 +989,7 @@ Implemented, unbuilt_untested: multicast delegate operations register self-membe
 ## 2026-10-23 variable usage identity — 945771a
 
 Implemented, unbuilt_untested: local/unrelated external variable names no longer count as Blueprint member usage. Explicit references to the Blueprint class count, including dispatcher references. Output graph sets sorted. Parent a28a09fd remains open for typed shared model, widget property bindings and callback reconciliation. No tests/build/editor runs.
+
+## 2026-10-23 designer binding usage — ca921ba
+
+Implemented, unbuilt_untested: widget designer function/property-path bindings contribute references; function GUID lookup follows stock engine skeleton resolution. Binding validity and runtime execution remain explicitly unproven. Parent a28a09fd remains open for shared typed results and callback coverage. No tests/build/editor runs.
