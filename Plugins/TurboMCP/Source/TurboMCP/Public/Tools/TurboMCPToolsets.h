@@ -854,13 +854,16 @@ public:
 	 *
 	 * A widget with no generated class is refused, because an instance of it would not
 	 * run its own Construct or its own functions.
+     * Execution is per-call consent: empty/deny refuses; allow permits project code.
+     * Script effects are not sandboxed or reversible, even without a named callback.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPWidgetPreview(
 		const FString& Widget,
 		const FString& SampleValuesJson,
 		const FString& FunctionName,
-		const FString& Size);
+		const FString& Size,
+        const FString& Execution = TEXT("deny"));
 
 	/**
 	 * Capture a picture of a Blueprint's graph editor, framed one of seven ways.

@@ -63,8 +63,14 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 	const FString& Widget,
 	const FString& SampleValuesJson,
 	const FString& FunctionName,
-	const FString& Size)
+	const FString& Size,
+    const FString& Execution)
 {
+    const FString ExecutionMode = Execution.TrimStartAndEnd().ToLower();
+    if (ExecutionMode.IsEmpty() || ExecutionMode == TEXT("deny"))
+        return TEXT("error: widget rendering constructs project widgets and can execute project code. Pass Execution=allow explicitly for this call to permit construction and callbacks. External effects are not sandboxed or reversible. No widget was loaded or constructed.");
+    if (ExecutionMode != TEXT("allow"))
+        return TEXT("error: Execution accepts only empty/deny or allow; no widget was loaded or constructed.");
 	if (Widget.IsEmpty())
 	{
 		return TEXT("error: no widget given. Pass a Widget Blueprint in any path ")
@@ -168,6 +174,7 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 	}
 
 	FString Out = FString::Printf(TEXT("look: preview of %s"), *Resolved.ObjectPath);
+    Out += TEXT("\nexecution: allow; script-capable construction/callbacks. External effects are not sandboxed or reversible; this is not a passive read.");
 	Out += FString::Printf(TEXT("\nsize: %dx%d"), Width, Height);
 
 	int32 ValuesSet = 0;

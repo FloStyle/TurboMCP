@@ -77,7 +77,7 @@ def main():
     print("=== T-LOOK-5: render with the widget's own defaults ===")
     out = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                        {"widget": WIDGET, "sampleValuesJson": "",
-                        "functionName": "", "size": ""})
+                        "execution": "allow", "functionName": "", "size": ""})
     print(out)
     print()
     check("reports the widget", WIDGET in out)
@@ -115,7 +115,7 @@ def main():
     print("=== a requested size is honoured ===")
     small = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                          {"widget": WIDGET, "sampleValuesJson": "",
-                          "functionName": "", "size": "640x360"})
+                          "execution": "allow", "functionName": "", "size": "640x360"})
     check("reports the size asked for", "size: 640x360" in small)
     small_path = None
     for line in small.splitlines():
@@ -139,7 +139,7 @@ def main():
     print("=== P2: a variable that does not exist is refused with suggestions ===")
     bad_value = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                              {"widget": WIDGET, "sampleValuesJson": '{"NotAVariable": 3}',
-                              "functionName": "", "size": ""})
+                              "execution": "allow", "functionName": "", "size": ""})
     print(bad_value)
     print()
     check("counts the refusal", "0 set, 1 refused" in bad_value)
@@ -150,7 +150,7 @@ def main():
     print("=== P2: sample values must be a JSON object ===")
     bad_json = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                             {"widget": WIDGET, "sampleValuesJson": "[1,2,3]",
-                             "functionName": "", "size": ""})
+                             "execution": "allow", "functionName": "", "size": ""})
     print(bad_json)
     print()
     check("refuses an array", bad_json.startswith("error:"))
@@ -160,7 +160,7 @@ def main():
     print("=== P2: a bad size is refused by name ===")
     bad_size = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                             {"widget": WIDGET, "sampleValuesJson": "",
-                             "functionName": "", "size": "banana"})
+                             "execution": "allow", "functionName": "", "size": "banana"})
     print(bad_size)
     print()
     check("refuses", bad_size.startswith("error:"))
@@ -170,7 +170,7 @@ def main():
     print("=== a size above the limit is refused, not clamped ===")
     huge = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                         {"widget": WIDGET, "sampleValuesJson": "",
-                         "functionName": "", "size": "9000x9000"})
+                         "execution": "allow", "functionName": "", "size": "9000x9000"})
     print(huge)
     print()
     check("refuses", huge.startswith("error:"))
@@ -185,7 +185,7 @@ def main():
     print("=== a function that takes parameters is refused ===")
     with_params = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                                {"widget": WIDGET, "sampleValuesJson": "",
-                                "functionName": "SetPositionInViewport", "size": ""})
+                                "execution": "allow", "functionName": "SetPositionInViewport", "size": ""})
     print(with_params)
     print()
     check("says it was not called",
@@ -195,7 +195,7 @@ def main():
     print("=== P2: a non-widget is refused and names the class ===")
     wrong = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                          {"widget": "BP_NodeTest", "sampleValuesJson": "",
-                          "functionName": "", "size": ""})
+                          "execution": "allow", "functionName": "", "size": ""})
     print(wrong)
     print()
     check("refuses", wrong.startswith("error:"))
@@ -206,7 +206,7 @@ def main():
     print("=== a missing widget is refused ===")
     missing = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                            {"widget": "zzzznotathing", "sampleValuesJson": "",
-                            "functionName": "", "size": ""})
+                            "execution": "allow", "functionName": "", "size": ""})
     check("refuses", missing.startswith("error:"))
 
     print()
