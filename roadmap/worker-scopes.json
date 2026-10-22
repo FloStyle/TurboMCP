@@ -1068,6 +1068,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunction.cpp"
           ],
           "new_files": []
+        },
+        "nested-widget-diagnostics": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetarget.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
