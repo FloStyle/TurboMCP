@@ -723,3 +723,7 @@ Oct22 S1 X-96 partial: UFUNCTION defaults Format=read and Detail=bodies match ex
 ## Tool parameter aliases — 4ed1ddc
 
 Oct22 S1 X-96 implemented with f02c2a5 defaults. Registry wrapper maps asset/assets, toolset/toolsetName, tool/toolName and nodeId/nodeIds only to declared FString parameters when the alternate name is not separately declared. Duplicate aliases refuse before execution. Original request retained in call log; standard inner enable/filter/reflection validation remains. No tests/build/editor runs. Verify registry paths, disabled recording, schemas with UHT defaults, malformed JSON, wrong types, duplicate aliases, array tools and canonical requests. Native tools/direct C++ remain unchanged.
+
+## Tag referencer discovery — 61504f6
+
+Oct22 S1 X-93 help request implemented in both search tool declarations and docs/user/tools.md. Verified native FindReferencersByTag declaration, exact TagName parameter and searchable-name asset-registry lookup by source inspection. No tests/build/editor runs. Confirm rebuilt UHT tooltip/schema help exposes these cross-links and enabled native tool discovery on the field installation. Does not close the separate Oct22 S2 X-93 unrelated-dirty-assets defect.

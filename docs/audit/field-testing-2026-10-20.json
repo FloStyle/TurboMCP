@@ -2123,11 +2123,14 @@
       "canonical_issue": "2026-10-22_S1/X-93",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Usability (tool discovery).\n- **Observed:** The engine tag toolset has \"find referencers by tag\". It would have answered \"is this setting wired\" in one call. The agent found it only later, while adding a tag. The TurboMCP tool index does not point to it from the asset or node search help.\n- **Proposed behavior:** In the node find and asset search help, name the tag referencer tool for tag questions."
+      "observation": "- **Type:** Usability (tool discovery).\n- **Observed:** The engine tag toolset has \"find referencers by tag\". It would have answered \"is this setting wired\" in one call. The agent found it only later, while adding a tag. The TurboMCP tool index does not point to it from the asset or node search help.\n- **Proposed behavior:** In the node find and asset search help, name the tag referencer tool for tag questions.",
+      "implementation": "61504f6",
+      "implementation_limits": "Asset and node search UFUNCTION help and human tool index name the stock GameplayTagsToolset FindReferencersByTag tool, tagName parameter and registry-reference limits. Native declaration and implementation inspected; no runtime check.",
+      "remaining": ""
     },
     {
       "report": "2026-10-22_S1",
