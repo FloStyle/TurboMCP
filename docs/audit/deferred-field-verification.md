@@ -763,3 +763,7 @@ X-89/FT-93 remain open, partial, unbuilt_untested. Report now enumerates cross-b
 
 ## S16 shared execution-tail context — 0260d19
 X-89/FT-93 stay partial/open, unbuilt_untested. Body/full reads enumerate nodes reached through explicit exec links from multiple entry nodes, naming entry IDs and names. Traversal has per-entry visited sets, follows reroutes, excludes foreign graphs, and keeps full origin context for filtered views. Output is comment-only and does not alter executable graph forms. Source/API inspection only (stock TArray::Pop signature inspected); no tests/build/editor runs. Later verify merged branches, loops, reroutes, filters, large graphs and read/write round trips. Placement helper and before/after movement totals remain.
+
+
+## S16 cross-box operation totals — d4589be
+X-89/FT-93 remain open/partial, unbuilt_untested for placement proposals. Added shared side-effect-free cross-box metric with optional hypothetical rectangles. Group preview uses translated rectangles, edit recomputes after mutation; tidy reports before/after including no-op and rollback outcomes. Estimated straight-line pin model and smallest fully enclosing comment ownership match the report; counts expose changed ownership after copies or resizing. Source inspection only, no tests/build/editor runs. Later verify preview/edit parity, nested boxes, resize/copy membership, zero offset and rollback totals. Automatic placement proposals and shortened-wire explanations remain.
