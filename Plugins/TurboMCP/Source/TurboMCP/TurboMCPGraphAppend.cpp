@@ -112,22 +112,17 @@ namespace
 	}
 
 	/** The execution output that can carry a displaced continuation after an insertion. */
-	UEdGraphPin* FindExecContinuation(UEdGraphNode* InNode)
-	{
-		if (InNode == nullptr)
-		{
-			return nullptr;
-		}
-		for (UEdGraphPin* Pin : InNode->Pins)
-		{
-			if (Pin != nullptr && Pin->Direction == EGPD_Output
-				&& Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
-			{
-				return Pin;
-			}
-		}
-		return nullptr;
-	}
+    UEdGraphPin* FindExecContinuation(UEdGraphNode* InNode)
+    {
+        UEdGraphPin* Only=nullptr;
+        if(InNode) for(UEdGraphPin* Pin:InNode->Pins)
+            if(Pin && Pin->Direction==EGPD_Output && Pin->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec)
+            {
+                if(Only) return nullptr; // Branch/switch continuation must be explicit.
+                Only=Pin;
+            }
+        return Only;
+    }
 
 	/**
 	 * A requested placement must name every created form exactly once. A missing, duplicated, link-only or
@@ -1154,10 +1149,30 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			UEdGraphPin* Continuation = FromPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec
 				&& ToPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec
 				? FindExecContinuation(ToNode) : nullptr;
-			bool bContinued = Continuation != nullptr;
-			for (UEdGraphPin* OriginalTarget : ReplacedTargets)
-			{
-				if (Continuation == nullptr || OriginalTarget == nullptr || !Schema->TryCreateConnection(Continuation, OriginalTarget)
+			bool bContinued = true;
+            for (UEdGraphPin* OriginalTarget : ReplacedTargets)
+            {
+                // A named link in the submitted plan owns this target. Do not also
+                // invent a first-output continuation: that makes both branch arms run.
+                bool ExplicitTarget=false;
+                if(OriginalTarget && OriginalTarget->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec)
+                    for(const FNewLink& Requested:InPlan.Links)
+                    {
+                        UEdGraphNode* RequestedTarget=nullptr;
+                        if(Requested.ToFormIndex!=INDEX_NONE)
+                            RequestedTarget=CreatedByForm.IsValidIndex(Requested.ToFormIndex)?CreatedByForm[Requested.ToFormIndex]:nullptr;
+                        else for(UEdGraphNode* N:Graph->Nodes)
+                            if(N && TurboMCPNodeId::MakeForNode(N,true)==Requested.ToNodeKey) { RequestedTarget=N; break; }
+                        if(RequestedTarget==OriginalTarget->GetOwningNode() && Requested.ToPin==OriginalTarget->PinName.ToString())
+                        { ExplicitTarget=true; break; }
+                    }
+                if(ExplicitTarget)
+                {
+                    MovedLinkReports.Add(FString::Printf(TEXT("displaced wire target %s:%s uses its explicitly requested incoming link(s); no implicit continuation added"),
+                        *TurboMCPNodeId::MakeForNode(OriginalTarget->GetOwningNode(),true),*OriginalTarget->PinName.ToString()));
+                    continue;
+                }
+                if (Continuation == nullptr || OriginalTarget == nullptr || !Schema->TryCreateConnection(Continuation, OriginalTarget)
 					|| !HasLink(Continuation, OriginalTarget))
 				{
 					bContinued = false;
@@ -1179,7 +1194,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
                     return false;
                 }
 				OutError = FString::Printf(
-					TEXT("line %d: the new link replaced an existing chain but its continuation could not be made. ")
+					TEXT("line %d: the new link replaced an existing chain but its continuation could not be made unambiguously. Name the old target and desired branch output explicitly in the append text. ")
 					TEXT("The original chain was %s before rollback; NOTHING was written."),
 					Link.Line, bRestored ? TEXT("restored") : TEXT("NOT fully restored"));
 				return false;
@@ -1187,6 +1202,30 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		}
 		++LinksMade;
 	}
+
+    // Verify the final graph, not only each intermediate connection. A later
+    // schema connection may replace a wire that an earlier step successfully made.
+    for(const FNewLink& Requested:InPlan.Links)
+    {
+        auto ResolveEnd=[&](int32 Form,const FString& Key)->UEdGraphNode*
+        {
+            if(Form!=INDEX_NONE) return CreatedByForm.IsValidIndex(Form)?CreatedByForm[Form]:nullptr;
+            for(UEdGraphNode* N:Graph->Nodes) if(N && TurboMCPNodeId::MakeForNode(N,true)==Key) return N;
+            return nullptr;
+        };
+        UEdGraphNode* Source=ResolveEnd(Requested.FromFormIndex,Requested.FromNodeKey);
+        UEdGraphNode* Target=ResolveEnd(Requested.ToFormIndex,Requested.ToNodeKey);
+        UEdGraphPin* Output=nullptr; UEdGraphPin* Input=nullptr;
+        if(Source) for(UEdGraphPin* Pin:Source->Pins) if(Pin && Pin->Direction==EGPD_Output && Pin->PinName.ToString()==Requested.FromPin) Output=Pin;
+        if(Target) for(UEdGraphPin* Pin:Target->Pins) if(Pin && Pin->Direction==EGPD_Input && Pin->PinName.ToString()==Requested.ToPin) Input=Pin;
+        if(!HasLink(Output,Input))
+        {
+            const bool Undone=FTurboMCPRollback::EndAndUndoActiveTransaction();
+            OutError=FString::Printf(TEXT("%s: requested wire at line %d did not survive the complete edit; inspect conflicting output connections"),
+                Undone?TEXT("unchanged; rollback=complete"):TEXT("partial; rollback=failed"),Requested.Line);
+            return false;
+        }
+    }
 
 	// ---- COMPILE, THEN READ BACK AND COMPARE, which the spec demands rather than a claim of success --------
 	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
