@@ -166,6 +166,13 @@ namespace
 			if (bLinked)
 			{
 				Lines += FString::Printf(TEXT("  -> %d link(s)"), Pin->LinkedTo.Num());
+                for(const UEdGraphPin* Other:Pin->LinkedTo)
+                {
+                    if(!Other || !Other->GetOwningNodeUnchecked()) { Lines+=TEXT(" [invalid endpoint]"); continue; }
+                    Lines+=FString::Printf(TEXT(" [%s:%s %s]"),
+                        *TurboMCPNodeId::MakeForNode(Other->GetOwningNodeUnchecked(),true),
+                        *Other->PinName.ToString(),Other->Direction==EGPD_Input?TEXT("input"):TEXT("output"));
+                }
 			}
             else if (Pin->DefaultObject)
                 Lines += FString::Printf(TEXT("  = object:%s"), *Pin->DefaultObject->GetPathName());

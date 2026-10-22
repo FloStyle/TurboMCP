@@ -49,7 +49,7 @@ namespace
 	constexpr int32 MaxDescribeAssets = 25;
 
 	/** Characters a query may be split on, besides spaces. */
-	const TCHAR* QuerySeparators = TEXT(" \t");
+
 
 	/** A search filter prefix, so `type:Material` and `path:/Game/UI` work. */
 	const TCHAR* TypeFilterPrefix = TEXT("type:");
@@ -82,15 +82,15 @@ namespace
 		FParsedQuery Parsed;
 
 		TArray<FString> Tokens;
-		InQuery.ParseIntoArray(Tokens, QuerySeparators, /*InCullEmpty=*/true);
+		InQuery.ParseIntoArrayWS(Tokens);
 
 		for (const FString& Token : Tokens)
 		{
-			if (Token.StartsWith(TypeFilterPrefix, ESearchCase::IgnoreCase))
+			if (Token.StartsWith(TypeFilterPrefix, ESearchCase::IgnoreCase) || Token.StartsWith(TEXT("class:"), ESearchCase::IgnoreCase))
 			{
 				// Filters may appear at any position, and a later one wins so a
 				// caller can correct itself within one query.
-				Parsed.TypeFilter = Token.RightChop(FCString::Strlen(TypeFilterPrefix));
+				Parsed.TypeFilter = Token.RightChop(Token.StartsWith(TEXT("class:"), ESearchCase::IgnoreCase)?6:FCString::Strlen(TypeFilterPrefix));
 				if (Parsed.TypeFilter.IsEmpty()) { Parsed.Error = TEXT("error: type: needs a class name, for example type:Blueprint."); return Parsed; }
 			}
 			else if (Token.StartsWith(PathFilterPrefix, ESearchCase::IgnoreCase))
@@ -100,7 +100,7 @@ namespace
 			}
 			else if (Token.Contains(TEXT(":")))
 			{
-				Parsed.Error = FString::Printf(TEXT("error: unsupported query filter '%s'. Use type:ClassName or path:/Game/Folder; class: is not supported. Filters may appear before or after search words."), *Token);
+				Parsed.Error = FString::Printf(TEXT("error: unsupported query filter '%s'. Use type:ClassName or path:/Game/Folder; class: is an alias for type:. Filters may appear before or after search words."), *Token);
 				return Parsed;
 			}
 			else
