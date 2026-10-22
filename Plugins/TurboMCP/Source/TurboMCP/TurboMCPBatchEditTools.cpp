@@ -146,7 +146,12 @@ FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
    const FTransaction* Current = CurrentIndex >= 0 ? Buffer->GetTransaction(CurrentIndex) : nullptr;
    const bool bRolledBack = OwnedId.IsValid() && Buffer->ActiveCount == 0
     && Current && Current->GetId() == OwnedId && GEditor->UndoTransaction(false);
-   return FString::Printf(TEXT("%s\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollback=%s\nerror=%s"), bRolledBack ? TEXT("unchanged") : TEXT("partial"), *Op.Id, *Op.Kind, *FString::Join(Applied, TEXT(",")), bRolledBack ? TEXT("complete") : TEXT("failed"), *Error);
+   // The failing operation may have changed the graph before returning false.
+   // Include it in the attempted rollback scope; UndoTransaction alone is not
+   // a graph read-back verification, so never promise unchanged state here.
+   TArray<FString> Attempted = Applied;
+   Attempted.Add(Op.Id);
+   return FString::Printf(TEXT("partial\nfailed id=%s kind=%s\nappliedBeforeFailure=%s\nrollbackScope=%s\nrollback=%s\nrestoration=unverified\nretry=inspect_graph_before_retry\nerror=%s"), *Op.Id, *Op.Kind, *FString::Join(Applied, TEXT(",")), *FString::Join(Attempted, TEXT(",")), bRolledBack ? TEXT("undo_applied") : TEXT("not_confirmed"), *Error);
   }
   Applied.Add(Op.Id);
  }
