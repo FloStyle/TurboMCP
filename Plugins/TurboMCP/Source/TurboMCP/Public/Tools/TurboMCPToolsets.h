@@ -1346,6 +1346,13 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
+    /** Preview a Create Event node bound to a named self function and connect it to the exact delegate input.
+     * Signature must match. Replaces that input's previous source. Uses transient preview and owned undo;
+     * does not create the function, compile or save. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName);
+
+
 
     /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
     UFUNCTION(meta = (AICallable))
@@ -2182,6 +2189,13 @@ public:
     /** Remove exact nodes and links with scratch preview and one undo. Nodes is a JSON array of reader node IDs. Links is a JSON array of objects with sourceNodeId, sourcePin, targetNodeId, targetPin. Use [] for either unused list. Node deletion also removes incident links; other nodes/positions are preserved. No automatic reconnection, compile or save. */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
+
+    /** Edit a Create Event node bound to a named self function and connect it to the exact delegate input.
+     * Signature must match. Replaces that input's previous source. Uses transient preview and owned undo;
+     * does not create the function, compile or save. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName);
+
 
 
     /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
