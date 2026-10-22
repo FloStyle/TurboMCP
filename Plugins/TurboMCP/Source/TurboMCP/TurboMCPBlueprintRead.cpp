@@ -33,6 +33,7 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "UObject/Class.h"
 #include "UObject/UnrealType.h"
+#include "WidgetBlueprint.h"
 
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPGraphText.h"
@@ -680,6 +681,45 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 		}
 	}
 
+#if WITH_EDITORONLY_DATA
+	if (const UWidgetBlueprint* WidgetBlueprint = Cast<UWidgetBlueprint>(InBlueprint))
+	{
+		for (const FDelegateEditorBinding& Binding : WidgetBlueprint->Bindings)
+		{
+			const FString Site = FString::Printf(TEXT("widget binding %s.%s"), *Binding.ObjectName, *Binding.PropertyName.ToString());
+			FName BoundFunction = Binding.FunctionName;
+			if (Binding.Kind == EBindingKind::Function && Binding.MemberGuid.IsValid())
+			{
+				// Match the engine's GUID-based rename resolution without compiling.
+				BoundFunction = WidgetBlueprint->SkeletonGeneratedClass
+					? UBlueprint::GetFieldNameFromClassByGuid<UFunction>(WidgetBlueprint->SkeletonGeneratedClass, Binding.MemberGuid) : NAME_None;
+			}
+			if (Binding.Kind == EBindingKind::Function && !BoundFunction.IsNone())
+				CalledFunctions.Add(BoundFunction.ToString());
+			if (Binding.Kind == EBindingKind::Property && Binding.SourcePath.IsEmpty() && !Binding.SourceProperty.IsNone())
+				ReadersByVariable.FindOrAdd(Binding.SourceProperty.ToString()).Add(Site);
+			for (const FEditorPropertyPathSegment& Segment : Binding.SourcePath.Segments)
+			{
+				const FFieldVariant Member = Segment.GetMember();
+				if (const UFunction* Function = Cast<UFunction>(Member.ToUObject()))
+				{
+					const UClass* OwnerClass = Function->GetOuterUClass();
+					if (OwnerClass && OwnerClass->ClassGeneratedBy == InBlueprint)
+						CalledFunctions.Add(Function->GetName());
+				}
+				else if (const FProperty* Property = CastField<FProperty>(Member.ToField()))
+				{
+					const UClass* OwnerClass = Property->GetOwnerClass();
+					if (OwnerClass && OwnerClass->ClassGeneratedBy == InBlueprint)
+						ReadersByVariable.FindOrAdd(Property->GetName()).Add(Site);
+				}
+			}
+			DelegateSites.Add(FString::Printf(TEXT("%s -> function=%s sourceProperty=%s sourcePath=%s; asset-wide designer declaration, validity/runtime invocation not inferred"),
+				*Site, *BoundFunction.ToString(), *Binding.SourceProperty.ToString(), *Binding.SourcePath.GetDisplayText().ToString()));
+		}
+	}
+#endif
+
 	FString Out;
 
 	// The filter narrows the graphs the relations were collected from, so the
@@ -728,7 +768,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
     }
 
     DelegateSites.Sort();
-    Out += FString::Printf(TEXT("\ndelegate binding sites (scanned scope: %d/%d graphs; references/connections, not proof of runtime invocation):"), InGraphs.Num(), InTotalGraphCount);
+    Out += FString::Printf(TEXT("\ndelegate binding sites (scanned scope: %d/%d graphs; graph references plus asset-wide designer bindings; not proof of runtime invocation):"), InGraphs.Num(), InTotalGraphCount);
     if(DelegateSites.IsEmpty()) Out += TEXT("\n  none found");
     for(const FString& Site:DelegateSites) Out += TEXT("\n  ")+Site;
 
