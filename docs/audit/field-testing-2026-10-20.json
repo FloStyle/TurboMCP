@@ -2374,16 +2374,18 @@
       "canonical_issue": "getter-owner-resolution",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partially_implemented",
+      "disposition": "implemented_untested",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
       "observation": "- **Type:** Defect.\n- **Scenario:** A widget child was just marked as a variable. The Blueprint was not compiled yet. Another widget class has a variable with the same name.\n- **Reproduction status:** Observed once in this session.\n- **Steps to reproduce:**\n  1. Mark a widget child as a variable.\n  2. Without a compile, append 3 getters of that variable in the short variable form, each feeding a call.\n- **Observed:** The preview and the edit both passed. All 3 getters targeted the other widget class. The next compile failed with 6 errors.\n- **Expected:** A false pass is not acceptable. The getter targets this Blueprint, or the preview refuses the ambiguous name.\n- **Impact:** 3 nodes deleted and created again with engine tools, plus 3 connects and 2 compiles.\n- **State after:** Fixed in memory, then compiled clean and saved.\n- **Workaround:** Engine node create with the type ID that names this Blueprint. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** The preview prints the class each variable node targets and refuses a target outside the Blueprint and its parents.",
-      "implementation": "5621ddd",
+      "implementation": "Discovery supplements reflected actions with variable-enabled widgets in the current WidgetTree. Creates typed self-member getters and emits matching owner-qualified reader IDs without compiling. Existing exact reflected actions retain precedence.",
       "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone.",
       "owner_readback_commit": "2a9d55e",
       "owner_readback": "Probe and live spawn verify member name and declaring property owner against the selected action; generated/skeleton classes normalize by Blueprint. Mismatched created nodes are removed before linking.",
-      "remaining": "Uncompiled widget member discovery and alternate owner aliases remain unresolved; no claim of full getter capability coverage."
+      "remaining": "Uncompiled widget member discovery and alternate owner aliases remain unresolved; no claim of full getter capability coverage.",
+      "fix_commit": "683bf51",
+      "verification_debt": "Build, uncompiled designer widget append, subsequent compile/reconstruction and reader round-trip untested."
     },
     {
       "report": "2026-10-22_S2",

@@ -647,3 +647,6 @@ Added combined layout text, ten longest wires with exact endpoints and full-grap
 
 ## LR-18/LR-19 alignment tolerance (2026-10-22)
 Human report tools default to 64 units; configurable 0..1024 with strict 8 available. Internal measurement defaults unchanged. Unbuilt/untested: schema, offset boundary values, overlap/backward findings and comparison with accepted field layouts.
+
+## GC-33 current designer getter discovery (2026-10-22)
+Live WidgetTree variable declarations supplement missing reflected actions; getter uses explicit object type and self member, reader preserves owner-qualified ID. Unbuilt/untested: native/user-widget types, same names across assets, compile/reconstruction, rename and append/undo. No compilation or editor runs performed.
