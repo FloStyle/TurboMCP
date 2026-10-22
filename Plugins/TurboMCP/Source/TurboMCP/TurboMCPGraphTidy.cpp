@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPGraphTidy.h"
+#include "TurboMCPGraphScratch.h"
 #include "Misc/Paths.h"
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
@@ -172,7 +173,6 @@ namespace
     }
     TMap<const UEdGraphNode*, FVector2D> CachedAlignmentNodeSizes;
     TMap<const UEdGraphPin*, FVector2D> MeasuredPinOffsets;
-    TWeakPtr<SGraphEditor> AlignmentEditor;
     TWeakObjectPtr<UEdGraph> AlignmentGraph;
 
 	/** Case-folded, whitespace-trimmed comparison, matching the other graph tools. */
@@ -434,89 +434,75 @@ namespace
 		return false;
 	}
 
-    // Most K2 nodes do not persist Slate geometry in NodeWidth/NodeHeight.
-    // Read the graph panel's measured bounds into this plan, never into the asset.
+    // Measure a transient copy: never change a live editor's zoom, focus or paint caches.
     bool EnsureMeasuredNodeOutlines(UBlueprint* Blueprint, UEdGraph* Graph,
         TMap<const UEdGraphNode*, FVector2D>& Sizes, FString& Error)
     {
-        CachedAlignmentNodeSizes.Reset(); MeasuredPinOffsets.Reset(); AlignmentGraph.Reset();
-        auto Collect = [&](const TSharedPtr<SGraphEditor>& Panel)
+        Sizes.Reset(); CachedAlignmentNodeSizes.Reset(); MeasuredPinOffsets.Reset(); AlignmentGraph.Reset();
+        if (!Blueprint || !Graph) { Error = TEXT("graph measurement context unavailable"); return false; }
+        if (!FSlateApplication::IsInitialized())
         {
-            Sizes.Reset();
-            if (Panel.IsValid()) { AlignmentEditor=Panel; AlignmentGraph=Graph; }
-            for (const UEdGraphNode* Node : Graph->Nodes)
-            {
-                if (!Node) continue;
-                FSlateRect Bounds;
-                if (Panel.IsValid() && Panel->GetBoundsForNode(Node, Bounds, 0.f)
-                    && Bounds.Right > Bounds.Left && Bounds.Bottom > Bounds.Top)
-                    Sizes.Add(Node, FVector2D(Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top));
-                else if (Node->NodeWidth > 0 && Node->NodeHeight > 0)
-                    Sizes.Add(Node, FVector2D(Node->NodeWidth, Node->NodeHeight));
-                else return false;
-            }
-            return true;
-        };
-        if ((!GEditor || !FSlateApplication::IsInitialized()) && Collect(nullptr)) return true;
-        if (!GEditor || !FSlateApplication::IsInitialized())
-        {
-            Error = TEXT("Tidy needs a graphical editor to measure node outlines; no nodes moved.");
-            return false;
-        }
-        UAssetEditorSubsystem* Editors = GEditor->GetEditorSubsystem<UAssetEditorSubsystem>();
-        if (!Editors) { Error = TEXT("Asset editor subsystem unavailable; no nodes moved."); return false; }
-        Editors->OpenEditorForAsset(Blueprint);
-        IAssetEditorInstance* Instance = Editors->FindEditorForAsset(Blueprint, false);
-        if (!Instance || (Instance->GetEditorName() != FName(TEXT("BlueprintEditor"))
-            && Instance->GetEditorName() != FName(TEXT("WidgetBlueprintEditor"))))
-        {
-            Error = TEXT("Asset did not open a supported Blueprint editor; no unsafe editor cast attempted.");
-            return false;
-        }
-        FBlueprintEditor* Editor = static_cast<FBlueprintEditor*>(Instance);
-        TSharedPtr<SGraphEditor> Panel = Editor->OpenGraphAndBringToFront(Graph);
-        if (!Panel.IsValid()) { Error = TEXT("Graph panel unavailable; no nodes moved."); return false; }
-        FVector2f SavedView; float SavedZoom; Panel->GetViewLocation(SavedView,SavedZoom);
-        auto RestoreMeasuredView = [&]()
-        {
-            Panel->SetViewLocation(SavedView, SavedZoom);
-            // Measurement ticks at unity zoom. Discard cached layout/paint from
-            // that temporary view so normal Slate rendering uses the restored LOD.
             for (const UEdGraphNode* Node : Graph->Nodes)
                 if (Node)
-                    if (const TSharedPtr<SGraphNode> Widget = Panel->GetGraphPanel()->GetNodeWidgetFromGuid(Node->NodeGuid))
-                        Widget->Invalidate(EInvalidateWidgetReason::Layout | EInvalidateWidgetReason::Paint);
-            Panel->GetGraphPanel()->Invalidate(EInvalidateWidgetReason::Layout | EInvalidateWidgetReason::Paint);
-            Panel->Invalidate(EInvalidateWidgetReason::Layout | EInvalidateWidgetReason::Paint);
-        };
-        Panel->SetViewLocation(SavedView,1.0f);
-        Panel->GetGraphPanel()->Update();
-        for (int32 Attempt = 0; Attempt < 8; ++Attempt)
-        {
-            Panel->SlatePrepass(1.0f);
-            FSlateApplication::Get().Tick(ESlateTickType::All);
-            if (Attempt < 2) continue;
-            if (Collect(Panel))
-            {
-                CachedAlignmentNodeSizes=Sizes; MeasuredPinOffsets.Reset();
-                for(UEdGraphNode* Node:Graph->Nodes) if(Node)
                 {
-                    const TSharedPtr<SGraphNode> Widget=Panel->GetGraphPanel()->GetNodeWidgetFromGuid(Node->NodeGuid);
-                    if(!Widget.IsValid()) continue;
-                    for(UEdGraphPin* Pin:Node->Pins) if(Pin)
-                    {
-                        const TSharedPtr<SGraphPin> PW=Widget->FindWidgetForPin(Pin);
-                        if(PW.IsValid() && PW->GetTickSpaceGeometry().GetLocalSize().Y>0)
-                            MeasuredPinOffsets.Add(Pin,FVector2D(PW->GetNodeOffset()));
-                    }
+                    if (Node->NodeWidth <= 0 || Node->NodeHeight <= 0)
+                    { Error = TEXT("Tidy needs Slate to measure missing node outlines; no nodes moved."); Sizes.Reset(); return false; }
+                    Sizes.Add(Node, FVector2D(Node->NodeWidth, Node->NodeHeight));
                 }
-                RestoreMeasuredView();
-                return true;
+            CachedAlignmentNodeSizes = Sizes; AlignmentGraph = Graph;
+            return true;
+        }
+        TGuardValue<ITransaction*> SuppressScratchUndo(GUndo, nullptr);
+        TurboMCPGraphScratch::FCopy Scratch;
+        if (!Scratch.Init(Blueprint, Graph)) { Error = TEXT("transient measurement graph unavailable"); return false; }
+        // Stack only the throwaway nodes at the viewport origin. Every widget gets
+        // full-detail layout without scrolling/ticking the live editor, even for
+        // graphs whose real nodes are thousands of units outside the viewport.
+        for (UEdGraphNode* Node : Scratch.Graph->Nodes)
+            if (Node) Node->NodePosX = Node->NodePosY = 0;
+        const TSharedRef<SGraphEditor> View = SNew(SGraphEditor).GraphToEdit(Scratch.Graph).IsEditable(false).ShowGraphStateOverlay(false);
+        const FVector2D Canvas(2048, 2048);
+        TStrongObjectPtr<UTextureRenderTarget2D> Target(FWidgetRenderer::CreateTargetFor(Canvas, TF_Bilinear, true));
+        if (!Target.IsValid()) { Error = TEXT("measurement render target unavailable"); return false; }
+        FWidgetRenderer Renderer(true);
+        View->GetGraphPanel()->Update();
+        View->SetViewLocation(FVector2f::ZeroVector, 1.0f);
+        for (int32 Pass = 0; Pass < 3; ++Pass)
+        {
+            View->SlatePrepass(1.0f);
+            Renderer.DrawWidget(Target.Get(), View, Canvas, 0.0f);
+        }
+        TMap<const UEdGraphPin*, FVector2D> PinOffsets;
+        for (const UEdGraphNode* Node : Graph->Nodes)
+        {
+            if (!Node) continue;
+            UEdGraphNode* Copy = TurboMCPGraphScratch::ByGuid(Scratch.Graph, Node->NodeGuid);
+            FSlateRect Bounds;
+            if (!Copy || !View->GetBoundsForNode(Copy, Bounds, 0.f)
+                || !FMath::IsFinite(Bounds.Right - Bounds.Left) || !FMath::IsFinite(Bounds.Bottom - Bounds.Top)
+                || Bounds.Right <= Bounds.Left || Bounds.Bottom <= Bounds.Top)
+            { Error = TEXT("some scratch graph widgets have no measured bounds; no nodes moved"); Sizes.Reset(); return false; }
+            Sizes.Add(Node, FVector2D(Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top));
+            const TSharedPtr<SGraphNode> Widget = View->GetGraphPanel()->GetNodeWidgetFromGuid(Copy->NodeGuid);
+            if (!Widget.IsValid()) continue;
+            for (const UEdGraphPin* Pin : Node->Pins)
+            {
+                if (!Pin) continue;
+                for (UEdGraphPin* CopyPin : Copy->Pins)
+                    if (CopyPin && CopyPin->PinId == Pin->PinId)
+                    {
+                        const TSharedPtr<SGraphPin> PinWidget = Widget->FindWidgetForPin(CopyPin);
+                        if (PinWidget.IsValid() && PinWidget->GetTickSpaceGeometry().GetLocalSize().Y > 0)
+                        {
+                            const FVector2D Offset(PinWidget->GetNodeOffset());
+                            if (FMath::IsFinite(Offset.X) && FMath::IsFinite(Offset.Y)) PinOffsets.Add(Pin, Offset);
+                        }
+                        break;
+                    }
             }
         }
-        RestoreMeasuredView();
-        Error = TEXT("Some graph widgets still have no measured bounds. Let the editor draw the graph and retry; no nodes moved.");
-        return false;
+        CachedAlignmentNodeSizes = Sizes; MeasuredPinOffsets = MoveTemp(PinOffsets); AlignmentGraph = Graph;
+        return true;
     }
 
 }
