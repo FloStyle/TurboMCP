@@ -852,3 +852,7 @@ Source `3158a91`: ancestry traversal replaces numeric lane order so nested branc
 Source `e3ee332`: Tidy measures a transient duplicate in an offscreen Slate view, mapping node GUIDs and pin IDs back to original objects. No live editor open/focus/zoom changes or application-wide Slate ticks. Source/API inspection only; unbuilt/untested. Later verify compact nodes, nested comments, pin geometry, large graphs, dirty/undo isolation and CP-14 appearance.
 
 User diagram resolves the input-layout priority: straight exec-pin row; pure getters immediately left of consumer data pins, below the exec wire, not forcibly below the whole consumer body. Existing consumer-bottom floors must be corrected; TD-30/X-86/TD-39 remain open.
+
+## User diagram: pure readers alongside consumer (91069f0)
+
+Implemented incoming exec-pin clearance instead of whole-node-bottom clearance in generic, Sequence and copied-reader placement and structural scoring. Source/API inspected; no tests, build or editor runs. Deferred: compact/tall input offsets, nested branches, comment containment, copied-reader pin alignment and preview/apply visual parity. Aggregate layout items remain open for complete recipe audit.

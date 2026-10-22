@@ -1774,7 +1774,9 @@
       "nested_band_commit": "3158a91",
       "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
       "input_needed": "Resolved by user diagram 2026-10-23: exec pins share a straight row; getters sit immediately left of their consumer at data-input pin height, below the exec wire rather than below the entire consumer body.",
-      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png"
+      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png",
+      "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
+      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit."
     },
     {
       "report": "2026-10-21_S15",
@@ -2570,7 +2572,9 @@
       "nested_band_commit": "3158a91",
       "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
       "input_needed": "Resolved by user diagram 2026-10-23: exec pins share a straight row; getters sit immediately left of their consumer at data-input pin height, below the exec wire rather than below the entire consumer body.",
-      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png"
+      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png",
+      "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
+      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit."
     },
     {
       "report": "2026-10-22_S2",
@@ -3354,7 +3358,9 @@
       "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
       "input_needed": "Resolved by user diagram 2026-10-23: exec pins share a straight row; getters sit immediately left of their consumer at data-input pin height, below the exec wire rather than below the entire consumer body.",
       "remaining": "Replace consumer-bottom pure input floors with the user-confirmed exec-wire/data-pin layout. Keep collision avoidance and nested branch bands. Source implementation pending.",
-      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png"
+      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png",
+      "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
+      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit."
     },
     {
       "report": "2026-10-21_S15",
