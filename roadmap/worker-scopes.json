@@ -574,6 +574,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComment.cpp"
           ],
           "new_files": []
+        },
+        "p0-targeted-remove": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
