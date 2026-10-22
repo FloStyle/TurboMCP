@@ -20,6 +20,7 @@
 #include "GameFramework/Actor.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_CreateDelegate.h"
 #include "K2Node_Event.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_Variable.h"
@@ -510,6 +511,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	/** graph name -> the functions it calls */
 	TMap<FString, TSet<FString>> CallsByGraph;
 	TMap<FString, TArray<FString>> CallerSites;
+    TArray<FString> DelegateSites;
 	/** variable -> the graphs that write it */
 	TMap<FString, TSet<FString>> WritersByVariable;
 	/** variable -> the graphs that read it */
@@ -545,6 +547,31 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 				continue;
 			}
 			++NodesScanned;
+            FString DelegateTarget;
+            bool OwnDelegateTarget=false;
+            if(const UK2Node_CreateDelegate* Delegate=Cast<UK2Node_CreateDelegate>(Node))
+            {
+                UClass* Scope=Delegate->GetScopeClass();
+                const FName Function=Delegate->GetFunctionName();
+                if(!Function.IsNone())
+                {
+                    DelegateTarget=(Scope?Scope->GetPathName():TEXT("[unresolved object class]"))+TEXT(".")+Function.ToString();
+                    OwnDelegateTarget=Scope && Scope->ClassGeneratedBy==InBlueprint;
+                }
+            }
+            else if(const UK2Node_CustomEvent* Event=Cast<UK2Node_CustomEvent>(Node))
+            { DelegateTarget=InBlueprint->GetPathName()+TEXT(".")+Event->CustomFunctionName.ToString(); OwnDelegateTarget=true; }
+            if(!DelegateTarget.IsEmpty())
+                for(const UEdGraphPin* P:Node->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==UEdGraphSchema_K2::PC_Delegate)
+                    for(const UEdGraphPin* Consumer:P->LinkedTo) if(Consumer && Consumer->GetOwningNodeUnchecked())
+                    {
+                        DelegateSites.Add(FString::Printf(TEXT("%s bound via %s.%s -> %s.%s; binding entry=%s; runtime invocation not inferred"),
+                            *DelegateTarget,*TurboMCPNodeId::MakeForNode(Node,true),*P->PinName.ToString(),
+                            *TurboMCPNodeId::MakeForNode(Consumer->GetOwningNodeUnchecked(),true),*Consumer->PinName.ToString(),*CallerRoots(Consumer->GetOwningNodeUnchecked())));
+                        if(OwnDelegateTarget)
+                            if(const UK2Node_CreateDelegate* Delegate=Cast<UK2Node_CreateDelegate>(Node)) CalledFunctions.Add(Delegate->GetFunctionName().ToString());
+                    }
+
 
 			if (const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
 			{
@@ -638,6 +665,11 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
         TArray<FString>& Sites = CallerSites[Callee]; Sites.Sort();
         for (const FString& Site : Sites) Out += TEXT("\n    called from: ") + Site;
     }
+
+    DelegateSites.Sort();
+    Out += TEXT("\ndelegate binding sites (whole Blueprint; graph connections, not proof of runtime invocation):");
+    if(DelegateSites.IsEmpty()) Out += TEXT("\n  none found");
+    for(const FString& Site:DelegateSites) Out += TEXT("\n  ")+Site;
 
 	// Variable map, in the Blueprint's own variable order so it matches the
 	// variables section above.
