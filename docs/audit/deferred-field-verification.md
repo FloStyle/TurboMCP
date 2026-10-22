@@ -606,3 +606,7 @@ ED-18/FT-98 implemented, unbuilt_untested. New Preview/EditTurboMCPGraphRemove r
 ## P0 append continuation — 06aa485
 
 Partial, unbuilt_untested. Continuation=all traverses only newly created reachable exec nodes to unconnected exits after submitted links. label:pin selects a new node output. Failed resolution rolls back; explicit incoming target links take precedence. Preview states it does not yet dry-run exit resolution. Full parity/exact pre-disclosure remain open. No tests/build/editor runs.
+
+## P0 graph pages — ac0ee60
+
+GL-19 partial, unbuilt_untested. Offset/MaxChars/Revision retrieve complete rendered text; stale tokens refuse and partial pages cannot be written back standalone. Event/function entry filtering remains open. No tests/build/editor runs.
