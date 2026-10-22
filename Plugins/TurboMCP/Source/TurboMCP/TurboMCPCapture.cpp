@@ -752,7 +752,15 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 
     // Explicit picture dimensions render native Slate at that resolution. The live
     // editor's window size must not limit the available graph pixels (S10 CP-11).
-    if(!Size.TrimStartAndEnd().IsEmpty() && (bWholeGraph || bOneBox || bOneNode || bRegion))
+    // Selector Size is a hop count, not a resolution. Derive its independent
+    // canvas from only the resolved target bounds, never the whole graph extent.
+    if (bNewSelector)
+    {
+        const double SelectorScale = FMath::Min(1.0, static_cast<double>(MaxEdge) / FMath::Max(FrameWidth + 64.0, FrameHeight + 64.0));
+        Width = FMath::Clamp(FMath::CeilToInt((FrameWidth + 64.0) * SelectorScale), 256, MaxEdge);
+        Height = FMath::Clamp(FMath::CeilToInt((FrameHeight + 64.0) * SelectorScale), 256, MaxEdge);
+    }
+    if(bNewSelector || (!Size.TrimStartAndEnd().IsEmpty() && (bWholeGraph || bOneBox || bOneNode || bRegion)))
     {
         TurboMCPGraphScratch::FCopy CaptureCopy;
         if(!CaptureCopy.Init(Blueprint,Graph)) return TEXT("error: capture scratch graph unavailable");
@@ -798,7 +806,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
         IFileManager::Get().MakeDirectory(*PictureFolder,true);
         const FString PicturePath=FPaths::ConvertRelativePathToFull(PictureFolder/FString::Printf(TEXT("%s_%s_native_%dx%d.png"),*Blueprint->GetName(),*Graph->GetName(),Width,Height));
         if(PicturePng.IsEmpty() || !FFileHelper::SaveArrayToFile(PicturePng,*PicturePath)) return TEXT("error: capture PNG could not be saved");
-        return FString::Printf(TEXT("native graph capture: %dx%d; zoom %.3f; independent of editor window size; no raster upscaling\nimage: %s"),Width,Height,NativeZoom,*PicturePath);
+        return FString::Printf(TEXT("native graph capture: %dx%d; zoom %.3f; independent of editor window size; no raster upscaling\nframed: %s\n%s\nimage: %s"),Width,Height,NativeZoom,*FrameLabel,*SelectorDefinition,*PicturePath);
     }
 
 	// The graph editor, opened if it is not already.
