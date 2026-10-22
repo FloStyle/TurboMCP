@@ -1762,14 +1762,17 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "reported_pending_source_review",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
       "observation": "- **Type:** Limitation.\r\n- **Observed:** Both tidies passed the gate and matched the preview. Both results still needed a hand pass. About 22 TurboMCP calls for two small graphs.\r\n- **Expected:** Small graphs come out of one tidy call in the user's style.\r\n\r\n## 2. Tool observations\r\n\r\n### Tidy",
       "input_band_commit": "f2f3495",
       "input_band_progress": "Per-lane input floors and measured cluster reservations replace the global below-all-lanes fallback; inputs choose consumers within their assigned lane.",
       "remaining": "Remaining review: order sibling input columns by consumer pin to reduce crossings, ensure shared expressions/copies stay near their consumers, and audit aggregate small-graph output. Keep open; per-lane bands alone do not prove crossing-free layout.",
       "copy_placement_commit": "9fd395b",
-      "copy_placement_progress": "Shared reader copies consider nearby free columns on the consumer input side, choose the shortest pin connection among collision-cleared candidates, retain below-consumer floors and comment membership/growth guards."
+      "copy_placement_progress": "Shared reader copies consider nearby free columns on the consumer input side, choose the shortest pin connection among collision-cleared candidates, retain below-consumer floors and comment membership/growth guards.",
+      "nested_band_commit": "3158a91",
+      "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
+      "input_needed": "Asked 2026-10-23 to resolve S13 pin-level pure input alignment versus S15/S2 below-exec-row priority when both cannot fit. Current implementation prioritizes below-row input bands. Continue independent work while awaiting answer."
     },
     {
       "report": "2026-10-21_S15",
@@ -2552,7 +2555,7 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
       "observation": "- **Type:** Limitation.\n- **Scenario:** One function with 15 nodes, one branch and 3 getters.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Tidy the function after the append.\n  2. Capture the graph.\n- **Observed:** Wire length went down. One getter fed a call from far below and crossed another wire. A pure node sat on the exec row.\n- **Expected:** The user's layout rules: pure nodes below the exec row, next to their consumer.\n- **Impact:** 2 hand position calls and 2 captures.\n- **State after:** Positions fixed and saved.\n- **Workaround:** Hand positions. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None.",
       "input_band_commit": "f2f3495",
@@ -2561,7 +2564,10 @@
       "input_order_commit": "899076f",
       "input_order_progress": "Pure inputs traverse consumer-first in native input-pin Y order with a stable source-index tie break. Placement retains the chosen consumer, avoiding insertion-order inversion.",
       "copy_placement_commit": "9fd395b",
-      "copy_placement_progress": "Shared reader copies consider nearby free columns on the consumer input side, choose the shortest pin connection among collision-cleared candidates, retain below-consumer floors and comment membership/growth guards."
+      "copy_placement_progress": "Shared reader copies consider nearby free columns on the consumer input side, choose the shortest pin connection among collision-cleared candidates, retain below-consumer floors and comment membership/growth guards.",
+      "nested_band_commit": "3158a91",
+      "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
+      "input_needed": "Asked 2026-10-23 to resolve S13 pin-level pure input alignment versus S15/S2 below-exec-row priority when both cannot fit. Current implementation prioritizes below-row input bands. Continue independent work while awaiting answer."
     },
     {
       "report": "2026-10-22_S2",
@@ -3337,10 +3343,13 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-21_S13_TurboMCP_branch-graph-hand-layout.md",
-      "observation": "- **Type:** Proposal.\r\n- **Observed:** The hand layout used these steps. The user said the result was not too bad.\r\n  1. Put the entry and every exec node of the main path on one row.\r\n  2. For each branch, keep the first output on the main row. Put the other output lane one band below the main row data inputs.\r\n  3. Put a merge target on the main row, after both lanes.\r\n  4. Put each pure input in a column to the left of its consumer, level with the target pin. Nested inputs go one more column to the left.\r\n  5. Leave about 120 to 200 units between exec nodes, and more when the inputs need columns.\r\n  6. Size each band by its tallest data input cluster, not by a fixed pitch.\r\n- **Proposed behavior:** Use this recipe as the default for graphs with no comment box.\r\n\r\n### Capture"
+      "observation": "- **Type:** Proposal.\r\n- **Observed:** The hand layout used these steps. The user said the result was not too bad.\r\n  1. Put the entry and every exec node of the main path on one row.\r\n  2. For each branch, keep the first output on the main row. Put the other output lane one band below the main row data inputs.\r\n  3. Put a merge target on the main row, after both lanes.\r\n  4. Put each pure input in a column to the left of its consumer, level with the target pin. Nested inputs go one more column to the left.\r\n  5. Leave about 120 to 200 units between exec nodes, and more when the inputs need columns.\r\n  6. Size each band by its tallest data input cluster, not by a fixed pitch.\r\n- **Proposed behavior:** Use this recipe as the default for graphs with no comment box.\r\n\r\n### Capture",
+      "nested_band_commit": "3158a91",
+      "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
+      "input_needed": "Asked 2026-10-23 to resolve S13 pin-level pure input alignment versus S15/S2 below-exec-row priority when both cannot fit. Current implementation prioritizes below-row input bands. Continue independent work while awaiting answer."
     },
     {
       "report": "2026-10-21_S15",

@@ -842,3 +842,7 @@ S16/X-87 and FT-92 are implemented/unbuilt/untested after checking the archived 
 | Preserve unrelated positions and comment boundaries | Only FPlannedPosition entries for created forms are applied. Existing nodes/comments are obstacles for translation. |
 
 Automatic packing within an existing comment was introduced as an extra refinement in tracking notes; the original S16 items request lane attachment/reuse/placement, not comment expansion or contained packing. Remove that extra closure gate. Conservative stored/estimated old bounds, uniform cells, tight fixed endpoints and runtime layout quality remain explicit verification limitations. No builds, tests or editor runs performed.
+
+## Nested Tidy bands — 2026-10-23
+
+Source `3158a91`: ancestry traversal replaces numeric lane order so nested branch/input bands stay contiguous. Source inspection only; no tests/build/editor runs. Unbuilt/untested. Later check nested diamonds, Sequence sublanes and merge row ownership. Asked user to resolve conflicting pure-node placement priorities: S13 input-pin level versus S15/S2 below exec row. Current default prioritizes below-row floors; related findings remain open pending complete coverage audit.
