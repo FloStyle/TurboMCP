@@ -300,6 +300,57 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                     ExecRight.Add(Lane[I], X[I] + CellWidth);
                 }
             }
+            // Fit the block between all fixed execution attachments/rejoins when
+            // there is room. If fixed endpoints leave too little room, minimize
+            // backward connections rather than moving or duplicating those nodes.
+            struct FFixedExecBoundary { int64 IdealShift; bool bIncoming; };
+            TArray<FFixedExecBoundary> Boundaries;
+            TArray<int64> CandidateShifts;
+            CandidateShifts.Add(0);
+            for (const FNewLink& Link : *InLinks)
+            {
+                const bool bIncoming = Link.FromFormIndex == INDEX_NONE && IsNew(Link.ToFormIndex)
+                    && InNodes[Link.ToFormIndex].ProbeExecInputs.Contains(Link.ToPin);
+                const bool bOutgoing = IsNew(Link.FromFormIndex) && Link.ToFormIndex == INDEX_NONE
+                    && InNodes[Link.FromFormIndex].ProbeExecOutputs.Contains(Link.FromPin);
+                if (!bIncoming && !bOutgoing) continue;
+                const FString& FixedKey = bIncoming ? Link.FromNodeKey : Link.ToNodeKey;
+                for (const UEdGraphNode* Node : InGraph->Nodes)
+                    if (Node && TurboMCPNodeId::MakeForNode(Node, true) == FixedKey)
+                    {
+                        const int64 IdealShift = bIncoming
+                            ? static_cast<int64>(Node->NodePosX) + (Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth)
+                                + PlacementHorizontalGap - X[Link.ToFormIndex]
+                            : static_cast<int64>(Node->NodePosX) - PlacementHorizontalGap - X[Link.FromFormIndex] - CellWidth;
+                        Boundaries.Add({IdealShift, bIncoming}); CandidateShifts.AddUnique(IdealShift);
+                        CandidateShifts.AddUnique(IdealShift + (bIncoming ? -PlacementHorizontalGap : PlacementHorizontalGap));
+                        break;
+                    }
+            }
+            int32 BestBackwardCount = MAX_int32;
+            double BestBoundaryDistance = TNumericLimits<double>::Max();
+            int64 BestShiftX = 0;
+            for (int64 Candidate : CandidateShifts)
+            {
+                bool bFits = true;
+                for (int32 I : Order)
+                    if (!FitsCoordinate(X[I] + Candidate) || !FitsCoordinate(X[I] + Candidate + CellWidth)) { bFits = false; break; }
+                if (!bFits) continue;
+                int32 BackwardCount = 0;
+                double BoundaryDistance = 0.0;
+                for (const FFixedExecBoundary& Boundary : Boundaries)
+                {
+                    if (Boundary.bIncoming ? Candidate < Boundary.IdealShift - PlacementHorizontalGap
+                        : Candidate > Boundary.IdealShift + PlacementHorizontalGap) ++BackwardCount;
+                    BoundaryDistance += FMath::Abs(static_cast<double>(Candidate - Boundary.IdealShift));
+                }
+                if (BackwardCount < BestBackwardCount
+                    || (BackwardCount == BestBackwardCount && BoundaryDistance < BestBoundaryDistance)
+                    || (BackwardCount == BestBackwardCount && BoundaryDistance == BestBoundaryDistance
+                        && FMath::Abs(Candidate) < FMath::Abs(BestShiftX)))
+                { BestBackwardCount = BackwardCount; BestBoundaryDistance = BoundaryDistance; BestShiftX = Candidate; }
+            }
+            for (int32 I : Order) X[I] += BestShiftX;
             // Translate the whole new block past existing obstacles. Never move
             // existing nodes or silently expand/capture an existing comment.
             int64 ShiftY = 0;
