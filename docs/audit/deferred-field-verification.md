@@ -931,3 +931,8 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## Help usage templates — 2026-10-23
 
 2026-10-23 partial implementation: live help now includes supported trace actions and source-backed append/patch grammar templates with explicit asset/node placeholders and mutation limits. No tests/build/editor runs. Remaining: native engine property-form examples and schema-driven end-to-end example reconciliation. Do not mark this issue complete; templates are source-reviewed, not runtime-validated.
+
+
+## Nested graph consumers — 2026-10-23
+
+2026-10-23 partial repair: BPLint AllGraphs, DataTable loaded-reader graph search and Function CheckName call discovery now use FTurboMCPBlueprintRead::CollectGraphs (nested graphs, supplemental EventGraphs, deduplication and stable ordering). No tests/build/editor runs. Remaining: reconcile other graph-consuming tools and explicit skipped-scope diagnostics before closing asset-wide coverage. Function-definition-only scans intentionally remain limited to FunctionGraphs.
