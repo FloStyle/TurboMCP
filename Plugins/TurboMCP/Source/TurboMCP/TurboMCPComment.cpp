@@ -6,6 +6,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPComment.h"
+#include "ScopedTransaction.h"
+#include "Editor.h"
 
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraph.h"
@@ -651,6 +653,8 @@ FString FTurboMCPComment::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPComment::Apply(const FPlan& InPlan)
 {
+    if(!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive() || !GEditor->CanTransact())
+        return TEXT("unchanged: comment edit requires idle editor game thread with undo available");
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InPlan.Asset, Resolved);
 	if (!ResolveError.IsEmpty())
@@ -666,9 +670,18 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 		return FString::Printf(TEXT("error: %s"), *FindError);
 	}
 
+    const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP","CommentEdit","TurboMCP comment edit"));
+    if(!Transaction.IsOutstanding()) return TEXT("unchanged: comment undo transaction unavailable");
+    Blueprint->Modify();
+    Graph->Modify();
+    for(UEdGraphNode* Node:Graph->Nodes)
+        if(UEdGraphNode_Comment* Comment=Cast<UEdGraphNode_Comment>(Node))
+            if(InPlan.BoxKey.IsEmpty() || KeyOf(Comment)==InPlan.BoxKey)
+            { Comment->SetFlags(RF_Transactional); Comment->Modify(); }
+
 	if (InPlan.Action == EAction::Create)
 	{
-		UEdGraphNode_Comment* Comment = NewObject<UEdGraphNode_Comment>(Graph);
+		UEdGraphNode_Comment* Comment = NewObject<UEdGraphNode_Comment>(Graph,NAME_None,RF_Transactional);
 		// THE GUID IS MADE HERE, because `AddNode` is what would otherwise make it and the key is
 		// read back straight afterwards. Without this every box created in one session carried the
 		// key `000000`, measured: two boxes were made and BOTH reported `000000`, so a box could
