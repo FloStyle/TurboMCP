@@ -635,3 +635,6 @@ Implemented explicit tool and parameter examples plus matching refusal guidance.
 
 ## Targeted removal connection notifications (2026-10-22)
 Source follow-up 800b1e3: surviving endpoints receive pin and node callbacks after the raw batch, resolving pin IDs anew between callbacks. Both preview and edit use this path. Unbuilt/untested: wildcard and split-pin reconstruction, multiple removals on one node, deletion of linked nodes, preview isolation and undo restoration. No tests/build/editor runs.
+
+## Automatic thumbnail-free widget saves (2026-10-22)
+Both save entry points now serialize Widget Blueprints directly, preventing thumbnail design-time script execution in the MCP call. Existing thumbnails are not refreshed. Unbuilt/untested: project/plugin mount paths, source control/read-only failures, mixed asset batches, dirty state, persistence and reload. General save-result preservation for script exceptions outside thumbnail rendering remains open.
