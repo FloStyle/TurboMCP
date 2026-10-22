@@ -957,6 +957,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp"
           ],
           "new_files": []
+        },
+        "p0-append-cycle-layout": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
