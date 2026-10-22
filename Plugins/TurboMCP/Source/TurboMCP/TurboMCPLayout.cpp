@@ -19,6 +19,8 @@
 #include "TurboMCPBlueprintRead.h"
 #include "TurboMCPLayoutReport.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPCapture.h"
+#include "EdGraphNode_Comment.h"
 
 /**
  * L-LAYOUT-REPORT: layout facts for one graph.
@@ -102,6 +104,16 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 		TEXT("\ncounts: %d node(s), %d wire(s), %d comment box(es), %d nested"),
 		Report.NodeCount, Report.WireCount, Report.CommentBoxCount,
 		Report.NestedBoxCount);
+
+    TArray<TurboMCPCaptureSelector::FBox> CommentBoxes;
+    TurboMCPCaptureSelector::CollectCommentBoxes(Graph,CommentBoxes);
+    if(!CommentBoxes.IsEmpty()) Out+=TEXT("\ncomment boxes (capture index -> stable edit ID; indexes may change after layout):");
+    for(const auto& Box:CommentBoxes)
+    {
+        if(!Box.Node) continue;
+        const FString Text=Box.Node->NodeComment.Replace(TEXT("\r"),TEXT("\\r")).Replace(TEXT("\n"),TEXT("\\n"));
+        Out+=FString::Printf(TEXT("\n  box %d: %s text=\"%s\" rect=(%.0f,%.0f)-(%.0f,%.0f)"),Box.Index,*TurboMCPNodeId::MakeForNode(Box.Node,true),*Text,Box.MinX,Box.MinY,Box.MaxX,Box.MaxY);
+    }
 
 	if (Report.NodeCount == 0)
 	{
