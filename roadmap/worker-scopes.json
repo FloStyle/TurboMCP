@@ -525,6 +525,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp"
           ],
           "new_files": []
+        },
+        "p0-lexer-labels": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTextLex.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
