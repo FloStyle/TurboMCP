@@ -177,3 +177,7 @@ and `ReadTurboMCPNodeFind` searches node text; neither replaces tag referencers.
 The native tool returns package references recorded in the asset registry.
 A reference is not proof that a runtime execution path reaches that setting,
 and an empty result is not proof that dynamic code never uses the tag.
+
+
+### Connected group placement
+`PreviewTurboMCPGraphGroupPlacement(Asset, GraphName, NodeIds)` proposes a translation near outside nodes connected to the selected nodes or comment groups. It preserves internal layout and existing comment membership, reports every affected wire and returns integer `DeltaX`/`DeltaY`. Apply with `EditTurboMCPGraphGroupMove` using the same selection and offsets. The helper searches feasible free positions; it does not transfer nodes into a different comment box or guarantee a global optimum. A no-improvement result does not prove no better placement exists.

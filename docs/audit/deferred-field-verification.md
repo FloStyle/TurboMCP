@@ -767,3 +767,7 @@ X-89/FT-93 stay partial/open, unbuilt_untested. Body/full reads enumerate nodes 
 
 ## S16 cross-box operation totals — d4589be
 X-89/FT-93 remain open/partial, unbuilt_untested for placement proposals. Added shared side-effect-free cross-box metric with optional hypothetical rectangles. Group preview uses translated rectangles, edit recomputes after mutation; tidy reports before/after including no-op and rollback outcomes. Estimated straight-line pin model and smallest fully enclosing comment ownership match the report; counts expose changed ownership after copies or resizing. Source inspection only, no tests/build/editor runs. Later verify preview/edit parity, nested boxes, resize/copy membership, zero offset and rollback totals. Automatic placement proposals and shortened-wire explanations remain.
+
+
+## S16 connected placement proposal — 52e1733
+X-89/FT-93 remain open/partial: free-space placement implemented; explicit destination-box transfer remains. PreviewTurboMCPGraphGroupPlacement shares asset/selection/geometry and movement validation with GroupMove, searches linked-node neighbourhoods and obstacle edges then refines, reports offsets, candidate counts, total boundary-wire score and every affected endpoint length. No new backward exec edges, collisions or changed existing box membership. Returns no improvement honestly; not a global optimum claim. Source/API inspection only, unbuilt_untested. Later verify UHT/discovery, large-graph latency, edge direction, candidate feasibility, group moves and undo. No tests/build/editor runs.
