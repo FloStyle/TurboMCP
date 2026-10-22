@@ -457,11 +457,18 @@ namespace TurboMCPNodeId
 		}
 
         if (InNode->IsA<UK2Node_VariableGet>() && InNode->VariableReference.IsSelfContext())
-            if (const UWidgetBlueprint* WidgetBP=Cast<UWidgetBlueprint>(Blueprint))
-                if (WidgetBP->WidgetTree)
-                    if (const UWidget* Widget=WidgetBP->WidgetTree->FindWidget(VarName))
-                        if (Widget->bIsVariable)
-                            return FString::Printf(TEXT("Variable|%s|Get|%s"),*Blueprint->GetPathName(),*VarName.ToString());
+        {
+            const UWidgetBlueprint* WidgetBP=Cast<UWidgetBlueprint>(Blueprint);
+            for (const UClass* Ancestor=Blueprint->ParentClass;
+                WidgetBP && (!WidgetBP->WidgetTree || !WidgetBP->WidgetTree->RootWidget) && Ancestor;
+                Ancestor=Ancestor->GetSuperClass())
+                if (const UWidgetBlueprint* ParentWidgetBP=Cast<UWidgetBlueprint>(Ancestor->ClassGeneratedBy))
+                    WidgetBP=ParentWidgetBP;
+            if (WidgetBP && WidgetBP->WidgetTree)
+                if (const UWidget* Widget=WidgetBP->WidgetTree->FindWidget(VarName))
+                    if (Widget->bIsVariable)
+                        return FString::Printf(TEXT("Variable|%s|Get|%s"),*WidgetBP->GetPathName(),*VarName.ToString());
+        }
 
 		// The engine's writer calls an uncategorised variable's category
 		// `Default`, which is what makes `Variables|Default|SetHealth` the

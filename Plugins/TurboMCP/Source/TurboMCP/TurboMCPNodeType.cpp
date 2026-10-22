@@ -377,7 +377,15 @@ namespace
 		}
 
         // The live designer tree is authoritative before a new variable reaches the skeleton.
-        if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(InBlueprint))
+        const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(InBlueprint);
+        // Mirror Unreal's nearest ancestor with a rooted widget tree, without loading
+        // or compiling assets. A child without its own tree uses its parent's tree.
+        for (const UClass* Ancestor = InBlueprint->ParentClass;
+            WidgetBP && (!WidgetBP->WidgetTree || !WidgetBP->WidgetTree->RootWidget) && Ancestor;
+            Ancestor = Ancestor->GetSuperClass())
+            if (const UWidgetBlueprint* ParentWidgetBP = Cast<UWidgetBlueprint>(Ancestor->ClassGeneratedBy))
+                WidgetBP = ParentWidgetBP;
+        if (WidgetBP)
             if (WidgetBP->WidgetTree)
             {
                 TArray<UWidget*> Widgets;
@@ -385,7 +393,7 @@ namespace
                 for (UWidget* Widget : Widgets)
                 {
                     if (!Widget || !Widget->bIsVariable) continue;
-                    const FString Id = FString::Printf(TEXT("Variable|%s|Get|%s"), *InBlueprint->GetPathName(), *Widget->GetName());
+                    const FString Id = FString::Printf(TEXT("Variable|%s|Get|%s"), *WidgetBP->GetPathName(), *Widget->GetName());
                     // A changed designer class can precede skeleton regeneration. Keep its aliases,
                     // but use the live tree's object type instead of a stale reflected property.
                     FEntry Entry;
@@ -399,10 +407,10 @@ namespace
                     Entry.TypeId=Id; Entry.LegacyTypeId=Id; Entry.bDesignerGetter=true;
                     Entry.InputName=Widget->GetFName(); Entry.InputType.PinCategory=UEdGraphSchema_K2::PC_Object;
                     Entry.InputType.PinSubCategoryObject=Widget->GetClass();
-                    Entry.OwningClass=InBlueprint->GetPathName(); Entry.bOwnedByThisBlueprint=true;
+                    Entry.OwningClass=WidgetBP->GetPathName(); Entry.bOwnedByThisBlueprint=WidgetBP==InBlueprint;
                     Entry.bContextVariable=true; Entry.bPure=true;
                     Entry.Aliases.Add(TEXT("Variables|Default|Get")+Widget->GetName());
-                    AddBlueprintOwnerAliases(Entry, InBlueprint, TEXT("Get"), Widget->GetName());
+                    AddBlueprintOwnerAliases(Entry, WidgetBP, TEXT("Get"), Widget->GetName());
                     Entry.SearchKeywords=TEXT("widget designer getter ")+Widget->GetName();
                     OutEntries.Add(MoveTemp(Entry));
                 }
