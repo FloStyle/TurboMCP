@@ -1987,7 +1987,40 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             if (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(ConsumerPlan.Key)) continue;
 			Planned.PlannedX = ConsumerPlan.PlannedX
 				- Planned.Width - SpacingX;
-			Planned.PlannedY = ConsumerPlan.bIsPure ? static_cast<double>(MIN_int32) : ValueReaderFloor(ConsumerPlan.Node,ConsumerPlan.PlannedY);
+            double ReaderFloor=ValueReaderFloor(ConsumerPlan.Node,ConsumerPlan.PlannedY);
+            if(ConsumerPlan.bIsPure)
+            {
+                // A pure consumer still belongs to an execution lane. Find the
+                // nearest downstream lane above it; traversing only pure nodes
+                // avoids borrowing a later branch's unrelated execution band.
+                TArray<int32> PendingConsumers;PendingConsumers.Add(*ConsumerPlanIndex);
+                TSet<int32> VisitedConsumers;
+                double NearestFloor=-TNumericLimits<double>::Max();
+                double FirstFloor=TNumericLimits<double>::Max();
+                while(!PendingConsumers.IsEmpty())
+                {
+                    const int32 CurrentConsumer=PendingConsumers.Last();
+                    PendingConsumers.RemoveAt(PendingConsumers.Num()-1);
+                    if(VisitedConsumers.Contains(CurrentConsumer)) continue;
+                    VisitedConsumers.Add(CurrentConsumer);
+                    for(const FWire& W:OutPlan.Wires)
+                    {
+                        if(W.SourceNodeIndex!=CurrentConsumer || !W.OutputPin || W.OutputPin->PinType.PinCategory==TEXT("exec")
+                            || !OutPlan.Nodes.IsValidIndex(W.TargetNodeIndex)) continue;
+                        const FNode& Downstream=OutPlan.Nodes[W.TargetNodeIndex];
+                        if(Downstream.bIsPure) PendingConsumers.Add(W.TargetNodeIndex);
+                        else if(!Downstream.bIsComment)
+                        {
+                            const double LaneFloor=ValueReaderFloor(Downstream.Node,Downstream.PlannedY);
+                            FirstFloor=FMath::Min(FirstFloor,LaneFloor);
+                            if(LaneFloor<=ConsumerPlan.PlannedY) NearestFloor=FMath::Max(NearestFloor,LaneFloor);
+                        }
+                    }
+                }
+                if(NearestFloor!=-TNumericLimits<double>::Max()) ReaderFloor=NearestFloor;
+                else if(FirstFloor!=TNumericLimits<double>::Max()) ReaderFloor=FirstFloor;
+            }
+            Planned.PlannedY=ReaderFloor;
 			Planned.PlannedX = FMath::RoundToDouble(Planned.PlannedX);
             TSet<int32> ContainingBoxes;
             for (int32 B = ConsumerBoxIndex; B != INDEX_NONE; B = OutPlan.Boxes[B].ParentIndex) ContainingBoxes.Add(B);
