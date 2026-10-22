@@ -2607,10 +2607,12 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partial_implementation",
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
-      "observation": "- **Type:** Usability.\n- **Scenario:** Append pinless getters with local labels.\n- **Reproduction status:** Observed in 4 attempts. Recurs, see section 3.\n- **Steps to reproduce:**\n  1. Write a label comment on the same line as a form head, or on the line before a form.\n  2. Preview the append.\n- **Observed:** A label on the head line hid the closing bracket. A label on the line before a form named the previous form. A label on the line after a closed form worked, also for a form with no pins.\n- **Expected:** The help documents where a label goes.\n- **Impact:** 3 refused previews before the working form was found.\n- **State after:** Unchanged by the refusals.\n- **Workaround:** Close the form, then put the label on the next line. This worked in every later append.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Document the rule with one example in the tool help."
+      "observation": "- **Type:** Usability.\n- **Scenario:** Append pinless getters with local labels.\n- **Reproduction status:** Observed in 4 attempts. Recurs, see section 3.\n- **Steps to reproduce:**\n  1. Write a label comment on the same line as a form head, or on the line before a form.\n  2. Preview the append.\n- **Observed:** A label on the head line hid the closing bracket. A label on the line before a form named the previous form. A label on the line after a closed form worked, also for a form with no pins.\n- **Expected:** The help documents where a label goes.\n- **Impact:** 3 refused previews before the working form was found.\n- **State after:** Unchanged by the refusals.\n- **Workaround:** Close the form, then put the label on the next line. This worked in every later append.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Document the rule with one example in the tool help.",
+      "implementation": "180b749",
+      "implementation_limits": "Closed-form inline labels now recognized; all colon-prefixed continuation heads excluded from node types. Remaining: clarify standalone label association in public tool help and diagnose misplaced labels. No tests/build/editor runs."
     },
     {
       "report": "2026-10-22_S3",
