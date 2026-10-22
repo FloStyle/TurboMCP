@@ -799,3 +799,7 @@ S15/TD-34 implemented, unbuilt_untested. Generic branches reserve per-lane measu
 ## Consumer pin ordering — 2026-10-23
 
 Source `899076f`: pure input placement follows visual consumer pin order and places consumers before upstream inputs, with visited-node protection for cycles. Source inspection only; no builds, tests or editor runs. Unbuilt/untested. Later verify reversed insertion order, nested pure chains, shared values, branches, and repeat tidy stability. S2/TD-39 remains open for shared-copy/cross-branch placement review.
+
+## Shared reader nearby columns — 2026-10-23
+
+Source `9fd395b`: search obstacle-adjacent input columns instead of only pushing copies downward; score measured pin distance, preserve consumer floor and existing comment growth/membership guards. Source inspection only. No tests/build/editor runs. Unbuilt/untested. Later check crowded branches, narrow/nested comments, multiple copies and function parameter readers. Aggregate layout issues remain open.
