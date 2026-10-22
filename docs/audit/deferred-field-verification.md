@@ -574,3 +574,7 @@ User selected outward expansion preserving existing contents. Explicit-member fi
 ## P0 comment undo — 754d54a
 
 CB-05/ED-20 implemented, unbuilt_untested: owned comment transaction, pre-mutation Modify and transactional creation. Earlier fixes supply text lookup, index/ID mapping and outward-only fit. Native undo remains chronological. No tests/build/editor runs; undo/redo behavior needs later verification.
+
+## P0 same-Blueprint getter copy — fa91769
+
+ED-19 implemented, unbuilt_untested. Duplicate existing getter pins/member identity instead of reallocating through spawn helpers; clear copied links, assign a new node GUID, retain default/type checks and rollback. Local variables cannot cross graph scope. No tests/build/editor runs. Later verify cross-function member getter copy, source links/defaults preservation and undo.

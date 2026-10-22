@@ -2653,11 +2653,13 @@
       "canonical_issue": "2026-10-22_S3/ED-19",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_unverified",
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
-      "observation": "- **Type:** Limitation.\n- **Scenario:** Copy one member variable getter from one function to another function in the same Blueprint.\n- **Reproduction status:** Observed once. Related to ED-06, see section 3.\n- **Steps to reproduce:**\n  1. Run graph copy with one getter node ID, same asset, other function, no anchor.\n- **Observed:** Refused: copied pin identity, type or defaults could not be preserved. Rollback complete.\n- **Expected:** A getter for a member of the same Blueprint copies.\n- **Impact:** 1 extra call. The engine node create path was used instead.\n- **State after:** Unchanged.\n- **Workaround:** Engine node create with the distinct category ID. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None.\n\n### 2.3 Variables and functions"
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Copy one member variable getter from one function to another function in the same Blueprint.\n- **Reproduction status:** Observed once. Related to ED-06, see section 3.\n- **Steps to reproduce:**\n  1. Run graph copy with one getter node ID, same asset, other function, no anchor.\n- **Observed:** Refused: copied pin identity, type or defaults could not be preserved. Rollback complete.\n- **Expected:** A getter for a member of the same Blueprint copies.\n- **Impact:** 1 extra call. The engine node create path was used instead.\n- **State after:** Unchanged.\n- **Workaround:** Engine node create with the distinct category ID. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None.\n\n### 2.3 Variables and functions",
+      "fix_commit": "fa91769",
+      "implementation": "Same-Blueprint plain member getters duplicate their existing pins and member reference instead of reallocating through structural spawn helpers. Local-scope getters remain restricted to their original graph. Exact default/type verification and rollback retained."
     },
     {
       "report": "2026-10-22_S3",
