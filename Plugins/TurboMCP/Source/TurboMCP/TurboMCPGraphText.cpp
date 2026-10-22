@@ -597,10 +597,22 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 		// `2.1.12`: a node that cannot be printed becomes a comment line in its
 		// place, never a silent gap. It is PARTIAL evidence: text was emitted, but
 		// no usable form was produced.
-		const FString Note = FString::Printf(
+		FString Note = FString::Printf(
 			TEXT("; error: %s has no node type ID, so it cannot be written back. ")
 			TEXT("Its class is %s."),
 			*TurboMCPNodeId::MakeForNode(InNode), *InNode->GetClass()->GetName());
+        auto Safe=[](const FString& Value) { return Value.Replace(TEXT("\r"),TEXT("\\r")).Replace(TEXT("\n"),TEXT("\\n")); };
+        for(const UEdGraphPin* Pin:InNode->Pins)
+        {
+            if(!Pin) continue;
+            Note+=FString::Printf(TEXT("\n; read-only pin %s (%s, %s): value=%s object=%s text=%s"),
+                *Safe(Pin->PinName.ToString()),Pin->Direction==EGPD_Input?TEXT("input"):TEXT("output"),
+                *Pin->PinType.PinCategory.ToString(),*Safe(Pin->DefaultValue),
+                Pin->DefaultObject?*Safe(Pin->DefaultObject->GetPathName()):TEXT("None"),*Safe(Pin->DefaultTextValue.ToString()));
+            for(const UEdGraphPin* Peer:Pin->LinkedTo)
+                if(Peer && Peer->GetOwningNodeUnchecked())
+                    Note+=FString::Printf(TEXT("\n; linked to %s pin=%s"),*TurboMCPNodeId::MakeForNode(Peer->GetOwningNodeUnchecked(),true),*Safe(Peer->PinName.ToString()));
+        }
 		OutNotes.Add(Note);
 		OutEvidence = EFormEvidence::Partial;
 		return Note;
