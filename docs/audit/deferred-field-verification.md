@@ -939,3 +939,8 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 
 
 2026-10-23 additional coverage repair: WidgetRetarget stale-call scanning and NodeType missing-graph alternatives now share CollectGraphs. Top-level-only function definition/local-variable scans are intentional and remain unchanged. Remaining scope work: explicit coverage/skipped-graph diagnostics across output modes, especially duplicate graph names in diagnostic alternatives. Keep ca5bbbfc open; no tests/build/editor runs.
+
+
+## Getter execution eligibility — 2026-10-23
+
+2026-10-23 partial repair b5be37e: LayoutReport getter-place and FixBackward R2 now require pure getters without execution pins, preventing validated/exec-dependent getters from being diagnosed or repositioned under the pure-input rule. Remaining: shared consumer selection and pin-relative placement thresholds across report/fixer/Tidy. R2 intentionally handles below-consumer cases, not every report category. No tests/build/editor runs; unbuilt_untested.
