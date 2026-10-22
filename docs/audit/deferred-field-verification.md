@@ -936,3 +936,6 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## Nested graph consumers — 2026-10-23
 
 2026-10-23 partial repair: BPLint AllGraphs, DataTable loaded-reader graph search and Function CheckName call discovery now use FTurboMCPBlueprintRead::CollectGraphs (nested graphs, supplemental EventGraphs, deduplication and stable ordering). No tests/build/editor runs. Remaining: reconcile other graph-consuming tools and explicit skipped-scope diagnostics before closing asset-wide coverage. Function-definition-only scans intentionally remain limited to FunctionGraphs.
+
+
+2026-10-23 additional coverage repair: WidgetRetarget stale-call scanning and NodeType missing-graph alternatives now share CollectGraphs. Top-level-only function definition/local-variable scans are intentional and remain unchanged. Remaining scope work: explicit coverage/skipped-graph diagnostics across output modes, especially duplicate graph names in diagnostic alternatives. Keep ca5bbbfc open; no tests/build/editor runs.

@@ -11,6 +11,8 @@ Validation: unbuilt_untested
 
 ## Current review
 
+2026-10-23 additional coverage repair: WidgetRetarget stale-call scanning and NodeType missing-graph alternatives now share CollectGraphs. Top-level-only function definition/local-variable scans are intentional and remain unchanged. Remaining scope work: explicit coverage/skipped-graph diagnostics across output modes, especially duplicate graph names in diagnostic alternatives. Keep ca5bbbfc open; no tests/build/editor runs.
+
 2026-10-23 partial repair: BPLint AllGraphs, DataTable loaded-reader graph search and Function CheckName call discovery now use FTurboMCPBlueprintRead::CollectGraphs (nested graphs, supplemental EventGraphs, deduplication and stable ordering). No tests/build/editor runs. Remaining: reconcile other graph-consuming tools and explicit skipped-scope diagnostics before closing asset-wide coverage. Function-definition-only scans intentionally remain limited to FunctionGraphs.
 
 Partial repair c6e173a (Untested): unscoped NodeFind now uses UBlueprint::GetAllGraphs plus editor event graphs and deduplicates graph pointers. Nested graphs are included. Follow-up 2b16d12 adds recursive named-graph resolution and refuses ambiguous names for callers without a match count. BlueprintRead coverage is also implemented in 7f85a91, including pointer deduplication and stable ordering for equal names. Independent coverage verification remains deferred; this broad issue remains open. No tests/build/editor run.
