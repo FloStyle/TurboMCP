@@ -815,3 +815,7 @@ Source `b761d02`: merge ownership uses nearest common lane ancestor, and nested 
 ## Cyclic append positioning — 2026-10-23
 
 Source `ec9027c`: attached cyclic blocks receive iterative DFS reverse-finish layout order; only forward-ranked edges drive column and lane propagation. All requested links remain in the plan and mutation pipeline, including self/return links; schema preflight still decides connection validity. Source inspection only. No tests/build/editor runs. Unbuilt/untested. Later check loop-back exec, self-links, mixed cyclic/acyclic components and long chains. S16/X-87 and FT-92 remain partial for geometry/comment/rejoin scope.
+
+## Measured append footprints — 2026-10-23
+
+Source `f266d5d`: placement-requesting Plan executes the existing scratch pipeline, obtains created forms, measures final Slate bounds at unity zoom, and recalculates positions from conservative maximum measured footprint cells. No live graph view is reused. Missing existing sizes remain estimated. Stock GraphEditor and WidgetRenderer API declarations inspected; no builds/tests/editor runs. Unbuilt/untested. Later verify final defaults/expanded pins, dynamic node reconstruction, Slate/headless refusal, large nodes, performance of repeated scratch execution, dirty/undo isolation, preview parity and live bounds. S16/X-87 and FT-92 stay open for comment and fixed rejoin fitting.
