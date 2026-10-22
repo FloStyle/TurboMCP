@@ -913,6 +913,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
           ],
           "new_files": []
+        },
+        "p0-structural-quality-completion": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
