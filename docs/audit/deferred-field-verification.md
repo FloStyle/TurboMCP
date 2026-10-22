@@ -582,3 +582,7 @@ ED-19 implemented, unbuilt_untested. Duplicate existing getter pins/member ident
 ## P0 form diagnostics — 1a840ce
 
 GC-35 implemented, unbuilt_untested. Tracks opening lines and comments containing ignored closing brackets; preserves complete-input refusal before mutation. No tests/build/editor runs. Later verify nested inline comments, quoted semicolons, balanced forms and multiline strings.
+
+## P0 dirty package reporting
+
+X-93 (October 22 S2) partial, unbuilt_untested. Registry edits snapshot dirty packages and append deltas on success/error without saving or discarding. Off-thread completion reports unavailable; already-dirty modifications are not detected. Root cause remains open. No tests/build/editor runs.
