@@ -142,6 +142,7 @@ namespace
 		TArray<FString> Aliases;
 		FString OwningClass;
 		bool bOwnedByThisBlueprint = false;
+        bool bContextVariable = false;
 		bool bPure = false;
 		bool bLatent = false;
 		const UBlueprintNodeSpawner* Spawner = nullptr;
@@ -258,11 +259,18 @@ namespace
 								break;
 							}
 						const TCHAR* Access = VariableNodeClass == UK2Node_VariableSet::StaticClass() ? TEXT("Set") : TEXT("Get");
-						Entry.TypeId = FString::Printf(TEXT("Variables|%s|%s%s"), *Category, Access, *Property->GetName());
+						Entry.Aliases.Add(FString::Printf(TEXT("Variables|%s|%s%s"), *Category, Access, *Property->GetName()));
+                        const UClass* PropertyOwner=Property->GetOwnerClass();
+                        const UBlueprint* DeclaringBlueprint=PropertyOwner?Cast<UBlueprint>(PropertyOwner->ClassGeneratedBy):nullptr;
+                        Entry.TypeId=FString::Printf(TEXT("Variable|%s|%s|%s"),
+                            *(DeclaringBlueprint?DeclaringBlueprint->GetPathName():PropertyOwner?PropertyOwner->GetPathName():Property->GetOwnerStruct()->GetPathName()),Access,*Property->GetName());
+                        Entry.bContextVariable=DeclaringBlueprint==InBlueprint || (PropertyOwner && InBlueprint->ParentClass && InBlueprint->ParentClass->IsChildOf(PropertyOwner));
+                        Entry.OwningClass=PropertyOwner?PropertyOwner->GetPathName():Property->GetOwnerStruct()->GetPathName();
+                        Entry.bOwnedByThisBlueprint=DeclaringBlueprint==InBlueprint;
 					}
 				}
-				Entry.OwningClass = OwnerClassName(ActionObject);
-				Entry.bOwnedByThisBlueprint = Cast<UBlueprint>(ActionObject) == InBlueprint;
+				if(Entry.OwningClass.IsEmpty()) Entry.OwningClass = OwnerClassName(ActionObject);
+				Entry.bOwnedByThisBlueprint |= Cast<UBlueprint>(ActionObject) == InBlueprint;
 				Entry.Spawner = NodeSpawner;
 				Entry.Owner = ActionObject;
 
@@ -345,12 +353,17 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 	TArray<FEntry> Entries;
 	CollectEntries(InBlueprint, InGraph, Entries);
     const bool bHasExactId = Entries.ContainsByPredicate([&](const FEntry& Entry) { return Entry.TypeId == InTypeId; });
+    // Unqualified legacy member names prefer this Blueprint's declaration/parents.
+    // Exact class-qualified IDs always retain their explicitly requested owner.
+    const bool bHasContextVariable=!bHasExactId && Entries.ContainsByPredicate([&](const FEntry& Entry) {
+        return Entry.bContextVariable && (Entry.LegacyTypeId==InTypeId || Entry.Aliases.Contains(InTypeId)); });
+    if(bHasContextVariable || (!bHasExactId && InTypeId.StartsWith(TEXT("Variables|")))) Entries.RemoveAll([](const FEntry& Entry) { return !Entry.bContextVariable; });
     TSet<FString> MatchingTypes;
     for (const FEntry& Entry : Entries)
         if (Entry.TypeId == InTypeId || (!bHasExactId && (Entry.LegacyTypeId == InTypeId || Entry.Aliases.Contains(InTypeId)))) MatchingTypes.Add(Entry.TypeId);
     if (MatchingTypes.Num() > 1)
     {
-        OutNote = TEXT("ambiguous display type ID; use the exact Function|path ID from node-type discovery");
+        OutNote = TEXT("ambiguous display type ID; use a class-qualified Variable|owner|Get/Set|name or Function|path ID from node-type discovery");
         return nullptr;
     }
 	for (const FEntry& Entry : Entries)
@@ -404,12 +417,17 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 	TArray<FEntry> Entries;
 	CollectEntries(InBlueprint, InGraph, Entries);
     const bool bHasExactId = Entries.ContainsByPredicate([&](const FEntry& Entry) { return Entry.TypeId == InTypeId; });
+    // Unqualified legacy member names prefer this Blueprint's declaration/parents.
+    // Exact class-qualified IDs always retain their explicitly requested owner.
+    const bool bHasContextVariable=!bHasExactId && Entries.ContainsByPredicate([&](const FEntry& Entry) {
+        return Entry.bContextVariable && (Entry.LegacyTypeId==InTypeId || Entry.Aliases.Contains(InTypeId)); });
+    if(bHasContextVariable || (!bHasExactId && InTypeId.StartsWith(TEXT("Variables|")))) Entries.RemoveAll([](const FEntry& Entry) { return !Entry.bContextVariable; });
     TSet<FString> MatchingTypes;
     for (const FEntry& Entry : Entries)
         if (Entry.TypeId == InTypeId || (!bHasExactId && (Entry.LegacyTypeId == InTypeId || Entry.Aliases.Contains(InTypeId)))) MatchingTypes.Add(Entry.TypeId);
     if (MatchingTypes.Num() > 1)
     {
-        OutNote = TEXT("ambiguous display type ID; use the exact Function|path ID from node-type discovery");
+        OutNote = TEXT("ambiguous display type ID; use a class-qualified Variable|owner|Get/Set|name or Function|path ID from node-type discovery");
         return ESpawnResult::NoSuchTypeId;
     }
 	for (const FEntry& Entry : Entries)

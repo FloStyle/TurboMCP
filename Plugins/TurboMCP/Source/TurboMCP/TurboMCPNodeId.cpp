@@ -16,6 +16,7 @@
 #include "K2Node_PromotableOperator.h"
 #include "BlueprintTypePromotion.h"
 #include "UObject/Class.h"
+#include "UObject/UnrealType.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_FunctionResult.h"
 #include "K2Node_Variable.h"
@@ -406,6 +407,19 @@ namespace TurboMCPNodeId
 		{
 			return FString();
 		}
+
+        // Preserve the declaring class in reader-emitted identities. Category/name
+        // alone is not unique across Blueprint or engine classes.
+        const FProperty* Property=InNode->GetPropertyForVariableFromSkeleton();
+        if(!Property) Property=InNode->GetPropertyForVariable();
+        if(Property)
+        {
+            const UClass* PropertyOwner=Property->GetOwnerClass();
+            const UBlueprint* DeclaringBlueprint=PropertyOwner?Cast<UBlueprint>(PropertyOwner->ClassGeneratedBy):nullptr;
+            return FString::Printf(TEXT("Variable|%s|%s|%s"),
+                *(DeclaringBlueprint?DeclaringBlueprint->GetPathName():PropertyOwner?PropertyOwner->GetPathName():Property->GetOwnerStruct()->GetPathName()),
+                InNode->IsA<UK2Node_VariableSet>()?TEXT("Set"):TEXT("Get"),*Property->GetName());
+        }
 
 		// The variable's category lives on the Blueprint, not on the node, so the
 		// owning Blueprint is found through the graph. A node with no Blueprint
