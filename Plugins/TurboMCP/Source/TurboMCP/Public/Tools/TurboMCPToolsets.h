@@ -209,6 +209,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPNodeResolve(const FString& NodeIds);
 
+    /** Read a node's static upstream execution paths, exact input sources/defaults and next execution hops as text. No screenshots. Dynamic dispatch is not inferred. NextHops 0..32. */
+    UFUNCTION(meta = (AICallable))
+    static FString ReadTurboMCPNodeContext(const FString& Asset,const FString& GraphName,const FString& NodeId,int32 NextHops = 3);
+
+
 	/**
 	 * Find nodes in a Blueprint by what they say.
 	 *

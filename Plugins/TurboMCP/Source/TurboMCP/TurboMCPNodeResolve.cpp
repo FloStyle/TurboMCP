@@ -25,6 +25,8 @@
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPGraphScratch.h"
+#include "K2Node_FunctionEntry.h"
 
 /**
  * R-NODE-RESOLVE and R-NODE-FIND: the two tools that let an agent name a node.
@@ -653,4 +655,63 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 	}
 
 	return Result;
+}
+
+FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const FString& GraphName,const FString& NodeId,int32 NextHops)
+{
+    if(NextHops<0 || NextHops>32) return TEXT("error: NextHops must be 0..32");
+    FTurboMCPAssetResolver::FResolved Resolved;
+    const FString Error=FTurboMCPAssetResolver::Resolve(Asset,Resolved);
+    if(!Error.IsEmpty()) return Error;
+    UBlueprint* Blueprint=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath);
+    int32 Matches=0; UEdGraph* Graph=Blueprint?TurboMCPNodeId::FindGraphByName(Blueprint,GraphName,Matches):nullptr;
+    if(!Graph || Matches!=1) return TEXT("error: graph must resolve uniquely");
+    UEdGraphNode* Selected=TurboMCPGraphScratch::Find(Graph,NodeId);
+    if(!Selected) return TEXT("error: node ID must resolve uniquely in the graph");
+    TSet<UEdGraphNode*> Context;
+    TArray<UEdGraphNode*> Queue; Queue.Add(Selected);
+    TArray<FString> Entries;
+    // Full upstream static execution context, cycle-safe and not limited by NextHops.
+    for(int32 Index=0;Index<Queue.Num();++Index)
+    {
+        UEdGraphNode* Node=Queue[Index]; if(!Node || Context.Contains(Node)) continue;
+        Context.Add(Node);
+        if(Node->IsA<UK2Node_Event>() || Node->IsA<UK2Node_FunctionEntry>()) Entries.AddUnique(TurboMCPNodeId::MakeForNode(Node,true));
+        const UK2Node* K2=Cast<UK2Node>(Node);
+        for(UEdGraphPin* P:Node->Pins) if(P)
+            if((P->Direction==EGPD_Input && P->PinType.PinCategory==TEXT("exec"))
+                || (K2 && K2->IsNodePure() && P->Direction==EGPD_Output && P->PinType.PinCategory!=TEXT("exec")))
+                for(UEdGraphPin* Q:P->LinkedTo) if(Q) Queue.Add(Q->GetOwningNode());
+    }
+    TArray<TPair<UEdGraphNode*,int32>> Forward; Forward.Add({Selected,0}); TSet<UEdGraphNode*> ForwardSeen;
+    for(int32 Index=0;Index<Forward.Num();++Index)
+    {
+        const auto Current=Forward[Index]; UEdGraphNode* Node=Current.Key;
+        if(!Node || ForwardSeen.Contains(Node)) continue;
+        ForwardSeen.Add(Node); Context.Add(Node);
+        if(Current.Value>=NextHops) continue;
+        for(UEdGraphPin* P:Node->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==TEXT("exec"))
+            for(UEdGraphPin* Q:P->LinkedTo) if(Q) Forward.Add({Q->GetOwningNode(),Current.Value+1});
+    }
+    Entries.Sort();
+    FString Out=TEXT("read: static execution context for ")+TurboMCPNodeId::MakeForNode(Selected,true);
+    Out+=TEXT("\nentry paths: ")+(Entries.IsEmpty()?FString(TEXT("none found; dynamic/delegate dispatch is not inferred")):FString::Join(Entries,TEXT(", ")));
+    TArray<UEdGraphNode*> Ordered=Context.Array();
+    Ordered.Sort([](const UEdGraphNode& A,const UEdGraphNode& B){return A.NodeGuid.ToString()<B.NodeGuid.ToString();});
+    for(UEdGraphNode* Node:Ordered)
+    {
+        Out+=TEXT("\nnode ")+TurboMCPNodeId::MakeForNode(Node,true)+TEXT(" type=")+TurboMCPNodeId::GetNodeTypeId(Node);
+        for(UEdGraphPin* P:Node->Pins) if(P)
+        {
+            if(P->Direction==EGPD_Input && P->PinType.PinCategory!=TEXT("exec") && P->LinkedTo.IsEmpty())
+            {
+                FString Value=P->DefaultObject?P->DefaultObject->GetPathName():!P->DefaultTextValue.IsEmpty()?P->DefaultTextValue.ToString():P->DefaultValue;
+                Value.ReplaceInline(TEXT("\n"),TEXT("\\n")); Value.ReplaceInline(TEXT("\r"),TEXT("\\r"));
+                Out+=TEXT("\n  input ")+P->PinName.ToString()+TEXT(" default=")+Value;
+            }
+            for(UEdGraphPin* Q:P->LinkedTo) if(Q && Q->GetOwningNodeUnchecked())
+                Out+=FString::Printf(TEXT("\n  %s %s %s %s:%s"),P->Direction==EGPD_Input?TEXT("input"):TEXT("output"),*P->PinName.ToString(),P->Direction==EGPD_Input?TEXT("<-"):TEXT("->"),*TurboMCPNodeId::MakeForNode(Q->GetOwningNode(),true),*Q->PinName.ToString());
+        }
+    }
+    return Out+TEXT("\nContext includes all static predecessors and requested downstream exec hops; external input sources are named by exact ID. No asset changes.");
 }
