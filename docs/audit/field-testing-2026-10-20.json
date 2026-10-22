@@ -1894,7 +1894,7 @@
       "observation": "- **Type:** Limitation.\r\n- **Scenario:** A new branch lane must end in two existing nodes that already have exec links from other lanes.\r\n- **Observed:** The append tool can only link inputs of nodes it creates. The patch tool refuses links (\"edits literal defaults only\"). The connect tool replaces data inputs only. So the agent duplicated the two end nodes and their getter. The append placed all new nodes in one column at the graph edge with estimated sizes. The tidy then made the graph longer and rolled back. The user called the result ugly.\r\n- **Workaround:** The engine connect tool added the exec links into the existing nodes (an exec input accepts many links). The engine delete tool removed the duplicates. Then one position call placed the lane. This worked, but it took about 12 extra calls and needed engine tools.\r\n- **Proposed behavior:** Let append link a new node output to an existing node input, by node ID and pin name, with read-back. Let append place the new block next to the node it attaches to, as a lane in the user layout style.",
       "placement_commit": "42e8d65",
       "implementation": "Existing-node exact endpoint connections and explicit continuation already implemented. Append now uses probe exec pin metadata and requested links to position acyclic blocks relative to an existing exec source, with dependency columns, branch rows and pure input bands; only new positions change.",
-      "remaining": "Comment-contained attached lane fitting remains. Existing bounds still use stored/fallback sizes, and uniform maximum-size cells can be spacious. Automatic displaced-continuation endpoints need the same placement evidence as explicit links. Keep open.",
+      "remaining": "Comment-contained attached lane fitting remains. Existing bounds still use stored/fallback sizes and uniform maximum-size cells can be spacious. Keep open.",
       "nested_lane_commit": "b761d02",
       "nested_lane_progress": "Merge lanes use nearest shared ancestor; nested side bands are grouped depth-first under their parent. Source inspected only; unbuilt/untested.",
       "cycle_layout_commit": "ec9027c",
@@ -1902,7 +1902,9 @@
       "measurement_commit": "f266d5d",
       "measurement_progress": "Append Plan runs the existing mutation pipeline in a transient graph, measures final created nodes after links/defaults via stock Slate at unity zoom, then recomputes placement using maximum measured footprint cells. Preview labels measured versus estimated evidence. Missing existing dimensions still use estimates.",
       "rejoin_placement_commit": "6703a0f",
-      "rejoin_placement_progress": "Horizontal block translation considers all explicit existing exec sources and destinations, prioritizes forward endpoint geometry then preferred spacing and minimum movement. Existing nodes remain fixed; too-tight fixed geometry can require return wires."
+      "rejoin_placement_progress": "Horizontal block translation considers all explicit existing exec sources and destinations, prioritizes forward endpoint geometry then preferred spacing and minimum movement. Existing nodes remain fixed; too-tight fixed geometry can require return wires.",
+      "implicit_rejoin_commit": "95cffdf",
+      "implicit_rejoin_progress": "Placement consumes existing-target exec edges from the final scratch graph, including automatically preserved continuations. These are layout-only edges; requested mutation links remain unchanged."
     },
     {
       "report": "2026-10-21_S16",
@@ -2420,11 +2422,12 @@
       "observation": "- **Type:** Defect.\n- **Scenario:** The session edited one widget, one struct and one data table. At the start the unsaved list was empty.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Start with no unsaved assets.\n  2. Edit, compile and save one widget Blueprint with the tools listed above.\n  3. Read the unsaved list.\n- **Observed:** Two assets that no call edited were listed as unsaved: one widget Blueprint and one data table.\n- **Expected:** Only edited assets become unsaved (user expectation).\n- **Impact:** The user must check and discard two packages by hand.\n- **State after:** The two assets stay unsaved. They were not saved.\n- **Workaround:** None observed. The agent left them unsaved and told the user.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** The save or compile result names any other package that became unsaved during the call.\n\n## 2. Tool observations\n\n### Asset search",
       "fix_commit": "8d350de",
       "implementation": "Registry edit-call wrapper reports dirty package counts and newly dirty/cleared package names on both success and error. No implicit save/discard. Off-game-thread completion explicitly reports unavailable snapshot.",
-      "remaining": "Root cause unconfirmed. Need the exact first dirtying call and whether affected widget/DataTable reference the edited struct/widget. Report mixes native Unreal calls with TurboMCP; native calls are outside this wrapper. Existing-dirty package content changes are not detectable by dirty-flag set differences.",
+      "remaining": "Root cause unconfirmed; historical triggering call/dependency evidence unavailable. Continue source audit for concrete unintended mutation paths. A future recurrence would need per-call dirty snapshots for attribution, including native calls outside the TurboMCP wrapper. Do not clear dirty flags or claim the original incident fixed.",
       "comment_dirty_followup": "Comment Set and Fit now defer Modify/transaction until a real change; already-equal values/bounds leave package and undo history untouched. This removes one concrete cause, not the complete unrelated-package dirtying investigation.",
       "dirty_audit_commit": "257dfad",
       "dirty_audit": "Reads, previews and looks now report newly dirty/cleared packages when a game-thread before snapshot is available; unchanged non-edit calls stay quiet. Edit/compile/save reporting retained. No dirty flags cleared.",
-      "input_needed": "Asked user 2026-10-23 for before/after DirtyList per call including native tools, exact triggering tool name, and dependency relationships only (no project code). Continue other P0 work while awaiting evidence."
+      "input_needed": "User confirmed 2026-10-23 that the historical session is too old and the requested first-dirtying-call evidence is impossible to recover. No outstanding request for this old evidence.",
+      "evidence_status": "historical_evidence_unavailable_user_confirmed"
     },
     {
       "report": "2026-10-22_S2",
@@ -3430,7 +3433,7 @@
       "disposition": "partially_implemented",
       "placement_commit": "42e8d65",
       "implementation": "Existing-node exact endpoint connections and explicit continuation already implemented. Append now uses probe exec pin metadata and requested links to position acyclic blocks relative to an existing exec source, with dependency columns, branch rows and pure input bands; only new positions change.",
-      "remaining": "Comment-contained attached lane fitting remains. Existing bounds still use stored/fallback sizes, and uniform maximum-size cells can be spacious. Automatic displaced-continuation endpoints need the same placement evidence as explicit links. Keep open.",
+      "remaining": "Comment-contained attached lane fitting remains. Existing bounds still use stored/fallback sizes and uniform maximum-size cells can be spacious. Keep open.",
       "nested_lane_commit": "b761d02",
       "nested_lane_progress": "Merge lanes use nearest shared ancestor; nested side bands are grouped depth-first under their parent. Source inspected only; unbuilt/untested.",
       "cycle_layout_commit": "ec9027c",
@@ -3438,7 +3441,9 @@
       "measurement_commit": "f266d5d",
       "measurement_progress": "Append Plan runs the existing mutation pipeline in a transient graph, measures final created nodes after links/defaults via stock Slate at unity zoom, then recomputes placement using maximum measured footprint cells. Preview labels measured versus estimated evidence. Missing existing dimensions still use estimates.",
       "rejoin_placement_commit": "6703a0f",
-      "rejoin_placement_progress": "Horizontal block translation considers all explicit existing exec sources and destinations, prioritizes forward endpoint geometry then preferred spacing and minimum movement. Existing nodes remain fixed; too-tight fixed geometry can require return wires."
+      "rejoin_placement_progress": "Horizontal block translation considers all explicit existing exec sources and destinations, prioritizes forward endpoint geometry then preferred spacing and minimum movement. Existing nodes remain fixed; too-tight fixed geometry can require return wires.",
+      "implicit_rejoin_commit": "95cffdf",
+      "implicit_rejoin_progress": "Placement consumes existing-target exec edges from the final scratch graph, including automatically preserved continuations. These are layout-only edges; requested mutation links remain unchanged."
     },
     {
       "report": "2026-10-22_S1",

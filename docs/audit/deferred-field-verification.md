@@ -823,3 +823,7 @@ Source `f266d5d`: placement-requesting Plan executes the existing scratch pipeli
 ## Fixed rejoin placement — 2026-10-23
 
 Source `6703a0f`: append block translation scores every explicit fixed exec source/rejoin boundary, minimizing backward connections before spacing distance; old nodes stay fixed. Candidate ranges are coordinate checked before obstacle translation. Source inspection only; no tests/build/editor runs. Unbuilt/untested. Later check multiple rejoins, narrow insertion space, existing returns left of source, coordinate bounds and comments. Automatic displaced continuation edges are not explicit requested links and remain a placement follow-up.
+
+## Implicit rejoin layout — 2026-10-23
+
+Source `95cffdf`: final scratch exec edges from new forms to original nodes feed placement, including preserved displaced continuations. No synthetic mutation requests added. Source inspection only; no tests/build/editor runs. Unbuilt/untested. Later verify auto/all/explicit continuation layouts and duplicate edge suppression. S2/X-93 historical dirtying evidence is unavailable, confirmed by the user; original root cause remains unproven, not fixed by instrumentation alone.
