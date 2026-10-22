@@ -704,6 +704,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 		Graph->Modify();
 		Graph->AddNode(Comment, /*bUserAction=*/true, /*bSelectNewNode=*/false);
 		Graph->MarkPackageDirty();
+		Graph->NotifyGraphChanged();
 
 		FBox Made;
 		ReadBox(Comment, Made);
@@ -738,6 +739,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			Graph->Modify();
 			Comment->DestroyNode();
 			Graph->MarkPackageDirty();
+		Graph->NotifyGraphChanged();
 
 			// THE READ-BACK RE-COUNTS THE BOXES, so "the box is gone" is checked rather than asserted.
 			// *** THE NODES ARE NOT RE-MEASURED: `MemberTotal` is taken before the destroy and states
@@ -807,6 +809,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 				Comment->NodeHeight = static_cast<int32>(InPlan.Height);
 			}
 			Graph->MarkPackageDirty();
+		Graph->NotifyGraphChanged();
 
 			const bool bChanged = OldText != Comment->NodeComment
 				|| !OldColor.Equals(Comment->CommentColor)
@@ -887,6 +890,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 	if (Fitted > 0)
 	{
 		Graph->MarkPackageDirty();
+		Graph->NotifyGraphChanged();
 	}
 
 	FString Out;
