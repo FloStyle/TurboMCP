@@ -26,7 +26,7 @@
  * tool that can change an asset.
  */
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
-	const FString& Asset, const FString& GraphName, const FString& Text)
+	const FString& Asset, const FString& GraphName, const FString& Text, const FString& Continuation)
 {
 	FTurboMCPGraphAppend::FPlan Plan;
 	FString Error;
@@ -35,11 +35,16 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
 		return FTurboMCPToolError::AsError(Error);
 	}
 
+    Plan.Continuation = Continuation.TrimStartAndEnd();
+    if (Plan.Continuation.IsEmpty()) Plan.Continuation = TEXT("auto");
+    if (Plan.Continuation != TEXT("auto") && Plan.Continuation != TEXT("all") && !Plan.Continuation.Contains(TEXT(":")))
+        Plan.Refusals.Add(TEXT("Continuation must be auto, all, or label:pin"));
+
 	return FTurboMCPGraphAppend::RenderPreview(Plan);
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPGraphAppend(
-	const FString& Asset, const FString& GraphName, const FString& Text)
+	const FString& Asset, const FString& GraphName, const FString& Text, const FString& Continuation)
 {
 	// THE PLAN IS BUILT ONCE, HERE, AND THE DECISION IS ITS. Everything the edit refuses, the preview
 	// refused first with the same words, because both reach this same construction.
@@ -49,6 +54,11 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphAppend(
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
+
+    Plan.Continuation = Continuation.TrimStartAndEnd();
+    if (Plan.Continuation.IsEmpty()) Plan.Continuation = TEXT("auto");
+    if (Plan.Continuation != TEXT("auto") && Plan.Continuation != TEXT("all") && !Plan.Continuation.Contains(TEXT(":")))
+        Plan.Refusals.Add(TEXT("Continuation must be auto, all, or label:pin"));
 
 	if (!Plan.bAcceptable())
 	{

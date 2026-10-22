@@ -1255,11 +1255,13 @@ public:
      * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments
      * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
 	 */
+	/** Continuation: auto (legacy unique exit), all (all reachable new unconnected exec exits), or label:pin (one named new node output). Applies to displaced existing exec wires; explicit submitted target links take precedence. Compile/save deferred. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphAppend(
 		const FString& Asset,
 		const FString& GraphName,
-		const FString& Text);
+		const FString& Text,
+        const FString& Continuation = TEXT("auto"));
 
 	/**
 	 * Rewrite the body of one function, override or event, and list what it removes.
@@ -2075,11 +2077,13 @@ public:
      * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments
      * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
 	 */
+	/** Continuation: auto (legacy unique exit), all (all reachable new unconnected exec exits), or label:pin (one named new node output). Applies to displaced existing exec wires; explicit submitted target links take precedence. Compile/save deferred. */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphAppend(
 		const FString& Asset,
 		const FString& GraphName,
-		const FString& Text);
+		const FString& Text,
+        const FString& Continuation = TEXT("auto"));
 
 	/**
 	 * Rewrite the body of one function, override or event, and report every node it removed.

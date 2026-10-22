@@ -727,6 +727,8 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 
 	FString Out = FString::Printf(TEXT("preview: append to %s in %s : %d new node(s), %d form(s) link to existing"),
 		*InPlan.GraphName, *InPlan.Asset, NewCount, LinkCount);
+    Out += TEXT("\ncontinuation mode: ")+InPlan.Continuation;
+    if(InPlan.Continuation!=TEXT("auto")) Out+=TEXT("\nExplicit continuation is resolved after submitted links; this preview does not yet dry-run final exit resolution. Apply rolls back if no valid exit exists.");
 	Out += FString::Printf(TEXT("\n%d node(s) in the graph now, and %d would be added"),
 		InPlan.NodeCountBefore, NewCount);
 
@@ -854,6 +856,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
     TArray<TPair<int32,FString>> DeferredDefaults;
 	int32 LinksMade = 0;
 	TArray<FString> MovedLinkReports;
+    TArray<TPair<UEdGraphNode*,UEdGraphPin*>> PendingContinuations;
 	TArray<UEdGraphNode*> Created;
 	TArray<const FPlannedPosition*> PositionByForm;
 	if (InPlan.bPlacementRequested)
@@ -1188,6 +1191,11 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
                         *TurboMCPNodeId::MakeForNode(OriginalTarget->GetOwningNode(),true),*OriginalTarget->PinName.ToString()));
                     continue;
                 }
+                if (InPlan.Continuation != TEXT("auto") && OriginalTarget && OriginalTarget->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                {
+                    PendingContinuations.Add(TPair<UEdGraphNode*,UEdGraphPin*>(ToNode,OriginalTarget));
+                    continue;
+                }
                 if (Continuation == nullptr || OriginalTarget == nullptr || !Schema->TryCreateConnection(Continuation, OriginalTarget)
 					|| !HasLink(Continuation, OriginalTarget))
 				{
@@ -1238,6 +1246,55 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
             return false;
         }
         if(Changed) ++PinsWritten;
+    }
+
+    // Resolve explicit continuation only after every submitted link exists, so branch tails
+    // are found from final topology rather than the order of text forms.
+    TSet<UEdGraphNode*> NewContinuationNodes;
+    for(int32 Index=0; Index<InPlan.Nodes.Num(); ++Index)
+        if(!InPlan.Nodes[Index].bLinksToExisting && CreatedByForm[Index]) NewContinuationNodes.Add(CreatedByForm[Index]);
+    for (const auto& Pending : PendingContinuations)
+    {
+        TArray<UEdGraphPin*> Exits;
+        if (InPlan.Continuation == TEXT("all"))
+        {
+            TArray<UEdGraphNode*> Queue; Queue.Add(Pending.Key);
+            TSet<UEdGraphNode*> Seen;
+            for (int32 Index=0; Index<Queue.Num(); ++Index)
+            {
+                UEdGraphNode* Node=Queue[Index];
+                if (!Node || Seen.Contains(Node) || !NewContinuationNodes.Contains(Node)) continue;
+                Seen.Add(Node);
+                for (UEdGraphPin* P:Node->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec)
+                {
+                    if(P->LinkedTo.IsEmpty()) Exits.AddUnique(P);
+                    else for(UEdGraphPin* Q:P->LinkedTo) if(Q) Queue.Add(Q->GetOwningNode());
+                }
+            }
+        }
+        else
+        {
+            FString Label, PinName;
+            InPlan.Continuation.Split(TEXT(":"), &Label, &PinName);
+            for(int32 Index=0; Index<InPlan.Nodes.Num(); ++Index)
+                if(InPlan.Nodes[Index].LocalLabel==Label && !InPlan.Nodes[Index].bLinksToExisting && CreatedByForm.IsValidIndex(Index) && CreatedByForm[Index])
+                    for(UEdGraphPin* P:CreatedByForm[Index]->Pins)
+                        if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec && P->PinName.ToString()==PinName) Exits.AddUnique(P);
+        }
+        bool Connected=!Exits.IsEmpty();
+        for(UEdGraphPin* Exit:Exits)
+        {
+            if(!Exit->LinkedTo.IsEmpty() || !Graph->GetSchema()->TryCreateConnection(Exit,Pending.Value) || !HasLink(Exit,Pending.Value)) { Connected=false; break; }
+            MovedLinkReports.Add(FString::Printf(TEXT("explicit continuation %s:%s -> %s:%s"),
+                *TurboMCPNodeId::MakeForNode(Exit->GetOwningNode(),true),*Exit->PinName.ToString(),
+                *TurboMCPNodeId::MakeForNode(Pending.Value->GetOwningNode(),true),*Pending.Value->PinName.ToString()));
+        }
+        if(!Connected)
+        {
+            const bool Undone=FTurboMCPRollback::EndAndUndoActiveTransaction();
+            OutError=FString(Undone?TEXT("unchanged; rollback=complete: "):TEXT("partial; rollback=failed: "))+TEXT("explicit continuation requires reachable unconnected exec exits or one valid label:pin");
+            return false;
+        }
     }
 
     // Verify the final graph, not only each intermediate connection. A later

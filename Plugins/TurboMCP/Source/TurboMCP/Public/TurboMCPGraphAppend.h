@@ -115,6 +115,7 @@ public:
 	/** What the plan decided, so `Apply` can act without deciding anything. */
 	struct FPlan
 	{
+        FString Continuation = TEXT("auto");
 		FString Asset;
 		FString GraphName;
 
