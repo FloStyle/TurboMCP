@@ -878,6 +878,12 @@
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp"
           ]
+        },
+        "p0-shared-tail-context": {
+          "new_files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp"
+          ]
         }
       },
       "preserve_rows": []
