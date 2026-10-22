@@ -251,14 +251,14 @@ public:
 	 * cannot be printed becomes an inline `; error:` line rather than a silent gap,
 	 * and is also counted at the end so the gap cannot be missed.
 	 */
-	/** Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input. */
+	/** EntryFilter optionally matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input. */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPGraphLoad(
 		const FString& Asset,
 		const FString& GraphName,
 		const FString& Format,
 		const FString& Detail,
-        int32 Offset = 0, int32 MaxChars = 24000, const FString& Revision = TEXT(""));
+        int32 Offset = 0, int32 MaxChars = 24000, const FString& Revision = TEXT(""), const FString& EntryFilter = TEXT(""));
 
 	/**
 	 * Read whole Blueprints: the main Read tool.

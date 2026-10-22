@@ -66,7 +66,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 	const FString& Asset,
 	const FString& GraphName,
 	const FString& Format,
-	const FString& Detail, int32 Offset, int32 MaxChars, const FString& Revision)
+	const FString& Detail, int32 Offset, int32 MaxChars, const FString& Revision, const FString& EntryFilter)
 {
     if (Offset < 0 || MaxChars < 256 || MaxChars > MaxGraphTextChars) return TEXT("error: Offset must be nonnegative and MaxChars must be 256..24000");
     if (Offset > 0 && Revision.IsEmpty()) return TEXT("error: subsequent pages require the revision token from page zero");
@@ -135,7 +135,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 
 	TArray<FString> Notes;
 	const FTurboMCPGraphText Writer;
-	const FString Text = Writer.Render(Graph, DetailLevel, Resolved.ObjectPath, Notes);
+	const FString Text = Writer.Render(Graph, DetailLevel, Resolved.ObjectPath, Notes, EntryFilter);
 
 	const FString DetailLabel = Detail.IsEmpty() ? TEXT("bodies") : Detail;
 
@@ -169,7 +169,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
         // Avoid splitting a UTF-16 surrogate pair at the page boundary.
         if (Count>0 && Offset+Count<Result.Len() && uint32(Result[Offset+Count-1])>=0xD800 && uint32(Result[Offset+Count-1])<=0xDBFF) --Count;
         const int32 Next=Offset+Count;
-        const FString Header=FString::Printf(TEXT("; error: partial graph page; inspection fragment, not standalone write-back text\n; revision=%s offset=%d count=%d total=%d nextOffset=%d\n; Request the same Asset/GraphName/Format/Detail with Revision and nextOffset; -1 means end. Payload follows:\n"),
+        const FString Header=FString::Printf(TEXT("; error: partial graph page; inspection fragment, not standalone write-back text\n; revision=%s offset=%d count=%d total=%d nextOffset=%d\n; Request the same Asset/GraphName/Format/Detail/EntryFilter with Revision and nextOffset; -1 means end. Payload follows:\n"),
             *CurrentRevision,Offset,Count,Result.Len(),Next<Result.Len()?Next:-1);
         return Header+Result.Mid(Offset,Count);
     }

@@ -922,7 +922,7 @@ FString FTurboMCPGraphText::RenderEntryBody(const UEdGraph* InGraph,
 }
 
 FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
-	const FString& InAssetPath, TArray<FString>& OutNotes) const
+	const FString& InAssetPath, TArray<FString>& OutNotes, const FString& EntryFilter) const
 {
 	if (InGraph == nullptr)
 	{
@@ -931,12 +931,27 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 
 	TArray<FEntryPoint> Entries;
 	CollectEntryPoints(InGraph, Entries);
+    const FString Filter=EntryFilter.TrimStartAndEnd();
+    if(!Filter.IsEmpty())
+    {
+        TArray<FString> Available;
+        for(const FEntryPoint& Entry:Entries) Available.Add(Entry.Name);
+        Entries.RemoveAll([&](const FEntryPoint& Entry){return !Entry.Name.Contains(Filter,ESearchCase::IgnoreCase);});
+        if(Entries.IsEmpty())
+        {
+            const FString Error=TEXT("entry filter matched nothing; available entries: ")+FString::Join(Available,TEXT(", "));
+            OutNotes.Add(Error);
+            return TEXT("; error: ")+Error;
+        }
+    }
+
 
 	const int32 NodeCount = InGraph->Nodes.Num();
 	const FString GraphName = InGraph->GetName();
 
 	FString Out = FString::Printf(TEXT("; graph %s.%s"),
 		*InAssetPath, *GraphName);
+    if(!Filter.IsEmpty()) Out+=TEXT("\n; error: filtered inspection view, not a complete graph for write-back\n; entry-name contains: ")+Filter;
 
 	if (InDetail == EDetail::Manifest)
 	{
@@ -995,7 +1010,7 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 	TArray<FString> Comments;
 	for (const UEdGraphNode* Node : InGraph->Nodes)
 	{
-		if (IsComment(Node))
+		if (Filter.IsEmpty() && IsComment(Node))
 		{
 			Comments.Add(FString::Printf(TEXT("; comment: %s"),
 				*TurboMCPNodeId::GetNodeTitle(Node)));
@@ -1043,6 +1058,8 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 			Printed, SharedValues, OutNotes);
 		Out += Head + Body + TEXT(")");
 	}
+
+    if(!Filter.IsEmpty()) return Out;
 
 	// Use the same all-wire reachability walk as the dead-node preview. Exec
 	// traversal alone would call a getter feeding a live target pin disconnected.

@@ -64,7 +64,7 @@ public:
 	 *                   knows the text is incomplete.
 	 */
 	FString Render(const UEdGraph* InGraph, EDetail InDetail,
-		const FString& InAssetPath, TArray<FString>& OutNotes) const;
+		const FString& InAssetPath, TArray<FString>& OutNotes, const FString& EntryFilter = FString()) const;
 
 private:
 	/**
