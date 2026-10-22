@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "Tools/TurboMCPToolsets.h"
+#include "TurboMCPBlueprintRead.h"
 
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetIdentifier.h"
@@ -315,20 +316,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 				// again per node: searching by name inside the node loop does the
 				// same work once per node.
 				TArray<UEdGraph*> Graphs;
-				auto AddGraph = [&Graphs](const TArray<TObjectPtr<UEdGraph>>& InGraphs)
-				{
-					for (const TObjectPtr<UEdGraph>& Graph : InGraphs)
-					{
-						if (Graph != nullptr)
-						{
-							Graphs.Add(Graph);
-						}
-					}
-				};
-				AddGraph(Blueprint->UbergraphPages);
-				AddGraph(Blueprint->FunctionGraphs);
-				AddGraph(Blueprint->MacroGraphs);
-				AddGraph(Blueprint->EventGraphs);
+                FTurboMCPBlueprintRead::CollectGraphs(Blueprint, Graphs);
 
 				// The graphs that actually hold a read of THIS table.
 				TArray<FString> ReadingGraphs;

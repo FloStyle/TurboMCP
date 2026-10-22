@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPFunction.h"
+#include "TurboMCPBlueprintRead.h"
 
 #include "BlueprintEditorLibrary.h"
 #include "Algo/Unique.h"
@@ -208,18 +209,7 @@ FTurboMCPFunction::FNameCheck FTurboMCPFunction::CheckName(
 	// would be left pointing at nothing if the name were taken. Listed rather than treated as
 	// fatal, because the caller may be about to build exactly that function.
 	TArray<UEdGraph*> AllGraphs;
-	for (UEdGraph* Graph : InBlueprint->FunctionGraphs)
-	{
-		if (Graph != nullptr) { AllGraphs.Add(Graph); }
-	}
-	for (UEdGraph* Graph : InBlueprint->UbergraphPages)
-	{
-		if (Graph != nullptr) { AllGraphs.Add(Graph); }
-	}
-	for (UEdGraph* Graph : InBlueprint->MacroGraphs)
-	{
-		if (Graph != nullptr) { AllGraphs.Add(Graph); }
-	}
+    FTurboMCPBlueprintRead::CollectGraphs(InBlueprint, AllGraphs);
 
 	for (UEdGraph* Graph : AllGraphs)
 	{

@@ -82,14 +82,7 @@ namespace
 	TArray<UEdGraph*> AllGraphs(const UBlueprint* InBlueprint)
 	{
 		TArray<UEdGraph*> Graphs;
-		for (UEdGraph* Graph : InBlueprint->UbergraphPages)
-		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
-		}
-		for (UEdGraph* Graph : InBlueprint->FunctionGraphs)
-		{
-			if (Graph != nullptr) { Graphs.Add(Graph); }
-		}
+        FTurboMCPBlueprintRead::CollectGraphs(InBlueprint, Graphs);
 		return Graphs;
 	}
 
