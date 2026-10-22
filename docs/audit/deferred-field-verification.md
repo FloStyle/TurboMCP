@@ -629,3 +629,6 @@ X-91/FT-95 implemented, unbuilt_untested. Text reader returns full static upstre
 
 ## DT-11 selected DataTable columns (2026-10-22)
 Implemented optional Columns projection using reflected property export. Unbuilt and untested by request. Verify native/user-defined row structs, tag/text/container/static-array fields, unknown names and output caps; no row mutation or saving is intended.
+
+## ED-17 position format help (2026-10-22)
+Implemented explicit tool and parameter examples plus matching refusal guidance. Untested: verify generated tool discovery exposes this documentation. Position-edit behavior was not changed.

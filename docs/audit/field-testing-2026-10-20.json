@@ -2467,11 +2467,13 @@
       "canonical_issue": "2026-10-22_S2/ED-17",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_untested",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
-      "observation": "- **Type:** Usability.\n- **Scenario:** Set 8 node positions in one call.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the tool schema. It shows only a string parameter.\n  2. Call with lines of text, then with a JSON array that uses a wrong key.\n- **Observed:** Two refusals. The second one named the needed keys.\n- **Expected:** The tool help gives the format.\n- **Impact:** 2 extra calls.\n- **State after:** No change until the third call.\n- **Workaround:** A JSON array with the keys from the error. This worked.\n- **Cause:** Not applicable.\n- **Proposed behavior:** Add the format and one example to the tool help.\n\n### Save"
+      "observation": "- **Type:** Usability.\n- **Scenario:** Set 8 node positions in one call.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read the tool schema. It shows only a string parameter.\n  2. Call with lines of text, then with a JSON array that uses a wrong key.\n- **Observed:** Two refusals. The second one named the needed keys.\n- **Expected:** The tool help gives the format.\n- **Impact:** 2 extra calls.\n- **State after:** No change until the third call.\n- **Workaround:** A JSON array with the keys from the error. This worked.\n- **Cause:** Not applicable.\n- **Proposed behavior:** Add the format and one example to the tool help.\n\n### Save",
+      "implementation": "Tool help and Positions parameter documentation include JSON array example, exact case-sensitive keys, reader IDs, integer absolute coordinate bounds, unique node limits and unchanged-node behavior. Refusals repeat the example.",
+      "verification_debt": "Generated schema/tool help visibility not checked; no build or tests run."
     },
     {
       "report": "2026-10-22_S2",
