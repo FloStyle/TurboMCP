@@ -977,3 +977,7 @@ Implemented, unbuilt_untested: failed operation included in rollback scope; succ
 ## 2026-10-23 missing parameter notes — f7b9cf1
 
 Implemented, unbuilt_untested: ReadTurboMCPToolHelp displays FToolInfo.Parameters, previously loaded but omitted. Names sorted; notes explicitly supplemental to the live schema. Parent help records 9263bd95 and 0e4658ad stay open for remaining example/constraint reconciliation. No tests/build/editor runs.
+
+## 2026-10-23 graph search diagnostics — 84f77fb
+
+Implemented, unbuilt_untested: NodeFind shared stable enumeration and explicit scope/result counts; NodeFind/NodeType ambiguous-name refusals distinguish absence and list graph paths. Named ambiguity remains refused, with no first-match fallback. Parent ca5bbbfc remains open for other output-mode coverage reconciliation. No tests, builds or editor runs.
