@@ -7,8 +7,11 @@ Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
 Review: source-reviewed
+Validation: unbuilt_untested
 
 ## Current review
+
+2026-10-23 partial repair 5936f54, unbuilt_untested: refused batches expose no planned additions/removals/changes; duplicate aliases resolve to canonical field identity; repeated field previews use the preceding requested value; row writes follow first-request order with case-insensitive row identity. Remaining: mixed set/remove or remove/set requests still refuse, not sequentially supported; final-state staging/rollback and preview value validation remain to reconcile. Do not close the full caller-order issue. No tests/build/editor runs.
 
 **Decision:** confirmed. **Follow-up owner:** [R08](roadmap-r08.md).
 

@@ -921,3 +921,8 @@ a8341453: Implemented in 461d22b: LayoutReport labels non-comment nodes (reroute
 c1e04796: Reconciled against current source: Patch and Replace delegate named graph lookup to TurboMCPNodeId::FindGraphByName, which refuses empty names and ambiguity. BlueprintRead CollectGraphs uses GetAllGraphs for asset-wide enumeration. The old first-graph fallback diagnosis is obsolete; broader consumer coverage stays under ca5bbbfc.
 
 Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constraints are not closed by discovery search. Deferred checks include mixed-case multiword search, paging/no-match/invalid offsets, real count populations, empty/ambiguous graph names, and dirty deltas on success/error. These are verification flags, not new product issues.
+
+
+## DataTable preview partial repair — 2026-10-23
+
+2026-10-23 partial repair 5936f54, unbuilt_untested: refused batches expose no planned additions/removals/changes; duplicate aliases resolve to canonical field identity; repeated field previews use the preceding requested value; row writes follow first-request order with case-insensitive row identity. Remaining: mixed set/remove or remove/set requests still refuse, not sequentially supported; final-state staging/rollback and preview value validation remain to reconcile. Do not close the full caller-order issue. No tests/build/editor runs.
