@@ -566,3 +566,7 @@ X-88/FT-91 plugin alternative implemented, unbuilt_untested. K2 schema source co
 ## P0 structural tidy gate — 7d577e5
 
 Partial, unbuilt_untested: structural-first gate applied to preview and live rollback decision. Overlaps, backward exec and linear alignment precede wire length. Branch fan-out/merge offsets excluded from linear drift. Pure-input scoring, copy geometry and branch/merge placement remain open. No tests/build/editor runs.
+
+## P0 comment fit — 89db15e
+
+User selected outward expansion preserving existing contents. Explicit-member fit now unions old rectangle with requested enclosure and reports planned bounds. CB-05 remains partial for layout-report mapping and undo review. No tests/build/editor runs.
