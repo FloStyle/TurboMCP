@@ -765,6 +765,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
           ],
           "new_files": []
+        },
+        "p0-append-preflight": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
