@@ -38,7 +38,7 @@ namespace
     {
         TSet<FString> Names;
         for (TObjectIterator<UPackage> It; It; ++It)
-            if (It->IsDirty() && !It->HasAnyPackageFlags(PKG_Transient) && !It->HasAnyFlags(RF_Transient)) Names.Add(It->GetName());
+            if (It->IsDirty() && !It->HasAnyFlags(RF_Transient)) Names.Add(It->GetName());
         return Names;
     }
 
