@@ -594,3 +594,7 @@ Partial, unbuilt_untested. Both probe and live spawn compare resolved member dec
 ## P0 global callers — 141cd11
 
 X-92 implemented, unbuilt_untested. Body filters no longer limit relations. Static call sites include full node IDs and upstream entry traversal; pure calls follow consumers. FT-96 remains partial for delegate/event binding context. No tests/build/editor runs.
+
+## P0 comment refresh — 26a276d
+
+CP-14 remains partial and unbuilt_untested. Comment edits now notify graph listeners; stock SGraphPanel registers OnGraphChanged. Existing tidy/positions already notify, so their reported rendering artifact remains unresolved. No tests/build/editor runs.

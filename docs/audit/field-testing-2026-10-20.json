@@ -1695,10 +1695,13 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-21_S14_TurboMCP_tidy-linear-function.md",
-      "observation": "- **Type:** Defect.\r\n- **Scenario:** The live graph editor, right after a tidy or position edit on a graph with a comment box. Also seen on compact pure nodes.\r\n- **Reproduction status:** Observed by the user, sometimes. The exact conditions are not known.\r\n- **Observed:** After the TurboMCP edit, the comment box body is a light, almost opaque grey. Its title text has a heavy dark shadow and looks bold and blurred. Compact pure nodes show a hard dark band around the body, like a second outline. The user describes it as a node refresh glitch that over-contrasts the drawn drop shadows. After the user makes one manual edit in the graph, the box goes back to its normal darker, see-through look and the text is sharp.\r\n- **Expected:** The graph looks the same after a TurboMCP edit as after a manual edit.\r\n- **Impact:** The user cannot judge the result until the graph redraws. It can look like the edit changed the box colour.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** Refresh the open graph view in the same way as a manual edit does, after each layout edit.\r\n\r\n### User reference layout"
+      "observation": "- **Type:** Defect.\r\n- **Scenario:** The live graph editor, right after a tidy or position edit on a graph with a comment box. Also seen on compact pure nodes.\r\n- **Reproduction status:** Observed by the user, sometimes. The exact conditions are not known.\r\n- **Observed:** After the TurboMCP edit, the comment box body is a light, almost opaque grey. Its title text has a heavy dark shadow and looks bold and blurred. Compact pure nodes show a hard dark band around the body, like a second outline. The user describes it as a node refresh glitch that over-contrasts the drawn drop shadows. After the user makes one manual edit in the graph, the box goes back to its normal darker, see-through look and the text is sharp.\r\n- **Expected:** The graph looks the same after a TurboMCP edit as after a manual edit.\r\n- **Impact:** The user cannot judge the result until the graph redraws. It can look like the edit changed the box colour.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** Refresh the open graph view in the same way as a manual edit does, after each layout edit.\r\n\r\n### User reference layout",
+      "fix_commit": "26a276d",
+      "implementation": "Comment create/remove/update/fit now broadcast NotifyGraphChanged so open graph panels rebuild after geometry/text changes.",
+      "remaining": "Tidy and positions already call NotifyGraphChanged. The reported overdraw/shadow glitch after those operations is not yet explained; do not claim this comment refresh resolves it."
     },
     {
       "report": "2026-10-21_S14",
