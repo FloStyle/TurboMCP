@@ -319,7 +319,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolIndex()
 	Result += Lines;
 	Result += TEXT("\nOrder is Read, Look, Preview, Edit. ")
 		TEXT("Use ReadTurboMCPToolHelp with a toolset name and a bare tool name ")
-		TEXT("for its parameters and known traps.");
+		TEXT("for its parameters and known traps. Search using ToolName=find:0:<words> (ToolsetName empty searches all registered tools).");
 
 	return Result;
 }
@@ -411,6 +411,44 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 			|| InName.Equals(WantedToolset, ESearchCase::IgnoreCase)
 			|| InName.EndsWith(TEXT(".") + WantedToolset, ESearchCase::IgnoreCase);
 	};
+
+    // Read-only discovery over the live registry; sorted pages do not imply routing preference.
+    // Syntax: find:<offset>:<words>. Keep the query intact after the first separator.
+    if (WantedTool.StartsWith(TEXT("find:")))
+    {
+        FString OffsetText, Query;
+        if (!WantedTool.Mid(5).Split(TEXT(":"), &OffsetText, &Query)
+            || OffsetText.IsEmpty() || OffsetText.Len() > 8 || Query.Len() > 256 || Query.TrimStartAndEnd().IsEmpty())
+            return TEXT("error: use ToolName=find:0:<search words>; ToolsetName may be empty; query maximum 256 characters");
+        for (TCHAR Ch : OffsetText)
+            if (Ch < TEXT('0') || Ch > TEXT('9')) return TEXT("error: search offset must contain decimal digits only");
+        const int32 Offset = FCString::Atoi(*OffsetText);
+        TArray<FString> Words;
+        Query.ParseIntoArrayWS(Words);
+        TArray<FString> Matches;
+        for (const FToolsetEntry& Entry : Toolsets)
+        {
+            if (!ToolsetMatches(Entry.Name)) continue;
+            for (const TSharedPtr<FJsonObject>& Tool : Entry.Tools)
+            {
+                const FString Name = Entry.Name + TEXT(".") + BareToolName(Field(Tool, TEXT("name")));
+                const FString Searchable = Name + TEXT(" ") + Field(Tool, TEXT("description"));
+                bool bMatches = true;
+                for (const FString& Word : Words)
+                    if (!Searchable.Contains(Word, ESearchCase::IgnoreCase)) { bMatches = false; break; }
+                if (bMatches) Matches.Add(Name);
+            }
+        }
+        Matches.Sort();
+        if (Matches.IsEmpty()) return TEXT("read: no registered tools match all search words in the requested toolset scope");
+        if (Offset >= Matches.Num()) return TEXT("error: search offset outside current results; restart with find:0:<search words>");
+        FString Result = FString::Printf(TEXT("read: %d matching registered tools; offset %d; alphabetical, not a recommendation"), Matches.Num(), Offset);
+        const int32 End = FMath::Min(Offset + 20, Matches.Num());
+        for (int32 Index = Offset; Index < End; ++Index) Result += TEXT("\n  ") + Matches[Index];
+        if (End < Matches.Num()) Result += FString::Printf(TEXT("\nnext: keep ToolsetName; ToolName=find:%d:%s"), End, *Query);
+        Result += TEXT("\nUse an exact tool name for parameters and traps. Search does not authorize edits or bypass refusals.");
+        return Result;
+    }
 
 	// Summary mode: one line per tool in the toolset.
 	if (WantedTool.IsEmpty())

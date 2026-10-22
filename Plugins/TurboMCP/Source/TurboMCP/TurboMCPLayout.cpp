@@ -104,7 +104,7 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 		*Resolved.ObjectPath, *Graph->GetName());
 
 	Out += FString::Printf(
-		TEXT("\ncounts: %d node(s), %d wire(s), %d comment box(es), %d nested"),
+		TEXT("\ncounts: %d non-comment node(s) (includes reroutes), %d pin-link wire(s), %d comment box(es), %d nested boxes"),
 		Report.NodeCount, Report.WireCount, Report.CommentBoxCount,
 		Report.NestedBoxCount);
 
@@ -122,7 +122,7 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 	{
 		// `P1`: a graph with nothing in it says so rather than printing zeroes with
 		// no explanation.
-		Out += TEXT("\nThis graph has no nodes, so there is nothing to measure.");
+		Out += TEXT("\nThis graph has no non-comment nodes; comment boxes are listed above.");
 		return Out;
 	}
 

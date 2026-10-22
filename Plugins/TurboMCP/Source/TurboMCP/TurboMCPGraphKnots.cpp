@@ -1053,7 +1053,7 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 	FString Out;
 	Out += FString::Printf(TEXT("knots: graph %s\n"), *InPlan.GraphName);
 	Out += FString::Printf(
-		TEXT("counts: %d node(s), %d knot(s) already, %d wire(s) cross a node, ")
+		TEXT("counts: %d graph array entries (includes comments and knots), %d knot(s) already (subset), %d wire(s) cross a node, ")
 		TEXT("%d crossing(s) in total\n"),
 		InPlan.NodeCountBefore, InPlan.KnotCountBefore, InPlan.CrossingWiresBefore,
 		InPlan.CrossingsBefore);
@@ -1424,7 +1424,7 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 
 	FString Out = FString::Printf(
 		TEXT("changed: placed %d knot(s) at the positions the preview listed. The crossings went ")
-		TEXT("from %d to %d, so the pass was kept. The graph has %d node(s) and %d knot(s), where it ")
+		TEXT("from %d to %d, so the pass was kept. The graph has %d array entries (includes comments and knots), of which %d are knots; previously it ")
 		TEXT("had %d and %d.\n"),
 		Created.Num(), InPlan.CrossingsBefore, CrossingsAfter,
 		Graph->Nodes.Num(), KnotsAfter, InPlan.NodeCountBefore, InPlan.KnotCountBefore);
