@@ -667,6 +667,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "p0-layout-tolerance": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLayoutReport.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
