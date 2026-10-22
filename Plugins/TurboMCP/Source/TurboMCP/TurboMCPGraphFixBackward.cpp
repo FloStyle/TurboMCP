@@ -1267,6 +1267,12 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 		// pin links to. `GetValuePin` is the working spelling, read from the promotion path in
 		// `TurboMCPLocalVars.cpp` rather than guessed.
 		UK2Node_VariableGet* GetterK2 = Cast<UK2Node_VariableGet>(GetterNode);
+        if (!GetterK2 || !GetterK2->IsNodePure()) continue;
+        bool bHasExecutionPin = false;
+        for (const UEdGraphPin* GetterPin : GetterK2->Pins)
+            if (GetterPin && GetterPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                bHasExecutionPin = true;
+        if (bHasExecutionPin) continue;
 		UEdGraphPin* ValuePin = GetterK2 != nullptr ? GetterK2->GetValuePin() : nullptr;
 		if (ValuePin == nullptr)
 		{

@@ -396,10 +396,17 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 	for (const UEdGraphNode* Node : FlowNodes)
 	{
 		const UK2Node_VariableGet* Getter = Cast<UK2Node_VariableGet>(Node);
-		if (Getter == nullptr)
+		if (Getter == nullptr || !Getter->IsNodePure())
 		{
 			continue;
 		}
+
+        // Validated/exec-dependent getters must follow execution flow, not pure-input placement.
+        bool bHasExecutionPin = false;
+        for (const UEdGraphPin* GetterPin : Getter->Pins)
+            if (GetterPin && GetterPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                bHasExecutionPin = true;
+        if (bHasExecutionPin) continue;
 
 		const FRect GetterRect = RectOf(Getter);
 
