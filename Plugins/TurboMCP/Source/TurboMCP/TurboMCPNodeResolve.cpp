@@ -200,6 +200,7 @@ namespace
 		TArray<FString> Fields;
 		Fields.Add(TurboMCPNodeId::GetNodeTitle(InNode));
 		Fields.Add(InNode->GetClass()->GetName());
+        Fields.Add(InNode->NodeComment);
 
 		if (const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(InNode))
 		{
@@ -604,11 +605,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 				// The class name is appended because the engine writer's type ID
 				// carries a localised title half; see the note in R-NODE-RESOLVE.
 				Lines.Add(FString::Printf(
-					TEXT("%s\n    title: %s\n    type ID: %s\n    class: %s"),
+					TEXT("%s\n    title: %s\n    type ID: %s\n    class: %s\n    comment text: %s"),
 					*TurboMCPNodeId::MakeForNode(Node, /*bLongForm=*/true),
 					*TurboMCPNodeId::GetNodeTitle(Node),
 					*TurboMCPNodeId::GetNodeTypeId(Node),
-					*Node->GetClass()->GetName()));
+					*Node->GetClass()->GetName(), *Node->NodeComment.Replace(TEXT("\r"),TEXT("\\r")).Replace(TEXT("\n"),TEXT("\\n"))));
 			}
 		}
 
@@ -628,7 +629,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 		Result += FString::Printf(
 			TEXT("\nNothing matched. All %d node(s) across %d graph(s) were searched. ")
 			TEXT("The words are matched against each node's title, its called function, ")
-			TEXT("its variable, its class and its pin names, and every word must appear. ")
+			TEXT("its variable, its class, its comment text and its pin names, and every word must appear. ")
 			TEXT("Try one word, or fewer."),
 			Searched, Graphs.Num());
 		return Result;
