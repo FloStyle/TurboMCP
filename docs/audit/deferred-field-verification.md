@@ -610,3 +610,7 @@ Partial, unbuilt_untested. Continuation=all traverses only newly created reachab
 ## P0 graph pages — ac0ee60
 
 GL-19 partial, unbuilt_untested. Offset/MaxChars/Revision retrieve complete rendered text; stale tokens refuse and partial pages cannot be written back standalone. Event/function entry filtering remains open. No tests/build/editor runs.
+
+## P0 entry filter — 34109ae
+
+GL-19 implemented, unbuilt_untested: entry-name substring filtering completes the pagination capability. Shared renderer preserves full default behavior; filtered views are explicitly partial and exclude unrelated disconnected inventory. No tests/build/editor runs. Later verify filtering with shared values/tails and revision paging across long Unicode output.

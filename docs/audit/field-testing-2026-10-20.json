@@ -2027,14 +2027,13 @@
       "canonical_issue": "2026-10-22_S1/GL-19",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partially_implemented",
+      "disposition": "implemented_unverified",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Type:** Limitation.\n- **Observed:** The event graph read stops at about 22000 characters and suggests a smaller detail level. There is no offset or \"events matching X\" parameter, so the missing events cannot be read as text.\n- **Proposed behavior:** Add an entry filter (event or function names) and a continuation offset, like the asset search paging.",
-      "fix_commit": "ac0ee60",
-      "implementation": "GraphLoad supports Offset, MaxChars and Revision; all text can be retrieved across pages. Stale revision refuses continuation. Partial pages carry reader-error markers to block standalone write-back.",
-      "remaining": "Requested event/function entry-name filter still outstanding. Pagination implemented; no tests/build/editor runs."
+      "fix_commit": "34109ae",
+      "implementation": "GraphLoad supports Offset/MaxChars/Revision plus EntryFilter (case-insensitive event/function name substring). No-match lists available entries. Filtered views omit unrelated comments/disconnected lists and reject standalone write-back; pages retain revision checks."
     },
     {
       "report": "2026-10-22_S1",
