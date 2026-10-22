@@ -114,6 +114,11 @@ public:
 	/**
 	 * Read assets matching a query, like the editor's quick open search.
 	 *
+	 * For gameplay-tag usage/referencers, discover the stock GameplayTagsToolset
+	 * FindReferencersByTag tool and pass tagName (the exact registered tag).
+	 * It returns asset-registry package referencers, not proof of runtime execution.
+	 * This text search is not a tag-reference search; the stock toolset must be enabled.
+	 *
 	 * Pass words to match against asset names and folder paths. Every word must
 	 * appear in one or the other. Two filters may appear at any position, alone
 	 * or with words: `type:<class words>` and `path:<folder words>`.
@@ -216,6 +221,11 @@ public:
 
 	/**
 	 * Find nodes in a Blueprint by what they say.
+	 *
+	 * For gameplay-tag usage/referencers, discover the stock GameplayTagsToolset
+	 * FindReferencersByTag tool and pass tagName (the exact registered tag).
+	 * It returns asset-registry package referencers, not proof of runtime execution.
+	 * This text search is not a tag-reference search; the stock toolset must be enabled.
 	 *
 	 * Pass the asset, one or more words separated by whitespace, commas or pipes, and
 	 * optionally one graph name. Every word must appear, which is what makes a

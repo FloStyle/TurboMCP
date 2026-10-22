@@ -164,3 +164,16 @@ The fast batch was merged at owner request without build or regression. Keep the
 Append, Patch and Replace defer compilation and saving. After editing, call EditTurboMCPCompile outside any transaction; inspect the result, then explicitly save. This avoids recording compilation/reinstancing inside graph-edit undo.
 
 Replace remains two-phase: append, then removal. A removal failure can leave the append applied; the tool reports partial state. Re-read before retrying. This source change has not been built or regression-tested.
+
+## Finding gameplay-tag usage
+
+For “where is this gameplay tag used?” or “is this setting referenced?”, discover
+`FindReferencersByTag` in the stock Unreal `GameplayTagsToolset` and pass
+`tagName`, for example `{"tagName":"UI.Settings.Audio"}` using a tag registered
+in your project. Enable/discover that toolset first; TurboMCP does not assume it
+is installed or enabled. `ReadTurboMCPAssetSearch` searches asset names/paths,
+and `ReadTurboMCPNodeFind` searches node text; neither replaces tag referencers.
+
+The native tool returns package references recorded in the asset registry.
+A reference is not proof that a runtime execution path reaches that setting,
+and an empty result is not proof that dynamic code never uses the tag.
