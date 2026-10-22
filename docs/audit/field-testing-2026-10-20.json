@@ -1796,7 +1796,7 @@
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
       "observation": "- **Type:** Limitation.\r\n- **Observed:** The previews reported 0 getters would be split. One self reference fed 3 consumers. One count getter fed 3 consumers. The tidy kept each one shared, with long wires.\r\n- **Proposed behavior:** Split shared self and getter nodes as part of the tidy, or offer it in the preview (TD-32).\r\n\r\n### Graph edits",
       "followup_implementation": "42250dc and a612b20: self and leaf getter splitting now supports consumer comment groups and nested bound growth.",
-      "remaining": "Automatic function-input getter synthesis and general shared-expression ownership remain outstanding; arbitrary pure operations are not duplicated."
+      "remaining": "General shared pure-expression ownership/splitting remains outstanding; automatic function-input getter synthesis is now implemented separately."
     },
     {
       "report": "2026-10-21_S15",
@@ -1856,15 +1856,15 @@
       "canonical_issue": "function-input-getters",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partially_implemented",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
       "observation": "- **Type:** Proposal from the user review.\r\n- **Observed:** The user rated the hand layout of the math graph almost perfect. The user wants the tool to make this kind of result. The one change the user made: the two function inputs were wired from the entry node across the whole graph. The user replaced each wire with a getter node for that function input, placed next to its consumer. The diagonal wire across the condition nodes went away.\r\n- **Expected:** When a function input wire is long or crosses other nodes, the layout uses an input getter beside the consumer instead.\r\n- **Proposed behavior:** Treat function inputs like shared values in TD-35. Split them into one getter per consumer and place each getter in the input column of its consumer.",
       "fix_commit": "1ffb537",
       "implementation": "FunctionInput IDs discover and create scoped getters from current entry pin declarations, including inputs not yet reflected; no compile. Reader uses the same declaration-based identity.",
-      "remaining": "Split-struct parameter pins remain unsupported by automatic conversion. Native getter measurement and metric parity require deferred runtime verification.",
-      "implementation_limits": "Tidy plans typed local input getters for each eligible visible unsplit function-entry data output consumer. Same creation path in transient preview/live apply; existing copy rollback restores original links. Selection and comment obstacle rules retained. Native transient getter measurement supplies per-reader bounds and output offsets; preview placement and post-edit wire comparisons use those offsets. No live asset measurement mutations; scratch undo suppressed.",
+      "remaining": "",
+      "implementation_limits": "Automatic per-consumer function input getters implemented for visible scalar/container and split-struct leaf outputs. Root parameter reference and complete nested split tree preserved; native getter measurements, selected scope, comment obstacles, preview/apply pin matching and rollback included. Runtime/compile verification deferred.",
       "measurement_commit": "c6a9eff"
     },
     {
@@ -3305,15 +3305,15 @@
       "canonical_issue": "function-input-getters",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
       "observation": "The user did this by hand for 2 wires.",
-      "disposition": "partially_implemented",
+      "disposition": "implemented",
       "fix_commit": "1ffb537",
       "implementation": "FunctionInput IDs discover and create scoped getters from current entry pin declarations, including inputs not yet reflected; no compile. Reader uses the same declaration-based identity.",
-      "remaining": "Split-struct parameter pins remain unsupported by automatic conversion. Native getter measurement and metric parity require deferred runtime verification.",
-      "implementation_limits": "Tidy plans typed local input getters for each eligible visible unsplit function-entry data output consumer. Same creation path in transient preview/live apply; existing copy rollback restores original links. Selection and comment obstacle rules retained. Native transient getter measurement supplies per-reader bounds and output offsets; preview placement and post-edit wire comparisons use those offsets. No live asset measurement mutations; scratch undo suppressed.",
+      "remaining": "",
+      "implementation_limits": "Automatic per-consumer function input getters implemented for visible scalar/container and split-struct leaf outputs. Root parameter reference and complete nested split tree preserved; native getter measurements, selected scope, comment obstacles, preview/apply pin matching and rollback included. Runtime/compile verification deferred.",
       "measurement_commit": "c6a9eff"
     },
     {

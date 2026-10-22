@@ -739,3 +739,7 @@ Tidy creates typed scoped UK2Node_VariableGet readers for visible unsplit functi
 ## Native input getter geometry — c6a9eff
 
 Input getter planning measures one transient native getter per parameter, with scratch undo suppressed, then stores reader bounds and output offset. Placement, comment growth and overlap metrics use those bounds; planned/post-edit wire comparisons use the same output offset. No tests/build/editor runs. Verify native offscreen creation without Blueprint ownership, widget population, large parameter names/types, repeated tidy, measured geometry and rollback parity. Split input pins remain implementation work.
+
+## Split function input getters
+
+TD-36/FT-90 implementation complete with the automatic conversion and geometry batches. Split leaf consumers get a local getter referring to the root parameter with a cloned full split hierarchy (names, types, hidden parents, defaults and parent/subpin relationships). Measurement, preview, edit and rollback resolve the exact leaf by name/type. No tests/build/editor runs. Verify nested structs, by-reference parameters, container types, native widget rendering, compile, reload, undo and semantic equivalence. General shared pure expressions remain TD-35 implementation work.
