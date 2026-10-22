@@ -242,6 +242,11 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		// for a comment that is not an id, which is most of them.
 		if (TurboMCPGraphTextLex::IsCommentLine(Line))
 		{
+            if(CurrentIndex==INDEX_NONE && !TurboMCPGraphTextLex::LocalLabelFromComment(Line.Text).IsEmpty())
+            {
+                OutError=FString::Printf(TEXT("line %d: label has no preceding node form. Put '; label Name' after the form it names, not before the next form."),Line.Number);
+                return false;
+            }
 			if (CurrentIndex != INDEX_NONE)
 			{
 				const FString FormId = TurboMCPGraphTextLex::NodeIdFromComment(Line.Text);
@@ -252,6 +257,11 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 				const FString LocalLabel = TurboMCPGraphTextLex::LocalLabelFromComment(Line.Text);
 				if (!LocalLabel.IsEmpty())
 				{
+                    if(!OutPlan.Nodes[CurrentIndex].LocalLabel.IsEmpty() && OutPlan.Nodes[CurrentIndex].LocalLabel!=LocalLabel)
+                    {
+                        OutError=FString::Printf(TEXT("line %d: node already has label '%s'. A standalone label belongs to the preceding form; place the next node's label after that node."),Line.Number,*OutPlan.Nodes[CurrentIndex].LocalLabel);
+                        return false;
+                    }
 					OutPlan.Nodes[CurrentIndex].LocalLabel = LocalLabel;
 				}
 			}

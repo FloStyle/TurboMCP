@@ -1250,6 +1250,10 @@ public:
 	 *
 	 * Writes nothing, and cannot. It is in this toolset, which holds no tool that can
 	 * change an asset.
+     * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
+     * or put `; label Name` on its own line after the closed form. Never put a label before its node.
+     * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments
+     * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphAppend(
@@ -2061,6 +2065,10 @@ public:
 	 * AFTER WRITING it reads the graph back and compares, and a node the plan created that
 	 * is NOT in the graph is reported as `FAILED COMPARE` - a FAILURE, not a success with a
 	 * note. The first line is `changed` or `unchanged`.
+     * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
+     * or put `; label Name` on its own line after the closed form. Never put a label before its node.
+     * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments
+     * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphAppend(
