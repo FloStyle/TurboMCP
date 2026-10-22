@@ -595,6 +595,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 				}
 			}
 
+            // Usage comes from the current tool contract; placeholders are not real asset IDs.
+            if (Entry.Name.StartsWith(TEXT("TurboMCP.")))
+            {
+                if (Bare == TEXT("ReadTurboMCPTrace"))
+                    Help += TEXT("\nusage: Action=status, NodeId empty. This reads trace state; arm/clear require EditTurboMCPTrace.");
+                else if (Bare == TEXT("EditTurboMCPTrace"))
+                    Help += TEXT("\nusage: Action=arm, NodeId=<actual node ID from the reader>; Action=clear, NodeId empty clears the trace registry. Action=status is also accepted. No start/stop action exists. Arming does not itself execute the graph.");
+                else if (Bare == TEXT("PreviewTurboMCPGraphAppend") || Bare == TEXT("EditTurboMCPGraphAppend"))
+                    Help += TEXT("\nusage template: Asset=<existing Blueprint path>, GraphName=<explicit existing graph>, Continuation=auto. Text example (a new unconnected call):\n(Development|PrintString\n    InString \"Hello\"\n    Duration 1.5)\nUse Preview first. This fragment does not splice an existing execution wire; connections require reader-derived IDs and the append link grammar. A refusal is not permission to retry through a different writer.");
+                else if (Bare == TEXT("PreviewTurboMCPGraphPatch") || Bare == TEXT("EditTurboMCPGraphPatch"))
+                    Help += TEXT("\nusage template: Asset=<existing Blueprint path>, GraphName=<explicit existing graph>. For an existing PrintString call, replace <full reader node ID> below with that node's actual identity:\n(Development|PrintString ; <full reader node ID>\n    InString \"Hello\")\nPreview first. Patch changes existing literal defaults; this is not an append or an execution-link rewrite. The type and pin must match the target node; placeholders are not accepted IDs.");
+            }
+
 			// Traps come from the data file, never from code (D-07).
 			const FTurboMCPTraps::FToolInfo* Info = Traps.Find(Bare);
 			if (Info != nullptr && Info->Traps.Num() > 0)
