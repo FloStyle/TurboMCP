@@ -15,6 +15,9 @@
 #include "Templates/SubclassOf.h"
 #include "Templates/ValueOrError.h"
 #include "UObject/Class.h"
+#include "UObject/Package.h"
+#include "UObject/UObjectIterator.h"
+#include "Containers/Set.h"
 
 #include "ToolsetRegistry/Toolset.h"
 #include "ToolsetRegistry/ToolsetRegistry.h"
@@ -29,6 +32,31 @@ namespace
 {
 	using UE::ToolsetRegistry::FToolset;
 	using FToolResult = TValueOrError<FString, FString>;
+
+    // Called only on the editor game thread. Store names rather than object pointers across a call.
+    TSet<FString> DirtyPackages()
+    {
+        TSet<FString> Names;
+        for (TObjectIterator<UPackage> It; It; ++It)
+            if (It->IsDirty() && !It->HasAnyPackageFlags(PKG_Transient) && !It->HasAnyFlags(RF_Transient)) Names.Add(It->GetName());
+        return Names;
+    }
+
+    FString DirtyDelta(const TSet<FString>& Before)
+    {
+        if (!IsInGameThread()) return TEXT("\ndirty_packages: after snapshot unavailable off game thread; no cleanliness claim");
+        const TSet<FString> After = DirtyPackages();
+        TArray<FString> Added, Cleared;
+        for (const FString& Name : After) if (!Before.Contains(Name)) Added.Add(Name);
+        for (const FString& Name : Before) if (!After.Contains(Name)) Cleared.Add(Name);
+        Added.Sort(); Cleared.Sort();
+        FString Report = FString::Printf(TEXT("\ndirty_packages: before=%d after=%d newly_dirty=%d no_longer_dirty=%d"), Before.Num(), After.Num(), Added.Num(), Cleared.Num());
+        for (const FString& Name : Added) Report += TEXT("\n  newly_dirty: ") + Name;
+        for (const FString& Name : Cleared) Report += TEXT("\n  no_longer_dirty: ") + Name;
+        if (!Added.IsEmpty()) Report += TEXT("\nReview newly dirty packages against the requested targets; this report does not save or discard them. Dependency/editor side effects may be included.");
+        if (!Cleared.IsEmpty()) Report += TEXT("\nA cleared dirty flag alone is not proof of a successful disk save.");
+        return Report;
+    }
 
 	/**
 	 * The wrappers this plugin installed.
@@ -126,10 +154,17 @@ namespace
                 return MakeFulfilledPromise<FToolResult>(MakeError(Error)).GetFuture();
             }
 
+			const TSet<FString> BeforeDirty = bAssetEdit ? DirtyPackages() : TSet<FString>();
 			return Inner->ExecuteTool(ToolName, JsonInput).Then(
-				[Call](TFuture<FToolResult> Future) -> FToolResult
+				[Call, bAssetEdit, BeforeDirty](TFuture<FToolResult> Future) -> FToolResult
 				{
 					FToolResult Result = Future.Get();
+                    if (bAssetEdit)
+                    {
+                        const FString Delta = DirtyDelta(BeforeDirty);
+                        if (Result.HasError()) Result = MakeError(Result.GetError() + Delta);
+                        else Result = MakeValue(Result.GetValue() + Delta);
+                    }
 
 					// THE SIZE AND THE TOKEN ESTIMATE COME FROM THE RESULT ITSELF, WHICH IS THE POINT OF
 					// MEASURING AT THIS BOUNDARY: the engine's event for the same call carries neither,
