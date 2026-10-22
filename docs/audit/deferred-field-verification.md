@@ -683,3 +683,7 @@ CP-16 remains partial: target-only bounds now drive an independent native canvas
 ## Pure expression execution-row separation — 19bc09b
 
 TD-34 remains partial. General and Sequence pure placement clamps below the execution consumer; upstream pure inputs inherit the floor. Getter copies use that floor too. Direct pure-to-exec row conflicts now precede wire length in structural quality. No tests/build/editor runs. Inspect later with math chains, Sequence stages, boxes, selected nodes, shared multi-lane values and copy-aware metrics; those last two remain implementation work, not verification-only debt.
+
+## Copy-aware structural quality — 7555abc
+
+Planned and actual quality include getter-copy rectangles, using the original same-schema getter outline. Data row conflicts use each rerouted copy position. Actual evaluation receives the created copies, and increased overlap counts trigger rollback even with Force. Source inspection only; no tests/build/editor runs. Verify preview/apply metric parity, copies against original nodes and other copies, Force rollback and restoration. Native copy outline equivalence remains unverified. This supersedes the previous missing-copy metric implementation debt; shared-value ownership and corridor placement remain open.
