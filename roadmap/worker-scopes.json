@@ -925,6 +925,12 @@
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp"
           ]
+        },
+        "p0-per-lane-input-bands": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
