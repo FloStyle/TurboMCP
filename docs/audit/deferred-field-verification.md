@@ -671,3 +671,7 @@ Added bound-event owner property/class, actor identity and event node ID to Blue
 
 ## FT-96 reroute traversal (2026-10-22)
 Delegate consumers traced through transparent knots with visited-pin cycle detection. Dynamic storage/runtime invocation explicitly not inferred. Unbuilt/untested: branched/cyclic/disconnected knots, bound functions and context output.
+
+## Empty note distance preview — a079cd6
+
+2026-10-21_S14/CB-03: implemented the requested reporting alternative. Source inspection only; no build, tests or editor runs. Verify empty leaf notes, graphs without non-comment nodes, distance changes after tidy and unchanged note geometry. Nearest-node proximity does not establish a semantic anchor; automatic note following is not claimed.

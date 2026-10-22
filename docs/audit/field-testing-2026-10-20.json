@@ -1682,11 +1682,14 @@
       "canonical_issue": "2026-10-21_S14/CB-03",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-21_S14_TurboMCP_tidy-linear-function.md",
-      "observation": "- **Type:** Limitation.\r\n- **Observed:** The graph has a note box with no node in it. The tidy kept its corner. After the tidy, the box sits far to the left and below the chain, away from the part of the chain that the note is about.\r\n- **Expected:** A note box moves with the nodes it describes, or the tool reports that the box is now far from the chain.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** List empty boxes in the preview and ask which node to anchor each one to.\r\n\r\n### Capture"
+      "observation": "- **Type:** Limitation.\r\n- **Observed:** The graph has a note box with no node in it. The tidy kept its corner. After the tidy, the box sits far to the left and below the chain, away from the part of the chain that the note is about.\r\n- **Expected:** A note box moves with the nodes it describes, or the tool reports that the box is now far from the chain.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** List empty boxes in the preview and ask which node to anchor each one to.\r\n\r\n### Capture",
+      "fix_commit": "a079cd6",
+      "implementation": "Tidy preview lists empty leaf comment notes by stable ID and text, with before/planned edge distance to the same nearest pre-tidy node. Notes remain fixed; preview asks which node they describe rather than inferring semantic ownership. Implements the report's explicit distance-reporting alternative.",
+      "remaining": ""
     },
     {
       "report": "2026-10-21_S14",
