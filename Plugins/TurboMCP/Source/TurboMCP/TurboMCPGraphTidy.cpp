@@ -57,6 +57,9 @@ namespace
         int32 BackwardExec=0;
         double LinearExecDrift=0;
         int32 PureInputRowConflicts=0;
+        int32 BackwardData=0;
+        int32 FanOutRowConflicts=0;
+        double InputPinDrift=0;
     };
     // Mode: original, planned, or actual post-edit coordinates. Pin offsets remain native.
     FStructuralQuality StructuralQuality(const FTurboMCPGraphTidy::FPlan& Plan,int32 Mode,
@@ -98,41 +101,73 @@ namespace
         // wire would put the expression back into the execution corridor.
         for (const auto& DataWire : Plan.Wires)
         {
-            if (!DataWire.OutputPin || DataWire.OutputPin->PinType.PinCategory == TEXT("exec")
+            if (!DataWire.OutputPin || !DataWire.InputPin || DataWire.OutputPin->PinType.PinCategory == TEXT("exec")
                 || !Plan.Nodes.IsValidIndex(DataWire.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(DataWire.TargetNodeIndex)) continue;
             const auto& Source = Plan.Nodes[DataWire.SourceNodeIndex];
             const auto& Consumer = Plan.Nodes[DataWire.TargetNodeIndex];
+            if(!Source.Node || !Consumer.Node) continue;
             FVector2D EffectiveSource = Position(Source);
+            bool IsValueReader=Source.bIsPure;
+            FVector2D OutputPosition=FTurboMCPGraphTidy::AlignmentPinPosition(DataWire.OutputPin)
+                +EffectiveSource-FVector2D(Source.Node->NodePosX,Source.Node->NodePosY);
             if (Mode != 0)
                 for (const auto& Copy : Copies)
                     if (Copy.OriginalValuePin == DataWire.OutputPin && Copy.ConsumerPin == DataWire.InputPin
                         && (Mode != 2 || Copy.Copy))
-                    { EffectiveSource = CopyPosition(Copy); break; }
-            if (Source.bIsPure && !Source.bIsKnot && !Consumer.bIsPure && !Consumer.bIsComment
+                    { EffectiveSource = CopyPosition(Copy); OutputPosition=EffectiveSource+Copy.OutputOffset; IsValueReader=true; break; }
+            if (IsValueReader && !Source.bIsKnot && !Consumer.bIsPure && !Consumer.bIsComment
                 && EffectiveSource.Y < Position(Consumer).Y + Consumer.Height)
                 ++Q.PureInputRowConflicts;
+            const FVector2D InputPosition=FTurboMCPGraphTidy::AlignmentPinPosition(DataWire.InputPin)
+                +Position(Consumer)-FVector2D(Consumer.Node->NodePosX,Consumer.Node->NodePosY);
+            if(InputPosition.X<OutputPosition.X) ++Q.BackwardData;
+            if(IsValueReader && !Source.bIsKnot)
+                Q.InputPinDrift+=FMath::Max(0.0,FMath::Abs(InputPosition.Y-OutputPosition.Y)-8.0);
         }
         for(const auto& W:Plan.Wires)
         {
             if(!W.OutputPin || !W.InputPin || W.OutputPin->PinType.PinCategory!=TEXT("exec") || !Plan.Nodes.IsValidIndex(W.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(W.TargetNodeIndex)) continue;
             const auto& S=Plan.Nodes[W.SourceNodeIndex]; const auto& T=Plan.Nodes[W.TargetNodeIndex];
             if(!S.Node || !T.Node) continue;
-            const FVector2D Start=FTurboMCPLayoutReport::PinPosition(W.OutputPin)+Position(S)-FVector2D(S.Node->NodePosX,S.Node->NodePosY);
-            const FVector2D End=FTurboMCPLayoutReport::PinPosition(W.InputPin)+Position(T)-FVector2D(T.Node->NodePosX,T.Node->NodePosY);
+            const FVector2D Start=FTurboMCPGraphTidy::AlignmentPinPosition(W.OutputPin)+Position(S)-FVector2D(S.Node->NodePosX,S.Node->NodePosY);
+            const FVector2D End=FTurboMCPGraphTidy::AlignmentPinPosition(W.InputPin)+Position(T)-FVector2D(T.Node->NodePosX,T.Node->NodePosY);
             if(End.X<Start.X) ++Q.BackwardExec;
             int32 Outputs=0;
             for(const UEdGraphPin* P:S.Node->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==TEXT("exec")) ++Outputs;
             // Branch/Sequence fan-out and merge inputs deliberately occupy separate rows.
             if(Outputs==1 && W.InputPin->LinkedTo.Num()==1) Q.LinearExecDrift+=FMath::Max(0.0,FMath::Abs(End.Y-Start.Y)-16.0);
         }
+        // Distinct fan-out paths need separate bands. A shared immediate target
+        // is a merge, not two lanes, so do not penalize it for coincident endpoints.
+        for(int32 A=0;A<Plan.Wires.Num();++A)
+        {
+            const auto& L=Plan.Wires[A];
+            if(!L.OutputPin || !L.InputPin || L.OutputPin->PinType.PinCategory!=TEXT("exec")
+                || !Plan.Nodes.IsValidIndex(L.TargetNodeIndex)) continue;
+            for(int32 B=A+1;B<Plan.Wires.Num();++B)
+            {
+                const auto& R=Plan.Wires[B];
+                if(!R.OutputPin || !R.InputPin || R.OutputPin->PinType.PinCategory!=TEXT("exec")
+                    || L.SourceNodeIndex!=R.SourceNodeIndex || L.OutputPin==R.OutputPin
+                    || L.TargetNodeIndex==R.TargetNodeIndex || !Plan.Nodes.IsValidIndex(R.TargetNodeIndex)) continue;
+                const auto& LN=Plan.Nodes[L.TargetNodeIndex];const auto& RN=Plan.Nodes[R.TargetNodeIndex];
+                if(!LN.Node || !RN.Node) continue;
+                const double LY=FTurboMCPGraphTidy::AlignmentPinPosition(L.InputPin).Y+Position(LN).Y-LN.Node->NodePosY;
+                const double RY=FTurboMCPGraphTidy::AlignmentPinPosition(R.InputPin).Y+Position(RN).Y-RN.Node->NodePosY;
+                if(FMath::Abs(LY-RY)<16.0) ++Q.FanOutRowConflicts;
+            }
+        }
         return Q;
     }
     bool BetterLayout(const FStructuralQuality& Before,const FStructuralQuality& After,double OldLength,double NewLength)
     {
         if(After.Overlaps!=Before.Overlaps) return After.Overlaps<Before.Overlaps;
-        if(After.BackwardExec!=Before.BackwardExec) return After.BackwardExec<Before.BackwardExec;
         if(!FMath::IsNearlyEqual(After.LinearExecDrift,Before.LinearExecDrift,1.0)) return After.LinearExecDrift<Before.LinearExecDrift;
+        if(After.FanOutRowConflicts!=Before.FanOutRowConflicts) return After.FanOutRowConflicts<Before.FanOutRowConflicts;
+        if(After.BackwardExec!=Before.BackwardExec) return After.BackwardExec<Before.BackwardExec;
+        if(After.BackwardData!=Before.BackwardData) return After.BackwardData<Before.BackwardData;
         if(After.PureInputRowConflicts!=Before.PureInputRowConflicts) return After.PureInputRowConflicts<Before.PureInputRowConflicts;
+        if(!FMath::IsNearlyEqual(After.InputPinDrift,Before.InputPinDrift,1.0)) return After.InputPinDrift<Before.InputPinDrift;
         return NewLength<OldLength;
     }
     TMap<const UEdGraphNode*, FVector2D> CachedAlignmentNodeSizes;
@@ -2103,7 +2138,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	// CROSSING NODES, so a reader comparing the two tools' numbers is comparing two quantities - and
 	// the label is what stops that.
     const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
-    Lines.Add(FString::Printf(TEXT("quality: overlaps %d -> %d; backward exec %d -> %d; linear exec drift %.1f -> %.1f (16px tolerance); pure input row conflicts %d -> %d. Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts));
+    Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.FanOutRowConflicts,QualityAfter.FanOutRowConflicts,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.BackwardData,QualityAfter.BackwardData,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts,QualityBefore.InputPinDrift,QualityAfter.InputPinDrift));
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
 
 	if (InPlan.SelectedNodeKeys.Num() > 0)
@@ -2498,6 +2533,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	const bool bScoreMatchesPlan = FMath::IsNearlyEqual(MeasuredAfter, InPlan.WireLengthAfter, 1.0);
 	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? (InPlan.bForce ? TEXT(" (longer wires; Force enabled)") : TEXT(" (longer wires; structural quality improved)")) : TEXT("")));
 	Lines.Add(FString::Printf(TEXT("score: preview predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("MATCHES THE PREVIEW") : TEXT("DOES NOT MATCH THE PREVIEW")));
+    Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),OriginalQuality.Overlaps,ActualQuality.Overlaps,OriginalQuality.LinearExecDrift,ActualQuality.LinearExecDrift,OriginalQuality.FanOutRowConflicts,ActualQuality.FanOutRowConflicts,OriginalQuality.BackwardExec,ActualQuality.BackwardExec,OriginalQuality.BackwardData,ActualQuality.BackwardData,OriginalQuality.PureInputRowConflicts,ActualQuality.PureInputRowConflicts,OriginalQuality.InputPinDrift,ActualQuality.InputPinDrift));
     const auto CrossBoxAfter = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
     Lines.Add(FString::Printf(TEXT("cross-box: estimated straight-line length %.1f -> %.1f (delta %+.1f); connections %d -> %d. Ownership uses the smallest enclosing comment at each state; copies or box growth can change the count."), CrossBoxBefore.Length, CrossBoxAfter.Length, CrossBoxAfter.Length-CrossBoxBefore.Length, CrossBoxBefore.Count, CrossBoxAfter.Count));
 	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), and NO BOX CORNER MOVED: every box keeps the top-left corner the user placed, and only its size changed."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
