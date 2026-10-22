@@ -620,6 +620,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp"
           ],
           "new_files": []
+        },
+        "p0-node-context": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
