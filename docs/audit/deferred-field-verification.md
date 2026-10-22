@@ -872,3 +872,7 @@ Found missing graph-change notification after direct tidy writes. Added default 
 ## Actual branch input-cluster bands
 
 Pack each lane and owned pure inputs as one translated band using their actual placed union height; retain minimum LanePitch and vertical clearance. This removes provisional sum-of-all-input-heights whitespace when columns sit side by side. Source inspection only; no tests/build/editor. Deferred: nested branch/merge diagrams, shared values across lanes, copies added after packing, scoped/comment boundary parity. Aggregate layout findings remain open for the final copy-placement interaction audit.
+
+## Oct22 S2/X-93 dependency audit, 2026-10-23
+
+Read the original tools/scenario and current StructNew/WidgetsAsVars/Compile/CallRecorder paths. Stock UserDefinedStructureCompilerUtils.cpp updates dependent Blueprints through FindScriptStructsInNodes and MarkBlueprintAsStructurallyModified, then reinstantiates referencing objects. This establishes a possible legitimate dependency mechanism, not the reported cause. No evidence identifies the two packages as dependency-free, nor the triggering native/plugin call. User cannot recover historical details. Keep issue open: package-delta reporting is implemented, unintended-dirty prevention is not proven. A fresh reproduction is deferred under the no editor/tests policy; never hide the issue by resetting package dirty flags or skipping necessary dependency migration.

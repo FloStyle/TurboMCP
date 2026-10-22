@@ -2445,7 +2445,17 @@
       "dirty_audit_commit": "257dfad",
       "dirty_audit": "Reads, previews and looks now report newly dirty/cleared packages when a game-thread before snapshot is available; unchanged non-edit calls stay quiet. Edit/compile/save reporting retained. No dirty flags cleared.",
       "input_needed": "User confirmed 2026-10-23 that the historical session is too old and the requested first-dirtying-call evidence is impossible to recover. No outstanding request for this old evidence.",
-      "evidence_status": "historical_evidence_unavailable_user_confirmed"
+      "evidence_status": "historical_evidence_unavailable_user_confirmed",
+      "source_audit_2026_10_23": {
+        "paths_reviewed": [
+          "TurboMCPStruct.cpp struct creation/field compilation",
+          "TurboMCPWidgetsAsVars.cpp named widget mutation",
+          "TurboMCPCompile.cpp explicit Blueprint compile",
+          "TurboMCPCallRecorder.cpp package delta attribution"
+        ],
+        "finding": "Stock UserDefinedStructureCompilerUtils compiles dependency graphs, reconstructs referencing nodes, marks dependent Blueprints structurally modified and reinstantiates referencing objects. This is a legitimate possible dependency effect, not proof of this historical incident. Report also used native engine tools outside TurboMCP attribution.",
+        "remaining": "Triggering call and dependency relationships unavailable (user confirmed old evidence cannot be recovered). No concrete unintended mutation source established. Fresh reproduction would be needed to distinguish unrelated side effects from dependency migration; tests/editor remain deferred by user. Do not clear dirty flags or disable dependency updates."
+      }
     },
     {
       "report": "2026-10-22_S2",
