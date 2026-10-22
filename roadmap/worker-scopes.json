@@ -544,6 +544,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp"
           ],
           "new_files": []
+        },
+        "p0-form-diagnostics": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheck.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
