@@ -207,6 +207,17 @@ namespace
 	 * produced under. Both are avoided here by collecting everything in the single pass that already
 	 * has it.
 	 */
+    void AddBlueprintOwnerAliases(FEntry& Entry, const UBlueprint* Owner, const TCHAR* Access, const FString& Name)
+    {
+        if (!Owner) return;
+        Entry.Aliases.AddUnique(FString::Printf(TEXT("Variables|%s|%s%s"), *Owner->GetName(), Access, *Name));
+        // Both class objects describe the same declaration; their lifetime/version differs.
+        if (Owner->GeneratedClass)
+            Entry.Aliases.AddUnique(FString::Printf(TEXT("Variable|%s|%s|%s"), *Owner->GeneratedClass->GetPathName(), Access, *Name));
+        if (Owner->SkeletonGeneratedClass)
+            Entry.Aliases.AddUnique(FString::Printf(TEXT("Variable|%s|%s|%s"), *Owner->SkeletonGeneratedClass->GetPathName(), Access, *Name));
+    }
+
 	void CollectEntries(UBlueprint* InBlueprint, UEdGraph* InGraph, TArray<FEntry>& OutEntries)
 	{
 		if (InBlueprint == nullptr || InGraph == nullptr)
@@ -314,10 +325,14 @@ namespace
                         Entry.TypeId=FString::Printf(TEXT("Variable|%s|%s|%s"),
                             *(DeclaringBlueprint?DeclaringBlueprint->GetPathName():PropertyOwner?PropertyOwner->GetPathName():Property->GetOwnerStruct()->GetPathName()),Access,*Property->GetName());
                         Entry.bContextVariable=DeclaringBlueprint==InBlueprint || (PropertyOwner && InBlueprint->ParentClass && InBlueprint->ParentClass->IsChildOf(PropertyOwner));
+                        // Skeleton and generated parent classes are different UClass objects.
+                        // Normalize Blueprint ancestry before deciding that a member is foreign.
+                        if (DeclaringBlueprint)
+                            for (const UClass* Ancestor = InBlueprint->ParentClass; Ancestor; Ancestor = Ancestor->GetSuperClass())
+                                if (Ancestor->ClassGeneratedBy == DeclaringBlueprint) { Entry.bContextVariable = true; break; }
                         Entry.OwningClass=PropertyOwner?PropertyOwner->GetPathName():Property->GetOwnerStruct()->GetPathName();
                         Entry.bOwnedByThisBlueprint=DeclaringBlueprint==InBlueprint;
-                        if (DeclaringBlueprint)
-                            Entry.Aliases.AddUnique(FString::Printf(TEXT("Variables|%s|%s%s"), *DeclaringBlueprint->GetName(), Access, *Property->GetName()));
+                        AddBlueprintOwnerAliases(Entry, DeclaringBlueprint, Access, Property->GetName());
                         if (PropertyOwner)
                             Entry.Aliases.AddUnique(FString::Printf(TEXT("Variable|%s|%s|%s"), *PropertyOwner->GetPathName(), Access, *Property->GetName()));
 					}
@@ -387,7 +402,7 @@ namespace
                     Entry.OwningClass=InBlueprint->GetPathName(); Entry.bOwnedByThisBlueprint=true;
                     Entry.bContextVariable=true; Entry.bPure=true;
                     Entry.Aliases.Add(TEXT("Variables|Default|Get")+Widget->GetName());
-                    Entry.Aliases.AddUnique(TEXT("Variables|")+InBlueprint->GetName()+TEXT("|Get")+Widget->GetName());
+                    AddBlueprintOwnerAliases(Entry, InBlueprint, TEXT("Get"), Widget->GetName());
                     Entry.SearchKeywords=TEXT("widget designer getter ")+Widget->GetName();
                     OutEntries.Add(MoveTemp(Entry));
                 }
