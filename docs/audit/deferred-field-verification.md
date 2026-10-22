@@ -868,3 +868,7 @@ Implemented optional WrapAfter in both tidy tools and shared Plan. Source review
 ## S14/CP-14 final tidy visual notification (0377faa)
 
 Found missing graph-change notification after direct tidy writes. Added default NotifyGraphChanged after successful final positions/comment sizes and after rollback. Stock EdGraph.cpp broadcasts; SGraphPanel::OnGraphChanged handles default action by purging visual representation and scheduling Update. Source/API inspection only, no tests/build/editor. Positions already notify. Verify open-editor comments/compact nodes, selection/view preservation and rollback refresh later. Historical artifact cause remains unconfirmed, so CP-14 stays open.
+
+## Actual branch input-cluster bands
+
+Pack each lane and owned pure inputs as one translated band using their actual placed union height; retain minimum LanePitch and vertical clearance. This removes provisional sum-of-all-input-heights whitespace when columns sit side by side. Source inspection only; no tests/build/editor. Deferred: nested branch/merge diagrams, shared values across lanes, copies added after packing, scoped/comment boundary parity. Aggregate layout findings remain open for the final copy-placement interaction audit.

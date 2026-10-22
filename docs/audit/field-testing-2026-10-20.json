@@ -1783,7 +1783,8 @@
       "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
       "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit.",
       "reader_collision_commit": "8f1988cb6de959a8360436052d33366b91fbb0be",
-      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit."
+      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit.",
+      "cluster_band_evidence": "After pure-input placement, branch bands are translated together using actual union height of their exec nodes and owned input cluster, rather than summed heights of parallel columns. LanePitch remains minimum clearance. Source inspected; unbuilt/untested. Shared-reader copies created later still require final recipe audit."
     },
     {
       "report": "2026-10-21_S15",
@@ -2583,7 +2584,8 @@
       "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
       "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit.",
       "reader_collision_commit": "8f1988cb6de959a8360436052d33366b91fbb0be",
-      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit."
+      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit.",
+      "cluster_band_evidence": "After pure-input placement, branch bands are translated together using actual union height of their exec nodes and owned input cluster, rather than summed heights of parallel columns. LanePitch remains minimum clearance. Source inspected; unbuilt/untested. Shared-reader copies created later still require final recipe audit."
     },
     {
       "report": "2026-10-22_S2",
@@ -3371,7 +3373,8 @@
       "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
       "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit.",
       "reader_collision_commit": "8f1988cb6de959a8360436052d33366b91fbb0be",
-      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit."
+      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit.",
+      "cluster_band_evidence": "After pure-input placement, branch bands are translated together using actual union height of their exec nodes and owned input cluster, rather than summed heights of parallel columns. LanePitch remains minimum clearance. Source inspected; unbuilt/untested. Shared-reader copies created later still require final recipe audit."
     },
     {
       "report": "2026-10-21_S15",
