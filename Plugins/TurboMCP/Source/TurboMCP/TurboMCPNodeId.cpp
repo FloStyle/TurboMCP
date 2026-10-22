@@ -414,6 +414,14 @@ namespace TurboMCPNodeId
         if(!Property) Property=InNode->GetPropertyForVariable();
         if(Property)
         {
+            const UFunction* InputFunction=Cast<UFunction>(Property->GetOwnerStruct());
+            if(InputFunction && Property->HasAnyPropertyFlags(CPF_Parm) && !Property->HasAnyPropertyFlags(CPF_ReturnParm)
+                && InNode->IsA<UK2Node_VariableGet>() && InNode->VariableReference.IsLocalScope())
+            {
+                const UBlueprint* OwnerBlueprint=InNode->GetGraph()?FBlueprintEditorUtils::FindBlueprintForGraph(InNode->GetGraph()):nullptr;
+                if(OwnerBlueprint) return FString::Printf(TEXT("FunctionInput|%s|%s|%s"),*OwnerBlueprint->GetPathName(),*InputFunction->GetName(),*Property->GetName());
+            }
+
             const UClass* PropertyOwner=Property->GetOwnerClass();
             const UBlueprint* DeclaringBlueprint=PropertyOwner?Cast<UBlueprint>(PropertyOwner->ClassGeneratedBy):nullptr;
             return FString::Printf(TEXT("Variable|%s|%s|%s"),

@@ -152,11 +152,20 @@ namespace
     bool VerifyVariableIdentity(const FEntry& Entry, UEdGraphNode* Node, FString& Note)
     {
         const UBlueprintVariableNodeSpawner* Spawner = Cast<UBlueprintVariableNodeSpawner>(Entry.Spawner);
-        if (!Spawner || !Entry.TypeId.StartsWith(TEXT("Variable|"))) return true;
+        if (!Spawner || (!Entry.TypeId.StartsWith(TEXT("Variable|")) && !Entry.TypeId.StartsWith(TEXT("FunctionInput|")))) return true;
         const FProperty* Expected = Spawner->GetVarProperty();
         const UK2Node_Variable* Variable = Cast<UK2Node_Variable>(Node);
         const FProperty* Actual = Variable ? Variable->GetPropertyForVariableFromSkeleton() : nullptr;
         if (!Actual && Variable) Actual = Variable->GetPropertyForVariable();
+        if (Entry.TypeId.StartsWith(TEXT("FunctionInput|")))
+        {
+            const UFunction* ExpectedFunction=Expected?Cast<UFunction>(Expected->GetOwnerStruct()):nullptr;
+            const UFunction* ActualFunction=Actual?Cast<UFunction>(Actual->GetOwnerStruct()):nullptr;
+            if(ExpectedFunction && ActualFunction && Variable && Variable->VariableReference.IsLocalScope()
+                && Variable->VariableReference.GetMemberScopeName()==ExpectedFunction->GetName()
+                && Expected->GetFName()==Actual->GetFName() && ExpectedFunction->GetFName()==ActualFunction->GetFName()) return true;
+            Note=TEXT("function input getter did not resolve to its requested scope/member"); return false;
+        }
         const UClass* ExpectedOwner = Expected ? Expected->GetOwnerClass() : nullptr;
         const UClass* ActualOwner = Actual ? Actual->GetOwnerClass() : nullptr;
         // Skeleton and generated classes represent the same declaration when their Blueprint agrees.
@@ -327,6 +336,27 @@ namespace
 				OutEntries.Add(MoveTemp(Entry));
 			}
 		}
+
+        // Function parameters are graph-local actions; they need not be registered globally.
+        if (InBlueprint->FunctionGraphs.Contains(InGraph))
+        {
+            UClass* Owner=InBlueprint->SkeletonGeneratedClass?InBlueprint->SkeletonGeneratedClass:InBlueprint->GeneratedClass;
+            UFunction* Function=Owner?Owner->FindFunctionByName(InGraph->GetFName()):nullptr;
+            if(Function) for(TFieldIterator<FProperty> It(Function); It; ++It)
+            {
+                FProperty* Property=*It;
+                if(!Property->HasAnyPropertyFlags(CPF_Parm) || Property->HasAnyPropertyFlags(CPF_ReturnParm)
+                    || (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ReferenceParm))) continue;
+                FEntry Entry;
+                Entry.TypeId=FString::Printf(TEXT("FunctionInput|%s|%s|%s"),*InBlueprint->GetPathName(),*InGraph->GetName(),*Property->GetName());
+                Entry.LegacyTypeId=Entry.TypeId;
+                Entry.SearchKeywords=TEXT("function input parameter getter ")+Property->GetName();
+                Entry.OwningClass=InBlueprint->GetPathName(); Entry.bOwnedByThisBlueprint=true; Entry.bContextVariable=true; Entry.bPure=true;
+                Entry.Owner=InBlueprint;
+                Entry.Spawner=UBlueprintVariableNodeSpawner::CreateFromMemberOrParam(UK2Node_VariableGet::StaticClass(),Property,InGraph);
+                if(Entry.Spawner) OutEntries.Add(MoveTemp(Entry));
+            }
+        }
 	}
 }
 
