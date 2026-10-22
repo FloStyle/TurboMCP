@@ -598,3 +598,7 @@ X-92 implemented, unbuilt_untested. Body filters no longer limit relations. Stat
 ## P0 comment refresh — 26a276d
 
 CP-14 remains partial and unbuilt_untested. Comment edits now notify graph listeners; stock SGraphPanel registers OnGraphChanged. Existing tidy/positions already notify, so their reported rendering artifact remains unresolved. No tests/build/editor runs.
+
+## P0 targeted removal — 4447f52
+
+ED-18/FT-98 implemented, unbuilt_untested. New Preview/EditTurboMCPGraphRemove resolves all node/link targets before mutation on scratch then live, exact reciprocal removal, owned transaction and rollback. Non-deletable nodes refuse. No tests/build/editor runs. Verify undo/redo, unrelated links/defaults/positions and typed wildcard disconnections later.
