@@ -31,6 +31,13 @@
 
 namespace
 {
+    bool CanDuplicateGetterWithoutCompile(const UEdGraphNode* Node,const UBlueprint* Source,const UBlueprint* Target,const UEdGraph* Destination)
+    {
+        const UK2Node_VariableGet* Getter=Cast<UK2Node_VariableGet>(Node);
+        return Getter && Node->GetClass()==UK2Node_VariableGet::StaticClass() && Source==Target
+            && (!Getter->VariableReference.IsLocalScope() || Node->GetGraph()==Destination);
+    }
+
 	/**
 	 * One graph, looked up the same way the append writer looks it up.
 	 *
@@ -476,7 +483,7 @@ bool FTurboMCPGraphStructure::PlanCopy(const FString& InSourceAsset, const FStri
 	{
 		UEdGraphNode* Node = Selected[Index];
 		const UK2Node* K2 = Cast<UK2Node>(Node);
-		if (!K2 || K2->NodeCausesStructuralBlueprintChange())
+		if (!K2 || (K2->NodeCausesStructuralBlueprintChange() && !CanDuplicateGetterWithoutCompile(Node,SourceBlueprint,TargetBlueprint,TargetGraphObject)))
 			OutPlan.Refusals.Add(FString::Printf(TEXT("node '%s' requires unsupported or structural creation; copy refuses implicit compilation inside undo"), *KeyOf(Node)));
 
 		if (Node->NodePosX > MAX_int32 - 40 || Node->NodePosY > MAX_int32 - 40)
@@ -852,7 +859,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	for (UEdGraphNode* Node : Selected)
 	{
 		const UK2Node* K2 = Cast<UK2Node>(Node);
-		if (!K2 || K2->NodeCausesStructuralBlueprintChange())
+		if (!K2 || (K2->NodeCausesStructuralBlueprintChange() && !CanDuplicateGetterWithoutCompile(Node,SourceBlueprint,TargetBlueprint,TargetGraph)))
 		{
 			OutError = TEXT("unchanged: selected node requires unsupported or structural creation; implicit compile inside undo is refused");
 			return false;
@@ -927,8 +934,18 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		const int32 CopyX = Source->NodePosX + 40;
 		const int32 CopyY = Source->NodePosY + 40;
 		const FVector2D Location(CopyX, CopyY);
-		UEdGraphNode* Made = FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate<UK2Node>(
-			TargetGraph, Template, Location, /*bSelectNewNode=*/false);
+		UEdGraphNode* Made=nullptr;
+        if(CanDuplicateGetterWithoutCompile(Source,SourceBlueprint,TargetBlueprint,TargetGraph))
+        {
+            Made=DuplicateObject<UEdGraphNode>(Source,TargetGraph);
+            if(Made)
+            {
+                Made->SetFlags(RF_Transactional); Made->CreateNewGuid();
+                for(UEdGraphPin* P:Made->Pins) if(P) P->LinkedTo.Reset();
+                TargetGraph->AddNode(Made,false,false);
+            }
+        }
+        else Made=FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate<UK2Node>(TargetGraph,Template,Location,false);
 
 		if (Made == nullptr)
 		{
