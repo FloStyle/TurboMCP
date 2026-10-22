@@ -514,34 +514,31 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			continue;
 		}
 
-		// *** THE SECOND TOOL WRITES THE PACKAGE ITSELF, SO IT HAS TO NAME THE FILE ITSELF, AND IT
-		// REFUSES WHEN IT CANNOT NAME ONE HONESTLY. *** The filename is the project's content directory
-		// plus the package path with `/Game/` removed, which is the construction
-		// `TurboMCPTestMapCommandlet.cpp:329-332` proved on this machine: the map it writes IS at
-		// `TestProject/Content/Tests/TurboMCPTestMap.umap`. The engine's own
-		// `FPackageName::LongPackageNameToFilename` is NOT used, because it folds in
-		// `MountPoint->GetContentPathRelative()` (`PackageName.cpp:1430`) and this project measured the
-		// result as a path relative to the engine directory, after which `SavePackage` reported "could
-		// not save" while the asset was complete in memory.
-		FString WithoutThumbnailFileName;
-		if (bWithoutThumbnail && AssetObject != nullptr)
-		{
-			const FString SavePackageName = Package->GetName();
-			if (!SavePackageName.StartsWith(TEXT("/Game/")))
-			{
-				Errors += FString::Printf(
-					TEXT("\nerror: %s lives at %s, which is not under the project's /Game mount. ")
-					TEXT("EditTurboMCPSaveWithoutThumbnail writes the package itself, so it has to name ")
-					TEXT("the file, and it will not guess one. Call EditTurboMCPSave for this asset."),
-					*Resolved.ObjectPath, *SavePackageName);
-				++FailedCount;
-				continue;
-			}
-			WithoutThumbnailFileName = FPaths::ConvertRelativePathToFull(FPaths::Combine(
-				FPaths::ProjectContentDir(),
-				SavePackageName.RightChop(FCString::Strlen(TEXT("/Game/")))
-					+ FPackageName::GetAssetPackageExtension()));
-		}
+        // Widget thumbnail rendering runs design-time Blueprint code inside the MCP
+        // exception handler. Its script errors can hide a successful save result.
+        // Use direct package serialization for widgets on both save entry points.
+        const bool bSkipThumbnail = bWithoutThumbnail || Cast<UWidgetBlueprint>(AssetObject) != nullptr;
+        FString WithoutThumbnailFileName;
+        if (bSkipThumbnail)
+        {
+            const FString SavePackageName = Package->GetName();
+            if (SavePackageName.StartsWith(TEXT("/Game/")))
+            {
+                WithoutThumbnailFileName = FPaths::ConvertRelativePathToFull(FPaths::Combine(
+                    FPaths::ProjectContentDir(), SavePackageName.RightChop(6) + FPackageName::GetAssetPackageExtension()));
+            }
+            else
+            {
+                if (!FPackageName::TryConvertLongPackageNameToFilename(SavePackageName, WithoutThumbnailFileName,
+                    FPackageName::GetAssetPackageExtension()))
+                {
+                    Errors += FString::Printf(TEXT("\nerror: cannot resolve mounted filename for %s; save not attempted"), *SavePackageName);
+                    ++FailedCount;
+                    continue;
+                }
+                WithoutThumbnailFileName = FPaths::ConvertRelativePathToFull(WithoutThumbnailFileName);
+            }
+        }
 
 		bool bSaved = false;
 		if (AssetObject != nullptr)
@@ -549,7 +546,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			// *** THE MECHANISM IS CHOSEN ONCE AND USED BY BOTH ATTEMPTS, INCLUDING THE RETRY BELOW. ***
 			auto SaveOnce = [&]() -> bool
 			{
-				if (!bWithoutThumbnail)
+				if (!bSkipThumbnail)
 				{
 					// UEditorAssetLibrary::SaveLoadedAsset is the same save path the
 					// engine's own editor toolset uses. FEditorFileUtils was tried first
@@ -602,7 +599,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 			// Report the save API outcome plus dirty state; this is not reload verification.
 			Lines += FString::Printf(TEXT("\n%s  package write: saved"), *Resolved.ObjectPath);
 			++SavedCount;
-			Lines += bWithoutThumbnail
+			Lines += bSkipThumbnail
 				? TEXT("\n    thumbnail/design-time work: skipped (written without the thumbnail draw)")
 				: TEXT("\n    thumbnail/design-time work: ran through the editor's save path (written by the editor's save)");
 		}
@@ -621,7 +618,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 				*Resolved.ObjectPath,
 				CallOutcome,
 				*Capture.SummariseSince(MarkBeforeSave, /*InMax=*/1));
-            if (!bWithoutThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
+            if (!bSkipThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
             {
                 Errors += TEXT("\n    Widget save may execute thumbnail/design-time code. Use EditTurboMCPSaveWithoutThumbnail with the same asset to save without drawing a new thumbnail; inspect its result before retrying again.");
             }
@@ -640,7 +637,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 		// (`WidgetBlueprintThumbnailRenderer.cpp:189-191`). The direct write calls none of it.
 		if (bSaved && !bStillDirty && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
 		{
-			Lines += bWithoutThumbnail
+			Lines += bSkipThumbnail
 				? TEXT("\n    ; the package was written directly, so the engine's thumbnail step did not")
 					TEXT(" run for this save, and this widget's design-time code did not run for a draw.")
 				: TEXT("\n    ; the editor's save runs the engine's thumbnail step before it writes, and a")
@@ -650,7 +647,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 					TEXT(" `EditTurboMCPSaveWithoutThumbnail` writes the package without it.");
 		}
 
-		if (bSaved && !bStillDirty && !bWithoutThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr && ErrorsHere > 0)
+		if (bSaved && !bStillDirty && !bSkipThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr && ErrorsHere > 0)
 		{
 			// The write is already proven above. A widget thumbnail may execute design-time script, so report
 			// that work as a warning instead of allowing its error to obscure the saved package.

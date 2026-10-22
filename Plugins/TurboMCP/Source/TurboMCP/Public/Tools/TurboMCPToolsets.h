@@ -1632,6 +1632,9 @@ public:
 	static FString EditTurboMCPCompile(const FString& Assets);
 
 	/**
+	 * Widget Blueprints automatically use direct package serialization without drawing
+	 * a thumbnail, so design-time thumbnail script errors cannot hide the save result.
+	 * Their existing thumbnail is not refreshed. Other assets use the editor save path.
 	 * Save one or more assets without noise.
 	 *
 	 * Pass assets separated by commas or pipes, in any path form.
