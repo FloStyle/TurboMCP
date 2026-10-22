@@ -144,6 +144,15 @@ namespace TurboMCPGraphTextLex
 			return false;
 		}
 
+        // A delimiter-only line closes forms; it is never a pin assignment.
+        // Balance validation belongs to GraphCheck. Ignore whitespace between
+        // closing delimiters too, including a trailing comment already stripped.
+        bool bOnlyClosers = true;
+        for (int32 Cursor = Index; Cursor < Body.Len(); ++Cursor)
+            if (Body[Cursor] != TEXT(')') && !FChar::IsWhitespace(Body[Cursor]))
+            { bOnlyClosers = false; break; }
+        if (bOnlyClosers) return false;
+
 		OutColumn = Index + 1;
 
 		// A quoted pin name, which the writer uses when the real name holds a space.
