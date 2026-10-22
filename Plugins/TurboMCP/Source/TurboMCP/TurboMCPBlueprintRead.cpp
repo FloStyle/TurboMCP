@@ -538,6 +538,22 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 		}
 	}
 
+	// A local or another class's same-named member is not a use of our
+	// declaration. Explicit references to this Blueprint's class do count.
+	const auto IsOwnMemberReference = [InBlueprint](const FMemberReference& Reference)
+	{
+		if (Reference.IsLocalScope()) return false;
+		const UClass* OwnerClass = Reference.GetMemberParentClass();
+		return Reference.IsSelfContext() || (OwnerClass && OwnerClass->ClassGeneratedBy == InBlueprint);
+	};
+	const auto SortedGraphNames = [](const TSet<FString>* Names)
+	{
+		if (!Names || Names->IsEmpty()) return FString(TEXT("nothing"));
+		TArray<FString> Ordered = Names->Array();
+		Ordered.Sort();
+		return FString::Join(Ordered, TEXT(", "));
+	};
+
 	int32 NodesScanned = 0;
 
 	for (UEdGraph* Graph : InGraphs)
@@ -557,7 +573,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
                 // Calls, binds and removals all reference the dispatcher, even
                 // though they are not VariableGet nodes. Do not count another
                 // object's same-named member as use of this Blueprint's member.
-                if (Dispatcher->DelegateReference.IsSelfContext() && !Dispatcher->GetPropertyName().IsNone())
+                if (IsOwnMemberReference(Dispatcher->DelegateReference) && !Dispatcher->GetPropertyName().IsNone())
                     ReadersByVariable.FindOrAdd(Member).Add(GraphName);
                 DelegateSites.Add(FString::Printf(TEXT("dispatcher reference %s; operation=%s; self=%s; node=%s; runtime invocation not inferred"),
                     *Member, *Node->GetClass()->GetName(), Dispatcher->DelegateReference.IsSelfContext() ? TEXT("true") : TEXT("false"), *TurboMCPNodeId::MakeForNode(Node, true)));
@@ -633,12 +649,14 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 			else if (const UK2Node_VariableSet* Set = Cast<UK2Node_VariableSet>(Node))
 			{
 				const FString VariableName = Set->GetVarName().ToString();
-				WritersByVariable.FindOrAdd(VariableName).Add(GraphName);
+				if (IsOwnMemberReference(Set->VariableReference))
+					WritersByVariable.FindOrAdd(VariableName).Add(GraphName);
 			}
 			else if (const UK2Node_VariableGet* Get = Cast<UK2Node_VariableGet>(Node))
 			{
 				const FString VariableName = Get->GetVarName().ToString();
-				ReadersByVariable.FindOrAdd(VariableName).Add(GraphName);
+				if (IsOwnMemberReference(Get->VariableReference))
+					ReadersByVariable.FindOrAdd(VariableName).Add(GraphName);
 			}
 			else if (const UK2Node_CustomEvent* Custom = Cast<UK2Node_CustomEvent>(Node))
 			{
@@ -730,10 +748,8 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 		// A variable nothing touches is a fact worth printing, and it is the kind
 		// of thing that is obvious here and invisible in a body.
-		const FString WriteText = Writers != nullptr && Writers->Num() > 0
-			? FString::Join(Writers->Array(), TEXT(", ")) : TEXT("nothing");
-		const FString ReadText = Readers != nullptr && Readers->Num() > 0
-			? FString::Join(Readers->Array(), TEXT(", ")) : TEXT("nothing");
+		const FString WriteText = SortedGraphNames(Writers);
+		const FString ReadText = SortedGraphNames(Readers);
 
 		Out += FString::Printf(TEXT("\n  %s"), *Name);
 		Out += FString::Printf(TEXT("\n      read by:  %s"), *ReadText);
