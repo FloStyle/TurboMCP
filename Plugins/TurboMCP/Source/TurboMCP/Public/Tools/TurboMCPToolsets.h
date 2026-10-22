@@ -1313,7 +1313,7 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPBatchEdit(const FString& Operations);
 
-    /** Replace one existing data input source using schema validation and exact one-link read-back. No implicit casts or exec rewires. Preview first. */
+    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first. */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
 
@@ -2126,7 +2126,7 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPBatchEdit(const FString& Operations);
 
-    /** Replace one existing data input source using schema validation and exact one-link read-back. No implicit casts or exec rewires. Preview first. */
+    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first. */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
 

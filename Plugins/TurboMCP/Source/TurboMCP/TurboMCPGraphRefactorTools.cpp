@@ -39,8 +39,23 @@ bool Connect(UEdGraph* Graph,UEdGraphPin* Output,UEdGraphPin* Input,FString& Err
 {
     if(!Output || !Input || Output->GetOwningNode()->GetGraph()!=Graph || Input->GetOwningNode()->GetGraph()!=Graph)
     { Error=TEXT("pins must resolve uniquely in the named graph"); return false; }
-    if(Output->PinType.PinCategory==TEXT("exec") || Input->PinType.PinCategory==TEXT("exec"))
-    { Error=TEXT("connect-replace accepts data pins only; execution rewiring uses repoint/refactor"); return false; }
+    const bool ExecOutput=Output->PinType.PinCategory==TEXT("exec");
+    const bool ExecInput=Input->PinType.PinCategory==TEXT("exec");
+    if(ExecOutput!=ExecInput) { Error=TEXT("cannot connect execution and data pins"); return false; }
+    if(ExecOutput)
+    {
+        if(Output->LinkedTo.Num()==1 && Output->LinkedTo[0]==Input && Input->LinkedTo.Contains(Output)) return true;
+        const FPinConnectionResponse Check=Graph->GetSchema()->CanCreateConnection(Output,Input);
+        if(Check.Response!=CONNECT_RESPONSE_MAKE && Check.Response!=CONNECT_RESPONSE_BREAK_OTHERS_A)
+        { Error=TEXT("execution connection refused without conversion or removal of other incoming paths: ")+Check.Message.ToString(); return false; }
+        const TArray<UEdGraphPin*> Incoming=Input->LinkedTo;
+        Output->BreakAllPinLinks();
+        if(!Graph->GetSchema()->TryCreateConnection(Output,Input) || Output->LinkedTo.Num()!=1 || Output->LinkedTo[0]!=Input || !Input->LinkedTo.Contains(Output))
+        { Error=TEXT("execution connection read-back failed"); return false; }
+        for(UEdGraphPin* Prior:Incoming) if(Prior!=Output && (!Input->LinkedTo.Contains(Prior) || !Prior || !Prior->LinkedTo.Contains(Input)))
+        { Error=TEXT("execution connection changed another incoming path"); return false; }
+        return true;
+    }
     if(Input->LinkedTo.Num()==1 && Input->LinkedTo[0]==Output && Output->LinkedTo.Contains(Input)) return true;
     const FPinConnectionResponse Check=Graph->GetSchema()->CanCreateConnection(Output,Input);
     if(Check.Response!=CONNECT_RESPONSE_MAKE && Check.Response!=CONNECT_RESPONSE_BREAK_OTHERS_B)
@@ -221,9 +236,9 @@ bool Sequence(UEdGraph* Graph,UEdGraph* Identity,const FString& Groups,bool Spli
 }
 }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin)
-{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { const bool Ok=Connect(G,Pin(ResolveNode(G,I,SourceNodeId),SourcePin,EGPD_Output),Pin(ResolveNode(G,I,TargetNodeId),TargetPin,EGPD_Input),E); R=TEXT("data input replaced; read-back source count=1"); return Ok; }); }
+{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { const bool Ok=Connect(G,Pin(ResolveNode(G,I,SourceNodeId),SourcePin,EGPD_Output),Pin(ResolveNode(G,I,TargetNodeId),TargetPin,EGPD_Input),E); R=TEXT("exact named connection applied; data replaces the target input source, exec replaces only the named source output destination; other incoming exec paths preserved; no automatic continuation"); return Ok; }); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin)
-{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { const bool Ok=Connect(G,Pin(ResolveNode(G,I,SourceNodeId),SourcePin,EGPD_Output),Pin(ResolveNode(G,I,TargetNodeId),TargetPin,EGPD_Input),E); R=TEXT("data input replaced; read-back source count=1"); return Ok; }); }
+{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { const bool Ok=Connect(G,Pin(ResolveNode(G,I,SourceNodeId),SourcePin,EGPD_Output),Pin(ResolveNode(G,I,TargetNodeId),TargetPin,EGPD_Input),E); R=TEXT("exact named connection applied; data replaces the target input source, exec replaces only the named source output destination; other incoming exec paths preserved; no automatic continuation"); return Ok; }); }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
 { return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; FString Mapping; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E,&Mapping); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count)+Mapping; return Ok; }); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
