@@ -28,12 +28,12 @@
  */
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(const FString& Asset,
-	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds, const FString& MainPath, double HorizontalGap, double VerticalGap, double LanePitch)
+	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds, const FString& MainPath, double HorizontalGap, double VerticalGap, double LanePitch, const FString& WrapAfter)
 {
 	FTurboMCPGraphTidy::FPlan Plan;
 	FString Error;
 	if (!FTurboMCPGraphTidy::Plan(Asset, GraphName, bForce, /*bInMergeGetters=*/false,
-		NodeIds, Plan, Error, MainPath, HorizontalGap, VerticalGap, LanePitch))
+		NodeIds, Plan, Error, MainPath, HorizontalGap, VerticalGap, LanePitch, WrapAfter))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
@@ -41,12 +41,12 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(const FString& Asset,
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPGraphTidy(const FString& Asset,
-	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds, const FString& MainPath, double HorizontalGap, double VerticalGap, double LanePitch)
+	const FString& GraphName, bool bForce, const TArray<FString>& NodeIds, const FString& MainPath, double HorizontalGap, double VerticalGap, double LanePitch, const FString& WrapAfter)
 {
 	FTurboMCPGraphTidy::FPlan Plan;
 	FString Error;
 	if (!FTurboMCPGraphTidy::Plan(Asset, GraphName, bForce, /*bInMergeGetters=*/false,
-		NodeIds, Plan, Error, MainPath, HorizontalGap, VerticalGap, LanePitch))
+		NodeIds, Plan, Error, MainPath, HorizontalGap, VerticalGap, LanePitch, WrapAfter))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}

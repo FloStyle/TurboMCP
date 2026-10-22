@@ -181,6 +181,8 @@ public:
 	/** Everything the Preview and the Edit both need, computed once in `Plan`. */
 	struct FPlan
 	{
+        /** Explicit row breaks after these execution node indices. */
+        TSet<int32> WrapAfterNodes;
 		FString Asset;
 		FString GraphName;
 		bool bForce = false;
@@ -243,7 +245,7 @@ public:
 	 * `error:` and names what stopped it.
 	 */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath = FString(), double InHorizontalGap = 120.0, double InVerticalGap = 100.0, double InLanePitch = 280.0);
+		bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath = FString(), double InHorizontalGap = 120.0, double InVerticalGap = 100.0, double InLanePitch = 280.0, const FString& WrapAfter = FString());
 
     /** Acquire native node/pin geometry when a graphical editor is available. */
     static bool PrepareAlignment(UBlueprint* Blueprint, UEdGraph* Graph, FString& Error);

@@ -68,6 +68,7 @@ namespace
     struct FStructuralQuality
     {
         int32 Overlaps=0;
+        int32 UnwrappedBreaks=0;
         int32 BackwardExec=0;
         double LinearExecDrift=0;
         int32 PureInputRowConflicts=0;
@@ -144,6 +145,11 @@ namespace
             if(!S.Node || !T.Node) continue;
             const FVector2D Start=FTurboMCPGraphTidy::AlignmentPinPosition(W.OutputPin)+Position(S)-FVector2D(S.Node->NodePosX,S.Node->NodePosY);
             const FVector2D End=FTurboMCPGraphTidy::AlignmentPinPosition(W.InputPin)+Position(T)-FVector2D(T.Node->NodePosX,T.Node->NodePosY);
+            if(Plan.WrapAfterNodes.Contains(W.SourceNodeIndex))
+            {
+                if(Position(T).Y<=Position(S).Y+S.Height) ++Q.UnwrappedBreaks;
+                continue; // A requested return wire is neither a straight lane nor a backward-flow defect.
+            }
             if(End.X<Start.X) ++Q.BackwardExec;
             int32 Outputs=0;
             for(const UEdGraphPin* P:S.Node->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==TEXT("exec")) ++Outputs;
@@ -175,6 +181,7 @@ namespace
     bool BetterLayout(const FStructuralQuality& Before,const FStructuralQuality& After,double OldLength,double NewLength)
     {
         if(After.Overlaps!=Before.Overlaps) return After.Overlaps<Before.Overlaps;
+        if(After.UnwrappedBreaks!=Before.UnwrappedBreaks) return After.UnwrappedBreaks<Before.UnwrappedBreaks;
         if(!FMath::IsNearlyEqual(After.LinearExecDrift,Before.LinearExecDrift,1.0)) return After.LinearExecDrift<Before.LinearExecDrift;
         if(After.FanOutRowConflicts!=Before.FanOutRowConflicts) return After.FanOutRowConflicts<Before.FanOutRowConflicts;
         if(After.BackwardExec!=Before.BackwardExec) return After.BackwardExec<Before.BackwardExec;
@@ -577,7 +584,7 @@ FVector2D FTurboMCPGraphTidy::AlignmentPinPosition(const UEdGraphPin* Pin)
 }
 
 bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName, bool bInForce,
-	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath, double InHorizontalGap, double InVerticalGap, double InLanePitch)
+	bool bInMergeGetters, const TArray<FString>& InNodeIds, FPlan& OutPlan, FString& OutError, const FString& MainPath, double InHorizontalGap, double InVerticalGap, double InLanePitch, const FString& WrapAfter)
 {
     if(!FMath::IsFinite(InHorizontalGap) || !FMath::IsFinite(InVerticalGap) || !FMath::IsFinite(InLanePitch)
         || InHorizontalGap<40 || InHorizontalGap>2000 || InVerticalGap<40 || InVerticalGap>2000 || InLanePitch<100 || InLanePitch>10000)
@@ -890,6 +897,23 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	OutPlan.WireCount = OutPlan.Wires.Num();
 
     TMap<int32,int32> MainPredecessor;
+    TArray<FString> WrapIds;
+    WrapAfter.ParseIntoArray(WrapIds,TEXT(","),true);
+    for(FString Id:WrapIds)
+    {
+        Id=Id.TrimStartAndEnd();
+        int32 Found=INDEX_NONE,Matches=0;
+        for(int32 I=0;I<OutPlan.Nodes.Num();++I)
+            if(NodeAnswersToId(OutPlan.Nodes[I].Node,Id)) {Found=I;++Matches;}
+        if(Matches!=1 || OutPlan.Nodes[Found].bIsPure || OutPlan.Nodes[Found].bIsComment
+            || (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[Found].Key)))
+        {OutError=TEXT("WrapAfter requires unique execution node IDs within the selected scope");return false;}
+        bool HasContinuation=false;
+        for(const FWire& W:OutPlan.Wires)
+            if(W.SourceNodeIndex==Found && W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("exec")) HasContinuation=true;
+        if(!HasContinuation) {OutError=TEXT("WrapAfter node has no execution continuation");return false;}
+        OutPlan.WrapAfterNodes.Add(Found);
+    }
     TArray<FString> MainIds; MainPath.ParseIntoArray(MainIds,TEXT(","),true);
     if(MainPath.TrimStartAndEnd().Equals(TEXT("auto"),ESearchCase::IgnoreCase))
     {
@@ -1163,7 +1187,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				for (const FWire& W : OutPlan.Wires)
 				{
 					if (!W.OutputPin || W.OutputPin->PinType.PinCategory != TEXT("exec")
-						|| !RowOf.Contains(W.SourceNodeIndex) || !RowOf.Contains(W.TargetNodeIndex)) continue;
+						|| OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex)
+                        || !RowOf.Contains(W.SourceNodeIndex) || !RowOf.Contains(W.TargetNodeIndex)) continue;
 					const int32 R = FMath::Min(RowOf[W.SourceNodeIndex], RowOf[W.TargetNodeIndex]);
 					Changed |= RowOf[W.SourceNodeIndex] != R || RowOf[W.TargetNodeIndex] != R;
 					RowOf[W.SourceNodeIndex] = RowOf[W.TargetNodeIndex] = R;
@@ -1189,6 +1214,27 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			}
 			TArray<int32> Rows;
 			for (int32 I : Free) Rows.AddUnique(RowOf[I]);
+            if(!OutPlan.WrapAfterNodes.IsEmpty())
+            {
+                TArray<int32> PendingRows=Rows,OrderedRows;
+                while(!PendingRows.IsEmpty())
+                {
+                    int32 Ready=INDEX_NONE;
+                    for(int32 CandidateRow:PendingRows)
+                    {
+                        bool HasEarlierRow=false;
+                        for(const FWire& W:OutPlan.Wires)
+                            if(OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex)
+                                && RowOf.Contains(W.SourceNodeIndex) && RowOf.Contains(W.TargetNodeIndex)
+                                && RowOf[W.TargetNodeIndex]==CandidateRow && RowOf[W.SourceNodeIndex]!=CandidateRow
+                                && PendingRows.Contains(RowOf[W.SourceNodeIndex])) {HasEarlierRow=true;break;}
+                        if(!HasEarlierRow) {Ready=CandidateRow;break;}
+                    }
+                    if(Ready==INDEX_NONE) break; // Final validation reports an unsatisfied cyclic break.
+                    OrderedRows.Add(Ready);PendingRows.RemoveSingle(Ready);
+                }
+                OrderedRows.Append(PendingRows);Rows=MoveTemp(OrderedRows);
+            }
             // Optimize all inter-row relationships; delegates carry extra weight.
             // Adjacent swaps reduce weighted distance without disturbing execution components.
             TMap<int32,int32> Rank;
@@ -1204,7 +1250,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 return Sum;
             };
             int64 Best=Cost();
-            for(int32 Pass=0;Pass<8;++Pass)
+            for(int32 Pass=0;Pass<8 && OutPlan.WrapAfterNodes.IsEmpty();++Pass)
             {
                 bool Changed=false;
                 for(int32 I=1;I<Rows.Num();++I)
@@ -1500,7 +1546,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             for(int32 SeqIndex:Free)
             {
                 const FNode& SeqNode=OutPlan.Nodes[SeqIndex];
-                if(!SeqNode.Node->IsA<UK2Node_ExecutionSequence>()) continue;
+                if(!OutPlan.WrapAfterNodes.IsEmpty() || !SeqNode.Node->IsA<UK2Node_ExecutionSequence>()) continue;
                 TArray<TArray<int32>> Lanes; TSet<int32> OwnedCalls; bool Supported=true;
                 for(UEdGraphPin* Exec:SeqNode.Node->Pins) if(Exec && Exec->Direction==EGPD_Output && Exec->PinType.PinCategory==TEXT("exec"))
                 {
@@ -2138,6 +2184,18 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	OutPlan.bAlreadyTidy = OutPlan.NodesToMove == 0 && OutPlan.BoxesToFit == 0
 		&& OutPlan.GetterCopies.Num() == 0;
 
+    for(const FWire& W:OutPlan.Wires)
+        if(OutPlan.WrapAfterNodes.Contains(W.SourceNodeIndex) && W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("exec"))
+        {
+            const FNode& WrapSource=OutPlan.Nodes[W.SourceNodeIndex];
+            const FNode& WrapTarget=OutPlan.Nodes[W.TargetNodeIndex];
+            if(WrapTarget.PlannedY<=WrapSource.PlannedY+WrapSource.Height)
+            {
+                OutError=FString::Printf(TEXT("WrapAfter %s cannot separate this continuation into a lower row within its current scope/comment boundaries; choose a chain break without a bypass or include the continuation. Unchanged."),*WrapSource.Key);
+                return false;
+            }
+        }
+
 	if (OutPlan.bAlreadyTidy)
 	{
 		OutPlan.bWouldApply = false;
@@ -2291,6 +2349,8 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	// CROSSING NODES, so a reader comparing the two tools' numbers is comparing two quantities - and
 	// the label is what stops that.
     const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
+    for(int32 I:InPlan.WrapAfterNodes)
+        Lines.Add(FString::Printf(TEXT("row break after %s (execution links preserved)"),*InPlan.Nodes[I].Key));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.FanOutRowConflicts,QualityAfter.FanOutRowConflicts,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.BackwardData,QualityAfter.BackwardData,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts,QualityBefore.InputPinDrift,QualityAfter.InputPinDrift));
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
 

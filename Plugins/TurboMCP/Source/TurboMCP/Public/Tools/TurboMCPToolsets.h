@@ -1194,9 +1194,9 @@ public:
 	 * space rather than through its anchors. The preview reports the planned score and the edit reports
 	 * the score it actually measured after writing.
 	 *
+	 * WrapAfter optionally lists comma-separated execution node IDs at natural breaks (e.g. a latent call); their continuations start a new row. No links change.
 	 * HorizontalGap/VerticalGap set full-detail clearance; LanePitch is minimum Sequence row spacing, expanded for tall pure trees. MainPath accepts "auto" for the longest acyclic execution path, or comma-separated connected reader node IDs for the top exec lane. Auto refuses execution cycles.
-	 * The number it prints is the TOTAL WIRE LENGTH, which is what this pass is judged on. `P-GRAPH-KNOTS`
-	 * is judged on WIRES CROSSING NODES instead, and the two numbers are deliberately not comparable.
+	 * Structural quality (including requested row breaks) takes priority; total wire length breaks ties.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphTidy(
@@ -1204,7 +1204,7 @@ public:
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0);
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""));
 
 	/**
 	 * Repair the bad spots in a mostly-good graph, WITHOUT moving anything.
@@ -2015,6 +2015,7 @@ public:
 	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
 	 * disagrees with the measure asks for. `NodeIds` has the same fixed-anchor scope as the preview.
 	 * Include "@unboxed" to leave boxed nodes fixed (alone: all unboxed; with IDs: only unboxed IDs).
+	 * WrapAfter is the same comma-separated execution-node row-break option as the preview; links remain unchanged.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphTidy(
@@ -2022,7 +2023,7 @@ public:
 		const FString& GraphName,
 		bool bForce,
 		const TArray<FString>& NodeIds,
-		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0);
+		const FString& MainPath = TEXT(""), double HorizontalGap = 120.0, double VerticalGap = 100.0, double LanePitch = 280.0, const FString& WrapAfter = TEXT(""));
 
 	/**
 	 * Apply the repairs the preview listed.
