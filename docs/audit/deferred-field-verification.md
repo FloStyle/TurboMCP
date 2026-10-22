@@ -791,3 +791,7 @@ Issue remains open; diagnostic improvement is not a root-cause fix. TurboMCP rea
 
 ## CP-16 scope correction and source completion audit — 2026-10-23
 Oct22 S1/CP-16 requires neighbour capture framing only its selected nodes on a large graph. Existing 8086687 implements this: resolved Targets alone define bounds/canvas/fit zoom; selector capture returns from independent native renderer before legacy window framing. Alignment preparation measures at unity zoom rather than fitting the whole graph. CP-16 is implemented, unbuilt_untested. Earlier wording requiring tiled capture for widely spaced selections expanded the report scope and is superseded; no tiling claim. Deferred field check: one node plus two hops in the roughly 400-node graph, correct crop and readable native output. No tests/build/editor runs.
+
+
+## Per-lane pure input bands — f2f3495
+S15/TD-34 implemented, unbuilt_untested. Generic branches reserve per-lane measured pure-cluster height, place pure nodes below their own exec band and use same-lane consumers for positioning. Shared inputs reserve capacity in each using lane for subsequent safe copies. Nested branch lane ancestry and main-row merges retained. S2/TD-39 and S15/X-86 remain open for sibling column order/crossings and aggregate output review. No tests/build/editor runs. Deferred: nested branches, multiple pure consumers, shared copies, function-input readers, comments/fixed anchors, Sequence override and band overflow/collision regressions.

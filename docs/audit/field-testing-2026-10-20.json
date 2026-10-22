@@ -1764,7 +1764,10 @@
       "validation": "reported",
       "disposition": "reported_pending_source_review",
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
-      "observation": "- **Type:** Limitation.\r\n- **Observed:** Both tidies passed the gate and matched the preview. Both results still needed a hand pass. About 22 TurboMCP calls for two small graphs.\r\n- **Expected:** Small graphs come out of one tidy call in the user's style.\r\n\r\n## 2. Tool observations\r\n\r\n### Tidy"
+      "observation": "- **Type:** Limitation.\r\n- **Observed:** Both tidies passed the gate and matched the preview. Both results still needed a hand pass. About 22 TurboMCP calls for two small graphs.\r\n- **Expected:** Small graphs come out of one tidy call in the user's style.\r\n\r\n## 2. Tool observations\r\n\r\n### Tidy",
+      "input_band_commit": "f2f3495",
+      "input_band_progress": "Per-lane input floors and measured cluster reservations replace the global below-all-lanes fallback; inputs choose consumers within their assigned lane.",
+      "remaining": "Remaining review: order sibling input columns by consumer pin to reduce crossings, ensure shared expressions/copies stay near their consumers, and audit aggregate small-graph output. Keep open; per-lane bands alone do not prove crossing-free layout."
     },
     {
       "report": "2026-10-21_S15",
@@ -1775,14 +1778,14 @@
       "canonical_issue": "2026-10-21_S15/TD-34",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partially_implemented",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
       "observation": "- **Type:** Limitation.\r\n- **Observed:** In both results, math nodes (modulo, add, greater, and) sat on the exec row. The exec wire ran through them. In the second graph the whole math chain formed one row with the exec line.\r\n- **Expected:** Pure nodes sit below the exec row, in columns left of their consumer.\r\n- **Proposed behavior:** Reserve the exec row for exec nodes. See TD-30 for the recipe.",
       "fix_commit": "19bc09b",
-      "implementation": "General and Sequence placement now keep pure expressions below their execution consumer, propagating that floor upstream. Getter copies use the same below-consumer floor. Structural acceptance measures direct pure-input row conflicts before wire length.",
-      "remaining": "Generic and Sequence lanes reserve their full execution-node band. Cross-box/shared multi-lane corridor clearance still requires source completion.",
+      "implementation": "f2f3495: assign upstream pure clusters to execution lanes, reserve measured input-band height per lane (including shared readers used by each lane), position inputs below their owning exec band and left of same-lane consumers. Replaces the global floor below all branch lanes; Sequence-specific floor remains.",
+      "remaining": "No identified gap for reported pure math nodes occupying execution rows. Native build/editor and field regression deferred; broader data-wire crossing work remains separate.",
       "followup_implementation": "7555abc: structural quality includes planned/actual getter copy rectangles and rerouted data-source positions; increased overlap count cannot be forced.",
       "sequence_input_clearance": "Sequence input floor uses the lowest execution-node bottom plus spacing before pure traversal, preserving lane-zero alignment and subsequent lane growth. unbuilt_untested."
     },
@@ -2532,7 +2535,10 @@
       "validation": "reported",
       "disposition": "reported_pending_source_review",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
-      "observation": "- **Type:** Limitation.\n- **Scenario:** One function with 15 nodes, one branch and 3 getters.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Tidy the function after the append.\n  2. Capture the graph.\n- **Observed:** Wire length went down. One getter fed a call from far below and crossed another wire. A pure node sat on the exec row.\n- **Expected:** The user's layout rules: pure nodes below the exec row, next to their consumer.\n- **Impact:** 2 hand position calls and 2 captures.\n- **State after:** Positions fixed and saved.\n- **Workaround:** Hand positions. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None."
+      "observation": "- **Type:** Limitation.\n- **Scenario:** One function with 15 nodes, one branch and 3 getters.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Tidy the function after the append.\n  2. Capture the graph.\n- **Observed:** Wire length went down. One getter fed a call from far below and crossed another wire. A pure node sat on the exec row.\n- **Expected:** The user's layout rules: pure nodes below the exec row, next to their consumer.\n- **Impact:** 2 hand position calls and 2 captures.\n- **State after:** Positions fixed and saved.\n- **Workaround:** Hand positions. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None.",
+      "input_band_commit": "f2f3495",
+      "input_band_progress": "Per-lane input floors and measured cluster reservations replace the global below-all-lanes fallback; inputs choose consumers within their assigned lane.",
+      "remaining": "Remaining review: order sibling input columns by consumer pin to reduce crossings, ensure shared expressions/copies stay near their consumers, and audit aggregate small-graph output. Keep open; per-lane bands alone do not prove crossing-free layout."
     },
     {
       "report": "2026-10-22_S2",
