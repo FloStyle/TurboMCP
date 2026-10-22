@@ -743,3 +743,7 @@ Input getter planning measures one transient native getter per parameter, with s
 ## Split function input getters
 
 TD-36/FT-90 implementation complete with the automatic conversion and geometry batches. Split leaf consumers get a local getter referring to the root parameter with a cloned full split hierarchy (names, types, hidden parents, defaults and parent/subpin relationships). Measurement, preview, edit and rollback resolve the exact leaf by name/type. No tests/build/editor runs. Verify nested structs, by-reference parameters, container types, native widget rendering, compile, reload, undo and semantic equivalence. General shared pure expressions remain TD-35 implementation work.
+
+## Pure chain execution-row clearance
+
+Generic pure placement now clamps below the full execution row, independent of whether its pure consumer has been positioned. No tests/build/editor runs. Verify dependency order, nested math chains, branch rows, comment boundaries and sequence-specific subsequent placement. TD-34 remains partial for sequence/cross-box corridor coverage. TD-35 closed against its actual report requirement (self/count getter splitting), not an invented general-expression duplication requirement.
