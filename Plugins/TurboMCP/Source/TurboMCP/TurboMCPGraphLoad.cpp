@@ -8,6 +8,7 @@
 #include "Tools/TurboMCPToolsets.h"
 
 #include "Containers/UnrealString.h"
+#include "Misc/SecureHash.h"
 #include "EdGraph/EdGraph.h"
 #include "Engine/Blueprint.h"
 #include "UObject/Object.h"
@@ -65,8 +66,10 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 	const FString& Asset,
 	const FString& GraphName,
 	const FString& Format,
-	const FString& Detail)
+	const FString& Detail, int32 Offset, int32 MaxChars, const FString& Revision)
 {
+    if (Offset < 0 || MaxChars < 256 || MaxChars > MaxGraphTextChars) return TEXT("error: Offset must be nonnegative and MaxChars must be 256..24000");
+    if (Offset > 0 && Revision.IsEmpty()) return TEXT("error: subsequent pages require the revision token from page zero");
 	if (Asset.IsEmpty())
 	{
 		return TEXT("error: no asset given. Pass a Blueprint in any path form, for ")
@@ -154,17 +157,22 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 		}
 	}
 
-	if (Result.Len() > MaxGraphTextChars)
-	{
-		// `P6` and `04_FORMATS.md` section 1: a capped result says how much was
-		// dropped and the exact call that gets the rest.
-		const int32 Dropped = Result.Len() - MaxGraphTextChars;
-		Result = Result.Left(MaxGraphTextChars);
-		Result += FString::Printf(
-			TEXT("\n\n; (%d more character(s) were dropped, use detail 'manifest' or ")
-			TEXT("'signatures' for a smaller read, or read one graph at a time)"),
-			Dropped);
-	}
+    FSHAHash Digest;
+    FSHA1::HashBuffer(*Result, Result.Len()*sizeof(TCHAR), Digest.Hash);
+    const FString CurrentRevision = Digest.ToString();
+    if (!Revision.IsEmpty() && !Revision.Equals(CurrentRevision, ESearchCase::IgnoreCase))
+        return TEXT("error: graph read changed since the previous page; restart with Offset=0 and empty Revision");
+    if (Offset > Result.Len()) return TEXT("error: Offset exceeds the complete read length; restart at zero");
+    if (Offset > 0 || Result.Len() > MaxChars)
+    {
+        int32 Count=FMath::Min(MaxChars,Result.Len()-Offset);
+        // Avoid splitting a UTF-16 surrogate pair at the page boundary.
+        if (Count>0 && Offset+Count<Result.Len() && uint32(Result[Offset+Count-1])>=0xD800 && uint32(Result[Offset+Count-1])<=0xDBFF) --Count;
+        const int32 Next=Offset+Count;
+        const FString Header=FString::Printf(TEXT("; error: partial graph page; inspection fragment, not standalone write-back text\n; revision=%s offset=%d count=%d total=%d nextOffset=%d\n; Request the same Asset/GraphName/Format/Detail with Revision and nextOffset; -1 means end. Payload follows:\n"),
+            *CurrentRevision,Offset,Count,Result.Len(),Next<Result.Len()?Next:-1);
+        return Header+Result.Mid(Offset,Count);
+    }
 
 	return Result;
 }
