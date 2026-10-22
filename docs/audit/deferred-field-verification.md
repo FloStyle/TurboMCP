@@ -727,3 +727,7 @@ Oct22 S1 X-96 implemented with f02c2a5 defaults. Registry wrapper maps asset/ass
 ## Tag referencer discovery — 61504f6
 
 Oct22 S1 X-93 help request implemented in both search tool declarations and docs/user/tools.md. Verified native FindReferencersByTag declaration, exact TagName parameter and searchable-name asset-registry lookup by source inspection. No tests/build/editor runs. Confirm rebuilt UHT tooltip/schema help exposes these cross-links and enabled native tool discovery on the field installation. Does not close the separate Oct22 S2 X-93 unrelated-dirty-assets defect.
+
+## Restore measured view caches — d83f7c9
+
+CP-14 partial: unity-zoom measurement now restores saved view and invalidates node/panel/editor layout and paint caches on success and failure. Invalidation flags inspected in stock SlateCore. No tests/build/editor runs. Verify compact nodes/comment shadows at non-unit zoom, success/failure restoration, normal next-frame repaint and unchanged asset dirtiness. Exact field overdraw cause remains unknown; this is not a closure claim.
