@@ -679,3 +679,7 @@ Delegate consumers traced through transparent knots with visited-pin cycle detec
 ## Neighbour capture canvas — 8086687
 
 CP-16 remains partial: target-only bounds now drive an independent native canvas, capped at 4096 per edge. No tests/build/editor runs. Verify a small two-hop selection in a large graph, selection and box-neighbours modes, native geometry and PNG framing. Widely spaced targets can still exceed native minimum zoom; tiled coverage remains outstanding.
+
+## Pure expression execution-row separation — 19bc09b
+
+TD-34 remains partial. General and Sequence pure placement clamps below the execution consumer; upstream pure inputs inherit the floor. Getter copies use that floor too. Direct pure-to-exec row conflicts now precede wire length in structural quality. No tests/build/editor runs. Inspect later with math chains, Sequence stages, boxes, selected nodes, shared multi-lane values and copy-aware metrics; those last two remain implementation work, not verification-only debt.

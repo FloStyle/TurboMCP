@@ -1767,10 +1767,13 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
-      "observation": "- **Type:** Limitation.\r\n- **Observed:** In both results, math nodes (modulo, add, greater, and) sat on the exec row. The exec wire ran through them. In the second graph the whole math chain formed one row with the exec line.\r\n- **Expected:** Pure nodes sit below the exec row, in columns left of their consumer.\r\n- **Proposed behavior:** Reserve the exec row for exec nodes. See TD-30 for the recipe."
+      "observation": "- **Type:** Limitation.\r\n- **Observed:** In both results, math nodes (modulo, add, greater, and) sat on the exec row. The exec wire ran through them. In the second graph the whole math chain formed one row with the exec line.\r\n- **Expected:** Pure nodes sit below the exec row, in columns left of their consumer.\r\n- **Proposed behavior:** Reserve the exec row for exec nodes. See TD-30 for the recipe.",
+      "fix_commit": "19bc09b",
+      "implementation": "General and Sequence placement now keep pure expressions below their execution consumer, propagating that floor upstream. Getter copies use the same below-consumer floor. Structural acceptance measures direct pure-input row conflicts before wire length.",
+      "remaining": "Shared expressions spanning multiple execution lanes still require safe splitting/ownership; current placement follows one consumer. Full exec-corridor clearance across all unrelated lanes and copy-aware structural metrics remain outstanding."
     },
     {
       "report": "2026-10-21_S15",
