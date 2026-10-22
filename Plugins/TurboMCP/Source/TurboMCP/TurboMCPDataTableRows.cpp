@@ -559,6 +559,36 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 		PlannedAdditions.Add(FName(*Op.RowName));
 	}
 
+    // Validate the same merged row text Apply will import, on initialized scratch
+    // storage only. A preview must not advertise values the engine cannot import.
+    if (Out.Refusals.IsEmpty())
+    {
+        TMap<FName, FString> PreviewRows;
+        for (const FRowOp& Op : Out.Ops)
+        {
+            if (Op.Op != ERowOp::Set) continue;
+            const FName PreviewName(*Op.RowName);
+            const FString Base = PreviewRows.Contains(PreviewName)
+                ? PreviewRows.FindChecked(PreviewName)
+                : (Rows.Contains(PreviewName)
+                    ? WholeRowText(Struct, Rows.FindChecked(PreviewName), Table)
+                    : DefaultRowText(Struct));
+            FString Merged;
+            MergeIntoExport(Base, Op.Fields, Merged);
+            PreviewRows.Add(PreviewName, MoveTemp(Merged));
+        }
+        TArray<FName> PreviewNames;
+        PreviewRows.GetKeys(PreviewNames);
+        PreviewNames.Sort([](const FName& A, const FName& B) { return A.ToString() < B.ToString(); });
+        for (const FName& PreviewName : PreviewNames)
+        {
+            FStructOnScope Scratch(Struct);
+            FString ValidationError;
+            if (!ImportRow(Struct, Scratch.GetStructMemory(), Table, PreviewRows.FindChecked(PreviewName), ValidationError))
+                Out.Refusals.Add(FString::Printf(TEXT("invalid row '%s': %s"), *PreviewName.ToString(), *ValidationError));
+        }
+    }
+
     // A refused batch has no accepted effects. Keep requests/refusal reasons for
     // diagnostics, but never advertise a subset as an executable preview.
     if (!Out.Refusals.IsEmpty())
