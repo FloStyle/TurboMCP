@@ -711,3 +711,7 @@ Blueprint-category and reflected class-path aliases retain canonical owner ident
 ## Generated/skeleton owner identity — eba40b4
 
 Discovery aliases now include both existing generated and skeleton class paths for the same Blueprint declaration, including synthetic live designer getters. Inherited context matching normalizes parent class ancestry by ClassGeneratedBy. NT-09/FT-99 canonical self-member identification implemented, unbuilt_untested. Remaining correctness review concerns inherited designer members missing from both action registry and child live tree. No tests/build/editor runs. Verify inherited same-name getters, explicit class aliases, canonical lookup-to-append round trip and native property identity after compile.
+
+## Inherited designer getters — 35f3672
+
+Completes the identified owner-resolution implementation gaps for S16 GC-31, Oct22 S1 GC-47 and S3 GC-43. Discovery and missing-property reader fallback walk to the nearest Blueprint ancestor with a rooted live widget tree, matching the ownership rule inspected in stock WidgetBlueprintGeneratedClass::FindWidgetTreeOwningClass. IDs retain that declaration owner. No tests/build/editor runs. Verify parent/child widget trees, missing skeleton properties, child tree overrides, same-name foreign members, pin types, compile and preview/apply parity. Prior inherited-discovery implementation debt is superseded; runtime evidence is still absent.
