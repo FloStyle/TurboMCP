@@ -1883,22 +1883,51 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     const FBox& OtherBox = OutPlan.Boxes[B];
                     CopyObstacles.Add({OtherBox.X, OtherBox.Y, OtherBox.PlannedWidth, OtherBox.PlannedHeight});
                 }
-			// Keep existing/planned nodes fixed. Move only this new copy below
-			// intersecting rectangles, reserving its space for subsequent copies.
-			for (int32 Pass = 0; Pass <= CopyObstacles.Num(); ++Pass)
-			{
-				double NextY = Planned.PlannedY;
-				for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
-				{
-					if (Planned.PlannedX < Obstacle.X + Obstacle.Width
-						&& Planned.PlannedX + Planned.Width > Obstacle.X
-						&& Planned.PlannedY < Obstacle.Y + Obstacle.Height
-						&& Planned.PlannedY + Planned.Height > Obstacle.Y)
-						NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + SpacingY));
-				}
-				if (NextY == Planned.PlannedY) break;
-				Planned.PlannedY = NextY;
-			}
+            // Search adjacent input columns as well as downward. A blocked preferred
+            // column must not push a tiny reader below every unrelated branch.
+            const FVector2D ConsumerInput = FTurboMCPGraphTidy::AlignmentPinPosition(ConsumerPin)
+                + FVector2D(ConsumerPlan.PlannedX - ConsumerPlan.X, ConsumerPlan.PlannedY - ConsumerPlan.Y);
+            const double CopyFloor = Planned.PlannedY;
+            const double PreferredCopyX = Planned.PlannedX;
+            const double MinimumCopyX = ConsumerBoxIndex == INDEX_NONE ? static_cast<double>(MIN_int32)
+                : OutPlan.Boxes[ConsumerBoxIndex].X + FitPadding;
+            TArray<double> CopyColumns;
+            CopyColumns.Add(PreferredCopyX);
+            for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
+            {
+                const double LeftColumn = FMath::FloorToDouble(Obstacle.X - Planned.Width - SpacingX);
+                const double RightColumn = FMath::CeilToDouble(Obstacle.X + Obstacle.Width + SpacingX);
+                if (LeftColumn >= MinimumCopyX && LeftColumn <= PreferredCopyX) CopyColumns.AddUnique(LeftColumn);
+                if (RightColumn >= MinimumCopyX && RightColumn <= PreferredCopyX) CopyColumns.AddUnique(RightColumn);
+            }
+            double BestCopyScore = TNumericLimits<double>::Max();
+            for (double CopyX : CopyColumns)
+            {
+                double CopyY = FMath::Max(CopyFloor, FMath::RoundToDouble(ConsumerInput.Y - Planned.OutputOffset.Y));
+                for (int32 Pass = 0; Pass <= CopyObstacles.Num(); ++Pass)
+                {
+                    double NextY = CopyY;
+                    for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
+                        if (CopyX < Obstacle.X + Obstacle.Width + SpacingX
+                            && CopyX + Planned.Width + SpacingX > Obstacle.X
+                            && CopyY < Obstacle.Y + Obstacle.Height + SpacingY
+                            && CopyY + Planned.Height + SpacingY > Obstacle.Y)
+                            NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + SpacingY));
+                    if (NextY == CopyY) break;
+                    CopyY = NextY;
+                }
+                if (!FMath::IsFinite(CopyX) || !FMath::IsFinite(CopyY)
+                    || CopyX < MIN_int32 || CopyX > MAX_int32 || CopyY < MIN_int32 || CopyY > MAX_int32) continue;
+                const double CopyScore = FVector2D::Distance(FVector2D(CopyX, CopyY) + Planned.OutputOffset, ConsumerInput);
+                if (CopyScore < BestCopyScore)
+                {
+                    BestCopyScore = CopyScore;
+                    Planned.PlannedX = CopyX;
+                    Planned.PlannedY = CopyY;
+                }
+            }
+            if (BestCopyScore == TNumericLimits<double>::Max())
+            { OutError = TEXT("No finite shared-reader position; no graph changes applied."); return false; }
 			if (!FMath::IsFinite(Planned.PlannedX) || !FMath::IsFinite(Planned.PlannedY)
 				|| Planned.PlannedX < MIN_int32 || Planned.PlannedX > MAX_int32
 				|| Planned.PlannedY < MIN_int32 || Planned.PlannedY > MAX_int32)
