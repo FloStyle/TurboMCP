@@ -25,6 +25,7 @@
 #include "Logging.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPBlueprintRead.h"
 #include "TurboMCPGraphScratch.h"
 #include "K2Node_FunctionEntry.h"
 
@@ -259,21 +260,7 @@ namespace
 			return;
 		}
 
-		TArray<UEdGraph*> AllGraphs;
-		InBlueprint->GetAllGraphs(AllGraphs);
-		// Retain editor event graphs as well as the engine's recursive graph inventory.
-		for (UEdGraph* EventGraph : InBlueprint->EventGraphs)
-		{
-			if (EventGraph)
-			{
-				AllGraphs.Add(EventGraph);
-				EventGraph->GetAllChildrenGraphs(AllGraphs);
-			}
-		}
-		for (UEdGraph* Graph : AllGraphs)
-		{
-			if (Graph) OutGraphs.AddUnique(Graph);
-		}
+		FTurboMCPBlueprintRead::CollectGraphs(InBlueprint, OutGraphs);
 	}
 
 	/** The real graph names, for an error that has to name what does exist. */
@@ -285,7 +272,8 @@ namespace
 		FString Names;
 		for (const UEdGraph* Graph : Graphs)
 		{
-			Names += Names.IsEmpty() ? Graph->GetName() : TEXT(", ") + Graph->GetName();
+			const FString Label = FString::Printf(TEXT("%s [%s]"), *Graph->GetName(), *Graph->GetPathName());
+			Names += Names.IsEmpty() ? Label : TEXT(", ") + Label;
 		}
 		return Names.IsEmpty() ? TEXT("(none)") : Names;
 	}
@@ -561,7 +549,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 			*Resolved.ObjectPath);
 	}
 
-	const FString Scope = GraphName.IsEmpty() ? TEXT("every graph") : GraphName;
+	if (!GraphName.IsEmpty())
+	{
+		int32 GraphMatches = 0;
+		TurboMCPNodeId::FindGraphByName(Blueprint, GraphName, GraphMatches);
+		if (GraphMatches > 1)
+		{
+			return FString::Printf(TEXT("error: graph name '%s' is ambiguous (%d matches). Graph paths below are diagnostic, not accepted selectors. Omit GraphName to search all graphs. Graphs: %s"), *GraphName, GraphMatches, *ListGraphNames(Blueprint));
+		}
+	}
+	const FString Scope = GraphName.IsEmpty() ? TEXT("all graphs enumerated on this Blueprint") : GraphName;
 
 	TArray<UEdGraph*> Graphs;
 	CollectGraphs(Blueprint, GraphName, Graphs);
@@ -624,6 +621,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 
 	Result += FString::Printf(TEXT(": %d match(es), %d node(s) searched"),
 		TotalMatched, Searched);
+
+	Result += FString::Printf(TEXT("\ncoverage: %d graph(s); nested graphs included when unscoped; inherited Blueprint assets and native implementations not searched; null node entries skipped; results shown=%d/%d"), Graphs.Num(), Lines.Num(), TotalMatched);
 
 	if (TotalMatched == 0)
 	{

@@ -652,13 +652,15 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	OutPlan.Asset = Resolved.ObjectPath;
 
 	UEdGraph* Graph = nullptr;
+	int32 GraphMatches = 0;
 	if (OutPlan.GraphName.IsEmpty())
 	{
 		Graph = FBlueprintEditorUtils::FindEventGraph(Blueprint);
 	}
 	else
 	{
-		Graph = TurboMCPNodeId::FindGraphByName(Blueprint, OutPlan.GraphName);
+		Graph = TurboMCPNodeId::FindGraphByName(Blueprint, OutPlan.GraphName, GraphMatches);
+		if (GraphMatches != 1) Graph = nullptr;
 	}
 
 	if (Graph == nullptr)
@@ -667,8 +669,14 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 		TArray<FString> Names;
         TArray<UEdGraph*> AvailableGraphs;
         FTurboMCPBlueprintRead::CollectGraphs(Blueprint, AvailableGraphs);
-        for (const UEdGraph* Each : AvailableGraphs) Names.AddUnique(Each->GetName());
+        for (const UEdGraph* Each : AvailableGraphs) Names.Add(FString::Printf(TEXT("%s [%s]"), *Each->GetName(), *Each->GetPathName()));
 		Names.Sort();
+
+		if (GraphMatches > 1)
+		{
+			OutError = FString::Printf(TEXT("'%s' has %d graphs named '%s'; ambiguous graph names are refused. Graph paths are diagnostic, not accepted selectors: %s"), *Blueprint->GetName(), GraphMatches, *OutPlan.GraphName, *FString::Join(Names, TEXT(", ")));
+			return false;
+		}
 
 		OutError = OutPlan.GraphName.IsEmpty()
 			? FString::Printf(
