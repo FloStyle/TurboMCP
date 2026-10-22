@@ -538,3 +538,7 @@ Implemented native pin offsets, measured comment fit, explicit wire-length rejec
 ## S12 — 587efd2
 
 X-83 own-header-first include order repaired. No local tests/build. Field evidence: d6ca123 compiled and linked on UE5.8.3/MSVC14.50 with this diagnostic; no editor load observed. This does not establish runtime correctness. Preventive source-convention enforcement remains tracked separately.
+
+## P0 getter identity — 5621ddd
+
+Partial repair: class-qualified reflected property IDs now shared by reader/discovery, legacy context-member preference, no foreign fallback for Variables short IDs. No tests/build/editor runs. Getter-owner group remains OPEN: newly exposed uncompiled widget variables, alternate alias resolution, result owner reporting and preview parity still need implementation review.
