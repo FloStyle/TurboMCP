@@ -3355,9 +3355,10 @@
       "validation": "unbuilt_untested",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "A filtered read with a wrong \"nothing calls\" list",
-      "disposition": "partially_implemented",
-      "fix_commit": "141cd11",
-      "remaining": "Static function callers and upstream entries implemented. Delegate-bound event callers and expanded execution context remain outstanding."
+      "disposition": "partial_implementation",
+      "fix_commit": "c330650",
+      "remaining": "Designer/component-bound events and delegate routes through intermediate nodes need complete coverage.",
+      "implementation": "Global static callers plus Create Event/custom-event delegate connection sites, exact endpoints and binding-entry context. Bound self functions are counted as referenced. Binding is explicitly distinguished from runtime invocation."
     },
     {
       "report": "2026-10-22_S2",

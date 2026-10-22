@@ -662,3 +662,6 @@ Function binding now accepts exact object output endpoints, wires context before
 
 ## GC-42 signature-derived event creation (2026-10-22)
 Added BindNewEvent preview/edit using stock CreateFromFunction, event graph/name guards and delegate-signature resolution. Body intentionally empty for caller wiring. Return-valued signatures require function binding. Unbuilt/untested: typed/ref parameters, preview isolation, event name collisions, compile, undo and source replacement.
+
+## FT-96 delegate relation evidence (2026-10-22)
+Blueprint relation reads list direct function/custom-event delegate connections and binding-entry context. Runtime invocation is not inferred. Unbuilt/untested: self/external scope, disconnected nodes, name collisions and text caps. Designer/component binding and intermediate routes remain open.
