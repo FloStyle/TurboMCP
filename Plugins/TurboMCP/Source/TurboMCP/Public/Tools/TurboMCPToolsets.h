@@ -1318,11 +1318,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetUndo(const FString& Asset);
 
-	/** Translate selected nodes or entire comment groups, including nested boxes; keeps internal layout and wiring. Refuses new collisions or changed external box membership. */
+	/** Translate selected nodes or entire comment groups, including nested boxes; keeps internal layout and wiring. Refuses new collisions or changed external box membership unless DestinationBox explicitly names a comment to receive selected unboxed nodes; they must fit inside without resizing it. */
 	UFUNCTION(meta = (AICallable))
-	static FString PreviewTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY);
+	static FString PreviewTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY, const FString& DestinationBox = TEXT(""));
 
-    /** Propose a collision-free translation near outside nodes linked to the selected nodes/comment groups. Returns DeltaX/DeltaY for GraphGroupMove and per-wire before/after lengths. Preserves internal layout and existing comment membership; searches free positions, never edits, saves or compiles. */
+    /** Propose a collision-free translation near outside nodes linked to the selected nodes/comment groups. Returns DeltaX/DeltaY for GraphGroupMove and per-wire before/after lengths. Preserves internal layout; searches free positions and connected comment boxes with room for the unboxed selection. Returns explicit DestinationBox when transferring into a box. Never edits, saves or compiles. */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphGroupPlacement(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds);
 
@@ -2164,9 +2164,9 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPAssetUndo(const FString& Asset, const FString& Confirm);
 
-	/** Translate selected nodes or entire comment groups, including nested boxes; keeps internal layout and wiring. Refuses new collisions or changed external box membership. */
+	/** Translate selected nodes or entire comment groups, including nested boxes; keeps internal layout and wiring. Refuses new collisions or changed external box membership unless DestinationBox explicitly names a comment to receive selected unboxed nodes; they must fit inside without resizing it. */
 	UFUNCTION(meta = (AICallable))
-	static FString EditTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY);
+	static FString EditTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY, const FString& DestinationBox = TEXT(""));
 
 	/** Edit reload of saved Blueprint package; discards all unsaved edits, may reset undo. Edit requires the preview confirmation. */
 	UFUNCTION(meta = (AICallable))
