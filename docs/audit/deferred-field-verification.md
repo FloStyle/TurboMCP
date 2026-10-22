@@ -626,3 +626,6 @@ GC-39 implemented, unbuilt_untested. Discovery/creation now use current entry pi
 ## P0 node execution context — f64432d
 
 X-91/FT-95 implemented, unbuilt_untested. Text reader returns full static upstream context, entries, exact links/input defaults and bounded downstream hops. No screenshots or dynamic dispatch inference. No tests/build/editor runs. Verify loops, shared tails, pure call consumers and large graph output later. Append scratch parity remains open: apply currently resolves original asset identity and uses editor undo; a proper transient execution abstraction is still required.
+
+## DT-11 selected DataTable columns (2026-10-22)
+Implemented optional Columns projection using reflected property export. Unbuilt and untested by request. Verify native/user-defined row structs, tag/text/container/static-array fields, unknown names and output caps; no row mutation or saving is intended.

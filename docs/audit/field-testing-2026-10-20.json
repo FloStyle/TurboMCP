@@ -2081,11 +2081,13 @@
       "canonical_issue": "2026-10-22_S1/DT-11",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_untested",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Limitation (documented).\n- **Observed:** To see which tag each row holds, the agent needed the engine row tool. For save-setting tables, the row tag and type are the main facts.\n- **Proposed behavior:** Print the key columns (tag, type, default) for save descriptor tables, or a \"columns\" parameter.\n\n### Later in the same session (feature build)"
+      "observation": "- **Type:** Limitation (documented).\n- **Observed:** To see which tag each row holds, the agent needed the engine row tool. For save-setting tables, the row tag and type are the main facts.\n- **Proposed behavior:** Print the key columns (tag, type, default) for save descriptor tables, or a \"columns\" parameter.\n\n### Later in the same session (feature build)",
+      "implementation": "ReadTurboMCPDataTable Columns selects comma-separated reflected schema fields; exports selected values for listed rows, rejects unknown fields, preserves existing row/result caps. No mutation or save.",
+      "verification_debt": "Build and field-check native/user-defined structs, tags, text, arrays and missing row storage. No tests run."
     },
     {
       "report": "2026-10-22_S1",
