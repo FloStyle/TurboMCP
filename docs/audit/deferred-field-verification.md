@@ -985,3 +985,7 @@ Implemented, unbuilt_untested: NodeFind shared stable enumeration and explicit s
 ## 2026-10-23 dispatcher usage — e1de181
 
 Implemented, unbuilt_untested: multicast delegate operations register self-member references and expose operation class; static absent-use findings no longer claim runtime nonuse or default persistence. Caller/delegate output states scan scope. a28a09fd remains open for shared typed model, widget property bindings, member identity and callback coverage. No tests/build/editor runs.
+
+## 2026-10-23 variable usage identity — 945771a
+
+Implemented, unbuilt_untested: local/unrelated external variable names no longer count as Blueprint member usage. Explicit references to the Blueprint class count, including dispatcher references. Output graph sets sorted. Parent a28a09fd remains open for typed shared model, widget property bindings and callback reconciliation. No tests/build/editor runs.
