@@ -1127,6 +1127,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp"
           ],
           "new_files": []
+        },
+        "quick-dispatcher-usage": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
