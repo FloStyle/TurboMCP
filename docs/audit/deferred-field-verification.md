@@ -964,3 +964,8 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## Canonical identity reconciliation — 2026-10-23
 
 2026-10-23 implementation reconciliation: NodeId Parse splits unquoted separators and preserves quoted graph names; NormaliseKey rejects nonhex/undersized aliases; FindNodesByKey returns all matches. NodeResolve refuses ambiguous assets/node prefixes; CaptureSelector uses the same parser/match counts and refuses ambiguity; Append resolves aliases through the shared key matcher before using canonical node identity. MakeForNode emits full identity for long-form mutation records. Close this named normalization/ambiguity implementation record as Done/Untested. No claim that every tool accepts arbitrary short keys, and no runtime verification. Broader reader/writer grammar coverage stays under 4de12720 and full endpoint inventory under ff18311b.
+
+
+## Strict single-graph batch input — 2026-10-23
+
+2026-10-23 partial repair 6885040, unbuilt_untested: batch wrapper/operation unknown fields refuse; case-duplicate keys and simultaneous graph/graphName refuse; optional values no longer silently default from wrong JSON types; id/kind match argument case handling. Operations must resolve to one actual graph/asset. Remaining: transaction-core ownership, final compile policy and rollback/outcome guarantees. Sequential scratch planning already exists; original all-ops-independent planning diagnosis is stale. No tests/build/editor runs.
