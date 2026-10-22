@@ -675,3 +675,7 @@ Delegate consumers traced through transparent knots with visited-pin cycle detec
 ## Empty note distance preview — a079cd6
 
 2026-10-21_S14/CB-03: implemented the requested reporting alternative. Source inspection only; no build, tests or editor runs. Verify empty leaf notes, graphs without non-comment nodes, distance changes after tidy and unchanged note geometry. Nearest-node proximity does not establish a semantic anchor; automatic note following is not claimed.
+
+## Neighbour capture canvas — 8086687
+
+CP-16 remains partial: target-only bounds now drive an independent native canvas, capped at 4096 per edge. No tests/build/editor runs. Verify a small two-hop selection in a large graph, selection and box-neighbours modes, native geometry and PNG framing. Widely spaced targets can still exceed native minimum zoom; tiled coverage remains outstanding.
