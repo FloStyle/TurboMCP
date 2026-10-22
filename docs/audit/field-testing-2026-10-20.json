@@ -1590,13 +1590,14 @@
       "canonical_issue": "layout-quality-gate",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-21_S13_TurboMCP_branch-graph-hand-layout.md",
       "observation": "- **Type:** Defect in the acceptance rule.\r\n- **Scenario:** The same graph as TD-28.\r\n- **Reproduction status:** Observed once, by measurement.\r\n- **Observed:** The original messy layout measured 14391. The hand layout that the user accepted measured 15480. The tidy accepts a result only when the wire length goes down. So the tidy gate would reject the layout the user wants, even if the planner made it.\r\n- **Expected:** The gate scores what the user rules value: a straight main exec row, stacked lanes, no overlap, inputs level with their pins. Total wire length is a secondary score.\r\n- **Impact:** No change to the planner can pass the gate on graphs like this one.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** Score in this order: overlaps, exec rows straight, backward wires, inputs level, then wire length. Accept a result that improves the first four, even with longer wires.",
-      "implementation": "7d577e5",
-      "implementation_limits": "Preview and post-edit acceptance now prioritize overlaps, backward exec wires and linear exec drift (16px tolerance), then wire length. Remaining: pure-input alignment metric, shared-copy geometry and complete branch/merge lane placement. No tests/build/editor runs."
+      "implementation": "f8780f0: common preview/post-edit structural comparison ranks overlaps, straight execution rows, separate fan-out bands, backward exec/data links, pure-input corridor conflicts and input-pin drift before wire length. Native pin geometry used for alignment; value-reader copies included. Preview and edit print component scores.",
+      "implementation_limits": "Source inspected only; no tests/build/editor runs. Lexicographic priorities intentionally permit longer wires when a higher-priority structural score improves. Force still cannot add overlaps.",
+      "remaining": "No identified implementation gap in replacing the wire-length-only acceptance rule. Native and field verification deferred; separate planner limitations remain independently tracked."
     },
     {
       "report": "2026-10-21_S13",
@@ -1988,13 +1989,14 @@
       "canonical_issue": "layout-quality-gate",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
       "observation": "- **Observed:** Wire length would go from 16008 to 17923, so the tidy rolled back. This repeats TD-29: the gate rejects layouts that add lanes.\r\n\r\n### Comment boxes and group move",
-      "implementation": "7d577e5",
-      "implementation_limits": "Preview and post-edit acceptance now prioritize overlaps, backward exec wires and linear exec drift (16px tolerance), then wire length. Remaining: pure-input alignment metric, shared-copy geometry and complete branch/merge lane placement. No tests/build/editor runs."
+      "implementation": "f8780f0: common preview/post-edit structural comparison ranks overlaps, straight execution rows, separate fan-out bands, backward exec/data links, pure-input corridor conflicts and input-pin drift before wire length. Native pin geometry used for alignment; value-reader copies included. Preview and edit print component scores.",
+      "implementation_limits": "Source inspected only; no tests/build/editor runs. Lexicographic priorities intentionally permit longer wires when a higher-priority structural score improves. Force still cannot add overlaps.",
+      "remaining": "No identified implementation gap in replacing the wire-length-only acceptance rule. Native and field verification deferred; separate planner limitations remain independently tracked."
     },
     {
       "report": "2026-10-21_S16",
@@ -2210,13 +2212,14 @@
       "canonical_issue": "layout-quality-gate",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Observed:** All four graphs grew in wire length and rolled back (6418 to 8399, 11576 to 15221, 4377 to 6473, 884 to 1296). Hand layout again. Same cause as TD-29.",
-      "implementation": "7d577e5",
-      "implementation_limits": "Preview and post-edit acceptance now prioritize overlaps, backward exec wires and linear exec drift (16px tolerance), then wire length. Remaining: pure-input alignment metric, shared-copy geometry and complete branch/merge lane placement. No tests/build/editor runs."
+      "implementation": "f8780f0: common preview/post-edit structural comparison ranks overlaps, straight execution rows, separate fan-out bands, backward exec/data links, pure-input corridor conflicts and input-pin drift before wire length. Native pin geometry used for alignment; value-reader copies included. Preview and edit print component scores.",
+      "implementation_limits": "Source inspected only; no tests/build/editor runs. Lexicographic priorities intentionally permit longer wires when a higher-priority structural score improves. Force still cannot add overlaps.",
+      "remaining": "No identified implementation gap in replacing the wire-length-only acceptance rule. Native and field verification deferred; separate planner limitations remain independently tracked."
     },
     {
       "report": "2026-10-22_S1",
@@ -2227,13 +2230,14 @@
       "canonical_issue": "layout-quality-gate",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Observed:** Wire length would go from 25018 to 29553, so the tidy rolled back. Hand layout in 2 position calls. Same cause as TD-29.",
-      "implementation": "7d577e5",
-      "implementation_limits": "Preview and post-edit acceptance now prioritize overlaps, backward exec wires and linear exec drift (16px tolerance), then wire length. Remaining: pure-input alignment metric, shared-copy geometry and complete branch/merge lane placement. No tests/build/editor runs."
+      "implementation": "f8780f0: common preview/post-edit structural comparison ranks overlaps, straight execution rows, separate fan-out bands, backward exec/data links, pure-input corridor conflicts and input-pin drift before wire length. Native pin geometry used for alignment; value-reader copies included. Preview and edit print component scores.",
+      "implementation_limits": "Source inspected only; no tests/build/editor runs. Lexicographic priorities intentionally permit longer wires when a higher-priority structural score improves. Force still cannot add overlaps.",
+      "remaining": "No identified implementation gap in replacing the wire-length-only acceptance rule. Native and field verification deferred; separate planner limitations remain independently tracked."
     },
     {
       "report": "2026-10-22_S1",
