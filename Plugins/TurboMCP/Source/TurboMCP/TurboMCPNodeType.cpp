@@ -149,6 +149,26 @@ namespace
 		UObject* Owner = nullptr;
 	};
 
+    bool VerifyVariableIdentity(const FEntry& Entry, UEdGraphNode* Node, FString& Note)
+    {
+        const UBlueprintVariableNodeSpawner* Spawner = Cast<UBlueprintVariableNodeSpawner>(Entry.Spawner);
+        if (!Spawner || !Entry.TypeId.StartsWith(TEXT("Variable|"))) return true;
+        const FProperty* Expected = Spawner->GetVarProperty();
+        const UK2Node_Variable* Variable = Cast<UK2Node_Variable>(Node);
+        const FProperty* Actual = Variable ? Variable->GetPropertyForVariableFromSkeleton() : nullptr;
+        if (!Actual && Variable) Actual = Variable->GetPropertyForVariable();
+        const UClass* ExpectedOwner = Expected ? Expected->GetOwnerClass() : nullptr;
+        const UClass* ActualOwner = Actual ? Actual->GetOwnerClass() : nullptr;
+        // Skeleton and generated classes represent the same declaration when their Blueprint agrees.
+        const bool SameOwner = ExpectedOwner && ActualOwner && (ExpectedOwner == ActualOwner
+            || (ExpectedOwner->ClassGeneratedBy && ExpectedOwner->ClassGeneratedBy == ActualOwner->ClassGeneratedBy));
+        if (Expected && Actual && SameOwner && Expected->GetFName() == Actual->GetFName()
+            && Variable->VariableReference.GetMemberName() == Expected->GetFName()) return true;
+        Note = FString::Printf(TEXT("created variable identity did not match requested '%s'; created node removed before linking (expected owner=%s, actual owner=%s)"),
+            *Entry.TypeId, *GetPathNameSafe(ExpectedOwner), *GetPathNameSafe(ActualOwner));
+        return false;
+    }
+
 	/**
 	 * Every entry the action database offers for this graph, after the engine's own filter.
 	 *
@@ -387,6 +407,11 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 		{
 			OutNote = FString::Printf(TEXT("the engine's spawner for '%s' returned no node, so it declined to build one in this context"), *InTypeId);
 		}
+        if (Spawned && !VerifyVariableIdentity(Entry, Spawned, OutNote))
+        {
+            Spawned->DestroyNode();
+            return nullptr;
+        }
 		return Spawned;
 	}
 
@@ -462,6 +487,11 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 		{
 			Spawned->AllocateDefaultPins();
 		}
+        if (!VerifyVariableIdentity(Entry, Spawned, OutNote))
+        {
+            Spawned->DestroyNode();
+            return ESpawnResult::SpawnerDeclined;
+        }
 		OutNode = Spawned;
 		return ESpawnResult::Spawned;
 	}
