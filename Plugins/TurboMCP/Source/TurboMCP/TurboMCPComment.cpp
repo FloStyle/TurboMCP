@@ -15,6 +15,7 @@
 #include "EdGraphNode_Comment.h"
 #include "Engine/Blueprint.h"
 #include "Misc/Guid.h"
+#include "Templates/UniquePtr.h"
 #include "UObject/Class.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
@@ -670,17 +671,23 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 		return FString::Printf(TEXT("error: %s"), *FindError);
 	}
 
-    const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP","CommentEdit","TurboMCP comment edit"));
-    if(!Transaction.IsOutstanding()) return TEXT("unchanged: comment undo transaction unavailable");
-    Blueprint->Modify();
-    Graph->Modify();
-    for(UEdGraphNode* Node:Graph->Nodes)
-        if(UEdGraphNode_Comment* Comment=Cast<UEdGraphNode_Comment>(Node))
-            if(InPlan.BoxKey.IsEmpty() || KeyOf(Comment)==InPlan.BoxKey)
-            { Comment->SetFlags(RF_Transactional); Comment->Modify(); }
+    TUniquePtr<FScopedTransaction> Transaction;
+    auto BeginEdit = [&](UEdGraphNode_Comment* Comment) -> bool
+    {
+        if (!Transaction)
+        {
+            Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP","CommentEdit","TurboMCP comment edit"));
+            if (!Transaction->IsOutstanding()) return false;
+            Blueprint->Modify();
+            Graph->Modify();
+        }
+        if (Comment) { Comment->SetFlags(RF_Transactional); Comment->Modify(); }
+        return true;
+    };
 
 	if (InPlan.Action == EAction::Create)
 	{
+        if (!BeginEdit(nullptr)) return TEXT("unchanged: comment undo transaction unavailable");
 		UEdGraphNode_Comment* Comment = NewObject<UEdGraphNode_Comment>(Graph,NAME_None,RF_Transactional);
 		// THE GUID IS MADE HERE, because `AddNode` is what would otherwise make it and the key is
 		// read back straight afterwards. Without this every box created in one session carried the
@@ -736,6 +743,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			const int32 MemberTotal = Members.Num();
 			const FString Text = Comment->NodeComment;
 
+            if (!BeginEdit(Comment)) return TEXT("unchanged: comment undo transaction unavailable");
 			Graph->Modify();
 			Comment->DestroyNode();
 			Graph->MarkPackageDirty();
@@ -787,7 +795,16 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			const FLinearColor OldColor = Comment->CommentColor;
 			const int32 OldWidth = Comment->NodeWidth;
 			const int32 OldHeight = Comment->NodeHeight;
-
+            FLinearColor DesiredColor = OldColor;
+            FString ColorError;
+            if (InPlan.bHasColor && !ParseColor(InPlan.Color, DesiredColor, ColorError))
+                return TEXT("unchanged: ") + ColorError;
+            const bool NeedsChange = (InPlan.bHasText && OldText != InPlan.Text)
+                || !OldColor.Equals(DesiredColor)
+                || (InPlan.Width > 0.0 && OldWidth != static_cast<int32>(InPlan.Width))
+                || (InPlan.Height > 0.0 && OldHeight != static_cast<int32>(InPlan.Height));
+            if (!NeedsChange) return FString::Printf(TEXT("unchanged: box %s already has those values."), *InPlan.BoxKey);
+            if (!BeginEdit(Comment)) return TEXT("unchanged: comment undo transaction unavailable");
 			Graph->Modify();
 			if (InPlan.bHasText)
 			{
@@ -871,7 +888,9 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			continue;
 		}
 
-		Comment->Modify();
+        if (Comment->NodePosX == static_cast<int32>(X) && Comment->NodePosY == static_cast<int32>(Y)
+            && Comment->NodeWidth == static_cast<int32>(Width) && Comment->NodeHeight == static_cast<int32>(Height)) continue;
+        if (!BeginEdit(Comment)) return TEXT("unchanged: comment undo transaction unavailable");
 		const int32 OldWidth = Comment->NodeWidth;
 		const int32 OldHeight = Comment->NodeHeight;
 
@@ -918,10 +937,9 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			TEXT("\n%d box(es) hold nothing and were LEFT ALONE, because a box with no contents ")
 			TEXT("has no size to fit to. %s"),
 			Empty,
-			Fitted > 0 ? TEXT("The two counts add up to the boxes in the graph.")
-				: TEXT("They are listed by P-COMMENT."));
+			TEXT("Already-fitted and unselected boxes were also left unchanged."));
 	}
 
-	Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+	if (Fitted > 0) Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
 	return Out;
 }
