@@ -2532,13 +2532,15 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partial_implementation",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
       "observation": "- **Type:** Limitation.\n- **Scenario:** One function with 15 nodes, one branch and 3 getters.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Tidy the function after the append.\n  2. Capture the graph.\n- **Observed:** Wire length went down. One getter fed a call from far below and crossed another wire. A pure node sat on the exec row.\n- **Expected:** The user's layout rules: pure nodes below the exec row, next to their consumer.\n- **Impact:** 2 hand position calls and 2 captures.\n- **State after:** Positions fixed and saved.\n- **Workaround:** Hand positions. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None.",
       "input_band_commit": "f2f3495",
       "input_band_progress": "Per-lane input floors and measured cluster reservations replace the global below-all-lanes fallback; inputs choose consumers within their assigned lane.",
-      "remaining": "Remaining review: order sibling input columns by consumer pin to reduce crossings, ensure shared expressions/copies stay near their consumers, and audit aggregate small-graph output. Keep open; per-lane bands alone do not prove crossing-free layout."
+      "remaining": "Inspect shared-reader copies and cross-branch input interactions; audit aggregate small-graph output. Per-consumer ordering is implemented but broader crossing/near-consumer coverage is still partial.",
+      "input_order_commit": "899076f",
+      "input_order_progress": "Pure inputs traverse consumer-first in native input-pin Y order with a stable source-index tie break. Placement retains the chosen consumer, avoiding insertion-order inversion."
     },
     {
       "report": "2026-10-22_S2",

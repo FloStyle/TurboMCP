@@ -795,3 +795,7 @@ Oct22 S1/CP-16 requires neighbour capture framing only its selected nodes on a l
 
 ## Per-lane pure input bands — f2f3495
 S15/TD-34 implemented, unbuilt_untested. Generic branches reserve per-lane measured pure-cluster height, place pure nodes below their own exec band and use same-lane consumers for positioning. Shared inputs reserve capacity in each using lane for subsequent safe copies. Nested branch lane ancestry and main-row merges retained. S2/TD-39 and S15/X-86 remain open for sibling column order/crossings and aggregate output review. No tests/build/editor runs. Deferred: nested branches, multiple pure consumers, shared copies, function-input readers, comments/fixed anchors, Sequence override and band overflow/collision regressions.
+
+## Consumer pin ordering — 2026-10-23
+
+Source `899076f`: pure input placement follows visual consumer pin order and places consumers before upstream inputs, with visited-node protection for cycles. Source inspection only; no builds, tests or editor runs. Unbuilt/untested. Later verify reversed insertion order, nested pure chains, shared values, branches, and repeat tidy stability. S2/TD-39 remains open for shared-copy/cross-branch placement review.
