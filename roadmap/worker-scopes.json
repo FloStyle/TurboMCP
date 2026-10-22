@@ -951,6 +951,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h"
           ]
+        },
+        "p0-append-nested-lanes": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
