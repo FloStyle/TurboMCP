@@ -813,8 +813,7 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 		{
 			if (Pin != nullptr
 				&& Pin->Direction == EGPD_Output
-				&& Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec
-				&& Pin->LinkedTo.Num() > 0)
+				&& Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
 			{
 				ExecOuts.Add(Pin);
 			}
@@ -843,7 +842,7 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 			continue;
 		}
 
-		// Several outputs: every arm becomes a named continuation. Printing the
+		// Every declared arm is named, including unconnected outputs. Printing the
 		// first one inline would imply the others run after it rather than instead
 		// of it, so they are all written the same way.
 		for (const UEdGraphPin* Pin : ExecOuts)
