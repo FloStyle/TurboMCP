@@ -21,6 +21,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_CreateDelegate.h"
+#include "K2Node_Knot.h"
 #include "K2Node_ComponentBoundEvent.h"
 #include "K2Node_ActorBoundEvent.h"
 #include "K2Node_Event.h"
@@ -573,14 +574,33 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
             { DelegateTarget=InBlueprint->GetPathName()+TEXT(".")+Event->CustomFunctionName.ToString(); OwnDelegateTarget=true; }
             if(!DelegateTarget.IsEmpty())
                 for(const UEdGraphPin* P:Node->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==UEdGraphSchema_K2::PC_Delegate)
-                    for(const UEdGraphPin* Consumer:P->LinkedTo) if(Consumer && Consumer->GetOwningNodeUnchecked())
+                {
+                    TArray<const UEdGraphPin*> Pending;
+                    for(const UEdGraphPin* Linked:P->LinkedTo) Pending.Add(Linked);
+                    TSet<const UEdGraphPin*> Visited;
+                    bool ThroughReroute=false;
+                    for(int32 Cursor=0;Cursor<Pending.Num();++Cursor)
                     {
+                        const UEdGraphPin* Consumer=Pending[Cursor];
+                        if(!Consumer || !Consumer->GetOwningNodeUnchecked() || Visited.Contains(Consumer)) continue;
+                        Visited.Add(Consumer);
+                        if(const UK2Node_Knot* Knot=Cast<UK2Node_Knot>(Consumer->GetOwningNodeUnchecked()))
+                        {
+                            ThroughReroute=true;
+                            for(const UEdGraphPin* K:Knot->Pins) if(K && K->Direction==EGPD_Output)
+                                for(const UEdGraphPin* Next:K->LinkedTo) Pending.Add(Next);
+                            continue;
+                        }
                         DelegateSites.Add(FString::Printf(TEXT("%s bound via %s.%s -> %s.%s; binding entry=%s; runtime invocation not inferred"),
                             *DelegateTarget,*TurboMCPNodeId::MakeForNode(Node,true),*P->PinName.ToString(),
                             *TurboMCPNodeId::MakeForNode(Consumer->GetOwningNodeUnchecked(),true),*Consumer->PinName.ToString(),*CallerRoots(Consumer->GetOwningNodeUnchecked())));
                         if(OwnDelegateTarget)
                             if(const UK2Node_CreateDelegate* Delegate=Cast<UK2Node_CreateDelegate>(Node)) CalledFunctions.Add(Delegate->GetFunctionName().ToString());
                     }
+                    if(ThroughReroute) DelegateSites.Add(TEXT("reroute traversal: ")+TurboMCPNodeId::MakeForNode(Node,true)+TEXT(".")+P->PinName.ToString()
+                        +TEXT("; transparent knots followed with cycle detection; dynamic storage/dispatch is not inferred"));
+                }
+
 
 
 			if (const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node))
