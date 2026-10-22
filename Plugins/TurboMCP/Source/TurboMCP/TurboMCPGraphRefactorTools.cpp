@@ -198,7 +198,24 @@ bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FStrin
         { Error=TEXT("duplicate link selection"); return false; }
         Break.Add({From,To}); Report+=TEXT("\nbreak link: ")+Source+TEXT(":")+SourcePin+TEXT(" -> ")+Target+TEXT(":")+TargetPin;
     }
-    // Exact reciprocal removal avoids schema conversion/reconstruction of unrelated pins.
+    // Defer callbacks until all raw pin operations finish: K2 callbacks can reconstruct
+    // pins, which would invalidate pointers for later links in this same batch.
+    struct FNotifyPin { UEdGraphNode* Node; FGuid PinId; };
+    TArray<FNotifyPin> NotifyPins;
+    TArray<UEdGraphNode*> NotifyNodes;
+    auto Remember = [&](UEdGraphPin* P)
+    {
+        if(!P || Delete.Contains(P->GetOwningNode())) return;
+        UEdGraphNode* N=P->GetOwningNode();
+        if(!NotifyPins.ContainsByPredicate([&](const FNotifyPin& R){return R.Node==N && R.PinId==P->PinId;}))
+            NotifyPins.Add({N,P->PinId});
+        NotifyNodes.AddUnique(N);
+    };
+    for(const FLink& Link:Break) { Remember(Link.From); Remember(Link.To); }
+    for(UEdGraphNode* Node:Delete)
+        for(UEdGraphPin* P:Node->Pins) if(P)
+            for(UEdGraphPin* Other:P->LinkedTo) Remember(Other);
+    // Exact reciprocal removal, followed by the editor's connection notifications.
     for(const FLink& Link:Break)
     {
         Link.From->BreakLinkTo(Link.To);
@@ -207,9 +224,19 @@ bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FStrin
     }
     for(UEdGraphNode* Node:Delete)
     {
-        Node->BreakAllNodeLinks(); Graph->RemoveNode(Node);
+        for(UEdGraphPin* P:Node->Pins) if(P) P->BreakAllPinLinks(false);
+        Graph->RemoveNode(Node);
         if(Graph->Nodes.Contains(Node)) { Error=TEXT("node removal read-back failed"); return false; }
     }
+    for(const FNotifyPin& Ref:NotifyPins)
+    {
+        if(!Graph->Nodes.Contains(Ref.Node)) continue;
+        UEdGraphPin* Current=nullptr;
+        for(UEdGraphPin* P:Ref.Node->Pins) if(P && P->PinId==Ref.PinId) { Current=P; break; }
+        if(Current) Ref.Node->PinConnectionListChanged(Current);
+    }
+    for(UEdGraphNode* Node:NotifyNodes)
+        if(Graph->Nodes.Contains(Node)) Node->NodeConnectionListChanged();
     Report=FString::Printf(TEXT("removed nodes=%d links=%d; incident links of removed nodes are also removed; no automatic reconnection"),Delete.Num(),Break.Num())+Report;
     return true;
 }
