@@ -89,7 +89,7 @@ namespace TurboMCPGraphTextLex
 		}
 
 		// A link form and the two continuation forms the writer emits are not nodes.
-		if (Head == TEXT("->") || Head == TEXT(":then") || Head == TEXT(":else"))
+		if (Head == TEXT("->") || Head.StartsWith(TEXT(":")))
 		{
 			return false;
 		}
@@ -325,6 +325,8 @@ namespace TurboMCPGraphTextLex
 	FString LocalLabelFromComment(const FString& InComment)
 	{
 		FString Body = InComment.TrimStartAndEnd();
+        // Closed pinless forms may carry their label after the closing delimiter.
+        while(Body.StartsWith(TEXT(")"))) Body=Body.RightChop(1).TrimStartAndEnd();
 		if (Body.StartsWith(TEXT(";")))
 		{
 			Body = Body.RightChop(1).TrimStartAndEnd();
