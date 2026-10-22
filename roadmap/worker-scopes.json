@@ -971,6 +971,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h"
           ],
           "new_files": []
+        },
+        "p0-append-rejoin-placement": {
+          "new_files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp"
+          ]
         }
       },
       "preserve_rows": []
