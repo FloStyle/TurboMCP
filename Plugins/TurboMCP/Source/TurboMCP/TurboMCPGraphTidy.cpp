@@ -1189,6 +1189,16 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				double LaneHeight = SpacingY;
 				for (int32 I : Free) if (RowOf[I] == Row) LaneHeight = FMath::Max(LaneHeight, OutPlan.Nodes[I].Height + SpacingY);
 				TMap<int32,int32> LaneOf;
+                TMap<const UEdGraphPin*,int32> OutputLane;
+                int32 NextLane=1;
+                TMap<int32,int32> LaneParent;
+                auto CommonLane=[&LaneParent](int32 A,int32 B)
+                {
+                    TSet<int32> Ancestors;
+                    for(;;) {Ancestors.Add(A);if(A==0) break;A=LaneParent.FindRef(A);}
+                    while(!Ancestors.Contains(B) && B!=0) B=LaneParent.FindRef(B);
+                    return B;
+                };
                 TMap<int32,double> LaneCursor;
                 LaneCursor.Add(0,FreeStartX);
 				for (int32 I : Free)
@@ -1199,19 +1209,42 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					for (const FWire& W : OutPlan.Wires)
 						if (W.TargetNodeIndex == I && W.OutputPin && W.OutputPin->PinType.PinCategory == TEXT("exec") && LaneOf.Contains(W.SourceNodeIndex))
 						{
-							int32 Branch = 0;
-							for (const UEdGraphPin* Pin : OutPlan.Nodes[W.SourceNodeIndex].Node->Pins)
-							{ if (Pin == W.OutputPin) break; if (Pin && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == TEXT("exec")) ++Branch; }
-							if(W.OutputPin->PinName==TEXT("Completed")) Branch=0;
                             const bool Preferred=MainPredecessor.Contains(I) && MainPredecessor[I]==W.SourceNodeIndex;
                             const bool SequenceEdge=OutPlan.Nodes[W.SourceNodeIndex].Node->IsA<UK2Node_ExecutionSequence>();
                             if(MainPredecessor.Contains(I) && !Preferred && !SequenceEdge) continue;
-                            if(!Preferred && !SequenceEdge) for(const auto& Edge:MainPredecessor) if(Edge.Value==W.SourceNodeIndex && Edge.Key!=I) Branch=FMath::Max(1,Branch);
-                            const int32 Candidate = LaneOf[W.SourceNodeIndex] + (SequenceEdge ? Branch+1 : (Preferred?0:Branch));
-							if (Candidate < Lane) { Lane = Candidate; Incoming = &W; }
+                            const int32* ReservedLane=OutputLane.Find(W.OutputPin);
+                            const int32 Candidate=ReservedLane?*ReservedLane:LaneOf[W.SourceNodeIndex];
+                            if(Lane==MAX_int32) {Lane=Candidate;Incoming=&W;}
+                            else
+                            {
+                                if(Candidate<Lane) Incoming=&W;
+                                Lane=CommonLane(Lane,Candidate);
+                            }
 						}
 					if (Lane == MAX_int32) Lane = 0;
 					LaneOf.Add(I, Lane);
+                    NextLane=FMath::Max(NextLane,Lane+1);
+                    // Reserve distinct lanes per fan-out pin once, at the source.
+                    // Adding branch indices to the parent lane lets an inner false
+                    // path collide with its outer sibling (both become lane 1).
+                    const UEdGraphPin* MainOutput=nullptr;
+                    for(const UEdGraphPin* Pin:N.Node->Pins)
+                        if(Pin && Pin->Direction==EGPD_Output && Pin->PinType.PinCategory==TEXT("exec") && !Pin->LinkedTo.IsEmpty())
+                        {
+                            if(!MainOutput || Pin->PinName==TEXT("Completed")) MainOutput=Pin;
+                        }
+                    for(const FWire& W:OutPlan.Wires)
+                        if(W.SourceNodeIndex==I && W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("exec")
+                            && MainPredecessor.Contains(W.TargetNodeIndex) && MainPredecessor[W.TargetNodeIndex]==I)
+                        { MainOutput=W.OutputPin;break; }
+                    const bool IsSequence=N.Node->IsA<UK2Node_ExecutionSequence>();
+                    for(const UEdGraphPin* Pin:N.Node->Pins)
+                        if(Pin && Pin->Direction==EGPD_Output && Pin->PinType.PinCategory==TEXT("exec") && !Pin->LinkedTo.IsEmpty())
+                        {
+                            if(!IsSequence && Pin==MainOutput) OutputLane.Add(Pin,Lane);
+                            else {LaneParent.Add(NextLane,Lane);OutputLane.Add(Pin,NextLane++);}
+                        }
+
 					double PureSpace=0;
                     TSet<int32> SeenPure;
                     TFunction<double(int32)> Required=[&](int32 Target)
@@ -1229,7 +1262,17 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         const double Start=Incoming ? OutPlan.Nodes[Incoming->SourceNodeIndex].PlannedX+OutPlan.Nodes[Incoming->SourceNodeIndex].Width+SpacingX : FreeStartX;
                         LaneCursor.Add(Lane,Start);
                     }
-                    CursorX=LaneCursor[Lane]+PureSpace;
+                    // A merge stays on its main lane but follows every already
+                    // placed predecessor, not just that lane's shorter branch.
+                    double IncomingRight=LaneCursor[Lane];
+                    for(const FWire& W:OutPlan.Wires)
+                        if(W.TargetNodeIndex==I && W.OutputPin && W.OutputPin->PinType.PinCategory==TEXT("exec")
+                            && LaneOf.Contains(W.SourceNodeIndex) && W.SourceNodeIndex!=I)
+                        {
+                            const FNode& Predecessor=OutPlan.Nodes[W.SourceNodeIndex];
+                            IncomingRight=FMath::Max(IncomingRight,Predecessor.PlannedX+Predecessor.Width+SpacingX);
+                        }
+                    CursorX=IncomingRight+PureSpace;
                     N.PlannedX = CursorX; N.PlannedY = RowY + Lane * LaneHeight;
 					if (Incoming && LaneOf[Incoming->SourceNodeIndex] == Lane)
 					{
