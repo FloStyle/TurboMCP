@@ -40,7 +40,10 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(
     if (Plan.Continuation != TEXT("auto") && Plan.Continuation != TEXT("all") && !Plan.Continuation.Contains(TEXT(":")))
         Plan.Refusals.Add(TEXT("Continuation must be auto, all, or label:pin"));
 
-	return FTurboMCPGraphAppend::RenderPreview(Plan);
+    FString ExecutionReport;
+    if (Plan.bAcceptable() && !FTurboMCPGraphAppend::Preflight(Plan, ExecutionReport, Error))
+        return FTurboMCPToolError::AsError(Error);
+    return FTurboMCPGraphAppend::RenderPreview(Plan) + (ExecutionReport.IsEmpty() ? FString() : TEXT("\n") + ExecutionReport);
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPGraphAppend(

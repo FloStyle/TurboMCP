@@ -10,6 +10,9 @@
 #include "TurboMCPRollback.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPGraphCheck.h"
+#include "TurboMCPGraphScratch.h"
+#include "CoreGlobals.h"
+#include "Templates/UnrealTemplate.h"
 #include "TurboMCPGraphReachability.h"
 #include "TurboMCPNodeId.h"
 #include "TurboMCPNodeType.h"
@@ -836,11 +839,76 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		return false;
 	}
 
+    FString PreflightReport;
+    if (!Preflight(InPlan, PreflightReport, OutError)) return false;
+    return ExecuteGraph(InPlan, Blueprint, Graph, OutReport, OutError, false, bJoinCallerTransaction);
+}
+
+bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FString& OutError)
+{
+    OutReport.Empty(); OutError.Empty();
+    if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress())
+    { OutError = TEXT("append preflight requires the editor game thread outside PIE"); return false; }
+    if (!InPlan.bAcceptable()) { OutReport = RenderPreview(InPlan); return true; }
+    if (InPlan.bPlacementRequested && !ValidatePlannedPositions(InPlan, OutError)) return false;
+    FTurboMCPAssetResolver::FResolved Resolved;
+    OutError = FTurboMCPAssetResolver::Resolve(InPlan.Asset, Resolved);
+    if (!OutError.IsEmpty()) return false;
+    UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    UEdGraph* Original = Blueprint ? FindGraph(Blueprint, InPlan.GraphName) : nullptr;
+    if (!Original) { OutError = TEXT("append preflight graph is unavailable"); return false; }
+    TGuardValue<ITransaction*> SuppressScratchUndo(GUndo, nullptr);
+    TurboMCPGraphScratch::FCopy Scratch;
+    if (!Scratch.Init(Blueprint, Original)) { OutError = TEXT("append scratch graph could not be created"); return false; }
+    FPlan ScratchPlan = InPlan;
+    TMap<FString,FString> Remap;
+    for (UEdGraphNode* Node : Original->Nodes)
+        if (Node)
+        {
+            UEdGraphNode* Copy = TurboMCPGraphScratch::ByGuid(Scratch.Graph, Node->NodeGuid);
+            if (!Copy) { OutError = TEXT("append scratch node identity mapping failed"); return false; }
+            Remap.Add(TurboMCPNodeId::MakeForNode(Node,true), TurboMCPNodeId::MakeForNode(Copy,true));
+        }
+    auto RemapKey = [&Remap,&OutError](FString& Key)
+    {
+        if (Key.IsEmpty()) return true;
+        const FString* Mapped = Remap.Find(Key);
+        if (!Mapped) { OutError = TEXT("append references a stale existing node: ") + Key; return false; }
+        Key = *Mapped; return true;
+    };
+    for (FNewNode& Node : ScratchPlan.Nodes)
+        if (Node.bLinksToExisting && !RemapKey(Node.ExistingNodeId)) return false;
+    for (FNewLink& Link : ScratchPlan.Links)
+    {
+        if (Link.FromFormIndex == INDEX_NONE && !RemapKey(Link.FromNodeKey)) return false;
+        if (Link.ToFormIndex == INDEX_NONE && !RemapKey(Link.ToNodeKey)) return false;
+    }
+    // Resolve type IDs in the real Blueprint context; all created nodes and schema
+    // mutations belong to the scratch graph, whose owner is transient.
+    const bool Accepted = ExecuteGraph(ScratchPlan, Blueprint, Scratch.Graph, OutReport, OutError, true, false);
+    for (const auto& Pair : Remap)
+    {
+        OutReport.ReplaceInline(*Pair.Value, *Pair.Key, ESearchCase::CaseSensitive);
+        OutError.ReplaceInline(*Pair.Value, *Pair.Key, ESearchCase::CaseSensitive);
+    }
+    OutError.ReplaceInline(TEXT("rollback=complete"), TEXT("scratch_discarded"));
+    if (OutReport.StartsWith(TEXT("changed:"))) OutReport = TEXT("would change:") + OutReport.Mid(8);
+    if (!Accepted) OutError = TEXT("append preflight refused; live graph unchanged: ") + OutError;
+    else OutReport = TEXT("scratch execution accepted; new node IDs below are provisional, not live IDs\n") + OutReport;
+    return Accepted;
+}
+
+bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Blueprint, UEdGraph* Graph,
+    FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction)
+{
+    OutReport.Empty(); OutError.Empty();
+    // Scratch failures discard the entire transient graph, without touching undo.
+    auto Rollback = [bScratch]() { return bScratch || FTurboMCPRollback::EndAndUndoActiveTransaction(); };
 	// ---- ONE TRANSACTION, as the spec requires, so a refusal anywhere leaves the graph as it was ---------
 	TUniquePtr<FScopedTransaction> Transaction;
-    if (!bJoinCallerTransaction)
+    if (!bScratch && !bJoinCallerTransaction)
         Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "GraphAppend", "TurboMCP append to graph"));
-	Blueprint->Modify();
+	if (!bScratch) Blueprint->Modify();
 	Graph->Modify();
 
 	// ---- CREATE, THEN LINK, THEN SET PINS. THAT ORDER IS NOT ARBITRARY: a pin value can only be written on a
@@ -888,7 +956,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		{
 			// THE PLAN SAID THIS WOULD WORK AND IT DID NOT. Rolling back and saying so is the spec's rule:
 			// a failed compare, or a failed creation, is a FAILURE rather than a success with a note.
-			if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+			if (!Rollback())
                 {
                     OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
                     return false;
@@ -906,7 +974,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 				? PositionByForm[FormIndex] : nullptr;
 			if (Position == nullptr)
 			{
-				if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+				if (!Rollback())
                 {
                     OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
                     return false;
@@ -946,7 +1014,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 			if (Target == nullptr)
 			{
-				if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+				if (!Rollback())
                 {
                     OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
                     return false;
@@ -969,7 +1037,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
             bool Changed = false; FString PinError;
             if (!SetLiteral(Graph, Target, Literal, Changed, PinError))
             {
-                const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+                const bool Undone = Rollback();
                 OutError = FString::Printf(TEXT("%s: invalid pin default '%s': %s"), Undone ? TEXT("unchanged; rollback=complete") : TEXT("partial; rollback=failed"), *Pin.Name, *PinError);
                 return false;
             }
@@ -1021,7 +1089,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 		if (FromNode == nullptr || ToNode == nullptr)
 		{
-			if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+			if (!Rollback())
                 {
                     OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
                     return false;
@@ -1058,7 +1126,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 
 		if (FromPin == nullptr || ToPin == nullptr)
 		{
-			if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+			if (!Rollback())
                 {
                     OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
                     return false;
@@ -1083,7 +1151,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 				// Do not let a plain link request silently introduce a cast/conversion node.
 				const FString Reason = FString::Printf(TEXT("line %d: link '%s' -> '%s' requires an automatic conversion (%s). Add an explicit conversion node or use compatible typed pins; no implicit conversion was requested."),
 					Link.Line, *Link.FromPin, *Link.ToPin, *Response.Message.ToString());
-				if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+				if (!Rollback())
 				{
 					OutError = TEXT("partial: conversion link refused and rollback failed; inspect graph before retrying; save=not_requested. ") + Reason;
 					return false;
@@ -1114,7 +1182,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 					}
 				}
 			}
-			if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+			if (!Rollback())
                 {
                     OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
                     return false;
@@ -1212,7 +1280,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 			if (!bContinued)
 			{
 				const bool bRestored = RestoreOriginalChain();
-				if (!FTurboMCPRollback::EndAndUndoActiveTransaction())
+				if (!Rollback())
                 {
                     OutError = TEXT("partial: graph write failed and rollback failed; inspect the graph before retrying; save=not_requested");
                     return false;
@@ -1241,7 +1309,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
         bool Changed=false; FString Why;
         if(!Target || !FormPin || !SetLiteral(Graph,Target,Unquote(FormPin->Value),Changed,Why))
         {
-            const bool Undone=FTurboMCPRollback::EndAndUndoActiveTransaction();
+            const bool Undone=Rollback();
             OutError=FString::Printf(TEXT("%s: deferred default '%s' failed after type propagation: %s"),Undone?TEXT("unchanged; rollback=complete"):TEXT("partial; rollback=failed"),*Deferred.Value,*Why);
             return false;
         }
@@ -1291,7 +1359,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
         }
         if(!Connected)
         {
-            const bool Undone=FTurboMCPRollback::EndAndUndoActiveTransaction();
+            const bool Undone=Rollback();
             OutError=FString(Undone?TEXT("unchanged; rollback=complete: "):TEXT("partial; rollback=failed: "))+TEXT("explicit continuation requires reachable unconnected exec exits or one valid label:pin");
             return false;
         }
@@ -1314,7 +1382,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
         if(Target) for(UEdGraphPin* Pin:Target->Pins) if(Pin && Pin->Direction==EGPD_Input && Pin->PinName.ToString()==Requested.ToPin) Input=Pin;
         if(!HasLink(Output,Input))
         {
-            const bool Undone=FTurboMCPRollback::EndAndUndoActiveTransaction();
+            const bool Undone=Rollback();
             OutError=FString::Printf(TEXT("%s: requested wire at line %d did not survive the complete edit; inspect conflicting output connections"),
                 Undone?TEXT("unchanged; rollback=complete"):TEXT("partial; rollback=failed"),Requested.Line);
             return false;
@@ -1322,7 +1390,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
     }
 
 	// ---- COMPILE, THEN READ BACK AND COMPARE, which the spec demands rather than a claim of success --------
-	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+	if (!bScratch) FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 
 	// THE READ BACK USES THE READER, NOT THIS TOOL'S OWN MEMORY. A writer reporting what it just wrote is not
 	// evidence; `FTurboMCPNodeId` reads identity off the live graph, which is what a caller would see.
@@ -1415,7 +1483,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 	Out += TEXT("\ncompile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
     if (Unmatched.Num() > 0)
     {
-        const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        const bool Undone = Rollback();
         OutError = Undone ? TEXT("unchanged: node-set verification failed; rollback=complete")
                           : TEXT("partial: node-set verification failed; rollback=failed");
         OutReport = TEXT("save=not_requested; attempted read-back is not final state");
@@ -1438,7 +1506,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
     if (!UnreachableCreated.IsEmpty())
     {
         const FString NodeList = FString::Join(UnreachableCreated, TEXT(", "));
-        const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
+        const bool Undone = Rollback();
         OutError = FString::Printf(TEXT("%s: newly created execution nodes have no path from recognized entries: %s; rollback=%s"),
             Undone ? TEXT("unchanged") : TEXT("partial"), *NodeList, Undone ? TEXT("complete") : TEXT("failed"));
         OutReport = TEXT("compile=not_run; save=not_requested; connect new execution chains to an entry before applying");

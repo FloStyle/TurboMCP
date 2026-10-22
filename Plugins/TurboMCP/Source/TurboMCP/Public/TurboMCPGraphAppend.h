@@ -189,4 +189,11 @@ public:
 
 	/** Renders a plan for a Preview, which prints the same refusals an Edit would act on. */
 	static FString RenderPreview(const FPlan& InPlan);
+
+    /** Execute the same mutation pipeline on a transient graph, never the live asset. */
+    static bool Preflight(const FPlan& InPlan, FString& OutReport, FString& OutError);
+private:
+    static bool ExecuteGraph(const FPlan& InPlan, UBlueprint* Blueprint, UEdGraph* Graph,
+        FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction);
+
 };
