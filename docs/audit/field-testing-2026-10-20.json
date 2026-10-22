@@ -2212,10 +2212,12 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partial_implementation",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Defect (preview and edit disagree).\n- **Observed:** On an enum equality node, a default on the second input passed the preview. The edit rolled back with \"Unsupported type Wildcard\". The pin is typed only after the first input is wired. Workaround: append without the default, then set it with the pin default tool."
+      "observation": "- **Type:** Defect (preview and edit disagree).\n- **Observed:** On an enum equality node, a default on the second input passed the preview. The edit rolled back with \"Unsupported type Wildcard\". The pin is typed only after the first input is wired. Workaround: append without the default, then set it with the pin default tool.",
+      "implementation": "abb771c;7757bca",
+      "implementation_limits": "Wildcard defaults deferred until all links propagate types; pins re-resolved after reconstruction and final requested links checked afterward. Remaining: full scratch preview/edit parity and typed defaults affected by later reconstruction. No tests/build/editor runs."
     },
     {
       "report": "2026-10-22_S1",
