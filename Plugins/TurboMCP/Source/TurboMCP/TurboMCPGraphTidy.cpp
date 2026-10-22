@@ -363,6 +363,18 @@ namespace
         TSharedPtr<SGraphEditor> Panel = Editor->OpenGraphAndBringToFront(Graph);
         if (!Panel.IsValid()) { Error = TEXT("Graph panel unavailable; no nodes moved."); return false; }
         FVector2f SavedView; float SavedZoom; Panel->GetViewLocation(SavedView,SavedZoom);
+        auto RestoreMeasuredView = [&]()
+        {
+            Panel->SetViewLocation(SavedView, SavedZoom);
+            // Measurement ticks at unity zoom. Discard cached layout/paint from
+            // that temporary view so normal Slate rendering uses the restored LOD.
+            for (const UEdGraphNode* Node : Graph->Nodes)
+                if (Node)
+                    if (const TSharedPtr<SGraphNode> Widget = Panel->GetGraphPanel()->GetNodeWidgetFromGuid(Node->NodeGuid))
+                        Widget->Invalidate(EInvalidateWidgetReason::Layout | EInvalidateWidgetReason::Paint);
+            Panel->GetGraphPanel()->Invalidate(EInvalidateWidgetReason::Layout | EInvalidateWidgetReason::Paint);
+            Panel->Invalidate(EInvalidateWidgetReason::Layout | EInvalidateWidgetReason::Paint);
+        };
         Panel->SetViewLocation(SavedView,1.0f);
         Panel->GetGraphPanel()->Update();
         for (int32 Attempt = 0; Attempt < 8; ++Attempt)
@@ -384,11 +396,11 @@ namespace
                             MeasuredPinOffsets.Add(Pin,FVector2D(PW->GetNodeOffset()));
                     }
                 }
-                Panel->SetViewLocation(SavedView,SavedZoom);
+                RestoreMeasuredView();
                 return true;
             }
         }
-        Panel->SetViewLocation(SavedView,SavedZoom);
+        RestoreMeasuredView();
         Error = TEXT("Some graph widgets still have no measured bounds. Let the editor draw the graph and retry; no nodes moved.");
         return false;
     }
