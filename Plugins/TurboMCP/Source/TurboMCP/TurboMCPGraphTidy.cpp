@@ -1442,19 +1442,50 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     }
                     const double* LaneFloor=PureLane.Contains(I)?InputFloorByLane.Find(PureLane[I]):nullptr;
                     N.PlannedY = FMath::Max(N.PlannedY, LaneFloor?*LaneFloor:FallbackInputFloor);
-					for (int32 Pass = 0; Pass <= PlacedPure.Num(); ++Pass)
-					{
-						double NextY = N.PlannedY;
-						for (int32 P : PlacedPure)
-						{
-							const FNode& O = OutPlan.Nodes[P];
-							if (N.PlannedX < O.PlannedX + O.Width + SpacingX && N.PlannedX + N.Width + SpacingX > O.PlannedX
-								&& N.PlannedY < O.PlannedY + O.Height + SpacingY && N.PlannedY + N.Height + SpacingY > O.PlannedY)
-								NextY = FMath::Max(NextY, O.PlannedY + O.Height + SpacingY);
-						}
-						if (NextY == N.PlannedY) break;
-						N.PlannedY = NextY;
-					}
+                    // Try neighbouring input columns before sending a reader below a
+                    // tall obstacle. Keep every candidate left of its consumer and in
+                    // this region; use pin distance to choose among collision-free slots.
+                    const double PreferredX=N.PlannedX, PreferredY=N.PlannedY;
+                    TArray<double> ReaderColumns;
+                    ReaderColumns.Add(PreferredX);
+                    for(int32 P:PlacedPure)
+                    {
+                        const FNode& O=OutPlan.Nodes[P];
+                        const double Left=O.PlannedX-N.Width-SpacingX;
+                        const double Right=O.PlannedX+O.Width+SpacingX;
+                        if(Left>=FreeStartX && Left<=PreferredX) ReaderColumns.AddUnique(Left);
+                        if(Right>=FreeStartX && Right<=PreferredX) ReaderColumns.AddUnique(Right);
+                    }
+                    double BestDistance=TNumericLimits<double>::Max();
+                    double BestX=PreferredX,BestY=PreferredY;
+                    for(double ReaderX:ReaderColumns)
+                    {
+                        double ReaderY=PreferredY;
+                        for(int32 Pass=0;Pass<=PlacedPure.Num();++Pass)
+                        {
+                            double NextY=ReaderY;
+                            for(int32 P:PlacedPure)
+                            {
+                                const FNode& O=OutPlan.Nodes[P];
+                                if(ReaderX<O.PlannedX+O.Width+SpacingX && ReaderX+N.Width+SpacingX>O.PlannedX
+                                    && ReaderY<O.PlannedY+O.Height+SpacingY && ReaderY+N.Height+SpacingY>O.PlannedY)
+                                    NextY=FMath::Max(NextY,O.PlannedY+O.Height+SpacingY);
+                            }
+                            if(NextY==ReaderY) break;
+                            ReaderY=NextY;
+                        }
+                        double Distance=FVector2D::Distance(FVector2D(ReaderX,ReaderY),FVector2D(PreferredX,PreferredY));
+                        if(Chosen)
+                        {
+                            const FNode& Consumer=OutPlan.Nodes[Chosen->TargetNodeIndex];
+                            const FVector2D Input=AlignmentPinPosition(Chosen->InputPin)+FVector2D(Consumer.PlannedX-Consumer.X,Consumer.PlannedY-Consumer.Y);
+                            const FVector2D Output=AlignmentPinPosition(Chosen->OutputPin)+FVector2D(ReaderX-N.X,ReaderY-N.Y);
+                            Distance=FVector2D::Distance(Input,Output);
+                        }
+                        if(FMath::IsFinite(Distance) && Distance<BestDistance)
+                        { BestDistance=Distance;BestX=ReaderX;BestY=ReaderY; }
+                    }
+                    N.PlannedX=BestX;N.PlannedY=BestY;
 					PlacedPure.Add(I);
 					PureBottom = FMath::Max(PureBottom, N.PlannedY + N.Height);
 				}
