@@ -542,3 +542,7 @@ X-83 own-header-first include order repaired. No local tests/build. Field eviden
 ## P0 getter identity — 5621ddd
 
 Partial repair: class-qualified reflected property IDs now shared by reader/discovery, legacy context-member preference, no foreign fallback for Variables short IDs. No tests/build/editor runs. Getter-owner group remains OPEN: newly exposed uncompiled widget variables, alternate alias resolution, result owner reporting and preview parity still need implementation review.
+
+## P0 explicit continuation — f469303
+
+GC-44 implemented, unbuilt/untested: explicitly named old targets no longer receive an additional implicit first-output edge. Final all-link read-back added. Multi-output implicit continuation refuses instead of guessing. Preview parity/disclosure and convenience continuation options remain OPEN; no tests/build/editor runs.
