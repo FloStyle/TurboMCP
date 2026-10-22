@@ -164,6 +164,55 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
     Graph->NotifyGraphChanged(); FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
     return TEXT("changed\n")+Report+TEXT("\nundo=one\ncompile/save=deferred\nRun layout after structural edits.");
 }
+bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FString& Links,FString& Report,FString& Error)
+{
+    TArray<TSharedPtr<FJsonValue>> NodeJson, LinkJson;
+    if(!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Nodes),NodeJson)
+        || !FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Links),LinkJson))
+    { Error=TEXT("Nodes and Links must be JSON arrays; use [] for an unused selection"); return false; }
+    TArray<UEdGraphNode*> Delete;
+    struct FLink { UEdGraphPin* From; UEdGraphPin* To; };
+    TArray<FLink> Break;
+    for(const auto& Value:NodeJson)
+    {
+        FString Id;
+        if(!Value.IsValid() || !Value->TryGetString(Id)) { Error=TEXT("Nodes must contain node ID strings"); return false; }
+        UEdGraphNode* Node=ResolveNode(Graph,Identity,Id);
+        if(!Node || !Node->CanUserDeleteNode() || Delete.Contains(Node)) { Error=TEXT("missing, repeated or non-deletable node: ")+Id; return false; }
+        Delete.Add(Node); Report+=TEXT("\nremove node: ")+Id;
+    }
+    for(const auto& Value:LinkJson)
+    {
+        if(!Value.IsValid() || Value->Type!=EJson::Object) { Error=TEXT("Links must contain endpoint objects"); return false; }
+        const auto Object=Value->AsObject(); FString Source,SourcePin,Target,TargetPin;
+        if(!Object->TryGetStringField(TEXT("sourceNodeId"),Source) || !Object->TryGetStringField(TEXT("sourcePin"),SourcePin)
+            || !Object->TryGetStringField(TEXT("targetNodeId"),Target) || !Object->TryGetStringField(TEXT("targetPin"),TargetPin))
+        { Error=TEXT("link needs sourceNodeId, sourcePin, targetNodeId, targetPin"); return false; }
+        UEdGraphPin* From=Pin(ResolveNode(Graph,Identity,Source),SourcePin,EGPD_Output);
+        UEdGraphPin* To=Pin(ResolveNode(Graph,Identity,Target),TargetPin,EGPD_Input);
+        if(!From || !To || !From->LinkedTo.Contains(To) || !To->LinkedTo.Contains(From))
+        { Error=TEXT("requested link must exist reciprocally between exact endpoints"); return false; }
+        if(Delete.Contains(From->GetOwningNode()) || Delete.Contains(To->GetOwningNode()))
+        { Error=TEXT("link is already removed by a selected node deletion; omit the redundant link"); return false; }
+        if(Break.ContainsByPredicate([&](const FLink& L){return L.From==From && L.To==To;}))
+        { Error=TEXT("duplicate link selection"); return false; }
+        Break.Add({From,To}); Report+=TEXT("\nbreak link: ")+Source+TEXT(":")+SourcePin+TEXT(" -> ")+Target+TEXT(":")+TargetPin;
+    }
+    // Exact reciprocal removal avoids schema conversion/reconstruction of unrelated pins.
+    for(const FLink& Link:Break)
+    {
+        Link.From->BreakLinkTo(Link.To);
+        if(Link.From->LinkedTo.Contains(Link.To) || Link.To->LinkedTo.Contains(Link.From))
+        { Error=TEXT("link removal read-back failed"); return false; }
+    }
+    for(UEdGraphNode* Node:Delete)
+    {
+        Node->BreakAllNodeLinks(); Graph->RemoveNode(Node);
+        if(Graph->Nodes.Contains(Node)) { Error=TEXT("node removal read-back failed"); return false; }
+    }
+    Report=FString::Printf(TEXT("removed nodes=%d links=%d; incident links of removed nodes are also removed; no automatic reconnection"),Delete.Num(),Break.Num())+Report;
+    return true;
+}
 bool Sequence(UEdGraph* Graph,UEdGraph* Identity,const FString& Groups,bool SplitValues,FString& Report,FString& Error)
 {
     TArray<TSharedPtr<FJsonValue>> Json;
@@ -247,3 +296,9 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSequence(const FString& Ass
 { return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues)
 { return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
+
+FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links)
+{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }); }
+
+FString UTurboMCPEditToolset::EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links)
+{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }); }

@@ -1321,6 +1321,11 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
 
+    /** Remove exact nodes and links with scratch preview and one undo. Nodes is a JSON array of reader node IDs. Links is a JSON array of objects with sourceNodeId, sourcePin, targetNodeId, targetPin. Use [] for either unused list. Node deletion also removes incident links; other nodes/positions are preserved. No automatic reconnection, compile or save. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
+
+
     /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
@@ -2137,6 +2142,11 @@ public:
     /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first. */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
+
+    /** Remove exact nodes and links with scratch preview and one undo. Nodes is a JSON array of reader node IDs. Links is a JSON array of objects with sourceNodeId, sourcePin, targetNodeId, targetPin. Use [] for either unused list. Node deletion also removes incident links; other nodes/positions are preserved. No automatic reconnection, compile or save. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
+
 
     /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
     UFUNCTION(meta = (AICallable))
