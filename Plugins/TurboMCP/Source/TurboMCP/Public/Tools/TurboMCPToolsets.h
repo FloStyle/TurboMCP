@@ -1188,6 +1188,7 @@ public:
 	 * only by Slate when a node is drawn, so a graph built headlessly has no measured sizes until
 	 * something draws it.
 	 *
+	 * NodeIds accepts "@unboxed": alone selects all unboxed nodes; with node IDs filters that selection to unboxed nodes. Boxed nodes and comments stay fixed.
 	 * `NodeIds` scopes the pass to a block. An empty list tidies the whole graph; otherwise every
 	 * unselected node is a fixed anchor and only the named nodes may move. The block is moved to clear
 	 * space rather than through its anchors. The preview reports the planned score and the edit reports
@@ -2008,6 +2009,7 @@ public:
 	 *
 	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
 	 * disagrees with the measure asks for. `NodeIds` has the same fixed-anchor scope as the preview.
+	 * Include "@unboxed" to leave boxed nodes fixed (alone: all unboxed; with IDs: only unboxed IDs).
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphTidy(

@@ -638,9 +638,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	// so preview and edit reject the same stale selection and a partial block is never moved.
 	if (InNodeIds.Num() > 0)
 	{
+        const bool bUnboxedOnly = InNodeIds.ContainsByPredicate([](const FString& Id) { return Id.TrimStartAndEnd() == TEXT("@unboxed"); });
+        bool bExplicitNodes = false;
 		for (const FString& RequestedId : InNodeIds)
 		{
 			const FString Id = RequestedId.TrimStartAndEnd();
+            if (Id == TEXT("@unboxed")) continue;
+            bExplicitNodes = true;
 			const FNode* Found = OutPlan.Nodes.FindByPredicate([&Id](const FNode& Candidate)
 			{
 				return NodeAnswersToId(Candidate.Node, Id);
@@ -661,7 +665,20 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			}
 			OutPlan.SelectedNodeKeys.Add(Found->Key);
 		}
-		if (OutPlan.SelectedNodeKeys.IsEmpty()) { OutError = TEXT("selected boxes contain no nodes; unchanged"); return false; }
+        if (bUnboxedOnly)
+        {
+            if (!bExplicitNodes)
+                for (const FNode& Node : OutPlan.Nodes) if (!Node.bIsComment) OutPlan.SelectedNodeKeys.Add(Node.Key);
+            for (const FNode& BoxNode : OutPlan.Nodes)
+                if (UEdGraphNode_Comment* Box = Cast<UEdGraphNode_Comment>(BoxNode.Node))
+                {
+                    TArray<FString> Members;
+                    FTurboMCPComment::MembersOf(Box, Members);
+                    for (const FNode& Node : OutPlan.Nodes)
+                        if (Members.Contains(Node.Node->GetName())) OutPlan.SelectedNodeKeys.Remove(Node.Key);
+                }
+        }
+        if (OutPlan.SelectedNodeKeys.IsEmpty()) { OutError = TEXT("selection contains no eligible nodes (after @unboxed filtering, if requested); unchanged"); return false; }
 		OutPlan.AnchorCount = 0;
 		for (const FNode& Candidate : OutPlan.Nodes)
 		{
@@ -1411,7 +1428,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 for (const FString& Key : Box.MemberKeys)
                     if (const int32* I = NodeIndexByKey.Find(Key))
                         if (OwnerOfNode[*I] == BoxIndex && !OutPlan.Nodes[*I].bIsComment && OutPlan.SelectedNodeKeys.Contains(OutPlan.Nodes[*I].Key))
-                        { OutError = TEXT("selection crosses a comment group; select the whole comment box to preserve membership"); return false; }
+                        { OutError = FString::Printf(TEXT("selected node %s belongs to partially selected comment %s; select the whole comment, or include @unboxed with nodeIds to keep boxed nodes fixed"), *OutPlan.Nodes[*I].Key, *Box.Key); return false; }
                 Box.bWouldFit = false; continue;
             }
 		}
@@ -1841,9 +1858,11 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			if (!Index) { OutError = TEXT("comment membership could not be resolved; tidy refused"); return false; }
 			const FNode& N = OutPlan.Nodes[*Index];
             if (N.bIsComment) continue;
+            // Existing overflow on an untouched anchor is not caused by this tidy.
+            if (N.PlannedX == N.X && N.PlannedY == N.Y && !Box.bWouldFit) continue;
 			if (N.PlannedX < Box.X || N.PlannedY < Box.Y + TitleBarHeight
 				|| N.PlannedX + N.Width > Box.X + Box.PlannedWidth || N.PlannedY + N.Height > Box.Y + Box.PlannedHeight)
-			{ OutError = TEXT("tidy would move a node outside its original comment box; unchanged. Use a smaller selection or explicit batch positions."); return false; }
+			{ OutError = FString::Printf(TEXT("tidy would move node %s outside comment %s; unchanged. Include @unboxed with nodeIds to tidy only unboxed nodes and leave boxed continuations fixed."), *N.Key, *Box.Key); return false; }
 		}
 
     for (int32 A=0; A<OutPlan.Nodes.Num(); ++A)
