@@ -884,6 +884,15 @@
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp"
           ]
+        },
+        "p0-cross-box-move-totals": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayoutReport.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLayoutReport.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
