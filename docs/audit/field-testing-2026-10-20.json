@@ -2682,7 +2682,8 @@
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
       "observation": "- **Type:** Limitation.\n- **Scenario:** Remove two wrong links and replace two small gates in an event graph.\n- **Reproduction status:** Observed in 3 separate needs in this session.\n- **Steps to reproduce:**\n  1. Find a wrong exec link between two nodes.\n  2. Look for a TurboMCP tool that removes only that link or only a few nodes in an event graph.\n- **Observed:** Repoint refused a source and target on the same node. Replace works on one function or event body only. The agent used engine tools for 2 link breaks and 9 node deletes.\n- **Expected:** A previewed, undoable remove for one link or a list of nodes.\n- **Impact:** 11 engine calls with no preview and no read back.\n- **State after:** Correct after manual checks with node resolve and the graph reader.\n- **Workaround:** Engine pin break and node delete tools. These worked. The node references came from node resolve.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** See FT-98.",
       "fix_commit": "4447f52",
-      "implementation": "Preview/EditTurboMCPGraphRemove accepts explicit node-ID and exact-link JSON arrays. Preflight on scratch, all targets resolved before mutation, reciprocal unlink readback and node absence check, owned transaction/rollback. No automatic reconnect, compile or save."
+      "implementation": "Preview/EditTurboMCPGraphRemove accepts explicit node-ID and exact-link JSON arrays. Preflight on scratch, all targets resolved before mutation, reciprocal unlink readback and node absence check, owned transaction/rollback. No automatic reconnect, compile or save.",
+      "connection_notification_followup": "800b1e3: targeted removal notifies surviving pins/nodes after disconnections; pin IDs are resolved again before callbacks to avoid stale pointers during reconstruction."
     },
     {
       "report": "2026-10-22_S3",
@@ -3371,7 +3372,8 @@
       "observation": "2 engine link breaks and 9 engine node deletes, each checked by hand",
       "disposition": "implemented_unverified",
       "fix_commit": "4447f52",
-      "implementation": "Preview/EditTurboMCPGraphRemove accepts explicit node-ID and exact-link JSON arrays. Preflight on scratch, all targets resolved before mutation, reciprocal unlink readback and node absence check, owned transaction/rollback. No automatic reconnect, compile or save."
+      "implementation": "Preview/EditTurboMCPGraphRemove accepts explicit node-ID and exact-link JSON arrays. Preflight on scratch, all targets resolved before mutation, reciprocal unlink readback and node absence check, owned transaction/rollback. No automatic reconnect, compile or save.",
+      "connection_notification_followup": "800b1e3: targeted removal notifies surviving pins/nodes after disconnections; pin IDs are resolved again before callbacks to avoid stale pointers during reconstruction."
     },
     {
       "report": "2026-10-22_S3",

@@ -632,3 +632,6 @@ Implemented optional Columns projection using reflected property export. Unbuilt
 
 ## ED-17 position format help (2026-10-22)
 Implemented explicit tool and parameter examples plus matching refusal guidance. Untested: verify generated tool discovery exposes this documentation. Position-edit behavior was not changed.
+
+## Targeted removal connection notifications (2026-10-22)
+Source follow-up 800b1e3: surviving endpoints receive pin and node callbacks after the raw batch, resolving pin IDs anew between callbacks. Both preview and edit use this path. Unbuilt/untested: wildcard and split-pin reconstruction, multiple removals on one node, deletion of linked nodes, preview isolation and undo restoration. No tests/build/editor runs.
