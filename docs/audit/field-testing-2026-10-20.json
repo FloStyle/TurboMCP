@@ -1912,11 +1912,14 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
       "observation": "- **Type:** Defect.\r\n- **Scenario:** A member variable getter written by type ID. Another widget class has a variable with the same name.\r\n- **Reproduction status:** Observed once.\r\n- **Observed:** The append created a getter whose self pin is the other class. Its read-back said every node matched the plan. The compile failed with two errors. The agent repointed the readers to an existing getter of the right class.\r\n- **Expected:** A variable type ID resolves to the class that owns the graph first, or the append refuses the ambiguity.\r\n- **Cause:** The cause is not confirmed.",
       "implementation": "5621ddd",
-      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone."
+      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone.",
+      "owner_readback_commit": "2a9d55e",
+      "owner_readback": "Probe and live spawn verify member name and declaring property owner against the selected action; generated/skeleton classes normalize by Blueprint. Mismatched created nodes are removed before linking.",
+      "remaining": "Uncompiled widget member discovery and alternate owner aliases remain unresolved; no claim of full getter capability coverage."
     },
     {
       "report": "2026-10-21_S16",
@@ -2198,11 +2201,14 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Type:** Defect. Recurrence of GC-31.\n- **Observed:** A getter for a designer widget variable, written by type ID, was created with its self pin typed to another widget class that has a widget of the same name. The read-back said every node matched the plan. The compile failed with 4 errors. The engine node finder lists the right getter under a category named after the owning Blueprint, not \"Default\".\n- **Expected:** A variable getter resolves to the graph's own class first.",
       "implementation": "5621ddd",
-      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone."
+      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone.",
+      "owner_readback_commit": "2a9d55e",
+      "owner_readback": "Probe and live spawn verify member name and declaring property owner against the selected action; generated/skeleton classes normalize by Blueprint. Mismatched created nodes are removed before linking.",
+      "remaining": "Uncompiled widget member discovery and alternate owner aliases remain unresolved; no claim of full getter capability coverage."
     },
     {
       "report": "2026-10-22_S1",
@@ -2346,11 +2352,14 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
       "observation": "- **Type:** Defect.\n- **Scenario:** A widget child was just marked as a variable. The Blueprint was not compiled yet. Another widget class has a variable with the same name.\n- **Reproduction status:** Observed once in this session.\n- **Steps to reproduce:**\n  1. Mark a widget child as a variable.\n  2. Without a compile, append 3 getters of that variable in the short variable form, each feeding a call.\n- **Observed:** The preview and the edit both passed. All 3 getters targeted the other widget class. The next compile failed with 6 errors.\n- **Expected:** A false pass is not acceptable. The getter targets this Blueprint, or the preview refuses the ambiguous name.\n- **Impact:** 3 nodes deleted and created again with engine tools, plus 3 connects and 2 compiles.\n- **State after:** Fixed in memory, then compiled clean and saved.\n- **Workaround:** Engine node create with the type ID that names this Blueprint. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** The preview prints the class each variable node targets and refuses a target outside the Blueprint and its parents.",
       "implementation": "5621ddd",
-      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone."
+      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone.",
+      "owner_readback_commit": "2a9d55e",
+      "owner_readback": "Probe and live spawn verify member name and declaring property owner against the selected action; generated/skeleton classes normalize by Blueprint. Mismatched created nodes are removed before linking.",
+      "remaining": "Uncompiled widget member discovery and alternate owner aliases remain unresolved; no claim of full getter capability coverage."
     },
     {
       "report": "2026-10-22_S2",
@@ -2579,11 +2588,14 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
       "observation": "- **Type:** Defect.\n- **Scenario:** Append a getter for a widget variable of the edited Blueprint. Six other classes in the project have a variable with the same name.\n- **Reproduction status:** Observed once in this session. Recurs, see section 3.\n- **Steps to reproduce:**\n  1. In a function of a widget Blueprint, append a form for the getter type ID of a widget variable whose name also exists on other classes.\n  2. Link its output to the self pin of a call on that widget class.\n- **Observed:** The created getter read an array variable on an engine widget class, not the Blueprint's own widget. The node-type lookup listed the same type ID for 7 classes. Only node resolve showed the wrong owning class and the array container flag.\n- **Expected:** The getter targets the edited Blueprint, or the tool refuses the ambiguous ID and names the candidates.\n- **Impact:** 1 failed edit, about 5 extra calls to diagnose, and a manual fix with engine tools.\n- **State after:** The wrong getter was deleted. The correct getter was created with an engine tool and connected. Compile clean. Saved.\n- **Workaround:** The engine node type search listed a distinct ID under the widget variable category. Creating the node with that ID and connecting it with the engine pin tool worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Prefer the edited Blueprint's own member when a variable type ID is ambiguous. Print the owning class of every created getter in the edit result.",
       "implementation": "5621ddd",
-      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone."
+      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone.",
+      "owner_readback_commit": "2a9d55e",
+      "owner_readback": "Probe and live spawn verify member name and declaring property owner against the selected action; generated/skeleton classes normalize by Blueprint. Mismatched created nodes are removed before linking.",
+      "remaining": "Uncompiled widget member discovery and alternate owner aliases remain unresolved; no claim of full getter capability coverage."
     },
     {
       "report": "2026-10-22_S3",
@@ -2709,11 +2721,14 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
       "observation": "- **Type:** Usability.\n- **Scenario:** Search the getter for a widget variable whose name exists on 7 classes.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Run the node-type lookup with the variable name in a function of the edited Blueprint.\n- **Observed:** 7 results with the same type ID, one marked as defined in this Blueprint. No result gave an ID that append would resolve to that one.\n- **Expected:** The result for this Blueprint carries an ID that append resolves to this Blueprint only.\n- **Impact:** Led to GC-43.\n- **State after:** No change.\n- **Workaround:** The engine node type search gave a distinct category ID. This worked with the engine node create tool.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** See FT-99.",
       "implementation": "5621ddd",
-      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone."
+      "implementation_limits": "Class-qualified Variable|owner|Get/Set|name IDs in discovery and reader; context-member preference for legacy IDs; foreign short-name fallback blocked. Remaining: newly exposed uncompiled widget member discovery, all alternate alias paths, created-node owner read-back and full append preview parity. Not closed by refusal alone.",
+      "owner_readback_commit": "2a9d55e",
+      "owner_readback": "Probe and live spawn verify member name and declaring property owner against the selected action; generated/skeleton classes normalize by Blueprint. Mismatched created nodes are removed before linking.",
+      "remaining": "Uncompiled widget member discovery and alternate owner aliases remain unresolved; no claim of full getter capability coverage."
     },
     {
       "report": "2026-10-22_S3",

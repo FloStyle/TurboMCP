@@ -586,3 +586,7 @@ GC-35 implemented, unbuilt_untested. Tracks opening lines and comments containin
 ## P0 dirty package reporting
 
 X-93 (October 22 S2) partial, unbuilt_untested. Registry edits snapshot dirty packages and append deltas on success/error without saving or discarding. Off-thread completion reports unavailable; already-dirty modifications are not detected. Root cause remains open. No tests/build/editor runs.
+
+## P0 getter owner readback — 2a9d55e
+
+Partial, unbuilt_untested. Both probe and live spawn compare resolved member declaration owner/name to the action property. Wrong/missing declarations remove the created node before wiring. Skeleton/generated owners normalize by Blueprint. Uncompiled widget discovery remains open. No tests/build/editor runs.
