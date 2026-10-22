@@ -1108,6 +1108,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
           ],
           "new_files": []
+        },
+        "quick-batch-failure-report": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
