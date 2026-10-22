@@ -989,6 +989,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
           ],
           "new_files": []
+        },
+        "p0-isolated-tidy-measurement": {
+          "new_files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
+          ]
         }
       },
       "preserve_rows": []
