@@ -1346,11 +1346,12 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
-    /** Preview a Create Event node bound to a named self function and connect it to the exact delegate input.
+    /** Preview a Create Event node bound to a named function and connect it to the exact delegate input.
+     * Optional ObjectNodeId and ObjectPin select an object-reference output; both empty means self.
      * Signature must match. Replaces that input's previous source. Uses transient preview and owned undo;
      * does not create the function, compile or save. */
     UFUNCTION(meta = (AICallable))
-    static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName);
+    static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
 
 
@@ -2190,11 +2191,12 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
-    /** Edit a Create Event node bound to a named self function and connect it to the exact delegate input.
+    /** Edit a Create Event node bound to a named function and connect it to the exact delegate input.
+     * Optional ObjectNodeId and ObjectPin select an object-reference output; both empty means self.
      * Signature must match. Replaces that input's previous source. Uses transient preview and owned undo;
      * does not create the function, compile or save. */
     UFUNCTION(meta = (AICallable))
-    static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName);
+    static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
 
 

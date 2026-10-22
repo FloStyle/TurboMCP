@@ -167,22 +167,29 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
     Graph->NotifyGraphChanged(); FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
     return TEXT("changed\n")+Report+TEXT("\nundo=one\ncompile/save=deferred\nRun layout after structural edits.");
 }
-bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& FunctionName,FString& Report,FString& Error)
+bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin,FString& Report,FString& Error)
 {
     UEdGraphNode* Target=ResolveNode(Graph,Identity,TargetId);
     UEdGraphPin* Input=Pin(Target,TargetPin,EGPD_Input);
     if(!Input || Input->PinType.PinCategory!=TEXT("delegate") || FunctionName.TrimStartAndEnd().IsEmpty())
-    { Error=TEXT("requires an exact delegate input pin and a self function name"); return false; }
+    { Error=TEXT("requires an exact delegate input pin and a function name"); return false; }
+    const bool ExplicitObject=!ObjectNodeId.IsEmpty();
+    if(ExplicitObject!=!ObjectPin.IsEmpty())
+    { Error=TEXT("ObjectNodeId and ObjectPin must both be supplied, or both empty for self"); return false; }
+    UEdGraphPin* ObjectOutput=ExplicitObject?Pin(ResolveNode(Graph,Identity,ObjectNodeId),ObjectPin,EGPD_Output):nullptr;
+    if(ExplicitObject && (!ObjectOutput || ObjectOutput->PinType.PinCategory!=UEdGraphSchema_K2::PC_Object))
+    { Error=TEXT("object endpoint must resolve to an object-reference output pin"); return false; }
     UK2Node_CreateDelegate* Event=NewObject<UK2Node_CreateDelegate>(Graph,NAME_None,RF_Transactional);
     Graph->AddNode(Event,false,false); Event->CreateNewGuid(); Event->AllocateDefaultPins();
     Event->NodePosX=Target->NodePosX-240; Event->NodePosY=Target->NodePosY+160;
+    if(ExplicitObject && !Connect(Graph,ObjectOutput,Event->GetObjectInPin(),Error)) return false;
     if(!Connect(Graph,Event->GetDelegateOutPin(),Input,Error)) return false;
     UFunction* Signature=Event->GetDelegateSignature();
     UClass* Scope=Event->GetScopeClass();
     UFunction* Function=Scope?Scope->FindFunctionByName(FName(*FunctionName)):nullptr;
     if(!Signature || !Function || !Signature->IsSignatureCompatibleWith(Function)
         || !UEdGraphSchema_K2::FunctionCanBeUsedInDelegate(Function))
-    { Error=TEXT("function must exist on self and match the target delegate signature exactly"); return false; }
+    { Error=TEXT("function must exist on the chosen object class and match the target delegate signature exactly"); return false; }
     Event->SetFunction(Function->GetFName());
     Event->HandleAnyChangeWithoutNotifying();
     UEdGraphPin* Output=Event->GetDelegateOutPin();
@@ -190,8 +197,17 @@ bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     if(Event->GetFunctionName()!=Function->GetFName() || !Output || !CurrentInput
         || !Output->LinkedTo.Contains(CurrentInput) || !CurrentInput->LinkedTo.Contains(Output))
     { Error=TEXT("delegate function selection or link did not survive read-back"); return false; }
+    if(ExplicitObject)
+    {
+        UEdGraphPin* CurrentObject=Pin(ResolveNode(Graph,Identity,ObjectNodeId),ObjectPin,EGPD_Output);
+        UEdGraphPin* ObjectInput=Event->GetObjectInPin();
+        if(!CurrentObject || !ObjectInput || ObjectInput->LinkedTo.Num()!=1
+            || ObjectInput->LinkedTo[0]!=CurrentObject || !CurrentObject->LinkedTo.Contains(ObjectInput))
+        { Error=TEXT("delegate object context did not survive read-back"); return false; }
+    }
     Report=TEXT("created function delegate ")+TurboMCPNodeId::MakeForNode(Event,true)+TEXT(" function=")+FunctionName
-        +TEXT("; connected to ")+TargetId+TEXT(".")+TargetPin+TEXT("; existing input source replaced; self object; no compile/save");
+        +TEXT("; connected to ")+TargetId+TEXT(".")+TargetPin+TEXT("; existing input source replaced; object=")
+        +(ExplicitObject?ObjectNodeId+TEXT(".")+ObjectPin:TEXT("self"))+TEXT("; no compile/save");
     return true;
 }
 bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FString& Links,FString& Report,FString& Error)
@@ -360,8 +376,8 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphRemove(const FString& Asset
 FString UTurboMCPEditToolset::EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links)
 { return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }); }
 
-FString UTurboMCPPreviewToolset::PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName)
-{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,R,E); }); }
+FString UTurboMCPPreviewToolset::PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin)
+{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,ObjectNodeId,ObjectPin,R,E); }); }
 
-FString UTurboMCPEditToolset::EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName)
-{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,R,E); }); }
+FString UTurboMCPEditToolset::EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin)
+{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,ObjectNodeId,ObjectPin,R,E); }); }
