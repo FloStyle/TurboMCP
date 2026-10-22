@@ -755,3 +755,7 @@ The Sequence-specific placement pass now reserves the entire execution-node heig
 ## Unboxed-only tidy scope
 
 TD-38 implementation complete: @unboxed selects all unboxed nodes or filters explicit node IDs using existing comment membership rules. Partial-comment and boundary failures name node/comment IDs. Unchanged box/member overflow is left untouched. No tests/build/editor runs. Verify shared boxed continuations, nested comments, selections with no unboxed nodes, no boxed-node movement, pre-existing overflow, preview/edit scope and undo. This does not close the separate cross-box placement helper request X-89/FT-93.
+
+
+## S16 cross-box report — 1eb4ea0
+X-89/FT-93 remain open, partial, unbuilt_untested. Report now enumerates cross-box edges with precise endpoints and box owners, sorted descending with a total. Membership uses the smallest fully enclosing comment rectangle, with deterministic equal-area ownership; unboxed-to-unboxed excluded. Distances use the existing estimated pin model, not rendered spline length. Source inspected only; no tests/build/editor runs. Later verify nested/overlapping boxes, unboxed endpoints, duplicate links, rendering of long reports. Placement helper, shared-tail context, and before/after operation totals remain.
