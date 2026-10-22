@@ -617,14 +617,18 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 
 			Errors += FString::Printf(
 				TEXT("\nerror: %s has no confirmed successful save. %s. ")
-				TEXT("The asset may be read only, or another program may hold the file.%s"),
+				TEXT("Disk outcome is unconfirmed; do not assume nothing was written.%s"),
 				*Resolved.ObjectPath,
 				CallOutcome,
 				*Capture.SummariseSince(MarkBeforeSave, /*InMax=*/1));
-			++FailedCount;
-		}
+            if (!bWithoutThumbnail && Cast<UWidgetBlueprint>(AssetObject) != nullptr)
+            {
+                Errors += TEXT("\n    Widget save may execute thumbnail/design-time code. Use EditTurboMCPSaveWithoutThumbnail with the same asset to save without drawing a new thumbnail; inspect its result before retrying again.");
+            }
+            ++FailedCount;
+        }
 
-		// *** SV-03, AND IT IS THE BRANCH THAT NEEDS NO NEW PARAMETER. *** The report's design is an OR:
+        // *** SV-03, AND IT IS THE BRANCH THAT NEEDS NO NEW PARAMETER. *** The report's design is an OR:
 		// "add an option to save without a new thumbnail, OR SAY IN THE RESULT THAT THE THUMBNAIL DRAW
 		// RUNS WIDGET CODE." This is the second half, said for the mechanism that actually ran, so a
 		// caller who sees a warning during this save knows what drew the asset's own code.
@@ -670,7 +674,7 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 	if (SavedCount == 0)
 	{
 		Result = FailedCount > 0
-			? FString::Printf(TEXT("unchanged: nothing was saved, %d failed"), FailedCount)
+			? FString::Printf(TEXT("unconfirmed: no successful saves confirmed, %d failed; disk may have changed"), FailedCount)
 			: FString::Printf(
 				TEXT("unchanged: nothing to save, all %d asset(s) already had no changes"),
 				NoChangeCount);
