@@ -644,3 +644,6 @@ Defer owned transaction and Modify until a concrete create/delete/set/fit change
 
 ## FT-94 layout done-check (2026-10-22)
 Added combined layout text, ten longest wires with exact endpoints and full-graph capture. Unbuilt/untested: discovery, large graphs/output caps, full framing, failed capture preservation and endpoint ordering. No automatic layout approval or edits.
+
+## LR-18/LR-19 alignment tolerance (2026-10-22)
+Human report tools default to 64 units; configurable 0..1024 with strict 8 available. Internal measurement defaults unchanged. Unbuilt/untested: schema, offset boundary values, overlap/backward findings and comparison with accepted field layouts.

@@ -1619,11 +1619,14 @@
       "canonical_issue": "layout-finding-tolerance",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_untested",
       "source": "docs/audit/field-reports/2026-10-21_S13_TurboMCP_branch-graph-hand-layout.md",
-      "observation": "- **Type:** Usability.\r\n- **Observed:** After the hand layout, the report gave 34 pin-not-level findings. Most were offsets of 10 to 46 units. On the capture these looked level enough. The real fault, one overlap, was easy to miss among them.\r\n- **Proposed behavior:** A tolerance value, or sort the findings by size."
+      "observation": "- **Type:** Usability.\r\n- **Observed:** After the hand layout, the report gave 34 pin-not-level findings. Most were offsets of 10 to 46 units. On the capture these looked level enough. The real fault, one overlap, was easy to miss among them.\r\n- **Proposed behavior:** A tolerance value, or sort the findings by size.",
+      "implementation": "LayoutReport and LayoutDoneCheck accept AlignmentTolerance (0..1024 graph units), default 64; strict 8 remains available. Only vertical alignment noise suppressed; overlaps/backward wires retained. Internal layout measurement default remains 8.",
+      "fix_commit": "59ad588",
+      "verification_debt": "No build/editor tests. Compare reported field layouts and check generated optional parameter schema."
     },
     {
       "report": "2026-10-21_S14",
@@ -1727,11 +1730,14 @@
       "canonical_issue": "layout-finding-tolerance",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_untested",
       "source": "docs/audit/field-reports/2026-10-21_S14_TurboMCP_tidy-linear-function.md",
-      "observation": "- **Type:** Usability.\r\n- **Observed:** On the user's final layout, the report gave 10 exec-not-straight, 26 pin-not-level and 1 overlap. Most offsets were 16 to 56 units. The user accepted this layout.\r\n- **Expected:** An accepted layout gives few or no findings.\r\n- **Proposed behavior:** A tolerance for small offsets, as LR-18 also proposes. Use the user's layout as the calibration case."
+      "observation": "- **Type:** Usability.\r\n- **Observed:** On the user's final layout, the report gave 10 exec-not-straight, 26 pin-not-level and 1 overlap. Most offsets were 16 to 56 units. The user accepted this layout.\r\n- **Expected:** An accepted layout gives few or no findings.\r\n- **Proposed behavior:** A tolerance for small offsets, as LR-18 also proposes. Use the user's layout as the calibration case.",
+      "implementation": "LayoutReport and LayoutDoneCheck accept AlignmentTolerance (0..1024 graph units), default 64; strict 8 remains available. Only vertical alignment noise suppressed; overlaps/backward wires retained. Internal layout measurement default remains 8.",
+      "fix_commit": "59ad588",
+      "verification_debt": "No build/editor tests. Compare reported field layouts and check generated optional parameter schema."
     },
     {
       "report": "2026-10-21_S15",
