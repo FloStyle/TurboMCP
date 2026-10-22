@@ -3284,10 +3284,14 @@
       "canonical_issue": "2026-10-21_S16/FT-94",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
+      "state": "done",
+      "validation": "unbuilt_untested",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
-      "observation": "Repeated local captures that missed the problem"
+      "observation": "Repeated local captures that missed the problem",
+      "disposition": "implemented_untested",
+      "implementation": "LookTurboMCPLayoutDoneCheck combines layout text with ten longest wires and exact endpoints, plus full-graph capture via existing capture path. Capture failure preserved; no automatic approval.",
+      "fix_commit": "2d54b5f",
+      "verification_debt": "Build/tool discovery, full capture framing and wire ordering untested; no editor runs."
     },
     {
       "report": "2026-10-21_S16",

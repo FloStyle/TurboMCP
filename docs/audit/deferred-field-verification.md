@@ -641,3 +641,6 @@ Both save entry points now serialize Widget Blueprints directly, preventing thum
 
 ## Comment no-op dirtying (2026-10-22)
 Defer owned transaction and Modify until a concrete create/delete/set/fit change. Skip identical bounds and field values. Unbuilt/untested: clean and already-dirty packages, repeated set/fit, missing targets, mixed changed/unchanged boxes and undo. Broader unrelated-package dirtying remains open.
+
+## FT-94 layout done-check (2026-10-22)
+Added combined layout text, ten longest wires with exact endpoints and full-graph capture. Unbuilt/untested: discovery, large graphs/output caps, full framing, failed capture preservation and endpoint ordering. No automatic layout approval or edits.
