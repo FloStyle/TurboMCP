@@ -1572,11 +1572,14 @@
       "canonical_issue": "2026-10-21_S13/TD-28",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-21_S13_TurboMCP_branch-graph-hand-layout.md",
-      "observation": "- **Type:** Limitation.\r\n- **Scenario:** A graph with an outer branch, an inner branch, and an execution merge after the outer branch.\r\n- **Reproduction status:** Observed once.\r\n- **Observed:** The preview predicted 14391 to 27918 and rejected the change. The after image showed one long row with the branch lanes pushed far to the side. A hand layout reached 15480 with no exec staircase and 1 overlap.\r\n- **Expected:** Branch lanes stacked under their branch, as in the user layout rules.\r\n- **Impact:** The whole layout was done by hand. It needed 54 positions in one call.\r\n- **Workaround:** Hand positions from the graph text and one capture. It worked.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** Treat each branch output as a lane. Put the merge node on the main row."
+      "observation": "- **Type:** Limitation.\r\n- **Scenario:** A graph with an outer branch, an inner branch, and an execution merge after the outer branch.\r\n- **Reproduction status:** Observed once.\r\n- **Observed:** The preview predicted 14391 to 27918 and rejected the change. The after image showed one long row with the branch lanes pushed far to the side. A hand layout reached 15480 with no exec staircase and 1 overlap.\r\n- **Expected:** Branch lanes stacked under their branch, as in the user layout rules.\r\n- **Impact:** The whole layout was done by hand. It needed 54 positions in one call.\r\n- **Workaround:** Hand positions from the graph text and one capture. It worked.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** Treat each branch output as a lane. Put the merge node on the main row.",
+      "implementation": "89460ad: reserve unique fan-out lanes at each source, retain explicit main-path/Completed precedence, resolve merging lanes to their common parent, and position merge after every placed exec predecessor. Independent lane cursors preserve stacked branch placement.",
+      "implementation_limits": "Source-inspected for dependency-ordered layout; no build/editor/test verification. General acceptance policy is tracked separately under TD-29; pure-input corridors and cyclic graph behavior need deferred regression.",
+      "remaining": "No identified implementation gap for nested branch output lanes and main-row merge placement; field verification pending."
     },
     {
       "report": "2026-10-21_S13",
