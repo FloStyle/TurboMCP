@@ -1048,6 +1048,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
           ],
           "new_files": []
+        },
+        "datatable-preview-truth": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
