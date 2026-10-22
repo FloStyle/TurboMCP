@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPNodeType.h"
+#include "TurboMCPBlueprintRead.h"
 
 #include "BlueprintActionDatabase.h"
 #include "BlueprintActionFilter.h"
@@ -664,27 +665,9 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	{
 		// `P7`: name the real alternatives rather than only the failure.
 		TArray<FString> Names;
-		for (const UEdGraph* Each : Blueprint->UbergraphPages)
-		{
-			if (Each != nullptr)
-			{
-				Names.Add(Each->GetName());
-			}
-		}
-		for (const UEdGraph* Each : Blueprint->FunctionGraphs)
-		{
-			if (Each != nullptr)
-			{
-				Names.Add(Each->GetName());
-			}
-		}
-		for (const UEdGraph* Each : Blueprint->MacroGraphs)
-		{
-			if (Each != nullptr)
-			{
-				Names.Add(Each->GetName());
-			}
-		}
+        TArray<UEdGraph*> AvailableGraphs;
+        FTurboMCPBlueprintRead::CollectGraphs(Blueprint, AvailableGraphs);
+        for (const UEdGraph* Each : AvailableGraphs) Names.AddUnique(Each->GetName());
 		Names.Sort();
 
 		OutError = OutPlan.GraphName.IsEmpty()

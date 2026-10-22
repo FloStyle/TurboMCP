@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPWidgetRetarget.h"
+#include "TurboMCPBlueprintRead.h"
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Widget.h"
@@ -157,14 +158,7 @@ bool FTurboMCPWidgetRetarget::Plan(
 	// it is reported rather than removed: a caller may be about to add that function, and removing
 	// a node is a bigger change than the spec asks for here.
 	TArray<UEdGraph*> Graphs;
-	for (UEdGraph* Graph : WidgetBlueprint->UbergraphPages)
-	{
-		if (Graph != nullptr) { Graphs.Add(Graph); }
-	}
-	for (UEdGraph* Graph : WidgetBlueprint->FunctionGraphs)
-	{
-		if (Graph != nullptr) { Graphs.Add(Graph); }
-	}
+    FTurboMCPBlueprintRead::CollectGraphs(WidgetBlueprint, Graphs);
 
 	const UClass* Parent = WidgetBlueprint->ParentClass;
 
