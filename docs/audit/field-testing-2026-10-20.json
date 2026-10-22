@@ -1776,7 +1776,9 @@
       "input_needed": "Resolved by user diagram 2026-10-23: exec pins share a straight row; getters sit immediately left of their consumer at data-input pin height, below the exec wire rather than below the entire consumer body.",
       "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png",
       "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
-      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit."
+      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit.",
+      "reader_collision_commit": "8f1988cb6de959a8360436052d33366b91fbb0be",
+      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit."
     },
     {
       "report": "2026-10-21_S15",
@@ -2574,7 +2576,9 @@
       "input_needed": "Resolved by user diagram 2026-10-23: exec pins share a straight row; getters sit immediately left of their consumer at data-input pin height, below the exec wire rather than below the entire consumer body.",
       "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png",
       "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
-      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit."
+      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit.",
+      "reader_collision_commit": "8f1988cb6de959a8360436052d33366b91fbb0be",
+      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit."
     },
     {
       "report": "2026-10-22_S2",
@@ -3360,7 +3364,9 @@
       "remaining": "Replace consumer-bottom pure input floors with the user-confirmed exec-wire/data-pin layout. Keep collision avoidance and nested branch bands. Source implementation pending.",
       "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png",
       "pin_height_layout_commit": "91069f0628cdb4b8f93a80d52a9a1ce768f66a89",
-      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit."
+      "pin_height_layout_evidence": "Generic, Sequence and copied-reader placement now use the incoming exec-pin corridor plus 8 units instead of consumer-bottom floors. Structural scoring uses the same corridor. Pin alignment, collision and comment containment remain. Source inspected only; unbuilt and untested. Full recipe coverage remains under audit.",
+      "reader_collision_commit": "8f1988cb6de959a8360436052d33366b91fbb0be",
+      "reader_collision_evidence": "Generic pure-reader placement searches obstacle-edge columns within its region and left of the preferred consumer column, sweeps downward to clear placed nodes, then chooses shortest actual input/output pin distance. Previous behaviour only pushed downward. No tests/build/editor; aggregate recipe remains under audit."
     },
     {
       "report": "2026-10-21_S15",

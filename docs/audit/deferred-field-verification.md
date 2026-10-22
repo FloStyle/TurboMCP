@@ -856,3 +856,7 @@ User diagram resolves the input-layout priority: straight exec-pin row; pure get
 ## User diagram: pure readers alongside consumer (91069f0)
 
 Implemented incoming exec-pin clearance instead of whole-node-bottom clearance in generic, Sequence and copied-reader placement and structural scoring. Source/API inspected; no tests, build or editor runs. Deferred: compact/tall input offsets, nested branches, comment containment, copied-reader pin alignment and preview/apply visual parity. Aggregate layout items remain open for complete recipe audit.
+
+## Pure reader obstacle columns (8f1988c)
+
+Source inspected only. Generic placement now searches adjacent obstacle-edge columns before choosing a downward position, using measured pin distance. Deferred visual regression: multiple close input pins, deep expressions, nested branches and comment boundaries. Original graph links and exec placement unchanged by this search. Aggregate report items remain open.
