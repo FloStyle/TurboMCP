@@ -1022,6 +1022,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
           ],
           "new_files": []
+        },
+        "p0-tight-input-cluster-bands": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
