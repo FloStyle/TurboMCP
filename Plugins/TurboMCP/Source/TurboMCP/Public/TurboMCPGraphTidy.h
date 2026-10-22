@@ -161,6 +161,11 @@ public:
 		/** Where the copy goes, decided in `Plan` so the Preview can describe it without creating it. */
 		double PlannedX = 0.0;
 		double PlannedY = 0.0;
+        /** Measured reader outline and output-pin offset, independent of the source entry. */
+        double Width = 0.0;
+        double Height = 0.0;
+        FVector2D OutputOffset = FVector2D::ZeroVector;
+
 	};
 
 	/** A knot placed before the measure, with what is needed to undo it. */

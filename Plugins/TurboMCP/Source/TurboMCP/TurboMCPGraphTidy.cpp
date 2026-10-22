@@ -18,6 +18,8 @@
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphNode_Comment.h"
 #include "Editor.h"
+#include "CoreGlobals.h"
+#include "Templates/UnrealTemplate.h"
 #include "ScopedTransaction.h"
 #include "Engine/Blueprint.h"
 #include "Framework/Application/SlateApplication.h"
@@ -81,9 +83,8 @@ namespace
             for (const auto& Copy : Copies)
             {
                 if (Mode == 2 && !Copy.Copy) continue;
-                // Copies retain the original getter's schema and measured outline.
-                const auto* Original = Plan.Nodes.FindByPredicate([&Copy](const FTurboMCPGraphTidy::FNode& N) { return N.Node == Copy.Original; });
-                if (Original) Rectangles.Add({CopyPosition(Copy), Original->Width, Original->Height});
+                // Each reader carries its measured outline; an entry is not its getter.
+                Rectangles.Add({CopyPosition(Copy), Copy.Width, Copy.Height});
             }
         for (int32 A = 0; A < Rectangles.Num(); ++A)
             for (int32 B = A + 1; B < Rectangles.Num(); ++B)
@@ -205,6 +206,38 @@ namespace
         Copy->CreateNewGuid();
         Graph->AddNode(Copy, false, false);
         return Copy;
+    }
+
+    bool MeasureInputReader(UEdGraphNode* Source, UEdGraphPin* Pin, FVector2D& Size, FVector2D& Offset)
+    {
+        if (!FSlateApplication::IsInitialized()) return false;
+        TGuardValue<ITransaction*> SuppressScratchUndo(GUndo, nullptr);
+        TStrongObjectPtr<UEdGraph> Scratch(NewObject<UEdGraph>(GetTransientPackage(), NAME_None, RF_Transient));
+        Scratch->Schema = Source->GetGraph()->Schema;
+        UEdGraphNode* Reader = DuplicateValueReader(Source, Scratch.Get(), Pin, Source->GetGraph()->GetName());
+        if (!Reader) return false;
+        Reader->NodePosX = Reader->NodePosY = 0;
+        const TSharedRef<SGraphEditor> View = SNew(SGraphEditor).GraphToEdit(Scratch.Get()).IsEditable(false).ShowGraphStateOverlay(false);
+        const FVector2D Canvas(1024, 512);
+        TStrongObjectPtr<UTextureRenderTarget2D> Target(FWidgetRenderer::CreateTargetFor(Canvas, TF_Bilinear, true));
+        if (!Target.IsValid()) return false;
+        FWidgetRenderer Renderer(true);
+        View->GetGraphPanel()->Update();
+        View->SetViewLocation(FVector2f::ZeroVector, 1.0f);
+        for (int32 Pass = 0; Pass < 2; ++Pass)
+        {
+            View->SlatePrepass(1.0f);
+            Renderer.DrawWidget(Target.Get(), View, Canvas, 0.0f);
+        }
+        FSlateRect Bounds;
+        const TSharedPtr<SGraphNode> Widget = View->GetGraphPanel()->GetNodeWidgetFromGuid(Reader->NodeGuid);
+        if (!Widget || !View->GetBoundsForNode(Reader, Bounds, 0.f)) return false;
+        const TSharedPtr<SGraphPin> PinWidget = Widget->FindWidgetForPin(SplitValuePin(Reader));
+        if (!PinWidget || PinWidget->GetTickSpaceGeometry().GetLocalSize().Y <= 0) return false;
+        Size = FVector2D(Bounds.Right - Bounds.Left, Bounds.Bottom - Bounds.Top);
+        Offset = FVector2D(PinWidget->GetNodeOffset());
+        return Size.X > 0 && Size.Y > 0 && FMath::IsFinite(Size.X) && FMath::IsFinite(Size.Y)
+            && FMath::IsFinite(Offset.X) && FMath::IsFinite(Offset.Y);
     }
 
 	/** Accept both node-id forms emitted by the graph readers. */
@@ -1560,6 +1593,11 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			continue;
 		}
 
+        FVector2D ReaderSize(Entry.Width, Entry.Height);
+        FVector2D ReaderOffset = FTurboMCPLayoutReport::PinPosition(ValuePin) - FVector2D(Entry.X, Entry.Y);
+        if (bFunctionInput && !MeasureInputReader(Getter, ValuePin, ReaderSize, ReaderOffset))
+        { OutError = TEXT("function-input getter outline could not be measured; no graph changes applied"); return false; }
+
 		// Leaf readers keep the FIRST consumer; entry parameters receive a getter per consumer.
 		// The stable ordering makes the split
 		// deterministic and a second run of tidy finds nothing left to split.
@@ -1605,13 +1643,14 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			Planned.Original = Getter;
 			Planned.ConsumerPin = ConsumerPin;
 			Planned.OriginalValuePin = ValuePin;
+            Planned.Width = ReaderSize.X; Planned.Height = ReaderSize.Y; Planned.OutputOffset = ReaderOffset;
 			const int32* ConsumerPlanIndex = IndexByNode.Find(ConsumerNode);
 			if (!ConsumerPlanIndex) continue;
             const int32 ConsumerBoxIndex = OwnerOfNode[*ConsumerPlanIndex];
 			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
             if (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(ConsumerPlan.Key)) continue;
 			Planned.PlannedX = ConsumerPlan.PlannedX
-				- Entry.Width - SpacingX;
+				- Planned.Width - SpacingX;
 			Planned.PlannedY = FMath::RoundToDouble(ConsumerPlan.PlannedY + (ConsumerPlan.bIsPure ? 0.0 : ConsumerPlan.Height + SpacingY));
 			Planned.PlannedX = FMath::RoundToDouble(Planned.PlannedX);
             TSet<int32> ContainingBoxes;
@@ -1639,9 +1678,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
 				{
 					if (Planned.PlannedX < Obstacle.X + Obstacle.Width
-						&& Planned.PlannedX + Entry.Width > Obstacle.X
+						&& Planned.PlannedX + Planned.Width > Obstacle.X
 						&& Planned.PlannedY < Obstacle.Y + Obstacle.Height
-						&& Planned.PlannedY + Entry.Height > Obstacle.Y)
+						&& Planned.PlannedY + Planned.Height > Obstacle.Y)
 						NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + SpacingY));
 				}
 				if (NextY == Planned.PlannedY) break;
@@ -1654,8 +1693,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				OutError = TEXT("Getter-copy placement exceeds graph coordinate limits; no nodes moved.");
 				return false;
 			}
-            double RequiredRight = Planned.PlannedX + Entry.Width + FitPadding;
-            double RequiredBottom = Planned.PlannedY + Entry.Height + FitPadding;
+            double RequiredRight = Planned.PlannedX + Planned.Width + FitPadding;
+            double RequiredBottom = Planned.PlannedY + Planned.Height + FitPadding;
             for (int32 B = ConsumerBoxIndex; B != INDEX_NONE; B = OutPlan.Boxes[B].ParentIndex)
             {
                 FBox& Container = OutPlan.Boxes[B];
@@ -1693,7 +1732,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 RequiredRight = Container.X + NewWidth + FitPadding;
                 RequiredBottom = Container.Y + NewHeight + FitPadding;
             }
-            GetterObstacles.Add({Planned.PlannedX, Planned.PlannedY, Entry.Width, Entry.Height});
+            GetterObstacles.Add({Planned.PlannedX, Planned.PlannedY, Planned.Width, Planned.Height});
             OutPlan.GetterCopies.Add(Planned);
 		}
         }
@@ -1726,6 +1765,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 			double SourceX = bUsePlanned ? Source.PlannedX : Source.X;
 			double SourceY = bUsePlanned ? Source.PlannedY : Source.Y;
+            FVector2D SourceOffset = FTurboMCPLayoutReport::PinPosition(Wire.OutputPin) - FVector2D(Source.X, Source.Y);
 			if (bUsePlanned)
 			{
 				// This consumer will read from its copy, not the original getter.
@@ -1735,6 +1775,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					{
 						SourceX = Copy.PlannedX;
 						SourceY = Copy.PlannedY;
+                        SourceOffset = Copy.OutputOffset;
 						break;
 					}
 				}
@@ -1744,7 +1785,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 
 			// Use exactly the report pin model, translated to planned positions.
 
-			const FVector2D Start = FTurboMCPLayoutReport::PinPosition(Wire.OutputPin) + FVector2D(SourceX - Source.X, SourceY - Source.Y);
+			const FVector2D Start = FVector2D(SourceX, SourceY) + SourceOffset;
 			const FVector2D End = FTurboMCPLayoutReport::PinPosition(Wire.InputPin) + FVector2D(TargetX - Target.X, TargetY - Target.Y);
 			Total += FVector2D::Distance(Start, End);
 		}
@@ -2208,7 +2249,12 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			{
 				continue;
 			}
-			MeasuredAfter += FTurboMCPLayoutReport::WireLength(Pin);
+            FVector2D Start = FTurboMCPLayoutReport::PinPosition(Pin);
+            for (const FGetterCopy& Copy : Created)
+                if (Copy.Copy == Node && SplitValuePin(Copy.Copy) == Pin)
+                { Start = FVector2D(Node->NodePosX, Node->NodePosY) + Copy.OutputOffset; break; }
+            for (const UEdGraphPin* Other : Pin->LinkedTo)
+                if (Other) MeasuredAfter += FVector2D::Distance(Start, FTurboMCPLayoutReport::PinPosition(Other));
 		}
 	}
 
