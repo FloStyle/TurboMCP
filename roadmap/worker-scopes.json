@@ -627,6 +627,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "p0-table-columns": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
