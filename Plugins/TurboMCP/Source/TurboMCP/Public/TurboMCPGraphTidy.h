@@ -143,14 +143,14 @@ public:
 		int32 TargetNodeIndex = INDEX_NONE;
 	};
 
-	/** A variable getter copied for one consumer, with what is needed to undo it. */
+	/** A variable getter or self reference copied for one consumer, with what is needed to undo it. */
 	struct FGetterCopy
 	{
 		/** Made by `Apply`, and null until then: `Plan` records WHERE a copy would go, not the copy. */
-		UK2Node_VariableGet* Copy = nullptr;
+		UEdGraphNode* Copy = nullptr;
 
 		/** The original getter this was copied from. */
-		UK2Node_VariableGet* Original = nullptr;
+		UEdGraphNode* Original = nullptr;
 
 		/** The consumer's input pin that was moved off the original and onto the copy. */
 		UEdGraphPin* ConsumerPin = nullptr;

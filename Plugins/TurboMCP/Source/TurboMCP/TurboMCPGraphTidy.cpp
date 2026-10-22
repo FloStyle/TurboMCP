@@ -25,6 +25,7 @@
 #include "K2Node_Knot.h"
 #include "K2Node_ExecutionSequence.h"
 #include "K2Node_VariableGet.h"
+#include "K2Node_Self.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/Guid.h"
 #include "Slate/WidgetRenderer.h"
@@ -157,19 +158,35 @@ namespace
 
 	bool IsGetterNode(const UEdGraphNode* InNode)
 	{
-		return Cast<UK2Node_VariableGet>(InNode) != nullptr;
+		return Cast<UK2Node_VariableGet>(InNode) != nullptr || Cast<UK2Node_Self>(InNode) != nullptr;
 	}
 
-	// Splitting copies only VariableReference, not target/default/exec/split-pin state.
-	// Keep all nontrivial getters intact rather than changing their meaning for layout.
-	bool CanSplitGetter(UK2Node_VariableGet* Getter)
-	{
-		if (!Getter || Getter->GetClass() != UK2Node_VariableGet::StaticClass()
-			|| !Getter->IsNodePure()) return false;
-		UEdGraphPin* Value = Getter->GetValuePin();
-		if (!Value || Getter->Pins.Num() != 1 || Getter->Pins[0] != Value) return false;
-		return Value->Direction == EGPD_Output && Value->SubPins.Num() == 0;
-	}
+    // Only leaf value readers may be duplicated: no exec, target or split-pin state.
+    UEdGraphPin* SplitValuePin(UEdGraphNode* Node)
+    {
+        if (!Node || Node->Pins.Num() != 1) return nullptr;
+        UEdGraphPin* Pin = Node->Pins[0];
+        return Pin && Pin->Direction == EGPD_Output && Pin->SubPins.Num() == 0 ? Pin : nullptr;
+    }
+    bool CanSplitGetter(UEdGraphNode* Node)
+    {
+        const UK2Node* K2 = Cast<UK2Node>(Node);
+        return K2 && K2->IsNodePure() && SplitValuePin(Node)
+            && (Node->GetClass() == UK2Node_VariableGet::StaticClass() || Node->GetClass() == UK2Node_Self::StaticClass());
+    }
+    UEdGraphNode* DuplicateValueReader(UEdGraphNode* Source, UEdGraph* Graph)
+    {
+        if (!CanSplitGetter(Source)) return nullptr;
+        UEdGraphNode* Copy = DuplicateObject<UEdGraphNode>(Source, Graph);
+        if (!Copy) return nullptr;
+        // Duplicated pins retain references to the old neighbours. Clear only the
+        // copy's array; BreakAllPinLinks would touch the original neighbours.
+        for (UEdGraphPin* Pin : Copy->Pins) if (Pin) Pin->LinkedTo.Reset();
+        Copy->SetFlags(RF_Transactional);
+        Copy->CreateNewGuid();
+        Graph->AddNode(Copy, false, false);
+        return Copy;
+    }
 
 	/** Accept both node-id forms emitted by the graph readers. */
 	bool NodeAnswersToId(const UEdGraphNode* InNode, const FString& InId)
@@ -1497,12 +1514,12 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			continue;
 		}
 
-		UK2Node_VariableGet* Getter = Cast<UK2Node_VariableGet>(Entry.Node);
+		UEdGraphNode* Getter = Entry.Node;
 		if (!CanSplitGetter(Getter))
 		{
 			continue;
 		}
-		UEdGraphPin* ValuePin = Getter->GetValuePin();
+		UEdGraphPin* ValuePin = SplitValuePin(Getter);
 		if (ValuePin == nullptr || ValuePin->LinkedTo.Num() < 2)
 		{
 			continue;
@@ -1555,6 +1572,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			const int32* ConsumerPlanIndex = IndexByNode.Find(ConsumerNode);
 			if (!ConsumerPlanIndex || OwnerOfNode[NodeIndex] != INDEX_NONE || OwnerOfNode[*ConsumerPlanIndex] != INDEX_NONE) continue;
 			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
+            if (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(ConsumerPlan.Key)) continue;
 			Planned.PlannedX = ConsumerPlan.PlannedX
 				- Entry.Width - SpacingX;
 			Planned.PlannedY = FMath::RoundToDouble(ConsumerPlan.PlannedY + (ConsumerPlan.bIsPure ? 0.0 : ConsumerPlan.Height + SpacingY));
@@ -1778,15 +1796,13 @@ namespace
      if(UEdGraphNode** Copy=ByGuid.Find(B.Comment->NodeGuid)) { (*Copy)->NodeWidth=FMath::RoundToInt(B.PlannedWidth); (*Copy)->NodeHeight=FMath::RoundToInt(B.PlannedHeight); }
     for(const auto& C:Plan.GetterCopies)
     {
-     UK2Node_VariableGet* Source=Cast<UK2Node_VariableGet>(ByGuid.FindRef(C.Original->NodeGuid));
+     UEdGraphNode* Source=ByGuid.FindRef(C.Original->NodeGuid);
      UEdGraphPin* Input=FindPin(ByGuid.FindRef(C.ConsumerPin->GetOwningNode()->NodeGuid),C.ConsumerPin);
-     if(!Source || !Input || !Source->GetValuePin() || Source->GetGraph()!=Graph || Input->GetOwningNode()->GetGraph()!=Graph) { Result=TEXT("getter-copy preview mapping failed"); return false; }
-     UK2Node_VariableGet* Copy=NewObject<UK2Node_VariableGet>(Graph,NAME_None,RF_Transient);
-     Copy->VariableReference=Source->VariableReference; Copy->CreateNewGuid();
-     Graph->AddNode(Copy,false,false); Copy->AllocateDefaultPins();
-     if(!Copy->GetValuePin()) { Result=TEXT("getter-copy preview has no value pin"); return false; }
+     if(!Source || !Input || !CanSplitGetter(Source) || Source->GetGraph()!=Graph || Input->GetOwningNode()->GetGraph()!=Graph) { Result=TEXT("getter-copy preview mapping failed"); return false; }
+     UEdGraphNode* Copy=DuplicateValueReader(Source,Graph);
+     if(!Copy || !SplitValuePin(Copy)) { Result=TEXT("getter-copy preview has no value pin"); return false; }
      Copy->NodePosX=FMath::RoundToInt(C.PlannedX); Copy->NodePosY=FMath::RoundToInt(C.PlannedY);
-     Source->GetValuePin()->BreakLinkTo(Input); Copy->GetValuePin()->MakeLinkTo(Input);
+     SplitValuePin(Source)->BreakLinkTo(Input); SplitValuePin(Copy)->MakeLinkTo(Input);
     }
    }
    const TSharedRef<SGraphEditor> Editor=SNew(SGraphEditor).GraphToEdit(Graph).IsEditable(false).ShowGraphStateOverlay(false);
@@ -1994,7 +2010,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		for (const UEdGraphNode* Node : Graph->Nodes)
 			if (Node && Copy.ConsumerPin && Node->Pins.Contains(Copy.ConsumerPin)) { bConsumerLive = true; break; }
 		if (!Copy.OriginalValuePin || !Graph->Nodes.Contains(Copy.Original) || !CanSplitGetter(Copy.Original)
-			|| Copy.Original->GetValuePin() != Copy.OriginalValuePin || !bConsumerLive
+			|| SplitValuePin(Copy.Original) != Copy.OriginalValuePin || !bConsumerLive
 			|| !Copy.OriginalValuePin->LinkedTo.Contains(Copy.ConsumerPin)
 			|| !Copy.ConsumerPin->LinkedTo.Contains(Copy.OriginalValuePin))
 			return TEXT("unchanged: getter split plan is stale; preview again before applying");
@@ -2019,34 +2035,15 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			break;
 		}
 
-		UK2Node_VariableGet* Copy = NewObject<UK2Node_VariableGet>(Graph, NAME_None, RF_Transactional);
-		if (Copy == nullptr)
-		{
-			CopyFailure = TEXT("a planned getter copy could not be created");
-			break;
-		}
-
-		Copy->CreateNewGuid();
-
-		// THE MEMBER REFERENCE IS COPIED EXACTLY, GUID INCLUDED. A local-variable reference resolves
-		// through its GUID, so a copy with a default GUID would point at nothing and break the graph in
-		// a way no report would show.
-		Copy->VariableReference = Entry.Original->VariableReference;
-
-		Copy->NodePosX = static_cast<int32>(FMath::RoundToDouble(Entry.PlannedX));
-		Copy->NodePosY = static_cast<int32>(FMath::RoundToDouble(Entry.PlannedY));
-
-		Graph->Modify();
-		Graph->AddNode(Copy, /*bUserAction=*/false, /*bSelectNewNode=*/false);
-
-		// `AllocateDefaultPins` IS MANDATORY, AND LEAVING IT OUT IS A MEASURED CRASH. `NewObject` does
-		// not allocate a node's pins and `UEdGraph::AddNode` does not either: the editor allocates them
-		// when the node is reconstructed for display, which never happens headlessly.
-		// `UK2Node_Knot::GetOutputPin` is `return Pins[1];` unguarded and took the editor down on an
-		// empty array for exactly this reason.
-		Copy->AllocateDefaultPins();
-
-		UEdGraphPin* CopyValuePin = Copy->GetValuePin();
+        UEdGraphNode* Copy = DuplicateValueReader(Entry.Original, Graph);
+        if (!Copy)
+        {
+            CopyFailure = TEXT("a planned value-reader copy could not be created");
+            break;
+        }
+        Copy->NodePosX = FMath::RoundToInt(Entry.PlannedX);
+        Copy->NodePosY = FMath::RoundToInt(Entry.PlannedY);
+        UEdGraphPin* CopyValuePin = SplitValuePin(Copy);
 		if (CopyValuePin == nullptr || CopyValuePin->PinType != Entry.OriginalValuePin->PinType)
 		{
 			// REFUSED RATHER THAN HALF-DONE. A copy with no value pin cannot take the consumer, and
@@ -2058,7 +2055,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 
 		UEdGraphPin* OriginalValuePin = Entry.OriginalValuePin != nullptr
-			? Entry.OriginalValuePin : Entry.Original->GetValuePin();
+			? Entry.OriginalValuePin : SplitValuePin(Entry.Original);
 		if (OriginalValuePin != nullptr)
 		{
 			OriginalValuePin->BreakLinkTo(Entry.ConsumerPin);
@@ -2149,7 +2146,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 			{
 				// Break the copy's link FIRST, then re-make the original's, so the consumer is never
 				// left with two links or with none.
-				if (UEdGraphPin* CopyPin = Entry.Copy->GetValuePin())
+				if (UEdGraphPin* CopyPin = SplitValuePin(Entry.Copy))
 				{
 					CopyPin->BreakLinkTo(Entry.ConsumerPin);
 				}
