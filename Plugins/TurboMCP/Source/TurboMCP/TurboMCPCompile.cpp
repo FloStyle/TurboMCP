@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "Tools/TurboMCPToolsets.h"
+#include "TurboMCPCallRecorder.h"
 
 #include "Containers/UnrealString.h"
 #include "Editor.h"
@@ -704,10 +705,14 @@ static FString SaveTurboMCPAssets(const FString& Assets, bool bWithoutThumbnail)
 
 FString UTurboMCPEditToolset::EditTurboMCPSave(const FString& Assets)
 {
-	return SaveTurboMCPAssets(Assets, /*bWithoutThumbnail=*/false);
+	const FString Report = SaveTurboMCPAssets(Assets, /*bWithoutThumbnail=*/false);
+    CaptureTurboMCPSaveOutcome(Report);
+    return Report;
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPSaveWithoutThumbnail(const FString& Assets)
 {
-	return SaveTurboMCPAssets(Assets, /*bWithoutThumbnail=*/true);
+	const FString Report = SaveTurboMCPAssets(Assets, /*bWithoutThumbnail=*/true);
+    CaptureTurboMCPSaveOutcome(Report);
+    return Report;
 }

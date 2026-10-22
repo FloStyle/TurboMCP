@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "Containers/UnrealString.h"
+
 /**
  * Gives every one of this plugin's tools a `start` record before it runs and an `end` record after it,
  * ON WHICHEVER PATH THE CALL ARRIVED - including an agent's.
@@ -65,3 +67,6 @@ void InstallTurboMCPCallRecording();
  * is holding.
  */
 void RemoveTurboMCPCallRecording();
+
+/** Preserve the completed synchronous save report for the active registry call only. */
+void CaptureTurboMCPSaveOutcome(const FString& Report);

@@ -14,6 +14,7 @@
 #include "Templates/SharedPointer.h"
 #include "Templates/SubclassOf.h"
 #include "Templates/ValueOrError.h"
+#include "Templates/UnrealTemplate.h"
 #include "UObject/Class.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectIterator.h"
@@ -32,6 +33,8 @@ namespace
 {
 	using UE::ToolsetRegistry::FToolset;
 	using FToolResult = TValueOrError<FString, FString>;
+
+    thread_local FString* ActiveSaveOutcome = nullptr;
 
     // Called only on the editor game thread. Store names rather than object pointers across a call.
     TSet<FString> DirtyPackages()
@@ -155,10 +158,29 @@ namespace
             }
 
 			const TSet<FString> BeforeDirty = bAssetEdit ? DirtyPackages() : TSet<FString>();
-			return Inner->ExecuteTool(ToolName, JsonInput).Then(
-				[Call, bAssetEdit, BeforeDirty](TFuture<FToolResult> Future) -> FToolResult
+            FString SaveOutcome;
+            const bool bSave = Inner->GetToolsetClass() == UTurboMCPEditToolset::StaticClass()
+                && (ToolName == TEXT("EditTurboMCPSave") || ToolName == TEXT("EditTurboMCPSaveWithoutThumbnail"));
+            // These FString-returning save functions are invoked synchronously by
+            // FObjectFunctionToolCall before its future is returned. Keep the sink
+            // scoped to that invocation, never across asynchronous completion.
+            auto InnerFuture = [&]()
+            {
+                TGuardValue<FString*> CaptureScope(ActiveSaveOutcome, bSave ? &SaveOutcome : nullptr);
+                return Inner->ExecuteTool(ToolName, JsonInput);
+            }();
+            return InnerFuture.Then(
+                [Call, bAssetEdit, BeforeDirty, SaveOutcome](TFuture<FToolResult> Future) -> FToolResult
 				{
 					FToolResult Result = Future.Get();
+                    if (Result.HasError() && !SaveOutcome.IsEmpty())
+                    {
+                        // Keep the error carrier and its diagnostics. A completed
+                        // report may say saved, failed or unconfirmed: do not infer
+                        // success from an exception or from a changed dirty flag.
+                        Result = MakeError(TEXT("save outcome (reported before wrapper diagnostics):\n")
+                            + SaveOutcome + TEXT("\nscript/tool diagnostics:\n") + Result.GetError());
+                    }
                     if (bAssetEdit)
                     {
                         const FString Delta = DirtyDelta(BeforeDirty);
@@ -179,6 +201,11 @@ namespace
 	private:
 		TSharedPtr<FToolset> Inner;
 	};
+}
+
+void CaptureTurboMCPSaveOutcome(const FString& Report)
+{
+    if (IsInGameThread() && ActiveSaveOutcome) *ActiveSaveOutcome = Report;
 }
 
 void InstallTurboMCPCallRecording()
