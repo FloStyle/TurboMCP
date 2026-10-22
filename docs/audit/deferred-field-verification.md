@@ -906,3 +906,18 @@ Open investigations:
 - Oct22 S2/X-93: package-delta reporting implemented; source audit found legitimate dependency compilation mechanism, not the reported trigger. Need per-call dirty delta and dependency relationship on a fresh occurrence. Historical details are unavailable; do not request them again or suppress dirty flags.
 
 Asked whether narrowly scoped editor reproductions may override the current no-tests/editor policy for these two, or whether to wait for next field evidence. Until answered, no runtime work authorized. Goal remains incomplete; both issues stay open. Other implemented fixes retain verification debt rather than becoming separate feature tasks.
+
+
+## 2026-10-23 quick-fix batch (461d22b)
+
+No tests/build/editor runs. All four implementation closures are unbuilt_untested.
+
+a8341453: Implemented in 461d22b: LayoutReport labels non-comment nodes (reroutes included), pin links, comments and nested boxes; Knots labels graph-array entries and knots as a subset, avoiding additive double-counting. Tidy retains operation-specific moved/split/fitted populations. No runtime verification.
+
+9e5d5c9a: Implemented in 461d22b: ReadTurboMCPToolHelp accepts find:<offset>:<words>, AND case-insensitive matching against live names/descriptions, alphabetical results, 20-result pages, explicit continuation, no-match and invalid-offset refusal. Search query bounded to 256 characters. No routing preference or mutation authorization inferred. Tool-specific examples remain owned by 9263bd95.
+
+1f5fe672: Reconciled against current source: Struct removal warning reports potentially affected loaded dependents, not proven breakage, and compile-not-run. CallRecorder snapshots and reports before/after dirty-package deltas for EditTurboMCP calls on success/error, with off-thread limitation explicit. Already-dirty semantic modifications are not inferred. This closes the reporting implementation, not X-93 causality.
+
+c1e04796: Reconciled against current source: Patch and Replace delegate named graph lookup to TurboMCPNodeId::FindGraphByName, which refuses empty names and ambiguity. BlueprintRead CollectGraphs uses GetAllGraphs for asset-wide enumeration. The old first-graph fallback diagnosis is obsolete; broader consumer coverage stays under ca5bbbfc.
+
+Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constraints are not closed by discovery search. Deferred checks include mixed-case multiword search, paging/no-match/invalid offsets, real count populations, empty/ambiguous graph names, and dirty deltas on success/error. These are verification flags, not new product issues.
