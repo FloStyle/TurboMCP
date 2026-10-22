@@ -735,3 +735,7 @@ CP-14 partial: unity-zoom measurement now restores saved view and invalidates no
 ## Automatic function input getters — initial implementation
 
 Tidy creates typed scoped UK2Node_VariableGet readers for visible unsplit function-entry output consumers using the existing copy plan, native preview and live transaction/rollback. No tests/build/editor runs. TD-36/FT-90 remain open: split parameters and dedicated getter sizing/metric offsets still need implementation. Verify parameter scope, reference/container types, hidden pins excluded, multiple parameters, selections, nested comments, read-back, undo and repeated tidy. No general pure-expression duplication is introduced.
+
+## Native input getter geometry — c6a9eff
+
+Input getter planning measures one transient native getter per parameter, with scratch undo suppressed, then stores reader bounds and output offset. Placement, comment growth and overlap metrics use those bounds; planned/post-edit wire comparisons use the same output offset. No tests/build/editor runs. Verify native offscreen creation without Blueprint ownership, widget population, large parameter names/types, repeated tidy, measured geometry and rollback parity. Split input pins remain implementation work.
