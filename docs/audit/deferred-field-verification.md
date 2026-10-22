@@ -590,3 +590,7 @@ X-93 (October 22 S2) partial, unbuilt_untested. Registry edits snapshot dirty pa
 ## P0 getter owner readback — 2a9d55e
 
 Partial, unbuilt_untested. Both probe and live spawn compare resolved member declaration owner/name to the action property. Wrong/missing declarations remove the created node before wiring. Skeleton/generated owners normalize by Blueprint. Uncompiled widget discovery remains open. No tests/build/editor runs.
+
+## P0 global callers — 141cd11
+
+X-92 implemented, unbuilt_untested. Body filters no longer limit relations. Static call sites include full node IDs and upstream entry traversal; pure calls follow consumers. FT-96 remains partial for delegate/event binding context. No tests/build/editor runs.

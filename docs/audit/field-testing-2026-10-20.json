@@ -2007,11 +2007,13 @@
       "canonical_issue": "2026-10-22_S1/X-92",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_unverified",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Usability.\n- **Observed:** With a graph filter, the whole-Blueprint read listed two functions under \"functions nothing calls\". Both are called from the event graph, which the filter excluded. A note says that the filter limits the relations, but the heading still reads as a fact.\n- **Expected:** The caller list is computed over the whole Blueprint, even when only some bodies are printed.\n- **Proposed behavior:** Always compute callers globally. Print \"called from: (graph, node ID)\" next to each listed function.\n\n## 2. Tool observations\n\n### Graph reader"
+      "observation": "- **Type:** Usability.\n- **Observed:** With a graph filter, the whole-Blueprint read listed two functions under \"functions nothing calls\". Both are called from the event graph, which the filter excluded. A note says that the filter limits the relations, but the heading still reads as a fact.\n- **Expected:** The caller list is computed over the whole Blueprint, even when only some bodies are printed.\n- **Proposed behavior:** Always compute callers globally. Print \"called from: (graph, node ID)\" next to each listed function.\n\n## 2. Tool observations\n\n### Graph reader",
+      "fix_commit": "141cd11",
+      "implementation": "Relation scan uses all Blueprint graphs independently of body filter. Caller list identifies target function path, exact call node ID, graph and static upstream entries. Dynamic dispatch is explicitly excluded."
     },
     {
       "report": "2026-10-22_S1",
@@ -3299,9 +3301,12 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
+      "validation": "unbuilt_untested",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "A filtered read with a wrong \"nothing calls\" list"
+      "observation": "A filtered read with a wrong \"nothing calls\" list",
+      "disposition": "partially_implemented",
+      "fix_commit": "141cd11",
+      "remaining": "Static function callers and upstream entries implemented. Delegate-bound event callers and expanded execution context remain outstanding."
     },
     {
       "report": "2026-10-22_S2",
