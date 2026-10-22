@@ -1162,28 +1162,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
                 // invent a first-output continuation: that makes both branch arms run.
                 bool ExplicitTarget=false;
                 if(OriginalTarget && OriginalTarget->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec)
-                    // Connections specialize wildcard pins and can reconstruct nodes. Resolve by name
-    // again rather than retaining pin pointers from before wiring.
-    for(const auto& Deferred:DeferredDefaults)
-    {
-        UEdGraphNode* Node=CreatedByForm[Deferred.Key];
-        UEdGraphPin* Target=nullptr;
-        for(UEdGraphPin* Candidate:Node->Pins)
-            if(Candidate && Candidate->Direction==EGPD_Input && Candidate->PinName.ToString()==Deferred.Value) { Target=Candidate; break; }
-        const TurboMCPGraphTextLex::FPinForm* FormPin=nullptr;
-        for(const auto& Candidate:InPlan.Nodes[Deferred.Key].Pins)
-            if(Candidate.Name==Deferred.Value) { FormPin=&Candidate; break; }
-        bool Changed=false; FString Why;
-        if(!Target || !FormPin || !SetLiteral(Graph,Target,Unquote(FormPin->Value),Changed,Why))
-        {
-            const bool Undone=FTurboMCPRollback::EndAndUndoActiveTransaction();
-            OutError=FString::Printf(TEXT("%s: deferred default '%s' failed after type propagation: %s"),Undone?TEXT("unchanged; rollback=complete"):TEXT("partial; rollback=failed"),*Deferred.Value,*Why);
-            return false;
-        }
-        if(Changed) ++PinsWritten;
-    }
-
-    for(const FNewLink& Requested:InPlan.Links)
+                    for(const FNewLink& Requested:InPlan.Links)
                     {
                         UEdGraphNode* RequestedTarget=nullptr;
                         if(Requested.ToFormIndex!=INDEX_NONE)
@@ -1229,6 +1208,27 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
 		}
 		++LinksMade;
 	}
+
+    // Connections specialize wildcard pins and can reconstruct nodes. Resolve by name
+    // again rather than retaining pin pointers from before wiring.
+    for(const auto& Deferred:DeferredDefaults)
+    {
+        UEdGraphNode* Node=CreatedByForm[Deferred.Key];
+        UEdGraphPin* Target=nullptr;
+        for(UEdGraphPin* Candidate:Node->Pins)
+            if(Candidate && Candidate->Direction==EGPD_Input && Candidate->PinName.ToString()==Deferred.Value) { Target=Candidate; break; }
+        const TurboMCPGraphTextLex::FPinForm* FormPin=nullptr;
+        for(const auto& Candidate:InPlan.Nodes[Deferred.Key].Pins)
+            if(Candidate.Name==Deferred.Value) { FormPin=&Candidate; break; }
+        bool Changed=false; FString Why;
+        if(!Target || !FormPin || !SetLiteral(Graph,Target,Unquote(FormPin->Value),Changed,Why))
+        {
+            const bool Undone=FTurboMCPRollback::EndAndUndoActiveTransaction();
+            OutError=FString::Printf(TEXT("%s: deferred default '%s' failed after type propagation: %s"),Undone?TEXT("unchanged; rollback=complete"):TEXT("partial; rollback=failed"),*Deferred.Value,*Why);
+            return false;
+        }
+        if(Changed) ++PinsWritten;
+    }
 
     // Verify the final graph, not only each intermediate connection. A later
     // schema connection may replace a wire that an earlier step successfully made.
