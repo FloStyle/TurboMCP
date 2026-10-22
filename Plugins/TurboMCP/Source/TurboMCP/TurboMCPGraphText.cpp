@@ -931,6 +931,7 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 
 	TArray<FEntryPoint> Entries;
 	CollectEntryPoints(InGraph, Entries);
+    const TArray<FEntryPoint> AllEntries = Entries;
     const FString Filter=EntryFilter.TrimStartAndEnd();
     if(!Filter.IsEmpty())
     {
@@ -986,6 +987,52 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 		}
 		return Out;
 	}
+
+    // Compute origins independently for each entry: a globally visited set would
+    // hide the second origin precisely where execution chains merge. Follow only
+    // explicit exec links, including knots; this is static reachability, not a
+    // claim that runtime conditions take every branch.
+    TMap<const UEdGraphNode*, TArray<FString>> ExecOrigins;
+    TSet<const UEdGraphNode*> SelectedReachable;
+    TSet<const UEdGraphNode*> SelectedEntries;
+    for (const FEntryPoint& Entry : Entries) SelectedEntries.Add(Entry.Node);
+    for (const FEntryPoint& Entry : AllEntries)
+    {
+        TSet<const UEdGraphNode*> Visited;
+        TArray<const UEdGraphNode*> Pending;
+        Pending.Add(Entry.Node);
+        const FString Origin = Entry.Name + TEXT(" [") + TurboMCPNodeId::MakeForNode(Entry.Node) + TEXT("]");
+        while (!Pending.IsEmpty())
+        {
+            const UEdGraphNode* Node = Pending.Pop(EAllowShrinking::No);
+            if (!Node || Node->GetGraph() != InGraph || Visited.Contains(Node)) continue;
+            Visited.Add(Node);
+            ExecOrigins.FindOrAdd(Node).Add(Origin);
+            if (SelectedEntries.Contains(Entry.Node)) SelectedReachable.Add(Node);
+            for (const UEdGraphPin* Pin : Node->Pins)
+            {
+                if (!Pin || Pin->Direction != EGPD_Output || Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec) continue;
+                for (const UEdGraphPin* Target : Pin->LinkedTo)
+                {
+                    if (Target && Target->Direction == EGPD_Input && Target->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                        Pending.Add(Target->GetOwningNode());
+                }
+            }
+        }
+    }
+    TArray<FString> SharedTailLines;
+    for (const TPair<const UEdGraphNode*, TArray<FString>>& Pair : ExecOrigins)
+    {
+        if (Pair.Value.Num() < 2 || !SelectedReachable.Contains(Pair.Key) || IsKnot(Pair.Key)) continue;
+        SharedTailLines.Add(FString::Printf(TEXT("\n; shared-tail %s: reachable via exec links from %s"),
+            *TurboMCPNodeId::MakeForNode(Pair.Key), *FString::Join(Pair.Value, TEXT(", "))));
+    }
+    SharedTailLines.Sort();
+    if (!SharedTailLines.IsEmpty())
+    {
+        Out += TEXT("\n; Shared execution tails (static graph links; includes other entry origins even in a filtered view):");
+        for (const FString& Line : SharedTailLines) Out += Line;
+    }
 
     // BL-12: declarations are stored on the function entry, not on variable-get nodes.
     for (const UEdGraphNode* Node : InGraph->Nodes)
