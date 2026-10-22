@@ -450,6 +450,7 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 	// table is what keeps the plan from depending on writes that have not happened.
 	TSet<FName> PlannedAdditions;
 	TMap<FName, ERowOp> SeenOperations;
+    TMap<FName, TMap<FName, FString>> PlannedFieldValues;
 
 	for (const FRowOp& Op : RequestedOps)
 	{
@@ -478,7 +479,7 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
         TSet<FName> Fields;
         for (const FFieldEdit& Edit : Op.Fields)
         {
-            const FName Field(*Edit.Name);
+            const FName Field(*CanonicalField(Struct, Edit.Name));
             if (Fields.Contains(Field)) Out.Refusals.Add(FString::Printf(TEXT("Duplicate field '%s' in one row operation"), *Edit.Name));
             Fields.Add(Field);
         }
@@ -519,9 +520,16 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 			Change.Field = CanonicalField(Struct, Edit.Name);
 			Change.NewText = Edit.Text;
 
-			if (bExistsNow)
-			{
-				const uint8* Row = Rows.FindChecked(RowName);
+            const TMap<FName, FString>* EarlierFields = PlannedFieldValues.Find(RowName);
+            const FString* EarlierValue = EarlierFields ? EarlierFields->Find(FName(*Change.Field)) : nullptr;
+            if (EarlierValue)
+            {
+                Change.OldText = *EarlierValue;
+                Change.bUnchanged = Change.OldText.Equals(Edit.Text, ESearchCase::CaseSensitive);
+            }
+            else if (bExistsNow)
+            {
+                const uint8* Row = Rows.FindChecked(RowName);
 				Change.OldText = OneFieldText(Struct, Row, Edit.Name);
 				// A SET THAT CHANGES NOTHING IS REPORTED AND FLAGGED rather than hidden, because a caller who
 				// asked for it should be able to see that the table already agreed.
@@ -537,13 +545,22 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 				Out.Additions.AddUnique(Op.RowName);
 			}
 
+            PlannedFieldValues.FindOrAdd(RowName).Add(FName(*Change.Field), Edit.Text);
 			Out.Changes.Add(MoveTemp(Change));
 		}
 
 		PlannedAdditions.Add(FName(*Op.RowName));
 	}
 
-	return FString();
+    // A refused batch has no accepted effects. Keep requests/refusal reasons for
+    // diagnostics, but never advertise a subset as an executable preview.
+    if (!Out.Refusals.IsEmpty())
+    {
+        Out.Changes.Reset();
+        Out.Additions.Reset();
+        Out.Removals.Reset();
+    }
+    return FString();
 }
 
 FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
@@ -593,7 +610,7 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 		}
 
 		const FName RowName(*Op.RowName);
-		if (!Order.Contains(Op.RowName))
+		if (!Order.ContainsByPredicate([&RowName](const FString& Existing) { return FName(*Existing) == RowName; }))
 		{
 			Order.Add(Op.RowName);
 		}
@@ -674,26 +691,27 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 
 	// Stop at the first mutation failure; the common failure path undoes this batch.
 	int32 Written = 0;
-	for (const TPair<FName, FString>& Pair : FinalText)
+	for (const FString& OrderedName : Order)
 	{
+        const FName RowKey(*OrderedName);
 		if (!Failures.IsEmpty()) break;
 		if (Table->GetRowStruct() != Struct)
 		{
 			Failures.Add(TEXT("row struct changed during editor callbacks; remaining writes stopped"));
 			break;
 		}
-		uint8* Row = Table->GetRowMap().FindRef(Pair.Key);
+		uint8* Row = Table->GetRowMap().FindRef(RowKey);
 		if (Row == nullptr)
 		{
 			// `AddRow` initialises the new row from the struct's OWN defaults, which is what the engine's editor
 			// does, so an unmentioned field of a NEW row gets its default rather than an indeterminate value.
-			FDataTableEditorUtils::AddRow(Table, Pair.Key);
+			FDataTableEditorUtils::AddRow(Table, RowKey);
             // Editor callbacks may replace row storage; never retain their returned pointer.
-            Row = Table->GetRowMap().FindRef(Pair.Key);
+            Row = Table->GetRowMap().FindRef(RowKey);
 		}
 		if (Row == nullptr)
 		{
-			Failures.Add(FString::Printf(TEXT("the engine refused to add the row '%s'"), *Pair.Key.ToString()));
+			Failures.Add(FString::Printf(TEXT("the engine refused to add the row '%s'"), *RowKey.ToString()));
 			break;
 		}
 
@@ -704,7 +722,7 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
         }
         // Import once, before mutation. Copy from initialized, validated storage
         // using reflected assignment (never memcpy for strings/arrays/objects).
-        const TUniquePtr<FStructOnScope>* Prepared = PreparedRows.Find(Pair.Key);
+        const TUniquePtr<FStructOnScope>* Prepared = PreparedRows.Find(RowKey);
         if (!Prepared || !Prepared->IsValid())
         {
             Failures.Add(TEXT("prepared row data missing; remaining writes stopped"));
