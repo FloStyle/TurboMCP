@@ -981,3 +981,7 @@ Implemented, unbuilt_untested: ReadTurboMCPToolHelp displays FToolInfo.Parameter
 ## 2026-10-23 graph search diagnostics — 84f77fb
 
 Implemented, unbuilt_untested: NodeFind shared stable enumeration and explicit scope/result counts; NodeFind/NodeType ambiguous-name refusals distinguish absence and list graph paths. Named ambiguity remains refused, with no first-match fallback. Parent ca5bbbfc remains open for other output-mode coverage reconciliation. No tests, builds or editor runs.
+
+## 2026-10-23 dispatcher usage — e1de181
+
+Implemented, unbuilt_untested: multicast delegate operations register self-member references and expose operation class; static absent-use findings no longer claim runtime nonuse or default persistence. Caller/delegate output states scan scope. a28a09fd remains open for shared typed model, widget property bindings, member identity and callback coverage. No tests/build/editor runs.
