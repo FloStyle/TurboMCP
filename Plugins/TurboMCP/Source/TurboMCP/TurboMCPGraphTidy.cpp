@@ -1341,7 +1341,20 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                 TArray<int32> LaneOrder;
                 for(int32 I:Free) if(RowOf[I]==Row && !OutPlan.Nodes[I].bIsPure)
                 { LaneOrder.AddUnique(LaneOf[I]);CollectInputs(I,LaneOf[I]); }
-                LaneOrder.Sort();
+                // Creation order can interleave an inner branch with its parent's
+                // unrelated sibling. Visit lane ancestry so each subtree stays together.
+                const TArray<int32> ActiveLanes = LaneOrder;
+                LaneOrder.Reset();
+                TArray<int32> PendingLanes;
+                PendingLanes.Add(0);
+                while (!PendingLanes.IsEmpty())
+                {
+                    const int32 CurrentLane = PendingLanes.Last();
+                    PendingLanes.RemoveAt(PendingLanes.Num() - 1);
+                    if (ActiveLanes.Contains(CurrentLane)) LaneOrder.Add(CurrentLane);
+                    for (int32 ChildLane = NextLane - 1; ChildLane > 0; --ChildLane)
+                        if (LaneParent.FindRef(ChildLane) == CurrentLane) PendingLanes.Add(ChildLane);
+                }
                 TMap<int32,double> InputFloorByLane;
                 double BandTop=RowY;
                 Bottom=RowY;
