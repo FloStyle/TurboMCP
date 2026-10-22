@@ -668,3 +668,6 @@ Blueprint relation reads list direct function/custom-event delegate connections 
 
 ## FT-96 component/widget and actor binding reads (2026-10-22)
 Added bound-event owner property/class, actor identity and event node ID to Blueprint relations. Unbuilt/untested: widget hover/click, component events, missing/deleted owners and actor-bound level scripts. Intermediate delegate routes remain open.
+
+## FT-96 reroute traversal (2026-10-22)
+Delegate consumers traced through transparent knots with visited-pin cycle detection. Dynamic storage/runtime invocation explicitly not inferred. Unbuilt/untested: branched/cyclic/disconnected knots, bound functions and context output.
