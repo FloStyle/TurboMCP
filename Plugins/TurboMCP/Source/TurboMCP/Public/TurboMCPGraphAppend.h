@@ -75,6 +75,8 @@ public:
 		TArray<FString> ProbePinNames;
         TArray<FString> ProbeExecInputs;
         TArray<FString> ProbeExecOutputs;
+        int32 MeasuredWidth = 0;
+        int32 MeasuredHeight = 0;
 	};
 
 	/** One link the plan will make, by node id or by a node this same text creates. */
@@ -110,7 +112,7 @@ public:
 		int32 X = 0;
 		int32 Y = 0;
 
-		/** True when the created node's footprint is the 320x160 estimate rather than a stored size. */
+		/** True when the created footprint uses the fallback estimate rather than scratch Slate measurement. */
 		bool bEstimatedSize = true;
 	};
 
@@ -145,7 +147,7 @@ public:
 		/** One entry per created form, in input order. Empty when placement was not requested. */
 		TArray<FPlannedPosition> PlannedPositions;
 
-		/** True when at least one existing bound dimension was estimated; created nodes are always estimated. */
+		/** True when at least one existing or created bound dimension was estimated. */
 		bool bPlacementUsedEstimatedSize = false;
 
 		/** True when the text would be applied: no refusals AND something to do. */
@@ -170,8 +172,8 @@ public:
 	 *
 	 * Every edge, extent and addition is widened to int64 and checked before the int32 cast. Each positive
 	 * stored dimension is kept and only a missing dimension is estimated. Both the top-left position and the
-	 * estimated 320x160 footprint must fit int32; otherwise the plan refuses before mutation. The result is
-	 * stored/estimated geometry, not a measured Slate footprint, so it does not prove visual non-overlap.
+	 * measured or fallback footprint must fit int32; otherwise the plan refuses before mutation. The result is
+	 * scratch-measured created geometry with stored/estimated existing bounds; live visual non-overlap is unverified.
 	 *
 	 * @param OutRefusal  Why the geometry cannot be represented. Empty on success.
 	 */
@@ -194,9 +196,9 @@ public:
 	static FString RenderPreview(const FPlan& InPlan);
 
     /** Execute the same mutation pipeline on a transient graph, never the live asset. */
-    static bool Preflight(const FPlan& InPlan, FString& OutReport, FString& OutError);
+    static bool Preflight(const FPlan& InPlan, FString& OutReport, FString& OutError, FPlan* OutMeasuredPlan = nullptr);
 private:
     static bool ExecuteGraph(const FPlan& InPlan, UBlueprint* Blueprint, UEdGraph* Graph,
-        FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction);
+        FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction, TArray<UEdGraphNode*>* OutCreatedByForm = nullptr);
 
 };

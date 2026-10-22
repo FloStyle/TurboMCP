@@ -15,9 +15,9 @@
 /**
  * Deterministic placement for the forms an append creates.
  *
- * The column is to the right of every existing stored/estimated bound, with the new forms in input order.
- * Stored non-positive sizes are replaced by an explicit 320x160 estimate, and the result is reported as
- * geometry rather than as a measured Slate footprint. Every edge, extent and addition is widened to int64
+ * Attached blocks follow their dependency lanes; detached forms use a separate column.
+ * Created footprints come from scratch Slate measurement when supplied. Missing existing dimensions
+ * retain an explicit 320x160 estimate. Every edge, extent and addition is widened to int64
  * and checked before the int32 cast; a coordinate outside the node coordinate range refuses.
  */
 namespace
@@ -26,7 +26,6 @@ namespace
 	constexpr int64 PlacementHeight = 160;
 	constexpr int64 PlacementHorizontalGap = 160;
 	constexpr int64 PlacementVerticalGap = 64;
-	constexpr int64 PlacementVerticalStride = PlacementHeight + PlacementVerticalGap;
 
 	/** Add two widened values, reporting an int64 overflow instead of wrapping. */
 	bool AddWide(int64 InA, int64 InB, int64& OutSum)
@@ -72,6 +71,15 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 		return true;
 	}
 
+    int64 CellWidth = 0, CellHeight = 0;
+    for (const FNewNode& Form : InNodes)
+        if (!Form.bLinksToExisting)
+        {
+            CellWidth = FMath::Max<int64>(CellWidth, Form.MeasuredWidth > 0 ? Form.MeasuredWidth : PlacementWidth);
+            CellHeight = FMath::Max<int64>(CellHeight, Form.MeasuredHeight > 0 ? Form.MeasuredHeight : PlacementHeight);
+            bOutUsedEstimatedSize |= Form.MeasuredWidth <= 0 || Form.MeasuredHeight <= 0;
+        }
+    const int64 CellStride = CellHeight + PlacementVerticalGap;
 	bool bHasExistingBounds = false;
 	int64 Top = 0;
 	int64 Right = 0;
@@ -85,7 +93,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 		int64 Width = Node->NodeWidth;
 		int64 Height = Node->NodeHeight;
 		// EACH DIMENSION IS INDEPENDENT: a known positive width stays authoritative even when the
-		// height is missing, so the column cannot be placed inside a known wide bound.
+		// height is missing, so the block cannot be placed inside a known wide bound.
 		if (Width <= 0)
 		{
 			Width = PlacementWidth;
@@ -247,10 +255,10 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                     if (Link.FromFormIndex == I && IsForward(Link)) { Lane[I] = Lane[Link.ToFormIndex]; break; }
             }
             const int64 BaseX = static_cast<int64>(Attachment->NodePosX)
-                + FMath::Max<int64>(Attachment->NodeWidth, PlacementWidth) + PlacementHorizontalGap
-                - static_cast<int64>(Depth[AttachmentForm]) * (PlacementWidth + PlacementHorizontalGap);
+                + (Attachment->NodeWidth > 0 ? static_cast<int64>(Attachment->NodeWidth) : PlacementWidth) + PlacementHorizontalGap
+                - static_cast<int64>(Depth[AttachmentForm]) * (CellWidth + PlacementHorizontalGap);
             const int64 BaseY = static_cast<int64>(Attachment->NodePosY)
-                + FMath::Max<int64>(Attachment->NodeHeight, PlacementHeight) + PlacementVerticalGap;
+                + (Attachment->NodeHeight > 0 ? static_cast<int64>(Attachment->NodeHeight) : PlacementHeight) + PlacementVerticalGap;
             // Reserve every input in the lane before starting the next exec band.
             TMap<int32, int32> PureCounts;
             for (int32 I : Order)
@@ -272,24 +280,24 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
             for (int32 L : LaneOrder)
             {
                 LaneY[L] = BandY;
-                BandY += (static_cast<int64>(PureCounts.FindRef(L)) + 1) * PlacementVerticalStride;
+                BandY += (static_cast<int64>(PureCounts.FindRef(L)) + 1) * CellStride;
             }
             TMap<int32, int32> PureSlots;
             TMap<int32, int64> ExecRight;
             TArray<int64> X, Y; X.Init(0, InNodes.Num()); Y.Init(0, InNodes.Num());
             for (int32 I : Order)
             {
-                X[I] = BaseX + static_cast<int64>(Depth[I]) * (PlacementWidth + PlacementHorizontalGap);
+                X[I] = BaseX + static_cast<int64>(Depth[I]) * (CellWidth + PlacementHorizontalGap);
                 for (const FNewLink& Link : *InLinks)
                     if (Link.ToFormIndex == I && IsForward(Link))
-                        X[I] = FMath::Max(X[I], X[Link.FromFormIndex] + PlacementWidth + PlacementHorizontalGap);
+                        X[I] = FMath::Max(X[I], X[Link.FromFormIndex] + CellWidth + PlacementHorizontalGap);
                 Y[I] = LaneY[Lane[I]];
                 if (InNodes[I].ProbeExecInputs.IsEmpty() && InNodes[I].ProbeExecOutputs.IsEmpty())
-                    Y[I] += static_cast<int64>(++PureSlots.FindOrAdd(Lane[I])) * PlacementVerticalStride;
+                    Y[I] += static_cast<int64>(++PureSlots.FindOrAdd(Lane[I])) * CellStride;
                 else
                 {
                     if (const int64* PreviousRight = ExecRight.Find(Lane[I])) X[I] = FMath::Max(X[I], *PreviousRight + PlacementHorizontalGap);
-                    ExecRight.Add(Lane[I], X[I] + PlacementWidth);
+                    ExecRight.Add(Lane[I], X[I] + CellWidth);
                 }
             }
             // Translate the whole new block past existing obstacles. Never move
@@ -305,9 +313,9 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                         const int64 W = Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth;
                         const int64 H = Node->NodeHeight > 0 ? Node->NodeHeight : PlacementHeight;
                         if (X[I] < static_cast<int64>(Node->NodePosX) + W + PlacementHorizontalGap
-                            && X[I] + PlacementWidth + PlacementHorizontalGap > Node->NodePosX
+                            && X[I] + CellWidth + PlacementHorizontalGap > Node->NodePosX
                             && Y[I] + ShiftY < static_cast<int64>(Node->NodePosY) + H + PlacementVerticalGap
-                            && Y[I] + ShiftY + PlacementHeight + PlacementVerticalGap > Node->NodePosY)
+                            && Y[I] + ShiftY + CellHeight + PlacementVerticalGap > Node->NodePosY)
                             NextShift = FMath::Max(NextShift, static_cast<int64>(Node->NodePosY) + H + PlacementVerticalGap - Y[I]);
                     }
                 if (NextShift == ShiftY) break;
@@ -317,14 +325,13 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                 if (IsNew(I))
                 {
                     const int64 FinalY = Y[I] + ShiftY;
-                    if (!FitsCoordinate(X[I]) || !FitsCoordinate(X[I] + PlacementWidth)
-                        || !FitsCoordinate(FinalY) || !FitsCoordinate(FinalY + PlacementHeight))
+                    if (!FitsCoordinate(X[I]) || !FitsCoordinate(X[I] + CellWidth)
+                        || !FitsCoordinate(FinalY) || !FitsCoordinate(FinalY + CellHeight))
                     { OutPositions.Reset(); OutRefusal = TEXT("attachment lane exceeds graph coordinate range"); return false; }
                     FPlannedPosition Position;
                     Position.FormIndex = I; Position.X = static_cast<int32>(X[I]); Position.Y = static_cast<int32>(FinalY);
-                    Position.bEstimatedSize = true; OutPositions.Add(Position);
+                    Position.bEstimatedSize = InNodes[I].MeasuredWidth <= 0 || InNodes[I].MeasuredHeight <= 0; OutPositions.Add(Position);
                 }
-            bOutUsedEstimatedSize = true;
             return true;
         }
     }
@@ -350,14 +357,14 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 	}
 
 	// THE POSITION AND THE ESTIMATED FOOTPRINT MUST BOTH FIT. A top-left inside int32 does not mean the
-	// 320x160 rectangle does, and a downstream int32 edge addition would otherwise overflow.
-	const int64 ColumnRight = ColumnX + PlacementWidth;
+	// reserved rectangle does, and a downstream int32 edge addition would otherwise overflow.
+	const int64 ColumnRight = ColumnX + CellWidth;
 	if (!FitsCoordinate(ColumnRight))
 	{
 		OutRefusal = FString::Printf(
-			TEXT("placement: the column at x=%lld would place the estimated %lld-wide footprint past the ")
+			TEXT("placement: the column at x=%lld would place the reserved %lld-wide footprint past the ")
 			TEXT("32-bit node coordinate range"),
-			ColumnX, PlacementWidth);
+			ColumnX, CellWidth);
 		return false;
 	}
 
@@ -389,14 +396,14 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 			return false;
 		}
 
-		const int64 FootprintBottom = Y + PlacementHeight;
+		const int64 FootprintBottom = Y + CellHeight;
 		if (!FitsCoordinate(FootprintBottom))
 		{
 			OutPositions.Reset();
 			OutRefusal = FString::Printf(
-				TEXT("placement: the form at line %d at y=%lld would place the estimated %lld-high ")
+				TEXT("placement: the form at line %d at y=%lld would place the reserved %lld-high ")
 				TEXT("footprint past the 32-bit node coordinate range"),
-				Form.Line, Y, PlacementHeight);
+				Form.Line, Y, CellHeight);
 			return false;
 		}
 
@@ -404,11 +411,11 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 		Position.FormIndex = Index;
 		Position.X = static_cast<int32>(ColumnX);
 		Position.Y = static_cast<int32>(Y);
-		Position.bEstimatedSize = true;
+		Position.bEstimatedSize = Form.MeasuredWidth <= 0 || Form.MeasuredHeight <= 0;
 		OutPositions.Add(Position);
 
 		// The count is bounded by the text size, so this addition cannot leave int64.
-		Offset += PlacementVerticalStride;
+		Offset += CellStride;
 	}
 
 	return true;

@@ -29,6 +29,12 @@
 #include "Editor/TransBuffer.h"
 #include "UObject/Package.h"
 #include "UObject/UnrealType.h"
+#include "Framework/Application/SlateApplication.h"
+#include "GraphEditor.h"
+#include "SGraphPanel.h"
+#include "Slate/WidgetRenderer.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "UObject/StrongObjectPtr.h"
 
 namespace
 {
@@ -698,6 +704,11 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		}
 	}
 
+    if (OutPlan.bPlacementRequested && OutPlan.bAcceptable())
+    {
+        FString ScratchReport, MeasureError;
+        if (!Preflight(OutPlan, ScratchReport, MeasureError, &OutPlan)) OutPlan.Refusals.Add(MeasureError);
+    }
 	return true;
 }
 
@@ -775,11 +786,11 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 				continue;
 			}
 			const FNewNode& Form = InPlan.Nodes[Position.FormIndex];
-			Out += FString::Printf(TEXT("\n  line %d: %s at (%d,%d)"),
-				Form.Line, *Form.TypeId, Position.X, Position.Y);
+			Out += FString::Printf(TEXT("\n  line %d: %s at (%d,%d), footprint=%s"),
+				Form.Line, *Form.TypeId, Position.X, Position.Y, Position.bEstimatedSize ? TEXT("estimated") : TEXT("scratch-measured"));
 		}
 		Out += TEXT("\n; existing bounds keep each stored positive dimension and estimate only a missing ");
-		Out += TEXT("one; new nodes use an estimated 320x160 footprint; not a measured Slate footprint.");
+		Out += TEXT("one; footprint labels distinguish scratch-measured nodes from estimated fallback geometry.");
 	}
 
 	Out += TEXT("\n; the preview changes NOTHING. Call the edit to write it.");
@@ -849,7 +860,7 @@ bool FTurboMCPGraphAppend::Apply(const FPlan& InPlan, FString& OutReport, FStrin
     return ExecuteGraph(InPlan, Blueprint, Graph, OutReport, OutError, false, bJoinCallerTransaction);
 }
 
-bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FString& OutError)
+bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FString& OutError, FPlan* OutMeasuredPlan)
 {
     OutReport.Empty(); OutError.Empty();
     if (!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress())
@@ -890,7 +901,51 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
     }
     // Resolve type IDs in the real Blueprint context; all created nodes and schema
     // mutations belong to the scratch graph, whose owner is transient.
-    const bool Accepted = ExecuteGraph(ScratchPlan, Blueprint, Scratch.Graph, OutReport, OutError, true, false);
+    TArray<UEdGraphNode*> ScratchCreated;
+    bool Accepted = ExecuteGraph(ScratchPlan, Blueprint, Scratch.Graph, OutReport, OutError, true, false,
+        OutMeasuredPlan ? &ScratchCreated : nullptr);
+    if (Accepted && OutMeasuredPlan)
+    {
+        if (!FSlateApplication::IsInitialized())
+        { OutError = TEXT("append placement needs Slate to measure final node footprints"); Accepted = false; }
+        else
+        {
+            const TSharedRef<SGraphEditor> MeasureView = SNew(SGraphEditor).GraphToEdit(Scratch.Graph).IsEditable(false).ShowGraphStateOverlay(false);
+            const FVector2D Canvas(2048, 2048);
+            TStrongObjectPtr<UTextureRenderTarget2D> Target(FWidgetRenderer::CreateTargetFor(Canvas, TF_Bilinear, true));
+            if (!Target.IsValid()) { OutError = TEXT("append footprint render target unavailable"); Accepted = false; }
+            else
+            {
+                FWidgetRenderer Renderer(true);
+                MeasureView->GetGraphPanel()->Update();
+                for (int32 I = 0; I < ScratchCreated.Num() && Accepted; ++I)
+                {
+                    UEdGraphNode* Node = ScratchCreated[I];
+                    if (!Node) continue;
+                    if (!OutMeasuredPlan->Nodes.IsValidIndex(I))
+                    { OutError = TEXT("append measurement form mapping is stale"); Accepted = false; break; }
+                    MeasureView->SetViewLocation(FVector2f(Node->NodePosX, Node->NodePosY), 1.0f);
+                    for (int32 Pass = 0; Pass < 2; ++Pass)
+                    {
+                        MeasureView->SlatePrepass(1.0f);
+                        Renderer.DrawWidget(Target.Get(), MeasureView, Canvas, 0.0f);
+                    }
+                    FSlateRect Bounds;
+                    if (!MeasureView->GetBoundsForNode(Node, Bounds, 0.f)
+                        || !FMath::IsFinite(Bounds.Right - Bounds.Left) || !FMath::IsFinite(Bounds.Bottom - Bounds.Top)
+                        || Bounds.Right <= Bounds.Left || Bounds.Bottom <= Bounds.Top
+                        || static_cast<double>(Bounds.Right - Bounds.Left) >= MAX_int32
+                        || static_cast<double>(Bounds.Bottom - Bounds.Top) >= MAX_int32)
+                    { OutError = TEXT("append final node footprint could not be measured"); Accepted = false; break; }
+                    OutMeasuredPlan->Nodes[I].MeasuredWidth = FMath::CeilToInt(Bounds.Right - Bounds.Left);
+                    OutMeasuredPlan->Nodes[I].MeasuredHeight = FMath::CeilToInt(Bounds.Bottom - Bounds.Top);
+                }
+                if (Accepted)
+                    Accepted = PlanPlacement(Original, OutMeasuredPlan->Nodes, OutMeasuredPlan->PlannedPositions,
+                        OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &OutMeasuredPlan->Links);
+            }
+        }
+    }
     for (const auto& Pair : Remap)
     {
         OutReport.ReplaceInline(*Pair.Value, *Pair.Key, ESearchCase::CaseSensitive);
@@ -904,7 +959,7 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
 }
 
 bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Blueprint, UEdGraph* Graph,
-    FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction)
+    FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction, TArray<UEdGraphNode*>* OutCreatedByForm)
 {
     OutReport.Empty(); OutError.Empty();
     // Scratch failures discard the entire transient graph, without touching undo.
@@ -1476,8 +1531,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 				*TurboMCPNodeId::MakeForNode(CreatedByForm[FormIndex]), Position->X, Position->Y);
 		}
 		Out += TEXT("\n; existing bounds keep each stored positive dimension and estimate only a missing ");
-		Out += TEXT("one; created nodes use an estimated 320x160 footprint; this is not a measured Slate ");
-		Out += TEXT("footprint.");
+		Out += TEXT("one; placement retains the plan footprint evidence; missing existing bounds remain estimated. ");
+		Out += TEXT("Live Slate geometry has not been verified.");
 	}
 
 	// THE REPORT IS HANDED BACK. IT WAS NOT AT FIRST, AND THE BUG WAS INVISIBLE FROM OUTSIDE., AND THE BUG WAS INVISIBLE FROM OUTSIDE.
@@ -1524,5 +1579,6 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
     }
     Out += TEXT("\nnew_execution_nodes=structurally_reachable; runtime_behavior=not_verified");
 	OutReport = Out;
+    if (OutCreatedByForm) *OutCreatedByForm = CreatedByForm;
 	return true;
 }
