@@ -538,6 +538,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "p0-getter-copy": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
