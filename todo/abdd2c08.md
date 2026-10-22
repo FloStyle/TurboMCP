@@ -7,8 +7,11 @@ Readiness: needs_reconciliation
 Owner: unassigned
 Design: docs/design/editor-domains.md
 Review: source-reviewed
+Validation: unbuilt_untested
 
 ## Current review
+
+2026-10-23 d3678da implements strict DataTable scratch-row import completion: captured Error/Fatal diagnostics refuse even with a non-null importer result, and trailing non-whitespace refuses. Validation occurs before any removal/write. Done implementation slice, unbuilt_untested. Remaining abdd2c08: field/display-name ambiguity, nested syntax and precision consistency across other parsers. No tests/build/editor runs.
 
 **Decision:** partial. **Follow-up owner:** [R04](roadmap-r04.md), [R08](roadmap-r08.md).
 

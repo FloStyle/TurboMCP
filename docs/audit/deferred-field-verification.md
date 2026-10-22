@@ -949,3 +949,8 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## Widget preview execution consent — 2026-10-23
 
 2026-10-23 ARC10 widget consent implementation DONE / unbuilt_untested in 3e3a60f. LookTurboMCPWidgetPreview now requires per-call Execution=allow; empty/deny refuses before asset load/construction, invalid values refuse. Allowed output and generated documentation identify project-code execution and non-reversible external effects. Existing fixture calls explicitly opt in but were NOT run. Remaining parent investigation: side effects of other readers/probes and historical dirty/save attribution; X-93 awaits new evidence. No tests/build/editor runs.
+
+
+## Strict row import — 2026-10-23
+
+2026-10-23 d3678da implements strict DataTable scratch-row import completion: captured Error/Fatal diagnostics refuse even with a non-null importer result, and trailing non-whitespace refuses. Validation occurs before any removal/write. Done implementation slice, unbuilt_untested. Remaining abdd2c08: field/display-name ambiguity, nested syntax and precision consistency across other parsers. No tests/build/editor runs.
