@@ -489,6 +489,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComment.cpp"
           ],
           "new_files": []
+        },
+        "p0-box-map": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
