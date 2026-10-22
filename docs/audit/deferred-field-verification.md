@@ -715,3 +715,7 @@ Discovery aliases now include both existing generated and skeleton class paths f
 ## Inherited designer getters — 35f3672
 
 Completes the identified owner-resolution implementation gaps for S16 GC-31, Oct22 S1 GC-47 and S3 GC-43. Discovery and missing-property reader fallback walk to the nearest Blueprint ancestor with a rooted live widget tree, matching the ownership rule inspected in stock WidgetBlueprintGeneratedClass::FindWidgetTreeOwningClass. IDs retain that declaration owner. No tests/build/editor runs. Verify parent/child widget trees, missing skeleton properties, child tree overrides, same-name foreign members, pin types, compile and preview/apply parity. Prior inherited-discovery implementation debt is superseded; runtime evidence is still absent.
+
+## Optional graph read presentation arguments
+
+Oct22 S1 X-96 partial: UFUNCTION defaults Format=read and Detail=bodies match existing implementation behavior for empty strings. No tests/build/editor runs. Verify UHT schema optionality, omitted arguments via registry and unchanged explicit values. Parameter aliases remain open.

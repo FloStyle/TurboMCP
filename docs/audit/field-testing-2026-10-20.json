@@ -2358,10 +2358,12 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Usability.\n- **Observed:** Similar tools use different names for the same input: \"asset\" in some tools, \"assets\" in compile, save and the whole-Blueprint read; \"toolsetName\" and \"toolName\" in the help tool but \"toolset\" and \"tool\" in the schema tool; \"nodeIds\" in node resolve. Graph read requires \"format\" and \"detail\" even when empty. Each wrong guess cost one refused call, about 10 times in this session.\n- **Proposed behavior:** Use one name per concept across all tools, or accept aliases."
+      "observation": "- **Type:** Usability.\n- **Observed:** Similar tools use different names for the same input: \"asset\" in some tools, \"assets\" in compile, save and the whole-Blueprint read; \"toolsetName\" and \"toolName\" in the help tool but \"toolset\" and \"tool\" in the schema tool; \"nodeIds\" in node resolve. Graph read requires \"format\" and \"detail\" even when empty. Each wrong guess cost one refused call, about 10 times in this session.\n- **Proposed behavior:** Use one name per concept across all tools, or accept aliases.",
+      "implementation_limits": "Graph read Format defaults to read and Detail to bodies in the UFUNCTION declaration. Source inspection only.",
+      "remaining": "Asset/assets, toolset/toolsetName, tool/toolName and node identity parameter consistency or aliases remain to implement."
     },
     {
       "report": "2026-10-22_S2",
