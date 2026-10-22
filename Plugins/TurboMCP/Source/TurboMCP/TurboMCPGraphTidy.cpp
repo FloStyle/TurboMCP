@@ -1930,32 +1930,33 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		}
 
         FVector2D ReaderSize(Entry.Width, Entry.Height);
-        FVector2D ReaderOffset = FTurboMCPLayoutReport::PinPosition(ValuePin) - FVector2D(Entry.X, Entry.Y);
+        FVector2D ReaderOffset = AlignmentPinPosition(ValuePin) - FVector2D(Entry.X, Entry.Y);
         if (bFunctionInput && !MeasureInputReader(Getter, ValuePin, ReaderSize, ReaderOffset))
         { OutError = TEXT("function-input getter outline could not be measured; no graph changes applied"); return false; }
 
-		// Leaf readers keep the FIRST consumer; entry parameters receive a getter per consumer.
-		// The stable ordering makes the split
-		// deterministic and a second run of tidy finds nothing left to split.
-		TArray<UEdGraphPin*> Consumers = ValuePin->LinkedTo;
-		Consumers.Sort([](const UEdGraphPin& InLeft, const UEdGraphPin& InRight)
-		{
-			const UEdGraphNode* L = InLeft.GetOwningNodeUnchecked();
-			const UEdGraphNode* R = InRight.GetOwningNodeUnchecked();
-			if (L == nullptr || R == nullptr)
-			{
-				return L != nullptr;
-			}
-			if (L->NodePosX != R->NodePosX)
-			{
-				return L->NodePosX < R->NodePosX;
-			}
-			if (L->NodePosY != R->NodePosY)
-			{
-				return L->NodePosY < R->NodePosY;
-			}
-			return L->GetName() < R->GetName();
-		});
+        // Keep the original beside its nearest planned consumer. Old canvas X
+        // order can select a different lane after tidy and leave a long residual wire.
+        TArray<UEdGraphPin*> Consumers = ValuePin->LinkedTo;
+        const FVector2D OriginalOutput=FVector2D(Entry.PlannedX,Entry.PlannedY)+ReaderOffset;
+        auto PlannedConsumerDistance=[&](const UEdGraphPin& Pin)
+        {
+            const UEdGraphNode* Owner=Pin.GetOwningNodeUnchecked();
+            const int32* OwnerIndex=IndexByNode.Find(Owner);
+            if(!Owner || !OwnerIndex) return TNumericLimits<double>::Max();
+            const FNode& OwnerPlan=OutPlan.Nodes[*OwnerIndex];
+            const FVector2D Input=AlignmentPinPosition(&Pin)+FVector2D(OwnerPlan.PlannedX-OwnerPlan.X,OwnerPlan.PlannedY-OwnerPlan.Y);
+            return FVector2D::Distance(OriginalOutput,Input);
+        };
+        Consumers.Sort([&](const UEdGraphPin& InLeft,const UEdGraphPin& InRight)
+        {
+            const double LeftDistance=PlannedConsumerDistance(InLeft),RightDistance=PlannedConsumerDistance(InRight);
+            if(LeftDistance!=RightDistance) return LeftDistance<RightDistance;
+            const UEdGraphNode* L=InLeft.GetOwningNodeUnchecked();
+            const UEdGraphNode* R=InRight.GetOwningNodeUnchecked();
+            if(!L || !R) return L!=nullptr && R==nullptr;
+            if(L->NodeGuid!=R->NodeGuid) return L->NodeGuid.ToString()<R->NodeGuid.ToString();
+            return InLeft.PinId.ToString()<InRight.PinId.ToString();
+        });
 
 		for (int32 ConsumerIndex = bFunctionInput ? 0 : 1; ConsumerIndex < Consumers.Num(); ++ConsumerIndex)
 		{
