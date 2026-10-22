@@ -1319,14 +1319,49 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     LaneCursor[Lane]=CursorX;
 					Bottom = FMath::Max(Bottom, N.PlannedY + N.Height);
 				}
-				// Place pure nodes below-left of consumers, reserving vertical space for each.
-                // Reserve the full execution-row band even when a pure consumer
-                // has not been positioned yet. Dependency iteration order must not
-                // put an upstream math node back through the execution wires.
-                double PureRowFloor = RowY;
-                for (int32 I : Free)
-                    if (RowOf[I] == Row && !OutPlan.Nodes[I].bIsPure)
-                        PureRowFloor = FMath::Max(PureRowFloor, OutPlan.Nodes[I].PlannedY + OutPlan.Nodes[I].Height + SpacingY);
+                // Give each execution lane its own input band. A graph-wide floor
+                // sends main-row readers beneath every branch and creates long wires
+                // back through unrelated lanes. Reserve shared readers in each lane
+                // that uses them so later safe getter copies have space as well.
+                TMap<int32,TSet<int32>> LaneInputs;
+                TMap<int32,int32> PureLane;
+                TFunction<void(int32,int32)> CollectInputs=[&](int32 Target,int32 Lane)
+                {
+                    for(const FWire& W:OutPlan.Wires)
+                    {
+                        if(W.TargetNodeIndex!=Target || !RowOf.Contains(W.SourceNodeIndex)
+                            || RowOf[W.SourceNodeIndex]!=Row || !OutPlan.Nodes[W.SourceNodeIndex].bIsPure) continue;
+                        TSet<int32>& Inputs=LaneInputs.FindOrAdd(Lane);
+                        if(Inputs.Contains(W.SourceNodeIndex)) continue;
+                        Inputs.Add(W.SourceNodeIndex);
+                        if(!PureLane.Contains(W.SourceNodeIndex)) PureLane.Add(W.SourceNodeIndex,Lane);
+                        CollectInputs(W.SourceNodeIndex,Lane);
+                    }
+                };
+                TArray<int32> LaneOrder;
+                for(int32 I:Free) if(RowOf[I]==Row && !OutPlan.Nodes[I].bIsPure)
+                { LaneOrder.AddUnique(LaneOf[I]);CollectInputs(I,LaneOf[I]); }
+                LaneOrder.Sort();
+                TMap<int32,double> InputFloorByLane;
+                double BandTop=RowY;
+                Bottom=RowY;
+                for(int32 Lane:LaneOrder)
+                {
+                    double ExecTop=TNumericLimits<double>::Max(),ExecBottom=-TNumericLimits<double>::Max();
+                    for(int32 I:Free) if(RowOf[I]==Row && !OutPlan.Nodes[I].bIsPure && LaneOf[I]==Lane)
+                    { ExecTop=FMath::Min(ExecTop,OutPlan.Nodes[I].PlannedY);ExecBottom=FMath::Max(ExecBottom,OutPlan.Nodes[I].PlannedY+OutPlan.Nodes[I].Height); }
+                    const double Shift=BandTop-ExecTop;
+                    for(int32 I:Free) if(RowOf[I]==Row && !OutPlan.Nodes[I].bIsPure && LaneOf[I]==Lane)
+                        OutPlan.Nodes[I].PlannedY+=Shift;
+                    const double InputFloor=ExecBottom+Shift+SpacingY;
+                    InputFloorByLane.Add(Lane,InputFloor);
+                    double InputHeight=0.0;
+                    if(const TSet<int32>* Inputs=LaneInputs.Find(Lane))
+                        for(int32 I:*Inputs) InputHeight+=OutPlan.Nodes[I].Height+SpacingY;
+                    Bottom=FMath::Max(Bottom,ExecBottom+Shift);
+                    BandTop=FMath::Max(BandTop+InLanePitch,InputFloor+InputHeight+SpacingY);
+                }
+                const double FallbackInputFloor=Bottom+SpacingY;
 				double PureBottom = Bottom;
 				TArray<int32> PlacedPure;
 				for (int32 I : Free) if (RowOf[I] == Row && !OutPlan.Nodes[I].bIsPure) PlacedPure.Add(I);
@@ -1337,7 +1372,10 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					N.PlannedX = FreeStartX; N.PlannedY = RowY;
                     const FWire* Chosen=nullptr;
                     for(const FWire& W:OutPlan.Wires)
-                        if(W.SourceNodeIndex==I && W.TargetNodeIndex!=I && RowOf.Contains(W.TargetNodeIndex))
+                        if(W.SourceNodeIndex==I && W.TargetNodeIndex!=I && RowOf.Contains(W.TargetNodeIndex)
+                            && (!PureLane.Contains(I)
+                                || (!OutPlan.Nodes[W.TargetNodeIndex].bIsPure && LaneOf.Contains(W.TargetNodeIndex) && LaneOf[W.TargetNodeIndex]==PureLane[I])
+                                || (PureLane.Contains(W.TargetNodeIndex) && PureLane[W.TargetNodeIndex]==PureLane[I])))
                             if(!Chosen || FTurboMCPGraphTidy::AlignmentPinPosition(W.InputPin).Y-OutPlan.Nodes[W.TargetNodeIndex].Y
                                 < FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->InputPin).Y-OutPlan.Nodes[Chosen->TargetNodeIndex].Y) Chosen=&W;
                     if(Chosen)
@@ -1349,7 +1387,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         const double InputFloor = Consumer.PlannedY + (Consumer.bIsPure ? 0.0 : Consumer.Height + SpacingY);
                         N.PlannedY = FMath::Max(N.PlannedY, InputFloor);
                     }
-                    N.PlannedY = FMath::Max(N.PlannedY, PureRowFloor);
+                    const double* LaneFloor=PureLane.Contains(I)?InputFloorByLane.Find(PureLane[I]):nullptr;
+                    N.PlannedY = FMath::Max(N.PlannedY, LaneFloor?*LaneFloor:FallbackInputFloor);
 					for (int32 Pass = 0; Pass <= PlacedPure.Num(); ++Pass)
 					{
 						double NextY = N.PlannedY;
