@@ -35,6 +35,33 @@
 
 namespace
 {
+    FString CallerRoots(UEdGraphNode* Start)
+    {
+        TArray<UEdGraphNode*> Pending; Pending.Add(Start);
+        TSet<UEdGraphNode*> Seen;
+        TArray<FString> Roots;
+        for (int32 Index = 0; Index < Pending.Num(); ++Index)
+        {
+            UEdGraphNode* Node = Pending[Index];
+            if (!Node || Seen.Contains(Node)) continue;
+            Seen.Add(Node);
+            if (Node->IsA<UK2Node_Event>() || Node->IsA<UK2Node_FunctionEntry>())
+                Roots.AddUnique(TurboMCPNodeId::MakeForNode(Node, true));
+            for (UEdGraphPin* Pin : Node->Pins)
+            {
+                if (!Pin) continue;
+                // Walk exec predecessors; for a pure call first follow its value consumers.
+                const UK2Node* K2 = Cast<UK2Node>(Node);
+                const bool bPure = K2 && K2->IsNodePure();
+                if ((Pin->Direction == EGPD_Input && Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                    || (bPure && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec))
+                    for (UEdGraphPin* Other : Pin->LinkedTo) if (Other) Pending.Add(Other->GetOwningNode());
+            }
+        }
+        Roots.Sort();
+        return Roots.IsEmpty() ? TEXT("no static entry path found") : FString::Join(Roots, TEXT(", "));
+    }
+
 	/** How many graph names are listed before the manifest caps. */
 	constexpr int32 MaxManifestNames = 60;
 
@@ -482,6 +509,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 	/** graph name -> the functions it calls */
 	TMap<FString, TSet<FString>> CallsByGraph;
+	TMap<FString, TArray<FString>> CallerSites;
 	/** variable -> the graphs that write it */
 	TMap<FString, TSet<FString>> WritersByVariable;
 	/** variable -> the graphs that read it */
@@ -524,7 +552,12 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 				if (!FunctionName.IsEmpty())
 				{
 					CallsByGraph.FindOrAdd(GraphName).Add(FunctionName);
-					CalledFunctions.Add(FunctionName);
+					const UFunction* Target = Call->GetTargetFunction();
+                    const UClass* Owner = Target ? Target->GetOuterUClass() : nullptr;
+                    if (Call->FunctionReference.IsSelfContext() || (Owner && Owner->ClassGeneratedBy == InBlueprint)) CalledFunctions.Add(FunctionName);
+                    const FString TargetName = Target ? Target->GetPathName() : FunctionName + TEXT(" [unresolved owner]");
+                    CallerSites.FindOrAdd(TargetName).Add(FString::Printf(TEXT("graph=%s node=%s entry=%s"),
+                        *GraphName, *TurboMCPNodeId::MakeForNode(Node, true), *CallerRoots(Node)));
 				}
 			}
 			else if (const UK2Node_VariableSet* Set = Cast<UK2Node_VariableSet>(Node))
@@ -595,6 +628,16 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 				*GraphName, *FString::Join(Targets, TEXT(", ")));
 		}
 	}
+
+    Out += TEXT("\ncallers (whole Blueprint; static calls only):");
+    TArray<FString> Callees; CallerSites.GetKeys(Callees); Callees.Sort();
+    if (Callees.IsEmpty()) Out += TEXT("\n  none found");
+    for (const FString& Callee : Callees)
+    {
+        Out += TEXT("\n  ") + Callee;
+        TArray<FString>& Sites = CallerSites[Callee]; Sites.Sort();
+        for (const FString& Site : Sites) Out += TEXT("\n    called from: ") + Site;
+    }
 
 	// Variable map, in the Blueprint's own variable order so it matches the
 	// variables section above.
@@ -748,8 +791,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 	TArray<UEdGraph*> AllGraphs;
 	CollectGraphs(InBlueprint, AllGraphs);
 
-	// The filter is applied once, here, so every section sees the same graphs and
-	// two sections cannot disagree about what was in scope.
+	// Body filtering never narrows global relation/caller discovery.
 	TArray<UEdGraph*> Graphs;
 	for (UEdGraph* Graph : AllGraphs)
 	{
@@ -788,7 +830,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 	{
 		Result.Text += TEXT("\n") + RenderVariables(InBlueprint);
 		Result.Text += TEXT("\n") + RenderSignatures(InBlueprint);
-		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, Graphs, AllGraphs.Num(), Result.Notes);
+		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, AllGraphs, AllGraphs.Num(), Result.Notes);
 	}
 
 	if (PrintsBodies(InRequest.Detail))
