@@ -864,3 +864,7 @@ Source inspected only. Generic placement now searches adjacent obstacle-edge col
 ## S14/TD-31 explicit natural-break wrapping (1ff05bc)
 
 Implemented optional WrapAfter in both tidy tools and shared Plan. Source reviewed: parameter/default parity, exact node identification, execution-component split, continuation row ordering, pure-input row attachment, unchanged links, requested-break validation before no-op return, same quality calculation for preview/apply. No tests/build/editor runs. Deferred: latent completion chains, multiple breaks, getter sharing across rows, nested comments, scoped fixed continuations, bypass/cyclic refusal and re-run stability. This implements the requested option; automatic width-triggered break selection was not requested and is not claimed.
+
+## S14/CP-14 final tidy visual notification (0377faa)
+
+Found missing graph-change notification after direct tidy writes. Added default NotifyGraphChanged after successful final positions/comment sizes and after rollback. Stock EdGraph.cpp broadcasts; SGraphPanel::OnGraphChanged handles default action by purging visual representation and scheduling Update. Source/API inspection only, no tests/build/editor. Positions already notify. Verify open-editor comments/compact nodes, selection/view preservation and rollback refresh later. Historical artifact cause remains unconfirmed, so CP-14 stays open.

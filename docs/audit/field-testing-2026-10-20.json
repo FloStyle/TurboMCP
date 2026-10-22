@@ -1717,10 +1717,12 @@
       "observation": "- **Type:** Defect.\r\n- **Scenario:** The live graph editor, right after a tidy or position edit on a graph with a comment box. Also seen on compact pure nodes.\r\n- **Reproduction status:** Observed by the user, sometimes. The exact conditions are not known.\r\n- **Observed:** After the TurboMCP edit, the comment box body is a light, almost opaque grey. Its title text has a heavy dark shadow and looks bold and blurred. Compact pure nodes show a hard dark band around the body, like a second outline. The user describes it as a node refresh glitch that over-contrasts the drawn drop shadows. After the user makes one manual edit in the graph, the box goes back to its normal darker, see-through look and the text is sharp.\r\n- **Expected:** The graph looks the same after a TurboMCP edit as after a manual edit.\r\n- **Impact:** The user cannot judge the result until the graph redraws. It can look like the edit changed the box colour.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** Refresh the open graph view in the same way as a manual edit does, after each layout edit.\r\n\r\n### User reference layout",
       "fix_commit": "26a276d",
       "implementation": "Comment create/remove/update/fit now broadcast NotifyGraphChanged so open graph panels rebuild after geometry/text changes.",
-      "remaining": "Source isolation removes live-view measurement interference; exact historical shadow/overdraw cause remains unconfirmed and needs later field verification.",
+      "remaining": "Exact historical grey/shadow/compact-outline cause remains unconfirmed; these changes implement native refresh and isolate measurement, but do not prove all reported artifacts resolved. Keep open pending reproduction or field confirmation.",
       "view_refresh_commit": "d83f7c9",
       "implementation_limits": "Tidy measurement now uses a transient graph and offscreen Slate view; live zoom/focus/paint state and application-wide ticks are no longer used. Exact reported shadow glitch remains unconfirmed. No runtime verification.",
-      "isolated_measurement_commit": "e3ee332"
+      "isolated_measurement_commit": "e3ee332",
+      "live_refresh_commit": "0377faa",
+      "live_refresh_evidence": "Tidy Apply now sends default NotifyGraphChanged after final node/comment writes and after rollback. Stock UEdGraph broadcasts this action; SGraphPanel purges visual representation and schedules native Update. Positions already notify. Measurement uses isolated scratch graph (e3ee332). Source/API inspected only."
     },
     {
       "report": "2026-10-21_S14",
