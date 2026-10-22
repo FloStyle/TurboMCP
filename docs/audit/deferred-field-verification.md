@@ -558,3 +558,7 @@ ED-16 implemented, unbuilt_untested: every created copy reports its full node ID
 ## P0 save outcome — 860db27
 
 S1 SV-13 guidance implemented, unbuilt_untested. S2 SV-13/S3 SV-14 remain open: uncertain saves no longer claim no disk change; outer dispatch/log capture still requires inspection for hidden successful result text. No tests/build/editor runs.
+
+## P0 exact exec connector — 7418c94
+
+X-88/FT-91 plugin alternative implemented, unbuilt_untested. K2 schema source confirms BREAK_OTHERS_A replaces output when output is argument A. Both endpoints read back and other incoming target paths preserved. Scratch preview, owned transaction rollback retained. No tests/build/editor runs.

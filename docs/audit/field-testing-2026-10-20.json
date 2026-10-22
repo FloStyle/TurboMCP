@@ -1861,11 +1861,13 @@
       "canonical_issue": "2026-10-21_S16/X-88",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
-      "observation": "- **Type:** Defect (engine tool), with no TurboMCP guard.\r\n- **Observed:** The agent passed a pin by name. The engine tool ignored the name field, used index 0, and returned no error. The branch true and false outputs both went to the wrong node. The agent found it only by re-reading the graph. With an index field the call worked.\r\n- **Expected:** An unknown field is refused, or the call reads back the made link.\r\n- **Proposed behavior:** A TurboMCP exec-connect tool that takes node IDs and pin names, and reads back both ends (see FT-91)."
+      "observation": "- **Type:** Defect (engine tool), with no TurboMCP guard.\r\n- **Observed:** The agent passed a pin by name. The engine tool ignored the name field, used index 0, and returned no error. The branch true and false outputs both went to the wrong node. The agent found it only by re-reading the graph. With an index field the call worked.\r\n- **Expected:** An unknown field is refused, or the call reads back the made link.\r\n- **Proposed behavior:** A TurboMCP exec-connect tool that takes node IDs and pin names, and reads back both ends (see FT-91).",
+      "implementation": "7418c94",
+      "implementation_limits": "TurboMCP GraphConnect now supports exact exec pin names and reciprocal read-back with one undo and scratch preview. Replaces only named source output destination; no automatic continuation. Native engine tool unchanged. No tests/build/editor runs."
     },
     {
       "report": "2026-10-21_S16",
@@ -3174,10 +3176,13 @@
       "canonical_issue": "2026-10-21_S16/FT-91",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
+      "state": "done",
+      "validation": "unbuilt_untested",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
-      "observation": "2 engine connect calls, 2 wrong links, 2 deletes, 1 re-read"
+      "observation": "2 engine connect calls, 2 wrong links, 2 deletes, 1 re-read",
+      "disposition": "implementation_complete_pending_verification",
+      "implementation": "7418c94",
+      "implementation_limits": "TurboMCP GraphConnect now supports exact exec pin names and reciprocal read-back with one undo and scratch preview. Replaces only named source output destination; no automatic continuation. Native engine tool unchanged. No tests/build/editor runs."
     },
     {
       "report": "2026-10-21_S16",
