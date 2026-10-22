@@ -2096,11 +2096,13 @@
       "canonical_issue": "2026-10-22_S1/GL-21",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Limitation.\n- **Observed:** The project's custom save-value getter node prints as \"no node type ID, cannot be written back\", with no slot or tag. Those two pins are the whole point of the node. The agent had to resolve each node separately.\n- **Proposed behavior:** Print the pin defaults of nodes that cannot be written back, even if the node itself cannot be written."
+      "observation": "- **Type:** Limitation.\n- **Observed:** The project's custom save-value getter node prints as \"no node type ID, cannot be written back\", with no slot or tag. Those two pins are the whole point of the node. The agent had to resolve each node separately.\n- **Proposed behavior:** Print the pin defaults of nodes that cannot be written back, even if the node itself cannot be written.",
+      "implementation": "bdb52c7",
+      "implementation_limits": "Unsupported node diagnostics include pin direction/type, scalar/object/text defaults and exact linked endpoints as read-only comments. Write-back remains explicitly unsupported. No tests/build/editor runs."
     },
     {
       "report": "2026-10-22_S1",
