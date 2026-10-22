@@ -1863,7 +1863,8 @@
       "observation": "- **Type:** Proposal from the user review.\r\n- **Observed:** The user rated the hand layout of the math graph almost perfect. The user wants the tool to make this kind of result. The one change the user made: the two function inputs were wired from the entry node across the whole graph. The user replaced each wire with a getter node for that function input, placed next to its consumer. The diagonal wire across the condition nodes went away.\r\n- **Expected:** When a function input wire is long or crosses other nodes, the layout uses an input getter beside the consumer instead.\r\n- **Proposed behavior:** Treat function inputs like shared values in TD-35. Split them into one getter per consumer and place each getter in the input column of its consumer.",
       "fix_commit": "1ffb537",
       "implementation": "FunctionInput IDs discover and create scoped getters from current entry pin declarations, including inputs not yet reflected; no compile. Reader uses the same declaration-based identity.",
-      "remaining": "Automatic per-consumer layout conversion remains open."
+      "remaining": "Split-struct parameter pins remain unsupported by automatic conversion. Getter sizing and wire metrics still use the entry outline/offset, requiring dedicated getter measurements before completion.",
+      "implementation_limits": "Tidy plans typed local input getters for each eligible visible unsplit function-entry data output consumer. Same creation path in transient preview/live apply; existing copy rollback restores original links. Selection and comment obstacle rules retained."
     },
     {
       "report": "2026-10-21_S16",
@@ -3310,7 +3311,8 @@
       "disposition": "partially_implemented",
       "fix_commit": "1ffb537",
       "implementation": "FunctionInput IDs discover and create scoped getters from current entry pin declarations, including inputs not yet reflected; no compile. Reader uses the same declaration-based identity.",
-      "remaining": "Automatic per-consumer layout conversion remains open."
+      "remaining": "Split-struct parameter pins remain unsupported by automatic conversion. Getter sizing and wire metrics still use the entry outline/offset, requiring dedicated getter measurements before completion.",
+      "implementation_limits": "Tidy plans typed local input getters for each eligible visible unsplit function-entry data output consumer. Same creation path in transient preview/live apply; existing copy rollback restores original links. Selection and comment obstacle rules retained."
     },
     {
       "report": "2026-10-21_S16",

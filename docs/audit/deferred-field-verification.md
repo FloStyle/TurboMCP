@@ -731,3 +731,7 @@ Oct22 S1 X-93 help request implemented in both search tool declarations and docs
 ## Restore measured view caches — d83f7c9
 
 CP-14 partial: unity-zoom measurement now restores saved view and invalidates node/panel/editor layout and paint caches on success and failure. Invalidation flags inspected in stock SlateCore. No tests/build/editor runs. Verify compact nodes/comment shadows at non-unit zoom, success/failure restoration, normal next-frame repaint and unchanged asset dirtiness. Exact field overdraw cause remains unknown; this is not a closure claim.
+
+## Automatic function input getters — initial implementation
+
+Tidy creates typed scoped UK2Node_VariableGet readers for visible unsplit function-entry output consumers using the existing copy plan, native preview and live transaction/rollback. No tests/build/editor runs. TD-36/FT-90 remain open: split parameters and dedicated getter sizing/metric offsets still need implementation. Verify parameter scope, reference/container types, hidden pins excluded, multiple parameters, selections, nested comments, read-back, undo and repeated tidy. No general pure-expression duplication is introduced.
