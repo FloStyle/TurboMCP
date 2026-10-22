@@ -653,3 +653,6 @@ Live WidgetTree variable declarations supplement missing reflected actions; gett
 
 ## GC-34 / GC-32 standalone closers (2026-10-22)
 Shared pin parser ignores delimiter-only closing lines after comment removal. Balance checking remains separate. Unbuilt/untested: pinless labeled forms, nested closures, trailing comments and malformed parentheses. GC-32 remains partial because default-validation preview parity is not complete.
+
+## GC-42 function delegate binding (2026-10-22)
+Added typed existing-self-function binding through Create Event, signature and engine eligibility checks, transient preview and owned rollback. Unbuilt/untested: compatible/incompatible signatures, existing delegate source replacement, preview isolation, undo and compile. New typed custom event creation and non-self targets remain open.
