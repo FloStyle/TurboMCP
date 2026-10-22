@@ -926,3 +926,8 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## DataTable preview partial repair — 2026-10-23
 
 2026-10-23 partial repair 5936f54, unbuilt_untested: refused batches expose no planned additions/removals/changes; duplicate aliases resolve to canonical field identity; repeated field previews use the preceding requested value; row writes follow first-request order with case-insensitive row identity. Remaining: mixed set/remove or remove/set requests still refuse, not sequentially supported; final-state staging/rollback and preview value validation remain to reconcile. Do not close the full caller-order issue. No tests/build/editor runs.
+
+
+## Help usage templates — 2026-10-23
+
+2026-10-23 partial implementation: live help now includes supported trace actions and source-backed append/patch grammar templates with explicit asset/node placeholders and mutation limits. No tests/build/editor runs. Remaining: native engine property-form examples and schema-driven end-to-end example reconciliation. Do not mark this issue complete; templates are source-reviewed, not runtime-validated.
