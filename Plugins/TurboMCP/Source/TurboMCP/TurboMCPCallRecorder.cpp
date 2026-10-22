@@ -16,6 +16,11 @@
 #include "Templates/ValueOrError.h"
 #include "Templates/UnrealTemplate.h"
 #include "UObject/Class.h"
+#include "UObject/UnrealType.h"
+#include "JsonObjectConverter.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 #include "UObject/Package.h"
 #include "UObject/UObjectIterator.h"
 #include "Containers/Set.h"
@@ -35,6 +40,60 @@ namespace
 	using FToolResult = TValueOrError<FString, FString>;
 
     thread_local FString* ActiveSaveOutcome = nullptr;
+
+    bool NormalizeParameterAliases(UClass* ToolsetClass, const FString& ToolName,
+        const FString& Input, FString& Output, FString& Error)
+    {
+        Output = Input;
+        if (!ToolsetClass || !ToolName.Contains(TEXT("TurboMCP"))) return true;
+        const UFunction* Function = ToolsetClass->FindFunctionByName(FName(*ToolName));
+        if (!Function) return true; // Normal dispatch owns unknown-tool errors.
+        TSharedPtr<FJsonObject> Object;
+        if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Input), Object) || !Object) return true;
+        TSet<FString> Parameters;
+        TSet<FString> StringParameters;
+        for (TFieldIterator<FProperty> It(Function); It; ++It)
+            if (It->HasAnyPropertyFlags(CPF_Parm) && !It->HasAnyPropertyFlags(CPF_ReturnParm))
+            {
+                const FString Name = FJsonObjectConverter::StandardizeCase(It->GetName());
+                Parameters.Add(Name);
+                if (CastField<FStrProperty>(*It)) StringParameters.Add(Name);
+            }
+        const TCHAR* Pairs[][2] = {
+            {TEXT("asset"), TEXT("assets")}, {TEXT("toolset"), TEXT("toolsetName")},
+            {TEXT("tool"), TEXT("toolName")}, {TEXT("nodeId"), TEXT("nodeIds")}
+        };
+        bool Changed = false;
+        for (const auto& Pair : Pairs)
+            for (int32 Direction = 0; Direction < 2; ++Direction)
+            {
+                const FString Canonical = Pair[Direction];
+                const FString Alias = Pair[1 - Direction];
+                // Do not reinterpret two distinct declared parameters or array inputs.
+                if (!StringParameters.Contains(Canonical) || Parameters.Contains(Alias) || !Object->HasField(Alias)) continue;
+                if (Object->HasField(Canonical))
+                {
+                    Error = FString::Printf(TEXT("unchanged: supply only '%s' or its alias '%s', not both"), *Canonical, *Alias);
+                    return false;
+                }
+                FString Value;
+                if (!Object->TryGetStringField(Alias, Value))
+                {
+                    Error = FString::Printf(TEXT("unchanged: alias '%s' requires the string value declared for '%s'"), *Alias, *Canonical);
+                    return false;
+                }
+                Object->SetStringField(Canonical, Value);
+                Object->RemoveField(Alias);
+                Changed = true;
+            }
+        if (Changed)
+        {
+            Output.Reset();
+            FJsonSerializer::Serialize(Object.ToSharedRef(), TJsonWriterFactory<>::Create(&Output));
+        }
+        return true;
+    }
+
 
     // Called only on the editor game thread. Store names rather than object pointers across a call.
     TSet<FString> DirtyPackages()
@@ -146,6 +205,13 @@ namespace
 			TSharedPtr<FTurboMCPCallLog::FScopedCall> Call =
 				MakeShared<FTurboMCPCallLog::FScopedCall>(RecordedToolset, ToolName, JsonInput);
 
+            FString NormalizedInput, AliasError;
+            if (!NormalizeParameterAliases(Inner->GetToolsetClass(), ToolName, JsonInput, NormalizedInput, AliasError))
+            {
+                Call->Finish(AliasError, true);
+                return MakeFulfilledPromise<FToolResult>(MakeError(AliasError)).GetFuture();
+            }
+
             const bool bAssetEdit = ToolName.StartsWith(TEXT("EditTurboMCP"))
                 && !ToolName.StartsWith(TEXT("EditTurboMCPCallLog"))
                 && ToolName != TEXT("EditTurboMCPTrace") && ToolName != TEXT("EditTurboMCPVcsCheckout");
@@ -167,7 +233,7 @@ namespace
             auto InnerFuture = [&]()
             {
                 TGuardValue<FString*> CaptureScope(ActiveSaveOutcome, bSave ? &SaveOutcome : nullptr);
-                return Inner->ExecuteTool(ToolName, JsonInput);
+                return Inner->ExecuteTool(ToolName, NormalizedInput);
             }();
             return InnerFuture.Then(
                 [Call, bAssetEdit, BeforeDirty, SaveOutcome](TFuture<FToolResult> Future) -> FToolResult
