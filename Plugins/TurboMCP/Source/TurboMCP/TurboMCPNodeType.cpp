@@ -12,6 +12,9 @@
 #include "BlueprintNodeSpawner.h"
 #include "BlueprintVariableNodeSpawner.h"
 #include "K2Node_VariableGet.h"
+#include "WidgetBlueprint.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Widget.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_VariableSet.h"
 #include "Internationalization/Text.h"
@@ -138,6 +141,7 @@ namespace
 	struct FEntry
 	{
 		FString TypeId;
+        bool bDesignerGetter = false;
         FString InputScope;
         FName InputName;
         FEdGraphPinType InputType;
@@ -158,7 +162,8 @@ namespace
         UK2Node_VariableGet* Node=NewObject<UK2Node_VariableGet>(Graph,NAME_None,RF_Transactional);
         if(!Node) return nullptr;
         Node->CreateNewGuid();
-        Node->VariableReference.SetLocalMember(Entry.InputName,Entry.InputScope,FGuid());
+        if (Entry.bDesignerGetter) Node->VariableReference.SetSelfMember(Entry.InputName);
+        else Node->VariableReference.SetLocalMember(Entry.InputName,Entry.InputScope,FGuid());
         Node->CreatePin(EGPD_Output,Entry.InputType,Entry.InputName);
         Graph->AddNode(Node,false,false);
         return Node;
@@ -352,6 +357,30 @@ namespace
 			}
 		}
 
+        // The live designer tree is authoritative before a new variable reaches the skeleton.
+        if (const UWidgetBlueprint* WidgetBP = Cast<UWidgetBlueprint>(InBlueprint))
+            if (WidgetBP->WidgetTree)
+            {
+                TArray<UWidget*> Widgets;
+                WidgetBP->WidgetTree->GetAllWidgets(Widgets);
+                for (UWidget* Widget : Widgets)
+                {
+                    if (!Widget || !Widget->bIsVariable) continue;
+                    const FString Id = FString::Printf(TEXT("Variable|%s|Get|%s"), *InBlueprint->GetPathName(), *Widget->GetName());
+                    // Prefer the normal reflected spawner when its exact declaration is available.
+                    if (OutEntries.ContainsByPredicate([&](const FEntry& E){ return E.TypeId==Id; })) continue;
+                    FEntry Entry;
+                    Entry.TypeId=Id; Entry.LegacyTypeId=Id; Entry.bDesignerGetter=true;
+                    Entry.InputName=Widget->GetFName(); Entry.InputType.PinCategory=UEdGraphSchema_K2::PC_Object;
+                    Entry.InputType.PinSubCategoryObject=Widget->GetClass();
+                    Entry.OwningClass=InBlueprint->GetPathName(); Entry.bOwnedByThisBlueprint=true;
+                    Entry.bContextVariable=true; Entry.bPure=true;
+                    Entry.Aliases.Add(TEXT("Variables|Default|Get")+Widget->GetName());
+                    Entry.SearchKeywords=TEXT("widget designer getter ")+Widget->GetName();
+                    OutEntries.Add(MoveTemp(Entry));
+                }
+            }
+
         // Entry pins are authoritative even before the signature reaches the skeleton class.
         if (InBlueprint->FunctionGraphs.Contains(InGraph))
             for(UEdGraphNode* Node:InGraph->Nodes) if(const UK2Node_FunctionEntry* FunctionEntry=Cast<UK2Node_FunctionEntry>(Node))
@@ -439,7 +468,7 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 			return nullptr;
 		}
 		ProbeGraph->Schema = InGraph->Schema;
-        if(!Entry.InputScope.IsEmpty()) return CreateInputGetter(Entry,ProbeGraph);
+        if(Entry.bDesignerGetter || !Entry.InputScope.IsEmpty()) return CreateInputGetter(Entry,ProbeGraph);
 		FBlueprintActionInfo ActionInfo(Entry.Owner, Entry.Spawner);
 		UEdGraphNode* Spawned = Entry.Spawner->Invoke(ProbeGraph, ActionInfo.GetBindings(),
 			FVector2D::ZeroVector);
@@ -502,7 +531,7 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 			continue;
 		}
 
-        if(!Entry.InputScope.IsEmpty())
+        if(Entry.bDesignerGetter || !Entry.InputScope.IsEmpty())
         {
             OutNode=CreateInputGetter(Entry,InGraph);
             if(!OutNode) OutNote=TEXT("function input getter allocation failed");

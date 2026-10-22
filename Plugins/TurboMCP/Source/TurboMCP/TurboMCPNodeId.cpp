@@ -22,6 +22,9 @@
 #include "K2Node_FunctionResult.h"
 #include "K2Node_Variable.h"
 #include "K2Node_VariableGet.h"
+#include "WidgetBlueprint.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Widget.h"
 #include "K2Node_VariableSet.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Misc/Char.h"
@@ -452,6 +455,13 @@ namespace TurboMCPNodeId
 		{
 			return FString();
 		}
+
+        if (InNode->IsA<UK2Node_VariableGet>() && InNode->VariableReference.IsSelfContext())
+            if (const UWidgetBlueprint* WidgetBP=Cast<UWidgetBlueprint>(Blueprint))
+                if (WidgetBP->WidgetTree)
+                    if (const UWidget* Widget=WidgetBP->WidgetTree->FindWidget(VarName))
+                        if (Widget->bIsVariable)
+                            return FString::Printf(TEXT("Variable|%s|Get|%s"),*Blueprint->GetPathName(),*VarName.ToString());
 
 		// The engine's writer calls an uncategorised variable's category
 		// `Default`, which is what makes `Variables|Default|SetHealth` the
