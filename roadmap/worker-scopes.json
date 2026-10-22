@@ -597,6 +597,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
           ],
           "new_files": []
+        },
+        "p0-entry-filter": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphText.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
