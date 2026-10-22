@@ -3357,8 +3357,8 @@
       "observation": "A filtered read with a wrong \"nothing calls\" list",
       "disposition": "partial_implementation",
       "fix_commit": "c330650",
-      "remaining": "Designer/component-bound events and delegate routes through intermediate nodes need complete coverage.",
-      "implementation": "Global static callers plus Create Event/custom-event delegate connection sites, exact endpoints and binding-entry context. Bound self functions are counted as referenced. Binding is explicitly distinguished from runtime invocation."
+      "remaining": "Delegate routes through intermediate nodes still need complete coverage.",
+      "implementation": "Global static callers, direct Create Event/custom-event delegate sites, plus component/widget and actor-bound events with owning property/class and exact event IDs. Static declarations are distinguished from runtime invocation."
     },
     {
       "report": "2026-10-22_S2",

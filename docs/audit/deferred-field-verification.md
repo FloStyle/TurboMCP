@@ -665,3 +665,6 @@ Added BindNewEvent preview/edit using stock CreateFromFunction, event graph/name
 
 ## FT-96 delegate relation evidence (2026-10-22)
 Blueprint relation reads list direct function/custom-event delegate connections and binding-entry context. Runtime invocation is not inferred. Unbuilt/untested: self/external scope, disconnected nodes, name collisions and text caps. Designer/component binding and intermediate routes remain open.
+
+## FT-96 component/widget and actor binding reads (2026-10-22)
+Added bound-event owner property/class, actor identity and event node ID to Blueprint relations. Unbuilt/untested: widget hover/click, component events, missing/deleted owners and actor-bound level scripts. Intermediate delegate routes remain open.
