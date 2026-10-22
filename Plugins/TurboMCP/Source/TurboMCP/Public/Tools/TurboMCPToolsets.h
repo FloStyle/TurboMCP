@@ -806,6 +806,13 @@ public:
 		const FString& Asset,
 		const FString& GraphName);
 
+    /** Review layout in one call: text findings and the ten longest wires with exact endpoints,
+     * plus a full-graph capture. Does not edit, compile or save. Capture failures remain visible
+     * alongside the text report; this is evidence for human review, not a pass/fail certification. */
+    UFUNCTION(meta = (AICallable))
+    static FString LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName);
+
+
     /** Read node IDs, positions and measured sizes without editing the graph. */
     UFUNCTION(meta = (AICallable))
     static FString LookTurboMCPGraphPositions(const FString& Asset, const FString& GraphName);

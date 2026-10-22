@@ -11,6 +11,7 @@
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphPin.h"
 #include "Engine/Blueprint.h"
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
@@ -145,6 +146,24 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 		Out += FString::Printf(TEXT("\n%s"), *Report.Summary);
 	}
 
+    struct FLongWire { double Length; FString Endpoints; };
+    TArray<FLongWire> Longest;
+    for (UEdGraphNode* Node : Graph->Nodes) if (Node && !Node->IsA<UEdGraphNode_Comment>())
+        for (UEdGraphPin* Pin : Node->Pins) if (Pin && Pin->Direction == EGPD_Output)
+            for (UEdGraphPin* Other : Pin->LinkedTo)
+            {
+                if (!Other || !Other->GetOwningNodeUnchecked()) continue;
+                const double Length = FVector2D::Distance(FTurboMCPGraphTidy::AlignmentPinPosition(Pin), FTurboMCPGraphTidy::AlignmentPinPosition(Other));
+                Longest.Add({Length, FString::Printf(TEXT("%s.%s -> %s.%s"),
+                    *TurboMCPNodeId::MakeForNode(Node,true), *Pin->PinName.ToString(),
+                    *TurboMCPNodeId::MakeForNode(Other->GetOwningNodeUnchecked(),true), *Other->PinName.ToString())});
+                Longest.Sort([](const FLongWire& A,const FLongWire& B) { return A.Length==B.Length ? A.Endpoints<B.Endpoints : A.Length>B.Length; });
+                if (Longest.Num()>10) Longest.SetNum(10);
+            }
+    Out += TEXT("\nlongest wires (up to 10, straight pin-to-pin graph units; diagnostic, not an error threshold):");
+    for (int32 Index=0;Index<Longest.Num();++Index)
+        Out += FString::Printf(TEXT("\n  %d. %.1f units: %s"),Index+1,Longest[Index].Length,*Longest[Index].Endpoints);
+
 	// Findings, counted by kind so the shape of the problem is visible before the
 	// detail.
 	TMap<FString, int32> CountsByKind;
@@ -238,4 +257,12 @@ FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset,co
     }
     Result+=FString::Printf(TEXT("listed %d of %d graph entries"),Count,Graph->Nodes.Num());
     return Result;
+}
+
+FString UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName)
+{
+    const FString Report = LookTurboMCPLayoutReport(Asset,GraphName);
+    if (!Report.StartsWith(TEXT("look:"))) return Report;
+    const FString Capture = LookTurboMCPCapture(Asset,GraphName,TEXT("graph"),TEXT(""),TEXT(""));
+    return Report + TEXT("\n\nfull-graph capture (review aid; not automatic layout approval):\n") + Capture;
 }
