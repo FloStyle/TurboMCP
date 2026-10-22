@@ -638,3 +638,6 @@ Source follow-up 800b1e3: surviving endpoints receive pin and node callbacks aft
 
 ## Automatic thumbnail-free widget saves (2026-10-22)
 Both save entry points now serialize Widget Blueprints directly, preventing thumbnail design-time script execution in the MCP call. Existing thumbnails are not refreshed. Unbuilt/untested: project/plugin mount paths, source control/read-only failures, mixed asset batches, dirty state, persistence and reload. General save-result preservation for script exceptions outside thumbnail rendering remains open.
+
+## Comment no-op dirtying (2026-10-22)
+Defer owned transaction and Modify until a concrete create/delete/set/fit change. Skip identical bounds and field values. Unbuilt/untested: clean and already-dirty packages, repeated set/fit, missing targets, mixed changed/unchanged boxes and undo. Broader unrelated-package dirtying remains open.
