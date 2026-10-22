@@ -656,3 +656,6 @@ Shared pin parser ignores delimiter-only closing lines after comment removal. Ba
 
 ## GC-42 function delegate binding (2026-10-22)
 Added typed existing-self-function binding through Create Event, signature and engine eligibility checks, transient preview and owned rollback. Unbuilt/untested: compatible/incompatible signatures, existing delegate source replacement, preview isolation, undo and compile. New typed custom event creation and non-self targets remain open.
+
+## GC-42 explicit object delegate context (2026-10-22)
+Function binding now accepts exact object output endpoints, wires context before signature selection and checks surviving links. Unbuilt/untested: foreign Blueprint/native objects, incompatible functions, object/delegate pin reconstruction, preview isolation and undo. New signature-derived custom events remain open.
