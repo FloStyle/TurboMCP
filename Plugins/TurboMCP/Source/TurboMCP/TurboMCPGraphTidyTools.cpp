@@ -187,10 +187,12 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPAssetRevert(const FString& Asset
 FString UTurboMCPEditToolset::EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm) { return AssetRevert(Asset, Confirm, true); }
 
 #include "EdGraphNode_Comment.h"
+#include "EdGraph/EdGraphPin.h"
+#include "Math/IntPoint.h"
 #include "TurboMCPLayoutReport.h"
 namespace
 {
- FString MoveGroup(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds,int32 DeltaX,int32 DeltaY,bool Edit)
+ FString MoveGroup(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds,int32 DeltaX,int32 DeltaY,bool Edit,bool Suggest=false)
  {
   if(!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive()) return TEXT("error: idle editor required; unchanged");
   if(NodeIds.IsEmpty()) return TEXT("error: explicit node or comment IDs required; unchanged");
@@ -228,11 +230,13 @@ namespace
     }
    }
   }
-  for(UEdGraphNode* N:Selected)
+  auto MoveError = [&](int32 OffsetX,int32 OffsetY) -> FString
   {
-   const int64 X=int64(N->NodePosX)+DeltaX,Y=int64(N->NodePosY)+DeltaY;
+   for(UEdGraphNode* N:Selected)
+  {
+   const int64 X=int64(N->NodePosX)+OffsetX,Y=int64(N->NodePosY)+OffsetY;
    if(X<MIN_int32 || X>MAX_int32 || Y<MIN_int32 || Y>MAX_int32) return TEXT("error: coordinate overflow; unchanged");
-   auto New=Bounds[N]; New.MinX+=DeltaX; New.MaxX+=DeltaX; New.MinY+=DeltaY; New.MaxY+=DeltaY;
+   auto New=Bounds[N]; New.MinX+=OffsetX; New.MaxX+=OffsetX; New.MinY+=OffsetY; New.MaxY+=OffsetY;
    const auto Old=Bounds[N];
    for(UEdGraphNode* Other:Graph->Nodes) if(Other && !Selected.Contains(Other))
    {
@@ -241,12 +245,115 @@ namespace
     {
      const bool WasInside=Old.MinX>=Rect.MinX && Old.MinY>=Rect.MinY && Old.MaxX<=Rect.MaxX && Old.MaxY<=Rect.MaxY;
      const bool IsInside=New.MinX>=Rect.MinX && New.MinY>=Rect.MinY && New.MaxX<=Rect.MaxX && New.MaxY<=Rect.MaxY;
+     const bool Intersects=New.MinX<Rect.MaxX && New.MaxX>Rect.MinX && New.MinY<Rect.MaxY && New.MaxY>Rect.MinY;
+     if(Suggest && Intersects && !IsInside && !N->IsA<UEdGraphNode_Comment>()) return TEXT("error: candidate crosses a comment boundary");
      if(WasInside!=IsInside) return TEXT("error: move changes membership of an unselected comment; select its group too");
     }
     else if(New.MinX<Rect.MaxX && New.MaxX>Rect.MinX && New.MinY<Rect.MaxY && New.MaxY>Rect.MinY)
      return TEXT("error: moved group would overlap an unselected node; unchanged");
    }
   }
+   return FString();
+  };
+  FString PlacementDetails;
+  if(Suggest)
+  {
+   struct FBoundaryWire { const UEdGraphPin* Moving; const UEdGraphPin* Fixed; FVector2D Start; FVector2D End; };
+   TArray<FBoundaryWire> Boundary;
+   for(UEdGraphNode* N:Graph->Nodes) if(N)
+    for(const UEdGraphPin* Pin:N->Pins) if(Pin && Pin->Direction==EGPD_Output)
+    {
+     TSet<const UEdGraphPin*> Seen;
+     for(const UEdGraphPin* Other:Pin->LinkedTo)
+     {
+      if(!Other || Seen.Contains(Other) || !Other->GetOwningNode() || Other->GetOwningNode()->GetGraph()!=Graph) continue;
+      Seen.Add(Other);
+      const bool SourceMoves=Selected.Contains(N), TargetMoves=Selected.Contains(Other->GetOwningNode());
+      if(SourceMoves==TargetMoves) continue;
+      const UEdGraphPin* Moving=SourceMoves?Pin:Other;
+      const UEdGraphPin* Fixed=SourceMoves?Other:Pin;
+      Boundary.Add({Moving,Fixed,FTurboMCPLayoutReport::PinPosition(Moving),FTurboMCPLayoutReport::PinPosition(Fixed)});
+     }
+    }
+   if(Boundary.IsEmpty()) return TEXT("unchanged: selected group has no links to outside nodes; no connected placement to propose");
+   FTurboMCPLayoutReport::FRect Group;
+   bool First=true;
+   for(UEdGraphNode* N:Selected)
+   {
+    const auto B=Bounds[N];
+    if(First) {Group=B;First=false;}
+    else {Group.MinX=FMath::Min(Group.MinX,B.MinX);Group.MinY=FMath::Min(Group.MinY,B.MinY);Group.MaxX=FMath::Max(Group.MaxX,B.MaxX);Group.MaxY=FMath::Max(Group.MaxY,B.MaxY);}
+   }
+   auto Score=[&](const FVector2D& Offset)
+   {
+    double Total=0;
+    for(const FBoundaryWire& Wire:Boundary) Total+=FVector2D::Distance(Wire.Start+Offset,Wire.End);
+    return Total;
+   };
+   const double Before=Score(FVector2D::ZeroVector);
+   double Best=Before;
+   FVector2D BestOffset=FVector2D::ZeroVector;
+   int32 Evaluated=0,Feasible=0;
+   TSet<FIntPoint> SeenOffsets;
+   auto Consider=[&](double X,double Y)
+   {
+    if(!FMath::IsFinite(X) || !FMath::IsFinite(Y) || X<MIN_int32 || X>MAX_int32 || Y<MIN_int32 || Y>MAX_int32) return;
+    const FIntPoint Offset(static_cast<int32>(FMath::RoundToDouble(X)),static_cast<int32>(FMath::RoundToDouble(Y)));
+    if(SeenOffsets.Contains(Offset)) return;
+    SeenOffsets.Add(Offset);++Evaluated;
+    if(!MoveError(Offset.X,Offset.Y).IsEmpty()) return;
+    const FVector2D D(Offset.X,Offset.Y);
+    for(const FBoundaryWire& Wire:Boundary)
+    {
+     if(Wire.Moving->PinType.PinCategory!=TEXT("exec")) continue;
+     const double Sign=Wire.Moving->Direction==EGPD_Output?1.0:-1.0;
+     const double OldForward=Sign*(Wire.End.X-Wire.Start.X);
+     const double NewForward=Sign*(Wire.End.X-Wire.Start.X-D.X);
+     if(OldForward>=0.0 && NewForward<0.0) return;
+    }
+    ++Feasible;
+    const double Cost=Score(D);
+    if(Cost<Best-0.01 || (FMath::Abs(Cost-Best)<=0.01 && D.SizeSquared()<BestOffset.SizeSquared()))
+    {Best=Cost;BestOffset=D;}
+   };
+   FVector2D Ideal=FVector2D::ZeroVector;
+   for(const FBoundaryWire& Wire:Boundary) Ideal+=Wire.End-Wire.Start;
+   Ideal/=Boundary.Num();
+   Consider(Ideal.X,Ideal.Y);
+   // Search the linked-node neighbourhood and obstacle edges, not just the
+   // selected lane in isolation. All candidates keep internal offsets intact.
+   for(UEdGraphNode* N:Graph->Nodes) if(N && !Selected.Contains(N))
+   {
+    const auto B=Bounds[N];
+    const double Xs[]={B.MinX-Group.MaxX-64.0,B.MaxX-Group.MinX+64.0,Ideal.X};
+    const double Ys[]={B.MinY-Group.MaxY-64.0,B.MaxY-Group.MinY+64.0,Ideal.Y};
+    for(double X:Xs) for(double Y:Ys) Consider(X,Y);
+   }
+   for(const FBoundaryWire& Wire:Boundary)
+   {
+    const FVector2D D=Wire.End-Wire.Start;
+    Consider(D.X+(Wire.Moving->Direction==EGPD_Output?-120.0:120.0),D.Y);
+   }
+   // Refine the best feasible region down to individual graph units.
+   for(double Step=256.0;Step>=1.0;Step*=0.5)
+   {
+    const FVector2D Center=BestOffset;
+    for(int32 X=-1;X<=1;++X) for(int32 Y=-1;Y<=1;++Y)
+     Consider(Center.X+X*Step,Center.Y+Y*Step);
+   }
+   if(Best>=Before-0.01)
+    return FString::Printf(TEXT("unchanged: no shorter collision-free placement found among %d candidates (%d feasible). Existing box membership retained; try a smaller selection or explicitly relocate into a destination box. No graph edits."),Evaluated,Feasible);
+   DeltaX=static_cast<int32>(BestOffset.X);DeltaY=static_cast<int32>(BestOffset.Y);
+   PlacementDetails=FString::Printf(TEXT("\nplacement proposal: DeltaX=%d DeltaY=%d; best feasible candidate searched, not a global optimum; %d candidates, %d feasible. Boundary-wire total %.1f -> %.1f estimated graph units. Apply with EditTurboMCPGraphGroupMove using the same NodeIds and offsets; positions and obstacles are rechecked. Existing comment membership preserved."),DeltaX,DeltaY,Evaluated,Feasible,Before,Best);
+   for(const FBoundaryWire& Wire:Boundary)
+   {
+    const double OldLength=FVector2D::Distance(Wire.Start,Wire.End);
+    const double NewLength=FVector2D::Distance(Wire.Start+BestOffset,Wire.End);
+    PlacementDetails+=FString::Printf(TEXT("\n  %s.%s <-> %s.%s: %.1f -> %.1f (%s)"),*TurboMCPNodeId::MakeForNode(Wire.Moving->GetOwningNode()),*Wire.Moving->PinName.ToString(),*TurboMCPNodeId::MakeForNode(Wire.Fixed->GetOwningNode()),*Wire.Fixed->PinName.ToString(),OldLength,NewLength,NewLength<OldLength?TEXT("shorter"):NewLength>OldLength?TEXT("longer"):TEXT("unchanged"));
+   }
+  }
+  const FString Validation=MoveError(DeltaX,DeltaY);
+  if(!Validation.IsEmpty()) return Validation;
   const auto CrossBefore=FTurboMCPLayoutReport::MeasureCrossBox(Graph);
   TMap<const UEdGraphNode*,FTurboMCPLayoutReport::FRect> PredictedRects;
   for(UEdGraphNode* N:Selected)
@@ -258,7 +365,7 @@ namespace
   const auto CrossPlanned=FTurboMCPLayoutReport::MeasureCrossBox(Graph,PredictedRects);
   const FString CrossPreview=FString::Printf(TEXT("; cross-box estimated straight-line length %.1f -> %.1f (delta %+.1f), connections %d -> %d"),CrossBefore.Length,CrossPlanned.Length,CrossPlanned.Length-CrossBefore.Length,CrossBefore.Count,CrossPlanned.Count);
   const FString Summary=FString::Printf(TEXT("%d nodes/comments translated by (%d,%d); internal spacing, sizes, pins and links preserved"),Selected.Num(),DeltaX,DeltaY);
-  if(!Edit) return TEXT("preview: ")+Summary+CrossPreview;
+  if(!Edit) return TEXT("preview: ")+Summary+CrossPreview+PlacementDetails;
   if(DeltaX==0 && DeltaY==0) return TEXT("unchanged: zero offset")+CrossPreview;
   FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP move graph group")));
   if(!Transaction.IsOutstanding()) return TEXT("error: no undo transaction; unchanged");
@@ -271,3 +378,5 @@ namespace
 }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupMove(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds,int32 DeltaX,int32 DeltaY) { return MoveGroup(Asset,GraphName,NodeIds,DeltaX,DeltaY,false); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphGroupMove(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds,int32 DeltaX,int32 DeltaY) { return MoveGroup(Asset,GraphName,NodeIds,DeltaX,DeltaY,true); }
+
+FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupPlacement(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds) { return MoveGroup(Asset,GraphName,NodeIds,0,0,false,true); }

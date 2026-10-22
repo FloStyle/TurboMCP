@@ -1322,6 +1322,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY);
 
+    /** Propose a collision-free translation near outside nodes linked to the selected nodes/comment groups. Returns DeltaX/DeltaY for GraphGroupMove and per-wire before/after lengths. Preserves internal layout and existing comment membership; searches free positions, never edits, saves or compiles. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPGraphGroupPlacement(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds);
+
+
 	/** Preview reload of saved Blueprint package; discards all unsaved edits, may reset undo. Edit requires the preview confirmation. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetRevert(const FString& Asset);
