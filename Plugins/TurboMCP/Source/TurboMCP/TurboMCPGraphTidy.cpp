@@ -1535,6 +1535,38 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					PlacedPure.Add(I);
 					PureBottom = FMath::Max(PureBottom, N.PlannedY + N.Height);
 				}
+                // Provisional bands reserve enough space for any input stacking.
+                // Once input columns exist, pack by their actual union height rather
+                // than the sum of every reader's height (parallel columns overlap in Y).
+                double PackedBandTop=RowY;
+                for(int32 Lane:LaneOrder)
+                {
+                    TArray<int32> BandMembers;
+                    double BandMin=TNumericLimits<double>::Max();
+                    double BandMax=-TNumericLimits<double>::Max();
+                    for(int32 I:Free)
+                    {
+                        if(RowOf[I]!=Row) continue;
+                        const bool InBand=OutPlan.Nodes[I].bIsPure
+                            ? PureLane.Contains(I) && PureLane[I]==Lane
+                            : LaneOf.Contains(I) && LaneOf[I]==Lane;
+                        if(!InBand) continue;
+                        BandMembers.Add(I);
+                        BandMin=FMath::Min(BandMin,OutPlan.Nodes[I].PlannedY);
+                        BandMax=FMath::Max(BandMax,OutPlan.Nodes[I].PlannedY+OutPlan.Nodes[I].Height);
+                    }
+                    if(BandMembers.IsEmpty()) continue;
+                    const double BandShift=PackedBandTop-BandMin;
+                    for(int32 I:BandMembers) OutPlan.Nodes[I].PlannedY+=BandShift;
+                    PackedBandTop+=FMath::Max(InLanePitch,BandMax-BandMin+SpacingY);
+                }
+                Bottom=RowY;PureBottom=RowY;
+                for(int32 I:Free) if(RowOf[I]==Row)
+                {
+                    const FNode& PlacedNode=OutPlan.Nodes[I];
+                    if(PlacedNode.bIsPure) PureBottom=FMath::Max(PureBottom,PlacedNode.PlannedY+PlacedNode.Height);
+                    else Bottom=FMath::Max(Bottom,PlacedNode.PlannedY+PlacedNode.Height);
+                }
 				double Minimum=RowY;
                 for(int32 I:Free) if(RowOf[I]==Row) Minimum=FMath::Min(Minimum,OutPlan.Nodes[I].PlannedY);
                 const double Shift=RowY-Minimum;
