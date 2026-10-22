@@ -52,6 +52,19 @@
 
 namespace
 {
+    // Keep value readers below the incoming exec wire, not below the consumer body.
+    // Input pins define the incoming corridor; entry nodes fall back to their first output.
+    double ValueReaderFloor(UEdGraphNode* Node, double PlannedY)
+    {
+        if (!Node) return PlannedY;
+        for (const UEdGraphPin* Pin : Node->Pins)
+            if (Pin && Pin->Direction == EGPD_Input && Pin->PinType.PinCategory == TEXT("exec"))
+                return PlannedY + FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - Node->NodePosY + 8.0;
+        for (const UEdGraphPin* Pin : Node->Pins)
+            if (Pin && Pin->Direction == EGPD_Output && Pin->PinType.PinCategory == TEXT("exec"))
+                return PlannedY + FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - Node->NodePosY + 8.0;
+        return PlannedY;
+    }
     struct FStructuralQuality
     {
         int32 Overlaps=0;
@@ -98,8 +111,7 @@ namespace
                     && L.Position.Y < R.Position.Y + R.Height && L.Position.Y + L.Height > R.Position.Y)
                     ++Q.Overlaps;
             }
-        // Data inputs belong below their execution consumer, even when a shorter
-        // wire would put the expression back into the execution corridor.
+        // Data readers sit beside the consumer, below its incoming exec wire.
         for (const auto& DataWire : Plan.Wires)
         {
             if (!DataWire.OutputPin || !DataWire.InputPin || DataWire.OutputPin->PinType.PinCategory == TEXT("exec")
@@ -117,7 +129,7 @@ namespace
                         && (Mode != 2 || Copy.Copy))
                     { EffectiveSource = CopyPosition(Copy); OutputPosition=EffectiveSource+Copy.OutputOffset; IsValueReader=true; break; }
             if (IsValueReader && !Source.bIsKnot && !Consumer.bIsPure && !Consumer.bIsComment
-                && EffectiveSource.Y < Position(Consumer).Y + Consumer.Height)
+                && EffectiveSource.Y < ValueReaderFloor(Consumer.Node, Position(Consumer).Y))
                 ++Q.PureInputRowConflicts;
             const FVector2D InputPosition=FTurboMCPGraphTidy::AlignmentPinPosition(DataWire.InputPin)
                 +Position(Consumer)-FVector2D(Consumer.Node->NodePosX,Consumer.Node->NodePosY);
@@ -1352,13 +1364,15 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     const double Shift=BandTop-ExecTop;
                     for(int32 I:Free) if(RowOf[I]==Row && !OutPlan.Nodes[I].bIsPure && LaneOf[I]==Lane)
                         OutPlan.Nodes[I].PlannedY+=Shift;
-                    const double InputFloor=ExecBottom+Shift+SpacingY;
+                    double InputFloor=BandTop;
+                    for(int32 I:Free) if(RowOf[I]==Row && !OutPlan.Nodes[I].bIsPure && LaneOf[I]==Lane)
+                        InputFloor=FMath::Max(InputFloor,ValueReaderFloor(OutPlan.Nodes[I].Node,OutPlan.Nodes[I].PlannedY));
                     InputFloorByLane.Add(Lane,InputFloor);
                     double InputHeight=0.0;
                     if(const TSet<int32>* Inputs=LaneInputs.Find(Lane))
                         for(int32 I:*Inputs) InputHeight+=OutPlan.Nodes[I].Height+SpacingY;
                     Bottom=FMath::Max(Bottom,ExecBottom+Shift);
-                    BandTop=FMath::Max(BandTop+InLanePitch,InputFloor+InputHeight+SpacingY);
+                    BandTop=FMath::Max(FMath::Max(BandTop+InLanePitch,ExecBottom+Shift+SpacingY),InputFloor+InputHeight+SpacingY);
                 }
                 const double FallbackInputFloor=Bottom+SpacingY;
 				double PureBottom = Bottom;
@@ -1423,7 +1437,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         N.PlannedX=FMath::Max(FreeStartX,Consumer.PlannedX-N.Width-SpacingX);
                         N.PlannedY=FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->InputPin).Y+Consumer.PlannedY-Consumer.Y
                             -(FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->OutputPin).Y-N.Y);
-                        const double InputFloor = Consumer.PlannedY + (Consumer.bIsPure ? 0.0 : Consumer.Height + SpacingY);
+                        const double InputFloor = Consumer.bIsPure ? -TNumericLimits<double>::Max() : ValueReaderFloor(Consumer.Node,Consumer.PlannedY);
                         N.PlannedY = FMath::Max(N.PlannedY, InputFloor);
                     }
                     const double* LaneFloor=PureLane.Contains(I)?InputFloorByLane.Find(PureLane[I]):nullptr;
@@ -1522,9 +1536,10 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             N.PlannedY=AlignmentPinPosition(W.OutputPin).Y+OutPlan.Nodes[Lane[Stage-1]].PlannedY-OutPlan.Nodes[Lane[Stage-1]].Y-(AlignmentPinPosition(W.InputPin).Y-N.Y);
                         Bottom=FMath::Max(Bottom,N.PlannedY+N.Height);
                     }
-                    // The input column must clear every execution node in this
-                    // lane, including taller nodes with offset execution pins.
-                    const double SequenceInputFloor = Bottom + SpacingY;
+                    // Readers may sit alongside tall calls while clearing the exec corridor.
+                    double SequenceInputFloor = -TNumericLimits<double>::Max();
+                    for(int32 Call:Lane)
+                        SequenceInputFloor=FMath::Max(SequenceInputFloor,ValueReaderFloor(OutPlan.Nodes[Call].Node,OutPlan.Nodes[Call].PlannedY));
                     TSet<int32> Placed; for(int32 Call:Lane) Placed.Add(Call);
                     // Consumer-first traversal places pure trees using real pin offsets.
                     TFunction<void(int32)> PlaceInputs=[&](int32 Target)
@@ -1538,7 +1553,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             FNode& N=OutPlan.Nodes[I]; const FNode& Consumer=OutPlan.Nodes[Target];
                             N.PlannedX=Consumer.PlannedX-N.Width-SpacingX;
                             N.PlannedY=AlignmentPinPosition(W->InputPin).Y+Consumer.PlannedY-Consumer.Y-(AlignmentPinPosition(W->OutputPin).Y-N.Y);
-                            N.PlannedY=FMath::Max(N.PlannedY,Consumer.PlannedY+(Consumer.bIsPure?0.0:Consumer.Height+SpacingY));
+                            if(!Consumer.bIsPure) N.PlannedY=FMath::Max(N.PlannedY,ValueReaderFloor(Consumer.Node,Consumer.PlannedY));
                             N.PlannedY=FMath::Max(N.PlannedY,SequenceInputFloor);
                             for(int32 Pass=0;Pass<Members.Num();++Pass)
                             {
@@ -1863,7 +1878,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             if (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(ConsumerPlan.Key)) continue;
 			Planned.PlannedX = ConsumerPlan.PlannedX
 				- Planned.Width - SpacingX;
-			Planned.PlannedY = FMath::RoundToDouble(ConsumerPlan.PlannedY + (ConsumerPlan.bIsPure ? 0.0 : ConsumerPlan.Height + SpacingY));
+			Planned.PlannedY = ConsumerPlan.bIsPure ? static_cast<double>(MIN_int32) : ValueReaderFloor(ConsumerPlan.Node,ConsumerPlan.PlannedY);
 			Planned.PlannedX = FMath::RoundToDouble(Planned.PlannedX);
             TSet<int32> ContainingBoxes;
             for (int32 B = ConsumerBoxIndex; B != INDEX_NONE; B = OutPlan.Boxes[B].ParentIndex) ContainingBoxes.Add(B);
