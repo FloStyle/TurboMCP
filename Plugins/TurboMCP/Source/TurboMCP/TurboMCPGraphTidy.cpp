@@ -52,6 +52,7 @@ namespace
         int32 Overlaps=0;
         int32 BackwardExec=0;
         double LinearExecDrift=0;
+        int32 PureInputRowConflicts=0;
     };
     // Mode: original, planned, or actual post-edit coordinates. Pin offsets remain native.
     FStructuralQuality StructuralQuality(const FTurboMCPGraphTidy::FPlan& Plan,int32 Mode)
@@ -68,6 +69,18 @@ namespace
             if(L.bIsComment || R.bIsComment) continue;
             const FVector2D P=Position(L), T=Position(R);
             if(P.X<T.X+R.Width && P.X+L.Width>T.X && P.Y<T.Y+R.Height && P.Y+L.Height>T.Y) ++Q.Overlaps;
+        }
+        // Data inputs belong below their execution consumer, even when a shorter
+        // wire would put the expression back into the execution corridor.
+        for (const auto& DataWire : Plan.Wires)
+        {
+            if (!DataWire.OutputPin || DataWire.OutputPin->PinType.PinCategory == TEXT("exec")
+                || !Plan.Nodes.IsValidIndex(DataWire.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(DataWire.TargetNodeIndex)) continue;
+            const auto& Source = Plan.Nodes[DataWire.SourceNodeIndex];
+            const auto& Consumer = Plan.Nodes[DataWire.TargetNodeIndex];
+            if (Source.bIsPure && !Source.bIsKnot && !Consumer.bIsPure && !Consumer.bIsComment
+                && Position(Source).Y < Position(Consumer).Y + Consumer.Height)
+                ++Q.PureInputRowConflicts;
         }
         for(const auto& W:Plan.Wires)
         {
@@ -89,6 +102,7 @@ namespace
         if(After.Overlaps!=Before.Overlaps) return After.Overlaps<Before.Overlaps;
         if(After.BackwardExec!=Before.BackwardExec) return After.BackwardExec<Before.BackwardExec;
         if(!FMath::IsNearlyEqual(After.LinearExecDrift,Before.LinearExecDrift,1.0)) return After.LinearExecDrift<Before.LinearExecDrift;
+        if(After.PureInputRowConflicts!=Before.PureInputRowConflicts) return After.PureInputRowConflicts<Before.PureInputRowConflicts;
         return NewLength<OldLength;
     }
     TMap<const UEdGraphNode*, FVector2D> CachedAlignmentNodeSizes;
@@ -1095,6 +1109,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         N.PlannedX=FMath::Max(FreeStartX,Consumer.PlannedX-N.Width-SpacingX);
                         N.PlannedY=FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->InputPin).Y+Consumer.PlannedY-Consumer.Y
                             -(FTurboMCPGraphTidy::AlignmentPinPosition(Chosen->OutputPin).Y-N.Y);
+                        const double InputFloor = Consumer.PlannedY + (Consumer.bIsPure ? 0.0 : Consumer.Height + SpacingY);
+                        N.PlannedY = FMath::Max(N.PlannedY, InputFloor);
                     }
 					for (int32 Pass = 0; Pass <= PlacedPure.Num(); ++Pass)
 					{
@@ -1203,6 +1219,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             FNode& N=OutPlan.Nodes[I]; const FNode& Consumer=OutPlan.Nodes[Target];
                             N.PlannedX=Consumer.PlannedX-N.Width-SpacingX;
                             N.PlannedY=AlignmentPinPosition(W->InputPin).Y+Consumer.PlannedY-Consumer.Y-(AlignmentPinPosition(W->OutputPin).Y-N.Y);
+                            N.PlannedY=FMath::Max(N.PlannedY,Consumer.PlannedY+(Consumer.bIsPure?0.0:Consumer.Height+SpacingY));
                             for(int32 Pass=0;Pass<Members.Num();++Pass)
                             {
                                 double NextX=N.PlannedX;
@@ -1513,7 +1530,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
 			Planned.PlannedX = ConsumerPlan.PlannedX
 				- Entry.Width - SpacingX;
-			Planned.PlannedY = FMath::RoundToDouble(ConsumerPlan.PlannedY);
+			Planned.PlannedY = FMath::RoundToDouble(ConsumerPlan.PlannedY + (ConsumerPlan.bIsPure ? 0.0 : ConsumerPlan.Height + SpacingY));
 			Planned.PlannedX = FMath::RoundToDouble(Planned.PlannedX);
 			// Keep existing/planned nodes fixed. Move only this new copy below
 			// intersecting rectangles, reserving its space for subsequent copies.
@@ -1803,7 +1820,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	// CROSSING NODES, so a reader comparing the two tools' numbers is comparing two quantities - and
 	// the label is what stops that.
     const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
-    Lines.Add(FString::Printf(TEXT("quality: overlaps %d -> %d; backward exec %d -> %d; linear exec drift %.1f -> %.1f (16px tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift));
+    Lines.Add(FString::Printf(TEXT("quality: overlaps %d -> %d; backward exec %d -> %d; linear exec drift %.1f -> %.1f (16px tolerance); pure input row conflicts %d -> %d. Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift,QualityBefore.PureInputRowConflicts,QualityAfter.PureInputRowConflicts));
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
 
 	if (InPlan.SelectedNodeKeys.Num() > 0)
