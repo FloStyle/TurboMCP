@@ -122,16 +122,26 @@ namespace
 	 * preview, which is exactly what `D-02` exists to prevent. So the type is resolved while planning,
 	 * and both tools refuse the same input.
 	 */
+    FString ReferenceTypeSyntax(const FString& Type)
+    {
+        const FString Trimmed=Type.TrimStartAndEnd();
+        // A generated class path denotes the class of an object reference, matching
+        // the editor object-variable workflow. Use class<path> for a class reference.
+        if(Trimmed.StartsWith(TEXT("/")) && Trimmed.EndsWith(TEXT("_C"),ESearchCase::IgnoreCase))
+            return TEXT("object<")+Trimmed+TEXT(">");
+        return Trimmed;
+    }
 	bool ResolveTypeName(const FString& InType, FString& OutWhy)
 	{
-		const FString Lower = InType.ToLower();
+		const FString ReferenceType=ReferenceTypeSyntax(InType);
+        const FString Lower = ReferenceType.ToLower();
 
 		// Typed object and class references share the full field syntax with structs and function pins.
 		if (Lower.StartsWith(TEXT("object<")) || Lower.StartsWith(TEXT("class<"))
 			|| Lower.StartsWith(TEXT("softobject<")) || Lower.StartsWith(TEXT("softclass<")))
 		{
 			FEdGraphPinType Ignored;
-			return FTurboMCPTypeParser::Resolve(InType, Ignored, OutWhy);
+			return FTurboMCPTypeParser::Resolve(ReferenceType, Ignored, OutWhy);
 		}
 
 		if (BasicTypeNames().Contains(Lower) || StructTypeNames().Contains(Lower))
@@ -555,7 +565,8 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 		// checked against the accepted list FIRST, and the resolver is only reached for a
 		// name that is known to be one of them.
 		FEdGraphPinType PinType;
-		const FString Lower = Variable.InnerType.ToLower();
+		const FString ReferenceType=ReferenceTypeSyntax(Variable.InnerType);
+        const FString Lower = ReferenceType.ToLower();
 
 		const TSet<FString>& BasicNames = BasicTypeNames();
 		const TMap<FString, FString>& StructNames = StructTypeNames();
@@ -564,7 +575,7 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 			|| Lower.StartsWith(TEXT("softobject<")) || Lower.StartsWith(TEXT("softclass<")))
 		{
 			FString TypeWhy;
-			if (!FTurboMCPTypeParser::Resolve(Variable.InnerType, PinType, TypeWhy))
+			if (!FTurboMCPTypeParser::Resolve(ReferenceType, PinType, TypeWhy))
 			{
 				return FString::Printf(TEXT("error: '%s' has invalid type '%s': %s. %d variable(s) before it were added."),
 					*Variable.Name, *Variable.InnerType, *TypeWhy, Added);
