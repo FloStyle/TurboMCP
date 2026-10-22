@@ -60,7 +60,7 @@ bool Trivial(UEdGraphNode* Node)
     const FString Name=Fn->GetName();
     return Name==TEXT("MakeLiteralBool") || Name==TEXT("MakeLiteralInt") || Name==TEXT("MakeLiteralFloat") || Name==TEXT("MakeLiteralDouble") || Name==TEXT("MakeLiteralName") || Name==TEXT("MakeLiteralString") || Name==TEXT("MakeLiteralText") || Name==TEXT("MakeLiteralByte");
 }
-bool Split(UEdGraph* Graph,UEdGraphNode* Node,const TSet<UEdGraphNode*>* Selected,int32& Count,FString& Error)
+bool Split(UEdGraph* Graph,UEdGraphNode* Node,const TSet<UEdGraphNode*>* Selected,int32& Count,FString& Error,FString* Mapping=nullptr)
 {
     if(!Trivial(Node)) { Error=TEXT("only pure self, variable-get, object-literal and whitelisted literal constructors can be split; never impure calls"); return false; }
     UEdGraphPin* Value=nullptr;
@@ -93,6 +93,12 @@ bool Split(UEdGraph* Graph,UEdGraphNode* Node,const TSet<UEdGraphNode*>* Selecte
         UEdGraphPin* NewValue=Pin(Copy,Value->PinName.ToString(),EGPD_Output);
         if(!Connect(Graph,NewValue,Reader,Error)) return false;
         Copy->NodePosX=Reader->GetOwningNode()->NodePosX-240; Copy->NodePosY=Reader->GetOwningNode()->NodePosY;
+        if(Mapping)
+        {
+            *Mapping+=FString::Printf(TEXT("\ncopy %s output=%s -> consumer %s input=%s"),
+                *TurboMCPNodeId::MakeForNode(Copy,true),*NewValue->PinName.ToString(),
+                *TurboMCPNodeId::MakeForNode(Reader->GetOwningNode(),true),*Reader->PinName.ToString());
+        }
         ++Count;
     }
     // Keep the original if anything outside this selection still consumes it.
@@ -123,7 +129,7 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
     FString Report; const FString BeforeState=Fingerprint(Copy.Graph);
     if(!Operation(Copy.Graph,Graph,Report,Error)) return TEXT("unchanged\nrefused: ")+Error;
     if(Fingerprint(Copy.Graph)==BeforeState) return TEXT("unchanged\nno edit needed\n")+Report;
-    if(!Edit) return TEXT("unchanged\npreview (transient graph)\n")+Report+TEXT("\ncompile/save=deferred");
+    if(!Edit) return TEXT("unchanged\npreview (transient graph)\n")+Report+TEXT("\nNew node IDs in preview are provisional; use the edit result IDs for subsequent calls.\ncompile/save=deferred");
     UTransBuffer* Buffer=Cast<UTransBuffer>(GEditor->Trans);
     if(!Buffer || !GEditor->CanTransact()) return TEXT("unchanged\nrefused: undo unavailable");
     const bool Dirty=BP->GetOutermost()->IsDirty();
@@ -219,9 +225,9 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphConnect(const FString& Asse
 FString UTurboMCPEditToolset::EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin)
 { return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { const bool Ok=Connect(G,Pin(ResolveNode(G,I,SourceNodeId),SourcePin,EGPD_Output),Pin(ResolveNode(G,I,TargetNodeId),TargetPin,EGPD_Input),E); R=TEXT("data input replaced; read-back source count=1"); return Ok; }); }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
-{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count); return Ok; }); }
+{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; FString Mapping; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E,&Mapping); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count)+Mapping; return Ok; }); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
-{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count); return Ok; }); }
+{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; FString Mapping; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E,&Mapping); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count)+Mapping; return Ok; }); }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues)
 { return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues)
