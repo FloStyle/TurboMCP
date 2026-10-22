@@ -827,3 +827,18 @@ Source `6703a0f`: append block translation scores every explicit fixed exec sour
 ## Implicit rejoin layout — 2026-10-23
 
 Source `95cffdf`: final scratch exec edges from new forms to original nodes feed placement, including preserved displaced continuations. No synthetic mutation requests added. Source inspection only; no tests/build/editor runs. Unbuilt/untested. Later verify auto/all/explicit continuation layouts and duplicate edge suppression. S2/X-93 historical dirtying evidence is unavailable, confirmed by the user; original root cause remains unproven, not fixed by instrumentation alone.
+
+## S16 append-lane implementation coverage audit — 2026-10-23
+
+S16/X-87 and FT-92 are implemented/unbuilt/untested after checking the archived report against current source. This is implementation coverage, not native verification.
+
+| Report requirement | Source evidence |
+| --- | --- |
+| Attach new lane to existing branch/switch output | GraphAppend Plan resolves exact source keys/pins; ExecuteGraph uses the K2 schema and retains requested-link read-back. |
+| Reuse named existing end nodes, including shared exec inputs | FNewLink distinguishes existing keys from created form indices on both ends; ExecuteGraph resolves each without duplicating the existing node. |
+| Place appended block as lane near attachment | GraphAppendPlacement uses existing exec attachment, dependency order, nested lane ancestry, input bands and cycle return ordering. |
+| Replace fixed created-node size guess | Preflight measures final scratch nodes after links/defaults; PlanPlacement reserves maximum measured footprint cells. |
+| Preserve rejoin flow and layout context | Explicit endpoint bounds and final scratch preserved-continuation edges influence horizontal placement. |
+| Preserve unrelated positions and comment boundaries | Only FPlannedPosition entries for created forms are applied. Existing nodes/comments are obstacles for translation. |
+
+Automatic packing within an existing comment was introduced as an extra refinement in tracking notes; the original S16 items request lane attachment/reuse/placement, not comment expansion or contained packing. Remove that extra closure gate. Conservative stored/estimated old bounds, uniform cells, tight fixed endpoints and runtime layout quality remain explicit verification limitations. No builds, tests or editor runs performed.
