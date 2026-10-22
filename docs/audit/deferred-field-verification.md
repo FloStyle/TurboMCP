@@ -707,3 +707,7 @@ Oct22 S2 SV-13 and S3 SV-14 implemented, unbuilt/untested. Save wrappers publish
 ## Live designer owner aliases — 414db69
 
 Blueprint-category and reflected class-path aliases retain canonical owner identity. Live designer widget getters replace stale reflected entries while preserving aliases. Append reports canonical types for surviving created nodes. No tests/build/editor runs. Verify same-named members across classes, precompile widget class changes, inherited members, category aliases, preview/apply and compilation; source coverage audit of inherited designer and generated/skeleton aliases remains open.
+
+## Generated/skeleton owner identity — eba40b4
+
+Discovery aliases now include both existing generated and skeleton class paths for the same Blueprint declaration, including synthetic live designer getters. Inherited context matching normalizes parent class ancestry by ClassGeneratedBy. NT-09/FT-99 canonical self-member identification implemented, unbuilt_untested. Remaining correctness review concerns inherited designer members missing from both action registry and child live tree. No tests/build/editor runs. Verify inherited same-name getters, explicit class aliases, canonical lookup-to-append round trip and native property identity after compile.
