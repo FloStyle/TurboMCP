@@ -2373,11 +2373,13 @@
       "canonical_issue": "2026-10-22_S2/GC-35",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_unverified",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
-      "observation": "- **Type:** Usability.\n- **Scenario:** Append with a nested inline value that carries a label comment.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Write a pin value as a nested node form, with a comment before its closing bracket.\n- **Observed:** The error said there was an unclosed form. It did not name the line or the comment.\n- **Expected:** The error names the line where the comment took the bracket.\n- **Impact:** One extra call.\n- **State after:** No change. Preview only.\n- **Workaround:** Put each node in its own form with a label. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Name the line and say that a comment ends at the end of the line."
+      "observation": "- **Type:** Usability.\n- **Scenario:** Append with a nested inline value that carries a label comment.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Write a pin value as a nested node form, with a comment before its closing bracket.\n- **Observed:** The error said there was an unclosed form. It did not name the line or the comment.\n- **Expected:** The error names the line where the comment took the bracket.\n- **Impact:** One extra call.\n- **State after:** No change. Preview only.\n- **Workaround:** Put each node in its own form with a label. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Name the line and say that a comment ends at the end of the line.",
+      "fix_commit": "1a840ce",
+      "implementation": "Unclosed forms identify their opening line; ignored closing brackets in comments list their exact lines and explain end-of-line comment syntax. Quoted-value failures also identify the opening line."
     },
     {
       "report": "2026-10-22_S2",

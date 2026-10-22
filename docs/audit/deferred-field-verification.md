@@ -578,3 +578,7 @@ CB-05/ED-20 implemented, unbuilt_untested: owned comment transaction, pre-mutati
 ## P0 same-Blueprint getter copy — fa91769
 
 ED-19 implemented, unbuilt_untested. Duplicate existing getter pins/member identity instead of reallocating through spawn helpers; clear copied links, assign a new node GUID, retain default/type checks and rollback. Local variables cannot cross graph scope. No tests/build/editor runs. Later verify cross-function member getter copy, source links/defaults preservation and undo.
+
+## P0 form diagnostics — 1a840ce
+
+GC-35 implemented, unbuilt_untested. Tracks opening lines and comments containing ignored closing brackets; preserves complete-input refusal before mutation. No tests/build/editor runs. Later verify nested inline comments, quoted semicolons, balanced forms and multiline strings.
