@@ -2014,11 +2014,13 @@
       "canonical_issue": "2026-10-21_S16/TD-38",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
-      "observation": "- **Scenario:** Five unboxed event chains at the top of a large event graph. Their tails continue into nodes inside other boxes.\r\n- **Observed:** The tidy refused twice with \"a node would leave its comment box\", without naming the node. The agent laid out 47 nodes by hand in 2 position calls, using the graph text to find the chains.\r\n- **Proposed behavior:** Name the node that blocks the tidy. Offer to tidy only the unboxed part of each chain and leave boxed nodes fixed."
+      "observation": "- **Scenario:** Five unboxed event chains at the top of a large event graph. Their tails continue into nodes inside other boxes.\r\n- **Observed:** The tidy refused twice with \"a node would leave its comment box\", without naming the node. The agent laid out 47 nodes by hand in 2 position calls, using the graph text to find the chains.\r\n- **Proposed behavior:** Name the node that blocks the tidy. Offer to tidy only the unboxed part of each chain and leave boxed nodes fixed.",
+      "remaining": "",
+      "implementation_limits": "NodeIds accepts @unboxed alone or as a selection filter. Box members/comments remain anchors. Refusals identify exact node/comment; pre-existing overflow on untouched boxes is not attributed to tidy. Native overlap/quality gates remain; no runtime verification."
     },
     {
       "report": "2026-10-22_S1",

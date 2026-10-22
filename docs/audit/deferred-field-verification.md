@@ -751,3 +751,7 @@ Generic pure placement now clamps below the full execution row, independent of w
 ## Sequence pure-input clearance
 
 The Sequence-specific placement pass now reserves the entire execution-node height band before positioning pure inputs. This complements generic pure-row clearance and preserves the existing lane shift/growth logic. No tests/build/editor runs. Verify varying call heights/exec pin offsets, nested pure chains, later Sequence lanes and comment bounds. TD-34 remains partial for cross-box/shared-lane corridor cases.
+
+## Unboxed-only tidy scope
+
+TD-38 implementation complete: @unboxed selects all unboxed nodes or filters explicit node IDs using existing comment membership rules. Partial-comment and boundary failures name node/comment IDs. Unchanged box/member overflow is left untouched. No tests/build/editor runs. Verify shared boxed continuations, nested comments, selections with no unboxed nodes, no boxed-node movement, pre-existing overflow, preview/edit scope and undo. This does not close the separate cross-box placement helper request X-89/FT-93.
