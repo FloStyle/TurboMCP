@@ -691,3 +691,7 @@ Planned and actual quality include getter-copy rectangles, using the original sa
 ## Shared self splitting — 42250dc
 
 TD-32 partial: plain UK2Node_Self and leaf variable getters share an exact-pin duplication helper in preview/apply. Copies clear only their duplicated link arrays, preserve typed pins/member identity, and receive new node GUIDs. Selected scope does not rewire unselected consumers. No tests/build/editor runs. Verify typed self/variable copies, native previews, exact one-consumer wiring, repeated tidy, undo and rollback. Comment-owned nodes remain implementation work; no completion claim for that scope.
+
+## Comment-aware shared value copies — a612b20
+
+TD-32 implementation complete, unbuilt/untested. Consumer-owned copies clamp to comment padding, avoid non-ancestor comments and node rectangles, and expand ancestor bounds right/down. Before mutation, expansion rejects newly intersecting unrelated nodes or notes and invalid dimensions. No tests/build/editor runs. Verify nested comments, cross-box consumers, partial selections, occupied expansion areas, native preview/apply parity, undo, repeated tidy and graph semantics. General pure-expression splitting/function-input synthesis remain separate open capabilities.
