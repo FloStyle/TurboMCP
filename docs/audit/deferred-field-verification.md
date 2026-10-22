@@ -969,3 +969,7 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## Strict single-graph batch input — 2026-10-23
 
 2026-10-23 partial repair 6885040, unbuilt_untested: batch wrapper/operation unknown fields refuse; case-duplicate keys and simultaneous graph/graphName refuse; optional values no longer silently default from wrong JSON types; id/kind match argument case handling. Operations must resolve to one actual graph/asset. Remaining: transaction-core ownership, final compile policy and rollback/outcome guarantees. Sequential scratch planning already exists; original all-ops-independent planning diagnosis is stale. No tests/build/editor runs.
+
+## 2026-10-23 batch failure reporting — 0d7a95c
+
+Implemented, unbuilt_untested: failed operation included in rollback scope; successful undo reported as undo_applied with restoration unverified, not unchanged. Caller transaction joining and explicit separate compile/save confirmed by source review. Parent 5b6a8e45 remains open for verified restoration and precise no-op/change accounting. No tests, builds or editor runs.
