@@ -2684,6 +2684,8 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		const bool bRollbackComplete = bRestored && RestorationFailed == 0
 			&& bPositionsRestored && Graph->Nodes.Num() == NodesBefore;
 		if (bRollbackComplete && !bWasDirtyBefore) Graph->GetOutermost()->SetDirtyFlag(false);
+        // Rebuild widgets from the restored graph, including removed reader copies.
+        Graph->NotifyGraphChanged();
 		FString Out = FString::Printf(TEXT("%s: %s in %s did not complete an acceptable layout (total wire length %.1f -> %.1f), so rollback was attempted. Preview predicted %.1f; the post-write measurement was %.1f. %d node position(s) and %d getter copy(ies) were undone, and the rollback %s the original length (%.1f)."), bRollbackComplete ? TEXT("unchanged") : TEXT("partial"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, InPlan.WireLengthAfter, MeasuredAfter, OriginalPositions.Num(), Undone, bRestored ? TEXT("RESTORED") : TEXT("DID NOT RESTORE"), Restored);
 		if (InPlan.SelectedNodeKeys.Num() > 0)
 		{
@@ -2740,6 +2742,10 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	// number that decides whether the pass is kept. The result says so rather than leaving a caller to
 	// assume knots were considered.
 	Graph->MarkPackageDirty();
+    // Direct position/size writes do not notify open graph panels. The default
+    // action purges their visual representation and schedules a native rebuild;
+    // do this once after all nodes, copies and comment sizes are final.
+    Graph->NotifyGraphChanged();
 
 	TArray<FString> Lines;
 	const bool bWorse = MeasuredAfter >= InPlan.WireLengthBefore;
