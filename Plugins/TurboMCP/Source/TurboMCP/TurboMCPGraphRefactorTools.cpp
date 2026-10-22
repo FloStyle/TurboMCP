@@ -8,6 +8,8 @@
 #include "EdGraphSchema_K2.h"
 #include "K2Node_Self.h"
 #include "K2Node_CreateDelegate.h"
+#include "K2Node_CustomEvent.h"
+#include "UObject/UnrealType.h"
 #include "UObject/Class.h"
 #include "K2Node_Literal.h"
 #include "K2Node_VariableGet.h"
@@ -166,6 +168,50 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
     }
     Graph->NotifyGraphChanged(); FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
     return TEXT("changed\n")+Report+TEXT("\nundo=one\ncompile/save=deferred\nRun layout after structural edits.");
+}
+bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& EventName,FString& Report,FString& Error)
+{
+    UBlueprint* BP=FBlueprintEditorUtils::FindBlueprintForGraph(Graph);
+    if(!BP || !BP->UbergraphPages.Contains(Graph))
+    { Error=TEXT("custom events require an event graph"); return false; }
+    if(EventName.IsEmpty() || FChar::IsDigit(EventName[0]))
+    { Error=TEXT("event name must be a nonempty identifier starting with a letter or underscore"); return false; }
+    for(TCHAR C:EventName) if(!FChar::IsAlnum(C) && C!=TEXT('_'))
+    { Error=TEXT("event name may contain only letters, digits and underscores"); return false; }
+    UBlueprint* OriginalBP=FBlueprintEditorUtils::FindBlueprintForGraph(Identity);
+    const FName Name(*EventName);
+    if(OriginalBP && ((OriginalBP->SkeletonGeneratedClass && OriginalBP->SkeletonGeneratedClass->FindFunctionByName(Name))
+        || (OriginalBP->GeneratedClass && OriginalBP->GeneratedClass->FindFunctionByName(Name))))
+    { Error=TEXT("event name already exists as a function"); return false; }
+    TArray<UEdGraph*> AllGraphs;
+    if(OriginalBP) FBlueprintEditorUtils::GetAllGraphs(OriginalBP,AllGraphs);
+    for(UEdGraph* G:AllGraphs) if(G) for(UEdGraphNode* N:G->Nodes)
+        if(const UK2Node_CustomEvent* E=Cast<UK2Node_CustomEvent>(N)) if(E->CustomFunctionName==Name)
+        { Error=TEXT("event name already exists"); return false; }
+    UEdGraphNode* Target=ResolveNode(Graph,Identity,TargetId);
+    UEdGraphPin* Input=Pin(Target,TargetPin,EGPD_Input);
+    if(!Input || Input->PinType.PinCategory!=TEXT("delegate"))
+    { Error=TEXT("target must be an exact delegate input pin"); return false; }
+    // Let the same engine delegate node used by the editor resolve the signature.
+    UK2Node_CreateDelegate* Probe=NewObject<UK2Node_CreateDelegate>(Graph,NAME_None,RF_Transactional);
+    Graph->AddNode(Probe,false,false); Probe->CreateNewGuid(); Probe->AllocateDefaultPins();
+    if(!Connect(Graph,Probe->GetDelegateOutPin(),Input,Error)) return false;
+    UFunction* Signature=Probe->GetDelegateSignature();
+    if(!Signature) { Error=TEXT("target delegate signature could not be resolved"); return false; }
+    for(TFieldIterator<FProperty> It(Signature);It && It->HasAnyPropertyFlags(CPF_Parm);++It)
+        if(It->HasAnyPropertyFlags(CPF_ReturnParm) || (It->HasAnyPropertyFlags(CPF_OutParm) && !It->HasAnyPropertyFlags(CPF_ReferenceParm)))
+        { Error=TEXT("custom events cannot implement a return/output-value signature; bind a compatible function instead"); return false; }
+    Probe->BreakAllNodeLinks(); Graph->RemoveNode(Probe);
+    UK2Node_CustomEvent* Event=UK2Node_CustomEvent::CreateFromFunction(
+        FVector2D(Target->NodePosX-320,Target->NodePosY+240),Graph,EventName,Signature,false);
+    if(!Event) { Error=TEXT("engine could not create the typed custom event"); return false; }
+    UEdGraphPin* Output=nullptr;
+    for(UEdGraphPin* P:Event->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==TEXT("delegate")) Output=P;
+    Input=Pin(Target,TargetPin,EGPD_Input);
+    if(!Connect(Graph,Output,Input,Error)) return false;
+    Report=TEXT("created typed custom event ")+TurboMCPNodeId::MakeForNode(Event,true)+TEXT(" name=")+EventName
+        +TEXT(" signature=")+Signature->GetPathName()+TEXT("; delegate connected; event body is empty; wire its exec output to the desired body; compile/save deferred");
+    return true;
 }
 bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin,FString& Report,FString& Error)
 {
@@ -381,3 +427,9 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPBindFunction(const FString& Asse
 
 FString UTurboMCPEditToolset::EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin)
 { return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,ObjectNodeId,ObjectPin,R,E); }); }
+
+FString UTurboMCPPreviewToolset::PreviewTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName)
+{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindNewEvent(G,I,TargetNodeId,TargetPin,EventName,R,E); }); }
+
+FString UTurboMCPEditToolset::EditTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName)
+{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindNewEvent(G,I,TargetNodeId,TargetPin,EventName,R,E); }); }

@@ -1353,6 +1353,13 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
+    /** Preview a new custom event whose parameters come from the exact target delegate input.
+     * EventName must be unused. Event graph only; replaces the delegate input source.
+     * The event body starts empty. Does not compile or save; preview uses a transient copy. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName);
+
+
 
 
     /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
@@ -2197,6 +2204,13 @@ public:
      * does not create the function, compile or save. */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
+
+    /** Edit a new custom event whose parameters come from the exact target delegate input.
+     * EventName must be unused. Event graph only; replaces the delegate input source.
+     * The event body starts empty. Does not compile or save; preview uses a transient copy. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName);
+
 
 
 
