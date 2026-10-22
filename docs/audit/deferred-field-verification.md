@@ -880,3 +880,19 @@ Read the original tools/scenario and current StructNew/WidgetsAsVars/Compile/Cal
 ## Copied reader / pure expression corridor (e058cdc)
 
 Closed a source gap where copied readers feeding pure consumers had no exec clearance floor. Iterative visited downstream data traversal resolves an execution lane without walking through execution nodes. Uses the closest reachable floor above the consumer, or earliest reachable floor if all are below; disconnected expressions retain consumer top. Existing pin-distance placement, collision and comment checks remain. Source inspection only; no tests/build/editor. Deferred: multi-consumer expressions across branches, tall getter offsets, loops, disconnected expressions and compact-node geometry. Aggregate layout audit remains open.
+
+## Layout coverage audit: S13/TD-30, S15/X-86, Oct22 S2/TD-39 (27184b1)
+
+Reviewed original report requirements against TurboMCPGraphTidy.cpp current implementation, not just tracker status:
+
+- TD-30.1: incoming measured exec-pin offsets align each main lane; explicit MainPath supported.
+- TD-30.2: first connected branch output remains main (Completed preference for latent nodes); other outputs allocate child lanes; ancestry traversal groups nested lanes.
+- TD-30.3: common ancestor chooses merge lane; IncomingRight waits for all placed predecessors.
+- TD-30.4: consumer-first traversal, target-pin ordering, measured pin offsets, nested input columns and nearest collision-free column search. User diagram overrides old consumer-bottom rule with exec-wire clearance.
+- TD-30.5: HorizontalGap defaults 120, adds recursive input column width; configurable.
+- TD-30.6: bands pack by actual placed exec/input union height, with LanePitch as a minimum rather than fixed height.
+- X-86: the named gaps TD-34/35/36 now have pure corridor placement, safe shared readers and per-consumer function-input getters within the same tidy plan/apply flow.
+- S2/TD-39: getters placed near target pins, sibling ordering, nearby-column search instead of only downward movement, exec corridor protection including copies feeding pure expressions.
+- Split interaction: 27184b1 retains the nearest planned consumer instead of old-canvas leftmost consumer; native measured output offset replaces estimated offset. Copy obstacles include all nodes, previous copies and non-containing boxes; comment growth guards preserve unrelated membership. Structural acceptance uses overlaps/exec/pure alignment before length.
+
+Close these three implementation items as unbuilt_untested. No test/build/editor run. No guarantee of crossing-free aesthetics for every graph: field verification must cover dense pin siblings, cyclic/merged data dependencies, copied-reader congestion, nested comments, branch/merge layouts, pin geometry and re-run stability. These are verification debt, not additional unimplemented requested capabilities. CP-14 and unrelated dirty-package X-93 remain separately open with unconfirmed historical causes.
