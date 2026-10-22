@@ -1816,6 +1816,38 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 		Lines.Add(TEXT("scope: whole graph; no fixed-node selection was supplied."));
 	}
 
+    // Empty notes have no geometric membership: never invent an anchor or move them.
+    for (const FBox& Note : InPlan.Boxes)
+    {
+        if (Note.MemberKeys.Num() != 0 || Note.ChildBoxIndices.Num() != 0) continue;
+        auto GapToNote = [&Note](const FNode& Candidate, bool bPlanned)
+        {
+            const double NX = bPlanned ? Candidate.PlannedX : Candidate.X;
+            const double NY = bPlanned ? Candidate.PlannedY : Candidate.Y;
+            const double DX = FMath::Max(0.0, FMath::Max(Note.X - (NX + Candidate.Width), NX - (Note.X + Note.Width)));
+            const double DY = FMath::Max(0.0, FMath::Max(Note.Y - (NY + Candidate.Height), NY - (Note.Y + Note.Height)));
+            return FMath::Sqrt(DX * DX + DY * DY);
+        };
+        const FNode* Nearest = nullptr;
+        double BeforeGap = 0.0;
+        for (const FNode& Candidate : InPlan.Nodes)
+        {
+            if (Candidate.bIsComment) continue;
+            const double Gap = GapToNote(Candidate, false);
+            if (!Nearest || Gap < BeforeGap || (Gap == BeforeGap && Candidate.Key < Nearest->Key))
+            {
+                Nearest = &Candidate;
+                BeforeGap = Gap;
+            }
+        }
+        FString NoteText = Note.Text.Replace(TEXT("\r"), TEXT(" ")).Replace(TEXT("\n"), TEXT(" ")).Left(160);
+        if (Nearest)
+            Lines.Add(FString::Printf(TEXT("empty note %s \"%s\": stays fixed; nearest node before tidy %s; edge distance to that same node %.1f -> %.1f px. Which node should this note describe? Proximity is not an assigned anchor."),
+                *Note.Key, *NoteText, *Nearest->Key, BeforeGap, GapToNote(*Nearest, true)));
+        else
+            Lines.Add(FString::Printf(TEXT("empty note %s \"%s\": stays fixed; no non-comment node is available as an anchor."), *Note.Key, *NoteText));
+    }
+
 	if (InPlan.bAlreadyTidy)
 	{
 		Lines.Add(TEXT("the graph is ALREADY TIDY: no node would move, no box would change size, and no getter would be split. The edit would answer unchanged:"));
