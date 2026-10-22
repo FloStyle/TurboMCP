@@ -501,6 +501,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComment.cpp"
           ],
           "new_files": []
+        },
+        "p0-object-vars": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAdd.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
