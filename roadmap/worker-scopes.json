@@ -660,6 +660,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComment.cpp"
           ],
           "new_files": []
+        },
+        "p0-layout-done-check": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
