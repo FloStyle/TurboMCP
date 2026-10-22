@@ -973,3 +973,7 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## 2026-10-23 batch failure reporting — 0d7a95c
 
 Implemented, unbuilt_untested: failed operation included in rollback scope; successful undo reported as undo_applied with restoration unverified, not unchanged. Caller transaction joining and explicit separate compile/save confirmed by source review. Parent 5b6a8e45 remains open for verified restoration and precise no-op/change accounting. No tests, builds or editor runs.
+
+## 2026-10-23 missing parameter notes — f7b9cf1
+
+Implemented, unbuilt_untested: ReadTurboMCPToolHelp displays FToolInfo.Parameters, previously loaded but omitted. Names sorted; notes explicitly supplemental to the live schema. Parent help records 9263bd95 and 0e4658ad stay open for remaining example/constraint reconciliation. No tests/build/editor runs.
