@@ -1365,13 +1365,53 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				double PureBottom = Bottom;
 				TArray<int32> PlacedPure;
 				for (int32 I : Free) if (RowOf[I] == Row && !OutPlan.Nodes[I].bIsPure) PlacedPure.Add(I);
-				for (int32 K = Free.Num() - 1; K >= 0; --K)
+                // Visit consumers before their inputs, and siblings in visual pin order.
+                // Graph insertion order is unrelated to pin order and can invert getter wires.
+                TArray<int32> PureOrder;
+                TSet<int32> OrderedInputs;
+                TMap<int32, const FWire*> PreferredConsumer;
+                TFunction<void(int32)> OrderInputs = [&](int32 Target)
+                {
+                    TArray<const FWire*> Incoming;
+                    for (const FWire& W : OutPlan.Wires)
+                        if (W.TargetNodeIndex == Target && W.SourceNodeIndex != Target
+                            && RowOf.Contains(W.SourceNodeIndex) && RowOf[W.SourceNodeIndex] == Row
+                            && OutPlan.Nodes[W.SourceNodeIndex].bIsPure)
+                            Incoming.Add(&W);
+                    Incoming.Sort([](const FWire& A, const FWire& B)
+                    {
+                        const double AY = FTurboMCPGraphTidy::AlignmentPinPosition(A.InputPin).Y;
+                        const double BY = FTurboMCPGraphTidy::AlignmentPinPosition(B.InputPin).Y;
+                        if (AY != BY) return AY < BY;
+                        return A.SourceNodeIndex < B.SourceNodeIndex;
+                    });
+                    TArray<int32> Added;
+                    for (const FWire* W : Incoming)
+                    {
+                        const int32 Source = W->SourceNodeIndex;
+                        if (OrderedInputs.Contains(Source)) continue;
+                        if (PureLane.Contains(Source)
+                            && ((!OutPlan.Nodes[Target].bIsPure && LaneOf.Contains(Target) && PureLane[Source] != LaneOf[Target])
+                                || (PureLane.Contains(Target) && PureLane[Source] != PureLane[Target]))) continue;
+                        OrderedInputs.Add(Source);
+                        PureOrder.Add(Source);
+                        PreferredConsumer.Add(Source, W);
+                        Added.Add(Source);
+                    }
+                    for (int32 Source : Added) OrderInputs(Source);
+                };
+                for (int32 I : PlacedPure) OrderInputs(I);
+                // Include disconnected pure components without recursing forever on cycles.
+                for (int32 I : Free)
+                    if (RowOf[I] == Row && OutPlan.Nodes[I].bIsPure && !OrderedInputs.Contains(I))
+                    { OrderedInputs.Add(I); PureOrder.Add(I); OrderInputs(I); }
+				for (int32 I : PureOrder)
 				{
-					const int32 I = Free[K]; FNode& N = OutPlan.Nodes[I];
+					FNode& N = OutPlan.Nodes[I];
 					if (RowOf[I] != Row || !N.bIsPure) continue;
 					N.PlannedX = FreeStartX; N.PlannedY = RowY;
-                    const FWire* Chosen=nullptr;
-                    for(const FWire& W:OutPlan.Wires)
+                    const FWire* Chosen = PreferredConsumer.FindRef(I);
+                    if (!Chosen) for(const FWire& W:OutPlan.Wires)
                         if(W.SourceNodeIndex==I && W.TargetNodeIndex!=I && RowOf.Contains(W.TargetNodeIndex)
                             && (!PureLane.Contains(I)
                                 || (!OutPlan.Nodes[W.TargetNodeIndex].bIsPure && LaneOf.Contains(W.TargetNodeIndex) && LaneOf[W.TargetNodeIndex]==PureLane[I])
