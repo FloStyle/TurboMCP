@@ -21,6 +21,8 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_CreateDelegate.h"
+#include "K2Node_ComponentBoundEvent.h"
+#include "K2Node_ActorBoundEvent.h"
 #include "K2Node_Event.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_Variable.h"
@@ -547,6 +549,14 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 				continue;
 			}
 			++NodesScanned;
+            if(const UK2Node_ComponentBoundEvent* Bound=Cast<UK2Node_ComponentBoundEvent>(Node))
+                DelegateSites.Add(FString::Printf(TEXT("component/widget %s.%s (owner class=%s) -> event %s; declared automatic binding, runtime invocation not inferred"),
+                    *Bound->ComponentPropertyName.ToString(),*Bound->DelegatePropertyName.ToString(),
+                    *GetPathNameSafe(Bound->DelegateOwnerClass.Get()),*TurboMCPNodeId::MakeForNode(Node,true)));
+            else if(const UK2Node_ActorBoundEvent* Bound=Cast<UK2Node_ActorBoundEvent>(Node))
+                DelegateSites.Add(FString::Printf(TEXT("actor %s.%s (owner class=%s) -> event %s; declared automatic binding, runtime invocation not inferred"),
+                    *GetPathNameSafe(Bound->EventOwner.Get()),*Bound->DelegatePropertyName.ToString(),
+                    *GetPathNameSafe(Bound->DelegateOwnerClass.Get()),*TurboMCPNodeId::MakeForNode(Node,true)));
             FString DelegateTarget;
             bool OwnDelegateTarget=false;
             if(const UK2Node_CreateDelegate* Delegate=Cast<UK2Node_CreateDelegate>(Node))
