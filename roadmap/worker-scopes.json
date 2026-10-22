@@ -821,6 +821,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp"
           ],
           "new_files": []
+        },
+        "p0-tag-reference-discovery": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "docs/user/tools.md"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
