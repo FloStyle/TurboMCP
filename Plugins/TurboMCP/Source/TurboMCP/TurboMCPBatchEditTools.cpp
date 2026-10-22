@@ -6,6 +6,7 @@
 #include "TurboMCPGraphScratch.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeType.h"
+#include "TurboMCPNodeId.h"
 #include "EdGraph/EdGraphPin.h"
 #include "TurboMCPRollback.h"
 #include "Dom/JsonObject.h"
@@ -33,7 +34,12 @@ namespace
   if (!FJsonSerializer::Deserialize(Reader, Root) || !Root.IsValid()) { Error = TEXT("Operations contains malformed JSON"); return false; }
   const TArray<TSharedPtr<FJsonValue>>* Values = nullptr;
   if(Root->Type==EJson::Array) Values=&Root->AsArray();
-  else if(Root->Type==EJson::Object) Root->AsObject()->TryGetArrayField(TEXT("operations"),Values);
+  else if(Root->Type==EJson::Object)
+  {
+   for (const auto& Field : Root->AsObject()->Values)
+    if (FString(*Field.Key) != TEXT("operations")) { Error=TEXT("batch wrapper accepts only operations"); return false; }
+   Root->AsObject()->TryGetArrayField(TEXT("operations"),Values);
+  }
   if(!Values) { Error=TEXT("Expected an array or {\"operations\":[...]}. Each entry needs asset, graphName (or graph), sourceNodeId, sourcePin, targetNodeId, targetPin; optional id, kind=graphRepoint, targetTypeId and keepSource."); return false; }
   TSet<FString> Ids;
   TMap<UEdGraph*,TSharedPtr<TurboMCPGraphScratch::FCopy>> Copies;
@@ -41,11 +47,26 @@ namespace
   {
    const TSharedPtr<FJsonObject> Object = (*Values)[Index].IsValid() && (*Values)[Index]->Type==EJson::Object ? (*Values)[Index]->AsObject() : nullptr;
    if (!Object.IsValid()) { Error = FString::Printf(TEXT("operation %d is not an object"), Index); return false; }
+   TSet<FString> SeenFields;
+   for (const auto& Field : Object->Values)
+   {
+    const FString Key = FString(*Field.Key).ToLower();
+    const bool bKnown = Key==TEXT("id") || Key==TEXT("kind") || Key==TEXT("asset") || Key==TEXT("graph") || Key==TEXT("graphname")
+     || Key==TEXT("sourcenodeid") || Key==TEXT("sourcepin") || Key==TEXT("targetnodeid") || Key==TEXT("targetpin") || Key==TEXT("targettypeid") || Key==TEXT("keepsource");
+    if (!bKnown || SeenFields.Contains(Key)) { Error=FString::Printf(TEXT("operation %d has unknown or case-duplicate field '%s'"),Index+1,*FString(*Field.Key)); return false; }
+    SeenFields.Add(Key);
+    if (!Field.Value.IsValid() || (Field.Value->Type!=EJson::String && !(Key==TEXT("keepsource") && Field.Value->Type==EJson::Boolean)))
+    { Error=FString::Printf(TEXT("operation %d field '%s' has invalid type; expected string (keepSource also accepts boolean)"),Index+1,*FString(*Field.Key)); return false; }
+   }
+   if (SeenFields.Contains(TEXT("graph")) && SeenFields.Contains(TEXT("graphname"))) { Error=TEXT("use graph or graphName, not both"); return false; }
+   // id and kind use the same case-insensitive lookup policy as arguments.
+   auto MetaArg=[&](const TCHAR* Name,FString& Value)
+   { for(const auto& Field:Object->Values) if(FString(*Field.Key).Equals(Name,ESearchCase::IgnoreCase)) return Field.Value->TryGetString(Value); return false; };
    FBatchOperation Op;
-   if (!Object->TryGetStringField(TEXT("id"), Op.Id) || Op.Id.IsEmpty()) Op.Id=FString::Printf(TEXT("operation-%d"),Index+1);
+   if (!MetaArg(TEXT("id"), Op.Id) || Op.Id.IsEmpty()) Op.Id=FString::Printf(TEXT("operation-%d"),Index+1);
    if (Ids.Contains(Op.Id)) { Error = FString::Printf(TEXT("duplicate operation id '%s'"), *Op.Id); return false; }
    Ids.Add(Op.Id);
-   if (!Object->TryGetStringField(TEXT("kind"), Op.Kind) || Op.Kind.IsEmpty()) Op.Kind=TEXT("graphRepoint");
+   if (!MetaArg(TEXT("kind"), Op.Kind) || Op.Kind.IsEmpty()) Op.Kind=TEXT("graphRepoint");
    if (Op.Kind != TEXT("graphRepoint")) { Error = FString::Printf(TEXT("operation '%s' has unknown or unsupported kind '%s'"), *Op.Id, *Op.Kind); return false; }
    FString Asset, Graph, SourceNode, SourcePin, TargetNode, TargetType, TargetPin, KeepSource;
    auto StringArg=[&](const TCHAR* Name,FString& Value)
@@ -65,6 +86,7 @@ namespace
    UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath); int32 Matches=0;
    UEdGraph* Original=BP?TurboMCPNodeId::FindGraphByName(BP,Graph,Matches):nullptr;
    if(!Original || Matches!=1) { Error=TEXT("batch graph must resolve uniquely"); return false; }
+   if (!Copies.IsEmpty() && !Copies.Contains(Original)) { Error=TEXT("batch operations must target one asset and one graph"); return false; }
    TSharedPtr<TurboMCPGraphScratch::FCopy>& Copy=Copies.FindOrAdd(Original);
    if(!Copy.IsValid()) { Copy=MakeShared<TurboMCPGraphScratch::FCopy>(); if(!Copy->Init(BP,Original)) { Error=TEXT("batch graph copy failed"); return false; } }
    if(!FTurboMCPGraphRepoint::PlanOnGraph(Copy->Owner.Get(),Copy->Graph,Original,Asset,SourceNode,SourcePin,TargetNode,TargetType,TargetPin,KeepSource,Op.Repoint,Error)) return false;
