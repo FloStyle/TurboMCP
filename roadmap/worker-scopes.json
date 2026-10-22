@@ -977,6 +977,12 @@
           "files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendPlacement.cpp"
           ]
+        },
+        "p0-implicit-rejoin-layout": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
