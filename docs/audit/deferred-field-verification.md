@@ -954,3 +954,8 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## Strict row import — 2026-10-23
 
 2026-10-23 d3678da implements strict DataTable scratch-row import completion: captured Error/Fatal diagnostics refuse even with a non-null importer result, and trailing non-whitespace refuses. Validation occurs before any removal/write. Done implementation slice, unbuilt_untested. Remaining abdd2c08: field/display-name ambiguity, nested syntax and precision consistency across other parsers. No tests/build/editor runs.
+
+
+## DataTable preview values — 2026-10-23
+
+2026-10-23 b872c49: preview now stages the same final merged row text as Apply and imports it into initialized scratch rows; invalid values become refusals and all advertised effects are cleared. Done preview-validation slice, unbuilt_untested. Remaining caller-order issue: mixed set/remove semantics remain refused; sequential mixed-operation support is not implemented. No tests/build/editor runs.
