@@ -30,7 +30,7 @@
  *
  * `03_TOOLS.md` asks for the row struct with its fields and types, the row count,
  * the row names capped, and the graphs in loaded Blueprints that read the table.
- * **Row values are explicitly out of scope**, and are not printed.
+ * Selected row values are printed when Columns names schema fields.
  *
  * The readers are found in two steps rather than one:
  *
@@ -90,7 +90,8 @@ namespace
 
 FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 	const FString& Asset,
-	const FString& Include)
+	const FString& Include,
+	const FString& Columns)
 {
 	if (Asset.IsEmpty())
 	{
@@ -139,6 +140,22 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 			Loaded != nullptr ? *Loaded->GetClass()->GetName() : TEXT("missing object"));
 	}
 
+	TArray<FProperty*> SelectedColumns;
+	TArray<FString> ColumnNames;
+	Columns.ParseIntoArray(ColumnNames, TEXT(","), true);
+	if (!Columns.TrimStartAndEnd().IsEmpty() && (Mode == 1 || !Table->GetRowStruct()))
+		return TEXT("error: columns require a row struct and include=all or schema");
+	for (FString Column : ColumnNames)
+	{
+		Column.TrimStartAndEndInline();
+		FProperty* Found = nullptr;
+		for (TFieldIterator<FProperty> It(Table->GetRowStruct()); It; ++It)
+		{
+			if (It->GetName().Equals(Column, ESearchCase::IgnoreCase)) { Found = *It; break; }
+		}
+		if (!Found) return FString::Printf(TEXT("error: unknown column '%s'; use the schema field names"), *Column);
+		SelectedColumns.AddUnique(Found);
+	}
 	FString Out = FString::Printf(TEXT("read: data table %s"), *Resolved.ObjectPath);
 
 	if (Mode != 1)
@@ -221,12 +238,29 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 			}
 			++ShownRows;
 			Out += FString::Printf(TEXT("\n  %s"), *Name.ToString());
+			const uint8* const* Row = RowMap.Find(Name);
+			for (const FProperty* Column : SelectedColumns)
+			{
+				FString Value;
+				if (Row && *Row)
+					{
+					for (int32 Element = 0; Element < Column->ArrayDim; ++Element)
+					{
+						if (Element) Value += TEXT(", ");
+						if (!Column->ExportText_InContainer(Element, Value, *Row, nullptr, Table, PPF_None))
+							Value += TEXT("<export unavailable>");
+					}
+				}
+				else Value = TEXT("<missing row storage>");
+				Value.ReplaceInline(TEXT("\r"), TEXT("\\r"));
+				Value.ReplaceInline(TEXT("\n"), TEXT("\\n"));
+				Out += FString::Printf(TEXT("\n    %s = %s"), *Column->GetName(), *Value);
+			}
+
 		}
 
-		// Row VALUES are out of scope by the spec, and saying so stops a caller
-		// asking again.
-		Out += TEXT("\n; row values are not printed. The engine's own data table ");
-		Out += TEXT("tools read and write them.");
+		if (SelectedColumns.IsEmpty())
+			Out += TEXT("\n; pass Columns as comma-separated schema field names to read selected row values.");
 	}
 
 	if (Mode != 2)

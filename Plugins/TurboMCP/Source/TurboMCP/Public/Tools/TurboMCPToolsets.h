@@ -389,9 +389,8 @@ public:
 	 * Empty means all.
 	 *
 	 * The row struct is reported with every field and its type, then the row count
-	 * and the row names. **Row values are not printed**: the spec puts them out of
-	 * scope because the engine's own tools read and write them, and the result says
-	 * so rather than leaving a caller to wonder.
+	 * and the row names. Optional Columns selects reflected fields whose values
+	 * are exported beside each row, without editing or saving the table.
 	 *
 	 * The readers are found in two steps. The asset registry gives every asset that
 	 * depends on the table, which is complete but names no graph; loaded Blueprints
@@ -401,12 +400,15 @@ public:
 	 *
 	 * A table with no rows, or a struct with no fields, reports that as a fact. A
 	 * table whose row struct was deleted says so instead of printing an empty schema.
+	 * Columns optionally names comma-separated exact schema fields to export per row.
+	 * Unknown fields are refused before producing a partial result.
 	 * A filter that is not one of the three is refused by name.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPDataTable(
 		const FString& Asset,
-		const FString& Include);
+		const FString& Include,
+		const FString& Columns = TEXT(""));
 
 	/**
 	 * Read the call log: what the server recorded about its own use.
