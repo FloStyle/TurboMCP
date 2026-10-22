@@ -82,7 +82,7 @@ The linked records distinguish implemented containment from unresolved causes. V
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>todo (58)</summary>
+<summary>todo (57)</summary>
 
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
 - **P1** [Verify append node structure and compile outcomes](todo/4f1bfd61.md)
@@ -130,7 +130,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P4** [Verify node purity and declared-name aliases](todo/9db83209.md)
 - **P4** [State graph search coverage explicitly](todo/ca5bbbfc.md)
 - **P4** [Split new asset, component and listener proposals](todo/d4433d0e.md)
-- **P4** [Use canonical identity with unambiguous display aliases](todo/e866ba0d.md)
 - **P4** [Split helper proposals and restrict source-file access](todo/e9a28b8d.md)
 - **P5** [Consolidate editor presentation requirements under R18](todo/9d4624ff.md)
 - **P5** [Use one agent entry point and shipped trap source](todo/e35faf67.md)
@@ -174,7 +173,7 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (20)</summary>
+<summary>done (21)</summary>
 
 - **P1** [Validate call-cost caps without hiding invalid input](todo/019cf7af.md)
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
@@ -195,6 +194,7 @@ These records preserve original requirements and evidence. Their status does not
 - **P3** [Distinguish struct dependents from proven breakage](todo/1f5fe672.md)
 - **P3** [Include struct make/break usage in removal checks](todo/7bd81b84.md)
 - **P3** [Enforce explicit graph selection and asset-wide reads](todo/c1e04796.md)
+- **P4** [Use canonical identity with unambiguous display aliases](todo/e866ba0d.md)
 - **P5** [Shorten successful checkout reports](todo/1db73082.md)
 
 </details>

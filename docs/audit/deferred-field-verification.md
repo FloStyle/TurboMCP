@@ -959,3 +959,8 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## DataTable preview values — 2026-10-23
 
 2026-10-23 b872c49: preview now stages the same final merged row text as Apply and imports it into initialized scratch rows; invalid values become refusals and all advertised effects are cleared. Done preview-validation slice, unbuilt_untested. Remaining caller-order issue: mixed set/remove semantics remain refused; sequential mixed-operation support is not implemented. No tests/build/editor runs.
+
+
+## Canonical identity reconciliation — 2026-10-23
+
+2026-10-23 implementation reconciliation: NodeId Parse splits unquoted separators and preserves quoted graph names; NormaliseKey rejects nonhex/undersized aliases; FindNodesByKey returns all matches. NodeResolve refuses ambiguous assets/node prefixes; CaptureSelector uses the same parser/match counts and refuses ambiguity; Append resolves aliases through the shared key matcher before using canonical node identity. MakeForNode emits full identity for long-form mutation records. Close this named normalization/ambiguity implementation record as Done/Untested. No claim that every tool accepts arbitrary short keys, and no runtime verification. Broader reader/writer grammar coverage stays under 4de12720 and full endpoint inventory under ff18311b.
