@@ -1812,11 +1812,13 @@
       "canonical_issue": "2026-10-21_S15/NR-07",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
-      "observation": "- **Type:** Limitation.\r\n- **Observed:** The resolve output gives a link count for each pin, but not the linked node and pin.\r\n- **Proposed behavior:** Add the linked node ID and pin name.\r\n\r\n### User review"
+      "observation": "- **Type:** Limitation.\r\n- **Observed:** The resolve output gives a link count for each pin, but not the linked node and pin.\r\n- **Proposed behavior:** Add the linked node ID and pin name.\r\n\r\n### User review",
+      "implementation": "5d74cf1",
+      "implementation_limits": "Source implemented; no build, tests or editor verification. Resolve now prints peer node IDs, pin names and direction."
     },
     {
       "report": "2026-10-21_S15",
@@ -2039,11 +2041,13 @@
       "canonical_issue": "asset-search-filter",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Defect.\n- **Observed:** One search word plus \"type:DataTable\" was refused as an unsupported filter, although the help says filters can appear before or after the words. The same search without the filter worked.\n- **Expected:** Words and the type filter combine.\n\n### Data table reader"
+      "observation": "- **Type:** Defect.\n- **Observed:** One search word plus \"type:DataTable\" was refused as an unsupported filter, although the help says filters can appear before or after the words. The same search without the filter worked.\n- **Expected:** Words and the type filter combine.\n\n### Data table reader",
+      "implementation": "5d74cf1",
+      "implementation_limits": "Source implemented; no build, tests or editor verification. Whitespace tokenization and class: alias."
     },
     {
       "report": "2026-10-22_S1",
@@ -2298,11 +2302,13 @@
       "canonical_issue": "asset-search-filter",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
-      "observation": "- **Type:** Usability.\n- **Scenario:** Search for widget Blueprints whose name holds one word.\n- **Reproduction status:** Repeated, 3 times.\n- **Steps to reproduce:**\n  1. Search with the word first and a type filter second.\n  2. Search with the type filter first and the word second.\n- **Observed:** Word first was refused as an unsupported filter. Filter first gave 0 matches, and the summary showed the word as part of the type. A search with only the word gave the expected results.\n- **Expected:** The tool help says filters can appear before or after words.\n- **Impact:** Two extra calls. The type filter could not be used.\n- **State after:** No change. Read only.\n- **Workaround:** Search with the word only. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** A filter value ends at the first space.\n\n### Graph append"
+      "observation": "- **Type:** Usability.\n- **Scenario:** Search for widget Blueprints whose name holds one word.\n- **Reproduction status:** Repeated, 3 times.\n- **Steps to reproduce:**\n  1. Search with the word first and a type filter second.\n  2. Search with the type filter first and the word second.\n- **Observed:** Word first was refused as an unsupported filter. Filter first gave 0 matches, and the summary showed the word as part of the type. A search with only the word gave the expected results.\n- **Expected:** The tool help says filters can appear before or after words.\n- **Impact:** Two extra calls. The type filter could not be used.\n- **State after:** No change. Read only.\n- **Workaround:** Search with the word only. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** A filter value ends at the first space.\n\n### Graph append",
+      "implementation": "5d74cf1",
+      "implementation_limits": "Source implemented; no build, tests or editor verification. Whitespace tokenization and class: alias."
     },
     {
       "report": "2026-10-22_S2",
@@ -2683,11 +2689,13 @@
       "canonical_issue": "asset-search-filter",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
-      "observation": "- **Type:** Usability.\n- **Scenario:** Search a name prefix restricted to widget Blueprints.\n- **Reproduction status:** Observed once. Recurs AS-04 and AS-05.\n- **Steps to reproduce:**\n  1. Run asset search with a name word and a type filter for the widget Blueprint class.\n- **Observed:** The whole query was refused as an unsupported filter.\n- **Expected:** A type filter with a search word works.\n- **Impact:** 1 extra call. The references tool found the asset instead.\n- **State after:** No change.\n- **Workaround:** Read outgoing references of a known parent asset. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None."
+      "observation": "- **Type:** Usability.\n- **Scenario:** Search a name prefix restricted to widget Blueprints.\n- **Reproduction status:** Observed once. Recurs AS-04 and AS-05.\n- **Steps to reproduce:**\n  1. Run asset search with a name word and a type filter for the widget Blueprint class.\n- **Observed:** The whole query was refused as an unsupported filter.\n- **Expected:** A type filter with a search word works.\n- **Impact:** 1 extra call. The references tool found the asset instead.\n- **State after:** No change.\n- **Workaround:** Read outgoing references of a known parent asset. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None.",
+      "implementation": "5d74cf1",
+      "implementation_limits": "Source implemented; no build, tests or editor verification. Whitespace tokenization and class: alias."
     },
     {
       "report": "2026-10-22_S3",

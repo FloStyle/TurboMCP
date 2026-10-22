@@ -546,3 +546,7 @@ Partial repair: class-qualified reflected property IDs now shared by reader/disc
 ## P0 explicit continuation — f469303
 
 GC-44 implemented, unbuilt/untested: explicitly named old targets no longer receive an additional implicit first-output edge. Final all-link read-back added. Multi-output implicit continuation refuses instead of guessing. Preview parity/disclosure and convenience continuation options remain OPEN; no tests/build/editor runs.
+
+## P0 search and pin endpoints — 5d74cf1
+
+AS-04/AS-05/AS-06 and NR-07 implemented, unbuilt_untested. Search now splits whitespace and accepts class: as type: alias. Node resolve exposes exact linked node/pin/direction. No tests/build/editor runs; graph-reader branch-output naming remains separate and open.
