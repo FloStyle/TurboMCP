@@ -1090,6 +1090,12 @@
             "Tools/test-widget-preview.py"
           ],
           "new_files": []
+        },
+        "datatable-import-completeness": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
