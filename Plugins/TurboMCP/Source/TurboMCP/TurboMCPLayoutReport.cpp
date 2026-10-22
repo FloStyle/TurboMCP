@@ -612,6 +612,71 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
         }
     }
 
+
+    // Each endpoint belongs to its smallest enclosing comment (nested boxes
+    // therefore have a single, deterministic owner). Unboxed endpoints are explicit.
+    TMap<const UEdGraphNode*, const UEdGraphNode*> BoxOwners;
+    for (const UEdGraphNode* Node : InGraph->Nodes)
+    {
+        if (!Node || Node->IsA<UEdGraphNode_Comment>()) continue;
+        const FRect R = RectOf(Node);
+        const UEdGraphNode* Owner = nullptr;
+        double OwnerArea = TNumericLimits<double>::Max();
+        for (const UEdGraphNode* Box : InGraph->Nodes)
+        {
+            if (!Box || !Box->IsA<UEdGraphNode_Comment>()) continue;
+            const FRect B = RectOf(Box);
+            const double Area = (B.MaxX-B.MinX)*(B.MaxY-B.MinY);
+            if (R.MinX >= B.MinX && R.MinY >= B.MinY && R.MaxX <= B.MaxX && R.MaxY <= B.MaxY
+                && (Area < OwnerArea || (Area == OwnerArea && Owner && Box->GetName() < Owner->GetName())))
+            { Owner = Box; OwnerArea = Area; }
+        }
+        BoxOwners.Add(Node, Owner);
+    }
+    struct FCrossBoxWire { double Length; FString Text; FString SourceId; FString TargetId; };
+    TArray<FCrossBoxWire> CrossBoxWires;
+    double CrossBoxTotal = 0.0;
+    for (const UEdGraphNode* Node : InGraph->Nodes)
+    {
+        if (!Node || Node->IsA<UEdGraphNode_Comment>()) continue;
+        const UEdGraphNode* SourceBox = BoxOwners.FindRef(Node);
+        for (const UEdGraphPin* Pin : Node->Pins)
+        {
+            if (!Pin || Pin->Direction != EGPD_Output) continue;
+            TSet<const UEdGraphPin*> SeenTargets;
+            for (const UEdGraphPin* Other : Pin->LinkedTo)
+            {
+                if (!Other || SeenTargets.Contains(Other)) continue;
+                SeenTargets.Add(Other);
+                const UEdGraphNode* Target = Other->GetOwningNode();
+                if (!Target || Target->GetGraph() != InGraph) continue;
+                const UEdGraphNode* TargetBox = BoxOwners.FindRef(Target);
+                if (SourceBox == TargetBox) continue;
+                const double Length = FVector2D::Distance(PinPosition(Pin), PinPosition(Other));
+                const FString SourceId = TurboMCPNodeId::MakeForNode(Node);
+                const FString TargetId = TurboMCPNodeId::MakeForNode(Target);
+                const FString SourceOwner = SourceBox ? TurboMCPNodeId::MakeForNode(SourceBox) : TEXT("unboxed");
+                const FString TargetOwner = TargetBox ? TurboMCPNodeId::MakeForNode(TargetBox) : TEXT("unboxed");
+                CrossBoxWires.Add({Length, FString::Printf(TEXT("%.1f units: %s.%s [%s] -> %s.%s [%s]"),
+                    Length, *SourceId, *Pin->PinName.ToString(), *SourceOwner,
+                    *TargetId, *Other->PinName.ToString(), *TargetOwner), SourceId, TargetId});
+                CrossBoxTotal += Length;
+            }
+        }
+    }
+    CrossBoxWires.Sort([](const FCrossBoxWire& A, const FCrossBoxWire& B)
+    { return A.Length == B.Length ? A.Text < B.Text : A.Length > B.Length; });
+    FFinding CrossBoxFinding;
+    CrossBoxFinding.Kind = TEXT("cross-box-wires");
+    CrossBoxFinding.Detail = FString::Printf(TEXT("%d cross-box connections; total %.1f graph units (estimated straight-line pin distances). Smallest fully enclosing comment owns each endpoint; unboxed-to-unboxed excluded. Longest first:"), CrossBoxWires.Num(), CrossBoxTotal);
+    for (const FCrossBoxWire& Wire : CrossBoxWires)
+    {
+        CrossBoxFinding.Detail += TEXT("\n      ") + Wire.Text;
+        CrossBoxFinding.NodeIds.AddUnique(Wire.SourceId);
+        CrossBoxFinding.NodeIds.AddUnique(Wire.TargetId);
+    }
+    Report.Findings.Add(MoveTemp(CrossBoxFinding));
+
 	if (Report.bHasNoWires)
 	{
 		// The spec asks for this in words rather than as a zero.
