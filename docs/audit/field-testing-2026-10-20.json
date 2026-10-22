@@ -1888,10 +1888,13 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
-      "observation": "- **Type:** Limitation.\r\n- **Scenario:** A new branch lane must end in two existing nodes that already have exec links from other lanes.\r\n- **Observed:** The append tool can only link inputs of nodes it creates. The patch tool refuses links (\"edits literal defaults only\"). The connect tool replaces data inputs only. So the agent duplicated the two end nodes and their getter. The append placed all new nodes in one column at the graph edge with estimated sizes. The tidy then made the graph longer and rolled back. The user called the result ugly.\r\n- **Workaround:** The engine connect tool added the exec links into the existing nodes (an exec input accepts many links). The engine delete tool removed the duplicates. Then one position call placed the lane. This worked, but it took about 12 extra calls and needed engine tools.\r\n- **Proposed behavior:** Let append link a new node output to an existing node input, by node ID and pin name, with read-back. Let append place the new block next to the node it attaches to, as a lane in the user layout style."
+      "observation": "- **Type:** Limitation.\r\n- **Scenario:** A new branch lane must end in two existing nodes that already have exec links from other lanes.\r\n- **Observed:** The append tool can only link inputs of nodes it creates. The patch tool refuses links (\"edits literal defaults only\"). The connect tool replaces data inputs only. So the agent duplicated the two end nodes and their getter. The append placed all new nodes in one column at the graph edge with estimated sizes. The tidy then made the graph longer and rolled back. The user called the result ugly.\r\n- **Workaround:** The engine connect tool added the exec links into the existing nodes (an exec input accepts many links). The engine delete tool removed the duplicates. Then one position call placed the lane. This worked, but it took about 12 extra calls and needed engine tools.\r\n- **Proposed behavior:** Let append link a new node output to an existing node input, by node ID and pin name, with read-back. Let append place the new block next to the node it attaches to, as a lane in the user layout style.",
+      "placement_commit": "42e8d65",
+      "implementation": "Existing-node exact endpoint connections and explicit continuation already implemented. Append now uses probe exec pin metadata and requested links to position acyclic blocks relative to an existing exec source, with dependency columns, branch rows and pure input bands; only new positions change.",
+      "remaining": "Measured new-node footprints, comment-contained attached lane fitting, cyclic-block layout and full nested branch/rejoin styling remain. Current lane bounds use explicit 320x160 estimates; detached/cyclic blocks retain legacy column fallback. Keep open."
     },
     {
       "report": "2026-10-21_S16",
@@ -3413,9 +3416,13 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
+      "validation": "unbuilt_untested",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
-      "observation": "The duplicate nodes, the column placement and the hand position pass"
+      "observation": "The duplicate nodes, the column placement and the hand position pass",
+      "disposition": "partially_implemented",
+      "placement_commit": "42e8d65",
+      "implementation": "Existing-node exact endpoint connections and explicit continuation already implemented. Append now uses probe exec pin metadata and requested links to position acyclic blocks relative to an existing exec source, with dependency columns, branch rows and pure input bands; only new positions change.",
+      "remaining": "Measured new-node footprints, comment-contained attached lane fitting, cyclic-block layout and full nested branch/rejoin styling remain. Current lane bounds use explicit 320x160 estimates; detached/cyclic blocks retain legacy column fallback. Keep open."
     },
     {
       "report": "2026-10-22_S1",

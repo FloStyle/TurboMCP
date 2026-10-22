@@ -803,3 +803,7 @@ Source `899076f`: pure input placement follows visual consumer pin order and pla
 ## Shared reader nearby columns — 2026-10-23
 
 Source `9fd395b`: search obstacle-adjacent input columns instead of only pushing copies downward; score measured pin distance, preserve consumer floor and existing comment growth/membership guards. Source inspection only. No tests/build/editor runs. Unbuilt/untested. Later check crowded branches, narrow/nested comments, multiple copies and function parameter readers. Aggregate layout issues remain open.
+
+## Attachment-relative append lanes — 2026-10-23
+
+Source `42e8d65`: capture exec pin metadata from existing transient probes; topologically arrange acyclic append forms relative to a named existing exec source. Reserve branch/input bands and translate the new block past existing stored/estimated obstacles. Existing positions remain untouched. Preview/edit consume the same positions. Source/API inspection only; no build/test/editor runs. Unbuilt/untested. S16/X-87 and FT-92 stay open for measured footprints, comment-contained fitting, cyclic blocks and nested branch/rejoin styling. Later check multiple attachments, merges, disconnected forms, coordinate extremes, comment boundaries and text-order independence.
