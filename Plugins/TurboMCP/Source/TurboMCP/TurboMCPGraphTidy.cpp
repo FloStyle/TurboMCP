@@ -1225,6 +1225,13 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 					Bottom = FMath::Max(Bottom, N.PlannedY + N.Height);
 				}
 				// Place pure nodes below-left of consumers, reserving vertical space for each.
+                // Reserve the full execution-row band even when a pure consumer
+                // has not been positioned yet. Dependency iteration order must not
+                // put an upstream math node back through the execution wires.
+                double PureRowFloor = RowY;
+                for (int32 I : Free)
+                    if (RowOf[I] == Row && !OutPlan.Nodes[I].bIsPure)
+                        PureRowFloor = FMath::Max(PureRowFloor, OutPlan.Nodes[I].PlannedY + OutPlan.Nodes[I].Height + SpacingY);
 				double PureBottom = Bottom;
 				TArray<int32> PlacedPure;
 				for (int32 I : Free) if (RowOf[I] == Row && !OutPlan.Nodes[I].bIsPure) PlacedPure.Add(I);
@@ -1247,6 +1254,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                         const double InputFloor = Consumer.PlannedY + (Consumer.bIsPure ? 0.0 : Consumer.Height + SpacingY);
                         N.PlannedY = FMath::Max(N.PlannedY, InputFloor);
                     }
+                    N.PlannedY = FMath::Max(N.PlannedY, PureRowFloor);
 					for (int32 Pass = 0; Pass <= PlacedPure.Num(); ++Pass)
 					{
 						double NextY = N.PlannedY;
