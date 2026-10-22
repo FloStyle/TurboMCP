@@ -47,6 +47,50 @@
 
 namespace
 {
+    struct FStructuralQuality
+    {
+        int32 Overlaps=0;
+        int32 BackwardExec=0;
+        double LinearExecDrift=0;
+    };
+    // Mode: original, planned, or actual post-edit coordinates. Pin offsets remain native.
+    FStructuralQuality StructuralQuality(const FTurboMCPGraphTidy::FPlan& Plan,int32 Mode)
+    {
+        FStructuralQuality Q;
+        auto Position=[Mode](const FTurboMCPGraphTidy::FNode& N)
+        {
+            if(Mode==2 && N.Node) return FVector2D(N.Node->NodePosX,N.Node->NodePosY);
+            return Mode==1?FVector2D(N.PlannedX,N.PlannedY):FVector2D(N.X,N.Y);
+        };
+        for(int32 A=0;A<Plan.Nodes.Num();++A) for(int32 B=A+1;B<Plan.Nodes.Num();++B)
+        {
+            const auto& L=Plan.Nodes[A]; const auto& R=Plan.Nodes[B];
+            if(L.bIsComment || R.bIsComment) continue;
+            const FVector2D P=Position(L), T=Position(R);
+            if(P.X<T.X+R.Width && P.X+L.Width>T.X && P.Y<T.Y+R.Height && P.Y+L.Height>T.Y) ++Q.Overlaps;
+        }
+        for(const auto& W:Plan.Wires)
+        {
+            if(!W.OutputPin || !W.InputPin || W.OutputPin->PinType.PinCategory!=TEXT("exec") || !Plan.Nodes.IsValidIndex(W.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(W.TargetNodeIndex)) continue;
+            const auto& S=Plan.Nodes[W.SourceNodeIndex]; const auto& T=Plan.Nodes[W.TargetNodeIndex];
+            if(!S.Node || !T.Node) continue;
+            const FVector2D Start=FTurboMCPLayoutReport::PinPosition(W.OutputPin)+Position(S)-FVector2D(S.Node->NodePosX,S.Node->NodePosY);
+            const FVector2D End=FTurboMCPLayoutReport::PinPosition(W.InputPin)+Position(T)-FVector2D(T.Node->NodePosX,T.Node->NodePosY);
+            if(End.X<Start.X) ++Q.BackwardExec;
+            int32 Outputs=0;
+            for(const UEdGraphPin* P:S.Node->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==TEXT("exec")) ++Outputs;
+            // Branch/Sequence fan-out and merge inputs deliberately occupy separate rows.
+            if(Outputs==1 && W.InputPin->LinkedTo.Num()==1) Q.LinearExecDrift+=FMath::Max(0.0,FMath::Abs(End.Y-Start.Y)-16.0);
+        }
+        return Q;
+    }
+    bool BetterLayout(const FStructuralQuality& Before,const FStructuralQuality& After,double OldLength,double NewLength)
+    {
+        if(After.Overlaps!=Before.Overlaps) return After.Overlaps<Before.Overlaps;
+        if(After.BackwardExec!=Before.BackwardExec) return After.BackwardExec<Before.BackwardExec;
+        if(!FMath::IsNearlyEqual(After.LinearExecDrift,Before.LinearExecDrift,1.0)) return After.LinearExecDrift<Before.LinearExecDrift;
+        return NewLength<OldLength;
+    }
     TMap<const UEdGraphNode*, FVector2D> CachedAlignmentNodeSizes;
     TMap<const UEdGraphPin*, FVector2D> MeasuredPinOffsets;
     TWeakPtr<SGraphEditor> AlignmentEditor;
@@ -1604,11 +1648,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 	// -----------------------------------------------------------------------------------------
 	// STEP 9: better or not.
 	//
-	// STRICTLY LESS, not "not worse". `T-LAY-5` states the acceptance criterion as "wire length not
-	// worse, or rolled back with numbers": a pass that changes nothing and rolls back satisfies it, and
-	// so does one that improves. A pass that makes the number EQUAL while moving every node has changed
-	// the user's graph for no gain, so it rolls back.
-	// -----------------------------------------------------------------------------------------
+	// Compare structural quality first; use wire length only when structural metrics tie.
 	OutPlan.bAlreadyTidy = OutPlan.NodesToMove == 0 && OutPlan.BoxesToFit == 0
 		&& OutPlan.GetterCopies.Num() == 0;
 
@@ -1620,11 +1660,11 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		return true;
 	}
 
-	OutPlan.bWouldApply = OutPlan.WireLengthAfter < OutPlan.WireLengthBefore || bInForce;
+	OutPlan.bWouldApply = BetterLayout(StructuralQuality(OutPlan,0),StructuralQuality(OutPlan,1),OutPlan.WireLengthBefore,OutPlan.WireLengthAfter) || bInForce;
 	if (!OutPlan.bWouldApply)
 	{
 		OutPlan.RollbackReason = FString::Printf(
-			TEXT("the layout would leave the wire length at %.1f against %.1f, which is not shorter, so the candidate is rejected without moving nodes. This is the total wire-length gate, not proof the current layout is good. Shared data sources and cross-group wires can outweigh straighter execution rows. Inspect the preview before choosing force; collision and membership guards still apply."),
+			TEXT("candidate rejected by structural quality order: overlaps, backward exec wires, linear exec alignment, then total wire length (%.1f versus %.1f). Force does not bypass collision or membership guards."),
 			OutPlan.WireLengthAfter, OutPlan.WireLengthBefore);
 	}
 
@@ -1762,6 +1802,8 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 	// WAS MEASURED. `D-LAY-4` settles that tidy is judged on TOTAL WIRE LENGTH and knots on WIRES
 	// CROSSING NODES, so a reader comparing the two tools' numbers is comparing two quantities - and
 	// the label is what stops that.
+    const FStructuralQuality QualityBefore=StructuralQuality(InPlan,0), QualityAfter=StructuralQuality(InPlan,1);
+    Lines.Add(FString::Printf(TEXT("quality: overlaps %d -> %d; backward exec %d -> %d; linear exec drift %.1f -> %.1f (16px tolerance). Wire length breaks structural ties."),QualityBefore.Overlaps,QualityAfter.Overlaps,QualityBefore.BackwardExec,QualityAfter.BackwardExec,QualityBefore.LinearExecDrift,QualityAfter.LinearExecDrift));
 	Lines.Add(FString::Printf(TEXT("preview: %s in %s : total wire length %.1f -> %.1f across %d wire(s)"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireLengthAfter, InPlan.WireCount));
 
 	if (InPlan.SelectedNodeKeys.Num() > 0)
@@ -1793,7 +1835,7 @@ FString FTurboMCPGraphTidy::RenderPreview(const FPlan& InPlan)
 
 	if (InPlan.bForce && InPlan.WireLengthAfter >= InPlan.WireLengthBefore && !InPlan.bAlreadyTidy)
 	{
-		Lines.Add(TEXT("Force is set, so it would be applied EVEN THOUGH the wire length is not shorter. The edit's first line says WORSE when it does."));
+		Lines.Add(TEXT("Force is set and wire length is not shorter. Structural metrics above explain whether the layout improves independently of wire length."));
 	}
 
 	// A BOX'S TOP-LEFT CORNER IS NEVER MOVED, and the preview says so WITH THE SIZES IT WOULD SET, so
@@ -2000,7 +2042,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 	}
 
-	const bool bBetter = MeasuredAfter < InPlan.WireLengthBefore;
+	const bool bBetter = BetterLayout(StructuralQuality(InPlan,0),StructuralQuality(InPlan,2),InPlan.WireLengthBefore,MeasuredAfter);
 	if (!CopyFailure.IsEmpty() || (!bBetter && !InPlan.bForce))
 	{
 		// ROLLBACK. The positions are put back EXACTLY, and every copy is destroyed with the consumer it
@@ -2130,7 +2172,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	TArray<FString> Lines;
 	const bool bWorse = MeasuredAfter >= InPlan.WireLengthBefore;
 	const bool bScoreMatchesPlan = FMath::IsNearlyEqual(MeasuredAfter, InPlan.WireLengthAfter, 1.0);
-	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? TEXT(" (WORSE, applied because Force was set)") : TEXT("")));
+	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? (InPlan.bForce ? TEXT(" (longer wires; Force enabled)") : TEXT(" (longer wires; structural quality improved)")) : TEXT("")));
 	Lines.Add(FString::Printf(TEXT("score: preview predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("MATCHES THE PREVIEW") : TEXT("DOES NOT MATCH THE PREVIEW")));
 	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), and NO BOX CORNER MOVED: every box keeps the top-left corner the user placed, and only its size changed."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
 	if (InPlan.SelectedNodeKeys.Num() > 0)
