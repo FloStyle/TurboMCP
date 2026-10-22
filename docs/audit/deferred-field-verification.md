@@ -554,3 +554,7 @@ AS-04/AS-05/AS-06 and NR-07 implemented, unbuilt_untested. Search now splits whi
 ## P0 split result — 0ad705e
 
 ED-16 implemented, unbuilt_untested: every created copy reports its full node ID and consumer node/pin. Preview IDs are explicitly provisional. Source review only; no tests, build or editor runs.
+
+## P0 save outcome — 860db27
+
+S1 SV-13 guidance implemented, unbuilt_untested. S2 SV-13/S3 SV-14 remain open: uncertain saves no longer claim no disk change; outer dispatch/log capture still requires inspection for hidden successful result text. No tests/build/editor runs.
