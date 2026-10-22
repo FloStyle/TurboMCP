@@ -622,3 +622,7 @@ Partial, unbuilt_untested. Reflection-backed function inputs use stock scoped ge
 ## P0 unreflected input getters
 
 GC-39 implemented, unbuilt_untested. Discovery/creation now use current entry pin declarations and local member scope without skeleton mutation or compile. Reader identity works before reflection. Automatic layout conversion remains open. No tests/build/editor runs; verify compilation of newly declared reference/container inputs later.
+
+## P0 node execution context — f64432d
+
+X-91/FT-95 implemented, unbuilt_untested. Text reader returns full static upstream context, entries, exact links/input defaults and bounded downstream hops. No screenshots or dynamic dispatch inference. No tests/build/editor runs. Verify loops, shared tails, pure call consumers and large graph output later. Append scratch parity remains open: apply currently resolves original asset identity and uses editor undo; a proper transient execution abstraction is still required.

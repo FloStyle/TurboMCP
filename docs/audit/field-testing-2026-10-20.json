@@ -1998,11 +1998,13 @@
       "canonical_issue": "2026-10-22_S1/X-91",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_unverified",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Limitation.\n- **Scenario:** A function is called from two places in a large event graph. The question is what triggers each call.\n- **Observed:** The node find gives the two call node IDs and their graph, but not the event or chain around them. The event graph text read is cut at about 22000 characters and does not reach these chains. A graph-filtered whole-Blueprint read lists callers only inside the filtered graphs. So the agent used the neighbours capture twice and read the answer from the images: one call runs at widget init, the other runs on a gameplay message. The user rejected images for logic reading: a full context, fast, is the job of TurboMCP.\n- **Expected:** One text call answers \"show me the chain around this node\": the entry event, the exec path to the node, the data inputs, and what runs after it.\n- **Impact:** 2 image calls and a user correction. Images can hide pin values and wire targets.\n- **Proposed behavior:** See FT-95. The neighbours capture already computes the right node set; give the same selection as text."
+      "observation": "- **Type:** Limitation.\n- **Scenario:** A function is called from two places in a large event graph. The question is what triggers each call.\n- **Observed:** The node find gives the two call node IDs and their graph, but not the event or chain around them. The event graph text read is cut at about 22000 characters and does not reach these chains. A graph-filtered whole-Blueprint read lists callers only inside the filtered graphs. So the agent used the neighbours capture twice and read the answer from the images: one call runs at widget init, the other runs on a gameplay message. The user rejected images for logic reading: a full context, fast, is the job of TurboMCP.\n- **Expected:** One text call answers \"show me the chain around this node\": the entry event, the exec path to the node, the data inputs, and what runs after it.\n- **Impact:** 2 image calls and a user correction. Images can hide pin values and wire targets.\n- **Proposed behavior:** See FT-95. The neighbours capture already computes the right node set; give the same selection as text.",
+      "fix_commit": "f64432d",
+      "implementation": "ReadTurboMCPNodeContext returns cycle-safe static upstream execution context and entry IDs, exact input sources/defaults, and configurable downstream exec hops. Pure nodes follow their consumers to execution context. Dynamic/delegate dispatch is explicitly not inferred."
     },
     {
       "report": "2026-10-22_S1",
@@ -3304,10 +3306,13 @@
       "canonical_issue": "2026-10-22_S1/FT-95",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
+      "state": "done",
+      "validation": "unbuilt_untested",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "2 captures read as images, and a user correction"
+      "observation": "2 captures read as images, and a user correction",
+      "disposition": "implemented_unverified",
+      "fix_commit": "f64432d",
+      "implementation": "ReadTurboMCPNodeContext returns cycle-safe static upstream execution context and entry IDs, exact input sources/defaults, and configurable downstream exec hops. Pure nodes follow their consumers to execution context. Dynamic/delegate dispatch is explicitly not inferred."
     },
     {
       "report": "2026-10-22_S1",
