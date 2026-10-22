@@ -521,7 +521,17 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 		if (!ComputeEnclosingRect(Graph, OutPlan.NodeKeys, OutPlan.Planned.X, OutPlan.Planned.Y,
 			OutPlan.Planned.Width, OutPlan.Planned.Height, Missing) || !Missing.IsEmpty())
 		{ OutError = TEXT("fit contains missing or invalid nodes; unchanged"); return false; }
-		OutPlan.Boxes[0].MemberCount = OutPlan.NodeKeys.Num();
+        if (OutPlan.Boxes.Num()!=1) { OutError=TEXT("explicit fit requires exactly one existing comment box"); return false; }
+        const FBox& Existing=OutPlan.Boxes[0];
+        // Union the requested enclosure with the entire old rectangle. Outward expansion
+        // preserves old contents even when the caller supplied only some member IDs.
+        const double Right=FMath::Max(Existing.X+Existing.Width,OutPlan.Planned.X+OutPlan.Planned.Width);
+        const double Bottom=FMath::Max(Existing.Y+Existing.Height,OutPlan.Planned.Y+OutPlan.Planned.Height);
+        OutPlan.Planned.X=FMath::Min(Existing.X,OutPlan.Planned.X);
+        OutPlan.Planned.Y=FMath::Min(Existing.Y,OutPlan.Planned.Y);
+        OutPlan.Planned.Width=Right-OutPlan.Planned.X;
+        OutPlan.Planned.Height=Bottom-OutPlan.Planned.Y;
+        OutPlan.Boxes[0].MemberCount = OutPlan.NodeKeys.Num();
 	}
 	// An empty Box keeps the explicit legacy fit-all behavior.
 	return true;
@@ -597,6 +607,8 @@ FString FTurboMCPComment::RenderPreview(const FPlan& InPlan)
 	}
 	else
 	{
+        if (!InPlan.NodeKeys.IsEmpty())
+            Out += FString::Printf(TEXT("\nexplicit fit: expand outward only, preserving the old rectangle and all existing contents; planned rect=(%.0f,%.0f,%.0f,%.0f)"),InPlan.Planned.X,InPlan.Planned.Y,InPlan.Planned.Width,InPlan.Planned.Height);
 		int32 Fitted = 0;
 		int32 Empty = 0;
 		for (const FBox& Box : InPlan.Boxes)
