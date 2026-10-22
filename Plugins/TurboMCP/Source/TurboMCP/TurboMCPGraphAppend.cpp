@@ -1432,6 +1432,11 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 	Out += FString::Printf(TEXT("\n%d of %d created node(s) are in the graph after the write"),
 		Survived, Created.Num());
 
+    for (const UEdGraphNode* CreatedNode : Created)
+        if (CreatedNode && Graph->Nodes.Contains(CreatedNode))
+            Out += FString::Printf(TEXT("\ncreated %s: type %s"),
+                *TurboMCPNodeId::MakeForNode(CreatedNode, true), *TurboMCPNodeId::GetNodeTypeId(CreatedNode));
+
 	if (Unmatched.Num() > 0)
 	{
 		// A FAILED COMPARE IS REPORTED AS A FAILURE. The line says so and names what did not match, rather

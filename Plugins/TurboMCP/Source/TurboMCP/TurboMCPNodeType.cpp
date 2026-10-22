@@ -316,6 +316,10 @@ namespace
                         Entry.bContextVariable=DeclaringBlueprint==InBlueprint || (PropertyOwner && InBlueprint->ParentClass && InBlueprint->ParentClass->IsChildOf(PropertyOwner));
                         Entry.OwningClass=PropertyOwner?PropertyOwner->GetPathName():Property->GetOwnerStruct()->GetPathName();
                         Entry.bOwnedByThisBlueprint=DeclaringBlueprint==InBlueprint;
+                        if (DeclaringBlueprint)
+                            Entry.Aliases.AddUnique(FString::Printf(TEXT("Variables|%s|%s%s"), *DeclaringBlueprint->GetName(), Access, *Property->GetName()));
+                        if (PropertyOwner)
+                            Entry.Aliases.AddUnique(FString::Printf(TEXT("Variable|%s|%s|%s"), *PropertyOwner->GetPathName(), Access, *Property->GetName()));
 					}
 				}
 				if(Entry.OwningClass.IsEmpty()) Entry.OwningClass = OwnerClassName(ActionObject);
@@ -367,15 +371,23 @@ namespace
                 {
                     if (!Widget || !Widget->bIsVariable) continue;
                     const FString Id = FString::Printf(TEXT("Variable|%s|Get|%s"), *InBlueprint->GetPathName(), *Widget->GetName());
-                    // Prefer the normal reflected spawner when its exact declaration is available.
-                    if (OutEntries.ContainsByPredicate([&](const FEntry& E){ return E.TypeId==Id; })) continue;
+                    // A changed designer class can precede skeleton regeneration. Keep its aliases,
+                    // but use the live tree's object type instead of a stale reflected property.
                     FEntry Entry;
+                    for (const FEntry& Existing : OutEntries)
+                        if (Existing.TypeId == Id)
+                        {
+                            Entry.Aliases.AddUnique(Existing.LegacyTypeId);
+                            for (const FString& Alias : Existing.Aliases) Entry.Aliases.AddUnique(Alias);
+                        }
+                    OutEntries.RemoveAll([&](const FEntry& Existing){ return Existing.TypeId == Id; });
                     Entry.TypeId=Id; Entry.LegacyTypeId=Id; Entry.bDesignerGetter=true;
                     Entry.InputName=Widget->GetFName(); Entry.InputType.PinCategory=UEdGraphSchema_K2::PC_Object;
                     Entry.InputType.PinSubCategoryObject=Widget->GetClass();
                     Entry.OwningClass=InBlueprint->GetPathName(); Entry.bOwnedByThisBlueprint=true;
                     Entry.bContextVariable=true; Entry.bPure=true;
                     Entry.Aliases.Add(TEXT("Variables|Default|Get")+Widget->GetName());
+                    Entry.Aliases.AddUnique(TEXT("Variables|")+InBlueprint->GetName()+TEXT("|Get")+Widget->GetName());
                     Entry.SearchKeywords=TEXT("widget designer getter ")+Widget->GetName();
                     OutEntries.Add(MoveTemp(Entry));
                 }
