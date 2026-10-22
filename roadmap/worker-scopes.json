@@ -1114,6 +1114,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
           ],
           "new_files": []
+        },
+        "quick-help-parameter-notes": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
