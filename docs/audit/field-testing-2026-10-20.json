@@ -1894,9 +1894,11 @@
       "observation": "- **Type:** Limitation.\r\n- **Scenario:** A new branch lane must end in two existing nodes that already have exec links from other lanes.\r\n- **Observed:** The append tool can only link inputs of nodes it creates. The patch tool refuses links (\"edits literal defaults only\"). The connect tool replaces data inputs only. So the agent duplicated the two end nodes and their getter. The append placed all new nodes in one column at the graph edge with estimated sizes. The tidy then made the graph longer and rolled back. The user called the result ugly.\r\n- **Workaround:** The engine connect tool added the exec links into the existing nodes (an exec input accepts many links). The engine delete tool removed the duplicates. Then one position call placed the lane. This worked, but it took about 12 extra calls and needed engine tools.\r\n- **Proposed behavior:** Let append link a new node output to an existing node input, by node ID and pin name, with read-back. Let append place the new block next to the node it attaches to, as a lane in the user layout style.",
       "placement_commit": "42e8d65",
       "implementation": "Existing-node exact endpoint connections and explicit continuation already implemented. Append now uses probe exec pin metadata and requested links to position acyclic blocks relative to an existing exec source, with dependency columns, branch rows and pure input bands; only new positions change.",
-      "remaining": "Measured new-node footprints, comment-contained attached lane fitting and cyclic-block layout remain. Existing-target rejoin positioning must be audited against fixed destination geometry. Current lane bounds use explicit 320x160 estimates; detached/cyclic blocks retain legacy column fallback. Keep open.",
+      "remaining": "Measured new-node footprints and comment-contained attached lane fitting remain. Existing-target rejoin positioning must be audited against fixed destination geometry. Current lane bounds use explicit 320x160 estimates; detached blocks retain legacy column fallback. Keep open.",
       "nested_lane_commit": "b761d02",
-      "nested_lane_progress": "Merge lanes use nearest shared ancestor; nested side bands are grouped depth-first under their parent. Source inspected only; unbuilt/untested."
+      "nested_lane_progress": "Merge lanes use nearest shared ancestor; nested side bands are grouped depth-first under their parent. Source inspected only; unbuilt/untested.",
+      "cycle_layout_commit": "ec9027c",
+      "cycle_layout_progress": "Iterative reverse-finish traversal arranges cyclic attached blocks; backward edges are layout return wires only and all links remain unchanged. No column fallback solely due to a cycle."
     },
     {
       "report": "2026-10-21_S16",
@@ -3424,9 +3426,11 @@
       "disposition": "partially_implemented",
       "placement_commit": "42e8d65",
       "implementation": "Existing-node exact endpoint connections and explicit continuation already implemented. Append now uses probe exec pin metadata and requested links to position acyclic blocks relative to an existing exec source, with dependency columns, branch rows and pure input bands; only new positions change.",
-      "remaining": "Measured new-node footprints, comment-contained attached lane fitting and cyclic-block layout remain. Existing-target rejoin positioning must be audited against fixed destination geometry. Current lane bounds use explicit 320x160 estimates; detached/cyclic blocks retain legacy column fallback. Keep open.",
+      "remaining": "Measured new-node footprints and comment-contained attached lane fitting remain. Existing-target rejoin positioning must be audited against fixed destination geometry. Current lane bounds use explicit 320x160 estimates; detached blocks retain legacy column fallback. Keep open.",
       "nested_lane_commit": "b761d02",
-      "nested_lane_progress": "Merge lanes use nearest shared ancestor; nested side bands are grouped depth-first under their parent. Source inspected only; unbuilt/untested."
+      "nested_lane_progress": "Merge lanes use nearest shared ancestor; nested side bands are grouped depth-first under their parent. Source inspected only; unbuilt/untested.",
+      "cycle_layout_commit": "ec9027c",
+      "cycle_layout_progress": "Iterative reverse-finish traversal arranges cyclic attached blocks; backward edges are layout return wires only and all links remain unchanged. No column fallback solely due to a cycle."
     },
     {
       "report": "2026-10-22_S1",

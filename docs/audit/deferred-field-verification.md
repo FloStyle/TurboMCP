@@ -811,3 +811,7 @@ Source `42e8d65`: capture exec pin metadata from existing transient probes; topo
 ## Nested append lanes — 2026-10-23
 
 Source `b761d02`: merge ownership uses nearest common lane ancestor, and nested child bands precede unrelated siblings. Existing nodes remain fixed. Source inspection only; no tests/build/editor runs. Unbuilt/untested. Later verify nested diamonds, sibling merges, shared tails, multiple roots and existing-target rejoins. S16/X-87 and FT-92 remain open with explicit remaining scope.
+
+## Cyclic append positioning — 2026-10-23
+
+Source `ec9027c`: attached cyclic blocks receive iterative DFS reverse-finish layout order; only forward-ranked edges drive column and lane propagation. All requested links remain in the plan and mutation pipeline, including self/return links; schema preflight still decides connection validity. Source inspection only. No tests/build/editor runs. Unbuilt/untested. Later check loop-back exec, self-links, mixed cyclic/acyclic components and long chains. S16/X-87 and FT-92 remain partial for geometry/comment/rejoin scope.
