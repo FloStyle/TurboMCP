@@ -1894,13 +1894,15 @@
       "observation": "- **Type:** Limitation.\r\n- **Scenario:** A new branch lane must end in two existing nodes that already have exec links from other lanes.\r\n- **Observed:** The append tool can only link inputs of nodes it creates. The patch tool refuses links (\"edits literal defaults only\"). The connect tool replaces data inputs only. So the agent duplicated the two end nodes and their getter. The append placed all new nodes in one column at the graph edge with estimated sizes. The tidy then made the graph longer and rolled back. The user called the result ugly.\r\n- **Workaround:** The engine connect tool added the exec links into the existing nodes (an exec input accepts many links). The engine delete tool removed the duplicates. Then one position call placed the lane. This worked, but it took about 12 extra calls and needed engine tools.\r\n- **Proposed behavior:** Let append link a new node output to an existing node input, by node ID and pin name, with read-back. Let append place the new block next to the node it attaches to, as a lane in the user layout style.",
       "placement_commit": "42e8d65",
       "implementation": "Existing-node exact endpoint connections and explicit continuation already implemented. Append now uses probe exec pin metadata and requested links to position acyclic blocks relative to an existing exec source, with dependency columns, branch rows and pure input bands; only new positions change.",
-      "remaining": "Comment-contained attached lane fitting and existing-target rejoin placement remain. Existing bounds still use stored/fallback sizes, and uniform maximum-size cells can be spacious. Measurement unavailable refuses before live mutation. Keep open.",
+      "remaining": "Comment-contained attached lane fitting remains. Existing bounds still use stored/fallback sizes, and uniform maximum-size cells can be spacious. Automatic displaced-continuation endpoints need the same placement evidence as explicit links. Keep open.",
       "nested_lane_commit": "b761d02",
       "nested_lane_progress": "Merge lanes use nearest shared ancestor; nested side bands are grouped depth-first under their parent. Source inspected only; unbuilt/untested.",
       "cycle_layout_commit": "ec9027c",
       "cycle_layout_progress": "Iterative reverse-finish traversal arranges cyclic attached blocks; backward edges are layout return wires only and all links remain unchanged. No column fallback solely due to a cycle.",
       "measurement_commit": "f266d5d",
-      "measurement_progress": "Append Plan runs the existing mutation pipeline in a transient graph, measures final created nodes after links/defaults via stock Slate at unity zoom, then recomputes placement using maximum measured footprint cells. Preview labels measured versus estimated evidence. Missing existing dimensions still use estimates."
+      "measurement_progress": "Append Plan runs the existing mutation pipeline in a transient graph, measures final created nodes after links/defaults via stock Slate at unity zoom, then recomputes placement using maximum measured footprint cells. Preview labels measured versus estimated evidence. Missing existing dimensions still use estimates.",
+      "rejoin_placement_commit": "6703a0f",
+      "rejoin_placement_progress": "Horizontal block translation considers all explicit existing exec sources and destinations, prioritizes forward endpoint geometry then preferred spacing and minimum movement. Existing nodes remain fixed; too-tight fixed geometry can require return wires."
     },
     {
       "report": "2026-10-21_S16",
@@ -3428,13 +3430,15 @@
       "disposition": "partially_implemented",
       "placement_commit": "42e8d65",
       "implementation": "Existing-node exact endpoint connections and explicit continuation already implemented. Append now uses probe exec pin metadata and requested links to position acyclic blocks relative to an existing exec source, with dependency columns, branch rows and pure input bands; only new positions change.",
-      "remaining": "Comment-contained attached lane fitting and existing-target rejoin placement remain. Existing bounds still use stored/fallback sizes, and uniform maximum-size cells can be spacious. Measurement unavailable refuses before live mutation. Keep open.",
+      "remaining": "Comment-contained attached lane fitting remains. Existing bounds still use stored/fallback sizes, and uniform maximum-size cells can be spacious. Automatic displaced-continuation endpoints need the same placement evidence as explicit links. Keep open.",
       "nested_lane_commit": "b761d02",
       "nested_lane_progress": "Merge lanes use nearest shared ancestor; nested side bands are grouped depth-first under their parent. Source inspected only; unbuilt/untested.",
       "cycle_layout_commit": "ec9027c",
       "cycle_layout_progress": "Iterative reverse-finish traversal arranges cyclic attached blocks; backward edges are layout return wires only and all links remain unchanged. No column fallback solely due to a cycle.",
       "measurement_commit": "f266d5d",
-      "measurement_progress": "Append Plan runs the existing mutation pipeline in a transient graph, measures final created nodes after links/defaults via stock Slate at unity zoom, then recomputes placement using maximum measured footprint cells. Preview labels measured versus estimated evidence. Missing existing dimensions still use estimates."
+      "measurement_progress": "Append Plan runs the existing mutation pipeline in a transient graph, measures final created nodes after links/defaults via stock Slate at unity zoom, then recomputes placement using maximum measured footprint cells. Preview labels measured versus estimated evidence. Missing existing dimensions still use estimates.",
+      "rejoin_placement_commit": "6703a0f",
+      "rejoin_placement_progress": "Horizontal block translation considers all explicit existing exec sources and destinations, prioritizes forward endpoint geometry then preferred spacing and minimum movement. Existing nodes remain fixed; too-tight fixed geometry can require return wires."
     },
     {
       "report": "2026-10-22_S1",

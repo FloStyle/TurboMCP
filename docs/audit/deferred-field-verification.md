@@ -819,3 +819,7 @@ Source `ec9027c`: attached cyclic blocks receive iterative DFS reverse-finish la
 ## Measured append footprints — 2026-10-23
 
 Source `f266d5d`: placement-requesting Plan executes the existing scratch pipeline, obtains created forms, measures final Slate bounds at unity zoom, and recalculates positions from conservative maximum measured footprint cells. No live graph view is reused. Missing existing sizes remain estimated. Stock GraphEditor and WidgetRenderer API declarations inspected; no builds/tests/editor runs. Unbuilt/untested. Later verify final defaults/expanded pins, dynamic node reconstruction, Slate/headless refusal, large nodes, performance of repeated scratch execution, dirty/undo isolation, preview parity and live bounds. S16/X-87 and FT-92 stay open for comment and fixed rejoin fitting.
+
+## Fixed rejoin placement — 2026-10-23
+
+Source `6703a0f`: append block translation scores every explicit fixed exec source/rejoin boundary, minimizing backward connections before spacing distance; old nodes stay fixed. Candidate ranges are coordinate checked before obstacle translation. Source inspection only; no tests/build/editor runs. Unbuilt/untested. Later check multiple rejoins, narrow insertion space, existing returns left of source, coordinate bounds and comments. Automatic displaced continuation edges are not explicit requested links and remain a placement follow-up.
