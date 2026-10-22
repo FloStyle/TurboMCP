@@ -1797,11 +1797,13 @@
       "canonical_issue": "2026-10-21_S15/ED-16",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
-      "observation": "- **Type:** Usability.\r\n- **Observed:** The split result gave the copy count but no node IDs, and no consumer for each copy. The agent needed a node find, a node resolve and a layout report to learn which copy feeds which pin. The node resolve gave pins but no link targets.\r\n- **Proposed behavior:** List each new node ID with its consumer node and pin.\r\n\r\n### Node resolve"
+      "observation": "- **Type:** Usability.\r\n- **Observed:** The split result gave the copy count but no node IDs, and no consumer for each copy. The agent needed a node find, a node resolve and a layout report to learn which copy feeds which pin. The node resolve gave pins but no link targets.\r\n- **Proposed behavior:** List each new node ID with its consumer node and pin.\r\n\r\n### Node resolve",
+      "implementation": "0ad705e",
+      "implementation_limits": "Split edit returns each new full node ID and exact consumer node/pin. Preview IDs explicitly provisional. No build/tests/editor run."
     },
     {
       "report": "2026-10-21_S15",
