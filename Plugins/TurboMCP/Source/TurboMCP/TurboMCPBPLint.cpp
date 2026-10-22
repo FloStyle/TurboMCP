@@ -465,7 +465,7 @@ static void RunUnusedDeclarations(const UBlueprint* InBlueprint,
 				Finding.Check = Out.Name;
 				Finding.Severity = TEXT("info");
 				Finding.Why = FString::Printf(
-					TEXT("variable '%s' is READ BY NOTHING in any graph"), *CurrentVariable);
+					TEXT("variable '%s': no direct read/reference found in scanned Blueprint graphs; external, native, reflected and dynamic uses are not excluded; this is not evidence for deletion"), *CurrentVariable);
 				Out.Findings.Add(Finding);
 			}
 			continue;

@@ -21,6 +21,7 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
 #include "K2Node_CreateDelegate.h"
+#include "K2Node_BaseMCDelegate.h"
 #include "K2Node_Knot.h"
 #include "K2Node_ComponentBoundEvent.h"
 #include "K2Node_ActorBoundEvent.h"
@@ -550,6 +551,18 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 				continue;
 			}
 			++NodesScanned;
+            if (const UK2Node_BaseMCDelegate* Dispatcher = Cast<UK2Node_BaseMCDelegate>(Node))
+            {
+                const FString Member = Dispatcher->GetPropertyName().ToString();
+                // Calls, binds and removals all reference the dispatcher, even
+                // though they are not VariableGet nodes. Do not count another
+                // object's same-named member as use of this Blueprint's member.
+                if (Dispatcher->DelegateReference.IsSelfContext() && !Dispatcher->GetPropertyName().IsNone())
+                    ReadersByVariable.FindOrAdd(Member).Add(GraphName);
+                DelegateSites.Add(FString::Printf(TEXT("dispatcher reference %s; operation=%s; self=%s; node=%s; runtime invocation not inferred"),
+                    *Member, *Node->GetClass()->GetName(), Dispatcher->DelegateReference.IsSelfContext() ? TEXT("true") : TEXT("false"), *TurboMCPNodeId::MakeForNode(Node, true)));
+            }
+
             if(const UK2Node_ComponentBoundEvent* Bound=Cast<UK2Node_ComponentBoundEvent>(Node))
                 DelegateSites.Add(FString::Printf(TEXT("component/widget %s.%s (owner class=%s) -> event %s; declared automatic binding, runtime invocation not inferred"),
                     *Bound->ComponentPropertyName.ToString(),*Bound->DelegatePropertyName.ToString(),
@@ -686,7 +699,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 		}
 	}
 
-    Out += TEXT("\ncallers (whole Blueprint; static calls only):");
+    Out += FString::Printf(TEXT("\ncallers (scanned scope: %d/%d graphs; static calls only):"), InGraphs.Num(), InTotalGraphCount);
     TArray<FString> Callees; CallerSites.GetKeys(Callees); Callees.Sort();
     if (Callees.IsEmpty()) Out += TEXT("\n  none found");
     for (const FString& Callee : Callees)
@@ -697,7 +710,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
     }
 
     DelegateSites.Sort();
-    Out += TEXT("\ndelegate binding sites (whole Blueprint; graph connections, not proof of runtime invocation):");
+    Out += FString::Printf(TEXT("\ndelegate binding sites (scanned scope: %d/%d graphs; references/connections, not proof of runtime invocation):"), InGraphs.Num(), InTotalGraphCount);
     if(DelegateSites.IsEmpty()) Out += TEXT("\n  none found");
     for(const FString& Site:DelegateSites) Out += TEXT("\n  ")+Site;
 
@@ -729,11 +742,11 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 		if ((Writers == nullptr || Writers->Num() == 0)
 			&& (Readers == nullptr || Readers->Num() == 0))
 		{
-			Out += TEXT("\n      never read and never written in any graph");
+			Out += TEXT("\n      ; no direct read/reference or write found in scanned graphs; external, native and dynamic uses are not excluded");
 		}
 		else if (Writers == nullptr || Writers->Num() == 0)
 		{
-			Out += TEXT("\n      never written, so it keeps its default");
+			Out += TEXT("\n      ; no direct write found in scanned graphs; external/native writes and instance overrides may change the value");
 		}
 	}
 
