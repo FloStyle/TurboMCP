@@ -787,3 +787,7 @@ S13/TD-29, S16/TD-37, Oct22 S1/TD-39 and S1/TD-40 implemented, unbuilt_untested.
 
 ## S2/X-93 dirty side-effect visibility — 257dfad
 Issue remains open; diagnostic improvement is not a root-cause fix. TurboMCP reads/previews/looks now compare dirty package sets and report changes; edit/compile/save behavior preserved. Off-game-thread missing snapshots are explicitly unavailable, never treated as an empty baseline. No dirty flags are cleared or packages saved. Native tools remain outside the wrapper and already-dirty content changes are not observed. Requested field evidence: exact first dirtying call, before/after DirtyList including native tools, and dependency relationships to edited struct/widget. No project code required. No tests/build/editor runs; unbuilt_untested.
+
+
+## CP-16 scope correction and source completion audit — 2026-10-23
+Oct22 S1/CP-16 requires neighbour capture framing only its selected nodes on a large graph. Existing 8086687 implements this: resolved Targets alone define bounds/canvas/fit zoom; selector capture returns from independent native renderer before legacy window framing. Alignment preparation measures at unity zoom rather than fitting the whole graph. CP-16 is implemented, unbuilt_untested. Earlier wording requiring tiled capture for widely spaced selections expanded the report scope and is superseded; no tiling claim. Deferred field check: one node plus two hops in the roughly 400-node graph, correct crop and readable native output. No tests/build/editor runs.

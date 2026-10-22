@@ -2343,14 +2343,15 @@
       "canonical_issue": "2026-10-22_S1/CP-16",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partially_implemented",
+      "disposition": "implemented",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Type:** Limitation.\n- **Observed:** A neighbours capture of one node, 2 hops, in an event graph of about 400 nodes was refused with \"graph exceeds the minimum canvas zoom\". A region capture of the same area worked. The neighbour set is small, so the size of the whole graph does not seem relevant. The cause is not confirmed.\n- **Expected:** The neighbours mode frames only the selected nodes.",
       "fix_commit": "8086687",
       "implementation": "Neighbour and selection captures use an independent native Slate canvas sized from resolved target bounds, up to 4096 pixels per edge; hop-count Size is not interpreted as resolution. Output preserves selected frame description.",
-      "remaining": "Native minimum zoom still bounds widely spaced selected nodes. Full coverage needs tiled capture or equivalent framing beyond that limit; original field reproduction remains unverified."
+      "remaining": "Original field reproduction still needs verification. Tiling widely spaced selected nodes is not required by this report and is not an implementation blocker.",
+      "source_review": "2026-10-23: selector resolution supplies Targets; only target rectangles build Box; bNewSelector derives Width/Height from that Box; native FitZoom uses FrameWidth/FrameHeight and returns before the legacy live-window framing path. PrepareAlignment measures bounds at unity zoom, without whole-graph minimum-zoom fitting. Existing fix 8086687 covers the reported framing requirement."
     },
     {
       "report": "2026-10-22_S1",
