@@ -153,6 +153,16 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
         if (Order.Num() == CreatedCount)
         {
             int32 NextLane = 1;
+            TArray<int32> LaneParent;
+            LaneParent.Add(INDEX_NONE);
+            const auto SharedParentLane = [&](int32 A, int32 B)
+            {
+                TSet<int32> Ancestors;
+                for (int32 L = A; L != INDEX_NONE; L = LaneParent[L]) Ancestors.Add(L);
+                for (int32 L = B; L != INDEX_NONE; L = LaneParent[L])
+                    if (Ancestors.Contains(L)) return L;
+                return 0;
+            };
             TSet<int32> AssignedLanes;
             for (int32 I : Order)
             {
@@ -167,8 +177,13 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                             && InNodes[Link.ToFormIndex].ProbeExecInputs.Contains(Link.ToPin))
                         {
                             if (OutputLane == INDEX_NONE)
-                            { OutputLane = bFirstConnectedOutput ? Lane[I] : NextLane++; bFirstConnectedOutput = false; }
-                            if (AssignedLanes.Contains(Link.ToFormIndex)) Lane[Link.ToFormIndex] = FMath::Min(Lane[Link.ToFormIndex], OutputLane);
+                            {
+                                if (bFirstConnectedOutput) OutputLane = Lane[I];
+                                else { OutputLane = NextLane++; LaneParent.Add(Lane[I]); }
+                                bFirstConnectedOutput = false;
+                            }
+                            if (AssignedLanes.Contains(Link.ToFormIndex))
+                                Lane[Link.ToFormIndex] = SharedParentLane(Lane[Link.ToFormIndex], OutputLane);
                             else { Lane[Link.ToFormIndex] = OutputLane; AssignedLanes.Add(Link.ToFormIndex); }
                         }
                 }
@@ -190,9 +205,25 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
             TMap<int32, int32> PureCounts;
             for (int32 I : Order)
                 if (InNodes[I].ProbeExecInputs.IsEmpty() && InNodes[I].ProbeExecOutputs.IsEmpty()) ++PureCounts.FindOrAdd(Lane[I]);
+            // Keep nested side lanes beside their parent, before unrelated siblings.
+            // Numeric creation order alone interleaves nested branches and crossings.
+            TArray<int32> LaneOrder, PendingLanes;
+            PendingLanes.Add(0);
+            while (!PendingLanes.IsEmpty())
+            {
+                const int32 L = PendingLanes.Last();
+                PendingLanes.RemoveAt(PendingLanes.Num() - 1);
+                LaneOrder.Add(L);
+                for (int32 Child = NextLane - 1; Child > 0; --Child)
+                    if (LaneParent[Child] == L) PendingLanes.Add(Child);
+            }
             TArray<int64> LaneY; LaneY.Init(BaseY, NextLane);
-            for (int32 L = 1; L < NextLane; ++L)
-                LaneY[L] = LaneY[L-1] + (static_cast<int64>(PureCounts.FindRef(L-1)) + 1) * PlacementVerticalStride;
+            int64 BandY = BaseY;
+            for (int32 L : LaneOrder)
+            {
+                LaneY[L] = BandY;
+                BandY += (static_cast<int64>(PureCounts.FindRef(L)) + 1) * PlacementVerticalStride;
+            }
             TMap<int32, int32> PureSlots;
             TMap<int32, int64> ExecRight;
             TArray<int64> X, Y; X.Init(0, InNodes.Num()); Y.Init(0, InNodes.Num());
