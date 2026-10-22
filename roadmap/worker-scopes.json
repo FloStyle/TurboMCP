@@ -983,6 +983,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
           ],
           "new_files": []
+        },
+        "p0-tidy-nested-band-order": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
