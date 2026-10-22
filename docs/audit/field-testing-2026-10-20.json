@@ -1714,9 +1714,10 @@
       "observation": "- **Type:** Defect.\r\n- **Scenario:** The live graph editor, right after a tidy or position edit on a graph with a comment box. Also seen on compact pure nodes.\r\n- **Reproduction status:** Observed by the user, sometimes. The exact conditions are not known.\r\n- **Observed:** After the TurboMCP edit, the comment box body is a light, almost opaque grey. Its title text has a heavy dark shadow and looks bold and blurred. Compact pure nodes show a hard dark band around the body, like a second outline. The user describes it as a node refresh glitch that over-contrasts the drawn drop shadows. After the user makes one manual edit in the graph, the box goes back to its normal darker, see-through look and the text is sharp.\r\n- **Expected:** The graph looks the same after a TurboMCP edit as after a manual edit.\r\n- **Impact:** The user cannot judge the result until the graph redraws. It can look like the edit changed the box colour.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** Refresh the open graph view in the same way as a manual edit does, after each layout edit.\r\n\r\n### User reference layout",
       "fix_commit": "26a276d",
       "implementation": "Comment create/remove/update/fit now broadcast NotifyGraphChanged so open graph panels rebuild after geometry/text changes.",
-      "remaining": "Exact overdraw/shadow cause remains unconfirmed. Existing edit notifications plus explicit post-measurement layout/paint invalidation cover the identified stale-view path; further source investigation or field evidence is needed before closing.",
+      "remaining": "Source isolation removes live-view measurement interference; exact historical shadow/overdraw cause remains unconfirmed and needs later field verification.",
       "view_refresh_commit": "d83f7c9",
-      "implementation_limits": "Measurement restores saved zoom/view and invalidates all measured graph-node, panel and editor layout/paint caches on both success and failure. No asset mutation or forced editor restart. No runtime verification."
+      "implementation_limits": "Tidy measurement now uses a transient graph and offscreen Slate view; live zoom/focus/paint state and application-wide ticks are no longer used. Exact reported shadow glitch remains unconfirmed. No runtime verification.",
+      "isolated_measurement_commit": "e3ee332"
     },
     {
       "report": "2026-10-21_S14",
@@ -1767,12 +1768,13 @@
       "observation": "- **Type:** Limitation.\r\n- **Observed:** Both tidies passed the gate and matched the preview. Both results still needed a hand pass. About 22 TurboMCP calls for two small graphs.\r\n- **Expected:** Small graphs come out of one tidy call in the user's style.\r\n\r\n## 2. Tool observations\r\n\r\n### Tidy",
       "input_band_commit": "f2f3495",
       "input_band_progress": "Per-lane input floors and measured cluster reservations replace the global below-all-lanes fallback; inputs choose consumers within their assigned lane.",
-      "remaining": "Remaining review: order sibling input columns by consumer pin to reduce crossings, ensure shared expressions/copies stay near their consumers, and audit aggregate small-graph output. Keep open; per-lane bands alone do not prove crossing-free layout.",
+      "remaining": "Replace consumer-bottom pure input floors with the user-confirmed exec-wire/data-pin layout. Keep collision avoidance and nested branch bands. Source implementation pending.",
       "copy_placement_commit": "9fd395b",
       "copy_placement_progress": "Shared reader copies consider nearby free columns on the consumer input side, choose the shortest pin connection among collision-cleared candidates, retain below-consumer floors and comment membership/growth guards.",
       "nested_band_commit": "3158a91",
       "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
-      "input_needed": "Asked 2026-10-23 to resolve S13 pin-level pure input alignment versus S15/S2 below-exec-row priority when both cannot fit. Current implementation prioritizes below-row input bands. Continue independent work while awaiting answer."
+      "input_needed": "Resolved by user diagram 2026-10-23: exec pins share a straight row; getters sit immediately left of their consumer at data-input pin height, below the exec wire rather than below the entire consumer body.",
+      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png"
     },
     {
       "report": "2026-10-21_S15",
@@ -2560,14 +2562,15 @@
       "observation": "- **Type:** Limitation.\n- **Scenario:** One function with 15 nodes, one branch and 3 getters.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Tidy the function after the append.\n  2. Capture the graph.\n- **Observed:** Wire length went down. One getter fed a call from far below and crossed another wire. A pure node sat on the exec row.\n- **Expected:** The user's layout rules: pure nodes below the exec row, next to their consumer.\n- **Impact:** 2 hand position calls and 2 captures.\n- **State after:** Positions fixed and saved.\n- **Workaround:** Hand positions. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** None.",
       "input_band_commit": "f2f3495",
       "input_band_progress": "Per-lane input floors and measured cluster reservations replace the global below-all-lanes fallback; inputs choose consumers within their assigned lane.",
-      "remaining": "Audit cross-branch/shared-expression interactions and aggregate small-graph layout. Sibling pin ordering and near-consumer copy candidate search implemented; broader issue remains open pending source coverage review.",
+      "remaining": "Replace consumer-bottom pure input floors with the user-confirmed exec-wire/data-pin layout. Keep collision avoidance and nested branch bands. Source implementation pending.",
       "input_order_commit": "899076f",
       "input_order_progress": "Pure inputs traverse consumer-first in native input-pin Y order with a stable source-index tie break. Placement retains the chosen consumer, avoiding insertion-order inversion.",
       "copy_placement_commit": "9fd395b",
       "copy_placement_progress": "Shared reader copies consider nearby free columns on the consumer input side, choose the shortest pin connection among collision-cleared candidates, retain below-consumer floors and comment membership/growth guards.",
       "nested_band_commit": "3158a91",
       "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
-      "input_needed": "Asked 2026-10-23 to resolve S13 pin-level pure input alignment versus S15/S2 below-exec-row priority when both cannot fit. Current implementation prioritizes below-row input bands. Continue independent work while awaiting answer."
+      "input_needed": "Resolved by user diagram 2026-10-23: exec pins share a straight row; getters sit immediately left of their consumer at data-input pin height, below the exec wire rather than below the entire consumer body.",
+      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png"
     },
     {
       "report": "2026-10-22_S2",
@@ -3349,7 +3352,9 @@
       "observation": "- **Type:** Proposal.\r\n- **Observed:** The hand layout used these steps. The user said the result was not too bad.\r\n  1. Put the entry and every exec node of the main path on one row.\r\n  2. For each branch, keep the first output on the main row. Put the other output lane one band below the main row data inputs.\r\n  3. Put a merge target on the main row, after both lanes.\r\n  4. Put each pure input in a column to the left of its consumer, level with the target pin. Nested inputs go one more column to the left.\r\n  5. Leave about 120 to 200 units between exec nodes, and more when the inputs need columns.\r\n  6. Size each band by its tallest data input cluster, not by a fixed pitch.\r\n- **Proposed behavior:** Use this recipe as the default for graphs with no comment box.\r\n\r\n### Capture",
       "nested_band_commit": "3158a91",
       "nested_band_progress": "Tidy orders bands by lane ancestry so nested branches and their input clusters stay together before unrelated sibling lanes.",
-      "input_needed": "Asked 2026-10-23 to resolve S13 pin-level pure input alignment versus S15/S2 below-exec-row priority when both cannot fit. Current implementation prioritizes below-row input bands. Continue independent work while awaiting answer."
+      "input_needed": "Resolved by user diagram 2026-10-23: exec pins share a straight row; getters sit immediately left of their consumer at data-input pin height, below the exec wire rather than below the entire consumer body.",
+      "remaining": "Replace consumer-bottom pure input floors with the user-confirmed exec-wire/data-pin layout. Keep collision avoidance and nested branch bands. Source implementation pending.",
+      "layout_reference": "docs/audit/field-reports/2026-10-23_pure-input-layout-reference.png"
     },
     {
       "report": "2026-10-21_S15",

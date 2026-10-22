@@ -846,3 +846,9 @@ Automatic packing within an existing comment was introduced as an extra refineme
 ## Nested Tidy bands — 2026-10-23
 
 Source `3158a91`: ancestry traversal replaces numeric lane order so nested branch/input bands stay contiguous. Source inspection only; no tests/build/editor runs. Unbuilt/untested. Later check nested diamonds, Sequence sublanes and merge row ownership. Asked user to resolve conflicting pure-node placement priorities: S13 input-pin level versus S15/S2 below exec row. Current default prioritizes below-row floors; related findings remain open pending complete coverage audit.
+
+## Isolated measurement and clarified input layout — 2026-10-23
+
+Source `e3ee332`: Tidy measures a transient duplicate in an offscreen Slate view, mapping node GUIDs and pin IDs back to original objects. No live editor open/focus/zoom changes or application-wide Slate ticks. Source/API inspection only; unbuilt/untested. Later verify compact nodes, nested comments, pin geometry, large graphs, dirty/undo isolation and CP-14 appearance.
+
+User diagram resolves the input-layout priority: straight exec-pin row; pure getters immediately left of consumer data pins, below the exec wire, not forcibly below the whole consumer body. Existing consumer-bottom floors must be corrected; TD-30/X-86/TD-39 remain open.
