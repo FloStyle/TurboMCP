@@ -896,3 +896,13 @@ Reviewed original report requirements against TurboMCPGraphTidy.cpp current impl
 - Split interaction: 27184b1 retains the nearest planned consumer instead of old-canvas leftmost consumer; native measured output offset replaces estimated offset. Copy obstacles include all nodes, previous copies and non-containing boxes; comment growth guards preserve unrelated membership. Structural acceptance uses overlaps/exec/pure alignment before length.
 
 Close these three implementation items as unbuilt_untested. No test/build/editor run. No guarantee of crossing-free aesthetics for every graph: field verification must cover dense pin siblings, cyclic/merged data dependencies, copied-reader congestion, nested comments, branch/merge layouts, pin geometry and re-run stability. These are verification debt, not additional unimplemented requested capabilities. CP-14 and unrelated dirty-package X-93 remain separately open with unconfirmed historical causes.
+
+## Seven-report intake/status reconciliation, 2026-10-23
+
+At d3833fd: all seven archived SHA-256 hashes match the batch manifest. Parsed observation headings and feature-table IDs exactly match its 93 distinct report/item keys, preserving reused X-93/TD-39/SV-13 meanings. Classification: 60 defects, 12 requested features, 19 positives, one reference, one process observation. Tracker currently records 70 actionable implementations and two open investigations. This is intake/status evidence, not proof that every implementation is correct at runtime.
+
+Open investigations:
+- S14/CP-14: isolated measurement and final native graph refresh implemented; historical rendering artifact cause unconfirmed. Need fresh before/after observation on stock editor to distinguish remaining capture/render state from mutation refresh.
+- Oct22 S2/X-93: package-delta reporting implemented; source audit found legitimate dependency compilation mechanism, not the reported trigger. Need per-call dirty delta and dependency relationship on a fresh occurrence. Historical details are unavailable; do not request them again or suppress dirty flags.
+
+Asked whether narrowly scoped editor reproductions may override the current no-tests/editor policy for these two, or whether to wait for next field evidence. Until answered, no runtime work authorized. Goal remains incomplete; both issues stay open. Other implemented fixes retain verification debt rather than becoming separate feature tasks.

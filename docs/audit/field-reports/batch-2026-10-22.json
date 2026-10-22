@@ -502,5 +502,24 @@
       "kind": "feature",
       "canonical_issue": "explicit-exec-continuation"
     }
-  ]
+  ],
+  "reconciliation_2026_10_23": {
+    "source_main": "d3833fdf15ce5d815d8cc650db17720c0a1cb362",
+    "archived_hashes": "all seven SHA-256 hashes match",
+    "record_coverage": "93 unique report/item keys; all report observation headings and feature-table entries represented with no extra IDs",
+    "counts": {
+      "defects": 60,
+      "features": 12,
+      "positive": 19,
+      "reference": 1,
+      "process": 1,
+      "actionable_implemented": 70,
+      "actionable_open": 2
+    },
+    "open": [
+      "2026-10-21_S14/CP-14",
+      "2026-10-22_S2/X-93"
+    ],
+    "limits": "Intake/status reconciliation only. Implemented records remain unbuilt/untested; not whole-batch runtime or bug-free certification. Historical rendering and dirty-package causes remain unconfirmed. Awaiting user choice of targeted reproduction versus later field evidence; no tests/editor launched."
+  }
 }
