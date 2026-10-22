@@ -2241,13 +2241,13 @@
       "canonical_issue": "2026-10-22_S1/CB-05",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Type:** Limitation, with side effects.\n- **Observed:** The node find lists 14 boxes all titled \"Comment\". The layout report gives box indexes, but the comment tool needs IDs, and the box capture needs indexes. The fit action changed two wrong boxes (one shrank, one moved into another box). To find the right box, the agent set the text on 8 boxes and set it back, one by one. The asset undo offered to revert a different, later step.\n- **Expected:** The node find prints each box's text, and the layout report prints box IDs.\n- **Proposed behavior:** Print box text and ID in both tools. Make fit with a node list grow the box, not move it.",
-      "implementation": "4852712;89db15e;be88ddc",
-      "implementation_limits": "NodeFind searches/displays comment text. Layout report maps capture indices to full stable IDs, text and rectangles using shared capture order. Explicit fit expands outward preserving old contents. Remaining: comment undo review (also ED-20). No tests/build/editor runs."
+      "implementation": "4852712;89db15e;be88ddc;754d54a",
+      "implementation_limits": "Comment text lookup and capture-index/stable-ID mapping implemented; explicit fitting expands outward preserving old contents. Comment create/set/fit/delete now own a transaction and capture objects before mutation; new boxes transactional. Undo remains chronological and does not skip subsequent edits. No tests/build/editor runs."
     },
     {
       "report": "2026-10-22_S1",
@@ -2273,11 +2273,13 @@
       "canonical_issue": "2026-10-22_S1/ED-20",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Usability.\n- **Observed:** After two wrong comment box fits, the undo preview offered to revert the latest batch of node positions instead. Comment box changes did not appear as the latest undo step. A direct undo call without the preview confirmation was refused. The agent restored the boxes by setting their sizes by hand.\n- **Expected:** Each comment box edit is its own undo step, and the preview names it."
+      "observation": "- **Type:** Usability.\n- **Observed:** After two wrong comment box fits, the undo preview offered to revert the latest batch of node positions instead. Comment box changes did not appear as the latest undo step. A direct undo call without the preview confirmation was refused. The agent restored the boxes by setting their sizes by hand.\n- **Expected:** Each comment box edit is its own undo step, and the preview names it.",
+      "implementation": "4852712;89db15e;be88ddc;754d54a",
+      "implementation_limits": "Comment text lookup and capture-index/stable-ID mapping implemented; explicit fitting expands outward preserving old contents. Comment create/set/fit/delete now own a transaction and capture objects before mutation; new boxes transactional. Undo remains chronological and does not skip subsequent edits. No tests/build/editor runs."
     },
     {
       "report": "2026-10-22_S1",

@@ -570,3 +570,7 @@ Partial, unbuilt_untested: structural-first gate applied to preview and live rol
 ## P0 comment fit — 89db15e
 
 User selected outward expansion preserving existing contents. Explicit-member fit now unions old rectangle with requested enclosure and reports planned bounds. CB-05 remains partial for layout-report mapping and undo review. No tests/build/editor runs.
+
+## P0 comment undo — 754d54a
+
+CB-05/ED-20 implemented, unbuilt_untested: owned comment transaction, pre-mutation Modify and transactional creation. Earlier fixes supply text lookup, index/ID mapping and outward-only fit. Native undo remains chronological. No tests/build/editor runs; undo/redo behavior needs later verification.
