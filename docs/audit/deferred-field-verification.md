@@ -687,3 +687,7 @@ TD-34 remains partial. General and Sequence pure placement clamps below the exec
 ## Copy-aware structural quality — 7555abc
 
 Planned and actual quality include getter-copy rectangles, using the original same-schema getter outline. Data row conflicts use each rerouted copy position. Actual evaluation receives the created copies, and increased overlap counts trigger rollback even with Force. Source inspection only; no tests/build/editor runs. Verify preview/apply metric parity, copies against original nodes and other copies, Force rollback and restoration. Native copy outline equivalence remains unverified. This supersedes the previous missing-copy metric implementation debt; shared-value ownership and corridor placement remain open.
+
+## Shared self splitting — 42250dc
+
+TD-32 partial: plain UK2Node_Self and leaf variable getters share an exact-pin duplication helper in preview/apply. Copies clear only their duplicated link arrays, preserve typed pins/member identity, and receive new node GUIDs. Selected scope does not rewire unselected consumers. No tests/build/editor runs. Verify typed self/variable copies, native previews, exact one-consumer wiring, repeated tidy, undo and rollback. Comment-owned nodes remain implementation work; no completion claim for that scope.

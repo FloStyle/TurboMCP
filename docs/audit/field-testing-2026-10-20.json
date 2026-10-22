@@ -1668,10 +1668,13 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-21_S14_TurboMCP_tidy-linear-function.md",
-      "observation": "- **Type:** Limitation.\r\n- **Observed:** One self node near the start feeds a node far down the chain. The longest wire is 2997 units, and its target input is 278 units off level.\r\n- **Expected:** One self copy per consumer, as in the user layout rules.\r\n- **Proposed behavior:** Split shared self and getter nodes when a wire passes a set length.\r\n\r\n### Comment boxes"
+      "observation": "- **Type:** Limitation.\r\n- **Observed:** One self node near the start feeds a node far down the chain. The longest wire is 2997 units, and its target input is 278 units off level.\r\n- **Expected:** One self copy per consumer, as in the user layout rules.\r\n- **Proposed behavior:** Split shared self and getter nodes when a wire passes a set length.\r\n\r\n### Comment boxes",
+      "fix_commit": "42250dc",
+      "implementation": "Tidy now duplicates plain shared self references as well as leaf variable getters, preserving original pin types and wiring each extra eligible consumer to its own nearby copy. Preview uses the same duplication helper; rollback reconnects the original. Scoped selection excludes unselected consumers.",
+      "remaining": "Splitting inside or across comment boxes remains excluded by existing ownership guards; complete comment-aware placement and fitting are still required."
     },
     {
       "report": "2026-10-21_S14",
