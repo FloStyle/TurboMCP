@@ -79,7 +79,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphPositions(const FString& Asset, c
 	if (!Graph || Matches != 1) return TEXT("error: graph missing or ambiguous; unchanged");
 	TArray<TSharedPtr<FJsonValue>> Items;
 	if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Positions), Items) || Items.IsEmpty() || Items.Num() > 4096)
-		return TEXT("error: Positions must be a JSON array with 1..4096 entries; unchanged");
+		return TEXT("error: Positions must be a string containing a JSON array with 1..4096 entries, e.g. [{\"node\":\"exact reader node ID\",\"x\":100,\"y\":200}]; unchanged");
 	struct FMove { UEdGraphNode* Node; int32 X; int32 Y; };
 	TArray<FMove> Moves; TSet<UEdGraphNode*> Seen;
 	for (const auto& Item : Items)
@@ -90,7 +90,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphPositions(const FString& Asset, c
 			|| !(*Obj)->TryGetNumberField(TEXT("y"), Y) || !FMath::IsFinite(X) || !FMath::IsFinite(Y)
 			|| X < MIN_int32 || X > MAX_int32 || Y < MIN_int32 || Y > MAX_int32
 			|| FMath::FloorToDouble(X) != X || FMath::FloorToDouble(Y) != Y)
-			return TEXT("error: each position requires node, x and y with int32 coordinates; unchanged");
+			return TEXT("error: each position requires exactly the keys node (reader ID), x and y (integer graph coordinates); example [{\"node\":\"exact reader node ID\",\"x\":100,\"y\":200}]; unchanged");
 		UEdGraphNode* Found = nullptr;
 		for (UEdGraphNode* Node : Graph->Nodes)
 			if (Node && (TurboMCPNodeId::MakeForNode(Node, true) == Id || TurboMCPNodeId::MakeForNode(Node, false) == Id))

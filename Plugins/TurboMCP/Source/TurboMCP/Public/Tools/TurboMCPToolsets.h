@@ -2127,7 +2127,17 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm);
 
-	/** Set node positions in one undo step. Positions is a JSON array of {"node":"exact reader node ID","x":100,"y":200}. Validates the entire batch before writing; does not compile or save. */
+	/**
+	 * Set node positions in one undo step. No compile or save.
+	 * Positions is a STRING containing a JSON array, not lines of text or a JSON object.
+	 * Example: [{"node":"exact reader node ID","x":100,"y":200}]
+	 * Each object must contain exactly node, x, y (case-sensitive); not id or nodeId.
+	 * Use IDs from LookTurboMCPGraphPositions or the graph reader, not display titles.
+	 * x and y are absolute integer graph coordinates, including negative coordinates,
+	 * in the signed 32-bit range. Supply 1..4096 unique nodes; omit unchanged nodes.
+	 * Validates the entire batch before writing; unlisted nodes stay in place.
+	 * @param Positions JSON array encoded as a string. Example: [{"node":"exact reader node ID","x":100,"y":200}]
+	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& Positions);
 
