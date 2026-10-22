@@ -610,6 +610,19 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 
 			// Traps come from the data file, never from code (D-07).
 			const FTurboMCPTraps::FToolInfo* Info = Traps.Find(Bare);
+			if (Info != nullptr && Info->Parameters.Num() > 0)
+			{
+				// Supplemental notes describe engine-specific forms; the registry
+				// above remains authoritative for parameter names and requiredness.
+				TArray<FString> NoteNames;
+				Info->Parameters.GetKeys(NoteNames);
+				NoteNames.Sort();
+				Help += TEXT("\nparameter notes (supplemental; use the live schema above):");
+				for (const FString& NoteName : NoteNames)
+				{
+					Help += FString::Printf(TEXT("\n  %s: %s"), *NoteName, *Info->Parameters.FindChecked(NoteName));
+				}
+			}
 			if (Info != nullptr && Info->Traps.Num() > 0)
 			{
 				Help += FString::Printf(TEXT("\ntraps: %d"), Info->Traps.Num());
