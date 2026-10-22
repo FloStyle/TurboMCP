@@ -5,6 +5,7 @@
 #include "TurboMCPAssetResolver.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
+#include "EdGraphSchema_K2.h"
 #include "K2Node_Self.h"
 #include "K2Node_CreateDelegate.h"
 #include "UObject/Class.h"
@@ -179,7 +180,8 @@ bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     UFunction* Signature=Event->GetDelegateSignature();
     UClass* Scope=Event->GetScopeClass();
     UFunction* Function=Scope?Scope->FindFunctionByName(FName(*FunctionName)):nullptr;
-    if(!Signature || !Function || !Signature->IsSignatureCompatibleWith(Function))
+    if(!Signature || !Function || !Signature->IsSignatureCompatibleWith(Function)
+        || !UEdGraphSchema_K2::FunctionCanBeUsedInDelegate(Function))
     { Error=TEXT("function must exist on self and match the target delegate signature exactly"); return false; }
     Event->SetFunction(Function->GetFName());
     Event->HandleAnyChangeWithoutNotifying();
