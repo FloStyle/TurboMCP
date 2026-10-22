@@ -2242,10 +2242,12 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partial_implementation",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
-      "observation": "- **Type:** Limitation, with side effects.\n- **Observed:** The node find lists 14 boxes all titled \"Comment\". The layout report gives box indexes, but the comment tool needs IDs, and the box capture needs indexes. The fit action changed two wrong boxes (one shrank, one moved into another box). To find the right box, the agent set the text on 8 boxes and set it back, one by one. The asset undo offered to revert a different, later step.\n- **Expected:** The node find prints each box's text, and the layout report prints box IDs.\n- **Proposed behavior:** Print box text and ID in both tools. Make fit with a node list grow the box, not move it."
+      "observation": "- **Type:** Limitation, with side effects.\n- **Observed:** The node find lists 14 boxes all titled \"Comment\". The layout report gives box indexes, but the comment tool needs IDs, and the box capture needs indexes. The fit action changed two wrong boxes (one shrank, one moved into another box). To find the right box, the agent set the text on 8 boxes and set it back, one by one. The asset undo offered to revert a different, later step.\n- **Expected:** The node find prints each box's text, and the layout report prints box IDs.\n- **Proposed behavior:** Print box text and ID in both tools. Make fit with a node list grow the box, not move it.",
+      "implementation": "4852712",
+      "implementation_limits": "NodeFind now searches actual NodeComment text and prints it beside full stable IDs. Remaining: layout report box ID/text mapping, grow-only fit with explicit members, comment undo review. No tests/build/editor runs."
     },
     {
       "report": "2026-10-22_S1",
