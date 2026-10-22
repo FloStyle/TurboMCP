@@ -1656,11 +1656,14 @@
       "canonical_issue": "2026-10-21_S14/TD-31",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_pending_verification",
       "source": "docs/audit/field-reports/2026-10-21_S14_TurboMCP_tidy-linear-function.md",
-      "observation": "- **Type:** Usability.\r\n- **Observed:** The result is one row about 10100 units wide and 470 units tall. It is straight, but it needs much horizontal scroll.\r\n- **Proposed behavior:** An option to wrap a long chain into rows at a natural break, for example after a latent node."
+      "observation": "- **Type:** Usability.\r\n- **Observed:** The result is one row about 10100 units wide and 470 units tall. It is straight, but it needs much horizontal scroll.\r\n- **Proposed behavior:** An option to wrap a long chain into rows at a natural break, for example after a latent node.",
+      "fix_commit": "1ff05bc",
+      "implementation": "Preview/Edit GraphTidy accept optional WrapAfter comma-separated execution node IDs. Execution components split at requested breaks, rows ordered by continuation, pure inputs follow consumers. Original links preserved. Intentional return wires exempt from straight/backward penalties; requested lower-row satisfaction participates in structural acceptance. Default empty preserves previous behaviour.",
+      "limitations": "Explicit caller-selected break, not automatic width wrapping. Cyclic/bypassed breaks or fixed/comment-boundary continuations that cannot form a lower row refuse unchanged. No tests/build/editor run."
     },
     {
       "report": "2026-10-21_S14",

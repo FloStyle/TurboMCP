@@ -860,3 +860,7 @@ Implemented incoming exec-pin clearance instead of whole-node-bottom clearance i
 ## Pure reader obstacle columns (8f1988c)
 
 Source inspected only. Generic placement now searches adjacent obstacle-edge columns before choosing a downward position, using measured pin distance. Deferred visual regression: multiple close input pins, deep expressions, nested branches and comment boundaries. Original graph links and exec placement unchanged by this search. Aggregate report items remain open.
+
+## S14/TD-31 explicit natural-break wrapping (1ff05bc)
+
+Implemented optional WrapAfter in both tidy tools and shared Plan. Source reviewed: parameter/default parity, exact node identification, execution-component split, continuation row ordering, pure-input row attachment, unchanged links, requested-break validation before no-op return, same quality calculation for preview/apply. No tests/build/editor runs. Deferred: latent completion chains, multiple breaks, getter sharing across rows, nested comments, scoped fixed continuations, bypass/cyclic refusal and re-run stability. This implements the requested option; automatic width-triggered break selection was not requested and is not claimed.
