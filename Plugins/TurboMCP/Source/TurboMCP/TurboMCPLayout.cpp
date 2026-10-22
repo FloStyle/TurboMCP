@@ -44,8 +44,10 @@ namespace
 
 FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 	const FString& Asset,
-	const FString& GraphName)
+	const FString& GraphName, double AlignmentTolerance)
 {
+    if (!FMath::IsFinite(AlignmentTolerance) || AlignmentTolerance < 0.0 || AlignmentTolerance > 1024.0)
+        return TEXT("error: AlignmentTolerance must be finite and between 0 and 1024 graph units");
 	if (Asset.IsEmpty())
 	{
 		return TEXT("error: no asset given. Pass a Blueprint in any path form, for ")
@@ -95,7 +97,7 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 	FString GeometryError;
     if(!FTurboMCPGraphTidy::PrepareAlignment(Blueprint,Graph,GeometryError)) return TEXT("error: ")+GeometryError;
     FTurboMCPLayoutReport::FReport Report =
-		FTurboMCPLayoutReport::Measure(Graph, Resolved.ObjectPath);
+		FTurboMCPLayoutReport::Measure(Graph, Resolved.ObjectPath, AlignmentTolerance);
 
 	Report.Findings.StableSort([](const auto& A,const auto& B) { return A.Kind<B.Kind; });
 	FString Out = FString::Printf(TEXT("look: layout of %s graph %s"),
@@ -163,6 +165,8 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
     Out += TEXT("\nlongest wires (up to 10, straight pin-to-pin graph units; diagnostic, not an error threshold):");
     for (int32 Index=0;Index<Longest.Num();++Index)
         Out += FString::Printf(TEXT("\n  %d. %.1f units: %s"),Index+1,Longest[Index].Length,*Longest[Index].Endpoints);
+
+    Out += FString::Printf(TEXT("\nalignment tolerance: %.1f graph units; overlaps and backward connections are not suppressed"), AlignmentTolerance);
 
 	// Findings, counted by kind so the shape of the problem is visible before the
 	// detail.
@@ -259,9 +263,9 @@ FString UTurboMCPLookToolset::LookTurboMCPGraphPositions(const FString& Asset,co
     return Result;
 }
 
-FString UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName)
+FString UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance)
 {
-    const FString Report = LookTurboMCPLayoutReport(Asset,GraphName);
+    const FString Report = LookTurboMCPLayoutReport(Asset,GraphName,AlignmentTolerance);
     if (!Report.StartsWith(TEXT("look:"))) return Report;
     const FString Capture = LookTurboMCPCapture(Asset,GraphName,TEXT("graph"),TEXT(""),TEXT(""));
     return Report + TEXT("\n\nfull-graph capture (review aid; not automatic layout approval):\n") + Capture;

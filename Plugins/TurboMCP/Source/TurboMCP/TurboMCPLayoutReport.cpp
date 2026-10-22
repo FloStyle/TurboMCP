@@ -167,7 +167,7 @@ double FTurboMCPLayoutReport::WireLength(const UEdGraphPin* InPin)
 }
 
 FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
-	const UEdGraph* InGraph, const FString& InAssetPath)
+	const UEdGraph* InGraph, const FString& InAssetPath, double AlignmentTolerance)
 {
 	FReport Report;
 	if (InGraph == nullptr)
@@ -291,7 +291,7 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
                             ++OutputIndex;
                         }
                 }
-                if (!IntentionalSequenceLane && FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y) > 8.0 && Report.Findings.Num() < 128)
+                if (!IntentionalSequenceLane && FMath::Abs(FTurboMCPGraphTidy::AlignmentPinPosition(Pin).Y - FTurboMCPGraphTidy::AlignmentPinPosition(Other).Y) > AlignmentTolerance && Report.Findings.Num() < 128)
                 {
                     FFinding Finding;
                     Finding.Kind = bIsExec ? TEXT("exec-not-straight") : TEXT("pin-not-level");

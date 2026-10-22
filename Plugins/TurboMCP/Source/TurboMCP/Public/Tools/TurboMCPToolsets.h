@@ -777,6 +777,8 @@ public:
 	static FString LookTurboMCPToolset();
 
 	/**
+	 * AlignmentTolerance ignores vertical pin offsets up to this many graph units
+	 * (default 64, use 8 for strict inspection). Does not hide overlaps or backward wires.
 	 * Look at the layout of one graph: measure it and report, without moving anything.
 	 *
 	 * Pass a Blueprint and a graph name. Every node in the graph is included,
@@ -804,13 +806,14 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPLayoutReport(
 		const FString& Asset,
-		const FString& GraphName);
+		const FString& GraphName,
+        double AlignmentTolerance = 64.0);
 
     /** Review layout in one call: text findings and the ten longest wires with exact endpoints,
      * plus a full-graph capture. Does not edit, compile or save. Capture failures remain visible
      * alongside the text report; this is evidence for human review, not a pass/fail certification. */
     UFUNCTION(meta = (AICallable))
-    static FString LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName);
+    static FString LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance = 64.0);
 
 
     /** Read node IDs, positions and measured sizes without editing the graph. */

@@ -92,7 +92,7 @@ public:
 	};
 
 	/** Measures one graph. Never modifies it. */
-	static FReport Measure(const UEdGraph* InGraph, const FString& InAssetPath);
+	static FReport Measure(const UEdGraph* InGraph, const FString& InAssetPath, double AlignmentTolerance = 8.0);
 
 	/** The rectangle a node occupies. */
 	static FRect RectOf(const UEdGraphNode* InNode);
