@@ -1943,10 +1943,12 @@
       "owner": "FIELD-06",
       "priority": "P0",
       "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "validation": "unbuilt_untested",
+      "disposition": "partial_implementation",
       "source": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
-      "observation": "- **Type:** Usability.\r\n- **Observed:** A closing parenthesis on its own line is read as a pin name. A label inside the comment eats the parenthesis. Writing the self pin as \"self self\" passed the preview but failed the edit with an invalid default. So preview and edit disagreed. The workaround was to refer to the getter by its type ID, which only works when the type is unique in the block.\r\n- **Proposed behavior:** Accept a label on any form. Make the preview run the same pin default checks as the edit.\r\n\r\n### Tidy"
+      "observation": "- **Type:** Usability.\r\n- **Observed:** A closing parenthesis on its own line is read as a pin name. A label inside the comment eats the parenthesis. Writing the self pin as \"self self\" passed the preview but failed the edit with an invalid default. So preview and edit disagreed. The workaround was to refer to the getter by its type ID, which only works when the type is unique in the block.\r\n- **Proposed behavior:** Accept a label on any form. Make the preview run the same pin default checks as the edit.\r\n\r\n### Tidy",
+      "implementation": "Standalone closing lines no longer become pin names in shared lexer; pinless label handling implemented.",
+      "remaining": "Complete preview/edit default-validation parity remains open, including invalid self defaults."
     },
     {
       "report": "2026-10-21_S16",
@@ -2396,11 +2398,13 @@
       "canonical_issue": "2026-10-22_S2/GC-34",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implemented_untested",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
-      "observation": "- **Type:** Limitation.\n- **Scenario:** Append a variable getter with a local label.\n- **Reproduction status:** Repeated, 3 times.\n- **Steps to reproduce:**\n  1. Write a getter form with a label and a closing bracket on its own line.\n  2. Write it again with the closing bracket after the self pin name.\n- **Observed:** Both were refused. A closing bracket alone was read as a pin name, and so was the pin name with the bracket glued to it.\n- **Expected:** A form with no pin lines can be closed.\n- **Impact:** 3 extra preview calls.\n- **State after:** No change. Preview only.\n- **Workaround:** Give the self pin an empty quoted value with the bracket after it. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Accept a closing bracket alone on a line."
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Append a variable getter with a local label.\n- **Reproduction status:** Repeated, 3 times.\n- **Steps to reproduce:**\n  1. Write a getter form with a label and a closing bracket on its own line.\n  2. Write it again with the closing bracket after the self pin name.\n- **Observed:** Both were refused. A closing bracket alone was read as a pin name, and so was the pin name with the bracket glued to it.\n- **Expected:** A form with no pin lines can be closed.\n- **Impact:** 3 extra preview calls.\n- **State after:** No change. Preview only.\n- **Workaround:** Give the self pin an empty quoted value with the bracket after it. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Accept a closing bracket alone on a line.",
+      "implementation": "Shared ParsePinLine ignores delimiter-only closing lines, including multiple closers, whitespace and trailing comments; form balance remains checked by GraphCheck. Pinless labeled forms no longer invent a closing-parenthesis pin.",
+      "verification_debt": "No tests/build/editor runs. Check labeled pinless append, nested closers and malformed balance in preview/edit."
     },
     {
       "report": "2026-10-22_S2",

@@ -650,3 +650,6 @@ Human report tools default to 64 units; configurable 0..1024 with strict 8 avail
 
 ## GC-33 current designer getter discovery (2026-10-22)
 Live WidgetTree variable declarations supplement missing reflected actions; getter uses explicit object type and self member, reader preserves owner-qualified ID. Unbuilt/untested: native/user-widget types, same names across assets, compile/reconstruction, rename and append/undo. No compilation or editor runs performed.
+
+## GC-34 / GC-32 standalone closers (2026-10-22)
+Shared pin parser ignores delimiter-only closing lines after comment removal. Balance checking remains separate. Unbuilt/untested: pinless labeled forms, nested closures, trailing comments and malformed parentheses. GC-32 remains partial because default-validation preview parity is not complete.
