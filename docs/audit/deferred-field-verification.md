@@ -759,3 +759,7 @@ TD-38 implementation complete: @unboxed selects all unboxed nodes or filters exp
 
 ## S16 cross-box report — 1eb4ea0
 X-89/FT-93 remain open, partial, unbuilt_untested. Report now enumerates cross-box edges with precise endpoints and box owners, sorted descending with a total. Membership uses the smallest fully enclosing comment rectangle, with deterministic equal-area ownership; unboxed-to-unboxed excluded. Distances use the existing estimated pin model, not rendered spline length. Source inspected only; no tests/build/editor runs. Later verify nested/overlapping boxes, unboxed endpoints, duplicate links, rendering of long reports. Placement helper, shared-tail context, and before/after operation totals remain.
+
+
+## S16 shared execution-tail context — 0260d19
+X-89/FT-93 stay partial/open, unbuilt_untested. Body/full reads enumerate nodes reached through explicit exec links from multiple entry nodes, naming entry IDs and names. Traversal has per-entry visited sets, follows reroutes, excludes foreign graphs, and keeps full origin context for filtered views. Output is comment-only and does not alter executable graph forms. Source/API inspection only (stock TArray::Pop signature inspected); no tests/build/editor runs. Later verify merged branches, loops, reroutes, filters, large graphs and read/write round trips. Placement helper and before/after movement totals remain.
