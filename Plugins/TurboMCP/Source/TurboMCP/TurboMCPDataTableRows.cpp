@@ -54,9 +54,11 @@ namespace
 	{
 	public:
 		FString Text;
+        bool bHadError = false;
 
 		virtual void Serialize(const TCHAR* Message, ELogVerbosity::Type Verbosity, const FName& Category) override
 		{
+            if (Verbosity == ELogVerbosity::Error || Verbosity == ELogVerbosity::Fatal) bHadError = true;
 			if (!Text.IsEmpty())
 			{
 				Text += TEXT("; ");
@@ -302,7 +304,7 @@ namespace
 		const TCHAR* After = Struct->ImportText(*Text, Row, Owner, CopyFlags, &Capture,
 			Struct->GetPathName());
 
-		if (After == nullptr)
+		if (After == nullptr || Capture.bHadError)
 		{
 			OutError = FString::Printf(
 				TEXT("the row struct refused '%s'. The accepted spelling is the struct's own export text, for ")
@@ -311,6 +313,11 @@ namespace
 				Capture.Text.IsEmpty() ? TEXT("") : *FString::Printf(TEXT(". The engine said: %s"), *Capture.Text));
 			return false;
 		}
+        if (!FString(After).TrimStartAndEnd().IsEmpty())
+        {
+            OutError = TEXT("row import left trailing text; the entire value must be valid engine export text");
+            return false;
+        }
 		return true;
 	}
 }
