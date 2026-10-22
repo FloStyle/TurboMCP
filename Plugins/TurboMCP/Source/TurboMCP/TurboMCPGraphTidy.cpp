@@ -2190,9 +2190,10 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	// the links they replaced restored.
 	// -----------------------------------------------------------------------------------------
 
+    const auto CrossBoxBefore = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
 	if (InPlan.bAlreadyTidy)
 	{
-		return FString::Printf(TEXT("unchanged: %s in %s is already tidy (total wire length %.1f across %d wire(s)). No node moved, no box changed size and no getter was split."), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireCount);
+		return FString::Printf(TEXT("unchanged: %s in %s is already tidy (total wire length %.1f across %d wire(s)). No node moved, no box changed size and no getter was split."), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, InPlan.WireCount) + FString::Printf(TEXT(" Cross-box estimated length %.1f -> %.1f across %d connections."), CrossBoxBefore.Length, CrossBoxBefore.Length, CrossBoxBefore.Count);
 	}
 
 	// THE PLAN IS READ-ONLY, so the copies this function makes are recorded in a LOCAL array. `Plan`
@@ -2411,6 +2412,8 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 		if (!CopyFailure.IsEmpty()) Out += TEXT(" Cause: ") + CopyFailure + TEXT(". Force does not bypass split failures.");
 		if (!bRollbackComplete) Out += TEXT(" rollback=incomplete; package remains dirty; inspect before retrying or saving.");
+        const auto CrossBoxRestored = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
+        Out += FString::Printf(TEXT(" Cross-box estimated length before %.1f; after rollback %.1f; connections %d -> %d."), CrossBoxBefore.Length, CrossBoxRestored.Length, CrossBoxBefore.Count, CrossBoxRestored.Count);
 		return Out;
 	}
 
@@ -2452,6 +2455,8 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	const bool bScoreMatchesPlan = FMath::IsNearlyEqual(MeasuredAfter, InPlan.WireLengthAfter, 1.0);
 	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? (InPlan.bForce ? TEXT(" (longer wires; Force enabled)") : TEXT(" (longer wires; structural quality improved)")) : TEXT("")));
 	Lines.Add(FString::Printf(TEXT("score: preview predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("MATCHES THE PREVIEW") : TEXT("DOES NOT MATCH THE PREVIEW")));
+    const auto CrossBoxAfter = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
+    Lines.Add(FString::Printf(TEXT("cross-box: estimated straight-line length %.1f -> %.1f (delta %+.1f); connections %d -> %d. Ownership uses the smallest enclosing comment at each state; copies or box growth can change the count."), CrossBoxBefore.Length, CrossBoxAfter.Length, CrossBoxAfter.Length-CrossBoxBefore.Length, CrossBoxBefore.Count, CrossBoxAfter.Count));
 	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), and NO BOX CORNER MOVED: every box keeps the top-left corner the user placed, and only its size changed."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
 	if (InPlan.SelectedNodeKeys.Num() > 0)
 	{

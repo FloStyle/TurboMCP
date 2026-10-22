@@ -687,3 +687,58 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
 
 	return Report;
 }
+
+FTurboMCPLayoutReport::FCrossBoxMeasure FTurboMCPLayoutReport::MeasureCrossBox(
+    const UEdGraph* Graph, const TMap<const UEdGraphNode*, FRect>& RectOverrides)
+{
+    FCrossBoxMeasure Result;
+    if (!Graph) return Result;
+    auto Bounds = [&RectOverrides](const UEdGraphNode* Node)
+    {
+        const FRect* Override = RectOverrides.Find(Node);
+        return Override ? *Override : RectOf(Node);
+    };
+    TMap<const UEdGraphNode*, const UEdGraphNode*> Owners;
+    for (const UEdGraphNode* Node : Graph->Nodes)
+    {
+        if (!Node || Node->IsA<UEdGraphNode_Comment>()) continue;
+        const FRect R = Bounds(Node);
+        const UEdGraphNode* Owner = nullptr;
+        double OwnerArea = TNumericLimits<double>::Max();
+        for (const UEdGraphNode* Box : Graph->Nodes)
+        {
+            if (!Box || !Box->IsA<UEdGraphNode_Comment>()) continue;
+            const FRect B = Bounds(Box);
+            const double Area = B.Width()*B.Height();
+            if (R.MinX >= B.MinX && R.MinY >= B.MinY && R.MaxX <= B.MaxX && R.MaxY <= B.MaxY
+                && (Area < OwnerArea || (Area == OwnerArea && Owner && Box->GetName() < Owner->GetName())))
+            { Owner = Box; OwnerArea = Area; }
+        }
+        Owners.Add(Node, Owner);
+    }
+    auto Position = [&Bounds](const UEdGraphPin* Pin)
+    {
+        const UEdGraphNode* Node = Pin->GetOwningNode();
+        const FRect R = Bounds(Node);
+        return PinPosition(Pin) + FVector2D(R.MinX-Node->NodePosX, R.MinY-Node->NodePosY);
+    };
+    for (const UEdGraphNode* Node : Graph->Nodes)
+    {
+        if (!Node || Node->IsA<UEdGraphNode_Comment>()) continue;
+        for (const UEdGraphPin* Pin : Node->Pins)
+        {
+            if (!Pin || Pin->Direction != EGPD_Output) continue;
+            TSet<const UEdGraphPin*> Seen;
+            for (const UEdGraphPin* Other : Pin->LinkedTo)
+            {
+                if (!Other || Seen.Contains(Other)) continue;
+                Seen.Add(Other);
+                const UEdGraphNode* Target = Other->GetOwningNode();
+                if (!Target || Target->GetGraph() != Graph || Owners.FindRef(Node) == Owners.FindRef(Target)) continue;
+                ++Result.Count;
+                Result.Length += FVector2D::Distance(Position(Pin), Position(Other));
+            }
+        }
+    }
+    return Result;
+}

@@ -8,6 +8,7 @@
 #pragma once
 
 #include "Containers/Array.h"
+#include "Containers/Map.h"
 #include "Containers/UnrealString.h"
 #include "CoreTypes.h"
 #include "Math/Vector2D.h"
@@ -90,6 +91,18 @@ public:
 		/** Said in words when there is nothing to report, per `P1`. */
 		FString Summary;
 	};
+
+    struct FCrossBoxMeasure
+    {
+        int32 Count = 0;
+        double Length = 0.0;
+    };
+
+    /** Estimated cross-box lengths, optionally on hypothetical node rectangles.
+     * Overrides translate the pin model as well as containment; never writes nodes.
+     */
+    static FCrossBoxMeasure MeasureCrossBox(const UEdGraph* Graph,
+        const TMap<const UEdGraphNode*, FRect>& RectOverrides = TMap<const UEdGraphNode*, FRect>());
 
 	/** Measures one graph. Never modifies it. */
 	static FReport Measure(const UEdGraph* InGraph, const FString& InAssetPath, double AlignmentTolerance = 8.0);

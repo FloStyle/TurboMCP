@@ -247,15 +247,26 @@ namespace
      return TEXT("error: moved group would overlap an unselected node; unchanged");
    }
   }
+  const auto CrossBefore=FTurboMCPLayoutReport::MeasureCrossBox(Graph);
+  TMap<const UEdGraphNode*,FTurboMCPLayoutReport::FRect> PredictedRects;
+  for(UEdGraphNode* N:Selected)
+  {
+   auto Rect=FTurboMCPLayoutReport::RectOf(N);
+   Rect.MinX+=DeltaX; Rect.MaxX+=DeltaX; Rect.MinY+=DeltaY; Rect.MaxY+=DeltaY;
+   PredictedRects.Add(N,Rect);
+  }
+  const auto CrossPlanned=FTurboMCPLayoutReport::MeasureCrossBox(Graph,PredictedRects);
+  const FString CrossPreview=FString::Printf(TEXT("; cross-box estimated straight-line length %.1f -> %.1f (delta %+.1f), connections %d -> %d"),CrossBefore.Length,CrossPlanned.Length,CrossPlanned.Length-CrossBefore.Length,CrossBefore.Count,CrossPlanned.Count);
   const FString Summary=FString::Printf(TEXT("%d nodes/comments translated by (%d,%d); internal spacing, sizes, pins and links preserved"),Selected.Num(),DeltaX,DeltaY);
-  if(!Edit) return TEXT("preview: ")+Summary;
-  if(DeltaX==0 && DeltaY==0) return TEXT("unchanged: zero offset");
+  if(!Edit) return TEXT("preview: ")+Summary+CrossPreview;
+  if(DeltaX==0 && DeltaY==0) return TEXT("unchanged: zero offset")+CrossPreview;
   FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP move graph group")));
   if(!Transaction.IsOutstanding()) return TEXT("error: no undo transaction; unchanged");
   BP->Modify(); Graph->Modify();
   for(UEdGraphNode* N:Selected) { N->Modify(); N->NodePosX+=DeltaX; N->NodePosY+=DeltaY; }
   Graph->NotifyGraphChanged(); FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
-  return TEXT("changed: ")+Summary+TEXT("; undo=one; compile=not_run; save=not_requested");
+  const auto CrossAfter=FTurboMCPLayoutReport::MeasureCrossBox(Graph);
+  return TEXT("changed: ")+Summary+FString::Printf(TEXT("; cross-box estimated straight-line length %.1f -> %.1f (delta %+.1f), connections %d -> %d; preview predicted %.1f"),CrossBefore.Length,CrossAfter.Length,CrossAfter.Length-CrossBefore.Length,CrossBefore.Count,CrossAfter.Count,CrossPlanned.Length)+TEXT("; undo=one; compile=not_run; save=not_requested");
  }
 }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphGroupMove(const FString& Asset,const FString& GraphName,const TArray<FString>& NodeIds,int32 DeltaX,int32 DeltaY) { return MoveGroup(Asset,GraphName,NodeIds,DeltaX,DeltaY,false); }
