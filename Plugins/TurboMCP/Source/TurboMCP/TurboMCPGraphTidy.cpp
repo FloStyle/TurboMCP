@@ -55,7 +55,8 @@ namespace
         int32 PureInputRowConflicts=0;
     };
     // Mode: original, planned, or actual post-edit coordinates. Pin offsets remain native.
-    FStructuralQuality StructuralQuality(const FTurboMCPGraphTidy::FPlan& Plan,int32 Mode)
+    FStructuralQuality StructuralQuality(const FTurboMCPGraphTidy::FPlan& Plan,int32 Mode,
+        const TArray<FTurboMCPGraphTidy::FGetterCopy>* ActualCopies = nullptr)
     {
         FStructuralQuality Q;
         auto Position=[Mode](const FTurboMCPGraphTidy::FNode& N)
@@ -63,13 +64,33 @@ namespace
             if(Mode==2 && N.Node) return FVector2D(N.Node->NodePosX,N.Node->NodePosY);
             return Mode==1?FVector2D(N.PlannedX,N.PlannedY):FVector2D(N.X,N.Y);
         };
-        for(int32 A=0;A<Plan.Nodes.Num();++A) for(int32 B=A+1;B<Plan.Nodes.Num();++B)
+        struct FQualityRect { FVector2D Position; double Width; double Height; };
+        TArray<FQualityRect> Rectangles;
+        for (const auto& Node : Plan.Nodes)
+            if (!Node.bIsComment) Rectangles.Add({Position(Node), Node.Width, Node.Height});
+        const auto& Copies = ActualCopies ? *ActualCopies : Plan.GetterCopies;
+        auto CopyPosition = [Mode](const FTurboMCPGraphTidy::FGetterCopy& Copy)
         {
-            const auto& L=Plan.Nodes[A]; const auto& R=Plan.Nodes[B];
-            if(L.bIsComment || R.bIsComment) continue;
-            const FVector2D P=Position(L), T=Position(R);
-            if(P.X<T.X+R.Width && P.X+L.Width>T.X && P.Y<T.Y+R.Height && P.Y+L.Height>T.Y) ++Q.Overlaps;
-        }
+            return Mode == 2 && Copy.Copy
+                ? FVector2D(Copy.Copy->NodePosX, Copy.Copy->NodePosY)
+                : FVector2D(Copy.PlannedX, Copy.PlannedY);
+        };
+        if (Mode != 0)
+            for (const auto& Copy : Copies)
+            {
+                if (Mode == 2 && !Copy.Copy) continue;
+                // Copies retain the original getter's schema and measured outline.
+                const auto* Original = Plan.Nodes.FindByPredicate([&Copy](const FTurboMCPGraphTidy::FNode& N) { return N.Node == Copy.Original; });
+                if (Original) Rectangles.Add({CopyPosition(Copy), Original->Width, Original->Height});
+            }
+        for (int32 A = 0; A < Rectangles.Num(); ++A)
+            for (int32 B = A + 1; B < Rectangles.Num(); ++B)
+            {
+                const auto& L = Rectangles[A]; const auto& R = Rectangles[B];
+                if (L.Position.X < R.Position.X + R.Width && L.Position.X + L.Width > R.Position.X
+                    && L.Position.Y < R.Position.Y + R.Height && L.Position.Y + L.Height > R.Position.Y)
+                    ++Q.Overlaps;
+            }
         // Data inputs belong below their execution consumer, even when a shorter
         // wire would put the expression back into the execution corridor.
         for (const auto& DataWire : Plan.Wires)
@@ -78,8 +99,14 @@ namespace
                 || !Plan.Nodes.IsValidIndex(DataWire.SourceNodeIndex) || !Plan.Nodes.IsValidIndex(DataWire.TargetNodeIndex)) continue;
             const auto& Source = Plan.Nodes[DataWire.SourceNodeIndex];
             const auto& Consumer = Plan.Nodes[DataWire.TargetNodeIndex];
+            FVector2D EffectiveSource = Position(Source);
+            if (Mode != 0)
+                for (const auto& Copy : Copies)
+                    if (Copy.OriginalValuePin == DataWire.OutputPin && Copy.ConsumerPin == DataWire.InputPin
+                        && (Mode != 2 || Copy.Copy))
+                    { EffectiveSource = CopyPosition(Copy); break; }
             if (Source.bIsPure && !Source.bIsKnot && !Consumer.bIsPure && !Consumer.bIsComment
-                && Position(Source).Y < Position(Consumer).Y + Consumer.Height)
+                && EffectiveSource.Y < Position(Consumer).Y + Consumer.Height)
                 ++Q.PureInputRowConflicts;
         }
         for(const auto& W:Plan.Wires)
@@ -1677,11 +1704,14 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 		return true;
 	}
 
-	OutPlan.bWouldApply = BetterLayout(StructuralQuality(OutPlan,0),StructuralQuality(OutPlan,1),OutPlan.WireLengthBefore,OutPlan.WireLengthAfter) || bInForce;
+	const FStructuralQuality OriginalQuality = StructuralQuality(OutPlan,0);
+    const FStructuralQuality PlannedQuality = StructuralQuality(OutPlan,1);
+    OutPlan.bWouldApply = PlannedQuality.Overlaps <= OriginalQuality.Overlaps
+        && (BetterLayout(OriginalQuality,PlannedQuality,OutPlan.WireLengthBefore,OutPlan.WireLengthAfter) || bInForce);
 	if (!OutPlan.bWouldApply)
 	{
 		OutPlan.RollbackReason = FString::Printf(
-			TEXT("candidate rejected by structural quality order: overlaps, backward exec wires, linear exec alignment, then total wire length (%.1f versus %.1f). Force does not bypass collision or membership guards."),
+			TEXT("candidate rejected by structural quality order: overlaps, backward exec wires, linear exec alignment, pure input row conflicts, then total wire length (%.1f versus %.1f). Force does not bypass collision or membership guards."),
 			OutPlan.WireLengthAfter, OutPlan.WireLengthBefore);
 	}
 
@@ -2091,7 +2121,11 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 	}
 
-	const bool bBetter = BetterLayout(StructuralQuality(InPlan,0),StructuralQuality(InPlan,2),InPlan.WireLengthBefore,MeasuredAfter);
+	const FStructuralQuality OriginalQuality = StructuralQuality(InPlan,0);
+    const FStructuralQuality ActualQuality = StructuralQuality(InPlan,2,&Created);
+    const bool bBetter = BetterLayout(OriginalQuality,ActualQuality,InPlan.WireLengthBefore,MeasuredAfter);
+    if (ActualQuality.Overlaps > OriginalQuality.Overlaps && CopyFailure.IsEmpty())
+        CopyFailure = TEXT("post-edit geometry introduced overlaps, including getter copies");
 	if (!CopyFailure.IsEmpty() || (!bBetter && !InPlan.bForce))
 	{
 		// ROLLBACK. The positions are put back EXACTLY, and every copy is destroyed with the consumer it
