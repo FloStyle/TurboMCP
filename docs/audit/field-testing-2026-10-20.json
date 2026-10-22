@@ -2662,11 +2662,13 @@
       "canonical_issue": "2026-10-22_S3/VA-05",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
-      "observation": "- **Type:** Limitation.\n- **Scenario:** Add a variable that holds a reference to a widget Blueprint class.\n- **Reproduction status:** Observed once in this session, on 2 needs. Recurs VA-02.\n- **Steps to reproduce:**\n  1. Run variables add with a widget Blueprint generated class path as the type.\n- **Observed:** Refused: a variable can be an enum or a struct, not that.\n- **Expected:** Object and class reference types are accepted, as in the details panel.\n- **Impact:** 2 engine calls without read back, 1 extra compile.\n- **State after:** Unchanged by the refusal.\n- **Workaround:** Engine object variable add, then a compile. This worked both times.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Accept an object path as an object reference type."
+      "observation": "- **Type:** Limitation.\n- **Scenario:** Add a variable that holds a reference to a widget Blueprint class.\n- **Reproduction status:** Observed once in this session, on 2 needs. Recurs VA-02.\n- **Steps to reproduce:**\n  1. Run variables add with a widget Blueprint generated class path as the type.\n- **Observed:** Refused: a variable can be an enum or a struct, not that.\n- **Expected:** Object and class reference types are accepted, as in the details panel.\n- **Impact:** 2 engine calls without read back, 1 extra compile.\n- **State after:** Unchanged by the refusal.\n- **Workaround:** Engine object variable add, then a compile. This worked both times.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Accept an object path as an object reference type.",
+      "implementation": "04a09bd",
+      "implementation_limits": "Bare full generated-class paths ending _C normalize to object<path> in preview and edit. Explicit class<path>, object<path> and soft reference forms remain supported. Source parser loads UClass directly. No tests/build/editor runs."
     },
     {
       "report": "2026-10-22_S3",
