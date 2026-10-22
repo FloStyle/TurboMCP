@@ -121,7 +121,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 
 
     // Attachment-relative layout changes positions of new forms only. Keep the
-    // conservative legacy column for detached blocks or cyclic dependencies.
+    // conservative legacy column only for detached blocks.
     const UEdGraphNode* Attachment = nullptr;
     int32 AttachmentForm = INDEX_NONE;
     if (InLinks)
@@ -150,6 +150,56 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                     Depth[Link.ToFormIndex] = FMath::Max(Depth[Link.ToFormIndex], Depth[Order[Cursor]] + 1);
                     if (--Degree[Link.ToFormIndex] == 0) Order.Add(Link.ToFormIndex);
                 }
+        if (Order.Num() != CreatedCount)
+        {
+            // A dependency cycle has no topological order. Use iterative DFS
+            // reverse finish order; backward edges become layout return wires.
+            // This is a position-only classification: no link is removed or changed.
+            TArray<uint8> Visit;
+            Visit.Init(0, InNodes.Num());
+            TArray<int32> Roots, Finished, Stack, EdgeCursor;
+            Roots.Add(AttachmentForm);
+            for (int32 I = 0; I < InNodes.Num(); ++I) if (IsNew(I) && I != AttachmentForm) Roots.Add(I);
+            for (int32 Root : Roots)
+            {
+                if (Visit[Root] != 0) continue;
+                Visit[Root] = 1; Stack.Add(Root); EdgeCursor.Add(0);
+                while (!Stack.IsEmpty())
+                {
+                    const int32 Current = Stack.Last();
+                    bool bDescended = false;
+                    while (EdgeCursor.Last() < InLinks->Num())
+                    {
+                        const FNewLink& Link = (*InLinks)[EdgeCursor.Last()++];
+                        if (Link.FromFormIndex != Current || !IsNew(Link.ToFormIndex) || Visit[Link.ToFormIndex] != 0) continue;
+                        Visit[Link.ToFormIndex] = 1;
+                        Stack.Add(Link.ToFormIndex); EdgeCursor.Add(0);
+                        bDescended = true;
+                        break;
+                    }
+                    if (!bDescended)
+                    {
+                        Visit[Current] = 2; Finished.Add(Current);
+                        Stack.RemoveAt(Stack.Num() - 1); EdgeCursor.RemoveAt(EdgeCursor.Num() - 1);
+                    }
+                }
+            }
+            Order.Reset();
+            for (int32 I = Finished.Num() - 1; I >= 0; --I) Order.Add(Finished[I]);
+        }
+        TArray<int32> LayoutRank;
+        LayoutRank.Init(INDEX_NONE, InNodes.Num());
+        for (int32 I = 0; I < Order.Num(); ++I) LayoutRank[Order[I]] = I;
+        const auto IsForward = [&](const FNewLink& Link)
+        {
+            return IsNew(Link.FromFormIndex) && IsNew(Link.ToFormIndex)
+                && LayoutRank[Link.FromFormIndex] < LayoutRank[Link.ToFormIndex];
+        };
+        Depth.Init(0, InNodes.Num());
+        for (int32 I : Order)
+            for (const FNewLink& Link : *InLinks)
+                if (Link.FromFormIndex == I && IsForward(Link))
+                    Depth[Link.ToFormIndex] = FMath::Max(Depth[Link.ToFormIndex], Depth[I] + 1);
         if (Order.Num() == CreatedCount)
         {
             int32 NextLane = 1;
@@ -172,7 +222,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                 {
                     int32 OutputLane = INDEX_NONE;
                     for (const FNewLink& Link : *InLinks)
-                        if (Link.FromFormIndex == I && IsNew(Link.ToFormIndex)
+                        if (Link.FromFormIndex == I && IsForward(Link)
                             && Link.FromPin == InNodes[I].ProbeExecOutputs[PinIndex]
                             && InNodes[Link.ToFormIndex].ProbeExecInputs.Contains(Link.ToPin))
                         {
@@ -194,7 +244,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                 const int32 I = Order[Cursor];
                 if (!InNodes[I].ProbeExecInputs.IsEmpty() || !InNodes[I].ProbeExecOutputs.IsEmpty()) continue;
                 for (const FNewLink& Link : *InLinks)
-                    if (Link.FromFormIndex == I && IsNew(Link.ToFormIndex)) { Lane[I] = Lane[Link.ToFormIndex]; break; }
+                    if (Link.FromFormIndex == I && IsForward(Link)) { Lane[I] = Lane[Link.ToFormIndex]; break; }
             }
             const int64 BaseX = static_cast<int64>(Attachment->NodePosX)
                 + FMath::Max<int64>(Attachment->NodeWidth, PlacementWidth) + PlacementHorizontalGap
@@ -231,7 +281,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
             {
                 X[I] = BaseX + static_cast<int64>(Depth[I]) * (PlacementWidth + PlacementHorizontalGap);
                 for (const FNewLink& Link : *InLinks)
-                    if (Link.ToFormIndex == I && IsNew(Link.FromFormIndex))
+                    if (Link.ToFormIndex == I && IsForward(Link))
                         X[I] = FMath::Max(X[I], X[Link.FromFormIndex] + PlacementWidth + PlacementHorizontalGap);
                 Y[I] = LaneY[Lane[I]];
                 if (InNodes[I].ProbeExecInputs.IsEmpty() && InNodes[I].ProbeExecOutputs.IsEmpty())
