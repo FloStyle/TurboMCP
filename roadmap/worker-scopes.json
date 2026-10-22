@@ -445,6 +445,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
           ],
           "new_files": []
+        },
+        "p0-search-links": {
+          "new_files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp"
+          ]
         }
       },
       "preserve_rows": []
