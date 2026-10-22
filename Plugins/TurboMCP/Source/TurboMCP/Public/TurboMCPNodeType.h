@@ -179,8 +179,9 @@ public:
 	 *
 	 * @param OutNote  Why it could not be built, when it could not. Never empty unless Spawned.
 	 */
-	static ESpawnResult SpawnNodeOfType(UBlueprint* InBlueprint, UEdGraph* InGraph,
-		const FString& InTypeId, UEdGraphNode*& OutNode, FString& OutNote);
+	// Optional discovery graph preserves action-filter scope when spawning into a transient copy.
+    static ESpawnResult SpawnNodeOfType(UBlueprint* InBlueprint, UEdGraph* InGraph,
+        const FString& InTypeId, UEdGraphNode*& OutNode, FString& OutNote, UEdGraph* DiscoveryGraph = nullptr);
 
 	/** Resolves a guess against the real ids and caps the answer. */
 	static bool Plan(const FString& InAsset, const FString& InGraphName, const FString& InGuess,

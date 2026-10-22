@@ -490,7 +490,7 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 
 FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 	UBlueprint* InBlueprint, UEdGraph* InGraph, const FString& InTypeId,
-	UEdGraphNode*& OutNode, FString& OutNote)
+	UEdGraphNode*& OutNode, FString& OutNote, UEdGraph* DiscoveryGraph)
 {
 	OutNode = nullptr;
 	OutNote.Empty();
@@ -509,7 +509,7 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 	// This is the same resolver used by lookup and probe construction. Replace and patch delegate
 	// to graph append, so all five operations consume this one filtered action list.
 	TArray<FEntry> Entries;
-	CollectEntries(InBlueprint, InGraph, Entries);
+	CollectEntries(InBlueprint, DiscoveryGraph ? DiscoveryGraph : InGraph, Entries);
     const bool bHasExactId = Entries.ContainsByPredicate([&](const FEntry& Entry) { return Entry.TypeId == InTypeId; });
     // Unqualified legacy member names prefer this Blueprint's declaration/parents.
     // Exact class-qualified IDs always retain their explicitly requested owner.

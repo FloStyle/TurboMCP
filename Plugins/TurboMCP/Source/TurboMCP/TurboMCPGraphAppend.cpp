@@ -950,7 +950,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 		FString SpawnNote;
 		UEdGraphNode* Made = nullptr;
 		const FTurboMCPNodeType::ESpawnResult Result =
-			FTurboMCPNodeType::SpawnNodeOfType(Blueprint, Graph, Form.TypeId, Made, SpawnNote);
+			FTurboMCPNodeType::SpawnNodeOfType(Blueprint, Graph, Form.TypeId, Made, SpawnNote, bScratch ? FindGraph(Blueprint, InPlan.GraphName) : nullptr);
 
 		if (Result != FTurboMCPNodeType::ESpawnResult::Spawned || Made == nullptr)
 		{
