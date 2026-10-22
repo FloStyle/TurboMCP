@@ -747,3 +747,7 @@ TD-36/FT-90 implementation complete with the automatic conversion and geometry b
 ## Pure chain execution-row clearance
 
 Generic pure placement now clamps below the full execution row, independent of whether its pure consumer has been positioned. No tests/build/editor runs. Verify dependency order, nested math chains, branch rows, comment boundaries and sequence-specific subsequent placement. TD-34 remains partial for sequence/cross-box corridor coverage. TD-35 closed against its actual report requirement (self/count getter splitting), not an invented general-expression duplication requirement.
+
+## Sequence pure-input clearance
+
+The Sequence-specific placement pass now reserves the entire execution-node height band before positioning pure inputs. This complements generic pure-row clearance and preserves the existing lane shift/growth logic. No tests/build/editor runs. Verify varying call heights/exec pin offsets, nested pure chains, later Sequence lanes and comment bounds. TD-34 remains partial for cross-box/shared-lane corridor cases.

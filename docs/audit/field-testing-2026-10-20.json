@@ -1778,8 +1778,9 @@
       "observation": "- **Type:** Limitation.\r\n- **Observed:** In both results, math nodes (modulo, add, greater, and) sat on the exec row. The exec wire ran through them. In the second graph the whole math chain formed one row with the exec line.\r\n- **Expected:** Pure nodes sit below the exec row, in columns left of their consumer.\r\n- **Proposed behavior:** Reserve the exec row for exec nodes. See TD-30 for the recipe.",
       "fix_commit": "19bc09b",
       "implementation": "General and Sequence placement now keep pure expressions below their execution consumer, propagating that floor upstream. Getter copies use the same below-consumer floor. Structural acceptance measures direct pure-input row conflicts before wire length.",
-      "remaining": "Generic pure placement now reserves the entire execution-row band. Sequence-specific repositioning and cross-box/shared multi-lane corridor clearance still require source completion.",
-      "followup_implementation": "7555abc: structural quality includes planned/actual getter copy rectangles and rerouted data-source positions; increased overlap count cannot be forced."
+      "remaining": "Generic and Sequence lanes reserve their full execution-node band. Cross-box/shared multi-lane corridor clearance still requires source completion.",
+      "followup_implementation": "7555abc: structural quality includes planned/actual getter copy rectangles and rerouted data-source positions; increased overlap count cannot be forced.",
+      "sequence_input_clearance": "Sequence input floor uses the lowest execution-node bottom plus spacing before pure traversal, preserving lane-zero alignment and subsequent lane growth. unbuilt_untested."
     },
     {
       "report": "2026-10-21_S15",
