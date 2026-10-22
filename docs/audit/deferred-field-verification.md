@@ -602,3 +602,7 @@ CP-14 remains partial and unbuilt_untested. Comment edits now notify graph liste
 ## P0 targeted removal — 4447f52
 
 ED-18/FT-98 implemented, unbuilt_untested. New Preview/EditTurboMCPGraphRemove resolves all node/link targets before mutation on scratch then live, exact reciprocal removal, owned transaction and rollback. Non-deletable nodes refuse. No tests/build/editor runs. Verify undo/redo, unrelated links/defaults/positions and typed wildcard disconnections later.
+
+## P0 append continuation — 06aa485
+
+Partial, unbuilt_untested. Continuation=all traverses only newly created reachable exec nodes to unconnected exits after submitted links. label:pin selects a new node output. Failed resolution rolls back; explicit incoming target links take precedence. Preview states it does not yet dry-run exit resolution. Full parity/exact pre-disclosure remain open. No tests/build/editor runs.

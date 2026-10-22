@@ -2123,11 +2123,12 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Type:** Defect (preview and edit disagree).\n- **Observed:** The preview of an append that linked from an already connected exec output said \"0 forms link to existing\". The edit then reported \"moved existing wire\": the new async node was inserted between two existing nodes. The result was correct here, but the preview did not warn.\n- **Proposed behavior:** The preview lists every existing wire it will move.",
       "implementation": "f469303",
-      "implementation_limits": "Explicit incoming links to displaced exec targets suppress implicit first-output reconnection. Final requested links are verified after all edits. Ambiguous automatic branch continuation refuses. Remaining group work: preview disclosure, named continuation/rejoin-all convenience and shared dry-run parity."
+      "implementation_limits": "Append now accepts Continuation=all or label:pin, resolving exits after submitted links and rolling back failed resolution. Explicit target links take precedence. Still open: full scratch preview parity and advance disclosure of exact displaced wires/exits.",
+      "continuation_commit": "06aa485"
     },
     {
       "report": "2026-10-22_S1",
@@ -2409,11 +2410,12 @@
       "priority": "P0",
       "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
       "observation": "- **Type:** Limitation.\n- **Scenario:** Insert a branch between two existing exec nodes. Both lanes must continue to the old next node.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Append a branch whose input links from the old exec output, with one call on each lane.\n- **Observed:** The tool moved the old link to the end of the first lane, and said so clearly. The second lane ended with no link.\n- **Expected:** A way to say that every lane rejoins the old next node.\n- **Impact:** One engine connect call.\n- **State after:** Fixed and compiled clean.\n- **Workaround:** Engine pin connect. This worked.\n- **Cause:** Not applicable. The tool reported what it did.\n- **Proposed behavior:** See FT-97.",
       "implementation": "f469303",
-      "implementation_limits": "Explicit incoming links to displaced exec targets suppress implicit first-output reconnection. Final requested links are verified after all edits. Ambiguous automatic branch continuation refuses. Remaining group work: preview disclosure, named continuation/rejoin-all convenience and shared dry-run parity."
+      "implementation_limits": "Append now accepts Continuation=all or label:pin, resolving exits after submitted links and rolling back failed resolution. Explicit target links take precedence. Still open: full scratch preview parity and advance disclosure of exact displaced wires/exits.",
+      "continuation_commit": "06aa485"
     },
     {
       "report": "2026-10-22_S2",
@@ -2611,13 +2613,14 @@
       "canonical_issue": "explicit-exec-continuation",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "done",
+      "state": "open",
       "validation": "unbuilt_untested",
-      "disposition": "implementation_complete_pending_verification",
+      "disposition": "partially_implemented",
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
       "observation": "- **Type:** Defect.\n- **Scenario:** Insert a branch between an event and its only call node, so the call runs only on the false output.\n- **Reproduction status:** Observed twice (two events in one append). Recurs, see section 3.\n- **Steps to reproduce:**\n  1. Append a branch whose exec input links from an event output that already feeds a call node.\n  2. In the same text, link the existing call node's exec input from the branch false output.\n- **Observed:** The edit reported that it moved the existing wire to the branch true output. The false output link was also made. The call node then ran on both outputs, so the gate did nothing. The compile was clean. Only node resolve link counts showed the problem.\n- **Expected:** When the text links the old target from a named output, the moved wire is not added again on another output. The preview states which output gets the moved wire.\n- **Impact:** A clean compile with wrong behavior. 2 extra engine calls to break the extra links.\n- **State after:** Fixed by breaking the two extra links. Compile clean. Saved.\n- **Workaround:** Break the true-output link with the engine pin break tool. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Let the text choose the continuation output for an insert. Never move an old wire to an output when the text already links that target.",
       "implementation": "f469303",
-      "implementation_limits": "Explicit incoming links to displaced exec targets suppress implicit first-output reconnection. Final requested links are verified after all edits. Ambiguous automatic branch continuation refuses. Remaining group work: preview disclosure, named continuation/rejoin-all convenience and shared dry-run parity."
+      "implementation_limits": "Append now accepts Continuation=all or label:pin, resolving exits after submitted links and rolling back failed resolution. Explicit target links take precedence. Still open: full scratch preview parity and advance disclosure of exact displaced wires/exits.",
+      "continuation_commit": "06aa485"
     },
     {
       "report": "2026-10-22_S3",
@@ -3328,8 +3331,9 @@
       "source": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
       "observation": "1 resolve and 1 engine connect call",
       "implementation": "f469303",
-      "implementation_limits": "Explicit incoming links to displaced exec targets suppress implicit first-output reconnection. Final requested links are verified after all edits. Ambiguous automatic branch continuation refuses. Remaining group work: preview disclosure, named continuation/rejoin-all convenience and shared dry-run parity.",
-      "disposition": "partial_implementation"
+      "implementation_limits": "Append now accepts Continuation=all or label:pin, resolving exits after submitted links and rolling back failed resolution. Explicit target links take precedence. Still open: full scratch preview parity and advance disclosure of exact displaced wires/exits.",
+      "disposition": "partially_implemented",
+      "continuation_commit": "06aa485"
     },
     {
       "report": "2026-10-22_S3",
@@ -3382,8 +3386,9 @@
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
       "observation": "2 extra link breaks after a branch insert that compiled clean but did nothing",
       "implementation": "f469303",
-      "implementation_limits": "Explicit incoming links to displaced exec targets suppress implicit first-output reconnection. Final requested links are verified after all edits. Ambiguous automatic branch continuation refuses. Remaining group work: preview disclosure, named continuation/rejoin-all convenience and shared dry-run parity.",
-      "disposition": "partial_implementation"
+      "implementation_limits": "Append now accepts Continuation=all or label:pin, resolving exits after submitted links and rolling back failed resolution. Explicit target links take precedence. Still open: full scratch preview parity and advance disclosure of exact displaced wires/exits.",
+      "disposition": "partially_implemented",
+      "continuation_commit": "06aa485"
     }
   ],
   "integrationStatus": "Reviewed prototype test improvements passed the combined native suites and serial offline gate. Urgent production defects remain open; Codex owns follow-up. Auto-dispatch paused.",
