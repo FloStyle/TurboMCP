@@ -1349,6 +1349,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             N.PlannedY=AlignmentPinPosition(W.OutputPin).Y+OutPlan.Nodes[Lane[Stage-1]].PlannedY-OutPlan.Nodes[Lane[Stage-1]].Y-(AlignmentPinPosition(W.InputPin).Y-N.Y);
                         Bottom=FMath::Max(Bottom,N.PlannedY+N.Height);
                     }
+                    // The input column must clear every execution node in this
+                    // lane, including taller nodes with offset execution pins.
+                    const double SequenceInputFloor = Bottom + SpacingY;
                     TSet<int32> Placed; for(int32 Call:Lane) Placed.Add(Call);
                     // Consumer-first traversal places pure trees using real pin offsets.
                     TFunction<void(int32)> PlaceInputs=[&](int32 Target)
@@ -1363,6 +1366,7 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                             N.PlannedX=Consumer.PlannedX-N.Width-SpacingX;
                             N.PlannedY=AlignmentPinPosition(W->InputPin).Y+Consumer.PlannedY-Consumer.Y-(AlignmentPinPosition(W->OutputPin).Y-N.Y);
                             N.PlannedY=FMath::Max(N.PlannedY,Consumer.PlannedY+(Consumer.bIsPure?0.0:Consumer.Height+SpacingY));
+                            N.PlannedY=FMath::Max(N.PlannedY,SequenceInputFloor);
                             for(int32 Pass=0;Pass<Members.Num();++Pass)
                             {
                                 double NextX=N.PlannedX;
