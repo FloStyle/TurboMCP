@@ -659,3 +659,6 @@ Added typed existing-self-function binding through Create Event, signature and e
 
 ## GC-42 explicit object delegate context (2026-10-22)
 Function binding now accepts exact object output endpoints, wires context before signature selection and checks surviving links. Unbuilt/untested: foreign Blueprint/native objects, incompatible functions, object/delegate pin reconstruction, preview isolation and undo. New signature-derived custom events remain open.
+
+## GC-42 signature-derived event creation (2026-10-22)
+Added BindNewEvent preview/edit using stock CreateFromFunction, event graph/name guards and delegate-signature resolution. Body intentionally empty for caller wiring. Return-valued signatures require function binding. Unbuilt/untested: typed/ref parameters, preview isolation, event name collisions, compile, undo and source replacement.

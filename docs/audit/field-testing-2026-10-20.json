@@ -2261,14 +2261,14 @@
       "canonical_issue": "2026-10-22_S1/GC-42",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partial_implementation",
+      "disposition": "implemented_untested",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Type:** Limitation.\n- **Observed:** Append cannot write an event form. A Create Event node cannot get its function name set (the property is refused). A custom event made by the engine create tool has no parameters, so it cannot connect to a typed delegate. The working path was the engine create tool on the \"Assign\" delegate node, which spawns a matching event.\n- **Proposed behavior:** An append form for \"bind delegate to new event\" or \"bind delegate to function\", with the signature taken from the delegate.",
-      "implementation": "Preview/EditTurboMCPBindFunction creates a Create Event node for an existing self or explicit object-output function. Checks signature/engine eligibility, connects exact delegate input and verifies object/function/link read-back. Shared transient preview and owned rollback.",
-      "remaining": "Signature-derived new custom-event creation remains to implement. No tests/build/editor runs.",
-      "fix_commit": "2c0a96b"
+      "implementation": "Preview/Edit BindFunction supports compatible self or explicit-object functions. Preview/Edit BindNewEvent derives custom-event parameters from the delegate signature using the stock factory, validates unused name/event graph and connects exact delegate input. Empty event body is explicit; return-valued signatures use function binding. Transient preview and owned rollback shared.",
+      "fix_commit": "07b69c1",
+      "verification_debt": "Unbuilt/untested: native/Blueprint typed delegates, reference parameters, name collisions, preview isolation, compile, replacement and undo."
     },
     {
       "report": "2026-10-22_S1",
