@@ -1842,8 +1842,8 @@
       "source": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
       "observation": "- **Type:** Proposal from the user review.\r\n- **Observed:** The user rated the hand layout of the math graph almost perfect. The user wants the tool to make this kind of result. The one change the user made: the two function inputs were wired from the entry node across the whole graph. The user replaced each wire with a getter node for that function input, placed next to its consumer. The diagonal wire across the condition nodes went away.\r\n- **Expected:** When a function input wire is long or crosses other nodes, the layout uses an input getter beside the consumer instead.\r\n- **Proposed behavior:** Treat function inputs like shared values in TD-35. Split them into one getter per consumer and place each getter in the input column of its consumer.",
       "fix_commit": "1ffb537",
-      "implementation": "Scoped reflected function inputs are offered as FunctionInput|BlueprintPath|FunctionName|ParameterName and spawned through stock parameter-getter spawners. Reader emits the same ID.",
-      "remaining": "Automatic per-consumer layout conversion remains open. Inputs absent from the skeleton/generated signature still need support; no compile is triggered to manufacture discovery."
+      "implementation": "FunctionInput IDs discover and create scoped getters from current entry pin declarations, including inputs not yet reflected; no compile. Reader uses the same declaration-based identity.",
+      "remaining": "Automatic per-consumer layout conversion remains open."
     },
     {
       "report": "2026-10-21_S16",
@@ -2195,14 +2195,13 @@
       "canonical_issue": "function-input-getters",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
+      "state": "done",
       "validation": "unbuilt_untested",
-      "disposition": "partially_implemented",
+      "disposition": "implemented_unverified",
       "source": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
       "observation": "- **Type:** Limitation.\n- **Observed:** The layout rules ask for one function input getter per consumer. The append refused every getter form for a function parameter and listed no matching type ID. So six long wires from the entry node stay in the graph.\n- **Proposed behavior:** Accept a function parameter getter form in append, and name it in the refusal hint.",
       "fix_commit": "1ffb537",
-      "implementation": "Scoped reflected function inputs are offered as FunctionInput|BlueprintPath|FunctionName|ParameterName and spawned through stock parameter-getter spawners. Reader emits the same ID.",
-      "remaining": "Automatic per-consumer layout conversion remains open. Inputs absent from the skeleton/generated signature still need support; no compile is triggered to manufacture discovery."
+      "implementation": "FunctionInput IDs discover and create scoped getters from current entry pin declarations, including inputs not yet reflected; no compile. Reader uses the same declaration-based identity."
     },
     {
       "report": "2026-10-22_S1",
@@ -3229,8 +3228,8 @@
       "observation": "The user did this by hand for 2 wires.",
       "disposition": "partially_implemented",
       "fix_commit": "1ffb537",
-      "implementation": "Scoped reflected function inputs are offered as FunctionInput|BlueprintPath|FunctionName|ParameterName and spawned through stock parameter-getter spawners. Reader emits the same ID.",
-      "remaining": "Automatic per-consumer layout conversion remains open. Inputs absent from the skeleton/generated signature still need support; no compile is triggered to manufacture discovery."
+      "implementation": "FunctionInput IDs discover and create scoped getters from current entry pin declarations, including inputs not yet reflected; no compile. Reader uses the same declaration-based identity.",
+      "remaining": "Automatic per-consumer layout conversion remains open."
     },
     {
       "report": "2026-10-21_S16",

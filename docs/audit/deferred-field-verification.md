@@ -618,3 +618,7 @@ GL-19 implemented, unbuilt_untested: entry-name substring filtering completes th
 ## P0 function input getters — 1ffb537
 
 Partial, unbuilt_untested. Reflection-backed function inputs use stock scoped getter spawners and stable reader IDs. Automatic layout conversion and signatures not yet reflected remain open. No tests/build/editor runs. Verify parameter scope, reference inputs and nested graphs later.
+
+## P0 unreflected input getters
+
+GC-39 implemented, unbuilt_untested. Discovery/creation now use current entry pin declarations and local member scope without skeleton mutation or compile. Reader identity works before reflection. Automatic layout conversion remains open. No tests/build/editor runs; verify compilation of newly declared reference/container inputs later.
