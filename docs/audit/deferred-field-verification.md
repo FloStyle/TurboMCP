@@ -944,3 +944,8 @@ Remaining: 9263bd95 valid tool-specific graph/trace examples and schema constrai
 ## Getter execution eligibility — 2026-10-23
 
 2026-10-23 partial repair b5be37e: LayoutReport getter-place and FixBackward R2 now require pure getters without execution pins, preventing validated/exec-dependent getters from being diagnosed or repositioned under the pure-input rule. Remaining: shared consumer selection and pin-relative placement thresholds across report/fixer/Tidy. R2 intentionally handles below-consumer cases, not every report category. No tests/build/editor runs; unbuilt_untested.
+
+
+## Widget preview execution consent — 2026-10-23
+
+2026-10-23 ARC10 widget consent implementation DONE / unbuilt_untested in 3e3a60f. LookTurboMCPWidgetPreview now requires per-call Execution=allow; empty/deny refuses before asset load/construction, invalid values refuse. Allowed output and generated documentation identify project-code execution and non-reversible external effects. Existing fixture calls explicitly opt in but were NOT run. Remaining parent investigation: side effects of other readers/probes and historical dirty/save attribution; X-93 awaits new evidence. No tests/build/editor runs.
