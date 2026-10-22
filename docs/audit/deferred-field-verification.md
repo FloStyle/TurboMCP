@@ -703,3 +703,7 @@ Implementation closes S16 GC-32, Oct22 S1 GC-38/GC-48, S2 GC-36/FT-97, S3 X-94/G
 ## Preserve save outcome under script errors — 78a838d
 
 Oct22 S2 SV-13 and S3 SV-14 implemented, unbuilt/untested. Save wrappers publish their completed report into a per-call thread-local sink installed around normal registry dispatch. If the engine wrapper returns an error, that report is retained alongside the original error; the error carrier is preserved. Unreal 5.8.3 ObjectFunctionToolCall invokes FString-returning functions synchronously before returning its future; scope ends immediately after dispatch. No custom engine, bypassed registry validation, persistent last-result cache or inferred disk success. No tests/build/editor runs. Verify successful saves with serialization script errors, genuine failures/unconfirmed results, malformed parameters, consecutive/nested calls, disabled logging and unchanged direct C++ returns. A process crash before the save function returns cannot provide a completed report.
+
+## Live designer owner aliases — 414db69
+
+Blueprint-category and reflected class-path aliases retain canonical owner identity. Live designer widget getters replace stale reflected entries while preserving aliases. Append reports canonical types for surviving created nodes. No tests/build/editor runs. Verify same-named members across classes, precompile widget class changes, inherited members, category aliases, preview/apply and compilation; source coverage audit of inherited designer and generated/skeleton aliases remains open.
