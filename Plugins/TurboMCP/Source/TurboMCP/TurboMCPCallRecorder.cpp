@@ -104,7 +104,7 @@ namespace
         return Names;
     }
 
-    FString DirtyDelta(const TSet<FString>& Before)
+    FString DirtyDelta(const TSet<FString>& Before, bool OnlyChanges)
     {
         if (!IsInGameThread()) return TEXT("\ndirty_packages: after snapshot unavailable off game thread; no cleanliness claim");
         const TSet<FString> After = DirtyPackages();
@@ -112,6 +112,7 @@ namespace
         for (const FString& Name : After) if (!Before.Contains(Name)) Added.Add(Name);
         for (const FString& Name : Before) if (!After.Contains(Name)) Cleared.Add(Name);
         Added.Sort(); Cleared.Sort();
+        if (OnlyChanges && Added.IsEmpty() && Cleared.IsEmpty()) return FString();
         FString Report = FString::Printf(TEXT("\ndirty_packages: before=%d after=%d newly_dirty=%d no_longer_dirty=%d"), Before.Num(), After.Num(), Added.Num(), Cleared.Num());
         for (const FString& Name : Added) Report += TEXT("\n  newly_dirty: ") + Name;
         for (const FString& Name : Cleared) Report += TEXT("\n  no_longer_dirty: ") + Name;
@@ -223,7 +224,12 @@ namespace
                 return MakeFulfilledPromise<FToolResult>(MakeError(Error)).GetFuture();
             }
 
-			const TSet<FString> BeforeDirty = bAssetEdit ? DirtyPackages() : TSet<FString>();
+            // Read/preview paths can load assets and trigger dependency work too.
+            // Report their deltas without pretending an absent before snapshot was clean.
+            const bool bObserveDirty = bAssetEdit || ToolName.StartsWith(TEXT("ReadTurboMCP"))
+                || ToolName.StartsWith(TEXT("PreviewTurboMCP")) || ToolName.StartsWith(TEXT("LookTurboMCP"));
+            const bool bDirtyBeforeAvailable = bObserveDirty && IsInGameThread();
+            const TSet<FString> BeforeDirty = bDirtyBeforeAvailable ? DirtyPackages() : TSet<FString>();
             FString SaveOutcome;
             const bool bSave = Inner->GetToolsetClass() == UTurboMCPEditToolset::StaticClass()
                 && (ToolName == TEXT("EditTurboMCPSave") || ToolName == TEXT("EditTurboMCPSaveWithoutThumbnail"));
@@ -236,7 +242,7 @@ namespace
                 return Inner->ExecuteTool(ToolName, NormalizedInput);
             }();
             return InnerFuture.Then(
-                [Call, bAssetEdit, BeforeDirty, SaveOutcome](TFuture<FToolResult> Future) -> FToolResult
+                [Call, bAssetEdit, bObserveDirty, bDirtyBeforeAvailable, BeforeDirty, SaveOutcome](TFuture<FToolResult> Future) -> FToolResult
 				{
 					FToolResult Result = Future.Get();
                     if (Result.HasError() && !SaveOutcome.IsEmpty())
@@ -247,11 +253,16 @@ namespace
                         Result = MakeError(TEXT("save outcome (reported before wrapper diagnostics):\n")
                             + SaveOutcome + TEXT("\nscript/tool diagnostics:\n") + Result.GetError());
                     }
-                    if (bAssetEdit)
+                    if (bObserveDirty)
                     {
-                        const FString Delta = DirtyDelta(BeforeDirty);
-                        if (Result.HasError()) Result = MakeError(Result.GetError() + Delta);
-                        else Result = MakeValue(Result.GetValue() + Delta);
+                        const FString Delta = bDirtyBeforeAvailable
+                            ? DirtyDelta(BeforeDirty, !bAssetEdit)
+                            : TEXT("\ndirty_packages: before snapshot unavailable off game thread; changes cannot be attributed to this call");
+                        if (!Delta.IsEmpty())
+                        {
+                            if (Result.HasError()) Result = MakeError(Result.GetError() + Delta);
+                            else Result = MakeValue(Result.GetValue() + Delta);
+                        }
                     }
 
 					// THE SIZE AND THE TOKEN ESTIMATE COME FROM THE RESULT ITSELF, WHICH IS THE POINT OF
