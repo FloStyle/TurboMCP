@@ -1570,19 +1570,37 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 			Planned.ConsumerPin = ConsumerPin;
 			Planned.OriginalValuePin = ValuePin;
 			const int32* ConsumerPlanIndex = IndexByNode.Find(ConsumerNode);
-			if (!ConsumerPlanIndex || OwnerOfNode[NodeIndex] != INDEX_NONE || OwnerOfNode[*ConsumerPlanIndex] != INDEX_NONE) continue;
+			if (!ConsumerPlanIndex) continue;
+            const int32 ConsumerBoxIndex = OwnerOfNode[*ConsumerPlanIndex];
 			const FNode& ConsumerPlan = OutPlan.Nodes[*ConsumerPlanIndex];
             if (!OutPlan.SelectedNodeKeys.IsEmpty() && !OutPlan.SelectedNodeKeys.Contains(ConsumerPlan.Key)) continue;
 			Planned.PlannedX = ConsumerPlan.PlannedX
 				- Entry.Width - SpacingX;
 			Planned.PlannedY = FMath::RoundToDouble(ConsumerPlan.PlannedY + (ConsumerPlan.bIsPure ? 0.0 : ConsumerPlan.Height + SpacingY));
 			Planned.PlannedX = FMath::RoundToDouble(Planned.PlannedX);
+            TSet<int32> ContainingBoxes;
+            for (int32 B = ConsumerBoxIndex; B != INDEX_NONE; B = OutPlan.Boxes[B].ParentIndex) ContainingBoxes.Add(B);
+            if (ConsumerBoxIndex != INDEX_NONE)
+            {
+                const FBox& ConsumerBox = OutPlan.Boxes[ConsumerBoxIndex];
+                Planned.PlannedX = FMath::Max(Planned.PlannedX, ConsumerBox.X + FitPadding);
+                Planned.PlannedY = FMath::Max(Planned.PlannedY, ConsumerBox.Y + TitleBarHeight + FitPadding);
+            }
+            TArray<FOccupiedGetterRect> CopyObstacles = GetterObstacles;
+            // Child/sibling notes are solid obstacles; only the consumer's box
+            // and its ancestors may contain the new reader.
+            for (int32 B = 0; B < OutPlan.Boxes.Num(); ++B)
+                if (!ContainingBoxes.Contains(B))
+                {
+                    const FBox& OtherBox = OutPlan.Boxes[B];
+                    CopyObstacles.Add({OtherBox.X, OtherBox.Y, OtherBox.PlannedWidth, OtherBox.PlannedHeight});
+                }
 			// Keep existing/planned nodes fixed. Move only this new copy below
 			// intersecting rectangles, reserving its space for subsequent copies.
-			for (int32 Pass = 0; Pass <= GetterObstacles.Num(); ++Pass)
+			for (int32 Pass = 0; Pass <= CopyObstacles.Num(); ++Pass)
 			{
 				double NextY = Planned.PlannedY;
-				for (const FOccupiedGetterRect& Obstacle : GetterObstacles)
+				for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
 				{
 					if (Planned.PlannedX < Obstacle.X + Obstacle.Width
 						&& Planned.PlannedX + Entry.Width > Obstacle.X
@@ -1600,8 +1618,47 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				OutError = TEXT("Getter-copy placement exceeds graph coordinate limits; no nodes moved.");
 				return false;
 			}
-			GetterObstacles.Add({Planned.PlannedX, Planned.PlannedY, Entry.Width, Entry.Height});
-			if (OwnerOfNode[NodeIndex] == INDEX_NONE) OutPlan.GetterCopies.Add(Planned);
+            double RequiredRight = Planned.PlannedX + Entry.Width + FitPadding;
+            double RequiredBottom = Planned.PlannedY + Entry.Height + FitPadding;
+            for (int32 B = ConsumerBoxIndex; B != INDEX_NONE; B = OutPlan.Boxes[B].ParentIndex)
+            {
+                FBox& Container = OutPlan.Boxes[B];
+                const double NewWidth = FMath::Max(Container.PlannedWidth, RequiredRight - Container.X);
+                const double NewHeight = FMath::Max(Container.PlannedHeight, RequiredBottom - Container.Y);
+                if (!FMath::IsFinite(NewWidth) || !FMath::IsFinite(NewHeight) || NewWidth > MAX_int32 || NewHeight > MAX_int32)
+                { OutError = TEXT("shared-value copy exceeds comment size limits; no changes applied"); return false; }
+                // Growing a comment must not capture an unrelated node or note.
+                for (int32 OtherIndex = 0; OtherIndex < OutPlan.Nodes.Num(); ++OtherIndex)
+                {
+                    const FNode& Other = OutPlan.Nodes[OtherIndex];
+                    bool bMember = Container.MemberKeys.Contains(Other.Key);
+                    if (Other.bIsComment)
+                        for (int32 Child = 0; Child < OutPlan.Boxes.Num(); ++Child)
+                            if (OutPlan.Boxes[Child].Key == Other.Key)
+                                for (int32 Parent = Child; Parent != INDEX_NONE; Parent = OutPlan.Boxes[Parent].ParentIndex)
+                                    if (Parent == B) bMember = true;
+                    if (bMember) continue;
+                    const double OX = Other.bIsComment ? Other.X : Other.PlannedX;
+                    const double OY = Other.bIsComment ? Other.Y : Other.PlannedY;
+                    double OW = Other.Width, OH = Other.Height;
+                    if (Other.bIsComment)
+                        for (const FBox& OtherBox : OutPlan.Boxes)
+                            if (OtherBox.Key == Other.Key) { OW = OtherBox.PlannedWidth; OH = OtherBox.PlannedHeight; break; }
+                    const bool WasIntersecting = OX < Container.X + Container.PlannedWidth && OX + OW > Container.X
+                        && OY < Container.Y + Container.PlannedHeight && OY + OH > Container.Y;
+                    const bool WouldIntersect = OX < Container.X + NewWidth && OX + OW > Container.X
+                        && OY < Container.Y + NewHeight && OY + OH > Container.Y;
+                    if (WouldIntersect && !WasIntersecting)
+                    { OutError = TEXT("shared-value copy needs comment space occupied by an unrelated node or box; no changes applied"); return false; }
+                }
+                Container.PlannedWidth = NewWidth;
+                Container.PlannedHeight = NewHeight;
+                Container.bWouldFit = !FMath::IsNearlyEqual(NewWidth, Container.Width) || !FMath::IsNearlyEqual(NewHeight, Container.Height);
+                RequiredRight = Container.X + NewWidth + FitPadding;
+                RequiredBottom = Container.Y + NewHeight + FitPadding;
+            }
+            GetterObstacles.Add({Planned.PlannedX, Planned.PlannedY, Entry.Width, Entry.Height});
+            OutPlan.GetterCopies.Add(Planned);
 		}
 	}
 
