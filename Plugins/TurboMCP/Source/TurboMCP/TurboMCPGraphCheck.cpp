@@ -309,6 +309,9 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 	// Validate the whole document before resolving assets or interpreting node forms.
 	// Reader diagnostics and truncated forms must never become partial writes.
 	int32 FormDepth = 0;
+	TArray<int32> OpenFormLines;
+	TArray<int32> CommentBracketLines;
+	int32 StringStartLine = 0;
 	bool bInString = false;
 	bool bEscaped = false;
 	for (const FLine& Line : SplitLines(InText))
@@ -330,22 +333,34 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 				if (Ch == TEXT('"')) bInString = false;
 				continue;
 			}
-			if (Ch == TEXT(';')) break;
-			if (Ch == TEXT('"')) { bInString = true; continue; }
-			if (Ch == TEXT('(')) ++FormDepth;
+			if (Ch == TEXT(';'))
+			{
+				if (FormDepth > 0 && Line.Text.Mid(Index + 1).Contains(TEXT(")"))) CommentBracketLines.AddUnique(Line.Number);
+				break;
+			}
+			if (Ch == TEXT('"')) { bInString = true; StringStartLine = Line.Number; continue; }
+			if (Ch == TEXT('(')) { ++FormDepth; OpenFormLines.Add(Line.Number); }
 			else if (Ch == TEXT(')') && --FormDepth < 0)
 			{
 				OutError = FString::Printf(TEXT("line %d, column %d: unexpected closing parenthesis; nothing was written"), Line.Number, Index + 1);
 				return false;
 			}
+			else if (Ch == TEXT(')')) OpenFormLines.Pop();
 		}
 		// A physical newline consumes a preceding escape, not the next line's first character.
 		bEscaped = false;
 	}
 	if (bInString || FormDepth != 0)
 	{
-		OutError = bInString ? TEXT("graph text ends inside a quoted value; obtain complete text before write-back")
-			: FString::Printf(TEXT("graph text has %d unclosed form(s); obtain complete text before write-back"), FormDepth);
+		OutError = bInString
+            ? FString::Printf(TEXT("line %d: quoted value is not closed; nothing was written"), StringStartLine)
+            : FString::Printf(TEXT("line %d: form opened here is not closed (%d unclosed forms); nothing was written"), OpenFormLines.Last(), FormDepth);
+        if (!bInString && !CommentBracketLines.IsEmpty())
+        {
+            TArray<FString> Lines;
+            for (int32 Number : CommentBracketLines) Lines.Add(FString::FromInt(Number));
+            OutError += FString::Printf(TEXT(". Closing brackets inside comments on line(s) %s are ignored: ';' comments continue to end of line. Put the closing bracket before the comment or on the next line"), *FString::Join(Lines, TEXT(", ")));
+        }
 		return false;
 	}
 
