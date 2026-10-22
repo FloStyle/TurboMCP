@@ -10,6 +10,7 @@
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "Math/NumericLimits.h"
+#include "TurboMCPNodeId.h"
 
 /**
  * Deterministic placement for the forms an append creates.
@@ -46,7 +47,7 @@ namespace
 }
 
 bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,
-	TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal)
+	TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal, const TArray<FNewLink>* InLinks)
 {
 	OutPositions.Reset();
 	bOutUsedEstimatedSize = false;
@@ -117,6 +118,135 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
 			Right = FMath::Max(Right, NodeRight);
 		}
 	}
+
+
+    // Attachment-relative layout changes positions of new forms only. Keep the
+    // conservative legacy column for detached blocks or cyclic dependencies.
+    const UEdGraphNode* Attachment = nullptr;
+    int32 AttachmentForm = INDEX_NONE;
+    if (InLinks)
+        for (const FNewLink& Link : *InLinks)
+            if (Link.FromFormIndex == INDEX_NONE && InNodes.IsValidIndex(Link.ToFormIndex)
+                && !InNodes[Link.ToFormIndex].bLinksToExisting
+                && InNodes[Link.ToFormIndex].ProbeExecInputs.Contains(Link.ToPin))
+            {
+                for (const UEdGraphNode* Node : InGraph->Nodes)
+                    if (Node && TurboMCPNodeId::MakeForNode(Node, true) == Link.FromNodeKey)
+                    { Attachment = Node; AttachmentForm = Link.ToFormIndex; break; }
+                if (Attachment) break;
+            }
+    if (Attachment && InLinks)
+    {
+        TArray<int32> Degree, Depth, Lane, Order;
+        Degree.Init(0, InNodes.Num()); Depth.Init(0, InNodes.Num()); Lane.Init(0, InNodes.Num());
+        const auto IsNew = [&](int32 I) { return InNodes.IsValidIndex(I) && !InNodes[I].bLinksToExisting; };
+        for (const FNewLink& Link : *InLinks)
+            if (IsNew(Link.FromFormIndex) && IsNew(Link.ToFormIndex)) ++Degree[Link.ToFormIndex];
+        for (int32 I = 0; I < InNodes.Num(); ++I) if (IsNew(I) && Degree[I] == 0) Order.Add(I);
+        for (int32 Cursor = 0; Cursor < Order.Num(); ++Cursor)
+            for (const FNewLink& Link : *InLinks)
+                if (Link.FromFormIndex == Order[Cursor] && IsNew(Link.ToFormIndex))
+                {
+                    Depth[Link.ToFormIndex] = FMath::Max(Depth[Link.ToFormIndex], Depth[Order[Cursor]] + 1);
+                    if (--Degree[Link.ToFormIndex] == 0) Order.Add(Link.ToFormIndex);
+                }
+        if (Order.Num() == CreatedCount)
+        {
+            int32 NextLane = 1;
+            TSet<int32> AssignedLanes;
+            for (int32 I : Order)
+            {
+                // Output pin order keeps the first connected continuation on its parent's row.
+                bool bFirstConnectedOutput = true;
+                for (int32 PinIndex = 0; PinIndex < InNodes[I].ProbeExecOutputs.Num(); ++PinIndex)
+                {
+                    int32 OutputLane = INDEX_NONE;
+                    for (const FNewLink& Link : *InLinks)
+                        if (Link.FromFormIndex == I && IsNew(Link.ToFormIndex)
+                            && Link.FromPin == InNodes[I].ProbeExecOutputs[PinIndex]
+                            && InNodes[Link.ToFormIndex].ProbeExecInputs.Contains(Link.ToPin))
+                        {
+                            if (OutputLane == INDEX_NONE)
+                            { OutputLane = bFirstConnectedOutput ? Lane[I] : NextLane++; bFirstConnectedOutput = false; }
+                            if (AssignedLanes.Contains(Link.ToFormIndex)) Lane[Link.ToFormIndex] = FMath::Min(Lane[Link.ToFormIndex], OutputLane);
+                            else { Lane[Link.ToFormIndex] = OutputLane; AssignedLanes.Add(Link.ToFormIndex); }
+                        }
+                }
+            }
+            // Pure inputs inherit the consumer's lane, traversed consumer-first.
+            for (int32 Cursor = Order.Num() - 1; Cursor >= 0; --Cursor)
+            {
+                const int32 I = Order[Cursor];
+                if (!InNodes[I].ProbeExecInputs.IsEmpty() || !InNodes[I].ProbeExecOutputs.IsEmpty()) continue;
+                for (const FNewLink& Link : *InLinks)
+                    if (Link.FromFormIndex == I && IsNew(Link.ToFormIndex)) { Lane[I] = Lane[Link.ToFormIndex]; break; }
+            }
+            const int64 BaseX = static_cast<int64>(Attachment->NodePosX)
+                + FMath::Max<int64>(Attachment->NodeWidth, PlacementWidth) + PlacementHorizontalGap
+                - static_cast<int64>(Depth[AttachmentForm]) * (PlacementWidth + PlacementHorizontalGap);
+            const int64 BaseY = static_cast<int64>(Attachment->NodePosY)
+                + FMath::Max<int64>(Attachment->NodeHeight, PlacementHeight) + PlacementVerticalGap;
+            // Reserve every input in the lane before starting the next exec band.
+            TMap<int32, int32> PureCounts;
+            for (int32 I : Order)
+                if (InNodes[I].ProbeExecInputs.IsEmpty() && InNodes[I].ProbeExecOutputs.IsEmpty()) ++PureCounts.FindOrAdd(Lane[I]);
+            TArray<int64> LaneY; LaneY.Init(BaseY, NextLane);
+            for (int32 L = 1; L < NextLane; ++L)
+                LaneY[L] = LaneY[L-1] + (static_cast<int64>(PureCounts.FindRef(L-1)) + 1) * PlacementVerticalStride;
+            TMap<int32, int32> PureSlots;
+            TMap<int32, int64> ExecRight;
+            TArray<int64> X, Y; X.Init(0, InNodes.Num()); Y.Init(0, InNodes.Num());
+            for (int32 I : Order)
+            {
+                X[I] = BaseX + static_cast<int64>(Depth[I]) * (PlacementWidth + PlacementHorizontalGap);
+                for (const FNewLink& Link : *InLinks)
+                    if (Link.ToFormIndex == I && IsNew(Link.FromFormIndex))
+                        X[I] = FMath::Max(X[I], X[Link.FromFormIndex] + PlacementWidth + PlacementHorizontalGap);
+                Y[I] = LaneY[Lane[I]];
+                if (InNodes[I].ProbeExecInputs.IsEmpty() && InNodes[I].ProbeExecOutputs.IsEmpty())
+                    Y[I] += static_cast<int64>(++PureSlots.FindOrAdd(Lane[I])) * PlacementVerticalStride;
+                else
+                {
+                    if (const int64* PreviousRight = ExecRight.Find(Lane[I])) X[I] = FMath::Max(X[I], *PreviousRight + PlacementHorizontalGap);
+                    ExecRight.Add(Lane[I], X[I] + PlacementWidth);
+                }
+            }
+            // Translate the whole new block past existing obstacles. Never move
+            // existing nodes or silently expand/capture an existing comment.
+            int64 ShiftY = 0;
+            for (int64 Pass = 0; Pass <= static_cast<int64>(InGraph->Nodes.Num()) * CreatedCount; ++Pass)
+            {
+                int64 NextShift = ShiftY;
+                for (int32 I : Order)
+                    for (const UEdGraphNode* Node : InGraph->Nodes)
+                    {
+                        if (!Node) continue;
+                        const int64 W = Node->NodeWidth > 0 ? Node->NodeWidth : PlacementWidth;
+                        const int64 H = Node->NodeHeight > 0 ? Node->NodeHeight : PlacementHeight;
+                        if (X[I] < static_cast<int64>(Node->NodePosX) + W + PlacementHorizontalGap
+                            && X[I] + PlacementWidth + PlacementHorizontalGap > Node->NodePosX
+                            && Y[I] + ShiftY < static_cast<int64>(Node->NodePosY) + H + PlacementVerticalGap
+                            && Y[I] + ShiftY + PlacementHeight + PlacementVerticalGap > Node->NodePosY)
+                            NextShift = FMath::Max(NextShift, static_cast<int64>(Node->NodePosY) + H + PlacementVerticalGap - Y[I]);
+                    }
+                if (NextShift == ShiftY) break;
+                ShiftY = NextShift;
+            }
+            for (int32 I = 0; I < InNodes.Num(); ++I)
+                if (IsNew(I))
+                {
+                    const int64 FinalY = Y[I] + ShiftY;
+                    if (!FitsCoordinate(X[I]) || !FitsCoordinate(X[I] + PlacementWidth)
+                        || !FitsCoordinate(FinalY) || !FitsCoordinate(FinalY + PlacementHeight))
+                    { OutPositions.Reset(); OutRefusal = TEXT("attachment lane exceeds graph coordinate range"); return false; }
+                    FPlannedPosition Position;
+                    Position.FormIndex = I; Position.X = static_cast<int32>(X[I]); Position.Y = static_cast<int32>(FinalY);
+                    Position.bEstimatedSize = true; OutPositions.Add(Position);
+                }
+            bOutUsedEstimatedSize = true;
+            return true;
+        }
+    }
 
 	int64 ColumnX = 0;
 	int64 ColumnTop = 0;

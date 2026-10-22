@@ -419,6 +419,11 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 			if (ProbePin != nullptr)
 			{
 				Form.ProbePinNames.Add(ProbePin->PinName.ToString());
+                if (ProbePin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
+                {
+                    if (ProbePin->Direction == EGPD_Input) Form.ProbeExecInputs.Add(ProbePin->PinName.ToString());
+                    else Form.ProbeExecOutputs.Add(ProbePin->PinName.ToString());
+                }
 			}
 		}
 
@@ -686,7 +691,7 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 		{
 			FString PlacementRefusal;
 			if (!PlanPlacement(Graph, OutPlan.Nodes, OutPlan.PlannedPositions,
-				OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal))
+				OutPlan.bPlacementUsedEstimatedSize, PlacementRefusal, &OutPlan.Links))
 			{
 				OutPlan.Refusals.Add(PlacementRefusal);
 			}

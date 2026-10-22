@@ -73,6 +73,8 @@ public:
 		 * refused at apply time, and `P1` requires the Preview and the Edit to refuse the SAME input.
 		 */
 		TArray<FString> ProbePinNames;
+        TArray<FString> ProbeExecInputs;
+        TArray<FString> ProbeExecOutputs;
 	};
 
 	/** One link the plan will make, by node id or by a node this same text creates. */
@@ -164,7 +166,7 @@ public:
 		FPlan& OutPlan, FString& OutError, bool bRequestPlacement = false);
 
 	/**
-	 * Plans one deterministic column to the right of the existing stored/estimated bounds.
+	 * Plans an attachment-relative block when links identify an existing exec source; otherwise a deterministic column.
 	 *
 	 * Every edge, extent and addition is widened to int64 and checked before the int32 cast. Each positive
 	 * stored dimension is kept and only a missing dimension is estimated. Both the top-left position and the
@@ -174,7 +176,8 @@ public:
 	 * @param OutRefusal  Why the geometry cannot be represented. Empty on success.
 	 */
 	static bool PlanPlacement(const UEdGraph* InGraph, const TArray<FNewNode>& InNodes,
-		TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal);
+		TArray<FPlannedPosition>& OutPositions, bool& bOutUsedEstimatedSize, FString& OutRefusal,
+        const TArray<FNewLink>* InLinks = nullptr);
 
 	/**
 	 * Applies an accepted plan: one transaction, create, link, lay out, then read back and compare. Compile is separate.
