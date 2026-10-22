@@ -614,3 +614,7 @@ GL-19 partial, unbuilt_untested. Offset/MaxChars/Revision retrieve complete rend
 ## P0 entry filter — 34109ae
 
 GL-19 implemented, unbuilt_untested: entry-name substring filtering completes the pagination capability. Shared renderer preserves full default behavior; filtered views are explicitly partial and exclude unrelated disconnected inventory. No tests/build/editor runs. Later verify filtering with shared values/tails and revision paging across long Unicode output.
+
+## P0 function input getters — 1ffb537
+
+Partial, unbuilt_untested. Reflection-backed function inputs use stock scoped getter spawners and stable reader IDs. Automatic layout conversion and signatures not yet reflected remain open. No tests/build/editor runs. Verify parameter scope, reference inputs and nested graphs later.
