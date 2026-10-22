@@ -2747,11 +2747,13 @@
       "canonical_issue": "2026-10-22_S3/X-95",
       "owner": "FIELD-06",
       "priority": "P0",
-      "state": "open",
-      "validation": "reported",
-      "disposition": "reported_pending_source_review",
+      "state": "done",
+      "validation": "unbuilt_untested",
+      "disposition": "implementation_complete_pending_verification",
       "source": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
-      "observation": "- **Type:** Usability.\n- **Scenario:** Read a function body after a branch insert.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read a function at bodies detail after inserting a branch.\n- **Observed:** The body text showed the call node under the branch without the output name. Node resolve was needed to see which outputs were linked.\n- **Expected:** The reader names the source output of each exec link.\n- **Impact:** 1 extra resolve call per check.\n- **State after:** No change.\n- **Workaround:** Node resolve. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Print the source pin name on exec links from multi-output nodes.\n\n### 2.5 Edit queue, source control, compile, save"
+      "observation": "- **Type:** Usability.\n- **Scenario:** Read a function body after a branch insert.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Read a function at bodies detail after inserting a branch.\n- **Observed:** The body text showed the call node under the branch without the output name. Node resolve was needed to see which outputs were linked.\n- **Expected:** The reader names the source output of each exec link.\n- **Impact:** 1 extra resolve call per check.\n- **State after:** No change.\n- **Workaround:** Node resolve. This worked.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** Print the source pin name on exec links from multi-output nodes.\n\n### 2.5 Edit queue, source control, compile, save",
+      "implementation": "ecdb82b",
+      "implementation_limits": "All declared exec outputs are counted, so branch/switch/cast arms retain names even with only one connected output. Unconnected arms are explicit empty named forms. No tests/build/editor runs."
     },
     {
       "report": "2026-10-22_S3",
