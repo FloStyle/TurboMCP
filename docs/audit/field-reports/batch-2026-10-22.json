@@ -1,0 +1,506 @@
+{
+  "reports": [
+    {
+      "report": "2026-10-21_S13",
+      "path": "docs/audit/field-reports/2026-10-21_S13_TurboMCP_branch-graph-hand-layout.md",
+      "sha256": "e491ccd2b420c774951a9a933e744e587f22e8333d044cb6a5b82c1be03b3da5"
+    },
+    {
+      "report": "2026-10-21_S14",
+      "path": "docs/audit/field-reports/2026-10-21_S14_TurboMCP_tidy-linear-function.md",
+      "sha256": "5f7838f3c5ffcb8d2d8e72b0f9dc18e9f401082f684b6c9979bedd164023e133"
+    },
+    {
+      "report": "2026-10-21_S15",
+      "path": "docs/audit/field-reports/2026-10-21_S15_TurboMCP_split-and-branch-layout.md",
+      "sha256": "fb863981e802dbc28c480eb8fdad8eb41a756a851fbfd631dc512382cce6ac31"
+    },
+    {
+      "report": "2026-10-21_S16",
+      "path": "docs/audit/field-reports/2026-10-21_S16_TurboMCP_append-into-existing-flow.md",
+      "sha256": "0c46574b7dba873d279db7b08b92b41cfbc3b0beb009d3ba3a734a5c839ea2a7"
+    },
+    {
+      "report": "2026-10-22_S1",
+      "path": "docs/audit/field-reports/2026-10-22_S1_TurboMCP_context-reading-gaps.md",
+      "sha256": "776380c65814ff0e07a05426aaab47c90464efaa38a03e07df9998065d01656f"
+    },
+    {
+      "report": "2026-10-22_S2",
+      "path": "docs/audit/field-reports/2026-10-22_S2_TurboMCP_data-driven-widget-text.md",
+      "sha256": "aa38a7853f6b2efacf91c3530f4d73400a12bbd8ce43c6f0ff4211f9ee2da21a"
+    },
+    {
+      "report": "2026-10-22_S3",
+      "path": "docs/audit/field-reports/2026-10-22_S3_TurboMCP_widget-hover-state-graph-edits.md",
+      "sha256": "90736c42f802a3c47dd6a243faae8a0f8d234407255749b456737900c7a0a4c2"
+    }
+  ],
+  "records": [
+    {
+      "key": "2026-10-21_S13/X-84",
+      "kind": "positive",
+      "canonical_issue": "2026-10-21_S13/X-84"
+    },
+    {
+      "key": "2026-10-21_S13/TD-28",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S13/TD-28"
+    },
+    {
+      "key": "2026-10-21_S13/TD-29",
+      "kind": "defect",
+      "canonical_issue": "layout-quality-gate"
+    },
+    {
+      "key": "2026-10-21_S13/TD-30",
+      "kind": "feature",
+      "canonical_issue": "2026-10-21_S13/TD-30"
+    },
+    {
+      "key": "2026-10-21_S13/CP-13",
+      "kind": "positive",
+      "canonical_issue": "2026-10-21_S13/CP-13"
+    },
+    {
+      "key": "2026-10-21_S13/LR-18",
+      "kind": "defect",
+      "canonical_issue": "layout-finding-tolerance"
+    },
+    {
+      "key": "2026-10-21_S14/X-85",
+      "kind": "positive",
+      "canonical_issue": "2026-10-21_S14/X-85"
+    },
+    {
+      "key": "2026-10-21_S14/TD-31",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S14/TD-31"
+    },
+    {
+      "key": "2026-10-21_S14/TD-32",
+      "kind": "defect",
+      "canonical_issue": "shared-value-layout"
+    },
+    {
+      "key": "2026-10-21_S14/CB-03",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S14/CB-03"
+    },
+    {
+      "key": "2026-10-21_S14/CP-14",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S14/CP-14"
+    },
+    {
+      "key": "2026-10-21_S14/TD-33",
+      "kind": "reference",
+      "canonical_issue": "2026-10-21_S14/TD-33"
+    },
+    {
+      "key": "2026-10-21_S14/LR-19",
+      "kind": "defect",
+      "canonical_issue": "layout-finding-tolerance"
+    },
+    {
+      "key": "2026-10-21_S15/X-86",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S15/X-86"
+    },
+    {
+      "key": "2026-10-21_S15/TD-34",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S15/TD-34"
+    },
+    {
+      "key": "2026-10-21_S15/TD-35",
+      "kind": "defect",
+      "canonical_issue": "shared-value-layout"
+    },
+    {
+      "key": "2026-10-21_S15/ED-15",
+      "kind": "positive",
+      "canonical_issue": "2026-10-21_S15/ED-15"
+    },
+    {
+      "key": "2026-10-21_S15/ED-16",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S15/ED-16"
+    },
+    {
+      "key": "2026-10-21_S15/NR-07",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S15/NR-07"
+    },
+    {
+      "key": "2026-10-21_S15/TD-36",
+      "kind": "defect",
+      "canonical_issue": "function-input-getters"
+    },
+    {
+      "key": "2026-10-21_S15/FT-90",
+      "kind": "feature",
+      "canonical_issue": "function-input-getters"
+    },
+    {
+      "key": "2026-10-21_S16/X-87",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S16/X-87"
+    },
+    {
+      "key": "2026-10-21_S16/X-88",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S16/X-88"
+    },
+    {
+      "key": "2026-10-21_S16/X-89",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S16/X-89"
+    },
+    {
+      "key": "2026-10-21_S16/X-90",
+      "kind": "process",
+      "canonical_issue": "2026-10-21_S16/X-90"
+    },
+    {
+      "key": "2026-10-21_S16/GC-31",
+      "kind": "defect",
+      "canonical_issue": "getter-owner-resolution"
+    },
+    {
+      "key": "2026-10-21_S16/GC-32",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S16/GC-32"
+    },
+    {
+      "key": "2026-10-21_S16/TD-37",
+      "kind": "defect",
+      "canonical_issue": "layout-quality-gate"
+    },
+    {
+      "key": "2026-10-21_S16/CB-04",
+      "kind": "positive",
+      "canonical_issue": "2026-10-21_S16/CB-04"
+    },
+    {
+      "key": "2026-10-21_S16/TD-38",
+      "kind": "defect",
+      "canonical_issue": "2026-10-21_S16/TD-38"
+    },
+    {
+      "key": "2026-10-21_S16/FT-91",
+      "kind": "feature",
+      "canonical_issue": "2026-10-21_S16/FT-91"
+    },
+    {
+      "key": "2026-10-21_S16/FT-93",
+      "kind": "feature",
+      "canonical_issue": "2026-10-21_S16/FT-93"
+    },
+    {
+      "key": "2026-10-21_S16/FT-94",
+      "kind": "feature",
+      "canonical_issue": "2026-10-21_S16/FT-94"
+    },
+    {
+      "key": "2026-10-21_S16/FT-92",
+      "kind": "feature",
+      "canonical_issue": "2026-10-21_S16/FT-92"
+    },
+    {
+      "key": "2026-10-22_S1/X-91",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/X-91"
+    },
+    {
+      "key": "2026-10-22_S1/X-92",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/X-92"
+    },
+    {
+      "key": "2026-10-22_S1/GL-19",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/GL-19"
+    },
+    {
+      "key": "2026-10-22_S1/GL-20",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S1/GL-20"
+    },
+    {
+      "key": "2026-10-22_S1/AS-04",
+      "kind": "defect",
+      "canonical_issue": "asset-search-filter"
+    },
+    {
+      "key": "2026-10-22_S1/DT-11",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/DT-11"
+    },
+    {
+      "key": "2026-10-22_S1/X-93",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/X-93"
+    },
+    {
+      "key": "2026-10-22_S1/GL-21",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/GL-21"
+    },
+    {
+      "key": "2026-10-22_S1/GC-38",
+      "kind": "defect",
+      "canonical_issue": "explicit-exec-continuation"
+    },
+    {
+      "key": "2026-10-22_S1/SV-13",
+      "kind": "defect",
+      "canonical_issue": "save-outcome-and-thumbnail"
+    },
+    {
+      "key": "2026-10-22_S1/TD-39",
+      "kind": "defect",
+      "canonical_issue": "layout-quality-gate"
+    },
+    {
+      "key": "2026-10-22_S1/TD-40",
+      "kind": "defect",
+      "canonical_issue": "layout-quality-gate"
+    },
+    {
+      "key": "2026-10-22_S1/GC-39",
+      "kind": "defect",
+      "canonical_issue": "function-input-getters"
+    },
+    {
+      "key": "2026-10-22_S1/GC-47",
+      "kind": "defect",
+      "canonical_issue": "getter-owner-resolution"
+    },
+    {
+      "key": "2026-10-22_S1/GC-48",
+      "kind": "defect",
+      "canonical_issue": "preview-edit-parity"
+    },
+    {
+      "key": "2026-10-22_S1/GC-42",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/GC-42"
+    },
+    {
+      "key": "2026-10-22_S1/CB-05",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/CB-05"
+    },
+    {
+      "key": "2026-10-22_S1/CP-16",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/CP-16"
+    },
+    {
+      "key": "2026-10-22_S1/ED-20",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/ED-20"
+    },
+    {
+      "key": "2026-10-22_S1/X-96",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S1/X-96"
+    },
+    {
+      "key": "2026-10-22_S1/FT-95",
+      "kind": "feature",
+      "canonical_issue": "2026-10-22_S1/FT-95"
+    },
+    {
+      "key": "2026-10-22_S1/FT-96",
+      "kind": "feature",
+      "canonical_issue": "2026-10-22_S1/FT-96"
+    },
+    {
+      "key": "2026-10-22_S2/X-93",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S2/X-93"
+    },
+    {
+      "key": "2026-10-22_S2/AS-05",
+      "kind": "defect",
+      "canonical_issue": "asset-search-filter"
+    },
+    {
+      "key": "2026-10-22_S2/GC-33",
+      "kind": "defect",
+      "canonical_issue": "getter-owner-resolution"
+    },
+    {
+      "key": "2026-10-22_S2/GC-34",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S2/GC-34"
+    },
+    {
+      "key": "2026-10-22_S2/GC-35",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S2/GC-35"
+    },
+    {
+      "key": "2026-10-22_S2/GC-36",
+      "kind": "defect",
+      "canonical_issue": "explicit-exec-continuation"
+    },
+    {
+      "key": "2026-10-22_S2/GC-37",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S2/GC-37"
+    },
+    {
+      "key": "2026-10-22_S2/TD-39",
+      "kind": "defect",
+      "canonical_issue": "pure-input-placement"
+    },
+    {
+      "key": "2026-10-22_S2/ED-17",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S2/ED-17"
+    },
+    {
+      "key": "2026-10-22_S2/SV-13",
+      "kind": "defect",
+      "canonical_issue": "save-outcome-and-thumbnail"
+    },
+    {
+      "key": "2026-10-22_S2/SN-03",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S2/SN-03"
+    },
+    {
+      "key": "2026-10-22_S2/DT-12",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S2/DT-12"
+    },
+    {
+      "key": "2026-10-22_S2/WT-09",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S2/WT-09"
+    },
+    {
+      "key": "2026-10-22_S2/NR-08",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S2/NR-08"
+    },
+    {
+      "key": "2026-10-22_S2/CP-15",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S2/CP-15"
+    },
+    {
+      "key": "2026-10-22_S2/VC-09",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S2/VC-09"
+    },
+    {
+      "key": "2026-10-22_S2/FT-97",
+      "kind": "feature",
+      "canonical_issue": "explicit-exec-continuation"
+    },
+    {
+      "key": "2026-10-22_S3/X-94",
+      "kind": "defect",
+      "canonical_issue": "preview-edit-parity"
+    },
+    {
+      "key": "2026-10-22_S3/GC-43",
+      "kind": "defect",
+      "canonical_issue": "getter-owner-resolution"
+    },
+    {
+      "key": "2026-10-22_S3/GC-44",
+      "kind": "defect",
+      "canonical_issue": "explicit-exec-continuation"
+    },
+    {
+      "key": "2026-10-22_S3/GC-45",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S3/GC-45"
+    },
+    {
+      "key": "2026-10-22_S3/GC-46",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S3/GC-46"
+    },
+    {
+      "key": "2026-10-22_S3/ED-18",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S3/ED-18"
+    },
+    {
+      "key": "2026-10-22_S3/ED-19",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S3/ED-19"
+    },
+    {
+      "key": "2026-10-22_S3/VA-05",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S3/VA-05"
+    },
+    {
+      "key": "2026-10-22_S3/FA-08",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S3/FA-08"
+    },
+    {
+      "key": "2026-10-22_S3/NT-09",
+      "kind": "defect",
+      "canonical_issue": "getter-owner-resolution"
+    },
+    {
+      "key": "2026-10-22_S3/AS-06",
+      "kind": "defect",
+      "canonical_issue": "asset-search-filter"
+    },
+    {
+      "key": "2026-10-22_S3/NR-09",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S3/NR-09"
+    },
+    {
+      "key": "2026-10-22_S3/X-95",
+      "kind": "defect",
+      "canonical_issue": "2026-10-22_S3/X-95"
+    },
+    {
+      "key": "2026-10-22_S3/EQ-03",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S3/EQ-03"
+    },
+    {
+      "key": "2026-10-22_S3/VC-10",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S3/VC-10"
+    },
+    {
+      "key": "2026-10-22_S3/CO-10",
+      "kind": "positive",
+      "canonical_issue": "2026-10-22_S3/CO-10"
+    },
+    {
+      "key": "2026-10-22_S3/SV-14",
+      "kind": "defect",
+      "canonical_issue": "save-outcome-and-thumbnail"
+    },
+    {
+      "key": "2026-10-22_S3/FT-98",
+      "kind": "feature",
+      "canonical_issue": "2026-10-22_S3/FT-98"
+    },
+    {
+      "key": "2026-10-22_S3/FT-99",
+      "kind": "feature",
+      "canonical_issue": "getter-owner-resolution"
+    },
+    {
+      "key": "2026-10-22_S3/FT-100",
+      "kind": "feature",
+      "canonical_issue": "explicit-exec-continuation"
+    }
+  ]
+}
