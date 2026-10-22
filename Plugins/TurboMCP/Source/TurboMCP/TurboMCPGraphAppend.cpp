@@ -941,8 +941,47 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
                     OutMeasuredPlan->Nodes[I].MeasuredHeight = FMath::CeilToInt(Bounds.Bottom - Bounds.Top);
                 }
                 if (Accepted)
+                {
+                    // Automatic continuation is decided by the shared scratch mutation
+                    // pipeline. Feed its final existing-target edges to placement only;
+                    // do not add a second mutation request or guess a branch output.
+                    TArray<FNewLink> LayoutLinks = OutMeasuredPlan->Links;
+                    TMap<const UEdGraphNode*, FString> OriginalKeyByScratch;
+                    for (const UEdGraphNode* OriginalNode : Original->Nodes)
+                        if (OriginalNode)
+                            if (const UEdGraphNode* Copy = TurboMCPGraphScratch::ByGuid(Scratch.Graph, OriginalNode->NodeGuid))
+                                OriginalKeyByScratch.Add(Copy, TurboMCPNodeId::MakeForNode(OriginalNode, true));
+                    for (int32 I = 0; I < ScratchCreated.Num(); ++I)
+                    {
+                        const UEdGraphNode* Node = ScratchCreated[I];
+                        if (!Node) continue;
+                        for (const UEdGraphPin* Output : Node->Pins)
+                        {
+                            if (!Output || Output->bOrphanedPin || Output->Direction != EGPD_Output
+                                || Output->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec) continue;
+                            for (const UEdGraphPin* Input : Output->LinkedTo)
+                            {
+                                if (!Input || Input->Direction != EGPD_Input) continue;
+                                const FString* OriginalKey = OriginalKeyByScratch.Find(Input->GetOwningNodeUnchecked());
+                                if (!OriginalKey) continue;
+                                const FString OutputName = Output->PinName.ToString();
+                                const FString InputName = Input->PinName.ToString();
+                                const bool bPresent = LayoutLinks.ContainsByPredicate([&](const FNewLink& Link)
+                                {
+                                    return Link.FromFormIndex == I && Link.ToFormIndex == INDEX_NONE
+                                        && Link.ToNodeKey == *OriginalKey && Link.FromPin == OutputName && Link.ToPin == InputName;
+                                });
+                                if (bPresent) continue;
+                                FNewLink Edge;
+                                Edge.FromFormIndex = I; Edge.FromPin = OutputName;
+                                Edge.ToNodeKey = *OriginalKey; Edge.ToPin = InputName;
+                                LayoutLinks.Add(MoveTemp(Edge));
+                            }
+                        }
+                    }
                     Accepted = PlanPlacement(Original, OutMeasuredPlan->Nodes, OutMeasuredPlan->PlannedPositions,
-                        OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &OutMeasuredPlan->Links);
+                        OutMeasuredPlan->bPlacementUsedEstimatedSize, OutError, &LayoutLinks);
+                }
             }
         }
     }
