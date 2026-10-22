@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPNodeId.h"
+#include "K2Node_FunctionEntry.h"
 
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -407,6 +408,16 @@ namespace TurboMCPNodeId
 		{
 			return FString();
 		}
+
+        if(InNode->IsA<UK2Node_VariableGet>() && InNode->VariableReference.IsLocalScope() && InNode->GetGraph())
+        {
+            const UBlueprint* ScopeBlueprint=FBlueprintEditorUtils::FindBlueprintForGraph(InNode->GetGraph());
+            if(ScopeBlueprint) for(const UEdGraph* FunctionGraph:ScopeBlueprint->FunctionGraphs)
+                if(FunctionGraph && FunctionGraph->GetName()==InNode->VariableReference.GetMemberScopeName())
+                    for(const UEdGraphNode* Node:FunctionGraph->Nodes) if(Node && Node->IsA<UK2Node_FunctionEntry>())
+                        for(const UEdGraphPin* P:Node->Pins) if(P && P->Direction==EGPD_Output && P->PinName==VarName && P->PinType.PinCategory!=UEdGraphSchema_K2::PC_Exec)
+                            return FString::Printf(TEXT("FunctionInput|%s|%s|%s"),*ScopeBlueprint->GetPathName(),*FunctionGraph->GetName(),*VarName.ToString());
+        }
 
         // Preserve the declaring class in reader-emitted identities. Category/name
         // alone is not unique across Blueprint or engine classes.

@@ -12,6 +12,7 @@
 #include "BlueprintNodeSpawner.h"
 #include "BlueprintVariableNodeSpawner.h"
 #include "K2Node_VariableGet.h"
+#include "K2Node_FunctionEntry.h"
 #include "K2Node_VariableSet.h"
 #include "Internationalization/Text.h"
 #include "EdGraph/EdGraph.h"
@@ -137,6 +138,9 @@ namespace
 	struct FEntry
 	{
 		FString TypeId;
+        FString InputScope;
+        FName InputName;
+        FEdGraphPinType InputType;
         FString LegacyTypeId;
 		FString SearchKeywords;
 		TArray<FString> Aliases;
@@ -148,6 +152,17 @@ namespace
 		const UBlueprintNodeSpawner* Spawner = nullptr;
 		UObject* Owner = nullptr;
 	};
+
+    UEdGraphNode* CreateInputGetter(const FEntry& Entry, UEdGraph* Graph)
+    {
+        UK2Node_VariableGet* Node=NewObject<UK2Node_VariableGet>(Graph,NAME_None,RF_Transactional);
+        if(!Node) return nullptr;
+        Node->CreateNewGuid();
+        Node->VariableReference.SetLocalMember(Entry.InputName,Entry.InputScope,FGuid());
+        Node->CreatePin(EGPD_Output,Entry.InputType,Entry.InputName);
+        Graph->AddNode(Node,false,false);
+        return Node;
+    }
 
     bool VerifyVariableIdentity(const FEntry& Entry, UEdGraphNode* Node, FString& Note)
     {
@@ -337,26 +352,20 @@ namespace
 			}
 		}
 
-        // Function parameters are graph-local actions; they need not be registered globally.
+        // Entry pins are authoritative even before the signature reaches the skeleton class.
         if (InBlueprint->FunctionGraphs.Contains(InGraph))
-        {
-            UClass* Owner=InBlueprint->SkeletonGeneratedClass?InBlueprint->SkeletonGeneratedClass:InBlueprint->GeneratedClass;
-            UFunction* Function=Owner?Owner->FindFunctionByName(InGraph->GetFName()):nullptr;
-            if(Function) for(TFieldIterator<FProperty> It(Function); It; ++It)
-            {
-                FProperty* Property=*It;
-                if(!Property->HasAnyPropertyFlags(CPF_Parm) || Property->HasAnyPropertyFlags(CPF_ReturnParm)
-                    || (Property->HasAnyPropertyFlags(CPF_OutParm) && !Property->HasAnyPropertyFlags(CPF_ReferenceParm))) continue;
-                FEntry Entry;
-                Entry.TypeId=FString::Printf(TEXT("FunctionInput|%s|%s|%s"),*InBlueprint->GetPathName(),*InGraph->GetName(),*Property->GetName());
-                Entry.LegacyTypeId=Entry.TypeId;
-                Entry.SearchKeywords=TEXT("function input parameter getter ")+Property->GetName();
-                Entry.OwningClass=InBlueprint->GetPathName(); Entry.bOwnedByThisBlueprint=true; Entry.bContextVariable=true; Entry.bPure=true;
-                Entry.Owner=InBlueprint;
-                Entry.Spawner=UBlueprintVariableNodeSpawner::CreateFromMemberOrParam(UK2Node_VariableGet::StaticClass(),Property,InGraph);
-                if(Entry.Spawner) OutEntries.Add(MoveTemp(Entry));
-            }
-        }
+            for(UEdGraphNode* Node:InGraph->Nodes) if(const UK2Node_FunctionEntry* FunctionEntry=Cast<UK2Node_FunctionEntry>(Node))
+                for(const UEdGraphPin* Input:FunctionEntry->Pins)
+                {
+                    if(!Input || Input->Direction!=EGPD_Output || Input->PinType.PinCategory==UEdGraphSchema_K2::PC_Exec || Input->ParentPin || Input->bOrphanedPin) continue;
+                    FEntry Entry;
+                    Entry.TypeId=FString::Printf(TEXT("FunctionInput|%s|%s|%s"),*InBlueprint->GetPathName(),*InGraph->GetName(),*Input->PinName.ToString());
+                    Entry.LegacyTypeId=Entry.TypeId; Entry.InputScope=InGraph->GetName(); Entry.InputName=Input->PinName; Entry.InputType=Input->PinType;
+                    Entry.SearchKeywords=TEXT("function input parameter getter ")+Input->PinName.ToString();
+                    Entry.OwningClass=InBlueprint->GetPathName(); Entry.bOwnedByThisBlueprint=true; Entry.bContextVariable=true; Entry.bPure=true;
+                    OutEntries.Add(MoveTemp(Entry));
+                }
+
 	}
 }
 
@@ -430,6 +439,7 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 			return nullptr;
 		}
 		ProbeGraph->Schema = InGraph->Schema;
+        if(!Entry.InputScope.IsEmpty()) return CreateInputGetter(Entry,ProbeGraph);
 		FBlueprintActionInfo ActionInfo(Entry.Owner, Entry.Spawner);
 		UEdGraphNode* Spawned = Entry.Spawner->Invoke(ProbeGraph, ActionInfo.GetBindings(),
 			FVector2D::ZeroVector);
@@ -492,6 +502,12 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 			continue;
 		}
 
+        if(!Entry.InputScope.IsEmpty())
+        {
+            OutNode=CreateInputGetter(Entry,InGraph);
+            if(!OutNode) OutNote=TEXT("function input getter allocation failed");
+            return OutNode?ESpawnResult::Spawned:ESpawnResult::SpawnerDeclined;
+        }
 		FBlueprintActionInfo ActionInfo(Entry.Owner, Entry.Spawner);
 		UEdGraphNode* Spawned = Entry.Spawner->Invoke(InGraph, ActionInfo.GetBindings(), FVector2D::ZeroVector);
 		if (Spawned == nullptr)
