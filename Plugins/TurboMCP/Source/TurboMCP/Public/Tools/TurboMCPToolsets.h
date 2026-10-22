@@ -261,8 +261,8 @@ public:
 	static FString ReadTurboMCPGraphLoad(
 		const FString& Asset,
 		const FString& GraphName,
-		const FString& Format,
-		const FString& Detail,
+		const FString& Format = TEXT("read"),
+		const FString& Detail = TEXT("bodies"),
         int32 Offset = 0, int32 MaxChars = 24000, const FString& Revision = TEXT(""), const FString& EntryFilter = TEXT(""));
 
 	/**
