@@ -687,6 +687,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-widget-preview-inputs",
+      "path": "Tools/test-widget-preview-inputs.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
     }
   ]
 }

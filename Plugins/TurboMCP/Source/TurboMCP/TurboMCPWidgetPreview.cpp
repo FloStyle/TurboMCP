@@ -77,46 +77,34 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 			TEXT("form, for example WBP_NodeTest.");
 	}
 
-	// Every input is validated before anything is created, so a typo costs nothing
-	// and leaves no half-built instance behind.
-	int32 Width = DefaultWidth;
-	int32 Height = DefaultHeight;
-	if (!Size.TrimStartAndEnd().IsEmpty())
-	{
-		FString Left;
-		FString Right;
-		if (!Size.Split(TEXT("x"), &Left, &Right)
-			&& !Size.Split(TEXT(","), &Left, &Right))
-		{
-			return FString::Printf(
-				TEXT("error: '%s' is not a size. Pass WxH, for example 1280x720."), *Size);
-		}
-
-		Left.TrimStartAndEndInline();
-		Right.TrimStartAndEndInline();
-		if (!Left.IsNumeric() || !Right.IsNumeric())
-		{
-			return FString::Printf(
-				TEXT("error: '%s' is not a size. Both parts must be whole numbers, ")
-				TEXT("for example 1280x720."), *Size);
-		}
-
-		Width = FCString::Atoi(*Left);
-		Height = FCString::Atoi(*Right);
-
-		if (Width <= 0 || Height <= 0)
-		{
-			return FString::Printf(
-				TEXT("error: a size of %dx%d cannot be rendered. Both parts must be ")
-				TEXT("positive."), Width, Height);
-		}
-		if (Width > MaxEdge || Height > MaxEdge)
-		{
-			return FString::Printf(
-				TEXT("error: %dx%d is larger than the %d limit. Pass a smaller size."),
-				Width, Height, MaxEdge);
-		}
-	}
+    // Validate dimensions before asset loading or script-capable construction.
+    int32 Width = DefaultWidth;
+    int32 Height = DefaultHeight;
+    if (!Size.TrimStartAndEnd().IsEmpty())
+    {
+        FString Left, Right;
+        if (!Size.Split(TEXT("x"), &Left, &Right) && !Size.Split(TEXT(","), &Left, &Right))
+            return TEXT("error: size must be WxH, for example 1280x720; no widget was loaded or constructed.");
+        auto ParseEdge = [](FString Value, int32& Out) -> bool
+        {
+            Value.TrimStartAndEndInline();
+            if (Value.IsEmpty()) return false;
+            int32 Parsed = 0;
+            for (TCHAR Digit : Value)
+            {
+                if (Digit < TEXT('0') || Digit > TEXT('9')) return false;
+                // Check before multiplication so even very long inputs cannot overflow.
+                const int32 Number = Digit - TEXT('0');
+                if (Parsed > (MaxEdge - Number) / 10) return false;
+                Parsed = Parsed * 10 + Number;
+            }
+            if (Parsed == 0) return false;
+            Out = Parsed;
+            return true;
+        };
+        if (!ParseEdge(Left, Width) || !ParseEdge(Right, Height))
+            return TEXT("error: size dimensions must be whole numbers from 1 to 4096, for example 1280x720; no widget was loaded or constructed.");
+    }
 
 	// The sample values, parsed before the instance exists.
 	TSharedPtr<FJsonObject> SampleValues;
