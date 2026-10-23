@@ -30,3 +30,13 @@ S14/CP-14: excessive contrast, shadows and outlines after MCP graph changes; man
 ## Evidence and delivery limits
 
 Historical evidence is recorded in todo/field-01.md, field-02.md, field-03.md, field-04.md and docs/audit/deferred-field-verification.md. Old experimental commits are local engine history; no private project code or assets are needed in a proposal. A future proposal must include a sanitized reproducer, exact 5.9 revision, expected/actual result and validation evidence. No custom engine requirement, automatic publication or claim that 5.9 is affected follows from this document.
+
+## 2026-10-23 local native-open observation
+
+Supervised run `f616e04a3382410e96dd713a2f25635f`, candidate `f41d99a`, stock pinned engine, real rendering enabled. Build and diagnostic completed; supervisor restored 16 fixture files and stopped its editor. Startup took about 246 seconds (cold shader preparation).
+
+Native `EditorToolset.EditorAppToolset.OpenEditorForAsset` opened `/Game/Tests/BP_NodeTest.BP_NodeTest` and `/Game/Tests/WBP_NodeTest.WBP_NodeTest`. `ReadTurboMCPDirtyList` reported zero dirty packages before each open, immediately afterwards and three seconds afterwards. No asset save was requested.
+
+This only establishes that opening these two fixtures did not reproduce X-93. Inspection/capture, other asset types and project dependencies remain untested. CP-14 rendering artifact has not been exercised by this run. Neither issue is closed.
+
+Evidence: `.local/executions/f616e04a3382410e96dd713a2f25635f/report.json` and `02-suites/test-field-open-diagnostic.log` in the execution checkout. Native discovery also confirms `SlateInspectorToolset` is available for subsequent autonomous screenshots and UI observations.
