@@ -24,12 +24,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPTrace(const FString& Action, const FSt
 			*Wanted, *TurboMCPTrace::Status());
 	}
 
-	TurboMCPTrace::FPlan Plan;
-	FString Error;
-	if (!TurboMCPTrace::Plan(Action.IsEmpty() ? TEXT("status") : Action, NodeId, Plan, Error))
-	{
-		return FTurboMCPToolError::AsError(Error);
-	}
+	if (!Wanted.IsEmpty() && Wanted != TEXT("status"))
+		return TEXT("error: ReadTurboMCPTrace accepts Action=status or an empty Action. Use EditTurboMCPTrace to arm or clear points.");
 
 	return TurboMCPTrace::Status();
 }

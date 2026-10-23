@@ -393,11 +393,10 @@ namespace TurboMCPTrace
 		}
 		else
 		{
-			// THE HONEST ZERO, WITH THE REASON. Zero hits is either "it never ran" or "nothing was armed",
-			// and those need different answers from whoever reads it.
+			// Missing events do not establish whether the armed nodes executed.
 			Out += FString::Printf(
-				TEXT("\nno hit has been recorded yet. With %d point(s) armed, that means none of them has run ")
-				TEXT("since arming, not that the trace is off: the subscription is %s."),
+				TEXT("\nNo hits were recorded for %d armed point(s). This does not prove the nodes did not execute; ")
+				TEXT("check the node IDs and trace-event delivery. The subscription is %s."),
 				GArmed.Num(), IsSubscribed() ? TEXT("live") : TEXT("NOT live"));
 		}
 

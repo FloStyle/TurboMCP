@@ -124,7 +124,7 @@ def probe_node_id(session, blueprint_name):
     """
     text = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                         {"asset": blueprint_name, "graphName": "EventGraph",
-                         "detail": "bodies", "format": "", "tokenBudget": "", "revision": ""})
+                         "detail": "bodies", "format": "", "revision": "", "entryFilter": ""})
     if text.startswith("error:"):
         print("    reading %s failed: %s" % (blueprint_name, text[:160]))
         return None
@@ -214,6 +214,13 @@ def main():
     print("=== THE REFUSALS NAME WHAT IS WRONG ===")
     # EACH ASSERTS ITS OWN SENTENCE. A prefix-only check would pass on a tool that refused everything with one
     # generic message, which is the unfailable-assertion failure this project has recorded.
+    invalid_read = status(session, action="wat")
+    check("invalid read action recommends the status action",
+          invalid_read.startswith("error:") and "Action=status" in invalid_read,
+          invalid_read[:200])
+    empty_read = status(session, action="   ")
+    check("whitespace action reads status", empty_read.startswith("trace:"), empty_read[:200])
+
     bad_action = session.call(EDIT_TOOLSET, "EditTurboMCPTrace",
                               {"action": "wat", "nodeId": REAL_NODE})
     print(bad_action)
@@ -260,7 +267,7 @@ def main():
     check("the hit count is PARSED and reported as a number",
           hit_count(said) is not None, "parsed %s" % hit_count(said))
     check("it explains what a zero means rather than leaving a bare 0",
-          "that means none of them has run" in said, said[-300:])
+          "does not prove the nodes did not execute" in said, said[-300:])
 
     print()
     print("=== PUT BACK WHAT WAS TAKEN ===")
