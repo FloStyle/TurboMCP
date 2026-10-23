@@ -1334,6 +1334,13 @@
             "Tools/test-datatable.py"
           ],
           "new_files": []
+        },
+        "quality-datatable-readiness": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp",
+            "Tools/test-datatable.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
