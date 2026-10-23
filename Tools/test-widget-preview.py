@@ -11,7 +11,7 @@ Checks the rules the spec states, and exits non-zero on failure.
 NEEDS A RENDERING EDITOR
 ------------------------
 This is the one suite that cannot run under -nullrhi, because it renders. The editor
-the other suites use has rendering on by default, so this runs everywhere they do.
+runner enables rendering when this suite is requested alone. Other suites may use NullRHI.
 
 WHAT THE IMAGE ACTUALLY CONTAINS
 --------------------------------
@@ -80,6 +80,7 @@ def main():
                         "execution": "allow", "functionName": "", "size": ""})
     print(out)
     print()
+    check("reports image success", "result: image written" in out and not out.startswith("partial:"))
     check("reports the widget", WIDGET in out)
     check("reports the size it used", "size: 1280x720" in out)
     check("says how many values it set", "sample values: 0 set" in out)
@@ -142,6 +143,7 @@ def main():
                               "execution": "allow", "functionName": "", "size": ""})
     print(bad_value)
     print()
+    check("marks refused samples partial", bad_value.startswith("partial:") and "not rolled back" in bad_value)
     check("counts the refusal", "0 set, 1 refused" in bad_value)
     check("names the bad variable", "NotAVariable" in bad_value)
     check("offers names that do exist", "Some it does have:" in bad_value)
@@ -186,6 +188,7 @@ def main():
                                 "execution": "allow", "functionName": "SetPositionInViewport", "size": ""})
     print(with_params)
     print()
+    check("marks refused callback partial", with_params.startswith("partial:"))
     check("says it was not called",
           "nothing was called" in with_params or "only call a function" in with_params)
 

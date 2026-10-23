@@ -297,7 +297,7 @@ function Start-EditorAndWait {
     $oldStartingEditor = $env:TURBOMCP_RUNNER_STARTING_EDITOR
     $env:TURBOMCP_RUNNER_STARTING_EDITOR = '1'
     # The field diagnostic must exercise real Slate/rendering, not NullRHI.
-    $diagnosticRender = $Suites -eq 'test-field-open-diagnostic'
+    $diagnosticRender = $Suites -in @('test-field-open-diagnostic', 'test-widget-preview')
     try {
         if ($diagnosticRender) { & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null }
         else { & pwsh -NoProfile -File $StartEditor -LowPriority -Offscreen 2>&1 | Out-Null }

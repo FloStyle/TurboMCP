@@ -227,17 +227,20 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 
 	// The optional function, called on the instance by name.
 	FString FunctionReport = TEXT("none asked for");
+    bool bFunctionRefused = false;
 	if (!FunctionName.TrimStartAndEnd().IsEmpty())
 	{
 		UFunction* Function = WidgetClass->FindFunctionByName(FName(*FunctionName));
 		if (Function == nullptr)
 		{
+            bFunctionRefused = true;
 			FunctionReport = FString::Printf(
-				TEXT("'%s' is not a function on this widget, so nothing was called"),
+				TEXT("'%s' is not a function on this widget, the requested callback was not called"),
 				*FunctionName);
 		}
 		else if (Function->NumParms != 0)
 		{
+            bFunctionRefused = true;
 			// Calling a function with parameters would need values this tool has no
 			// way to supply, so it is refused rather than called with garbage.
 			FunctionReport = FString::Printf(
@@ -331,8 +334,7 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 
 	if (!RenderError.IsEmpty())
 	{
-		// A failed render is an error naming why, and the instance is still destroyed
-		// below, so nothing is left behind.
+		// Report render failure without implying that earlier script effects were undone.
 		Out += FString::Printf(TEXT("\nerror: %s"), *RenderError);
 	}
 	else
@@ -344,8 +346,7 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 		Out += TEXT("empty in most viewers.");
 	}
 
-	// The instance is destroyed before returning, which is what the spec asks and
-	// what keeps this a Look tool.
+	// Release the transient instance for garbage collection. This does not undo script effects.
 	Instance->RemoveFromRoot();
 	Instance->MarkAsGarbage();
 
@@ -376,6 +377,21 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 			Out += Capture.SummariseSince(/*InMark=*/0, MaxMessages);
 		}
 	}
+
+    if (Errors > 0)
+    {
+        Out += TEXT("\nerrors raised:");
+        Out += Capture.SummariseErrorsSince(0, MaxMessages);
+    }
+    if (ValuesRefused > 0 || bFunctionRefused || Errors > 0 || !RenderError.IsEmpty())
+    {
+        Out = TEXT("partial: widget preview did not complete every requested operation.\n") + Out;
+        Out += TEXT("\nnext: inspect the value, callback, script and render diagnostics before retrying. Earlier script effects were not rolled back. No explicit compile or asset save was requested.");
+    }
+    else
+    {
+        Out += TEXT("\nresult: image written; inspect any warnings. This does not certify widget behavior or absence of external script effects. No explicit compile or asset save was requested.");
+    }
 
 	return Out;
 }
