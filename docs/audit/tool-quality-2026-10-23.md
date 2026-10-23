@@ -18,8 +18,8 @@ Local raw evidence: `.local/executions/91838362a8be4b14bd2fc5817a6fd36b/02-suite
 | Revert preview and edit descriptions blur which call discards changes | P1 | Implemented in 1204b10; build and live help checks passed | Live preview says no discard; edit says all unsaved package edits and current confirmation. |
 | 366 parameter descriptions absent | P1 | Open; existing issue 0e4658ad | Add source-backed @param documentation, formats, defaults and empty semantics; verify live schemas, not source text alone. |
 | Compact help retains only the first description sentence | P1 | Partial; special execution/revert warnings repaired | Review each tool's essential conditions; preserve them within budget with a clear full-help path. Do not silently lose safety or input grammar. |
-| Toolset schema-size report compares whole toolsets with a single-tool 2000-character limit | P2 | Open | Correct the metric and wording in TurboMCPToolsets.cpp; do not report a false budget violation. |
-| Graph-load write-format refusal cites a future phase and old internal documents | P2 | Open | State supported format and usable next action without a delivery promise. |
+| Toolset schema-size report compares whole toolsets with a single-tool 2000-character limit | P2 | Implemented in 5761cbd; live checks passed | Whole-toolset schema size no longer compared with the compact per-tool help limit. |
+| Graph-load write-format refusal cites a future phase and old internal documents | P2 | Implemented in 5761cbd; live checks passed | Graph-load write-format refusal names current supported behavior without a future-phase promise. |
 | Window-list response says image writing is a later phase | P2 | Implemented in 1204b10; build and live help checks passed | Point to current LookTurboMCPCapture. |
 | Header explains wrong U-prefixed registry names and impossible class-level safety guarantee | P2 | Implemented in 1204b10; source reviewed | Continue removing obsolete historical commentary; keep current constraints and reasons. |
 | GraphLoad/LayoutReport summaries lead with an option, not their purpose | P2 | Open | Action first, scope second, options in parameter documentation. |
@@ -52,3 +52,11 @@ Implemented d8a4945: parameter documentation for both preview/edit Tidy, FixBack
 Source finding: GraphRefactorTools::Run treated an owned UndoTransaction success as proof of complete restoration and manually restored the prior dirty flag. The failure path now reports partial with rollback applied/failed and restoration unverified, does not manually clear dirty state, and asks for inspection before retry/save. This is an honest-reporting repair, not completed restoration verification. Full-property/callback restoration comparison and fault-injected runtime evidence remain open. Affects connect/remove/split/sequence/delegate refactor operations using Run; not the separate batch-edit implementation.
 
 Run 81cf6ab4ac064c32a056dd1090d1eec0 passed build, all-tool inventory and existing help regression. Live missing parameter descriptions: 265. Editor stopped and 16 fixture files restored. The all-tool inventory does not execute the rollback branch; failure-path runtime verification remains pending.
+
+## Persistence help quality batch
+
+Implemented a282c1c: seven compile/save/undo/revert tool contracts rewritten around current behavior, with nine parameter descriptions. Removes obsolete claims that Widget saves draw thumbnails and direct saves only accept /Game mounts. Documents explicit saves of clean-flag packages, per-asset partial persistence, checkout limitations, exact undo GUIDs and 60-second single-use revert confirmations. No implementation behavior changed.
+
+Supervised run 7375735b6928474f97a8c9c3aa739a1a passed build, all 125 live tool inventory checks and existing help tests; 16 fixture files restored. Missing parameter descriptions: 256 of 367. Destructive reload, undo and save failure-path behavioral checks remain pending; this batch does not certify them.
+
+New live finding: compact help truncates parameter descriptions at the first period, including the abbreviation e.g.; save help omits later thumbnail-execution and partial-persistence details. Full schema text is corrected, but compact-help fidelity remains open and needs formatter repair plus assertions for those details.
