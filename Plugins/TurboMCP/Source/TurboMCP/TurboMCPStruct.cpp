@@ -763,6 +763,12 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 			}
 			else if (LowerKey == TEXT("category"))
 			{
+				// Apply stores this as FName; refuse before any struct mutation.
+				if (OptionValue.Len() >= NAME_SIZE)
+				{
+					OutError = FString::Printf(TEXT("category on field '%s' exceeds the maximum name length of %d characters."), *Name, NAME_SIZE - 1);
+					return false;
+				}
 				Field.Category = OptionValue;
 			}
 			else
