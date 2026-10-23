@@ -22,18 +22,12 @@ and whose response was merely lost. One lost response produced TWO effects. Repe
 recovery; it is a second edit, and for a tool like `EditTurboMCPWidgetPreview` it can be a second execution of
 project code.
 
-So the retry is now split by what the request can do:
+Protocol initialization and tool discovery may reconnect and retry once. Tool calls do not
+replay by default: Read/Look names do not prove absence of project-code execution or other
+effects. A lost response raises UnknownOutcomeError (exit 2); inspect the asset/operation
+before requesting another call. Callers may explicitly assert mutates=False (CLI --mutates no)
+only when they have established that replay is safe for that exact request.
 
-  * A READ/Look request may reconnect and be repeated. A repeat of a pure read cannot double an effect.
-  * A MUTATION request may reconnect, but the original request is NEVER repeated. The caller receives
-    `UnknownOutcomeError` and must find the outcome by independent means: read the asset back, list the dirty
-    packages, or inspect the operation id the result line carries. The CLI exits 2, because "the outcome is
-    not known" is neither success nor failure.
-
-The mutation list is deliberately STATIC rather than derived from the server. Deriving it would require a
-call to the server, and the classification has to be correct precisely when the server is not answering.
-`--mutates` overrides it for a tool whose name this file does not know; a name it does not recognise is
-treated as a mutation, because guessing "read" about an unknown tool is the wrong way to be wrong.
 """
 
 import argparse
@@ -56,18 +50,6 @@ EDIT_TOOLSET = "TurboMCP.TurboMCPEditToolset"
 #: Exit code for "the outcome could not be established". Distinct from 1, which means a refusal or a
 #: failure that WAS established.
 EXIT_UNKNOWN = 2
-
-#: Tool-name prefixes that can change something. A `Preview` tool is listed as a mutation on purpose: it is
-#: documented as non-mutating, but release finding R05 records that four toolset classes do not enforce
-#: read-only behaviour, so the safe assumption about a preview whose implementation has not been read is that
-#: repeating it is not obviously free.
-MUTATION_PREFIXES = (
-    "Edit",
-    "Preview",
-)
-
-#: Look through these verbs before treating an unknown name as a read.
-READ_VERBS = ("Read", "Look", "List", "Get", "Find", "Search", "Describe")
 
 #: ARC02's exit codes, imported from the contract module so there is ONE definition of each. Kept as module
 #: attributes too, because callers and tests read them from the client.
@@ -203,22 +185,15 @@ class UnknownOutcomeError(RuntimeError):
 
 
 def is_mutation(tool, override=None):
-    """Whether repeating this tool's request could apply a second effect.
+    """Conservative replay classification for callers outside Session.
 
-    `override` is the CLI's `--mutates` flag: True forces mutation, False forces read, None uses the name.
-    An unrecognised name is a MUTATION, because the cost of wrongly replaying a write is higher than the cost
-    of wrongly refusing to replay a read.
+    Only protocol initialization/discovery is implicitly repeatable. Tool labels
+    and unresolved call envelopes cannot establish absence of side effects.
+    An explicit False is the caller's assertion that this exact request is safe.
     """
     if override is not None:
         return bool(override)
-    if tool in ("call_tool", "initialize", "tools/list", "tools/call"):
-        # The MCP envelope itself carries no edit; the tool NAMED INSIDE its arguments does.
-        return False
-    if tool.startswith(MUTATION_PREFIXES):
-        return True
-    if tool.startswith(READ_VERBS):
-        return False
-    return True
+    return tool not in ("initialize", "tools/list")
 
 
 def tier_of_return(value):
@@ -255,8 +230,7 @@ class Session:
         genuinely dead editor into a run that appears to hang.
 
         `mutates` decides whether the original request may be repeated after the reconnect. See the module
-        docstring: a repeated mutation is a second mutation, not a recovery. `None` means "decide from the
-        tool name inside `params`".
+        docstring: a repeated mutation is a second mutation, not a recovery. `None` means "do not replay tool calls; allow protocol discovery".
         """
         tool = None
         if isinstance(params, dict):
@@ -265,7 +239,9 @@ class Session:
                 tool = arguments.get("tool_name")
             if not tool:
                 tool = params.get("name")
-        mutation = is_mutation(tool or method, mutates)
+        # Decide from the RPC method, not a nested tool name that could look
+        # like a protocol method. Every tools/call is non-replayable by default.
+        mutation = is_mutation(method, mutates)
 
         try:
             return self._rpc_once(method, params, request_id)
@@ -288,7 +264,7 @@ class Session:
                     self._connecting = False
                 raise UnknownOutcomeError(tool or method, "%s: %s" % (type(transport).__name__, transport))
 
-            # A read may be repeated: a repeated read cannot double an effect.
+            # Only protocol discovery or an explicitly replay-safe request reaches here.
             self.id = None
             self._connecting = True
             try:
@@ -447,7 +423,7 @@ def main():
         "--mutates",
         choices=("yes", "no"),
         help="force the mutation classification for a tool whose name this file does not know. "
-             "Default: decide from the name, and treat an unrecognised name as a mutation.",
+             "Default: never replay tool calls. Use no only after establishing that this exact request is safe to repeat.",
     )
     args = parser.parse_args()
     mutates = {"yes": True, "no": False, None: None}[args.mutates]
