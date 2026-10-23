@@ -126,3 +126,11 @@ Implemented a316551 / 0535c38: six parameter descriptions, accurate filter diffe
 Run 372ef3a59a244b3299f9c8404782bc28 passed build/help but exposed a missing import in the new test and stale text assertions. Corrections a8b9467 / ba53674 preserve refusal checks. Run e79777dcdc2042b6a6bd9c48b1337c92 passed build, call-log regression (including fractional/huge limits) and all 125 help responses; cost failed only its two stale cap wording assertions. Latest live schema count: 226 parameters still lack descriptions. Timestamp validation/normalization is not implemented; documented as text comparison. Broader behavior coverage remains incomplete.
 
 Final run 5abb594a3d784632bbd8337dec435f76 passed build and call-cost regression at ba53674. Together these runs verify the exercised call-log/cost paths; they do not certify every tool's behavior.
+
+## Recording controls and truncation guidance (2026-10-24)
+
+Implemented a5712e5: recording/clear parameters now documented; enabling recording accurately preserves earlier retained records without recovering calls made while disabled. Truncation guidance distinguishes newer Since results from omitted older records. Settings changes are checked in memory, and disk persistence is described as requested rather than verified. Removed obsolete token-estimate document reference and clarified confirmation output.
+
+Next source-review findings: TraceReadTools still recommends obsolete E-TRACE/R-TRACE names and incorrectly describes toolset class membership as a mutation guard. PlayCheckTools reports a clean run based on zero captured warnings/errors; qualify this as captured-log evidence rather than full behavioral correctness. These findings are not fixed by a5712e5.
+
+Run 4079d0fcafdd49029c855a2a44fd83b8 passed build, call-log regression and all-tool schema/help inventory. Restart persistence and settings failure injection remain unverified; the output now states that limit.
