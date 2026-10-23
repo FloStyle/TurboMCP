@@ -86,3 +86,9 @@ Run 58f060350d5e4219818acbecb3fbf7ae passed build and rendered test-widget-previ
 Implemented e3fb8c2: refuse null, nested objects and arrays before asset resolution rather than converting them to empty text and attempting property import. Strings, numbers and booleans retain the pinned engine conversion; complex property values require engine text-import strings. Removed obsolete Look-tool harmlessness and immediate-destruction claims.
 
 Build/rendered run f1c6b7e6ec0a4ba8a713dee7b1fb7649 passed, including numeric RenderOpacity and boolean bIsEnabled imports reported as 2 set / 0 refused and image success. This is import/pipeline evidence, not visual-value read-back proof. Run 4f6a745f859c4234bfdc29d769a9027e passed focused pre-load invalid sample refusals and all-tool schema/help inventory. Both restored 16 fixture files. Successful callback execution, render-error injection and broader property types remain unverified.
+
+## Reference, override, comment and DataTable contracts
+
+Implemented 0f115e5 / 0d77e81: nine input descriptions with source-checked filters, empty behavior and examples. DataTable help now states the 80-field/60-row display limits and registry/loaded-reader limitations instead of claiming completeness. Columns is required by the live schema even though its empty value omits row values.
+
+Run 50f15d9a0bc6429a85ee503da6d47fe8 passed build, inventory, refs, overrides and comments. DataTable regression failed because its calls omitted required Columns and expected obsolete out-of-scope text. Corrected those calls and the obsolete guidance assertion; run f31ddabb658d499584e3954baf525608 passed DataTable and all-tool inventory, restoring 16 files. Missing parameter descriptions now 242. This batch changes help/tests, not reader behavior. Native nested/overlapping comment boxes and registry-incomplete DataTable reader discovery remain coverage gaps.
