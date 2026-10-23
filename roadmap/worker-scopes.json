@@ -1250,6 +1250,15 @@
             "Tools/test-tool-text-inventory.py"
           ],
           "new_files": []
+        },
+        "quality-discovery-parameters": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
