@@ -993,3 +993,7 @@ Implemented, unbuilt_untested: local/unrelated external variable names no longer
 ## 2026-10-23 designer binding usage — ca921ba
 
 Implemented, unbuilt_untested: widget designer function/property-path bindings contribute references; function GUID lookup follows stock engine skeleton resolution. Binding validity and runtime execution remain explicitly unproven. Parent a28a09fd remains open for shared typed results and callback coverage. No tests/build/editor runs.
+
+## 2026-10-23 shared typed usage — 31c0d17
+
+Implemented, unbuilt_untested: lint uses reader FUsageSummary instead of reparsing rendered output; scanned count now includes all examined declarations. Missing collection explicitly skips the check. Parent a28a09fd remains open for callback classification/coverage reconciliation. No tests/build/editor runs.
