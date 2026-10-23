@@ -1011,3 +1011,7 @@ Source reviewed at daa7ae7: ParseBatch requires bAcceptable (no refusals and Rea
 ## 2026-10-23 DataTable display fields — 1cc5714
 
 Implemented, unbuilt_untested: unique display names resolved to internal fields before planning/apply; duplicate aliases normalize to the same field; ambiguous labels refused. Existing internal names retain priority. abdd2c08 stays open for broader parser syntax/precision reconciliation. No tests/build/editor runs.
+
+## 2026-10-23 row delimiter validation — bca2be8
+
+Implemented, unbuilt_untested: caller row syntax rejects unmatched parentheses/quotes before planning. Engine-export merge path remains non-strict to preserve value handling. abdd2c08 remains open for cross-parser syntax/precision reconciliation. No tests/build/editor runs.
