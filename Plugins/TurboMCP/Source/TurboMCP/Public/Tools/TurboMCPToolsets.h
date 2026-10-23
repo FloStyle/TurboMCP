@@ -311,27 +311,9 @@ public:
 		const FString& TokenBudget);
 
 	/**
-	 * Read what an asset references, and what references it.
-	 *
-	 * Pass one asset in any path form, and optionally a direction: `out` for the
-	 * content assets it uses, `in` for the assets that use it, or `both`. Empty
-	 * means both.
-	 *
-	 * Every reference is printed as a full object path with its class. Engine and
-	 * script packages are counted but not listed, because `/Script/...` is not
-	 * content and listing it would bury the few project assets that matter.
-	 *
-	 * The edges come from the asset registry, which records them when packages are
-	 * saved. An asset that has never been saved therefore has no outgoing edges, and
-	 * a user that has never been saved will not appear as an incoming one; the
-	 * result says so rather than letting a zero look like a fact about the project.
-	 * The tool waits for the registry scan before it reports a count, including a
-	 * later scan of newly mounted content. If the registry is unavailable or its
-	 * scan remains incomplete, it returns an error instead of treating that missing
-	 * data as zero references.
-	 *
-	 * A direction that is not one of the three is refused by name, and an asset that
-	 * cannot be resolved is refused by the shared resolver.
+	 * Read saved registry references into or out of an asset. Unsaved reference changes are not authoritative registry data; no explicit compile or save. Waits for registry scanning before reporting counts.
+	 * @param Asset Required asset path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved values are refused; use a full path for ambiguous names.
+	 * @param Direction Case-insensitive out (dependencies), in (referencers), or both. Empty defaults to both; other values are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPRefs(
@@ -339,26 +321,9 @@ public:
 		const FString& Direction);
 
 	/**
-	 * Read what a Blueprint can override, and what it already does.
-	 *
-	 * Pass one Blueprint in any path form, and optionally an include filter: `all`
-	 * for everything, `overridden` for what this Blueprint already overrides, or
-	 * `available` for what it has not overridden yet. Empty means all.
-	 *
-	 * Every function comes from the parent chain or from an implemented interface,
-	 * with its full signature and its inputs and outputs marked. Interface
-	 * functions are labelled, because a Blueprint that implements an interface has
-	 * to answer each of them.
-	 *
-	 * Each entry says whether it is already overridden here, and which class the
-	 * engine says it really comes from, which is what a caller needs in order to
-	 * call the parent implementation. Both facts come from the editor's own helpers
-	 * rather than from a rule written here.
-	 *
-	 * Counts are reported before the filter is applied, so asking for `available`
-	 * still says how many exist in total. A filter matching nothing says so and says
-	 * what would work, and a parent chain with nothing to override says that plainly
-	 * rather than looking like a failure.
+	 * Read available and implemented Blueprint overrides from parent classes and interfaces. Loads the Blueprint; no explicit compile or save. Counts precede filtering.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or non-Blueprint targets are refused.
+	 * @param Include Case-insensitive all, overridden, or available; not-overridden is an alias for available. Empty defaults to all. Unknown filters are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPOverrides(
@@ -366,20 +331,9 @@ public:
 		const FString& Include);
 
 	/**
-	 * Read the comment boxes of a Blueprint's graphs as data.
-	 *
-	 * Pass one Blueprint in any path form, and optionally one graph name. Empty
-	 * means every graph, which is usually what a caller wants before choosing one.
-	 *
-	 * Each box gives its node ID, its title, its colour, its rectangle in graph
-	 * coordinates, its parent box when it is nested, and the IDs of the nodes inside
-	 * it. A graph with no boxes says so rather than being left out, and a box that
-	 * covers no node says that too, because both are facts rather than gaps.
-	 *
-	 * Membership and nesting are computed from the rectangles, because a comment box
-	 * does not store either. A node that falls inside more than one box is reported
-	 * with a warning and counted, rather than being assigned to one of them, because
-	 * moving it changes the membership of every box that covers it.
+	 * Read Blueprint comment rectangles, membership and nesting. Membership is inferred geometrically, not a stored ownership relation; overlapping membership is reported. Loads the Blueprint; no explicit compile or save.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or non-Blueprint targets are refused.
+	 * @param GraphName Existing graph name, e.g. EventGraph. Empty lists all collected graphs; unknown names are refused with available names.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPCommentList(
@@ -387,27 +341,10 @@ public:
 		const FString& GraphName);
 
 	/**
-	 * Describe a data table.
-	 *
-	 * Pass one DataTable in any path form, and optionally an include filter: `all`,
-	 * `readers` for which graphs read it, or `schema` for the row struct and rows.
-	 * Empty means all.
-	 *
-	 * The row struct is reported with every field and its type, then the row count
-	 * and the row names. Optional Columns selects reflected fields whose values
-	 * are exported beside each row, without editing or saving the table.
-	 *
-	 * The readers are found in two steps. The asset registry gives every asset that
-	 * depends on the table, which is complete but names no graph; loaded Blueprints
-	 * among them are then searched for a node reading this exact table, which is what
-	 * turns an asset into a graph name. A reader that is not loaded is still
-	 * reported, saying its graph was not searched, rather than being omitted.
-	 *
-	 * A table with no rows, or a struct with no fields, reports that as a fact. A
-	 * table whose row struct was deleted says so instead of printing an empty schema.
-	 * Columns optionally names comma-separated exact schema fields to export per row.
-	 * Unknown fields are refused before producing a partial result.
-	 * A filter that is not one of the three is refused by name.
+	 * Read DataTable schema, row names, selected values and registry-based readers. Displays up to 80 fields and 60 sorted row names, with omitted counts; no paging parameter. Reader graph details are searched only in loaded Blueprints. Registry results do not prove all unsaved or dynamic uses. Loads the table; no explicit edit or save.
+	 * @param Asset Required DataTable path or unique short name, e.g. /Game/Tests/DT_Items. Empty or non-DataTable targets are refused.
+	 * @param Include Case-insensitive all, readers, or schema. Empty defaults to all. schema includes row names and selected values; readers omits rows. Unknown filters are refused.
+	 * @param Columns Optional comma-separated reflected field names from the schema, e.g. Price,Count. Empty omits values. Matching ignores case, duplicates are collapsed and unknown fields are refused. Requires a row struct and Include=all or schema; values are limited to the displayed rows.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPDataTable(

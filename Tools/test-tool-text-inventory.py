@@ -37,6 +37,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         documented = {'ReadTurboMCPToolHelp', 'ReadTurboMCPAssetSearch', 'ReadTurboMCPAssetDescribe', 'ReadTurboMCPTypeFind', 'ReadTurboMCPDirtyList', 'ReadTurboMCPGraphLoad'}
         documented.update(prefix + 'TurboMCP' + suffix for prefix in ('Preview', 'Edit') for suffix in ('GraphAppend', 'GraphPatch', 'GraphSwapCall', 'GraphConnect'))
         documented.update(prefix + 'TurboMCP' + suffix for prefix in ('Preview', 'Edit') for suffix in ('GraphTidy', 'GraphFixBackward', 'GraphSplitValue', 'GraphRemove', 'GraphSequence'))
+        documented.update({'ReadTurboMCPDataTable', 'ReadTurboMCPOverrides', 'ReadTurboMCPCommentList', 'ReadTurboMCPRefs'})
         documented.update(('EditTurboMCPGraphPositions', 'LookTurboMCPWidgetPreview'))
         documented.update({'EditTurboMCPCompile', 'EditTurboMCPSaveWithoutThumbnail', 'EditTurboMCPSave', 'PreviewTurboMCPAssetRevert', 'EditTurboMCPAssetRevert', 'EditTurboMCPAssetUndo', 'PreviewTurboMCPAssetUndo'})
         if name in documented:
