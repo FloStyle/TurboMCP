@@ -92,3 +92,9 @@ Build/rendered run f1c6b7e6ec0a4ba8a713dee7b1fb7649 passed, including numeric Re
 Implemented 0f115e5 / 0d77e81: nine input descriptions with source-checked filters, empty behavior and examples. DataTable help now states the 80-field/60-row display limits and registry/loaded-reader limitations instead of claiming completeness. Columns is required by the live schema even though its empty value omits row values.
 
 Run 50f15d9a0bc6429a85ee503da6d47fe8 passed build, inventory, refs, overrides and comments. DataTable regression failed because its calls omitted required Columns and expected obsolete out-of-scope text. Corrected those calls and the obsolete guidance assertion; run f31ddabb658d499584e3954baf525608 passed DataTable and all-tool inventory, restoring 16 files. Missing parameter descriptions now 242. This batch changes help/tests, not reader behavior. Native nested/overlapping comment boxes and registry-incomplete DataTable reader discovery remain coverage gaps.
+
+## DataTable reader readiness
+
+Implemented f6e3356: wait for registry completion before reader lookup, then refuse to manufacture counts if registry gathering continues. Unavailable/incomplete lookup returns partial with readers unknown and a retry action; any schema already read remains visible. Successful lookup states saved-registry/loaded-Blueprint coverage and possible missing unsaved/dynamic references.
+
+Run 92faded4b0f34fc6b90a96dc3de07d23 passed build and DataTable regression, including the new coverage text assertions; 16 fixture files restored. Missing-registry/incomplete-scan branches are source-reviewed but not fault-injected. This does not certify dynamic reference discovery.
