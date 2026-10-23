@@ -393,139 +393,39 @@ static void RunHeavyHardReferences(const FString& InPackageName, FTurboMCPBPLint
 // unused-declarations
 // ---------------------------------------------------------------------------------------------------
 //
-// `D-05` SAYS PRINT ONLY WHAT WAS CHECKED, and `Spec/03_TOOLS.md` says this check is "computed the way
-// `R-BP-LOAD`'s relation layer computes it". SO IT IS THE RELATION LAYER, PARSED - not a second
-// implementation of it. `FTurboMCPBlueprintRead::RenderRelations` is public, and reading its own text back
-// means this check and `R-BP-LOAD` CANNOT DISAGREE, which is the whole reason the spec names that layer.
+// Reader and lint consume the same typed facts. Rendered prose is not a data format.
 static void RunUnusedDeclarations(const UBlueprint* InBlueprint,
 	FTurboMCPBPLint::FCheckResult& Out)
 {
 	Out.Name = TEXT("unused-declarations");
-	Out.bRan = true;
-
-	// *** THE RELATION LAYER, REACHED THROUGH ITS PUBLIC DOOR. *** `RenderRelations` carries the text this
-	// check wants, BUT IT IS `private` (`TurboMCPBlueprintRead.h:132`, declared at `:150`) AND THIS WORKSTREAM
-	// IS NOT ALLOWED TO EDIT THAT HEADER - correctly, because two other workstreams share the tree. So the
-	// SAME layer is reached through `Read`, which IS public (`:107`) and prints the relations at
-	// `EDetail::Signatures` (`TurboMCPBlueprintRead.cpp:793` calls `RenderRelations` for exactly that level).
-	//
-	// ** WHAT MATTERS IS THAT IT IS STILL THE LAYER AND NOT A SECOND IMPLEMENTATION OF IT. ** `D-05` says print
-	// only what the relation layer can PROVE, and the spec says this check is "computed the way R-BP-LOAD's
-	// relation layer computes it" - so computing it here would be the drift the spec is warning against, and
-	// the text being the layer's own is what makes the two tools agree by construction.
 	FTurboMCPBlueprintRead::FRequest Request;
 	Request.Detail = FTurboMCPBlueprintRead::EDetail::Signatures;
 	const FTurboMCPBlueprintRead::FResult Read = FTurboMCPBlueprintRead::Read(InBlueprint, Request);
-
-	// START AT THE VARIABLE MAP, so the parse sees the relations section and not the manifest above it. THE
-	// MARKER IS THEREFORE REQUIRED TO BE FOUND, and not finding it is REPORTED rather than silently scanning
-	// the whole output - a parser that quietly reads the wrong section is the "assumes a format" mistake this
-	// record has now cost five checks.
-	const int32 MapStart = Read.Text.Find(TEXT("variable map:"));
-	if (MapStart == INDEX_NONE)
+	const FTurboMCPBlueprintRead::FUsageSummary& Usage = Read.Usage;
+	Out.bRan = Usage.bCollected;
+	if (!Out.bRan)
 	{
-		Out.bRan = false;
-		Out.Reason = TEXT("R-BP-LOAD's relation layer did not print a variable map, so nothing here was checked");
+		Out.Reason = TEXT("static usage facts were not collected; no declarations were checked");
 		return;
 	}
-	const FString Relations = Read.Text.Mid(MapStart);
-
-	// `variable map: N variable(s)` - THE DENOMINATOR COMES FROM THE LAYER'S OWN COUNT rather than from
-	// `NewVariables.Num()`, so if the layer ever looked at fewer the number would say so.
-	int32 VariablesSeen = 0;
-	if (const int32 Found = Relations.Find(TEXT("variable map: ")); Found != INDEX_NONE)
+	Out.Scanned = Usage.VariablesScanned + Usage.FunctionsScanned;
+	Out.Reason = FString::Printf(TEXT("static scan of %d graph(s), %d variable(s), %d function(s), plus designer bindings; external/native/dynamic invocation is not excluded; findings are not deletion advice"),
+		Usage.GraphsScanned, Usage.VariablesScanned, Usage.FunctionsScanned);
+	for (const FString& Variable : Usage.VariablesWithoutReadReferences)
 	{
-		const FString Tail = Relations.Mid(Found + 14);
-		LexTryParseString(VariablesSeen, *Tail);
-	}
-
-	// A VARIABLE NOTHING READS. Parsed as a per-variable block: the name, then `read by:` and `written by:`
-	// lines. THE FORMAT IS READ FROM THE LAYER RATHER THAN ASSUMED - the last workstream lost five checks to
-	// a regex that assumed a format the tool never prints.
-	TArray<FString> Lines;
-	Relations.ParseIntoArrayLines(Lines, /*bCullEmpty=*/false);
-
-	FString CurrentVariable;
-	bool bPairIsVariable = false;
-	for (const FString& RawLine : Lines)
-	{
-		const FString Line = RawLine.TrimStartAndEnd();
-
-		if (Line.StartsWith(TEXT("variable map:"))) { bPairIsVariable = true; continue; }
-		if (Line.StartsWith(TEXT("functions nothing calls:"))) { bPairIsVariable = false; }
-		if (!bPairIsVariable) { continue; }
-
-		if (Line.StartsWith(TEXT("read by:")))
-		{
-			const FString Value = Line.Mid(8).TrimStartAndEnd();
-			if (Value.Equals(TEXT("nothing"), ESearchCase::IgnoreCase) && !CurrentVariable.IsEmpty())
-			{
-				++Out.Scanned;
-				FTurboMCPBPLint::FFinding Finding;
-				Finding.Check = Out.Name;
-				Finding.Severity = TEXT("info");
-				Finding.Why = FString::Printf(
-					TEXT("variable '%s': no direct read/reference found in scanned Blueprint graphs; external, native, reflected and dynamic uses are not excluded; this is not evidence for deletion"), *CurrentVariable);
-				Out.Findings.Add(Finding);
-			}
-			continue;
-		}
-
-		if (Line.StartsWith(TEXT("written by:"))) { continue; }
-		if (Line.StartsWith(TEXT("never "))) { continue; }
-		if (Line.StartsWith(TEXT(";"))) { continue; }
-
-		// Anything else at this indent inside the variable map is a variable name.
-		if (!Line.Contains(TEXT(":"))) { CurrentVariable = Line; }
-	}
-
-	// FUNCTIONS NOTHING CALLS. The layer prints the count and then one name per line.
-	CurrentVariable.Empty();
-	bool bPairIsFunction = false;
-	for (const FString& RawLine : Lines)
-	{
-		const FString Line = RawLine.TrimStartAndEnd();
-		if (Line.StartsWith(TEXT("functions nothing calls:")))
-		{
-			bPairIsFunction = true;
-			// `functions nothing calls: none` is one line; `: ` then names is the other form.
-			const FString Tail = Line.Mid(24).TrimStartAndEnd();
-			if (Tail.Equals(TEXT("none"), ESearchCase::IgnoreCase) || Tail.IsEmpty())
-			{
-				// Nothing to add, but the section was examined and its count of zero stands.
-			}
-			continue;
-		}
-		if (!bPairIsFunction) { continue; }
-		if (Line.StartsWith(TEXT("events bound:")) || Line.StartsWith(TEXT("note:"))
-			|| Line.StartsWith(TEXT(";")))
-		{
-			bPairIsFunction = false;
-			continue;
-		}
-		if (Line.IsEmpty()) { continue; }
-
-		++Out.Scanned;
 		FTurboMCPBPLint::FFinding Finding;
 		Finding.Check = Out.Name;
 		Finding.Severity = TEXT("info");
-		// THE CAVEAT THE LAYER ITSELF PRINTS IS REPEATED HERE, because dropping it would make an `info`
-		// sound like a verdict: an engine-called function such as `UserConstructionScript` appears in this
-		// list and is NOT dead.
-		Finding.Why = FString::Printf(
-			TEXT("function '%s' is called by no NODE; an engine-called function such as UserConstructionScript also appears here and is not dead"),
-			*Line);
+		Finding.Why = FString::Printf(TEXT("variable '%s': no direct read/reference found in scanned Blueprint graphs or designer bindings; external, native, reflected and dynamic uses are not excluded"), *Variable);
 		Out.Findings.Add(Finding);
 	}
-
-	// EVENTS NOTHING BINDS, from the layer's own `events bound:` line.
-	CurrentVariable.Empty();
-
-	if (VariablesSeen == 0)
+	for (const FString& Function : Usage.FunctionsWithoutReferences)
 	{
-		// `P1`: a section with zero items still says it was looked at, "when the agent would otherwise not
-		// know the section was checked".
-		Out.Reason = TEXT("this Blueprint declares no variables");
+		FTurboMCPBPLint::FFinding Finding;
+		Finding.Check = Out.Name;
+		Finding.Severity = TEXT("info");
+		Finding.Why = FString::Printf(TEXT("function '%s': no static call/delegate/designer reference found; engine callbacks and external/dynamic callers are not excluded; this does not establish dead code"), *Function);
+		Out.Findings.Add(Finding);
 	}
 }
 

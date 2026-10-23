@@ -496,8 +496,9 @@ FString FTurboMCPBlueprintRead::RenderSignatures(const UBlueprint* InBlueprint)
 
 FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	const TArray<UEdGraph*>& InGraphs, int32 InTotalGraphCount,
-	TArray<FString>& OutNotes)
+	TArray<FString>& OutNotes, FUsageSummary& OutUsage)
 {
+	OutUsage = FUsageSummary();
 	if (InBlueprint == nullptr)
 	{
 		return FString();
@@ -785,6 +786,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 
 		const TSet<FString>* Writers = WritersByVariable.Find(Name);
 		const TSet<FString>* Readers = ReadersByVariable.Find(Name);
+		if (!Readers || Readers->Num() == 0) OutUsage.VariablesWithoutReadReferences.Add(Name);
 
 		// A variable nothing touches is a fact worth printing, and it is the kind
 		// of thing that is obvious here and invisible in a body.
@@ -818,6 +820,11 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 		}
 	}
 	Uncalled.Sort();
+	OutUsage.FunctionsWithoutReferences = Uncalled;
+	OutUsage.GraphsScanned = InGraphs.Num();
+	OutUsage.VariablesScanned = InBlueprint->NewVariables.Num();
+	OutUsage.FunctionsScanned = OwnFunctionNames.Num();
+	OutUsage.bCollected = true;
 
 	Out += TEXT("\nfunctions nothing calls:");
 	if (Uncalled.Num() == 0)
@@ -961,7 +968,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 	{
 		Result.Text += TEXT("\n") + RenderVariables(InBlueprint);
 		Result.Text += TEXT("\n") + RenderSignatures(InBlueprint);
-		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, AllGraphs, AllGraphs.Num(), Result.Notes);
+		Result.Text += TEXT("\n") + RenderRelations(InBlueprint, AllGraphs, AllGraphs.Num(), Result.Notes, Result.Usage);
 	}
 
 	if (PrintsBodies(InRequest.Detail))

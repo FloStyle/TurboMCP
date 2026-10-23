@@ -80,10 +80,22 @@ public:
 		int32 TokenBudgetChars = 0;
 	};
 
+	/** Static usage facts shared by the reader and lint, independent of text formatting. */
+	struct FUsageSummary
+	{
+		bool bCollected = false;
+		int32 GraphsScanned = 0;
+		int32 VariablesScanned = 0;
+		int32 FunctionsScanned = 0;
+		TArray<FString> VariablesWithoutReadReferences;
+		TArray<FString> FunctionsWithoutReferences;
+	};
+
 	/** What one call produced, and what it had to leave out. */
 	struct FResult
 	{
 		FString Text;
+		FUsageSummary Usage;
 
 		/** The level actually used, which may be lower than the one asked for. */
 		EDetail DetailUsed = EDetail::Manifest;
@@ -149,7 +161,7 @@ private:
 	 */
 	static FString RenderRelations(const UBlueprint* InBlueprint,
 		const TArray<UEdGraph*>& InGraphs, int32 InTotalGraphCount,
-		TArray<FString>& OutNotes);
+		TArray<FString>& OutNotes, FUsageSummary& OutUsage);
 
 	/** Every graph body, using the shared graph text writer. */
 	static FString RenderBodies(const UBlueprint* InBlueprint,
