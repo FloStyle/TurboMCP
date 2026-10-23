@@ -117,7 +117,7 @@ def main():
     # The parameter default is 0.75, so a numeric input value that is NOT 0.75 is the unlinked one.
     # Parse only the tree's form lines, where an input reads `B <value>)`, and skip the parameter table.
     small_budget = session.call(READ_TOOLSET, "ReadTurboMCPMaterialLoad",
-                                {"asset": ASSET, "includeInstanceOverrides":False, "tokenBudget":1})
+                                {"asset": ASSET, "bIncludeInstanceOverrides":False, "tokenBudget":1})
     check("budget overrun is honest", "budget exceeded:" in small_budget and "does not enforce the budget" in small_budget and "REDUCED:" not in small_budget)
     tree = load.split("connected outputs", 1)[-1]
     constants = re.findall(r"^\s+[AB] (\d+(?:\.\d+)?)\)?\s*$", tree, re.MULTILINE)
@@ -147,8 +147,11 @@ def main():
     check("it answers for a connected output", not trace.startswith("error:"), trace[:160])
     check("it names the output it traced", "MP_BaseColor" in trace, trace[:300])
 
+    connected = set(re.findall(r"^\((MP_\w+)", load, re.MULTILINE))
+    unconnected = next((name for name in ("MP_EmissiveColor", "MP_Roughness", "MP_Metallic", "MP_Opacity") if name not in connected), None)
+    assert unconnected is not None, "Fixture needs an unconnected material output for refusal coverage"
     refused = session.call(READ_TOOLSET, "ReadTurboMCPMaterialTrace",
-                           {"asset": ASSET, "outputProperty": "MP_EmissiveColor",
+                           {"asset": ASSET, "outputProperty": unconnected,
                             "tokenBudget": 0})
     print(refused[:400])
     print()
