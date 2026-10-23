@@ -1214,6 +1214,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackward.cpp"
           ],
           "new_files": []
+        },
+        "client-no-blind-tool-replay": {
+          "files": [
+            "Tools/tmcp.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
