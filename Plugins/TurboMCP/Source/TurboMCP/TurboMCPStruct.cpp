@@ -108,6 +108,14 @@ namespace
 			OutWhy = TEXT("the name is empty");
 			return false;
 		}
+		// Unreal generates <base>_<uint32>_<32-digit GUID>; our collision
+		// helper may append three more digits to the base before that.
+		constexpr int32 MaxFieldNameLength = NAME_SIZE - 1 - (1 + 10 + 1 + 32) - 3;
+		if (InName.Len() > MaxFieldNameLength)
+		{
+			OutWhy = FString::Printf(TEXT("the name exceeds %d characters, including room for Unreal's generated suffix"), MaxFieldNameLength);
+			return false;
+		}
 		if (!FChar::IsAlpha(InName[0]) && InName[0] != TEXT('_'))
 		{
 			OutWhy = TEXT("it does not start with a letter or an underscore");
@@ -832,6 +840,14 @@ bool FTurboMCPStruct::PlanNew(const FString& InPath, const FString& InFields,
 		return false;
 	}
 
+	FText PathReason;
+	if (Path.Len() >= NAME_SIZE || !FPackageName::IsValidLongPackageName(Path, false, &PathReason))
+	{
+		OutError = Path.Len() >= NAME_SIZE
+			? TEXT("package path exceeds Unreal's name length limit; use a shorter package path.")
+			: FString::Printf(TEXT("invalid package path: %s"), *PathReason.ToString());
+		return false;
+	}
 	OutPlan.PackagePath = Path;
 	OutPlan.AssetName = FPaths::GetCleanFilename(Path);
 	if (OutPlan.AssetName.IsEmpty())
