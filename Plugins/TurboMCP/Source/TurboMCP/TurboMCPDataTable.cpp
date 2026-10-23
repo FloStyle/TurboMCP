@@ -266,16 +266,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPDataTable(
 
 	if (Mode != 2)
 	{
-		// Readers, in two steps: the registry for completeness, a node scan for the
-		// graph names.
-		IAssetRegistry* Registry = IAssetRegistry::Get();
-		if (Registry == nullptr)
-		{
-			Out += TEXT("\nreaders: the asset registry is not available yet, so no ");
-			Out += TEXT("reader could be looked up. Try again once the editor has ");
-			Out += TEXT("finished loading.");
-			return Out;
-		}
+        // Registry existence does not establish that dependency scanning has finished.
+        IAssetRegistry* Registry = IAssetRegistry::Get();
+        if (Registry == nullptr)
+            return TEXT("partial: DataTable reader lookup unavailable.\n") + Out
+                + TEXT("\nreaders: unknown; asset registry unavailable. Retry after editor startup. No reader counts were produced.");
+        Registry->WaitForCompletion();
+        if (Registry->IsGathering())
+            return TEXT("partial: DataTable reader lookup incomplete.\n") + Out
+                + TEXT("\nreaders: unknown; asset registry is still scanning mounted content. Retry after scanning finishes. No reader counts were produced.");
+        Out += TEXT("\nreader coverage: saved registry dependencies; graph inspection only for loaded Blueprints. Unsaved or dynamic references may be absent.");
 
 		TArray<FAssetDependency> Referencers;
 		Registry->GetReferencers(FAssetIdentifier(FName(*Resolved.PackagePath)), Referencers);

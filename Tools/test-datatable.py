@@ -86,6 +86,8 @@ def main():
     before = session.call(READ_TOOLSET, "ReadTurboMCPDataTable",
                           {"asset": TABLE, "include": "readers", "columns": ""})
     print(before)
+    check("states registry reader coverage", "reader coverage: saved registry dependencies" in before)
+    check("states dynamic reference limitation", "Unsaved or dynamic references may be absent" in before)
     print()
     check("finds the readers from the asset registry", "readers: 2 asset(s)" in before)
     check("does not print the schema", "row struct:" not in before)
