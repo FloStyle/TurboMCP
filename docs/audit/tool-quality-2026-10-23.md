@@ -140,3 +140,11 @@ Run 4079d0fcafdd49029c855a2a44fd83b8 passed build, call-log regression and all-t
 Implemented 34ac513: trace refusals use callable tool names; comments attribute the mutation boundary to explicit action checks, not Read class membership. Play-check zero-warning output describes captured evidence without certifying gameplay. Four parameter descriptions cover start/poll, duration, map and trace status inputs. Compact help must retain execution, non-sandboxed effects and no-explicit-save information.
 
 Remaining source finding: an invalid ReadTrace action still reaches shared Plan guidance listing arm/clear/status, although arm/clear belong to the Edit tool. The specific mutation refusal is fixed; general invalid-action guidance needs a follow-up. Existing trace status only reports recorded events; zero hits are not proof of non-execution.
+
+## Trace evidence wording follow-up (2026-10-24)
+
+Implemented d31fc8d: zero recorded hits no longer claim the nodes never executed; output directs users to check IDs and event delivery. ReadTrace invalid actions now recommend status instead of shared edit-only actions, and whitespace means status. Corrected test-trace GraphLoad inputs against the complete live schema (Revision and EntryFilter required; obsolete TokenBudget removed). Compact play help uses grammatical execution/effect wording in d3dfc00.
+
+Run 0866169ac48a4f9293c1f29552c87066 passed play-check (28 checks), but trace omitted Revision and compact help dropped effects after the first sentence. Run 7c84cc5124bd43bdab5acfdcf8c94421 passed all-tool help after the summary correction, but trace still omitted EntryFilter. These are recorded failures, not runtime trace acceptance. Latest trace/help verification remains pending.
+
+Run b6d424f9f8994201b696e831bb055d3d passed build, trace behavior checks and all 125 schema/help checks at d31fc8d. This includes actual fixture event delivery and read-action refusals. Wider trace behavior and other tool coverage remain separate.
