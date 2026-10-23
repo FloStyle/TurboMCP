@@ -1303,6 +1303,14 @@
             "Tools/test-widget-preview.py"
           ],
           "new_files": []
+        },
+        "quality-widget-results": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
+            "Tools/test-widget-preview.py",
+            "Tools/run-suites.ps1"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
