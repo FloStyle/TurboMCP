@@ -1371,7 +1371,8 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheckTools.cpp",
             "Tools/test-trace.py",
             "Tools/test-play-check.py",
-            "Tools/test-tool-text-inventory.py"
+            "Tools/test-tool-text-inventory.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTrace.cpp"
           ],
           "new_files": []
         }
