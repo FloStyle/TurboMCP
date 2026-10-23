@@ -175,8 +175,8 @@ def main():
     check("it answers rather than erroring", not blocks.startswith("error:"), blocks[:160])
     check("it reports both boxes",
           "INNER" in blocks and "OUTER" in blocks, blocks[:400])
-    check("it reports how many expressions are inside NO box",
-          "inside no comment box" in blocks, blocks[:500])
+    check("it reports the count outside comment boxes",
+          re.search(r"\b\d+ expression\(s\) are outside all comment boxes", blocks) is not None, blocks[:500])
     check("its findings include a value crossing boxes without a label",
           "cross" in blocks.lower(), blocks[:500])
     # NESTING IS GEOMETRIC. INNER sits inside OUTER, so the geometry must show it.
