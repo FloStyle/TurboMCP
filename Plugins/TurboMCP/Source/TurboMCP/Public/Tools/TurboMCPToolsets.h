@@ -1331,7 +1331,10 @@ public:
 		const FString& GraphName,
 		const FString& Text);
 
-	/** Preview latest global undo transaction only if exclusively TurboMCP and the named asset. */
+	/**
+	 * Inspect the latest global undo entry for the named Blueprint and return its confirmation GUID; does not undo. Refuses unrelated or multi-package entries.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer the full path.
+	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetUndo(const FString& Asset);
 
@@ -1344,7 +1347,10 @@ public:
     static FString PreviewTurboMCPGraphGroupPlacement(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds);
 
 
-	/** Preview reloading a saved Blueprint package without discarding edits. Returns confirmation for EditTurboMCPAssetRevert; that edit discards all unsaved package changes and may reset undo. */
+	/**
+	 * Preview discarding all unsaved changes in a saved Blueprint package; does not reload or save. Returns a confirmation valid for 60 seconds. The edit can reinstance references and reset global undo history.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer the full path. A saved package must exist.
+	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetRevert(const FString& Asset);
 
@@ -1696,105 +1702,27 @@ public:
 	static FString ReadTurboMCPEditQueue();
 
 	/**
-	 * Compile one or more Blueprints or widgets, with a real answer each.
-	 *
-	 * Pass assets separated by commas or pipes. Each asset gets its own line:
-	 * clean, clean with warnings, or its errors and warnings with the node that
-	 * caused each one. A line also says whether the asset still has unsaved
-	 * changes, so a successful compile is never mistaken for saved work.
-	 *
-	 * The answer comes from the compiler's own message log, not from a return
-	 * value, because the engine's compile tool can answer null for success and
-	 * for failure alike.
-	 *
-	 * THE COMPILER'S LOG IS NOT THE WHOLE ANSWER. An engine ensure raised during
-	 * the compile reaches the output log and never `FCompilerResultsLog`, so the
-	 * log is captured alongside it and both the warnings and the errors the
-	 * engine logged are counted and listed per asset. A compile that logged an
-	 * engine error is reported as not clean even when the compiler reported
-	 * nothing.
-	 *
-	 * Warnings raised by the compile pass are counted and attributed to the asset
-	 * that raised them, and each engine message is listed as its category and its
-	 * first line, bounded and trimmed, because a bare count cannot be acted on
-	 * and full engine log text does not belong in a result (`P6`).
-	 *
-	 * An asset kind that cannot compile is refused with the reason (`P2`).
+	 * Compile up to 25 named assets and report compiler and engine diagnostics; does not save.
+	 * Compilation can reinstance classes and affect dependent objects. Refuses during an active editor transaction. Inspect each asset result before saving; this is not an atomic batch.
+	 * @param Assets Required comma- or pipe-separated asset paths or unique short names, e.g. /Game/Tests/BP_NodeTest|/Game/Tests/WBP_NodeTest. Empty lists and lists over 25 entries are refused. Unsupported asset types are reported individually.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPCompile(const FString& Assets);
 
 	/**
-	 * Widget Blueprints automatically use direct package serialization without drawing
-	 * a thumbnail, so design-time thumbnail script errors cannot hide the save result.
-	 * Their existing thumbnail is not refreshed. Other assets use the editor save path.
-	 * Save one or more assets without noise.
-	 *
-	 * Pass assets separated by commas or pipes, in any path form.
-	 *
-	 * Refuses while a play or simulate session runs, with that reason, because
-	 * saves made then failed or half worked (`D-34`).
-	 *
-	 * Saves one asset at a time and retries a failure once. Each asset is
-	 * reported from its unsaved flag after the save, never from what the save
-	 * call returned, because an engine save once reported an error when it had
-	 * worked and saved only some of the assets it was given (`D-33`).
-	 *
-	 * Each line states saved, had no changes, or failed with the reason. Engine
-	 * log text is counted and attributed to the asset that raised it, never
-	 * pasted (`P6`).
-	 *
-	 * BEFORE ANY FILE IS WRITTEN IT PERFORMS THE AUTOMATIC CHECKOUT OF ROW 10.2 (D-57). The
-	 * project's own provider is asked whether it uses checkout at all, and a checkout is then
-	 * issued through ISourceControlProvider::Execute with the provider's own answer repeated
-	 * verbatim. It NEVER uses USourceControlHelpers::CheckOutFile, whose true on Git means "the
-	 * state says the file is already checked out" rather than "a lock was taken" - the trap row
-	 * 10.1 measured. THE CHECKOUT ANSWER IS A REPORT AND NEVER A GATE, so a provider that cannot
-	 * take a lock cannot fail this call. The appended block names which of the three policies was
-	 * chosen when a provider reports UsesCheckout() == false, and it is (b): attempt the checkout
-	 * and repeat the provider's answer.
-	 *
-	 * `SV-03`'S SECOND BRANCH IS SAID IN THE RESULT, AND THAT IS DELIBERATE. The session report's design
-	 * is an OR: "add an option to save without a new thumbnail, OR SAY IN THE RESULT THAT THE THUMBNAIL
-	 * DRAW RUNS WIDGET CODE". The first branch needs a parameter, and a defaulted parameter on an
-	 * `AICallable` function is REQUIRED by the schema UHT generates - so the option that was tried made
-	 * this tool uncallable without it and was withdrawn (`bb6467b`). This tool therefore reports WHICH
-	 * MECHANISM RAN, and for a Widget Blueprint it says that the editor's save runs the engine's
-	 * thumbnail step and that a thumbnail draw instantiates the widget and runs its design-time code.
-	 * THE OTHER BRANCH IS `EditTurboMCPSaveWithoutThumbnail`, a tool of its own, which needs no such
-	 * parameter and cannot break a caller.
+	 * Write named asset packages to disk, including packages whose dirty flag is clear; does not explicitly compile.
+	 * Widget Blueprints use direct package serialization without refreshing their thumbnail. Other assets use the editor save path, which may render thumbnails and execute asset code. Saving is not an undoable graph edit.
+	 * Refuses during play, simulation or an active editor transaction. Each asset is saved separately, with one retry on failure; earlier writes are not rolled back if another asset fails. Source-control checkout results are reported and do not guarantee a lock or block the save. Inspect each result.
+	 * @param Assets Required comma- or pipe-separated asset paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty lists and lists over 25 entries are refused. This is an explicit save list, not a dirty-asset filter.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPSave(const FString& Assets);
 
 	/**
-	 * Save one or more assets WITHOUT the editor's thumbnail step.
-	 *
-	 * THE SAME SAVE AS `E-SAVE`, MINUS THE ONE PART THAT CAN CRASH THE EDITOR OR RUN THE ASSET'S OWN
-	 * CODE. `SV-03` observed the editor CRASH in the engine thumbnail renderer while a save drew a
-	 * widget's thumbnail, and its design offers this option as one of two ways to protect a caller.
-	 *
-	 * IT WRITES THE PACKAGE ITSELF, through `UPackage::SavePackage`, instead of going through the
-	 * editor's save. That is the whole point: the editor's save is an `OBJ SAVEPACKAGE` exec
-	 * (`FileHelpers.cpp:1332`), and that exec runs the engine's thumbnail step (`UnrealEdSrv.cpp:680-682`),
-	 * which renders a thumbnail when the cached one is missing or stale (`:439-446`, `:478-485`). For a
-	 * Widget Blueprint the renderer INSTANTIATES THE WIDGET with `Designing | ExecutePreConstruct` and
-	 * runs its design-time code (`WidgetBlueprintThumbnailRenderer.cpp:189-191`, frequency `OnAssetSave`
-	 * at `:216`). A direct package write calls none of that.
-	 *
-	 * *** SO IT IS A TOOL OF ITS OWN AND NOT A SECOND PARAMETER ON `E-SAVE`. *** Every caller that passes
-	 * only `assets` to `E-SAVE` still works, which is the property the withdrawn version lost.
-	 *
-	 * REFUSES a package outside the project's `/Game` mount, by name, because it has to name the file
-	 * itself: this project MEASURED the engine's own conversion answering a path relative to the ENGINE
-	 * directory (`PackageName.cpp:1430`; the consequence is recorded at
-	 * `TurboMCPTestMapCommandlet.cpp:323-332`), and a write to a guessed filename is worse than a
-	 * refusal. `E-SAVE` handles every mount, so the refusal names it.
-	 *
-	 * The result says `(written without the thumbnail draw)`, because a caller who chose this and is not
-	 * told cannot tell the two saves apart in a log. Everything else - one asset at a time, the retry,
-	 * the verdict from the unsaved flag, the counted warnings, the automatic checkout - is `E-SAVE`'s own
-	 * behaviour, because both tools run ONE body.
+	 * Write named asset packages directly to disk without refreshing thumbnails; does not explicitly compile.
+	 * Skips the editor thumbnail draw, but package serialization still runs engine and asset save callbacks. This is not a sandbox or an undoable graph edit. Existing thumbnails may remain stale. Mounted package filenames must resolve successfully.
+	 * Refuses during play, simulation or an active editor transaction. Saves each asset separately with one retry on failure; earlier writes are not rolled back. Source-control checkout results are reported, not a guarantee that a lock was acquired.
+	 * @param Assets Required comma- or pipe-separated asset paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty lists and lists over 25 entries are refused. Explicitly saves even packages whose dirty flag is clear.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPSaveWithoutThumbnail(const FString& Assets);
@@ -2233,7 +2161,11 @@ public:
 		const FString& GraphName,
 		const FString& Text);
 
-	/** Undo only the latest global transaction when exclusively TurboMCP and this asset. Confirm is the transaction GUID from preview. Never skips unrelated edits. Editor Redo remains available. */
+	/**
+	 * Undo the latest global TurboMCP transaction for the named Blueprint; does not explicitly compile or save. Never skips unrelated entries. Editor Redo remains available after successful undo.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer the full path.
+	 * @param Confirm Required exact transaction GUID returned by PreviewTurboMCPAssetUndo for this asset. Empty or stale confirmation is refused; preview again if the undo stack changes.
+	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPAssetUndo(const FString& Asset, const FString& Confirm);
 
@@ -2241,7 +2173,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY, const FString& DestinationBox = TEXT(""));
 
-	/** Reload a saved Blueprint package, discarding all unsaved package changes. May reset undo. Confirm must contain the confirmation returned by the current PreviewTurboMCPAssetRevert call. */
+	/**
+	 * Reload a saved Blueprint package, discarding ALL unsaved changes, including edits made after preview; does not save. May reinstance references and reset global undo history. Re-read asset IDs and references after reload.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer the full path. A saved package must exist.
+	 * @param Confirm Required exact DISCARD confirmation string from the latest PreviewTurboMCPAssetRevert for this asset. Expires after 60 seconds and is consumed before reload. Empty, expired or replaced tokens are refused; preview again. Do not construct a token yourself.
+	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm);
 

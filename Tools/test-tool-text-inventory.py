@@ -34,6 +34,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         documented.update(prefix + 'TurboMCP' + suffix for prefix in ('Preview', 'Edit') for suffix in ('GraphAppend', 'GraphPatch', 'GraphSwapCall', 'GraphConnect'))
         documented.update(prefix + 'TurboMCP' + suffix for prefix in ('Preview', 'Edit') for suffix in ('GraphTidy', 'GraphFixBackward', 'GraphSplitValue', 'GraphRemove', 'GraphSequence'))
         documented.add('EditTurboMCPGraphPositions')
+        documented.update({'EditTurboMCPCompile', 'EditTurboMCPSaveWithoutThumbnail', 'EditTurboMCPSave', 'PreviewTurboMCPAssetRevert', 'EditTurboMCPAssetRevert', 'EditTurboMCPAssetUndo', 'PreviewTurboMCPAssetUndo'})
         if name in documented:
             for parameter, definition in tool['inputSchema'].get('properties', {}).items():
                 if not definition.get('description'):
