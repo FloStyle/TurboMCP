@@ -1208,6 +1208,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp"
           ],
           "new_files": []
+        },
+        "getter-consumer-selection": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackward.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
