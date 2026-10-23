@@ -1320,6 +1320,13 @@
             "Tools/test-widget-preview-inputs.py"
           ],
           "new_files": []
+        },
+        "quality-read-contracts": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
