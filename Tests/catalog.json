@@ -680,6 +680,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-tool-text-inventory",
+      "path": "Tools/test-tool-text-inventory.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
     }
   ]
 }
