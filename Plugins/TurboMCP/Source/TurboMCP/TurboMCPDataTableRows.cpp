@@ -75,8 +75,9 @@ namespace
 	 * only depth-1 commas separate fields. **THE NESTED CASE IS THE EXPECTED CASE RATHER THAN AN EDGE CASE, because
 	 * `Spec/06_ACCEPTANCE.md` gives TA-14 four fields and says ONE OF THEM IS A STRUCT TYPE.**
 	 */
-	void SplitTopLevel(const FString& Body, TArray<FString>& Out)
+	bool SplitTopLevel(const FString& Body, TArray<FString>& Out, bool bValidateSyntax = false)
 	{
+		Out.Reset();
 		int32 Depth = 0;
 		bool bInQuotes = false;
 		FString Current;
@@ -104,6 +105,7 @@ namespace
 				}
 				else if (Ch == TCHAR(')'))
 				{
+					if (bValidateSyntax && Depth == 0) { Out.Reset(); return false; }
 					--Depth;
 				}
 				else if (Ch == TCHAR(',') && Depth == 0)
@@ -117,10 +119,12 @@ namespace
 			Current.AppendChar(Ch);
 		}
 
+		if (bValidateSyntax && (bInQuotes || Depth != 0)) { Out.Reset(); return false; }
 		if (!Current.IsEmpty())
 		{
 			Out.Add(Current);
 		}
+		return true;
 	}
 
 	/** The name to the left of the first `=`, trimmed. Empty when there is no `=` at all. */
@@ -400,7 +404,10 @@ FString Parse(const TArray<FString>& Lines, TArray<FRowOp>& Out)
 		}
 
 		TArray<FString> Pairs;
-		SplitTopLevel(Body, Pairs);
+		if (!SplitTopLevel(Body, Pairs, /*bValidateSyntax=*/true))
+		{
+			return FString::Printf(TEXT("error: row '%s' has unbalanced parentheses or an unterminated quoted value; quote text containing literal delimiters. Nothing was parsed."), *Op.RowName);
+		}
 		for (const FString& Pair : Pairs)
 		{
 			const FString Trimmed = Pair.TrimStartAndEnd();
