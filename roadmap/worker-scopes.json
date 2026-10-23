@@ -1184,6 +1184,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp"
           ],
           "new_files": []
+        },
+        "struct-category-name-bound": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
