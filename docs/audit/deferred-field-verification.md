@@ -1003,3 +1003,7 @@ Implemented, unbuilt_untested: lint uses reader FUsageSummary instead of reparsi
 2026-10-23 implementation complete through a1f0a4b, unbuilt_untested. Shared typed usage facts replace lint prose parsing; multicast dispatcher references, CreateEvent handlers, automatic bindings and designer function/property bindings are represented; local/external same-name members are separated. Inherited/interface functions are classified as possible external entries rather than absent-use findings. Event declarations no longer imply binding. Unconnected-pin checks already use K2 default validity and exclude hidden/defaulted pins, rather than treating every unlinked input as required. All absence findings are static and never authorize deletion. Regression for delegate, designer binding, callbacks and implicit self is deferred, not a remaining implementation task. No tests/build/editor runs.
 
 a28a09fd and duplicate 261bb8db closed as implemented/Untested. No runtime guarantee or release acceptance.
+
+## 2026-10-23 batch no-op reconciliation
+
+Source reviewed at daa7ae7: ParseBatch requires bAcceptable (no refusals and Readers.Num()>0); PlanOnGraph refuses identical source/target nodes; an empty array is refused. These paths return before opening the batch transaction. Removed the speculative accepted-no-op/counting remainder from 5b6a8e45. Verified whole-batch restoration remains open. No source change, tests, builds or editor runs.
