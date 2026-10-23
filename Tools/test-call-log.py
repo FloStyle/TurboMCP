@@ -19,6 +19,7 @@ unresolved half is LABELLED rather than invented.
 
 import json
 import os
+import re
 import sys
 import time
 
@@ -103,7 +104,7 @@ def main():
     # only when there is nothing to show, and when there IS something the entries must be there.
     if "showing 0 newest of 0" in state:
         check("an empty selection explains why it is empty",
-              ("the log is OFF" in state) or ("the log is on" in state), state[:400])
+              ("Recording is off" in state) or ("Recording is on" in state), state[:400])
     else:
         check("a non-empty selection actually shows entries",
               state.count("  end  ") + state.count("  start  ") > 0, state[:300])
