@@ -1019,3 +1019,7 @@ Implemented, unbuilt_untested: caller row syntax rejects unmatched parentheses/q
 ## 2026-10-23 variable option validation — 3d74f98
 
 Implemented, unbuilt_untested: duplicate options and default/value alias collisions refuse; boolean options reject invalid values instead of converting them silently. Float widening requirement reconciled as superseded by type-preservation fix 0a5e7d0. abdd2c08 still tracks remaining grammar inventory. No tests/build/editor runs.
+
+## 2026-10-23 struct duplicates — 05aab8f/cf03659
+
+Implemented, unbuilt_untested: case-equivalent field names and duplicate struct options refuse. Names compared as strings before engine name creation. Function signatures already reject duplicate/invalid declarations; extra options are feature scope. No tests/build/editor runs.
