@@ -70,7 +70,7 @@ def main():
 
     print("=== T-BP-15: the schema ===")
     out = session.call(READ_TOOLSET, "ReadTurboMCPDataTable",
-                       {"asset": TABLE, "include": "schema"})
+                       {"asset": TABLE, "include": "schema", "columns": ""})
     print(out)
     print()
     check("reports the row struct", EXPECTED_STRUCT in out)
@@ -78,13 +78,13 @@ def main():
     check("reports a field with its type", ": UStaticMesh*" in out)
     check("reports the row count", "rows: %d" % EXPECTED_ROWS in out)
     check("lists the row names", "EDatasmithAreaLightActorShape::Cylinder" in out)
-    check("says row values are out of scope", "row values are not printed" in out)
+    check("explains selected value access", "pass Columns as comma-separated schema field names" in out)
     check("does not print a reader section", "readers:" not in out)
 
     print()
     print("=== the readers ===")
     before = session.call(READ_TOOLSET, "ReadTurboMCPDataTable",
-                          {"asset": TABLE, "include": "readers"})
+                          {"asset": TABLE, "include": "readers", "columns": ""})
     print(before)
     print()
     check("finds the readers from the asset registry", "readers: 2 asset(s)" in before)
@@ -128,7 +128,7 @@ def main():
                      {"assetPath": path})
 
     after = session.call(READ_TOOLSET, "ReadTurboMCPDataTable",
-                         {"asset": TABLE, "include": "readers"})
+                         {"asset": TABLE, "include": "readers", "columns": ""})
     print(after)
     print()
     check(
@@ -149,7 +149,7 @@ def main():
     print()
     print("=== P2: a bad filter is refused by name ===")
     bad = session.call(READ_TOOLSET, "ReadTurboMCPDataTable",
-                       {"asset": TABLE, "include": "banana"})
+                       {"asset": TABLE, "include": "banana", "columns": ""})
     print(bad)
     print()
     check("refuses", bad.startswith("error:"))
@@ -158,7 +158,7 @@ def main():
     print()
     print("=== P2: a non-DataTable is refused ===")
     wrong = session.call(READ_TOOLSET, "ReadTurboMCPDataTable",
-                         {"asset": "BP_NodeTest", "include": ""})
+                         {"asset": "BP_NodeTest", "include": "", "columns": ""})
     print(wrong)
     print()
     check("refuses", wrong.startswith("error:"))
@@ -173,7 +173,7 @@ def main():
     bodies = set()
     for label, value in forms.items():
         text = session.call(READ_TOOLSET, "ReadTurboMCPDataTable",
-                            {"asset": value, "include": "schema"})
+                            {"asset": value, "include": "schema", "columns": ""})
         print("--- %s: %s" % (label, text.splitlines()[0] if text else "(empty)"))
         bodies.add(text)
     check("both forms agree", len(bodies) == 1,

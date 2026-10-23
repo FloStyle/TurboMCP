@@ -344,7 +344,7 @@ public:
 	 * Read DataTable schema, row names, selected values and registry-based readers. Displays up to 80 fields and 60 sorted row names, with omitted counts; no paging parameter. Reader graph details are searched only in loaded Blueprints. Registry results do not prove all unsaved or dynamic uses. Loads the table; no explicit edit or save.
 	 * @param Asset Required DataTable path or unique short name, e.g. /Game/Tests/DT_Items. Empty or non-DataTable targets are refused.
 	 * @param Include Case-insensitive all, readers, or schema. Empty defaults to all. schema includes row names and selected values; readers omits rows. Unknown filters are refused.
-	 * @param Columns Optional comma-separated reflected field names from the schema, e.g. Price,Count. Empty omits values. Matching ignores case, duplicates are collapsed and unknown fields are refused. Requires a row struct and Include=all or schema; values are limited to the displayed rows.
+	 * @param Columns Required field; pass an empty string to omit values. Otherwise comma-separated reflected field names from the schema, e.g. Price,Count. Empty omits values. Matching ignores case, duplicates are collapsed and unknown fields are refused. Requires a row struct and Include=all or schema; values are limited to the displayed rows.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPDataTable(
