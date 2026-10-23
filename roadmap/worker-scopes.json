@@ -1288,6 +1288,16 @@
             "Tools/test-tool-text-inventory.py"
           ],
           "new_files": []
+        },
+        "quality-widget-size": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": [
+            "Tools/test-widget-preview-inputs.py"
+          ]
         }
       },
       "preserve_rows": []
