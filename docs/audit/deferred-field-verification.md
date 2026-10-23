@@ -1039,3 +1039,7 @@ Source-only repair: compare all pre-edit row names/exported values, row struct a
 ## 2026-10-23 struct generated names and package paths
 
 Implemented planning guards reserve 44 engine suffix characters plus 3 collision digits within NAME_SIZE-1; package paths use IsValidLongPackageName and a length guard. No tests/build/editor runs. Deferred: boundary-length field names, collision suffixes and invalid/read-only package roots.
+
+## 2026-10-23 explicit verification classification
+
+2f066e6c, 77b738a1, a6a86af7, ee4fde11 and f434ffba are verification/reference records, not additional product defects. Their historical scope remains in their task files with Kind: verification. Dashboard exclusion must use explicit metadata, not a title beginning with Verify: genuine unresolved investigations must remain visible. No tests were run and no bug was declared fixed by this reconciliation.

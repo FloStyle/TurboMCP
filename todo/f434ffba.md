@@ -4,11 +4,14 @@ ID: f434ffba-f4cc-49a1-bb51-21b51941c8b7
 Status: todo
 Priority: P6
 Readiness: needs_reconciliation
+Kind: verification
 Owner: unassigned
 Design: docs/design/verification.md
 Review: source-reviewed
 
 ## Current review
+
+2026-10-23 classification: deferred verification/reference, not a separate product bug. Retain historical scope and evidence; no implementation completion or test pass is claimed.
 
 **Decision:** partial. **Follow-up owner:** [R08](roadmap-r08.md).
 

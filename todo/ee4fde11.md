@@ -4,11 +4,14 @@ ID: ee4fde11-5d9a-43f2-a017-ad6993605e30
 Status: todo
 Priority: P1
 Readiness: needs_reconciliation
+Kind: verification
 Owner: unassigned
 Design: docs/design/verification.md
 Review: source-reviewed
 
 ## Current review
+
+2026-10-23 classification: deferred verification/reference, not a separate product bug. Retain historical scope and evidence; no implementation completion or test pass is claimed.
 
 **Decision:** superseded. **Follow-up owner:** [R11](roadmap-r11.md).
 
