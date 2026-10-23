@@ -1023,3 +1023,7 @@ Implemented, unbuilt_untested: duplicate options and default/value alias collisi
 ## 2026-10-23 struct duplicates — 05aab8f/cf03659
 
 Implemented, unbuilt_untested: case-equivalent field names and duplicate struct options refuse. Names compared as strings before engine name creation. Function signatures already reject duplicate/invalid declarations; extra options are feature scope. No tests/build/editor runs.
+
+## 2026-10-23 parser scope reconciliation
+
+Closed abdd2c08 concrete parser repairs as implemented / unbuilt_untested through cf03659. Unified grammar remains FEATURE-FIELD-GRAMMAR, a backlog feature. Original acceptance retained; no tests/build/editor runs.

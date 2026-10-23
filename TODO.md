@@ -82,7 +82,7 @@ The linked records distinguish implemented containment from unresolved causes. V
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>todo (55)</summary>
+<summary>todo (54)</summary>
 
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
 - **P1** [Verify append node structure and compile outcomes](todo/4f1bfd61.md)
@@ -121,7 +121,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P3** [Retire the legacy release-run container](todo/5f2cee78.md)
 - **P3** [Provide valid help examples for graph and trace tools](todo/9263bd95.md)
 - **P3** [Separate table creation from nested row correctness](todo/a4eed2e1.md)
-- **P3** [Define field syntax without changing value semantics](todo/abdd2c08.md)
 - **P3** [Extract a genuinely transaction-free repoint core](todo/b230e508.md)
 - **P3** [Make table previews and application follow caller order](todo/ba6df3c8.md)
 - **P3** [Consolidate release approval under current gates](todo/c2865829.md)
@@ -143,7 +142,7 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>backlog (22)</summary>
+<summary>backlog (23)</summary>
 
 - **P1** [Verify override removal preserves unrelated overrides](todo/c4485ba2.md)
 - **P1** [Require accepted evidence before fresh-history publication](todo/public-cutover.md)
@@ -154,6 +153,7 @@ These records preserve original requirements and evidence. Their status does not
 - **P3** [Strengthen window-list assertions](todo/5301f48e.md)
 - **P3** [Keep audit counts tied to explicit scope](todo/53fb9672.md)
 - **P3** [Treat failure-wording scans as advisory](todo/71e2e86a.md)
+- **P3** [Consider a common declaration grammar across tools](todo/field-grammar-feature.md)
 - **P4** [Retain the historical unused-symbol survey as reference](todo/4ff1c6d8.md)
 - **P4** [Retire the old in-progress suite sweep](todo/5013737a.md)
 - **P5** [Describe token estimates without universal claims](todo/48608da1.md)
@@ -171,7 +171,7 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (23)</summary>
+<summary>done (24)</summary>
 
 - **P1** [Validate call-cost caps without hiding invalid input](todo/019cf7af.md)
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
@@ -192,6 +192,7 @@ These records preserve original requirements and evidence. Their status does not
 - **P3** [Report editable widget reference overrides](todo/1256778b.md)
 - **P3** [Distinguish struct dependents from proven breakage](todo/1f5fe672.md)
 - **P3** [Include struct make/break usage in removal checks](todo/7bd81b84.md)
+- **P3** [Define field syntax without changing value semantics](todo/abdd2c08.md)
 - **P3** [Enforce explicit graph selection and asset-wide reads](todo/c1e04796.md)
 - **P4** [Keep bound handlers out of unused-code claims](todo/261bb8db.md)
 - **P4** [Use canonical identity with unambiguous display aliases](todo/e866ba0d.md)

@@ -1,15 +1,17 @@
 # Define field syntax without changing value semantics
 
 ID: abdd2c08-6544-4730-b183-e4d856aad868
-Status: todo
+Status: done
 Priority: P3
-Readiness: needs_reconciliation
+Readiness: ready
 Owner: unassigned
 Design: docs/design/editor-domains.md
 Review: source-reviewed
 Validation: unbuilt_untested
 
 ## Current review
+
+2026-10-23 scope reconciliation: the concrete parser defects are implemented through cf03659, unbuilt_untested. The remaining unified-grammar proposal is preserved separately in [field-grammar-feature](field-grammar-feature.md); it is a feature, not another open parser bug. Historical requirements below remain for traceability.
 
 2026-10-23 follow-up 05aab8f/cf03659, unbuilt_untested: struct fields reject case-equivalent duplicate names and repeated options. Duplicate checking compares normalized strings without interning unbounded names. Function signature source already rejects duplicate names and invalid types; its supported grammar is Name: Type, so adding option syntax is feature scope. Remaining: reconcile shared grammar proposal/help scope separately from implemented parser defects. No tests/build/editor runs.
 
@@ -21,13 +23,13 @@ Validation: unbuilt_untested
 
 2026-10-23 d3678da implements strict DataTable scratch-row import completion: captured Error/Fatal diagnostics refuse even with a non-null importer result, and trailing non-whitespace refuses. Validation occurs before any removal/write. Done implementation slice, unbuilt_untested. Remaining abdd2c08: field/display-name ambiguity, nested syntax and precision consistency across other parsers. No tests/build/editor runs.
 
-**Decision:** partial. **Follow-up owner:** [R04](roadmap-r04.md), [R08](roadmap-r08.md).
+**Decision:** implemented bug scope closed; broader feature split out. **Follow-up owner:** [R04](roadmap-r04.md), [R08](roadmap-r08.md).
 
 A common type resolver already maps float/real/double to PC_Real, while field/options and row operations have different grammars. A shared type resolver is not a shared field parser.
 
 ### Next action and acceptance
 
-Inventory accepted syntax and precision for each current caller. Test display/internal-name ambiguity, nested arrays, duplicate options and invalid types. Preserve existing valid inputs; approve any common grammar before refactoring unrelated parsers.
+Deferred verification: display/internal-name ambiguity, nested arrays, duplicate options and invalid types. These are evidence flags for the implemented repairs, not new tasks. Common grammar and help expansion remain in the linked feature record.
 
 ### Current source and verification
 
