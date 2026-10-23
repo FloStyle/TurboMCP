@@ -4,11 +4,14 @@ ID: foundation-engine-matrix
 Status: todo
 Priority: P1
 Readiness: needs_reconciliation
+Category: Compatibility
 Owner: unassigned
 Design: docs/design/verification.md
 Review: source-reviewed
 
 ## Current review
+
+2026-10-23 classification: Duplicate installed-engine acceptance scope owned by R16/R12; not an additional product bug. No implementation or passing verification is claimed.
 
 **Decision:** duplicate. **Follow-up owner:** [R16](roadmap-r16.md), [R12](roadmap-r12.md).
 

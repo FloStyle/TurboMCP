@@ -4,11 +4,14 @@ ID: ue59-protocol
 Status: backlog
 Priority: P2
 Readiness: needs_reconciliation
+Category: Compatibility
 Owner: unassigned
 Design: docs/design/editor-domains.md
 Review: source-reviewed
 
 ## Current review
+
+2026-10-23 classification: Forward-version compatibility investigation; not a confirmed defect on the pinned engine. No implementation or passing verification is claimed.
 
 **Decision:** deferred. **Follow-up owner:** [R13](roadmap-r13.md), [R14](roadmap-r14.md).
 

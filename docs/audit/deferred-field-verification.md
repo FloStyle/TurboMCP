@@ -1051,3 +1051,7 @@ Implemented local-function refusal, event override qualification, ambiguity refu
 ## 2026-10-23 getter consumer selection
 
 Implemented all-output/split-pin search, deterministic offending consumer choice and linked-input ordinal placement. Untested. Deferred cases: split pins, multiple consumers, reordered graph node arrays, collision/comment refusals. Measured pin alignment and reroute consumer policy remain open under 02ba0f24.
+
+## 2026-10-23 remaining non-bug classification
+
+foundation-engine-matrix and ue59-protocol are Compatibility; 51678b9f is Housekeeping (report traceability). All remain unresolved in their own categories. This reconciliation does not close a defect or claim test evidence.
