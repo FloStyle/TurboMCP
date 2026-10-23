@@ -1357,7 +1357,8 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostTools.cpp",
-            "Tools/test-tool-text-inventory.py"
+            "Tools/test-tool-text-inventory.py",
+            "Tools/test-call-log.py"
           ],
           "new_files": []
         }
