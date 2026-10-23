@@ -121,7 +121,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 		Out += FString::Printf(TEXT("\nlog file: %s"), *Log.GetLogFilePath());
 		Out += FString::Printf(TEXT("\nrecording: %s"),
 			Log.IsEnabled() ? TEXT("on") : TEXT("OFF"));
-		Out += TEXT("\n\nNO COST CAN BE REPORTED, AND THE REASON IS NOT THAT ANYTHING WAS CHEAP:");
+		Out += TEXT("\n\nNo recorded calls are available for cost analysis:");
 		Out += FString::Printf(TEXT("\n  %s"), *FTurboMCPCallCost::DescribeEmptiness(
 			Log.IsEnabled()
 				? FTurboMCPCallCost::EEmptiness::LogOnAndEmpty
@@ -184,7 +184,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallCost(
 
 	if (Selected.Num() == 0)
 	{
-		Out += TEXT("\n\nNO COST CAN BE REPORTED, AND THE REASON IS NOT THAT ANYTHING WAS CHEAP:");
+		Out += TEXT("\n\nNo recorded calls are available for cost analysis:");
 		Out += FString::Printf(TEXT("\n  %s"), *FTurboMCPCallCost::DescribeEmptiness(
 			FTurboMCPCallCost::EEmptiness::FilterMatchedNothing));
 		Out += FString::Printf(TEXT("\n  %d call%s in the log, none matching '%s'."),

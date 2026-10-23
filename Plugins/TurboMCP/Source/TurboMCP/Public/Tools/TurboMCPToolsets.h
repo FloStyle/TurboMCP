@@ -353,25 +353,11 @@ public:
 		const FString& Columns = TEXT(""));
 
 	/**
-	 * Read the call log: what the server recorded about its own use.
-	 *
-	 * EVERY tool call is recorded when the log is on, including the ENGINE's own toolsets. The log
-	 * has TWO SOURCES and one line shape, so a reader does not have to know which produced a line;
-	 * the `source` field says `plugin` or `engine`.
-	 *
-	 *  - For this plugin's tools the arguments are known, so the line carries them.
-	 *  - For the engine's tools the event carries only BLAKE3 hashes of the names and no arguments
-	 *    at all, measured from the engine's own `ModelContextProtocolAnalytics.cpp`. This plugin's
-	 *    own toolset names are hashed back to names; an engine tool's hash CANNOT be, because
-	 *    `UToolsetRegistry` exposes no list of served toolsets or tools. Those lines carry the first
-	 *    twelve characters of the hash, labelled as what they are, rather than an invented name.
-	 *
-	 * `filter` matches the toolset, the tool or the source. `since` is an ISO-8601 timestamp and
-	 * returns only later entries, so a caller pages forward instead of re-reading. `limit` defaults
-	 * to 50 and is capped at 500.
-	 *
-	 * An empty log is never just empty: the result says whether logging is OFF, or on with nothing
-	 * recorded, or on with entries that do not match the filter.
+	 * Read retained call-log records, newest first. Does not clear the log or change recording settings; this request may itself be recorded.
+	 * Engine records may lack arguments or resolved names. Unknown sizes are not zero. Records are not the same as completed calls; use ReadTurboMCPCallCost for call totals.
+	 * @param Filter Required string. Case-insensitive substring of toolset, tool, source, arguments or status (ok/error). Empty matches all records; e.g. BP_NodeTest. This call can match its own recorded filter argument.
+	 * @param Limit Required string of positive decimal digits, e.g. 50. Empty uses 50; values above 500 are capped at 500. Zero, signs and fractions are refused.
+	 * @param Since Required timestamp string copied exactly from a log entry, e.g. 2026-10-24T09:30:00.000Z. Empty has no lower bound. Returns records strictly after this timestamp, using text comparison; other date formats are not normalized or validated.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPCallLog(
@@ -380,37 +366,11 @@ public:
 		const FString& Since);
 
 	/**
-	 * What the calls COST: which were most expensive, which were slowest, which failed, and the
-	 * totals per tool and per asset.
-	 *
-	 * `R-CALL-LOG` answers "what was called". This answers "what did it cost", and it is a SECOND
-	 * VIEW OVER THE SAME DATA RATHER THAN A SECOND PARSER: it reads the very object `R-CALL-LOG`
-	 * reads, so the two cannot disagree about what a line says.
-	 *
-	 * **THE MOST EXPENSIVE AND THE SLOWEST ARE TWO SEPARATE ANSWERS, AND THAT IS DELIBERATE.** A
-	 * call that returns a huge payload and a call that blocks the game thread are different problems
-	 * with different fixes, so each is reported under its own heading with the basis it ranked by.
-	 *
-	 * **EVERY TOTAL CARRIES ITS DENOMINATOR** - the call count it was computed from. A total without
-	 * one is a number nobody can judge, and a zero-finding answer with no denominator cannot be told
-	 * apart from a scan that examined nothing.
-	 *
-	 * **AN EMPTY ANSWER NAMES WHICH EMPTINESS IT IS**, per `P1`: logging OFF, on with no entries, or
-	 * on with entries the filter did not match. Reporting zeros for those would say the tools are
-	 * cheap when in fact nothing was recorded. The same rule applies inside the answer: a ranking
-	 * over rows that ALL read zero says so rather than naming a winner, because naming one implies a
-	 * ranking existed.
-	 *
-	 * `toolset` NAMES ARE NORMALISED BEFORE TOTALLING. MEASURED: the log's two writers spell the same
-	 * toolset two ways - the engine's resolved name arrives already qualified
-	 * (`TurboMCP.TurboMCPReadToolset`) while this plugin writes it bare (`TurboMCPReadToolset`) - so
-	 * without collapsing them ONE TOOLSET IS REPORTED AS TWO ROWS WITH TWO DENOMINATORS.
-	 *
-	 * `since` is an ISO-8601 timestamp taken from a previous answer; `filter` matches the toolset,
-	 * the tool or the source; `cap` bounds the number of ROWS SHOWN, not the analysis, so a truncated
-	 * list never makes a total wrong.
-	 *
-	 * This is a READ tool: it never writes, and it never clears.
+	 * Summarize retained call costs, durations and failures. Does not clear the log or change recording settings; this request may itself be recorded.
+	 * Related records are grouped into calls. Rankings and totals cover matching retained calls, not all historical activity. Unknown measurements are not zero; token counts are estimates.
+	 * @param Since Required timestamp string copied exactly from a log entry, e.g. 2026-10-24T09:30:00.000Z. Empty has no lower bound. Selects calls strictly after the timestamp using text comparison; other date formats are not normalized or validated.
+	 * @param Filter Required string. Case-insensitive substring of the tool label, toolset, tool or source; e.g. TurboMCPReadToolset. Empty includes all retained calls. Unlike CallLog, does not search arguments or status.
+	 * @param Cap Required string of positive decimal digits, e.g. 10. Empty uses 10; values above 50 are capped at 50. Limits displayed rows per list, not analysis or totals. Zero, signs and fractions are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPCallCost(

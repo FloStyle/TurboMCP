@@ -44,29 +44,17 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	const TArray<FTurboMCPCallLog::FEntry> All =
 		FTurboMCPCallTimeline::WithSessionsInEffect(Log.GetEntries());
 
-	// *** A LARGE NUMBER IS CLAMPED, A NON-NUMBER IS REFUSED, AND THOSE ARE NOT THE SAME REQUEST. *** `P6`
-	// wants a bounded answer, so "a million lines" is a caller asking for as much as this tool will give, and
-	// it is clamped at 500 below. `banana` is not a request: turning it into the default would answer a
-	// question nobody asked, so it is refused by name - the shape `TurboMCPBlueprintLoad.cpp:100-114` uses.
-	constexpr int32 DefaultLimit = 50;
-	int32 Max = DefaultLimit;
-	if (!Limit.TrimStartAndEnd().IsEmpty())
+	// Validate every digit and saturate at the display cap without integer overflow.
+	const FString LimitText = Limit.TrimStartAndEnd();
+	int32 Cap = LimitText.IsEmpty() ? 50 : 0;
+	for (TCHAR Digit : LimitText)
 	{
-		if (!Limit.TrimStartAndEnd().IsNumeric())
-		{
-			return FString::Printf(
-				TEXT("error: '%s' is not a limit. Pass a whole number of entries, or leave it empty for the ")
-				TEXT("default of %d."), *Limit, DefaultLimit);
-		}
-		Max = FCString::Atoi(*Limit);
-		if (Max <= 0)
-		{
-			return FString::Printf(
-				TEXT("error: a limit of %d is not usable. Pass a positive number of entries, or leave it empty ")
-				TEXT("for the default of %d."), Max, DefaultLimit);
-		}
+		if (Digit < TEXT('0') || Digit > TEXT('9'))
+			return TEXT("error: Limit must contain positive whole-number digits only. Leave it empty for 50 entries; the maximum is 500.");
+		Cap = FMath::Min(500, Cap * 10 + (Digit - TEXT('0')));
 	}
-	const int32 Cap = FMath::Min(Max, 500);
+	if (Cap == 0)
+		return TEXT("error: Limit must be greater than zero. Leave it empty for 50 entries; the maximum is 500.");
 
 	// `since` is matched against the ISO-8601 timestamp, which sorts lexically because it is
 	// fixed-width UTC. A caller resumes from the last time it saw rather than re-reading.
@@ -112,7 +100,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	FString Out = TEXT("read: the TurboMCP call log");
 	Out += FString::Printf(TEXT("\nlog file: %s"), *Log.GetLogFilePath());
 	Out += FString::Printf(TEXT("\nrecording: %s"),
-		Log.IsEnabled() ? TEXT("on") : TEXT("OFF (E-CALL-LOG turns it on)"));
+		Log.IsEnabled() ? TEXT("on") : TEXT("off (use EditTurboMCPCallLog to enable recording)"));
 	Out += FString::Printf(TEXT("\ncounts: %d in memory, showing %d newest of %d matching"),
 		All.Num(), Selected.Num(), Total);
 
@@ -122,8 +110,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 		if (All.Num() == 0)
 		{
 			Out += Log.IsEnabled()
-				? TEXT("\nthe log is on and empty, so no tool has been called yet this session.")
-				: TEXT("\nthe log is OFF, so nothing has been recorded. E-CALL-LOG turns it on.");
+				? TEXT("\nRecording is on, but no entries are currently retained. The log may have been cleared.")
+				: TEXT("\nRecording is off and no entries are currently retained. Use EditTurboMCPCallLog to enable recording.");
 		}
 		else
 		{
