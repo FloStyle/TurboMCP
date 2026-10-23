@@ -732,6 +732,26 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
     }
     if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
         return TEXT("unchanged: DataTable edit requires an idle editor outside an active transaction");
+    // Retain value evidence, never live row pointers, for failure restoration checks.
+    const bool bDirtyBefore = Table->GetOutermost()->IsDirty();
+    TMap<FName, FString> RowsBeforeEdit;
+    for (const TPair<FName, uint8*>& Pair : Table->GetRowMap())
+    {
+        if (!Pair.Value) return TEXT("unchanged: null row storage prevents rollback verification");
+        RowsBeforeEdit.Add(Pair.Key, WholeRowText(Struct, Pair.Value, Table));
+    }
+    auto RowStateRestored = [&]()
+    {
+        if (Table->GetRowStruct() != Struct
+            || Table->GetOutermost()->IsDirty() != bDirtyBefore
+            || Table->GetRowMap().Num() != RowsBeforeEdit.Num()) return false;
+        for (const TPair<FName, FString>& Pair : RowsBeforeEdit)
+        {
+            const uint8* RestoredRow = Table->GetRowMap().FindRef(Pair.Key);
+            if (!RestoredRow || WholeRowText(Struct, RestoredRow, Table) != Pair.Value) return false;
+        }
+        return true;
+    };
     TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "DataTableRows", "TurboMCP DataTable rows"));
     UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
     const FGuid OwnedId = Transaction->IsOutstanding() && Buffer && Buffer->ActiveCount == 1
@@ -868,9 +888,13 @@ FString Apply(UDataTable* Table, const FPlan& Plan, FString& OutReport)
 	if (Failures.Num() > 0)
 	{
         const bool bUndone = RollbackRows();
-        OutReport = bUndone ? TEXT("rollback=complete; attempted read-back discarded; save=not_requested")
-                            : TEXT("rollback=failed; partial changes may remain; inspect before retrying");
-        return FString::Printf(TEXT("%s: %s"), bUndone ? TEXT("unchanged") : TEXT("partial"),
+        const bool bRestored = bUndone && RowStateRestored();
+        OutReport = bRestored
+            ? TEXT("rollback=row_state_verified; row names, exported values, row struct and package dirty state match the baseline; external callback effects are not verified; save=not_requested")
+            : (bUndone
+                ? TEXT("rollback=undo_applied; restoration=not_verified; partial changes may remain; inspect before retrying")
+                : TEXT("rollback=failed; partial changes may remain; inspect before retrying"));
+        return FString::Printf(TEXT("%s: %s"), bRestored ? TEXT("unchanged") : TEXT("partial"),
             *FString::Join(Failures, TEXT("; ")));
 	}
 
