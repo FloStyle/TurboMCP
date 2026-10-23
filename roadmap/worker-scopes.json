@@ -1190,6 +1190,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp"
           ],
           "new_files": []
+        },
+        "datatable-rollback-evidence": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
