@@ -1047,3 +1047,7 @@ Implemented planning guards reserve 44 engine suffix characters plus 3 collision
 ## 2026-10-23 override removal safety
 
 Implemented local-function refusal, event override qualification, ambiguity refusal, explicit transactions and target-presence read-back. Source-reviewed only. Deferred evidence: unrelated override identities/content, one-step undo and failure restoration. c4485ba2 remains partial/open; no tests/build/editor runs.
+
+## 2026-10-23 getter consumer selection
+
+Implemented all-output/split-pin search, deterministic offending consumer choice and linked-input ordinal placement. Untested. Deferred cases: split pins, multiple consumers, reordered graph node arrays, collision/comment refusals. Measured pin alignment and reroute consumer policy remain open under 02ba0f24.
