@@ -114,3 +114,7 @@ Implemented 01691e3: empty/whitespace OutputProperty refusals now list the actua
 Implemented 0de7207: replaced obsolete shorthand and roadmap guidance in material-reader output with plain English and callable ReadTurboMCPMaterialLoad guidance. Unboxed expressions are described as outside comment boxes; empty reader content no longer implies an empty material.
 
 Interrupted observation was recovered: supervisor run f90a6dd24c194dc59159f36c81dd30af completed with a test failure because one assertion expected the old wording. Test correction b3cccb7 checks the numeric expression count with the current wording. Run a59643b22b524e898953813e5fe3572c passed build and test-material at b3cccb7d9acdf0d8dc2ae2e3d0391cb06c815038; all 16 fixture files were restored. This verifies the exercised material paths, not every output branch or all tools. Hard material budget enforcement and the remaining parameter/output review are still open.
+
+## Material findings and recovery wording (2026-10-24)
+
+Implemented 72a485f: removed unsupported claims that missing labels imply disconnected islands, and stopped inferring that empty comment boxes are leftovers. Output now describes observed contents and uses callable Blueprint, widget and material preview names. Simplified token-estimate wording and obsolete reader comments. Supervised run 92e32a97c2424cdc9db06cab8e9e59c3 passed build and test-material; this exercises the fixture's material findings, not every empty-result/wrong-type branch. Those branches remain source-reviewed only.
