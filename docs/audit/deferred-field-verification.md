@@ -1007,3 +1007,7 @@ a28a09fd and duplicate 261bb8db closed as implemented/Untested. No runtime guara
 ## 2026-10-23 batch no-op reconciliation
 
 Source reviewed at daa7ae7: ParseBatch requires bAcceptable (no refusals and Readers.Num()>0); PlanOnGraph refuses identical source/target nodes; an empty array is refused. These paths return before opening the batch transaction. Removed the speculative accepted-no-op/counting remainder from 5b6a8e45. Verified whole-batch restoration remains open. No source change, tests, builds or editor runs.
+
+## 2026-10-23 DataTable display fields — 1cc5714
+
+Implemented, unbuilt_untested: unique display names resolved to internal fields before planning/apply; duplicate aliases normalize to the same field; ambiguous labels refused. Existing internal names retain priority. abdd2c08 stays open for broader parser syntax/precision reconciliation. No tests/build/editor runs.
