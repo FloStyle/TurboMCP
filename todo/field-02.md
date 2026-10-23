@@ -1,19 +1,18 @@
 # Prevent dependent Widget loss around compile and batch rollback
 
 ID: FIELD-02
-Status: in_progress
+Status: done
 Priority: P0
 Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
 Kind: investigation
 Review: source-reviewed
+Validation: unbuilt_untested
 
 ## Current product state
 
-The remaining product problem is dependent Widget-tree loss across compilation/rollback. Existing guards are containment, not root-cause closure.
-
-All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
+2026-10-23 owner acceptance: Widget loss has not recurred in recent field use. The owner explicitly accepts the delivered plugin safeguards as fixed for now. Closed implementation scope; retain Untested for controlled regression. This is user field feedback, not a local regression pass or proof of the original engine cause. Reopen on recurrence. Earlier investigations below are retained as history.
 
 ## Problem
 A failed batch containing compile reportedly removed 23 child widgets from three dependent assets in memory. Restart without saving recovered them; persistent loss was not reported.

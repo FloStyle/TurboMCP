@@ -1705,11 +1705,11 @@
       "report": "2026-10-21_S14",
       "id": "CP-14",
       "key": "2026-10-21_S14/CP-14",
-      "title": "Graph looks wrong in the live editor after a TurboMCP edit (low)",
+      "title": "Graph shadows/contrast become excessive until a manual node edit",
       "kind": "defect",
       "canonical_issue": "2026-10-21_S14/CP-14",
       "owner": "FIELD-06",
-      "priority": "P0",
+      "priority": "P2",
       "state": "open",
       "validation": "unbuilt_untested",
       "disposition": "partially_implemented",
@@ -1717,12 +1717,13 @@
       "observation": "- **Type:** Defect.\r\n- **Scenario:** The live graph editor, right after a tidy or position edit on a graph with a comment box. Also seen on compact pure nodes.\r\n- **Reproduction status:** Observed by the user, sometimes. The exact conditions are not known.\r\n- **Observed:** After the TurboMCP edit, the comment box body is a light, almost opaque grey. Its title text has a heavy dark shadow and looks bold and blurred. Compact pure nodes show a hard dark band around the body, like a second outline. The user describes it as a node refresh glitch that over-contrasts the drawn drop shadows. After the user makes one manual edit in the graph, the box goes back to its normal darker, see-through look and the text is sharp.\r\n- **Expected:** The graph looks the same after a TurboMCP edit as after a manual edit.\r\n- **Impact:** The user cannot judge the result until the graph redraws. It can look like the edit changed the box colour.\r\n- **Cause:** The cause is not confirmed.\r\n- **Proposed behavior:** Refresh the open graph view in the same way as a manual edit does, after each layout edit.\r\n\r\n### User reference layout",
       "fix_commit": "26a276d",
       "implementation": "Comment create/remove/update/fit now broadcast NotifyGraphChanged so open graph panels rebuild after geometry/text changes.",
-      "remaining": "Exact historical grey/shadow/compact-outline cause remains unconfirmed; these changes implement native refresh and isolate measurement, but do not prove all reported artifacts resolved. Keep open pending reproduction or field confirmation.",
+      "remaining": "User clarified 2026-10-23: rendering contrast/shadow artifact clears when a human creates a node. A Blueprint capture may have preceded it; that association is uncertain. No graph-data loss reported. Existing refresh fixes need focused reproduction/confirmation.",
       "view_refresh_commit": "d83f7c9",
       "implementation_limits": "Tidy measurement now uses a transient graph and offscreen Slate view; live zoom/focus/paint state and application-wide ticks are no longer used. Exact reported shadow glitch remains unconfirmed. No runtime verification.",
       "isolated_measurement_commit": "e3ee332",
       "live_refresh_commit": "0377faa",
-      "live_refresh_evidence": "Tidy Apply now sends default NotifyGraphChanged after final node/comment writes and after rollback. Stock UEdGraph broadcasts this action; SGraphPanel purges visual representation and schedules native Update. Positions already notify. Measurement uses isolated scratch graph (e3ee332). Source/API inspected only."
+      "live_refresh_evidence": "Tidy Apply now sends default NotifyGraphChanged after final node/comment writes and after rollback. Stock UEdGraph broadcasts this action; SGraphPanel purges visual representation and schedules native Update. Positions already notify. Measurement uses isolated scratch graph (e3ee332). Source/API inspected only.",
+      "user_context": "Rendering-only symptom; manual node creation clears it. Capture involvement suspected, not established."
     },
     {
       "report": "2026-10-21_S14",
@@ -2432,11 +2433,11 @@
       "report": "2026-10-22_S2",
       "id": "X-93",
       "key": "2026-10-22_S2/X-93",
-      "title": "Two unrelated assets became unsaved during the session (medium)",
+      "title": "Opening an asset for inspection through native Unreal MCP marks it dirty",
       "kind": "defect",
       "canonical_issue": "2026-10-22_S2/X-93",
       "owner": "FIELD-06",
-      "priority": "P0",
+      "priority": "P2",
       "state": "open",
       "validation": "unbuilt_untested",
       "disposition": "partial_fix",
@@ -2444,7 +2445,7 @@
       "observation": "- **Type:** Defect.\n- **Scenario:** The session edited one widget, one struct and one data table. At the start the unsaved list was empty.\n- **Reproduction status:** Observed once.\n- **Steps to reproduce:**\n  1. Start with no unsaved assets.\n  2. Edit, compile and save one widget Blueprint with the tools listed above.\n  3. Read the unsaved list.\n- **Observed:** Two assets that no call edited were listed as unsaved: one widget Blueprint and one data table.\n- **Expected:** Only edited assets become unsaved (user expectation).\n- **Impact:** The user must check and discard two packages by hand.\n- **State after:** The two assets stay unsaved. They were not saved.\n- **Workaround:** None observed. The agent left them unsaved and told the user.\n- **Cause:** The cause is not confirmed.\n- **Proposed behavior:** The save or compile result names any other package that became unsaved during the call.\n\n## 2. Tool observations\n\n### Asset search",
       "fix_commit": "8d350de",
       "implementation": "Registry edit-call wrapper reports dirty package counts and newly dirty/cleared package names on both success and error. No implicit save/discard. Off-game-thread completion explicitly reports unavailable snapshot.",
-      "remaining": "Root cause unconfirmed; historical triggering call/dependency evidence unavailable. Continue source audit for concrete unintended mutation paths. A future recurrence would need per-call dirty snapshots for attribution, including native calls outside the TurboMCP wrapper. Do not clear dirty flags or claim the original incident fixed.",
+      "remaining": "User clarified 2026-10-23: also occurs with default Unreal MCP when opening an asset to inspect content. Risk is accidentally saving unintended changes. Determine whether actual property changes or only dirty flag; do not clear flags blindly.",
       "comment_dirty_followup": "Comment Set and Fit now defer Modify/transaction until a real change; already-equal values/bounds leave package and undo history untouched. This removes one concrete cause, not the complete unrelated-package dirtying investigation.",
       "dirty_audit_commit": "257dfad",
       "dirty_audit": "Reads, previews and looks now report newly dirty/cleared packages when a game-thread before snapshot is available; unchanged non-edit calls stay quiet. Edit/compile/save reporting retained. No dirty flags cleared.",
@@ -2459,7 +2460,8 @@
         ],
         "finding": "Stock UserDefinedStructureCompilerUtils compiles dependency graphs, reconstructs referencing nodes, marks dependent Blueprints structurally modified and reinstantiates referencing objects. This is a legitimate possible dependency effect, not proof of this historical incident. Report also used native engine tools outside TurboMCP attribution.",
         "remaining": "Triggering call and dependency relationships unavailable (user confirmed old evidence cannot be recovered). No concrete unintended mutation source established. Fresh reproduction would be needed to distinguish unrelated side effects from dependency migration; tests/editor remain deferred by user. Do not clear dirty flags or disable dependency updates."
-      }
+      },
+      "user_context": "Not exclusive to TurboMCP. Native asset-open/read path is the reported trigger; exact native tool and dependency effects remain unconfirmed."
     },
     {
       "report": "2026-10-22_S2",
