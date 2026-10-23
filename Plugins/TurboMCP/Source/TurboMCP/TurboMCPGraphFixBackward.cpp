@@ -1263,9 +1263,7 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 			continue;
 		}
 
-		// THE CONSUMER IS IDENTIFIED BY PIN, NOT BY CLASS: the node owning the pin the getter's value
-		// pin links to. `GetValuePin` is the working spelling, read from the promotion path in
-		// `TurboMCPLocalVars.cpp` rather than guessed.
+		// Only pure getters without execution pins participate in data-input placement.
 		UK2Node_VariableGet* GetterK2 = Cast<UK2Node_VariableGet>(GetterNode);
         if (!GetterK2 || !GetterK2->IsNodePure()) continue;
         bool bHasExecutionPin = false;
@@ -1273,24 +1271,31 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
             if (GetterPin && GetterPin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec)
                 bHasExecutionPin = true;
         if (bHasExecutionPin) continue;
-		UEdGraphPin* ValuePin = GetterK2 != nullptr ? GetterK2->GetValuePin() : nullptr;
-		if (ValuePin == nullptr)
-		{
-			continue;
-		}
-
+		// Inspect all outputs, including split value pins. Pick the leftmost
+		// offending consumer, then stable node identity and input-pin order.
 		UEdGraphNode* ConsumerNode = nullptr;
-		for (UEdGraphPin* Link : ValuePin->LinkedTo)
+		int32 ConsumerPinIndex = INDEX_NONE;
+		const FTurboMCPLayoutReport::FRect InitialGetterRect = RectOf(GetterNode);
+		for (UEdGraphPin* Output : GetterK2->Pins)
 		{
-			if (Link == nullptr)
+			if (!Output || Output->Direction != EGPD_Output) continue;
+			for (UEdGraphPin* Link : Output->LinkedTo)
 			{
-				continue;
-			}
-			UEdGraphNode* Owner = Link->GetOwningNodeUnchecked();
-			if (Owner != nullptr && !IsComment(Owner) && !IsKnot(Owner))
-			{
-				ConsumerNode = Owner;
-				break;
+				if (!Link || Link->Direction != EGPD_Input) continue;
+				UEdGraphNode* Owner = Link->GetOwningNodeUnchecked();
+				if (!Owner || Owner == GetterNode || IsComment(Owner) || IsKnot(Owner)
+					|| IndexOfKey(Index, KeyOf(Owner)) == INDEX_NONE) continue;
+				const FTurboMCPLayoutReport::FRect CandidateRect = RectOf(Owner);
+				if (InitialGetterRect.MinY < CandidateRect.MaxY || InitialGetterRect.MaxX <= CandidateRect.MinX) continue;
+				const int32 CandidatePinIndex = Owner->Pins.IndexOfByKey(Link);
+				if (CandidatePinIndex == INDEX_NONE) continue;
+				if (!ConsumerNode || CandidateRect.MinX < RectOf(ConsumerNode).MinX
+					|| (CandidateRect.MinX == RectOf(ConsumerNode).MinX && KeyOf(Owner) < KeyOf(ConsumerNode))
+					|| (Owner == ConsumerNode && CandidatePinIndex < ConsumerPinIndex))
+				{
+					ConsumerNode = Owner;
+					ConsumerPinIndex = CandidatePinIndex;
+				}
 			}
 		}
 		if (ConsumerNode == nullptr)
@@ -1322,30 +1327,13 @@ bool FTurboMCPGraphFixBackward::Plan(const FString& InAsset, const FString& InGr
 
 		const FNode& Consumer = Nodes[ConsumerIndex];
 
-		// MULTIPLE GETTERS OF ONE CONSUMER ARE STACKED IN ONE COLUMN, ordered by the consumer pin's index
-		// so the order is STABLE between runs, each one `PinRowSpacing` below the previous. That is what
-		// lines them up with the consumer's own pin rows.
+		// Use the linked input's ordinal, not graph iteration order. This remains
+		// an estimated row spacing; collision and comment-boundary guards still apply.
 		int32 StackIndex = 0;
+		for (int32 PinIndex = 0; PinIndex < ConsumerPinIndex; ++PinIndex)
 		{
-			int32 PinIndex = 0;
-			for (const UEdGraphPin* Pin : ConsumerNode->Pins)
-			{
-				if (Pin == nullptr || Pin->Direction != EGPD_Input)
-				{
-					continue;
-				}
-				++PinIndex;
-			}
-			// The stack position is this getter's ordinal among the getters already moved for the same
-			// consumer, which is stable because the node list is walked in graph order.
-			for (const FMove& Earlier : OutPlan.Moves)
-			{
-				if (Earlier.Rule == TEXT("R2") && Earlier.Reason.Contains(Consumer.Key))
-				{
-					++StackIndex;
-				}
-			}
-			(void)PinIndex;
+			const UEdGraphPin* Pin = ConsumerNode->Pins[PinIndex];
+			if (Pin && Pin->Direction == EGPD_Input && !Pin->bHidden) ++StackIndex;
 		}
 
 		const double ToX = Consumer.PlannedX - PlannedExtent(Getter.Width) - GetterGap;
