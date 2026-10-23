@@ -1298,6 +1298,12 @@
           "new_files": [
             "Tools/test-widget-preview-inputs.py"
           ]
+        },
+        "quality-widget-test-wording": {
+          "files": [
+            "Tools/test-widget-preview.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
