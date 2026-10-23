@@ -1043,3 +1043,7 @@ Implemented planning guards reserve 44 engine suffix characters plus 3 collision
 ## 2026-10-23 explicit verification classification
 
 2f066e6c, 77b738a1, a6a86af7, ee4fde11 and f434ffba are verification/reference records, not additional product defects. Their historical scope remains in their task files with Kind: verification. Dashboard exclusion must use explicit metadata, not a title beginning with Verify: genuine unresolved investigations must remain visible. No tests were run and no bug was declared fixed by this reconciliation.
+
+## 2026-10-23 override removal safety
+
+Implemented local-function refusal, event override qualification, ambiguity refusal, explicit transactions and target-presence read-back. Source-reviewed only. Deferred evidence: unrelated override identities/content, one-step undo and failure restoration. c4485ba2 remains partial/open; no tests/build/editor runs.
