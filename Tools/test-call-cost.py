@@ -347,10 +347,10 @@ def main():
     # asserted here is only that a TYPO and a ZERO are refused, each in its own words.
     bad_cap = cost(session, cap="banana")
     check("refuses a cap that is not a number, and names the parameter",
-          bad_cap.startswith("error:") and "is not a cap" in bad_cap, bad_cap[:200])
+          bad_cap.startswith("error:") and "cap" in bad_cap and "whole-number" in bad_cap, bad_cap[:200])
     zero_cap = cost(session, cap="0")
     check("refuses a cap of zero with its OWN sentence, not the non-number one",
-          zero_cap.startswith("error:") and "is not usable" in zero_cap, zero_cap[:200])
+          zero_cap.startswith("error:") and "cap must be positive" in zero_cap, zero_cap[:200])
 
     print()
     if failures:
