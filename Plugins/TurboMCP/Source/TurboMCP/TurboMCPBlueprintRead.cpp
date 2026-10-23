@@ -811,10 +811,28 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	// Dead code. Only functions of this Blueprint are checked, and an event is
 	// reported as unbound rather than dead, because an event is called by the
 	// engine and not by a node.
+	TArray<FString> ExternalEntries;
 	TArray<FString> Uncalled;
 	for (const FString& FunctionName : OwnFunctionNames)
 	{
-		if (!CalledFunctions.Contains(FunctionName))
+		const FName EntryName(*FunctionName);
+		const UFunction* ParentFunction = InBlueprint->ParentClass
+			? InBlueprint->ParentClass->FindFunctionByName(EntryName) : nullptr;
+		bool bInterfaceEntry = false;
+		for (const FBPInterfaceDescription& Interface : InBlueprint->ImplementedInterfaces)
+		{
+			if (Interface.Interface && Interface.Interface->FindFunctionByName(EntryName))
+			{
+				bInterfaceEntry = true;
+				break;
+			}
+		}
+		if (ParentFunction || bInterfaceEntry)
+		{
+			ExternalEntries.Add(FString::Printf(TEXT("%s (%s; possible external entry, runtime use not established)"), *FunctionName,
+				bInterfaceEntry ? TEXT("interface contract") : TEXT("inherited function/override")));
+		}
+		else if (!CalledFunctions.Contains(FunctionName))
 		{
 			Uncalled.Add(FunctionName);
 		}
@@ -826,7 +844,7 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	OutUsage.FunctionsScanned = OwnFunctionNames.Num();
 	OutUsage.bCollected = true;
 
-	Out += TEXT("\nfunctions nothing calls:");
+	Out += TEXT("\nfunctions with no observed static reference (not proof of runtime nonuse):");
 	if (Uncalled.Num() == 0)
 	{
 		Out += TEXT(" none");
@@ -835,18 +853,11 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
 	{
 		Out += FString::Printf(TEXT("\n  %s"), *FunctionName);
 	}
-	if (Uncalled.Num() > 0)
-	{
-		// A function the ENGINE calls is not dead, and saying so prevents a caller
-		// from deleting something that runs. `UserConstructionScript` is the case
-		// in this kit: it is invoked when an instance is constructed, so no node
-		// refers to it and it is still live.
-		Out += TEXT("\n  ; this lists functions no NODE calls. A function the engine")
-			TEXT("\n  ; calls itself, such as UserConstructionScript, appears here and")
-			TEXT("\n  ; is not dead.");
-	}
+	ExternalEntries.Sort();
+	Out += FString::Printf(TEXT("\npossible external function entries: %d"), ExternalEntries.Num());
+	for (const FString& Entry : ExternalEntries) Out += TEXT("\n  ") + Entry;
 
-	Out += FString::Printf(TEXT("\nevents bound: %d"), EventNames.Num());
+	Out += FString::Printf(TEXT("\nevent declarations (not proof of binding or invocation): %d"), EventNames.Num());
 	if (EventNames.Num() == 0)
 	{
 		Out += TEXT(" none");
