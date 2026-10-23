@@ -1266,6 +1266,14 @@
             "Tools/test-tool-text-inventory.py"
           ],
           "new_files": []
+        },
+        "quality-layout-refactor": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
