@@ -1178,6 +1178,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAdd.cpp"
           ],
           "new_files": []
+        },
+        "quick-struct-duplicates": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
