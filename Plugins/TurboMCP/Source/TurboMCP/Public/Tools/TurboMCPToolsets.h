@@ -442,7 +442,7 @@ public:
 	static FString ReadTurboMCPMaterialInstance(const FString& Asset);
 
 	/**
-	 * Start or poll timed Play In Editor; Executes project code with editor permissions, effects are not sandboxed or automatically undone, and Does not explicitly save assets.
+	 * Start or poll a timed Play In Editor session that executes project code with editor permissions, is not sandboxed or automatically undone, and does not explicitly save assets.
 	 * Starting returns immediately. Poll with empty Seconds until the owned session has stopped; pending is not a completed result. Existing play sessions are left alone. Captured warnings/errors do not prove gameplay correctness.
 	 * @param Seconds Required string. A positive numeric duration up to 600 seconds starts a run; e.g. 2.5. Empty or whitespace polls the current run. Zero, negative, invalid and over-limit durations are refused.
 	 * @param Map Required string. On start, a loadable map package path, e.g. /Game/Maps/TestMap; empty uses the editor's default play request. Ignored when polling. Invalid map paths are refused before requesting PIE.

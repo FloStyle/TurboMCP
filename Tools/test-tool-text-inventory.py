@@ -21,7 +21,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         if help_text.startswith('error:') or '!! isError' in help_text:
             raise RuntimeError('Help unavailable for ' + name)
         required_text = {
-            'ReadTurboMCPPlayCheck': ('kind: Execute', 'Executes project code', 'not sandboxed', 'Does not explicitly save'),
+            'ReadTurboMCPPlayCheck': ('kind: Execute', 'executes project code', 'not sandboxed', 'does not explicitly save'),
             'EditTurboMCPSave': ('Partial saves are not rolled back', 'thumbnail code', '/Game/Tests/BP_NodeTest', '25 entries'),
             'EditTurboMCPSaveWithoutThumbnail': ('save callbacks still run', 'Partial saves are not rolled back'),
             'EditTurboMCPCompile': ('reinstance classes', 'Does not save'),
