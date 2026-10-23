@@ -1363,6 +1363,17 @@
             "Tools/test-call-cost.py"
           ],
           "new_files": []
+        },
+        "quality-trace-play-output": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceReadTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheckTools.cpp",
+            "Tools/test-trace.py",
+            "Tools/test-play-check.py",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
