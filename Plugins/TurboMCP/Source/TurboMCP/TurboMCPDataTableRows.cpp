@@ -149,9 +149,28 @@ namespace
 		TArray<FString> Names;
 		for (TFieldIterator<FProperty> It(Struct); It; ++It)
 		{
-			Names.Add(It->GetName());
+			Names.Add(FString::Printf(TEXT("%s [internal: %s]"), *It->GetDisplayNameText().ToString(), *It->GetName()));
 		}
 		return FString::Join(Names, TEXT(", "));
+	}
+
+	/** Preserve internal-name calls; otherwise accept one unambiguous display label. */
+	bool ResolveFieldLabel(const UScriptStruct* Struct, const FString& Name, FString& ResolvedName)
+	{
+		for (TFieldIterator<FProperty> It(Struct); It; ++It)
+		{
+			if (SameField(It->GetName(), Name)) { ResolvedName = It->GetName(); return true; }
+		}
+		int32 Matches = 0;
+		for (TFieldIterator<FProperty> It(Struct); It; ++It)
+		{
+			if (SameField(It->GetDisplayNameText().ToString(), Name))
+			{
+				ResolvedName = It->GetName();
+				++Matches;
+			}
+		}
+		return Matches == 1;
 	}
 
 	/** True when the struct declares this field. */
@@ -459,9 +478,22 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 	TMap<FName, ERowOp> SeenOperations;
     TMap<FName, TMap<FName, FString>> PlannedFieldValues;
 
-	for (const FRowOp& Op : RequestedOps)
+	for (FRowOp Op : RequestedOps)
 	{
+		bool bFieldsResolved = true;
+		for (FFieldEdit& Edit : Op.Fields)
+		{
+			FString ResolvedName;
+			if (!ResolveFieldLabel(Struct, Edit.Name, ResolvedName))
+			{
+				Out.Refusals.Add(FString::Printf(TEXT("field '%s' is unknown or has an ambiguous display label. Use an internal name. Fields: %s"), *Edit.Name, *FieldNames(Struct)));
+				bFieldsResolved = false;
+			}
+			else Edit.Name = MoveTemp(ResolvedName);
+		}
+		// Persist canonical fields so preview, merging and apply share identity.
 		Out.Ops.Add(Op);
+		if (!bFieldsResolved) continue;
 		if (Op.Op == ERowOp::Set && Op.Fields.IsEmpty())
 		{
 			Out.Refusals.Add(TEXT("Set operations require at least one field=value pair"));
