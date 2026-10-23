@@ -74,3 +74,9 @@ Implemented e06e5aa: dimensions require decimal digits and bounds 1..4096, check
 Run 3e8df026748649778aab9c4beed465d0 passed build and inventory but failed a case-sensitive consent assertion. Test-only correction 6bbf9bd then passed build, focused preview-input checks and all-tool inventory in fa5ac4ce3b9e4cddbf8603e5cf644677. Covers invalid dimensions, consent refusal and valid dimensions reaching JSON validation; does not cover rendering/callback behavior. Existing rendered-suite bound assertion updated in 358d3f7, not rerun.
 
 Workflow exception: reacquiring the original scope for the test capitalization correction refused because its new-file entry already existed; the shell continued and the integrator correction was committed. No worker claim was acquired for 6bbf9bd. Future continuation must classify that file as existing and stop shell execution on claim failure.
+
+## Widget preview result quality and rendered validation
+
+Implemented 4bafe5c: rejected sample values/callbacks, logged errors and render failure produce an explicit partial heading and inspection guidance. Captured error details are now emitted, not just counted. Success reports image output without certifying widget behavior. Removed comments claiming garbage collection reverses external effects or immediately destroys the instance. Supervisor enables rendering for the standalone widget-preview suite.
+
+Run 58f060350d5e4219818acbecb3fbf7ae passed build and rendered test-widget-preview, including actual PNG dimensions at default/requested sizes, invalid-input refusals, and partial results for rejected sample property and parameterized callback. Supervisor restored 16 fixture files and stopped its editor. Logged-error and render-failure injection remain unverified; successful nonempty sample imports and successful explicit callback behavior need separate coverage. The fixture image is simple and does not certify real-project visual correctness.
