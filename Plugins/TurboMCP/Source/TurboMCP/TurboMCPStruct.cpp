@@ -677,7 +677,7 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 	TArray<FString> Parts;
 	SplitItemsWithOptions(InFields, Parts);
 
-	TSet<FString> Seen;
+	TSet<FName> Seen;
 	for (const FString& Raw : Parts)
 	{
 		const FString Item = Trim(Raw);
@@ -707,14 +707,14 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 			return false;
 		}
 
-		if (Seen.Contains(Name))
+		if (Seen.Contains(FName(*Name)))
 		{
 			// Two fields with one name is a struct no caller can address, so it is refused rather than collapsed.
 			OutError = FString::Printf(
 				TEXT("'%s' is given twice. Each field must have its own name."), *Name);
 			return false;
 		}
-		Seen.Add(Name);
+		Seen.Add(FName(*Name));
 
 		FField Field;
 		Field.Name = Name;
@@ -725,6 +725,7 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 		SplitTopLevel(Rest, TEXT(','), Segments);
 		Field.TypeText = Trim(Segments.Num() > 0 ? Segments[0] : FString());
 
+		TSet<FString> SeenOptions;
 		for (int32 Index = 1; Index < Segments.Num(); ++Index)
 		{
 			const FString Segment = Trim(Segments[Index]);
@@ -745,6 +746,12 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 
 			const FString LowerKey = Trim(Key).ToLower();
 			const FString OptionValue = Trim(Value);
+			if (SeenOptions.Contains(LowerKey))
+			{
+				OutError = FString::Printf(TEXT("field '%s' repeats option '%s'; each option may be supplied once."), *Name, *Trim(Key));
+				return false;
+			}
+			SeenOptions.Add(LowerKey);
 
 			if (LowerKey == TEXT("default"))
 			{
