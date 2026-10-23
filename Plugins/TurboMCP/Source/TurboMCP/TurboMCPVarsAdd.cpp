@@ -281,6 +281,7 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 		SplitTopLevel(Trim(Rest), TEXT(' '), Tokens);
 
 		bool bTypeSeen = false;
+		TSet<FString> SeenOptions;
 		for (const FString& RawToken : Tokens)
 		{
 			const FString Token = Trim(RawToken);
@@ -312,6 +313,26 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 
 			Key = Trim(Key).ToLower();
 			Value = Trim(Value);
+			const FString OptionKey = Key == TEXT("value") ? TEXT("default") : Key;
+			if (SeenOptions.Contains(OptionKey))
+			{
+				OutError = FString::Printf(TEXT("'%s' repeats option '%s'; default and value are aliases and cannot both be supplied."), *Variable.Name, *Key);
+				return false;
+			}
+			SeenOptions.Add(OptionKey);
+			if (Key == TEXT("private") || Key == TEXT("readonly") || Key == TEXT("instanceeditable") || Key == TEXT("exposeonspawn"))
+			{
+				const FString LowerValue = Value.ToLower();
+				const bool bTrueValue = LowerValue == TEXT("true") || LowerValue == TEXT("1") || LowerValue == TEXT("yes") || LowerValue == TEXT("on");
+				const bool bFalseValue = LowerValue == TEXT("false") || LowerValue == TEXT("0") || LowerValue == TEXT("no") || LowerValue == TEXT("off");
+				if (!bTrueValue && !bFalseValue)
+				{
+					OutError = FString::Printf(TEXT("'%s' option '%s' requires true/false, 1/0, yes/no or on/off; got '%s'."), *Variable.Name, *Key, *Value);
+					return false;
+				}
+				Value = bTrueValue ? TEXT("true") : TEXT("false");
+			}
+
 
 			if (Key == TEXT("default") || Key == TEXT("value"))
 			{
