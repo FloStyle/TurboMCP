@@ -1196,6 +1196,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
           ],
           "new_files": []
+        },
+        "struct-generated-name-bounds": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
