@@ -1185,8 +1185,8 @@ FString FTurboMCPMaterial::BudgetNote(const FString& InText, int32 InTokenBudget
 	// `P1`: a Read that produced nothing says WHY rather than being blank.
 	if (InText.TrimStartAndEnd().IsEmpty())
 	{
-		Out += TEXT("\n; nothing was printed. That is a bug in this reader rather than an empty ")
-			TEXT("material: every material has at least its own asset line.");
+		Out += TEXT("\n; error: the reader returned no content. This does not mean the material is empty. ")
+            TEXT("Report this failure with the asset path and requested tool.");
 	}
 
 	Out += TEXT("\n; the token estimate is an estimate, not a model tokenizer count.");
@@ -1558,7 +1558,7 @@ FString FTurboMCPMaterial::RenderTree(FPlan& InPlan, bool bTraceOnly, int32 InTo
 	{
 		Out += FString::Printf(
 			TEXT("\n\n; only %s is printed, and only the labels and shared values inside its tree. ")
-			TEXT("R-MAT-LOAD prints every output of this material."), *InPlan.OutputProperty);
+			TEXT("Use ReadTurboMCPMaterialLoad to inspect all connected outputs."), *InPlan.OutputProperty);
 	}
 
 	Out += BudgetNote(Out, InTokenBudget,
@@ -1630,9 +1630,8 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 	if (InPlan.Comments.Num() == 0)
 	{
 		// `P1`. A material with no boxes has one block, which is itself the finding.
-		Out += TEXT("\nthis material has no comment box, so it is one block. R-MAT-LOAD prints it ")
-			TEXT("as a whole; P-COMMENT adds boxes to a Blueprint, and a material box is added in ")
-			TEXT("the material editor for now.");
+		Out += TEXT("\nNo comment boxes found. Use ReadTurboMCPMaterialLoad to inspect the material graph, ")
+            TEXT("or add comment boxes in the Material Editor to organize it into blocks.");
 		return Out;
 	}
 
@@ -1883,8 +1882,8 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 	if (Unboxed > 0)
 	{
 		Out += FString::Printf(
-			TEXT("\n\n%d expression(s) are inside no comment box. R-MAT-LOAD prints them as part ")
-			TEXT("of the whole material."), Unboxed);
+			TEXT("\n\n%d expression(s) are outside all comment boxes. Use ReadTurboMCPMaterialLoad ")
+            TEXT("to inspect them in the full graph."), Unboxed);
 	}
 
 	// THE FINDINGS SECTION, which is the reason this reader exists: it says what is wrong with the
