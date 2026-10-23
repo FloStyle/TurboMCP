@@ -78,12 +78,11 @@ public:
 	 * The reply stays under 2000 characters for one tool. A name that fits
 	 * nothing lists the real toolset names and the closest matches.
 	 *
-	 * Both arguments are strings and both appear required in the schema, because
-	 * the engine's tool registry marks an FString parameter required whatever its
-	 * default. There is no way to express an optional string here, so an empty
-	 * string is the documented way to say "not given" (see `07_ENGINE_NOTES.md`
-	 * section 2.1). Pass "" rather than omitting the field.
-	 */
+	 * Both fields are required by this tool's live schema. Pass an empty string
+	 * for an unused field; requiredness of other tools comes from their own schemas.
+	  * @param ToolsetName Registered toolset name, e.g. TurboMCP.TurboMCPReadToolset. Empty searches all toolsets for ToolName. Supply an empty string when unused.
+	 * @param ToolName Bare tool name, e.g. ReadTurboMCPStatus. Empty lists the named toolset; use the returned list:<offset> for another page. find:0:<words> searches names and descriptions.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPToolHelp(const FString& ToolsetName, const FString& ToolName);
 
@@ -109,7 +108,8 @@ public:
 	 *
 	 * Pass "" to see the refusal message. A query matching nothing says how many
 	 * assets were searched, so "no match" never looks like "nothing searched".
-	 */
+	  * @param Query Nonempty search words with optional type: and path: filters, e.g. type:Blueprint path:/Game/UI. All words must match. Empty input and unsupported filters are refused.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPAssetSearch(const FString& Query);
 
@@ -127,7 +127,8 @@ public:
 	 *
 	 * A fact that could not be read is reported as unknown with the reason, never
 	 * as a confident answer (`D-05`).
-	 */
+	  * @param Assets One or more existing assets separated by commas or pipes, e.g. /Game/Tests/BP_NodeTest. Short names must resolve uniquely; use full paths to disambiguate.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPAssetDescribe(const FString& Assets);
 
@@ -148,7 +149,9 @@ public:
 	 *
 	 * Pass an empty kind for `any`. An unknown kind is refused with the list of
 	 * accepted kinds.
-	 */
+	  * @param Words Words matched against type names and paths, e.g. Vector. Empty searches all types subject to the result cap.
+	 * @param Kind struct, enum, class, interface or any; empty means any. Example: struct.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPTypeFind(const FString& Words, const FString& Kind);
 
@@ -164,7 +167,8 @@ public:
 	 *
 	 * When nothing is unsaved it says so, because a zero that names its reason is
 	 * different from a check that did not run (`P1`).
-	 */
+	  * @param Limit Positive decimal maximum number of listed packages, e.g. 100. Empty uses 50; zero, non-digits and values above 2147483647 are refused.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPDirtyList(const FString& Limit);
 
@@ -241,8 +245,17 @@ public:
 	 * A graph name that does not exist lists the real graph names. A node that
 	 * cannot be printed becomes an inline `; error:` line rather than a silent gap,
 	 * and is also counted at the end so the gap cannot be missed.
-	 */
-	/** EntryFilter optionally matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input. */
+	 *
+	 * EntryFilter optionally matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input.
+	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is refused.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Empty is refused; no graph is guessed.
+	 * @param Format read is the only supported format and the default; empty also means read. write is refused.
+	 * @param Detail manifest, signatures, bodies or full; default or empty means bodies. Each level adds detail.
+	 * @param Offset Zero-based character offset. Start at 0; for later pages use the returned nextOffset and Revision together. Negative values are refused.
+	 * @param MaxChars Maximum page characters, 256..24000 inclusive; default 24000. Partial pages are inspection-only, not standalone write-back input.
+	 * @param Revision Empty for page zero. Later pages require the revision token from page zero with unchanged arguments; stale tokens are refused.
+	 * @param EntryFilter Case-insensitive entry-name substring, e.g. BeginPlay. Empty includes all entries. Filtered views are inspection-only.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPGraphLoad(
 		const FString& Asset,

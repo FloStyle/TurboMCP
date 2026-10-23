@@ -270,13 +270,6 @@ FString UTurboMCPLookToolset::LookTurboMCPToolset()
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPToolset()
 {
-	/**
-	 * How many schema characters one result may carry.
-	 *
-	 * The same 2000 character cap `03_TOOLS.md` R-TOOL-SCHEMA sets, so a help
-	 * result cannot be larger than the budget the spec allows for help.
-	 */
-	constexpr int32 MaxSchemaChars = 2000;
 
 	if (!UToolsetRegistry::IsAvailable())
 	{
@@ -291,7 +284,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPToolset()
 	// A Preview reports what it worked out. It never claims to have changed
 	// anything, which is why this opens with "would change".
 	FString Result = FString::Printf(
-		TEXT("would change: nothing. previewed the size of the own tool help, %d characters total"),
+		TEXT("would change: nothing. Registry schemas for all registered toolsets: %d characters total"),
 		TotalChars);
 
 	for (const TSubclassOf<UToolsetDefinition>& Class : TurboMCPToolsets::GetToolsetClasses())
@@ -308,17 +301,11 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPToolset()
 			continue;
 		}
 
-		// Per toolset size, so a toolset that is too large to help anyone is
-		// visible before an agent pays for the whole thing.
 		const FString OwnSchema = UToolsetRegistry::GetToolsetJsonSchema(Class);
-		Result += FString::Printf(
-			TEXT("\n%s: %d characters, %s"),
-			*Name,
-			OwnSchema.Len(),
-			OwnSchema.Len() > MaxSchemaChars
-				? TEXT("over the 2000 character help budget from R-TOOL-SCHEMA")
-				: TEXT("inside the help budget"));
+		Result += FString::Printf(TEXT("\n%s: %d schema characters"), *Name, OwnSchema.Len());
 	}
+
+	Result += TEXT("\nThese are whole-toolset schema sizes, not compact help sizes. The 2000-character limit applies to one ReadTurboMCPToolHelp response, not a toolset schema.");
 
 	if (TotalChars == 0)
 	{

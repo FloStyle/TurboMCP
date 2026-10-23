@@ -99,10 +99,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 	{
 		if (WantedFormat == TEXT("write"))
 		{
-			return TEXT("error: format 'write' is not implemented yet. It prints the ")
-				TEXT("graph in the engine's own graph write dialect ")
-				TEXT("(04_FORMATS.md section 2.6), and is the next step of phase 2. ")
-				TEXT("Use format 'read', the default, to read the graph now.");
+            return TEXT("error: format 'write' is unsupported. Use Format=read to inspect the graph; read output is not the engine's graph-write dialect.");
 		}
 		return FString::Printf(
 			TEXT("error: '%s' is not a format. Accepted: read."), *Format);

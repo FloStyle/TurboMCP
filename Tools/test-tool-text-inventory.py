@@ -30,5 +30,10 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
                 raise RuntimeError(name + ' lost essential help: ' + expected)
         if len(help_text) > 2000:
             raise RuntimeError(name + ' exceeds compact help budget')
+        documented = {'ReadTurboMCPToolHelp', 'ReadTurboMCPAssetSearch', 'ReadTurboMCPAssetDescribe', 'ReadTurboMCPTypeFind', 'ReadTurboMCPDirtyList', 'ReadTurboMCPGraphLoad'}
+        if name in documented:
+            for parameter, definition in tool['inputSchema'].get('properties', {}).items():
+                if not definition.get('description'):
+                    raise RuntimeError(name + ' missing live parameter description: ' + parameter)
         count += 1
 print('RESULT: PASS (inventoried %d tools; behavioral correctness not certified)' % count, flush=True)
