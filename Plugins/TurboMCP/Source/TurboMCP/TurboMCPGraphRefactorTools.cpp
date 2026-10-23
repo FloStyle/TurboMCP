@@ -184,7 +184,7 @@ bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
         || (OriginalBP->GeneratedClass && OriginalBP->GeneratedClass->FindFunctionByName(Name))))
     { Error=TEXT("event name already exists as a function"); return false; }
     TArray<UEdGraph*> AllGraphs;
-    if(OriginalBP) FBlueprintEditorUtils::GetAllGraphs(OriginalBP,AllGraphs);
+    if(OriginalBP) OriginalBP->GetAllGraphs(AllGraphs);
     for(UEdGraph* G:AllGraphs) if(G) for(UEdGraphNode* N:G->Nodes)
         if(const UK2Node_CustomEvent* E=Cast<UK2Node_CustomEvent>(N)) if(E->CustomFunctionName==Name)
         { Error=TEXT("event name already exists"); return false; }

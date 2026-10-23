@@ -581,14 +581,14 @@ FString FTurboMCPBlueprintRead::RenderRelations(const UBlueprint* InBlueprint,
                     *Member, *Node->GetClass()->GetName(), Dispatcher->DelegateReference.IsSelfContext() ? TEXT("true") : TEXT("false"), *TurboMCPNodeId::MakeForNode(Node, true)));
             }
 
-            if(const UK2Node_ComponentBoundEvent* Bound=Cast<UK2Node_ComponentBoundEvent>(Node))
+            if(const UK2Node_ComponentBoundEvent* ComponentBound=Cast<UK2Node_ComponentBoundEvent>(Node))
                 DelegateSites.Add(FString::Printf(TEXT("component/widget %s.%s (owner class=%s) -> event %s; declared automatic binding, runtime invocation not inferred"),
-                    *Bound->ComponentPropertyName.ToString(),*Bound->DelegatePropertyName.ToString(),
-                    *GetPathNameSafe(Bound->DelegateOwnerClass.Get()),*TurboMCPNodeId::MakeForNode(Node,true)));
-            else if(const UK2Node_ActorBoundEvent* Bound=Cast<UK2Node_ActorBoundEvent>(Node))
+                    *ComponentBound->ComponentPropertyName.ToString(),*ComponentBound->DelegatePropertyName.ToString(),
+                    *GetPathNameSafe(ComponentBound->DelegateOwnerClass.Get()),*TurboMCPNodeId::MakeForNode(Node,true)));
+            else if(const UK2Node_ActorBoundEvent* ActorBound=Cast<UK2Node_ActorBoundEvent>(Node))
                 DelegateSites.Add(FString::Printf(TEXT("actor %s.%s (owner class=%s) -> event %s; declared automatic binding, runtime invocation not inferred"),
-                    *GetPathNameSafe(Bound->EventOwner.Get()),*Bound->DelegatePropertyName.ToString(),
-                    *GetPathNameSafe(Bound->DelegateOwnerClass.Get()),*TurboMCPNodeId::MakeForNode(Node,true)));
+                    *GetPathNameSafe(ActorBound->EventOwner.Get()),*ActorBound->DelegatePropertyName.ToString(),
+                    *GetPathNameSafe(ActorBound->DelegateOwnerClass.Get()),*TurboMCPNodeId::MakeForNode(Node,true)));
             FString DelegateTarget;
             bool OwnDelegateTarget=false;
             if(const UK2Node_CreateDelegate* Delegate=Cast<UK2Node_CreateDelegate>(Node))
