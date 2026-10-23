@@ -1055,3 +1055,7 @@ Implemented all-output/split-pin search, deterministic offending consumer choice
 ## 2026-10-23 remaining non-bug classification
 
 foundation-engine-matrix and ue59-protocol are Compatibility; 51678b9f is Housekeeping (report traceability). All remain unresolved in their own categories. This reconciliation does not close a defect or claim test evidence.
+
+## 2026-10-23 client no-blind-tool-replay
+
+Removed Read/Look prefix and unresolved envelope exemptions. Session classifies the RPC method; nested tool names cannot masquerade as protocol discovery. Default tools/call response loss raises unknown outcome without replay. Explicit request-specific replay override remains supported. No tests run. Deferred: lost Read/Look/unknown-envelope replies, initialization retry and explicit override. FIELD-04 remains open for native script/late-outcome investigation.

@@ -11,6 +11,8 @@ Review: source-reviewed
 
 ## Current product state
 
+2026-10-23 client repair: tmcp no longer infers replay safety from Read/Look prefixes or unresolved call_tool envelopes. All tool calls default to unknown outcome without replay on lost responses; initialization/discovery may retry. Explicit mutates=False / --mutates no remains a caller assertion of request-specific replay safety. Implemented, unbuilt_untested. Native script timeout/late completion and the historical duplicate-execution suspicion remain unresolved.
+
 FIELD-FIX-01/02/14 close bounded graph rollback implementation slices. Native script timeouts, duplicate-execution suspicion and late outcomes remain unresolved; the protected registry does not provide general script batching.
 
 All new regression execution is deferred by owner. See [verification ledger](../docs/audit/deferred-field-verification.md). Historical approvals below do not authorize tests or engine changes now.
