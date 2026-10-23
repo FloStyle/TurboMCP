@@ -1327,6 +1327,13 @@
             "Tools/test-tool-text-inventory.py"
           ],
           "new_files": []
+        },
+        "quality-datatable-contract-test": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-datatable.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
