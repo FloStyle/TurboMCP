@@ -167,12 +167,12 @@ FString FTurboMCPCallCost::DescribeEmptiness(EEmptiness InEmptiness)
 	switch (InEmptiness)
 	{
 	case EEmptiness::LoggingOff:
-		return TEXT("logging is OFF, so nothing has been recorded and nothing is cheap. "
-			"`E-CALL-LOG` turns it on; this is NOT a result of zero.");
+		return TEXT("Recording is off and no calls are retained for analysis. "
+			"Use EditTurboMCPCallLog to enable recording; missing measurements are not zero.");
 	case EEmptiness::LogOnAndEmpty:
-		return TEXT("logging is ON and the log is empty, so no tool has been called yet.");
+		return TEXT("Recording is on, but no calls are retained for analysis. The log may have been cleared.");
 	case EEmptiness::FilterMatchedNothing:
 	default:
-		return TEXT("the log has entries but NONE matched the filter.");
+		return TEXT("Recorded calls are available, but none match the filter. Adjust Filter or Since.");
 	}
 }

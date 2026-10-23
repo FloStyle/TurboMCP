@@ -158,14 +158,14 @@ def main():
     check("the log being OFF is stated in the recording line",
           "recording: OFF" in off, off[:200])
     check("R-CALL-COST says NO COST CAN BE REPORTED rather than printing zeros",
-          "NO COST CAN BE REPORTED" in off, off[:300])
+          "No recorded calls are available for cost analysis" in off, off[:300])
     check("it names LOGGING OFF as the reason, which is one of the three `P1` distinguishes",
-          "logging is OFF" in off, off[:400])
+          "Recording is off" in off, off[:400])
     # `P1` AND `T-HELP-6` TOGETHER: the whole point is that "off" and "zero" are different answers.
     check("it does NOT report a zero total, because nothing was measured",
           "0 tokens" not in off and "0 call(s)" not in off, off[:300])
     check("it names the switch that turns logging on, so the next step is a call and not a guess",
-          "E-CALL-LOG" in off, off[:400])
+          "EditTurboMCPCallLog" in off, off[:400])
 
     print()
     print("=== with the log ON, known calls are made and then costed ===")
