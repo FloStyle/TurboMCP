@@ -296,7 +296,12 @@ function Start-EditorAndWait {
     # down and the foreground work does not notice. An interactive launch does not have to pass either switch.
     $oldStartingEditor = $env:TURBOMCP_RUNNER_STARTING_EDITOR
     $env:TURBOMCP_RUNNER_STARTING_EDITOR = '1'
-    try { & pwsh -NoProfile -File $StartEditor -LowPriority -Offscreen 2>&1 | Out-Null }
+    # The field diagnostic must exercise real Slate/rendering, not NullRHI.
+    $diagnosticRender = $Suites -eq 'test-field-open-diagnostic'
+    try {
+        if ($diagnosticRender) { & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null }
+        else { & pwsh -NoProfile -File $StartEditor -LowPriority -Offscreen 2>&1 | Out-Null }
+    }
     finally { $env:TURBOMCP_RUNNER_STARTING_EDITOR = $oldStartingEditor }
     $retryDeadline = (Get-Date).AddSeconds($TimeoutSeconds)
     while ((Get-Date) -lt $retryDeadline) {
