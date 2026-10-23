@@ -149,7 +149,7 @@ public:
 	 *
 	 * Pass an empty kind for `any`. An unknown kind is refused with the list of
 	 * accepted kinds.
-	  * @param Words Words matched against type names and paths, e.g. Vector. Empty searches all types subject to the result cap.
+	  * @param Words Words matched against type names and paths, e.g. Vector. Empty or whitespace-only input is refused.
 	 * @param Kind struct, enum, class, interface or any; empty means any. Example: struct.
 	*/
 	UFUNCTION(meta = (AICallable))
