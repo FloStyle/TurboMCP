@@ -134,3 +134,9 @@ Implemented a5712e5: recording/clear parameters now documented; enabling recordi
 Next source-review findings: TraceReadTools still recommends obsolete E-TRACE/R-TRACE names and incorrectly describes toolset class membership as a mutation guard. PlayCheckTools reports a clean run based on zero captured warnings/errors; qualify this as captured-log evidence rather than full behavioral correctness. These findings are not fixed by a5712e5.
 
 Run 4079d0fcafdd49029c855a2a44fd83b8 passed build, call-log regression and all-tool schema/help inventory. Restart persistence and settings failure injection remain unverified; the output now states that limit.
+
+## Trace and play-check text (2026-10-24)
+
+Implemented 34ac513: trace refusals use callable tool names; comments attribute the mutation boundary to explicit action checks, not Read class membership. Play-check zero-warning output describes captured evidence without certifying gameplay. Four parameter descriptions cover start/poll, duration, map and trace status inputs. Compact help must retain execution, non-sandboxed effects and no-explicit-save information.
+
+Remaining source finding: an invalid ReadTrace action still reaches shared Plan guidance listing arm/clear/status, although arm/clear belong to the Edit tool. The specific mutation refusal is fixed; general invalid-action guidance needs a follow-up. Existing trace status only reports recorded events; zero hits are not proof of non-execution.
