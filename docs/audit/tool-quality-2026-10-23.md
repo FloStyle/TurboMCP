@@ -108,3 +108,9 @@ Run 95e0f3af4afb42a2b688be785c03a0a6 passed build/all-tool help but material tes
 ## Empty material trace recovery (2026-10-24)
 
 Implemented 01691e3: empty/whitespace OutputProperty refusals now list the actual connected outputs instead of falsely saying none have been listed. Materials without connections explicitly report no connected output to trace. Run eaeeb1cccf494b80a5b698b32e7fa2fc passed build and material regression, including both empty forms checked against current fixture output names; 16 fixture files restored. No-connected-output branch remains source-reviewed rather than independently fixture-tested.
+
+## Material output English (2026-10-24)
+
+Implemented 0de7207: replaced obsolete shorthand and roadmap guidance in material-reader output with plain English and callable ReadTurboMCPMaterialLoad guidance. Unboxed expressions are described as outside comment boxes; empty reader content no longer implies an empty material.
+
+Interrupted observation was recovered: supervisor run f90a6dd24c194dc59159f36c81dd30af completed with a test failure because one assertion expected the old wording. Test correction b3cccb7 checks the numeric expression count with the current wording. Run a59643b22b524e898953813e5fe3572c passed build and test-material at b3cccb7d9acdf0d8dc2ae2e3d0391cb06c815038; all 16 fixture files were restored. This verifies the exercised material paths, not every output branch or all tools. Hard material budget enforcement and the remaining parameter/output review are still open.
