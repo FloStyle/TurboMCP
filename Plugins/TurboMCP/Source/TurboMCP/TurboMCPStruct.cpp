@@ -677,7 +677,7 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 	TArray<FString> Parts;
 	SplitItemsWithOptions(InFields, Parts);
 
-	TSet<FName> Seen;
+	TSet<FString> Seen;
 	for (const FString& Raw : Parts)
 	{
 		const FString Item = Trim(Raw);
@@ -707,14 +707,14 @@ bool FTurboMCPStruct::ParseFields(const FString& InFields, TArray<FField>& OutFi
 			return false;
 		}
 
-		if (Seen.Contains(FName(*Name)))
+		if (Seen.Contains(Name.ToLower()))
 		{
 			// Two fields with one name is a struct no caller can address, so it is refused rather than collapsed.
 			OutError = FString::Printf(
 				TEXT("'%s' is given twice. Each field must have its own name."), *Name);
 			return false;
 		}
-		Seen.Add(FName(*Name));
+		Seen.Add(Name.ToLower());
 
 		FField Field;
 		Field.Name = Name;
