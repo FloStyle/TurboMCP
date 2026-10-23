@@ -1236,16 +1236,15 @@ public:
 	 * Each finding carries its line and column.
 	 *
 	 * Call this BEFORE P-GRAPH-APPEND, P-GRAPH-REPLACE or P-GRAPH-PATCH. Those three
-	 * take this same text and reach the same decision through this same check, so a
-	 * text that passes here is one they accept - and a text that fails here names
+	 * take this same text and reach the same decision through this same check, but each operation also has its own scope and edit guards. A text that fails here names
 	 * what to fix rather than failing halfway through a write.
 	 *
 	 * A graph name is required, not optional: a node type and a pin name are both
 	 * resolved against a live graph, so an unnamed graph is refused rather than
 	 * guessed at.
 	 *
-	 * Writes nothing, and cannot. It is in this toolset, which holds no tool that can
-	 * change an asset.
+	 * Plans this operation without applying it to the target graph. A successful preview
+	 * does not guarantee a later edit: the target state and edit guards can change.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphCheck(
@@ -1268,16 +1267,21 @@ public:
 	 * second form's input pin. A local label is unique within that submitted block.
 	 *
 	 * The text is the same dialect the readers print, checked by P-GRAPH-CHECK first, so
-	 * a text this accepts is one the edit accepts.
+	 * the edit rechecks the current graph and its mutation guards.
 	 *
-	 * Writes nothing, and cannot. It is in this toolset, which holds no tool that can
-	 * change an asset.
+	 * Plans this operation without applying it to the target graph. A successful preview
+	 * does not guarantee a later edit: the target state and edit guards can change.
      * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
      * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments
      * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
-	 */
-	/** Continuation: auto (legacy unique exit), all (all reachable new unconnected exec exits), or label:pin (one named new node output). Applies to displaced existing exec wires; explicit submitted target links take precedence. Compile/save deferred. */
+	 *
+	 * Continuation: auto (legacy unique exit), all (all reachable new unconnected exec exits), or label:pin (one named new node output). Applies to displaced existing exec wires; explicit submitted target links take precedence. Compile/save deferred.
+	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input.
+	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence. Example: Done:then for a submitted local label.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphAppend(
 		const FString& Asset,
@@ -1297,8 +1301,8 @@ public:
 	 * than counted, and every entry, result, event and comment is kept, because removing one
 	 * would delete a signature or an author's documentation.
 	 *
-	 * Writes nothing, and cannot. It is in this toolset, which holds no tool that can
-	 * change an asset.
+	 * Plans this operation without applying it to the target graph. A successful preview
+	 * does not guarantee a later edit: the target state and edit guards can change.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphReplace(
@@ -1323,7 +1327,13 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetRevert(const FString& Asset);
 
-	/** Preview call swap. Options is optional JSON: {"pin_map":{"Old":"New"},"new_inputs":{"NewInput":{"node":"reader node ID","pin":"OutputPin"}}}. Unmapped pins retain exact names; keepOld defaults true. */
+	/** Preview call swap. Options is optional JSON: {"pin_map":{"Old":"New"},"new_inputs":{"NewInput":{"node":"reader node ID","pin":"OutputPin"}}}. Unmapped pins retain exact names; keepOld defaults true.  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	 * @param NodeId Exact reader ID of the existing call node to replace; empty is invalid.
+	 * @param ReplacementTypeId Exact replacement call type ID returned by node-type discovery for this graph. Do not use a display name or guessed C++ name.
+	 * @param KeepOld true or yes (also empty) keeps the original node disconnected; false or no removes it after verification. Other values are refused.
+	 * @param Options JSON object encoded as a string, or empty for exact-name pin matching. Optional pin_map maps old pin names to new names; new_inputs maps new input names to objects with node and pin. Example: {"pin_map":{"Old":"New"}}. Unknown fields are refused.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphSwapCall(
 		const FString& Asset,
@@ -1346,7 +1356,13 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPBatchEdit(const FString& Operations);
 
-    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first. */
+    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first.  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	 * @param SourceNodeId Exact reader ID of the existing output node in this graph; empty or unresolved IDs are refused.
+	 * @param SourcePin Exact output pin name from the reader, e.g. then. No automatic continuation is added.
+	 * @param TargetNodeId Exact reader ID of the existing input node in this graph; empty or unresolved IDs are refused.
+	 * @param TargetPin Exact input pin name from the reader, e.g. execute. Data replaces this input source; execution replaces only the named source output destination, preserving other incoming paths.
+	*/
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
 
@@ -1395,7 +1411,10 @@ public:
 	 * Returns the nodes that would change, each by key with its class, and the count of nodes
 	 * named against the count that would actually differ. Writes nothing, and cannot. It is in
 	 * this toolset, which holds no tool that can change an asset.
-	 */
+	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	 * @param Text Nonempty graph text containing existing reader node IDs and only changed literal pin defaults. No node creation, removal or link rewiring. Example: a reader-derived PrintString form with its original ID and changed InString value.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphPatch(
 		const FString& Asset,
@@ -2123,8 +2142,13 @@ public:
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
      * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments
      * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
-	 */
-	/** Continuation: auto (legacy unique exit), all (all reachable new unconnected exec exits), or label:pin (one named new node output). Applies to displaced existing exec wires; explicit submitted target links take precedence. Compile/save deferred. */
+	 *
+	 * Continuation: auto (legacy unique exit), all (all reachable new unconnected exec exits), or label:pin (one named new node output). Applies to displaced existing exec wires; explicit submitted target links take precedence. Compile/save deferred.
+	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input.
+	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence. Example: Done:then for a submitted local label.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphAppend(
 		const FString& Asset,
@@ -2175,11 +2199,19 @@ public:
 	 * in the signed 32-bit range. Supply 1..4096 unique nodes; omit unchanged nodes.
 	 * Validates the entire batch before writing; unlisted nodes stay in place.
 	 * @param Positions JSON array encoded as a string. Example: [{"node":"exact reader node ID","x":100,"y":200}]
-	 */
+	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& Positions);
 
-	/** Apply a localized call-node swap. keepOld=true retains the old node unplugged; false deletes it after verification. */
+	/** Apply a localized call-node swap. keepOld=true retains the old node unplugged; false deletes it after verification.  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	 * @param NodeId Exact reader ID of the existing call node to replace; empty is invalid.
+	 * @param ReplacementTypeId Exact replacement call type ID returned by node-type discovery for this graph. Do not use a display name or guessed C++ name.
+	 * @param KeepOld true or yes (also empty) keeps the original node disconnected; false or no removes it after verification. Other values are refused.
+	 * @param Options JSON object encoded as a string, or empty for exact-name pin matching. Optional pin_map maps old pin names to new names; new_inputs maps new input names to objects with node and pin. Example: {"pin_map":{"Old":"New"}}. Unknown fields are refused.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphSwapCall(
 		const FString& Asset,
@@ -2200,7 +2232,13 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPBatchEdit(const FString& Operations);
 
-    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first. */
+    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first.  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	 * @param SourceNodeId Exact reader ID of the existing output node in this graph; empty or unresolved IDs are refused.
+	 * @param SourcePin Exact output pin name from the reader, e.g. then. No automatic continuation is added.
+	 * @param TargetNodeId Exact reader ID of the existing input node in this graph; empty or unresolved IDs are refused.
+	 * @param TargetPin Exact input pin name from the reader, e.g. execute. Data replaces this input source; execution replaces only the named source output destination, preserving other incoming paths.
+	*/
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
 
@@ -2257,7 +2295,10 @@ public:
 	 *
 	 * One transaction, rolled back on any new compile error, and the first line is `changed` or
 	 * `unchanged`.
-	 */
+	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
+	 * @param Text Nonempty graph text containing existing reader node IDs and only changed literal pin defaults. No node creation, removal or link rewiring. Example: a reader-derived PrintString form with its original ID and changed InString value.
+	*/
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphPatch(
 		const FString& Asset,
