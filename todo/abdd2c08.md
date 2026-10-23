@@ -11,6 +11,8 @@ Validation: unbuilt_untested
 
 ## Current review
 
+2026-10-23 follow-up 265cced: oversized struct category options refuse in ParseFields before FName construction or mutation. Shared planning covers struct creation and field edits. Implemented / unbuilt_untested; no tests, builds or editor runs.
+
 2026-10-23 scope reconciliation: the concrete parser defects are implemented through cf03659, unbuilt_untested. The remaining unified-grammar proposal is preserved separately in [field-grammar-feature](field-grammar-feature.md); it is a feature, not another open parser bug. Historical requirements below remain for traceability.
 
 2026-10-23 follow-up 05aab8f/cf03659, unbuilt_untested: struct fields reject case-equivalent duplicate names and repeated options. Duplicate checking compares normalized strings without interning unbounded names. Function signature source already rejects duplicate names and invalid types; its supported grammar is Name: Type, so adding option syntax is feature scope. Remaining: reconcile shared grammar proposal/help scope separately from implemented parser defects. No tests/build/editor runs.

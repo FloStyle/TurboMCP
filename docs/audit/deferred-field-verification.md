@@ -1027,3 +1027,7 @@ Implemented, unbuilt_untested: case-equivalent field names and duplicate struct 
 ## 2026-10-23 parser scope reconciliation
 
 Closed abdd2c08 concrete parser repairs as implemented / unbuilt_untested through cf03659. Unified grammar remains FEATURE-FIELD-GRAMMAR, a backlog feature. Original acceptance retained; no tests/build/editor runs.
+
+## 2026-10-23 oversized struct categories
+
+265cced guards category length before FName construction in both struct creation and field-edit planning. Source-reviewed, unbuilt_untested. Deferred boundary evidence: NAME_SIZE-1 accepted, NAME_SIZE refused, refused plan leaves asset unchanged. No tests/build/editor runs.
