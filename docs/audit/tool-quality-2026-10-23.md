@@ -118,3 +118,11 @@ Interrupted observation was recovered: supervisor run f90a6dd24c194dc59159f36c81
 ## Material findings and recovery wording (2026-10-24)
 
 Implemented 72a485f: removed unsupported claims that missing labels imply disconnected islands, and stopped inferring that empty comment boxes are leftovers. Output now describes observed contents and uses callable Blueprint, widget and material preview names. Simplified token-estimate wording and obsolete reader comments. Supervised run 92e32a97c2424cdc9db06cab8e9e59c3 passed build and test-material; this exercises the fixture's material findings, not every empty-result/wrong-type branch. Those branches remain source-reviewed only.
+
+## Call-log and cost output contracts (2026-10-24)
+
+Implemented a316551 / 0535c38: six parameter descriptions, accurate filter differences and timestamp text-comparison limits, plain-English empty-result guidance with callable tool names. An empty retained log no longer claims no tools have run. CallLog limits now reject fractions/signs and saturate large positive digit strings at 500 without integer overflow. Cost headings no longer use emphatic claims about calls being cheap.
+
+Run 372ef3a59a244b3299f9c8404782bc28 passed build/help but exposed a missing import in the new test and stale text assertions. Corrections a8b9467 / ba53674 preserve refusal checks. Run e79777dcdc2042b6a6bd9c48b1337c92 passed build, call-log regression (including fractional/huge limits) and all 125 help responses; cost failed only its two stale cap wording assertions. Latest live schema count: 226 parameters still lack descriptions. Timestamp validation/normalization is not implemented; documented as text comparison. Broader behavior coverage remains incomplete.
+
+Final run 5abb594a3d784632bbd8337dec435f76 passed build and call-cost regression at ba53674. Together these runs verify the exercised call-log/cost paths; they do not certify every tool's behavior.
