@@ -849,7 +849,7 @@ bool FTurboMCPMaterial::Plan(const FString& InAsset, ERead InKind,
 		// which is a different and much worse answer.
 		OutError = FString::Printf(
 			TEXT("%s is a %s, and these readers take a Material, a Material Instance or a Material ")
-			TEXT("Function. For a Blueprint use R-BP-LOAD; for a widget use the widget tree reader."),
+			TEXT("Function. For a Blueprint use ReadTurboMCPBlueprintLoad; for a widget use ReadTurboMCPWidgetTree."),
 			*Resolved.ObjectPath, *Loaded->GetClass()->GetName());
 		return false;
 	}
@@ -1189,7 +1189,7 @@ FString FTurboMCPMaterial::BudgetNote(const FString& InText, int32 InTokenBudget
             TEXT("Report this failure with the asset path and requested tool.");
 	}
 
-	Out += TEXT("\n; the token estimate is an estimate, not a model tokenizer count.");
+	Out += TEXT("\n; Token counts are approximate; they are not measured with a model tokenizer.");
 	return Out;
 }
 
@@ -1215,12 +1215,10 @@ FString FTurboMCPMaterial::RenderLabels(const FPlan& InPlan)
 
 	if (Declarations == 0 && Readers == 0)
 	{
-		// `P1`: never return nothing, and say WHY. A material with no labels is a different answer
-		// from a failed read, and the difference matters because the whole point of calling this
-		// first is to learn whether the material is one connected picture.
-		Out += TEXT("\nthis material declares no named reroute labels, and nothing reads one. Every ")
-			TEXT("value is reached by a direct wire, so the graph is as many islands as it has ")
-			TEXT("shared values. P-MAT-LABEL-PROMOTE proposes labels worth adding.");
+		// An empty label list is a valid result, not a failed graph read.
+		Out += TEXT("\nNo named reroute declarations or readers were found. ")
+			TEXT("Use ReadTurboMCPMaterialLoad to inspect the graph. ")
+			TEXT("Use PreviewTurboMCPMaterialLabelPromote to preview possible labels.");
 		return Out;
 	}
 
@@ -1307,8 +1305,8 @@ FString FTurboMCPMaterial::RenderLabels(const FPlan& InPlan)
 
 	Out += FString::Printf(TEXT("\n; %d expression(s) in the graph, %d comment box(es)"),
 		InPlan.Expressions.Num(), InPlan.Comments.Num());
-	Out += TEXT("\n; call this first on any material: a label is the only thing that keeps a ")
-		TEXT("material as one connected picture rather than islands.");
+	Out += TEXT("\n; This report lists named reroutes and their readers. ")
+		TEXT("Use ReadTurboMCPMaterialLoad to inspect the connected outputs.");
 	Out += BudgetNote(Out, 0, FString());
 	return Out;
 }
@@ -1713,9 +1711,8 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 
 		if (Box.Members.Num() == 0)
 		{
-			// An empty box is named plainly. It is a block with no logic, which is a finding rather
-			// than an error: the box is probably a leftover.
-			Out += TEXT("\n    ; this box holds no expression. It is a label with nothing to label.");
+			// Empty comments can be intentional; report their contents without inferring intent.
+			Out += TEXT("\n    ; This comment box contains no expressions.");
 			Out += TEXT(")");
 			continue;
 		}
@@ -1909,8 +1906,8 @@ FString FTurboMCPMaterial::RenderBlocks(FPlan& InPlan, int32 InTokenBudget)
 			{
 				Out += TEXT("\n") + Line;
 			}
-			Out += TEXT("\n; a wire crossing a box boundary is what a label is for. ")
-				TEXT("P-MAT-LABEL-PROMOTE proposes the labels.");
+			Out += TEXT("\n; Named reroutes may help organize these connections. ")
+				TEXT("Use PreviewTurboMCPMaterialLabelPromote to preview possible labels.");
 		}
 		if (InBoxLabels.Num() > 0)
 		{

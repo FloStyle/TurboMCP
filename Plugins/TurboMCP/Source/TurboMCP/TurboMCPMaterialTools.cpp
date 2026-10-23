@@ -13,22 +13,9 @@
 
 #include "TurboMCPMaterial.h"
 
-/**
- * The four material readers: `R-MAT-LABELS`, `R-MAT-LOAD`, `R-MAT-TRACE` and `R-MAT-BLOCKS`.
- *
- * ONE RENDERER, FOUR VIEWS. Every printing decision lives in `FTurboMCPMaterial`, so these functions
- * are only the boundary: resolve, refuse by name, or print. That is the same shape `P-COMMENT` uses.
- *
- * `R-MAT-TRACE` SHARES ITS PRINTING CODE WITH `R-MAT-LOAD`, which `03_TOOLS.md` requires by name:
- * "Shares its printing code with R-MAT-LOAD, so the two cannot disagree." Both call `RenderTree` and
- * differ in one argument, so they cannot disagree about the dialect, the label rule or the shared-value
- * rule - only about which outputs are printed.
- *
- * THE ERROR PREFIX IS ADDED IN EXACTLY ONE PLACE. `FTurboMCPMaterial::Plan` fills a bare sentence,
- * while `FTurboMCPAssetResolver::Resolve` - which `Plan` passes through - fills one that already
- * carries `error:`. Two layers each assuming the other leaves the prefix off is how a result ends up
- * reading `error: error: ...`, so `AsError` checks before adding.
- */
+// Material reader entry points share planning and rendering code.
+// Load and Trace use the same tree renderer with different output selection.
+// AsError avoids duplicating an error prefix supplied by the asset resolver.
 namespace
 {
 	// Shared read path; positive budgets currently report overruns, not hard caps.
@@ -47,8 +34,7 @@ namespace
 		switch (InKind)
 		{
 		case FTurboMCPMaterial::ERead::Labels:
-			// A label report is a short list by construction - one line per label plus its readers -
-			// so a budget would have nothing to reduce. It still reports its size.
+			// Label reports have no budget parameter.
 			return FTurboMCPMaterial::RenderLabels(Plan);
 
 		case FTurboMCPMaterial::ERead::Trace:
@@ -66,8 +52,7 @@ namespace
 
 FString UTurboMCPReadToolset::ReadTurboMCPMaterialLabels(const FString& Asset)
 {
-	// `03_TOOLS.md` says to call this first on any material, so it takes no output property and no
-	// budget: the answer is short and an agent that had to pass anything would be tempted to skip it.
+	// Enumerate named reroutes without selecting a material output.
 	return ReadMaterial(Asset, FTurboMCPMaterial::ERead::Labels, FString(),
 		/*bInIncludeInstanceOverrides=*/false, /*InTokenBudget=*/0);
 }
