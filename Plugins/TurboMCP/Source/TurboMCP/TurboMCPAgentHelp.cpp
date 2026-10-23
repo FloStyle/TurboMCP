@@ -73,7 +73,9 @@ namespace
 	{
 		if (Toolset.StartsWith(TEXT("TurboMCP.")) && Bare == TEXT("ReadTurboMCPPlayCheck"))
 			return TEXT("Execute (starts PIE / runs project code)");
-		return KindOf(Toolset);
+		if (Toolset.StartsWith(TEXT("TurboMCP.")) && Bare == TEXT("LookTurboMCPWidgetPreview"))
+            return TEXT("Execute (renders widget / runs project code)");
+        return KindOf(Toolset);
 	}
 
 	/**
@@ -516,8 +518,18 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 			FString Help = FString::Printf(TEXT("read: %s.%s"), *Entry.Name, *Bare);
 			Help += FString::Printf(TEXT("\nkind: %s   source: %s"),
 				*KindForTool(Entry.Name, Bare), *SourceOf(Entry.Name));
-            if (Bare == TEXT("ReadTurboMCPPlayCheck"))
-                Help += TEXT("\neffects: starts PIE and executes project code; NOT a passive read.");
+            // Keep execution and destructive effects before optional detail and truncation.
+            if (Entry.Name.StartsWith(TEXT("TurboMCP.")))
+            {
+                if (Bare == TEXT("ReadTurboMCPPlayCheck"))
+                    Help += TEXT("\neffects: starts PIE and executes project code; NOT a passive read.");
+                else if (Bare == TEXT("LookTurboMCPWidgetPreview"))
+                    Help += TEXT("\neffects: Execution=allow runs widget/project code, including construction. Empty/deny refuses. Effects are not sandboxed or reversible; this is NOT a passive image read.");
+                else if (Bare == TEXT("PreviewTurboMCPAssetRevert"))
+                    Help += TEXT("\neffects: preview only; does not discard edits. Returns confirmation for EditTurboMCPAssetRevert, which discards ALL unsaved edits in the named package and may reset undo.");
+                else if (Bare == TEXT("EditTurboMCPAssetRevert"))
+                    Help += TEXT("\neffects: discards ALL unsaved edits in the named Blueprint package; may reset undo. Confirm must be the current preview confirmation. This is not a save or a normal undo.");
+            }
 			Help += FString::Printf(TEXT("\nwhat: %s"),
 				*FirstSentence(Field(Tool, TEXT("description"))));
 

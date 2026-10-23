@@ -263,8 +263,7 @@ FString UTurboMCPLookToolset::LookTurboMCPToolset()
 	}
 
 	// Say plainly what this tool did not do, so it is not mistaken for a capture.
-	Result += TEXT("\nThis tool only names the windows. Writing the image is a later ")
-		TEXT("phase of the roadmap.");
+	Result += TEXT("\nThis tool lists windows only. Use LookTurboMCPCapture to capture a Blueprint graph.");
 
 	return Result;
 }

@@ -14,35 +14,11 @@
 #include "TurboMCPToolsets.generated.h"
 
 /**
- * The four toolset classes, one per tool kind.
- *
- * `03_TOOLS.md` section 1.1 requires a toolset that holds only Read and Look
- * tools to be unable to change an asset, and requires that this stays true by
- * structure rather than by care.
- *
- * So the kind is the class, not a label on a function:
- *
- * | Kind    | Class                  | May write |
- * |---------|------------------------|-----------|
- * | Read    | UTurboMCPReadToolset   | no        |
- * | Look    | UTurboMCPLookToolset   | no        |
- * | Preview | UTurboMCPPreviewToolset| no        |
- * | Edit    | UTurboMCPEditToolset   | yes       |
- *
- * A write tool can only live in the Edit class, and that class is registered
- * last. Nothing enforces this by convention: putting a write in a Read class is
- * a code change in a file whose whole job is reading, which is visible in review.
- *
- * The toolset name an agent sees is `<Module>.<ClassName>`, built by the engine
- * in FFunctionLibraryToolset::GetToolsetClassName. Ours are therefore
- * `TurboMCP.UTurboMCPReadToolset` and so on. The engine does not strip the `U`,
- * so the class names are chosen to read well with it.
- *
- * Each tool is a static UFUNCTION with `meta = (AICallable)`. The engine builds
- * the tool's schema from reflection and uses the doc comment as the tool
- * description the agent reads. `07_ENGINE_NOTES.md` section 2.1 says a UFUNCTION
- * in a toolset that is not a tool needs `meta = (AIIgnore)`, or the registry
- * reports an invalid tool function.
+ * Reflected MCP tools grouped by their primary purpose. A toolset name is not a
+ * side-effect guarantee: PlayCheck and WidgetPreview execute project code.
+ * Consult each tool's execution and mutation contract before invoking it.
+ * The registry publishes names such as TurboMCP.TurboMCPReadToolset.
+ * UFUNCTION documentation is exposed to MCP clients as the tool description.
  */
 
 /**
@@ -762,7 +738,7 @@ public:
 };
 
 /**
- * Look tools: return layout facts or images. Cannot change anything.
+ * Look tools return layout facts or images. WidgetPreview requires per-call consent and runs project code; capture may open editor UI and writes an image file.
  *
  * Phase 3 fills this class with L-LAYOUT-REPORT, L-CAPTURE and
  * L-WIDGET-PREVIEW.
@@ -1330,7 +1306,7 @@ public:
     static FString PreviewTurboMCPGraphGroupPlacement(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds);
 
 
-	/** Preview reload of saved Blueprint package; discards all unsaved edits, may reset undo. Edit requires the preview confirmation. */
+	/** Preview reloading a saved Blueprint package without discarding edits. Returns confirmation for EditTurboMCPAssetRevert; that edit discards all unsaved package changes and may reset undo. */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetRevert(const FString& Asset);
 
@@ -2172,7 +2148,7 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY, const FString& DestinationBox = TEXT(""));
 
-	/** Edit reload of saved Blueprint package; discards all unsaved edits, may reset undo. Edit requires the preview confirmation. */
+	/** Reload a saved Blueprint package, discarding all unsaved package changes. May reset undo. Confirm must contain the confirmation returned by the current PreviewTurboMCPAssetRevert call. */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPAssetRevert(const FString& Asset, const FString& Confirm);
 
