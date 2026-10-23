@@ -173,11 +173,11 @@ FString UTurboMCPReadToolset::ReadTurboMCPCallLog(
 	if (Total > Selected.Num())
 	{
 		Out += FString::Printf(
-			TEXT("\n; %d more matched. Raise limit, or pass since='%s' to page forward."),
+			TEXT("\n; %d older matching records are omitted. Increase Limit (maximum 500) or narrow Filter. Since='%s' selects newer records; it does not retrieve these omitted records."),
 			Total - Selected.Num(), *Selected[0].Timestamp);
 	}
 
-	Out += TEXT("\n; the token estimate is an estimate, per 04_FORMATS.md section 5.");
+	Out += TEXT("\n; Token counts are approximate, not measured with a model tokenizer.");
 	// *** A COUNT OF RECORDS IS NOT A COUNT OF CALLS, AND SAYING SO IS THE WHOLE POINT. *** A call to
 	// one of this plugin's own tools writes a `plugin start`, a `plugin end` AND the engine's own event
 	// for the same call, so the list below is longer than the number of calls made. `R-CALL-COST` and
@@ -209,27 +209,27 @@ FString UTurboMCPEditToolset::EditTurboMCPCallLog(const FString& Enabled)
 	else
 	{
 		return FString::Printf(
-			TEXT("error: '%s' is not a yes or no. Pass true or false."), *Enabled);
+			TEXT("error: Enabled='%s' is not a supported boolean value. Pass true or false."), *Enabled);
 	}
 
 	Log.SetEnabled(bWanted);
+	if (Log.IsEnabled() != bWanted)
+		return TEXT("error: Recording settings did not change. Check editor settings and try again.");
 
 	if (bWas == bWanted)
 	{
 		return FString::Printf(
-			TEXT("unchanged: the call log was already %s. The choice is stored in the editor ")
-			TEXT("settings, so it survives a restart."),
+			TEXT("unchanged: Recording was already %s. Editor settings persistence was requested; disk persistence was not verified."),
 			bWanted ? TEXT("on") : TEXT("off"));
 	}
 
 	FString Out = FString::Printf(TEXT("changed: the call log is now %s"),
 		bWanted ? TEXT("on") : TEXT("off"));
 	Out += FString::Printf(TEXT("\nlog file: %s"), *Log.GetLogFilePath());
-	Out += TEXT("\n; the choice is stored in the editor settings, so it survives a restart.");
+	Out += TEXT("\n; Editor settings persistence was requested; disk persistence was not verified.");
 	if (bWanted)
 	{
-		Out += TEXT("\n; calls made BEFORE this point are not in the log, including engine ")
-			TEXT("tool calls, because the analytics provider only sees events from now on.");
+		Out += TEXT("\n; Recording is enabled for subsequent calls. Existing records are retained; calls made while recording was off are not recovered.");
 	}
 	return Out;
 }
@@ -240,8 +240,7 @@ FString UTurboMCPEditToolset::EditTurboMCPCallLogClear(const FString& Confirm)
 		&& !Confirm.TrimStartAndEnd().Equals(TEXT("true"), ESearchCase::IgnoreCase))
 	{
 		return TEXT("error: clearing needs confirmation. Pass confirm=yes. Only the ")
-			TEXT("in-memory entries are dropped; the log FILE on disk is left alone, because ")
-			TEXT("it is the record of what happened and erasing it is not this tool's job.");
+			TEXT("in-memory entries are dropped; the log file on disk is left alone.");
 	}
 
 	FTurboMCPCallLog& Log = FTurboMCPCallLog::Get();
@@ -249,6 +248,6 @@ FString UTurboMCPEditToolset::EditTurboMCPCallLogClear(const FString& Confirm)
 	Log.Clear();
 
 	return FString::Printf(
-		TEXT("changed: dropped %d entry(s) from memory. The log file at %s is untouched."),
+		TEXT("changed: Removed %d log records from memory. The log file at %s is untouched."),
 		Count, *Log.GetLogFilePath());
 }

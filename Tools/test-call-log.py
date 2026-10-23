@@ -126,7 +126,8 @@ def main():
     check("it opens with changed: or unchanged:",
           on.startswith("changed:") or on.startswith("unchanged:"), on[:70])
     check("it says the log is on", "call log is now on" in on or "already on" in on)
-    check("it says the choice persists", "survives a restart" in on)
+    check("it distinguishes requested persistence from disk verification",
+          "persistence was requested" in on and "disk persistence was not verified" in on)
 
     # A second call in the same direction must NOT claim a change.
     again = session.call(EDIT_TOOLSET, "EditTurboMCPCallLog", {"enabled": "on"})
@@ -384,7 +385,7 @@ def main():
     print()
     print("=== the request is validated ===")
     for label, args, expect in (
-        ("a bad boolean", {"enabled": "maybe"}, "not a yes or no"),
+        ("a bad boolean", {"enabled": "maybe"}, "not a supported boolean value"),
         ("a bad confirmation", {"confirm": "please"}, "confirm=yes"),
     ):
         tool = "EditTurboMCPCallLog" if "enabled" in args else "EditTurboMCPCallLogClear"

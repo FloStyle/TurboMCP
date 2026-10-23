@@ -1938,29 +1938,15 @@ public:
 	static FString EditTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
 
 	/**
-	 * Turn the call log on or off.
-	 *
-	 * The choice is stored in the EDITOR SETTINGS, so it survives a restart, which `03_TOOLS.md`
-	 * requires: "It starts unticked, and the choice persists in editor settings." It starts off,
-	 * deliberately, because a log that switched itself on would make every user pay for it.
-	 *
-	 * The value is parsed strictly rather than through `FString::ToBool`, which answers false for
-	 * anything it does not recognise — so a caller who typed `on` would silently turn the log OFF
-	 * instead of being told their word was not understood. `true`/`on`/`yes`/`1` and
-	 * `false`/`off`/`no`/`0` are accepted; anything else is refused by name.
-	 *
-	 * Calls made BEFORE it is switched on are not in the log, including engine tool calls, because
-	 * the analytics provider only sees events from the moment it is installed.
+	 * Enable or disable call recording and request persistence in editor settings. Existing records are retained. Calls made while recording was off are not recovered.
+	 * @param Enabled Required boolean text: true/on/yes/1 enables recording; false/off/no/0 disables it. Case-insensitive with surrounding whitespace ignored. Empty and other values are refused. Example: true.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPCallLog(const FString& Enabled);
 
 	/**
-	 * Drop the in-memory call log entries.
-	 *
-	 * Needs `confirm=yes`. ONLY THE IN-MEMORY ENTRIES ARE DROPPED: the log FILE on disk is left
-	 * alone, because it is the record of what happened and erasing it is not this tool's job. The
-	 * result says so, so a caller is not left believing the file was cleared too.
+	 * Clear retained in-memory call records after confirmation. Leaves the disk log and recording setting unchanged. This request may itself leave new records when recording is enabled.
+	 * @param Confirm Required confirmation text: yes or true, case-insensitive with surrounding whitespace ignored. Empty and other values are refused. Example: yes.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPCallLogClear(const FString& Confirm);
