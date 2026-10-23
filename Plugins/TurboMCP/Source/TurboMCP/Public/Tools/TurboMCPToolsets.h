@@ -80,7 +80,8 @@ public:
 	 *
 	 * Both fields are required by this tool's live schema. Pass an empty string
 	 * for an unused field; requiredness of other tools comes from their own schemas.
-	  * @param ToolsetName Registered toolset name, e.g. TurboMCP.TurboMCPReadToolset. Empty searches all toolsets for ToolName. Supply an empty string when unused.
+	 *
+	 * @param ToolsetName Registered toolset name, e.g. TurboMCP.TurboMCPReadToolset. Empty searches all toolsets for ToolName. Supply an empty string when unused.
 	 * @param ToolName Bare tool name, e.g. ReadTurboMCPStatus. Empty lists the named toolset; use the returned list:<offset> for another page. find:0:<words> searches names and descriptions.
 	*/
 	UFUNCTION(meta = (AICallable))
@@ -108,7 +109,8 @@ public:
 	 *
 	 * Pass "" to see the refusal message. A query matching nothing says how many
 	 * assets were searched, so "no match" never looks like "nothing searched".
-	  * @param Query Nonempty search words with optional type: and path: filters, e.g. type:Blueprint path:/Game/UI. All words must match. Empty input and unsupported filters are refused.
+	 *
+	 * @param Query Nonempty search words with optional type: and path: filters, e.g. type:Blueprint path:/Game/UI. All words must match. Empty input and unsupported filters are refused.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPAssetSearch(const FString& Query);
@@ -127,7 +129,8 @@ public:
 	 *
 	 * A fact that could not be read is reported as unknown with the reason, never
 	 * as a confident answer (`D-05`).
-	  * @param Assets One or more existing assets separated by commas or pipes, e.g. /Game/Tests/BP_NodeTest. Short names must resolve uniquely; use full paths to disambiguate.
+	 *
+	 * @param Assets One or more existing assets separated by commas or pipes, e.g. /Game/Tests/BP_NodeTest. Short names must resolve uniquely; use full paths to disambiguate.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPAssetDescribe(const FString& Assets);
@@ -149,7 +152,8 @@ public:
 	 *
 	 * Pass an empty kind for `any`. An unknown kind is refused with the list of
 	 * accepted kinds.
-	  * @param Words Words matched against type names and paths, e.g. Vector. Empty or whitespace-only input is refused.
+	 *
+	 * @param Words Words matched against type names and paths, e.g. Vector. Empty or whitespace-only input is refused.
 	 * @param Kind struct, enum, class, interface or any; empty means any. Example: struct.
 	*/
 	UFUNCTION(meta = (AICallable))
@@ -167,7 +171,8 @@ public:
 	 *
 	 * When nothing is unsaved it says so, because a zero that names its reason is
 	 * different from a check that did not run (`P1`).
-	  * @param Limit Positive decimal maximum number of listed packages, e.g. 100. Empty uses 50; zero, non-digits and values above 2147483647 are refused.
+	 *
+	 * @param Limit Positive decimal maximum number of listed packages, e.g. 100. Empty uses 50; zero, non-digits and values above 2147483647 are refused.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPDirtyList(const FString& Limit);
@@ -247,7 +252,8 @@ public:
 	 * and is also counted at the end so the gap cannot be missed.
 	 *
 	 * EntryFilter optionally matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input.
-	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is refused.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is refused.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Empty is refused; no graph is guessed.
 	 * @param Format read is the only supported format and the default; empty also means read. write is refused.
 	 * @param Detail manifest, signatures, bodies or full; default or empty means bodies. Each level adds detail.
@@ -1277,7 +1283,8 @@ public:
      * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
 	 *
 	 * Continuation: auto (legacy unique exit), all (all reachable new unconnected exec exits), or label:pin (one named new node output). Applies to displaced existing exec wires; explicit submitted target links take precedence. Compile/save deferred.
-	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input.
 	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence. Example: Done:then for a submitted local label.
@@ -1327,7 +1334,8 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetRevert(const FString& Asset);
 
-	/** Preview call swap. Options is optional JSON: {"pin_map":{"Old":"New"},"new_inputs":{"NewInput":{"node":"reader node ID","pin":"OutputPin"}}}. Unmapped pins retain exact names; keepOld defaults true.  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	/** Preview call swap. Options is optional JSON: {"pin_map":{"Old":"New"},"new_inputs":{"NewInput":{"node":"reader node ID","pin":"OutputPin"}}}. Unmapped pins retain exact names; keepOld defaults true.
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param NodeId Exact reader ID of the existing call node to replace; empty is invalid.
 	 * @param ReplacementTypeId Exact replacement call type ID returned by node-type discovery for this graph. Do not use a display name or guessed C++ name.
@@ -1356,7 +1364,8 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPBatchEdit(const FString& Operations);
 
-    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first.  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first.
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param SourceNodeId Exact reader ID of the existing output node in this graph; empty or unresolved IDs are refused.
 	 * @param SourcePin Exact output pin name from the reader, e.g. then. No automatic continuation is added.
@@ -1411,7 +1420,8 @@ public:
 	 * Returns the nodes that would change, each by key with its class, and the count of nodes
 	 * named against the count that would actually differ. Writes nothing, and cannot. It is in
 	 * this toolset, which holds no tool that can change an asset.
-	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param Text Nonempty graph text containing existing reader node IDs and only changed literal pin defaults. No node creation, removal or link rewiring. Example: a reader-derived PrintString form with its original ID and changed InString value.
 	*/
@@ -2144,7 +2154,8 @@ public:
      * consume the rest of their line: put the closing parenthesis BEFORE a trailing label/comment.
 	 *
 	 * Continuation: auto (legacy unique exit), all (all reachable new unconnected exec exits), or label:pin (one named new node output). Applies to displaced existing exec wires; explicit submitted target links take precedence. Compile/save deferred.
-	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param Text Nonempty append graph text. New forms create nodes; reader-derived IDs refer to existing nodes. Use Preview first and preserve exact type IDs and pin names. Partial reader pages are not standalone append input.
 	 * @param Continuation auto (default or empty), all, or label:pin. Controls reconnection of displaced execution wires to new exits; explicit target links take precedence. Example: Done:then for a submitted local label.
@@ -2199,13 +2210,15 @@ public:
 	 * in the signed 32-bit range. Supply 1..4096 unique nodes; omit unchanged nodes.
 	 * Validates the entire batch before writing; unlisted nodes stay in place.
 	 * @param Positions JSON array encoded as a string. Example: [{"node":"exact reader node ID","x":100,"y":200}]
-	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	*/
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& Positions);
 
-	/** Apply a localized call-node swap. keepOld=true retains the old node unplugged; false deletes it after verification.  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	/** Apply a localized call-node swap. keepOld=true retains the old node unplugged; false deletes it after verification.
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param NodeId Exact reader ID of the existing call node to replace; empty is invalid.
 	 * @param ReplacementTypeId Exact replacement call type ID returned by node-type discovery for this graph. Do not use a display name or guessed C++ name.
@@ -2232,7 +2245,8 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPBatchEdit(const FString& Operations);
 
-    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first.  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+    /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first.
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param SourceNodeId Exact reader ID of the existing output node in this graph; empty or unresolved IDs are refused.
 	 * @param SourcePin Exact output pin name from the reader, e.g. then. No automatic continuation is added.
@@ -2295,7 +2309,8 @@ public:
 	 *
 	 * One transaction, rolled back on any new compile error, and the first line is `changed` or
 	 * `unchanged`.
-	  * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param Text Nonempty graph text containing existing reader node IDs and only changed literal pin defaults. No node creation, removal or link rewiring. Example: a reader-derived PrintString form with its original ID and changed InString value.
 	*/
