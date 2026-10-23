@@ -1172,6 +1172,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
           ],
           "new_files": []
+        },
+        "quick-variable-option-validation": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAdd.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
