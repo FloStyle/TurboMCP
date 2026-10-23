@@ -124,7 +124,7 @@ def probe_node_id(session, blueprint_name):
     """
     text = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                         {"asset": blueprint_name, "graphName": "EventGraph",
-                         "detail": "bodies", "format": "", "tokenBudget": ""})
+                         "detail": "bodies", "format": "", "tokenBudget": "", "revision": ""})
     if text.startswith("error:"):
         print("    reading %s failed: %s" % (blueprint_name, text[:160]))
         return None
