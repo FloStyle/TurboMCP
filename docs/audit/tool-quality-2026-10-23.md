@@ -60,3 +60,9 @@ Implemented a282c1c: seven compile/save/undo/revert tool contracts rewritten aro
 Supervised run 7375735b6928474f97a8c9c3aa739a1a passed build, all 125 live tool inventory checks and existing help tests; 16 fixture files restored. Missing parameter descriptions: 256 of 367. Destructive reload, undo and save failure-path behavioral checks remain pending; this batch does not certify them.
 
 New live finding: compact help truncates parameter descriptions at the first period, including the abbreviation e.g.; save help omits later thumbnail-execution and partial-persistence details. Full schema text is corrected, but compact-help fidelity remains open and needs formatter repair plus assertions for those details.
+
+## Compact help fidelity repair
+
+Implemented 6389df5: parameter descriptions retain their full text instead of ending at the first period; tool summaries avoid dots in paths, decimals and common abbreviations. Compile/save/undo effects precede optional detail. Over-budget help ends at a complete line with an explicit route to describe_toolset for full schema descriptions, rather than silently losing detail or exceeding 2000 characters. This does not yet prove every tool has adequate effect information.
+
+Run 3d3a3ae687c440c988682c5aac2ab5b4 passed build, all 125 tool help checks (including save example and persistence effects) and existing help regression; supervisor restored 16 files. Inspected live save output retains its example, 25-entry limit, thumbnail execution warning and partial-save warning. Runtime mutation coverage remains separate and incomplete.
