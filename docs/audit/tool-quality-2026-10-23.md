@@ -66,3 +66,11 @@ New live finding: compact help truncates parameter descriptions at the first per
 Implemented 6389df5: parameter descriptions retain their full text instead of ending at the first period; tool summaries avoid dots in paths, decimals and common abbreviations. Compile/save/undo effects precede optional detail. Over-budget help ends at a complete line with an explicit route to describe_toolset for full schema descriptions, rather than silently losing detail or exceeding 2000 characters. This does not yet prove every tool has adequate effect information.
 
 Run 3d3a3ae687c440c988682c5aac2ab5b4 passed build, all 125 tool help checks (including save example and persistence effects) and existing help regression; supervisor restored 16 files. Inspected live save output retains its example, 25-entry limit, thumbnail execution warning and partial-save warning. Runtime mutation coverage remains separate and incomplete.
+
+## Widget preview dimension validation
+
+Implemented e06e5aa: dimensions require decimal digits and bounds 1..4096, checked before multiplication to prevent overflow. Fractions/signs no longer reach Atoi and silently truncate. Parsing and consent refusal precede asset resolution. Five preview parameters now documented. Replaced the false claim that every input is validated before construction: property/function checks occur later.
+
+Run 3e8df026748649778aab9c4beed465d0 passed build and inventory but failed a case-sensitive consent assertion. Test-only correction 6bbf9bd then passed build, focused preview-input checks and all-tool inventory in fa5ac4ce3b9e4cddbf8603e5cf644677. Covers invalid dimensions, consent refusal and valid dimensions reaching JSON validation; does not cover rendering/callback behavior. Existing rendered-suite bound assertion updated in 358d3f7, not rerun.
+
+Workflow exception: reacquiring the original scope for the test capitalization correction refused because its new-file entry already existed; the shell continued and the integrator correction was committed. No worker claim was acquired for 6bbf9bd. Future continuation must classify that file as existing and stop shell execution on claim failure.
