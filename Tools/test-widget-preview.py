@@ -6,7 +6,7 @@ Checks the rules the spec states, and exits non-zero on failure.
   T-LOOK-5  render a widget with sample values
   P1        a zero and an empty message say what they mean
   P2        a bad size, bad JSON and a non-widget are refused
-  P3        a Look tool changes nothing that outlives the call
+  Execution is explicitly allowed; external script effects are not reversible.
 
 NEEDS A RENDERING EDITOR
 ------------------------
@@ -174,12 +174,10 @@ def main():
     print(huge)
     print()
     check("refuses", huge.startswith("error:"))
-    # *** THIS CHECK USED TO BE `"4096" in huge`, AND IT WAS A BARE-NUMERAL SUBSTRING TEST. ***
-    # ANY 4096 ANYWHERE ON THE LINE SATISFIED IT - including the `9000`'s neighbour in a timestamp, a node id
-    # or a byte count - so the check could pass while the tool said nothing about a limit at all. The tool's
-    # own message is `error: %dx%d is larger than the %d limit.` (TurboMCPCapture.cpp:434), so the ASSERTION
-    # NOW NAMES THE WHOLE SENTENCE AND NOT ONLY THE NUMBER IN IT. The sentence is what makes it about a limit.
-    check("names the limit", "is larger than the 4096 limit" in huge)
+    # Require the bound and pre-construction refusal, not an unrelated numeric substring.
+    check("names the limit", "whole numbers from 1 to 4096" in huge)
+    check("refuses before construction", "no widget was loaded or constructed" in huge)
+
 
     print()
     print("=== a function that takes parameters is refused ===")
