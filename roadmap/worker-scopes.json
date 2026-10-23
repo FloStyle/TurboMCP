@@ -1341,6 +1341,16 @@
             "Tools/test-datatable.py"
           ],
           "new_files": []
+        },
+        "quality-material-contracts": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterial.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
+            "Tools/test-tool-text-inventory.py",
+            "Tools/test-material.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
