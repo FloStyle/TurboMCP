@@ -15,4 +15,7 @@ for consent in ('', 'deny', 'maybe'):
 for size in ('', '1x1', '4096x4096', ' 1280 x 720 ', '640,360'):
     result=call(size,samples='[]')
     assert 'sample values are not a JSON object' in result, (size,result)
+for samples in ('{"bIsEnabled":null}', '{"bIsEnabled":[]}', '{"bIsEnabled":{}}'):
+    result=call('1280x720',samples=samples)
+    assert result.startswith('error:') and "sample value 'bIsEnabled'" in result and 'no widget was loaded or constructed' in result, result
 print('RESULT: PASS (size and consent refusals; no rendering or mutation coverage)')

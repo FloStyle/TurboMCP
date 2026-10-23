@@ -30,22 +30,8 @@
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPLogCapture.h"
 
-/**
- * L-WIDGET-PREVIEW: render a widget with sample values.
- *
- * `03_TOOLS.md` asks for a temporary instance made off screen, the values set, an
- * optional function called, the result rendered to a PNG, and the instance
- * destroyed, with **all script errors and warnings** reported, and no play session.
- *
- * This is a Look tool, so it changes nothing that outlives the call (`P3`). The
- * instance it makes is transient, is not saved, and is destroyed before the tool
- * returns. The one thing it does write is the PNG, which is the point of the tool.
- *
- * THE INSTANCE IS CREATED THROUGH THE BLUEPRINT'S GENERATED CLASS, so `Construct`
- * runs and the widget is a real instance rather than a designer tree walk. That is
- * what makes setting a variable and calling a function meaningful: a value set on a
- * designer tree would not run any of the widget's own logic.
- */
+// Renders a transient instance with explicit execution consent. Construction,
+// callbacks and rendering can run project code; garbage collection is not rollback.
 namespace
 {
 	/** The default render size when the caller does not give one. */
@@ -120,6 +106,16 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 				TEXT("named.");
 		}
 	}
+
+    if (SampleValues.IsValid())
+    {
+        for (const auto& Pair : SampleValues->Values)
+        {
+            FString ValueText;
+            if (!Pair.Value.IsValid() || !Pair.Value->TryGetString(ValueText))
+                return FString::Printf(TEXT("error: sample value '%s' must be a JSON string, number or boolean. For structs or arrays, use an engine text-import string. Null and nested JSON values are not supported; no widget was loaded or constructed."), *Pair.Key);
+        }
+    }
 
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(Widget, Resolved);

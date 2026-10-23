@@ -130,6 +130,14 @@ def main():
                   png_size(absolute) == (640, 360), str(png_size(absolute)))
 
     print()
+    print("=== numeric and boolean sample values are imported ===")
+    samples = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
+                           {"widget": WIDGET, "sampleValuesJson": '{"RenderOpacity":0.5,"bIsEnabled":false}',
+                            "execution":"allow", "functionName":"", "size":"640x360"})
+    print(samples)
+    check("imports both scalar values", "sample values: 2 set, 0 refused" in samples)
+    check("scalar preview succeeds", "result: image written" in samples and not samples.startswith("partial:"))
+    print()
     print("=== a script warning or error is reported, not swallowed ===")
     check(
         "says so when nothing was raised",
