@@ -442,42 +442,18 @@ public:
 	static FString ReadTurboMCPMaterialInstance(const FString& Asset);
 
 	/**
-	 * Play the project for a few seconds and report the warnings and errors it raised.
-	 *
-	 * THIS IS TWO CALLS, AND THAT IS THE ENGINE RATHER THAN A CHOICE. A tool call runs on the editor's game
-	 * thread, and PIE is ticked on that same thread inside the editor's own tick, so a call that started a
-	 * session and then waited would be blocking the one thread the session needs in order to run. It would
-	 * hang, or report a window that never happened.
-	 *
-	 * So: pass `seconds` to REQUEST a session and return immediately; then call again with `seconds` EMPTY
-	 * to collect. The second call answers `pending` while it is still running, and only reports once the
-	 * engine has actually torn the session down.
-	 *
-	 * It uses the engine's own play controls, so what runs is exactly what the Play button runs. A session
-	 * already running when you ask is LEFT ALONE and said so, because stopping someone else's play session
-	 * is not this tool's decision. It stops only what it started.
-	 *
-	 * `map` overrides which map plays; empty means the project's default, which is what the Play button
-	 * does. `seconds` is capped at 600.
-	 *
-	 * One session is watched at a time, so a second request while one is pending is refused by name rather
-	 * than mixing two runs into one log. Returns warnings and errors only - not ordinary log lines - counted
-	 * per source category, and it names anything the list cap left out.
+	 * Start or poll a timed Play In Editor session. Executes project code with editor permissions; effects are not sandboxed or automatically undone. Does not explicitly save assets.
+	 * Starting returns immediately. Poll with empty Seconds until the owned session has stopped; pending is not a completed result. Existing play sessions are left alone. Captured warnings/errors do not prove gameplay correctness.
+	 * @param Seconds Required string. A positive numeric duration up to 600 seconds starts a run; e.g. 2.5. Empty or whitespace polls the current run. Zero, negative, invalid and over-limit durations are refused.
+	 * @param Map Required string. On start, a loadable map package path, e.g. /Game/Maps/TestMap; empty uses the editor's default play request. Ignored when polling. Invalid map paths are refused before requesting PIE.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPPlayCheck(const FString& Seconds, const FString& Map);
 
 	/**
-	 * Read the trace: what is armed, and how often each point has run.
-	 *
-	 * Pass `action=status` with no node ID. Answers with whether the engine subscription is
-	 * live, every armed point with its hit count, and the hits with their time, node and thread.
-	 *
-	 * This is the READ side, so it cannot arm or clear anything: asking it to do either is
-	 * refused by name and the current state is returned instead. Call the Edit twin for changes.
-	 *
-	 * A zero is reported with its reason, because "nothing has run yet" and "nothing is armed"
-	 * need different answers from whoever reads it.
+	 * Report the trace subscription, armed points and retained hits. Does not arm or clear points, edit graphs, compile or save assets. Zero hits alone do not prove a node never ran.
+	 * @param Action Required string. status (case-insensitive) reports the registry; empty also selects status. arm and clear are refused with EditTurboMCPTrace guidance. Other actions are refused. Example: status.
+	 * @param NodeId Required string. Ignored for status; use an empty string. This reader reports the full registry rather than filtering by node ID.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPTrace(const FString& Action, const FString& NodeId);

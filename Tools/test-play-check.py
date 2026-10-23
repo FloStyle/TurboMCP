@@ -277,13 +277,13 @@ def main():
     # state produces: a clean 3-second session raises nothing (MEASURED 0 and 0, and no PIE path this project
     # can reach raises anything), so the report must say so in the tool's own words for it.
     check("a clean window is stated as such, in the tool's own sentence for it",
-          "The session raised no warnings and no errors." in final, final[:260])
+          "No warnings or errors were captured during this play-check window." in final, final[:260])
     check("...and a clean window does NOT also claim to have listed records",
           "warn  " not in final and "ERROR " not in final, final[:260])
 
     # THE REPORT MUST NOT CONTRADICT ITS OWN NUMBERS, AND THIS CHECK WAS ADDED BECAUSE A BREAK-TEST SHOWED THE
     # TOOL COULD. Hardcoding the count to a non-zero value produced a report that said
-    # `5 warning(s) and 0 error(s) in the window` AND `The session raised no warnings and no errors.` IN THE
+    # `5 warning(s) and 0 error(s) in the window` AND `No warnings or errors were captured during this play-check window.` IN THE
     # SAME ANSWER - the count and the sentence disagreed, and only the cross-check below noticed.
     #
     # A reader who trusts the sentence is told the run was clean while the number says otherwise, and the two
@@ -291,7 +291,7 @@ def main():
     # of the two a future edit gets wrong, the other one contradicts it here.
     if counts is not None:
         warned, errored = int(counts.group(1)), int(counts.group(2))
-        claims_clean = "The session raised no warnings and no errors." in final
+        claims_clean = "No warnings or errors were captured during this play-check window." in final
         check("the report does not contradict its own counts: a non-zero count and a clean sentence "
               "cannot both appear",
               not (claims_clean and (warned > 0 or errored > 0)),

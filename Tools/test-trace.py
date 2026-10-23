@@ -206,7 +206,7 @@ def main():
     check("R-TRACE REFUSES an arm request by name rather than performing it",
           attempted.startswith("error:") and "does not perform it" in attempted, attempted[:160])
     check("the refusal points at the tool that CAN do it",
-          "E-TRACE" in attempted, attempted[:200])
+          "EditTurboMCPTrace" in attempted, attempted[:200])
     check("and it returns the current state rather than only an error",
           "armed point(s)" in attempted, attempted[-200:])
 

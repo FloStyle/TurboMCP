@@ -21,6 +21,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         if help_text.startswith('error:') or '!! isError' in help_text:
             raise RuntimeError('Help unavailable for ' + name)
         required_text = {
+            'ReadTurboMCPPlayCheck': ('kind: Execute', 'Executes project code', 'not sandboxed', 'Does not explicitly save'),
             'EditTurboMCPSave': ('Partial saves are not rolled back', 'thumbnail code', '/Game/Tests/BP_NodeTest', '25 entries'),
             'EditTurboMCPSaveWithoutThumbnail': ('save callbacks still run', 'Partial saves are not rolled back'),
             'EditTurboMCPCompile': ('reinstance classes', 'Does not save'),
@@ -40,6 +41,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         documented.update({'ReadTurboMCPDataTable', 'ReadTurboMCPOverrides', 'ReadTurboMCPCommentList', 'ReadTurboMCPRefs'})
         documented.update({'ReadTurboMCPMaterialTrace', 'ReadTurboMCPMaterialBlocks', 'ReadTurboMCPMaterialInstance', 'ReadTurboMCPMaterialLabels', 'ReadTurboMCPMaterialLoad'})
         documented.update({'ReadTurboMCPCallLog', 'ReadTurboMCPCallCost', 'EditTurboMCPCallLog', 'EditTurboMCPCallLogClear'})
+        documented.update({'ReadTurboMCPTrace', 'ReadTurboMCPPlayCheck'})
         documented.update(('EditTurboMCPGraphPositions', 'LookTurboMCPWidgetPreview'))
         documented.update({'EditTurboMCPCompile', 'EditTurboMCPSaveWithoutThumbnail', 'EditTurboMCPSave', 'PreviewTurboMCPAssetRevert', 'EditTurboMCPAssetRevert', 'EditTurboMCPAssetUndo', 'PreviewTurboMCPAssetUndo'})
         if name in documented:
