@@ -1059,3 +1059,7 @@ foundation-engine-matrix and ue59-protocol are Compatibility; 51678b9f is Housek
 ## 2026-10-23 client no-blind-tool-replay
 
 Removed Read/Look prefix and unresolved envelope exemptions. Session classifies the RPC method; nested tool names cannot masquerade as protocol discovery. Default tools/call response loss raises unknown outcome without replay. Explicit request-specific replay override remains supported. No tests run. Deferred: lost Read/Look/unknown-envelope replies, initialization retry and explicit override. FIELD-04 remains open for native script/late-outcome investigation.
+
+## 2026-10-23 S1 / X-97 build blocker
+
+Field build at 5eaf00b failed with C4456 and C2039/C3861. Distinct bound-event variable names and UBlueprint::GetAllGraphs member call implemented. FIELD-X97 Done / unbuilt_untested. Full plugin compilation remains unverified; the field build may have stopped before other errors. No build or test run locally.

@@ -171,8 +171,9 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (24)</summary>
+<summary>done (25)</summary>
 
+- **P0** [Fix Oct23 S1 plugin compile errors](todo/field-x97-build.md)
 - **P1** [Validate call-cost caps without hiding invalid input](todo/019cf7af.md)
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
 - **P1** [Verify enum names after creation](todo/214d6e7a.md)
