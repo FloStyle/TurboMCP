@@ -1227,6 +1227,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp"
           ],
           "new_files": []
+        },
+        "field-open-diagnostic": {
+          "files": [
+            "Tools/run-suites.ps1"
+          ],
+          "new_files": [
+            "Tools/test-field-open-diagnostic.py"
+          ]
         }
       },
       "preserve_rows": []
