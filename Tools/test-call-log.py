@@ -397,15 +397,23 @@ def main():
                        {"enabled": "true"})[:60].replace("\n", " "))
 
     print()
-    # *** THE LIMIT'S TWO REFUSALS, WHICH NO RUN HAD EVER TAKEN. *** A LARGE limit is still CLAMPED rather than
-    # refused - `P6` wants a bounded answer and "a million lines" IS a request - so what is asserted here is
-    # only that a TYPO is refused by name, and that zero gets its own sentence.
+    # Reject non-integer limits and clamp arbitrarily large positive values.
     bad_limit = read_log(session, limit="banana")
     check("refuses a limit that is not a number, and names the parameter",
-          bad_limit.startswith("error:") and "is not a limit" in bad_limit, bad_limit[:200])
+          bad_limit.startswith("error:") and "Limit" in bad_limit and "whole-number" in bad_limit, bad_limit[:200])
     zero_limit = read_log(session, limit="0")
     check("refuses a limit of zero with its OWN sentence, not the non-number one",
-          zero_limit.startswith("error:") and "is not usable" in zero_limit, zero_limit[:200])
+          zero_limit.startswith("error:") and "greater than zero" in zero_limit, zero_limit[:200])
+
+    for invalid in ("1.5", "+2", "-2", "1e3", "999999999999999999x"):
+        refused = read_log(session, limit=invalid)
+        check("refuses invalid limit " + invalid,
+              refused.startswith("error:") and "whole-number" in refused, refused[:200])
+    large = read_log(session, limit="9" * 80)
+    shown = re.search(r"showing (\d+) newest", large)
+    check("large positive limit is accepted and capped",
+          not large.startswith("error:") and shown is not None and int(shown.group(1)) <= 500,
+          large[:250])
 
     print()
     if failures:
