@@ -11,6 +11,8 @@ Validation: unbuilt_untested
 
 ## Current review
 
+2026-10-23 follow-up 3d74f98, unbuilt_untested: variable-add refuses repeated options (including default/value aliases) and invalid booleans; accepted boolean forms are true/false, 1/0, yes/no, on/off, case-insensitive. Precision reconciliation: current TypeParser deliberately preserves float as PC_Float (FIELD-FIX-17 / 0a5e7d0); the old demand to silently widen float to double is superseded, not an open bug. Remaining: struct/signature option grammar inventory and separation of the common-grammar feature proposal. No tests/build/editor runs.
+
 2026-10-23 follow-up bca2be8, unbuilt_untested: caller row syntax refuses unmatched parentheses and unterminated quotes before exposing parsed operations. Escaped quotes retain backslash-parity handling. Strict mode applies to caller input only; engine-export merge behavior is preserved. Remaining broader parser/precision work unchanged. No tests/build/editor runs.
 
 2026-10-23 follow-up 1cc5714, unbuilt_untested: DataTable field resolution accepts a unique display label, preserves exact internal-name priority, and normalizes before duplicate detection, preview merging and apply. Unknown/ambiguous labels refuse with display/internal alternatives. Internal priority intentionally preserves existing valid calls rather than silently retargeting a field on a label collision. Remaining: nested grammar/precision reconciliation across other parsers and the historical shared-grammar proposal. No tests/build/editor runs.

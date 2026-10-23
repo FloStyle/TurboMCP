@@ -1015,3 +1015,7 @@ Implemented, unbuilt_untested: unique display names resolved to internal fields 
 ## 2026-10-23 row delimiter validation — bca2be8
 
 Implemented, unbuilt_untested: caller row syntax rejects unmatched parentheses/quotes before planning. Engine-export merge path remains non-strict to preserve value handling. abdd2c08 remains open for cross-parser syntax/precision reconciliation. No tests/build/editor runs.
+
+## 2026-10-23 variable option validation — 3d74f98
+
+Implemented, unbuilt_untested: duplicate options and default/value alias collisions refuse; boolean options reject invalid values instead of converting them silently. Float widening requirement reconciled as superseded by type-preservation fix 0a5e7d0. abdd2c08 still tracks remaining grammar inventory. No tests/build/editor runs.
