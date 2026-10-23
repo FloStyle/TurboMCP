@@ -1311,6 +1311,15 @@
             "Tools/run-suites.ps1"
           ],
           "new_files": []
+        },
+        "quality-widget-samples": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-widget-preview.py",
+            "Tools/test-widget-preview-inputs.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
