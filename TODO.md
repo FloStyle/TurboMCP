@@ -82,7 +82,7 @@ The linked records distinguish implemented containment from unresolved causes. V
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>todo (57)</summary>
+<summary>todo (55)</summary>
 
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
 - **P1** [Verify append node structure and compile outcomes](todo/4f1bfd61.md)
@@ -107,7 +107,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P2** [Compare live widget-instance inspection](todo/7ae3dd76.md)
 - **P2** [Distinguish fixture serialization drift from semantic drift](todo/9935c0ea.md)
 - **P2** [Design explicit unsaved-asset revert separately](todo/9c47994b.md)
-- **P2** [Make usage analysis conservative about delegates and self](todo/a28a09fd.md)
 - **P2** [Preserve run-start fixtures without resetting user work](todo/b4d297e2.md)
 - **P2** [Verify geometry provenance across all layout tools](todo/be9c2edb.md)
 - **P2** [Verify captured pixels match reported framing](todo/c421299d.md)
@@ -126,7 +125,6 @@ These records preserve original requirements and evidence. Their status does not
 - **P3** [Extract a genuinely transaction-free repoint core](todo/b230e508.md)
 - **P3** [Make table previews and application follow caller order](todo/ba6df3c8.md)
 - **P3** [Consolidate release approval under current gates](todo/c2865829.md)
-- **P4** [Keep bound handlers out of unused-code claims](todo/261bb8db.md)
 - **P4** [Verify node purity and declared-name aliases](todo/9db83209.md)
 - **P4** [State graph search coverage explicitly](todo/ca5bbbfc.md)
 - **P4** [Split new asset, component and listener proposals](todo/d4433d0e.md)
@@ -173,7 +171,7 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (21)</summary>
+<summary>done (23)</summary>
 
 - **P1** [Validate call-cost caps without hiding invalid input](todo/019cf7af.md)
 - **P1** [Map trace events to actual executing nodes](todo/02674939.md)
@@ -189,11 +187,13 @@ These records preserve original requirements and evidence. Their status does not
 - **P2** [Object and interface signature type support](todo/field-fix-25.md)
 - **P2** [Default-on tool call recording](todo/field-fix-26.md)
 - **P2** [Schema-aware missing-default lint](todo/field-fix-28.md)
+- **P2** [Make usage analysis conservative about delegates and self](todo/a28a09fd.md)
 - **P2** [Make layout counts name their populations](todo/a8341453.md)
 - **P3** [Report editable widget reference overrides](todo/1256778b.md)
 - **P3** [Distinguish struct dependents from proven breakage](todo/1f5fe672.md)
 - **P3** [Include struct make/break usage in removal checks](todo/7bd81b84.md)
 - **P3** [Enforce explicit graph selection and asset-wide reads](todo/c1e04796.md)
+- **P4** [Keep bound handlers out of unused-code claims](todo/261bb8db.md)
 - **P4** [Use canonical identity with unambiguous display aliases](todo/e866ba0d.md)
 - **P5** [Shorten successful checkout reports](todo/1db73082.md)
 

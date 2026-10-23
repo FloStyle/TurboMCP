@@ -997,3 +997,9 @@ Implemented, unbuilt_untested: widget designer function/property-path bindings c
 ## 2026-10-23 shared typed usage — 31c0d17
 
 Implemented, unbuilt_untested: lint uses reader FUsageSummary instead of reparsing rendered output; scanned count now includes all examined declarations. Missing collection explicitly skips the check. Parent a28a09fd remains open for callback classification/coverage reconciliation. No tests/build/editor runs.
+
+## 2026-10-23 usage-analysis completion — a1f0a4b
+
+2026-10-23 implementation complete through a1f0a4b, unbuilt_untested. Shared typed usage facts replace lint prose parsing; multicast dispatcher references, CreateEvent handlers, automatic bindings and designer function/property bindings are represented; local/external same-name members are separated. Inherited/interface functions are classified as possible external entries rather than absent-use findings. Event declarations no longer imply binding. Unconnected-pin checks already use K2 default validity and exclude hidden/defaulted pins, rather than treating every unlinked input as required. All absence findings are static and never authorize deletion. Regression for delegate, designer binding, callbacks and implicit self is deferred, not a remaining implementation task. No tests/build/editor runs.
+
+a28a09fd and duplicate 261bb8db closed as implemented/Untested. No runtime guarantee or release acceptance.
