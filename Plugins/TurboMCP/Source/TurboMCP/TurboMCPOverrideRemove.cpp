@@ -8,6 +8,9 @@
 #include "Tools/TurboMCPToolsets.h"
 
 #include "BlueprintEditorLibrary.h"
+#include "Editor.h"
+#include "ScopedTransaction.h"
+#include "Kismet2/BlueprintEditorUtils.h"
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraph.h"
 #include "Engine/Blueprint.h"
@@ -46,6 +49,9 @@ namespace
 FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 	const FString& Asset, const FString& FunctionOrEvent)
 {
+	if (!IsInGameThread() || !GEditor || !GEditor->CanTransact()
+		|| GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+		return TEXT("unchanged: override removal requires an idle editor with undo available");
 	const FString Wanted = FunctionOrEvent.TrimStartAndEnd();
 	if (Wanted.IsEmpty())
 	{
@@ -68,6 +74,16 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 			*Resolved.ObjectPath);
 	}
 
+	int32 MatchingTargets = 0;
+	for (UEdGraph* Graph : Blueprint->UbergraphPages)
+		if (Graph) for (UEdGraphNode* Node : Graph->Nodes)
+			if (const UK2Node_Event* Event = Cast<UK2Node_Event>(Node))
+				if (Event->bOverrideFunction && NameMatches(Event->GetFunctionName(), Wanted)) ++MatchingTargets;
+	for (UEdGraph* Graph : Blueprint->FunctionGraphs)
+		if (Graph && NameMatches(Graph->GetFName(), Wanted)) ++MatchingTargets;
+	if (MatchingTargets > 1)
+		return TEXT("unchanged: override name matches multiple implementations; resolve the ambiguity before removal");
+
 	// An event override is a NODE in the ubergraph, and a function override is a GRAPH of its
 	// own. Both are looked for, because a caller does not know which one they made.
 	for (UEdGraph* Graph : Blueprint->UbergraphPages)
@@ -80,7 +96,7 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 		for (int32 Index = Graph->Nodes.Num() - 1; Index >= 0; --Index)
 		{
 			UK2Node_Event* Event = Cast<UK2Node_Event>(Graph->Nodes[Index]);
-			if (Event == nullptr || !NameMatches(Event->GetFunctionName(), Wanted))
+			if (Event == nullptr || !Event->bOverrideFunction || !NameMatches(Event->GetFunctionName(), Wanted))
 			{
 				continue;
 			}
@@ -96,11 +112,16 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 			//
 			// `Modify`, `DestroyNode` and `MarkPackageDirty` are the three steps the editor's
 			// own node deletion performs.
+			const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "RemoveEventOverride", "TurboMCP remove event override"));
+			Blueprint->Modify();
 			Graph->Modify();
+			Event->Modify();
 			const FString RemovedName = Event->GetName();
 			const FString FromGraph = Graph->GetName();
 			Event->DestroyNode();
-			Graph->MarkPackageDirty();
+			FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+			if (Graph->Nodes.Contains(Event))
+				return TEXT("partial: event override remains after removal; inspect the asset or undo before retrying");
 
 			FString Out = FString::Printf(
 				TEXT("changed: removed the override of '%s' from %s"),
@@ -132,7 +153,17 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 	{
 		if (Graph != nullptr && NameMatches(Graph->GetFName(), Wanted))
 		{
+			UFunction* OverrideFunction = nullptr;
+			if (!FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, Graph->GetFName(), &OverrideFunction) || !OverrideFunction)
+				return TEXT("unchanged: the named function is not a parent/interface override; use the function removal tool for local functions");
+			if (!Graph->bAllowDeletion)
+				return TEXT("unchanged: the override graph does not allow deletion");
+			const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "RemoveFunctionOverride", "TurboMCP remove function override"));
+			Blueprint->Modify();
+			Graph->Modify();
 			UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
+			if (Blueprint->FunctionGraphs.Contains(Graph))
+				return TEXT("partial: override graph remains after removal; inspect the asset or undo before retrying");
 
 			FString Out = FString::Printf(
 				TEXT("changed: removed the function override '%s' from %s"),
