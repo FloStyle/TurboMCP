@@ -1031,3 +1031,7 @@ Closed abdd2c08 concrete parser repairs as implemented / unbuilt_untested throug
 ## 2026-10-23 oversized struct categories
 
 265cced guards category length before FName construction in both struct creation and field-edit planning. Source-reviewed, unbuilt_untested. Deferred boundary evidence: NAME_SIZE-1 accepted, NAME_SIZE refused, refused plan leaves asset unchanged. No tests/build/editor runs.
+
+## 2026-10-23 DataTable rollback evidence
+
+Source-only repair: compare all pre-edit row names/exported values, row struct and dirty flag after owned Undo before claiming row-state restoration. Otherwise report partial / restoration not verified. External callback effects remain outside this comparison. Untested; failure-injection and dirty-state restoration evidence deferred. Mixed set/remove remains open under ba6df3c8.

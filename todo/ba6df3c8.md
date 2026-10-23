@@ -11,6 +11,8 @@ Validation: unbuilt_untested
 
 ## Current review
 
+2026-10-23 rollback follow-up: failure recovery now compares row identities, exported values, row-struct identity and package dirty state against a pre-mutation baseline. Undo success alone no longer claims complete restoration. External callback effects are explicitly unverified. Implemented slice, unbuilt_untested. Remaining: mixed set/remove caller-order support and guaranteed restoration on failure; this issue stays open. No tests/build/editor runs.
+
 2026-10-23 b872c49: preview now stages the same final merged row text as Apply and imports it into initialized scratch rows; invalid values become refusals and all advertised effects are cleared. Done preview-validation slice, unbuilt_untested. Remaining caller-order issue: mixed set/remove semantics remain refused; sequential mixed-operation support is not implemented. No tests/build/editor runs.
 
 2026-10-23 partial repair 5936f54, unbuilt_untested: refused batches expose no planned additions/removals/changes; duplicate aliases resolve to canonical field identity; repeated field previews use the preceding requested value; row writes follow first-request order with case-insensitive row identity. Remaining: mixed set/remove or remove/set requests still refuse, not sequentially supported; final-state staging/rollback and preview value validation remain to reconcile. Do not close the full caller-order issue. No tests/build/editor runs.
