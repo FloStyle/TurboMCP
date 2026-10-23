@@ -116,6 +116,9 @@ def main():
     #
     # The parameter default is 0.75, so a numeric input value that is NOT 0.75 is the unlinked one.
     # Parse only the tree's form lines, where an input reads `B <value>)`, and skip the parameter table.
+    small_budget = session.call(READ_TOOLSET, "ReadTurboMCPMaterialLoad",
+                                {"asset": ASSET, "includeInstanceOverrides":False, "tokenBudget":1})
+    check("budget overrun is honest", "budget exceeded:" in small_budget and "does not enforce the budget" in small_budget and "REDUCED:" not in small_budget)
     tree = load.split("connected outputs", 1)[-1]
     constants = re.findall(r"^\s+[AB] (\d+(?:\.\d+)?)\)?\s*$", tree, re.MULTILINE)
     print("    numeric constants printed for inputs: %s" % (constants or "none"))

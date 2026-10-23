@@ -31,14 +31,8 @@
  */
 namespace
 {
-	/**
-	 * Reads the asset once and renders it for the given kind, so the four tools share one path.
-	 *
-	 * `InTokenBudget` of zero means "no cap given", which `BudgetNote` treats as "print the size but
-	 * do not reduce". A budget is a tool argument rather than a plan field because the plan is about
-	 * WHAT was read and the budget is about HOW MUCH to print, and a plan reused across two calls
-	 * with different budgets must not carry the first one's.
-	 */
+	// Shared read path; positive budgets currently report overruns, not hard caps.
+
 	FString ReadMaterial(const FString& InAsset, FTurboMCPMaterial::ERead InKind,
 		const FString& InOutputProperty, bool bInIncludeInstanceOverrides, int32 InTokenBudget)
 	{

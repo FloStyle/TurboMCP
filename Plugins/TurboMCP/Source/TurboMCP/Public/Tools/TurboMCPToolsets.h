@@ -436,26 +436,17 @@ public:
 	static FString ReadTurboMCPToolSchema(const FString& Toolset, const FString& Tool);
 
 	/**
-	 * Read the named reroutes of a material: every label, its readers, and the unused ones.
-	 *
-	 * Named reroutes are the material graph's own way of naming a wire. An UNUSED label is the thing
-	 * this reader exists to find, because it is a wire somebody meant to reuse and did not.
-	 *
-	 * Call this FIRST on any material: the answer is short, and a caller who had to pass an argument
-	 * would be tempted to skip it.
+	 * Read named material reroute labels, writers and reader counts; no explicit edit, compile or save.
+	 * @param Asset Required Material or Material Function path or unique short name, e.g. /Game/Tests/M_TurboMCPFixture. Empty/unresolved assets are refused. Instances have no expression graph; read their parent or use ReadTurboMCPMaterialInstance.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPMaterialLabels(const FString& Asset);
 
 	/**
-	 * Read a whole material: its parameters, then every connected output as a tree.
-	 *
-	 * Works for a material, a material function and a material instance. An INSTANCE reports its
-	 * parent, and `bIncludeInstanceOverrides` adds the parameters it overrides, which is where an
-	 * instance's real behaviour lives.
-	 *
-	 * `TokenBudget` caps the answer. Zero means no cap; a non-zero budget is honoured by NAMING what
-	 * was left out rather than by truncating silently.
+	 * Read material parameters and connected output trees, or an instance override summary. Loads the asset; no explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
+	 * @param Asset Required Material, Material Function or constant Material Instance path or unique short name. Empty/unresolved values are refused; e.g. /Game/Tests/M_TurboMCPFixture.
+	 * @param bIncludeInstanceOverrides Required boolean. true permits constant Material Instances and lists their overrides; false refuses instances with parent guidance. Ignored for base materials/functions.
+	 * @param TokenBudget Required integer advisory threshold in estimated tokens, e.g. 3000. Zero or negative disables the overrun warning. Output is not capped or reduced to this threshold; use Trace to narrow large graphs.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPMaterialLoad(
@@ -464,11 +455,10 @@ public:
 		int32 TokenBudget);
 
 	/**
-	 * Read ONE output of a material rather than all of them.
-	 *
-	 * The same reader as `R-MAT-LOAD` restricted to one output, which is what a caller wants when
-	 * chasing a single problem rather than paying for the whole graph. The output property is
-	 * REQUIRED, and an empty or unconnected one is refused by LISTING the connected ones.
+	 * Read one connected material output tree; no explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
+	 * @param Asset Required Material or Material Function path or unique short name, e.g. /Game/Tests/M_TurboMCPFixture. Empty/unresolved assets are refused. Instances have no expression graph; read their parent or use ReadTurboMCPMaterialInstance.
+	 * @param OutputProperty Required connected output identifier from MaterialLoad, e.g. MP_BaseColor. Empty or unconnected output is refused; use MaterialLoad to discover connected outputs.
+	 * @param TokenBudget Required integer advisory threshold in estimated tokens, e.g. 3000. Zero or negative disables the overrun warning. Output is not capped or reduced to this threshold; use Trace to narrow large graphs.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPMaterialTrace(
@@ -477,29 +467,16 @@ public:
 		int32 TokenBudget);
 
 	/**
-	 * Read a material by BLOCK of logic, one block per comment box.
-	 *
-	 * A material graph is usually organised into comment boxes, and reading it block by block is how a
-	 * caller answers "what does this part do" without reading the whole thing.
+	 * Read material logic grouped by comment boxes; no explicit edit, compile or save. TokenBudget is advisory, not a hard cap.
+	 * @param Asset Required Material or Material Function path or unique short name, e.g. /Game/Tests/M_TurboMCPFixture. Empty/unresolved assets are refused. Instances have no expression graph; read their parent or use ReadTurboMCPMaterialInstance.
+	 * @param TokenBudget Required integer advisory threshold in estimated tokens, e.g. 3000. Zero or negative disables the overrun warning. Output is not capped or reduced to this threshold; use Trace to narrow large graphs.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPMaterialBlocks(const FString& Asset, int32 TokenBudget);
 
 	/**
-	 * Read a material INSTANCE: its parent chain, what it overrides, and - the list that matters - what it
-	 * inherits from a parent it does not own.
-	 *
-	 * `03_TOOLS.md` `R-MAT-INST-LOAD` says the inherited list "is the one that matters", because an agent asked to
-	 * change a parameter needs to know whether the value is REALLY ON THIS INSTANCE or inherited from a parent it
-	 * does not own. A parameter the parent does not declare is reported as ORPHANED rather than dropped, because a
-	 * renamed parameter leaves one behind.
-	 *
-	 * IT IS A SEPARATE READER FROM THE MATERIAL READER AND THAT IS `D-43`: an instance is a list of overrides, and
-	 * "a text that hides them invites an edit that changes the wrong asset".
-	 *
-	 * A BASE MATERIAL IS REFUSED BY NAME rather than answered with everything inherited, because every parameter of
-	 * a base material is editable on the material itself and the distinction this tool exists to make would not
-	 * apply - say `R-MAT-LOAD` for the graph.
+	 * Read material-instance parent chain, local overrides, inherited values and orphaned overrides. Loads the asset; no explicit edit, compile or save.
+	 * @param Asset Required material-instance path or unique short name, e.g. /Game/Tests/MI_TurboMCPFixture. Empty and base-material targets are refused; use ReadTurboMCPMaterialLoad for a base graph.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPMaterialInstance(const FString& Asset);

@@ -1174,14 +1174,12 @@ FString FTurboMCPMaterial::BudgetNote(const FString& InText, int32 InTokenBudget
 
 	if (InTokenBudget > 0 && Estimate > InTokenBudget)
 	{
-		// `04_FORMATS.md` budget step 4: "Stop, and add a closing block that lists each reduced item
-		// and the exact call that returns it in full." The reduction itself happened while rendering,
-		// where a subtree could still be replaced by a reference; this is the note that says so.
-		Out += FString::Printf(
-			TEXT("\n; REDUCED: this is over the %d-token budget, so it is at ~%d. Deeper subtrees ")
-			TEXT("were replaced by references rather than cut, because a form must never be cut in ")
-			TEXT("the middle. The full text comes from %s without a token budget."),
-			InTokenBudget, Estimate, *InFullCall);
+        Out += FString::Printf(
+            TEXT("\n; budget exceeded: requested %d estimated tokens, output is ~%d. ")
+            TEXT("This reader does not enforce the budget; no budget-driven reduction was applied. ")
+            TEXT("Use ReadTurboMCPMaterialTrace for one connected output or ReadTurboMCPMaterialLabels for a label summary."),
+            InTokenBudget, Estimate);
+
 	}
 
 	// `P1`: a Read that produced nothing says WHY rather than being blank.
@@ -1191,7 +1189,7 @@ FString FTurboMCPMaterial::BudgetNote(const FString& InText, int32 InTokenBudget
 			TEXT("material: every material has at least its own asset line.");
 	}
 
-	Out += TEXT("\n; the token estimate is an estimate, per 04_FORMATS.md section 5.");
+	Out += TEXT("\n; the token estimate is an estimate, not a model tokenizer count.");
 	return Out;
 }
 
