@@ -104,3 +104,7 @@ Run 92faded4b0f34fc6b90a96dc3de07d23 passed build and DataTable regression, incl
 Implemented 93fdfe6: ten parameter descriptions across five material readers, accepted asset/instance distinctions and actual advisory budget behavior. BudgetNote no longer falsely claims budget-driven subtree reduction; it explicitly reports overrun and offers narrower readers. Hard budget enforcement remains OPEN, not fixed by this text correction.
 
 Run 95e0f3af4afb42a2b688be785c03a0a6 passed build/all-tool help but material tests failed: new call used wrong boolean key and old fixture assumed Emissive remained unconnected. Test correction e7d8b12 uses the exact bIncludeInstanceOverrides field and selects an unconnected output from the current graph report. Run ea243845c48941d5a2cac41d05915130 passed material regression including tiny-budget honest-overrun assertion. Other material reader branches and hard-cap implementation remain incomplete.
+
+## Empty material trace recovery (2026-10-24)
+
+Implemented 01691e3: empty/whitespace OutputProperty refusals now list the actual connected outputs instead of falsely saying none have been listed. Materials without connections explicitly report no connected output to trace. Run eaeeb1cccf494b80a5b698b32e7fa2fc passed build and material regression, including both empty forms checked against current fixture output names; 16 fixture files restored. No-connected-output branch remains source-reviewed rather than independently fixture-tested.
