@@ -1202,6 +1202,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp"
           ],
           "new_files": []
+        },
+        "override-removal-target-safety": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
