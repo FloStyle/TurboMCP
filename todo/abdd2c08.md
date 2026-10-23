@@ -11,6 +11,8 @@ Validation: unbuilt_untested
 
 ## Current review
 
+2026-10-23 additional name safety: field names reserve space for the engine counter/GUID and collision suffix before creation or field-edit planning; struct creation rejects invalid or oversized package paths before lookup/creation. Source-reviewed against stock engine naming/API source, unbuilt_untested.
+
 2026-10-23 follow-up 265cced: oversized struct category options refuse in ParseFields before FName construction or mutation. Shared planning covers struct creation and field edits. Implemented / unbuilt_untested; no tests, builds or editor runs.
 
 2026-10-23 scope reconciliation: the concrete parser defects are implemented through cf03659, unbuilt_untested. The remaining unified-grammar proposal is preserved separately in [field-grammar-feature](field-grammar-feature.md); it is a feature, not another open parser bug. Historical requirements below remain for traceability.

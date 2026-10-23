@@ -1035,3 +1035,7 @@ Closed abdd2c08 concrete parser repairs as implemented / unbuilt_untested throug
 ## 2026-10-23 DataTable rollback evidence
 
 Source-only repair: compare all pre-edit row names/exported values, row struct and dirty flag after owned Undo before claiming row-state restoration. Otherwise report partial / restoration not verified. External callback effects remain outside this comparison. Untested; failure-injection and dirty-state restoration evidence deferred. Mixed set/remove remains open under ba6df3c8.
+
+## 2026-10-23 struct generated names and package paths
+
+Implemented planning guards reserve 44 engine suffix characters plus 3 collision digits within NAME_SIZE-1; package paths use IsValidLongPackageName and a length guard. No tests/build/editor runs. Deferred: boundary-length field names, collision suffixes and invalid/read-only package roots.
