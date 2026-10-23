@@ -148,6 +148,13 @@ def main():
     check("it names the output it traced", "MP_BaseColor" in trace, trace[:300])
 
     connected = set(re.findall(r"^\((MP_\w+)", load, re.MULTILINE))
+    for empty_output in ("", "   "):
+        empty_refusal = session.call(READ_TOOLSET, "ReadTurboMCPMaterialTrace",
+                                     {"asset": ASSET, "outputProperty":empty_output, "tokenBudget":0})
+        check("empty trace lists real choices", empty_refusal.startswith("error:")
+              and "Connected outputs:" in empty_refusal
+              and all(name in empty_refusal for name in connected)
+              and "none listed yet" not in empty_refusal, empty_refusal)
     unconnected = next((name for name in ("MP_EmissiveColor", "MP_Roughness", "MP_Metallic", "MP_Opacity") if name not in connected), None)
     assert unconnected is not None, "Fixture needs an unconnected material output for refusal coverage"
     refused = session.call(READ_TOOLSET, "ReadTurboMCPMaterialTrace",

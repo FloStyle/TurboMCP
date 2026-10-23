@@ -881,15 +881,15 @@ bool FTurboMCPMaterial::Plan(const FString& InAsset, ERead InKind,
 
 	if (InKind == ERead::Trace)
 	{
-		if (OutPlan.OutputProperty.IsEmpty())
-		{
-			OutError = TEXT("no output property given. Pass one of the material's connected ")
-				TEXT("outputs; this material has none listed yet.");
-			return false;
-		}
-
-		const TArray<FString> All = AllOutputProperties(OutPlan);
-		const TArray<FString> Connected = ConnectedOutputs(OutPlan);
+        const TArray<FString> All = AllOutputProperties(OutPlan);
+        const TArray<FString> Connected = ConnectedOutputs(OutPlan);
+        if (OutPlan.OutputProperty.IsEmpty())
+        {
+            OutError = FString::Printf(
+                TEXT("no output property given. Set OutputProperty to a connected output of %s. Connected outputs: %s."),
+                *OutPlan.Asset, Connected.Num() > 0 ? *FString::Join(Connected, TEXT(", ")) : TEXT("(none; there is no connected output to trace)"));
+            return false;
+        }
 
 		if (OutputSource(OutPlan, OutPlan.OutputProperty) == nullptr)
 		{
