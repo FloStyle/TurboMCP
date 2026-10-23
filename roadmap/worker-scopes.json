@@ -1235,6 +1235,12 @@
           "new_files": [
             "Tools/test-field-open-diagnostic.py"
           ]
+        },
+        "tool-text-quality-audit": {
+          "files": [],
+          "new_files": [
+            "Tools/test-tool-text-inventory.py"
+          ]
         }
       },
       "preserve_rows": []
