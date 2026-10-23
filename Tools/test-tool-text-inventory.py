@@ -21,6 +21,10 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         if help_text.startswith('error:') or '!! isError' in help_text:
             raise RuntimeError('Help unavailable for ' + name)
         required_text = {
+            'EditTurboMCPSave': ('Partial saves are not rolled back', 'thumbnail code', '/Game/Tests/BP_NodeTest', '25 entries'),
+            'EditTurboMCPSaveWithoutThumbnail': ('save callbacks still run', 'Partial saves are not rolled back'),
+            'EditTurboMCPCompile': ('reinstance classes', 'Does not save'),
+            'EditTurboMCPAssetUndo': ('preview GUID', 'Redo remains available'),
             'LookTurboMCPWidgetPreview': ('kind: Execute', 'Execution=allow', 'not sandboxed or reversible'),
             'PreviewTurboMCPAssetRevert': ('preview only; does not discard edits', 'confirmation'),
             'EditTurboMCPAssetRevert': ('discards ALL unsaved edits', 'current preview confirmation', 'may reset undo'),

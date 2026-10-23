@@ -121,31 +121,14 @@ namespace
 			return TEXT("(no description)");
 		}
 
-		int32 Stop = INDEX_NONE;
-		if (Text.FindChar(TEXT('.'), Stop))
-		{
-			// A stop inside a short leading token is usually an abbreviation or a
-			// dotted file name rather than a sentence end. The spec text is full
-			// of both, and cutting at the first would print things like "See `04".
-			const bool bLooksLikeAbbreviation =
-				Stop < 12
-				&& Text.Len() > Stop + 1
-				&& !FChar::IsWhitespace(Text[Stop + 1]);
-
-			if (!bLooksLikeAbbreviation)
-			{
-				return Text.Left(Stop + 1);
-			}
-
-			int32 NextStop = INDEX_NONE;
-			// FString::FindChar takes no search direction, so search the tail
-			// and add the offset back.
-			const FString Tail = Text.Mid(Stop + 1);
-			if (Tail.FindChar(TEXT('.'), NextStop))
-			{
-				return Text.Left(Stop + 1 + NextStop + 1);
-			}
-		}
+        // Dots inside paths, decimals and common abbreviations are not sentence ends.
+        for (int32 Stop = 0; Stop < Text.Len(); ++Stop)
+        {
+            if (Text[Stop] != TEXT('.') || (Stop + 1 < Text.Len() && !FChar::IsWhitespace(Text[Stop + 1]))) continue;
+            const FString Prefix = Text.Left(Stop + 1);
+            if (Prefix.EndsWith(TEXT("e.g.")) || Prefix.EndsWith(TEXT("i.e."))) continue;
+            return Prefix;
+        }
 
 		// No usable stop: take the first line, capped so one runaway description
 		// cannot flood a list.
@@ -525,6 +508,14 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
                     Help += TEXT("\neffects: starts PIE and executes project code; NOT a passive read.");
                 else if (Bare == TEXT("LookTurboMCPWidgetPreview"))
                     Help += TEXT("\neffects: Execution=allow runs widget/project code, including construction. Empty/deny refuses. Effects are not sandboxed or reversible; this is NOT a passive image read.");
+                else if (Bare == TEXT("EditTurboMCPSave"))
+                    Help += TEXT("\neffects: writes packages even when not dirty. Widgets skip thumbnail drawing; other assets may execute thumbnail code. Partial saves are not rolled back; inspect each result. No explicit compile.");
+                else if (Bare == TEXT("EditTurboMCPSaveWithoutThumbnail"))
+                    Help += TEXT("\neffects: writes packages without thumbnail drawing; save callbacks still run. Partial saves are not rolled back; inspect each result. No explicit compile. Thumbnails may remain stale.");
+                else if (Bare == TEXT("EditTurboMCPCompile"))
+                    Help += TEXT("\neffects: compilation can reinstance classes and affect dependents. Does not save; inspect each asset's diagnostics before saving.");
+                else if (Bare == TEXT("EditTurboMCPAssetUndo"))
+                    Help += TEXT("\neffects: undoes only the latest matching TurboMCP transaction. Requires its preview GUID; never skips unrelated edits. No explicit compile or save. Redo remains available after success.");
                 else if (Bare == TEXT("PreviewTurboMCPAssetRevert"))
                     Help += TEXT("\neffects: preview only; does not discard edits. Returns confirmation for EditTurboMCPAssetRevert, which discards ALL unsaved edits in the named package and may reset undo.");
                 else if (Bare == TEXT("EditTurboMCPAssetRevert"))
@@ -576,7 +567,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 						Help += PropDescription.IsEmpty()
 							? FString::Printf(TEXT("\n  %s: %s [%s]"), *Property.Key, *Type, Requirement)
 							: FString::Printf(TEXT("\n  %s: %s [%s] - %s"),
-								*Property.Key, *Type, Requirement, *FirstSentence(PropDescription));
+								*Property.Key, *Type, Requirement, *PropDescription.TrimStartAndEnd());
 						if (PropObject && (*PropObject).IsValid())
 						{
 							TSharedRef<FJsonObject> Constraints = MakeShared<FJsonObject>();
@@ -660,16 +651,15 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
 					*Traps.GetLoadedFrom());
 			}
 
-			// The budget is a hard requirement in R-TOOL-SCHEMA. Say when it is
-			// exceeded rather than cutting text in the middle (P6), because a
-			// truncated trap is a trap an agent will not read.
-			if (Help.Len() > HelpBudgetChars)
-			{
-				Help += FString::Printf(
-					TEXT("\nwarning: %d characters, over the %d character budget. ")
-					TEXT("Shorten the traps for this tool in the traps file."),
-					Help.Len(), HelpBudgetChars);
-			}
+            // Keep effects first; explicitly route omitted detail to the full live schema.
+            if (Help.Len() > HelpBudgetChars)
+            {
+                const FString Notice = TEXT("\n[Compact help shortened. Use describe_toolset with this toolset_name for full parameter descriptions and constraints.]");
+                FString Prefix = Help.Left(HelpBudgetChars - Notice.Len());
+                int32 LastLine = INDEX_NONE;
+                if (Prefix.FindLastChar(TEXT('\n'), LastLine)) Prefix.LeftInline(LastLine);
+                Help = Prefix + Notice;
+            }
 
 			return Help;
 		}
