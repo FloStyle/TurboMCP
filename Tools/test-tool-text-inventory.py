@@ -32,6 +32,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
             raise RuntimeError(name + ' exceeds compact help budget')
         documented = {'ReadTurboMCPToolHelp', 'ReadTurboMCPAssetSearch', 'ReadTurboMCPAssetDescribe', 'ReadTurboMCPTypeFind', 'ReadTurboMCPDirtyList', 'ReadTurboMCPGraphLoad'}
         documented.update(prefix + 'TurboMCP' + suffix for prefix in ('Preview', 'Edit') for suffix in ('GraphAppend', 'GraphPatch', 'GraphSwapCall', 'GraphConnect'))
+        documented.update(prefix + 'TurboMCP' + suffix for prefix in ('Preview', 'Edit') for suffix in ('GraphTidy', 'GraphFixBackward', 'GraphSplitValue', 'GraphRemove', 'GraphSequence'))
         documented.add('EditTurboMCPGraphPositions')
         if name in documented:
             for parameter, definition in tool['inputSchema'].get('properties', {}).items():

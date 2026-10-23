@@ -1195,6 +1195,16 @@ public:
 	 * WrapAfter optionally lists comma-separated execution node IDs at natural breaks (e.g. a latent call); their continuations start a new row. No links change.
 	 * HorizontalGap/VerticalGap set full-detail clearance; LanePitch is minimum Sequence row spacing, expanded for tall pure trees. MainPath accepts "auto" for the longest acyclic execution path, or comma-separated connected reader node IDs for the top exec lane. Auto refuses execution cycles.
 	 * Structural quality (including requested row breaks) takes priority; total wire length breaks ties.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope or collision checks.
+	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
+	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode.
+	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
+	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
+	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
+	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphTidy(
@@ -1224,6 +1234,10 @@ public:
 	 *
 	 * The number it prints is the TOTAL WIRE LENGTH, the same quantity `P-GRAPH-TIDY` reports, so the two
 	 * are comparable. `P-GRAPH-KNOTS` reports WIRES CROSSING NODES and is deliberately not comparable.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param bForce Required boolean. false requires the proposed wire-length improvement; true permits applying the planned placement without that improvement. Other safety checks still apply.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphFixBackward(
@@ -1375,7 +1389,13 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
 
-    /** Remove exact nodes and links with scratch preview and one undo. Nodes is a JSON array of reader node IDs. Links is a JSON array of objects with sourceNodeId, sourcePin, targetNodeId, targetPin. Use [] for either unused list. Node deletion also removes incident links; other nodes/positions are preserved. No automatic reconnection, compile or save. */
+    /** Remove exact nodes and links with scratch preview and one undo. Nodes is a JSON array of reader node IDs. Links is a JSON array of objects with sourceNodeId, sourcePin, targetNodeId, targetPin. Use [] for either unused list. Node deletion also removes incident links; other nodes/positions are preserved. No automatic reconnection, compile or save.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param Nodes JSON array encoded as a string, e.g. ["exact reader node ID"]. Use [] when removing only links, not an empty string. Duplicate, missing and non-deletable nodes are refused.
+	 * @param Links JSON array encoded as a string. Each object requires sourceNodeId, sourcePin, targetNodeId and targetPin for an existing link. Use [] when removing only nodes. Do not repeat links already removed by a selected node deletion.
+	 */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
@@ -1395,11 +1415,22 @@ public:
 
 
 
-    /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
+    /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param NodeId Exact reader ID of a supported pure self, getter or literal node to copy per consumer. Impure calls are refused. Run layout after the edit; no compile or save.
+	 */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
 
-    /** Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows. Groups is JSON [["reader ID 1","reader ID 2"],["reader ID 3"]]. Keeps original execution order and puts continuation last; refuses latent/branching/cyclic groups. Optional trivial-value splitting; one undo, no compile/save. */
+    /** Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows. Groups is JSON [["reader ID 1","reader ID 2"],["reader ID 3"]]. Keeps original execution order and puts continuation last; refuses latent/branching/cyclic groups. Optional trivial-value splitting; one undo, no compile/save.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param Groups JSON array encoded as a string: nonempty arrays of reader node IDs, e.g. [["first ID","second ID"],["third ID"]]. Groups must form an ordered linear chain of synchronous calls; latent, branching and cyclic groups are refused.
+	 * @param bSplitValues Optional boolean, default true. Split supported trivial values for the selected groups when true. false leaves those shared values in place; execution ordering checks still apply.
+	 */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues = true);
 
@@ -2037,6 +2068,16 @@ public:
 	 * disagrees with the measure asks for. `NodeIds` has the same fixed-anchor scope as the preview.
 	 * Include "@unboxed" to leave boxed nodes fixed (alone: all unboxed; with IDs: only unboxed IDs).
 	 * WrapAfter is the same comma-separated execution-node row-break option as the preview; links remain unchanged.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param bForce Required boolean. false keeps quality-based acceptance; true permits the proposed layout even when its score does not improve. Does not bypass scope or collision checks.
+	 * @param NodeIds Array of reader node IDs; [] selects the whole graph. Unselected nodes remain fixed. ["@unboxed"] selects unboxed nodes; combine it with IDs to restrict those IDs to unboxed nodes.
+	 * @param MainPath Empty uses normal layout. auto chooses the longest acyclic execution path; otherwise comma-separated connected execution node IDs in desired order. Cycles are refused in auto mode.
+	 * @param HorizontalGap Finite horizontal clearance in graph units, 40..2000; default 120. Example: 160.
+	 * @param VerticalGap Finite vertical clearance in graph units, 40..2000; default 100. Example: 120.
+	 * @param LanePitch Finite minimum Sequence-row spacing in graph units, 100..10000; default 280. Rows expand when needed for tall trees.
+	 * @param WrapAfter Empty means no requested row breaks. Otherwise comma-separated unique execution node IDs within scope, each with a continuation. Following execution starts a new row; links are unchanged.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphTidy(
@@ -2058,6 +2099,10 @@ public:
 	 *
 	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
 	 * disagrees with the measure asks for.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param bForce Required boolean. false requires the proposed wire-length improvement; true permits applying the planned placement without that improvement. Other safety checks still apply.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphFixBackward(
@@ -2256,7 +2301,13 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin);
 
-    /** Remove exact nodes and links with scratch preview and one undo. Nodes is a JSON array of reader node IDs. Links is a JSON array of objects with sourceNodeId, sourcePin, targetNodeId, targetPin. Use [] for either unused list. Node deletion also removes incident links; other nodes/positions are preserved. No automatic reconnection, compile or save. */
+    /** Remove exact nodes and links with scratch preview and one undo. Nodes is a JSON array of reader node IDs. Links is a JSON array of objects with sourceNodeId, sourcePin, targetNodeId, targetPin. Use [] for either unused list. Node deletion also removes incident links; other nodes/positions are preserved. No automatic reconnection, compile or save.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param Nodes JSON array encoded as a string, e.g. ["exact reader node ID"]. Use [] when removing only links, not an empty string. Duplicate, missing and non-deletable nodes are refused.
+	 * @param Links JSON array encoded as a string. Each object requires sourceNodeId, sourcePin, targetNodeId and targetPin for an existing link. Use [] when removing only nodes. Do not repeat links already removed by a selected node deletion.
+	 */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
@@ -2276,11 +2327,22 @@ public:
 
 
 
-    /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards. */
+    /** Copy a pure self/getter/literal per consumer; never impure calls. Preserves defaults and input sources. Run layout afterwards.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param NodeId Exact reader ID of a supported pure self, getter or literal node to copy per consumer. Impure calls are refused. Run layout after the edit; no compile or save.
+	 */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId);
 
-    /** Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows. Groups is JSON [["reader ID 1","reader ID 2"],["reader ID 3"]]. Keeps original execution order and puts continuation last; refuses latent/branching/cyclic groups. Optional trivial-value splitting; one undo, no compile/save. */
+    /** Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows. Groups is JSON [["reader ID 1","reader ID 2"],["reader ID 3"]]. Keeps original execution order and puts continuation last; refuses latent/branching/cyclic groups. Optional trivial-value splitting; one undo, no compile/save.
+	 *
+	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path to disambiguate.
+	 * @param GraphName Exact existing graph name, e.g. EventGraph. Select it from the reader; do not guess.
+	 * @param Groups JSON array encoded as a string: nonempty arrays of reader node IDs, e.g. [["first ID","second ID"],["third ID"]]. Groups must form an ordered linear chain of synchronous calls; latent, branching and cyclic groups are refused.
+	 * @param bSplitValues Optional boolean, default true. Split supported trivial values for the selected groups when true. false leaves those shared values in place; execution ordering checks still apply.
+	 */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues = true);
 

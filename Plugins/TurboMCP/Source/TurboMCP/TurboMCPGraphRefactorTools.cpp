@@ -152,7 +152,6 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
     if(!Edit) return TEXT("unchanged\npreview (transient graph)\n")+Report+TEXT("\nNew node IDs in preview are provisional; use the edit result IDs for subsequent calls.\ncompile/save=deferred");
     UTransBuffer* Buffer=Cast<UTransBuffer>(GEditor->Trans);
     if(!Buffer || !GEditor->CanTransact()) return TEXT("unchanged\nrefused: undo unavailable");
-    const bool Dirty=BP->GetOutermost()->IsDirty();
     TUniquePtr<FScopedTransaction> Tx=MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP","GraphRefactor","TurboMCP graph refactor"));
     if(!Tx->IsOutstanding() || Buffer->ActiveCount!=1 || Buffer->UndoBuffer.IsEmpty()) return TEXT("unchanged\nrefused: owned transaction unavailable");
     const FGuid Owned=Buffer->UndoBuffer.Last()->GetId();
@@ -162,9 +161,13 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
     {
         Tx.Reset(); const int32 Index=Buffer->GetQueueLength()-Buffer->GetUndoCount()-1;
         const FTransaction* Record=Index>=0?Buffer->GetTransaction(Index):nullptr;
-        const bool Restored=Record && Record->GetId()==Owned && GEditor->UndoTransaction(false);
-        if(Restored) BP->GetOutermost()->SetDirtyFlag(Dirty);
-        return FString(Restored?TEXT("unchanged\nrollback=complete\n"):TEXT("partial\nrollback=failed\n"))+Error;
+        const bool UndoApplied=Record && Record->GetId()==Owned && GEditor->UndoTransaction(false);
+        // Undo success does not prove complete restoration of properties or callback effects.
+        // Do not clear dirty state or report unchanged without a complete comparison.
+        return FString(UndoApplied
+            ? TEXT("partial\nrollback=applied; restoration=unverified\n")
+            : TEXT("partial\nrollback=failed; restoration=unverified\n"))
+            + Error + TEXT("\ncompile=not_run; save=not_requested\nInspect the asset before retrying or saving.");
     }
     Graph->NotifyGraphChanged(); FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
     return TEXT("changed\n")+Report+TEXT("\nundo=one\ncompile/save=deferred\nRun layout after structural edits.");
