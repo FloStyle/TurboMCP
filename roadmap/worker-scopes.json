@@ -1166,6 +1166,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
           ],
           "new_files": []
+        },
+        "quick-row-delimiters": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
