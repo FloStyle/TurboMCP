@@ -1154,6 +1154,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp"
           ],
           "new_files": []
+        },
+        "quick-callback-usage": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
