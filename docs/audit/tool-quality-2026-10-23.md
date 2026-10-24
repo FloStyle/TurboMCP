@@ -296,3 +296,9 @@ Supervised run 715b27b9b7504d87bfb620cb3e9f034f passed stock build and widget-re
 Implemented in b0203e1: documented all three EditTurboMCPWidgetsAsVars parameters; replaced obsolete save aliases and preview-equivalence claims with current compile/save actions and explicit skeleton regeneration, editor callback and undo limitations. Removed historical roadmap commentary. Missing-name refusal now describes unchanged widget flags rather than claiming all state is unchanged.
 
 Supervised run 4281ad84782f41c8b602d3af24588f0d passed the stock-engine build, test-widgets-as-vars and the 125-tool live help inventory; all 16 fixture files restored. The focused suite covers flag transitions, idempotence, missing-name refusal, reader-visible state and revised messages. It does not prove fresh disk reload, undo, or every callback effect. Overall tool-quality review remains incomplete.
+
+## Override creation text review
+
+Implemented in 47472de: documented the four parameters across Preview/EditTurboMCPOverrideAdd; compact help includes loading or edit effects, undo, compile and save limits. Event preview now describes the event node at the fixed origin instead of promising a result node. Replaced obsolete compile/save aliases and made editor-null-return messages explicit that state and rollback are unverified. Simplified obsolete duplicate-creation commentary.
+
+Supervised run bfae987246f049419105ae01c326df68 passed build, test-override-add and the 125-tool help inventory. The focused suite checks event creation, existing-override refusal, reader-visible counts, removal and revised messages. It does not validate function-override creation, undo, fault-path messages or fresh disk reload; these remain coverage gaps. Overall quality work remains incomplete.
