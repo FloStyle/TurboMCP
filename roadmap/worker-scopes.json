@@ -1423,6 +1423,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp"
           ],
           "new_files": []
+        },
+        "quality-node-readers": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": [
+            "Tools/test-node-reader-output.py"
+          ]
         }
       },
       "preserve_rows": []
