@@ -488,3 +488,9 @@ Supervised run 338a84949d6e4381abdb87c9bcb1af91 passed build and all 125 live he
 d9e040a documents ten parameters and puts the existing unsupported-collapse limitation first in compact help. Selection analysis no longer starts with 'would change'. The apply refusal states that nothing was extracted or created and points to manual editor extraction followed by fresh graph reads, without historical engineering speculation. This does not implement collapse or close its feature gap.
 
 Supervised run 295bd253016d40d2aa8757785065959a passed build and all 125 live help/schema checks. No new collapse behavioral acceptance is claimed. Existing selection-analysis validity and unsupported-operation refusal coverage remain separate verification work; the overall review remains open.
+
+## Repoint input contract — 2026-10-24
+
+42ae363 documents all 16 parameters across preview/edit. Both selected pins are outputs; the operation redirects consumers rather than connecting an output to an input. Help explains existing-target precedence, probe creation, source retention/deletion, empty boolean defaults and the absence of input/default transfer. Compact descriptions preserve loading/probing versus transaction/deletion/compile/save effects.
+
+Supervised run 634d5f0242654fdd82cb524889f44a80 passed build and all 125 live help/schema checks. No new behavior evidence is claimed. Follow-up source review must address rollback=complete claims based on UndoTransaction's return without independent full-state comparison. BatchEdit's existing example also incorrectly uses an input target pin for repoint and must be corrected in its text review. Overall quality review remains open.
