@@ -42,8 +42,9 @@ print("RESULT: PASS; dimensions, retained files and small-frame refusal checked.
 
 # A catalogue is a capability query, not historical capture evidence.
 catalogue = session.call(LOOK_TOOLSET, "LookTurboMCPCapture",
-                         dict(args, asset="", mode="asset-editor"))
+                         dict(args, asset="", graphName="", mode="asset-editor"))
 print(catalogue, flush=True)
+assert not catalogue.startswith(("error:", "!!")), catalogue
 for kind in ("Blueprint", "Anim Blueprint", "Material", "Material Instance",
              "Material Function", "Widget Blueprint (Designer)", "DataTable",
              "Anim Sequence", "Niagara system"):
