@@ -39,3 +39,17 @@ print(small, flush=True)
 assert small.startswith("error:") and "zoom range" in small, small
 assert "image:" not in small, small
 print("RESULT: PASS; dimensions, retained files and small-frame refusal checked. Pixel review remains separate.", flush=True)
+
+# A catalogue is a capability query, not historical capture evidence.
+catalogue = session.call(LOOK_TOOLSET, "LookTurboMCPCapture",
+                         dict(args, asset="", mode="asset-editor"))
+print(catalogue, flush=True)
+for kind in ("Blueprint", "Anim Blueprint", "Material", "Material Instance",
+             "Material Function", "Widget Blueprint (Designer)", "DataTable",
+             "Anim Sequence", "Niagara system"):
+    assert kind in catalogue, (kind, catalogue)
+assert "not capture acceptance" in catalogue, catalogue
+assert "may load editor modules" in catalogue, catalogue
+assert "MEASURED" not in catalogue and "distinct colours" not in catalogue, catalogue
+assert "1664x849" not in catalogue, catalogue
+print("RESULT: PASS; catalogue describes capability without historical evidence claims.", flush=True)

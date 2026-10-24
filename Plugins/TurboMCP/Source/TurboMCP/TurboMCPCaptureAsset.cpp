@@ -33,26 +33,8 @@
 
 #include "TurboMCPAssetResolver.h"
 
-/**
- * `L-CAPTURE-ASSET`: the support table, and the capture of one asset editor tab.
- *
- * WHY THIS IS A THIRD FILE, AND WHAT IT DOES NOT TOUCH
- * ----------------------------------------------------
- * `TurboMCPCapture.cpp` owns the frame arithmetic and the PNG contract for a Blueprint
- * graph frame, and `Tools/test-capture.py` measures the pictures it produces.
- * `TurboMCPCaptureSelector.cpp` owns the four node selectors row 2.1 added.
- *
- * This file owns a THIRD question: which asset editors exist as a Slate widget here at
- * all. It shares the PNG contract of `04_FORMATS.md` section 6 (the folder, the size
- * line, the `image:` line) and shares no arithmetic with either of the others, so a
- * change here cannot move a picture either suite already measures.
- *
- * *** THE DECISION PER KIND IS A MODULE LOAD, MEASURED IN THIS PROCESS. ***
- * An asset editor is published by an editor module's `AssetTypeActions`, and
- * `UAssetEditorSubsystem::OpenEditorForAsset` has nothing to open when that module is
- * not loaded. So `FModuleManager::Get().IsModuleLoaded(OwnerModule)` answers "is this
- * kind reachable here" with a measurement rather than a claim, and the output prints
- * the module name and the answer.
+/** Lists editor kinds and captures their editor presentation. Module availability
+ * is checked separately from opening an asset and rendering its editor widget.
  */
 namespace
 {
@@ -119,14 +101,8 @@ namespace
 			Kind.Name = TEXT("Blueprint");
 			Kind.AssetClass = TEXT("UBlueprint");
 			Kind.OwnerModule = TEXT("Kismet");
-			Kind.AlternativeTool = TEXT("L-CAPTURE modes graph / box / node (frames a NODE or a BOX)");
-			Kind.Reason = TEXT("THE BLUEPRINT EDITOR IS THE ONE THIS TOOL ALREADY RENDERS. ")
-				TEXT("The graph modes frame a named graph out of a live SGraphEditor ")
-				TEXT("(FBlueprintEditor::OpenGraphAndBringToFront), and this mode ALSO ")
-				TEXT("opens the editor tab: MEASURED, BP_NodeTest captured at 1664x849 with ")
-				TEXT("1629 distinct colours. So a Blueprint can be captured either as a ")
-				TEXT("framed graph or as the editor itself, and the graph modes are named ")
-				TEXT("because they are the ones that can frame a NODE or a BOX.");
+			Kind.AlternativeTool = TEXT("LookTurboMCPCapture modes graph, box or node");
+			Kind.Reason = TEXT("Captures the Blueprint editor presentation. Use graph, node or box modes to frame graph content.");
 			OutKinds.Add(Kind);
 		}
 
@@ -135,13 +111,8 @@ namespace
 			Kind.Name = TEXT("Anim Blueprint");
 			Kind.AssetClass = TEXT("UAnimBlueprint");
 			Kind.OwnerModule = TEXT("AnimationBlueprintEditor");
-			Kind.AlternativeTool = TEXT("L-CAPTURE modes graph / box / node (frames a NODE or a BOX)");
-			Kind.Reason = TEXT("UAnimBlueprint is a UBlueprint ")
-				TEXT("(Engine/Classes/Animation/AnimBlueprint.h:81), so the editor is an ")
-				TEXT("FBlueprintEditor (IAnimationBlueprintEditor derives from it, ")
-				TEXT("AnimationBlueprintEditor/Public/IAnimationBlueprintEditor.h:12) and ")
-				TEXT("the graph modes already frame its AnimGraph, exactly as row 2.1's ")
-				TEXT("pre-flight measured on the existing Blueprint fixtures.");
+			Kind.AlternativeTool = TEXT("LookTurboMCPCapture modes graph, box or node");
+			Kind.Reason = TEXT("Attempts the Animation Blueprint editor presentation. Module availability does not prove that a particular animation graph can be captured.");
 			OutKinds.Add(Kind);
 		}
 
@@ -151,12 +122,7 @@ namespace
 			Kind.AssetClass = TEXT("UMaterial");
 			Kind.OwnerModule = TEXT("MaterialEditor");
 			Kind.AlternativeTool = TEXT("");
-			Kind.Reason = TEXT("IMaterialEditor is an FAssetEditorToolkit ")
-				TEXT("(MaterialEditor/Public/IMaterialEditor.h:23), so the toolkit host's ")
-				TEXT("own widget IS the material editor. The MaterialEditor module is ")
-				TEXT("already a PrivateDependency of this plugin (TurboMCP.Build.cs:100). ")
-				TEXT("MEASURED, /Engine/EngineMaterials/CubeMaterial captured at 1664x849 ")
-				TEXT("with 3444 distinct colours.");
+			Kind.Reason = TEXT("Captures the material editor presentation.");
 			OutKinds.Add(Kind);
 		}
 
@@ -166,15 +132,7 @@ namespace
 			Kind.AssetClass = TEXT("UMaterialInstanceConstant");
 			Kind.OwnerModule = TEXT("MaterialEditor");
 			Kind.AlternativeTool = TEXT("");
-			Kind.Reason = TEXT("A Material Instance Constant opens in the same ")
-				TEXT("IMaterialEditor (MaterialEditor/Public/IMaterialEditor.h:23), the one ")
-				TEXT("cached as SMInstance, so it takes the same path as a Material. ")
-				TEXT("MEASURED, /Engine/VREditor/BasicMeshes/MI_Cube_01 captured at ")
-				TEXT("1664x849 with 1680 distinct colours. The project's OWN material ")
-				TEXT("instance fixture could not be reached: ")
-				TEXT("/Game/Tests/TurboMCPMaterialFixture has no object named after its ")
-				TEXT("package, measured through R-ASSET-SEARCH, so an engine instance was ")
-				TEXT("used instead and the substitution is stated rather than hidden.");
+			Kind.Reason = TEXT("Captures the material instance editor presentation.");
 			OutKinds.Add(Kind);
 		}
 
@@ -184,11 +142,7 @@ namespace
 			Kind.AssetClass = TEXT("UMaterialFunction");
 			Kind.OwnerModule = TEXT("MaterialEditor");
 			Kind.AlternativeTool = TEXT("");
-			Kind.Reason = TEXT("The same IMaterialEditor publishes material functions: it ")
-				TEXT("is created for UMaterialFunctionInterface assets too ")
-				TEXT("(MaterialEditor/Public/IMaterialEditor.h:23, and ")
-				TEXT("GetOriginalObjectName at :87 is documented as the material OR the ")
-				TEXT("material function being edited).");
+			Kind.Reason = TEXT("Captures the material function editor presentation.");
 			OutKinds.Add(Kind);
 		}
 
@@ -197,13 +151,8 @@ namespace
 			Kind.Name = TEXT("Widget Blueprint (Designer)");
 			Kind.AssetClass = TEXT("UWidgetBlueprint");
 			Kind.OwnerModule = TEXT("UMGEditor");
-			Kind.AlternativeTool = TEXT("L-WIDGET-PREVIEW");
-			Kind.Reason = TEXT("UWidgetBlueprint opens in FWidgetBlueprintEditor ")
-				TEXT("(UMGEditor/Public/WidgetBlueprintEditor.h), which the plugin already ")
-				TEXT("links (TurboMCP.Build.cs:93). MEASURED, WBP_NodeTest captured at ")
-				TEXT("1664x849 with 1278 distinct colours. L-WIDGET-PREVIEW remains the tool ")
-				TEXT("that renders the WIDGET with sample values rather than the designer, ")
-				TEXT("so the alternative is named rather than left implied.");
+			Kind.AlternativeTool = TEXT("LookTurboMCPWidgetPreview (requires Execution=allow)");
+			Kind.Reason = TEXT("Captures the Widget Blueprint editor presentation. The visible tab may be the designer or a graph. Widget preview renders a transient instance and requires explicit execution consent.");
 			OutKinds.Add(Kind);
 		}
 
@@ -213,10 +162,7 @@ namespace
 			Kind.AssetClass = TEXT("UDataTable");
 			Kind.OwnerModule = TEXT("DataTableEditor");
 			Kind.AlternativeTool = TEXT("");
-			Kind.Reason = TEXT("IDataTableEditor is an FAssetEditorToolkit ")
-				TEXT("(DataTableEditor/Public/IDataTableEditor.h:10), and a DataTable ")
-				TEXT("editor is a tab rather than a graph, which is precisely the case the ")
-				TEXT("editor-tab path in this file exists for.");
+			Kind.Reason = TEXT("Captures the DataTable editor presentation.");
 			OutKinds.Add(Kind);
 		}
 
@@ -226,14 +172,7 @@ namespace
 			Kind.AssetClass = TEXT("UAnimSequence");
 			Kind.OwnerModule = TEXT("AnimationEditor");
 			Kind.AlternativeTool = TEXT("");
-			Kind.Reason = TEXT("UAnimSequence (Engine/Classes/Animation/AnimSequence.h:202) ")
-				TEXT("is edited by FAnimationEditor in the AnimationEditor module. This was ")
-				TEXT("FIRST WRITTEN AS A REFUSAL BECAUSE THAT MODULE IS NOT IN ")
-				TEXT("TurboMCP.Build.cs, AND THAT WAS FALSE AS A CAPABILITY CLAIM: MEASURED, ")
-				TEXT("the module loads on demand and /Engine/Tutorial/SubEditors/")
-				TEXT("TutorialAssets/Character/Tutorial_Idle captured at 1664x849 with 1787 ")
-				TEXT("distinct colours. Linking a module is not the same as reaching its ")
-				TEXT("editor, and the engine loads editor modules when an asset asks for one.");
+			Kind.Reason = TEXT("Attempts the animation sequence editor presentation when its editor module can be loaded.");
 			OutKinds.Add(Kind);
 		}
 
@@ -243,14 +182,7 @@ namespace
 			Kind.AssetClass = TEXT("UNiagaraSystem");
 			Kind.OwnerModule = TEXT("NiagaraEditor");
 			Kind.AlternativeTool = TEXT("");
-			Kind.Reason = TEXT("A Niagara system is edited by the NiagaraEditor plugin ")
-				TEXT("module (Engine/Plugins/FX/Niagara/Source/NiagaraEditor), which the ")
-				TEXT("engine enables by default (Niagara.uplugin: EnabledByDefault true). ")
-				TEXT("This was FIRST WRITTEN AS A REFUSAL ON THE ASSUMPTION THAT THE TEST ")
-				TEXT("PROJECT'S .uproject NOT LISTING NIAGARA MEANT IT WAS NOT THERE, AND ")
-				TEXT("THAT WAS FALSE: MEASURED, the module loads and a real 1664x849 ")
-				TEXT("capture of DefaultSystem came back with 13282 distinct colours. So ")
-				TEXT("the kind is attempted like every other one.");
+			Kind.Reason = TEXT("Attempts the Niagara system editor presentation when its editor module can be loaded.");
 			OutKinds.Add(Kind);
 		}
 	}
@@ -373,7 +305,7 @@ namespace
 		Line += FString::Printf(TEXT("\n      editor module reachability: %s"),
 			*Reachability);
 		Line += FString::Printf(
-			TEXT("\n      another tool that also captures this kind, if any: %s"),
+			TEXT("\n      related tool or mode: %s"),
 			AlternativeLabel);
 		Line += FString::Printf(TEXT("\n      why: %s"), *InKind.Reason);
 		return Line;
@@ -456,10 +388,8 @@ void TurboMCPCaptureAsset::DescribeKinds(FString& InOutDescription)
 	int32 OtherTool = 0;
 	int32 Refused = 0;
 
-	FString Table = FString::Printf(
-		TEXT("\nwhich asset editors this tool can capture, one line per kind. Every kind's ")
-		TEXT("editor module was ASKED FOR, so this table is the same answer in a fresh ")
-		TEXT("process as in one where editors are already open:"));
+	FString Table = TEXT("\nAsset-editor module availability by kind. This query may load editor modules. ")
+		TEXT("It does not capture an asset or verify that an editor can render it:");
 
 	for (const FKind& Kind : Kinds)
 	{
@@ -488,13 +418,9 @@ void TurboMCPCaptureAsset::DescribeKinds(FString& InOutDescription)
 		Built, OtherTool, Refused, Kinds.Num());
 
 	InOutDescription += Table;
-	InOutDescription += TEXT("\n; a kind is BUILT when the module that publishes its ")
-		TEXT("editor LOADED when this table asked for it, which is a measurement taken ")
-		TEXT("here rather than a list written down. It is NOT a promise that a particular ")
-		TEXT("asset's editor opens or draws anything: only the capture attempt proves ")
-		TEXT("that, and its result is what a caller reads. A kind is REFUSED with the ")
-		TEXT("module named rather than silently dropped, so 'which editors can this ")
-		TEXT("capture' is answered by the table and not by which lines are missing.");
+	InOutDescription += TEXT("\n; BUILT means the editor module loaded successfully; it is not capture acceptance. ")
+		TEXT("REFUSED means the module could not be loaded. A capture attempt must separately ")
+		TEXT("open the requested editor and produce an image.");
 }
 
 bool TurboMCPCaptureAsset::FindKind(const FString& InKind, FKind& OutKind)
