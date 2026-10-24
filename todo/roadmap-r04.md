@@ -1428,3 +1428,7 @@ Implemented explicit endpoint retention (e92fc24), with supervised native planne
 ### 2026-10-24 Batch graph identity repair
 
 Fixed af034a7: staged plans preserve the live graph name rather than the scratch duplicate name. Native public Preview/Edit batch calls pass sequential existing-target edits and later-operation refusal without live mutation (03f81ea36fa5434ab4a55189eaf5b2a4). Batch rollback after live mutation and broader operation coverage remain open; see the quality audit.
+
+### 2026-10-24 Batch failure after live mutation
+
+Native run a426f0d227bc46d7bea1a3e98440d3aa passes a forced second-operation failure after both live rewires, with original graph links/default/position restored and both attempted operations reported. Existing sequential success/refusal suite also passed. Whole-state rollback remains unverified; see the tool-quality audit for exact limits.

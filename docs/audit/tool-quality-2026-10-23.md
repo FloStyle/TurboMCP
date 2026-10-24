@@ -584,3 +584,11 @@ Fixed af034a7: PlanOnGraph now stores IdentityGraph->GetName(), not the transien
 Supervised build/native run 03f81ea36fa5434ab4a55189eaf5b2a4 passed after the fix, with unchanged behavioral assertions. Coverage: two sequential existing-target repoints; the second uses readers moved by the first; preview leaves live links intact; invalid second-operation target pin refuses before either live operation; valid batch preserves node count/default/position and produces the intended final reciprocal edge. Scope checks passed for native candidate 124732c and repair af034a7.
 
 Limits: no failure injection after a live batch mutation, new-target batches, protected-node deletion, whole-state rollback, save or persistence acceptance. Those remain open. The legacy test-batch-edit.py is stale (reader schema and old behavior expectations); this new suite supplies current narrow coverage rather than claiming that suite passes. Four previously recorded offline findings remain unresolved.
+
+## Batch post-mutation failure evidence (2026-10-24)
+
+77fa8f7 extracts the existing batch executor into a translation-unit-private helper so automation can inject a final verification mismatch after normal ParseBatch. The public entry point still performs its editor guards and full planning before execution; no public bypass was added.
+
+Run a426f0d227bc46d7bea1a3e98440d3aa passed build, test-batch-sequence and test-batch-rollback with no native warnings. The latter makes operation one rewire successfully, then forces operation two to fail its final node-count verification after rewiring. It verifies failure identifies second, appliedBeforeFailure=first, rollbackScope=first,second, undo_applied with restoration=unverified, no active transaction, original reciprocal consumer link, empty attempted target outputs, node count, default and position.
+
+This closes the missing evidence for this specific two-existing-target failure case. It does not prove every property, dirty flag, callback, newly created/deleted node, disk or previous-history effect. Keep the broader batch restoration issue open and do not upgrade production results to verified complete rollback. Scope check passed against 141b351fd313f5c18ba215a539cb184c62cb6449. Previously recorded offline gate findings remain unresolved.
