@@ -1141,28 +1141,11 @@ public:
 		const FString& MemberName,
 		const FString& MemberKind);
 
-	/**
-	 * Work out what creating a user struct asset would do, without creating it.
-	 *
-	 * Pass a package path such as `/Game/Tests/MyStruct` and the fields. Each field is
-	 * `Name: Type`, followed by any of `default=`, `tooltip=` and `category=`. Fields are
-	 * separated by commas at the top level, so a type with a comma in it such as
-	 * `Map<String, Int>` stays one field.
-	 *
-	 * Basic types are bool, int, int64, byte, real, float, double, name, string and text.
-	 * Struct names are Vector, Rotator, Transform, Vector2D, LinearColor and Color. For an
-	 * enum or a struct asset, pass its path. Containers are `Array<T>`, `Set<T>` and
-	 * `Map<K, V>`.
-	 *
-	 * A path that is not absolute, a field name that is not a usable identifier, a duplicate
-	 * field name, an unknown field option, an unbalanced container type and a type that
-	 * resolves to nothing are each refused BY NAME. These checks and the ones below are in the
-	 * PLAN, so this Preview and its Edit twin refuse exactly the same input (`D-02`), and this
-	 * writes nothing.
-	 *
-	 * It also says whether the asset already exists, because that fact is what decides whether
-	 * the Edit will refuse rather than overwrite.
-	 */
+	/** Inspect a proposed user-defined struct; type resolution may load referenced assets; does not create, compile or save the struct.
+     * Existing assets are refused. Preview validates field syntax and resolves types, but does not guarantee creation or validate every default. Edit lists observed fields; defaults and metadata are not fully verified. Failures may leave a partial unsaved asset; inspect before saving or retrying.
+     * @param Path Required new package path including the asset name, such as /Game/Structs/S_Item; no object suffix or file extension. Whitespace is trimmed; empty, invalid and relative paths are refused. No automatic path is chosen.
+     * @param Fields Required comma-separated Name: Type declarations, such as Count: int, default=1, Label: text, tooltip=Item label. Options default=, tooltip= and category= attach to the preceding field and may appear once each. Empty input is refused; empty option values are skipped during creation. Names must be unique ignoring case. Types include bool, byte, int, int64, float, real, double, name, string, text; vector, rotator, transform, vector2d, linearcolor, color; loadable struct/enum paths; array<T>, set<T>, map<K,V> and supported object/class reference forms. Nested containers are refused and set elements/map keys must be hashable. Use Unreal literal syntax for defaults; plain top-level commas delimit fields or options.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPStructNew(const FString& Path, const FString& Fields);
 
@@ -1824,29 +1807,11 @@ public:
 		const FString& MemberName,
 		const FString& MemberKind);
 
-	/**
-	 * Create a user struct asset, with its fields in one call.
-	 *
-	 * The same inputs, parsed and validated the same way, as `P-STRUCT-NEW`, because the two
-	 * share one code path up to the write (`D-02`).
-	 *
-	 * REFUSES an existing path rather than overwriting it: a name someone else chose is not this
-	 * tool's to replace. The refusal opens with `unchanged:` so a caller can tell it from a
-	 * failure (`P4`).
-	 *
-	 * *** THE STRUCT IS CREATED THROUGH THE EDITOR'S OWN `FStructureEditorUtils::CreateUserDefinedStruct`,
-	 * AND THAT IS A MEASURED CLAIM RATHER THAN A STYLE CHOICE. *** `AddVariable` reaches for the
-	 * struct's `UUserDefinedStructEditorData`, and that ONE call installs it
-	 * (`StructureEditorUtils.cpp:49-50`) - which is why a `NewObject<UUserDefinedStruct>` built by
-	 * hand crashes at `StructureEditorUtils.cpp:256` and this does not. Going through the engine's
-	 * creator is also what keeps the asset editable in the struct editor instead of producing a
-	 * hand-built asset the editor cannot open.
-	 *
-	 * THE RESULT PRINTS WHAT WAS ASKED FOR, WHAT WAS ADDED AND WHAT READS BACK from the struct
-	 * itself, because a tool reporting its own intention is not evidence that it succeeded. It also
-	 * says plainly that the asset is NOT yet saved: an unsaved asset dies with the editor, which has
-	 * cost this project three times.
-	 */
+	/** Create and compile a user-defined struct in memory within an undo transaction; marks its package dirty and may run editor callbacks; does not save.
+     * Existing assets are refused. Preview validates field syntax and resolves types, but does not guarantee creation or validate every default. Edit lists observed fields; defaults and metadata are not fully verified. Failures may leave a partial unsaved asset; inspect before saving or retrying.
+     * @param Path Required new package path including the asset name, such as /Game/Structs/S_Item; no object suffix or file extension. Whitespace is trimmed; empty, invalid and relative paths are refused. No automatic path is chosen.
+     * @param Fields Required comma-separated Name: Type declarations, such as Count: int, default=1, Label: text, tooltip=Item label. Options default=, tooltip= and category= attach to the preceding field and may appear once each. Empty input is refused; empty option values are skipped during creation. Names must be unique ignoring case. Types include bool, byte, int, int64, float, real, double, name, string, text; vector, rotator, transform, vector2d, linearcolor, color; loadable struct/enum paths; array<T>, set<T>, map<K,V> and supported object/class reference forms. Nested containers are refused and set elements/map keys must be hashable. Use Unreal literal syntax for defaults; plain top-level commas delimit fields or options.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPStructNew(const FString& Path, const FString& Fields);
 

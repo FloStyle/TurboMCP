@@ -14,18 +14,7 @@
 #include "TurboMCPStruct.h"
 #include "TurboMCPSourceControlWrite.h"
 
-/**
- * `P/E-STRUCT-NEW` and `P/E-STRUCT-FIELDS`.
- *
- * ONE CODE PATH, TWO OUTCOMES. The plan is built and validated by `FTurboMCPStruct`, the Preview prints it, and the
- * Edit applies exactly that plan. `D-02` requires a Preview and its Edit twin to share everything up to the write,
- * because a preview that computes something different from the edit is worse than no preview.
- *
- * EVERY CHECK IS IN `Plan` AND NONE IS IN `Apply`, which is what makes that promise hold for the REFUSALS as well
- * as for the happy path: a removal with loaded readers is refused by the PLAN, so the Preview refuses it too and
- * tells the caller the count to authorise, rather than printing a plan the Edit would then reject.
- */
-
+// Shared planning validates syntax; apply checks current objects and can still fail.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPStructNew(
 	const FString& Path, const FString& Fields)
 {
@@ -42,8 +31,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPStructNew(
 FString UTurboMCPEditToolset::EditTurboMCPStructNew(
 	const FString& Path, const FString& Fields)
 {
-	// The SAME plan the preview builds, from the same function, so a caller that previewed and then edited cannot
-	// be surprised by a difference between them.
+	// Rebuild the plan; an earlier preview does not reserve a path or freeze editor state.
 	FTurboMCPStruct::FPlanNew Plan;
 	FString Error;
 	if (!FTurboMCPStruct::PlanNew(Path, Fields, Plan, Error))

@@ -890,11 +890,11 @@ FString FTurboMCPStruct::RenderPreviewNew(const FPlanNew& InPlan)
 	if (bExists)
 	{
 		Out += TEXT("\nthis asset already exists: the edit will REFUSE rather than overwrite it. Pick ")
-			TEXT("another path, or delete the asset first.");
+			TEXT("another package path.");
 	}
 	else
 	{
-		Out += TEXT("\nthis asset does not exist yet, so the edit will create it.");
+		Out += TEXT("\nthis asset does not exist yet; creation and field application can still fail.");
 	}
 
 	Out += TEXT("\n; the struct is created through the editor's own ")
@@ -913,8 +913,7 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 		|| FPackageName::DoesPackageExist(InPlan.PackagePath))
 	{
 		return FString::Printf(
-			TEXT("unchanged: %s already exists, so it was not touched. Pick another path, or delete the ")
-			TEXT("asset first."), *InPlan.PackagePath);
+			TEXT("unchanged: %s already exists, so it was not touched. Choose another package path."), *InPlan.PackagePath);
 	}
 
 	UPackage* Package = CreatePackage(*InPlan.PackagePath);
@@ -993,8 +992,8 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 		// REPORTED AS PARTIAL RATHER THAN DESCRIBED AS A SUCCESS. A caller told "3 of 4" can fix it; a caller told
 		// "created" cannot.
 		return FString::Printf(
-			TEXT("error: %s was created but %d of %d field(s) could not be added: %s. The asset exists and ")
-			TEXT("is editable; the missing fields can be added with E-STRUCT-FIELDS."),
+			TEXT("partial: %s was created but %d of %d field(s) could not be added: %s. ")
+			TEXT("An unsaved partial struct remains; inspect it before retrying or using EditTurboMCPStructFields; no rollback was attempted."),
 			*InPlan.AssetName, Failed.Num(), InPlan.Fields.Num(),
 			*FString::Join(Failed, TEXT(", ")));
 	}
@@ -1090,6 +1089,7 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 	ReadFields(Struct, ReadBack);
 
 	FString Out = FString::Printf(TEXT("changed: created struct %s"), *InPlan.PackagePath);
+	Out += TEXT("\nVerification: observed fields are listed below; requested defaults and metadata were not fully verified.");
 	Out += FString::Printf(TEXT("\nfields asked for: %d"), InPlan.Fields.Num());
 	Out += FString::Printf(TEXT("\nfields added: %d"), Added);
 	if (!bCreatorFieldRemoved)
@@ -1097,15 +1097,15 @@ FString FTurboMCPStruct::ApplyNew(const FPlanNew& InPlan)
 		// SAID PLAINLY RATHER THAN LEFT TO BE DISCOVERED. The engine adds this field itself and refuses to
 		// remove the last one, so if it is still here the caller is looking at a field they did not ask for.
 		Out += TEXT("\nwarning: the engine's own boolean field could not be removed, so it is still in ")
-			TEXT("the struct. That happens when the field list would otherwise be empty.");
+			TEXT("the struct; the reason was not verified. Inspect the extra field before saving.");
 	}
 	Out += FString::Printf(TEXT("\nfields read back: %d"), ReadBack.Num());
 	for (const FField& Field : ReadBack)
 	{
 		Out += FString::Printf(TEXT("\n  %s: %s"), *Field.Name, *Field.TypeText);
 	}
-	Out += TEXT("\n; the asset is loaded but NOT saved. Call E-SAVE to write it to disk, because an ")
-		TEXT("unsaved asset dies with the editor.");
+	Out += TEXT("\nThe asset is loaded but not saved. Inspect the result before calling EditTurboMCPSave; ")
+		TEXT("unsaved changes will be lost when the editor closes.");
 
 	return Out;
 }
@@ -1784,8 +1784,8 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 	{
 		Out += FString::Printf(TEXT("\n  %s: %s"), *Field.Name, *Field.TypeText);
 	}
-	Out += TEXT("\n; the asset is loaded but NOT saved. Call E-SAVE to write it to disk, because an ")
-		TEXT("unsaved asset dies with the editor.");
+	Out += TEXT("\nThe asset is loaded but not saved. Inspect the result before calling EditTurboMCPSave; ")
+		TEXT("unsaved changes will be lost when the editor closes.");
 
 	return Out;
 }
