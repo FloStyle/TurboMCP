@@ -323,16 +323,11 @@ def main():
         check("and it gives a reason", "DID NOT RUN -" in heavy, heavy[:300])
 
     print()
-    print("=== the READER cannot write ===")
-    # It lives in the read toolset, so a mutating call is refused by name. Trying the edit toolset's name
-    # proves the refusal is about the toolset rather than about a tool that happens not to exist.
-    try:
-        refused = session.call("TurboMCP.TurboMCPReadToolset", "EditTurboMCPBPLint", {})
-        check("the reader toolset refuses an edit-shaped name by name",
-              "error" in refused.lower() or "no such" in refused.lower(), refused[:200])
-    except Exception as error:  # noqa: BLE001 - a refusal raised is still a refusal
-        check("the reader toolset refuses an edit-shaped name by name", True,
-              "raised: %s" % type(error).__name__)
+    print("=== no EditTurboMCPBPLint tool is registered ===")
+    # This checks name discovery only, not whether a toolset can mutate assets.
+    refused = session.call("TurboMCP.TurboMCPReadToolset", "EditTurboMCPBPLint", {})
+    check("the nonexistent edit-lint tool is identified",
+          "Unknown tool EditTurboMCPBPLint" in refused, refused[:200])
 
     print()
     print("=== it MUTATES NOTHING: the asset is byte-identical after a full lint ===")
