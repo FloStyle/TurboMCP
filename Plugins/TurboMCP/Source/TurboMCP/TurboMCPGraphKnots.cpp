@@ -68,7 +68,7 @@ namespace
 	 *     node K2Node_CallFunction_0 at (300,0) size (0,0) rect x 300..300 y 0..0
 	 *
 	 * for EVERY node, including nodes loaded from a previously saved package. So the spec's OPEN-1
-	 * conclusion - that `L-LAYOUT-REPORT`'s wire lengths prove the sizes are real - WAS WRONG. Those
+	 * conclusion - that `LookTurboMCPLayoutReport`'s wire lengths prove the sizes are real - WAS WRONG. Those
 	 * wire lengths come from `PinRowSpacing`, a plugin constant, not from a measured height.
 	 *
 	 * REFUSING IS NOT THE RIGHT ANSWER, and this is where the spec's advice is worth departing from
@@ -122,7 +122,7 @@ namespace
 	 * A node's rectangle in graph coordinates.
 	 *
 	 * IT DELEGATES, AND THAT IS REQUIRED RATHER THAN TIDY. `FTurboMCPLayoutReport::RectOf` is the
-	 * only rectangle convention in this project, and `L-LAYOUT-REPORT` already publishes numbers
+	 * only rectangle convention in this project, and `LookTurboMCPLayoutReport` already publishes numbers
 	 * built from it. Two tools disagreeing about where a node IS would be an invisible
 	 * inconsistency, so the arithmetic is not repeated here.
 	 */
@@ -317,7 +317,7 @@ namespace
 
 			// A KNOT'S FOOTPRINT IS MEASURED, NOT ASSUMED. `UK2Node_Knot`'s own
 			// `AllocateDefaultPins` does not set `NodeWidth`/`NodeHeight`, and Slate supplies them
-			// at render time. Measured: `L-LAYOUT-REPORT` on the acceptance asset reports a longest
+			// at render time. Measured: `LookTurboMCPLayoutReport` on the acceptance asset reports a longest
 			// single wire of 400 for a wire between nodes at x=400 and x=1600, which is only
 			// possible if `NodeWidth` is non-zero. So in practice the size is real - but a knot
 			// whose rectangle is degenerate is inflated to a small square rather than being treated
@@ -365,7 +365,7 @@ namespace
 	 *
 	 * A NEWLY CREATED KNOT HAS NO SIZE, WHICH IS THE OPPOSITE OF WHAT THE SPEC ASSUMED, AND IT WAS
 	 * MEASURED RATHER THAN REASONED ABOUT. The spec's OPEN-1 worried that `NodeWidth`/`NodeHeight`
-	 * might be zero headlessly, then concluded from `L-LAYOUT-REPORT` wire lengths that they are real.
+	 * might be zero headlessly, then concluded from `LookTurboMCPLayoutReport` wire lengths that they are real.
 	 * BOTH ARE TRUE AND THEY ARE ABOUT DIFFERENT NODES:
 	 *
 	 *  - a knot that came out of a SAVED PACKAGE carries the size Slate measured when it was last
@@ -1076,7 +1076,7 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 		// `P1`: never return nothing. "No crossings" is an answer and it says what was looked at.
 		Out += TEXT("no wire crosses a node, so no knot is offered. A wire is a crossing when the ")
 			TEXT("straight segment between its two pin positions meets a node's rectangle, ")
-			TEXT("computed from the same pin positions L-LAYOUT-REPORT uses.\n");
+			TEXT("computed from the same pin positions LookTurboMCPLayoutReport uses.\n");
 		return Out;
 	}
 
@@ -1126,8 +1126,7 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 
 	Out += FString::Printf(
 		TEXT("\nthe edit would place %d knot(s), then re-measure the crossings and ROLL THE WHOLE ")
-		TEXT("PASS BACK if the count is not lower than %d. A knot cannot change what a Blueprint ")
-		TEXT("does, so undoing the pass is safe.\n"),
+		TEXT("PASS BACK if the count is not lower than %d. Full restoration and runtime behavior are not verified.\n"),
 		InPlan.AcceptedIndices.Num(), InPlan.CrossingsBefore);
 	return Out;
 }
@@ -1154,7 +1153,7 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 	{
 		return FString::Printf(
 			TEXT("unchanged: %s has %d wire(s) crossing a node and no knot can be placed for any of ")
-			TEXT("them, so nothing was added. P-GRAPH-KNOTS says which reason applies to each."),
+			TEXT("them, so nothing was added. PreviewTurboMCPGraphKnots says which reason applies to each."),
 			*Graph->GetName(), InPlan.CrossingWiresBefore);
 	}
 
@@ -1231,7 +1230,7 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 	// A pass that decides to roll back must leave the asset as it found it, AND CLEARING THE FLAG IS ONLY
 	// CORRECT WHEN THIS PASS IS WHAT SET IT: an earlier operation in the same editor session may have
 	// unsaved work of its own, and that fact is not this pass's to discard. ***
-	const bool bWasDirtyBefore = Graph->GetOutermost()->IsDirty();
+	// Do not clear dirty state after an unverified rollback.
 
 	TArray<UK2Node_Knot*> Created;
 	TArray<FPending> Completed;
@@ -1309,8 +1308,8 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 	if (Created.Num() == 0)
 	{
 		return FString::Printf(
-			TEXT("unchanged: %d wire(s) were planned and none could be routed, so the graph is as ")
-			TEXT("it was.%s%s"),
+			TEXT("partial: %d wire(s) were planned and none was successfully routed. ")
+			TEXT("Restoration is not verified; inspect links and unsaved changes before saving.%s%s"),
 			Pending.Num(),
 			Failed.Num() > 0 ? *FString::Printf(TEXT(" Failed: %s"),
 				*FString::Join(Failed, TEXT("; "))) : TEXT(""),
@@ -1392,32 +1391,19 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 		CrossingsAfterRollback = ConfirmCrossings;
 
 		FString Out = FString::Printf(
-			TEXT("changed: rolled back, nothing was kept. %d knot(s) were placed and the crossings ")
-			TEXT("went from %d to %d, which is not better, so the whole pass was undone. ")
+			TEXT("partial: rollback attempted. %d knot(s) were placed and the estimated crossings ")
+			TEXT("went from %d to %d, so rollback was requested. Full graph restoration is not verified. ")
 			TEXT("The crossings after the rollback are %d, %s the %d it started at.%s"),
 			Created.Num(), InPlan.CrossingsBefore, CrossingsAfter,
 			CrossingsAfterRollback,
-			CrossingsAfterRollback == InPlan.CrossingsBefore ? TEXT("which restores") : TEXT("which does NOT restore"),
+			CrossingsAfterRollback == InPlan.CrossingsBefore ? TEXT("equal to") : TEXT("different from"),
 			InPlan.CrossingsBefore,
 			Failed.Num() > 0 ? *FString::Printf(TEXT(" Failed: %s"),
 				*FString::Join(Failed, TEXT("; "))) : TEXT(""));
 
-		if (CrossingsAfterRollback != InPlan.CrossingsBefore)
-		{
-			Out += TEXT(" THE ROLLBACK DID NOT RESTORE THE GRAPH, which is a defect in this tool: ")
-				TEXT("the graph keeps knots and the wire is relinked. A knot cannot change what the ")
-				TEXT("Blueprint does, so this is cosmetic, but it should be reported.");
-		}
-
-		// *** THE DIRTY FLAG IS RESTORED TO WHAT IT WAS BEFORE THE PASS, AND ONLY THEN. `MarkPackageDirty`
-		// RAN UNCONDITIONALLY ABOVE, BEFORE THIS BRANCH WAS REACHED, so a pass that rolled everything
-		// back still left the package looking modified and the editor offering to save a change that
-		// does not exist. The flag is cleared ONLY when this pass is what set it: if the package was
-		// already dirty, that earlier work is not this pass's to discard. ***
-		if (!bWasDirtyBefore)
-		{
-			Graph->GetOutermost()->SetDirtyFlag(false);
-		}
+		// Crossing counts alone cannot establish restoration of links or callback effects.
+		Graph->MarkPackageDirty();
+		Out += TEXT(" Unsaved changes are retained. Inspect the graph and its links before saving; compilation and behavior were not checked.");
 
 		return Out;
 	}
@@ -1429,9 +1415,11 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 		Created.Num(), InPlan.CrossingsBefore, CrossingsAfter,
 		Graph->Nodes.Num(), KnotsAfter, InPlan.NodeCountBefore, InPlan.KnotCountBefore);
 
-	Out += TEXT("Each wire the preview listed is now one straight run plus one bend, so ")
-		TEXT("P-GRAPH-KNOTS reports nothing to fix. A knot is not compiler relevant, so the ")
-		TEXT("Blueprint compiles to the same code as before.\n");
+	Out += TEXT("Estimated crossings decreased; some crossings may remain. Compilation, runtime behavior and rendered layout are not verified. Inspect the graph before compiling or saving.\n");
+	if (Failed.Num() > 0 || Skipped.Num() > 0)
+	{
+		Out = TEXT("partial: some requested wires were not routed.\n") + Out;
+	}
 
 	if (Failed.Num() > 0)
 	{
