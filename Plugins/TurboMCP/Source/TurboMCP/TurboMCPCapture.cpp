@@ -499,7 +499,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// only mode on this tool that changes the editor. It exists because `P3` forbids a
 	// Look creating a selection (`02_PRINCIPLES.md:29-33`), so without a probe the
 	// positive branch of `selection` could never be measured here. It resolves the keys
-	// BEFORE touching anything, and it clears the selection and asserts that it is empty
+	// BEFORE selecting nodes, and restores the original selection afterwards.
 	// before returning. It is not an AICallable tool and it is not part of the contract.
 	if (bSelectProbe)
 	{

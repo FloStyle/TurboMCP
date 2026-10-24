@@ -728,6 +728,7 @@ bool TurboMCPCaptureSelector::ProbeSelection(
 
 	// 1. WHAT IS THERE NOW, reported rather than assumed. `P1`: this is a measurement,
 	// and "none" is printed as the words "none" rather than as a zero.
+	const FGraphPanelSelectionSet OriginalSelection = InPanel->GetSelectedNodes();
 	TArray<FString> Before;
 	for (UObject* Object : InPanel->GetSelectedNodes())
 	{
@@ -765,7 +766,7 @@ bool TurboMCPCaptureSelector::ProbeSelection(
 			Missing.Add(FString::Printf(TEXT("%s (%d match(es))"), *Token, Count));
 			continue;
 		}
-		Wanted.Add(Matches[0]);
+		Wanted.AddUnique(Matches[0]);
 	}
 
 	if (Missing.Num() > 0)
@@ -777,6 +778,17 @@ bool TurboMCPCaptureSelector::ProbeSelection(
 			TEXT("selected: %s"), *FString::Join(Missing, TEXT(", ")));
 		return false;
 	}
+
+	// Restore the exact original set, rather than clearing the user's selection.
+	auto RestoreSelection = [&]()
+	{
+		InPanel->ClearSelectionSet();
+		for (UObject* Object : OriginalSelection) InPanel->SetNodeSelection(Object, true);
+		const FGraphPanelSelectionSet& Restored = InPanel->GetSelectedNodes();
+		if (Restored.Num() != OriginalSelection.Num()) return false;
+		for (UObject* Object : OriginalSelection) if (!Restored.Contains(Object)) return false;
+		return true;
+	};
 
 	// 2. SELECT, through the engine's own API.
 	InPanel->ClearSelectionSet();
@@ -832,29 +844,21 @@ bool TurboMCPCaptureSelector::ProbeSelection(
 			TEXT("the engine accepted the selection for %d of %d node(s), so the setter ")
 			TEXT("and the reader disagree"),
 			After.Num(), Wanted.Num());
-		InPanel->ClearSelectionSet();
+		if (!RestoreSelection()) OutWhy += TEXT("; original selection could not be restored; editor selection may remain changed");
 		return false;
 	}
 
-	// 4. CLEAR, AND ASSERT IT IS EMPTY. `P3` protects the user visible selection, so a
-	// probe that restored it would still have changed it twice; clearing and checking is
-	// the stronger claim and it is the one asserted here.
-	InPanel->ClearSelectionSet();
-	const int32 Remaining = InPanel->GetSelectedNodes().Num();
-	InOutDescription += FString::Printf(
-		TEXT("\nselected after the probe cleared it: %d node(s)"), Remaining);
-	if (Remaining != 0)
+	if (!RestoreSelection())
 	{
-		OutWhy = FString::Printf(
-			TEXT("the probe could not clear the selection: %d node(s) are still selected, ")
-			TEXT("so the editor was left changed"), Remaining);
+		OutWhy = TEXT("the probe could not restore the original selection; editor selection may remain changed");
 		return false;
 	}
-	InOutDescription += TEXT(
-		"\n; these lines are the PROBE, not the contract. L-CAPTURE never selects anything: ")
-		TEXT("the selection mode reads what is already selected and refuses when nothing is. ")
-		TEXT("The probe exists so the positive branch can be measured, and it asserts that ")
-		TEXT("the selection is empty when it returns.");
+	InOutDescription += FString::Printf(
+		TEXT("\noriginal selection restored: %d object(s)"),
+		OriginalSelection.Num());
+	InOutDescription += TEXT("\n; this diagnostic temporarily selects nodes, then restores the original selection. ")
+		TEXT("It does not capture an image or verify visual framing.");
+
 	return true;
 }
 

@@ -92,3 +92,14 @@ for tool in ("LookTurboMCPGraphPositions", "LookTurboMCPLayoutReport", "LookTurb
     assert not result.startswith(("error:", "!!")), result
     dirty(f"after {tool}")
 print("RESULT: PASS; node, neighbourhood and region captures exercised; dirty-state observations recorded, not a universal no-side-effects claim.", flush=True)
+
+probe = session.call(LOOK_TOOLSET, "LookTurboMCPCapture",
+                     dict(args, mode="select-nodes", target=root + "," + root))
+print(probe, flush=True)
+assert not probe.startswith(("error:", "!!")), probe
+assert "asking for 1 node(s): 1 node(s)" in probe, probe
+assert "original selection restored: 0 object(s)" in probe, probe
+empty_selection = session.call(LOOK_TOOLSET, "LookTurboMCPCapture", dict(args, mode="selection"))
+assert empty_selection.startswith("error:"), empty_selection
+dirty("after selection probe")
+print("RESULT: PASS; duplicate probe IDs treated as a set and initial empty selection restored. Nonempty restoration still requires separate evidence.", flush=True)
