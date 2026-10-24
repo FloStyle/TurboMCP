@@ -1432,3 +1432,11 @@ Fixed af034a7: staged plans preserve the live graph name rather than the scratch
 ### 2026-10-24 Batch failure after live mutation
 
 Native run a426f0d227bc46d7bea1a3e98440d3aa passes a forced second-operation failure after both live rewires, with original graph links/default/position restored and both attempted operations reported. Existing sequential success/refusal suite also passed. Whole-state rollback remains unverified; see the tool-quality audit for exact limits.
+
+### 2026-10-24 local output identity repair
+
+Implementation 679cb88 counts consumers per distinct output pin, retains full node GUID and output name, and avoids merging separate calculated values into one candidate. Duplicate link entries do not count as independent consumers. Removed the disabled getter-only rewrite that destroyed the original calculation without assigning its value.
+
+Supervised run 0c3822c6bad54ac9988dd3b94c6eac0a passed build and TurboMCP.LocalVars.Ancestry with no warnings. Added controls cover two singly used outputs, duplicate links and the identity of a repeatedly consumed output. Scope gate passed against 8f1eacae0754aca08e7e92d452a9e9279cf471e0. These checks prove candidate selection, not successful promotion.
+
+P0 67f00521 remains OPEN. Explicit assignment, execution placement, transactional failure handling and an actual value-preservation fixture remain required. Promotion is still refused before mutation. All-125 behavioral acceptance and vision acceptance remain unfinished. Prior unrelated offline gate failures remain recorded; the full offline gate was not rerun for this slice.

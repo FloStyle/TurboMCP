@@ -600,3 +600,11 @@ Partial repair b1d48f9 restricts capture candidates and their upstream calculati
 Native analysis run a754081326cf41b097774ef66ad0aadc passed build and checks for reviewed arithmetic, random-function rejection, random ancestry rejection, reference-input rejection and by-value input acceptance, alongside existing shared-ancestry/cycle/null/reused-plan controls. Initial run 4a9e63dd31c44babaf1a7704ed8a1ef6 crashed in the test fixture's call-node setup (SelfScope assertion): bare transient graph had no Blueprint owner. 3f0842a replaced it with a stock factory-created disposable Blueprint; no suppression or engine modification.
 
 Promotion remains disabled. P0 67f00521 is NOT fixed: the remaining repair must retain the calculation, assign each promoted output on a valid execution path, reconnect consumers without changing value lifetime, and verify failure restoration. AddLocalVariable invokes structural compilation; implementation must reacquire node/pin references after that API. Existing offline gate failures remain open.
+
+### 2026-10-24 local output identity repair
+
+Implementation 679cb88 counts consumers per distinct output pin, retains full node GUID and output name, and avoids merging separate calculated values into one candidate. Duplicate link entries do not count as independent consumers. Removed the disabled getter-only rewrite that destroyed the original calculation without assigning its value.
+
+Supervised run 0c3822c6bad54ac9988dd3b94c6eac0a passed build and TurboMCP.LocalVars.Ancestry with no warnings. Added controls cover two singly used outputs, duplicate links and the identity of a repeatedly consumed output. Scope gate passed against 8f1eacae0754aca08e7e92d452a9e9279cf471e0. These checks prove candidate selection, not successful promotion.
+
+P0 67f00521 remains OPEN. Explicit assignment, execution placement, transactional failure handling and an actual value-preservation fixture remain required. Promotion is still refused before mutation. All-125 behavioral acceptance and vision acceptance remain unfinished. Prior unrelated offline gate failures remain recorded; the full offline gate was not rerun for this slice.
