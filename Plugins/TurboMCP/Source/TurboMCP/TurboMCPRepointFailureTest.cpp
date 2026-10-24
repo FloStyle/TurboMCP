@@ -6,6 +6,8 @@
 #include "TurboMCPGraphRepoint.h"
 #include "TurboMCPNodeId.h"
 #include "Engine/Blueprint.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Kismet2/KismetEditorUtilities.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphSchema_K2.h"
@@ -23,8 +25,9 @@ bool FTurboMCPRepointFailureTest::RunTest(const FString& Parameters)
 {
     const FString PackageName = TEXT("/Game/Tests/RepointFailure_") + FGuid::NewGuid().ToString(EGuidFormats::Digits);
     UPackage* Package = CreatePackage(*PackageName);
-    UBlueprint* Blueprint = NewObject<UBlueprint>(Package, TEXT("RepointFixture"), RF_Public | RF_Standalone | RF_Transactional);
-    Blueprint->ParentClass = AActor::StaticClass();
+    UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("RepointFixture"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass(), TEXT("TurboMCPRepointTest"));
+    if (!TestNotNull(TEXT("Blueprint factory succeeds"), Blueprint)) return false;
     FAssetRegistryModule::AssetCreated(Blueprint);
     ON_SCOPE_EXIT
     {
