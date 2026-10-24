@@ -370,3 +370,7 @@ Validation: supervised execution `4c8daae69c974351a0bce430a028daa7` passed the s
 Source a7480b0 documents both parameters for both tools and removes obsolete aliases and the unsupported promise that input tracing proves equivalent behavior. A critical defect was found: the mutation replaces a calculation with an unassigned local getter. Candidate edits now refuse before mutation as a temporary safeguard. Full repair remains open in todo/67f00521.md; this is not a completed promotion implementation.
 
 Execution d1d3700465734138aec566b36a1d63c3 passed build and the 125-tool live help inventory. test-local-vars failed because its FunctionAdd setup omits required inputs/outputs. Its remaining no-candidate/refusal checks do not cover candidate promotion. Sixteen fixtures restored. Next work: repair promotion semantics and add a real native candidate fixture; fix setup separately without weakening assertions.
+
+## Local-variable test setup — 2026-10-24
+
+f82bd8f repairs the required FunctionAdd arguments, checks the exact existing function before reuse, and removes unrelated suffixed-graph deletion from recovery. Supervised run d97875583b254f95a8b0953920b5acae passed build and test-local-vars. Coverage remains graph selection, no-candidate responses and invalid-input refusals; no candidate transformation is certified. P0 todo/67f00521.md remains open. Source inspection of stock DoPromoteToVariable2f confirms output promotion creates a setter, supporting the missing-assignment diagnosis.
