@@ -1974,6 +1974,14 @@
             "Tools/test-layout-output.py"
           ],
           "new_files": []
+        },
+        "quality-selection-preservation": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureSelector.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Tools/test-capture-framing.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
