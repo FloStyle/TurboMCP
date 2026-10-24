@@ -1866,6 +1866,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
           ],
           "new_files": []
+        },
+        "quality-append-failure-native": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAppendFailureTest.cpp",
+            "Tools/test-append-failure.py"
+          ]
         }
       },
       "preserve_rows": []
