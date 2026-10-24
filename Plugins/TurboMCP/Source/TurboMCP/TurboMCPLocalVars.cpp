@@ -16,6 +16,7 @@
 #include "EdGraphSchema_K2.h"
 #include "Engine/Blueprint.h"
 #include "K2Node_CallFunction.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_Knot.h"
 #include "K2Node_Variable.h"
@@ -80,6 +81,23 @@ namespace
 			*Source->GetClass()->GetName());
 	}
 
+    // Purity alone permits random values, time and mutable reads. Only these stock
+    // native arithmetic functions are currently reviewed for capture eligibility.
+    bool IsReviewedCalculation(const UEdGraphNode* Node)
+    {
+        const UK2Node_CallFunction* Call = Cast<UK2Node_CallFunction>(Node);
+        const UFunction* Function = Call ? Call->GetTargetFunction() : nullptr;
+        if (!Function || Function->GetOuterUClass() != UKismetMathLibrary::StaticClass()
+            || !Function->HasAllFunctionFlags(FUNC_Native | FUNC_Static | FUNC_BlueprintPure)) return false;
+        const FName Name = Function->GetFName();
+        static const TSet<FName> Reviewed{
+            TEXT("Add_IntInt"), TEXT("Subtract_IntInt"), TEXT("Multiply_IntInt"),
+            TEXT("Add_Int64Int64"), TEXT("Subtract_Int64Int64"), TEXT("Multiply_Int64Int64"),
+            TEXT("Add_DoubleDouble"), TEXT("Subtract_DoubleDouble"), TEXT("Multiply_DoubleDouble")
+        };
+        return Reviewed.Contains(Name);
+    }
+
 	/** Trace input ancestry. The visited set contains only the active recursion path.
 	 * Passing this check does not prove that pure functions are deterministic.
 	 */
@@ -120,8 +138,13 @@ namespace
 
 			if (InEntry != nullptr && Source == InEntry)
 			{
-				// A function input: safe.
-				continue;
+				// Reference parameters may be changed by other execution paths.
+                if (Linked->PinType.bIsReference)
+                {
+                    OutWhy = TEXT("it depends on a reference parameter that can change during the call");
+                    return false;
+                }
+                continue;
 			}
 
 			if (InOutVisited.Contains(Source))
@@ -165,6 +188,12 @@ namespace
 					*Source->GetName(), *Source->GetClass()->GetName());
 				return false;
 			}
+
+            if (!Cast<UK2Node_Knot>(Source) && !IsReviewedCalculation(Source))
+            {
+                OutWhy = TEXT("an upstream pure calculation has not been reviewed as deterministic");
+                return false;
+            }
 
 			InOutVisited.Add(Source);
 
@@ -380,6 +409,12 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
 				break;
 			}
 		}
+
+        if (bSafe && !IsReviewedCalculation(Node))
+        {
+            bSafe = false;
+            Why = TEXT("this pure calculation has not been reviewed as deterministic");
+        }
 
 		if (!OutPlan.bSupportsLocals)
 		{
@@ -755,6 +790,32 @@ bool FTurboMCPLocalAncestryTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("Missing linked pin refused"), TracesToInputsOrLiterals(Right->GetInputPin(), nullptr, Path, Why, 0));
     TestTrue(TEXT("Missing link explanation present"), Why.Contains(TEXT("missing pin link")));
     Shared->GetInputPin()->LinkedTo.Remove(nullptr);
+
+    auto MakeCall = [&](const TCHAR* Name)
+    {
+        UK2Node_CallFunction* Call = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transient);
+        Call->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(Name));
+        Graph->AddNode(Call, false, false);
+        Call->AllocateDefaultPins();
+        return Call;
+    };
+    UK2Node_CallFunction* Add = MakeCall(TEXT("Add_IntInt"));
+    UK2Node_CallFunction* Random = MakeCall(TEXT("RandomFloat"));
+    TestTrue(TEXT("Reviewed native arithmetic eligible"), IsReviewedCalculation(Add));
+    TestFalse(TEXT("Random pure function ineligible"), IsReviewedCalculation(Random));
+    Right->GetInputPin()->BreakAllPinLinks();
+    Random->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Right->GetInputPin());
+    TestFalse(TEXT("Random ancestry refused"), TracesToInputsOrLiterals(Right->GetInputPin(), nullptr, Path, Why, 0));
+    TestTrue(TEXT("Determinism reason reported"), Why.Contains(TEXT("deterministic")));
+    Right->GetInputPin()->BreakAllPinLinks();
+    UK2Node_FunctionEntry* Entry = NewObject<UK2Node_FunctionEntry>(Graph, NAME_None, RF_Transient);
+    UEdGraphPin* Parameter = Entry->CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Int, TEXT("Input"));
+    Parameter->PinType.bIsReference = true;
+    Parameter->MakeLinkTo(Right->GetInputPin());
+    TestFalse(TEXT("Reference input ancestry refused"), TracesToInputsOrLiterals(Right->GetInputPin(), Entry, Path, Why, 0));
+    TestTrue(TEXT("Reference parameter reason reported"), Why.Contains(TEXT("reference parameter")));
+    Parameter->PinType.bIsReference = false;
+    TestTrue(TEXT("Value input ancestry accepted"), TracesToInputsOrLiterals(Right->GetInputPin(), Entry, Path, Why, 0));
 
     FTurboMCPLocalVars::FPlan Reused;
     Reused.Candidates.AddDefaulted();
