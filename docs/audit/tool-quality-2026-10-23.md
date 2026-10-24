@@ -749,3 +749,22 @@ New output defect for follow-up: baseline AssetDescribe reports WidgetBlueprint
 'generated class: none, this asset kind has no generated class' while unloaded.
 This conflates unavailable metadata with class capability; inspect the source
 and correct the unknown/absent distinction before claiming tool-text completion.
+
+## AssetDescribe metadata repair — 2026-10-24
+
+c089599 uses existing Blueprint objects or GeneratedClass/ParentClass registry
+tags instead of requiring a separate generated-class asset entry. Parent lookup
+no longer loads an asset after the loaded-state snapshot. Missing metadata is
+unknown, not proof that the asset kind cannot generate a class.
+
+Supervised d8e2e06bb12e4c4b9db8072eb630b06a passed build and
+test-asset-describe-metadata: Blueprint and WidgetBlueprint returned real _C paths
+and parent metadata, remained unloaded across repeated descriptions, and produced
+identical results. Subsequent 7a9039a only removes an unjustified unloaded-state
+phrase from the generic missing-metadata fallback; that text-only change has no
+separate runtime evidence.
+
+Follow-up: test-asset-tools still expects generated class none for a registry-only
+enum. Update this stale absence assertion to check truthful metadata availability;
+the complete asset suite is not claimed passed. Loaded unsaved asset disk-state
+reporting also needs review; this repair does not certify that separate logic.

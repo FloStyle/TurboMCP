@@ -1468,3 +1468,22 @@ Implemented and focused-native-tested; broader field validation remains pending.
 ### Approved metadata repair — 2026-10-24
 
 AssetDescribe misreports unloaded WidgetBlueprint generated class and loads Blueprint parents after taking its loaded-state snapshot. Use live objects and registry metadata without loading; distinguish unavailable class data from absence. Verify repeated descriptions retain unloaded state and truthful generated-class output on Blueprint/Widget fixtures.
+
+## AssetDescribe metadata repair — 2026-10-24
+
+c089599 uses existing Blueprint objects or GeneratedClass/ParentClass registry
+tags instead of requiring a separate generated-class asset entry. Parent lookup
+no longer loads an asset after the loaded-state snapshot. Missing metadata is
+unknown, not proof that the asset kind cannot generate a class.
+
+Supervised d8e2e06bb12e4c4b9db8072eb630b06a passed build and
+test-asset-describe-metadata: Blueprint and WidgetBlueprint returned real _C paths
+and parent metadata, remained unloaded across repeated descriptions, and produced
+identical results. Subsequent 7a9039a only removes an unjustified unloaded-state
+phrase from the generic missing-metadata fallback; that text-only change has no
+separate runtime evidence.
+
+Follow-up: test-asset-tools still expects generated class none for a registry-only
+enum. Update this stale absence assertion to check truthful metadata availability;
+the complete asset suite is not claimed passed. Loaded unsaved asset disk-state
+reporting also needs review; this repair does not certify that separate logic.
