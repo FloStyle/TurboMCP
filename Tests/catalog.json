@@ -764,6 +764,13 @@
       "tier": "engine",
       "timeout_seconds": 600,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-replace-plan",
+      "path": "Tools/test-replace-plan.py",
+      "tier": "engine",
+      "timeout_seconds": 600,
+      "acceptance": "not_mapped"
     }
   ]
 }
