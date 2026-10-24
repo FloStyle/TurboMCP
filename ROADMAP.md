@@ -39,6 +39,35 @@ Fix false success, data-loss risk, misleading observations and unusable tests be
 
 Investigations produce reviewed repair specifications, not unlimited implementation permission. Confirmed defects must be assigned bounded repair tasks by the integration owner and inserted before their acceptance gate; the executor cannot silently close a finding or expand its own scope. This queue is the audit and foundation plan, not a claim that all 5.8.3 product repair tasks are already specified.
 
+## Vision tools and rendering investigation — 2026-10-24
+
+Owner: Codex. User-requested classification and local testing; DSH remains paused. This belongs to R07, with tool-output quality under R04. Existing issue c421299d tracks capture framing; CP-14 tracks the contrast/shadow artifact. Treat vision-tool involvement as the field report, not a proven root cause. Do not create a duplicate bug or close either from text-only checks.
+
+| Current capability | Tools | Boundary |
+| --- | --- | --- |
+| Graph, region, node, comment and neighbourhood images | LookTurboMCPCapture | Requires rendered editor; may open UI/change view or selection; produces PNG. Selector modes and Size semantics differ. |
+| Screen and supported asset-editor images | LookTurboMCPCapture | Captures editor presentation; not proof of asset correctness or general support for every asset editor. |
+| Widget image with sample values | LookTurboMCPWidgetPreview | Executes project code with Execution=allow; transient instance is not a sandbox. |
+| Geometry and layout observations | LookTurboMCPLayoutReport, LookTurboMCPGraphPositions | Text measurements/heuristics, not images or rendered-wire proof. |
+| Combined layout report and image | LookTurboMCPLayoutDoneCheck | Review aid; not a correctness/pass verdict. |
+| Window discovery | LookTurboMCPToolset | Lists live windows; does not capture an image. |
+
+### Missing evidence and candidate improvements
+
+- Missing acceptance evidence: captures consistently contain the requested nodes, including frame edges and small requested sizes; returned paths are accessible and image dimensions match reported facts.
+- Missing acceptance evidence: capture and geometry tools leave the live graph presentation usable. Reproduce CP-14 before selecting a rendering fix.
+- Review candidate: separate capture dimensions from neighbourhood depth/count rather than overloading Size. This is a proposed API improvement, not an approved schema change.
+- Review candidate: consistent image provenance (asset, graph, selector, bounds, dimensions, clipping/partial status) across modes. Inventory existing output first; do not assume every field is absent.
+- Review candidate: explicit preservation/reporting of changed view, focus and selection. No claim of existing restoration without checks.
+
+### Codex-owned local test plan
+
+Use the supervised pinned editor and disposable TestProject fixtures, not workplace assets. Record build identity, logs and images. Start with an open graph containing execution and data nodes, a comment box and nodes at frame edges. Capture a baseline, then call graph Capture, LayoutReport, GraphPositions and LayoutDoneCheck individually. Inspect the live graph after each call and repeat captures to distinguish image-only artifacts from persistent editor rendering changes. If contrast/shadows change, preserve evidence before a controlled node-create action; compare whether that action clears the artifact. Record dirty state, selection, zoom and focus before/after without automatically saving or clearing dirty flags.
+
+Then exercise node/box/region/selection/neighbour selectors, invalid selectors and undersized frames. Separately render a disposable Widget with explicit execution consent and known text/colour sample values. Inspect actual pixels and result text, not merely file existence or RPC success. Existing test-capture-selectors and test-capture suites are starting coverage, not full visual acceptance. Fix confirmed bugs first; retain unreproduced cases as open investigations. Validation is a flag, never a substitute feature/task.
+
+Status: classified and planned; no new editor execution or visual acceptance in this documentation update.
+
 ## Optional compatibility track
 
 R16 investigates integration constraints early; R12 proves installed-engine packaging. R14 implements and verifies the 5.9 adapter. Run `python Tools/next-task.py --track compatibility` when the baseline prerequisites and target engine are available. Missing optional engine distributions do not block baseline safety fixes and do not become support claims.
