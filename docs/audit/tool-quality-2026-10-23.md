@@ -436,3 +436,9 @@ Supervised run c2040b0878e84c419548618bee4ead9c passed build and the 125-tool li
 af7879d updates the controlled PrintString type ID, moves the closing bracket outside its line comment, supplies current reader inputs, and compares graph-reader output before and after the checked inputs. Registration assertions no longer claim that Preview membership proves safety. Existing diagnostic count, kind, location and closest-ID assertions remain intact.
 
 Supervised run d7936c9f5d83485b97dfbb4b82e6c5a3 passed build and test-graph-check. This resolves the preceding eight suite failures. Evidence covers the controlled valid/invalid inputs, unchanged fixture disk fingerprint and unchanged graph-reader output; it does not prove every in-memory property, callback effect, writer acceptance or runtime behavior. Overall quality review remains open.
+
+## Reroute tool wording and dirty-state safeguard — 2026-10-24
+
+066ba06 documents both tools' inputs and graph-name fallback, with loading versus transaction/rewiring effects in compact help. Results no longer promise identical compiled behavior, no remaining crossings, or full restoration from crossing counts alone. Failed routing and rollback are labeled partial. An unverified rollback retains dirty state rather than hiding possible unsaved changes. Preview does not guarantee edit success.
+
+Supervised run 2036b622edff4ead9e19f6f80fca15ac passed build and all 125 live help/schema checks. The dirty-state change and failure branches remain behaviorally untested. Follow-up is required for exact link restoration/read-back, callback pointer lifetime, transaction ownership and failure injection on disposable graphs. Existing heuristic geometry and historical implementation comments also need further review. This is a partial quality improvement, not certification of reroute safety or completion of the overall review.
