@@ -701,6 +701,13 @@
       "tier": "engine",
       "timeout_seconds": 120,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-layout-output",
+      "path": "Tools/test-layout-output.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
     }
   ]
 }
