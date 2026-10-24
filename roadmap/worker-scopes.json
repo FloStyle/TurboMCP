@@ -1710,6 +1710,12 @@
             "Tools/test-graph-check.py"
           ],
           "new_files": []
+        },
+        "quality-graph-check-suite": {
+          "files": [
+            "Tools/test-graph-check.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
