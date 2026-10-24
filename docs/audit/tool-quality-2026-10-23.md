@@ -548,3 +548,11 @@ Run e1e668a817214e49a58069012288e21c passed build and TurboMCP.Copy.PostMutation
 9767b41 removes obsolete internal recommendations for SpawnNodeFromTemplate on allocated nodes and false claims that Apply never rechecks or automatically compiles. Notes describe current copy limitations and unsupported collapse accurately. Search found no remaining production SpawnNodeFromTemplate calls in the plugin.
 
 Native run f4fd23bd156646dd8dbd91e34529ab0d passed build and the strengthened Copy suite, including expected copied execution edge, copied default, new node identities, translation and retained original edge/count. This remains same-Blueprint PrintString coverage, not all node classes or cross-Blueprint acceptance.
+
+## Append/Replace failure-report accuracy (2026-10-24)
+
+Implemented in f9947b1: Append no longer treats successful UndoTransaction as proof that nothing was written or restoration completed. Live mutation failures state that restoration is unverified and advise inspection before retrying; scratch failures explicitly identify unchanged live state. Replace inherits these corrected Append failure messages. Pre-transaction refusal wording remains unchanged.
+
+Scope check passed against ac2a001ec44442d7f2f4f3de115999afe5278b8c. Supervised build passed: execution 82f891f375d54cb08cc3239f61870508. This is compilation evidence only, not behavioral rollback acceptance.
+
+Pending: focused live post-mutation failure coverage. Public Apply runs scratch preflight, so simply corrupting a plan is insufficient to reach the live failure branch. A regression must exercise the mutation core with a bounded test seam or a deterministic live-only failure; do not count scratch refusal as live rollback coverage. Native regression assignment quality-append-failure-native is registered, but no test implementation exists yet. Full state-restoration verification remains open.
