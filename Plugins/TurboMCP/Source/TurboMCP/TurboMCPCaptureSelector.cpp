@@ -729,6 +729,14 @@ bool TurboMCPCaptureSelector::ProbeSelection(
 	// 1. WHAT IS THERE NOW, reported rather than assumed. `P1`: this is a measurement,
 	// and "none" is printed as the words "none" rather than as a zero.
 	const FGraphPanelSelectionSet OriginalSelection = InPanel->GetSelectedNodes();
+	for (UObject* Object : OriginalSelection)
+	{
+		if (!Cast<UEdGraphNode>(Object))
+		{
+			OutWhy = TEXT("the original selection contains a non-node object; the probe cannot restore it, so selection was not changed");
+			return false;
+		}
+	}
 	TArray<FString> Before;
 	for (UObject* Object : InPanel->GetSelectedNodes())
 	{
@@ -783,7 +791,7 @@ bool TurboMCPCaptureSelector::ProbeSelection(
 	auto RestoreSelection = [&]()
 	{
 		InPanel->ClearSelectionSet();
-		for (UObject* Object : OriginalSelection) InPanel->SetNodeSelection(Object, true);
+		for (UObject* Object : OriginalSelection) InPanel->SetNodeSelection(CastChecked<UEdGraphNode>(Object), true);
 		const FGraphPanelSelectionSet& Restored = InPanel->GetSelectedNodes();
 		if (Restored.Num() != OriginalSelection.Num()) return false;
 		for (UObject* Object : OriginalSelection) if (!Restored.Contains(Object)) return false;
