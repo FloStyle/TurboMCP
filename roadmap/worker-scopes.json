@@ -1527,6 +1527,13 @@
             "Tools/test-tool-text-inventory.py"
           ],
           "new_files": []
+        },
+        "quality-dirty-response": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallRecorder.cpp",
+            "Tools/test-widget-retarget.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
