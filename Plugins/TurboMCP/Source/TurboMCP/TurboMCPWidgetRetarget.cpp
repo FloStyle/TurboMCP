@@ -266,8 +266,7 @@ FString FTurboMCPWidgetRetarget::RenderPreview(const FPlan& InPlan)
 			InPlan.NumBroken());
 	}
 
-	Out += TEXT("\n; validity is decided the way the engine's own compiler decides it: the "
-		"binding's delegate is looked for ON THE WIDGET'S CURRENT CLASS.");
+	Out += TEXT("\n; this checks widget and delegate presence only, not bound-function existence, signature compatibility or runtime behavior.");
 	return Out;
 }
 
@@ -378,7 +377,7 @@ FString FTurboMCPWidgetRetarget::Apply(const FPlan& InPlan)
 			TEXT("Report this rather than trusting the count above.");
 	}
 
-	Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+	Out += TEXT("\n; changes are in memory; no compile or save was requested. Function and signature validity remain unchecked. Use EditTurboMCPCompile to validate, then EditTurboMCPSave when ready.");
 
 	return Out;
 }

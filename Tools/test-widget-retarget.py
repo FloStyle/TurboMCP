@@ -84,7 +84,7 @@ def main():
     print()
     check("it opens with changed:", good.startswith("changed:"), good[:70])
     check("it says the class HAS the delegate",
-          "HAS a delegate" in good and "VALID" in good, good[:200])
+          "delegate found" in good and "signature compatibility were not checked" in good, good[:200])
     check("it reads the binding back", "binding found after the add: yes" in good)
 
     print()

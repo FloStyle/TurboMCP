@@ -20,24 +20,8 @@
 
 #include "TurboMCPAssetResolver.h"
 
-/**
- * `E-WIDGET-BIND-ADD`, which exists because `P/E-WIDGET-RETARGET` HAS NOTHING TO REPAIR WITHOUT IT.
- *
- * WHY THIS TOOL IS HERE
- * ---------------------
- * `P/E-WIDGET-RETARGET` decides which widget bindings a class swap has left broken. Its own test
- * needs a broken binding to find, and a binding cannot be made by hand: it is a
- * `FDelegateEditorBinding` inside the `UWidgetBlueprint`, and the editor only ever writes one when
- * a user picks an event in the details panel, which does not exist headless.
- *
- * Without this tool the retarget capability could only ever be tested against an asset with NO
- * bindings, which would pass while proving nothing. That is the shape of check this project keeps
- * having to catch, so the binding is made on purpose instead.
- *
- * The binding names the delegate ON THE WIDGET'S OWN CLASS, so binding a delegate the class does
- * not carry is possible — which is exactly the state a class swap leaves behind, and exactly what
- * the retarget tool is for.
- */
+// Records binding metadata, including deliberately unresolved bindings.
+// Delegate lookup is diagnostic; function existence and signature are not validated.
 FString UTurboMCPEditToolset::EditTurboMCPWidgetBindAdd(
 	const FString& Asset, const FString& Widget, const FString& Property, const FString& Function)
 {
@@ -150,22 +134,22 @@ FString UTurboMCPEditToolset::EditTurboMCPWidgetBindAdd(
 	if (bHasDelegate)
 	{
 		Out += FString::Printf(
-			TEXT("\nthe class HAS a delegate '%s', so this binding is VALID and ")
-			TEXT("P-WIDGET-RETARGET will report it as ok."), *WithSuffix);
+			TEXT("\ndelegate found for '%s'; function existence and signature compatibility were not checked. ")
+			TEXT("Compile and inspect the binding before relying on it."), *PropertyName);
 	}
 	else
 	{
 		// Named plainly, because a caller who did this by accident needs to know at once.
 		Out += FString::Printf(
 			TEXT("\nthe class has NO delegate '%s' (nor '%s'), so this binding is BROKEN. ")
-			TEXT("P-WIDGET-RETARGET will report it as BROKEN and remove it; E-WIDGET-BIND-REMOVE ")
-			TEXT("takes it away without a retarget."),
+			TEXT("PreviewTurboMCPWidgetRetarget can inspect missing-delegate bindings; ")
+			TEXT("EditTurboMCPWidgetRetarget removes them, including other broken bindings on this asset."),
 			*WithSuffix, *PropertyName);
 	}
 
 	Out += FString::Printf(TEXT("\nbindings on the Blueprint now: %d"),
 		WidgetBlueprint->Bindings.Num());
-	Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+	Out += TEXT("\n; binding metadata is changed in memory; no compile or save was requested. Use EditTurboMCPCompile to validate, then EditTurboMCPSave when ready.");
 
 	return Out;
 }
