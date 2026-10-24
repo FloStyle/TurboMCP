@@ -1147,6 +1147,10 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 	{
 		AddError(FTurboMCPGraphAppend::RenderPreview(Plan));
 	}
+	const FString PreviewText = FTurboMCPGraphAppend::RenderPreview(Plan);
+	TestTrue(TEXT("preview names the apply tool"), PreviewText.Contains(TEXT("EditTurboMCPGraphAppend")));
+	TestTrue(TEXT("preview describes temporary planning effects"), PreviewText.Contains(TEXT("Planning may load assets and create temporary nodes")));
+	TestTrue(TEXT("preview states compile and save behavior"), PreviewText.Contains(TEXT("No compile or save was requested")));
 	TestEqual(TEXT("Plan creates one node"), Plan.Nodes.Num(), 1);
 	TestEqual(TEXT("Plan creates one link"), Plan.Links.Num(), 1);
 	TestEqual(TEXT("Plan records one position"), Plan.PlannedPositions.Num(), 1);

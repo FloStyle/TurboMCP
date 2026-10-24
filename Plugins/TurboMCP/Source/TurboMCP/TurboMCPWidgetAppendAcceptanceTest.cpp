@@ -880,8 +880,8 @@ bool FTurboMCPWidgetAppendAcceptanceTest::RunTest(const FString& Parameters)
 		RefusalApplyError, FString());
 	TestTrue(TEXT("Apply on a refused plan reports unchanged"),
 		RefusalReport.StartsWith(TEXT("unchanged:")));
-	TestTrue(TEXT("Apply on a refused plan reports the preview changes nothing"),
-		RefusalReport.Contains(TEXT("preview changes NOTHING")));
+	TestTrue(TEXT("Apply on a refused plan reports no append was applied"),
+		RefusalReport.Contains(TEXT("No append was applied to the target graph")));
 	TestTrue(TEXT("Apply on a refused plan did not mutate the target graph"),
 		SameGraph(RefusalApplyTarget, CaptureGraph(RefusalApplyFixture.Target)));
 	TestTrue(TEXT("Apply on a refused plan did not mutate the sibling graph"),

@@ -722,9 +722,9 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 			InPlan.Refusals.Num(), *InPlan.GraphName);
 		for (const FString& Refusal : InPlan.Refusals)
 		{
-			Out += FString::Printf(TEXT("\n  refused %s"), *Refusal);
+			Out += FString::Printf(TEXT("\n  reason: %s"), *Refusal);
 		}
-		Out += TEXT("\nthe preview changes NOTHING. Fix the refusals and call again.");
+		Out += TEXT("\nNo append was applied to the target graph. Resolve the reasons above, then call PreviewTurboMCPGraphAppend again. No compile or save was requested.");
 		return Out;
 	}
 
@@ -732,7 +732,7 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 	{
 		return FString::Printf(
 			TEXT("unchanged: the text describes no node to create in %s, so there is nothing to append. ")
-			TEXT("Its %d form(s) all name nodes that already exist, which an append LINKS to rather than ")
+			TEXT("Its %d form(s) name existing nodes, which append references instead of ")
 			TEXT("duplicating."),
 			*InPlan.GraphName, InPlan.Nodes.Num());
 	}
@@ -747,7 +747,7 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 	FString Out = FString::Printf(TEXT("preview: append to %s in %s : %d new node(s), %d form(s) link to existing"),
 		*InPlan.GraphName, *InPlan.Asset, NewCount, LinkCount);
     Out += TEXT("\ncontinuation mode: ")+InPlan.Continuation;
-    if(InPlan.Continuation!=TEXT("auto")) Out+=TEXT("\nExplicit continuation is resolved after submitted links; this preview does not yet dry-run final exit resolution. Apply rolls back if no valid exit exists.");
+    if(InPlan.Continuation!=TEXT("auto")) Out+=TEXT("\nExplicit continuation is resolved after the submitted links. The public preview validates it on a temporary graph; this plan summary alone does not prove that validation passed.");
 	Out += FString::Printf(TEXT("\n%d node(s) in the graph now, and %d would be added"),
 		InPlan.NodeCountBefore, NewCount);
 
@@ -793,7 +793,7 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 		Out += TEXT("one; footprint labels distinguish scratch-measured nodes from estimated fallback geometry.");
 	}
 
-	Out += TEXT("\n; the preview changes NOTHING. Call the edit to write it.");
+	Out += TEXT("\n; No append was applied to the target graph. Planning may load assets and create temporary nodes. No compile or save was requested. After a successful preview, call EditTurboMCPGraphAppend to apply the edit.");
 	return Out;
 }
 
@@ -913,7 +913,7 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
             const TSharedRef<SGraphEditor> MeasureView = SNew(SGraphEditor).GraphToEdit(Scratch.Graph).IsEditable(false).ShowGraphStateOverlay(false);
             const FVector2D Canvas(2048, 2048);
             TStrongObjectPtr<UTextureRenderTarget2D> Target(FWidgetRenderer::CreateTargetFor(Canvas, TF_Bilinear, true));
-            if (!Target.IsValid()) { OutError = TEXT("append footprint render target unavailable"); Accepted = false; }
+            if (!Target.IsValid()) { OutError = TEXT("Cannot measure appended nodes because a render target is unavailable. Run the editor with rendering enabled (without -NullRHI), then retry the preview."); Accepted = false; }
             else
             {
                 FWidgetRenderer Renderer(true);
