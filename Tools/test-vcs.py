@@ -134,7 +134,7 @@ def rows(text):
     THE STATE SECTION ONLY. The Edit answer appends a `=== checkout ... ===` section that prints its own `[n]`
     blocks, and parsing both at once would double the row count and make a count check meaningless.
     """
-    head = text.split("=== checkout (E-VCS-CHECKOUT) ===")[0]
+    head = text.split("=== checkout (EditTurboMCPVcsCheckout) ===")[0]
     out = []
     label = None
     body = []
@@ -302,7 +302,7 @@ def main():
     check("and it names WHERE that string comes from instead of implying it is this tool's own",
           "SourceControlHelpers.cpp:67" in bare, bare[:600])
     check("and it says no provider was reached at all",
-          "NO PROVIDER WAS REACHED" in bare, bare[:900])
+          "Per-file state was not requested" in bare, bare[:900])
 
     print("--- phase A: state per asset, with no provider ---")
     state = session.call(READ_TOOLSET, "ReadTurboMCPVcsState", {"assets": ASSETS})
@@ -378,7 +378,7 @@ def main():
           preview.count("WHAT A CHECKOUT WOULD DO") >= 2,
           "%d occurrence(s)" % preview.count("WHAT A CHECKOUT WOULD DO"))
     check("the edit twin attempted NOTHING and says so",
-          "NO CHECKOUT WAS ATTEMPTED AND NO PROVIDER WAS REACHED" in edit, edit[-800:])
+          "No checkout was attempted; provider readiness checks failed" in edit, edit[-800:])
     check("and it did not report a provider answer it could not have obtained",
           "provider answer, verbatim" not in edit, edit[-600:])
 
@@ -421,7 +421,7 @@ def main():
               field(git_state, "UsesCheckout()") == "false",
               repr(field(git_state, "UsesCheckout()")))
         check("and it SAYS a checkout is a no-op on this provider instead of implying a lock was taken",
-              "A CHECKOUT ON THIS PROVIDER IS A NO-OP" in git_state, git_state[:900])
+              "Checkout is not supported as a provider capability" in git_state, git_state[:900])
 
         git_blocks = rows(git_state)
         check("the state IS reported per asset, now that a provider answers",
@@ -471,11 +471,11 @@ def main():
         check("the checkout is ATTEMPTED through the provider, and its own answer is repeated",
               "provider answer, verbatim: ECommandResult::" in git_edit, git_edit[-900:])
         check("and the answer says a no-op was expected HERE rather than claiming a lock was taken",
-              "A CHECKOUT IS A NO-OP ON THIS PROVIDER" in git_edit, git_edit[-1400:])
+              "checkout is not a supported provider capability" in git_edit, git_edit[-1400:])
         check("and it repeats the PROVIDER'S OWN message, not a paraphrase of it",
               "not supported by revision control provider 'Git'" in git_edit, git_edit[-1400:])
         check("and it states that no file was written by the tool",
-              "NO FILE WAS WRITTEN BY THIS TOOL" in git_edit, git_edit[-1400:])
+              "No asset compile or save was requested" in git_edit, git_edit[-1400:])
         check("and the preview refused none of this input, so preview and edit still agree",
               all(refusal_of(body) is None
                   for _, body in rows(session.call(PREVIEW_TOOLSET, "PreviewTurboMCPVcsCheckout",
@@ -526,7 +526,7 @@ def main():
 
         p4_edit = session.call(EDIT_TOOLSET, "EditTurboMCPVcsCheckout", {"assets": FIXTURE})
         check("and the edit twin refuses the same input, attempting nothing",
-              "NO CHECKOUT WAS ATTEMPTED AND NO PROVIDER WAS REACHED" in p4_edit, p4_edit[-700:])
+              "No checkout was attempted; provider readiness checks failed" in p4_edit, p4_edit[-700:])
 
     # =====================================================================================================
     # PHASE B3: THE SAME QUESTIONS, READ BACK THROUGH A DIFFERENT TOOL.

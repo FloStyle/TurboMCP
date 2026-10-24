@@ -708,6 +708,13 @@
       "tier": "engine",
       "timeout_seconds": 120,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-checkout-output",
+      "path": "Tools/test-checkout-output.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
     }
   ]
 }

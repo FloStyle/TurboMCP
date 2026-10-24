@@ -113,11 +113,11 @@ namespace
 		if (!InRow.Refusal.IsEmpty())
 		{
 			Out.Add(FString::Printf(TEXT("      REFUSED: %s"), *InRow.Refusal));
-			Out.Add(TEXT("      NOTHING WAS ASKED OF ANY PROVIDER FOR THIS ASSET."));
+			Out.Add(TEXT("      No usable state is available for this asset; the reason is shown above."));
 			if (bShowCheckoutIntent)
 			{
-				Out.Add(TEXT("      WHAT A CHECKOUT WOULD DO: refused, with the line above - the Preview and"));
-				Out.Add(TEXT("      the Edit twin both refuse here, because the check is in Plan."));
+				Out.Add(TEXT("      Checkout is currently blocked by the reason above."));
+				Out.Add(TEXT("      A later EditTurboMCPVcsCheckout call refreshes state again."));
 			}
 			Out.Add(TEXT(""));
 			return;
@@ -148,11 +148,11 @@ namespace
 			if (!InPlan.bUsesCheckout)
 			{
 				Out.Add(FString::Printf(
-					TEXT("        the provider '%s' reports UsesCheckout() == false, so a checkout is a"),
+					TEXT("        Provider '%s' reports UsesCheckout() == false."),
 					*InPlan.ProviderName));
-				Out.Add(TEXT("        NO-OP on it: every tracked file in the working copy is already checked out"));
-				Out.Add(TEXT("        (GitSourceControlModule.cpp:21). The provider is still asked and its own"));
-				Out.Add(TEXT("        answer is repeated, because an expected no-op is not a measurement."));
+				Out.Add(TEXT("        Checkout is not supported as a provider capability; no lock is promised."));
+				Out.Add(TEXT("        Edit still submits the operation and reports the provider response."));
+				Out.Add(TEXT("        Preview has not submitted that operation."));
 			}
 			else if (InRow.bCheckedOut || InRow.bAdded)
 			{
@@ -173,7 +173,7 @@ namespace
 			else
 			{
 				Out.Add(TEXT("        an FCheckOut would be issued through the provider, and its own"));
-				Out.Add(TEXT("        answer repeated. No file is written by this tool itself."));
+				Out.Add(TEXT("        answer reported. Provider operations may change file or source-control state."));
 			}
 		}
 
@@ -325,7 +325,7 @@ FTurboMCPSourceControlPlan FTurboMCPSourceControl::Plan(const TArray<FString>& I
 FString FTurboMCPSourceControl::Render(const FTurboMCPSourceControlPlan& InPlan, const bool bShowCheckoutIntent)
 {
 	TArray<FString> Lines;
-	Lines.Add(TEXT("=== source control: E-VCS-CHECKOUT ==="));
+	Lines.Add(TEXT("=== source control state ==="));
 	Lines.Add(TEXT("WHAT THIS ANSWER IS: the state source control holds for each asset, or, when there is"));
 	Lines.Add(TEXT("no usable provider, a REFUSAL NAMED PER ASSET. The refusal strings are the ENGINE'S OWN."));
 	Lines.Add(TEXT(""));
@@ -363,9 +363,9 @@ FString FTurboMCPSourceControl::Render(const FTurboMCPSourceControlPlan& InPlan,
 		Lines.Add(FString::Printf(TEXT("  UsesLocalReadOnly(): %s"), BoolText(InPlan.bUsesLocalReadOnlyState)));
 		if (!InPlan.bUsesCheckout)
 		{
-			Lines.Add(TEXT("  ^ A CHECKOUT ON THIS PROVIDER IS A NO-OP. It has no lock command, so every"));
-			Lines.Add(TEXT("    tracked file in the working copy is already checked out. Say so rather than"));
-			Lines.Add(TEXT("    implying a lock was taken."));
+			Lines.Add(TEXT("  Checkout is not supported as a provider capability; no lock is promised."));
+			Lines.Add(TEXT("    UsesCheckout() alone does not establish the outcome of an operation."));
+			Lines.Add(TEXT("    Check per-file state and provider results."));
 		}
 	}
 	else
@@ -378,7 +378,7 @@ FString FTurboMCPSourceControl::Render(const FTurboMCPSourceControlPlan& InPlan,
 		Lines.Add(TEXT(""));
 		Lines.Add(FString::Printf(TEXT("REFUSAL, THE SAME FOR EVERY ASSET BELOW: %s"), *InPlan.RunRefusal));
 		Lines.Add(FString::Printf(TEXT("  the string is the engine's own: %s"), *InPlan.RunRefusalSource));
-		Lines.Add(TEXT("  NO PROVIDER WAS REACHED, so no state is reported and no zero is printed (P1)."));
+		Lines.Add(TEXT("  Per-file state was not requested because provider readiness checks failed."));
 	}
 	else
 	{
@@ -413,8 +413,9 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 	// compared line for line up to the point where the Edit one acts.
 	TArray<FString> Lines;
 	Lines.Add(Render(InPlan, false));
+	Lines.Add(TEXT("This state was measured before checkout. Refresh with ReadTurboMCPVcsState after reviewing per-file results."));
 	Lines.Add(TEXT(""));
-	Lines.Add(TEXT("=== checkout (E-VCS-CHECKOUT) ==="));
+	Lines.Add(TEXT("=== checkout (EditTurboMCPVcsCheckout) ==="));
 
 	if (InPlan.Assets.Num() == 0)
 	{
@@ -426,8 +427,8 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 	{
 		Lines.Add(FString::Printf(TEXT("REFUSED FOR EVERY ASSET: %s"), *InPlan.RunRefusal));
 		Lines.Add(FString::Printf(TEXT("  the string is the engine's own: %s"), *InPlan.RunRefusalSource));
-		Lines.Add(TEXT("  NO CHECKOUT WAS ATTEMPTED AND NO PROVIDER WAS REACHED. This refusal is the same one"));
-		Lines.Add(TEXT("  the Preview printed, because both read it out of Plan rather than deciding again."));
+		Lines.Add(TEXT("  No checkout was attempted; provider readiness checks failed."));
+		Lines.Add(TEXT("  Configure or reconnect revision control, then refresh with ReadTurboMCPVcsState."));
 		return FString::Join(Lines, TEXT("\n"));
 	}
 
@@ -447,7 +448,7 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 		if (!Row.Refusal.IsEmpty())
 		{
 			Lines.Add(FString::Printf(TEXT("      REFUSED: %s"), *Row.Refusal));
-			Lines.Add(TEXT("      NOT ATTEMPTED, and no provider call was made for this asset."));
+			Lines.Add(TEXT("      Checkout was not attempted for this asset."));
 			Lines.Add(TEXT(""));
 			continue;
 		}
@@ -473,10 +474,10 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 		const bool bNoOpExpected = !InPlan.bUsesCheckout;
 		if (bNoOpExpected)
 		{
-			Lines.Add(TEXT("      UsesCheckout() == false: A CHECKOUT IS A NO-OP ON THIS PROVIDER. Nothing is"));
-			Lines.Add(TEXT("      locked, because this provider has no lock command - so this line is NOT a claim"));
-			Lines.Add(TEXT("      that a lock was taken. The operation is issued anyway to record what the"));
-			Lines.Add(TEXT("      provider actually answers."));
+			Lines.Add(TEXT("      UsesCheckout() == false: checkout is not a supported provider capability."));
+			Lines.Add(TEXT("      No lock is promised. The operation is submitted below;"));
+			Lines.Add(TEXT("      its reported result does not independently verify exclusive ownership."));
+			Lines.Add(TEXT("      Provider messages follow the result."));
 		}
 		else if (Row.bCheckedOut || Row.bAdded)
 		{
@@ -504,7 +505,7 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 		Lines.Add(FString::Printf(TEXT("      provider answer, verbatim: ECommandResult::%s"), *ResultWord));
 		if (bNoOpExpected)
 		{
-			Lines.Add(TEXT("      ^ AND THAT IS THE MEASURED ANSWER TO A GIT CHECKOUT, not a prediction of one."));
+			Lines.Add(TEXT("      This is the selected provider response, not proof of a lock."));
 		}
 
 		const FSourceControlResultInfo& ResultInfo = Operation->GetResultInfo();
@@ -521,8 +522,8 @@ FString FTurboMCPSourceControl::Checkout(const FTurboMCPSourceControlPlan& InPla
 			Lines.Add(FString::Printf(TEXT("      provider info : %s"), *Message.ToString()));
 		}
 
-		Lines.Add(TEXT("      NO FILE WAS WRITTEN BY THIS TOOL. A checkout is a source control operation;"));
-		Lines.Add(TEXT("      the asset's contents are not touched here."));
+		Lines.Add(TEXT("      No asset compile or save was requested; provider operations may change file state."));
+		Lines.Add(TEXT("      Successful earlier operations are not rolled back if another asset fails."));
 		Lines.Add(TEXT(""));
 	}
 
