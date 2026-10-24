@@ -1745,6 +1745,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp"
           ],
           "new_files": []
+        },
+        "quality-group-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
