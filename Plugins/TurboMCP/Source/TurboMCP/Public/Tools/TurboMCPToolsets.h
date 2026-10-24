@@ -966,16 +966,29 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
-    /** Preview a Create Event node bound to a named function and connect it to the exact delegate input.
-     * Optional ObjectNodeId and ObjectPin select an object-reference output; both empty means self.
-     * Signature must match. Replaces that input's previous source. Uses transient preview and owned undo;
-     * does not create the function, compile or save. */
+    /**
+     * Load the Blueprint and simulate delegate binding on a transient graph; no live graph edits, compilation or saving are requested.
+     * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
+     * @param GraphName Required unique graph name, e.g. EventGraph. Empty or unresolved names are refused.
+     * @param TargetNodeId Required reader node ID in this graph; copy the exact full or short ID. Empty, missing or ambiguous IDs are refused.
+     * @param TargetPin Required exact delegate input pin name, case-sensitive and not trimmed. Existing input links are replaced. Empty, orphaned, ambiguous or non-delegate pins are refused; use the reader's pin name.
+     * @param FunctionName Required existing function name on self or the chosen object class, e.g. HandleClicked. Uses Unreal name matching; whitespace is not trimmed for lookup. Empty, missing or delegate-incompatible functions are refused. Does not create the function.
+     * @param ObjectNodeId Reader ID of the node supplying an object-reference output. Supply together with ObjectPin; both empty selects self. Missing or invalid endpoints are refused.
+     * @param ObjectPin Exact object-reference output pin name, case-sensitive and not trimmed. Supply together with ObjectNodeId; both empty selects self. Example: ReturnValue when the named node actually exposes that object output.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
-    /** Preview a new custom event whose parameters come from the exact target delegate input.
-     * EventName must be unused. Event graph only; replaces the delegate input source.
-     * The event body starts empty. Does not compile or save; preview uses a transient copy. */
+    /**
+     * Load the Blueprint and simulate delegate binding on a transient graph; no live graph edits, compilation or saving are requested.
+     * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
+     * @param GraphName Required unique graph name, e.g. EventGraph. Empty or unresolved names are refused.
+     * @param TargetNodeId Required reader node ID in this graph; copy the exact full or short ID. Empty, missing or ambiguous IDs are refused.
+     * @param TargetPin Required exact delegate input pin name, case-sensitive and not trimmed. Existing input links are replaced. Empty, orphaned, ambiguous or non-delegate pins are refused; use the reader's pin name.
+     * @param EventName Required unused identifier containing letters, digits or underscores, not starting with a digit; no whitespace. Example: OnSelectionChanged. Existing function/event names are refused. Event graphs only; parameters come from the target delegate. Return/output-value signatures are refused. The new event has no execution body.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName);
 
@@ -1568,16 +1581,29 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links);
 
-    /** Edit a Create Event node bound to a named function and connect it to the exact delegate input.
-     * Optional ObjectNodeId and ObjectPin select an object-reference output; both empty means self.
-     * Signature must match. Replaces that input's previous source. Uses transient preview and owned undo;
-     * does not create the function, compile or save. */
+    /**
+     * Create a delegate binding and replace its target input connection in one undo transaction; loads the Blueprint, but does not compile or save.
+     * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
+     * @param GraphName Required unique graph name, e.g. EventGraph. Empty or unresolved names are refused.
+     * @param TargetNodeId Required reader node ID in this graph; copy the exact full or short ID. Empty, missing or ambiguous IDs are refused.
+     * @param TargetPin Required exact delegate input pin name, case-sensitive and not trimmed. Existing input links are replaced. Empty, orphaned, ambiguous or non-delegate pins are refused; use the reader's pin name.
+     * @param FunctionName Required existing function name on self or the chosen object class, e.g. HandleClicked. Uses Unreal name matching; whitespace is not trimmed for lookup. Empty, missing or delegate-incompatible functions are refused. Does not create the function.
+     * @param ObjectNodeId Reader ID of the node supplying an object-reference output. Supply together with ObjectPin; both empty selects self. Missing or invalid endpoints are refused.
+     * @param ObjectPin Exact object-reference output pin name, case-sensitive and not trimmed. Supply together with ObjectNodeId; both empty selects self. Example: ReturnValue when the named node actually exposes that object output.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
-    /** Edit a new custom event whose parameters come from the exact target delegate input.
-     * EventName must be unused. Event graph only; replaces the delegate input source.
-     * The event body starts empty. Does not compile or save; preview uses a transient copy. */
+    /**
+     * Create a delegate binding and replace its target input connection in one undo transaction; loads the Blueprint, but does not compile or save.
+     * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
+     * @param GraphName Required unique graph name, e.g. EventGraph. Empty or unresolved names are refused.
+     * @param TargetNodeId Required reader node ID in this graph; copy the exact full or short ID. Empty, missing or ambiguous IDs are refused.
+     * @param TargetPin Required exact delegate input pin name, case-sensitive and not trimmed. Existing input links are replaced. Empty, orphaned, ambiguous or non-delegate pins are refused; use the reader's pin name.
+     * @param EventName Required unused identifier containing letters, digits or underscores, not starting with a digit; no whitespace. Example: OnSelectionChanged. Existing function/event names are refused. Event graphs only; parameters come from the target delegate. Return/output-value signatures are refused. The new event has no execution body.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName);
 

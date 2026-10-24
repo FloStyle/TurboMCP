@@ -213,7 +213,7 @@ bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     Input=Pin(Target,TargetPin,EGPD_Input);
     if(!Connect(Graph,Output,Input,Error)) return false;
     Report=TEXT("created typed custom event ")+TurboMCPNodeId::MakeForNode(Event,true)+TEXT(" name=")+EventName
-        +TEXT(" signature=")+Signature->GetPathName()+TEXT("; delegate connected; event body is empty; wire its exec output to the desired body; compile/save deferred");
+        +TEXT(" signature=")+Signature->GetPathName()+TEXT("; target delegate input source replaced; event body is empty. Connect its execution output to the intended body, inspect the graph, then compile and save. Compilation and runtime behavior were not verified");
     return true;
 }
 bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin,FString& Report,FString& Error)
@@ -256,7 +256,7 @@ bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     }
     Report=TEXT("created function delegate ")+TurboMCPNodeId::MakeForNode(Event,true)+TEXT(" function=")+FunctionName
         +TEXT("; connected to ")+TargetId+TEXT(".")+TargetPin+TEXT("; existing input source replaced; object=")
-        +(ExplicitObject?ObjectNodeId+TEXT(".")+ObjectPin:TEXT("self"))+TEXT("; no compile/save");
+        +(ExplicitObject?ObjectNodeId+TEXT(".")+ObjectPin:TEXT("self"))+TEXT("; function selection and requested links read back; compilation, runtime behavior and layout not verified. Inspect the graph before compiling and saving");
     return true;
 }
 bool Remove(UEdGraph* Graph,UEdGraph* Identity,const FString& Nodes,const FString& Links,FString& Report,FString& Error)
