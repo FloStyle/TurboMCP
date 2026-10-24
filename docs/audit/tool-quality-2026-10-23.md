@@ -566,3 +566,13 @@ Supervised build/native run be075ebe668c48d988161303c5efd145 passed without nati
 Initial run 6189a061bebf4089af0cfe8a08a90fd3 failed on an engine skeleton-compilation ensure during post-undo callbacks. Its fixture skipped production planning and first discovered node actions inside the active transaction. Running the real planner before controlled injection matched production order and passed; the ensure was not suppressed. This does not establish a general engine defect.
 
 The offline gate has reported task 02674939 missing a Problem section, invalid UTF-8 in docs/user/tools.md, client retry expectation failure and lookup-guard findings. Relevant source inputs are unchanged from 4f00175; the regression does not resolve or waive these findings. Do not describe the full offline gate as passed.
+
+## Replace explicit endpoint preservation (2026-10-24)
+
+Fixed e92fc24: existing nodes referenced by explicit replacement wires now count as described nodes and are excluded from removal. Previously only explicit node forms counted, so Append could validate a requested wire and Replace then delete its endpoint. This is an implemented deletion-conflict fix, not just reporting hardening.
+
+Native reproduction 57601ffeef5e4136835b2c0db5e830db proved the source endpoint was incorrectly scheduled for removal (3 removals instead of 2). An unsupported output-pin test form also refused; it was corrected to the supported input-pin reference syntax. Planner checks passed in 556f5686c2d845ad9f2293ab1d422586. Expanded live test initially failed to compile because its event fixture declaration was missing (a15cc9b5797e4f1caf77a3348e3a4a01); corrected in 30517cb.
+
+Final supervised build/native run 447be52387e64809ac83908daf368d21 passed. It verifies retained endpoint counts in plans, unchanged planning graph state, and an actual Replace Apply on an event-connected graph: event/source retained, old unreferenced consumer/target removed, new literal retained, requested reciprocal wire and entry connection retained. No save or compile acceptance, arbitrary node types, downstream dependency preservation, or forced removal-phase failure is certified.
+
+Scope: exact production/test files from quality-replace-linked-retention; Tests/catalog.json registered separately by integrator. Prior offline gate failures remain recorded and unresolved. Full R04 and all-tool acceptance remain open.

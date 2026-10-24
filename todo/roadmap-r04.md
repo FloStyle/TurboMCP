@@ -1420,3 +1420,7 @@ Current integrated field-test baseline: e1c71699d8fcba6719050f5e331647ddddf15445
 Urgent follow-up is owned by Codex; auto-dispatch remains paused. FIELD-01 and FIELD-02 are P0 investigations; FIELD-03 through FIELD-07 cover persistence, batch outcomes, identity, layout and semantic verification. FIELD-08 through FIELD-10 retain diagnostics, smaller gaps and the separate GPU investigation. See [complete intake](../docs/audit/field-testing-2026-10-20.json). These records do not claim fixes or grant unbounded implementation scope.
 
 Weekly prototype review: the three test improvements were accepted for integration after combined native run `875a4c319c2c494eb206114ce0d91648` passed and serial offline validation passed. The refusal fingerprint now includes SHA-256. Visual geometry and MCP ambiguous-identity coverage remain unverified. This acceptance applies to the additional tests, not to the field defects or release readiness.
+
+### 2026-10-24 Replace linked-node deletion repair
+
+Implemented explicit endpoint retention (e92fc24), with supervised native planner and live Apply evidence 447be52387e64809ac83908daf368d21. Requested wires no longer lose their explicitly referenced existing endpoints merely because those nodes lack separate forms. See the tool-quality audit for reproduction and validation limits. R04 remains open; this does not certify full rollback, persistence or all 125 tools.
