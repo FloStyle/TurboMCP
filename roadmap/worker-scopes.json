@@ -1845,6 +1845,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCopyFailureTest.cpp",
             "Tools/test-copy-failure.py"
           ]
+        },
+        "quality-copy-pin-repair": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCopyFailureTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
