@@ -1678,6 +1678,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp"
           ]
+        },
+        "quality-datatable-rows-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
