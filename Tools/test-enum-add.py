@@ -156,6 +156,16 @@ def main():
         check("refuses %s" % label, ok, out[:90])
 
     print()
+    print("=== malformed package paths are refused by preview and edit ===")
+    for bad_path in ("/Game/Tests/Bad.Name", "/Game/Tests/Bad Name",
+                     "/Game/Tests/Bad.uasset", "/UnregisteredTurboMCPMount/Bad"):
+        for toolset, tool in ((PREVIEW_TOOLSET, "PreviewTurboMCPEnumAdd"),
+                              (EDIT_TOOLSET, "EditTurboMCPEnumAdd")):
+            result = session.call(toolset, tool, {"path": bad_path, "values": "Good"})
+            check("%s refuses %s before creation" % (tool, bad_path),
+                  result.startswith("error:") and "invalid package path" in result
+                  and "without an object suffix" in result, result[:240])
+
     print("=== a refusal is an error, and an existing asset is not an error ===")
     # The distinction matters: `error:` means the request was wrong, `unchanged:` means the
     # request was fine and nothing needed doing. A caller should not retry the second.

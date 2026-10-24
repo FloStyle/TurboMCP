@@ -12,6 +12,7 @@
 #include "Engine/UserDefinedEnum.h"
 #include "Kismet2/EnumEditorUtils.h"
 #include "Misc/Paths.h"
+#include "Misc/PackageName.h"
 #include "UObject/Class.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
@@ -72,6 +73,15 @@ bool FTurboMCPEnumAdd::Plan(const FString& InPath, const FString& InValues,
 			TEXT("/Game/Tests/MyEnum."), *Path);
 		return false;
 	}
+
+    FText PathReason;
+    if (!FPackageName::IsValidLongPackageName(Path, false, &PathReason))
+    {
+        OutError = FString::Printf(
+            TEXT("invalid package path '%s': %s; use a writable content package path such as /Game/Enums/E_Colour, without an object suffix or file extension."),
+            *Path, *PathReason.ToString());
+        return false;
+    }
 
 	OutPlan.PackagePath = Path;
 	OutPlan.AssetName = FPaths::GetCleanFilename(Path);
