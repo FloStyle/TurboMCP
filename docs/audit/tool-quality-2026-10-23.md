@@ -170,3 +170,9 @@ Run c272268814ad496ba5de3152ff3ba0da passed build/help; the asset-cost test misc
 Implemented fefc6fe: wait for registry completion, return partial/unknown if gathering persists, and check GetDependencies success for each category. Failed queries no longer produce zero category counts; the report preserves available own-size information and names unavailable queries with retry guidance. Removed the public header's class-based harmlessness assertion.
 
 Run 46ceba9ba1fd4995917e4e1c5e285114 passed build and asset-cost regression; 16 fixture files restored. The normal fixture still returned zero dependencies. Query failure, ongoing gathering and nonzero/unknown-size dependency paths remain unexercised and require targeted coverage; passing this suite does not close those coverage gaps.
+
+## Widget-tree reader coverage (2026-10-24)
+
+Implemented 369f5fe: removed the unsupported lossless read/write identity promise and Read-class mutation guarantee. Live output and help describe selected hierarchy/visibility/padding coverage and omitted properties, bindings and animations. Slot index order is no longer equated with complete visual draw order. The no-root result no longer points at an obsolete tool name.
+
+Source finding retained: SlotAssignments rounds nonzero padding to whole units and omits nearly-zero values. The response now warns about it, but precision preservation is still an actionable defect, not fixed by wording. Full widget backup/export and arbitrary write-back preservation are not certified. Verification pending.
