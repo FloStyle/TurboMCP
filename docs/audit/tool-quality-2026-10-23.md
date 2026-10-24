@@ -528,3 +528,11 @@ Supervised build 66327646f8bb4bd68c355b4ed1d543b6 passed. Shared-ancestry, actua
 ## Local promotion analysis native evidence — 2026-10-24
 
 0ce615c adds TurboMCP.LocalVars.Ancestry using transient graph nodes and the production ancestry helper. Supervised run 2860cbf687994b7199becb1931da9076 passed build and native execution: shared upstream ancestry accepted, true cycle refused, missing linked pin refused, traversal state cleared and reused plan fields reset. This supersedes the untested flag for these specific planner cases only. It does not test assignment, execution placement or completed promotion; 67f00521 remains open and guarded.
+
+## Repoint post-mutation failure evidence — 2026-10-24
+
+Native TurboMCP.Repoint.PostMutationFailure forces a final node-count mismatch after the production path rewires a consumer. On the factory-created, unsaved disposable Blueprint it verifies failure code, unknown restoration reporting, original node identities/count, original consumer link, absent target link, retained default and retained position. Run a5870e69ff764cf3a31da6dc9c554286 passed build and native execution.
+
+Initial run 219a2228c9ed4f3fbb9455c072ec2263 crashed with an access violation using a bare NewObject Blueprint fixture. db49da5 replaced that incomplete fixture with the stock Blueprint factory; the same checks then passed. Do not classify the initial crash as a confirmed product defect. No workplace assets or disk saves were involved; supervisor restored 16 protected fixtures.
+
+This proves the observed rollback case only. Full property/other-graph/callback effects, target creation/source deletion failures, Copy/Replace and whole-batch restoration remain unverified. The production result correctly continues to avoid claiming verified complete restoration.
