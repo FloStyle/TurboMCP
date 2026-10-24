@@ -1464,3 +1464,7 @@ Replacement transaction finalization now follows the exact owned record. Scope c
 Supervised 79e4a84b75ae44dcbad6494420c80373 passed build and test-replace-plan without native warnings. New evidence: forced failure after real append/rewiring/removal restored all four original node identities, node count, reciprocal original edge, removed-node default and position, with no active transaction. Existing successful replacement checks still pass. A protected macro tunnel is refused in both planning and an independently checked stale/corrupt accepted plan, without creation or deletion. Scope gate passed 65dd983 against 66422d41fa9bc0f146a2e6f176dc34f3aafe7b5e.
 
 Implemented and focused-native-tested; broader field validation remains pending. These checks do not certify all node classes, editor callbacks, breakpoint/watch restoration, disk persistence or complete rollback of arbitrary Blueprint properties. No full offline or 125-tool acceptance claim; previously recorded offline failures remain.
+
+### Approved metadata repair — 2026-10-24
+
+AssetDescribe misreports unloaded WidgetBlueprint generated class and loads Blueprint parents after taking its loaded-state snapshot. Use live objects and registry metadata without loading; distinguish unavailable class data from absence. Verify repeated descriptions retain unloaded state and truthful generated-class output on Blueprint/Widget fixtures.

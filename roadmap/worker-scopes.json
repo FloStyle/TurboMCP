@@ -1996,6 +1996,14 @@
             "Tools/test-widget-preview.py"
           ],
           "new_files": []
+        },
+        "quality-asset-describe-metadata": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp"
+          ],
+          "new_files": [
+            "Tools/test-asset-describe-metadata.py"
+          ]
         }
       },
       "preserve_rows": []
