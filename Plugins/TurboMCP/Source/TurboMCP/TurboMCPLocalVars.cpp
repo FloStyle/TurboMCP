@@ -80,13 +80,8 @@ namespace
 			*Source->GetClass()->GetName());
 	}
 
-	/**
-	 * True when the value at this pin traces back ONLY to function inputs and literals.
-	 *
-	 * TRANSITIVE, with a visited set. A one-level check would call `A(input) -> B(A) -> used twice`
-	 * safe for B without ever looking at A, which is the mistake the rule exists to prevent. The
-	 * visited set stops a cycle from being walked forever, and a cycle is itself UNSAFE: a value that
-	 * depends on itself is not fixed by its inputs.
+	/** Trace input ancestry. The visited set contains only the active recursion path.
+	 * Passing this check does not prove that pure functions are deterministic.
 	 */
 	bool TracesToInputsOrLiterals(UEdGraphPin* InPin, const UK2Node_FunctionEntry* InEntry,
 		TSet<UEdGraphNode*>& InOutVisited, FString& OutWhy, int32 InDepth)
@@ -113,7 +108,8 @@ namespace
 		{
 			if (Linked == nullptr)
 			{
-				continue;
+				OutWhy = TEXT("one of its inputs contains a missing pin link");
+				return false;
 			}
 			UEdGraphNode* Source = Linked->GetOwningNode();
 			if (Source == nullptr)
@@ -184,9 +180,11 @@ namespace
 				if (!TracesToInputsOrLiterals(SourceInput, InEntry, InOutVisited, OutWhy,
 						InDepth + 1))
 				{
+					InOutVisited.Remove(Source);
 					return false;
 				}
 			}
+			InOutVisited.Remove(Source);
 		}
 
 		return true;
@@ -209,6 +207,7 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
 	FPlan& OutPlan, FString& OutError)
 {
 	OutError.Empty();
+	OutPlan = FPlan();
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 
@@ -401,7 +400,7 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 {
 	FString Out = FString::Printf(TEXT("preview: values to promote in %s : %s"),
 		*InPlan.Asset, *InPlan.GraphName);
-	Out += FString::Printf(TEXT("\n%d node(s), %d value(s) used more than once by a pure node"),
+	Out += FString::Printf(TEXT("\n%d node(s), %d pure node(s) whose outputs are read more than once"),
 		InPlan.NodeCountBefore, InPlan.Candidates.Num());
 
 	if (!InPlan.bSupportsLocals && !InPlan.NoLocalsReason.IsEmpty())

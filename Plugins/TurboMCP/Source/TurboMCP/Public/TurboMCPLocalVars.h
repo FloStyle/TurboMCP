@@ -15,34 +15,10 @@ class UBlueprint;
 class UEdGraph;
 
 /**
- * Promoting a value to a local variable, behind `P-LOCAL-VARS` and `E-LOCAL-VARS`.
- *
- * `03_TOOLS.md` gives two halves and one definition that is easy to get wrong:
- *
- *  - the Preview lists values computed by PURE nodes and used MORE THAN ONCE in a function, each
- *    marked safe or unsafe WITH THE REASON;
- *  - the Edit promotes ONLY the values the Preview marked safe;
- *  - and SAFE MEANS everything feeding the value is a function input or a literal, so capturing it
- *    once cannot change the result.
- *
- * WHY THE SAFETY RULE IS "INPUT OR LITERAL" AND NOT SOMETHING WEAKER
- * ------------------------------------------------------------------
- * Capturing a value once and reading it twice is only the same as computing it twice when the value
- * CANNOT CHANGE between the two reads. A value derived from a member variable can change if the exec
- * chain between the two reads writes that variable; a value derived from a function call can return
- * something different each time. Only a value derived from the function's own inputs and from
- * literals is fixed for the whole call, so only that is safe.
- *
- * The rule is applied TRANSITIVELY: a pure node fed by another pure node is safe only when THAT one
- * is safe, all the way back to an input or a literal. A one-level check would call
- * `A(input) -> B(A) -> used twice` safe for B without ever looking at A.
- *
- * WHY ONLY FUNCTION GRAPHS
- * ------------------------
- * A local variable belongs to a function. `FBlueprintEditorUtils::DoesSupportLocalVariables` decides
- * which graphs allow one, and the answer is checked rather than assumed: an event graph has no
- * locals, so a value used twice there is reported as unsafe with that as the reason rather than
- * being silently skipped.
+ * Analyze repeatedly consumed pure-node outputs in function graphs.
+ * Input ancestry excludes mutable variable reads and impure sources, but does not
+ * prove determinism or safe evaluation timing. Promotion is currently refused:
+ * calculated-value assignment and execution placement are not implemented.
  */
 class FTurboMCPLocalVars
 {
@@ -62,7 +38,7 @@ public:
 		/** How many other nodes read the value. */
 		int32 ConsumerCount = 0;
 
-		/** True when every input traces back to a function input or a literal. */
+		/** True when input ancestry passes the exclusions; not proof of semantic safety. */
 		bool bSafe = false;
 
 		/** Why it is unsafe, when it is. Empty when safe. */
@@ -90,18 +66,18 @@ public:
 		TArray<FCandidate> Candidates;
 		int32 NodeCountBefore = 0;
 
-		/** True when the graph cannot hold local variables, with the reason. */
+		/** True when the graph supports local variables. */
 		bool bSupportsLocals = false;
 		FString NoLocalsReason;
 	};
 
-	/** Reads the function graph and works out which values are safe to promote. */
+	/** Reads the function graph and checks candidate input ancestry. */
 	static bool Plan(const FString& InAsset, const FString& InGraphName,
 		FPlan& OutPlan, FString& OutError);
 
-	/** Lists every candidate with its safety and the reason. */
+	/** Lists candidates, exclusions and the current promotion limitation. */
 	static FString RenderPreview(const FPlan& InPlan);
 
-	/** Promotes the safe candidates and reports what it made. */
+	/** Refuses nonempty promotion plans until value-preserving assignment is implemented. */
 	static FString Apply(const FPlan& InPlan);
 };
