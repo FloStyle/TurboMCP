@@ -174,9 +174,12 @@ def main():
     print(out)
     print()
     check("arming is accepted", out.startswith("armed:"), out[:120])
+    check("arming reports unvalidated IDs and instrumentation limits",
+          "IDs are not validated" in out and "Zero hits do not prove" in out, out)
+    check("clear reports irreversible trace-history removal", "cannot be restored with Undo" in drained, drained)
     check("it reports the point it added", "added 1 point" in out, out[:120])
-    check("IT SAYS NOTHING WAS ADDED TO A GRAPH AND NOTHING WAS RECOMPILED",
-          "NOTHING WAS ADDED TO ANY GRAPH" in out and "RECOMPILED" in out, out[-200:])
+    check("arming describes graph, compile and save effects",
+          "no graph nodes were added" in out and "no compile or save was requested" in out, out[-200:])
 
     # THE FINGERPRINT IS THE INDEPENDENT WITNESS. A tool's own sentence about not writing is not evidence; the
     # asset's size, mtime and hash are.

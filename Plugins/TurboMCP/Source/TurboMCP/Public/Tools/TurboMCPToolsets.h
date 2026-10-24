@@ -1713,19 +1713,11 @@ public:
 	static FString EditTurboMCPCallLogClear(const FString& Confirm);
 
 	/**
-	 * Mark a node to be traced, or clear the marks.
-	 *
-	 * `action=arm` with one or more node IDs records that node every time it runs in a play
-	 * session, without pausing; `action=clear` with IDs removes those marks and their hits, and
-	 * with no IDs removes every mark and every hit. Always answers with the arming summary.
-	 *
-	 * NOTHING IS ADDED TO ANY GRAPH AND NOTHING IS RECOMPILED. The engine already emits a trace
-	 * point into every normally-compiled node and the VM raises it through a delegate, so arming
-	 * is an in-memory registry entry. That is why this tool cannot corrupt a graph.
-	 *
-	 * It is in the Edit toolset although it writes no file, because it changes state a caller
-	 * must be able to undo and a Read toolset is the one this plugin promises cannot change
-	 * anything.
+	 * Manage in-memory trace points; does not edit graph nodes, compile or save assets, and clearing recorded hits is not undoable.
+	 * Arming registers IDs without verifying that the nodes exist or will emit trace events. It does not start gameplay.
+	 * Hits require execution and available Blueprint instrumentation; zero hits do not prove that a node did not run.
+	 * @param Action Required command: arm, clear or status (case-insensitive). Empty is refused. Arm adds points; clear removes points and their recorded hits; status reports current trace state.
+	 * @param NodeId Comma-separated exact node IDs from ReadTurboMCPNodeFind, e.g. Asset:EventGraph:NodeKey. Arm requires at least one; clear with empty removes ALL points and hits. Status ignores this argument. Supply an empty string when unused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPTrace(const FString& Action, const FString& NodeId);

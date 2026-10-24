@@ -257,7 +257,7 @@ namespace TurboMCPTrace
 				GHits.Reset();
 				GDroppedHits = 0;
 				return FString::Printf(
-					TEXT("cleared: removed %d armed point(s) and every recorded hit"), Was);
+					TEXT("cleared: removed %d armed point(s) and every recorded hit. This trace history cannot be restored with Undo."), Was);
 			}
 
 			int32 Removed = 0;
@@ -273,7 +273,7 @@ namespace TurboMCPTrace
 				return InPlan.NodeIds.Contains(Hit.NodeId);
 			});
 			return FString::Printf(
-				TEXT("cleared: removed %d of %d named point(s), and %d of %d recorded hit(s)"),
+				TEXT("cleared: removed %d of %d named point(s), and %d of %d recorded hit(s). Removed trace history cannot be restored with Undo."),
 				Removed, InPlan.NodeIds.Num(), HitsBefore - GHits.Num(), HitsBefore);
 		}
 
@@ -295,8 +295,9 @@ namespace TurboMCPTrace
 			}
 			return FString::Printf(
 				TEXT("armed: added %d point(s), %d were already armed, %d armed in total. ")
-				TEXT("NOTHING WAS ADDED TO ANY GRAPH AND NOTHING WAS RECOMPILED: the engine already emits a ")
-				TEXT("trace point into every normally-compiled node, so arming is a registry entry."),
+				TEXT("Registered IDs in memory; no graph nodes were added and no compile or save was requested. ")
+				TEXT("IDs are not validated against the graph. Hits require execution and available instrumentation; ")
+				TEXT("use ReadTurboMCPTrace to inspect them. Zero hits do not prove that a node did not run."),
 				Added, Already, GArmed.Num());
 		}
 
