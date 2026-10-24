@@ -359,18 +359,10 @@ public:
 		const FString& Cap);
 
 	/**
-	 * The exact schema of one tool: its signature, one row per parameter, and its trap notes.
-	 *
-	 * Pass a toolset name and an empty tool to get one line per tool in it. The toolset is accepted in
-	 * its FULL form and in its SHORT form, and a name that fits nothing is refused with the CLOSEST
-	 * REAL NAMES rather than a bare "not found".
-	 *
-	 * TRAPS COME FROM A DATA FILE, not from code, so they are corrected without a rebuild. When that
-	 * file cannot be read the answer SAYS SO rather than looking like "no traps".
-	 *
-	 * The ENGINE's own tools are covered by the same code path, because the schemas are read from the
-	 * toolset registry. A tool's help is capped at 2000 characters, and what did not fit is named
-	 * rather than silently dropped.
+	 * Inspect registered tool metadata and local trap notes without invoking the described tool.
+	 * This is a compact rendering, not the complete JSON schema. Single-tool output is capped at 2000 characters; use describe_toolset for the complete schema. Missing trap notes are reported, not treated as proof that a tool has no limitations.
+	 * @param Toolset Required string. Empty lists registered toolsets. Prefer the full registry name, e.g. TurboMCP.TurboMCPReadToolset. Short names and suffixes are matched after normalization; the first matching toolset is selected, so use full names to avoid ambiguity.
+	 * @param Tool Required string. Empty lists tools in the selected toolset. Otherwise use a bare or fully qualified registered tool name, e.g. ReadTurboMCPNodeFind. Matching ignores case, spaces and underscores. Unknown names return suggestions; Toolset must be supplied to select a tool.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPToolSchema(const FString& Toolset, const FString& Tool);
@@ -471,39 +463,10 @@ public:
 		const FString& Asset);
 
 	/**
-	 * Call the two PURE functions behind `R-CALL-COST` with LITERAL inputs, and print what they returned.
-	 *
-	 * THIS IS A TEST SURFACE AND THE GAP IT CLOSES IS MEASURED. `R-CALL-COST` totals calls by
-	 * `FTurboMCPCallCost::NormaliseToolset` and attributes them by `FTurboMCPCallCost::AssetFromArguments`.
-	 * ONE OF THE TWO IS UNREACHABLE FROM ANY SUITE THAT READS THE LOG: every entry in the real log is an
-	 * ENGINE event, and an engine event carries NO `arguments` field at all - measured over 252 lines, not
-	 * one of which had arguments - so nothing can hand `AssetFromArguments` a non-empty input. The
-	 * commandlet written to close that gap cannot run: the `Kismet` dependency puts `check(GEditor);` in
-	 * the way before any commandlet's `Main`. So the assertions run where every other check in this
-	 * project runs: over MCP, from a suite.
-	 *
-	 * THE OTHER HALF IS REACHABLE, AND THAT IS SAID HERE BECAUSE IT CORRECTS THE RECORD RATHER THAN
-	 * FLATTERING THIS TOOL. On a build that demonstrably compiled `return Trimmed;` in the normaliser's
-	 * body, `test-call-cost` DOES go red (`no tool row contains the engine's qualification path`), because
-	 * the log really does carry qualified names. What this tool adds is therefore not a check that cannot
-	 * otherwise fail but ONE THAT CANNOT GO VACUOUS: the log-dependent check bites only while the log
-	 * carries a qualified name, which is a fact about the engine's hash resolver, while a literal input is
-	 * the same assertion in every session.
-	 *
-	 * `toolsets` takes one or more toolset SPELLINGS separated by commas or pipes. Pass BOTH spellings of
-	 * one toolset to see them collapse: the analytics provider resolves names fully qualified, so an
-	 * engine entry records `TurboMCP.TurboMCPReadToolset`, while this plugin's own writer records the bare
-	 * `TurboMCPReadToolset`. Each spelling is printed with the key the normaliser gave it, and the number
-	 * of DISTINCT keys is printed as a NUMBER, so "one key" is read off a count and never inferred from a
-	 * sentence. An empty list says that no spelling was given rather than reporting zero keys (`P1`).
-	 *
-	 * `arguments` takes an arguments blob exactly as the log records one. The asset the function found is
-	 * printed with its LENGTH as a number, so "names no asset" is a measured zero: an engine event has no
-	 * arguments at all, and an absent measurement is not zero cost (`P1`). Line breaks in the echo are
-	 * written as spaces so one value stays on one line; the function is given the caller's own string.
-	 *
-	 * IT COMPUTES STRINGS AND WRITES NOTHING - no log is opened, no asset is loaded, no setting is
-	 * toggled - so it needs no fixture, it cannot race another suite, and it has nothing to restore.
+	 * Inspect call-cost string normalization and asset extraction for literal inputs; does not run the named tools or read the call log.
+	 * The result shows computed strings, not a pass/fail verdict or evidence that an asset exists. The tool body does not load assets, edit, compile or save; normal tool-call recording may still record this invocation.
+	 * @param Toolsets Required comma- or pipe-separated spellings, e.g. TurboMCP.TurboMCPReadToolset,TurboMCPReadToolset. Whitespace around entries is trimmed; empty entries are ignored. Empty input computes no toolset keys. Names need not exist in the registry.
+	 * @param Arguments Required literal string to inspect for an asset key, e.g. {"asset":"/Game/Tests/BP_NodeTest"}. Empty is accepted and yields no asset key. This is heuristic string extraction, not JSON validation or asset resolution. Echoed line breaks and tabs become spaces; extraction uses the original input.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPPureChecks(
@@ -511,36 +474,9 @@ public:
 		const FString& Arguments);
 
 	/**
-	 * Read what source control holds for each asset, and refuse by name when it holds nothing.
-	 *
-	 * Pass assets separated by commas or pipes, in any path form; pass nothing to read only whether the
-	 * project has source control on and which provider is selected.
-	 *
-	 * BOTH OF THE ENGINE OWN QUESTIONS ARE ASKED, IN ITS OWN ORDER, BEFORE ANYTHING ELSE IS TOUCHED:
-	 * whether a provider is selected at all, and whether that provider is available. `SourceControlHelpers.cpp:61-85`
-	 * is the engine own gate and it asks exactly these two. BOTH ARE REQUIRED, and that is measured rather than
-	 * defensive: Perforce (`PerforceSourceControlProvider.cpp:232-235`), Plastic
-	 * (`PlasticSourceControlProvider.cpp:283-286`) and Subversion (`SubversionSourceControlProvider.cpp:79-82`)
-	 * answer the FIRST with true UNCONDITIONALLY while the second is false without a server - so a tool that
-	 * asked only the first would report a working provider where there is none, which is the one answer this
-	 * tool must never give.
-	 *
-	 * WHEN EITHER ANSWER IS NO, EVERY ASSET IS REFUSED BY NAME, with the engine own wording reproduced
-	 * verbatim: `"Revision control is not enabled."` (`SourceControlHelpers.cpp:67`) or
-	 * `"Revision control server is currently not available."` (`:76`). NO PROVIDER CALL IS MADE AT ALL,
-	 * because with the default provider `GetState` returns Failed with a NULL state
-	 * (`DefaultSourceControlProvider.cpp:52-60`) that a reader can mistake for "not under source control".
-	 * No state is printed and no zero is printed, for the same reason (`P1`).
-	 *
-	 * WHEN BOTH PASS, each asset reports: whether it is under source control, whether it is checked out here,
-	 * whether it is out of date with respect to the depot, whether it is modified, and the provider own text
-	 * for its state. A provider that hands back NO state even so is reported as UNKNOWN WITH THE REASON
-	 * rather than as "not under source control", because an absent measurement is not a measured absence.
-	 *
-	 * ITS EDIT TWIN IS `EditTurboMCPVcsCheckout` and its preview is `PreviewTurboMCPVcsCheckout`; all three
-	 * read one plan, so they refuse the same input in the same words.
-	 *
-	 * THIS IS A READ TOOL. It never checks anything out and it never writes a file.
+	 * Query the selected source-control provider; may refresh cached state and contact its server, but does not request checkout, save or submission.
+	 * Reports provider availability and per-asset state. Unavailable or missing provider state is unknown, not evidence that a file is clean or untracked. Results describe the provider response at query time.
+	 * @param Assets Required comma- or pipe-separated asset paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty queries provider status only. Invalid or ambiguous assets are reported individually; other entries are still processed. Use full paths to disambiguate.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPVcsState(const FString& Assets);

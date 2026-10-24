@@ -329,7 +329,7 @@ def main():
     # FAILING INPUT: an empty `toolsets` value with the `P1` branch deleted - the count of zero would
     # be the whole answer, and a zero with no reason is the shape `P1` forbids.
     check("no spelling given says so rather than reporting a bare count of zero",
-          "NO TOOLSET SPELLING WAS GIVEN" in none_given, none_given[:400])
+          "No toolset spelling was supplied" in none_given, none_given[:400])
     check("and the count is still printed, so the absence has a denominator of its own",
           number(none_given, "toolset distinct keys") == 0,
           "toolset distinct keys=%r" % number(none_given, "toolset distinct keys"))

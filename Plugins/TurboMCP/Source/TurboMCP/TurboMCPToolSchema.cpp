@@ -548,7 +548,7 @@ bool FTurboMCPToolSchema::Plan(const FString& InToolsetName, const FString& InTo
 			OutPlan.RequestedToolset, OutPlan.AllToolsetNames, 10);
 		OutError = FString::Printf(
 			TEXT("'%s' is not a toolset the registry serves. Closest names: %s. ")
-			TEXT("R-TOOL-INDEX lists every toolset."),
+			TEXT("ReadTurboMCPToolIndex lists registered toolsets."),
 			*OutPlan.RequestedToolset,
 			Closest.Num() > 0 ? *FString::Join(Closest, TEXT(", ")) : TEXT("(none)"));
 		return false;

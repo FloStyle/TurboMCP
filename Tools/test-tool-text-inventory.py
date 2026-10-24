@@ -43,7 +43,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         documented.update({'ReadTurboMCPCallLog', 'ReadTurboMCPCallCost', 'EditTurboMCPCallLog', 'EditTurboMCPCallLogClear'})
         documented.update({'ReadTurboMCPTrace', 'ReadTurboMCPPlayCheck'})
         documented.update({'ReadTurboMCPBPLint'})
-        documented.update({'ReadTurboMCPAssetCost'})
+        documented.update({'ReadTurboMCPAssetCost', 'ReadTurboMCPToolSchema', 'ReadTurboMCPPureChecks', 'ReadTurboMCPVcsState'})
         documented.update({'ReadTurboMCPWidgetTree', 'ReadTurboMCPNodeResolve', 'ReadTurboMCPNodeFind', 'ReadTurboMCPNodeContext'})
         documented.update(('EditTurboMCPGraphPositions', 'LookTurboMCPWidgetPreview'))
         documented.update({'EditTurboMCPCompile', 'EditTurboMCPSaveWithoutThumbnail', 'EditTurboMCPSave', 'PreviewTurboMCPAssetRevert', 'EditTurboMCPAssetRevert', 'EditTurboMCPAssetUndo', 'PreviewTurboMCPAssetUndo'})

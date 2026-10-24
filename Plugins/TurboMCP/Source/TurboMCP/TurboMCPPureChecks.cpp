@@ -52,11 +52,9 @@ namespace
 
 FString FTurboMCPPureChecks::Report(const FString& InToolsets, const FString& InArguments)
 {
-	FString Out = TEXT("read: the two PURE functions behind `R-CALL-COST`, called with literal inputs");
-	Out += TEXT("\n; this tool computes strings only: it reads no log, loads no asset and writes nothing,");
-	Out += TEXT("\n; so it needs no fixture, cannot race another suite, and has nothing to restore.");
-	Out += TEXT("\n; the arguments echoed below have their line breaks written as spaces; the value the");
-	Out += TEXT("\n; function was GIVEN is the caller's own string.");
+	FString Out = TEXT("read: call-cost string diagnostics for literal inputs");
+	Out += TEXT("\nThis does not invoke tools, resolve assets or read the call log. Tool-call recording may record this invocation.");
+	Out += TEXT("\nEchoed line breaks and tabs are shown as spaces; extraction uses the original input.");
 	Out += TEXT("\nfunctions | FTurboMCPCallCost::NormaliseToolset, FTurboMCPCallCost::AssetFromArguments");
 
 	// ---------------------------------------------------------------------------------------------
@@ -103,8 +101,8 @@ FString FTurboMCPPureChecks::Report(const FString& InToolsets, const FString& In
 		// would read as a normaliser that collapsed everything, which is the opposite of what an
 		// empty input says. The empty input is the one shape this tool cannot reach through its
 		// list argument, so it is named here rather than left to the count.
-		Out += TEXT("\n  NO TOOLSET SPELLING WAS GIVEN, so no key was computed at all.");
-		Out += TEXT("\n  THAT IS AN ABSENT MEASUREMENT, NOT ONE KEY AND NOT ZERO KEYS.");
+		Out += TEXT("\n  No toolset spelling was supplied; no normalization was performed.");
+		Out += TEXT("\n  The count below describes the empty input, not a normalization result.");
 	}
 
 	// THE COUNT IS THE ANSWER TO "DO THE TWO SPELLINGS COLLAPSE": a caller reads a NUMBER rather
