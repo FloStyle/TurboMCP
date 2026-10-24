@@ -1642,6 +1642,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp"
           ],
           "new_files": []
+        },
+        "quality-enum-path": {
+          "new_files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAdd.cpp",
+            "Tools/test-enum-add.py"
+          ]
         }
       },
       "preserve_rows": []
