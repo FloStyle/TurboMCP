@@ -63,19 +63,16 @@ bool FTurboMCPAppendFailureTest::RunTest(const FString& Parameters)
     for (bool bJoined : {false, true})
     {
         FTurboMCPGraphAppend::FPlan Plan;
-        Plan.Asset = Blueprint->GetPathName();
-        Plan.GraphName = Graph->GetName();
-        Plan.NodeCountBefore = Graph->Nodes.Num();
-        FTurboMCPGraphAppend::FNewNode Form;
-        Form.TypeId = TEXT("Development|PrintString");
-        Form.Line = 1;
+        FString Report, Error;
+        if (!TestTrue(TEXT("Production planner accepts the node"), FTurboMCPGraphAppend::Plan(
+            Blueprint->GetPathName(), Graph->GetName(), TEXT("(Development|PrintString\n InString \"new-node\"\n)"), Plan, Error)))
+        { AddError(Error); return false; }
+        if (!TestTrue(TEXT("Plan contains a new node"), Plan.bAcceptable() && Plan.Nodes.Num() == 1)) return false;
         TurboMCPGraphTextLex::FPinForm BadPin;
         BadPin.Name = TEXT("MissingPinForFailureTest");
         BadPin.Value = TEXT("42");
         BadPin.Line = 2;
-        Form.Pins.Add(BadPin);
-        Plan.Nodes.Add(Form);
-        FString Report, Error;
+        Plan.Nodes[0].Pins.Add(BadPin);
         // Bypass only scratch preflight, which would catch this deliberately malformed plan.
         // The production mutation core creates a node before looking up this missing pin.
         TUniquePtr<FScopedTransaction> Caller;
