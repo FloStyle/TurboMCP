@@ -2012,6 +2012,12 @@
             "Tools/test-asset-tools.py"
           ],
           "new_files": []
+        },
+        "quality-asset-capture-gamma": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureAsset.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
