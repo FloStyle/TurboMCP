@@ -17,12 +17,23 @@ does NOT carry reproduces exactly the state a class swap leaves behind.
 The suite leaves the asset with the binding it started with, and removes its own.
 """
 
+import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, Session  # noqa: E402
+
+class BindingSession(Session):
+    def call(self, *args, **kwargs):
+        text = super().call(*args, **kwargs)
+        try:
+            wrapped = json.loads(text)
+        except (ValueError, TypeError):
+            return text
+        return wrapped.get("returnValue", text) if isinstance(wrapped, dict) else text
+
 
 WIDGET = "WBP_NodeTest"
 
@@ -59,7 +70,7 @@ def retarget_edit(session):
 
 
 def main():
-    session = Session()
+    session = BindingSession()
     session.connect()
 
     # Start clean: the retarget edit removes anything broken, and a valid one is left alone, so
@@ -78,7 +89,7 @@ def main():
           no_args.startswith("error:") and "required" in no_args, no_args[:100])
 
     print()
-    print("=== a binding on a delegate the class HAS is reported valid ===")
+    print("=== delegate presence is reported without claiming full binding validity ===")
     good = bind(session, "TitleText", VALID_PROPERTY, "GetTitleText")
     print(good)
     print()
@@ -111,7 +122,7 @@ def main():
     check("it says the edit would remove one and leave the rest",
           "REMOVE the 1 broken binding(s) and leave the rest" in preview)
     check("it says how validity is decided",
-          "ON THE WIDGET'S CURRENT CLASS" in preview)
+          "checks widget and delegate presence only" in preview)
 
     print()
     print("=== THE EDIT REMOVES THE BROKEN ONE AND KEEPS THE VALID ONE ===")
