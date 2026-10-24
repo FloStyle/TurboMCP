@@ -556,3 +556,13 @@ Implemented in f9947b1: Append no longer treats successful UndoTransaction as pr
 Scope check passed against ac2a001ec44442d7f2f4f3de115999afe5278b8c. Supervised build passed: execution 82f891f375d54cb08cc3239f61870508. This is compilation evidence only, not behavioral rollback acceptance.
 
 Pending: focused live post-mutation failure coverage. Public Apply runs scratch preflight, so simply corrupting a plan is insufficient to reach the live failure branch. A regression must exercise the mutation core with a bounded test seam or a deterministic live-only failure; do not count scratch refusal as live rollback coverage. Native regression assignment quality-append-failure-native is registered, but no test implementation exists yet. Full state-restoration verification remains open.
+
+## Append live failure regression (2026-10-24)
+
+Candidate fa20bc4, corrected fixture 2bfd440: add an automation-only friend for the private mutation core, plus disposable native coverage in test-append-failure. The real planner runs first; the test then injects a missing pin and calls the mutation core directly to get past scratch preflight. Standalone and caller-owned transactions are both covered. This is not an end-to-end Replace deletion test.
+
+Supervised build/native run be075ebe668c48d988161303c5efd145 passed without native warnings. Assertions cover the post-creation missing-pin diagnostic, truthful restoration uncertainty, no lingering active transaction, removal of the created node, original node IDs/count, reciprocal edge, default and position. Full pin/property/dirty-state/callback/disk restoration remains unproven.
+
+Initial run 6189a061bebf4089af0cfe8a08a90fd3 failed on an engine skeleton-compilation ensure during post-undo callbacks. Its fixture skipped production planning and first discovered node actions inside the active transaction. Running the real planner before controlled injection matched production order and passed; the ensure was not suppressed. This does not establish a general engine defect.
+
+The offline gate has reported task 02674939 missing a Problem section, invalid UTF-8 in docs/user/tools.md, client retry expectation failure and lookup-guard findings. Relevant source inputs are unchanged from 4f00175; the regression does not resolve or waive these findings. Do not describe the full offline gate as passed.
