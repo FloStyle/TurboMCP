@@ -164,3 +164,9 @@ Implemented cc1c570: dependencies with unknown disk sizes remain in their hard/s
 Regression checks category-count consistency and explicit provenance. Remaining gap: dependency-query success/readiness is not yet represented separately from an empty query result; the output now avoids certifying completeness, but explicit partial/unknown query status still needs implementation and failure-path coverage. Verification pending.
 
 Run c272268814ad496ba5de3152ff3ba0da passed build/help; the asset-cost test misclassified explanatory text as an unknown-size measurement. Corrected in 75bba93 to inspect measurement rows and avoid claiming unresolved-asset coverage proves missing-size behavior. Run fd3340b48ce048ab99080d3f78e30771 passed build and asset-cost suite. The fixture returned zero dependencies, so nonzero/unknown dependency counts remain source-reviewed and need a targeted fixture; the count-consistency assertion alone does not prove that branch.
+
+## Asset dependency query status (2026-10-24)
+
+Implemented fefc6fe: wait for registry completion, return partial/unknown if gathering persists, and check GetDependencies success for each category. Failed queries no longer produce zero category counts; the report preserves available own-size information and names unavailable queries with retry guidance. Removed the public header's class-based harmlessness assertion.
+
+Run 46ceba9ba1fd4995917e4e1c5e285114 passed build and asset-cost regression; 16 fixture files restored. The normal fixture still returned zero dependencies. Query failure, ongoing gathering and nonzero/unknown-size dependency paths remain unexercised and require targeted coverage; passing this suite does not close those coverage gaps.
