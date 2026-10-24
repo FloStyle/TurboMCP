@@ -520,7 +520,7 @@ UEdGraphNode* FTurboMCPNodeType::BuildProbeNode(UBlueprint* InBlueprint, UEdGrap
 		return Spawned;
 	}
 
-	OutNote = FString::Printf(TEXT("no node type this graph can hold has the id '%s'. P-NODE-TYPE lists the real ones and names the closest."), *InTypeId);
+	OutNote = FString::Printf(TEXT("no node type this graph can hold has the id '%s'. PreviewTurboMCPNodeType lists the real ones and names the closest."), *InTypeId);
 	return nullptr;
 }
 
@@ -607,7 +607,7 @@ FTurboMCPNodeType::ESpawnResult FTurboMCPNodeType::SpawnNodeOfType(
 		return ESpawnResult::Spawned;
 	}
 
-	OutNote = FString::Printf(TEXT("no node type this graph can hold has the id '%s'. P-NODE-TYPE lists the real ones and names the closest."), *InTypeId);
+	OutNote = FString::Printf(TEXT("no node type this graph can hold has the id '%s'. PreviewTurboMCPNodeType lists the real ones and names the closest."), *InTypeId);
 	return ESpawnResult::NoSuchTypeId;
 }
 
@@ -619,16 +619,26 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 	OutPlan.Guess = InGuess.TrimStartAndEnd();
 
-	// The limit, with the spec's default of ten. A limit of zero or an unparseable one is the
-	// default rather than an error, because "give me none" is not a useful request.
 	OutPlan.Limit = 10;
-	if (!InLimit.TrimStartAndEnd().IsEmpty())
+	const FString LimitText = InLimit.TrimStartAndEnd();
+	if (!LimitText.IsEmpty())
 	{
-		const int32 Parsed = FCString::Atoi(*InLimit);
-		if (Parsed > 0)
+		int32 Parsed = 0;
+		for (const TCHAR Character : LimitText)
 		{
-			OutPlan.Limit = FMath::Min(Parsed, 200);
+			if (Character < TEXT('0') || Character > TEXT('9') || Parsed > 200)
+			{
+				OutError = TEXT("Limit must contain digits for a whole number from 1 to 200; use 10, or leave it empty for 10.");
+				return false;
+			}
+			Parsed = Parsed * 10 + Character - TEXT('0');
 		}
+		if (Parsed < 1 || Parsed > 200)
+		{
+			OutError = TEXT("Limit must be from 1 to 200; use 10, or leave it empty for 10.");
+			return false;
+		}
+		OutPlan.Limit = Parsed;
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;
@@ -705,13 +715,7 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 	// still matched the same way, so a near miss still finds something.
 	OutPlan.bLooksLikeTypeId = OutPlan.Guess.Contains(TEXT("|"));
 
-	// *** A FINDER WITH NO WORDS IS A REQUEST FOR EVERYTHING, WHICH IS HUNDREDS OF IDS. IT IS REFUSED WITH THE COUNT
-	// AND A WAY TO NARROW IT, RATHER THAN PRINTING THE LOT (`P1`). *** *** BUT A CALLER WHO PASSED A `limit` HAS ALREADY
-	// SAID HOW MANY THEY WANT: IT IS IN `OutPlan.Limit`, PARSED AND CLAMPED AT 200 ABOVE, AND REFUSING THEM IS THE TOOL
-	// DECIDING FOR THEM. *** *** WITH A LIMIT THE MATCH RUNS WITH NO WORDS, WHICH MATCHES EVERYTHING, AND `Render`
-	// (`:761-762`) ALREADY SAYS `%d of %d match(es), showing %d` - SO THE LIST ARRIVES CAPPED BY EXACTLY WHAT WAS ASKED
-	// FOR, AND NO RENDERER CHANGE IS NEEDED TO DELIVER IT. *** *** AND THE REFUSAL STAYS FOR THE CALLER WHO ASKED FOR
-	// NOTHING AT ALL, WHICH IS THE CASE IT WAS WRITTEN FOR. ***
+	// An explicit limit permits bounded browsing without search words.
 	if (OutPlan.Guess.IsEmpty() && InLimit.TrimStartAndEnd().IsEmpty())
 	{
 		// A finder with no words is a request for everything, which is hundreds of ids. It is
@@ -899,7 +903,7 @@ bool FTurboMCPNodeType::Plan(const FString& InAsset, const FString& InGraphName,
 			OutPlan.Guess, Titles, 10);
 
 		OutError = FString::Printf(
-			TEXT("no node type in %s matches '%s'. Closest real names: %s. P-NODE-TYPE needs a ")
+			TEXT("no node type in %s matches '%s'. Closest real names: %s. PreviewTurboMCPNodeType needs a ")
 			TEXT("word from the node's own menu name, not from its C++ class."),
 			*Graph->GetName(), *OutPlan.Guess,
 			Closest.Num() > 0 ? *FString::Join(Closest, TEXT(", ")) : TEXT("(none)"));
@@ -960,13 +964,13 @@ FString FTurboMCPNodeType::Render(const FPlan& InPlan)
 			TEXT("accept an id this session added, even though the id is correct.");
 	}
 
-	Out += TEXT("\n; P-NODE-PINS gives the pins of one of these ids.");
+	Out += TEXT("\n; PreviewTurboMCPNodePins gives the pins of one of these ids.");
 	Out += TEXT("\nPromotable Utilities|Operators nodes acquire their operand type from the first typed link; connect that link before setting typed defaults.");
 	return Out;
 }
 
 // =============================================================================================
-// P-NODE-PINS
+// PreviewTurboMCPNodePins
 // =============================================================================================
 
 bool FTurboMCPNodePins::Plan(const FString& InAsset, const FString& InGraphName,
@@ -979,7 +983,7 @@ bool FTurboMCPNodePins::Plan(const FString& InAsset, const FString& InGraphName,
 
 	if (OutPlan.TypeId.IsEmpty())
 	{
-		OutError = TEXT("no node type id given. P-NODE-TYPE finds the real one for a graph, ")
+		OutError = TEXT("no node type id given. PreviewTurboMCPNodeType finds the real one for a graph, ")
 			TEXT("and its id is what this tool takes.");
 		return false;
 	}
@@ -1131,7 +1135,7 @@ bool FTurboMCPNodePins::Plan(const FString& InAsset, const FString& InGraphName,
 		Out.Direction = DirectionSpelling(Pin->Direction);
 		Out.bExec = Pin->PinType.PinCategory == UEdGraphSchema_K2::PC_Exec;
 
-		// The type, as the pin's own category and sub-category. `P-NODE-TYPE`'s spec asks for
+		// The type, as the pin's own category and sub-category. `PreviewTurboMCPNodeType`'s spec asks for
 		// the type a pin or variable needs, and this is the pair the engine's own tools print.
 		Out.Type = Pin->PinType.PinCategory.ToString();
 		if (Pin->PinType.PinSubCategory != NAME_None)
@@ -1209,8 +1213,8 @@ FString FTurboMCPNodePins::Render(const FPlan& InPlan)
 	// reader who does not know it will mis-read the whole table.
 	Out += TEXT("\n; positions are counted separately for inputs and outputs, as the engine ")
 		TEXT("does.");
-	Out += TEXT("\n; the node was built in a throwaway graph, so the asset's own graph was ")
-		TEXT("not changed.");
+	Out += TEXT("\n; a temporary graph was used to inspect the node; no compile or save was requested. ")
+		TEXT("Probe construction can execute editor code; unchanged node counts do not prove that all asset state is unchanged.");
 
 	for (const FPin& Pin : InPlan.Pins)
 	{

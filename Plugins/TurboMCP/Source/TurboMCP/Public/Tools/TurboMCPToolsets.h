@@ -759,19 +759,12 @@ public:
 	static FString PreviewTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
 
 	/**
-	 * Finds the REAL node type id the engine's node creation tool will accept.
-	 *
-	 * Give plain words and it matches them against every id this graph accepts, normalising both sides
-	 * the same way: case, spaces, underscores, brackets, and the category part before the last `|`.
-	 * It finds functions and variables added in this session, and says when the asset must be compiled
-	 * first for the engine's own tool to accept one.
-	 *
-	 * Each match gives the exact id, the class that declares it, whether it is pure, and why it
-	 * matched. When the id this plugin's graph text uses differs from the id the engine creates, BOTH
-	 * are printed, because one matches graph text and the other creates the node.
-	 *
-	 * Results are capped at ten unless `limit` says otherwise, and a miss is refused with the closest
-	 * real names. `P-NODE-PINS` gives the pins of an id this returns.
+	 * Search available node types; loads Blueprint context and queries editor node actions, without requesting graph edits, compilation or saving.
+	 * Results are ranked and capped; PreviewTurboMCPNodePins inspects a returned type.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
+	 * @param GraphName Exact graph name, e.g. EventGraph. Empty selects the Blueprint event graph; missing or ambiguous graphs are refused.
+	 * @param Words Search text or candidate type ID, e.g. PrintString. Empty is allowed only with an explicit Limit for bounded browsing.
+	 * @param Limit Maximum results as digits from 1 to 200, e.g. 10. Empty defaults to 10; signs, fractions, zero and larger values are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPNodeType(
@@ -781,18 +774,11 @@ public:
 		const FString& Limit);
 
 	/**
-	 * The pins a node type produces, WITHOUT TOUCHING the asset's own graph.
-	 *
-	 * Each pin gives its name, its type, its direction in the spelling the engine's pin tools expect
-	 * (`EGPD_Input` or `EGPD_Output`), its default, and its position COUNTED SEPARATELY for inputs and
-	 * outputs, which is what the engine does.
-	 *
-	 * It also says whether the node is pure or latent, and when a latent node is not allowed in this
-	 * graph kind it says that instead of leaving you to find out at compile time.
-	 *
-	 * The node is built in a THROWAWAY graph and discarded, so the asset's node count does not change.
-	 * The engine's own reader adds a probe to the real graph and LEAVES IT THERE, which this
-	 * deliberately does not repeat.
+	 * Inspect pins by constructing a temporary node; loads assets and executes editor probe code, without requesting compilation or saving.
+	 * Reports pin directions, defaults and graph restrictions; this is not proof of runtime behavior or absence of all side effects.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
+	 * @param GraphName Exact graph name, e.g. EventGraph. Empty selects the Blueprint event graph; missing or ambiguous graphs are refused.
+	 * @param TypeId Required exact, case-sensitive ID returned by PreviewTurboMCPNodeType. Copy the complete ID; empty or approximate names are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPNodePins(

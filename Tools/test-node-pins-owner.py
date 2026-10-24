@@ -80,6 +80,12 @@ def pins(session, graph, type_id):
 
 def main():
     session = Session()
+    session.connect()
+    for limit in ("0", "-1", "+1", "1.5", "201", "9" * 80, "abc"):
+        response = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPNodeType",
+                                {"asset": "", "graphName": GRAPH, "words": "", "limit": limit})
+        check("invalid limit refused: " + limit[:12], response.startswith("error:") and "Limit must" in response, response)
+
 
     # THE USABLE IDS COME FROM THE TYPE READER, NOT FROM A LIST OF ENGINE CLASS NAMES. A batch of bare `K2Node_x`
     # names came back ALL-REFUSALS, which the anti-vacuous check below caught. `test-batch-tools` reads the ids out of

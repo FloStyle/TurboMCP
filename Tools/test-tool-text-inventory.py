@@ -45,6 +45,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         documented.update({'ReadTurboMCPTrace', 'ReadTurboMCPPlayCheck'})
         documented.update({'ReadTurboMCPBPLint', 'ReadTurboMCPBlueprintLoad', 'LookTurboMCPLayoutReport', 'LookTurboMCPLayoutDoneCheck', 'LookTurboMCPGraphPositions'})
         documented.update({'ReadTurboMCPAssetCost', 'ReadTurboMCPToolSchema', 'ReadTurboMCPPureChecks', 'ReadTurboMCPVcsState'})
+        documented.update({'PreviewTurboMCPNodeType', 'PreviewTurboMCPNodePins'})
         documented.update({'ReadTurboMCPWidgetTree', 'ReadTurboMCPNodeResolve', 'ReadTurboMCPNodeFind', 'ReadTurboMCPNodeContext'})
         documented.update(('EditTurboMCPGraphPositions', 'LookTurboMCPWidgetPreview', 'LookTurboMCPCapture'))
         documented.update({'EditTurboMCPCompile', 'EditTurboMCPSaveWithoutThumbnail', 'EditTurboMCPSave', 'PreviewTurboMCPAssetRevert', 'EditTurboMCPAssetRevert', 'EditTurboMCPAssetUndo', 'PreviewTurboMCPAssetUndo'})
