@@ -595,6 +595,7 @@ bool FTurboMCPMaterialBlocks::Plan(const FString& InAsset, FPlan& OutPlan, FStri
 FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 {
 	FString Out = FString::Printf(TEXT("preview: blocks in %s"), *InPlan.Asset);
+	Out += TEXT("\n; Preview recompiles materials for baseline errors and may run editor callbacks; it does not apply graph changes or save.");
 	Out += FString::Printf(TEXT("\nblocks: %d comment box(es), %d expression(s), %d of them in no block"),
 		InPlan.BlockCount, InPlan.KeysBefore.Num(), InPlan.UnboxedExpressions);
 	Out += FString::Printf(TEXT("\nitems the edit would change: %d"), InPlan.ItemCount());
@@ -621,7 +622,7 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 	// THE LIST IS IN THE TEXT. A preview that said "3 changes" would make the requirement unverifiable.
 	if (InPlan.Crossings.Num() > 0)
 	{
-		Out += TEXT("\n\nLABELS TO ADD - a value read from more than one block, which D-17 says travels as ");
+		Out += TEXT("\n\nLABELS TO ADD - a value read from more than one block, to route through ");
 		Out += TEXT("a named reroute:");
 		for (const FCrossing& Crossing : InPlan.Crossings)
 		{
@@ -638,7 +639,7 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 	if (InPlan.Merges.Num() > 0)
 	{
 		Out += TEXT("\n\nUSAGE NODES TO MERGE - a label read through more than one usage node in one ");
-		Out += TEXT("block, which D-17 forbids:");
+		Out += TEXT("block:");
 		for (const FMerge& Merge : InPlan.Merges)
 		{
 			Out += FString::Printf(TEXT("\n  = @%s in block %d: keep %s, remove %d node(s)"),
@@ -657,7 +658,7 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 	if (InPlan.InBlockReroutes.Num() > 0)
 	{
 		Out += TEXT("\n\nIN-BLOCK REROUTES TO REMOVE - a plain reroute standing for a value inside one ");
-		Out += TEXT("block, which D-17 says they never do:");
+		Out += TEXT("block:");
 		for (const FInBlockReroute& Removal : InPlan.InBlockReroutes)
 		{
 			// D-45: a removal is listed BY KEY WITH ITS CLASS, never as a count. There is no title to
@@ -673,8 +674,8 @@ FString FTurboMCPMaterialBlocks::RenderPreview(const FPlan& InPlan)
 
 	Out += FString::Printf(
 		TEXT("\n\nthis edit ADDS %d label(s), MERGES %d usage group(s) and REMOVES %d reroute(s). It changes ")
-		TEXT("nothing outside that list, and the material's compiled result is checked afterwards and ")
-		TEXT("rolled back if it is not the same."),
+		TEXT("the listed graph elements; expression identities and compile errors are checked afterwards. ")
+		TEXT("Failure requests undo; full restoration is not verified."),
 		InPlan.Crossings.Num(), InPlan.Merges.Num(), InPlan.InBlockReroutes.Num());
 
 	return Out;
@@ -847,8 +848,8 @@ namespace
 			if (Missing.Num() == 0 && Extra.Num() == 0)
 			{
 				*OutNote = FString::Printf(
-					TEXT("\nROLLBACK VERIFIED: the material holds the %d expression(s) the plan read, so the ")
-					TEXT("undo put it back."), Plan.KeysBefore.Num());
+					TEXT("\nROLLBACK IDENTITY CHECK: the material holds the %d expression(s) the plan read. ")
+					TEXT("Links, values, layout and other state were not verified; inspect before saving or retrying."), Plan.KeysBefore.Num());
 				return;
 			}
 
@@ -938,7 +939,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		return FString::Printf(TEXT("error: %s has no material to change blocks in"), *InPlan.Asset);
 	}
 
-	// ONE TRANSACTION, so the whole edit is a single undo step and a rollback is exact.
+	// Group graph changes in one transaction; rollback checks expression identities only.
 	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "MaterialBlocks",
 		"TurboMCP: make labels follow blocks"));
 
@@ -1006,8 +1007,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		{
 			bOutRolledBack = true;
 			return FString::Printf(
-				TEXT("FAILED: the value %s this plan would name no longer exists, so the edit was ROLLED ")
-				TEXT("BACK rather than applied in part."), *Crossing.SourceKey);
+				TEXT("FAILED: the value %s this plan would name no longer exists, so the edit was submitted for undo; see the rollback check below ")
+				TEXT("rather than applied in part."), *Crossing.SourceKey);
 		}
 
 		UMaterialExpression* const Created = UMaterialEditingLibrary::CreateMaterialExpressionEx(
@@ -1024,8 +1025,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		{
 			bOutRolledBack = true;
 			return FString::Printf(
-				TEXT("FAILED: the declaration for @%s could not be created, so the whole edit was ROLLED ")
-				TEXT("BACK rather than applied in part."), *Crossing.ProposedName);
+				TEXT("FAILED: the declaration for @%s could not be created, so the whole edit was submitted for undo; see the rollback check below ")
+				TEXT("rather than applied in part."), *Crossing.ProposedName);
 		}
 		++LabelsAdded;
 
@@ -1053,7 +1054,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the plan carried a consumer reference this pass cannot parse (%s), so the ")
-					TEXT("edit was ROLLED BACK rather than applied against a reference it does not ")
+					TEXT("edit was submitted for undo; see the rollback check below rather than applied against a reference it does not ")
 					TEXT("understand."), *Ref);
 			}
 
@@ -1063,7 +1064,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this plan would retarget no longer exists, so the edit was ")
-					TEXT("ROLLED BACK rather than applied in part."), *ReaderKey);
+					TEXT("submitted for undo; see the rollback check below rather than applied in part."), *ReaderKey);
 			}
 
 			UMaterialExpressionNamedRerouteUsage* Usage = UsageByReaderKey.FindRef(ReaderKey);
@@ -1083,7 +1084,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 					bOutRolledBack = true;
 					return FString::Printf(
 						TEXT("FAILED: the usage node for @%s could not be created, so the whole edit was ")
-						TEXT("ROLLED BACK rather than applied in part."), *Crossing.ProposedName);
+						TEXT("submitted for undo; see the rollback check below rather than applied in part."), *Crossing.ProposedName);
 				}
 
 				// BOTH THE POINTER AND THE GUID, because the reader prefers the pointer and falls back to
@@ -1101,7 +1102,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: %s no longer points at %s, so the material changed between the Preview ")
-					TEXT("and this call and the edit was ROLLED BACK rather than rewired on the wrong ")
+					TEXT("and this call and the edit was submitted for undo; see the rollback check below rather than rewired on the wrong ")
 					TEXT("seam."), *Ref, *Crossing.SourceKey);
 			}
 			++InputsRetargeted;
@@ -1120,8 +1121,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		{
 			bOutRolledBack = true;
 			return FString::Printf(
-				TEXT("FAILED: the usage node to keep (%s) for @%s no longer exists, so the edit was ROLLED ")
-				TEXT("BACK rather than applied in part."), *Merge.KeepKey, *Merge.Label);
+				TEXT("FAILED: the usage node to keep (%s) for @%s no longer exists, so the edit was submitted for undo; see the rollback check below ")
+				TEXT("rather than applied in part."), *Merge.KeepKey, *Merge.Label);
 		}
 
 		for (const FString& Ref : Merge.ConsumerRefs)
@@ -1141,7 +1142,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this merge would retarget no longer exists, so the edit was ")
-					TEXT("ROLLED BACK rather than applied in part."), *ReaderKey);
+					TEXT("submitted for undo; see the rollback check below rather than applied in part."), *ReaderKey);
 			}
 
 			// THE OLD VALUE IS RECOMPUTED FROM THE READER ITSELF rather than carried, because a merge
@@ -1161,7 +1162,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: %s could not be moved onto the kept usage node for @%s, so the edit was ")
-					TEXT("ROLLED BACK rather than applied in part."), *Ref, *Merge.Label);
+					TEXT("submitted for undo; see the rollback check below rather than applied in part."), *Ref, *Merge.Label);
 			}
 			++InputsRetargeted;
 		}
@@ -1197,7 +1198,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			bOutRolledBack = true;
 			return FString::Printf(
 				TEXT("FAILED: the in-block reroute %s or the value it passes (%s) no longer exists, so the ")
-				TEXT("edit was ROLLED BACK rather than applied in part."),
+				TEXT("edit was submitted for undo; see the rollback check below rather than applied in part."),
 				*Removal.RerouteKey, *Removal.SourceKey);
 		}
 
@@ -1218,7 +1219,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this removal would retarget no longer exists, so the edit ")
-					TEXT("was ROLLED BACK rather than applied in part."), *ReaderKey);
+					TEXT("was submitted for undo; see the rollback check below rather than applied in part."), *ReaderKey);
 			}
 
 			// THE REROUTE MAY FAR INTO A CHAIN, but the readers point at THIS one, so that is what the
@@ -1227,7 +1228,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			{
 				bOutRolledBack = true;
 				return FString::Printf(
-					TEXT("FAILED: %s no longer points at the reroute %s, so the edit was ROLLED BACK ")
+					TEXT("FAILED: %s no longer points at the reroute %s, so the edit was submitted for undo; see the rollback check below ")
 					TEXT("rather than rewired on the wrong seam."), *Ref, *Removal.RerouteKey);
 			}
 			++InputsRetargeted;
@@ -1275,7 +1276,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		bOutRolledBack = true;
 		return FString::Printf(
 			TEXT("FAILED: the material could not be read back after the edit (%s), so the compiled result ")
-			TEXT("could NOT be verified and the edit was ROLLED BACK."), *ReadError);
+			TEXT("could NOT be verified and the edit was submitted for undo; see the rollback check below."), *ReadError);
 	}
 
 	TSet<FString> const Before(InPlan.KeysBefore);
@@ -1318,7 +1319,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		bOutRolledBack = true;
 		return FString::Printf(
 			TEXT("FAILED: making labels follow blocks introduced %d compile error(s) that were not there ")
-			TEXT("before, so the edit was ROLLED BACK. A named reroute forwards to its input and a plain ")
+			TEXT("before, so the edit was submitted for undo; see the rollback check below. A named reroute forwards to its input and a plain ")
 			TEXT("reroute passes its input along, so neither can legitimately change what a material ")
 			TEXT("computes. First: %s"), NewErrors.Num(), *NewErrors[0]);
 	}
@@ -1327,7 +1328,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	{
 		bOutRolledBack = true;
 		return FString::Printf(
-			TEXT("FAILED: the edit LOST %d expression(s) it did not list, so it was ROLLED BACK. This pass ")
+			TEXT("FAILED: the edit LOST %d expression(s) it did not list, so it was submitted for undo; see the rollback check below. This pass ")
 			TEXT("lists every removal by key; a node gone that was not on that list means it removed more ")
 			TEXT("than the Preview authorised. First lost: %s"), Lost.Num(), *Lost[0]);
 	}
@@ -1336,7 +1337,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 	{
 		bOutRolledBack = true;
 		return FString::Printf(
-			TEXT("FAILED: the edit GAINED %d expression(s) it did not plan, so it was ROLLED BACK. First ")
+			TEXT("FAILED: the edit GAINED %d expression(s) it did not plan, so it was submitted for undo; see the rollback check below. First ")
 			TEXT("unexpected: %s"), GainedUnexpected.Num(), *GainedUnexpected[0]);
 	}
 
@@ -1365,7 +1366,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 
 	// THE COMPILED-RESULT EVIDENCE, STATED WITH ITS OWN LIMITS RATHER THAN AS A BARE CLAIM.
 	Out += FString::Printf(
-		TEXT("\nCOMPILED RESULT: %d of %d pre-existing expression(s) still present, %d removed and all of ")
+		TEXT("\nCHECK RESULTS (not proof of identical rendered output): %d of %d pre-existing expression(s) still present, %d removed and all of ")
 		TEXT("them on the plan's own list, %d gained and all of them planned, and the engine reports %d ")
 		TEXT("error(s), none of them new. StateId %s -> %s (reported rather than asserted: it can change for ")
 		TEXT("reasons this pass does not control)."),

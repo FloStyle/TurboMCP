@@ -366,7 +366,7 @@ def main():
     # ---------------------------------------------------------------------------------------------
     # HALF TWO OF T-MAT-8: RESULT UNCHANGED.
     # ---------------------------------------------------------------------------------------------
-    check("the edit reports the COMPILED RESULT explicitly", "COMPILED RESULT:" in report,
+    check("the edit reports the COMPILED RESULT explicitly", "CHECK RESULTS (not proof of identical rendered output)" in report,
           "the edit made no compiled-result statement at all")
 
     # THE ABSENCE OF THE "none of them new" CLAIM IS CHECKED WITH `in` RATHER THAN THROUGH

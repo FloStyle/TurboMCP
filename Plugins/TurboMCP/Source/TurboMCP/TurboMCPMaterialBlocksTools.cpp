@@ -13,47 +13,6 @@
 
 #include "TurboMCPMaterialBlocks.h"
 
-/**
- * `P/E-MAT-BLOCKS`: make labels follow blocks.
- *
- * THE PAIR SHARES ONE PLAN, which is the rule this project states for every `P/E` pair and enforces by
- * shape: `Plan` decides, `RenderPreview` prints what would happen, and `Apply` writes it. A Preview that
- * accepted what its Edit twin refused would be worse than no Preview, so there is exactly ONE place that
- * can answer "no" and both tools reach it.
- *
- * THE ERROR PREFIX IS ADDED IN EXACTLY ONE PLACE, with the same guard the material readers use, because
- * two layers each assuming the other leaves the prefix off is how a result ends up reading
- * `error: error: ...`.
- *
- * THE REFUSAL PATH DIFFERS BETWEEN THE TWO HALVES ON PURPOSE, and `E-GRAPH-REPLACE` recorded why. A
- * material that already follows D-17 is NOT a failure - it is the correct answer for a material whose
- * labels already follow its blocks - so the Preview REPORTS it and the Edit answers `unchanged`.
- * Treating "nothing to do" as an error would make the tool look broken on exactly the materials it
- * should leave alone.
- *
- * AND A MATERIAL WITH NO COMMENT BOX IS A THIRD ANSWER RATHER THAN A SILENT SUCCESS. D-17 is about the
- * boundary between blocks, and a material with one block has no boundary: the refusal says so and names
- * `P/E-MAT-TIDY` as the tool that would create the blocks first.
- */
-
-/**
- * List what would make a material's labels follow its blocks, and change nothing.
- *
- * THE THREE LISTS ARE THE THREE WAYS D-17 CAN BE VIOLATED, and each is derived from the same geometric
- * block membership the reader uses - not from a second opinion about which box holds what:
- *
- *   - a value read from MORE THAN ONE BLOCK with no label, where D-17 says a value leaving its block
- *     travels as a named reroute;
- *   - a label read through TWO OR MORE usage nodes in ONE block, where D-17 says a block reads each label
- *     through a single usage node;
- *   - a PLAIN REROUTE whose source and readers are all in ONE block, where D-17 says plain reroute dots
- *     are for routing long wires and never stand for a value.
- *
- * Every item is printed with the keys the edit would touch, because "changes exactly the items in the
- * Preview list" is only checkable if the list is in the text.
- *
- * It writes nothing and does not claim the compiled result is unchanged; the edit measures that.
- */
 FString UTurboMCPPreviewToolset::PreviewTurboMCPMaterialBlocks(const FString& Asset)
 {
 	if (Asset.TrimStartAndEnd().IsEmpty())
@@ -76,29 +35,6 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPMaterialBlocks(const FString& As
 	return FTurboMCPMaterialBlocks::RenderPreview(Plan);
 }
 
-/**
- * Make a material's labels follow its blocks: add the missing labels, merge the redundant usage nodes,
- * and remove the in-block reroutes.
- *
- * *** THIS IS THE ONE MATERIAL WRITER THAT REMOVES, SO IT STATES WHAT IT REMOVES AND DELETES BY IDENTITY.
- * `05_DECISIONS.md` D-45 requires exactly that: "a writer that removes anything lists each removal by key
- * with its class and title, never a count... a count says how much is gone and a list says what." ***
- *
- * "Same compiled result check" IS THE REQUIREMENT AND IT IS MEASURED. The assertion is asymmetric on
- * purpose, because this pass legitimately adds and legitimately removes: NO PRE-EXISTING EXPRESSION WAS
- * LOST EXCEPT THE ONES ON THE PLAN'S OWN REMOVAL LIST, the expressions GAINED are exactly the ones it
- * planned, and the engine reports no NEW error - so a material that already had a compiler error does
- * not make this pass fail. A node that vanished without being listed is a failure even though the
- * material still compiles, WHICH IS WHAT "changes exactly the items in the Preview list" MEANS.
- *
- * EVERY NODE IS RE-RESOLVED BY KEY AT APPLY TIME rather than trusted from the plan, which is the other
- * half of D-45 and is forced by the two-call shape: a plan is made and applied separately, so the
- * material can change in between. An input that no longer points where the plan said is a REFUSAL rather
- * than a rewire, because a stale index would retarget the wrong pin and produce a wrong material that
- * still compiles - the one outcome the compiled-result check cannot tell from a correct edit.
- *
- * The whole edit is ONE TRANSACTION, so it is a single undo and a rollback is exact.
- */
 FString UTurboMCPEditToolset::EditTurboMCPMaterialBlocks(const FString& Asset)
 {
 	if (Asset.TrimStartAndEnd().IsEmpty())
