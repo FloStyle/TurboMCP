@@ -506,3 +506,9 @@ Supervised run 49a3d507b7224e2f9e6f1a50b6206b97 passed build and all 125 live he
 7d622ef documents 16 comment parameters, per-action empty behavior, fit scope, explicit-size override and load/measurement/undo/compile/save effects. Current reader/save names replace obsolete aliases. Size parsing now rejects nonnumeric, non-finite, sub-unit and out-of-int32-range sides before conversion; this behavior change still needs a focused negative-input regression.
 
 Supervised run 1eb8515a98264d6daa3d268c5e33c489 passed build and all 125 live help/schema checks. Parsing that run's 125 schema records found ZERO missing parameter descriptions. This completes description presence only: semantic accuracy, every output path and behavioral coverage are not thereby certified. Comment creation/set/fit/delete, size refusal behavior and resulting geometry remain separate validation requirements. Overall tool quality goal remains open.
+
+## Graph rollback reporting safeguard — 2026-10-24
+
+8508554 removes unverified complete-restoration claims from Repoint, Copy and Replace failure paths. Repoint now retains potentially modified dirty state and reports changed=null through its result boundary when restoration is unverified. Undo completion is explicitly distinguished from verified restoration. This is a partial repair, not proof of rollback correctness; full state comparison and failure-injection behavior remain open.
+
+Supervised build 61730b9c6692423aa6ac13cbf220440f passed on the repair checkout. No behavioral failure-path tests were run in this batch. All 125-tool behavioral acceptance remains unfinished.
