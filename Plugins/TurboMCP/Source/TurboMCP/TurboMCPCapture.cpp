@@ -73,7 +73,7 @@
  * is chosen so that box fits the requested image. `SGraphPanel::GetBoundsForNode`
  * would give on-screen bounds but needs a live panel and a widget geometry pass, so
  * the graph-space rectangles are used instead, which is the same computation
- * `L-LAYOUT-REPORT` already does and reports.
+ * `LookTurboMCPLayoutReport` already does and reports.
  */
 namespace
 {
@@ -85,7 +85,7 @@ namespace
 	constexpr int32 MaxEdge = 4096;
 
 	// Check each digit before multiplication so oversized input cannot overflow.
-	bool ParseCaptureNumber(const FString& Text, int32 Minimum, int32& OutValue)
+	bool ParseCaptureNumber(const FString& Text, int32 Minimum, int32& OutValue, int32 Maximum = MaxEdge)
 	{
 		if (Text.IsEmpty()) return false;
 		int32 Value = 0;
@@ -93,7 +93,7 @@ namespace
 		{
 			if (Character < TEXT('0') || Character > TEXT('9')) return false;
 			const int32 Digit = Character - TEXT('0');
-			if (Value > (MaxEdge - Digit) / 10) return false;
+			if (Value > (Maximum - Digit) / 10) return false;
 			Value = Value * 10 + Digit;
 		}
 		if (Value < Minimum) return false;
@@ -398,6 +398,15 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			TEXT("mode box, or a node ID for mode node."), *WantedMode);
 	}
 
+	// Validate both box modes before loading assets or opening editor UI.
+	int32 BoxIndex = 0;
+	if ((bOneBox || WantedMode == TEXT("box-neighbours"))
+		&& !ParseCaptureNumber(Target.TrimStartAndEnd(), 0, BoxIndex, MAX_int32))
+	{
+		return TEXT("error: Target must be a comment box index written as digits from 0 to 2147483647. ")
+			TEXT("Use an index from LookTurboMCPLayoutReport, for example 0. Fractions and signs are not accepted.");
+	}
+
 	int32 Width = DefaultWidth;
 	int32 Height = DefaultHeight;
 	if (bNewSelector)
@@ -612,13 +621,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	}
 	else if (bOneBox)
 	{
-		if (!Target.TrimStartAndEnd().IsNumeric())
-		{
-			return FString::Printf(
-				TEXT("error: '%s' is not a comment box index. Mode box takes a whole ")
-				TEXT("number, the index from L-LAYOUT-REPORT."), *Target);
-		}
-		const int32 Wanted = FCString::Atoi(*Target.TrimStartAndEnd());
+		const int32 Wanted = BoxIndex;
 
 		TArray<UEdGraphNode_Comment*> Boxes;
 		for (UEdGraphNode* Node : Graph->Nodes)
@@ -628,7 +631,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 				Boxes.Add(Comment);
 			}
 		}
-		// Sorted the same way L-LAYOUT-REPORT prints them, so an index means the same
+		// Sorted the same way LookTurboMCPLayoutReport prints them, so an index means the same
 		// thing in both tools. Without this the index would be meaningless.
 		Boxes.Sort([](const UEdGraphNode_Comment& A, const UEdGraphNode_Comment& B)
 		{
@@ -645,7 +648,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			// silent fallback to the whole graph.
 			return FString::Printf(
 				TEXT("error: asked for box %d, this graph has %d comment box(es). ")
-				TEXT("Boxes are numbered from 0 in the order L-LAYOUT-REPORT lists ")
+				TEXT("Boxes are numbered from 0 in the order LookTurboMCPLayoutReport lists ")
 				TEXT("them, top to bottom then left to right."),
 				Wanted, Boxes.Num());
 		}
@@ -661,7 +664,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			return FString::Printf(
 				TEXT("error: '%s' is not a node ID. Pass one in the form ")
 				TEXT("AssetName:GraphName:NodeKey, or an ID printed by ")
-				TEXT("R-NODE-FIND."), *Target);
+				TEXT("ReadTurboMCPNodeFind."), *Target);
 		}
 
 		TArray<UEdGraphNode*> Matches;
@@ -671,7 +674,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		{
 			return FString::Printf(
 				TEXT("error: no node in %s has the key %s, so nothing was captured. ")
-				TEXT("Use R-NODE-FIND to get a current ID."),
+				TEXT("Use ReadTurboMCPNodeFind to get a current ID."),
 				*Graph->GetName(), *Parsed.NodeKey);
 		}
 		if (MatchCount > 1)
