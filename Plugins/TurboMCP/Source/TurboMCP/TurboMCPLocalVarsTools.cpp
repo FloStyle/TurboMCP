@@ -13,14 +13,7 @@
 
 #include "TurboMCPLocalVars.h"
 
-/**
- * `P-LOCAL-VARS` and `E-LOCAL-VARS`.
- *
- * ONE CODE PATH, TWO OUTCOMES, and here the shared half matters more than usual: the SAFETY decision
- * lives in `Plan`, so the Preview states the reason and the Edit promotes only what the Preview
- * called safe. An Edit that judged for itself could promote a value the Preview had just refused,
- * which is the disagreement `D-02` exists to prevent.
- */
+// Both tools use the same candidate analysis; candidate edits are currently refused.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPLocalVars(
 	const FString& Asset, const FString& GraphName)
 {

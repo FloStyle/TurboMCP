@@ -707,23 +707,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
 
-	/**
-	 * Work out which values could become local variables, without promoting any.
-	 *
-	 * The candidates are values computed by PURE nodes and read MORE THAN ONCE in a function. Each is
-	 * marked SAFE or UNSAFE with the reason, which is what the spec asks for.
-	 *
-	 * SAFE MEANS everything feeding the value is a FUNCTION INPUT or a LITERAL, applied
-	 * TRANSITIVELY. Both halves of that are the point rather than pedantry:
-	 *  - capturing a value once and reading it twice is only the same as computing it twice when the
-	 *    value cannot change between the two reads. A value derived from a member variable can change
-	 *    if the exec chain writes it; one derived from an impure node can differ each time.
-	 *  - the rule is TRANSITIVE because a one-level check would call `A(input) -> B(A) -> read twice`
-	 *    safe for B without ever looking at A.
-	 *
-	 * ONLY FUNCTION GRAPHS can hold a local, and that is asked of the engine rather than assumed. A
-	 * graph that cannot is reported with that as the reason rather than skipped silently.
-	 */
+	/** Inspect repeated pure-node outputs in a Blueprint function; loads the asset but does not edit, compile or save; candidates are advisory and promotion is currently refused because value assignment is incomplete.
+     * Pure-node classification is not proof of deterministic behavior or equivalent execution.
+     * @param Asset Required Blueprint asset path or unique asset name, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed and empty is refused. Prefer a full path to avoid ambiguity.
+     * @param GraphName Function graph name, matched without case sensitivity after trimming whitespace; event graphs are refused. Pass empty to select the first function graph in the Blueprint's stored order; the result names the selected graph. Prefer an explicit name.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
 
@@ -1507,23 +1495,11 @@ public:
 		const FString& GraphName,
 		bool bForce);
 
-	/**
-	 * Promote the SAFE values to local variables.
-	 *
-	 * The same safety decision as `P-LOCAL-VARS`, made in the same place, because the two share one
-	 * code path up to the write. **The edit promotes only what the preview called safe**, and it
-	 * re-checks that on the node about to change rather than trusting a plan made in an earlier call.
-	 *
-	 * AN UNSAFE VALUE IS NEVER PROMOTED, however many times it is read: capturing it once is not the
-	 * same as computing it twice.
-	 *
-	 * A local variable is added through the editor's own `AddLocalVariable`, a getter is placed where
-	 * the value was computed, each consumer is re-pointed pin by pin, and **the original is removed
-	 * last**, once nothing points at it — removing it first would break the links the rewire needs.
-	 *
-	 * The result names each value it promoted, how many consumers it re-pointed, and how many
-	 * candidates it refused.
-	 */
+	/** Inspect a Blueprint function and refuse candidate promotion without editing; promotion is currently unavailable because the implementation does not assign the calculated value to the new local; does not compile or save.
+     * Pure-node classification is not proof of deterministic behavior or equivalent execution.
+     * @param Asset Required Blueprint asset path or unique asset name, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed and empty is refused. Prefer a full path to avoid ambiguity.
+     * @param GraphName Function graph name, matched without case sensitivity after trimming whitespace; event graphs are refused. Pass empty to select the first function graph in the Blueprint's stored order; the result names the selected graph. Prefer an explicit name.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
 

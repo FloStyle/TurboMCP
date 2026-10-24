@@ -246,7 +246,7 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
 	{
 		OutError = FString::Printf(
 			TEXT("%s has no function graphs, and a local variable belongs to a function. Add a ")
-			TEXT("function with E-FUNCTION-ADD first."), *Resolved.ObjectPath);
+			TEXT("function with EditTurboMCPFunctionAdd first."), *Resolved.ObjectPath);
 		return false;
 	}
 
@@ -424,7 +424,7 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 		if (Candidate.bSafe) { ++Safe; }
 
 		Out += FString::Printf(TEXT("\n\n%s  %s  (%s)"),
-			Candidate.bSafe ? TEXT("SAFE  ") : TEXT("UNSAFE"),
+			Candidate.bSafe ? TEXT("CANDIDATE") : TEXT("EXCLUDED"),
 			*Candidate.Title, *Candidate.ClassName);
 		Out += FString::Printf(TEXT("\n    %s, read %d time(s)"),
 			*Candidate.Key, Candidate.ConsumerCount);
@@ -437,8 +437,8 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 		if (Candidate.bSafe)
 		{
 			Out += FString::Printf(
-				TEXT("\n    everything feeding it is a function input or a literal, so capturing ")
-				TEXT("it once cannot change the result. Would become local '%s'."),
+				TEXT("\n    input tracing found no excluded source; this does not prove the calculation ")
+				TEXT("is deterministic. Proposed local name: '%s'; promotion is unavailable."),
 				*Candidate.ProposedName);
 		}
 		else
@@ -448,8 +448,8 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 	}
 
 	Out += FString::Printf(
-		TEXT("\n\nthe edit would promote %d of %d and leave the rest. An unsafe value is NEVER ")
-		TEXT("promoted: capturing it once is not the same as computing it twice."),
+		TEXT("\n\n%d of %d candidates passed input tracing, not behavioral verification. ")
+		TEXT("EditTurboMCPLocalVars currently refuses promotion: calculated-value assignment is incomplete; no graph changes were made."),
 		Safe, InPlan.Candidates.Num());
 
 	if (Safe == 0)
@@ -462,6 +462,13 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPLocalVars::Apply(const FPlan& InPlan)
 {
+    // Until assignment and execution placement are implemented, replacing the calculation
+    // with a getter would return an unassigned local. Refuse before any mutation.
+    if (!InPlan.Candidates.IsEmpty())
+    {
+        return TEXT("unchanged: local-variable promotion is unavailable; the implementation does not assign the calculated value to the local; no graph changes were made; use the Unreal editor to create and assign the local manually; compile=not_run; save=not_requested");
+    }
+
 	FTurboMCPAssetResolver::FResolved Resolved;
 	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InPlan.Asset, Resolved);
 	if (!ResolveError.IsEmpty())
