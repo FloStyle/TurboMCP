@@ -687,3 +687,17 @@ Confirmed output defects found in this run, not yet fixed:
 - Its headline longest wire is 1120, while the ranked pin-to-pin list starts at
   955.6; the two measurements need consistent geometry or explicit distinct labels.
 Prioritize these deterministic contradictions before speculative rendering fixes.
+
+## Layout report contradictions resolved — 2026-10-24
+
+286e55e fixes both contradictions observed in 8be8071c582d40c1905c42f8342bb6ef.
+The ranked wire list now uses LayoutReport::PinPosition, matching the summary's
+documented estimated geometry. No tidy algorithm or placement behavior changed.
+An empty cross-box summary no longer becomes a finding.
+
+Supervised 53fcfc18d19941c5a8876697713e0ac1 passed build and test-layout-output.
+The eight-link, zero-comment fixture verifies no cross-box finding, ranked
+maximum matching the headline longest wire, and ranked sum matching the total
+within display rounding. Existing numeric refusal controls passed.
+Both implementation defects are closed with focused runtime evidence. This
+does not establish rendered-spline accuracy, all graph types or CP-14 resolution.
