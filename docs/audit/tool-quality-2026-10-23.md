@@ -384,3 +384,9 @@ Supervised run fca73020a7b84f4084f0c52f04d1cf7c passed build, test-enum-add and 
 ## Enum package-path validation — 2026-10-24
 
 Implemented a0f7e93: shared planning validates paths with stock FPackageName::IsValidLongPackageName before package creation; refusal explains the rejected path and accepted package syntax. Added eight live negative checks across preview/edit for object suffixes, spaces, file extensions and an unknown mount. Supervised run 3bba19978187486187aec1e1a31134dc passed build and test-enum-add, including all eight checks. This closes the malformed-path gap identified in the preceding review, not fresh creation or partial-failure coverage. Path syntax/mount validation does not establish filesystem write permission or successful saving.
+
+## Fresh enum creation — 2026-10-24
+
+Native regression 61e3189, catalog 48b3854: uniquely named unsaved enum created through production Plan/Apply; independent UObject inspection checks three names, consecutive numeric values, requested display text, entry count including sentinel and dirty package state. Preview absence and no-object creation are checked; a second request is refused and preserves count, first name and display text. Owned asset registry entry/object/package are cleaned up without saving.
+
+Supervised run 220866a29f8842609306acaca73a7962 passed build and TurboMCP.Enums.FreshCreation (one native test, zero failures). This closes the fresh in-memory happy-path coverage gap from the earlier existing-fixture suite. It does not certify save/reload, all display-name inputs, injected partial creation failures or every collision invariant. Those remain separate coverage gaps.
