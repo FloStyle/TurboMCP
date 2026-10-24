@@ -198,6 +198,10 @@ public:
     /** Execute the same mutation pipeline on a transient graph, never the live asset. */
     static bool Preflight(const FPlan& InPlan, FString& OutReport, FString& OutError, FPlan* OutMeasuredPlan = nullptr);
 private:
+#if WITH_DEV_AUTOMATION_TESTS
+    // Exercise failures after scratch preflight without exposing a runtime bypass.
+    friend class FTurboMCPAppendFailureTest;
+#endif
     static bool ExecuteGraph(const FPlan& InPlan, UBlueprint* Blueprint, UEdGraph* Graph,
         FString& OutReport, FString& OutError, bool bScratch, bool bJoinCallerTransaction, TArray<UEdGraphNode*>* OutCreatedByForm = nullptr);
 
