@@ -603,20 +603,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPToolset();
 
-	/**
-	 * Work out what creating an enum asset would do, without creating it.
-	 *
-	 * Pass a package path such as `/Game/Tests/MyEnum` and the values, as a comma-separated
-	 * list where each entry is `Name` or `Name=Display Name`.
-	 *
-	 * Prints every value with its display name when it has one, and says whether the asset
-	 * already exists, because that fact decides whether the edit will be refused. A value
-	 * whose name is not a usable identifier is refused by name, a duplicate value is
-	 * refused, and `_MAX` is refused because every user-defined enum carries one already.
-	 *
-	 * This and its Edit twin share one code path up to the write, so the two cannot disagree
-	 * about what would happen (`D-02`). It writes nothing.
-	 */
+	/** Inspect a proposed new enum and check for an existing asset; does not create, compile or save an asset.
+     * Existing assets are not overwritten. Preview does not guarantee creation or that the engine will accept every display name; edit reads names, numeric values and requested display names back. Failed creation may leave an unsaved asset for inspection.
+     * @param Path Required new package path including the asset name, for example /Game/Enums/E_Colour; do not supply an object suffix or filesystem extension. Surrounding whitespace is trimmed; empty and relative paths are refused. Use a writable content mount.
+     * @param Values Required comma- or pipe-separated entries in Name or Name=Display Name format, for example Red,Green=Dark Green,Blue. Names start with a letter or underscore and contain only letters, digits or underscores; duplicates ignoring case and _MAX are refused. Values receive consecutive integers starting at zero. Empty input is refused; empty separators are skipped. Empty display text uses the engine-generated display name. Commas and pipes cannot be escaped inside display text.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPEnumAdd(const FString& Path, const FString& Values);
 
@@ -1266,23 +1257,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPSaveWithoutThumbnail(const FString& Assets);
 
-	/**
-	 * Create an enum asset from a list of values.
-	 *
-	 * Pass a package path such as `/Game/Tests/MyEnum` and the values, as a comma-separated
-	 * list where each entry is `Name` or `Name=Display Name`. The same inputs, validated the
-	 * same way, as `P-ENUM-ADD`, because the two share one code path up to the write.
-	 *
-	 * REFUSES an existing path rather than overwriting it: a name someone else chose is not
-	 * this tool's to replace, which is what `P8` means by never leaving the user worse off.
-	 * The refusal opens with `unchanged:` so a caller can tell it from a failure (`P4`).
-	 *
-	 * The enum is created through the editor's own `FEnumEditorUtils`, so it stays editable
-	 * in the enum editor rather than being a hand-built asset the editor cannot open. The
-	 * result says how many names were set and how many display names, and it says plainly
-	 * that the asset is NOT yet saved: an unsaved asset dies with the editor, which has cost
-	 * this project three times.
-	 */
+	/** Create a new user-defined enum in memory and mark its package dirty; editor enum callbacks may run; no tool-owned undo transaction, explicit Blueprint compile or save is performed.
+     * Existing assets are not overwritten. Preview does not guarantee creation or that the engine will accept every display name; edit reads names, numeric values and requested display names back. Failed creation may leave an unsaved asset for inspection.
+     * @param Path Required new package path including the asset name, for example /Game/Enums/E_Colour; do not supply an object suffix or filesystem extension. Surrounding whitespace is trimmed; empty and relative paths are refused. Use a writable content mount.
+     * @param Values Required comma- or pipe-separated entries in Name or Name=Display Name format, for example Red,Green=Dark Green,Blue. Names start with a letter or underscore and contain only letters, digits or underscores; duplicates ignoring case and _MAX are refused. Values receive consecutive integers starting at zero. Empty input is refused; empty separators are skipped. Empty display text uses the engine-generated display name. Commas and pipes cannot be escaped inside display text.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPEnumAdd(const FString& Path, const FString& Values);
 

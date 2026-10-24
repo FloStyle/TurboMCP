@@ -13,15 +13,7 @@
 
 #include "TurboMCPEnumAdd.h"
 
-/**
- * `P-ENUM-ADD` and `E-ENUM-ADD`.
- *
- * ONE CODE PATH, TWO OUTCOMES. The plan is built and validated by `FTurboMCPEnumAdd::Plan`,
- * the Preview prints it, and the Edit applies exactly that plan. `02_PRINCIPLES.md` `D-02`
- * requires a Preview and its Edit twin to share everything up to the write step, because a
- * preview that computes something different from the edit is worse than no preview.
- */
-
+// Preview and edit share input parsing; edit checks the current target again.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPEnumAdd(
 	const FString& Path, const FString& Values)
 {
@@ -38,8 +30,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPEnumAdd(
 FString UTurboMCPEditToolset::EditTurboMCPEnumAdd(
 	const FString& Path, const FString& Values)
 {
-	// The SAME plan the preview builds, from the same function, so a caller that previewed
-	// and then edited cannot be surprised by a difference between them.
+	// Rebuild the plan for this call; an earlier preview does not reserve the target.
 	FTurboMCPEnumAdd::FPlan Plan;
 	FString Error;
 	if (!FTurboMCPEnumAdd::Plan(Path, Values, Plan, Error))

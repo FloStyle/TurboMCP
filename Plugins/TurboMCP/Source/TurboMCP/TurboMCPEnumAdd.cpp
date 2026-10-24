@@ -168,11 +168,11 @@ FString FTurboMCPEnumAdd::RenderPreview(const FPlan& InPlan)
 	{
 		Out += FString::Printf(
 			TEXT("\nthis asset already exists: the edit will REFUSE rather than overwrite ")
-			TEXT("it. Pick another path, or delete the asset first."));
+			TEXT("it. Choose a different package path."));
 	}
 	else
 	{
-		Out += TEXT("\nthis asset does not exist yet, so the edit will create it.");
+		Out += TEXT("\nthis asset does not exist yet; creation can still fail if the path or display names are rejected.");
 	}
 
 	Out += TEXT("\n; the enum is created through the editor's own ")
@@ -192,7 +192,7 @@ FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 	{
 		return FString::Printf(
 			TEXT("unchanged: %s already exists, so it was not touched. Pick another path, ")
-			TEXT("or delete the asset first."), *InPlan.PackagePath);
+			TEXT("using a different asset name."), *InPlan.PackagePath);
 	}
 
 	UPackage* Package = CreatePackage(*InPlan.PackagePath);
@@ -217,7 +217,7 @@ FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 	if (UserEnum == nullptr)
 	{
 		return FString::Printf(
-			TEXT("error: %s was created but is not a user-defined enum, so it cannot be ")
+			TEXT("partial: %s was created but is not a user-defined enum, so it cannot be ")
 			TEXT("edited in the enum editor."), *InPlan.AssetName);
 	}
 
@@ -265,9 +265,8 @@ FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 		// means the enum is in a state the caller cannot use. Saying so beats reporting a
 		// success whose names may not have landed.
 		return FString::Printf(
-			TEXT("error: %s was created but the engine refused the value names, because ")
-			TEXT("its _MAX entry is not in a state the engine accepts. The asset exists ")
-			TEXT("and is editable; set the values in the enum editor."), *InPlan.AssetName);
+			TEXT("partial: %s was created but the engine rejected its value names; the cause was not verified. ")
+			TEXT("Inspect the unsaved asset before saving or retrying; no rollback was attempted."), *InPlan.AssetName);
 	}
 
 	int32 Renamed = 0;
@@ -314,15 +313,15 @@ FString FTurboMCPEnumAdd::Apply(const FPlan& InPlan)
 
 	FString Out = bVerified
 		? FString::Printf(TEXT("changed: created enum %s"), *InPlan.PackagePath)
-		: FString::Printf(TEXT("error: enum %s was created but its names, values or display names did not match the request; the unsaved asset remains for inspection"), *InPlan.PackagePath);
+		: FString::Printf(TEXT("partial: enum %s was created but its names, values or display names did not match the request; inspect the unsaved asset before saving or retrying; no rollback was attempted"), *InPlan.PackagePath);
 	Out += FString::Printf(TEXT("\nrequested values: %d; observed entries including _MAX: %d"), InPlan.Values.Num(), UserEnum->NumEnums());
 	Out += FString::Printf(TEXT("\nnames set: %d"), Renamed);
 	if (RequestedDisplays > 0)
 	{
 		Out += FString::Printf(TEXT("\ndisplay names set: %d"), ShownAs);
 	}
-	Out += TEXT("\n; the asset is loaded but NOT saved. Call E-SAVE to write it to disk, ");
-	Out += TEXT("because an unsaved asset dies with the editor.");
+	Out += TEXT("\nThe asset is loaded but not saved; inspect the result before calling EditTurboMCPSave. ");
+	Out += TEXT("Unsaved changes will be lost when the editor closes.");
 
 	return Out;
 }
