@@ -4,6 +4,7 @@ An oversized minimum manifest is retained with a warning, not refused or
 recursively reduced again. This suite does not assert a hard response limit.
 """
 
+import json
 import os
 import sys
 
@@ -47,8 +48,8 @@ def main():
     floor = load(session, "manifest", budget="1")
     check("manifest with a budget of one character reports its limit", FLOOR_MARKER in floor,
           next((line.strip() for line in floor.splitlines() if FLOOR_MARKER in line), "")[:110])
-    check("the refusal names the asset", ASSET in floor)
-    check("the refusal says the budget cannot be met rather than returning empty", len(floor.strip()) > 0)
+    check("the budget warning names the asset", ASSET in floor)
+    check("the budget warning is nonempty", len(floor.strip()) > 0)
 
     # 3. The ladder above the floor still reduces rather than refusing, so the floor has not swallowed the good path.
     reduced = load(session, "bodies", budget="2000")
@@ -61,6 +62,25 @@ def main():
     for invalid in ("0", "-1", "1.5", "2147483648"):
         answer = load(session, "manifest", invalid)
         check("invalid budget is refused: " + invalid, answer.startswith("error:"), answer[:200])
+
+    for detail in ("manifest", "signatures", "bodies", "full"):
+        args = {"assets": ASSET, "detail": detail, "graphFilter": "", "format": "json", "tokenBudget": "1000000"}
+        normal = session.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad", args)
+        start = normal.find("{")
+        check("JSON control contains a document: " + detail, start >= 0, normal[:200])
+        if start >= 0:
+            document, _ = json.JSONDecoder().raw_decode(normal[start:])
+            check("JSON control is not an error: " + detail, "error" not in document, str(document)[:200])
+        args["tokenBudget"] = "1"
+        refusal = session.call(READ_TOOLSET, "ReadTurboMCPBlueprintLoad", args)
+        start = refusal.find("{")
+        check("JSON refusal contains an error document: " + detail, start >= 0, refusal[:200])
+        if start >= 0:
+            error, _ = json.JSONDecoder().raw_decode(refusal[start:])
+            message = str(error)
+            check("JSON refusal names requested detail: " + detail, "detail '" + detail + "'" in message, message)
+            check("JSON refusal provides budget recovery: " + detail, "Raise TokenBudget" in message and "does not enforce a hard response limit" in message, message)
+        check("JSON budget refusal does not count as a read: " + detail, "read: 0 of 1" in refusal, refusal[:100])
 
     print("")
     if failures:

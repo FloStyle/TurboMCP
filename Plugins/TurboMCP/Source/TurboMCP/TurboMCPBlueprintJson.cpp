@@ -419,22 +419,18 @@ FString FTurboMCPBlueprintJson::Write(const UBlueprint* InBlueprint,
 		TJsonWriterFactory<TCHAR, TPrettyJsonPrintPolicy<TCHAR>>::Create(&Out);
 	FJsonSerializer::Serialize(Root, Writer);
 
-	// THE BUDGET, ENFORCED AS A REFUSAL RATHER THAN A CUT.
-	//
-	// The document is complete at this point, so it can be measured honestly. Cutting it
-	// here would produce something that does not parse, and a caller holding an unparseable
-	// document cannot even read the explanation of what went wrong. Naming the exact call
-	// that fits is what `03_TOOLS.md` asks a reduction to end with, and it works the same
-	// way here.
+	// Refuse oversized documents intact; truncation would produce invalid JSON.
 	if (InBudgetChars > 0 && Out.Len() > InBudgetChars)
 	{
+		const TCHAR* DetailName = InDetailLevel == 0 ? TEXT("manifest")
+			: InDetailLevel == 1 ? TEXT("signatures")
+			: InDetailLevel == 2 ? TEXT("bodies") : TEXT("full");
 		OutError = FString::Printf(
-			TEXT("the JSON document for detail '%s' is %d characters and the budget is %d, ")
-			TEXT("so it was refused rather than cut. A cut JSON document does not parse, ")
-			TEXT("which is worse than no document. Ask for a lower detail level, or use the ")
-			TEXT("text format, whose writer steps a graph's detail down to fit."),
-			InDetailLevel == 0 ? TEXT("manifest") : TEXT("signatures"),
-			Out.Len(), InBudgetChars);
+			TEXT("JSON output for detail '%s' requires %d characters, exceeding the per-asset budget of %d. ")
+			TEXT("The document was not returned or truncated. Raise TokenBudget or narrow GraphFilter. ")
+			TEXT("For smaller output, request manifest detail; if already at manifest, increase the budget. ")
+			TEXT("Format=read can reduce detail, but does not enforce a hard response limit."),
+			DetailName, Out.Len(), InBudgetChars);
 		return FString();
 	}
 
