@@ -308,3 +308,9 @@ Supervised run bfae987246f049419105ae01c326df68 passed build, test-override-add 
 Implemented in b789b98: documented both parameters and the destructive scope in compact help. Event deletion leaves other nodes, potentially disconnected; function deletion removes the entire graph and does not repair callers. Results explain undo transactions, skeleton/callback effects, compile/save limits and current follow-up tool names. If the editor still reports an implementation, output explicitly states that removal is not fully verified. Obsolete roadmap commentary removed.
 
 Supervised run ca8f4d6a74fb4dc0b40f33eb2994aa1d passed build, event override creation/removal and revised message assertions, plus live help inventory for all 125 tools. Function removal, undo restoration and partial-failure paths were not exercised by this suite; those coverage gaps remain open.
+
+## Function creation quality review
+
+Implemented in d543702: four parameter descriptions, compact execution/compile/save/undo limitations, current tool names and removal of guaranteed reference-resolution claims. Name-mismatch, missing-entry and missing-result cleanup now check graph membership before claiming graph removal; messages distinguish graph cleanup from restoration of other asset effects.
+
+Run 24fb97549c434f89ad0c00fd909997a7 built successfully but exposed an obsolete test parser: manifest graph names now include kind annotations. Corrected in 1971a93 while preserving exact-name comparisons. Rerun 542d31e12ed845e4bff44416d675fd2b passed build, test-function and all 125 live help checks. Function creation/removal, signatures and ordinary refusals were exercised. Cleanup-failure injection, caller reconstruction losses and undo remain unverified; parameter type documentation still needs full container syntax coverage. Overall quality work remains incomplete.
