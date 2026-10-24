@@ -148,3 +148,9 @@ Implemented d31fc8d: zero recorded hits no longer claim the nodes never executed
 Run 0866169ac48a4f9293c1f29552c87066 passed play-check (28 checks), but trace omitted Revision and compact help dropped effects after the first sentence. Run 7c84cc5124bd43bdab5acfdcf8c94421 passed all-tool help after the summary correction, but trace still omitted EntryFilter. These are recorded failures, not runtime trace acceptance. Latest trace/help verification remains pending.
 
 Run b6d424f9f8994201b696e831bb055d3d passed build, trace behavior checks and all 125 schema/help checks at d31fc8d. This includes actual fixture event delivery and read-action refusals. Wider trace behavior and other tool coverage remain separate.
+
+## Blueprint lint output and budgets (2026-10-24)
+
+Implemented def08ab: lint input descriptions distinguish estimated-token finding budget from total output; strict integer parsing rejects fractions/signs/overflow. Character-budget arithmetic uses int64. Truncated results retain every check summary, and the header counts checks that actually ran. Mixed asset refusals are marked partial. Findings use callable PreviewTurboMCPGraphDead guidance and avoid certifying assets as defect-free. Removed Read-class harmlessness claims.
+
+Regression now covers invalid and maximum budgets, retained summaries with a tiny budget, and current GraphLoad required fields. Hard total-output caps are not implemented: headings/counts and whole-line overshoot remain explicitly outside the finding budget. Verification pending.
