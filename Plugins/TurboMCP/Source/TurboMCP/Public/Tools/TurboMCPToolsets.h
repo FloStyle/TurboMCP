@@ -1730,7 +1730,14 @@ public:
     static FString EditTurboMCPGraphSequence(const FString& Asset,const FString& GraphName,const FString& Groups,bool bSplitValues = true);
 
 
-    /** Set one unconnected input pin default by exact reader NodeId and pin name. Validates before mutation, captures undo and marks the Blueprint dirty. Does not compile or save. */
+    /** Set one unconnected K2 input pin default; records an undo transaction and marks the Blueprint dirty; schema callbacks may run and object literals may load assets; does not explicitly compile or save.
+     * Validates the literal before editing and reads the pin back afterward. A failed read-back attempts to undo only this tool's transaction; restoration is not verified.
+     * @param Asset Required Blueprint asset path or unique asset name accepted by the asset resolver; empty is invalid. Prefer a full path such as /Game/Blueprints/BP_Player.
+     * @param GraphName Required graph name from the reader, such as EventGraph; matches the whole name without case sensitivity. Empty or ambiguous names are refused; whitespace is not trimmed.
+     * @param NodeId Required exact reader node ID, with or without its GUID suffix; surrounding whitespace is trimmed. Empty values, display labels and numeric indices are not supported.
+     * @param PinName Required exact input pin name from the reader; case-sensitive and not trimmed. The pin must be unconnected, non-execution, non-orphaned and accept editable defaults; empty is not a default selector.
+     * @param Value Required literal in the pin type's Unreal schema format, for example 42 for an integer or true for a Boolean. Empty text is passed to the schema as a literal, not a universal reset command; acceptance depends on the pin type. No value is supplied automatically.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPPinDefault(const FString& Asset, const FString& GraphName,
         const FString& NodeId, const FString& PinName, const FString& Value);

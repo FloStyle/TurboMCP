@@ -91,8 +91,8 @@ FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
     Transaction.Reset(); // Finalize once, then undo only the record created by this edit.
     const int32 Index = Buffer ? Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1 : -1;
     const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
-    const bool Restored = OwnedId.IsValid() && Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
-    return Restored
-        ? TEXT("unchanged: pin default read-back failed; rollback=complete; save=not_requested")
+    const bool UndoSucceeded = OwnedId.IsValid() && Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
+    return UndoSucceeded
+        ? TEXT("partial: pin default read-back failed; undo succeeded but restoration was not verified; inspect the Blueprint before saving or retrying; rollback=not_confirmed; save=not_requested")
         : TEXT("partial: pin default read-back failed; rollback=not_confirmed; inspect before retrying; save=not_requested");
 }
