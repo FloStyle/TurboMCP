@@ -146,7 +146,7 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
             for (UEdGraphPin* Other : Pin->LinkedTo)
             {
                 if (!Other || !Other->GetOwningNodeUnchecked()) continue;
-                const double Length = FVector2D::Distance(FTurboMCPGraphTidy::AlignmentPinPosition(Pin), FTurboMCPGraphTidy::AlignmentPinPosition(Other));
+                const double Length = FVector2D::Distance(FTurboMCPLayoutReport::PinPosition(Pin), FTurboMCPLayoutReport::PinPosition(Other));
                 Longest.Add({Length, FString::Printf(TEXT("%s.%s -> %s.%s"),
                     *TurboMCPNodeId::MakeForNode(Node,true), *Pin->PinName.ToString(),
                     *TurboMCPNodeId::MakeForNode(Other->GetOwningNodeUnchecked(),true), *Other->PinName.ToString())});

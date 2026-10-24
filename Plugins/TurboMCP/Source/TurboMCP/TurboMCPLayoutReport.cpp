@@ -682,7 +682,8 @@ FTurboMCPLayoutReport::FReport FTurboMCPLayoutReport::Measure(
         CrossBoxFinding.NodeIds.AddUnique(Wire.SourceId);
         CrossBoxFinding.NodeIds.AddUnique(Wire.TargetId);
     }
-    Report.Findings.Add(MoveTemp(CrossBoxFinding));
+    // An empty diagnostic summary is not a layout finding.
+    if (!CrossBoxWires.IsEmpty()) Report.Findings.Add(MoveTemp(CrossBoxFinding));
 
 	if (Report.bHasNoWires)
 	{

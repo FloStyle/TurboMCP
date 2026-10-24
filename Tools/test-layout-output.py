@@ -1,4 +1,5 @@
 """Validate capture numeric refusals and layout text on a disposable fixture using a rendered editor."""
+import re
 from tmcp import Session, LOOK_TOOLSET
 session = Session()
 session.connect()
@@ -6,6 +7,15 @@ args = {"asset": "/Game/Tests/BP_NodeTest", "graphName": "EventGraph"}
 report = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutReport", args)
 assert report.startswith("look:"), report
 assert "not the rendered wire curve" in report and "not a visual-quality score" in report, report
+# This fixture has eight links and no boxes; all ranked wires fit in the top ten.
+counts = re.search(r"counts: \d+ non-comment node\(s\).*?, (\d+) pin-link wire\(s\), (\d+) comment box", report)
+assert counts and int(counts[2]) == 0, report
+assert "cross-box-wires:" not in report, report
+summary = re.search(r"total wire length: ([0-9.]+)  \(longest single wire: ([0-9.]+)\)", report)
+ranked = [float(value) for value in re.findall(r"^  \d+\. ([0-9.]+) units:", report, re.M)]
+assert summary and ranked and len(ranked) == int(counts[1]) <= 10, report
+assert abs(float(summary[2]) - max(ranked)) <= 0.6, report
+assert abs(float(summary[1]) - sum(ranked)) <= 0.5 + 0.05 * len(ranked), report
 positions = session.call(LOOK_TOOLSET, "LookTurboMCPGraphPositions", args)
 assert "node positions" in positions and "width=" in positions, positions
 for value in (-1, 1025):
