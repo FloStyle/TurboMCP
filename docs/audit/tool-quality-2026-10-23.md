@@ -701,3 +701,21 @@ maximum matching the headline longest wire, and ranked sum matching the total
 within display rounding. Existing numeric refusal controls passed.
 Both implementation defects are closed with focused runtime evidence. This
 does not establish rendered-spline accuracy, all graph types or CP-14 resolution.
+
+## Selection diagnostic repair — 2026-10-24
+
+3afa806 / 10f644b replaces ProbeSelection's destructive clearing with restoration
+of the exact initial selection set on success and selection-count failure.
+Unsupported non-node initial selection refuses before changes. Duplicate requested
+IDs now select one node rather than causing a false count failure. Result text
+states temporary selection and restoration, not a false no-selection-change claim.
+
+Supervised efd7d18189d44b3fbeb63c77c0560bb8 passed build and test-capture-framing:
+duplicate-ID probe succeeded, initial empty selection was restored, subsequent
+selection capture refused for empty selection, and dirty snapshot stayed zero.
+Initial build 0dfdb7f269b0465f895e22434a11d2d1 caught UObject/UEdGraphNode setter
+mismatch; 10f644b added pre-validation and the typed restore.
+
+Implementation is in main; validation is PARTIAL. Nonempty initial-selection
+restoration and forced failure restoration still need native evidence. Do not
+close the broader selection-preservation acceptance or CP-14 investigation.
