@@ -1989,6 +1989,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureSelectionTest.cpp",
             "Tools/test-capture-selection-state.py"
           ]
+        },
+        "quality-widget-preview-evidence": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
+            "Tools/test-widget-preview.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
