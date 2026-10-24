@@ -242,3 +242,9 @@ Supervised execution 7d1d3451dba6478abf017efc6684df8a passed the stock-engine bu
 Implemented in 2260ec9, 047f71b and 852fa6b. Replaced obsolete capture narrative with five parameter descriptions covering mode-dependent meanings, required empty strings, limits and examples. Corrected the false fixed-resolution promise for empty Size. Compact help now retains asset/UI/callback effects, compile/save limits and lack of automatic undo in its first sentence.
 
 Supervised run 5efe58f066964de3a470051e663f17d8 passed stock build and live schema/help inventory for all 125 tools; 16 fixture files restored. Earlier checks caught warnings lost by first-line/first-sentence summarization and were corrected. Parameter-description gaps now total 183. This verifies help presence, not all capture modes or all tool behaviors. Capture support-table prose and selector refusal messages still need review; permissive comment-index parsing is a remaining implementation finding.
+
+## Capture comment-index refusal
+
+Implemented in d084197: both public box capture modes validate Target as a nonnegative int32 written in digits before asset resolution. Fractions, signs and overflow cannot silently select a different comment. Refusals name LookTurboMCPLayoutReport and ReadTurboMCPNodeFind instead of obsolete aliases.
+
+Supervised run 593b3f668e9a4882b3e1b7f50fbf776c passed the stock build and test-layout-output, including 10 malformed-index refusals, zero/max-int32 parser controls for both modes, prior size/hop checks and rendered layout checks. All 16 fixture files restored. Parser controls stop at asset resolution; they do not certify successful box captures or comment ordering. The internal selector still uses its older conversion after the public entry-point guard; support-table and remaining selector prose review are pending.
