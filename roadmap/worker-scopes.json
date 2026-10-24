@@ -1508,6 +1508,15 @@
             "Tools/test-tool-text-inventory.py"
           ],
           "new_files": []
+        },
+        "quality-checkout-output": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControl.cpp",
+            "Tools/test-vcs.py"
+          ],
+          "new_files": [
+            "Tools/test-checkout-output.py"
+          ]
         }
       },
       "preserve_rows": []
