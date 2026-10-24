@@ -954,6 +954,31 @@ bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
     FString Error;
     if (!TestTrue(TEXT("Production plan"), FTurboMCPLocalVars::Plan(Blueprint->GetPathName(), Graph->GetName(), Plan, Error))) return false;
     TestEqual(TEXT("Two dependent repeated values"), Plan.Candidates.Num(), 2);
+    TArray<UK2Node_FunctionEntry*> CurrentEntries;
+    Graph->GetNodesOfClass(CurrentEntries);
+    UEdGraphPin* LiveParameter = ExactPin(CurrentEntries[0], TEXT("Number"), EGPD_Output);
+    if (!TestNotNull(TEXT("Live input resolved"), LiveParameter)) return false;
+    LiveParameter->PinType.bIsReference = true;
+    const FString ReferenceRefusal = FTurboMCPLocalVars::Apply(Plan);
+    TestTrue(TEXT("Reference parameter edit refused before mutation"), ReferenceRefusal.StartsWith(TEXT("unchanged:"))
+        && ReferenceRefusal.Contains(TEXT("reference parameter")));
+    TestEqual(TEXT("Reference refusal preserves node count"), Graph->Nodes.Num(), OriginalCount);
+    LiveParameter->PinType.bIsReference = false;
+    UEdGraphPin* ArithmeticInput = ExactPin(ExactNode(Graph, AddId), TEXT("A"), EGPD_Input);
+    ArithmeticInput->PinType.bIsReference = true;
+    const FString MutableRefusal = FTurboMCPLocalVars::Apply(Plan);
+    TestTrue(TEXT("By-value parameter passed by reference refused"), MutableRefusal.StartsWith(TEXT("unchanged:"))
+        && MutableRefusal.Contains(TEXT("inputs can be assigned or passed by reference")));
+    ArithmeticInput->PinType.bIsReference = false;
+    UEdGraphPin* Start = ExactPin(CurrentEntries[0], UEdGraphSchema_K2::PN_Then, EGPD_Output);
+    if (!TestTrue(TEXT("Fixture has one execution successor"), Start && Start->LinkedTo.Num() == 1)) return false;
+    UEdGraphPin* Continuation = Start->LinkedTo[0];
+    Start->BreakLinkTo(Continuation);
+    const FString ExecutionRefusal = FTurboMCPLocalVars::Apply(Plan);
+    TestTrue(TEXT("Disconnected entry refused"), ExecutionRefusal.StartsWith(TEXT("unchanged:"))
+        && ExecutionRefusal.Contains(TEXT("exactly one connected execution successor")));
+    TestEqual(TEXT("Entry refusal creates no locals"), CurrentEntries[0]->LocalVariables.Num(), 0);
+    Start->MakeLinkTo(Continuation);
     const FString Failure = ApplyLocalPlan(Plan, true);
     AddInfo(Failure);
     TestTrue(TEXT("Post-rewire failure reports unverified restoration"), Failure.Contains(TEXT("owned undo applied; restoration is unverified")));
