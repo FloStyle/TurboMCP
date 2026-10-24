@@ -1385,6 +1385,16 @@
             "Tools/test-tool-text-inventory.py"
           ],
           "new_files": []
+        },
+        "quality-asset-cost": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetCost.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetCostTools.cpp",
+            "Tools/test-asset-cost.py",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
