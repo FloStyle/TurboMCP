@@ -1613,6 +1613,13 @@
             "Tools/test-material-blocks.py"
           ],
           "new_files": []
+        },
+        "quality-pin-default-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
