@@ -352,3 +352,9 @@ Run cc166c05b88749f19146ff2edc55dac0 passed build, test-material-tidy and all 12
 487d4f5 documents both asset parameters, preview compilation/callback effects and edit additions/rewiring. Removed exact-rollback and rendered-equivalence claims from help/results and obsolete wrapper commentary. Failure text reports requested undo with restoration unverified; success text identifies expression/error checks rather than claiming equivalent rendering.
 
 Run c2ef1f85f0294487b38f0cea19887d79 passed build, test-material-label-promote and the 125-tool live help inventory. This is focused fixture evidence, not rollback-failure injection or equivalence across all materials. Material block-tool text remains pending.
+
+## Material block cleanup text
+
+bffe9b5/5c193aa document both asset parameters, preview compilation and destructive edit scope. Rollback success wording now explicitly covers expression identities only, not links, values, layout or other state. Failure messages direct the caller to inspect rollback evidence before retrying or saving. Success reports bounded checks rather than rendered equivalence. Removed obsolete wrapper commentary and user-facing D-17 references.
+
+7798dadc12dc4f3fa9a87e2727253935 passed build, test-material-blocks and all 125 live help checks. Final failure-wording cleanup compiled in be4dac61b6fb44969dbd071248efb74c. Failure injection and full restoration remain unverified; no broad material behavior certification is claimed.
