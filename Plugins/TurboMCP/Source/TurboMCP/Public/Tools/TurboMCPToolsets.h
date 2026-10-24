@@ -924,8 +924,19 @@ public:
 		const FString& KeepOld,
 		const FString& Options = TEXT(""));
 
-	/** Preview repointing every reader of one output to an existing or newly created source. */
-	UFUNCTION(meta = (AICallable))
+	/**
+     * Plan moving consumers to another output; loads the Blueprint and may construct a probe node, without applying links, compiling or saving.
+     * Both selected pins are outputs. Every consumer of SourcePin is redirected; this does not connect an output to an input or transfer the source node's other inputs/defaults. Inspect the preview and read back the graph after editing.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
+     * @param GraphName Required unique existing graph name, e.g. EventGraph. Empty, missing or ambiguous names are refused.
+     * @param SourceNodeId Required source reader node ID in the named graph. Empty or unresolved IDs are refused.
+     * @param SourcePin Required exact output pin name, case-sensitive and not trimmed. Must have linked consumers. Example: ReturnValue when exposed by the source node.
+     * @param TargetNodeId Existing target reader node ID, or empty to create a node using TargetTypeId. Must differ from SourceNodeId. A nonempty ID takes precedence over TargetTypeId.
+     * @param TargetTypeId Supported creation type ID from discovery; required only when TargetNodeId is empty. Empty is valid with an existing target. Copy the exact type ID; unsupported types are refused.
+     * @param TargetPin Required exact output pin name on the existing or new target, case-sensitive and not trimmed. Must be compatible with every source consumer. Example: ReturnValue; this is not an execute input.
+     * @param KeepSource Required boolean text: true/1 retains the source; false/0 requests deletion. Empty defaults to true; whitespace trimmed and true/false case-insensitive. Other values refuse. Deletion refuses protected nodes or links on other source pins.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphRepoint(
 		const FString& Asset, const FString& GraphName, const FString& SourceNodeId,
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
@@ -1528,8 +1539,19 @@ public:
 		const FString& KeepOld,
 		const FString& Options = TEXT(""));
 
-	/** Repoint every reader of one output to an existing or newly created source in one transaction. */
-	UFUNCTION(meta = (AICallable))
+	/**
+     * Move consumers to another output, optionally creating a target and deleting the source, in one undo transaction; does not compile or save.
+     * Both selected pins are outputs. Every consumer of SourcePin is redirected; this does not connect an output to an input or transfer the source node's other inputs/defaults. Inspect the preview and read back the graph after editing.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
+     * @param GraphName Required unique existing graph name, e.g. EventGraph. Empty, missing or ambiguous names are refused.
+     * @param SourceNodeId Required source reader node ID in the named graph. Empty or unresolved IDs are refused.
+     * @param SourcePin Required exact output pin name, case-sensitive and not trimmed. Must have linked consumers. Example: ReturnValue when exposed by the source node.
+     * @param TargetNodeId Existing target reader node ID, or empty to create a node using TargetTypeId. Must differ from SourceNodeId. A nonempty ID takes precedence over TargetTypeId.
+     * @param TargetTypeId Supported creation type ID from discovery; required only when TargetNodeId is empty. Empty is valid with an existing target. Copy the exact type ID; unsupported types are refused.
+     * @param TargetPin Required exact output pin name on the existing or new target, case-sensitive and not trimmed. Must be compatible with every source consumer. Example: ReturnValue; this is not an execute input.
+     * @param KeepSource Required boolean text: true/1 retains the source; false/0 requests deletion. Empty defaults to true; whitespace trimmed and true/false case-insensitive. Other values refuse. Deletion refuses protected nodes or links on other source pins.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphRepoint(
 		const FString& Asset, const FString& GraphName, const FString& SourceNodeId,
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
