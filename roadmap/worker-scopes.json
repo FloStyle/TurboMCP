@@ -1375,6 +1375,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTrace.cpp"
           ],
           "new_files": []
+        },
+        "quality-lint-output": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLintTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLint.cpp",
+            "Tools/test-bp-lint.py",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
