@@ -1,30 +1,8 @@
-# ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LAY-13
-"""Exercise P-LOCAL-VARS and E-LOCAL-VARS against the running editor.
+"""Check LocalVars graph selection, empty-graph responses and input refusals.
 
-  T-LAY-13  promote safe values to local variables
-
-WHAT THIS SUITE CAN AND CANNOT PROVE, STATED UP FRONT
------------------------------------------------------
-A candidate needs a PURE node whose value is read MORE THAN ONCE. This plugin's tools do not create
-graph nodes, and the engine's `write_graph_dsl` **cannot express one**: a DSL expression is a tree,
-and a tree has no way to name an intermediate value, so every sub-expression it writes is consumed by
-exactly one parent. Measured against the DSL's own grammar and examples — `(fn DoubleIt (Value)
-(return (* Value 2)))` and the like — there is no form for "compute this once, read it twice".
-
-**So the test graphs contain NO candidate, and none can be made with the writers available.** The same
-wall `Q-9` hit with reroute knots and `Q-12` hit with disconnected groups.
-
-The consequence is stated rather than hidden: **the promotion path is not exercised here.** What IS
-exercised, and what these checks are for:
-
-- a graph that CANNOT hold local variables is refused BY THE PREVIEW, with the reason, rather than
-  being reported as "nothing to promote";
-- the event graph and a function graph are treated differently, which is the check that the engine's
-  own `DoesSupportLocalVariables` is being asked rather than a name being matched;
-- a function with no candidate reports WHY, which is a different answer from a failure (`P1`);
-- the edit refuses with `unchanged:` rather than reporting a change of zero.
-
-The promotion path is recorded as unverified in QUESTIONS.md (Q-13) with the route that would close it.
+This suite does not create a repeated-calculation candidate and does not certify
+promotion or the temporary candidate-refusal safeguard. See todo/67f00521.md.
+Run through the supervisor, which restores the protected fixture files.
 """
 
 import os
@@ -75,26 +53,19 @@ def main():
 
     print()
     print("=== a function graph is ACCEPTED, which is the other half of the same check ===")
-    # THE FUNCTION IS REUSED WHEN IT IS ALREADY THERE, because the engine's package does not release a
-    # function name at once: E-FUNCTION-ADD refuses to add a name that was just removed rather than
-    # creating a numbered graph, so removing and re-adding in one run cannot work. Measured: the first
-    # version removed its probe and re-added it, and the second run failed on NINE checks because the
-    # name was still held. The suite now ADDS ONLY WHEN MISSING and LEAVES THE FUNCTION BEHIND, which
-    # is the only shape that is re-runnable.
-    made = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
-                        {"asset": ASSET, "name": OWNED})
-    print(made)
-    print()
-    if made.startswith("changed:"):
-        check("a function graph was made to test with", True)
+    # Inspect before creating: a name collision is a refusal, not proof of reuse.
+    existing = preview(session, OWNED)
+    if existing.startswith("preview:") and OWNED in existing.splitlines()[0]:
+        check("the probe function exists and is selected explicitly", True)
     else:
-        # `unchanged:` means it already exists, which is the re-run case and is fine.
-        check("the probe function already exists and is reused",
-              made.startswith("unchanged:"), made[:120])
-        session.call(EDIT_TOOLSET, "EditTurboMCPFunctionRemove",
-                     {"asset": ASSET, "name": OWNED + "_0"})
-        session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
-                     {"asset": ASSET, "name": OWNED})
+        made = session.call(EDIT_TOOLSET, "EditTurboMCPFunctionAdd",
+                            {"asset": ASSET, "name": OWNED,
+                             "inputs": "", "outputs": ""})
+        print(made)
+        check("a function graph was made to test with", made.startswith("changed:"), made[:240])
+        if not made.startswith("changed:"):
+            print("RESULT: FAIL (fixture setup)")
+            return 1
 
     accepted = preview(session, OWNED)
     print(accepted)
