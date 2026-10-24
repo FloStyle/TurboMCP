@@ -744,19 +744,16 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 			Description->Category = FText::FromString(Variable.Category);
 		}
 
+		// Blueprint private access uses metadata, not the Details-panel editability flag.
 		if (Variable.bPrivate)
 		{
-			// THE ENGINE HAS NO `CPF_Private`. A Blueprint variable's "private" is expressed
-			// as `CPF_EditConst`, which is what stops it being edited from outside the
-			// Blueprint. `CPF_Private` and `CPF_BlueprintReadWrite` were both guessed at
-			// first and neither exists in UE 5.8; the full flag list in `ObjectMacros.h` is
-			// the authority, and "read write" is the ABSENCE of `CPF_BlueprintReadOnly`
-			// rather than a flag of its own.
-			Description->PropertyFlags |= CPF_EditConst;
+			FBlueprintEditorUtils::SetBlueprintVariableMetaData(
+				Blueprint, Name, nullptr, FBlueprintMetadata::MD_Private, TEXT("true"));
 		}
 		else
 		{
-			Description->PropertyFlags &= ~CPF_EditConst;
+			FBlueprintEditorUtils::RemoveBlueprintVariableMetaData(
+				Blueprint, Name, nullptr, FBlueprintMetadata::MD_Private);
 		}
 
 		if (Variable.bReadOnly)
