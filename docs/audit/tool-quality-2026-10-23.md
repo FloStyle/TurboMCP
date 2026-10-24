@@ -542,3 +542,9 @@ This proves the observed rollback case only. Full property/other-graph/callback 
 Native failure run 8d4bddd3634743119ac16e86bc4024c4 exposed a real copy-path defect: SpawnNodeFromTemplate duplicates an already allocated node then allocates pins again. Pin preservation failed and undo raised an asymmetric-link ensure. Repair 1345194 duplicates the existing node/pin tree once, clears inherited nonreciprocal link references before attachment and rebuilds planned links. No engine changes.
 
 Run e1e668a817214e49a58069012288e21c passed build and TurboMCP.Copy.PostMutationFailure: forced internal-link failure removes created copies, retains source identities/link/default/position; a fresh valid copy creates exactly two nodes without duplicate pins and with reciprocal destination-only links. This concrete duplicate-pin issue is implemented and tested on PrintString nodes. Other node classes, cross-Blueprint member references, paste lifecycle requirements and full callback/property rollback coverage remain open.
+
+## Copy contract and positive read-back — 2026-10-24
+
+9767b41 removes obsolete internal recommendations for SpawnNodeFromTemplate on allocated nodes and false claims that Apply never rechecks or automatically compiles. Notes describe current copy limitations and unsupported collapse accurately. Search found no remaining production SpawnNodeFromTemplate calls in the plugin.
+
+Native run f4fd23bd156646dd8dbd91e34529ab0d passed build and the strengthened Copy suite, including expected copied execution edge, copied default, new node identities, translation and retained original edge/count. This remains same-Blueprint PrintString coverage, not all node classes or cross-Blueprint acceptance.
