@@ -717,3 +717,54 @@ FString FTurboMCPLocalVars::Apply(const FPlan& InPlan)
 	Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
 	return Out;
 }
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Misc/AutomationTest.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPLocalAncestryTest,
+    "TurboMCP.LocalVars.Ancestry", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTurboMCPLocalAncestryTest::RunTest(const FString& Parameters)
+{
+    UEdGraph* Graph = NewObject<UEdGraph>(GetTransientPackage(), NAME_None, RF_Transient);
+    auto MakeKnot = [&]()
+    {
+        UK2Node_Knot* Node = NewObject<UK2Node_Knot>(Graph, NAME_None, RF_Transient);
+        Graph->AddNode(Node, false, false);
+        Node->CreateNewGuid();
+        Node->AllocateDefaultPins();
+        return Node;
+    };
+    UK2Node_Knot* Shared = MakeKnot();
+    UK2Node_Knot* Left = MakeKnot();
+    UK2Node_Knot* Right = MakeKnot();
+    Shared->GetOutputPin()->MakeLinkTo(Left->GetInputPin());
+    Shared->GetOutputPin()->MakeLinkTo(Right->GetInputPin());
+    TSet<UEdGraphNode*> Path;
+    FString Why;
+    TestTrue(TEXT("First shared ancestor accepted"), TracesToInputsOrLiterals(Left->GetInputPin(), nullptr, Path, Why, 0));
+    TestTrue(TEXT("Second shared ancestor is not a cycle"), TracesToInputsOrLiterals(Right->GetInputPin(), nullptr, Path, Why, 0));
+    TestEqual(TEXT("Completed traversal leaves no active ancestors"), Path.Num(), 0);
+
+    Left->GetOutputPin()->MakeLinkTo(Shared->GetInputPin());
+    TestFalse(TEXT("Actual recursion cycle refused"), TracesToInputsOrLiterals(Right->GetInputPin(), nullptr, Path, Why, 0));
+    TestTrue(TEXT("Cycle explanation present"), Why.Contains(TEXT("depends on itself")));
+    TestEqual(TEXT("Failed traversal clears active ancestors"), Path.Num(), 0);
+    Left->GetOutputPin()->BreakLinkTo(Shared->GetInputPin());
+    Shared->GetInputPin()->LinkedTo.Add(nullptr);
+    TestFalse(TEXT("Missing linked pin refused"), TracesToInputsOrLiterals(Right->GetInputPin(), nullptr, Path, Why, 0));
+    TestTrue(TEXT("Missing link explanation present"), Why.Contains(TEXT("missing pin link")));
+    Shared->GetInputPin()->LinkedTo.Remove(nullptr);
+
+    FTurboMCPLocalVars::FPlan Reused;
+    Reused.Candidates.AddDefaulted();
+    Reused.NodeCountBefore = 99;
+    Reused.bSupportsLocals = true;
+    TestFalse(TEXT("Empty asset refused"), FTurboMCPLocalVars::Plan(TEXT(""), TEXT(""), Reused, Why));
+    TestEqual(TEXT("Reused candidates reset"), Reused.Candidates.Num(), 0);
+    TestEqual(TEXT("Reused node count reset"), Reused.NodeCountBefore, 0);
+    TestFalse(TEXT("Reused support flag reset"), Reused.bSupportsLocals);
+    Graph->MarkAsGarbage();
+    return !HasAnyErrors();
+}
+#endif
