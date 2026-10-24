@@ -554,9 +554,9 @@ public:
         const FString& Execution = TEXT("deny"));
 
 	/**
-	 * Capture PNG; may load assets and change editor UI/view/selection; editor callbacks may run. No explicit asset compile/save. No automatic undo. Image is not proof of graph correctness.
+	 * Capture PNG; may load assets and change editor UI/view/selection; editor callbacks may run; no explicit asset compile/save; no automatic undo; image is not proof of graph correctness.
 	 * Requires a rendered editor. May load assets, open editor UI and change the view or selection.
-	 * Does not explicitly compile or save assets; editor callbacks may run. No automatic undo.
+	 * Does not explicitly compile or save assets; editor callbacks may run. no automatic undo.
 	 * Refusals can occur after opening UI. An image is not proof of graph correctness.
 	 * All five string arguments are required by the schema; supply empty strings where unused.
 	 * @param Asset Asset path or unique name, e.g. /Game/Tests/BP_NodeTest. Empty: allowed for screen; asset-editor lists supported kinds.
