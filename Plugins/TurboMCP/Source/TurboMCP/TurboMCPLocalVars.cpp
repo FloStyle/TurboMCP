@@ -27,6 +27,11 @@
 #include "UObject/Object.h"
 #include "UObject/UObjectGlobals.h"
 
+#include "Editor.h"
+#include "Editor/TransBuffer.h"
+#include "ScopedTransaction.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "Kismet2/CompilerResultsLog.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
 
@@ -485,16 +490,233 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 	return Out;
 }
 
+namespace
+{
+    UEdGraphNode* ExactNode(UEdGraph* Graph, const FGuid& Guid)
+    {
+        UEdGraphNode* Result = nullptr;
+        for (UEdGraphNode* Node : Graph->Nodes)
+        {
+            if (Node && Node->NodeGuid == Guid)
+            {
+                if (Result) return nullptr;
+                Result = Node;
+            }
+        }
+        return Result;
+    }
+
+    UEdGraphPin* ExactPin(UEdGraphNode* Node, FName Name, EEdGraphPinDirection Direction)
+    {
+        UEdGraphPin* Result = nullptr;
+        if (!Node) return nullptr;
+        for (UEdGraphPin* Pin : Node->Pins)
+        {
+            if (Pin && Pin->PinName == Name && Pin->Direction == Direction)
+            {
+                if (Result) return nullptr;
+                Result = Pin;
+            }
+        }
+        return Result;
+    }
+
+    struct FLocalCapture
+    {
+        FGuid Source;
+        FName Output;
+        FBPVariableDescription Variable;
+        TArray<TPair<FGuid, FName>> Consumers;
+        FGuid Setter;
+        FGuid Getter;
+        int32 Depth = 0;
+    };
+
+    // Planning has already refused cycles and capped ancestry depth.
+    int32 CalculationDepth(UEdGraphNode* Node, int32 Depth = 0)
+    {
+        if (Depth >= 64) return Depth;
+        int32 Result = Depth;
+        for (UEdGraphPin* Pin : Node->Pins)
+            if (Pin && Pin->Direction == EGPD_Input && IsDataPin(Pin))
+                for (UEdGraphPin* Source : Pin->LinkedTo)
+                    if (Source && Source->GetOwningNode())
+                        Result = FMath::Max(Result, CalculationDepth(Source->GetOwningNode(), Depth + 1));
+        return Result;
+    }
+
+    // The failure injection is private to this translation unit and used only by the native regression.
+    FString ApplyLocalPlan(const FTurboMCPLocalVars::FPlan& Requested, bool bFailAfterRewire = false)
+    {
+        auto Refuse = [](const FString& Why)
+        {
+            return TEXT("unchanged: ") + Why + TEXT("; no graph changes were made; compile=not_run; save=not_requested");
+        };
+        if (!IsInGameThread() || !GEditor || !GEditor->CanTransact()
+            || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress() || IsEngineExitRequested())
+            return Refuse(TEXT("local promotion requires an idle editor outside PIE, shutdown and active transactions"));
+        FTurboMCPLocalVars::FPlan Plan;
+        FString Error;
+        if (!FTurboMCPLocalVars::Plan(Requested.Asset, Requested.GraphName, Plan, Error)) return Refuse(Error);
+        if (Plan.Candidates.IsEmpty()) return Refuse(TEXT("no value was promoted; the preview has no repeatedly consumed output values"));
+        UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Plan.Asset);
+        if (!Blueprint || Blueprint->bBeingCompiled || Blueprint->Status != BS_UpToDate)
+            return Refuse(TEXT("compile the Blueprint successfully without warnings before requesting promotion"));
+        UEdGraph* Graph = nullptr;
+        for (UEdGraph* Found : Blueprint->FunctionGraphs)
+            if (Found && Found->GetName() == Plan.GraphName)
+            {
+                if (Graph) return Refuse(TEXT("the function graph name is ambiguous"));
+                Graph = Found;
+            }
+        if (!Graph || !Graph->GetSchema()) return Refuse(TEXT("the function graph is unavailable"));
+        TArray<UK2Node_FunctionEntry*> Entries;
+        Graph->GetNodesOfClass(Entries);
+        if (Entries.Num() != 1) return Refuse(TEXT("the function must have exactly one entry"));
+        UK2Node_FunctionEntry* Entry = Entries[0];
+        UEdGraphPin* EntryExec = ExactPin(Entry, UEdGraphSchema_K2::PN_Then, EGPD_Output);
+        if (!EntryExec || EntryExec->LinkedTo.Num() != 1 || !EntryExec->LinkedTo[0])
+            return Refuse(TEXT("the function entry must have exactly one connected execution successor"));
+        const FGuid EntryId = Entry->NodeGuid;
+        const FGuid SuccessorId = EntryExec->LinkedTo[0]->GetOwningNode()->NodeGuid;
+        const FName SuccessorPin = EntryExec->LinkedTo[0]->PinName;
+        TArray<FLocalCapture> Captures;
+        for (const FTurboMCPLocalVars::FCandidate& Candidate : Plan.Candidates)
+        {
+            if (!Candidate.bSafe) return Refuse(Candidate.Key + TEXT(": ") + Candidate.UnsafeReason);
+            UEdGraphNode* Source = ExactNode(Graph, Candidate.NodeGuid);
+            UEdGraphPin* Output = ExactPin(Source, Candidate.OutputPinName, EGPD_Output);
+            if (!Output || Output->PinType.IsContainer() || Output->PinType.bIsReference
+                || (Output->PinType.PinCategory != UEdGraphSchema_K2::PC_Int
+                    && Output->PinType.PinCategory != UEdGraphSchema_K2::PC_Int64
+                    && Output->PinType.PinCategory != UEdGraphSchema_K2::PC_Real))
+                return Refuse(TEXT("the output must be one unambiguous scalar arithmetic value"));
+            FLocalCapture Capture;
+            Capture.Source = Candidate.NodeGuid;
+            Capture.Output = Candidate.OutputPinName;
+            Capture.Depth = CalculationDepth(Source);
+            Capture.Variable.VarName = FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, Candidate.ProposedName);
+            Capture.Variable.VarGuid = FGuid::NewGuid();
+            Capture.Variable.VarType = Output->PinType;
+            Capture.Variable.VarType.bIsConst = false;
+            Capture.Variable.VarType.bIsReference = false;
+            Capture.Variable.PropertyFlags = CPF_BlueprintVisible;
+            Capture.Variable.FriendlyName = Capture.Variable.VarName.ToString();
+            Capture.Variable.Category = UEdGraphSchema_K2::VR_DefaultCategory;
+            for (UEdGraphPin* Consumer : Output->LinkedTo)
+            {
+                if (!Consumer || Consumer->Direction != EGPD_Input || Consumer->GetOwningNode()->GetGraph() != Graph
+                    || ExactPin(ExactNode(Graph, Consumer->GetOwningNode()->NodeGuid), Consumer->PinName, EGPD_Input) != Consumer
+                    || Consumer->LinkedTo.Num() != 1 || Consumer->LinkedTo[0] != Output)
+                    return Refuse(TEXT("an output has a broken, duplicate, ambiguous or cross-graph consumer link"));
+                Capture.Consumers.Emplace(Consumer->GetOwningNode()->NodeGuid, Consumer->PinName);
+            }
+            Captures.Add(MoveTemp(Capture));
+        }
+        Captures.Sort([](const FLocalCapture& A, const FLocalCapture& B) { return A.Depth < B.Depth; });
+        UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+        if (!Buffer) return Refuse(TEXT("editor undo is unavailable"));
+        TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "LocalPromotion", "TurboMCP promote calculated values"));
+        const FGuid OwnedId = Transaction->IsOutstanding() && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
+            ? Buffer->UndoBuffer.Last()->GetId() : FGuid();
+        if (!OwnedId.IsValid()) { Transaction.Reset(); return Refuse(TEXT("could not acquire an owned undo record")); }
+        auto Fail = [&](const FString& Why)
+        {
+            Transaction.Reset();
+            const int32 Index = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
+            const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
+            const bool bUndone = Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
+            return TEXT("error: local promotion failed: ") + Why
+                + (bUndone ? TEXT("; owned undo applied; restoration is unverified") : TEXT("; owned undo could not be applied"))
+                + TEXT("; changes may remain; inspect the Blueprint before retrying; compilation may have run; save=not_requested");
+        };
+        Blueprint->Modify(); Graph->Modify();
+        for (UEdGraphNode* Node : Graph->Nodes) if (Node) Node->Modify();
+        // Scalar variable declarations use the same fields as AddLocalVariable, but one
+        // structural update registers them together without nested editor transactions.
+        for (const FLocalCapture& Capture : Captures) Entry->LocalVariables.Add(Capture.Variable);
+        FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
+        if (Blueprint->Status == BS_Error) return Fail(TEXT("registering the local variables failed compilation"));
+        Entry = Cast<UK2Node_FunctionEntry>(ExactNode(Graph, EntryId));
+        EntryExec = ExactPin(Entry, UEdGraphSchema_K2::PN_Then, EGPD_Output);
+        UEdGraphPin* Successor = ExactPin(ExactNode(Graph, SuccessorId), SuccessorPin, EGPD_Input);
+        if (!EntryExec || !Successor || !EntryExec->LinkedTo.Contains(Successor))
+            return Fail(TEXT("the entry execution link changed during local registration"));
+        EntryExec->BreakLinkTo(Successor);
+        UEdGraphPin* Previous = EntryExec;
+        for (FLocalCapture& Capture : Captures)
+        {
+            UEdGraphNode* Source = ExactNode(Graph, Capture.Source);
+            UEdGraphPin* Output = ExactPin(Source, Capture.Output, EGPD_Output);
+            if (!Output) return Fail(TEXT("a calculated output disappeared during local registration"));
+            UK2Node_VariableSet* Setter = NewObject<UK2Node_VariableSet>(Graph, NAME_None, RF_Transactional);
+            UK2Node_VariableGet* Getter = NewObject<UK2Node_VariableGet>(Graph, NAME_None, RF_Transactional);
+            for (UK2Node_Variable* Variable : { static_cast<UK2Node_Variable*>(Setter), static_cast<UK2Node_Variable*>(Getter) })
+            {
+                Variable->CreateNewGuid();
+                Variable->VariableReference.SetLocalMember(Capture.Variable.VarName, Graph->GetName(), Capture.Variable.VarGuid);
+                Graph->AddNode(Variable, false, false);
+                Variable->AllocateDefaultPins();
+            }
+            Capture.Setter = Setter->NodeGuid; Capture.Getter = Getter->NodeGuid;
+            // Preserve all existing coordinates; put the new nodes below the calculation.
+            Setter->NodePosX = Source->NodePosX; Setter->NodePosY = Source->NodePosY + 240;
+            Getter->NodePosX = Source->NodePosX + 240; Getter->NodePosY = Source->NodePosY + 240;
+            UEdGraphPin* ValueIn = ExactPin(Setter, Capture.Variable.VarName, EGPD_Input);
+            UEdGraphPin* ValueOut = Getter->GetValuePin();
+            UEdGraphPin* ExecIn = ExactPin(Setter, UEdGraphSchema_K2::PN_Execute, EGPD_Input);
+            UEdGraphPin* ExecOut = ExactPin(Setter, UEdGraphSchema_K2::PN_Then, EGPD_Output);
+            if (!ValueIn || !ValueOut || !ExecIn || !ExecOut) return Fail(TEXT("a local variable node has missing pins"));
+            for (const TPair<FGuid, FName>& Reader : Capture.Consumers)
+            {
+                UEdGraphPin* Consumer = ExactPin(ExactNode(Graph, Reader.Key), Reader.Value, EGPD_Input);
+                if (!Consumer || !Consumer->LinkedTo.Contains(Output)) return Fail(TEXT("a planned consumer link changed"));
+                Output->BreakLinkTo(Consumer);
+                if (!Graph->GetSchema()->TryCreateConnection(ValueOut, Consumer)) return Fail(TEXT("the schema refused a local getter connection"));
+            }
+            if (!Graph->GetSchema()->TryCreateConnection(Output, ValueIn)
+                || !Graph->GetSchema()->TryCreateConnection(Previous, ExecIn)) return Fail(TEXT("the schema refused a local assignment connection"));
+            Previous = ExecOut;
+        }
+        if (!Graph->GetSchema()->TryCreateConnection(Previous, Successor)) return Fail(TEXT("the schema refused the original execution continuation"));
+        if (bFailAfterRewire) return Fail(TEXT("injected post-rewire regression failure"));
+        FCompilerResultsLog CompileLog;
+        FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::None, &CompileLog);
+        if (CompileLog.NumErrors || CompileLog.NumWarnings || Blueprint->Status != BS_UpToDate)
+            return Fail(TEXT("the promoted function did not compile without diagnostics"));
+        // Compilation may reconstruct nodes. Read back by full identities, never old pins.
+        Previous = ExactPin(ExactNode(Graph, EntryId), UEdGraphSchema_K2::PN_Then, EGPD_Output);
+        for (const FLocalCapture& Capture : Captures)
+        {
+            UEdGraphPin* Output = ExactPin(ExactNode(Graph, Capture.Source), Capture.Output, EGPD_Output);
+            UEdGraphNode* Setter = ExactNode(Graph, Capture.Setter);
+            UEdGraphPin* ValueIn = ExactPin(Setter, Capture.Variable.VarName, EGPD_Input);
+            UEdGraphPin* ValueOut = ExactPin(ExactNode(Graph, Capture.Getter), Capture.Variable.VarName, EGPD_Output);
+            UEdGraphPin* ExecIn = ExactPin(Setter, UEdGraphSchema_K2::PN_Execute, EGPD_Input);
+            if (!Output || !ValueIn || !ValueOut || !Previous || !ExecIn
+                || !Output->LinkedTo.Contains(ValueIn) || !ValueIn->LinkedTo.Contains(Output)
+                || !Previous->LinkedTo.Contains(ExecIn) || !ExecIn->LinkedTo.Contains(Previous))
+                return Fail(TEXT("post-compile assignment verification failed"));
+            for (const TPair<FGuid, FName>& Reader : Capture.Consumers)
+            {
+                UEdGraphPin* Consumer = ExactPin(ExactNode(Graph, Reader.Key), Reader.Value, EGPD_Input);
+                if (!Consumer || !Consumer->LinkedTo.Contains(ValueOut) || !ValueOut->LinkedTo.Contains(Consumer))
+                    return Fail(TEXT("post-compile consumer verification failed"));
+            }
+            Previous = ExactPin(Setter, UEdGraphSchema_K2::PN_Then, EGPD_Output);
+        }
+        Successor = ExactPin(ExactNode(Graph, SuccessorId), SuccessorPin, EGPD_Input);
+        if (!Previous || !Successor || !Previous->LinkedTo.Contains(Successor) || !Successor->LinkedTo.Contains(Previous))
+            return Fail(TEXT("post-compile execution continuation verification failed"));
+        Blueprint->MarkPackageDirty();
+        Transaction.Reset();
+        return FString::Printf(TEXT("changed: assigned %d calculated value(s) at function entry and replaced their consumers with local getters; original calculations and existing node positions were preserved; compile=passed; save=not_requested"), Captures.Num());
+    }
+}
+
 FString FTurboMCPLocalVars::Apply(const FPlan& InPlan)
 {
-    // Do not restore the former getter-only rewrite: it never assigned the calculated
-    // value and destroyed the original calculation. The replacement needs explicit
-    // assignment, execution placement and verified failure handling.
-    if (!InPlan.Candidates.IsEmpty())
-    {
-        return TEXT("unchanged: local-variable promotion is unavailable; calculated-value assignment and execution placement are not implemented; no graph changes were made; use the Unreal editor to create and assign the local manually; compile=not_run; save=not_requested");
-    }
-    return TEXT("unchanged: no value was promoted; the preview plan contains no repeatedly consumed output values; no graph changes were made; compile=not_run; save=not_requested");
+    return ApplyLocalPlan(InPlan);
 }
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
@@ -607,4 +829,103 @@ bool FTurboMCPLocalAncestryTest::RunTest(const FString& Parameters)
     Graph->MarkAsGarbage();
     return !HasAnyErrors();
 }
+#include "BlueprintEditorLibrary.h"
+#include "K2Node_FunctionResult.h"
+#include "UObject/StructOnScope.h"
+#include "UObject/UnrealType.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPLocalPromotionTest,
+    "TurboMCP.LocalVars.Promotion", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
+{
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/LocalPromotion_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("LocalFixture"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass(), TEXT("TurboMCPLocalTest"));
+    if (!TestNotNull(TEXT("Blueprint fixture created"), Blueprint)) return false;
+    ON_SCOPE_EXIT
+    {
+        Blueprint->ClearFlags(RF_Public | RF_Standalone);
+        Blueprint->MarkAsGarbage();
+        Package->SetDirtyFlag(false);
+        Package->MarkAsGarbage();
+    };
+    UEdGraph* Graph = UBlueprintEditorLibrary::AddFunctionGraph(Blueprint, TEXT("ComputeTwice"));
+    if (!TestNotNull(TEXT("Function created"), Graph)) return false;
+    TArray<UK2Node_FunctionEntry*> Entries;
+    Graph->GetNodesOfClass(Entries);
+    if (!TestEqual(TEXT("Unique entry"), Entries.Num(), 1)) return false;
+    UK2Node_FunctionEntry* Entry = Entries[0];
+    UK2Node_FunctionResult* Result = FBlueprintEditorUtils::FindOrCreateFunctionResultNode(Entry);
+    if (!TestNotNull(TEXT("Result created"), Result)) return false;
+    FEdGraphPinType IntType;
+    IntType.PinCategory = UEdGraphSchema_K2::PC_Int;
+    UEdGraphPin* Left = Result->CreateUserDefinedPin(TEXT("Left"), IntType, EGPD_Input, false);
+    UEdGraphPin* Right = Result->CreateUserDefinedPin(TEXT("Right"), IntType, EGPD_Input, false);
+    UK2Node_CallFunction* Add = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
+    Add->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
+    Add->CreateNewGuid(); Graph->AddNode(Add, false, false); Add->AllocateDefaultPins();
+    Add->NodePosX = 100; Add->NodePosY = 400;
+    Add->FindPinChecked(TEXT("A"))->DefaultValue = TEXT("2");
+    Add->FindPinChecked(TEXT("B"))->DefaultValue = TEXT("3");
+    Add->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Left);
+    Add->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Right);
+    Entry->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Result->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
+    const FGuid AddId = Add->NodeGuid;
+    const int32 OriginalCount = Graph->Nodes.Num();
+    auto Compile = [&]()
+    {
+        FCompilerResultsLog Log;
+        FKismetEditorUtilities::CompileBlueprint(Blueprint, EBlueprintCompileOptions::None, &Log);
+        return TestEqual(TEXT("No compile errors"), Log.NumErrors, 0)
+            && TestEqual(TEXT("No compile warnings"), Log.NumWarnings, 0);
+    };
+    auto CheckValues = [&]()
+    {
+        UFunction* Function = Blueprint->GeneratedClass ? Blueprint->GeneratedClass->FindFunctionByName(TEXT("ComputeTwice")) : nullptr;
+        if (!TestNotNull(TEXT("Compiled function exists"), Function)) return false;
+        FStructOnScope Args(Function);
+        Blueprint->GeneratedClass->GetDefaultObject()->ProcessEvent(Function, Args.GetStructMemory());
+        for (const TCHAR* Name : { TEXT("Left"), TEXT("Right") })
+        {
+            const FIntProperty* Property = FindFProperty<FIntProperty>(Function, Name);
+            if (!TestNotNull(TEXT("Result property exists"), Property)) return false;
+            TestEqual(FString::Printf(TEXT("%s retains calculated value"), Name), Property->GetPropertyValue_InContainer(Args.GetStructMemory()), 5);
+        }
+        return !HasAnyErrors();
+    };
+    if (!Compile() || !CheckValues()) return false;
+    FTurboMCPLocalVars::FPlan Plan;
+    FString Error;
+    if (!TestTrue(TEXT("Production plan"), FTurboMCPLocalVars::Plan(Blueprint->GetPathName(), Graph->GetName(), Plan, Error))) return false;
+    TestEqual(TEXT("One repeated value"), Plan.Candidates.Num(), 1);
+    const FString Failure = ApplyLocalPlan(Plan, true);
+    AddInfo(Failure);
+    TestTrue(TEXT("Post-rewire failure reports unverified restoration"), Failure.Contains(TEXT("owned undo applied; restoration is unverified")));
+    TestFalse(TEXT("Owned transaction ended"), GEditor->IsTransactionActive());
+    TestEqual(TEXT("Failure restores node count"), Graph->Nodes.Num(), OriginalCount);
+    TArray<UK2Node_FunctionEntry*> RestoredEntries;
+    Graph->GetNodesOfClass(RestoredEntries);
+    if (!TestEqual(TEXT("Entry restored"), RestoredEntries.Num(), 1)) return false;
+    TestEqual(TEXT("Failure restores local declarations"), RestoredEntries[0]->LocalVariables.Num(), 0);
+    UEdGraphNode* RestoredAdd = ExactNode(Graph, AddId);
+    if (!TestNotNull(TEXT("Calculation restored"), RestoredAdd)) return false;
+    TestEqual(TEXT("Both consumers restored"), ExactPin(RestoredAdd, TEXT("ReturnValue"), EGPD_Output)->LinkedTo.Num(), 2);
+    if (!Compile() || !CheckValues()) return false;
+    const FString Applied = FTurboMCPLocalVars::Apply(Plan);
+    AddInfo(Applied);
+    TestTrue(TEXT("Promotion succeeds"), Applied.StartsWith(TEXT("changed:")) && Applied.Contains(TEXT("compile=passed")));
+    TestFalse(TEXT("Success transaction ended"), GEditor->IsTransactionActive());
+    TestEqual(TEXT("Only setter and getter added"), Graph->Nodes.Num(), OriginalCount + 2);
+    UEdGraphNode* KeptAdd = ExactNode(Graph, AddId);
+    if (!TestNotNull(TEXT("Original calculation retained"), KeptAdd)) return false;
+    TestEqual(TEXT("Existing X retained"), KeptAdd->NodePosX, 100);
+    TestEqual(TEXT("Existing Y retained"), KeptAdd->NodePosY, 400);
+    CheckValues();
+    const FString Again = FTurboMCPLocalVars::Apply(Plan);
+    TestTrue(TEXT("Repeated request is a no-op"), Again.StartsWith(TEXT("unchanged:")));
+    TestEqual(TEXT("Repeated request adds no nodes"), Graph->Nodes.Num(), OriginalCount + 2);
+    return !HasAnyErrors();
+}
+
 #endif
