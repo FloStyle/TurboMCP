@@ -1058,25 +1058,20 @@ FString FTurboMCPGraphKnots::RenderPreview(const FPlan& InPlan)
 		InPlan.NodeCountBefore, InPlan.KnotCountBefore, InPlan.CrossingWiresBefore,
 		InPlan.CrossingsBefore);
 
+	Out += TEXT("Geometry: crossings use estimated straight wire segments and node rectangles, not rendered wire curves. Missing node dimensions use fallback bounds. Inspect the visible graph before accepting the layout.\n");
 	if (InPlan.bFootprintUnknown)
 	{
-		// WHICH GEOMETRY WAS USED IS PART OF THE ANSWER, not a footnote. On a graph whose nodes have
-		// never been drawn the engine has measured no sizes, so every rectangle is a small square
-		// centred on its node and the judgement is CONSERVATIVE. A caller comparing two graphs, or
-		// reading a number twice, has to know which of the two it is looking at.
-		Out += TEXT("; NOTE: the engine has measured no node sizes here, because a node's size is ")
-			TEXT("supplied by the editor when it draws one and this graph has never been drawn. ")
-			TEXT("Every node is therefore treated as a small square at its own position, which ")
-			TEXT("under-reports a crossing rather than inventing one. Open the graph in the editor ")
-			TEXT("and ask again for exact outlines.\n");
+		// This flag describes the reroute footprint, not whether every node was drawn.
+		Out += FString::Printf(TEXT("Reroute size: no usable measured knot footprint was found; planning uses %.0f by %.0f graph units.\n"),
+			FallbackKnotExtent, FallbackKnotExtent);
 	}
 
 	if (InPlan.Wires.Num() == 0)
 	{
 		// `P1`: never return nothing. "No crossings" is an answer and it says what was looked at.
-		Out += TEXT("no wire crosses a node, so no knot is offered. A wire is a crossing when the ")
+		Out += TEXT("No crossings were found by this geometry estimate, so no reroute is proposed. A crossing means the ")
 			TEXT("straight segment between its two pin positions meets a node's rectangle, ")
-			TEXT("computed from the same pin positions LookTurboMCPLayoutReport uses.\n");
+			TEXT("using the same pin-position estimate as LookTurboMCPLayoutReport. Rendered wires may differ.\n");
 		return Out;
 	}
 
