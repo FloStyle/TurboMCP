@@ -1293,25 +1293,9 @@ public:
 	static FString PreviewTurboMCPStructFields(const FString& Struct, const FString& Changes);
 
 	/**
-	 * Work out what a checkout would do, per asset, without checking anything out.
-	 *
-	 * Pass assets separated by commas or pipes, or nothing to read only the provider facts.
-	 *
-	 * IT RUNS THE SAME PLAN AS ITS EDIT TWIN, so every refusal here is the identical refusal there:
-	 * with no usable provider, each asset is refused by name with the engine own string and no provider
-	 * call is made at all (`SourceControlHelpers.cpp:67`, `:76`). The two questions - is a provider
-	 * selected, and is it available - are asked in that order and both are required, because Perforce,
-	 * Plastic and Subversion all answer the first with true unconditionally.
-	 *
-	 * AND IT STATES WHAT A CHECKOUT WOULD MEAN, WHICH IS NOT THE SAME ON EVERY PROVIDER. Where the
-	 * provider reports `UsesCheckout() == false`, a checkout is a NO-OP BY CONSTRUCTION: that provider has
-	 * no lock command, so every tracked file in the working copy is already checked out
-	 * (`GitSourceControlModule.cpp:21`). The preview says so rather than implying a lock would be taken.
-	 * Where it reports true - Perforce `:622-625`, Subversion `:239-242`, Plastic `:498-501` - a real lock
-	 * is the point of the call.
-	 *
-	 * WRITES NOTHING AND CANNOT: it is in this toolset, which holds no tool that can change an asset, and
-	 * a checkout is issued only by the Edit twin.
+	 * Inspect checkout eligibility; refreshes provider state and may contact the server, but does not request checkout, asset compilation or saving.
+	 * This is a current-state report, not a reservation or guarantee that a later checkout will succeed.
+	 * @param Assets Comma- or pipe-separated asset paths or unique names, e.g. /Game/Tests/BP_NodeTest. Assets must have files on disk. Empty reports provider status only. Each unresolved asset is reported separately.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPVcsCheckout(const FString& Assets);
@@ -2123,31 +2107,9 @@ public:
 	static FString EditTurboMCPStructFields(const FString& Struct, const FString& Changes);
 
 	/**
-	 * Take the lock before a write: check one or more assets out through the project own provider.
-	 *
-	 * `03_TOOLS.md` section 17 is the requirement and `D-57` the ordering decision: this capability is
-	 * built and tested BEFORE any write tool calls it, and no automatic checkout happens anywhere until
-	 * this tool own tests pass.
-	 *
-	 * IT GOES THROUGH `ISourceControlModule` OWN PROVIDER rather than shelling out to `p4` or `git`,
-	 * exactly as the spec asks. With assets given, its Edit half issues an `FCheckOut` operation through
-	 * that provider and repeats the provider own answer verbatim, including the messages the provider
-	 * attached to the operation. With no assets it only reads, and nothing is issued.
-	 *
-	 * IT REFUSES EXACTLY WHAT `PreviewTurboMCPVcsCheckout` REFUSES, because both read one plan: the two
-	 * engine questions are asked first, both are required, and with no usable provider every asset is
-	 * refused by name with the engine own string while NO PROVIDER IS REACHED - the refusal is not a
-	 * failure of a call, it is a decision not to make one.
-	 *
-	 * *** AND IT SAYS WHEN A CHECKOUT CANNOT MEAN ANYTHING. *** Where the provider reports
-	 * `UsesCheckout() == false` the answer states plainly that a checkout is a NO-OP on it, because that
-	 * provider has no lock command (`GitSourceControlModule.cpp:21`, `GitSourceControlProvider.cpp:286-289`),
-	 * and then records what the provider actually answered rather than predicting one. A tool that implied
-	 * it had taken a lock on a provider that has none would be lying about the one thing this capability
-	 * exists to guarantee.
-	 *
-	 * THIS TOOL WRITES NO FILE. A checkout is a source control operation; the asset contents are untouched,
-	 * and no save happens here.
+	 * Request provider checkout per asset; may contact the server and change source-control or file state, with no automatic rollback of partial success and no asset compile/save request.
+	 * Provider results are reported per file; a successful command is not independent proof of an exclusive lock. Providers without checkout support may reject the request. Refresh with ReadTurboMCPVcsState afterward.
+	 * @param Assets Comma- or pipe-separated asset paths or unique names, e.g. /Game/Tests/BP_NodeTest. Assets must have files on disk. Empty reports provider status without checking out files. Invalid entries are reported individually; other entries may proceed.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPVcsCheckout(const FString& Assets);
