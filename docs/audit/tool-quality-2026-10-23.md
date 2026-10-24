@@ -192,3 +192,11 @@ Run 40b3974c53604410b186cef29c1f8361 built successfully. The new native checks f
 0329b3f enables rendering for test-widget-roundtrip and selects render requirements from resolved suite names, fixing comma-separated batches and all-suite selection for the listed render-dependent suites. Removed the incorrect comment that all tools work without rendering. Other suites' rendering requirements still need inventory; this is not a complete runner classification audit.
 
 Run ed50a8e6f98c47eea9556d5bbead101d passed build, Widget.RoundtripAcceptance (Success, zero errors/warnings/skips), and widget-tree-sync. All 16 fixture files restored. This resolves the preceding padding/append validation failure and verifies the native fixture's targeted append path; it does not certify arbitrary widget export or every tool operation.
+
+## Append preview wording and effects (2026-10-24)
+
+Implemented dd4224d: replaced blanket “changes NOTHING” with target-graph append status, temporary-node/asset-loading effects, compile/save status and exact PreviewTurboMCPGraphAppend/EditTurboMCPGraphAppend next actions. Explicit-continuation text now distinguishes the plan summary from the public wrapper's scratch validation, rather than claiming validation is absent. Render-target failure gives a concrete rendering prerequisite. Removed the wrapper's false claim that class membership prevents side effects and its claim that all execution failures are unchanged.
+
+Run bcc1e9cb90b440cd8e3d35491cc79010 passed build, widget-roundtrip and widget-append-acceptance, covering accepted and refused plan text alongside graph-preservation assertions. Supervisor restored 16 fixture files. The revised render-target failure sentence and explicit-continuation wording are source-reviewed but not separately forced in this run. Other append rollback text still needs a full evidence audit; this does not certify every failure branch.
+
+Inventory recount from live capture 40b3974c53604410b186cef29c1f8361: 214 parameter descriptions remain missing across 69 tools. All-tool help enumeration passing is not completion of parameter documentation or behavior review. Next documentation candidates include VcsState, ToolSchema, PureChecks and node reader/context tools.
