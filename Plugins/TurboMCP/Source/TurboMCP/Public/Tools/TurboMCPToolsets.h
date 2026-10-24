@@ -642,19 +642,10 @@ public:
 	static FString PreviewTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
 
 	/**
-	 * Work out what creating an override would do, without creating it.
-	 *
-	 * Pass a Blueprint and a function or event name from `R-OVERRIDES`. The preview prints the
-	 * exact SIGNATURE, resolved from the real reflected `UFunction` rather than rebuilt from
-	 * pins, and says whether the name is an event or a function.
-	 *
-	 * A name this Blueprint cannot override is refused with BOTH lists of what is still
-	 * available, so a caller corrects itself in one step. A name that is ALREADY overridden is
-	 * reported in the preview, because a caller that previews and then edits should not be
-	 * surprised by the edit.
-	 *
-	 * The overridable set is the editor's own `ListEvents` and `ListFunctions`, so a name
-	 * accepted here is one the editor accepts, including interfaces implemented natively in C++.
+	 * Preview an event or function override; loads the Blueprint and inspects editor metadata without creating the override, compiling or saving.
+	 * Existing implementations are reported before creation. Preview is not a reservation; edit checks again.
+	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty is refused.
+	 * @param FunctionOrEvent Required reflected name from ReadTurboMCPOverrides, for example ReceiveActorOnClicked; case-insensitive with surrounding whitespace trimmed. Empty or unavailable names are refused; no default.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPOverrideAdd(
@@ -1398,21 +1389,10 @@ public:
 		bool bIsVariable);
 
 	/**
-	 * Create an override on purpose.
-	 *
-	 * The same inputs, resolved and validated the same way, as `P-OVERRIDE-ADD`, because the two
-	 * share one code path up to the write (`D-02`).
-	 *
-	 * REFUSES a name that is already overridden and says WHERE, opening with `unchanged:`. The
-	 * engine's own `AddFunctionOverride` does not check: it would quietly add a second graph,
-	 * which leaves a Blueprint with two implementations of one function and no way to tell them
-	 * apart afterwards.
-	 *
-	 * The override is created through the editor's own `UBlueprintEditorLibrary`, so it is the
-	 * same thing the editor's Override dropdown makes. The result names the graph or node it
-	 * created, prints the signature, and READS BACK whether the editor now lists the function as
-	 * implemented — because a call that returns a graph is not evidence that the Blueprint
-	 * agrees.
+	 * Create an event or function override through the editor API; may regenerate the skeleton and run editor callbacks, uses engine-managed undo, and does not perform a full compile or save.
+	 * Existing implementations are reported before creation. Preview is not a reservation; edit checks again.
+	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty is refused.
+	 * @param FunctionOrEvent Required reflected name from ReadTurboMCPOverrides, for example ReceiveActorOnClicked; case-insensitive with surrounding whitespace trimmed. Empty or unavailable names are refused; no default.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPOverrideAdd(

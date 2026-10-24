@@ -184,6 +184,11 @@ def main():
     check("it says the kind", "kind: event" in out or "kind: function" in out)
     check("it prints a signature", "signature:" in out)
     check("the signature carries the name", FREE in out)
+    check("event preview describes an event node", "event node at (0, 0)" in out)
+    check("event preview does not promise a result node", "its result node" not in out)
+    check("preview explains its effects", "does not create the override, compile or save" in out)
+    check("edit effects are visible", "editor callbacks" in out and "engine-managed undo" in out)
+
 
     print()
     print("=== a name this Blueprint cannot override is refused with BOTH lists ===")
@@ -239,6 +244,10 @@ def main():
     check("it names what it created", "created:" in edit)
     check("it names the graph or node", "EventGraph" in edit)
     check("it prints the signature again", "signature:" in edit)
+    check("edit names current follow-up tools",
+          "EditTurboMCPCompile" in edit and "EditTurboMCPSave" in edit)
+    check("edit does not claim a save", "is not saved" in edit)
+
     check("the editor reports it as implemented",
           "the editor now reports it as implemented: yes" in edit,
           "the read-back is the evidence, not the return value")

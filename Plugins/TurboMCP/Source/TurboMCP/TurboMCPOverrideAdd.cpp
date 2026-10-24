@@ -76,7 +76,7 @@ bool FTurboMCPOverrideAdd::Plan(const FString& InAsset, const FString& InFunctio
 	}
 	if (OutPlan.Wanted.IsEmpty())
 	{
-		OutError = TEXT("no function or event given. Pass a name from R-OVERRIDES, which ")
+		OutError = TEXT("no function or event given. Pass a name from ReadTurboMCPOverrides, which ")
 			TEXT("lists what this Blueprint can override.");
 		return false;
 	}
@@ -194,9 +194,7 @@ bool FTurboMCPOverrideAdd::Plan(const FString& InAsset, const FString& InFunctio
 			*TurboMCPDescribe::FunctionParameters(Signature))
 		: FString::Printf(TEXT("%s(?)"), *OutPlan.ResolvedName.ToString());
 
-	// ALREADY OVERRIDDEN IS CHECKED WHILE PLANNING, so the Preview refuses too. The engine's
-	// own AddFunctionOverride does not check: it would quietly add a second graph, which is
-	// how a Blueprint ends up with two implementations of one interface function.
+	// Record existing implementations so preview can explain why edit will refuse.
 	if (UEdGraph* Existing = FindExistingGraph(Blueprint, OutPlan.ResolvedName))
 	{
 		OutPlan.AlreadyImplementedIn = Existing->GetName();
@@ -223,12 +221,13 @@ FString FTurboMCPOverrideAdd::RenderPreview(const FPlan& InPlan)
 	}
 	else
 	{
-		Out += TEXT("\nthe edit will create the entry node and its result node.");
+		Out += InPlan.bIsEvent
+			? TEXT("\nThe edit will create an event node at (0, 0) in the event graph; check its placement afterwards.")
+			: TEXT("\nThe edit will create a function graph using the parent signature.");
 	}
 
-	Out += TEXT("\n; the override is created through the editor's own ")
-		+ FString(TEXT("UBlueprintEditorLibrary, so it is the same thing the editor's "))
-		+ FString(TEXT("Override dropdown makes."));
+	Out += TEXT("\n; Preview loads and inspects the Blueprint; it does not create the override, compile or save.");
+	Out += TEXT("\n; Edit may regenerate the skeleton and run editor callbacks; it uses engine-managed undo and does not perform a full compile or save.");
 	return Out;
 }
 
@@ -248,9 +247,7 @@ FString FTurboMCPOverrideAdd::Apply(const FPlan& InPlan)
 			TEXT("error: %s is not a Blueprint."), *Resolved.ObjectPath);
 	}
 
-	// REFUSED RATHER THAN DOUBLED. The engine's call would add a second graph, which is a
-	// Blueprint with two implementations of one function and no obvious way to tell them
-	// apart afterwards.
+	// Recheck after planning before asking the editor to create an override.
 	if (UEdGraph* Existing = FindExistingGraph(Blueprint, InPlan.ResolvedName))
 	{
 		return FString::Printf(
@@ -264,15 +261,14 @@ FString FTurboMCPOverrideAdd::Apply(const FPlan& InPlan)
 
 	if (InPlan.bIsEvent)
 	{
-		// `AddEventOverride` places the node, so a position is given. Zero is the top-left of
-		// the graph, which is where a caller expects a new node to be rather than off-screen.
+		// Creation uses the fixed origin; placement is not collision-aware.
 		UK2Node_Event* Node = UBlueprintEditorLibrary::AddEventOverride(
 			Blueprint, InPlan.ResolvedName, FIntPoint(0, 0));
 
 		if (Node == nullptr)
 		{
 			return FString::Printf(
-				TEXT("error: the engine's AddEventOverride returned nothing for '%s'."),
+				TEXT("error: the editor returned no event node for '%s'. Asset state was not verified or rolled back; inspect it with ReadTurboMCPOverrides before retrying."),
 				*InPlan.ResolvedName.ToString());
 		}
 
@@ -288,7 +284,7 @@ FString FTurboMCPOverrideAdd::Apply(const FPlan& InPlan)
 		if (Graph == nullptr)
 		{
 			return FString::Printf(
-				TEXT("error: the engine's AddFunctionOverride returned no graph for '%s'."),
+				TEXT("error: the editor returned no function graph for '%s'. Asset state was not verified or rolled back; inspect it with ReadTurboMCPOverrides before retrying."),
 				*InPlan.ResolvedName.ToString());
 		}
 
@@ -325,10 +321,10 @@ FString FTurboMCPOverrideAdd::Apply(const FPlan& InPlan)
 		// implemented. Saying so is the difference between a result a caller can trust and one
 		// that only looks like success.
 		Out += TEXT("\n; the override was created but the editor does not list it as ")
-			TEXT("implemented yet. It may need a compile, which E-COMPILE does.");
+			TEXT("implemented yet. It may need a compile, using EditTurboMCPCompile; creation alone does not prove compilation succeeds.");
 	}
 
-	Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+	Out += TEXT("\n; The change is in memory and is not saved. Review it, then use EditTurboMCPCompile and EditTurboMCPSave as needed.");
 
 	return Out;
 }
