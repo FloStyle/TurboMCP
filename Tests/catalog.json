@@ -694,6 +694,13 @@
       "tier": "engine",
       "timeout_seconds": 120,
       "acceptance": "not_mapped"
+    },
+    {
+      "id": "test-node-reader-output",
+      "path": "Tools/test-node-reader-output.py",
+      "tier": "engine",
+      "timeout_seconds": 120,
+      "acceptance": "not_mapped"
     }
   ]
 }
