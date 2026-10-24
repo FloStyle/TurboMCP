@@ -1912,6 +1912,12 @@
           "new_files": [
             "Tools/test-batch-rollback.py"
           ]
+        },
+        "quality-local-determinism": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVars.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
