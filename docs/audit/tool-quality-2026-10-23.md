@@ -400,3 +400,9 @@ Supervised run 22c3cc43cec544369119e63dbc3ecfc7: build and 125-tool help invento
 ## Struct suite parser repair — 2026-10-24
 
 ac1ac78 and 2e1b04b restrict field parsing to the declared field section, parse the current loaded-dependent count, avoid treating an unknown count as zero, and align Map/force negative assertions with the actual shared diagnostics. No behavior assertions were removed. Intermediate run c720bb7d1fc64c739b0b2ec85bc8d6d9 resolved five failures and exposed the remaining stale Map expectation. Final supervised run 20dab17698624afe8ec93adfc5222a00 passed build and test-struct, including the loaded-reader removal guard. This supersedes the six assertion failures recorded above; it does not certify all defaults/metadata, rollback, or save/reload semantics beyond the suite's checks.
+
+## Struct field editing text — 2026-10-24
+
+323ddb5 documents Struct/Changes for preview and edit, including add/change/reorder/remove syntax, empty options, repeated-target restriction and exact loaded-dependent force counts. Compact help states asset loading/status queries versus destructive mutation, undo transaction, checkout, compilation, callbacks and no save. Failed operations no longer invent concurrent modification as their cause; partial output states that changes may remain and no rollback was attempted. Verification limits are explicit and checkout reports use current tool names.
+
+Supervised run 0f02d2f1e1d64a0c9ad169c5994044d9 passed build, test-struct and the 125-tool live schema/help inventory. This covers the suite's normal field operations and refusal cases, not failure injection, all metadata/default setters or provider-specific checkout failures. Overall tool-quality review remains open.
