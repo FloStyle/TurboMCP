@@ -354,7 +354,7 @@ def main():
           edit.startswith("changed:"),
           "the edit answered: %s" % edit[:200])
     check("THE COMPILED RESULT IS STATED, so the requirement is claimed explicitly",
-          "COMPILED RESULT:" in edit,
+          "CHECK RESULTS (not proof of identical rendered output)" in edit,
           "the edit does not state the compiled result")
     # *** THE TOOL'S OWN NUMBERS ARE REPORTED, NOT ASSERTED, AND THE REASON IS A MEASURED
     # INCONSISTENCY THAT THIS WORKSTREAM COULD NOT SETTLE. *** It answers `22 of 16 pre-existing

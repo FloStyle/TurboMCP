@@ -346,6 +346,7 @@ bool FTurboMCPMaterialLabelsPromote::Plan(const FString& InAsset, FPlan& OutPlan
 FString FTurboMCPMaterialLabelsPromote::RenderPreview(const FPlan& InPlan)
 {
 	FString Out = FString::Printf(TEXT("preview: labels worth adding to %s"), *InPlan.Asset);
+	Out += TEXT("\n; Preview recompiles materials for baseline errors and may run editor callbacks; it does not add labels, rewire inputs or save.");
 	Out += FString::Printf(
 		TEXT("\nvalues examined: %d, worth a label: %d, inputs that would be retargeted: %d"),
 		InPlan.ValuesExamined, InPlan.Promotions.Num(), InPlan.InputsToRetarget);
@@ -395,7 +396,7 @@ FString FTurboMCPMaterialLabelsPromote::RenderPreview(const FPlan& InPlan)
 
 	Out += FString::Printf(
 		TEXT("\n\nthis edit ADDS %d declaration(s) and REWIRES %d input(s). It removes nothing, and the ")
-		TEXT("material's compiled result is checked afterwards and rolled back if it is not the same."),
+		TEXT("expression identities and compile errors are checked afterwards; failed checks request undo without proving restoration."),
 		InPlan.Promotions.Num(), InPlan.InputsToRetarget);
 
 	return Out;
@@ -416,7 +417,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 		return FString::Printf(TEXT("error: %s has no material to write a label into"), *InPlan.Asset);
 	}
 
-	// ONE TRANSACTION, so the whole promotion is a single undo step and a rollback is exact.
+	// Group edits in one transaction; failure paths request undo without verifying restoration.
 	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "MaterialLabelsPromote",
 		"TurboMCP: promote values to labels"));
 
@@ -462,7 +463,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 				FTurboMCPRollback::EndAndUndoActiveTransaction();
 				return FString::Printf(
 					TEXT("FAILED: the declaration for @%s could not be created, so the whole edit was ")
-					TEXT("ROLLED BACK rather than applied in part."), *Promotion.ProposedName);
+					TEXT("submitted for undo; restoration was not verified. Inspect the material before retrying or saving."), *Promotion.ProposedName);
 			}
 			++DeclarationsAdded;
 		}
@@ -538,7 +539,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 					FTurboMCPRollback::EndAndUndoActiveTransaction();
 					return FString::Printf(
 						TEXT("FAILED: the usage node for @%s could not be created, so the whole edit was ")
-						TEXT("ROLLED BACK rather than applied in part."), *Promotion.ProposedName);
+						TEXT("submitted for undo; restoration was not verified. Inspect the material before retrying or saving."), *Promotion.ProposedName);
 				}
 
 				// THE USAGE POINTS AT THE DECLARATION, which is what makes it read the label rather
@@ -611,7 +612,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: the material could not be read back after the edit (%s), so the compiled result ")
-			TEXT("could NOT be verified and the edit was ROLLED BACK."), *ReadError);
+			TEXT("could NOT be verified and undo was requested; restoration was not verified. Inspect the material before retrying or saving."), *ReadError);
 	}
 
 	TSet<FString> Before(InPlan.KeysBefore);
@@ -654,7 +655,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: promoting labels introduced %d compile error(s) that were not there before, so ")
-			TEXT("the edit was ROLLED BACK. A declaration forwards to its input, so it cannot legitimately ")
+			TEXT("undo was requested; restoration was not verified. Inspect the material before retrying or saving. A declaration forwards to its input, so it cannot legitimately ")
 			TEXT("change what a material computes. First: %s"), NewErrors.Num(), *NewErrors[0]);
 	}
 
@@ -662,7 +663,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 	{
 		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
-			TEXT("FAILED: the edit LOST %d expression(s), so it was ROLLED BACK. This pass adds a ")
+			TEXT("FAILED: the edit LOST %d expression(s), so undo was requested; restoration was not verified. Inspect the material before retrying or saving. This pass adds a ")
 			TEXT("declaration and re-points inputs at it; it never removes anything. First lost: %s"),
 			Lost.Num(), *Lost[0]);
 	}
@@ -671,7 +672,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 	{
 		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
-			TEXT("FAILED: the edit GAINED %d expression(s) it did not plan, so it was ROLLED BACK. The ")
+			TEXT("FAILED: the edit GAINED %d expression(s) it did not plan, so undo was requested; restoration was not verified. Inspect the material before retrying or saving. The ")
 			TEXT("only expressions this pass may add are the declarations it lists. First unexpected: %s"),
 			GainedUnexpected.Num(), *GainedUnexpected[0]);
 	}
@@ -689,7 +690,7 @@ FString FTurboMCPMaterialLabelsPromote::Apply(const FPlan& InPlan)
 
 	// THE COMPILED-RESULT EVIDENCE, STATED WITH ITS OWN LIMITS RATHER THAN AS A BARE CLAIM.
 	Out += FString::Printf(
-		TEXT("\nCOMPILED RESULT: %d of %d pre-existing expression(s) still present with none lost, ")
+		TEXT("\nCHECK RESULTS (not proof of identical rendered output): %d of %d pre-existing expression(s) still present with none lost, ")
 		TEXT("%d declaration(s) gained and all of them planned, and the engine reports %d error(s), none ")
 		TEXT("of them new. StateId %s -> %s (reported rather than asserted: it can change for reasons a ")
 		TEXT("label promotion does not control)."),
