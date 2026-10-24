@@ -290,3 +290,9 @@ Supervised run eeefed0e23d24043afcadac34005fdde passed stock build and widget-re
 Implemented 06321cb. For successful transport values containing a final tmcp-result-v1 line, dirty telemetry is inserted before that line, preserving the authoritative outcome rather than displacing it. Existing JSON return envelopes remain valid.
 
 Supervised run 715b27b9b7504d87bfb620cb3e9f034f passed stock build and widget-retarget suite, including a real EditTurboMCPGraphRepoint refusal parsed by call_structured with required metadata and retained dirty telemetry. All 16 fixture files restored. This verifies a refusal carried by successful transport plus ordinary widget output. The transport-error branch still appends diagnostics directly and needs equivalent ordering coverage if it contains result metadata; double-encoded envelopes and serializer fallback also remain unverified.
+
+## Widget variable text review
+
+Implemented in b0203e1: documented all three EditTurboMCPWidgetsAsVars parameters; replaced obsolete save aliases and preview-equivalence claims with current compile/save actions and explicit skeleton regeneration, editor callback and undo limitations. Removed historical roadmap commentary. Missing-name refusal now describes unchanged widget flags rather than claiming all state is unchanged.
+
+Supervised run 4281ad84782f41c8b602d3af24588f0d passed the stock-engine build, test-widgets-as-vars and the 125-tool live help inventory; all 16 fixture files restored. The focused suite covers flag transitions, idempotence, missing-name refusal, reader-visible state and revised messages. It does not prove fresh disk reload, undo, or every callback effect. Overall tool-quality review remains incomplete.
