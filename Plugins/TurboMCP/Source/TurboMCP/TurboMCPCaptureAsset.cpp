@@ -634,7 +634,7 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 	}
 
 	UTextureRenderTarget2D* RenderTarget = FWidgetRenderer::CreateTargetFor(
-		FVector2D(Width, Height), TF_Bilinear, /*bUseGammaCorrection=*/false);
+		FVector2D(Width, Height), TF_Bilinear, /*bUseGammaCorrection=*/true);
 	if (RenderTarget == nullptr)
 	{
 		OutError = FString::Printf(
@@ -643,7 +643,7 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 		return false;
 	}
 
-	FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/false);
+	FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/true);
 	Renderer->DrawWidget(RenderTarget, Widget, /*Scale=*/1.0f,
 		FVector2D(Width, Height), /*DeltaTime=*/0.0f, /*bDeferRenderTargetUpdate=*/false);
 
