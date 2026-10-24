@@ -320,3 +320,11 @@ Run 24fb97549c434f89ad0c00fd909997a7 built successfully but exposed an obsolete 
 57967b6 adds accepted primitive, struct, container and reference forms to function input help, including nested-container and hashing restrictions. Function removal now documents both parameters, whole-graph deletion, editor/callback effects, unrepaired callers and bindings, and compile/save/undo limitations. Removed the false promise that a deleted name is immediately free.
 
 Run 8327a8b8189849d380fab547a58856b5 passed build, test-function (including explicit deletion-message checks) and all 125 live help checks within the compact-help size limit. Type syntax was checked against the parser; this run does not exercise every type form or prove undo/rollback. Prior fault-path and reconstruction coverage gaps remain.
+
+## Variable creation text review
+
+576fb0b documents both tools and four parameters, removes the false compile-once/no-partial-change promises, explains that preview does not validate the target or existing names, replaces obsolete save guidance, and reports missing read-back names as partial. The empty-input example now uses supported default=value syntax.
+
+809c7a73ed01459a96f2e6906f040d98 passed build and 125-tool help inventory but the variable suite expected obsolete conflict wording. 99d949f checks all three conflicting names and the no-add statement directly. Rerun 29b7f008dfbd4046a1ee2b356b5dea28 passed. Fixture variables already existed: these runs prove preview, conflict/refusal messages and existing-state read-back, NOT fresh creation or partial-failure behavior.
+
+Remaining source findings: variable type resolution has separate legacy container/type handling rather than the shared parser throughout; inspect fallback and hashing behavior. The private option sets EditConst rather than proving Blueprint private access semantics. Multiword tooltip parsing commentary contradicts token handling. Fresh-fixture creation, defaults/flags and partial-add checks remain required; this family is not behavior-certified.
