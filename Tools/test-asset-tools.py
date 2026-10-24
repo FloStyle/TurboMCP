@@ -171,10 +171,10 @@ def main():
     # of `banana` or `0` answered 50 AND SAID NOTHING, so neither of these sentences had ever run.
     bad_limit = s.call(READ_TOOLSET, "ReadTurboMCPDirtyList", {"limit": "banana"})
     check("refuses a limit that is not a number, and names the parameter",
-          bad_limit.startswith("error:") and "is not a limit" in bad_limit, bad_limit[:200])
+          bad_limit.startswith("error:") and "limit" in bad_limit and "whole number" in bad_limit, bad_limit[:200])
     zero_limit = s.call(READ_TOOLSET, "ReadTurboMCPDirtyList", {"limit": "0"})
     check("refuses a limit of zero with its OWN sentence, not the non-number one",
-          zero_limit.startswith("error:") and "is not usable" in zero_limit, zero_limit[:200])
+          zero_limit.startswith("error:") and "limit must be positive" in zero_limit and zero_limit != bad_limit, zero_limit[:200])
 
     print()
     if failures:
