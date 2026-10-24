@@ -1455,6 +1455,17 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintJson.cpp"
           ],
           "new_files": []
+        },
+        "quality-layout-reader-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+            "Tools/test-tool-text-inventory.py",
+            "Tools/run-suites.ps1"
+          ],
+          "new_files": [
+            "Tools/test-layout-output.py"
+          ]
         }
       },
       "preserve_rows": []
