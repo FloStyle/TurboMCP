@@ -29,10 +29,10 @@ class BindingSession(Session):
     def call(self, *args, **kwargs):
         text = super().call(*args, **kwargs)
         try:
-            wrapped = json.loads(text)
+            wrapped, end = json.JSONDecoder().raw_decode(text)
         except (ValueError, TypeError):
             return text
-        return wrapped.get("returnValue", text) if isinstance(wrapped, dict) else text
+        return wrapped["returnValue"] + text[end:] if isinstance(wrapped, dict) and isinstance(wrapped.get("returnValue"), str) else text
 
 
 WIDGET = "WBP_NodeTest"
