@@ -80,8 +80,9 @@ The linked records distinguish implemented containment from unresolved causes. V
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>todo (54)</summary>
+<summary>todo (55)</summary>
 
+- **P0** [Local-variable promotion must preserve calculated values](todo/67f00521.md)
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
 - **P1** [Verify append node structure and compile outcomes](todo/4f1bfd61.md)
 - **P1** [Verify session-report completeness and stable IDs](todo/51678b9f.md)

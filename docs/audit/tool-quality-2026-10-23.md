@@ -364,3 +364,9 @@ bffe9b5/5c193aa document both asset parameters, preview compilation and destruct
 Implemented in `05e9f4c`: documented all five EditTurboMCPPinDefault parameters, exact identity matching, literal formats and empty-value behavior. Compact help retains transaction, dirty-state, schema callback, object-load and explicit compile/save information. Failed read-back no longer claims unchanged/complete restoration merely because UndoTransaction returned success; it reports partial, unconfirmed restoration and asks the caller to inspect before saving or retrying.
 
 Validation: supervised execution `4c8daae69c974351a0bce430a028daa7` passed the stock-engine build and live schema/help inventory for all 125 tools; all 16 protected fixtures restored. This is text/schema coverage, not pin-default behavioral certification. Success/refusal and callback-induced read-back failure/undo paths still need focused behavioral coverage; full restoration is deliberately not claimed.
+
+## Local-variable promotion review — 2026-10-24
+
+Source a7480b0 documents both parameters for both tools and removes obsolete aliases and the unsupported promise that input tracing proves equivalent behavior. A critical defect was found: the mutation replaces a calculation with an unassigned local getter. Candidate edits now refuse before mutation as a temporary safeguard. Full repair remains open in todo/67f00521.md; this is not a completed promotion implementation.
+
+Execution d1d3700465734138aec566b36a1d63c3 passed build and the 125-tool live help inventory. test-local-vars failed because its FunctionAdd setup omits required inputs/outputs. Its remaining no-candidate/refusal checks do not cover candidate promotion. Sixteen fixtures restored. Next work: repair promotion semantics and add a real native candidate fixture; fix setup separately without weakening assertions.
