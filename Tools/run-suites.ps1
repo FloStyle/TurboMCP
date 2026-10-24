@@ -286,18 +286,12 @@ function Start-EditorAndWait {
     } finally { $env:TURBOMCP_RUNNER_ALLOW_STOP = $oldAllowStop }
     Start-Sleep -Seconds 2
     $launchTime = Get-Date
-    # restarts it between suites - so the machine stole focus several times per run. It also skips shader
-    # compilation, which makes each start faster, and no suite loses anything because every TurboMCP tool
-    # works through reflection rather than rendering.
-    #
-    # `-LowPriority` BECAUSE THE EDITOR STARTS AT `Normal` AND SO DOES A RUNNING GAME, so a suite run COMPETED ON
-    # EQUAL TERMS with whatever the machine's owner was doing - MEASURED as a game hitching for the whole run. The
-    # Windows scheduler gives BelowNormal threads the CPU only when nothing at Normal wants it, so the suites slow
-    # down and the foreground work does not notice. An interactive launch does not have to pass either switch.
+    # Keep editor work at low priority. Render-dependent suites need a real RHI.
     $oldStartingEditor = $env:TURBOMCP_RUNNER_STARTING_EDITOR
     $env:TURBOMCP_RUNNER_STARTING_EDITOR = '1'
-    # The field diagnostic must exercise real Slate/rendering, not NullRHI.
-    $diagnosticRender = $Suites -in @('test-field-open-diagnostic', 'test-widget-preview')
+    # Use resolved names so comma-separated batches and 'all' honor rendering requirements.
+    $renderSuites = @('test-field-open-diagnostic', 'test-widget-preview', 'test-widget-roundtrip')
+    $diagnosticRender = @($Selected | Where-Object { $_ -in $renderSuites }).Count -gt 0
     try {
         if ($diagnosticRender) { & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null }
         else { & pwsh -NoProfile -File $StartEditor -LowPriority -Offscreen 2>&1 | Out-Null }
