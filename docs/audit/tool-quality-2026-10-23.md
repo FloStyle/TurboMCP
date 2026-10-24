@@ -482,3 +482,9 @@ Supervised run ab42a383ffaf4224bda493ccaffc75cd passed build and all 125 live he
 ad8312c documents 12 parameters across copy preview/edit, including existing destination requirements, selection boundaries, empty-selection behavior and the mandatory empty anchor value while anchor wiring is unsupported. Compact help retains asset loading, edit transaction and no compile/save. External unresolved links and required target members are explicit. Wrapper comments no longer imply matching plans guarantee successful apply or toolset membership prevents side effects.
 
 Supervised run 338a84949d6e4381abdb87c9bcb1af91 passed build and all 125 live help/schema checks. This documentation change adds no new copy behavior evidence. Link/default preservation, failed-copy restoration, reference resolution and resulting runtime behavior remain separate verification requirements; overall review stays open.
+
+## Collapse support-limit text — 2026-10-24
+
+d9e040a documents ten parameters and puts the existing unsupported-collapse limitation first in compact help. Selection analysis no longer starts with 'would change'. The apply refusal states that nothing was extracted or created and points to manual editor extraction followed by fresh graph reads, without historical engineering speculation. This does not implement collapse or close its feature gap.
+
+Supervised run 295bd253016d40d2aa8757785065959a passed build and all 125 live help/schema checks. No new collapse behavioral acceptance is claimed. Existing selection-analysis validity and unsupported-operation refusal coverage remain separate verification work; the overall review remains open.
