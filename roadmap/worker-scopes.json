@@ -1953,6 +1953,13 @@
           "new_files": [
             "Tools/test-capture-framing.py"
           ]
+        },
+        "quality-capture-catalogue": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureAsset.cpp",
+            "Tools/test-capture-framing.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
