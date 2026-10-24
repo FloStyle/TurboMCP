@@ -284,3 +284,9 @@ Run 9136a8e81dfe4885b0276d427505f39a passed build and all-125 help inventory; th
 Implemented 78c9b30. The recorder now appends dirty-package telemetry inside a JSON returnValue string while preserving other envelope fields, rather than concatenating text after the JSON object. Plain-text and error paths retain their existing handling. Removed the widget test decoder workaround; the normal Session client must decode the result and retain dirty_packages telemetry.
 
 Supervised run eeefed0e23d24043afcadac34005fdde passed stock build and widget-retarget behavior, including normal-client decoding with dirty telemetry; all 16 fixture files restored. Offline test-result-contract also passed. An initial mixed suite request was refused because that contract suite is catalogued offline; it was run in the correct mode afterward. The offline result suite does not exercise the recorder itself. Nested/double-encoded envelopes, encoding-failure fallback and final-metadata ordering with telemetry require separate coverage; no blanket protocol certification is claimed.
+
+## Dirty telemetry and final metadata
+
+Implemented 06321cb. For successful transport values containing a final tmcp-result-v1 line, dirty telemetry is inserted before that line, preserving the authoritative outcome rather than displacing it. Existing JSON return envelopes remain valid.
+
+Supervised run 715b27b9b7504d87bfb620cb3e9f034f passed stock build and widget-retarget suite, including a real EditTurboMCPGraphRepoint refusal parsed by call_structured with required metadata and retained dirty telemetry. All 16 fixture files restored. This verifies a refusal carried by successful transport plus ordinary widget output. The transport-error branch still appends diagnostics directly and needs equivalent ordering coverage if it contains result metadata; double-encoded envelopes and serializer fallback also remain unverified.
