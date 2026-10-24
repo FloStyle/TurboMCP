@@ -124,6 +124,14 @@ bool FTurboMCPGraphReplace::Plan(const FString& InAsset, const FString& InGraphN
 		}
 	}
 
+    // An explicit wire reference also describes an existing node. Removing that
+    // endpoint after Append verifies the wire would silently break the requested edit.
+    for (const FTurboMCPGraphAppend::FNewLink& Link : OutPlan.Append.Links)
+    {
+        if (!Link.FromNodeKey.IsEmpty()) Described.Add(Link.FromNodeKey);
+        if (!Link.ToNodeKey.IsEmpty()) Described.Add(Link.ToNodeKey);
+    }
+
 	// ---- 4. THE REMOVAL LIST, WHICH IS THE WHOLE DIFFERENCE FROM APPEND ---------------------------------
 	for (UEdGraphNode* Node : Graph->Nodes)
 	{

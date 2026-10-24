@@ -70,8 +70,7 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     {
         const FString KeptKey = bReferenceSource ? SourceKey : ConsumerKey;
         const FString Text = FString::Printf(TEXT("(Development|PrintString\n InString \"new\"\n %s (-> %s:%s)\n)"),
-            bReferenceSource ? TEXT("execute") : TEXT("then"), *KeptKey,
-            bReferenceSource ? TEXT("then") : TEXT("execute"));
+            TEXT("execute"), *KeptKey, TEXT("then"));
         FTurboMCPGraphReplace::FPlan Plan;
         if (!TestTrue(TEXT("Linked replacement plans"), FTurboMCPGraphReplace::Plan(Blueprint->GetPathName(), Graph->GetName(), Text, Plan, Error)))
         { AddError(Error); return false; }
