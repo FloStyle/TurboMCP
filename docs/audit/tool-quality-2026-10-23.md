@@ -260,3 +260,9 @@ Run 7812114be7ad4a0386cbcbc42720404b passed the stock build and all-125 live hel
 Implemented d8a77ad. Documented both EditTurboMCPTrace parameters and the clear-all empty-ID behavior. Compact help retains non-undoable history removal. Arming output now reports registry changes, unvalidated IDs and instrumentation dependence instead of claiming every compiled node emits events. Clear output states that removed history cannot be recovered with Undo. Removed obsolete wrapper commentary equating Read tools with absence of state changes.
 
 Supervised run e30d36767c1d42e1b6d0c959ea798d76 passed stock build, all-125 help inventory and 28 trace checks with zero skips, including one actual recorded Blueprint execution hit. All 16 fixture files restored. Parameter-description gaps now 174. This does not certify every instrumentation configuration or prove absent execution from zero hits.
+
+## Checkout help
+
+Implemented 755b7bc. Added both checkout Assets parameter descriptions. Preview help now names forced provider-state refresh and possible server contact, without promising later checkout success. Edit help names source-control/file-state changes and lack of rollback across partial successes. Removed wrapper claims that separate Preview/Edit calls cannot differ.
+
+Supervised run a1ccec98761748d6a422b0258450c499 passed stock build and all-125 live help inventory, including essential checkout warnings; 16 fixture files restored. Missing parameter descriptions now 172. No live depot checkout was executed. Remaining source-control output debt: renderer still contains obsolete aliases, overly broad no-file-write/no-provider-contact statements, and assumes UsesCheckout=false proves a harmless no-op. Those implementation/output paths remain open for the next batch; this entry closes only help coverage.
