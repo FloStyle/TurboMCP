@@ -178,3 +178,9 @@ Implemented 369f5fe: removed the unsupported lossless read/write identity promis
 Source finding retained: SlotAssignments rounds nonzero padding to whole units and omits nearly-zero values. The response now warns about it, but precision preservation is still an actionable defect, not fixed by wording. Full widget backup/export and arbitrary write-back preservation are not certified. Verification pending.
 
 Run e83564cffc0848bf984d8ecce1697cfd passed build/help but the widget suite omitted MCP session initialization and failed its first request with HTTP 400; the supervisor restored 16 fixtures. Test setup corrected in f229f45. Run a5f92310d40444978c80c6eeb723458e passed build and widget-tree-sync checks. This verifies the limited reader and coverage message, not full widget write-back identity.
+
+## Widget padding precision (2026-10-24)
+
+Implemented 441b1cb: both widget readers preserve fractional float padding with nine significant digits and omit only exact zero, rather than rounding to whole units or dropping tiny nonzero values. Removed the obsolete rounding warning; incomplete-export and omitted-state warnings remain.
+
+Run 40b3974c53604410b186cef29c1f8361 built successfully. The new native checks for fractional, negative, tiny nonzero and zero padding produced no failures; they execute before the existing graph append test. Widget-tree-sync passed 15 checks; live help inventory passed for all 125 tools. The overall run FAILED: Widget.RoundtripAcceptance later failed “Plan is acceptable” for its graph append. The reason is not yet captured by that assertion and remains an actionable investigation; this batch does not certify full roundtrip behavior. Supervisor restored 16 fixture files. Next: expose the rejected plan diagnostics and investigate without weakening the acceptance check.
