@@ -942,10 +942,12 @@ public:
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
 		const FString& TargetPin, const FString& KeepSource);
 
-	/** Preview graph repoints without edits. Operations accepts a JSON array or an object with an operations array.
-     * Example: [{"asset":"/Game/BP_Example","graphName":"EventGraph","sourceNodeId":"reader ID","sourcePin":"then","targetNodeId":"reader ID","targetPin":"execute","keepSource":true}]
-     * Field names match GraphRepoint (case-insensitive); graph is an alias for graphName. Optional id defaults to operation-N; optional kind defaults to graphRepoint. Other kinds refuse. Compile/save are deferred. Operations are preflighted in order on transient graph copies; later operations see earlier changes. */
-	UFUNCTION(meta = (AICallable))
+	/**
+     * Simulate ordered repoints on a transient graph; loads the Blueprint without applying live edits, compiling or saving.
+     * All operations must target one asset and graph. Later plans see preceding simulated changes. A successful preview does not guarantee apply; after a partial failure inspect the graph before retrying or saving.
+     * @param Operations Required nonempty JSON array of operation objects, or an object containing only a lowercase operations array. Each entry requires string asset, graphName (or graph, not both), sourceNodeId, sourcePin, targetNodeId and targetPin. Both pins are outputs. targetNodeId may be empty with targetTypeId for creation. Optional id defaults to operation-N and must be unique; kind defaults to exact graphRepoint, the only supported kind. Optional keepSource accepts boolean or true/false/1/0 text; empty or omitted retains the source. Other fields are strings. Operation field names are case-insensitive; unknown or case-duplicate fields refuse. Empty input/array and malformed JSON refuse. Example with actual reader IDs substituted: [{"asset":"/Game/Tests/BP_NodeTest","graphName":"EventGraph","sourceNodeId":"source reader ID","sourcePin":"ReturnValue","targetNodeId":"target reader ID","targetPin":"ReturnValue","keepSource":true}]. Both nodes must expose the named outputs.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPBatchEdit(const FString& Operations);
 
     /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first.
@@ -1557,8 +1559,12 @@ public:
 		const FString& SourcePin, const FString& TargetNodeId, const FString& TargetTypeId,
 		const FString& TargetPin, const FString& KeepSource);
 
-	/** Apply the same Operations JSON array/object accepted by PreviewTurboMCPBatchEdit under one transaction; preview first. Compile/save are deferred. Operations are preflighted in order on transient graph copies; later operations see earlier changes. */
-	UFUNCTION(meta = (AICallable))
+	/**
+     * Apply ordered repoints in one undo transaction, including requested source deletion; loads the Blueprint and does not compile or save.
+     * All operations must target one asset and graph. Later plans see preceding simulated changes. A successful preview does not guarantee apply; after a partial failure inspect the graph before retrying or saving.
+     * @param Operations Required nonempty JSON array of operation objects, or an object containing only a lowercase operations array. Each entry requires string asset, graphName (or graph, not both), sourceNodeId, sourcePin, targetNodeId and targetPin. Both pins are outputs. targetNodeId may be empty with targetTypeId for creation. Optional id defaults to operation-N and must be unique; kind defaults to exact graphRepoint, the only supported kind. Optional keepSource accepts boolean or true/false/1/0 text; empty or omitted retains the source. Other fields are strings. Operation field names are case-insensitive; unknown or case-duplicate fields refuse. Empty input/array and malformed JSON refuse. Example with actual reader IDs substituted: [{"asset":"/Game/Tests/BP_NodeTest","graphName":"EventGraph","sourceNodeId":"source reader ID","sourcePin":"ReturnValue","targetNodeId":"target reader ID","targetPin":"ReturnValue","keepSource":true}]. Both nodes must expose the named outputs.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPBatchEdit(const FString& Operations);
 
     /** Connect exact existing node/pin IDs. Data replaces the target input source; exec replaces only the named source output destination and preserves other incoming target paths. No automatic continuation or casts. Same scratch preview and one-undo edit; compile/save deferred. Preview first.

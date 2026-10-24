@@ -114,7 +114,7 @@ namespace
  {
   TSet<FString> Assets; FString Result = TEXT("unchanged\nplanned\nplanning=sequential transient graph; each operation sees preceding staged changes\n");
   for (const FBatchOperation& Op : Ops) { Assets.Add(Op.Repoint.Asset); Result += FString::Printf(TEXT("%s [%s]: %s\n"), *Op.Id, *Op.Kind, *FTurboMCPGraphRepoint::RenderPreview(Op.Repoint)); }
-  Result += FString::Printf(TEXT("operations=%d\naffectedAssets=%s\nundo=one\ncompile=deferred\nsave=deferred\n"), Ops.Num(), *FString::Join(Assets.Array(), TEXT(",")));
+  Result += FString::Printf(TEXT("operations=%d\naffectedAssets=%s\nundo=not_created_by_preview\ncompile=not_run\nsave=not_requested\n"), Ops.Num(), *FString::Join(Assets.Array(), TEXT(",")));
   return Result;
  }
 }
@@ -155,5 +155,5 @@ FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
   }
   Applied.Add(Op.Id);
  }
- return FString::Printf(TEXT("changed\noperations=%d\napplied=%s\nundo=one\ncompile=deferred\nsave=deferred\nrollbackScope=none"), Ops.Num(), *FString::Join(Applied, TEXT(",")));
+ return FString::Printf(TEXT("changed\noperations=%d\napplied=%s\nundo=one\ncompile=not_run\nsave=not_requested\nrollbackScope=none\nInspect the graph and compile before saving; runtime behavior is not verified."), Ops.Num(), *FString::Join(Applied, TEXT(",")));
 }
