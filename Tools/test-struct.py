@@ -120,21 +120,18 @@ def check(name, ok, detail=""):
 
 
 def field_names(text):
-    """The field names in a tool's own read-back list.
-
-    PARSED, NOT MATCHED AS A SENTENCE. The read back prints lines like
-    `  Weight: float`, so the name is what precedes the first colon on a
-    two-space-indented line. A line that does not have that shape is skipped
-    rather than guessed at.
-    """
+    """Read only the declared field section, never appended telemetry."""
     names = []
+    active = False
     for line in text.splitlines():
-        if not line.startswith("  ") or line.startswith("   "):
+        if re.fullmatch(r"fields (?:read back|now): \d+", line):
+            active = True
             continue
-        body = line.strip()
-        if ":" not in body:
+        if not active:
             continue
-        names.append(body.split(":", 1)[0].strip())
+        if not line.startswith("  ") or line.startswith("   ") or ":" not in line:
+            break
+        names.append(line.strip().split(":", 1)[0].strip())
     return names
 
 
@@ -159,7 +156,8 @@ def reader_count(text):
     The first shape is the one a caller acts on - it is the count that `force=`
     must name - so it is tried first.
     """
-    for pattern in (r"would break (\d+) loaded reader",
+    for pattern in (r"may affect (\d+) loaded dependent asset",
+                    r"would break (\d+) loaded reader",
                     r"\((\d+) loaded reader"):
         found = re.search(pattern, text)
         if found:
@@ -471,7 +469,7 @@ def main():
         remaining = field_names(forced)
         check("Drop is gone and Keep stays",
               "Drop" not in remaining and "Keep" in remaining, str(remaining))
-    else:
+    elif measured == 0:
         # THE READER DID NOT TAKE, AND THAT IS REPORTED AS A LIMIT ON THIS RUN
         # RATHER THAN PASSED OFF AS COVERAGE. With no reader the correct `force`
         # is `0` and the refusal branch never runs, so the force ARITHMETIC is not
@@ -586,7 +584,7 @@ def main():
          "not an option of a reorder"),
         ("a non-numeric force", PREVIEW_TOOLSET, "PreviewTurboMCPStructFields",
          {"struct": OBJECT_READ, "changes": "remove:Keep, force=lots"},
-         "is not a count"),
+         "force must be an integer count"),
         ("the same field changed twice", PREVIEW_TOOLSET, "PreviewTurboMCPStructFields",
          {"struct": OBJECT_EDIT, "changes": "Alpha: int, Alpha: double"},
          "changed twice"),
