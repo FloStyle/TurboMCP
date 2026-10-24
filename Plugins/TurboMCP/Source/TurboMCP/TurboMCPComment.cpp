@@ -407,10 +407,12 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 		}
 		const double ParsedWidth = FCString::Atod(*Left);
 		const double ParsedHeight = FCString::Atod(*Right);
-		if (ParsedWidth <= 0.0 || ParsedHeight <= 0.0)
+		if (!Left.TrimStartAndEnd().IsNumeric() || !Right.TrimStartAndEnd().IsNumeric()
+            || !FMath::IsFinite(ParsedWidth) || !FMath::IsFinite(ParsedHeight)
+            || ParsedWidth < 1.0 || ParsedHeight < 1.0 || ParsedWidth > MAX_int32 || ParsedHeight > MAX_int32)
 		{
 			OutError = FString::Printf(
-				TEXT("'%s' has a side that is not a positive number."), *InSize);
+				TEXT("'%s' has an invalid side. Use finite numeric dimensions from 1 to 2147483647, such as 400x200."), *InSize);
 			return false;
 		}
 		OutPlan.Width = ParsedWidth;
@@ -441,7 +443,7 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 		{
 			OutError = FString::Printf(
 				TEXT("none of the %d node key(s) are in %s. Its node keys are listed by ")
-				TEXT("R-NODE-FIND."), OutPlan.NodeKeys.Num(), *OutPlan.GraphName);
+				TEXT("ReadTurboMCPNodeFind."), OutPlan.NodeKeys.Num(), *OutPlan.GraphName);
 			return false;
 		}
 		if (Missing.Num() > 0)
@@ -468,7 +470,7 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 		if (OutPlan.BoxKey.IsEmpty())
 		{
 			OutError = TEXT("delete needs the box to remove. Pass its node key, as ")
-				TEXT("R-COMMENT-LIST reports it. Its nodes are never removed.");
+				TEXT("ReadTurboMCPCommentList reports it. Its nodes are never removed.");
 			return false;
 		}
 		// The box is FOUND while planning, so a key that names nothing is refused by the preview
@@ -723,7 +725,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			Made.Width, Made.Height, Made.X, Made.Y);
 		Out += FString::Printf(TEXT("\nholds %d node(s)"), Made.MemberCount);
 		Out += FString::Printf(TEXT("\n; refer to it later as %s"), *Made.Key);
-		Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+		Out += TEXT("\n; the change is in memory and NOT saved. Inspect the result, then use EditTurboMCPSave if correct. Compilation was not requested.");
 		return Out;
 	}
 
@@ -769,7 +771,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			Out += FString::Printf(
 				TEXT("\nits %d node(s) are untouched: a box is a label, not a container."),
 				MemberTotal);
-			Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+			Out += TEXT("\n; the change is in memory and NOT saved. Inspect the result, then use EditTurboMCPSave if correct. Compilation was not requested.");
 			return Out;
 		}
 
@@ -855,7 +857,7 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			{
 				Out += TEXT("\ncolour: changed");
 			}
-			Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+			Out += TEXT("\n; the change is in memory and NOT saved. Inspect the result, then use EditTurboMCPSave if correct. Compilation was not requested.");
 			return Out;
 		}
 
@@ -940,6 +942,6 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 			TEXT("Already-fitted and unselected boxes were also left unchanged."));
 	}
 
-	if (Fitted > 0) Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+	if (Fitted > 0) Out += TEXT("\n; the change is in memory and NOT saved. Inspect the result, then use EditTurboMCPSave if correct. Compilation was not requested.");
 	return Out;
 }

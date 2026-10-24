@@ -640,32 +640,18 @@ public:
 	static FString PreviewTurboMCPWidgetRetarget(const FString& Asset);
 
 	/**
-	 * Work out what a comment-box change would do, without making it.
-	 *
-	 * `action` is REQUIRED and one of `create`, `set`, `fit`, `delete`. It is required rather than
-	 * guessed from which other fields are present, because a caller who forgot one field would
-	 * otherwise get the other operation.
-	 *
-	 *  - `create` takes `nodes`, one or more node keys or full node ids, and boxes them. The box is
-	 *    sized to enclose them; `size=WxH` overrides that.
-	 *  - `set` takes `box` and any of `text=`, `color=`, `size=WxH`.
-	 *  - `fit` resizes every box in the graph to enclose what is inside it, leaving the box's
-	 *    top-left where it is and allowing for the title bar above the rectangle.
-	 *  - `delete` takes `box` and removes the BOX ONLY. A box is a label, not a container: nothing
-	 *    inside it is removed or moved, and the result says so.
-	 *
-	 * Boxes are named by their node key, the six hex digits `R-COMMENT-LIST` reports.
-	 *
-	 * WHAT IS INSIDE A BOX IS THE ENGINE'S ANSWER, not a rectangle compared by hand: membership
-	 * comes from `UEdGraphNode::GetNodesUnderComment`, which is what the editor itself uses. A
-	 * hand-rolled overlap test would disagree with the editor the first time either changed, and the
-	 * disagreement would be invisible.
-	 *
-	 * EVERY action LISTS THE BOXES THAT HOLD NOTHING, because a box around no nodes is a label with
-	 * nothing to label and is usually a leftover. `fit` leaves those alone rather than shrinking
-	 * them to nothing, which would look like a deletion.
-	 */
-	UFUNCTION(meta = (AICallable))
+     * Plan comment changes; loads the Blueprint and may measure transient graph widgets, without applying edits, compiling or saving.
+     * Deleting a box keeps its nodes. Explicit fit expands outward to preserve the old rectangle; fit without Nodes fits current contents. Inspect preview geometry before applying.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
+     * @param GraphName Required existing graph name, e.g. EventGraph. Use the reader's name; missing targets are refused.
+     * @param Action Required create, set, fit or delete; case-insensitive and trimmed. Empty/unknown actions refuse.
+     * @param Nodes Comma- or pipe-separated reader node IDs. Required for create; for fit selects nodes to enclose and requires Box. Empty fit uses current box contents. Unused for set/delete; pass empty.
+     * @param Box Existing comment ID for set/delete. For fit, empty with empty Nodes selects all boxes; nonempty selects one box. Explicit fit with Nodes requires one Box. Unused for create; pass empty.
+     * @param Text Comment label for create/set; empty means no supplied label on create or leave unchanged on set, not clear. Whitespace is retained. Unused for fit/delete; pass empty. Example: Input handling.
+     * @param Color Optional #RRGGBB or comma-separated RGB values 0..255, e.g. #3A6EA5. Empty uses the new box default or preserves an existing color. Used by create/set; otherwise pass empty.
+     * @param Size Optional width x height in graph units, e.g. 400x200. Each side must be finite numeric text in 1..2147483647; fractional parts truncate. Empty create encloses selected nodes; empty set keeps size. Explicit create size overrides automatic enclosure. Used by create/set; otherwise pass empty.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPComment(
 		const FString& Asset,
 		const FString& GraphName,
@@ -1296,23 +1282,18 @@ public:
 		const FString& Function);
 
 	/**
-	 * Make a comment-box change.
-	 *
-	 * The same inputs, read and validated the same way, as `P-COMMENT`, because the two share one
-	 * code path up to the write (`D-02`).
-	 *
-	 * THE DELETION NEVER TOUCHES THE NODES, AND ONLY ONE HALF OF THAT IS MEASURED. A box is a label
-	 * rather than a container, so removing it removes the label and nothing else. THE RE-MEASUREMENT IS
-	 * OF THE BOXES: the result re-counts them afterwards, so what is CHECKED is that the box itself is
-	 * gone. The node count is REPORTED, not verified - it is taken before the destroy and states what
-	 * the box held. That it stays true rests on `DestroyNode` removing the comment and nothing else,
-	 * which is why `Graph->Modify()` runs first and the change can be undone.
-	 *
-	 * `set` captures the old text, colour and size first, so the result reports what CHANGED rather
-	 * than only what the values are now (`P4`), and a `set` that changes nothing opens with
-	 * `unchanged:`.
-	 */
-	UFUNCTION(meta = (AICallable))
+     * Create, change, resize or delete comment boxes in an undo transaction; loads/measures the graph and does not compile or save.
+     * Deleting a box keeps its nodes. Explicit fit expands outward to preserve the old rectangle; fit without Nodes fits current contents. Inspect preview geometry before applying.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
+     * @param GraphName Required existing graph name, e.g. EventGraph. Use the reader's name; missing targets are refused.
+     * @param Action Required create, set, fit or delete; case-insensitive and trimmed. Empty/unknown actions refuse.
+     * @param Nodes Comma- or pipe-separated reader node IDs. Required for create; for fit selects nodes to enclose and requires Box. Empty fit uses current box contents. Unused for set/delete; pass empty.
+     * @param Box Existing comment ID for set/delete. For fit, empty with empty Nodes selects all boxes; nonempty selects one box. Explicit fit with Nodes requires one Box. Unused for create; pass empty.
+     * @param Text Comment label for create/set; empty means no supplied label on create or leave unchanged on set, not clear. Whitespace is retained. Unused for fit/delete; pass empty. Example: Input handling.
+     * @param Color Optional #RRGGBB or comma-separated RGB values 0..255, e.g. #3A6EA5. Empty uses the new box default or preserves an existing color. Used by create/set; otherwise pass empty.
+     * @param Size Optional width x height in graph units, e.g. 400x200. Each side must be finite numeric text in 1..2147483647; fractional parts truncate. Empty create encloses selected nodes; empty set keeps size. Explicit create size overrides automatic enclosure. Used by create/set; otherwise pass empty.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPComment(
 		const FString& Asset,
 		const FString& GraphName,
