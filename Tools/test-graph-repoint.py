@@ -3,7 +3,7 @@
 import os, re, subprocess, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tmcp_editor
-from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session
+from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, READ_TOOLSET, Session, call_structured
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSET, GRAPH = "TurboMCPAcceptance", "AppendChainProbe"
@@ -34,7 +34,8 @@ def main():
     refusal_args = dict(args); refusal_args["targetPin"] = "NoSuchPin"
     refusal = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphRepoint", refusal_args)
     after_preview = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", read_args)
-    refused_edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphRepoint", refusal_args)
+    refused_answer = call_structured(session, EDIT_TOOLSET, "EditTurboMCPGraphRepoint", refusal_args)
+    refused_edit = refused_answer.body
     after_refusal = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", read_args)
     print("PREVIEW:", preview, "REFUSAL:", refusal, "REFUSED EDIT:", refused_edit, sep="\n")
     edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphRepoint", args)
@@ -43,7 +44,7 @@ def main():
     checks = [
         before == after_preview,
         before == after_refusal,
-        '"outcome":"refused"' in refused_edit.replace(" ", ""),
+        refused_answer.result is not None and refused_answer.result.outcome == "refused",
         preview.startswith("preview:") and "reader(s) would move" in preview,
         "unchanged:" in refusal and "NoSuchPin" in refusal,
         edit.startswith("changed:") and "1 reader(s)" in edit,
