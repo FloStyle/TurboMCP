@@ -79,8 +79,8 @@ def main():
     print(again)
     print()
     check("the second call is refused", again.startswith("unchanged:"), again[:80])
-    check("it names what already exists", "already a variable" in again
-          or "already exist" in again)
+    check("it names what already exists", all(name in again for name in ("Speed", "bIsArmed", "Label"))
+          and "nothing was added" in again)
 
     print()
     print("=== save, then read it back through a DIFFERENT tool ===")
