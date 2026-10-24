@@ -58,6 +58,12 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     Consumer->FindPinChecked(TEXT("InString"))->DefaultValue = TEXT("preserve-me");
     Package->SetDirtyFlag(false);
 
+    UK2Node_CustomEvent* Event = NewObject<UK2Node_CustomEvent>(Graph, NAME_None, RF_Transactional);
+    Event->CustomFunctionName = TEXT("ReplacementStart");
+    Graph->AddNode(Event, false, false);
+    Event->CreateNewGuid();
+    Event->AllocateDefaultPins();
+    Event->FindPinChecked(TEXT("then"))->MakeLinkTo(Source->FindPinChecked(TEXT("execute")));
     const FString SourceKey = TurboMCPNodeId::MakeForNode(Source, true);
     const FString ConsumerKey = TurboMCPNodeId::MakeForNode(Consumer, true);
     FString Error;
