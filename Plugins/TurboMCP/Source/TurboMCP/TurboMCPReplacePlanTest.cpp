@@ -12,6 +12,7 @@
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraphSchema_K2.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_CustomEvent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/Actor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -82,9 +83,33 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Only unreferenced body nodes removed"), Plan.Removals.Num(), 2);
         TestEqual(TEXT("Referenced endpoint counted as retained"), Plan.DescribedKeysKept, 1);
     }
-    TestEqual(TEXT("Planning preserves node count"), Graph->Nodes.Num(), 3);
+    TestEqual(TEXT("Planning preserves node count"), Graph->Nodes.Num(), 4);
     TestTrue(TEXT("Planning preserves original edge"), Source->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Consumer->FindPinChecked(TEXT("execute"))));
     TestEqual(TEXT("Planning preserves default"), Consumer->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
+    FTurboMCPGraphReplace::FPlan LivePlan;
+    const FString LiveText = FString::Printf(TEXT("(Development|PrintString\n InString \"replacement\"\n execute (-> %s:then)\n)"), *SourceKey);
+    if (!TestTrue(TEXT("Live replacement plans"), FTurboMCPGraphReplace::Plan(Blueprint->GetPathName(), Graph->GetName(), LiveText, LivePlan, Error)))
+    { AddError(Error); return false; }
+    if (!TestTrue(TEXT("Live replacement accepted"), LivePlan.bAcceptable())) return false;
+    FString Report;
+    if (!TestTrue(TEXT("Live replacement applies"), FTurboMCPGraphReplace::Apply(LivePlan, Report, Error)))
+    { AddError(Error); return false; }
+    TestEqual(TEXT("Only event, referenced source and new call remain"), Graph->Nodes.Num(), 3);
+    TestTrue(TEXT("Event retained"), Graph->Nodes.Contains(Event));
+    TestTrue(TEXT("Referenced source retained"), Graph->Nodes.Contains(Source));
+    TestFalse(TEXT("Old unreferenced consumer removed"), Graph->Nodes.Contains(Consumer));
+    TestFalse(TEXT("Unreferenced target removed"), Graph->Nodes.Contains(Target));
+    UEdGraphNode* Added = nullptr;
+    for (UEdGraphNode* Node : Graph->Nodes) if (Node != Event && Node != Source) Added = Node;
+    if (TestNotNull(TEXT("New call exists"), Added))
+    {
+        UEdGraphPin* Input = Added->FindPinChecked(TEXT("execute"));
+        UEdGraphPin* Output = Source->FindPinChecked(TEXT("then"));
+        TestTrue(TEXT("Requested wire survives deletion"), Input->LinkedTo.Contains(Output) && Output->LinkedTo.Contains(Input));
+        TestEqual(TEXT("New literal retained"), Added->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("replacement")));
+    }
+    TestTrue(TEXT("Entry connection survives"), Event->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Source->FindPinChecked(TEXT("execute"))));
+    TestEqual(TEXT("Retained source position unchanged"), Source->NodePosX, 0);
     return !HasAnyErrors();
 }
 #endif
