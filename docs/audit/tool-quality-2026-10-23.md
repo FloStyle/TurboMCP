@@ -494,3 +494,9 @@ Supervised run 295bd253016d40d2aa8757785065959a passed build and all 125 live he
 42ae363 documents all 16 parameters across preview/edit. Both selected pins are outputs; the operation redirects consumers rather than connecting an output to an input. Help explains existing-target precedence, probe creation, source retention/deletion, empty boolean defaults and the absence of input/default transfer. Compact descriptions preserve loading/probing versus transaction/deletion/compile/save effects.
 
 Supervised run 634d5f0242654fdd82cb524889f44a80 passed build and all 125 live help/schema checks. No new behavior evidence is claimed. Follow-up source review must address rollback=complete claims based on UndoTransaction's return without independent full-state comparison. BatchEdit's existing example also incorrectly uses an input target pin for repoint and must be corrected in its text review. Overall quality review remains open.
+
+## BatchEdit text — 2026-10-24
+
+6c59f44 documents Operations for both tools, including JSON wrapper/entry rules, required and optional fields, one-graph scope, boolean defaults and refusal cases. The example now selects two output pins, matching repoint semantics. Preview reports no created undo transaction; compile/save statuses say not run/not requested rather than implying automatic deferred execution. Success asks for graph inspection and compilation without claiming runtime verification.
+
+Supervised run 49a3d507b7224e2f9e6f1a50b6206b97 passed build and all 125 live help/schema checks. No new batch behavior evidence is claimed; sequential staging equivalence, failure rollback/read-back and complex callback behavior remain separate coverage requirements. Overall review remains open.
