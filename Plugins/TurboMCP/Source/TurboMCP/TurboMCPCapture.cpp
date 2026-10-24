@@ -460,8 +460,8 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	{
 		return FString::Printf(
 			TEXT("error: %s is not a Blueprint, so its graph cannot be captured. ")
-			TEXT("Widget Blueprints and materials are not supported by this tool yet, ")
-			TEXT("and saying so is better than capturing the wrong tab."),
+			TEXT("This graph capture supports Blueprints, including Widget Blueprints; ")
+			TEXT("it does not capture material graphs."),
 			*Resolved.ObjectPath);
 	}
 
@@ -738,7 +738,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 			FrameHeight, *FrameLabel);
 	}
 
-    // Explicit picture dimensions render native Slate at that resolution. The live
+    // Graph captures render native Slate at the requested or default resolution. The live
     // editor's window size must not limit the available graph pixels (S10 CP-11).
     // Selector Size is a hop count, not a resolution. Derive its independent
     // canvas from only the resolved target bounds, never the whole graph extent.
@@ -748,7 +748,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
         Width = FMath::Clamp(FMath::CeilToInt((FrameWidth + 64.0) * SelectorScale), 256, MaxEdge);
         Height = FMath::Clamp(FMath::CeilToInt((FrameHeight + 64.0) * SelectorScale), 256, MaxEdge);
     }
-    if(bNewSelector || (!Size.TrimStartAndEnd().IsEmpty() && (bWholeGraph || bOneBox || bOneNode || bRegion)))
+    if(bNewSelector || bWholeGraph || bOneBox || bOneNode || bRegion)
     {
         TurboMCPGraphScratch::FCopy CaptureCopy;
         if(!CaptureCopy.Init(Blueprint,Graph)) return TEXT("error: capture scratch graph unavailable");
@@ -792,9 +792,9 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
         TArray64<uint8> PicturePng; FImageUtils::PNGCompressImageArray(Width,Height,PicturePixels,PicturePng);
         const FString PictureFolder=FPaths::ProjectSavedDir()/TEXT("TurboMCP/Captures");
         IFileManager::Get().MakeDirectory(*PictureFolder,true);
-        const FString PicturePath=FPaths::ConvertRelativePathToFull(PictureFolder/FString::Printf(TEXT("%s_%s_native_%dx%d.png"),*Blueprint->GetName(),*Graph->GetName(),Width,Height));
+        const FString PicturePath=FPaths::ConvertRelativePathToFull(PictureFolder/FString::Printf(TEXT("%s_%s_native_%dx%d_%s.png"),*Blueprint->GetName(),*Graph->GetName(),Width,Height,*FGuid::NewGuid().ToString(EGuidFormats::Digits)));
         if(PicturePng.IsEmpty() || !FFileHelper::SaveArrayToFile(PicturePng,*PicturePath)) return TEXT("error: capture PNG could not be saved");
-        return FString::Printf(TEXT("native graph capture: %dx%d; zoom %.3f; independent of editor window size; no raster upscaling\nframed: %s\n%s\nimage: %s"),Width,Height,NativeZoom,*FrameLabel,*SelectorDefinition,*PicturePath);
+        return FString::Printf(TEXT("look: capture of %s\ngraph: %s\nsize: %dx%d\nrenderer: native Slate scratch graph; zoom %.3f; independent of editor window size; no raster upscaling\nframe bounds: x %.1f to %.1f, y %.1f to %.1f\nframed: %s\n%s\nimage: %s"),*Resolved.ObjectPath,*Graph->GetName(),Width,Height,NativeZoom,Box.MinX,Box.MaxX,Box.MinY,Box.MaxY,*FrameLabel,*SelectorDefinition,*PicturePath);
     }
 
 	// The graph editor, opened if it is not already.
