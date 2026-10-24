@@ -1604,6 +1604,15 @@
             "Tools/test-material-label-promote.py"
           ],
           "new_files": []
+        },
+        "quality-material-block-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocks.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
+            "Tools/test-material-blocks.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
