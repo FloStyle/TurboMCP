@@ -1686,6 +1686,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp"
           ],
           "new_files": []
+        },
+        "quality-datatable-owned-test": {
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableQualityTest.cpp",
+            "Tools/test-datatable-quality.py"
+          ],
+          "files": []
         }
       },
       "preserve_rows": []
