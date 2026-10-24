@@ -1882,6 +1882,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAppendFailureTest.cpp",
             "Tools/test-append-failure.py"
           ]
+        },
+        "quality-replace-linked-retention": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReplacePlanTest.cpp",
+            "Tools/test-replace-plan.py"
+          ]
         }
       },
       "preserve_rows": []
