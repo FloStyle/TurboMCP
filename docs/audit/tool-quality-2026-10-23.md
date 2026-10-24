@@ -340,3 +340,9 @@ Supervised build 321860a132cd4f96811e66ce00379c3d passed. Implementation is sour
 3868fe4 adds TurboMCP.Variables.PrivateFlags and its supervised wrapper, registered in 21034c7. Creates a unique transient Blueprint and uses production Plan/Apply to add private/public integer variables with instanceEditable=true. Checks fresh-creation count, Blueprint metadata, skeleton-property private metadata, absence of EditConst and preserved instance editability. Fixture is never saved.
 
 Run fc876fb4528f491cb163418a0cd77060 passed build and native regression with no reported errors or warnings. The private metadata/editability correction now has focused live evidence; it is no longer build-only. Full compilation, external caller access, save/reload, every variable type and partial-failure behavior remain outside this check.
+
+## Material tidy effect and outcome text
+
+16f8169 documents all four parameters and explicitly discloses that planning/preview recompiles a material for baseline errors. Force is a presence flag, including nonempty false/0 strings. Removed no-effect and exact-rollback claims; failure output now says undo was requested and restoration remains unverified. Success output distinguishes identity/error checks from proof of identical rendered output. Obsolete wrapper documentation removed.
+
+Run cc166c05b88749f19146ff2edc55dac0 passed build, test-material-tidy and all 125 live help checks. This provides focused layout and message evidence, not failure-path rollback verification, every material family or pixel-equivalence certification. Material label/block tools still need the same source-backed text review.
