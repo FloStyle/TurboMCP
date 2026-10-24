@@ -1,21 +1,7 @@
 # ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-WRITE-1
-"""
-`P-GRAPH-CHECK` (`T-WRITE-1`): graph text is checked, and NOTHING is written.
-
-THE GATE EVERY WRITE ENTRY POINT DEPENDS ON, so this suite is not only asking whether the checker answers -
-it is asking whether its answer can be TRUSTED. That means three separate things, and each is a way to be
-wrong:
-
-  1. IT FINDS WHAT IS WRONG. `T-WRITE-1` requires a text with a wrong node type, a wrong pin and a type
-     mismatch to produce EXACTLY THREE findings, each with line, column and close matches.
-  2. IT DOES NOT INVENT FAULTS. Valid text - real text, read out of a real graph - must be accepted, because
-     a checker that refuses correct input stops every write this project has.
-  3. IT WRITES NOTHING, PROVED RATHER THAN PROMISED. The claim is checked from OUTSIDE the tool: the asset's
-     hash, size and mtime before and after, plus a read of the graph through a DIFFERENT tool. A tool
-     reporting its own innocence is not evidence.
-
-The counts are pinned for the texts THIS SUITE supplies, which is the opposite of the shared-asset rule and
-is correct here: the suite owns the input, so the expected finding count is known rather than observed.
+"""Check diagnostic counts/locations, valid input and bounded non-mutation evidence.
+Disk fingerprints and graph-reader snapshots cover the named fixture only.
+Preview membership is discovery metadata, not a guarantee about side effects.
 """
 
 import hashlib
@@ -36,16 +22,16 @@ GRAPH = "EventGraph"
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSET_FILE = os.path.join(REPO, "TestProject", "Content", "Tests", "BP_NodeTest.uasset")
 
-# A REAL node in BP_NodeTest:EventGraph, and its real type ID. Taken from `R-GRAPH-LOAD`, not invented -
+# A REAL node in BP_NodeTest:EventGraph, and its real type ID. Taken from `ReadTurboMCPGraphLoad`, not invented -
 # a fixture this suite made up could not tell a working checker from one that refuses everything.
-REAL_TYPE = "Development|PrintString"
+REAL_TYPE = "Function|/Script/Engine.KismetSystemLibrary:PrintString"
 REAL_NODE_ID = "/Game/Tests/BP_NodeTest.BP_NodeTest:EventGraph:09723b"
 
 # Valid text. Every pin named here is a real pin of PrintString.
-GOOD = '(Development|PrintString ; %s\n    InString "hi" ; in 3\n    bPrintToScreen true ; in 4)\n' % REAL_NODE_ID
+GOOD = '(Function|/Script/Engine.KismetSystemLibrary:PrintString ; %s\n    InString "hi" ; in 3\n    bPrintToScreen true ; in 4\n)\n' % REAL_NODE_ID
 
 # T-WRITE-1's three faults, one per line, each in a text this suite controls.
-BAD_TYPE = "(Development|PrintStringg ; fake:1111\n    InString \"hi\")\n"
+BAD_TYPE = "(Function|/Script/Engine.KismetSystemLibrary:PrintStringg ; fake:1111\n    InString \"hi\")\n"
 BAD_PIN = "(%s ; %s\n    NotAPin \"hi\")\n" % (REAL_TYPE, REAL_NODE_ID)
 BAD_MISMATCH = "(%s ; %s\n    InString 42.0)\n" % (REAL_TYPE, REAL_NODE_ID)
 
@@ -193,9 +179,9 @@ def main():
     print(good_out)
     print()
     good_counts = finding_count(good_out)
-    check("real text read from a real graph gives ZERO findings",
+    check("valid PrintString input gives ZERO findings",
           good_counts is not None and good_counts["total"] == 0, str(good_counts))
-    check("it says the text No issues found by these checks", "No issues found by these checks" in good_out, good_out[:200])
+    check("it limits its clean result to these checks", "No issues found by these checks" in good_out, good_out[:200])
     check("it counted what it read rather than answering vaguely",
           "1 node form(s) and 2 pin line(s) read" in good_out, good_out[:200])
 
@@ -221,11 +207,18 @@ def main():
     print()
     print("=== NOTHING IS WRITTEN, PROVED FROM OUTSIDE THE TOOL ===")
     # The fingerprint is taken around a run of ALL the texts above, so a write by any of them shows up.
+    snapshot_args = {"asset": ASSET, "graphName": GRAPH, "detail": "bodies",
+                     "format": "read", "offset": 0, "maxChars": 24000,
+                     "revision": "", "entryFilter": ""}
+    before_graph = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", snapshot_args)
+    check("baseline graph read succeeds", not before_graph.startswith("error:"), before_graph[:160])
     before = asset_fingerprint()
     for text in (GOOD, BAD_TYPE, BAD_PIN, BAD_MISMATCH, THREE_FAULTS):
         session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphCheck",
                      {"asset": ASSET, "graphName": GRAPH, "text": text})
     after = asset_fingerprint()
+    after_graph = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", snapshot_args)
+    check("graph reader output is unchanged", before_graph == after_graph and not after_graph.startswith("error:"), after_graph[:160])
 
     check("the asset file exists where the check says it is", before is not None, ASSET_FILE)
     check("the asset's SIZE, MTIME and MD5 are unchanged by every check above",
@@ -233,7 +226,7 @@ def main():
           "before %s, after %s" % (before, after))
 
     # AND THROUGH A DIFFERENT TOOL, because a hash proves the file did not change but not that the graph
-    # in memory did not. `R-GRAPH-LOAD` is the reader, and it is not the tool under test.
+    # in memory did not. `ReadTurboMCPGraphLoad` is the reader, and it is not the tool under test.
     #
     # AT `manifest` THE READER PRINTS THE ENTRY POINTS AND A NODE COUNT, NOT THE NODES - so a check for
     # `PrintString` here would fail on a correct reader. The first version of this suite asserted exactly
@@ -241,24 +234,23 @@ def main():
     # printed, so the assertion is about the thing it claims to be about.
     loaded = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                           {"asset": ASSET, "graphName": GRAPH, "detail": "bodies",
-                           "format": "", "tokenBudget": ""})
-    check("the graph still reads back through R-GRAPH-LOAD", not loaded.startswith("error:"),
+                           "format": "read", "offset": 0, "maxChars": 24000, "revision": "", "entryFilter": ""})
+    check("the graph still reads back through ReadTurboMCPGraphLoad", not loaded.startswith("error:"),
           loaded[:160])
     check("the node the text named is still in the graph",
           REAL_TYPE in loaded, loaded[:240])
 
     manifest = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                             {"asset": ASSET, "graphName": GRAPH, "detail": "manifest",
-                             "format": "", "tokenBudget": ""})
+                             "format": "read", "offset": 0, "maxChars": 24000, "revision": "", "entryFilter": ""})
     node_count = re.search(r";\s*(\d+)\s+node\(s\)", manifest)
     check("the manifest still reports a node count", node_count is not None, manifest[:200])
     check("and the graph still HAS nodes", node_count is not None and int(node_count.group(1)) > 0,
           node_count.group(1) if node_count else "no count")
 
     print()
-    print("=== the tool is in the PREVIEW toolset, which cannot write ===")
-    # Structural rather than behavioural: this project enforces "read-only" by WHICH CLASS a tool is in, so
-    # a check that the tool is declared in the Preview toolset is the check that it cannot change an asset.
+    print("=== tool discovery reports its registered toolset ===")
+    # This checks registration only; it provides no behavioral safety evidence.
     schema = session.call(READ_TOOLSET, "ReadTurboMCPToolSchema",
                           {"toolset": "Preview", "tool": "PreviewTurboMCPGraphCheck"})
     check("it is declared in the PREVIEW toolset", "TurboMCPPreviewToolset" in schema, schema[:200])
