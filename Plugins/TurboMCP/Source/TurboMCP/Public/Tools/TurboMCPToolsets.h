@@ -1085,16 +1085,11 @@ public:
 	static FString PreviewTurboMCPMaterialBlocks(
 		const FString& Asset);
 
-	/**
-	 * Preview row operations on a DataTable. WRITES NOTHING.
-	 *
-	 * `Rows` is one operation per line: `name = field=value, field=value` to set a row, or `- name` to remove one.
-	 * The values are the row struct's OWN export text, because they are parsed by the engine's own importer rather
-	 * than by a format invented here. A field the struct does not declare is refused with the real field names.
-	 *
-	 * EVERY REMOVAL IS LISTED BY NAME AND NEVER COUNTED, and every changed field is printed with the value it has
-	 * now and the value it would get. A plan with any refusal prints the refusals and writes nothing.
-	 */
+	/** Inspect proposed row edits using temporary row data; loads the table and may load objects referenced by imported values; does not write rows, compile or save.
+     * Validates the operation list before writing. Failed read-back attempts to undo this transaction; the result distinguishes verified row restoration from unverified or failed rollback. External callback effects are not covered by row restoration checks.
+     * @param Asset Required DataTable name or package/object path, for example /Game/Data/DT_Items; empty, ambiguous, unresolved or non-DataTable targets are refused. Prefer a full path.
+     * @param Rows Required array of operation strings, for example ["Potion = Health=100,Label=\"Small potion\"", "- Obsolete"]. Each string sets named fields or removes a named row. A set creates a missing row; unspecified fields keep existing values, or the row struct's defaults for a new row. Use internal field names when display labels are ambiguous and Unreal export-text syntax for values, including quoted text and parenthesized structs/containers. Empty arrays or all-blank lines are refused; blank lines within a nonempty request are skipped. Empty field values are passed to the type importer, not treated as omitted. Empty/None row names, duplicate fields in one operation and conflicting/repeated removals are refused. No implicit operation is supplied.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPDataTableRows(
 		const FString& Asset,
@@ -1727,13 +1722,11 @@ public:
 		const FString& Asset,
 		const TArray<FString>& Overrides);
 
-	/**
-	 * Apply row operations to a DataTable in ONE transaction, then re-read the rows back from the table.
-	 *
-	 * It refuses exactly what the Preview refuses, because both run the same Plan. Every row is named rather than
-	 * addressed by position, and every name is looked up again at apply time, so a plan made before another editor
-	 * changed the table cannot write into the wrong row. A table with unsaved changes is reported as such.
-	 */
+	/** Set or remove DataTable rows in an undo transaction; removals discard row data and edits may run editor callbacks and mark the package dirty; does not explicitly compile or save.
+     * Validates the operation list before writing. Failed read-back attempts to undo this transaction; the result distinguishes verified row restoration from unverified or failed rollback. External callback effects are not covered by row restoration checks.
+     * @param Asset Required DataTable name or package/object path, for example /Game/Data/DT_Items; empty, ambiguous, unresolved or non-DataTable targets are refused. Prefer a full path.
+     * @param Rows Required array of operation strings, for example ["Potion = Health=100,Label=\"Small potion\"", "- Obsolete"]. Each string sets named fields or removes a named row. A set creates a missing row; unspecified fields keep existing values, or the row struct's defaults for a new row. Use internal field names when display labels are ambiguous and Unreal export-text syntax for values, including quoted text and parenthesized structs/containers. Empty arrays or all-blank lines are refused; blank lines within a nonempty request are skipped. Empty field values are passed to the type importer, not treated as omitted. Empty/None row names, duplicate fields in one operation and conflicting/repeated removals are refused. No implicit operation is supplied.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPDataTableRows(
 		const FString& Asset,

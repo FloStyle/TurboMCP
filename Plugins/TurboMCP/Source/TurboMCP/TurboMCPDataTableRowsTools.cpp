@@ -115,7 +115,7 @@ namespace
 		// validates its `include` filter *before anything loads, so a typo costs nothing*.
 		if (Asset.IsEmpty())
 		{
-			return TEXT("error: no data table given. Pass a DataTable in any path form, for example DT_Items.");
+			return TEXT("error: no DataTable given; pass a unique name or full asset path, for example /Game/Data/DT_Items.");
 		}
 
 		TArray<FTurboMCPDataTableRows::FRowOp> Ops;

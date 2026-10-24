@@ -472,8 +472,8 @@ FString Plan(UDataTable* Table, const TArray<FRowOp>& Ops, FPlan& Out)
 	if (Struct == nullptr)
 	{
 		Out.Refusals.Add(TEXT("The table has no row struct"));
-		return TEXT("error: the table has no row struct, which happens when the struct it was built from was ")
-			TEXT("deleted. Its rows cannot be interpreted, so nothing can be written.");
+		return TEXT("error: the table has no row struct; its rows cannot be interpreted. ")
+			TEXT("Restore or assign a valid row struct in the editor before retrying; nothing was written.");
 	}
 
 	const TMap<FName, uint8*>& Rows = Table->GetRowMap();
