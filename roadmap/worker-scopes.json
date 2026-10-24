@@ -1891,6 +1891,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReplacePlanTest.cpp",
             "Tools/test-replace-plan.py"
           ]
+        },
+        "quality-batch-sequential-native": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchSequenceTest.cpp",
+            "Tools/test-batch-sequence.py"
+          ]
         }
       },
       "preserve_rows": []
