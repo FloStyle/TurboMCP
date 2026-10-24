@@ -554,16 +554,16 @@ public:
         const FString& Execution = TEXT("deny"));
 
 	/**
-	 * Capture an editor window or Blueprint graph as a PNG under the project's Saved folder.
+	 * Capture PNG; may load assets and change editor UI/view/selection; editor callbacks may run. No explicit asset compile/save. No automatic undo. Image is not proof of graph correctness.
 	 * Requires a rendered editor. May load assets, open editor UI and change the view or selection.
 	 * Does not explicitly compile or save assets; editor callbacks may run. No automatic undo.
 	 * Refusals can occur after opening UI. An image is not proof of graph correctness.
 	 * All five string arguments are required by the schema; supply empty strings where unused.
-	 * @param Asset Existing asset path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is allowed for screen; with asset-editor it lists supported editor kinds instead of capturing.
+	 * @param Asset Asset path or unique name, e.g. /Game/Tests/BP_NodeTest. Empty: allowed for screen; asset-editor lists supported kinds.
 	 * @param GraphName Exact graph name, e.g. EventGraph; required for graph and diagnostic modes. For asset-editor, optional editor kind from its support table (empty auto-detects). Ignored by screen.
 	 * @param Mode Case-insensitive: graph (also empty), box, node, region, selection, neighbours, box-neighbours, screen, asset-editor. Selection uses graph-canvas nodes only. Diagnostics: debug-window, rhi-state, select-nodes (changes graph selection).
 	 * @param Target Node ID from ReadTurboMCPNodeFind for node/neighbours; zero-based comment index from LookTurboMCPLayoutReport for box/box-neighbours. Region: x,y,width,height, finite values within +/-10000000, positive dimensions. select-nodes: comma-separated node keys. Otherwise pass empty.
-	 * @param Size Graph/box/node/region: WxH or W,H, each 1..4096 pixels, e.g. 1600x900. Empty uses native crop sizing, not a guaranteed resolution. Selection/neighbours/box-neighbours: digits 0..4096 (empty 0); neighbourhood modes use this as traversal depth/count and selectors size the image automatically. Screen/asset-editor ignore Size. Other diagnostics accept dimensions; rhi-state ignores them.
+	 * @param Size Graph/box/node/region: WxH or W,H, each 1..4096 pixels, e.g. 1600x900. Empty uses native crop sizing, not a guaranteed resolution. Selection/neighbours/box-neighbours: digits 0..4096 (empty 0); neighbourhood modes use this as traversal depth/count and selectors size the image automatically. Screen/asset-editor ignore Size. Diagnostics accept dimensions except rhi-state (ignored).
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPCapture(
