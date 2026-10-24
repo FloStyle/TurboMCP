@@ -1466,6 +1466,13 @@
           "new_files": [
             "Tools/test-layout-output.py"
           ]
+        },
+        "quality-capture-numbers": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Tools/test-layout-output.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
