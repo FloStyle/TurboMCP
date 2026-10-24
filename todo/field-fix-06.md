@@ -86,3 +86,7 @@ The shared structural selection reader now rejects multiple matching nodes and r
 ## Structural copy containment
 
 Stock SpawnNodeFromTemplate invokes MarkBlueprintAsStructurallyModified for structural K2 nodes (including custom events). Planning and apply now refuse these nodes and non-K2 nodes before mutation, avoiding that implicit compile-inside-undo path. Implementation done; unbuilt and untested. Safe structural-node copying remains unsupported; this does not close FIELD-02 Widget-loss causality. Deferred evidence: structural nodes refuse unchanged; ordinary K2 nodes retain copy behavior.
+
+## Copy follow-up — 2026-10-24
+
+1345194 fixes duplicated pin allocation in graph Copy. Native run e1e668a817214e49a58069012288e21c passed positive and post-creation failure cases on disposable PrintString nodes. The concrete defect is fixed/tested; this is not acceptance for all node classes or complete rollback state. See tool-quality-2026-10-23.md for remaining coverage.

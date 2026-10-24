@@ -536,3 +536,9 @@ Native TurboMCP.Repoint.PostMutationFailure forces a final node-count mismatch a
 Initial run 219a2228c9ed4f3fbb9455c072ec2263 crashed with an access violation using a bare NewObject Blueprint fixture. db49da5 replaced that incomplete fixture with the stock Blueprint factory; the same checks then passed. Do not classify the initial crash as a confirmed product defect. No workplace assets or disk saves were involved; supervisor restored 16 protected fixtures.
 
 This proves the observed rollback case only. Full property/other-graph/callback effects, target creation/source deletion failures, Copy/Replace and whole-batch restoration remain unverified. The production result correctly continues to avoid claiming verified complete restoration.
+
+## Graph Copy duplicate-pin defect — 2026-10-24
+
+Native failure run 8d4bddd3634743119ac16e86bc4024c4 exposed a real copy-path defect: SpawnNodeFromTemplate duplicates an already allocated node then allocates pins again. Pin preservation failed and undo raised an asymmetric-link ensure. Repair 1345194 duplicates the existing node/pin tree once, clears inherited nonreciprocal link references before attachment and rebuilds planned links. No engine changes.
+
+Run e1e668a817214e49a58069012288e21c passed build and TurboMCP.Copy.PostMutationFailure: forced internal-link failure removes created copies, retains source identities/link/default/position; a fresh valid copy creates exactly two nodes without duplicate pins and with reciprocal destination-only links. This concrete duplicate-pin issue is implemented and tested on PrintString nodes. Other node classes, cross-Blueprint member references, paste lifecycle requirements and full callback/property rollback coverage remain open.
