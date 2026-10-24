@@ -1960,6 +1960,12 @@
             "Tools/test-capture-framing.py"
           ],
           "new_files": []
+        },
+        "quality-vision-observations": {
+          "files": [
+            "Tools/test-capture-framing.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
