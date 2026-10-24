@@ -744,17 +744,6 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 			Description->Category = FText::FromString(Variable.Category);
 		}
 
-		// Blueprint private access uses metadata, not the Details-panel editability flag.
-		if (Variable.bPrivate)
-		{
-			FBlueprintEditorUtils::SetBlueprintVariableMetaData(
-				Blueprint, Name, nullptr, FBlueprintMetadata::MD_Private, TEXT("true"));
-		}
-		else
-		{
-			FBlueprintEditorUtils::RemoveBlueprintVariableMetaData(
-				Blueprint, Name, nullptr, FBlueprintMetadata::MD_Private);
-		}
 
 		if (Variable.bReadOnly)
 		{
@@ -785,6 +774,18 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 		if (Variable.bExposeOnSpawn)
 		{
 			Description->PropertyFlags |= CPF_ExposeOnSpawn;
+		}
+
+		// Blueprint private access uses metadata, not the Details-panel editability flag.
+		if (Variable.bPrivate)
+		{
+			FBlueprintEditorUtils::SetBlueprintVariableMetaData(
+				Blueprint, Name, nullptr, FBlueprintMetadata::MD_Private, TEXT("true"));
+		}
+		else
+		{
+			FBlueprintEditorUtils::RemoveBlueprintVariableMetaData(
+				Blueprint, Name, nullptr, FBlueprintMetadata::MD_Private);
 		}
 
 		if (!Variable.Tooltip.IsEmpty())
