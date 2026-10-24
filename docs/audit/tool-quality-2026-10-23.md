@@ -314,3 +314,9 @@ Supervised run ca8f4d6a74fb4dc0b40f33eb2994aa1d passed build, event override cre
 Implemented in d543702: four parameter descriptions, compact execution/compile/save/undo limitations, current tool names and removal of guaranteed reference-resolution claims. Name-mismatch, missing-entry and missing-result cleanup now check graph membership before claiming graph removal; messages distinguish graph cleanup from restoration of other asset effects.
 
 Run 24fb97549c434f89ad0c00fd909997a7 built successfully but exposed an obsolete test parser: manifest graph names now include kind annotations. Corrected in 1971a93 while preserving exact-name comparisons. Rerun 542d31e12ed845e4bff44416d675fd2b passed build, test-function and all 125 live help checks. Function creation/removal, signatures and ordinary refusals were exercised. Cleanup-failure injection, caller reconstruction losses and undo remain unverified; parameter type documentation still needs full container syntax coverage. Overall quality work remains incomplete.
+
+## Function type syntax and removal follow-up
+
+57967b6 adds accepted primitive, struct, container and reference forms to function input help, including nested-container and hashing restrictions. Function removal now documents both parameters, whole-graph deletion, editor/callback effects, unrepaired callers and bindings, and compile/save/undo limitations. Removed the false promise that a deleted name is immediately free.
+
+Run 8327a8b8189849d380fab547a58856b5 passed build, test-function (including explicit deletion-message checks) and all 125 live help checks within the compact-help size limit. Type syntax was checked against the parser; this run does not exercise every type form or prove undo/rollback. Prior fault-path and reconstruction coverage gaps remain.
