@@ -243,7 +243,7 @@ namespace
 		}
 		else
 		{
-			Line += TEXT("\n  generated class: unknown (no generated-class metadata; asset not loaded)");
+			Line += TEXT("\n  generated class: unknown (no generated-class metadata available)");
 		}
 
 		const FString Parent = BlueprintParentOf(Asset);
