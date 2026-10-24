@@ -1487,3 +1487,7 @@ Follow-up: test-asset-tools still expects generated class none for a registry-on
 enum. Update this stale absence assertion to check truthful metadata availability;
 the complete asset suite is not claimed passed. Loaded unsaved asset disk-state
 reporting also needs review; this repair does not certify that separate logic.
+
+### Approved asset disk-state correction — 2026-10-24
+
+AssetDescribe currently derives disk presence from dirty state, falsely reporting clean unsaved assets as on disk. Query package existence independently; retain unknown dirty state when unavailable. Verify fresh unsaved enum dirty and clean states using the disposable native fixture. Update the stale enum generated-class absence assertion.

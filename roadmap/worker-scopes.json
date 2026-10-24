@@ -2004,6 +2004,14 @@
           "new_files": [
             "Tools/test-asset-describe-metadata.py"
           ]
+        },
+        "quality-asset-disk-state": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumCreationTest.cpp",
+            "Tools/test-asset-tools.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
