@@ -470,3 +470,9 @@ Supervised run 7d74d30fdd784e9eace75c15971eb4de passed build and the 125-tool li
 ae4582a documents all 24 parameters across BindFunction/BindNewEvent preview and edit. Help explains exact pin selection, paired object context, empty values, naming/signature restrictions, replaced input connections, transient simulation and edit undo/compile/save effects. New-event output states that the body is empty and names the next actions; function binding limits verification to selected function/links rather than runtime correctness.
 
 Supervised run 64366a43ae484470bb9c02f3e979b965 passed build and all 125 live help/schema checks. This text batch supplies no new behavioral proof of delegate compatibility, failed-edit rollback, callback lifetime, runtime execution or generated layout. Overall review and those coverage requirements remain open.
+
+## Graph replacement help and remaining description inventory — 2026-10-24
+
+53a79f1 documents six replacement parameters and explicitly describes whole-named-graph removal of omitted eligible nodes, protected node classes, complete input requirements and edit undo/compile/save effects. Preview no longer claims that nothing can change, and wrapper comments no longer claim toolset membership prevents writes or that Apply performs no checks.
+
+Supervised run ab42a383ffaf4224bda493ccaffc75cd passed build and all 125 live help/schema checks. This text batch does not certify replacement rollback, deletion identity, callback effects or runtime behavior. The preceding live inventory (64366a43ae484470bb9c02f3e979b965) contained 62 missing parameter descriptions across 12 tools; this batch supplies six. Remaining families are Repoint, Copy, Collapse, Comment and BatchEdit (preview/edit). Presence of descriptions is not proof of semantic accuracy or complete behavioral review.
