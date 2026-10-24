@@ -1143,7 +1143,10 @@ bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 		FTurboMCPGraphAppend::Plan(Fixture.AssetPath, Fixture.Target->GetName(), AppendText,
 			Plan, PlanError, /*bRequestPlacement=*/true));
 	TestEqual(TEXT("Plan reports no error"), PlanError, FString());
-	TestTrue(TEXT("Plan is acceptable"), Plan.bAcceptable());
+	if (!TestTrue(TEXT("Plan is acceptable"), Plan.bAcceptable()))
+	{
+		AddError(FTurboMCPGraphAppend::RenderPreview(Plan));
+	}
 	TestEqual(TEXT("Plan creates one node"), Plan.Nodes.Num(), 1);
 	TestEqual(TEXT("Plan creates one link"), Plan.Links.Num(), 1);
 	TestEqual(TEXT("Plan records one position"), Plan.PlannedPositions.Num(), 1);
