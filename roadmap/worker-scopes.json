@@ -1982,6 +1982,13 @@
             "Tools/test-capture-framing.py"
           ],
           "new_files": []
+        },
+        "quality-selection-native": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureSelectionTest.cpp",
+            "Tools/test-capture-selection-state.py"
+          ]
         }
       },
       "preserve_rows": []
