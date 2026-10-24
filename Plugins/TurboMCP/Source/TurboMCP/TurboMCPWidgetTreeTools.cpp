@@ -11,17 +11,7 @@
 
 #include "TurboMCPWidgetTreeSync.h"
 
-/**
- * `R-WIDGET-TREE`: a Widget Blueprint's tree, in slot order, as the dialect text.
- *
- * THE ERROR PREFIX IS ADDED IN EXACTLY ONE PLACE, with the same guard the material and block readers use,
- * because two layers each assuming the other leaves the prefix off is how a result ends up reading
- * `error: error: ...`.
- *
- * THIS IS A READER AND ITS TOOLSET IS THE READ TOOLSET, which is the structural reason it cannot write:
- * the class it is declared on has no writer helpers, so this function could not mutate a tree even if it
- * tried. The writers live in `P/E-WIDGET-TREE` and are separate entry points on purpose.
- */
+// Read selected widget-tree data through the shared inspector; no writer is invoked here.
 FString UTurboMCPReadToolset::ReadTurboMCPWidgetTree(const FString& Asset)
 {
 	const FString Text = FTurboMCPWidgetTreeSync::Read(Asset);

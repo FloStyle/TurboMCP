@@ -359,12 +359,14 @@ FString FTurboMCPWidgetTreeSync::Read(const FString& Asset)
 		// SAID RATHER THAN RENDERED AS NOTHING, because an empty answer and an absent tree are the two
 		// things this project's `P1` rule exists to keep apart.
 		return FString::Printf(
-			TEXT("read: %s\n; THIS WIDGET BLUEPRINT HAS NO ROOT WIDGET, so there is no tree to print. ")
-			TEXT("That is an absent tree rather than an empty one - `R-BP-LOAD` reports the same state."),
+			TEXT("read: %s\n; This Widget Blueprint has no root widget to display. This does not describe its graphs or animations."),
 			*Asset);
 	}
 
 	// THE SAME RENDERER THE WRITER'S PARSER ACCEPTS, which is `D-15`'s requirement that the reader and the
 	// writer share one code path. There is no second printer.
-	return TurboMCPWidgetTreeText::Render(Tree, 0);
+	return TurboMCPWidgetTreeText::Render(Tree, 0)
+		+ TEXT("\n; Coverage: hierarchy, names, classes, paths, variable flags, non-default visibility and selected slot padding.\n")
+		+ TEXT("; This is not a complete widget export: other properties, bindings and animations are not included.\n")
+		+ TEXT("; Padding is currently rounded to whole units. Do not use this text as a lossless backup or assume replacement preserves omitted data.");
 }
