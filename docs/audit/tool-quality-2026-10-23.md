@@ -650,3 +650,19 @@ absent. This is focused acceptance, not all-selector or live-editor acceptance.
 CP-14 contrast/shadow reproduction, view/focus/selection/dirty-state effects,
 and broader selector coverage remain open. Earlier capture suites still have
 stale expectations and a missing Pillow dependency; they were not declared passed.
+
+## Asset capture catalogue accuracy — 2026-10-24
+
+22c02e0 removes historical fixture dimensions, colour counts and investigation
+narrative from the live asset-editor catalogue. Descriptions now explain each
+kind in plain English, use current tool names, disclose module loading and
+Widget preview execution consent, and distinguish module availability from
+successful rendering. Capture behavior and the nine listed kinds are unchanged.
+
+Supervised build and test-capture-framing passed in
+2304c21091e4474c994d464b7a85575b at d683d02. The successful empty-kind catalogue
+contains all nine kinds without the stale measurement claims. Initial run
+dd2c5fc782a847f7b1c0637571b9f2fd exercised the catalogue attached to an invalid-kind
+error; d683d02 corrected the request and required success before recording this
+evidence. This verifies catalogue output, not captures of all nine editor kinds.
+Remaining capture comments, selector coverage and CP-14 remain under review.
