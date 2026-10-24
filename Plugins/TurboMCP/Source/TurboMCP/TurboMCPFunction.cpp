@@ -538,6 +538,8 @@ FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
 		FString Out = FString::Printf(TEXT("changed: removed function '%s' from %s"),
 			*Wanted, *Resolved.ObjectPath);
 		Out += FString::Printf(TEXT("\nremoved: graph '%s'"), *RemovedGraph);
+		Out += TEXT("\n; The entire function graph and its nodes were removed. Callers and widget bindings were not repaired.");
+		Out += TEXT("\n; Editor callbacks and skeleton regeneration may have run. This tool does not perform a full compile or create a dedicated undo transaction.");
 		Out += FString::Printf(TEXT("\nno function graph holds that name now: %s"),
 			TEXT("yes"));
 

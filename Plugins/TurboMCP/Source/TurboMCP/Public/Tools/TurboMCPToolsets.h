@@ -1416,7 +1416,7 @@ public:
 	 * Requires an idle editor outside PIE. Reports lost caller links as partial changes; does not automatically roll them back.
 	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty or unresolved values are refused.
 	 * @param Name Required new identifier, for example ComputeScore; starts with a letter or underscore, then letters, digits or underscores. Empty, None, existing and parent function names are refused; whitespace is trimmed.
-	 * @param Inputs Optional comma-separated Name: Type declarations, for example Score: int, Enabled: bool. Empty/default creates no inputs. Names must be unique across inputs and outputs; types use the shared type parser, including primitives and loadable class/struct/enum paths.
+	 * @param Inputs Optional comma-separated Name: Type declarations, for example Score: int, Enabled: bool. Empty/default creates no inputs. Names must be unique across inputs/outputs. Types: bool, byte, int, int64, float, real, double, name, string, text; vector, rotator, transform, vector2d, linearcolor, color; loadable class/struct/enum paths; array<T>, set<T>, map<K,V>; object/class/softobject/softclass/interface<ClassPath>. No nested containers; set elements/map keys must be hashable.
 	 * @param Outputs Optional comma-separated Name: Type declarations, for example Result: float. Empty/default creates no outputs. Uses the same type syntax and name rules as Inputs; no parameter default-value syntax is supported here.
 	 */
 	UFUNCTION(meta = (AICallable))
@@ -1424,15 +1424,10 @@ public:
 		const FString& Inputs = TEXT(""), const FString& Outputs = TEXT(""));
 
 	/**
-	 * Remove a function from a Blueprint, so its name is free at once.
-	 *
-	 * Pass a Blueprint and the name of a function it has. The graph is removed through the editor's
-	 * own `RemoveFunctionGraph`, which is what the editor's delete does.
-	 *
-	 * The result says whether the name is FREE AGAIN, checked with the same name test the add uses.
-	 * When something else still holds it, that is named rather than left as a surprise on the next
-	 * add. A name matching no function is refused with `unchanged:` and lists the functions the
-	 * Blueprint does have.
+	 * Delete a function graph and all its nodes; may close asset editors, regenerate the skeleton and run editor callbacks, does not perform a full compile or save, and provides no dedicated undo transaction.
+	 * Requires an idle editor outside PIE. Does not repair callers or bindings. Removing the graph does not guarantee its name is immediately reusable; inspect the result before recreating it.
+	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty or unresolved values are refused.
+	 * @param Name Required function graph name, for example ComputeScore; case-insensitive with surrounding whitespace trimmed. Empty or ambiguous names are refused; no default. A missing name returns unchanged and lists available functions.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPFunctionRemove(const FString& Asset, const FString& Name);

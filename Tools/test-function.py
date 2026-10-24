@@ -142,6 +142,10 @@ def main():
     print(removed)
     print()
     check("it opens with changed:", removed.startswith("changed:"), removed[:70])
+    check("removal states destructive scope", "entire function graph and its nodes were removed" in removed)
+    check("removal states unrepaired references", "Callers and widget bindings were not repaired" in removed)
+    check("removal states compile and undo limits", "does not perform a full compile or create a dedicated undo transaction" in removed)
+
     check("it names the graph it removed", "removed: graph '%s'" % OWNED in removed)
     # The claim is deliberately NARROW: the tool cannot see the package, so it must not promise
     # more than that no function graph holds the name.
