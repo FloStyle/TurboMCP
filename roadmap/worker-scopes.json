@@ -1831,6 +1831,13 @@
           "new_files": [
             "Tools/test-localvars-analysis.py"
           ]
+        },
+        "quality-repoint-failure-native": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRepointFailureTest.cpp",
+            "Tools/test-repoint-failure.py"
+          ]
         }
       },
       "preserve_rows": []
