@@ -266,8 +266,8 @@ def main():
         match = re.search(r"(\d+) clean, (\d+) with warnings, (\d+) with errors", text)
         return tuple(map(int, match.groups())) if match and not text.startswith("error:") else None
     check("baseline compilation succeeds", verdict(compiled_before) == (1, 0, 0), compiled_before[:400])
-    print("    compile verdict before: %s" % verdict(compiled_before))
-    print("    compile verdict after:  %s" % verdict(compiled_after))
+    print("    compile verdict before: %s" % (verdict(compiled_before),))
+    print("    compile verdict after:  %s" % (verdict(compiled_after),))
     check("the Blueprint still compiles after the pass, at the same verdict",
           verdict(compiled_before) == (1, 0, 0) and verdict(compiled_after) == (1, 0, 0),
           "%s vs %s" % (verdict(compiled_before), verdict(compiled_after)))
