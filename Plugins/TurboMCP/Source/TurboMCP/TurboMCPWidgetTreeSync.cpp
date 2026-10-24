@@ -79,15 +79,15 @@ namespace
 		{
 			if (const FMargin* Pad = PadProperty->ContainerPtrToValuePtr<FMargin>(Slot))
 			{
-				const bool bAnyPadding = !FMath::IsNearlyZero(Pad->Left)
-					|| !FMath::IsNearlyZero(Pad->Top)
-					|| !FMath::IsNearlyZero(Pad->Right)
-					|| !FMath::IsNearlyZero(Pad->Bottom);
+				const bool bAnyPadding = Pad->Left != 0.0f
+					|| Pad->Top != 0.0f
+					|| Pad->Right != 0.0f
+					|| Pad->Bottom != 0.0f;
 				if (bAnyPadding)
 				{
 					TurboMCPWidgetTreeText::FAssignment Assignment;
 					Assignment.Name = TEXT("padding");
-					Assignment.Value = FString::Printf(TEXT("%.0f,%.0f,%.0f,%.0f"),
+					Assignment.Value = FString::Printf(TEXT("%.9g,%.9g,%.9g,%.9g"),
 						Pad->Left, Pad->Top, Pad->Right, Pad->Bottom);
 					OutSlot.Add(MoveTemp(Assignment));
 				}
@@ -368,5 +368,5 @@ FString FTurboMCPWidgetTreeSync::Read(const FString& Asset)
 	return TurboMCPWidgetTreeText::Render(Tree, 0)
 		+ TEXT("\n; Coverage: hierarchy, names, classes, paths, variable flags, non-default visibility and selected slot padding.\n")
 		+ TEXT("; This is not a complete widget export: other properties, bindings and animations are not included.\n")
-		+ TEXT("; Padding is currently rounded to whole units. Do not use this text as a lossless backup or assume replacement preserves omitted data.");
+		+ TEXT("; Do not use this text as a lossless backup or assume replacement preserves omitted data.");
 }

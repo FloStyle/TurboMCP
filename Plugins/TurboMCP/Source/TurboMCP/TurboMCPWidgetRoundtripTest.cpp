@@ -16,6 +16,10 @@
 #include "TurboMCPGraphText.h"
 #include "TurboMCPGraphTextLex.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPWidgetTree.h"
+#include "TurboMCPWidgetTreeSync.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
 
 #include "Blueprint/UserWidget.h"
 #include "Blueprint/WidgetTree.h"
@@ -988,6 +992,41 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FTurboMCPWidgetRoundtripTest::RunTest(const FString& Parameters)
 {
+	// Exercise both reader formats on fractional and very small nonzero padding.
+	UWidgetBlueprint* PaddingBlueprint = NewObject<UWidgetBlueprint>(GetTransientPackage());
+	PaddingBlueprint->WidgetTree = NewObject<UWidgetTree>(PaddingBlueprint);
+	UOverlay* PaddingRoot = PaddingBlueprint->WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("PaddingRoot"));
+	PaddingBlueprint->WidgetTree->RootWidget = PaddingRoot;
+	UTextBlock* PaddingChild = PaddingBlueprint->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("PaddingChild"));
+	UOverlaySlot* PaddingSlot = PaddingRoot->AddChildToOverlay(PaddingChild);
+	const FMargin Cases[] = { FMargin(1.25f, -2.5f, 0.125f, 3.75f), FMargin(0.0000001f), FMargin(0.0f) };
+	for (const FMargin& Expected : Cases)
+	{
+		PaddingSlot->SetPadding(Expected);
+		TArray<FTurboMCPWidgetTree::FEntry> Entries;
+		FString PaddingError;
+		TestTrue(TEXT("flat padding reader succeeds"), FTurboMCPWidgetTree::Collect(PaddingBlueprint, Entries, PaddingError));
+		const FTurboMCPWidgetTree::FEntry* Entry = Entries.FindByPredicate([](const FTurboMCPWidgetTree::FEntry& Item) { return Item.Name == TEXT("PaddingChild"); });
+		if (!TestNotNull(TEXT("padding child appears in flat reader"), Entry)) return false;
+		const bool bZero = Expected.Left == 0.0f && Expected.Top == 0.0f && Expected.Right == 0.0f && Expected.Bottom == 0.0f;
+		if (bZero) TestTrue(TEXT("zero padding remains omitted"), Entry->Padding.IsEmpty());
+		else
+		{
+			TArray<FString> Values;
+			Entry->Padding.ParseIntoArray(Values, TEXT(","));
+			if (!TestEqual(TEXT("padding has four components"), Values.Num(), 4)) return false;
+			TestEqual(TEXT("left padding retains precision"), FCString::Atof(*Values[0]), Expected.Left);
+			TestEqual(TEXT("top padding retains precision"), FCString::Atof(*Values[1]), Expected.Top);
+			TestEqual(TEXT("right padding retains precision"), FCString::Atof(*Values[2]), Expected.Right);
+			TestEqual(TEXT("bottom padding retains precision"), FCString::Atof(*Values[3]), Expected.Bottom);
+		}
+		TurboMCPWidgetTreeText::FTree PaddingTree;
+		TestTrue(TEXT("hierarchy padding reader succeeds"), FTurboMCPWidgetTreeSync::Walk(PaddingBlueprint, PaddingTree, PaddingError));
+		const FString PaddingText = TurboMCPWidgetTreeText::Render(PaddingTree);
+		TestTrue(TEXT("hierarchy reader preserves the same padding values"), bZero ? !PaddingText.Contains(TEXT("padding=")) : PaddingText.Contains(TEXT("padding=") + Entry->Padding));
+	}
+	PaddingBlueprint->MarkAsGarbage();
+
 	FFixture Fixture;
 	FScopedFixtureCleanup Cleanup(Fixture);
 	if (!BuildFixture(Fixture))

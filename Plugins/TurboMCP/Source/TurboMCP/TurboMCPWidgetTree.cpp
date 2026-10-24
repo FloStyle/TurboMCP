@@ -243,13 +243,13 @@ bool FTurboMCPWidgetTree::Collect(UBaseWidgetBlueprint* InWidgetBlueprint,
 				if (const FMargin* Pad =
 						PadProperty->ContainerPtrToValuePtr<FMargin>(Slot))
 				{
-					const bool bAnyPadding = !FMath::IsNearlyZero(Pad->Left)
-						|| !FMath::IsNearlyZero(Pad->Top)
-						|| !FMath::IsNearlyZero(Pad->Right)
-						|| !FMath::IsNearlyZero(Pad->Bottom);
+					const bool bAnyPadding = Pad->Left != 0.0f
+						|| Pad->Top != 0.0f
+						|| Pad->Right != 0.0f
+						|| Pad->Bottom != 0.0f;
 					if (bAnyPadding)
 					{
-						Entry.Padding = FString::Printf(TEXT("%.0f,%.0f,%.0f,%.0f"),
+						Entry.Padding = FString::Printf(TEXT("%.9g,%.9g,%.9g,%.9g"),
 							Pad->Left, Pad->Top, Pad->Right, Pad->Bottom);
 					}
 				}

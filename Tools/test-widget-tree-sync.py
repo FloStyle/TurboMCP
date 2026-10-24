@@ -110,7 +110,7 @@ def main():
     tree_text = read_tree(session, CARD)
     check("reader states its export limitations",
           "not a complete widget export" in tree_text and "bindings and animations are not included" in tree_text
-          and "rounded to whole units" in tree_text, tree_text[-600:])
+          and "lossless backup" in tree_text, tree_text[-600:])
 
     check("the answer is a `widget-tree` form rather than an error",
           "(widget-tree" in tree_text and not tree_text.lstrip().startswith("error:"),

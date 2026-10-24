@@ -483,7 +483,7 @@ public:
 
 	/**
 	 * Inspect selected Widget Blueprint hierarchy data; loads the asset without explicitly editing, compiling or saving it. This is not a complete or lossless export.
-	 * Reports names, classes, paths, variable flags, non-default visibility and selected padding. Panel children retain slot order; this alone does not establish visual draw order. Other properties, bindings and animations are omitted; padding is currently rounded to whole units. Do not assume write-back preserves omitted state.
+	 * Reports names, classes, paths, variable flags, non-default visibility and selected padding. Panel children retain slot order; this alone does not establish visual draw order. Other properties, bindings and animations are omitted. Do not assume write-back preserves omitted state.
 	 * @param Asset Required Widget Blueprint path or unique short name, e.g. /Game/Tests/WBP_NodeTest. Empty, unresolved or non-widget assets are refused. A widget without a root returns an explicit no-root result.
 	 */
 	UFUNCTION(meta = (AICallable))
