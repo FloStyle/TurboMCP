@@ -20,8 +20,10 @@ def main():
         except Exception: time.sleep(3)
     if session is None:
         print("RESULT: FAIL (editor connection)"); return 1
-    read_args = {"asset": ASSET, "graphName": GRAPH, "detail": "full", "format": "", "tokenBudget": ""}
+    read_args = {"asset": ASSET, "graphName": GRAPH, "detail": "full", "format": "read", "offset": 0, "maxChars": 24000, "revision": "", "entryFilter": ""}
     before = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", read_args)
+    if before.startswith("error:") or "!! isError" in before:
+        print("RESULT: FAIL (graph read failed: %s)" % before); return 1
     keys = re.findall(r"/Game/Tests/TurboMCPAcceptance\.TurboMCPAcceptance:%s:([0-9a-f]{6}) ; class K2Node_CallFunction" % GRAPH, before)
     if len(keys) < 3:
         print("RESULT: FAIL (fixture lacks call nodes)"); return 1
@@ -31,9 +33,17 @@ def main():
     preview = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphRepoint", args)
     refusal_args = dict(args); refusal_args["targetPin"] = "NoSuchPin"
     refusal = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPGraphRepoint", refusal_args)
+    after_preview = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", read_args)
+    refused_edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphRepoint", refusal_args)
+    after_refusal = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", read_args)
+    print("PREVIEW:", preview, "REFUSAL:", refusal, "REFUSED EDIT:", refused_edit, sep="\n")
     edit = session.call(EDIT_TOOLSET, "EditTurboMCPGraphRepoint", args)
     after = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", read_args)
+    print("EDIT:", edit, "AFTER:", after, sep="\n")
     checks = [
+        before == after_preview,
+        before == after_refusal,
+        '"outcome":"refused"' in refused_edit.replace(" ", ""),
         preview.startswith("preview:") and "reader(s) would move" in preview,
         "unchanged:" in refusal and "NoSuchPin" in refusal,
         edit.startswith("changed:") and "1 reader(s)" in edit,
