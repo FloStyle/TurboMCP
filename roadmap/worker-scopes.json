@@ -1918,6 +1918,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVars.cpp"
           ],
           "new_files": []
+        },
+        "quality-local-value-identity": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVars.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLocalVars.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
