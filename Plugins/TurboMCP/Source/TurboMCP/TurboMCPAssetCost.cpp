@@ -52,8 +52,12 @@ namespace
 		const UE::AssetRegistry::FDependencyQuery Query(InKind);
 
 		TArray<FName> Dependencies;
-		InRegistry->GetDependencies(InPackageName, Dependencies,
-			UE::AssetRegistry::EDependencyCategory::Package, Query);
+		if (!InRegistry->GetDependencies(InPackageName, Dependencies,
+			UE::AssetRegistry::EDependencyCategory::Package, Query))
+		{
+			Out.QueryErrors.Add(InReason);
+			return;
+		}
 
 		TArray<FTurboMCPAssetCost::FContributor>* Destination = &Out.Hard;
 		if (InKind == UE::AssetRegistry::EDependencyQuery::Soft)
@@ -112,6 +116,14 @@ FString FTurboMCPAssetCost::Render(int32 Cap) const
 	// ---------------------------------------------------------------------------------------------
 	// THE SPLIT. THIS IS `D-52` AND IT IS THE REASON THE TOOL EXISTS.
 	// ---------------------------------------------------------------------------------------------
+	if (QueryErrors.Num() > 0)
+	{
+		Lines.Insert(TEXT("partial: Dependency counts are unknown because registry queries failed."), 0);
+		for (const FString& Query : QueryErrors)
+			Lines.Add(TEXT("unavailable query: ") + Query);
+		Lines.Add(TEXT("Wait for the asset registry scan to finish, then retry. Unsaved packages may have no recorded dependencies."));
+		return FString::Join(Lines, TEXT("\n"));
+	}
 	Lines.Add(FString::Printf(TEXT("WHAT IT PULLS IN, SPLIT BY KIND (%d dependency entr(ies) examined)"), Examined));
 	Lines.Add(FString::Printf(TEXT("  hard references        : %d package(s)"), Hard.Num()));
 	Lines.Add(FString::Printf(TEXT("  soft references        : %d package(s)"), Soft.Num()));
@@ -192,6 +204,10 @@ FString FTurboMCPAssetCostReader::Read(const FString& AssetName, int32 Cap)
 		return TEXT("error: the asset registry is not available in this process, so no size can be reported "
 		            "at all. That is an absent measurement rather than zero cost.");
 	}
+
+    Registry->WaitForCompletion();
+    if (Registry->IsGathering())
+        return TEXT("partial: Asset registry scanning is still active. Package sizes and dependencies are unknown; wait for scanning to finish and retry.");
 
 	FTurboMCPAssetCost Report;
 
