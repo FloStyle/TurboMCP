@@ -13,6 +13,8 @@
 #include "EdGraphSchema_K2.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_CustomEvent.h"
+#include "K2Node_Tunnel.h"
+#include "Editor.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/Actor.h"
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -97,6 +99,32 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     if (!TestTrue(TEXT("Live replacement plans"), FTurboMCPGraphReplace::Plan(Blueprint->GetPathName(), Graph->GetName(), LiveText, LivePlan, Error)))
     { AddError(Error); return false; }
     if (!TestTrue(TEXT("Live replacement accepted"), LivePlan.bAcceptable())) return false;
+    // Force failure after real creation, rewiring and deletion, then inspect the live graph.
+    const FGuid SourceGuid = Source->NodeGuid;
+    const FGuid ConsumerGuid = Consumer->NodeGuid;
+    const FGuid TargetGuid = Target->NodeGuid;
+    const FGuid EventGuid = Event->NodeGuid;
+    FString FailureReport;
+    TestFalse(TEXT("Injected post-removal failure returns false"), FTurboMCPGraphReplace::ApplyInternal(LivePlan, FailureReport, Error, true));
+    AddInfo(Error);
+    TestTrue(TEXT("Failure describes owned undo without claiming restoration"), Error.Contains(TEXT("owned undo applied; restoration is unverified")));
+    TestFalse(TEXT("Failure leaves no active transaction"), GEditor->IsTransactionActive());
+    TestTrue(TEXT("Failure does not publish a changed report"), FailureReport.IsEmpty());
+    auto FindByGuid = [&](const FGuid& Guid) -> UEdGraphNode*
+    {
+        for (UEdGraphNode* Node : Graph->Nodes) if (Node && Node->NodeGuid == Guid) return Node;
+        return nullptr;
+    };
+    Source = Cast<UK2Node_CallFunction>(FindByGuid(SourceGuid));
+    Consumer = Cast<UK2Node_CallFunction>(FindByGuid(ConsumerGuid));
+    Target = Cast<UK2Node_CallFunction>(FindByGuid(TargetGuid));
+    Event = Cast<UK2Node_CustomEvent>(FindByGuid(EventGuid));
+    if (!TestTrue(TEXT("All original identities restored"), Source && Consumer && Target && Event)) return false;
+    TestEqual(TEXT("Failure restores exact node count"), Graph->Nodes.Num(), 4);
+    TestTrue(TEXT("Failure restores reciprocal original edge"), Source->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Consumer->FindPinChecked(TEXT("execute")))
+        && Consumer->FindPinChecked(TEXT("execute"))->LinkedTo.Contains(Source->FindPinChecked(TEXT("then"))));
+    TestEqual(TEXT("Failure restores removed node default"), Consumer->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
+    TestEqual(TEXT("Failure restores removed node position"), Consumer->NodePosX, 300);
     FString Report;
     if (!TestTrue(TEXT("Live replacement applies"), FTurboMCPGraphReplace::Apply(LivePlan, Report, Error)))
     { AddError(Error); return false; }
@@ -116,6 +144,28 @@ bool FTurboMCPReplacePlanTest::RunTest(const FString& Parameters)
     }
     TestTrue(TEXT("Entry connection survives"), Event->FindPinChecked(TEXT("then"))->LinkedTo.Contains(Source->FindPinChecked(TEXT("execute"))));
     TestEqual(TEXT("Retained source position unchanged"), Source->NodePosX, 0);
+    TestFalse(TEXT("Success leaves no active transaction"), GEditor->IsTransactionActive());
+
+    UEdGraph* Macro = NewObject<UEdGraph>(Blueprint, TEXT("ProtectedMacro"), RF_Transactional);
+    Macro->Schema = UEdGraphSchema_K2::StaticClass();
+    Blueprint->MacroGraphs.Add(Macro);
+    UK2Node_Tunnel* Tunnel = NewObject<UK2Node_Tunnel>(Macro, NAME_None, RF_Transactional);
+    Macro->AddNode(Tunnel, false, false); Tunnel->CreateNewGuid(); Tunnel->AllocateDefaultPins();
+    TestFalse(TEXT("Macro tunnel is protected by engine"), Tunnel->CanUserDeleteNode());
+    FTurboMCPGraphReplace::FPlan ProtectedPlan;
+    if (!TestTrue(TEXT("Protected-node request plans"), FTurboMCPGraphReplace::Plan(Blueprint->GetPathName(), Macro->GetName(),
+        TEXT("(Development|PrintString\n InString \"new\"\n)"), ProtectedPlan, Error)))
+    { AddError(Error); return false; }
+    TestFalse(TEXT("Protected deletion is not an acceptable plan"), ProtectedPlan.bAcceptable());
+    TestTrue(TEXT("Preview explains engine protection"), FTurboMCPGraphReplace::RenderPreview(ProtectedPlan).Contains(TEXT("protected by Unreal")));
+    // A stale/corrupt accepted plan must also be refused before Append can create anything.
+    ProtectedPlan.Append.Refusals.Reset();
+    FTurboMCPGraphReplace::FRemoval ProtectedRemoval;
+    ProtectedRemoval.Key = TurboMCPNodeId::MakeForNode(Tunnel, true);
+    ProtectedPlan.Removals.Add(ProtectedRemoval);
+    TestFalse(TEXT("Apply independently refuses protected removal"), FTurboMCPGraphReplace::Apply(ProtectedPlan, Report, Error));
+    TestEqual(TEXT("Protection refusal adds no nodes"), Macro->Nodes.Num(), 1);
+    TestTrue(TEXT("Protected node survives"), Macro->Nodes.Contains(Tunnel));
     return !HasAnyErrors();
 }
 #endif

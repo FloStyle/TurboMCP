@@ -15,25 +15,11 @@
 class UBlueprint;
 class UEdGraph;
 
-/**
- * `P/E-GRAPH-REPLACE`: rewrite the body of ONE function, override or event.
- *
- * WHAT THE SPEC REQUIRES, VERBATIM FROM `03_TOOLS.md`:
- *   "Replaces the body of one function, override, or event. Writes into the EXISTING entry node and result
- *    nodes; NEVER ADDS A SECOND ENTRY. Removes every node the new text does not describe, and LISTS WHAT IT
- *    REMOVED. Refuses on a whole event graph unless one event is named."
- *
- * *** IT SHARES EVERYTHING WITH `APPEND` RATHER THAN REIMPLEMENTING ANY OF IT. *** The parse, the checker gate,
- * the node factory, the linking, the layout, the compile and the read-back comparison are all
- * `FTurboMCPGraphAppend`'s, and this class CALLS its `Plan` and `Apply`. The ONLY thing REPLACE adds is what to
- * do with the OLD graph: a list of the nodes the submitted text does not describe, which are removed and
- * NAMED. A second parser would be a second dialect, which this project has recorded as a bug twice.
- *
- * THE ONE RESPECT IN WHICH IT IS THE OPPOSITE OF `APPEND`, AND IT MATTERS: `APPEND` CANNOT REMOVE ANYTHING by
- * construction, while REPLACE is the FIRST WRITER THAT CAN DESTROY. So every removal is LISTED, the entry and
- * result nodes are NEVER candidates, and the whole thing is one transaction that rolls back on a new compile
- * error. A writer that removes silently is worse than one that refuses, and the report is where that is
- * discharged rather than promised.
+/** Plans and applies graph-body replacement using Append's parser and writer.
+ * Entries, results, events and comments are retained. Other engine-protected nodes
+ * must be explicitly retained or the request is refused. Application owns one
+ * transaction, verifies the remaining node set, and does not compile or save.
+ * Failure attempts owned undo; restoration is not claimed without independent evidence.
  */
 class FTurboMCPGraphReplace
 {
@@ -109,7 +95,7 @@ public:
 
 	/**
 	 * Applies an accepted plan: ONE transaction that removes the old body and writes the new one, then
-	 * compiles, reads back and compares.
+	 * verifies the remaining node set. Compilation and saving are separate operations.
 	 *
 	 * @param OutError  Why it could not be applied at all. Empty when a report was produced.
 	 */
@@ -117,4 +103,7 @@ public:
 
 	/** Renders a plan for a Preview, which prints the same refusals an Edit would act on. */
 	static FString RenderPreview(const FPlan& InPlan);
+private:
+    friend class FTurboMCPReplacePlanTest;
+    static bool ApplyInternal(const FPlan& InPlan, FString& OutReport, FString& OutError, bool bFailAfterRemoval);
 };

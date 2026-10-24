@@ -16,8 +16,8 @@
 #include "Engine/Blueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
-#include "TurboMCPRollback.h"
-#include "ScopedTransaction.h"
+#include "Misc/ScopeExit.h"
+#include "Editor/TransBuffer.h"
 #include "Editor.h"
 
 #include "EdGraphNode_Comment.h"
@@ -172,6 +172,13 @@ bool FTurboMCPGraphReplace::Plan(const FString& InAsset, const FString& InGraphN
 			continue;
 		}
 
+        if (!Node->CanUserDeleteNode())
+        {
+            OutPlan.Append.Refusals.Add(FString::Printf(TEXT("node %s (%s) is protected by Unreal and cannot be removed; explicitly retain it in the replacement"),
+                *Key, *Node->GetClass()->GetName()));
+            continue;
+        }
+
 		FRemoval Removal;
 		Removal.Key = Key;
 		Removal.ClassName = Node->GetClass()->GetName();
@@ -223,7 +230,7 @@ FString FTurboMCPGraphReplace::RenderPreview(const FPlan& InPlan)
 			InPlan.NodeCountBefore - AccountedFor, InPlan.NodeCountBefore);
 	}
 
-	Out += FString::Printf(TEXT("\n%d node(s) kept because the text writes into them (entry, result, event)"),
+	Out += FString::Printf(TEXT("\n%d node(s) preserved as entry, result or event nodes"),
 		InPlan.ReusedKeys.Num());
 
 	// THE TWO HALVES OF REPLACE, STATED APART. Adding and removing are different acts and a caller reading one
@@ -252,9 +259,14 @@ FString FTurboMCPGraphReplace::RenderPreview(const FPlan& InPlan)
 
 bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FString& OutError)
 {
+    return ApplyInternal(InPlan, OutReport, OutError, false);
+}
+
+bool FTurboMCPGraphReplace::ApplyInternal(const FPlan& InPlan, FString& OutReport, FString& OutError, bool bFailAfterRemoval)
+{
 	OutReport.Empty();
 	OutError.Empty();
-    if (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GIsTransacting || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
     {
         OutError = TEXT("unchanged: graph write requires an idle editor outside an active transaction");
         return false;
@@ -284,11 +296,43 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
     {
         int32 Matches = 0;
         for (UEdGraphNode* Node : PreflightGraph->Nodes)
-            if (Node && TurboMCPNodeId::MakeForNode(Node, true) == Removal.Key && !IsEntryOrResult(Node) && !IsComment(Node)) ++Matches;
+            if (Node && TurboMCPNodeId::MakeForNode(Node, true) == Removal.Key && !IsEntryOrResult(Node) && !IsComment(Node) && Node->CanUserDeleteNode()) ++Matches;
         if (Matches != 1)
         { OutError = TEXT("unchanged: replacement removal target is missing, ambiguous or protected"); return false; }
     }
-    FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "GraphReplace", "TurboMCP replace a graph body"));
+    UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
+    if (!Buffer) { OutError = TEXT("unchanged: editor undo is unavailable"); return false; }
+    GEditor->BeginTransaction(NSLOCTEXT("TurboMCP", "GraphReplace", "TurboMCP replace a graph body"));
+    const FGuid OwnedId = Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
+        ? Buffer->UndoBuffer.Last()->GetId() : FGuid();
+    auto OwnsActiveTransaction = [&]()
+    {
+        return OwnedId.IsValid() && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()
+            && Buffer->UndoBuffer.Last()->GetId() == OwnedId;
+    };
+    ON_SCOPE_EXIT
+    {
+        // Append may have ended and undone this record on failure. Never end twice,
+        // and never finalize a callback's unrelated transaction.
+        if (OwnsActiveTransaction()) GEditor->EndTransaction();
+    };
+    if (!OwnedId.IsValid()) { OutError = TEXT("unchanged: could not acquire an owned replacement transaction"); return false; }
+    auto Fail = [&](const FString& Why)
+    {
+        bool bUndone = false;
+        if (OwnsActiveTransaction())
+        {
+            GEditor->EndTransaction();
+            const int32 Index = Buffer->GetQueueLength() - Buffer->GetUndoCount() - 1;
+            const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
+            bUndone = Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
+        }
+        OutError = TEXT("partial: ") + Why
+            + (bUndone ? TEXT("; owned undo applied; restoration is unverified") : TEXT("; no additional undo applied; restoration is unverified"))
+            + TEXT("; changes may remain; inspect the graph before retrying; compile=not_run; save=not_requested");
+        OutReport.Empty();
+        return false;
+    };
     UBlueprint* Blueprint = PreflightBlueprint;
     UEdGraph* Graph = PreflightGraph;
     Blueprint->Modify();
@@ -297,12 +341,7 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 	FString AppendError;
 	if (!FTurboMCPGraphAppend::Apply(InPlan.Append, AppendReport, AppendError, true))
 	{
-        // Append may already have undone the shared transaction. Never undo earlier history.
-        if (GEditor->IsTransactionActive() && !FTurboMCPRollback::EndAndUndoActiveTransaction())
-            OutError = TEXT("partial: replacement append failed and rollback failed; inspect graph before retrying. ") + AppendError;
-        else
-            OutError = AppendError;
-        return false;
+        return Fail(TEXT("replacement append failed: ") + AppendError);
 	}
 
 	// ---- 2. THE REMOVE HALF, WHICH IS THE PART ONLY REPLACE DOES ---------------------------------------
@@ -325,6 +364,15 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 	{
 		Wanted.Add(Removal.Key);
 	}
+
+    TSet<FGuid> ExpectedRemaining;
+    int32 ExpectedCount = 0;
+    for (const UEdGraphNode* Node : Graph->Nodes)
+        if (Node && !Wanted.Contains(TurboMCPNodeId::MakeForNode(Node, true)))
+        {
+            ExpectedRemaining.Add(Node->NodeGuid);
+            ++ExpectedCount;
+        }
 
 	TArray<FString> ActuallyRemoved;
 	TArray<FString> NotRemoved;
@@ -350,7 +398,7 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 
 		// A NODE RE-DISCOVERED AS AN ENTRY OR RESULT IS KEPT EVEN IF THE PLAN LISTED IT. Belt and braces, and
 		// the cost of being wrong here is a function with no signature.
-		if (IsEntryOrResult(Node) || IsComment(Node))
+		if (IsEntryOrResult(Node) || IsComment(Node) || !Node->CanUserDeleteNode())
 		{
 			NotRemoved.Add(Key);
 			continue;
@@ -362,8 +410,16 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 		ActuallyRemoved.Add(Key);
 	}
 
+    if (bFailAfterRemoval) return Fail(TEXT("injected post-removal regression failure"));
+
 	// ---- 3. MARK DIRTY WITHOUT COMPILING, THEN READ BACK AND COMPARE ---------------------------------------------------------
 	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+    if (Graph->Nodes.Num() != ExpectedCount || ExpectedRemaining.Num() != ExpectedCount)
+        return Fail(TEXT("replacement changed the expected retained-node set"));
+    for (const UEdGraphNode* Node : Graph->Nodes)
+        if (!Node || !ExpectedRemaining.Contains(Node->NodeGuid))
+            return Fail(TEXT("replacement lost or substituted a retained node"));
+
 	// Compile is explicit and must run after the edit transaction ends.
 
 	// THE READ BACK IS THE CHECK THAT MATTERS MOST FOR REPLACE. A node silently KEPT is invisible to the tool's
@@ -393,7 +449,7 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 		*InPlan.Append.GraphName, *InPlan.Append.Asset, Survived.Num(),
 		InPlan.NodeCountBefore, Graph->Nodes.Num());
 
-	Out += FString::Printf(TEXT("\n%d node(s) kept because the text writes into them (entry, result, event)"),
+	Out += FString::Printf(TEXT("\n%d node(s) preserved as entry, result or event nodes"),
 		InPlan.ReusedKeys.Num());
 
 	// THE LIST, NOT A COUNT. The spec says "LISTS WHAT IT REMOVED", and a count tells a reader how much is gone
@@ -440,11 +496,7 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
 	Out += TEXT("\ncompile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
     if (FailedToRemove > 0 || NotRemoved.Num() > 0)
     {
-        const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
-        OutError = Undone ? TEXT("partial: replacement verification failed; undo completed but restoration is unverified; changes may remain")
-                          : TEXT("partial: replacement verification failed; rollback=failed; inspect graph before retrying");
-        OutReport = TEXT("save=not_requested; inspect the graph before retrying replacement");
-        return false;
+        return Fail(TEXT("replacement removal verification failed"));
     }
     Out += TEXT("\nundo=one_transaction_for_append_and_removal");
 	OutReport = Out;
