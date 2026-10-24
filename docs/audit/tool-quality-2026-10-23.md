@@ -458,3 +458,9 @@ Supervised run fd4b7fd252f54c29b1fa1c84cac451ae built successfully. The live rer
 05c6e11 documents both inputs and graph fallback, preserves loading/destructive deletion/no tool-owned undo/no compile/no save in help, and describes static selection without claiming runtime safety. Partial removals are labeled partial, save guidance uses EditTurboMCPSave, and zero-removal output distinguishes missing keys from protected entries. The explicit dirty mark now runs only when a node was removed; loading/callback side effects are not ruled out.
 
 Supervised run 025a7eb1f2fc456ba5f9d88103272168 passed build and all 125 live help/schema checks. No-op dirty-state behavior and removal paths remain behaviorally untested by this run. Full removal identity verification, transaction ownership and static-selection limitations require follow-up; this does not certify destructive-operation safety or finish the overall review.
+
+## Group placement and movement text — 2026-10-24
+
+a90d652 documents 15 parameters across placement preview and movement preview/edit: exact IDs, selection expansion, signed coordinate offsets, empty behavior, overflow and destination-comment constraints. Compact help preserves asset loading/transient widget measurement and edit transaction/dirty/compile/save effects. Placement explicitly describes heuristic search limits and movement preview identifies the result as proposed rather than applied.
+
+Supervised run 7d74d30fdd784e9eace75c15971eb4de passed build and the 125-tool live help/schema inventory. This batch changes documentation/output, not movement algorithms; it supplies no new behavioral proof for comment membership, collisions, callback effects, undo replay or layout quality. Those remain separate review/coverage requirements.
