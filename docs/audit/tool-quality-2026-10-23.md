@@ -476,3 +476,9 @@ Supervised run 64366a43ae484470bb9c02f3e979b965 passed build and all 125 live he
 53a79f1 documents six replacement parameters and explicitly describes whole-named-graph removal of omitted eligible nodes, protected node classes, complete input requirements and edit undo/compile/save effects. Preview no longer claims that nothing can change, and wrapper comments no longer claim toolset membership prevents writes or that Apply performs no checks.
 
 Supervised run ab42a383ffaf4224bda493ccaffc75cd passed build and all 125 live help/schema checks. This text batch does not certify replacement rollback, deletion identity, callback effects or runtime behavior. The preceding live inventory (64366a43ae484470bb9c02f3e979b965) contained 62 missing parameter descriptions across 12 tools; this batch supplies six. Remaining families are Repoint, Copy, Collapse, Comment and BatchEdit (preview/edit). Presence of descriptions is not proof of semantic accuracy or complete behavioral review.
+
+## Graph copy help — 2026-10-24
+
+ad8312c documents 12 parameters across copy preview/edit, including existing destination requirements, selection boundaries, empty-selection behavior and the mandatory empty anchor value while anchor wiring is unsupported. Compact help retains asset loading, edit transaction and no compile/save. External unresolved links and required target members are explicit. Wrapper comments no longer imply matching plans guarantee successful apply or toolset membership prevents side effects.
+
+Supervised run 338a84949d6e4381abdb87c9bcb1af91 passed build and all 125 live help/schema checks. This documentation change adds no new copy behavior evidence. Link/default preservation, failed-copy restoration, reference resolution and resulting runtime behavior remain separate verification requirements; overall review stays open.
