@@ -249,7 +249,7 @@ def main():
         # that EVERY key the lint called dead in this graph IS A NODE THE READER PRINTS - and it is measured
         # over the whole set, not over the first one.
         graph_text = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", {
-            "asset": ASSET, "graphName": MESSY_GRAPH, "format": "read", "detail": "full"})
+            "asset": ASSET, "graphName": MESSY_GRAPH, "format": "read", "detail": "full", "revision": "", "entryFilter": ""})
         seen = set(re.findall(r"%s:%s:([0-9a-f]{4,})" % (re.escape(ASSET), re.escape(MESSY_GRAPH)),
                               graph_text))
         check("the reader prints nodes for the '%s' graph at all" % MESSY_GRAPH, len(seen) > 0,
@@ -270,7 +270,7 @@ def main():
     print()
     print("=== the fix for a dead node NAMES THE EXISTING TOOL rather than describing one ===")
     check("the dead-nodes finding names P/E-GRAPH-DEAD",
-          "P/E-GRAPH-DEAD" in dead or "GRAPH-DEAD" in dead,
+          "PreviewTurboMCPGraphDead" in dead,
           "no fix named in:\n%s" % dead[:400])
 
     print()
@@ -365,7 +365,17 @@ def main():
           not zero_budget.startswith("error:"), zero_budget[:200])
     word_budget = lint(session, ASSET, budget="banana")
     check("refuses a token budget that is not a number, and names the parameter",
-          word_budget.startswith("error:") and "is not a token budget" in word_budget, word_budget[:200])
+          word_budget.startswith("error:") and "TokenBudget" in word_budget and "estimated tokens" in word_budget, word_budget[:200])
+
+    for invalid in ("1.5", "-1", "+2", "2147483648", "9" * 80):
+        refused = lint(session, ASSET, budget=invalid)
+        check("invalid budget is refused: " + invalid,
+              refused.startswith("error:") and "TokenBudget" in refused, refused[:200])
+    maximum = lint(session, ASSET, budget="2147483647")
+    check("maximum budget does not overflow", not maximum.startswith("error:") and "TRUNCATED" not in maximum, maximum[:200])
+    tiny = lint(session, ASSET, budget="1")
+    for name in ("dead-nodes", "unnecessary-casts", "expensive-tick", "heavy-hard-references", "unused-declarations", "unconnected-pins"):
+        check("tiny budget retains check summary: " + name, name + ":" in tiny, tiny[-300:])
 
     print()
     if failures:

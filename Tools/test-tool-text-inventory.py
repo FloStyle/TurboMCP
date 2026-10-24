@@ -42,6 +42,7 @@ for toolset in (READ_TOOLSET, LOOK_TOOLSET, PREVIEW_TOOLSET, EDIT_TOOLSET):
         documented.update({'ReadTurboMCPMaterialTrace', 'ReadTurboMCPMaterialBlocks', 'ReadTurboMCPMaterialInstance', 'ReadTurboMCPMaterialLabels', 'ReadTurboMCPMaterialLoad'})
         documented.update({'ReadTurboMCPCallLog', 'ReadTurboMCPCallCost', 'EditTurboMCPCallLog', 'EditTurboMCPCallLogClear'})
         documented.update({'ReadTurboMCPTrace', 'ReadTurboMCPPlayCheck'})
+        documented.update({'ReadTurboMCPBPLint'})
         documented.update(('EditTurboMCPGraphPositions', 'LookTurboMCPWidgetPreview'))
         documented.update({'EditTurboMCPCompile', 'EditTurboMCPSaveWithoutThumbnail', 'EditTurboMCPSave', 'PreviewTurboMCPAssetRevert', 'EditTurboMCPAssetRevert', 'EditTurboMCPAssetUndo', 'PreviewTurboMCPAssetUndo'})
         if name in documented:

@@ -459,23 +459,10 @@ public:
 	static FString ReadTurboMCPTrace(const FString& Action, const FString& NodeId);
 
 	/**
-	 * Lint one or more Blueprints and report what is wrong with them, with each check NAMED.
-	 *
-	 * `assets` takes one or more asset names. `checks` filters by name - `dead-nodes`,
-	 * `unnecessary-casts`, `expensive-tick`, `heavy-hard-references`, `unused-declarations`,
-	 * `unconnected-pins` - and empty means every check. **`list` returns the check names and
-	 * nothing else**, because `P1` says a filter that matches nothing must say what exists.
-	 *
-	 * EVERY CHECK REPORTS HOW MANY THINGS IT LOOKED AT, AND THAT COUNT IS THE POINT: a lint
-	 * that says "no problems found" without a denominator is indistinguishable from a lint that
-	 * examined nothing. A check that could not run says so rather than reporting zero.
-	 *
-	 * EVERY FINDING CARRIES A NODE ID, A SEVERITY AND ONE LINE SAYING WHY, and where a fix
-	 * exists THE FINDING NAMES THE EXISTING TOOL RATHER THAN DESCRIBING ONE. The fix for dead
-	 * nodes is `P/E-GRAPH-DEAD`; for backward placement it is `P/E-GRAPH-FIX-BACKWARD`.
-	 *
-	 * This is a READ tool and it NEVER EDITS - the reader toolset is structurally unable to
-	 * write, which is what makes a lint's answer worth trusting.
+	 * Inspect Blueprints for selected lint findings; loads assets but does not explicitly edit, compile or save them. Findings are review suggestions, not proof of defects or guaranteed fixes.
+	 * @param Assets Required comma-separated Blueprint paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty is refused except when Checks=list. Each asset is processed independently; failures are reported alongside successful results.
+	 * @param Checks Required comma-separated check names; empty runs all checks. list returns names and descriptions without loading assets. Example: dead-nodes,unconnected-pins. Unknown names are refused.
+	 * @param TokenBudget Required string of decimal digits from 0 to 2147483647. Empty or 0 disables the budget. Positive values bound finding text approximately at four characters per estimated token per asset; complete lines may exceed it. Counts and headings are outside this budget. Example: 2000. Fractions and signs are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPBPLint(

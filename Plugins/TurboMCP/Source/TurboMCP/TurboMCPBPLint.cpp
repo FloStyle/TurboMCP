@@ -121,7 +121,7 @@ TArray<FTurboMCPBPLint::FCheckName> FTurboMCPBPLint::KnownChecks()
 {
 	TArray<FCheckName> Names;
 	Names.Add({ CheckDeadNodes,
-		TEXT("the disconnected groups P-GRAPH-DEAD would remove, with the entry rule applied") });
+		TEXT("the disconnected groups PreviewTurboMCPGraphDead would remove, with the entry rule applied") });
 	Names.Add({ CheckUnnecessaryCasts,
 		TEXT("a cast whose result only calls something already on the class, or on a known type") });
 	Names.Add({ CheckExpensiveTick,
@@ -196,7 +196,7 @@ static void RunDeadNodes(const UBlueprint* InBlueprint, const TArray<UEdGraph*>&
 					? FString::Printf(TEXT("unreachable from any entry, and it repeats live logic (%s)"),
 						*FString::Join(Group.RepeatedItems, TEXT(", ")))
 					: TEXT("unreachable from any entry point, so nothing runs it");
-				Finding.FixTool = TEXT("P/E-GRAPH-DEAD");
+				Finding.FixTool = TEXT("PreviewTurboMCPGraphDead");
 				Out.Findings.Add(Finding);
 			}
 		}
@@ -540,9 +540,9 @@ static void RunUnconnectedPins(const UBlueprint* InBlueprint, const TArray<UEdGr
 				Finding.GraphName = Graph->GetName();
 				Finding.Severity = TEXT("info");
 				Finding.Why = FString::Printf(
-					TEXT("%s is linked to nothing, so nothing can reach it; P/E-GRAPH-DEAD decides whether it is safe to remove"),
+					TEXT("%s is linked to nothing, so nothing can reach it; PreviewTurboMCPGraphDead decides whether it is safe to remove"),
 					*TitleOf(Node));
-				Finding.FixTool = TEXT("P/E-GRAPH-DEAD");
+				Finding.FixTool = TEXT("PreviewTurboMCPGraphDead");
 				Out.Findings.Add(Finding);
 			}
 		}
@@ -571,8 +571,8 @@ static void RunUnconnectedPins(const UBlueprint* InBlueprint, const TArray<UEdGr
 				Finding.NodeKey = Key;
 				Finding.GraphName = Graph->GetName();
 				Finding.Severity = TEXT("info");
-				Finding.Why = TEXT("nothing reaches it from any entry point, though it may still be linked; P/E-GRAPH-DEAD decides whether it is safe to remove");
-				Finding.FixTool = TEXT("P/E-GRAPH-DEAD");
+				Finding.Why = TEXT("nothing reaches it from any entry point, though it may still be linked; PreviewTurboMCPGraphDead decides whether it is safe to remove");
+				Finding.FixTool = TEXT("PreviewTurboMCPGraphDead");
 				Out.Findings.Add(Finding);
 			}
 		}
@@ -706,7 +706,9 @@ bool FTurboMCPBPLint::Lint(const FString& InAsset, const FString& InChecks,
 FString FTurboMCPBPLint::Render(const FReport& InReport, int32 InTokenBudget)
 {
 	FString Out = FString::Printf(TEXT("lint: %s"), *InReport.Asset);
-	Out += FString::Printf(TEXT("\n%d check(s) run"), InReport.Checks.Num());
+	int32 Ran = 0;
+	for (const FCheckResult& Check : InReport.Checks) { Ran += Check.bRan ? 1 : 0; }
+	Out += FString::Printf(TEXT("\n%d check(s) run, %d requested"), Ran, InReport.Checks.Num());
 
 	int32 TotalFindings = 0;
 	for (const FCheckResult& Check : InReport.Checks)
@@ -717,8 +719,8 @@ FString FTurboMCPBPLint::Render(const FReport& InReport, int32 InTokenBudget)
 
 	// A BUDGET THAT CUTS MUST SAY SO, rather than looking like a clean asset.
 	const bool bBudgeted = InTokenBudget > 0;
-	int32 CharactersPrinted = 0;
-	const int32 CharacterBudget = bBudgeted ? InTokenBudget * 4 : 0;
+	int64 CharactersPrinted = 0;
+	const int64 CharacterBudget = bBudgeted ? static_cast<int64>(InTokenBudget) * 4 : 0;
 	bool bTruncated = false;
 
 	for (const FCheckResult& Check : InReport.Checks)
@@ -739,7 +741,7 @@ FString FTurboMCPBPLint::Render(const FReport& InReport, int32 InTokenBudget)
 
 		if (Check.Findings.Num() == 0)
 		{
-			Out += FString::Printf(TEXT("\n  nothing found, and it really ran: %d thing(s) were examined."),
+			Out += FString::Printf(TEXT("\n  No findings among %d examined item(s); this does not certify the Blueprint as defect-free."),
 				Check.Scanned);
 			if (!Check.Reason.IsEmpty())
 			{
@@ -779,7 +781,7 @@ FString FTurboMCPBPLint::Render(const FReport& InReport, int32 InTokenBudget)
 			Out += Line;
 			CharactersPrinted += Line.Len();
 		}
-		if (bTruncated) { break; }
+		// Continue reporting every check count even when finding text is truncated.
 	}
 
 	// `P1`: a cut list says it was cut and says what to do next.
@@ -790,6 +792,6 @@ FString FTurboMCPBPLint::Render(const FReport& InReport, int32 InTokenBudget)
 			TEXT("\n; the findings are not.");
 	}
 
-	Out += TEXT("\n\nfixes go through the existing tools named on each finding; this check never edits.");
+	Out += TEXT("\n\nReview findings before applying changes. Suggested tools do not guarantee a fix; this lint pass does not explicitly edit, compile or save assets.");
 	return Out;
 }
