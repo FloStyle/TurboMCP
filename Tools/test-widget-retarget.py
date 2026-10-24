@@ -17,23 +17,12 @@ does NOT carry reproduces exactly the state a class swap leaves behind.
 The suite leaves the asset with the binding it started with, and removes its own.
 """
 
-import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, Session  # noqa: E402
-
-class BindingSession(Session):
-    def call(self, *args, **kwargs):
-        text = super().call(*args, **kwargs)
-        try:
-            wrapped, end = json.JSONDecoder().raw_decode(text)
-        except (ValueError, TypeError):
-            return text
-        return wrapped["returnValue"] + text[end:] if isinstance(wrapped, dict) and isinstance(wrapped.get("returnValue"), str) else text
-
 
 WIDGET = "WBP_NodeTest"
 
@@ -70,7 +59,7 @@ def retarget_edit(session):
 
 
 def main():
-    session = BindingSession()
+    session = Session()
     session.connect()
 
     # Start clean: the retarget edit removes anything broken, and a valid one is left alone, so
@@ -91,6 +80,7 @@ def main():
     print()
     print("=== delegate presence is reported without claiming full binding validity ===")
     good = bind(session, "TitleText", VALID_PROPERTY, "GetTitleText")
+    check("normal client decodes the response and preserves dirty telemetry", good.startswith("changed:") and "dirty_packages:" in good, good)
     print(good)
     print()
     check("it opens with changed:", good.startswith("changed:"), good[:70])

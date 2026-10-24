@@ -39,6 +39,26 @@ namespace
 	using UE::ToolsetRegistry::FToolset;
 	using FToolResult = TValueOrError<FString, FString>;
 
+    // Preserve the engine's JSON return envelope when adding human-readable telemetry.
+    // Appending after the closing brace produces neither valid JSON nor plain tool text.
+    FString AppendDirtyReport(const FString& Value, const FString& Delta)
+    {
+        TSharedPtr<FJsonObject> Object;
+        const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Value);
+        FString Body;
+        if (FJsonSerializer::Deserialize(Reader, Object) && Object.IsValid()
+            && Object->TryGetStringField(TEXT("returnValue"), Body))
+        {
+            Object->SetStringField(TEXT("returnValue"), Body + Delta);
+            FString Encoded;
+            const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Encoded);
+            if (FJsonSerializer::Serialize(Object.ToSharedRef(), Writer)) return Encoded;
+            // Preserve the report even if encoding unexpectedly fails.
+            return Value + Delta;
+        }
+        return Value + Delta;
+    }
+
     thread_local FString* ActiveSaveOutcome = nullptr;
 
     bool NormalizeParameterAliases(UClass* ToolsetClass, const FString& ToolName,
@@ -261,7 +281,7 @@ namespace
                         if (!Delta.IsEmpty())
                         {
                             if (Result.HasError()) Result = MakeError(Result.GetError() + Delta);
-                            else Result = MakeValue(Result.GetValue() + Delta);
+                            else Result = MakeValue(AppendDirtyReport(Result.GetValue(), Delta));
                         }
                     }
 
