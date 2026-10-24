@@ -1412,25 +1412,12 @@ public:
 		const FString& FunctionOrEvent);
 
 	/**
-	 * Add a function to a Blueprint.
-	 *
-	 * Pass a Blueprint and a name. The name is checked BEFORE anything is created, so a refusal
-	 * changes nothing.
-	 *
-	 * THREE REFUSALS, and the separation between them is the point of the spec:
-	 *  - a name already used ON THIS BLUEPRINT, whether by a function graph, an event or a custom
-	 *    event, is refused and the result NAMES what holds it;
-	 *  - a name that matches a PARENT function is refused differently and points at
-	 *    `P/E-OVERRIDE-ADD`, because a caller who wants to implement a parent function wants an
-	 *    override, not a new function that would leave the parent's version untouched;
-	 *  - a name that is not a usable identifier is refused with the character that is wrong.
-	 *
-	 * Call nodes and widget bindings that already name it are REPORTED rather than treated as
-	 * fatal, because the caller may be about to build exactly that function.
-	 *
-	 * NO PREVIEW TWIN, per `03_TOOLS.md`. The graph comes from the editor's own
-	 * `UBlueprintEditorLibrary::AddFunctionGraph`, and the result reads back whether the editor now
-	 * lists the function as implemented rather than trusting the call's return value.
+	 * Create a function graph and optional signature; loads types, regenerates the skeleton and refreshes matching self-call nodes, may run editor callbacks, and does not perform a full compile or save or provide a dedicated undo transaction.
+	 * Requires an idle editor outside PIE. Reports lost caller links as partial changes; does not automatically roll them back.
+	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty or unresolved values are refused.
+	 * @param Name Required new identifier, for example ComputeScore; starts with a letter or underscore, then letters, digits or underscores. Empty, None, existing and parent function names are refused; whitespace is trimmed.
+	 * @param Inputs Optional comma-separated Name: Type declarations, for example Score: int, Enabled: bool. Empty/default creates no inputs. Names must be unique across inputs and outputs; types use the shared type parser, including primitives and loadable class/struct/enum paths.
+	 * @param Outputs Optional comma-separated Name: Type declarations, for example Result: float. Empty/default creates no outputs. Uses the same type syntax and name rules as Inputs; no parameter default-value syntax is supported here.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPFunctionAdd(const FString& Asset, const FString& Name,

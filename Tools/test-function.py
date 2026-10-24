@@ -117,7 +117,7 @@ def main():
     check("it opens with unchanged:", parent.startswith("unchanged:"), parent[:70])
     check("it names the parent class", "parent class" in parent)
     check("IT POINTS AT P/E-OVERRIDE-ADD",
-          "P/E-OVERRIDE-ADD" in parent,
+          "PreviewTurboMCPOverrideAdd" in parent and "EditTurboMCPOverrideAdd" in parent,
           "the spec requires the refusal to send the caller to the override tool")
     check("it is NOT reported as a plain clash",
           "already a function" not in parent,

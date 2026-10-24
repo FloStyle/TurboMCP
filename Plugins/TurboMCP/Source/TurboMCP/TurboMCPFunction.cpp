@@ -199,7 +199,7 @@ FTurboMCPFunction::FNameCheck FTurboMCPFunction::CheckName(
 			Check.bIsParentFunction = true;
 			Check.Reason = FString::Printf(
 				TEXT("'%s' is declared by the parent class %s, so a new function of that name ")
-				TEXT("would override it. Use P/E-OVERRIDE-ADD instead."),
+				TEXT("would override it. Use PreviewTurboMCPOverrideAdd and EditTurboMCPOverrideAdd instead."),
 				*InName, *Parent->GetName());
 			return Check;
 		}
@@ -304,7 +304,7 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	if (Graph == nullptr)
 	{
 		return FString::Printf(
-			TEXT("error: the engine's AddFunctionGraph returned no graph for '%s'."), *Wanted);
+			TEXT("error: the editor returned no function graph for '%s'. Asset state was not verified or rolled back; inspect it before retrying."), *Wanted);
 	}
 
 	// THE ENGINE RESOLVES A NAME COLLISION SILENTLY, SO THE CREATED NAME IS CHECKED.
@@ -336,13 +336,15 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 		}
 
 		UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
+		if (Blueprint->FunctionGraphs.Contains(Graph))
+			return FString::Printf(TEXT("partial: the editor created '%s' instead of '%s', and cleanup left that graph present. Inspect it before retrying; no save was requested."), *Actual, *Wanted);
 
 		return FString::Printf(
 			TEXT("unchanged: the engine would not create a function named '%s' and made ")
 			TEXT("'%s' instead, because something in the package still holds that name. The ")
-			TEXT("graph was removed again, so nothing was added.%s If a function of that name ")
+			TEXT("graph was removed again; other asset effects were not restored.%s If a function of that name ")
 			TEXT("was just removed, the package may not have released the name yet; read the ")
-			TEXT("functions back with R-BP-LOAD and try again."),
+			TEXT("functions back with ReadTurboMCPBlueprintLoad and try again."),
 			*Wanted, *Actual, *Extra);
 	}
 
@@ -354,7 +356,10 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	if (Entry == nullptr)
 	{
 		UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
-		return FString::Printf(TEXT("error: the new function '%s' has no unique entry node; it was removed again."), *Wanted);
+		const bool bRemoved = !Blueprint->FunctionGraphs.Contains(Graph);
+		return FString::Printf(TEXT("%s: the new function '%s' has no unique entry node; cleanup=%s. Other asset effects were not restored; inspect before retrying."),
+			bRemoved ? TEXT("error") : TEXT("partial"), *Wanted,
+			bRemoved ? TEXT("graph removed") : TEXT("graph still present"));
 	}
 	for (const FSignaturePin& Pin : Inputs)
 	{
@@ -377,7 +382,10 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 		if (Result == nullptr)
 		{
 			UBlueprintEditorLibrary::RemoveFunctionGraph(Blueprint, Graph->GetFName());
-			return FString::Printf(TEXT("error: the new function '%s' has no result node; it was removed again."), *Wanted);
+			const bool bRemoved = !Blueprint->FunctionGraphs.Contains(Graph);
+		return FString::Printf(TEXT("%s: the new function '%s' has no result node; cleanup=%s. Other asset effects were not restored; inspect before retrying."),
+			bRemoved ? TEXT("error") : TEXT("partial"), *Wanted,
+			bRemoved ? TEXT("graph removed") : TEXT("graph still present"));
 		}
 		for (const FSignaturePin& Pin : Outputs)
 		{
@@ -455,11 +463,11 @@ FString FTurboMCPFunction::Add(const FString& InAsset, const FString& InName,
 	{
 		// Named rather than silently accepted: the caller may be about to build that function,
 		// or the call node may be a mistake. Either way it is a fact worth having.
-		Out += FString::Printf(TEXT("\n; these already name it and will now resolve: %s"),
+		Out += FString::Printf(TEXT("\n; these already reference this name; resolution and signature compatibility are not verified: %s"),
 			*FString::Join(Check.OtherUsers, TEXT(", ")));
 	}
 
-	Out += bComplete ? TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.")
+	Out += bComplete ? TEXT("\n; the change is in memory and NOT saved. Review the result, then use EditTurboMCPCompile and EditTurboMCPSave as needed.")
         : TEXT("\n; partial change remains in memory; save=not_requested.");
 	return Out;
 }
@@ -547,11 +555,11 @@ FString FTurboMCPFunction::Remove(const FString& InAsset, const FString& InName)
 			Out += TEXT("\n; this does NOT guarantee the package has released the name. The ")
 				+ FString(TEXT("engine uniques a new function's name against the objects still "))
 				+ FString(TEXT("in the package, so adding the same name back immediately may "))
-				+ FString(TEXT("still be renamed; E-FUNCTION-ADD detects that and refuses "))
+				+ FString(TEXT("still be renamed; EditTurboMCPFunctionAdd detects that and refuses "))
 				+ FString(TEXT("rather than creating a numbered graph."));
 		}
 
-		Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+		Out += TEXT("\n; the change is in memory and NOT saved. Review the result, then use EditTurboMCPCompile and EditTurboMCPSave as needed.");
 		return Out;
 	}
 
