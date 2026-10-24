@@ -84,6 +84,23 @@ namespace
 	/** The largest edge that is rendered. */
 	constexpr int32 MaxEdge = 4096;
 
+	// Check each digit before multiplication so oversized input cannot overflow.
+	bool ParseCaptureNumber(const FString& Text, int32 Minimum, int32& OutValue)
+	{
+		if (Text.IsEmpty()) return false;
+		int32 Value = 0;
+		for (const TCHAR Character : Text)
+		{
+			if (Character < TEXT('0') || Character > TEXT('9')) return false;
+			const int32 Digit = Character - TEXT('0');
+			if (Value > (MaxEdge - Digit) / 10) return false;
+			Value = Value * 10 + Digit;
+		}
+		if (Value < Minimum) return false;
+		OutValue = Value;
+		return true;
+	}
+
 	/** The smallest zoom, so a huge graph does not become unreadable. */
 	constexpr float MinZoom = 0.05f;
 
@@ -371,11 +388,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		return Out;
 	}
 
-	// The hop count lives in `Size` for the two neighbourhood selectors. `04_FORMATS.md`
-	// section 6.1 gives the framing names but no parameter spellings, and `Target` is
-	// already taken by the node ID or the box index, so the free parameter carries it.
-	// Size is parsed below exactly as it is for the older modes, so `1610` is refused
-	// rather than silently read as 1610 hops.
+	// Selector modes use Size as a hop count; other graph modes use image dimensions.
 	int32 NeighbourHops = 0;
 
 	if ((bOneBox || bOneNode) && Target.TrimStartAndEnd().IsEmpty())
@@ -389,29 +402,13 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	int32 Height = DefaultHeight;
 	if (bNewSelector)
 	{
-		// THE HOP COUNT IS `Size` FOR THE TWO NEIGHBOURHOOD SELECTORS, and it is a plain
-		// whole number rather than a `WxH` pair, because those modes COMPUTE their own
-		// picture size from the frame exactly as `node` and `box` already do. `0` is a
-		// meaningful value (the target alone), so a bare `0` must be accepted here even
-		// though the size parser below would reject it for every other mode.
 		const FString HopText = Size.TrimStartAndEnd();
-		if (!HopText.IsEmpty())
+		if (!HopText.IsEmpty() && !ParseCaptureNumber(HopText, 0, NeighbourHops))
 		{
-			if (!HopText.IsNumeric())
-			{
-				return FString::Printf(
-					TEXT("error: mode '%s' reads Size as a whole number of hops, and '%s' ")
-					TEXT("is not one. Pass 0 for the target alone, or a count such as 3."),
-					*WantedMode, *Size);
-			}
-			NeighbourHops = FCString::Atoi(*HopText);
-			if (NeighbourHops > MaxEdge)
-			{
-				return FString::Printf(
-					TEXT("error: %d hops is more than the %d limit this tool accepts. A ")
-					TEXT("neighbourhood that wide is the whole graph, so ask for the ")
-					TEXT("whole graph as it is."), NeighbourHops, MaxEdge);
-			}
+			return FString::Printf(
+				TEXT("error: mode '%s' requires Size to be a whole-number hop count from 0 to %d (the limit). ")
+				TEXT("Use digits only, for example 0 for the target alone or 3 for three hops. Leave Size empty for 0."),
+				*WantedMode, MaxEdge);
 		}
 	}
 	else if (!Size.TrimStartAndEnd().IsEmpty())
@@ -425,24 +422,12 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		}
 		Left.TrimStartAndEndInline();
 		Right.TrimStartAndEndInline();
-		if (!Left.IsNumeric() || !Right.IsNumeric())
+		if (!ParseCaptureNumber(Left, 1, Width) || !ParseCaptureNumber(Right, 1, Height))
 		{
 			return FString::Printf(
-				TEXT("error: '%s' is not a size. Both parts must be whole numbers."),
-				*Size);
-		}
-		Width = FCString::Atoi(*Left);
-		Height = FCString::Atoi(*Right);
-		if (Width <= 0 || Height <= 0)
-		{
-			return FString::Printf(
-				TEXT("error: a size of %dx%d cannot be rendered."), Width, Height);
-		}
-		if (Width > MaxEdge || Height > MaxEdge)
-		{
-			return FString::Printf(
-				TEXT("error: %dx%d is larger than the %d limit."),
-				Width, Height, MaxEdge);
+				TEXT("error: Size requires whole-number width and height from 1 to %d pixels. ")
+				TEXT("Use digits only in WxH or W,H format, for example 1600x900. Leave Size empty for 1600x900."),
+				MaxEdge);
 		}
 	}
 
