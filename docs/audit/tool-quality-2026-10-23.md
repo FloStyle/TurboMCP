@@ -452,3 +452,9 @@ Supervised run fd4b7fd252f54c29b1fa1c84cac451ae built successfully. The live rer
 ## Reroute geometry explanation — 2026-10-24
 
 687d7d4 fixes a false diagnosis in preview text: bFootprintUnknown represents missing measured knot dimensions, not proof that all graph nodes have never been drawn. Output now names the fallback reroute size, explains straight-segment/node-bound estimates, and makes no promise of exact rendered outlines or absence of visual crossings. Supervised build d198781d25e94bedb34ba4d919c98b0c passed. This text-only correction was not live-output tested; prior behavior gaps, including the invalid compilation fixture and rollback verification, remain open.
+
+## Unused-node removal text — 2026-10-24
+
+05c6e11 documents both inputs and graph fallback, preserves loading/destructive deletion/no tool-owned undo/no compile/no save in help, and describes static selection without claiming runtime safety. Partial removals are labeled partial, save guidance uses EditTurboMCPSave, and zero-removal output distinguishes missing keys from protected entries. The explicit dirty mark now runs only when a node was removed; loading/callback side effects are not ruled out.
+
+Supervised run 025a7eb1f2fc456ba5f9d88103272168 passed build and all 125 live help/schema checks. No-op dirty-state behavior and removal paths remain behaviorally untested by this run. Full removal identity verification, transaction ownership and static-selection limitations require follow-up; this does not certify destructive-operation safety or finish the overall review.
