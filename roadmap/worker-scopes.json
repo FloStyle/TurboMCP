@@ -1873,6 +1873,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAppendFailureTest.cpp",
             "Tools/test-append-failure.py"
           ]
+        },
+        "quality-append-failure-core": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAppendFailureTest.cpp",
+            "Tools/test-append-failure.py"
+          ]
         }
       },
       "preserve_rows": []
