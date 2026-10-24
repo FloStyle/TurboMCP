@@ -1904,6 +1904,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp"
           ],
           "new_files": []
+        },
+        "quality-batch-rollback-native": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp"
+          ],
+          "new_files": [
+            "Tools/test-batch-rollback.py"
+          ]
         }
       },
       "preserve_rows": []
