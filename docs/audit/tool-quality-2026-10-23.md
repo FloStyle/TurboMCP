@@ -512,3 +512,9 @@ Supervised run 1eb8515a98264d6daa3d268c5e33c489 passed build and all 125 live he
 8508554 removes unverified complete-restoration claims from Repoint, Copy and Replace failure paths. Repoint now retains potentially modified dirty state and reports changed=null through its result boundary when restoration is unverified. Undo completion is explicitly distinguished from verified restoration. This is a partial repair, not proof of rollback correctness; full state comparison and failure-injection behavior remain open.
 
 Supervised build 61730b9c6692423aa6ac13cbf220440f passed on the repair checkout. No behavioral failure-path tests were run in this batch. All 125-tool behavioral acceptance remains unfinished.
+
+## Repoint focused behavior regression — 2026-10-24
+
+6840f7b and b491443 update the legacy reader arguments and verify graph readback is unchanged after preview and invalid-target edit refusal. The refusal outcome is checked through structured metadata, not the compatibility method that strips the result line. Existing positive repoint checks remain.
+
+Run 64c195a865424ce889e31f3b8a465869 failed only the newly added metadata assertion because it initially used the text-only API. Corrected run bbd72ee4976b4e369b55fbaad3be9ed7 passed build and test-graph-repoint. This covers existing-target repoint and pre-mutation refusal on the disposable fixture; it does not induce a failure after mutation, prove full rollback restoration, or certify all pin types/runtime behavior. The rollback follow-up remains open.
