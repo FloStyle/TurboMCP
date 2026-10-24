@@ -123,10 +123,13 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPBatchEdit(const FString& Operati
 {
  TArray<FBatchOperation> Ops; FString Error; if (!ParseBatch(Operations, Ops, Error)) return Refusal(Error); return Render(Ops);
 }
-FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
+namespace
+{
+// The public entry point validates all operations before entering this shared executor.
+static FString ExecuteBatch(TArray<FBatchOperation>& Ops)
 {
  if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()) return Refusal(TEXT("requires an idle editor outside an active transaction"));
- TArray<FBatchOperation> Ops; FString Error; if (!ParseBatch(Operations, Ops, Error)) return Refusal(Error);
+ FString Error;
  UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
  if (!Buffer) return Refusal(TEXT("requires an editor transaction buffer"));
  TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "BatchEdit", "TurboMCP batch edit"));
@@ -157,3 +160,110 @@ FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
  }
  return FString::Printf(TEXT("changed\noperations=%d\napplied=%s\nundo=one\ncompile=not_run\nsave=not_requested\nrollbackScope=none\nInspect the graph and compile before saving; runtime behavior is not verified."), Ops.Num(), *FString::Join(Applied, TEXT(",")));
 }
+
+}
+
+FString UTurboMCPEditToolset::EditTurboMCPBatchEdit(const FString& Operations)
+{
+ if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress())
+  return Refusal(TEXT("requires an idle editor outside an active transaction"));
+ TArray<FBatchOperation> Ops;
+ FString Error;
+ if (!ParseBatch(Operations, Ops, Error)) return Refusal(Error);
+ return ExecuteBatch(Ops);
+}
+
+// Copyright (c) 2026 FloStyle
+// SPDX-License-Identifier: MPL-2.0
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+#include "Tools/TurboMCPToolsets.h"
+#include "TurboMCPNodeId.h"
+#include "Engine/Blueprint.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "EdGraph/EdGraph.h"
+#include "EdGraph/EdGraphPin.h"
+#include "EdGraphSchema_K2.h"
+#include "K2Node_CallFunction.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "GameFramework/Actor.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "UObject/Package.h"
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPBatchRollbackTest,
+    "TurboMCP.Batch.PostMutationFailure",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FTurboMCPBatchRollbackTest::RunTest(const FString& Parameters)
+{
+    const FString PackageName = TEXT("/Game/Tests/BatchRollback_") + FGuid::NewGuid().ToString(EGuidFormats::Digits);
+    UPackage* Package = CreatePackage(*PackageName);
+    UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("BatchRollbackFixture"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass(), TEXT("TurboMCPBatchTest"));
+    if (!TestNotNull(TEXT("Blueprint factory succeeds"), Blueprint)) return false;
+    FAssetRegistryModule::AssetCreated(Blueprint);
+    ON_SCOPE_EXIT
+    {
+        FAssetRegistryModule::AssetDeleted(Blueprint);
+        Blueprint->ClearFlags(RF_Public | RF_Standalone);
+        Blueprint->MarkAsGarbage();
+        Package->SetDirtyFlag(false); // Disposable, unsaved fixture only.
+        Package->MarkAsGarbage();
+    };
+    UEdGraph* Graph = NewObject<UEdGraph>(Blueprint, TEXT("FailureGraph"), RF_Transactional);
+    Graph->Schema = UEdGraphSchema_K2::StaticClass();
+    Blueprint->UbergraphPages.Add(Graph);
+    auto MakeCall = [&](int32 X)
+    {
+        UK2Node_CallFunction* Node = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
+        Node->SetFromFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName(TEXT("PrintString")));
+        Graph->AddNode(Node, false, false);
+        Node->CreateNewGuid();
+        Node->AllocateDefaultPins();
+        Node->NodePosX = X;
+        return Node;
+    };
+    UK2Node_CallFunction* Source = MakeCall(0);
+    UK2Node_CallFunction* Consumer = MakeCall(300);
+    UK2Node_CallFunction* Target = MakeCall(600);
+    Source->FindPinChecked(TEXT("then"))->MakeLinkTo(Consumer->FindPinChecked(TEXT("execute")));
+    Consumer->FindPinChecked(TEXT("InString"))->DefaultValue = TEXT("preserve-me");
+    Package->SetDirtyFlag(false);
+
+    UK2Node_CallFunction* FinalTarget = MakeCall(900);
+    auto Operation = [&](const TCHAR* Id, UEdGraphNode* From, UEdGraphNode* To, const TCHAR* Pin)
+    {
+        return FString::Printf(TEXT("{\"id\":\"%s\",\"asset\":\"%s\",\"graphName\":\"%s\",\"sourceNodeId\":\"%s\",\"sourcePin\":\"then\",\"targetNodeId\":\"%s\",\"targetPin\":\"%s\",\"keepSource\":true}"),
+            Id, *Blueprint->GetPathName(), *Graph->GetName(), *TurboMCPNodeId::MakeForNode(From, true), *TurboMCPNodeId::MakeForNode(To, true), Pin);
+    };
+
+    const FString Payload = TEXT("[") + Operation(TEXT("first"), Source, Target, TEXT("then")) + TEXT(",")
+        + Operation(TEXT("second"), Target, FinalTarget, TEXT("then")) + TEXT("]");
+    TArray<FBatchOperation> Ops;
+    FString Error;
+    if (!TestTrue(TEXT("Production batch planning succeeds"), ParseBatch(Payload, Ops, Error))) { AddError(Error); return false; }
+    if (!TestEqual(TEXT("Two operations planned"), Ops.Num(), 2)) return false;
+    // Force the second operation's final verification to fail after its rewiring.
+    ++Ops[1].Repoint.NodeCountBefore;
+    const FString Result = ExecuteBatch(Ops);
+    AddInfo(TEXT("Failed batch result: ") + Result);
+    TestTrue(TEXT("Second operation failed after first applied"), Result.Contains(TEXT("failed id=second"))
+        && Result.Contains(TEXT("appliedBeforeFailure=first")));
+    TestTrue(TEXT("Both operations included in undo"), Result.Contains(TEXT("rollbackScope=first,second"))
+        && Result.Contains(TEXT("rollback=undo_applied")));
+    TestTrue(TEXT("Unverified restoration stated"), Result.StartsWith(TEXT("partial")) && Result.Contains(TEXT("restoration=unverified")));
+    TestFalse(TEXT("No active transaction remains"), GEditor->IsTransactionActive());
+    TestEqual(TEXT("Original nodes retained"), Graph->Nodes.Num(), 4);
+    UEdGraphPin* Input = Consumer->FindPinChecked(TEXT("execute"));
+    UEdGraphPin* OriginalOutput = Source->FindPinChecked(TEXT("then"));
+    TestTrue(TEXT("Original reciprocal connection restored"), Input->LinkedTo.Num() == 1 && Input->LinkedTo.Contains(OriginalOutput)
+        && OriginalOutput->LinkedTo.Num() == 1 && OriginalOutput->LinkedTo.Contains(Input));
+    TestTrue(TEXT("Both attempted target outputs restored"), Target->FindPinChecked(TEXT("then"))->LinkedTo.IsEmpty()
+        && FinalTarget->FindPinChecked(TEXT("then"))->LinkedTo.IsEmpty());
+    TestEqual(TEXT("Unrelated default preserved"), Consumer->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
+    TestEqual(TEXT("Unrelated position preserved"), Consumer->NodePosX, 300);
+    return !HasAnyErrors();
+}
+#endif
