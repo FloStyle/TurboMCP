@@ -13,13 +13,7 @@
 
 #include "TurboMCPWidgetsAsVars.h"
 
-/**
- * `E-WIDGETS-AS-VARS`.
- *
- * EDIT ONLY, on purpose. `03_TOOLS.md` says no Preview twin is needed because it is a flag change
- * and the Edit reports old and new state. The reporting is what replaces the preview, so the
- * result names the previous value of the flag beside the new one rather than only the new one.
- */
+// Validate the request before resolving the asset and changing widget flags.
 FString UTurboMCPEditToolset::EditTurboMCPWidgetsAsVars(
 	const FString& Asset, const FString& Widgets, bool bIsVariable)
 {

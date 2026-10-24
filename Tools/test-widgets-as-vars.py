@@ -1,20 +1,8 @@
 # ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-STRUCT-3
-"""Exercise E-WIDGETS-AS-VARS against the running editor.
+"""Check widget flag changes, idempotence, refusal and reader-visible state.
 
-  T-STRUCT-3  mark widgets as variables
-  P4          the Edit opens with `changed:` or `unchanged:`
-  P8          a refusal leaves the tree untouched
-
-EDIT ONLY, ON PURPOSE. `03_TOOLS.md` says no Preview twin is needed, because it is a flag change
-and the Edit reports old and new state. This suite is the check on that claim: it verifies the
-result really does carry the OLD value beside the new one, which is what a preview would have
-shown.
-
-WHAT REPLACES TRUSTING THE REPORT
----------------------------------
-The tool reports what it changed. That report comes from the same code that changed it, so the
-suite reads the result back through R-BP-LOAD, which prints a widget as `variable` from the
-dashboard's own flag.
+Run only through the supervisor on its disposable fixture copy. Read-back from
+an open asset does not prove fresh disk reload or undo behavior.
 """
 
 import os
@@ -71,9 +59,13 @@ def main():
     check("it names the OLD value of the flag", "was not a variable" in out,
           "the report must carry what it was, not only what it is")
     check("it names the NEW value of the flag", "now variable" in out)
-    check("it says there is no Preview twin, and why",
-          "no Preview twin" in out and "flag change" in out)
-    check("it says the asset is not saved", "NOT saved" in out)
+    check("it explains skeleton and callback effects",
+          "regenerate the Blueprint skeleton" in out and "editor callbacks" in out)
+    check("it distinguishes full compilation", "not a full compile" in out)
+    check("it explains undo limitations", "No dedicated undo transaction" in out)
+    check("it says the asset is not saved", "does not save the asset" in out)
+    check("it names current follow-up tools",
+          "EditTurboMCPCompile" in out and "EditTurboMCPSave" in out)
 
     print()
     print("=== the second call is idempotent and says so rather than claiming a change ===")

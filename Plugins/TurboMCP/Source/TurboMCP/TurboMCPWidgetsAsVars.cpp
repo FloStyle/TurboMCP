@@ -90,9 +90,7 @@ FString FTurboMCPWidgetsAsVars::Apply(const FPlan& InPlan)
 			*Resolved.ObjectPath);
 	}
 
-	// EVERY NAME IS RESOLVED BEFORE ANYTHING IS CHANGED. A call that marked two widgets and
-	// then failed on a misspelled third would leave the tree half-changed, which is what `P8`
-	// forbids.
+	// Resolve every name before changing flags to avoid partially applying a misspelled list.
 	TArray<UWidget*> Targets;
 	TArray<FString> Missing;
 	for (const FString& Name : InPlan.Widgets)
@@ -110,7 +108,7 @@ FString FTurboMCPWidgetsAsVars::Apply(const FPlan& InPlan)
 
 	if (Missing.Num() > 0)
 	{
-		// The real names are listed, so the caller corrects itself in one step (`P7`).
+		// Include available names so the caller can correct the request.
 		TArray<FString> Real;
 		Tree->ForEachWidget([&Real](UWidget* Widget)
 		{
@@ -121,7 +119,7 @@ FString FTurboMCPWidgetsAsVars::Apply(const FPlan& InPlan)
 		});
 
 		return FString::Printf(
-			TEXT("unchanged: %d widget name(s) do not exist in %s, so nothing was ")
+			TEXT("unchanged: %d widget name(s) do not exist in %s, so no widget flags were ")
 			TEXT("changed: %s. The widgets are: %s"),
 			Missing.Num(), *Resolved.ObjectPath,
 			*FString::Join(Missing, TEXT(", ")),
@@ -176,11 +174,9 @@ FString FTurboMCPWidgetsAsVars::Apply(const FPlan& InPlan)
 		Out += Line;
 	}
 
-	Out += TEXT("\n; the flag is set in memory and NOT saved. Call E-SAVE, because an ");
-	Out += TEXT("unsaved asset dies with the editor.");
-	Out += TEXT("\n; there is no Preview twin for this tool: it is a flag change, and this ");
-	Out += TEXT("line reports the old and the new state of every widget, which is what a ");
-	Out += TEXT("preview would have shown.");
+	Out += TEXT("\n; Changes are in memory; this tool does not save the asset.");
+	Out += TEXT("\n; Changing a flag may regenerate the Blueprint skeleton and run editor callbacks; this is not a full compile.");
+	Out += TEXT("\n; No dedicated undo transaction is created. Review the flags, then use EditTurboMCPCompile and EditTurboMCPSave as needed.");
 
 	return Out;
 }
