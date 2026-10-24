@@ -9,16 +9,7 @@
 
 #include "TurboMCPAssetCost.h"
 
-/**
- * `R-ASSET-COST` - the size map and hard references of one asset.
- *
- * IT LIVES IN THE READ TOOLSET, WHICH IS STRUCTURALLY UNABLE TO WRITE. That is the project's safety model and the
- * spec's: a cost reader that could write would be a cost reader nobody could trust to leave the project alone.
- *
- * AND THE WHOLE ANSWER IS SPLIT BY PROVENANCE (`D-52`), which is why this returns a rendered report rather than a
- * number: *"Rejected: one total size. Why: the total names no cause and cannot be acted on. The check that matters
- * is 'a heavy hard reference where a soft one would do', and that fact does not exist inside a total."*
- */
+// Report recorded package sizes and direct dependency categories without an explicit asset edit.
 FString UTurboMCPReadToolset::ReadTurboMCPAssetCost(const FString& Asset, int32 Cap)
 {
 	return FTurboMCPAssetCostReader::Read(Asset, Cap);

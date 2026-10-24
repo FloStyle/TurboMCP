@@ -108,6 +108,13 @@ def main():
           re.search(r"(\d+) dependency entr", text) is not None, text[:400])
 
     # ---------------------------------------------------------------------------------------------
+    categories = re.findall(r"(?:hard|soft|editor-only) references\s*:\s*(\d+) package", text)
+    examined = re.search(r"(\d+) dependency entr", text)
+    check("category counts include every returned dependency entry",
+          len(categories) == 3 and examined is not None and sum(map(int, categories)) == int(examined.group(1)), text[:700])
+    check("size provenance and overlap are explicit",
+          "recorded package disk sizes" in text and "overlap" in text and "not a recursive" in text, text[:1000])
+
     # THE ASSET'S OWN SIZE, PRESENT OR EXPLICITLY UNKNOWN - NEVER A BARE ZERO.
     # ---------------------------------------------------------------------------------------------
     own = section(text, "OWN SIZE")
@@ -124,7 +131,7 @@ def main():
         check("an unknown size comes WITH A REASON rather than alone",
               re.search(r"unknown\s*-\s*\S", text) is not None, text[:400])
         check("it says explicitly that this is NOT ZERO",
-              "THIS IS NOT ZERO" in text, text[:600])
+              "unknown, not zero" in text, text[:600])
     else:
         print("    no unknown size on this asset, so the unknown path is NOT exercised here")
         print("    (it is asserted on a deliberately unresolvable asset below)")

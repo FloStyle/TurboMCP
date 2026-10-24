@@ -471,17 +471,10 @@ public:
 		const FString& TokenBudget);
 
 	/**
-	 * The size map and hard references of one asset, SPLIT BY PROVENANCE.
-	 *
-	 * `D-52`: *"A size is reported with its provenance. Rejected: one total size. Why: the total names no cause and
-	 * cannot be acted on. The check that matters is 'a heavy hard reference where a soft one would do', and that fact
-	 * does not exist inside a total."* SO THIS PRINTS THE ASSET'S OWN SIZE, THEN WHAT IT PULLS IN SPLIT INTO HARD,
-	 * SOFT AND EDITOR-ONLY, THEN THE LARGEST CONTRIBUTORS EACH WITH ITS SIZE AND WHY IT IS REFERENCED.
-	 *
-	 * `Asset` takes any accepted path form. `Cap` bounds the contributor list and defaults when not positive.
-	 *
-	 * AND `P1` GOVERNS EVERY FIGURE: a size that cannot be read is reported as UNKNOWN WITH THE REASON, NEVER AS
-	 * ZERO - because a zero reads as "free", and an unread package is not a free one.
+	 * Report recorded package disk sizes and direct registry dependencies; does not explicitly edit, compile or save assets. This is not runtime memory, cooked size or recursive load cost.
+	 * Categories may overlap; unknown sizes remain unknown. Registry data may omit unsaved or dynamic references.
+	 * @param Asset Required asset path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved assets are refused. Use a full path to disambiguate.
+	 * @param Cap Required integer maximum contributor rows shown. Zero or negative uses 10; positive values are used directly. Example: 20. Does not limit dependency scanning, category counts or the separate unknown-size list.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPAssetCost(

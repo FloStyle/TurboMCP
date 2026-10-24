@@ -80,11 +80,8 @@ namespace
 				Contributor.Reason = InReason + TEXT(", and THE REGISTRY HAS NO SIZE FOR IT");
 				Out.Unknown.Add(Contributor);
 			}
-			else
-			{
-				Destination->Add(Contributor);
-			}
-
+			// A missing size does not remove a dependency from its category count.
+			Destination->Add(Contributor);
 			Out.Largest.Add(Contributor);
 		}
 	}
@@ -93,7 +90,7 @@ namespace
 FString FTurboMCPAssetCost::Render(int32 Cap) const
 {
 	TArray<FString> Lines;
-	Lines.Add(FString::Printf(TEXT("read: what one asset costs, split by provenance (D-52)")));
+	Lines.Add(FString::Printf(TEXT("read: asset package sizes and direct registry dependencies")));
 	Lines.Add(FString::Printf(TEXT("asset: %s"), *Asset));
 	Lines.Add(TEXT(""));
 
@@ -103,8 +100,8 @@ FString FTurboMCPAssetCost::Render(int32 Cap) const
 	if (OwnBytes == INDEX_NONE)
 	{
 		Lines.Add(FString::Printf(TEXT("OWN SIZE: unknown - %s"), *OwnReason));
-		Lines.Add(TEXT("  THIS IS NOT ZERO. A package with no registry row has an UNREAD size, and a"));
-		Lines.Add(TEXT("  report that printed 0 here would claim the asset is free."));
+		Lines.Add(TEXT("  Size is unknown, not zero. The registry has no usable disk-size measurement."));
+		Lines.Add(TEXT("  Recorded package sizes do not measure runtime memory or cooked-build size."));
 	}
 	else
 	{
@@ -120,9 +117,9 @@ FString FTurboMCPAssetCost::Render(int32 Cap) const
 	Lines.Add(FString::Printf(TEXT("  soft references        : %d package(s)"), Soft.Num()));
 	Lines.Add(FString::Printf(TEXT("  editor-only references : %d package(s)"), EditorOnly.Num()));
 	Lines.Add(TEXT(""));
-	Lines.Add(TEXT("  THE SPLIT IS THE POINT, NOT THE TOTAL: `D-52` rejects one total size because"));
-	Lines.Add(TEXT("  the total names no cause. The check that matters is a HEAVY HARD REFERENCE"));
-	Lines.Add(TEXT("  WHERE A SOFT ONE WOULD DO, and that fact does not exist inside a sum."));
+	Lines.Add(TEXT("  These are direct registry dependencies, not a recursive load-cost total."));
+	Lines.Add(TEXT("  Editor-only entries can overlap hard or soft entries; do not add the categories."));
+	Lines.Add(TEXT("  Sizes are recorded package disk sizes; missing measurements remain unknown."));
 	Lines.Add(TEXT(""));
 
 	// ---------------------------------------------------------------------------------------------
@@ -156,8 +153,8 @@ FString FTurboMCPAssetCost::Render(int32 Cap) const
 	Lines.Add(FString::Printf(TEXT("LARGEST CONTRIBUTORS (%d of %d, capped at %d)"), Shown, Ranked.Num(), Cap));
 	if (Ranked.Num() == 0)
 	{
-		Lines.Add(TEXT("  none. The registry reported NO package dependency at all, which is a real"));
-		Lines.Add(TEXT("  possible answer and is not the same as a lookup that failed."));
+		Lines.Add(TEXT("  No dependencies were returned by the registry queries."));
+		Lines.Add(TEXT("  This does not prove that the asset has no runtime or unsaved references."));
 	}
 	for (int32 Index = 0; Index < Shown; ++Index)
 	{
@@ -222,7 +219,7 @@ FString FTurboMCPAssetCostReader::Read(const FString& AssetName, int32 Cap)
 	{
 		// THE REASON IS CARRIED, NOT INVENTED. `P1`: unknown with a reason beats a zero that reads as "free".
 		Report.OwnReason = FString::Printf(
-			TEXT("the asset registry has no package row for '%s', so its serialised size was never recorded"),
+			TEXT("the registry has no usable disk-size measurement for '%s'"),
 			*Resolved.PackagePath);
 	}
 
@@ -230,11 +227,11 @@ FString FTurboMCPAssetCostReader::Read(const FString& AssetName, int32 Cap)
 	// total names no cause and cannot be acted on"*. The readable kinds come from `EDependencyQuery`, whose own
 	// spellings are `Hard`, `Soft = NotHard` and `EditorOnly = NotGame`. ***
 	GatherDependencies(Registry, PackageName, UE::AssetRegistry::EDependencyQuery::Hard,
-		TEXT("HARD reference - it is loaded when this asset is loaded"), Report);
+		TEXT("HARD reference recorded by the asset registry"), Report);
 	GatherDependencies(Registry, PackageName, UE::AssetRegistry::EDependencyQuery::Soft,
-		TEXT("SOFT reference - it is loaded only when something asks for it"), Report);
+		TEXT("SOFT reference recorded by the asset registry"), Report);
 	GatherDependencies(Registry, PackageName, UE::AssetRegistry::EDependencyQuery::EditorOnly,
-		TEXT("EDITOR-ONLY reference - it is not part of a cooked build"), Report);
+		TEXT("EDITOR-ONLY reference recorded by the asset registry"), Report);
 
 	if (Report.Examined == 0)
 	{
