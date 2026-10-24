@@ -1,31 +1,7 @@
 # ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LAY-10
-"""Drive `P-GRAPH-KNOTS` and `E-GRAPH-KNOTS` against the acceptance asset.
-
-WHY THIS SUITE EXISTS
----------------------
-T-LAY-10 says two things: "Preview lists only wires that cross nodes; after Edit those wires are
-straight". The capability's whole risk is the OPPOSITE failure - placing knots where they make the
-graph worse - so the checks below are written to go red in that direction wherever they can.
-
-WHAT EACH CHECK PROVES, AND HOW IT COULD FAIL
----------------------------------------------
-- `KnotProbe` previews ZERO crossing wires. The graph has three knots between two distant calls and no
-  node on the straight route. Fails if the segment test fires on any pair, which is the failure that
-  would put knots on every wire in every graph;
-- the preview reports the counts it measured, so "before" and "after" have something to compare;
-- the preview LISTS the node a wire crosses, not merely a count, so a caller can see which obstacle;
-- a graph with nothing to fix yields `unchanged:` and no knot at all;
-- the request is validated, and each refusal names itself;
-- **THE EDIT REFUSES EXACTLY WHAT THE PREVIEW REFUSED** (`D-02`). The edit is run on the same graph
-  and must agree. Fails if a refusal is decided in `Apply` instead of `Plan`, which is the shape this
-  project has been caught by twice;
-- after an edit that keeps its work, the preview reports ZERO crossings for the wires it fixed;
-- a knot does not change what a Blueprint does, checked by compiling before and after;
-- reading never changes the asset: the node count is compared before and after every preview.
-
-THE FIXTURE IS REGENERATED FIRST AND LAST, because the edit mutates it. `make-acceptance-asset.ps1`
-stops the editor to do it and the suite starts it again, so this suite cannot run concurrently with
-another that uses the editor.
+"""Exercise reroute planning and editing on the supervisor-owned acceptance fixture.
+Checks cover diagnostic counts, node counts and compile results, not runtime
+semantics or complete rollback restoration. The supervisor restores fixture files.
 """
 
 import os
@@ -116,7 +92,7 @@ def crossing_counts(text):
 def node_count(session, graph):
     text = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad",
                         {"asset": ASSET, "graphName": graph, "detail": "signatures",
-                         "format": "", "tokenBudget": ""})
+                         "format": "read", "offset": 0, "maxChars": 24000, "revision": "", "entryFilter": ""})
     match = re.search(r"(\d+) node\(s\)", text)
     return int(match.group(1)) if match else None
 
@@ -134,6 +110,7 @@ def main():
         print("RESULT: FAIL (the MCP server never answered)")
         return 1
     print("  ok   the asset was rebuilt and the editor answers")
+    compiled_before = session.call(EDIT_TOOLSET, "EditTurboMCPCompile", {"assets": ASSET})
 
     print()
     print("=== 1. KnotProbe has NO crossing, so the predicate must stay silent ===")
@@ -152,7 +129,7 @@ def main():
           clean_wires == 0, "reported %s" % clean_wires)
     check("no knot is offered there", "KNOT " not in clean, clean[:300])
     after_nodes = node_count(session, CLEAN_GRAPH)
-    check("PREVIEWING DID NOT CHANGE THE GRAPH",
+    check("preview preserves the observed node count",
           before_nodes is not None and before_nodes == after_nodes,
           "%s -> %s" % (before_nodes, after_nodes))
 
@@ -173,11 +150,11 @@ def main():
         print(edit_sane[:400])
         print()
         check("the edit on a clean graph says unchanged:",
-              edit_sane.startswith("unchanged:") or edit_sane.startswith("error:"),
+              edit_sane.startswith("unchanged:"),
               edit_sane[:200])
         sane_nodes_after = node_count(session, SANE_GRAPH)
         check("NO KNOT WAS ADDED to the graph with nothing to fix",
-              sane_nodes_before == sane_nodes_after,
+              sane_nodes_before is not None and sane_nodes_before == sane_nodes_after,
               "%s -> %s" % (sane_nodes_before, sane_nodes_after))
 
     print()
@@ -276,27 +253,23 @@ def main():
                     check("the crossings that remain are the ones the preview REFUSED to fix",
                           after_crossings == refused_crossings,
                           "after=%s, refused=%s" % (after_crossings, refused_crossings))
-            elif "rolled back" in edit:
-                check("a rollback RESTORED the crossing count it started at",
+            elif "rollback attempted" in edit:
+                check("rollback returns the observed crossing count to its baseline",
                       after_crossings == crossed_before,
                       "%s vs %s" % (after_crossings, crossed_before))
 
     print()
-    print("=== 6. a knot does not change what the Blueprint does ===")
-    compiled_before = session.call(EDIT_TOOLSET, "EditTurboMCPCompile", {"assets": ASSET})
-    # The compile is asked again after the edit above, and the two must agree on whether the asset
-    # is clean. A knot that became compiler relevant would change this.
+    print("=== 6. compilation before and after editing ===")
+    # Successful compilation does not prove identical runtime behavior.
     compiled_after = session.call(EDIT_TOOLSET, "EditTurboMCPCompile", {"assets": ASSET})
     def verdict(text):
-        if "error" in text.lower():
-            return "error"
-        if "warning" in text.lower():
-            return "warn"
-        return "clean"
+        match = re.search(r"(\d+) clean, (\d+) with warnings, (\d+) with errors", text)
+        return tuple(map(int, match.groups())) if match and not text.startswith("error:") else None
+    check("baseline compilation succeeds", verdict(compiled_before) == (1, 0, 0), compiled_before[:400])
     print("    compile verdict before: %s" % verdict(compiled_before))
     print("    compile verdict after:  %s" % verdict(compiled_after))
     check("the Blueprint still compiles after the pass, at the same verdict",
-          verdict(compiled_before) == verdict(compiled_after),
+          verdict(compiled_before) == (1, 0, 0) and verdict(compiled_after) == (1, 0, 0),
           "%s vs %s" % (verdict(compiled_before), verdict(compiled_after)))
 
     print()

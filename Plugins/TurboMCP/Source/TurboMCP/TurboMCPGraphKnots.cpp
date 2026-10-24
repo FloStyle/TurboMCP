@@ -80,8 +80,8 @@ namespace
 	 * wider.
 	 *
 	 * WHAT THIS COSTS, STATED PLAINLY: on a graph whose nodes have never been drawn, this capability
-	 * judges crossings against small squares rather than the real outlines. In a live editor, where
-	 * nodes have been rendered, the measured sizes are used and the judgement is exact. Every report
+	 * judges crossings against small squares rather than the real outlines. When measured node sizes are available they improve the estimate;
+	 * straight-segment crossing checks still do not model rendered wire splines. Every report
 	 * says which of the two it used, so a caller is never left guessing.
 	 */
 	constexpr double MinimumNodeExtent = 48.0;
@@ -1226,11 +1226,7 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 	const FScopedTransaction Transaction(
 		FText::FromString(TEXT("TurboMCP: place reroute knots")));
 
-	// *** WHETHER THE PACKAGE WAS ALREADY DIRTY WHEN THIS PASS STARTED, RECORDED BEFORE THE FIRST WRITE.
-	// A pass that decides to roll back must leave the asset as it found it, AND CLEARING THE FLAG IS ONLY
-	// CORRECT WHEN THIS PASS IS WHAT SET IT: an earlier operation in the same editor session may have
-	// unsaved work of its own, and that fact is not this pass's to discard. ***
-	// Do not clear dirty state after an unverified rollback.
+	// Keep dirty state when restoration has not been independently verified.
 
 	TArray<UK2Node_Knot*> Created;
 	TArray<FPending> Completed;
@@ -1378,8 +1374,7 @@ FString FTurboMCPGraphKnots::Apply(const FPlan& InPlan)
 			}
 		}
 
-		// RE-MEASURE TO CONFIRM THE ROLLBACK WORKED. A rollback whose result is not checked is a
-		// rollback nobody knows works, and this project has recorded that shape often enough.
+		// Recount crossings for diagnostics; this does not verify complete restoration.
 		int32 ConfirmCrossings = 0;
 		int32 ConfirmKnots = 0;
 		{
