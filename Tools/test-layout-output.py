@@ -16,7 +16,7 @@ refused = session.call(LOOK_TOOLSET, "LookTurboMCPLayoutDoneCheck", dict(args, a
 assert refused.startswith("error:") and "full-graph capture" not in refused, refused
 # Numeric refusals happen before asset resolution or opening an editor.
 for size in ("1.5x900", "+1600x900", "-1x900", "0x900", "4097x900", "9" * 80 + "x900", "1600x0"):
-    result = session.call(LOOK_TOOLSET, "LookTurboMCPCapture", dict(args, mode="graph", size=size))
+    result = session.call(LOOK_TOOLSET, "LookTurboMCPCapture", dict(args, mode="graph", target="", size=size))
     assert result.startswith("error:") and "whole-number width and height" in result, (size, result)
 for size in ("-1", "+1", "1.5", "4097", "9" * 80):
     result = session.call(LOOK_TOOLSET, "LookTurboMCPCapture", dict(args, mode="neighbours", target="invalid", size=size))
