@@ -500,3 +500,9 @@ Supervised run 634d5f0242654fdd82cb524889f44a80 passed build and all 125 live he
 6c59f44 documents Operations for both tools, including JSON wrapper/entry rules, required and optional fields, one-graph scope, boolean defaults and refusal cases. The example now selects two output pins, matching repoint semantics. Preview reports no created undo transaction; compile/save statuses say not run/not requested rather than implying automatic deferred execution. Success asks for graph inspection and compilation without claiming runtime verification.
 
 Supervised run 49a3d507b7224e2f9e6f1a50b6206b97 passed build and all 125 live help/schema checks. No new batch behavior evidence is claimed; sequential staging equivalence, failure rollback/read-back and complex callback behavior remain separate coverage requirements. Overall review remains open.
+
+## Comment actions and parameter-description coverage — 2026-10-24
+
+7d622ef documents 16 comment parameters, per-action empty behavior, fit scope, explicit-size override and load/measurement/undo/compile/save effects. Current reader/save names replace obsolete aliases. Size parsing now rejects nonnumeric, non-finite, sub-unit and out-of-int32-range sides before conversion; this behavior change still needs a focused negative-input regression.
+
+Supervised run 1eb8515a98264d6daa3d268c5e33c489 passed build and all 125 live help/schema checks. Parsing that run's 125 schema records found ZERO missing parameter descriptions. This completes description presence only: semantic accuracy, every output path and behavioral coverage are not thereby certified. Comment creation/set/fit/delete, size refusal behavior and resulting geometry remain separate validation requirements. Overall tool quality goal remains open.
