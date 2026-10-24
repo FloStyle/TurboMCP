@@ -127,14 +127,14 @@ def main():
     # *** `P1`: AN UNREADABLE SIZE IS UNKNOWN WITH A REASON, NOT ZERO. *** THIS IS THE SECOND HALF OF THE ACCEPTANCE
     # ROW AND IT IS THE ONE A LAZY IMPLEMENTATION GETS WRONG, because zero is the convenient default.
     # ---------------------------------------------------------------------------------------------
-    if "unknown" in text.lower():
+    if re.search(r"OWN SIZE: unknown|\| size UNKNOWN \|", text):
         check("an unknown size comes WITH A REASON rather than alone",
-              re.search(r"unknown\s*-\s*\S", text) is not None, text[:400])
+              re.search(r"unknown\s*-\s*\S|size UNKNOWN \| .+", text) is not None, text[:400])
         check("it says explicitly that this is NOT ZERO",
-              "unknown, not zero" in text, text[:600])
+              "unknown, not zero" in text or "AN ABSENT MEASUREMENT, NOT ZERO COST" in text, text[:600])
     else:
         print("    no unknown size on this asset, so the unknown path is NOT exercised here")
-        print("    (it is asserted on a deliberately unresolvable asset below)")
+        print("    An unresolved-asset refusal below does not cover missing size measurements.")
 
     # ---------------------------------------------------------------------------------------------
     # THE REFUSAL PATH, WHICH IS THE OTHER HALF OF `P1` AND CAN BE EXERCISED EVERY RUN.
