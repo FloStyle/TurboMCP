@@ -39,6 +39,21 @@ namespace
 	using UE::ToolsetRegistry::FToolset;
 	using FToolResult = TValueOrError<FString, FString>;
 
+    FString InsertDirtyReport(const FString& Body, const FString& Delta)
+    {
+        const FString Trimmed = Body.TrimEnd();
+        int32 LastNewline = INDEX_NONE;
+        Trimmed.FindLastChar(TEXT('\n'), LastNewline);
+        const int32 FinalStart = LastNewline + 1;
+        if (Trimmed.Mid(FinalStart).StartsWith(TEXT("; tmcp-result-v1:")))
+        {
+            // Preserve the existing authoritative line verbatim; do not infer an outcome.
+            return Trimmed.Left(FinalStart) + Delta.TrimStart() + TEXT("\n")
+                + Trimmed.Mid(FinalStart);
+        }
+        return Body + Delta;
+    }
+
     // Preserve the engine's JSON return envelope when adding human-readable telemetry.
     // Appending after the closing brace produces neither valid JSON nor plain tool text.
     FString AppendDirtyReport(const FString& Value, const FString& Delta)
@@ -49,14 +64,14 @@ namespace
         if (FJsonSerializer::Deserialize(Reader, Object) && Object.IsValid()
             && Object->TryGetStringField(TEXT("returnValue"), Body))
         {
-            Object->SetStringField(TEXT("returnValue"), Body + Delta);
+            Object->SetStringField(TEXT("returnValue"), InsertDirtyReport(Body, Delta));
             FString Encoded;
             const TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&Encoded);
             if (FJsonSerializer::Serialize(Object.ToSharedRef(), Writer)) return Encoded;
             // Preserve the report even if encoding unexpectedly fails.
-            return Value + Delta;
+            return InsertDirtyReport(Value, Delta);
         }
-        return Value + Delta;
+        return InsertDirtyReport(Value, Delta);
     }
 
     thread_local FString* ActiveSaveOutcome = nullptr;

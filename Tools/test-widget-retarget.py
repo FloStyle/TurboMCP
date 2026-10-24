@@ -22,7 +22,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, Session  # noqa: E402
+from tmcp import EDIT_TOOLSET, PREVIEW_TOOLSET, Session, call_structured  # noqa: E402
 
 WIDGET = "WBP_NodeTest"
 
@@ -61,6 +61,14 @@ def retarget_edit(session):
 def main():
     session = Session()
     session.connect()
+    # A refusal from a migrated edit tool still needs its final metadata after dirty telemetry.
+    refusal = call_structured(session, EDIT_TOOLSET, "EditTurboMCPGraphRepoint",
+                              dict(asset="", graphName="", sourceNodeId="", sourcePin="",
+                                   targetNodeId="", targetTypeId="", targetPin="", keepSource=""),
+                              requires_result=True)
+    check("dirty telemetry preserves authoritative refusal metadata",
+          refusal.result.outcome == "refused" and "dirty_packages:" in refusal.body, refusal.body)
+
 
     # Start clean: the retarget edit removes anything broken, and a valid one is left alone, so
     # the asset is cleared by removing the bindings this suite would make.
