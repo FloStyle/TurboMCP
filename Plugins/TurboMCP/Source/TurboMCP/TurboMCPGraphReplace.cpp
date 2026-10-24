@@ -238,7 +238,7 @@ FString FTurboMCPGraphReplace::RenderPreview(const FPlan& InPlan)
 			InPlan.NodeCountBefore);
 	}
 
-	Out += TEXT("\n; a preview changes NOTHING. Call the edit to write it.");
+	Out += TEXT("\nNo replacement was applied. Inspect the removal list before calling EditTurboMCPGraphReplace; compilation and runtime behavior are not verified.");
 	return Out;
 }
 

@@ -856,21 +856,13 @@ public:
         const FString& Continuation = TEXT("auto"));
 
 	/**
-	 * Rewrite the body of one function, override or event, and list what it removes.
-	 *
-	 * Replaces the body rather than adding to it, so it is the FIRST writer that can remove
-	 * anything. It writes into the EXISTING entry and result nodes and never adds a second
-	 * entry, and it keeps the nodes the text does not describe as removals.
-	 *
-	 * Returns the nodes to create, the nodes to LINK to, and - the part that matters here - the
-	 * nodes it would REMOVE, each by key with its class and title. A removal is LISTED rather
-	 * than counted, and every entry, result, event and comment is kept, because removing one
-	 * would delete a signature or an author's documentation.
-	 *
-	 * Plans this operation without applying it to the target graph. A successful preview
-	 * does not guarantee a later edit: the target state and edit guards can change.
-	 */
-	UFUNCTION(meta = (AICallable))
+     * Plan graph replacement and list deletions; loads the Blueprint without applying the replacement, compiling or saving.
+     * Removal considers the named graph, not just one execution branch. Entry/result/event nodes and comments are protected. Inspect the removal list before editing; successful preview does not guarantee a later edit.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
+     * @param GraphName Required target graph name, e.g. EventGraph. Use the reader's exact graph name; missing or ambiguous targets are refused.
+     * @param Text Required nonempty graph text using the append grammar. Existing reader IDs identify nodes to retain; eligible nodes omitted from the text are deleted. Preserve exact type IDs and pin names. Start from a complete ReadTurboMCPGraphLoad result, not a truncated page or isolated fragment; preview the removal list before editing.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphReplace(
 		const FString& Asset,
 		const FString& GraphName,
@@ -1466,21 +1458,13 @@ public:
         const FString& Continuation = TEXT("auto"));
 
 	/**
-	 * Rewrite the body of one function, override or event, and report every node it removed.
-	 *
-	 * The Edit twin of PreviewTurboMCPGraphReplace. It reaches the SAME plan, so everything it
-	 * refuses the preview refused first, with the same words.
-	 *
-	 * IT CAN DESTROY, WHICH NO OTHER WRITER IN THIS PLUGIN CAN, so two things are deliberate.
-	 * Every removal is LISTED by key with its class and title rather than counted, because a
-	 * count says how much is gone and a list says what. And the node list is COPIED before
-	 * iterating, because removing while iterating a container skips every other element - which
-	 * here would mean a body silently HALF replaced, the worst outcome this capability has.
-	 *
-	 * One transaction, rolled back on any new compile error, and the result is read back through
-	 * the project's own reader and compared rather than reported from memory.
-	 */
-	UFUNCTION(meta = (AICallable))
+     * Replace graph content and delete omitted eligible nodes in one undo transaction; loads the Blueprint, but does not compile or save.
+     * Removal considers the named graph, not just one execution branch. Entry/result/event nodes and comments are protected. Inspect the removal list before editing; successful preview does not guarantee a later edit.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
+     * @param GraphName Required target graph name, e.g. EventGraph. Use the reader's exact graph name; missing or ambiguous targets are refused.
+     * @param Text Required nonempty graph text using the append grammar. Existing reader IDs identify nodes to retain; eligible nodes omitted from the text are deleted. Preserve exact type IDs and pin names. Start from a complete ReadTurboMCPGraphLoad result, not a truncated page or isolated fragment; preview the removal list before editing.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphReplace(
 		const FString& Asset,
 		const FString& GraphName,
