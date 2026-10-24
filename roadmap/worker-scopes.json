@@ -1781,6 +1781,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp"
           ],
           "new_files": []
+        },
+        "quality-repoint-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
