@@ -576,3 +576,11 @@ Native reproduction 57601ffeef5e4136835b2c0db5e830db proved the source endpoint 
 Final supervised build/native run 447be52387e64809ac83908daf368d21 passed. It verifies retained endpoint counts in plans, unchanged planning graph state, and an actual Replace Apply on an event-connected graph: event/source retained, old unreferenced consumer/target removed, new literal retained, requested reciprocal wire and entry connection retained. No save or compile acceptance, arbitrary node types, downstream dependency preservation, or forced removal-phase failure is certified.
 
 Scope: exact production/test files from quality-replace-linked-retention; Tests/catalog.json registered separately by integrator. Prior offline gate failures remain recorded and unresolved. Full R04 and all-tool acceptance remain open.
+
+## Batch staged/live graph identity repair (2026-10-24)
+
+Fixed af034a7: PlanOnGraph now stores IdentityGraph->GetName(), not the transient simulation graph name. Scratch duplication can rename its graph; the old plan then made live Apply resolve the scratch name and fail with graph disappeared before apply. Reproduced by native public-tool calls in runs 921203583fa24845b8d2d6a34c4aca02 and ddfc133b7c484c8c93077e4fb891daf7. The latter recorded the actual error on operation first, before changes.
+
+Supervised build/native run 03f81ea36fa5434ab4a55189eaf5b2a4 passed after the fix, with unchanged behavioral assertions. Coverage: two sequential existing-target repoints; the second uses readers moved by the first; preview leaves live links intact; invalid second-operation target pin refuses before either live operation; valid batch preserves node count/default/position and produces the intended final reciprocal edge. Scope checks passed for native candidate 124732c and repair af034a7.
+
+Limits: no failure injection after a live batch mutation, new-target batches, protected-node deletion, whole-state rollback, save or persistence acceptance. Those remain open. The legacy test-batch-edit.py is stale (reader schema and old behavior expectations); this new suite supplies current narrow coverage rather than claiming that suite passes. Four previously recorded offline findings remain unresolved.

@@ -1424,3 +1424,7 @@ Weekly prototype review: the three test improvements were accepted for integrati
 ### 2026-10-24 Replace linked-node deletion repair
 
 Implemented explicit endpoint retention (e92fc24), with supervised native planner and live Apply evidence 447be52387e64809ac83908daf368d21. Requested wires no longer lose their explicitly referenced existing endpoints merely because those nodes lack separate forms. See the tool-quality audit for reproduction and validation limits. R04 remains open; this does not certify full rollback, persistence or all 125 tools.
+
+### 2026-10-24 Batch graph identity repair
+
+Fixed af034a7: staged plans preserve the live graph name rather than the scratch duplicate name. Native public Preview/Edit batch calls pass sequential existing-target edits and later-operation refusal without live mutation (03f81ea36fa5434ab4a55189eaf5b2a4). Batch rollback after live mutation and broader operation coverage remain open; see the quality audit.
