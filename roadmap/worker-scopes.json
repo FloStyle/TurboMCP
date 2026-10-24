@@ -1693,6 +1693,14 @@
             "Tools/test-datatable-quality.py"
           ],
           "files": []
+        },
+        "quality-material-instance-text": {
+          "new_files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstanceTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialInstance.cpp"
+          ]
         }
       },
       "preserve_rows": []
