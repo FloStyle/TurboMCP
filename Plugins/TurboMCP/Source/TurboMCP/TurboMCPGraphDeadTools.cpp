@@ -13,14 +13,7 @@
 
 #include "TurboMCPGraphDead.h"
 
-/**
- * `P-GRAPH-DEAD` and `E-GRAPH-DEAD`.
- *
- * ONE CODE PATH, TWO OUTCOMES. `FTurboMCPGraphDead::Plan` finds the unreachable groups and decides
- * which are safe; the Preview lists every group with its reason and the Edit removes the candidates
- * (`D-02`). The three reasons to keep a group are checked in `Plan`, so the PREVIEW states them
- * rather than the edit surprising a caller who had already agreed.
- */
+// Preview and edit recompute the same static candidate selection; this is not runtime proof.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphDead(
 	const FString& Asset, const FString& GraphName)
 {

@@ -475,7 +475,7 @@ FString FTurboMCPGraphDead::RenderPreview(const FPlan& InPlan)
 	if (InPlan.Groups.Num() == 0)
 	{
 		// `P1`: never return nothing. "Nothing found" with the reason is the answer.
-		Out += TEXT("\nevery node is reachable from an entry, so there is nothing to remove.");
+		Out += TEXT("\nNo removal candidates were found by these static checks. This does not prove runtime reachability.");
 		return Out;
 	}
 
@@ -502,9 +502,7 @@ FString FTurboMCPGraphDead::RenderPreview(const FPlan& InPlan)
 		}
 		if (Group.Writes.Num() == 0 && Group.Calls.Num() == 0 && !Group.bHoldsEntry)
 		{
-			Out += TEXT("\n    kept on the safe reading: nothing here reads a variable or calls a ")
-				TEXT("function, so nothing outside can depend on it, but it is also not obviously ")
-				TEXT("a leftover.");
+			Out += TEXT("\n    Kept: this group has no recognized variable read or function call, so it does not meet the removal heuristic. External dependencies were not ruled out.");
 		}
 
 		if (Group.bRepeatsLiveLogic)
@@ -560,8 +558,8 @@ FString FTurboMCPGraphDead::Apply(const FPlan& InPlan)
 	if (InPlan.CandidateIndices.Num() == 0)
 	{
 		return FString::Printf(
-			TEXT("unchanged: %s has %d unreachable group(s) and none is safe to remove, so ")
-			TEXT("nothing was deleted. P-GRAPH-DEAD says which reason applies to each."),
+			TEXT("unchanged: %s has %d unreachable group(s) and none meets the removal heuristic, so ")
+			TEXT("nothing was deleted. PreviewTurboMCPGraphDead says which reason applies to each."),
 			*InPlan.GraphName, InPlan.Groups.Num());
 	}
 
@@ -618,7 +616,10 @@ FString FTurboMCPGraphDead::Apply(const FPlan& InPlan)
 		}
 	}
 
-	Graph->MarkPackageDirty();
+	if (Removed > 0)
+	{
+		Graph->MarkPackageDirty();
+	}
 
 	FString Out = FString::Printf(TEXT("changed: removed %d node(s) from %s : %s"),
 		Removed, *Resolved.ObjectPath, *Graph->GetName());
@@ -626,19 +627,19 @@ FString FTurboMCPGraphDead::Apply(const FPlan& InPlan)
 
 	if (Skipped > 0)
 	{
-		// Reported rather than hidden: a caller who asked for ten and got eight must know.
+		Out = TEXT("partial: some selected nodes were not removed.\n") + Out;
 		Out += FString::Printf(
 			TEXT("\n%d node(s) were NOT removed because they no longer resolve or are entries: %s"),
 			Skipped, *FString::Join(Missing, TEXT(", ")));
 	}
 
-	Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+	Out += TEXT("\nChanges are in memory. No tool-owned undo transaction, compilation or save was performed. Inspect the graph, compile it, then use EditTurboMCPSave if the result is correct. Runtime behavior is not verified.");
 
 	if (Removed == 0)
 	{
 		Out = FString::Printf(
-			TEXT("unchanged: nothing could be removed from %s : %s. %d node key(s) did not ")
-			TEXT("resolve."),
+			TEXT("unchanged: nothing could be removed from %s : %s. %d node key(s) were missing or protected entries. ")
+			TEXT("Read the graph again before retrying."),
 			*Resolved.ObjectPath, *Graph->GetName(), Skipped);
 	}
 
