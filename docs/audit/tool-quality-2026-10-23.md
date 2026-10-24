@@ -632,3 +632,21 @@ Replacement transaction finalization now follows the exact owned record. Scope c
 Supervised 79e4a84b75ae44dcbad6494420c80373 passed build and test-replace-plan without native warnings. New evidence: forced failure after real append/rewiring/removal restored all four original node identities, node count, reciprocal original edge, removed-node default and position, with no active transaction. Existing successful replacement checks still pass. A protected macro tunnel is refused in both planning and an independently checked stale/corrupt accepted plan, without creation or deletion. Scope gate passed 65dd983 against 66422d41fa9bc0f146a2e6f176dc34f3aafe7b5e.
 
 Implemented and focused-native-tested; broader field validation remains pending. These checks do not certify all node classes, editor callbacks, breakpoint/watch restoration, disk persistence or complete rollback of arbitrary Blueprint properties. No full offline or 125-tool acceptance claim; previously recorded offline failures remain.
+
+## Capture framing repair — 2026-10-24
+
+Implementation e5a7965; suite registration 50001e8. Supervised run
+8e39c7f2d85e40ea9e543c4bac25bcaa passed build and test-capture-framing.
+Default graph captures now use the native scratch renderer rather than a tight
+live-window crop. Results report actual dimensions, graph identity, bounds and
+an absolute unique PNG path. Repeated captures retain prior evidence.
+Capture suites now request a rendered editor. The non-Blueprint refusal no
+longer incorrectly excludes Widget Blueprints.
+
+Verified: default 1600x900, explicit 800x400, Widget 800x600, distinct retained
+files, and explicit 1x1 zoom-range refusal. Codex inspected the default Blueprint
+and Widget PNGs: fixture nodes are visible; the former right-edge clipping is
+absent. This is focused acceptance, not all-selector or live-editor acceptance.
+CP-14 contrast/shadow reproduction, view/focus/selection/dirty-state effects,
+and broader selector coverage remain open. Earlier capture suites still have
+stale expectations and a missing Pillow dependency; they were not declared passed.
