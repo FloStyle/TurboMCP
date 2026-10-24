@@ -1527,8 +1527,8 @@ FString FTurboMCPStruct::RenderPreviewFields(const FPlanFields& InPlan)
 		}
 	}
 
-	Out += TEXT("\nthe edit re-resolves every field by name when it is applied, so a field that has ")
-		TEXT("changed since this preview is refused rather than written to a different one (D-45).");
+	Out += TEXT("\nThe edit checks field names again; later failures may leave earlier changes applied. ")
+		TEXT("This preview does not reserve the struct or prove dependent assets will compile.");
 	return Out;
 }
 
@@ -1757,16 +1757,15 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 		}
 
 		return FString::Printf(
-			TEXT("error: the struct changed between the plan and this call. These names could not be ")
-			TEXT("re-resolved and were NOT silently skipped: %s. The struct's fields as this call reads ")
-			TEXT("them are: %s. Applied before that: %d added, %d changed, %d moved, %d removed."),
+			TEXT("partial: these field operations could not be completed: %s. ")
+			TEXT("Observed fields: %s. Completed operation counts: %d added, %d changed, %d moved, %d removed. ")
+			TEXT("Other partial changes may remain; no rollback was attempted. Inspect before retrying or saving."),
 			*FString::Join(Vanished, TEXT(", ")),
 			SeenNames.Num() > 0 ? *FString::Join(SeenNames, TEXT(", ")) : TEXT("(none)"),
 			Added, Changed, Moved, Removed);
 	}
 
-	// Compiled once, because without it the properties behind the new field list do not exist and a read back would
-	// report the previous shape.
+	// Compile the final field list; individual editor operations may also compile.
 	FStructureEditorUtils::CompileStructure(Struct);
 	Struct->MarkPackageDirty();
 
@@ -1775,6 +1774,7 @@ FString FTurboMCPStruct::ApplyFields(const FPlanFields& InPlan)
 	ReadFields(Struct, ReadBack);
 
 	FString Out = FString::Printf(TEXT("changed: struct %s"), *InPlan.ObjectPath);
+	Out += TEXT("\nVerification: operation counts and observed fields follow; defaults, metadata and dependent assets were not fully verified.");
 	Out += FString::Printf(TEXT("\nadded: %d"), Added);
 	Out += FString::Printf(TEXT("\nchanged: %d"), Changed);
 	Out += FString::Printf(TEXT("\nmoved: %d"), Moved);

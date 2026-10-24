@@ -67,7 +67,7 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPStructFields(
 
 	FString Out = FTurboMCPStruct::RenderPreviewFields(Plan);
 	Out += TEXT("\n\n");
-	Out += FTurboMCPSourceControlWrite::Render(Checkout, TEXT("P-STRUCT-FIELDS"));
+	Out += FTurboMCPSourceControlWrite::Render(Checkout, TEXT("PreviewTurboMCPStructFields"));
 	return Out;
 }
 
@@ -92,7 +92,7 @@ FString UTurboMCPEditToolset::EditTurboMCPStructFields(
 	TArray<FString> Targets;
 	Targets.Add(Plan.ObjectPath);
 	const FString CheckoutReport = FTurboMCPSourceControlWrite::EnsureCheckedOut(
-		FTurboMCPSourceControlWrite::Plan(Targets), TEXT("E-STRUCT-FIELDS"));
+		FTurboMCPSourceControlWrite::Plan(Targets), TEXT("EditTurboMCPStructFields"));
 
 	FString Out = FTurboMCPStruct::ApplyFields(Plan);
 	Out += TEXT("\n\n");

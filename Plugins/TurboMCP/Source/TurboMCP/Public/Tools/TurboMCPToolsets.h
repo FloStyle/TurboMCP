@@ -1149,35 +1149,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPStructNew(const FString& Path, const FString& Fields);
 
-	/**
-	 * Work out what editing a user struct's fields would do, without changing any.
-	 *
-	 * Pass a user struct asset and one or more changes, separated by commas at the top level.
-	 * A change is one of:
-	 *
-	 *   - `Name: Type` - ADDS the field, or CHANGES its type when the struct already has that
-	 *     name. Which one it is follows from the struct, not from the caller's guess, so the
-	 *     Preview and the Edit cannot disagree about it.
-	 *   - `move:Name, above=Other` or `move:Name, below=Other` - REORDERS.
-	 *   - `remove:Name` - REMOVES, and is refused unless it carries `force=<count>`.
-	 *
-	 * A field is addressed BY ITS DISPLAY NAME, and that is the key. `FStructureEditorUtils`
-	 * addresses a member by `FGuid`, but a GUID is generated inside the engine and a caller can
-	 * never name one, so the display name is the only key the caller has. Every name is
-	 * RE-RESOLVED at apply time, and a name that has gone is REFUSED rather than skipped (`D-45`).
-	 *
-	 * *** THE REMOVAL RULE IS THE ONE THAT MATTERS. *** A removal breaks every asset that reads
-	 * the struct, so it is reported with the LOADED READERS by path and class, never as a bare
-	 * count, and it is REFUSED unless `force` names that count exactly. Because the check is in
-	 * the PLAN, THIS PREVIEW REFUSES IT TOO and prints the count to pass - so a caller previews,
-	 * is told the number, and previews again with it. A caller that guesses a wrong number is
-	 * refused with the real one.
-	 *
-	 * IT ALSO PRINTS THE AUTOMATIC CHECKOUT OF ROW 10.2 (D-57), because its Edit twin now performs
-	 * one: the block states, per asset, whether a checkout WOULD be issued and why, so the Preview
-	 * and the Edit cannot disagree about what the write will do. THIS PREVIEW REACHES NO PROVIDER
-	 * WITH A CHECKOUT - it reads the capability flags and the state only.
-	 */
+	/** Inspect proposed struct field edits; loads the struct and referenced types and queries source-control status; does not edit, compile, check out or save the struct.
+     * Removal consent counts only loaded dependent assets, not all project references. Checkout failure is reported but does not block the in-memory edit. A failed operation may leave earlier changes applied; no automatic rollback is performed. Inspect the returned fields and dependent assets before saving.
+     * @param Struct Required user-defined struct asset name or package/object path, for example /Game/Structs/S_Item; empty or unresolved values and native C++ structs are refused.
+     * @param Changes Required comma-separated operations: Name: Type adds a missing field or changes an existing field; move:Name, above=Other or below=Other reorders; remove:Name deletes. Field declarations use the same types and default=, tooltip=, category= options as EditTurboMCPStructNew. Empty options leave existing settings unchanged, not cleared. Each field may be targeted once per call; empty input is refused. For removal, force=N must match the current loaded-dependent count reported by preview (integer 0 through 2147483647); omission is allowed only when there are no loaded dependents. Preview again if the count changes. Example: Count: int, default=1, move:Count, above=Label must be split into two calls because Count appears twice.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPStructFields(const FString& Struct, const FString& Changes);
 
@@ -1815,29 +1791,11 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPStructNew(const FString& Path, const FString& Fields);
 
-	/**
-	 * Add, change, reorder and remove fields on an existing user struct.
-	 *
-	 * The same inputs, checked the same way, as `P-STRUCT-FIELDS`, because the two share one code
-	 * path up to the write (`D-02`).
-	 *
-	 * One transaction, then it RE-READS the field list from the struct and prints it, so the answer
-	 * is what the struct holds rather than what this code intended. The report also says the asset
-	 * is not saved yet.
-	 *
-	 * A field that cannot be re-resolved at apply time - because the struct changed between the
-	 * preview and this call - is REFUSED BY NAME and is not silently skipped, because skipping it
-	 * would make this edit differ from the preview that authorised it (`D-45`). The counts of what
-	 * DID land are printed alongside, so the caller knows the exact state.
-	 *
-	 * BEFORE IT WRITES IT PERFORMS THE AUTOMATIC CHECKOUT OF ROW 10.2 (D-57), and appends what
-	 * happened. The provider is asked whether it uses checkout at all, and a checkout is issued
-	 * through ISourceControlProvider::Execute with the provider's own answer repeated verbatim. It
-	 * NEVER uses USourceControlHelpers::CheckOutFile, whose true on Git means "the state says the
-	 * file is already checked out" rather than "a lock was taken" - the trap row 10.1 measured. THE
-	 * CHECKOUT ANSWER IS A REPORT AND NEVER A GATE, and the block names the policy chosen when a
-	 * provider reports UsesCheckout() == false: (b) attempt it and repeat the provider's answer.
-	 */
+	/** Add, change, reorder or remove struct fields in an undo transaction; may check out files, compile structs and trigger dependent editor updates; removal or type changes may lose data; does not save.
+     * Removal consent counts only loaded dependent assets, not all project references. Checkout failure is reported but does not block the in-memory edit. A failed operation may leave earlier changes applied; no automatic rollback is performed. Inspect the returned fields and dependent assets before saving.
+     * @param Struct Required user-defined struct asset name or package/object path, for example /Game/Structs/S_Item; empty or unresolved values and native C++ structs are refused.
+     * @param Changes Required comma-separated operations: Name: Type adds a missing field or changes an existing field; move:Name, above=Other or below=Other reorders; remove:Name deletes. Field declarations use the same types and default=, tooltip=, category= options as EditTurboMCPStructNew. Empty options leave existing settings unchanged, not cleared. Each field may be targeted once per call; empty input is refused. For removal, force=N must match the current loaded-dependent count reported by preview (integer 0 through 2147483647); omission is allowed only when there are no loaded dependents. Preview again if the count changes. Example: Count: int, default=1, move:Count, above=Label must be split into two calls because Count appears twice.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPStructFields(const FString& Struct, const FString& Changes);
 
