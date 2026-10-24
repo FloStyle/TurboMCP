@@ -1396,6 +1396,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPAssetCost.h"
           ],
           "new_files": []
+        },
+        "quality-widget-reader-output": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeSync.cpp",
+            "Tools/test-widget-tree-sync.py",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
