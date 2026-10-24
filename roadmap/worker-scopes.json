@@ -1408,6 +1408,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp"
           ],
           "new_files": []
+        },
+        "quality-widget-render-validation": {
+          "files": [
+            "Tools/run-suites.ps1"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
