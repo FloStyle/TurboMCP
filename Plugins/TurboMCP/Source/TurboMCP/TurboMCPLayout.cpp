@@ -23,16 +23,7 @@
 #include "TurboMCPCapture.h"
 #include "EdGraphNode_Comment.h"
 
-/**
- * L-LAYOUT-REPORT: layout facts for one graph.
- *
- * A Look tool, so it measures and never moves anything (`P3`). All the measuring is
- * in `FTurboMCPLayoutReport`; this file only finds the graph, validates the inputs
- * and prints.
- *
- * The report is the input to the phase 6 layout tools, which is why every finding
- * names node IDs: a caller has to be able to act on it without a second read.
- */
+// Resolve the graph, measure geometry and report heuristic layout findings.
 namespace
 {
 	/** How many characters one result may hold. */
@@ -140,8 +131,8 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 		Report.TotalWireLength, Report.LongestWire);
 	Out += TEXT("\n; wire length is the straight distance between linked pins. Pin ");
 	Out += TEXT("positions are computed from each node's rectangle and pin order, ");
-	Out += TEXT("because the engine exposes no pin position to a tool call, so the ");
-	Out += TEXT("number is consistent and comparable rather than pixel exact.");
+	Out += TEXT("so the reported length is an estimate, not the rendered wire curve. The ");
+	Out += TEXT("value is not a visual-quality score.");
 
 	if (Report.bHasNoWires && !Report.Summary.IsEmpty())
 	{
@@ -178,8 +169,8 @@ FString UTurboMCPLookToolset::LookTurboMCPLayoutReport(
 
 	if (CountsByKind.Num() == 0)
 	{
-		Out += TEXT("\nfindings: none. No backward wire, no overlap, no misplaced ");
-		Out += TEXT("getter, no stray node and no disconnected group.");
+		Out += TEXT("\nfindings: none. The enabled checks detected no backward wire, overlap, misplaced ");
+		Out += TEXT("getter, stray node or disconnected group. This does not certify layout or behavior.");
 	}
 	else
 	{

@@ -485,48 +485,33 @@ public:
 	static FString LookTurboMCPToolset();
 
 	/**
-	 * AlignmentTolerance ignores vertical pin offsets up to this many graph units
-	 * (default 64, use 8 for strict inspection). Does not hide overlaps or backward wires.
-	 * Look at the layout of one graph: measure it and report, without moving anything.
-	 *
-	 * Pass a Blueprint and a graph name. Every node in the graph is included,
-	 * connected or not, and no node is listed twice.
-	 *
-	 * Reports the extent, the node count, the comment boxes and how many are nested,
-	 * and the total wire length with the longest single wire. Wire length is the
-	 * straight distance between linked pins and is the main layout measure: a tidy
-	 * graph of a given size scores lower than a tangled one. Pin positions are
-	 * computed from each node's rectangle and pin order, because the engine exposes
-	 * no pin position to a tool call, so the number is consistent and comparable
-	 * rather than pixel exact, and the result says so.
-	 *
-	 * Then reports what is wrong, each finding with node IDs so a caller can act on
-	 * it: backward wires with exec and data separated, where backward means the
-	 * target node starts to the left of where the source node ends, so a node stacked
-	 * under its predecessor counts; overlapping node pairs; a getter placed to the
-	 * right of or under its consumer; a node parked at the origin whose nearest link
-	 * is far away; and disconnected groups, each node marked with whether its logic
-	 * already exists in the connected graph.
-	 *
-	 * A graph with no wires says so in words rather than reporting a zero. A graph
-	 * name that does not exist lists the real ones.
+	 * Inspect graph geometry and layout findings; loads the Blueprint and measures Slate geometry without requesting graph edits, compile or save.
+	 * Requires editor rendering. Wire lengths use estimated pin positions, not rendered wire curves. Findings are heuristic review aids, not proof of correctness; some lists and output are capped.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
+	 * @param GraphName Required exact graph name, e.g. EventGraph. Empty or unresolved names are refused; use the Blueprint reader to list graphs.
+	 * @param AlignmentTolerance Optional finite vertical pin-offset tolerance in graph units, 0..1024; default 64. Use 8 for stricter alignment review. Does not suppress overlaps or backward-wire findings. Values outside the range are refused.
 	 */
 	UFUNCTION(meta = (AICallable))
-	static FString LookTurboMCPLayoutReport(
-		const FString& Asset,
-		const FString& GraphName,
-        double AlignmentTolerance = 64.0);
+	static FString LookTurboMCPLayoutReport(const FString& Asset, const FString& GraphName, double AlignmentTolerance = 64.0);
 
-    /** Review layout in one call: text findings and the ten longest wires with exact endpoints,
-     * plus a full-graph capture. Does not edit, compile or save. Capture failures remain visible
-     * alongside the text report; this is evidence for human review, not a pass/fail certification. */
-    UFUNCTION(meta = (AICallable))
-    static FString LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance = 64.0);
+	/**
+	 * Return layout findings and capture a graph image; may open editor UI and writes an image file, but does not request asset edits, compile or save.
+	 * Requires rendering. This is a human review aid, not an automatic done/pass verdict. A capture failure remains visible alongside any successful text report.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
+	 * @param GraphName Required exact graph name, e.g. EventGraph. The same graph is measured and captured; empty or unresolved names are refused.
+	 * @param AlignmentTolerance Optional finite vertical pin-offset tolerance in graph units, 0..1024; default 64. Use 8 for stricter review. Affects alignment findings, not capture framing, overlaps or backward-wire findings.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString LookTurboMCPLayoutDoneCheck(const FString& Asset,const FString& GraphName,double AlignmentTolerance = 64.0);
 
-
-    /** Read node IDs, positions and measured sizes without editing the graph. */
-    UFUNCTION(meta = (AICallable))
-    static FString LookTurboMCPGraphPositions(const FString& Asset, const FString& GraphName);
+	/**
+	 * Read node IDs, stored positions and measured sizes; loads the Blueprint and uses rendering without requesting graph edits, compile or save.
+	 * Coordinates and sizes are in graph units. A capped response marks omitted nodes and must not be treated as a complete inventory.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or unresolved input is refused.
+	 * @param GraphName Required exact graph name, e.g. EventGraph. Empty or unresolved names are refused; list graphs with ReadTurboMCPBlueprintLoad first.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString LookTurboMCPGraphPositions(const FString& Asset, const FString& GraphName);
 
 	/**
 	 * Render a Widget Blueprint with sample values and write a PNG.

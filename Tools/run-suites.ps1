@@ -290,7 +290,7 @@ function Start-EditorAndWait {
     $oldStartingEditor = $env:TURBOMCP_RUNNER_STARTING_EDITOR
     $env:TURBOMCP_RUNNER_STARTING_EDITOR = '1'
     # Use resolved names so comma-separated batches and 'all' honor rendering requirements.
-    $renderSuites = @('test-field-open-diagnostic', 'test-widget-preview', 'test-widget-roundtrip')
+    $renderSuites = @('test-field-open-diagnostic', 'test-widget-preview', 'test-widget-roundtrip', 'test-layout-output', 'test-layout')
     $diagnosticRender = @($Selected | Where-Object { $_ -in $renderSuites }).Count -gt 0
     try {
         if ($diagnosticRender) { & pwsh -NoProfile -File $StartEditor -LowPriority 2>&1 | Out-Null }
