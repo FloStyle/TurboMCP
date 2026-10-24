@@ -178,50 +178,30 @@ public:
 	static FString ReadTurboMCPDirtyList(const FString& Limit);
 
 	/**
-	 * Turn node IDs into nodes.
-	 *
-	 * Pass one or more IDs separated by commas or pipes, in the form
-	 * `AssetName:GraphName:NodeKey`, for example `WBP_ShopCard:RefreshPrice:3fa91c`.
-	 * The full path form `/Game/UI/WBP_ShopCard.WBP_ShopCard:RefreshPrice:3fa91c`
-	 * is always accepted too.
-	 *
-	 * Each ID gives back the node reference the engine's own tools take, its
-	 * title, its node type ID — the form the engine's graph writer accepts, not
-	 * the C++ class name — its graph, and every pin by name with its direction
-	 * and its index within that direction.
-	 *
-	 * An ID whose asset name fits more than one asset is refused and every full
-	 * path it fits is listed. An ID whose node is gone says so and offers the
-	 * nodes in that graph whose key starts the same way, so a rebuild can be
-	 * survived without guessing. A key that fits more than one node is refused
-	 * with the longer IDs that would disambiguate it (`04_FORMATS.md` 3.2).
+	 * Resolve node identities and inspect pins; may load assets, without requesting edits, compile or save.
+	 * Reports engine references, titles, type identities and up to 40 pins per node. Type identities do not guarantee writer support. Mixed results include per-ID refusals; similar key prefixes are suggestions, not replacement identities.
+	 * @param NodeIds Required comma- or pipe-separated list of 1..25 reader IDs, e.g. WBP_ShopCard:RefreshPrice:3fa91c. Full asset paths are accepted. Empty input is refused. Keys need at least six hexadecimal digits and must resolve uniquely; prefer the exact full ID from a fresh reader result.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPNodeResolve(const FString& NodeIds);
 
-    /** Read a node's static upstream execution paths, exact input sources/defaults and next execution hops as text. No screenshots. Dynamic dispatch is not inferred. NextHops 0..32. */
-    UFUNCTION(meta = (AICallable))
-    static FString ReadTurboMCPNodeContext(const FString& Asset,const FString& GraphName,const FString& NodeId,int32 NextHops = 3);
-
+	/**
+	 * Inspect static execution context and input sources; may load assets, without requesting edits, compile or save.
+	 * Lists reachable predecessors and bounded downstream execution hops, not runtime traces. Dynamic and delegate dispatch are not inferred. NextHops does not cap upstream traversal or total output.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty, missing or ambiguous assets are refused.
+	 * @param GraphName Required exact unique graph name, e.g. EventGraph. Empty, missing or ambiguous names are refused; graph paths are not selectors.
+	 * @param NodeId Required exact full or short node ID emitted by the reader for this graph. Empty, stale or ambiguous IDs are refused; arbitrary GUID prefixes are not accepted here.
+	 * @param NextHops Optional number of downstream execution edges to follow, 0..32; default 3. Zero includes the selected node and upstream context but no downstream hops. Values outside the range are refused.
+	 */
+	UFUNCTION(meta = (AICallable))
+	static FString ReadTurboMCPNodeContext(const FString& Asset,const FString& GraphName,const FString& NodeId,int32 NextHops = 3);
 
 	/**
-	 * Find nodes in a Blueprint by what they say.
-	 *
-	 * For gameplay-tag usage/referencers, discover the stock GameplayTagsToolset
-	 * FindReferencersByTag tool and pass tagName (the exact registered tag).
-	 * It returns asset-registry package referencers, not proof of runtime execution.
-	 * This text search is not a tag-reference search; the stock toolset must be enabled.
-	 *
-	 * Pass the asset, one or more words separated by whitespace, commas or pipes, and
-	 * optionally one graph name. Every word must appear, which is what makes a
-	 * two word search narrow rather than widen.
-	 *
-	 * The words are matched against each node's title, its called function, its
-	 * variable, its class and its pin names. Every graph is searched unless one is
-	 * named. Each match prints its node ID, title and node type ID.
-	 *
-	 * Nothing matching says how many nodes and graphs were searched and what to
-	 * try instead; a graph name that does not exist lists the real graph names.
+	 * Search Blueprint nodes by text; may load assets, without requesting edits, compile or save.
+	 * Returns up to 40 matches. Searches local graphs, including nested graphs when unscoped, but not inherited assets or native implementations. This is not a gameplay-tag reference search or proof of runtime execution.
+	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty, missing or ambiguous assets are refused.
+	 * @param Words Required search terms separated by whitespace, commas or pipes, e.g. Print String. Every term must match a title, function, variable, class, comment or pin name; matching uses case-insensitive substrings, not phrases. Empty input is refused.
+	 * @param GraphName Required string; pass an empty string to search all local graphs, or one exact unique graph name such as EventGraph. Missing or ambiguous names are refused. Graph paths are not accepted selectors.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPNodeFind(

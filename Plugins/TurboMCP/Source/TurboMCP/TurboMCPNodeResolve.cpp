@@ -631,7 +631,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 			TEXT("\nNothing matched. All %d node(s) across %d graph(s) were searched. ")
 			TEXT("The words are matched against each node's title, its called function, ")
 			TEXT("its variable, its class, its comment text and its pin names, and every word must appear. ")
-			TEXT("Try one word, or fewer."),
+			TEXT("Try fewer or broader terms, or pass an empty GraphName to search all local graphs."),
 			Searched, Graphs.Num());
 		return Result;
 	}
@@ -658,15 +658,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeFind(
 
 FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const FString& GraphName,const FString& NodeId,int32 NextHops)
 {
-    if(NextHops<0 || NextHops>32) return TEXT("error: NextHops must be 0..32");
+    if(NextHops<0 || NextHops>32) return TEXT("error: NextHops must be an integer from 0 to 32. Use 0 for no downstream hops, or 3 for the default depth.");
     FTurboMCPAssetResolver::FResolved Resolved;
     const FString Error=FTurboMCPAssetResolver::Resolve(Asset,Resolved);
     if(!Error.IsEmpty()) return Error;
     UBlueprint* Blueprint=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath);
     int32 Matches=0; UEdGraph* Graph=Blueprint?TurboMCPNodeId::FindGraphByName(Blueprint,GraphName,Matches):nullptr;
-    if(!Graph || Matches!=1) return TEXT("error: graph must resolve uniquely");
+    if(!Blueprint) return FString::Printf(TEXT("error: could not load %s as a Blueprint. Select a Blueprint asset and retry."), *Resolved.ObjectPath);
+    if(!Graph || Matches!=1) return FString::Printf(TEXT("error: graph '%s' must resolve uniquely in %s. Available graphs: %s. Use an exact unique graph name."), *GraphName, *Resolved.ObjectPath, *ListGraphNames(Blueprint));
     UEdGraphNode* Selected=TurboMCPGraphScratch::Find(Graph,NodeId);
-    if(!Selected) return TEXT("error: node ID must resolve uniquely in the graph");
+    if(!Selected) return FString::Printf(TEXT("error: node ID '%s' does not resolve uniquely in graph '%s'. Use ReadTurboMCPNodeFind to obtain a fresh ID from this graph, then retry."), *NodeId, *GraphName);
     TSet<UEdGraphNode*> Context;
     TArray<UEdGraphNode*> Queue; Queue.Add(Selected);
     TArray<FString> Entries;
@@ -694,7 +695,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const
     }
     Entries.Sort();
     FString Out=TEXT("read: static execution context for ")+TurboMCPNodeId::MakeForNode(Selected,true);
-    Out+=TEXT("\nentry paths: ")+(Entries.IsEmpty()?FString(TEXT("none found; dynamic/delegate dispatch is not inferred")):FString::Join(Entries,TEXT(", ")));
+    Out+=TEXT("\nreachable entry nodes: ")+(Entries.IsEmpty()?FString(TEXT("none found; dynamic/delegate dispatch is not inferred")):FString::Join(Entries,TEXT(", ")));
     TArray<UEdGraphNode*> Ordered=Context.Array();
     Ordered.Sort([](const UEdGraphNode& A,const UEdGraphNode& B){return A.NodeGuid.ToString()<B.NodeGuid.ToString();});
     for(UEdGraphNode* Node:Ordered)
@@ -712,5 +713,5 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const
                 Out+=FString::Printf(TEXT("\n  %s %s %s %s:%s"),P->Direction==EGPD_Input?TEXT("input"):TEXT("output"),*P->PinName.ToString(),P->Direction==EGPD_Input?TEXT("<-"):TEXT("->"),*TurboMCPNodeId::MakeForNode(Q->GetOwningNode(),true),*Q->PinName.ToString());
         }
     }
-    return Out+TEXT("\nContext includes all static predecessors and requested downstream exec hops; external input sources are named by exact ID. No asset changes.");
+    return Out+TEXT("\nContext follows upstream execution links (and consumers of pure nodes) plus the requested downstream execution hops. External input sources are named by ID. This is static connectivity, not proof of runtime execution. No edit, compile or save was requested.");
 }
