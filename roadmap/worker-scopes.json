@@ -1634,6 +1634,14 @@
           "files": [
             "Tools/test-local-vars.py"
           ]
+        },
+        "quality-enum-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAdd.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
