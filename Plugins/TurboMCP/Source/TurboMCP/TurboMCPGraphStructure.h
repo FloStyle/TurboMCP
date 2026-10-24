@@ -17,45 +17,11 @@ class UEdGraphNode;
 class UEdGraphPin;
 
 /**
- * `E-GRAPH-COPY` and `E-GRAPH-COLLAPSE`: the two structural graph writers.
- *
- * THE CHECKS ARE IN `Plan` AND NOT IN `Apply`, so a Preview and its Edit twin refuse the same input.
- * `Apply` consumes an `FPlan` and never re-decides anything.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THE BOUNDARY IS COMPUTED FROM CROSSING LINKS RATHER THAN FROM A PIN LIST, WHICH IS `D-47`
- * ---------------------------------------------------------------------------------------------
- *
- * `Spec/05_DECISIONS.md` `D-47` says the collapse boundary comes from the links that CROSS the selection.
- * That is not a convenience: it is the only definition that cannot disagree with the graph. A hand-entered
- * list of input and output names would be a SECOND DESCRIPTION of the same fact, and the two would drift
- * the first time someone linked a pin. So both writers below enumerate every pin of every selected node,
- * ask whether the link at the far end lands inside the selection, and treat the ones that do not as the
- * boundary - in a STABLE ORDER, because the new member's pin order must not depend on hash iteration.
- *
- * ---------------------------------------------------------------------------------------------
- * `SpawnNodeOfType` DOES NOT FIT A COPY, AND THAT IS MEASURED RATHER THAN ASSUMED
- * ---------------------------------------------------------------------------------------------
- *
- * A copy has a CLASS and a set of PROPERTY VALUES; it does not have a type id to resolve. `SpawnNodeOfType`
- * resolves a type id through the action database, so it would rebuild a node of the right class with the
- * RIGHT DEFAULT VALUES AND THE WRONG CONTENTS - a copied `UK2Node_CallFunction` would forget which function
- * it calls. `FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate` (`EdGraphSchema_K2_Actions.h:95`) is
- * static and carries the TEMPLATE'S OWN property values, so the source node IS the template and no
- * per-class copy code is needed. The engine uses it for exactly this at `EdGraphSchema_K2.cpp:2916`.
- *
- * `AllocateDefaultPins` IS MANDATORY on any node created outside the editor - create, add to the graph,
- * THEN allocate. It has already caused one crash and one silent corruption in this project, and
- * `SpawnNodeFromTemplate` is what performs it here rather than a hand-rolled sequence that might omit it.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT IS REPORTED RATHER THAN DROPPED
- * ---------------------------------------------------------------------------------------------
- *
- * `Spec/03_TOOLS.md` requires a link that crosses the selection and has NOTHING TO POINT AT in the target
- * to be REPORTED BY NAME and left unconnected, not silently dropped. A silently dropped wire is the worst
- * outcome this file can produce, because the graph still looks plausible - so every crossing link is
- * accounted for in exactly one of three lists: re-linked, refused, or reported.
+ * Plan graph copies and inspect possible collapse selections.
+ * Copy preserves existing pin trees, recreates supported links and reports links
+ * that cannot be recreated. Apply rechecks eligibility and uses an owned undo
+ * transaction; it does not compile or save. Failed undo is not proof of restoration.
+ * Collapse extraction is not implemented; Apply refuses it without extracting nodes.
  */
 class FTurboMCPGraphStructure
 {
@@ -129,7 +95,7 @@ public:
 		FString SourceKey;
 	};
 
-	/** What the plan decided, so `Apply` can act without deciding anything. */
+	/** Selection and expected state for Apply to recheck. */
 	struct FPlan
 	{
 		EVerb Verb = EVerb::Copy;
@@ -199,11 +165,8 @@ public:
 		const TArray<FString>& InNodeKeys, const FString& InMemberName, const FString& InMemberKind,
 		FPlan& OutPlan, FString& OutError);
 
-	/**
-	 * Applies an accepted plan: one transaction, create, link, compile, then read back and compare.
-	 *
-	 * THE CALLER MUST HAVE CALLED A `Plan` AND CHECKED `bAcceptable`. This function does not re-decide, and
-	 * its report's FIRST LINE is `changed` or `unchanged` as the spec requires.
+	/** Apply a copy with current-state guards and read-back; compile/save are separate.
+	 * Failure diagnostics distinguish refusal from potentially partial changes.
 	 */
 	static bool Apply(const FPlan& InPlan, FString& OutReport, FString& OutError);
 

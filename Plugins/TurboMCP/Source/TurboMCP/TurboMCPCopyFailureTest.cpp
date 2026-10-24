@@ -95,6 +95,24 @@ bool FTurboMCPCopyFailureTest::RunTest(const FString& Parameters)
                 TestTrue(TEXT("Copy links are reciprocal and stay in destination"), Linked && Linked->LinkedTo.Contains(Pin)
                     && Linked->GetOwningNode()->GetGraph() == Destination);
     }
+    UEdGraphNode* CopiedSource = nullptr;
+    UEdGraphNode* CopiedConsumer = nullptr;
+    for (UEdGraphNode* Copy : Destination->Nodes)
+    {
+        if (Copy->NodePosX == 40) CopiedSource = Copy;
+        if (Copy->NodePosX == 340) CopiedConsumer = Copy;
+    }
+    if (TestNotNull(TEXT("Translated source copy exists"), CopiedSource)
+        && TestNotNull(TEXT("Translated consumer copy exists"), CopiedConsumer))
+    {
+        UEdGraphPin* CopyInput = CopiedConsumer->FindPinChecked(TEXT("execute"));
+        TestTrue(TEXT("Expected internal edge recreated"), CopyInput->LinkedTo.Num() == 1
+            && CopyInput->LinkedTo.Contains(CopiedSource->FindPinChecked(TEXT("then"))));
+        TestEqual(TEXT("Copied default retained"), CopiedConsumer->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
+        TestTrue(TEXT("Copied identities are new"), CopiedSource->NodeGuid != SourceId && CopiedConsumer->NodeGuid != ConsumerId);
+    }
+    TestEqual(TEXT("Successful copy leaves source graph count unchanged"), Graph->Nodes.Num(), 3);
+    TestTrue(TEXT("Successful copy leaves original edge intact"), C->FindPinChecked(TEXT("execute"))->LinkedTo.Contains(S->FindPinChecked(TEXT("then"))));
     return !HasAnyErrors();
 }
 #endif
