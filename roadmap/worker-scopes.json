@@ -1767,6 +1767,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp"
           ],
           "new_files": []
+        },
+        "quality-copy-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
