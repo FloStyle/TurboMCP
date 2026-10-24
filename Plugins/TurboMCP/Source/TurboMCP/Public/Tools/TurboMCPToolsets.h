@@ -883,11 +883,27 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetUndo(const FString& Asset);
 
-	/** Translate selected nodes or entire comment groups, including nested boxes; keeps internal layout and wiring. Refuses new collisions or changed external box membership unless DestinationBox explicitly names a comment to receive selected unboxed nodes; they must fit inside without resizing it. */
-	UFUNCTION(meta = (AICallable))
+	/**
+     * Check a group translation; loads the Blueprint and measures transient graph widgets, without requesting live node moves, compilation or saving.
+     * Requires an idle editor and usable node bounds. Selection includes nodes fully contained in selected comments. Collision checks use node rectangles; estimated wire lengths do not prove rendered layout quality.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused; prefer a full path.
+     * @param GraphName Required unique graph name, e.g. EventGraph. Empty, missing or ambiguous names are refused; copy the name from the graph reader.
+     * @param NodeIds Required nonempty array of exact full or short reader node IDs. IDs are case-sensitive and not trimmed; duplicates select the same node once. Comment IDs include their fully contained nodes and nested boxes. Example: ["/Game/Tests/BP_NodeTest.BP_NodeTest:EventGraph:abcdef"].
+     * @param DeltaX Required signed 32-bit integer offset in graph units; positive moves right, negative left. Zero leaves X unchanged. Coordinate overflow is refused. Example: 128.
+     * @param DeltaY Required signed 32-bit integer offset in graph units; positive moves down, negative up. Zero leaves Y unchanged. Coordinate overflow is refused. Example: -64.
+     * @param DestinationBox Exact comment node ID, or empty to retain external comment membership. Nonempty permits only unboxed nodes to enter that comment and its containing ancestors; the selection must fit its padded interior without resizing. Use the ID returned by PreviewTurboMCPGraphGroupPlacement.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY, const FString& DestinationBox = TEXT(""));
 
-    /** Propose a collision-free translation near outside nodes linked to the selected nodes/comment groups. Returns DeltaX/DeltaY for GraphGroupMove and per-wire before/after lengths. Preserves internal layout; searches free positions and connected comment boxes with room for the unboxed selection. Returns explicit DestinationBox when transferring into a box. Never edits, saves or compiles. */
+    /**
+     * Suggest a group translation; loads the Blueprint and renders transient graph widgets for measurement, without requesting live node moves, compilation or saving.
+     * Requires an idle editor and usable node bounds. Selection includes nodes fully contained in selected comments. Collision checks use node rectangles; estimated wire lengths do not prove rendered layout quality.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused; prefer a full path.
+     * @param GraphName Required unique graph name, e.g. EventGraph. Empty, missing or ambiguous names are refused; copy the name from the graph reader.
+     * @param NodeIds Required nonempty array of exact full or short reader node IDs. IDs are case-sensitive and not trimmed; duplicates select the same node once. Comment IDs include their fully contained nodes and nested boxes. Example: ["/Game/Tests/BP_NodeTest.BP_NodeTest:EventGraph:abcdef"].
+     * Searches candidate positions near linked outside nodes; not a global optimum. No outside links or no shorter feasible candidate produces no proposal. Apply returned offsets and DestinationBox with EditTurboMCPGraphGroupMove; it rechecks current geometry.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphGroupPlacement(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds);
 
@@ -1465,8 +1481,17 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPAssetUndo(const FString& Asset, const FString& Confirm);
 
-	/** Translate selected nodes or entire comment groups, including nested boxes; keeps internal layout and wiring. Refuses new collisions or changed external box membership unless DestinationBox explicitly names a comment to receive selected unboxed nodes; they must fit inside without resizing it. */
-	UFUNCTION(meta = (AICallable))
+	/**
+     * Move selected nodes and comment contents in one undo transaction; loads and measures the graph, marks the Blueprint modified, and does not compile or save.
+     * Requires an idle editor and usable node bounds. Selection includes nodes fully contained in selected comments. Collision checks use node rectangles; estimated wire lengths do not prove rendered layout quality.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused; prefer a full path.
+     * @param GraphName Required unique graph name, e.g. EventGraph. Empty, missing or ambiguous names are refused; copy the name from the graph reader.
+     * @param NodeIds Required nonempty array of exact full or short reader node IDs. IDs are case-sensitive and not trimmed; duplicates select the same node once. Comment IDs include their fully contained nodes and nested boxes. Example: ["/Game/Tests/BP_NodeTest.BP_NodeTest:EventGraph:abcdef"].
+     * @param DeltaX Required signed 32-bit integer offset in graph units; positive moves right, negative left. Zero leaves X unchanged. Coordinate overflow is refused. Example: 128.
+     * @param DeltaY Required signed 32-bit integer offset in graph units; positive moves down, negative up. Zero leaves Y unchanged. Coordinate overflow is refused. Example: -64.
+     * @param DestinationBox Exact comment node ID, or empty to retain external comment membership. Nonempty permits only unboxed nodes to enter that comment and its containing ancestors; the selection must fit its padded interior without resizing. Use the ID returned by PreviewTurboMCPGraphGroupPlacement.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphGroupMove(const FString& Asset, const FString& GraphName, const TArray<FString>& NodeIds, int32 DeltaX, int32 DeltaY, const FString& DestinationBox = TEXT(""));
 
 	/**

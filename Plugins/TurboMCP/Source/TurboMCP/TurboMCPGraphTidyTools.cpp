@@ -425,7 +425,7 @@ namespace
   const FString CrossPreview=FString::Printf(TEXT("; cross-box estimated straight-line length %.1f -> %.1f (delta %+.1f), connections %d -> %d"),CrossBefore.Length,CrossPlanned.Length,CrossPlanned.Length-CrossBefore.Length,CrossBefore.Count,CrossPlanned.Count);
   const FString DestinationSummary=Destination?TEXT("; DestinationBox=")+TurboMCPNodeId::MakeForNode(Destination)+TEXT("; selected unboxed nodes enter this box; box size and other contents unchanged"):FString();
   const FString Summary=FString::Printf(TEXT("%d nodes/comments translated by (%d,%d); internal spacing, sizes, pins and links preserved"),Selected.Num(),DeltaX,DeltaY);
-  if(!Edit) return TEXT("preview: ")+Summary+DestinationSummary+CrossPreview+PlacementDetails;
+  if(!Edit) return TEXT("preview: proposed movement; ")+Summary+DestinationSummary+CrossPreview+PlacementDetails+TEXT("; no live node positions changed; graph widgets measured; compilation and save not requested");
   if(DeltaX==0 && DeltaY==0) return TEXT("unchanged: zero offset")+CrossPreview;
   FScopedTransaction Transaction(FText::FromString(TEXT("TurboMCP move graph group")));
   if(!Transaction.IsOutstanding()) return TEXT("error: no undo transaction; unchanged");
