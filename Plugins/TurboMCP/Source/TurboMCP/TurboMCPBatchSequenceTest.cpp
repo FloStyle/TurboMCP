@@ -86,6 +86,7 @@ bool FTurboMCPBatchSequenceTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Sequential preview accepts moved readers"), Result.Contains(TEXT("planned")) && !Result.Contains(TEXT("refused:")));
     TestTrue(TEXT("Successful preview preserves original edge"), OriginalEdge());
     Result = Edit->EditTurboMCPBatchEdit(Valid);
+    AddInfo(TEXT("Live batch result: ") + Result);
     TestTrue(TEXT("Both sequential operations apply"), Result.StartsWith(TEXT("changed")) && Result.Contains(TEXT("applied=first,second")));
     TestTrue(TEXT("Compile/save not requested"), Result.Contains(TEXT("compile=not_run")) && Result.Contains(TEXT("save=not_requested")));
     UEdGraphPin* Input = Consumer->FindPinChecked(TEXT("execute"));
