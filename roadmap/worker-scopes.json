@@ -1823,6 +1823,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLocalVars.h"
           ],
           "new_files": []
+        },
+        "quality-localvars-native": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVars.cpp"
+          ],
+          "new_files": [
+            "Tools/test-localvars-analysis.py"
+          ]
         }
       },
       "preserve_rows": []
