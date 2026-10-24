@@ -63,7 +63,7 @@ def graphs(session):
             if stripped.startswith("variables:") or stripped.startswith("counts:"):
                 break
             if stripped:
-                names.append(stripped)
+                names.append(re.sub(r" \[(?:event graph|function|macro)\]$", "", stripped))
     return names, text
 
 
