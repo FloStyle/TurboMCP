@@ -833,27 +833,12 @@ public:
 		const FString& GraphName,
 		bool bForce);
 
-	/**
-	 * Check graph text before writing it, and write nothing.
-	 *
-	 * The gate every write entry point depends on. Feed it exactly the text a reader
-	 * printed - there is no second dialect - and it parses, resolves and checks it,
-	 * then reports every unknown node type with the closest real IDs, every pin the
-	 * node does not have with the real names, every literal that cannot be the pin's
-	 * type naming both sides, and every construct it will refuse with the reason.
-	 * Each finding carries its line and column.
-	 *
-	 * Call this BEFORE P-GRAPH-APPEND, P-GRAPH-REPLACE or P-GRAPH-PATCH. Those three
-	 * take this same text and reach the same decision through this same check, but each operation also has its own scope and edit guards. A text that fails here names
-	 * what to fix rather than failing halfway through a write.
-	 *
-	 * A graph name is required, not optional: a node type and a pin name are both
-	 * resolved against a live graph, so an unnamed graph is refused rather than
-	 * guessed at.
-	 *
-	 * Plans this operation without applying it to the target graph. A successful preview
-	 * does not guarantee a later edit: the target state and edit guards can change.
-	 */
+	/** Check graph-text syntax, node types, pin names and supported literal types; loads the Blueprint for inspection but does not write graph changes, compile or save.
+     * A clean report means only that these checks found no issue; it does not guarantee writer acceptance, compilation or correct behavior. Unjudged findings need separate inspection. Use the intended edit tool's preview before writing.
+     * @param Asset Required Blueprint name or package/object path, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed. Empty, ambiguous or non-Blueprint targets are refused.
+     * @param GraphName Required unique graph name from the reader, for example EventGraph; trimmed and matched without case sensitivity. Empty names are refused rather than choosing a graph automatically.
+     * @param Text Required graph text in the reader's dialect, using exact node type IDs and pin names. Pass complete forms, not truncated output; empty text, unbalanced parentheses, unclosed quotes and reader-error markers are refused. Semicolon comments run to the end of the line, so closing parentheses inside comments do not close forms. No default text is supplied.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphCheck(
 		const FString& Asset,

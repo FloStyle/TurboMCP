@@ -75,7 +75,7 @@ def finding_count(out):
     The tool's counts, parsed from its own numbers.
 
     THE ZERO CASE IS PARSED TOO, AND THE FIRST VERSION OF THIS FUNCTION MISSED IT. The tool prints the
-    `N finding(s): ...` totals line only when there ARE findings, and says `the text would be accepted`
+    `N finding(s): ...` totals line only when there ARE findings, and says `the text No issues found by these checks`
     instead when there are none. So a clean run returned `None` here and the suite reported a failure on
     the CLEAN case - an assertion that could not be satisfied by the correct answer. Reading the accepted
     sentence as a parsed zero rather than as an absent number is the fix.
@@ -91,7 +91,7 @@ def finding_count(out):
             "refused": int(m.group(5)),
             "unjudged": int(m.group(6)),
         }
-    if "would be accepted" in out:
+    if "No issues found by these checks" in out:
         return {"total": 0, "node-type": 0, "pin-name": 0, "type-mismatch": 0,
                 "refused": 0, "unjudged": 0}
     return None
@@ -195,7 +195,7 @@ def main():
     good_counts = finding_count(good_out)
     check("real text read from a real graph gives ZERO findings",
           good_counts is not None and good_counts["total"] == 0, str(good_counts))
-    check("it says the text would be accepted", "would be accepted" in good_out, good_out[:200])
+    check("it says the text No issues found by these checks", "No issues found by these checks" in good_out, good_out[:200])
     check("it counted what it read rather than answering vaguely",
           "1 node form(s) and 2 pin line(s) read" in good_out, good_out[:200])
 

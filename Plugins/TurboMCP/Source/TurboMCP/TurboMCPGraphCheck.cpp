@@ -302,7 +302,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 	}
 	if (InText.TrimStartAndEnd().IsEmpty())
 	{
-		OutError = TEXT("no text given. Pass the graph text to check, exactly as R-GRAPH-LOAD prints it.");
+		OutError = TEXT("no text given. Pass the graph text to check, exactly as ReadTurboMCPGraphLoad prints it.");
 		return false;
 	}
 
@@ -494,7 +494,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 			continue;
 		}
 
-		// R-GRAPH-LOAD prefixes its otherwise round-trippable graph text with this
+		// ReadTurboMCPGraphLoad prefixes its otherwise round-trippable graph text with this
 		// result envelope. It describes the read, not a graph pin, so ignore it
 		// when the exact reader output is supplied to this checker.
 		if (Line.Text.TrimStartAndEnd().StartsWith(TEXT("read: ")))
@@ -762,7 +762,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 			Finding.Written = PinName;
 			Finding.Message = FString::Printf(
 				TEXT("pin '%s' is written the bare name '%s', which this dialect uses for an enum entry ")
-				TEXT("or an object path, so its type cannot be told from the text alone. NOT A FAULT."),
+				TEXT("or an object path, so its type cannot be told from the text alone. Not assessed; inspect this value before writing."),
 				*PinName, *PinValue);
 			OutPlan.Findings.Add(Finding);
 			continue;
@@ -778,7 +778,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 			Finding.Written = PinName;
 			Finding.Message = FString::Printf(
 				TEXT("pin '%s' is given %s, but the pin carries no type this checker can name, so the ")
-				TEXT("pair cannot be judged. NOT A FAULT."),
+				TEXT("pair cannot be judged. Not assessed; inspect this value before writing."),
 				*PinName, *WrittenType);
 			OutPlan.Findings.Add(Finding);
 			continue;
@@ -797,7 +797,7 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 			Finding.Written = PinName;
 			Finding.Message = FString::Printf(
 				TEXT("pin '%s' is an exec pin and the text gives it the literal '%s'. The format prints a ")
-				TEXT("link on an exec pin, never a value. NOT A FAULT, but not a shape the writer makes."),
+				TEXT("link on an exec pin, never a value. This shape is not validated; use an execution link instead."),
 				*PinName, *PinValue);
 			OutPlan.Findings.Add(Finding);
 			continue;
@@ -859,8 +859,8 @@ FString FTurboMCPGraphCheck::Render(const FPlan& InPlan)
 	if (InPlan.Findings.Num() == 0)
 	{
 		// `P1`: never return nothing. "Nothing found" WITH the counts above it is the answer.
-		Out += TEXT("\nthe text would be accepted: no unknown node type, no unknown pin and no type mismatch.");
-		Out += TEXT("\nNOTHING WAS WRITTEN: this tool parses, resolves and checks only.");
+		Out += TEXT("\nNo issues found by these checks; writer acceptance, compilation and behavior are not verified.");
+		Out += TEXT("\nNo graph changes were written; this tool parses, resolves and checks only.");
 		return Out;
 	}
 
@@ -878,7 +878,7 @@ FString FTurboMCPGraphCheck::Render(const FPlan& InPlan)
 		InPlan.CountOf(EFindingKind::TypeMismatch),
 		InPlan.CountOf(EFindingKind::Refused),
 		InPlan.CountOf(EFindingKind::Unjudged));
-	Out += TEXT("\nNOTHING WAS WRITTEN: this tool parses, resolves and checks only.");
+	Out += TEXT("\nNo graph changes were written; this tool parses, resolves and checks only.");
 
 	return Out;
 }
