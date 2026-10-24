@@ -732,3 +732,20 @@ on missing-target refusal. No asset was saved.
 This closes the normal nonempty-state regression gap for the implemented probe
 repair. Forced engine-setter failure restoration remains untested. This test
 does not inspect rendered selection capture pixels or resolve CP-14.
+
+## Widget preview evidence retention — 2026-10-24
+
+Baseline23d9cbdbd7d84befb7890e7fec892085 passed preview/input-refusal checks.
+Codex inspected the 640x360 PNG: the fixture's Text Block is visible with reduced
+opacity. This verifies rendered fixture content, not arbitrary Widget behavior.
+
+cc01bc6 fixes repeated previews overwriting earlier PNGs: each call returns a
+unique absolute path. Supervised cce9fbca050042e38c2842793f8d2983 passed build,
+test-widget-preview-inputs and test-widget-preview, including distinct same-size
+paths and unchanged prior bytes. Consent, scalar samples, partial sample/callback
+refusals and dimension checks also passed. No custom engine changes.
+
+New output defect for follow-up: baseline AssetDescribe reports WidgetBlueprint
+'generated class: none, this asset kind has no generated class' while unloaded.
+This conflates unavailable metadata with class capability; inspect the source
+and correct the unknown/absent distinction before claiming tool-text completion.
