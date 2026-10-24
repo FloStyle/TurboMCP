@@ -1579,6 +1579,13 @@
             "Tools/test-vars-add.py"
           ],
           "new_files": []
+        },
+        "quality-vars-private-test": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVariableFlagsTest.cpp",
+            "Tools/test-variable-flags.py"
+          ]
         }
       },
       "preserve_rows": []
