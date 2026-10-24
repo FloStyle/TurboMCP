@@ -50,6 +50,10 @@ def main():
     print(preview)
     print()
     check("the preview names the asset", ASSET in preview)
+    check("preview states target validation limits", "not the target Blueprint or existing names" in preview)
+    check("preview warns about partial changes", "can leave a partial list" in preview)
+    check("preview distinguishes full compilation", "does not perform a full compile or save" in preview)
+
     check("the preview counts the variables", "add 3 variable(s)" in preview)
     check("it prints each type", all(t in preview for t in ("float", "bool", "string")))
     check("it prints the default", "default 250" in preview)

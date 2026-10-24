@@ -198,7 +198,7 @@ bool FTurboMCPVarsAdd::Plan(const FString& InAsset, const FString& InVariables,
 	if (Trim(InVariables).IsEmpty())
 	{
 		OutError = TEXT("no variables given. Pass them as a comma-separated list, for ")
-			TEXT("example \"Health: float = 100, bIsDead: bool = false\".");
+			TEXT("example \"Health: float default=100, bIsDead: bool default=false\".");
 		return false;
 	}
 
@@ -509,9 +509,9 @@ FString FTurboMCPVarsAdd::RenderPreview(const FPlan& InPlan)
 		}
 	}
 
-	Out += TEXT("\n; the edit adds every variable, then compiles ONCE, then reads each one ");
-	Out += TEXT("back from the Blueprint. A name that already exists is refused before ");
-	Out += TEXT("anything is added, so a partly applied list cannot happen.");
+	Out += TEXT("\n; Preview validates declaration syntax and referenced types, not the target Blueprint or existing names.");
+	Out += TEXT("\n; Edit checks names before adding variables, but an editor failure can leave a partial list. No automatic rollback is performed.");
+	Out += TEXT("\n; Edit may regenerate the skeleton repeatedly and run editor callbacks; it does not perform a full compile or save.");
 	return Out;
 }
 
@@ -801,9 +801,7 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 		}
 	}
 
-	// ONE COMPILE, which `03_TOOLS.md` requires and which is what makes the defaults
-	// readable in this same call: before the compile the skeleton class does not carry the
-	// new members, so reading them back would report the previous state.
+	// Publish flag and metadata changes; each earlier add may also regenerate the skeleton.
 	FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
 
 	// The read-back. A tool that reported what it added without checking would be reporting
@@ -823,8 +821,8 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 		}
 	}
 
-	FString Out = FString::Printf(TEXT("changed: added %d variable(s) to %s"),
-		Added, *Resolved.ObjectPath);
+	FString Out = FString::Printf(TEXT("%s: added %d variable(s) to %s"),
+		Missing.IsEmpty() ? TEXT("changed") : TEXT("partial"), Added, *Resolved.ObjectPath);
 	Out += FString::Printf(TEXT("\nread back from the Blueprint: %d of %d"),
 		Confirmed, InPlan.Variables.Num());
 
@@ -834,8 +832,7 @@ FString FTurboMCPVarsAdd::Apply(const FPlan& InPlan)
 			*FString::Join(Missing, TEXT(", ")));
 	}
 
-	Out += TEXT("\n; the variables are in memory and NOT saved. Call E-SAVE, because an ");
-	Out += TEXT("unsaved asset dies with the editor.");
-
+	Out += TEXT("\n; Changes are in memory and are not saved. Read-back checks names only, not defaults, flags or full compilation.");
+	Out += TEXT("\n; Review the variables, then use EditTurboMCPCompile and EditTurboMCPSave as needed. No automatic rollback or dedicated undo transaction is provided.");
 	return Out;
 }

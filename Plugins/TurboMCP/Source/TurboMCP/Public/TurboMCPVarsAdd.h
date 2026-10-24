@@ -13,23 +13,7 @@
 
 class UBlueprint;
 
-/**
- * Adding Blueprint variables in bulk, shared by `P-VARS-ADD` and `E-VARS-ADD`.
- *
- * `Spec/02_PRINCIPLES.md` `D-02` says a Preview and its Edit twin share one code path up to
- * the write step. So the list is PARSED and VALIDATED once, the Preview prints the parsed
- * result, and the Edit applies exactly that list. A preview that parsed differently from the
- * edit would be worse than no preview.
- *
- * WHY THE PARSING IS THE HARD PART
- * --------------------------------
- * `03_TOOLS.md` wants each item to carry a name, a type, a default, a category, flags and a
- * tooltip, and wants the type to cover anything `R-TYPE-FIND` can find plus containers. The
- * containers are why a plain comma split does not work: `Map<String, Int>` has a comma inside
- * it, and `Array<Struct>` has angle brackets that must balance. The splitter therefore counts
- * depth rather than splitting on every comma, and a type whose brackets do not balance is
- * refused by name rather than silently truncated.
- */
+/** Shared declaration parsing and variable creation; preview does not validate the target. */
 class FTurboMCPVarsAdd
 {
 public:
@@ -81,6 +65,6 @@ public:
 	/** Prints what the call would add, without adding it. */
 	static FString RenderPreview(const FPlan& InPlan);
 
-	/** Adds the variables, compiles once, and reads them back. */
+	/** Adds variables, publishes structural changes and checks their names. */
 	static FString Apply(const FPlan& InPlan);
 };

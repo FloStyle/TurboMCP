@@ -13,14 +13,7 @@
 
 #include "TurboMCPVarsAdd.h"
 
-/**
- * `P-VARS-ADD` and `E-VARS-ADD`.
- *
- * ONE CODE PATH, TWO OUTCOMES. `FTurboMCPVarsAdd::Plan` parses and validates the list, the
- * Preview prints it, and the Edit applies exactly that list. Parsing is the part that must not
- * differ between the two: a preview that accepted a list the edit then refused would be worse
- * than no preview at all.
- */
+// Share declaration parsing; target resolution and name-conflict checks occur only in Apply.
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPVarsAdd(
 	const FString& Asset, const FString& Variables)
