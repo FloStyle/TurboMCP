@@ -518,3 +518,9 @@ Supervised build 61730b9c6692423aa6ac13cbf220440f passed on the repair checkout.
 6840f7b and b491443 update the legacy reader arguments and verify graph readback is unchanged after preview and invalid-target edit refusal. The refusal outcome is checked through structured metadata, not the compatibility method that strips the result line. Existing positive repoint checks remain.
 
 Run 64c195a865424ce889e31f3b8a465869 failed only the newly added metadata assertion because it initially used the text-only API. Corrected run bbd72ee4976b4e369b55fbaad3be9ed7 passed build and test-graph-repoint. This covers existing-target repoint and pre-mutation refusal on the disposable fixture; it does not induce a failure after mutation, prove full rollback restoration, or certify all pin types/runtime behavior. The rollback follow-up remains open.
+
+## Local promotion analysis corrections — 2026-10-24
+
+6a536a3 resets reused plans, limits cycle detection to the active ancestry path (shared upstream nodes are not cycles), and rejects null linked pins instead of silently ignoring them. Internal documentation no longer claims input ancestry proves determinism or that promotion is implemented. The value-loss safeguard remains enabled.
+
+Supervised build 66327646f8bb4bd68c355b4ed1d543b6 passed. Shared-ancestry, actual-cycle and reused-plan behavioral regressions still need native fixtures. Full promotion remains open under 67f00521: assignment, execution placement, deterministic eligibility, multiple-output identity and failure restoration are not complete.
