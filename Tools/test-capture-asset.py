@@ -1,53 +1,14 @@
 # ACCEPTANCE ROW THIS SUITE CLAIMS TO PROVE: T-LOOK-8
-"""Exercise L-CAPTURE-ASSET: capture an ASSET EDITOR, not just a graph.
+"""Check asset-editor capture outputs and PNG contents on named fixtures.
 
-  WORKING_PLAN.md row 2.2   `L-CAPTURE-ASSET` = material, instance, function,
-                            widget designer, DataTable, Anim Blueprint, Anim Sequence,
-                            Niagara -- every kind either BUILT or REFUSED BY NAME
-  03_TOOLS.md section 18    the same contract in prose, including "a kind that is
-                            refused says which tool can capture it instead, if any"
-  06_ACCEPTANCE.md:235      T-LOOK-8
-  D-41                      a framing that cannot be done is an ERROR, never a fallback
+Requires Pillow in the Python environment used by run-suites.ps1. Missing image
+support fails before MCP calls. Colour counts detect flat images; they do not
+prove correct framing, colour fidelity, or preservation of live editor state.
 
-WHY THIS IS A NEW FILE AND NOT AN ADDITION TO `test-capture.py`
---------------------------------------------------------------
-`Tools/test-capture.py` AND `Tools/test-capture-selectors.py` BOTH ALREADY EXIST AND
-ARE TRACKED, and both pass. Row 2.1's brief named `test-capture.py` as the file to
-create, which would have SILENTLY OVERWRITTEN a passing suite; the same trap is named
-in row 2.2's brief. So this file is new, it is named `test-capture-asset`, and it
-touches nothing that already passed. `Test-Path` was run before it was written.
-
-WHAT IS MEASURED, AND WITH WHAT
--------------------------------
-THE MOST IMPORTANT CHECK IN THIS FILE IS THE ONE ON THE PIXELS, and it is deliberately
-not a check on the tool's own sentence. "A tool's own report is not evidence": every
-image is read back OFF DISK, its PNG header parsed for a size, and PIL asked for the
-number of DISTINCT COLOURS. A kind is only recorded as captured when a real picture
-with more than one colour is on disk at the size the tool claimed.
-
-THE ONE THAT ACTUALLY SEPARATES AN EDITOR TAB FROM A WINDOW
------------------------------------------------------------
-Four different assets of four different kinds all reported `1664x849`, which is the
-size of a maximised editor window - so the size alone does NOT prove the picture is the
-editor asked for. Two independent facts are checked against that:
-
-  1. THE COLOUR COUNT DIFFERS PER KIND (measured: 3444 for a material, 1278 for the
-     widget designer, 1629 for a Blueprint), so these are not one cached rectangle;
-  2. THE PIXELS ARE NOT A FLAT FILL, which is what a widget that did not render would
-     produce - and the tool refuses to write such an image at all.
-
-WHAT IS NOT MEASURED, SAID PLAINLY
-----------------------------------
-No Anim Blueprint fixture exists (TA-18 does not exist; TA18_ColourSuite is a COLOUR
-asset, not an Anim Blueprint), so the Anim Blueprint row is exercised through the
-CATALOGUE rather than through a capture. No project-owned Anim Sequence or Niagara
-system exists either - `R-ASSET-SEARCH type:AnimSequence` finds 2, both under
-/Engine/Tutorial, and `type:NiagaraSystem` finds 19, all engine or plugin content - so
-those two kinds are captured from engine content and the substitution is named here
-rather than hidden.
-
-NO CHECK BELOW DEPENDS ON SHARED MUTABLE STATE: this suite never edits an asset, never
-changes a selection and never saves anything. Every input is a read.
+The suite opens editor tabs but does not intentionally edit or save assets.
+Opening editors may run editor callbacks; read-like tool names are not a claim
+of zero side effects. AnimBlueprint has no fixture. A named refusal is reported
+as a coverage gap, not positive capture evidence for that asset kind.
 """
 
 import os
@@ -247,6 +208,12 @@ def catalogue_counts(out):
 
 
 def main():
+    try:
+        from PIL import Image  # noqa: F401, PLC0415
+    except ImportError:
+        print("RESULT: FAIL - Pillow is required to inspect capture pixels. "
+              "Run the supervisor with a Python environment containing Pillow.")
+        return 1
     session = Session()
     session.connect()
 
@@ -282,7 +249,8 @@ def main():
     check("it says every kind's editor module was asked for",
           "editor module reachability:" in table)
     check("it names another tool that also covers a kind, when there is one",
-          "another tool that also captures this kind, if any:" in table)
+          "related tool or mode: LookTurboMCPCapture modes graph, box or node" in table
+          and "related tool or mode: LookTurboMCPWidgetPreview (requires Execution=allow)" in table)
 
     counts = catalogue_counts(table)
     check("the three counts are all reported", counts is not None, str(counts))
@@ -498,8 +466,8 @@ def main():
         check("%s: the result names the kind it resolved" % kind,
               "\nkind: %s" % kind in out,
               next((l for l in out.splitlines() if l.startswith("kind:")), "(no kind line)"))
-        measured[kind] = ("CAPTURED", colours, full)
-        if fewest[0] is None or colours < fewest[0]:
+        measured[kind] = ("CAPTURED" if colours is not None else "UNREADABLE", colours, full)
+        if colours is not None and (fewest[0] is None or colours < fewest[0]):
             fewest = (colours, full)
 
     # ------------------------------------------------------------------
@@ -527,8 +495,6 @@ def main():
     print(screen_out)
     print()
     screen_path = image_path_of(screen_out)
-    smallest = min((v for v in measured.values() if v[0] == "CAPTURED"),
-                   key=lambda v: v[1], default=None)
 
     if screen_path and fewest[1] is not None:
         screen_file = resolve_printed_path(screen_path)
