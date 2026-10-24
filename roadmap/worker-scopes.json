@@ -1451,7 +1451,8 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintRead.cpp",
             "Tools/test-read-budget-floor.py",
-            "Tools/test-tool-text-inventory.py"
+            "Tools/test-tool-text-inventory.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintJson.cpp"
           ],
           "new_files": []
         }
