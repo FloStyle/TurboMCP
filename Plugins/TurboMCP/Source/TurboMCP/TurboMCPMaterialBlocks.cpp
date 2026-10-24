@@ -1007,8 +1007,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		{
 			bOutRolledBack = true;
 			return FString::Printf(
-				TEXT("FAILED: the value %s this plan would name no longer exists, so the edit was submitted for undo; see the rollback check below ")
-				TEXT("rather than applied in part."), *Crossing.SourceKey);
+				TEXT("FAILED: the value %s this plan would name no longer exists, so the edit was submitted for undo. Inspect the rollback check below before retrying or saving. ")
+				TEXT(""), *Crossing.SourceKey);
 		}
 
 		UMaterialExpression* const Created = UMaterialEditingLibrary::CreateMaterialExpressionEx(
@@ -1025,8 +1025,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		{
 			bOutRolledBack = true;
 			return FString::Printf(
-				TEXT("FAILED: the declaration for @%s could not be created, so the whole edit was submitted for undo; see the rollback check below ")
-				TEXT("rather than applied in part."), *Crossing.ProposedName);
+				TEXT("FAILED: the declaration for @%s could not be created, so the whole edit was submitted for undo. Inspect the rollback check below before retrying or saving. ")
+				TEXT(""), *Crossing.ProposedName);
 		}
 		++LabelsAdded;
 
@@ -1054,8 +1054,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the plan carried a consumer reference this pass cannot parse (%s), so the ")
-					TEXT("edit was submitted for undo; see the rollback check below rather than applied against a reference it does not ")
-					TEXT("understand."), *Ref);
+					TEXT("edit was submitted for undo. Inspect the rollback check below before retrying or saving. ")
+					TEXT("The reference could not be resolved."), *Ref);
 			}
 
 			UMaterialExpression* const Reader = ByKey.FindRef(ReaderKey);
@@ -1064,7 +1064,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this plan would retarget no longer exists, so the edit was ")
-					TEXT("submitted for undo; see the rollback check below rather than applied in part."), *ReaderKey);
+					TEXT("submitted for undo. Inspect the rollback check below before retrying or saving."), *ReaderKey);
 			}
 
 			UMaterialExpressionNamedRerouteUsage* Usage = UsageByReaderKey.FindRef(ReaderKey);
@@ -1084,7 +1084,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 					bOutRolledBack = true;
 					return FString::Printf(
 						TEXT("FAILED: the usage node for @%s could not be created, so the whole edit was ")
-						TEXT("submitted for undo; see the rollback check below rather than applied in part."), *Crossing.ProposedName);
+						TEXT("submitted for undo. Inspect the rollback check below before retrying or saving."), *Crossing.ProposedName);
 				}
 
 				// BOTH THE POINTER AND THE GUID, because the reader prefers the pointer and falls back to
@@ -1102,8 +1102,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: %s no longer points at %s, so the material changed between the Preview ")
-					TEXT("and this call and the edit was submitted for undo; see the rollback check below rather than rewired on the wrong ")
-					TEXT("seam."), *Ref, *Crossing.SourceKey);
+					TEXT("and this call and the edit was submitted for undo. Inspect the rollback check below before retrying or saving. ")
+					TEXT("The connection changed after planning."), *Ref, *Crossing.SourceKey);
 			}
 			++InputsRetargeted;
 		}
@@ -1121,8 +1121,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 		{
 			bOutRolledBack = true;
 			return FString::Printf(
-				TEXT("FAILED: the usage node to keep (%s) for @%s no longer exists, so the edit was submitted for undo; see the rollback check below ")
-				TEXT("rather than applied in part."), *Merge.KeepKey, *Merge.Label);
+				TEXT("FAILED: the usage node to keep (%s) for @%s no longer exists, so the edit was submitted for undo. Inspect the rollback check below before retrying or saving. ")
+				TEXT(""), *Merge.KeepKey, *Merge.Label);
 		}
 
 		for (const FString& Ref : Merge.ConsumerRefs)
@@ -1142,7 +1142,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this merge would retarget no longer exists, so the edit was ")
-					TEXT("submitted for undo; see the rollback check below rather than applied in part."), *ReaderKey);
+					TEXT("submitted for undo. Inspect the rollback check below before retrying or saving."), *ReaderKey);
 			}
 
 			// THE OLD VALUE IS RECOMPUTED FROM THE READER ITSELF rather than carried, because a merge
@@ -1162,7 +1162,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: %s could not be moved onto the kept usage node for @%s, so the edit was ")
-					TEXT("submitted for undo; see the rollback check below rather than applied in part."), *Ref, *Merge.Label);
+					TEXT("submitted for undo. Inspect the rollback check below before retrying or saving."), *Ref, *Merge.Label);
 			}
 			++InputsRetargeted;
 		}
@@ -1198,7 +1198,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			bOutRolledBack = true;
 			return FString::Printf(
 				TEXT("FAILED: the in-block reroute %s or the value it passes (%s) no longer exists, so the ")
-				TEXT("edit was submitted for undo; see the rollback check below rather than applied in part."),
+				TEXT("edit was submitted for undo. Inspect the rollback check below before retrying or saving."),
 				*Removal.RerouteKey, *Removal.SourceKey);
 		}
 
@@ -1219,7 +1219,7 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 				bOutRolledBack = true;
 				return FString::Printf(
 					TEXT("FAILED: the reader %s this removal would retarget no longer exists, so the edit ")
-					TEXT("was submitted for undo; see the rollback check below rather than applied in part."), *ReaderKey);
+					TEXT("was submitted for undo. Inspect the rollback check below before retrying or saving."), *ReaderKey);
 			}
 
 			// THE REROUTE MAY FAR INTO A CHAIN, but the readers point at THIS one, so that is what the
@@ -1228,8 +1228,8 @@ FString FTurboMCPMaterialBlocks::Apply(const FPlan& InPlan, FString& OutRollback
 			{
 				bOutRolledBack = true;
 				return FString::Printf(
-					TEXT("FAILED: %s no longer points at the reroute %s, so the edit was submitted for undo; see the rollback check below ")
-					TEXT("rather than rewired on the wrong seam."), *Ref, *Removal.RerouteKey);
+					TEXT("FAILED: %s no longer points at the reroute %s, so the edit was submitted for undo. Inspect the rollback check below before retrying or saving. ")
+					TEXT(""), *Ref, *Removal.RerouteKey);
 			}
 			++InputsRetargeted;
 		}
