@@ -334,3 +334,9 @@ Remaining source findings: variable type resolution has separate legacy containe
 838efdc/cfaf7ac replace the incorrect CPF_EditConst implementation of private with FBlueprintMetadata::MD_Private using the same Set/RemoveBlueprintVariableMetaData APIs as BlueprintDetailsCustomization::OnPrivateChanged. Metadata calls occur after direct description edits because they regenerate the skeleton. This changes private access without incorrectly making the property edit-constant.
 
 Supervised build 321860a132cd4f96811e66ce00379c3d passed. Implementation is source-verified against the engine checkbox, but live private/public access and independent editability checks are still pending. The existing variable suite only encounters pre-existing variables and cannot certify this fix. Keep this correction flagged untested for behavior until a fresh disposable fixture checks metadata and generated-property flags.
+
+## Fresh private-variable verification
+
+3868fe4 adds TurboMCP.Variables.PrivateFlags and its supervised wrapper, registered in 21034c7. Creates a unique transient Blueprint and uses production Plan/Apply to add private/public integer variables with instanceEditable=true. Checks fresh-creation count, Blueprint metadata, skeleton-property private metadata, absence of EditConst and preserved instance editability. Fixture is never saved.
+
+Run fc876fb4528f491cb163418a0cd77060 passed build and native regression with no reported errors or warnings. The private metadata/editability correction now has focused live evidence; it is no longer build-only. Full compilation, external caller access, save/reload, every variable type and partial-failure behavior remain outside this check.
