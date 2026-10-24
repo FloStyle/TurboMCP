@@ -1802,6 +1802,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp"
           ],
           "new_files": []
+        },
+        "quality-rollback-truth": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
