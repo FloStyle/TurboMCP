@@ -1473,6 +1473,13 @@
             "Tools/test-layout-output.py"
           ],
           "new_files": []
+        },
+        "quality-capture-help": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
