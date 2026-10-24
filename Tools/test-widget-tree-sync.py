@@ -101,6 +101,7 @@ def name_of(widget_line):
 
 def main():
     session = Session()
+    session.connect()
 
     # ---------------------------------------------------------------------------------------------
     # THE TREE IS WELL FORMED AND CARRIES ITS PATHS.
