@@ -311,9 +311,9 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 					FPaths::ProjectSavedDir(), TEXT("TurboMCP"), TEXT("Captures"));
 				IFileManager::Get().MakeDirectory(*Folder, /*Tree=*/true);
 
-				const FString FileName = FString::Printf(TEXT("%s_%dx%d.png"),
-					*WidgetBlueprint->GetName(), Width, Height);
-				ImagePath = FPaths::Combine(Folder, FileName);
+				const FString FileName = FString::Printf(TEXT("%s_%dx%d_%s.png"),
+					*WidgetBlueprint->GetName(), Width, Height, *FGuid::NewGuid().ToString(EGuidFormats::Digits));
+				ImagePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(Folder, FileName));
 
 				if (!FFileHelper::SaveArrayToFile(PngData, *ImagePath))
 				{

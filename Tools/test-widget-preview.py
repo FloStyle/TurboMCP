@@ -129,12 +129,18 @@ def main():
             check("the second image is at the second size",
                   png_size(absolute) == (640, 360), str(png_size(absolute)))
 
+    retained_path = absolute if small_path else None
+    retained_bytes = open(retained_path, "rb").read() if retained_path and os.path.isfile(retained_path) else None
     print()
     print("=== numeric and boolean sample values are imported ===")
     samples = session.call(LOOK_TOOLSET, "LookTurboMCPWidgetPreview",
                            {"widget": WIDGET, "sampleValuesJson": '{"RenderOpacity":0.5,"bIsEnabled":false}',
                             "execution":"allow", "functionName":"", "size":"640x360"})
     print(samples)
+    sample_path = next((line.split(":", 1)[1].strip() for line in samples.splitlines() if line.startswith("image:")), None)
+    check("preview returns an absolute path", sample_path is not None and os.path.isabs(sample_path))
+    check("same-size previews retain distinct files", sample_path is not None and retained_path is not None and os.path.normcase(os.path.abspath(sample_path)) != os.path.normcase(os.path.abspath(retained_path)))
+    check("prior preview bytes survive the next call", retained_bytes is not None and open(retained_path, "rb").read() == retained_bytes)
     check("imports both scalar values", "sample values: 2 set, 0 refused" in samples)
     check("scalar preview succeeds", "result: image written" in samples and not samples.startswith("partial:"))
     print()
