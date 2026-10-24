@@ -1400,20 +1400,11 @@ public:
 		const FString& FunctionOrEvent);
 
 	/**
-	 * Remove an override this Blueprint has.
-	 *
-	 * Pass a Blueprint and a name from `R-OVERRIDES` with `include=overridden`. An event override
-	 * is a node in the ubergraph and a function override is a graph of its own, so both are looked
-	 * for; a caller does not know which one they made.
-	 *
-	 * An Edit that can only CREATE is an Edit that cannot be undone, and `P8` says never leave the
-	 * user worse off. It also keeps a test suite from consuming the asset: the override suite used
-	 * to override one event per run, ran the test Blueprint out of free events, and broke two
-	 * unrelated suites whose assertions counted things on the same asset.
-	 *
-	 * The result reads back whether the editor now reports the function as unoverridden, rather
-	 * than trusting the removal, and lists the Blueprint's overrides when the name does not match
-	 * one.
+	 * Delete an override event node or an entire override function graph and its contents; uses an undo transaction, may regenerate the skeleton and run editor callbacks, and does not perform a full compile or save.
+	 * Requires an idle editor with undo available. Event removal leaves the other nodes in its graph; disconnected logic may need repair. Function removal can close asset editors.
+	 * Refuses ambiguous matches and local functions. Review the Blueprint after removal; this tool does not repair callers or prove compilation succeeds.
+	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty or unresolved values are refused.
+	 * @param FunctionOrEvent Required reflected override name from ReadTurboMCPOverrides with include=overridden, for example ReceiveActorOnClicked; case-insensitive, surrounding whitespace trimmed, no default. Empty is refused.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPOverrideRemove(

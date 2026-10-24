@@ -315,6 +315,12 @@ def main():
         check("the removal reports changed: or unchanged:",
               removal.startswith("changed:") or removal.startswith("unchanged:"),
               removal[:80])
+        check("removal describes its scope", "Only the event node was removed" in removal)
+        check("removal warns about disconnected logic", "may now be disconnected" in removal)
+        check("removal explains persistence and compile limits",
+              "are not saved" in removal and "full compile has not been performed" in removal)
+        check("removal names current follow-up tools",
+              "EditTurboMCPCompile" in removal and "EditTurboMCPSave" in removal)
         final_count, _ = override_counts(session)
         check("the count is back where the suite found it",
               final_count == before,

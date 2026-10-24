@@ -20,23 +20,7 @@
 
 #include "TurboMCPAssetResolver.h"
 
-/**
- * Removing an override.
- *
- * WHY THIS EXISTS BESIDE `E-OVERRIDE-ADD`
- * ---------------------------------------
- * An Edit that can only create is an Edit that cannot be undone, and `P8` says never leave the
- * user worse off. It also matters for testing: a suite that creates an override and cannot remove
- * it CONSUMES a finite resource. That happened here — the override suite overrode one event per
- * run, ran `BP_NodeTest` out of free events after four runs, and broke two unrelated suites whose
- * assertions counted things on the same asset.
- *
- * It wraps `UBlueprintEditorLibrary::RemoveFunctionGraph` and, for an event, removes the node from
- * the ubergraph, so it removes exactly what `EditTurboMCPOverrideAdd` makes.
- *
- * `E-FUNCTION-REMOVE` in phase 4 will cover member functions as well; this covers overrides, which
- * is what the ADD beside it creates.
- */
+// Event overrides are individual nodes; function overrides own a complete graph.
 namespace
 {
 	/** True when the two names match, case-insensitively. */
@@ -56,7 +40,7 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 	if (Wanted.IsEmpty())
 	{
 		return TEXT("error: no function or event given. Pass the name of an override ")
-			TEXT("this Blueprint has, from R-OVERRIDES with include=overridden.");
+			TEXT("this Blueprint has, from ReadTurboMCPOverrides with include=overridden.");
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;
@@ -101,17 +85,7 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 				continue;
 			}
 
-			// THE NODE IS REMOVED, NOT THE GRAPH THAT HOLDS IT.
-			//
-			// CALLING `RemoveGraph` ON THE EVENT'S GRAPH WOULD BE WRONG, because for an event
-			// override that is the EVENT GRAPH — the one holding every other event and the whole
-			// body of the Blueprint. Removing one override that way destroys the other three
-			// and the graph with them, taking the overridden count from 4 to 1. That is the
-			// loss `P8` forbids, and it was caught only because the count after the removal was
-			// read back and compared with the count before.
-			//
-			// `Modify`, `DestroyNode` and `MarkPackageDirty` are the three steps the editor's
-			// own node deletion performs.
+			// Delete only the event node, preserving the graph and its other nodes.
 			const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "RemoveEventOverride", "TurboMCP remove event override"));
 			Blueprint->Modify();
 			Graph->Modify();
@@ -128,6 +102,7 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 				*Wanted, *Resolved.ObjectPath);
 			Out += FString::Printf(TEXT("\nremoved: %s from graph '%s'"),
 				*RemovedName, *FromGraph);
+			Out += TEXT("\n; Only the event node was removed. Other nodes remain and may now be disconnected.");
 
 			// THE READ-BACK through the editor's own list, as the Add does.
 			bool bStillImplemented = false;
@@ -143,7 +118,10 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 			Out += FString::Printf(
 				TEXT("\nthe editor now reports it as implemented: %s"),
 				bStillImplemented ? TEXT("yes") : TEXT("no"));
-			Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+			Out += TEXT("\n; Changes are in memory and are not saved. Skeleton regeneration and editor callbacks may have run; a full compile has not been performed.");
+			Out += TEXT("\n; Removal used an undo transaction. Review the Blueprint, then use EditTurboMCPCompile and EditTurboMCPSave as needed.");
+			if (bStillImplemented)
+				Out += TEXT("\n; The editor still lists this override as implemented. Inspect it with ReadTurboMCPOverrides before making further changes; removal is not fully verified.");
 			return Out;
 		}
 	}
@@ -155,7 +133,7 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 		{
 			UFunction* OverrideFunction = nullptr;
 			if (!FBlueprintEditorUtils::GetOverrideFunctionClass(Blueprint, Graph->GetFName(), &OverrideFunction) || !OverrideFunction)
-				return TEXT("unchanged: the named function is not a parent/interface override; use the function removal tool for local functions");
+				return TEXT("unchanged: the named function is not a parent/interface override; use EditTurboMCPFunctionRemove for local functions");
 			if (!Graph->bAllowDeletion)
 				return TEXT("unchanged: the override graph does not allow deletion");
 			const FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "RemoveFunctionOverride", "TurboMCP remove function override"));
@@ -168,6 +146,7 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 			FString Out = FString::Printf(
 				TEXT("changed: removed the function override '%s' from %s"),
 				*Wanted, *Resolved.ObjectPath);
+			Out += TEXT("\n; The entire override function graph and its contents were removed. Callers were not repaired.");
 
 			bool bStillImplemented = false;
 			for (const FBlueprintFunctionInfo& Info
@@ -182,7 +161,10 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 			Out += FString::Printf(
 				TEXT("\nthe editor now reports it as implemented: %s"),
 				bStillImplemented ? TEXT("yes") : TEXT("no"));
-			Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
+			Out += TEXT("\n; Changes are in memory and are not saved. Skeleton regeneration and editor callbacks may have run; a full compile has not been performed.");
+			Out += TEXT("\n; Removal used an undo transaction. Review the Blueprint, then use EditTurboMCPCompile and EditTurboMCPSave as needed.");
+			if (bStillImplemented)
+				Out += TEXT("\n; The editor still lists this override as implemented. Inspect it with ReadTurboMCPOverrides before making further changes; removal is not fully verified.");
 			return Out;
 		}
 	}
