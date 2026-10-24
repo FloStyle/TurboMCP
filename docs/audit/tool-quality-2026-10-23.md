@@ -328,3 +328,9 @@ Run 8327a8b8189849d380fab547a58856b5 passed build, test-function (including expl
 809c7a73ed01459a96f2e6906f040d98 passed build and 125-tool help inventory but the variable suite expected obsolete conflict wording. 99d949f checks all three conflicting names and the no-add statement directly. Rerun 29b7f008dfbd4046a1ee2b356b5dea28 passed. Fixture variables already existed: these runs prove preview, conflict/refusal messages and existing-state read-back, NOT fresh creation or partial-failure behavior.
 
 Remaining source findings: variable type resolution has separate legacy container/type handling rather than the shared parser throughout; inspect fallback and hashing behavior. The private option sets EditConst rather than proving Blueprint private access semantics. Multiword tooltip parsing commentary contradicts token handling. Fresh-fixture creation, defaults/flags and partial-add checks remain required; this family is not behavior-certified.
+
+## Variable private access correction
+
+838efdc/cfaf7ac replace the incorrect CPF_EditConst implementation of private with FBlueprintMetadata::MD_Private using the same Set/RemoveBlueprintVariableMetaData APIs as BlueprintDetailsCustomization::OnPrivateChanged. Metadata calls occur after direct description edits because they regenerate the skeleton. This changes private access without incorrectly making the property edit-constant.
+
+Supervised build 321860a132cd4f96811e66ce00379c3d passed. Implementation is source-verified against the engine checkbox, but live private/public access and independent editability checks are still pending. The existing variable suite only encounters pre-existing variables and cannot certify this fix. Keep this correction flagged untested for behavior until a fresh disposable fixture checks metadata and generated-property flags.
