@@ -175,40 +175,18 @@ namespace
 		return Full;
 	}
 
-	/**
-	 * The parent class of a Blueprint asset, or an empty string.
-	 *
-	 * Only asked for a Blueprint, because for anything else the parent is not a
-	 * meaningful thing to print. The asset is loaded only when it is not already
-	 * in memory, and a failure to load is reported as "parent unknown" rather
-	 * than as no parent, because those are different facts (`P1`, `D-05`).
-	 */
+	/** Read an existing Blueprint or its saved registry parent tag without loading it. */
 	FString BlueprintParentOf(const FAssetData& InAsset)
 	{
-		const FString ClassName = ClassNameOf(InAsset);
-		if (!ClassName.Contains(TEXT("Blueprint"), ESearchCase::IgnoreCase))
+		if (const UBlueprint* Blueprint = FindObject<UBlueprint>(nullptr, *InAsset.GetObjectPathString()))
 		{
-			return FString();
+			return Blueprint->ParentClass ? Blueprint->ParentClass->GetPathName() : TEXT("none (loaded Blueprint has no parent)");
 		}
-
-		const FString ObjectPath = InAsset.GetObjectPathString();
-		UObject* Asset = FindObject<UObject>(nullptr, *ObjectPath);
-		if (Asset == nullptr)
-		{
-			Asset = LoadObject<UObject>(nullptr, *ObjectPath);
-		}
-
-		const UBlueprint* Blueprint = Cast<UBlueprint>(Asset);
-		if (Blueprint == nullptr)
-		{
-			return Asset == nullptr ? TEXT("parent unknown (the asset could not be loaded)") : FString();
-		}
-
-		if (const UClass* Parent = Blueprint->ParentClass)
-		{
-			return Parent->GetName();
-		}
-		return TEXT("none");
+		FString ParentTag;
+		if (InAsset.GetTagValue(FName(TEXT("ParentClass")), ParentTag) && !ParentTag.IsEmpty())
+			return FPackageName::ExportTextPathToObjectPath(ParentTag) + TEXT(" (asset registry metadata)");
+		return ClassNameOf(InAsset).Contains(TEXT("Blueprint"), ESearchCase::IgnoreCase)
+			? TEXT("unknown (not loaded; no parent metadata)") : FString();
 	}
 
 	/** One line describing an asset, in the form `R-ASSET-DESCRIBE` requires. */
@@ -248,17 +226,25 @@ namespace
 			*InResolved.PackagePath, *InResolved.ObjectPath,
 			ClassShort.IsEmpty() ? TEXT("unknown") : *ClassShort);
 
-		// The generated class is a separate, real thing that the engine's own
-		// tools ask for by name, so it is printed only when it exists. Saying
-		// "none" is a positive statement that the check ran (`P1`).
-		const FString GeneratedClassPath = FString::Printf(
-			TEXT("%s.%s_C"), *InResolved.PackagePath, *InResolved.AssetName);
-		const FAssetData ClassAsset = Registry->GetAssetByObjectPath(
-			FSoftObjectPath(GeneratedClassPath), /*bIncludeOnlyOnDiskAssets=*/false);
-
-		Line += ClassAsset.IsValid()
-			? FString::Printf(TEXT("\n  generated class: %s"), *ClassAsset.GetObjectPathString())
-			: TEXT("\n  generated class: none, this asset kind has no generated class");
+		// Generated classes are commonly registry tags, not separate asset entries.
+		// Missing metadata does not establish that the asset cannot generate a class.
+		const UBlueprint* LoadedBlueprint = FindObject<UBlueprint>(nullptr, *InResolved.ObjectPath);
+		FString GeneratedClassTag;
+		if (LoadedBlueprint)
+		{
+			Line += LoadedBlueprint->GeneratedClass
+				? FString::Printf(TEXT("\n  generated class: %s"), *LoadedBlueprint->GeneratedClass->GetPathName())
+				: TEXT("\n  generated class: none currently assigned to the loaded Blueprint");
+		}
+		else if (Asset.GetTagValue(FName(TEXT("GeneratedClass")), GeneratedClassTag) && !GeneratedClassTag.IsEmpty())
+		{
+			Line += FString::Printf(TEXT("\n  generated class: %s (asset registry metadata; not loaded or validated)"),
+				*FPackageName::ExportTextPathToObjectPath(GeneratedClassTag));
+		}
+		else
+		{
+			Line += TEXT("\n  generated class: unknown (no generated-class metadata; asset not loaded)");
+		}
 
 		const FString Parent = BlueprintParentOf(Asset);
 		if (!Parent.IsEmpty())
