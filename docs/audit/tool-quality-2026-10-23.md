@@ -418,3 +418,9 @@ Run 62f93dc2bb3c44a9b8c8a3e25a9c5eee passed build and the 125-tool help inventor
 fcd4809 adds TurboMCP.DataTable.OwnedRows and its wrapper; d5c9508 registers the suite. It creates a uniquely owned temporary table with the kit's native row struct, runs production Parse/Plan/Apply, and independently checks changed Count, retained Weight/Label, added row, named removal and final count. Planning preserves row values/count. An unknown-field plan is refused by Apply and the existing value remains intact. Nothing is saved; only the owned temporary objects are cleaned up.
 
 Supervised run 6be054e652d54c118bb7956e32b50970 passed build and the native regression. This supplies focused behavior evidence without engine-content writes. It does not repair or certify the legacy test-datatable-rows setup, all value types, injected callback failure/rollback, undo replay or disk persistence; those remain open coverage gaps.
+
+## Material-instance editing quality — 2026-10-24
+
+cbdee23 documents Asset/Overrides and the texture-only contract, loading/render-update effects, absent tool-owned undo and no save. Duplicate requested names and ambiguous declared parameter names now refuse before mutation. Effective texture pointers are read back before success; a mismatch or post-write report failure is partial with no rollback claim. Reader text no longer contradicts override support and references ReadTurboMCPMaterialLoad by its current name.
+
+Supervised run 8388f5113e9e4161aa292df20f883cd1 passed build and the 125-tool live help inventory. The new duplicate/ambiguity/read-back branches are implemented but behaviorally untested; a disposable material/instance fixture is still needed. Sampler validation remains limited to color/linear sRGB checks, and rendered correctness is not certified. Overall review remains open.
