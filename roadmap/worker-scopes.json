@@ -1898,6 +1898,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchSequenceTest.cpp",
             "Tools/test-batch-sequence.py"
           ]
+        },
+        "quality-batch-live-identity": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
