@@ -1433,6 +1433,17 @@
           "new_files": [
             "Tools/test-node-reader-output.py"
           ]
+        },
+        "quality-diagnostic-reader-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecks.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecksTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolSchema.cpp",
+            "Tools/test-pure-checks.py",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
