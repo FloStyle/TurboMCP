@@ -156,3 +156,9 @@ Implemented def08ab: lint input descriptions distinguish estimated-token finding
 Regression now covers invalid and maximum budgets, retained summaries with a tiny budget, and current GraphLoad required fields. Hard total-output caps are not implemented: headings/counts and whole-line overshoot remain explicitly outside the finding budget. Verification pending.
 
 Run 94f6d880550f4e8caee2b1c35b2f2b48 passed build/help and all new budget/summary checks; the old unknown-tool assertion rejected the actual Unknown tool reply. Correction d2c5c16 checks that exact reply and removes blanket exception-as-pass behavior, without claiming a class-level safety boundary. Final run 720fcf76304a47888a886fe8cc9f06a6 passed build and lint regression. This covers fixture lint and disk fingerprints, not every analysis algorithm or arbitrary asset side effect.
+
+## Asset-cost provenance and counts (2026-10-24)
+
+Implemented cc1c570: dependencies with unknown disk sizes remain in their hard/soft/editor-only category counts and are also listed as unknown. Reports describe direct registry dependencies, category overlap and recorded package disk sizes rather than promising runtime load/cook behavior. Empty query results no longer claim to prove the absence of references. Two parameter descriptions specify Cap defaults and its limited display scope.
+
+Regression checks category-count consistency and explicit provenance. Remaining gap: dependency-query success/readiness is not yet represented separately from an empty query result; the output now avoids certifying completeness, but explicit partial/unknown query status still needs implementation and failure-path coverage. Verification pending.
