@@ -11,19 +11,7 @@
 
 #include "TurboMCPGraphStructure.h"
 
-/**
- * `P/E-GRAPH-COPY` and `P/E-GRAPH-COLLAPSE`, the pairs as `03_TOOLS.md` requires them.
- *
- * THE DECISION IS MADE IN `FTurboMCPGraphStructure::PlanCopy` AND `PlanCollapse`, NOT HERE. These
- * functions render or apply what those returned and decide nothing themselves, which is what makes a
- * Preview and its Edit twin refuse the SAME input - the rule this project requires of every pair.
- *
- * COPY IS BUILT AND COLLAPSE IS NOT, AND THE TWO ARE HONEST ABOUT IT IN DIFFERENT WORDS. COPY applies.
- * COLLAPSE runs its plan - so a caller learns what its input is missing - and then `Apply` refuses with
- * the measurement's own reason rather than a vague failure. Refusing a capability that is not built is
- * the outcome this project prefers to a half-built one: the whole breakpoint group was closed the same
- * way, with the refusal written into the descriptions of the tools an agent would reach for instead.
- */
+// Plans describe supported operations; Apply performs additional guards and can fail.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphCopy(
 	const FString& SourceAsset, const FString& SourceGraph, const TArray<FString>& NodeIds,
 	const FString& TargetAsset, const FString& TargetGraph, const FString& AnchorNodeId)
@@ -43,8 +31,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphCopy(
 	const FString& SourceAsset, const FString& SourceGraph, const TArray<FString>& NodeIds,
 	const FString& TargetAsset, const FString& TargetGraph, const FString& AnchorNodeId)
 {
-	// THE PLAN IS BUILT ONCE, HERE, AND THE DECISION IS ITS. Everything the edit refuses, the preview
-	// refused first with the same words, because both reach this same construction.
+	// Rebuild the plan from current state before applying it.
 	FTurboMCPGraphStructure::FPlan Plan;
 	FString Error;
 	if (!FTurboMCPGraphStructure::PlanCopy(SourceAsset, SourceGraph, NodeIds,
@@ -64,8 +51,7 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphCopy(
 	FString ApplyError;
 	if (!FTurboMCPGraphStructure::Apply(Plan, Report, ApplyError))
 	{
-		// `Apply` reports its own failures with `NOTHING was written`, because the spec requires a failed
-		// write to SAY it failed rather than to look like a success.
+		// Preserve Apply diagnostics, including partial changes or rollback failures.
 		return FTurboMCPToolError::AsError(ApplyError);
 	}
 

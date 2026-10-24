@@ -1074,19 +1074,16 @@ public:
 		const TArray<FString>& Rows);
 
 	/**
-	 * Plan copying a block of nodes from one graph to another, and write nothing.
-	 *
-	 * The boundary comes from the links that CROSS the selection rather than from a pin list
-	 * (`D-47`), and there are THREE outcomes rather than two: a crossing link whose far end is
-	 * reachable in the target is re-linked, one whose far end is not is REPORTED BY NAME and left
-	 * unconnected, and a member the target asset does not declare REFUSES the whole copy and names
-	 * every missing one - because half a block is worse than none.
-	 *
-	 * IT IS IN THIS TOOLSET, WHICH HOLDS NO TOOL THAT CAN CHANGE AN ASSET, so the plan cannot write
-	 * even by accident. Its Edit twin reaches the same plan, so everything refused here is refused
-	 * there in the same words.
-	 */
-	UFUNCTION(meta = (AICallable))
+     * Plan a node copy and report external links; loads both Blueprints without applying the copy, compiling or saving.
+     * Required target members must already exist. External links that cannot resolve in the target are reported and left unconnected. Inspect the preview, then check layout, links and compilation after editing; preview does not guarantee edit success.
+     * @param SourceAsset Required source Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
+     * @param SourceGraph Required existing source graph name, e.g. EventGraph; use the reader's name. Missing targets are refused.
+     * @param NodeIds Required array of source reader node IDs. Empty means nothing to copy. Use exact IDs from the source graph; unresolved or unsupported selections are refused. Selecting a comment does not implicitly select its contents.
+     * @param TargetAsset Required destination Blueprint path or unique short name. It must already exist and declare the members needed by copied nodes. Empty or ambiguous input is refused.
+     * @param TargetGraph Required existing destination graph name. This is not a new graph name; choose a different graph from the source. Example: EventGraph in another Blueprint.
+     * @param AnchorNodeId Required string; pass empty. Anchor wiring is not implemented and any nonempty value is refused.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphCopy(
 		const FString& SourceAsset,
 		const FString& SourceGraph,
@@ -1706,19 +1703,16 @@ public:
 		const TArray<FString>& Rows);
 
 	/**
-	 * Copy a block of nodes from one graph to another, and report what could not come with it.
-	 *
-	 * THE SAME ASSET AND GRAPH ON BOTH SIDES IS REFUSED BY NAME and pointed at the paste-in-place
-	 * case, because that is a duplicate rather than a copy. A variable, function or event the target
-	 * asset does not have REFUSES THE WHOLE COPY and names every missing member, so a half block is
-	 * never written. The copy itself reads the SOURCE NODE AS THE TEMPLATE - which is what keeps a
-	 * copied call node calling the function it called - and every link that crosses the selection and
-	 * has nothing to point at in the target is REPORTED BY NAME rather than silently dropped.
-	 *
-	 * One transaction. After writing it reads the graph back and states the node count before and
-	 * after, so the first line is `changed`.
-	 */
-	UFUNCTION(meta = (AICallable))
+     * Copy selected nodes and reconnect planned links in an owned undo transaction; loads both Blueprints, but does not compile or save.
+     * Required target members must already exist. External links that cannot resolve in the target are reported and left unconnected. Inspect the preview, then check layout, links and compilation after editing; preview does not guarantee edit success.
+     * @param SourceAsset Required source Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous input is refused.
+     * @param SourceGraph Required existing source graph name, e.g. EventGraph; use the reader's name. Missing targets are refused.
+     * @param NodeIds Required array of source reader node IDs. Empty means nothing to copy. Use exact IDs from the source graph; unresolved or unsupported selections are refused. Selecting a comment does not implicitly select its contents.
+     * @param TargetAsset Required destination Blueprint path or unique short name. It must already exist and declare the members needed by copied nodes. Empty or ambiguous input is refused.
+     * @param TargetGraph Required existing destination graph name. This is not a new graph name; choose a different graph from the source. Example: EventGraph in another Blueprint.
+     * @param AnchorNodeId Required string; pass empty. Anchor wiring is not implemented and any nonempty value is refused.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphCopy(
 		const FString& SourceAsset,
 		const FString& SourceGraph,
