@@ -2018,6 +2018,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureAsset.cpp"
           ],
           "new_files": []
+        },
+        "quality-asset-capture-harness": {
+          "files": [
+            "Tools/test-capture-asset.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

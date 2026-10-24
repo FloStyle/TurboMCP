@@ -1527,3 +1527,6 @@ not count this run as a suite pass. DataTable and AnimBlueprint positive capture
 coverage is still missing. Repair the harness dependency/error handling and
 stale assertions without weakening its image checks. CP-14 live graph contrast
 remains open; this correction concerns saved capture images only.
+
+### Approved capture harness repair — 2026-10-24
+Repair missing Pillow diagnostics and missing colour-count crashes in test-capture-asset.py; align related-tool assertion with current catalogue semantics. Preserve image thresholds, named refusal coverage and explicit fixture gaps. Run with an available Pillow environment through the supervisor. No plugin behavior changes in this assignment.
