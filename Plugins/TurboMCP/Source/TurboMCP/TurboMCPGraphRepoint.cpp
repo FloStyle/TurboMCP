@@ -107,7 +107,8 @@ bool FTurboMCPGraphRepoint::PlanOnGraph(UBlueprint* B,UEdGraph* G,UEdGraph* Iden
      UEdGraphNode* Original=FindNode(IdentityGraph,Id);
      return Original?TurboMCPGraphScratch::ByGuid(G,Original->NodeGuid):nullptr;
  };
- Out.GraphName=G->GetName(); Out.NodeCountBefore=G->Nodes.Num();
+ // Scratch graphs may be renamed during duplication; apply must resolve the live graph.
+ Out.GraphName=IdentityGraph->GetName(); Out.NodeCountBefore=G->Nodes.Num();
  UEdGraphNode* Source=Locate(SourceNodeId); if (!Source) { Out.Refusals.Add(FString::Printf(TEXT("source node '%s' was not found"),*SourceNodeId)); return true; }
  UEdGraphPin* SourceOut=FindPin(Source,SourcePin,EGPD_Output); if (!SourceOut) { Out.Refusals.Add(FString::Printf(TEXT("source '%s' has no unique output pin named '%s'"),*SourceNodeId,*SourcePin)); return true; }
  if (TargetNodeId.IsEmpty() && TargetTypeId.IsEmpty()) { Out.Refusals.Add(TEXT("targetTypeId is required when targetNodeId is empty")); return true; }
