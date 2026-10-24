@@ -6,6 +6,7 @@
 #include "Misc/Guid.h"
 #include "Misc/PackageName.h"
 #include "TurboMCPEnumAdd.h"
+#include "Tools/TurboMCPToolsets.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Engine/UserDefinedEnum.h"
 #include "UObject/Package.h"
@@ -56,6 +57,15 @@ bool FTurboMCPEnumCreationTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Requested display text"), Created->GetDisplayNameTextByIndex(1).ToString(), FString(TEXT("Dark Green")));
     TestTrue(TEXT("New package is dirty"), Created->GetOutermost()->IsDirty());
     TestFalse(TEXT("Creation did not save"), FPackageName::DoesPackageExist(Path));
+    UTurboMCPReadToolset* Reader = GetMutableDefault<UTurboMCPReadToolset>();
+    FString Description = Reader->ReadTurboMCPAssetDescribe(ObjectPath);
+    TestTrue(TEXT("Dirty unsaved asset has no disk package"), Description.Contains(TEXT("on disk: no")));
+    TestTrue(TEXT("Dirty state reported independently"), Description.Contains(TEXT("unsaved changes: yes")));
+    Created->GetOutermost()->SetDirtyFlag(false); // Disposable fixture only; deliberately test clean-but-unsaved.
+    Description = Reader->ReadTurboMCPAssetDescribe(ObjectPath);
+    TestTrue(TEXT("Clean unsaved asset still has no disk package"), Description.Contains(TEXT("on disk: no")));
+    TestTrue(TEXT("Clean state reported independently"), Description.Contains(TEXT("unsaved changes: no")));
+    Created->GetOutermost()->SetDirtyFlag(true);
     FTurboMCPEnumAdd::FPlan Collision;
     if (TestTrue(TEXT("Collision input parses"), FTurboMCPEnumAdd::Plan(Path, TEXT("Replacement"), Collision, Error)))
     {

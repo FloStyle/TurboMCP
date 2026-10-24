@@ -254,21 +254,21 @@ namespace
 
 		Line += FString::Printf(TEXT("\n  loaded: %s"), bLoaded ? TEXT("yes") : TEXT("no"));
 
-		// The unsaved flag is only knowable for an asset that is loaded, so an
-		// unloaded asset says so rather than claiming it is saved.
+		// Dirty state and package existence answer different questions.
 		if (bLoaded)
 		{
 			const UPackage* Package = FindPackage(nullptr, *InResolved.PackagePath);
-			const bool bDirty = Package != nullptr && Package->IsDirty();
-			Line += FString::Printf(TEXT("\n  unsaved changes: %s"), bDirty ? TEXT("yes") : TEXT("no"));
-			Line += FString::Printf(TEXT("\n  on disk: %s"),
-				Package != nullptr && Package->IsDirty() ? TEXT("not fully, it has unsaved changes") : TEXT("yes"));
+			const TCHAR* DirtyState = Package ? (Package->IsDirty() ? TEXT("yes") : TEXT("no")) : TEXT("unknown (package unavailable)");
+			Line += FString::Printf(TEXT("\n  unsaved changes: %s"), DirtyState);
 		}
 		else
 		{
 			Line += TEXT("\n  unsaved changes: unknown, the asset is not loaded");
-			Line += TEXT("\n  on disk: yes (it was found without loading)");
 		}
+		const bool bPackageExists = FPackageName::DoesPackageExist(InResolved.PackagePath);
+		Line += bPackageExists
+			? TEXT("\n  on disk: yes (package exists; in-memory changes may be unsaved)")
+			: TEXT("\n  on disk: no (no saved package found)");
 
 		return Line;
 	}

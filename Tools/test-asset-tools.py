@@ -94,8 +94,8 @@ def main():
     check("reports the class", "class: UserDefinedEnum" in answers["short name"])
     check("reports the object path", "object: %s.%s" % (ASSET_PACKAGE, ASSET) in answers["short name"])
     check(
-        "says so when there is no generated class",
-        "generated class: none" in answers["short name"],
+        "does not infer class absence from missing metadata",
+        "generated class: unknown" in answers["short name"],
     )
 
     print()
