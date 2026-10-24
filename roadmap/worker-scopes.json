@@ -1860,6 +1860,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCopyFailureTest.cpp"
           ],
           "new_files": []
+        },
+        "quality-append-failure-report": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
