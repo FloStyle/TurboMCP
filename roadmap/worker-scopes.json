@@ -1731,6 +1731,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnots.cpp"
           ],
           "new_files": []
+        },
+        "quality-knots-geometry-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnots.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
