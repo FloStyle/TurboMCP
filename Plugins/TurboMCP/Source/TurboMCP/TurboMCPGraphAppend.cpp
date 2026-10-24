@@ -1003,7 +1003,15 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
     OutReport.Empty(); OutError.Empty();
     // Scratch failures discard the entire transient graph, without touching undo.
     auto Rollback = [bScratch]() { return bScratch || FTurboMCPRollback::EndAndUndoActiveTransaction(); };
-	// ---- ONE TRANSACTION, as the spec requires, so a refusal anywhere leaves the graph as it was ---------
+    // Undo completion alone does not prove that callbacks and all graph state were restored.
+    auto RollbackStatus = [bScratch](bool bUndone) -> const TCHAR*
+    {
+        if (bScratch) return TEXT("scratch execution failed; live graph unchanged");
+        return bUndone
+            ? TEXT("partial: undo completed; restoration is unverified; inspect the graph before retrying; compile=not_run; save=not_requested")
+            : TEXT("partial: undo did not complete; inspect the graph before retrying; compile=not_run; save=not_requested");
+    };
+	// Use one transaction for live edits. Failure attempts undo; restoration remains unverified.
 	TUniquePtr<FScopedTransaction> Transaction;
     if (!bScratch && !bJoinCallerTransaction)
         Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "GraphAppend", "TurboMCP append to graph"));
@@ -1062,8 +1070,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                 }
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted '%s' but the graph refused it at apply time: %s. ")
-				TEXT("NOTHING was written."),
-				Form.Line, *Form.TypeId, *SpawnNote);
+				TEXT("%s"),
+				Form.Line, *Form.TypeId, *SpawnNote, RollbackStatus(true));
 			return false;
 		}
 
@@ -1079,8 +1087,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                     return false;
                 }
 				OutError = FString::Printf(
-					TEXT("placement: form %d has no planned position at apply time. NOTHING was written."),
-					FormIndex);
+					TEXT("placement: form %d has no planned position at apply time. %s"),
+					FormIndex, RollbackStatus(true));
 				return false;
 			}
 			Made->NodePosX = Position->X;
@@ -1119,8 +1127,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                     return false;
                 }
 				OutError = FString::Printf(
-					TEXT("line %d: '%s' has no pin named '%s' at apply time. NOTHING was written."),
-					Pin.Line, *Form.TypeId, *Pin.Name);
+					TEXT("line %d: '%s' has no pin named '%s' at apply time. %s"),
+					Pin.Line, *Form.TypeId, *Pin.Name, RollbackStatus(true));
 				return false;
 			}
 
@@ -1137,7 +1145,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
             if (!SetLiteral(Graph, Target, Literal, Changed, PinError))
             {
                 const bool Undone = Rollback();
-                OutError = FString::Printf(TEXT("%s: invalid pin default '%s': %s"), Undone ? TEXT("unchanged; rollback=complete") : TEXT("partial; rollback=failed"), *Pin.Name, *PinError);
+                OutError = FString::Printf(TEXT("%s: invalid pin default '%s': %s"), RollbackStatus(Undone), *Pin.Name, *PinError);
                 return false;
             }
             if (Changed) ++PinsWritten;
@@ -1195,8 +1203,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                 }
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted a link from '%s' to '%s', but one end was not in the graph ")
-				TEXT("at apply time. NOTHING was written."),
-				Link.Line, *Link.FromNodeKey, *Link.ToPin);
+				TEXT("at apply time. %s"),
+				Link.Line, *Link.FromNodeKey, *Link.ToPin, RollbackStatus(true));
 			return false;
 		}
 
@@ -1232,9 +1240,9 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                 }
 			OutError = FString::Printf(
 				TEXT("line %d: the plan accepted a link '%s' -> '%s', but a pin was missing at apply time ")
-				TEXT("(%s). NOTHING was written."),
+				TEXT("(%s). %s"),
 				Link.Line, *Link.FromPin, *Link.ToPin,
-				FromPin == nullptr ? TEXT("source") : TEXT("target"));
+				FromPin == nullptr ? TEXT("source") : TEXT("target"), RollbackStatus(true));
 			return false;
 		}
 
@@ -1255,7 +1263,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 					OutError = TEXT("partial: conversion link refused and rollback failed; inspect graph before retrying; save=not_requested. ") + Reason;
 					return false;
 				}
-				OutError = TEXT("unchanged: graph write rolled back. ") + Reason;
+				OutError = (FString(RollbackStatus(true)) + TEXT(". ")) + Reason;
 				return false;
 			}
 		}
@@ -1288,8 +1296,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                 }
 			OutError = FString::Printf(
 				TEXT("line %d: the engine refused the link '%s' -> '%s', or did not retain it. ")
-				TEXT("The original chain was %s before rollback; NOTHING was written."),
-				Link.Line, *Link.FromPin, *Link.ToPin, bRestored ? TEXT("restored") : TEXT("NOT fully restored"));
+				TEXT("The original chain was %s before rollback; %s"),
+				Link.Line, *Link.FromPin, *Link.ToPin, bRestored ? TEXT("restored") : TEXT("NOT fully restored"), RollbackStatus(true));
 			return false;
 		}
 
@@ -1386,8 +1394,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
                 }
 				OutError = FString::Printf(
 					TEXT("line %d: the new link replaced an existing chain but its continuation could not be made unambiguously. Name the old target and desired branch output explicitly in the append text. ")
-					TEXT("The original chain was %s before rollback; NOTHING was written."),
-					Link.Line, bRestored ? TEXT("restored") : TEXT("NOT fully restored"));
+					TEXT("The original chain was %s before rollback; %s"),
+					Link.Line, bRestored ? TEXT("restored") : TEXT("NOT fully restored"), RollbackStatus(true));
 				return false;
 			}
 		}
@@ -1409,7 +1417,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
         if(!Target || !FormPin || !SetLiteral(Graph,Target,Unquote(FormPin->Value),Changed,Why))
         {
             const bool Undone=Rollback();
-            OutError=FString::Printf(TEXT("%s: deferred default '%s' failed after type propagation: %s"),Undone?TEXT("unchanged; rollback=complete"):TEXT("partial; rollback=failed"),*Deferred.Value,*Why);
+            OutError=FString::Printf(TEXT("%s: deferred default '%s' failed after type propagation: %s"),RollbackStatus(Undone),*Deferred.Value,*Why);
             return false;
         }
         if(Changed) ++PinsWritten;
@@ -1459,7 +1467,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
         if(!Connected)
         {
             const bool Undone=Rollback();
-            OutError=FString(Undone?TEXT("unchanged; rollback=complete: "):TEXT("partial; rollback=failed: "))+TEXT("explicit continuation requires reachable unconnected exec exits or one valid label:pin");
+            OutError=(FString(RollbackStatus(Undone)) + TEXT(": "))+TEXT("explicit continuation requires reachable unconnected exec exits or one valid label:pin");
             return false;
         }
     }
@@ -1483,7 +1491,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
         {
             const bool Undone=Rollback();
             OutError=FString::Printf(TEXT("%s: requested wire at line %d did not survive the complete edit; inspect conflicting output connections"),
-                Undone?TEXT("unchanged; rollback=complete"):TEXT("partial; rollback=failed"),Requested.Line);
+                RollbackStatus(Undone),Requested.Line);
             return false;
         }
     }
@@ -1588,8 +1596,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
     if (Unmatched.Num() > 0)
     {
         const bool Undone = Rollback();
-        OutError = Undone ? TEXT("unchanged: node-set verification failed; rollback=complete")
-                          : TEXT("partial: node-set verification failed; rollback=failed");
+        OutError = FString(RollbackStatus(Undone)) + TEXT("; node-set verification failed");
         OutReport = TEXT("save=not_requested; attempted read-back is not final state");
         return false;
     }
@@ -1611,8 +1618,8 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
     {
         const FString NodeList = FString::Join(UnreachableCreated, TEXT(", "));
         const bool Undone = Rollback();
-        OutError = FString::Printf(TEXT("%s: newly created execution nodes have no path from recognized entries: %s; rollback=%s"),
-            Undone ? TEXT("unchanged") : TEXT("partial"), *NodeList, Undone ? TEXT("complete") : TEXT("failed"));
+        OutError = FString::Printf(TEXT("%s: newly created execution nodes have no path from recognized entries: %s"),
+            RollbackStatus(Undone), *NodeList);
         OutReport = TEXT("compile=not_run; save=not_requested; connect new execution chains to an entry before applying");
         return false;
     }
