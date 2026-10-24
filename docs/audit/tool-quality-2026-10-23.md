@@ -358,3 +358,9 @@ Run c2ef1f85f0294487b38f0cea19887d79 passed build, test-material-label-promote a
 bffe9b5/5c193aa document both asset parameters, preview compilation and destructive edit scope. Rollback success wording now explicitly covers expression identities only, not links, values, layout or other state. Failure messages direct the caller to inspect rollback evidence before retrying or saving. Success reports bounded checks rather than rendered equivalence. Removed obsolete wrapper commentary and user-facing D-17 references.
 
 7798dadc12dc4f3fa9a87e2727253935 passed build, test-material-blocks and all 125 live help checks. Final failure-wording cleanup compiled in be4dac61b6fb44969dbd071248efb74c. Failure injection and full restoration remain unverified; no broad material behavior certification is claimed.
+
+## Pin-default text review — 2026-10-24
+
+Implemented in `05e9f4c`: documented all five EditTurboMCPPinDefault parameters, exact identity matching, literal formats and empty-value behavior. Compact help retains transaction, dirty-state, schema callback, object-load and explicit compile/save information. Failed read-back no longer claims unchanged/complete restoration merely because UndoTransaction returned success; it reports partial, unconfirmed restoration and asks the caller to inspect before saving or retrying.
+
+Validation: supervised execution `4c8daae69c974351a0bce430a028daa7` passed the stock-engine build and live schema/help inventory for all 125 tools; all 16 protected fixtures restored. This is text/schema coverage, not pin-default behavioral certification. Success/refusal and callback-induced read-back failure/undo paths still need focused behavioral coverage; full restoration is deliberately not claimed.
