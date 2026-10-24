@@ -374,3 +374,9 @@ Execution d1d3700465734138aec566b36a1d63c3 passed build and the 125-tool live he
 ## Local-variable test setup — 2026-10-24
 
 f82bd8f repairs the required FunctionAdd arguments, checks the exact existing function before reuse, and removes unrelated suffixed-graph deletion from recovery. Supervised run d97875583b254f95a8b0953920b5acae passed build and test-local-vars. Coverage remains graph selection, no-candidate responses and invalid-input refusals; no candidate transformation is certified. P0 todo/67f00521.md remains open. Source inspection of stock DoPromoteToVariable2f confirms output promotion creates a setter, supporting the missing-assignment diagnosis.
+
+## Enum creation text — 2026-10-24
+
+56f2d7d documents both parameters on Preview/EditTurboMCPEnumAdd: package-path form, separators, identifier rules, sequential values, display-name defaults and empty-input behavior. Compact help states creation/dirty state, callbacks, absent tool-owned undo and explicit compile/save behavior. Preview no longer guarantees creation. Partial creation is labeled partial, unsupported causal claims are removed, and save guidance uses EditTurboMCPSave. Obsolete wrapper references removed.
+
+Supervised run fca73020a7b84f4084f0c52f04d1cf7c passed build, test-enum-add and the 125-tool live help inventory; 16 fixtures restored. The enum fixture already existed, so the suite exercised collision refusals and invalid-input checks plus existing-file inspection, NOT fresh creation or injected partial failures. Fresh creation, display rejection and malformed package-path behavior still require dedicated coverage; Plan currently validates only leading slash and nonempty asset name for paths. These limits remain open under the overall tool-quality review.
