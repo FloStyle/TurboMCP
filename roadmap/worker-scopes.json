@@ -1500,6 +1500,14 @@
             "Tools/test-trace.py"
           ],
           "new_files": []
+        },
+        "quality-checkout-help": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
+            "Tools/test-tool-text-inventory.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
