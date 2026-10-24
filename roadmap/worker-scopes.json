@@ -1670,6 +1670,14 @@
           "files": [
             "Tools/test-struct.py"
           ]
+        },
+        "quality-struct-fields-text": {
+          "new_files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp"
+          ]
         }
       },
       "preserve_rows": []
