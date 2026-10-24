@@ -224,6 +224,39 @@ namespace
 		return true;
 	}
 
+    bool EntryInputsAreStable(UEdGraph* Graph, const UK2Node_FunctionEntry* Entry)
+    {
+        if (!Entry) return false;
+        TSet<FName> Parameters;
+        TArray<UEdGraphPin*> Pending;
+        for (UEdGraphPin* Pin : Entry->Pins)
+            if (Pin && Pin->Direction == EGPD_Output && IsDataPin(Pin))
+            {
+                Parameters.Add(Pin->PinName);
+                Pending.Add(Pin);
+            }
+        // By-value parameters can still be assigned inside a function or passed to
+        // a reference input. Reject both: an entry-time capture would observe an older value.
+        for (UEdGraphNode* Node : Graph->Nodes)
+            if (const UK2Node_VariableSet* Set = Cast<UK2Node_VariableSet>(Node))
+                if (Parameters.Contains(Set->GetVarName())) return false;
+        TSet<UEdGraphPin*> Visited;
+        while (!Pending.IsEmpty())
+        {
+            UEdGraphPin* Output = Pending.Pop(EAllowShrinking::No);
+            if (Visited.Contains(Output)) continue;
+            Visited.Add(Output);
+            for (UEdGraphPin* Consumer : Output->LinkedTo)
+            {
+                if (!Consumer || Consumer->PinType.bIsReference) return false;
+                if (UK2Node_Knot* Knot = Cast<UK2Node_Knot>(Consumer->GetOwningNode()))
+                    for (UEdGraphPin* Pin : Knot->Pins)
+                        if (Pin && Pin->Direction == EGPD_Output) Pending.Add(Pin);
+            }
+        }
+        return true;
+    }
+
     /** Each output is a separate value; two singly used outputs are not a repeated value. */
     TArray<UEdGraphPin*> RepeatedOutputs(UEdGraphNode* Node)
     {
@@ -411,6 +444,12 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
                 Why = TEXT("this pure calculation has not been reviewed as deterministic");
             }
 
+            if (bSafe && !EntryInputsAreStable(Graph, Entry))
+            {
+                bSafe = false;
+                Why = TEXT("function inputs can be assigned or passed by reference; entry-time capture is not supported");
+            }
+
             if (!OutPlan.bSupportsLocals)
             {
                 bSafe = false;
@@ -468,7 +507,7 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 		{
 			Out += FString::Printf(
 				TEXT("\n    reviewed arithmetic and input-ancestry checks passed. Proposed local name: '%s'; ")
-                TEXT("promotion remains unavailable until assignment and execution placement are implemented."),
+                TEXT("edit revalidates the graph, assigns at function entry, then compiles; unsupported inputs or execution entry shapes are refused."),
 				*Candidate.ProposedName);
 		}
 		else
@@ -479,7 +518,7 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 
 	Out += FString::Printf(
 		TEXT("\n\n%d of %d candidates passed input tracing, not behavioral verification. ")
-		TEXT("EditTurboMCPLocalVars currently refuses promotion: calculated-value assignment is incomplete; no graph changes were made."),
+		TEXT("EditTurboMCPLocalVars requires a clean compile baseline and one connected function-entry successor; any excluded candidate refuses the whole edit. Preview made no graph changes."),
 		Safe, InPlan.Candidates.Num());
 
 	if (Safe == 0)
@@ -648,7 +687,7 @@ namespace
         {
             UEdGraphNode* Source = ExactNode(Graph, Capture.Source);
             UEdGraphPin* Output = ExactPin(Source, Capture.Output, EGPD_Output);
-            if (!Output) return Fail(TEXT("a calculated output disappeared during local registration"));
+            if (!Output || Output->LinkedTo.Num() != Capture.Consumers.Num()) return Fail(TEXT("a calculated output or its consumer set changed during local registration"));
             UK2Node_VariableSet* Setter = NewObject<UK2Node_VariableSet>(Graph, NAME_None, RF_Transactional);
             UK2Node_VariableGet* Getter = NewObject<UK2Node_VariableGet>(Graph, NAME_None, RF_Transactional);
             for (UK2Node_Variable* Variable : { static_cast<UK2Node_Variable*>(Setter), static_cast<UK2Node_Variable*>(Getter) })
@@ -660,8 +699,10 @@ namespace
             }
             Capture.Setter = Setter->NodeGuid; Capture.Getter = Getter->NodeGuid;
             // Preserve all existing coordinates; put the new nodes below the calculation.
-            Setter->NodePosX = Source->NodePosX; Setter->NodePosY = Source->NodePosY + 240;
-            Getter->NodePosX = Source->NodePosX + 240; Getter->NodePosY = Source->NodePosY + 240;
+            Setter->NodePosX = Source->NodePosX;
+            Setter->NodePosY = static_cast<int32>(FMath::Clamp<int64>(static_cast<int64>(Source->NodePosY) + 240, MIN_int32, MAX_int32));
+            Getter->NodePosX = static_cast<int32>(FMath::Clamp<int64>(static_cast<int64>(Source->NodePosX) + 240, MIN_int32, MAX_int32));
+            Getter->NodePosY = Setter->NodePosY;
             UEdGraphPin* ValueIn = ExactPin(Setter, Capture.Variable.VarName, EGPD_Input);
             UEdGraphPin* ValueOut = Getter->GetValuePin();
             UEdGraphPin* ExecIn = ExactPin(Setter, UEdGraphSchema_K2::PN_Execute, EGPD_Input);
@@ -860,16 +901,24 @@ bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
     if (!TestNotNull(TEXT("Result created"), Result)) return false;
     FEdGraphPinType IntType;
     IntType.PinCategory = UEdGraphSchema_K2::PC_Int;
+    UEdGraphPin* Number = Entry->CreateUserDefinedPin(TEXT("Number"), IntType, EGPD_Output, false);
+    UEdGraphPin* Third = Result->CreateUserDefinedPin(TEXT("Third"), IntType, EGPD_Input, false);
     UEdGraphPin* Left = Result->CreateUserDefinedPin(TEXT("Left"), IntType, EGPD_Input, false);
     UEdGraphPin* Right = Result->CreateUserDefinedPin(TEXT("Right"), IntType, EGPD_Input, false);
     UK2Node_CallFunction* Add = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
     Add->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
     Add->CreateNewGuid(); Graph->AddNode(Add, false, false); Add->AllocateDefaultPins();
     Add->NodePosX = 100; Add->NodePosY = 400;
-    Add->FindPinChecked(TEXT("A"))->DefaultValue = TEXT("2");
+    Number->MakeLinkTo(Add->FindPinChecked(TEXT("A")));
     Add->FindPinChecked(TEXT("B"))->DefaultValue = TEXT("3");
     Add->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Left);
-    Add->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Right);
+    UK2Node_CallFunction* Dependent = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transactional);
+    Dependent->SetFromFunction(UKismetMathLibrary::StaticClass()->FindFunctionByName(TEXT("Add_IntInt")));
+    Dependent->CreateNewGuid(); Graph->AddNode(Dependent, false, false); Dependent->AllocateDefaultPins();
+    Dependent->FindPinChecked(TEXT("B"))->DefaultValue = TEXT("4");
+    Add->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Dependent->FindPinChecked(TEXT("A")));
+    Dependent->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Right);
+    Dependent->FindPinChecked(TEXT("ReturnValue"))->MakeLinkTo(Third);
     Entry->FindPinChecked(UEdGraphSchema_K2::PN_Then)->MakeLinkTo(Result->FindPinChecked(UEdGraphSchema_K2::PN_Execute));
     const FGuid AddId = Add->NodeGuid;
     const int32 OriginalCount = Graph->Nodes.Num();
@@ -884,13 +933,19 @@ bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
     {
         UFunction* Function = Blueprint->GeneratedClass ? Blueprint->GeneratedClass->FindFunctionByName(TEXT("ComputeTwice")) : nullptr;
         if (!TestNotNull(TEXT("Compiled function exists"), Function)) return false;
+        for (int32 InputValue : { 2, 7 })
+        {
         FStructOnScope Args(Function);
+        const FIntProperty* Input = FindFProperty<FIntProperty>(Function, TEXT("Number"));
+        if (!TestNotNull(TEXT("Input property exists"), Input)) return false;
+        Input->SetPropertyValue_InContainer(Args.GetStructMemory(), InputValue);
         Blueprint->GeneratedClass->GetDefaultObject()->ProcessEvent(Function, Args.GetStructMemory());
-        for (const TCHAR* Name : { TEXT("Left"), TEXT("Right") })
+        for (const TCHAR* Name : { TEXT("Left"), TEXT("Right"), TEXT("Third") })
         {
             const FIntProperty* Property = FindFProperty<FIntProperty>(Function, Name);
             if (!TestNotNull(TEXT("Result property exists"), Property)) return false;
-            TestEqual(FString::Printf(TEXT("%s retains calculated value"), Name), Property->GetPropertyValue_InContainer(Args.GetStructMemory()), 5);
+            TestEqual(FString::Printf(TEXT("%s retains calculated value"), Name), Property->GetPropertyValue_InContainer(Args.GetStructMemory()), InputValue + (FString(Name) == TEXT("Left") ? 3 : 7));
+        }
         }
         return !HasAnyErrors();
     };
@@ -898,7 +953,7 @@ bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
     FTurboMCPLocalVars::FPlan Plan;
     FString Error;
     if (!TestTrue(TEXT("Production plan"), FTurboMCPLocalVars::Plan(Blueprint->GetPathName(), Graph->GetName(), Plan, Error))) return false;
-    TestEqual(TEXT("One repeated value"), Plan.Candidates.Num(), 1);
+    TestEqual(TEXT("Two dependent repeated values"), Plan.Candidates.Num(), 2);
     const FString Failure = ApplyLocalPlan(Plan, true);
     AddInfo(Failure);
     TestTrue(TEXT("Post-rewire failure reports unverified restoration"), Failure.Contains(TEXT("owned undo applied; restoration is unverified")));
@@ -916,7 +971,7 @@ bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
     AddInfo(Applied);
     TestTrue(TEXT("Promotion succeeds"), Applied.StartsWith(TEXT("changed:")) && Applied.Contains(TEXT("compile=passed")));
     TestFalse(TEXT("Success transaction ended"), GEditor->IsTransactionActive());
-    TestEqual(TEXT("Only setter and getter added"), Graph->Nodes.Num(), OriginalCount + 2);
+    TestEqual(TEXT("Only two setters and two getters added"), Graph->Nodes.Num(), OriginalCount + 4);
     UEdGraphNode* KeptAdd = ExactNode(Graph, AddId);
     if (!TestNotNull(TEXT("Original calculation retained"), KeptAdd)) return false;
     TestEqual(TEXT("Existing X retained"), KeptAdd->NodePosX, 100);
@@ -924,7 +979,7 @@ bool FTurboMCPLocalPromotionTest::RunTest(const FString& Parameters)
     CheckValues();
     const FString Again = FTurboMCPLocalVars::Apply(Plan);
     TestTrue(TEXT("Repeated request is a no-op"), Again.StartsWith(TEXT("unchanged:")));
-    TestEqual(TEXT("Repeated request adds no nodes"), Graph->Nodes.Num(), OriginalCount + 2);
+    TestEqual(TEXT("Repeated request adds no nodes"), Graph->Nodes.Num(), OriginalCount + 4);
     return !HasAnyErrors();
 }
 

@@ -13,7 +13,7 @@
 
 #include "TurboMCPLocalVars.h"
 
-// Both tools use the same candidate analysis; candidate edits are currently refused.
+// Both tools use the same candidate analysis; the edit revalidates live state before mutation.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPLocalVars(
 	const FString& Asset, const FString& GraphName)
 {

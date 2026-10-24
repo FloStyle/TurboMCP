@@ -18,9 +18,9 @@ class UEdGraph;
 
 /**
  * Analyze repeatedly consumed pure-node outputs in function graphs.
- * Input ancestry excludes mutable variable reads and impure sources, but does not
- * prove determinism or safe evaluation timing. Promotion is currently refused:
- * calculated-value assignment and execution placement are not implemented.
+ * Promotion supports reviewed scalar arithmetic with stable input ancestry.
+ * It retains calculations, assigns at function entry and replaces consumer reads.
+ * Unsupported value lifetimes and execution entry shapes are refused.
  */
 class FTurboMCPLocalVars
 {
@@ -81,9 +81,9 @@ public:
 	static bool Plan(const FString& InAsset, const FString& InGraphName,
 		FPlan& OutPlan, FString& OutError);
 
-	/** Lists candidates, exclusions and the current promotion limitation. */
+	/** Lists candidate outputs, exclusions and edit prerequisites. */
 	static FString RenderPreview(const FPlan& InPlan);
 
-	/** Refuses nonempty promotion plans until value-preserving assignment is implemented. */
+	/** Replans against live state, assigns supported values, compiles and verifies links; does not save. */
 	static FString Apply(const FPlan& InPlan);
 };

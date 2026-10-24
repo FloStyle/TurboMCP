@@ -671,7 +671,7 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphDead(const FString& Asset, const FString& GraphName);
 
-	/** Inspect repeated pure-node outputs in a Blueprint function; loads the asset but does not edit, compile or save; candidates are advisory and promotion is currently refused because value assignment is incomplete.
+	/** Inspect repeated pure-node outputs in a Blueprint function; loads the asset but does not edit, compile or save; candidates are advisory; edit requires reviewed scalar arithmetic, stable inputs, a clean compile baseline and one connected execution successor.
      * Pure-node classification is not proof of deterministic behavior or equivalent execution.
      * @param Asset Required Blueprint asset path or unique asset name, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed and empty is refused. Prefer a full path to avoid ambiguity.
      * @param GraphName Function graph name, matched without case sensitivity after trimming whitespace; event graphs are refused. Pass empty to select the first function graph in the Blueprint's stored order; the result names the selected graph. Prefer an explicit name.
@@ -1378,7 +1378,7 @@ public:
 		const FString& GraphName,
 		bool bForce);
 
-	/** Inspect a Blueprint function and refuse candidate promotion without editing; promotion is currently unavailable because the implementation does not assign the calculated value to the new local; does not compile or save.
+	/** Promote repeated reviewed scalar arithmetic values in a Blueprint function: retain calculations, assign locals at function entry and replace consumer reads. Replans live state, compiles and verifies links; does not save. Requires a clean compile baseline and one connected entry successor. Any excluded candidate refuses the whole edit. Failure attempts owned undo but does not claim verified restoration.
      * Pure-node classification is not proof of deterministic behavior or equivalent execution.
      * @param Asset Required Blueprint asset path or unique asset name, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed and empty is refused. Prefer a full path to avoid ambiguity.
      * @param GraphName Function graph name, matched without case sensitivity after trimming whitespace; event graphs are refused. Pass empty to select the first function graph in the Blueprint's stored order; the result names the selected graph. Prefer an explicit name.
