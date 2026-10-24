@@ -1552,6 +1552,14 @@
             "Tools/test-override-add.py"
           ],
           "new_files": []
+        },
+        "quality-override-remove-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp",
+            "Tools/test-override-add.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
