@@ -219,17 +219,23 @@ namespace
 		return true;
 	}
 
-	/** The pins a node's value is read from, i.e. its data output pins. */
-	void OutputPins(UEdGraphNode* InNode, TArray<UEdGraphPin*>& OutPins)
-	{
-		for (UEdGraphPin* Pin : InNode->Pins)
-		{
-			if (Pin != nullptr && Pin->Direction == EGPD_Output && IsDataPin(Pin))
-			{
-				OutPins.Add(Pin);
-			}
-		}
-	}
+    /** Each output is a separate value; two singly used outputs are not a repeated value. */
+    TArray<UEdGraphPin*> RepeatedOutputs(UEdGraphNode* Node)
+    {
+        TArray<UEdGraphPin*> Result;
+        for (UEdGraphPin* Pin : Node->Pins)
+        {
+            if (!Pin || Pin->Direction != EGPD_Output || !IsDataPin(Pin)) continue;
+            TSet<UEdGraphPin*> Consumers;
+            for (UEdGraphPin* Consumer : Pin->LinkedTo)
+            {
+                if (Consumer && Consumer->GetOwningNode()) Consumers.Add(Consumer);
+            }
+            if (Consumers.Num() >= 2) Result.Add(Pin);
+        }
+        return Result;
+    }
+
 }
 
 bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName,
@@ -352,80 +358,65 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
 			continue;
 		}
 
-		TArray<UEdGraphPin*> Outputs;
-		OutputPins(Node, Outputs);
-
-		int32 Consumers = 0;
-		TArray<UEdGraphPin*> ConsumerPins;
-		for (UEdGraphPin* Pin : Outputs)
-		{
-			for (UEdGraphPin* Linked : Pin->LinkedTo)
-			{
-				if (Linked != nullptr && Linked->GetOwningNode() != nullptr)
-				{
-					++Consumers;
-					ConsumerPins.Add(Linked);
-				}
-			}
-		}
-
-		if (Consumers < 2)
-		{
-			// USED MORE THAN ONCE, per the spec. A value read once gains nothing from a local and
-			// costs a node.
-			continue;
-		}
-
-		FCandidate Candidate;
-		Candidate.Key = KeyOf(Node);
-		Candidate.Title = K2->GetNodeTitle(ENodeTitleType::ListView).ToString();
-		Candidate.ClassName = Node->GetClass()->GetName();
-		Candidate.ConsumerCount = Consumers;
-		Candidate.X = Node->NodePosX;
-		Candidate.Y = Node->NodePosY;
-		if (Outputs.Num() > 0 && Outputs[0] != nullptr)
-		{
-			Candidate.TypeText = Outputs[0]->PinType.PinCategory.ToString();
-		}
-		Candidate.ProposedName = FString::Printf(TEXT("Local_%s"), *Candidate.Key);
-
-		// SAFETY, transitively over the node's own inputs.
-		TSet<UEdGraphNode*> Visited;
-		Visited.Add(Node);
-		FString Why;
-		bool bSafe = true;
-		for (UEdGraphPin* Input : Node->Pins)
-		{
-			if (Input == nullptr || Input->Direction != EGPD_Input || !IsDataPin(Input))
-			{
-				continue;
-			}
-			Candidate.FeedsFrom.Add(FString::Printf(TEXT("%s <- %s"),
-				*Input->PinName.ToString(), *DescribeSource(Input, Entry)));
-
-			if (!TracesToInputsOrLiterals(Input, Entry, Visited, Why, 0))
-			{
-				bSafe = false;
-				break;
-			}
-		}
-
-        if (bSafe && !IsReviewedCalculation(Node))
+        for (UEdGraphPin* Output : RepeatedOutputs(Node))
         {
-            bSafe = false;
-            Why = TEXT("this pure calculation has not been reviewed as deterministic");
+            TSet<UEdGraphPin*> Consumers;
+            for (UEdGraphPin* Consumer : Output->LinkedTo)
+            {
+                if (Consumer && Consumer->GetOwningNode()) Consumers.Add(Consumer);
+            }
+
+            FCandidate Candidate;
+            Candidate.Key = KeyOf(Node);
+            Candidate.NodeGuid = Node->NodeGuid;
+            Candidate.OutputPinName = Output->PinName;
+            Candidate.Title = K2->GetNodeTitle(ENodeTitleType::ListView).ToString();
+            Candidate.ClassName = Node->GetClass()->GetName();
+            Candidate.ConsumerCount = Consumers.Num();
+            Candidate.X = Node->NodePosX;
+            Candidate.Y = Node->NodePosY;
+            Candidate.TypeText = Output->PinType.PinCategory.ToString();
+            Candidate.ProposedName = FString::Printf(TEXT("Local_%s_%s"),
+                *Node->NodeGuid.ToString(EGuidFormats::Digits), *Output->PinName.ToString());
+
+            // SAFETY, transitively over the node's own inputs.
+            TSet<UEdGraphNode*> Visited;
+            Visited.Add(Node);
+            FString Why;
+            bool bSafe = true;
+            for (UEdGraphPin* Input : Node->Pins)
+            {
+                if (Input == nullptr || Input->Direction != EGPD_Input || !IsDataPin(Input))
+                {
+                    continue;
+                }
+                Candidate.FeedsFrom.Add(FString::Printf(TEXT("%s <- %s"),
+                    *Input->PinName.ToString(), *DescribeSource(Input, Entry)));
+
+                if (!TracesToInputsOrLiterals(Input, Entry, Visited, Why, 0))
+                {
+                    bSafe = false;
+                    break;
+                }
+            }
+
+            if (bSafe && !IsReviewedCalculation(Node))
+            {
+                bSafe = false;
+                Why = TEXT("this pure calculation has not been reviewed as deterministic");
+            }
+
+            if (!OutPlan.bSupportsLocals)
+            {
+                bSafe = false;
+                Why = OutPlan.NoLocalsReason;
+            }
+
+            Candidate.bSafe = bSafe;
+            Candidate.UnsafeReason = bSafe ? FString() : Why;
+
+            OutPlan.Candidates.Add(MoveTemp(Candidate));
         }
-
-		if (!OutPlan.bSupportsLocals)
-		{
-			bSafe = false;
-			Why = OutPlan.NoLocalsReason;
-		}
-
-		Candidate.bSafe = bSafe;
-		Candidate.UnsafeReason = bSafe ? FString() : Why;
-
-		OutPlan.Candidates.Add(MoveTemp(Candidate));
 	}
 
 	return true;
@@ -435,7 +426,7 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 {
 	FString Out = FString::Printf(TEXT("preview: values to promote in %s : %s"),
 		*InPlan.Asset, *InPlan.GraphName);
-	Out += FString::Printf(TEXT("\n%d node(s), %d pure node(s) whose outputs are read more than once"),
+	Out += FString::Printf(TEXT("\n%d node(s), %d repeatedly consumed output value(s)"),
 		InPlan.NodeCountBefore, InPlan.Candidates.Num());
 
 	if (!InPlan.bSupportsLocals && !InPlan.NoLocalsReason.IsEmpty())
@@ -460,8 +451,8 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 		Out += FString::Printf(TEXT("\n\n%s  %s  (%s)"),
 			Candidate.bSafe ? TEXT("CANDIDATE") : TEXT("EXCLUDED"),
 			*Candidate.Title, *Candidate.ClassName);
-		Out += FString::Printf(TEXT("\n    %s, read %d time(s)"),
-			*Candidate.Key, Candidate.ConsumerCount);
+		Out += FString::Printf(TEXT("\n    %s.%s, connected to %d input pin(s)"),
+			*Candidate.NodeGuid.ToString(EGuidFormats::DigitsWithHyphens), *Candidate.OutputPinName.ToString(), Candidate.ConsumerCount);
 
 		for (const FString& Feed : Candidate.FeedsFrom)
 		{
@@ -471,8 +462,8 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 		if (Candidate.bSafe)
 		{
 			Out += FString::Printf(
-				TEXT("\n    input tracing found no excluded source; this does not prove the calculation ")
-				TEXT("is deterministic. Proposed local name: '%s'; promotion is unavailable."),
+				TEXT("\n    reviewed arithmetic and input-ancestry checks passed. Proposed local name: '%s'; ")
+                TEXT("promotion remains unavailable until assignment and execution placement are implemented."),
 				*Candidate.ProposedName);
 		}
 		else
@@ -496,261 +487,14 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 
 FString FTurboMCPLocalVars::Apply(const FPlan& InPlan)
 {
-    // Until assignment and execution placement are implemented, replacing the calculation
-    // with a getter would return an unassigned local. Refuse before any mutation.
+    // Do not restore the former getter-only rewrite: it never assigned the calculated
+    // value and destroyed the original calculation. The replacement needs explicit
+    // assignment, execution placement and verified failure handling.
     if (!InPlan.Candidates.IsEmpty())
     {
-        return TEXT("unchanged: local-variable promotion is unavailable; the implementation does not assign the calculated value to the local; no graph changes were made; use the Unreal editor to create and assign the local manually; compile=not_run; save=not_requested");
+        return TEXT("unchanged: local-variable promotion is unavailable; calculated-value assignment and execution placement are not implemented; no graph changes were made; use the Unreal editor to create and assign the local manually; compile=not_run; save=not_requested");
     }
-
-	FTurboMCPAssetResolver::FResolved Resolved;
-	const FString ResolveError = FTurboMCPAssetResolver::Resolve(InPlan.Asset, Resolved);
-	if (!ResolveError.IsEmpty())
-	{
-		return ResolveError;
-	}
-
-	UBlueprint* Blueprint = Cast<UBlueprint>(LoadObject<UObject>(nullptr, *Resolved.ObjectPath));
-	if (Blueprint == nullptr)
-	{
-		return FString::Printf(TEXT("error: %s is not a Blueprint."), *Resolved.ObjectPath);
-	}
-
-	UEdGraph* Graph = nullptr;
-	for (UEdGraph* Candidate : Blueprint->FunctionGraphs)
-	{
-		if (Candidate != nullptr && NameMatches(Candidate->GetFName(), InPlan.GraphName))
-		{
-			Graph = Candidate;
-			break;
-		}
-	}
-	if (Graph == nullptr)
-	{
-		return FString::Printf(TEXT("error: function graph '%s' is no longer in %s."),
-			*InPlan.GraphName, *Resolved.ObjectPath);
-	}
-
-	if (!FBlueprintEditorUtils::DoesSupportLocalVariables(Graph))
-	{
-		return FString::Printf(
-			TEXT("unchanged: %s cannot hold local variables, so nothing was promoted."),
-			*Graph->GetName());
-	}
-
-	int32 Promoted = 0;
-	int32 Refused = 0;
-	TArray<FString> Lines;
-
-	for (const FCandidate& Candidate : InPlan.Candidates)
-	{
-		if (!Candidate.bSafe)
-		{
-			// THE EDIT PROMOTES ONLY WHAT THE PREVIEW MARKED SAFE, re-checked here rather than
-			// trusted from the plan, because a plan is made and applied in two calls.
-			++Refused;
-			continue;
-		}
-
-		// The node is found by key again, for the same reason.
-		UEdGraphNode* Node = nullptr;
-		for (UEdGraphNode* Found : Graph->Nodes)
-		{
-			if (Found != nullptr && KeyOf(Found).Equals(Candidate.Key, ESearchCase::IgnoreCase))
-			{
-				Node = Found;
-				break;
-			}
-		}
-		if (Node == nullptr)
-		{
-			++Refused;
-			Lines.Add(FString::Printf(TEXT("  %s: no longer in the graph, skipped"),
-				*Candidate.Key));
-			continue;
-		}
-
-		TArray<UEdGraphPin*> Outputs;
-		OutputPins(Node, Outputs);
-		if (Outputs.Num() == 0)
-		{
-			++Refused;
-			Lines.Add(FString::Printf(TEXT("  %s: it has no data output pin"), *Candidate.Key));
-			continue;
-		}
-
-		// The variable's type comes from the pin, with the const, reference AND WEAK POINTER
-		// qualifiers cleared, which is what the editor's own promote does. `bIsWeakPointer` was
-		// MISSING here and is a defect the source audit found: the engine clears all three
-		// (`BlueprintEditor.cpp:4885`), so a weak-pointer output would have produced a local of the
-		// wrong type.
-		FEdGraphPinType NewType = Outputs[0]->PinType;
-		NewType.bIsConst = false;
-		NewType.bIsReference = false;
-		NewType.bIsWeakPointer = false;
-		const FString DefaultValue = Outputs[0]->DefaultValue;
-		const double NodeX = Node->NodePosX;
-		const double NodeY = Node->NodePosY;
-
-		// `FindUniqueKismetName` already answers an `FName`, so no dereference is needed here.
-		const FName VarName = FBlueprintEditorUtils::FindUniqueKismetName(
-			Blueprint, *Candidate.ProposedName);
-
-		if (!FBlueprintEditorUtils::AddLocalVariable(Blueprint, Graph, VarName, NewType,
-				DefaultValue))
-		{
-			++Refused;
-			Lines.Add(FString::Printf(TEXT("  %s: the engine refused to add local '%s'"),
-				*Candidate.Key, *VarName.ToString()));
-			continue;
-		}
-
-		// THE NODE AND ITS PINS ARE RE-RESOLVED, BECAUSE ADDING THE VARIABLE COMPILED.
-		//
-		// FOUND BY SOURCE AUDIT, NOT BY A RUN. `FBlueprintEditorUtils::AddLocalVariable` ends with
-		// `MarkBlueprintAsStructurallyModified` (`BlueprintEditorUtils.cpp:5529`), which calls
-		// `FBlueprintCompilationManager::CompileSynchronously` and then `Blueprint->BroadcastChanged()`.
-		// A synchronous compile can RECONSTRUCT nodes, so `Node` and every pointer in `Outputs` may
-		// be freed by the call above — and they were used afterwards to read a position, to break
-		// links and to destroy the original.
-		//
-		// The engine's own promote guards against exactly this. `BlueprintEditor.cpp:4982` carries
-		// the comment "the owning node may have been reconstructed as a result of adding a new
-		// variable above, so ensure the pin reference is up-to-date", and re-fetches. That is the
-		// strongest available evidence, from the code that already solved it.
-		//
-		// The node is found again BY KEY rather than by pointer, and the output pins are re-derived
-		// from it, so nothing below can touch a freed object.
-		Node = nullptr;
-		for (UEdGraphNode* Found : Graph->Nodes)
-		{
-			if (Found != nullptr && KeyOf(Found).Equals(Candidate.Key, ESearchCase::IgnoreCase))
-			{
-				Node = Found;
-				break;
-			}
-		}
-		if (Node == nullptr)
-		{
-			// The value is gone after the compile. Reported, and the local variable that was just
-			// added is LEFT in place rather than removed: it is a harmless unused local, and
-			// removing it would be a second write to undo the first.
-			++Refused;
-			Lines.Add(FString::Printf(
-				TEXT("  %s: it no longer exists after the compile that adding local '%s' caused, so ")
-				TEXT("nothing was rewired and no node was removed. The local '%s' is unused."),
-				*Candidate.Key, *VarName.ToString(), *VarName.ToString()));
-			continue;
-		}
-		Outputs.Reset();
-		OutputPins(Node, Outputs);
-		if (Outputs.Num() == 0)
-		{
-			++Refused;
-			Lines.Add(FString::Printf(
-				TEXT("  %s: it has no data output pin after the compile; local '%s' is unused"),
-				*Candidate.Key, *VarName.ToString()));
-			continue;
-		}
-
-		// A GETTER IS MADE, because a local variable is read through one. It is placed where the
-		// value was computed, so the promoted graph reads the same way it did.
-		UK2Node_VariableGet* Getter = NewObject<UK2Node_VariableGet>(Graph);
-		Getter->CreateNewGuid();
-		Getter->VariableReference.SetLocalMember(VarName, Graph->GetName(),
-			FBlueprintEditorUtils::FindLocalVariableGuidByName(Blueprint, Graph, VarName));
-		// THE GETTER GOES WHERE THE VALUE WAS, using the position captured BEFORE the compile rather
-		// than read from the re-resolved node. Both would usually agree; the captured pair cannot be
-		// a stale read, and the whole point of capturing it was to have a value that survived.
-		Getter->NodePosX = static_cast<int32>(NodeX);
-		Getter->NodePosY = static_cast<int32>(NodeY);
-		Graph->Modify();
-		Graph->AddNode(Getter, /*bUserAction=*/true, /*bSelectNewNode=*/false);
-
-		// THE PINS ARE ALLOCATED EXPLICITLY, AND THIS WAS A SEVERE DEFECT BEFORE IT WAS HERE.
-		//
-		// FOUND BY SOURCE AUDIT, NOT BY A RUN: `UK2Node_VariableGet::AllocateDefaultPins` is guard-
-		// ed on `GetVarName() != NAME_None` and is what creates the value pin, while `GetValuePin`
-		// is `FindPin(GetVarName())`. With no allocation it returns NULL — and the rewire below was
-		// written to SKIP ITSELF when that happened, `continue` past it, DESTROY THE ORIGINAL NODE
-		// ANYWAY, and report `changed:`. That is the worst possible outcome: the graph is severed
-		// and the tool says it succeeded.
-		//
-		// This project already MEASURED the identical trap in the acceptance-asset commandlet, where
-		// `UK2Node_Knot::GetOutputPin` crashed on `Pins[1]` of an empty array. There it crashed; here
-		// the null guard turned the same omission into silence.
-		Getter->AllocateDefaultPins();
-		UEdGraphPin* GetterValue = Getter->GetValuePin();
-		if (GetterValue == nullptr)
-		{
-			// REFUSED RATHER THAN HALF-DONE. The getter is removed again and the original is left
-			// COMPLETELY ALONE, because continuing would destroy it with nothing to replace it.
-			Getter->DestroyNode();
-			++Refused;
-			Lines.Add(FString::Printf(
-				TEXT("  %s: the getter for local '%s' produced no value pin, so NOTHING was ")
-				TEXT("changed for this value and the original node is untouched"),
-				*Candidate.Key, *VarName.ToString()));
-			continue;
-		}
-
-		// THE CONSUMERS ARE RE-POINTED AT THE GETTER, pin by pin.
-		int32 Rewired = 0;
-		for (UEdGraphPin* Output : Outputs)
-		{
-			// A COPY of the array, because `BreakLinkTo` mutates `LinkedTo` while it is walked.
-			TArray<UEdGraphPin*> Consumers = Output->LinkedTo;
-			for (UEdGraphPin* Consumer : Consumers)
-			{
-				if (Consumer == nullptr)
-				{
-					continue;
-				}
-				Output->BreakLinkTo(Consumer);
-				GetterValue->MakeLinkTo(Consumer);
-				++Rewired;
-			}
-		}
-
-		// THE ORIGINAL IS REMOVED LAST, once nothing points at it. Removing it first would break the
-		// links the rewire still needs.
-		Node->DestroyNode();
-		Graph->MarkPackageDirty();
-
-		++Promoted;
-		Lines.Add(FString::Printf(
-			TEXT("  %s -> local '%s' (%s), %d consumer(s) re-pointed"),
-			*Candidate.Key, *VarName.ToString(), *Candidate.Title, Rewired));
-	}
-
-	if (Promoted == 0)
-	{
-		return FString::Printf(
-			TEXT("unchanged: no value in %s : %s was promoted. %d candidate(s) were refused, ")
-			TEXT("either because the preview marked them unsafe or because they no longer ")
-			TEXT("resolve."),
-			*Resolved.ObjectPath, *Graph->GetName(), Refused);
-	}
-
-	FString Out = FString::Printf(TEXT("changed: promoted %d value(s) to local variables in %s"),
-		Promoted, *Graph->GetName());
-	for (const FString& Line : Lines)
-	{
-		Out += TEXT("\n") + Line;
-	}
-	Out += FString::Printf(TEXT("\nnodes: %d -> %d"),
-		InPlan.NodeCountBefore, Graph->Nodes.Num());
-
-	if (Refused > 0)
-	{
-		// Reported rather than hidden: a caller who asked for four and got two must know.
-		Out += FString::Printf(
-			TEXT("\n%d candidate(s) were NOT promoted. An unsafe value is never promoted: ")
-			TEXT("capturing it once is not the same as computing it twice."), Refused);
-	}
-
-	Out += TEXT("\n; the change is in memory and NOT saved. Call E-SAVE.");
-	return Out;
+    return TEXT("unchanged: no value was promoted; the preview plan contains no repeatedly consumed output values; no graph changes were made; compile=not_run; save=not_requested");
 }
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
@@ -834,6 +578,23 @@ bool FTurboMCPLocalAncestryTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Reference parameter reason reported"), Why.Contains(TEXT("reference parameter")));
     Parameter->PinType.bIsReference = false;
     TestTrue(TEXT("Value input ancestry accepted"), TracesToInputsOrLiterals(Right->GetInputPin(), Entry, Path, Why, 0));
+
+    UK2Node_CallFunction* Multi = NewObject<UK2Node_CallFunction>(Graph, NAME_None, RF_Transient);
+    UEdGraphPin* First = Multi->CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Int, TEXT("First"));
+    UEdGraphPin* Second = Multi->CreatePin(EGPD_Output, UEdGraphSchema_K2::PC_Int, TEXT("Second"));
+    First->MakeLinkTo(Add->FindPinChecked(TEXT("A")));
+    Second->MakeLinkTo(Add->FindPinChecked(TEXT("B")));
+    TestEqual(TEXT("Two different singly used outputs are not repeated values"), RepeatedOutputs(Multi).Num(), 0);
+    First->LinkedTo.Add(Add->FindPinChecked(TEXT("A")));
+    TestEqual(TEXT("Duplicate link entries do not create extra consumers"), RepeatedOutputs(Multi).Num(), 0);
+    First->LinkedTo.RemoveAt(1);
+    UEdGraphPin* OtherConsumer = Multi->CreatePin(EGPD_Input, UEdGraphSchema_K2::PC_Int, TEXT("OtherConsumer"));
+    First->MakeLinkTo(OtherConsumer);
+    const TArray<UEdGraphPin*> Repeated = RepeatedOutputs(Multi);
+    TestEqual(TEXT("Only the repeatedly used output is selected"), Repeated.Num(), 1);
+    if (Repeated.Num() == 1) TestTrue(TEXT("Selected value retains its pin identity"), Repeated[0] == First);
+    First->BreakAllPinLinks();
+    Second->BreakAllPinLinks();
 
     FTurboMCPLocalVars::FPlan Reused;
     Reused.Candidates.AddDefaulted();

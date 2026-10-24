@@ -10,6 +10,8 @@
 #include "Containers/Array.h"
 #include "Containers/UnrealString.h"
 #include "CoreTypes.h"
+#include "Misc/Guid.h"
+#include "UObject/NameTypes.h"
 
 class UBlueprint;
 class UEdGraph;
@@ -26,8 +28,12 @@ public:
 	/** One candidate value. */
 	struct FCandidate
 	{
-		/** The key of the pure node that computes it. */
+		/** Short display key; never sufficient to identify a node for mutation. */
 		FString Key;
+
+        /** Full node and output identity: different outputs must never share a local. */
+        FGuid NodeGuid;
+        FName OutputPinName;
 
 		/** The node's title, so a reader knows what the value is. */
 		FString Title;
@@ -35,10 +41,10 @@ public:
 		/** The node's class. */
 		FString ClassName;
 
-		/** How many other nodes read the value. */
+		/** How many distinct input pins consume this output value. */
 		int32 ConsumerCount = 0;
 
-		/** True when input ancestry passes the exclusions; not proof of semantic safety. */
+		/** True when reviewed arithmetic and input-ancestry checks pass; execution placement is still required. */
 		bool bSafe = false;
 
 		/** Why it is unsafe, when it is. Empty when safe. */
