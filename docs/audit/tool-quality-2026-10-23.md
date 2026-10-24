@@ -524,3 +524,7 @@ Run 64c195a865424ce889e31f3b8a465869 failed only the newly added metadata assert
 6a536a3 resets reused plans, limits cycle detection to the active ancestry path (shared upstream nodes are not cycles), and rejects null linked pins instead of silently ignoring them. Internal documentation no longer claims input ancestry proves determinism or that promotion is implemented. The value-loss safeguard remains enabled.
 
 Supervised build 66327646f8bb4bd68c355b4ed1d543b6 passed. Shared-ancestry, actual-cycle and reused-plan behavioral regressions still need native fixtures. Full promotion remains open under 67f00521: assignment, execution placement, deterministic eligibility, multiple-output identity and failure restoration are not complete.
+
+## Local promotion analysis native evidence — 2026-10-24
+
+0ce615c adds TurboMCP.LocalVars.Ancestry using transient graph nodes and the production ancestry helper. Supervised run 2860cbf687994b7199becb1931da9076 passed build and native execution: shared upstream ancestry accepted, true cycle refused, missing linked pin refused, traversal state cleared and reused plan fields reset. This supersedes the untested flag for these specific planner cases only. It does not test assignment, execution placement or completed promotion; 67f00521 remains open and guarded.
