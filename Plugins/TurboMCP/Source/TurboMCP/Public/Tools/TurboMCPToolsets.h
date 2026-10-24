@@ -1710,13 +1710,11 @@ public:
 	static FString EditTurboMCPMaterialBlocks(
 		const FString& Asset);
 
-	/**
-	 * Set texture overrides on a material instance.
-	 *
-	 * Each entry is `Parameter = /Asset/Texture.Asset`. The parameter must be declared by the instance's
-	 * parent chain, and the texture must be compatible with the parameter's sampler type. The result is
-	 * re-read through R-MAT-INST-LOAD so it reports what the instance now stores.
-	 */
+	/** Set texture overrides on a Material Instance Constant; loads the instance and textures and runs PostEditChange, which may update rendering resources; no tool-owned undo transaction or save is performed.
+     * Only texture parameters are supported. Validates all requested overrides before writing and checks effective texture values afterward; failures after writing may leave partial changes with no automatic rollback. Sampler checks cover color versus linear sRGB compatibility, not all texture constraints or rendered correctness.
+     * @param Asset Required Material Instance Constant name or package/object path, for example /Game/Materials/MI_Item; empty, ambiguous or non-instance targets are refused. Prefer a full path.
+     * @param Overrides Required array of Parameter = TextureAsset entries, for example ["BaseColor = /Game/Textures/T_Item"]. Names match without case sensitivity and surrounding whitespace is trimmed. Each name must identify one declared texture parameter and may appear once per call; ambiguous layer/blend names are refused. Empty arrays, empty entries and unresolved textures are refused. Empty texture values do not clear overrides; scalar, vector and static-switch edits are not supported.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPMaterialInstanceSet(
 		const FString& Asset,

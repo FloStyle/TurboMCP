@@ -125,7 +125,7 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 	if (Interface == nullptr)
 	{
 		OutError = FString::Printf(TEXT("error: %s is a %s, not a material interface. This tool reads a material ")
-			TEXT("INSTANCE; read a Material with R-MAT-LOAD."), *Resolved.ObjectPath, *Loaded->GetClass()->GetName());
+			TEXT("INSTANCE; read a Material with ReadTurboMCPMaterialLoad."), *Resolved.ObjectPath, *Loaded->GetClass()->GetName());
 		return false;
 	}
 
@@ -138,7 +138,7 @@ bool FTurboMCPMaterialInstance::Read(const FString& InAsset, FResult& OutResult,
 		// the other direction for the same reason.
 		OutError = FString::Printf(TEXT("error: %s is a %s, which is NOT a material instance. Every parameter of a ")
 			TEXT("base material is editable on the material itself, so the inherited-versus-overridden distinction ")
-			TEXT("this tool exists to make does not apply. Use R-MAT-LOAD for the graph."),
+			TEXT("this tool exists to make does not apply. Use ReadTurboMCPMaterialLoad for the graph."),
 			*Resolved.ObjectPath, *Loaded->GetClass()->GetName());
 		return false;
 	}
@@ -328,7 +328,7 @@ FString FTurboMCPMaterialInstance::Render(const FResult& InResult)
 	}
 
 	Out += FString::Printf(TEXT("\n\n; INHERITED - declared by a parent, NOT overridden here (%d)"), InResult.Inherited.Num());
-	Out += TEXT("\n; THE VALUE SHOWN IS THE PARENT, AND CHANGING IT HERE IS NOT POSSIBLE. To change one of");
+	Out += TEXT("\n; Values below are inherited from a parent. To change one of");
 	Out += TEXT("\n; these, edit the asset named in declared at, or set an override on this instance.");
 	if (InResult.Inherited.Num() == 0)
 	{

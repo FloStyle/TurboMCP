@@ -121,6 +121,7 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(const FString& Ass
 	DeclaredNames.Sort();
 
 	TArray<FTextureOverride> Planned;
+	TSet<FName> RequestedNames;
 	for (const FString& Entry : Overrides)
 	{
 		FString Name;
@@ -131,13 +132,17 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(const FString& Ass
 		}
 		Name = Name.TrimStartAndEnd();
 		TextureAsset = TextureAsset.TrimStartAndEnd();
+        if (RequestedNames.Contains(FName(*Name)))
+            return FString::Printf(TEXT("error: texture parameter '%s' is requested more than once; send one value per parameter; nothing was written."), *Name);
+        RequestedNames.Add(FName(*Name));
 		const TPair<FMaterialParameterInfo, FMaterialParameterMetadata>* DeclaredPair = nullptr;
 		for (const TPair<FMaterialParameterInfo, FMaterialParameterMetadata>& Pair : Declared)
 		{
 			if (Pair.Key.Name.ToString().Equals(Name, ESearchCase::IgnoreCase))
 			{
-				DeclaredPair = &Pair;
-				break;
+                if (DeclaredPair != nullptr)
+                    return FString::Printf(TEXT("error: texture parameter '%s' is ambiguous across layers or blends; this tool accepts only unique parameter names; nothing was written."), *Name);
+                DeclaredPair = &Pair;
 			}
 		}
 		if (DeclaredPair == nullptr)
@@ -185,13 +190,19 @@ FString UTurboMCPEditToolset::EditTurboMCPMaterialInstanceSet(const FString& Ass
 		Instance->SetTextureParameterValueEditorOnly(Override.Parameter, Override.Texture);
 	}
 	Instance->PostEditChange();
+    for (const FTextureOverride& Override : Planned)
+    {
+        UTexture* Actual = nullptr;
+        if (!Instance->GetTextureParameterValue(Override.Parameter, Actual) || Actual != Override.Texture)
+            return FString::Printf(TEXT("partial: texture override '%s' did not read back as requested; changes may remain; no rollback was attempted; inspect the instance before saving or retrying."), *Override.Name);
+    }
 
 	FTurboMCPMaterialInstance::FResult Result;
 	FString ReadError;
 	if (!FTurboMCPMaterialInstance::Read(Asset, Result, ReadError))
 	{
-		return FTurboMCPToolError::AsError(ReadError);
+		return FString::Printf(TEXT("partial: overrides were written but the instance report failed: %s; inspect before saving or retrying; no rollback was attempted."), *ReadError);
 	}
-	return FString::Printf(TEXT("changed: %d texture override(s)\n%s"), Planned.Num(),
+	return FString::Printf(TEXT("changed: %d texture override(s); effective texture values verified; rendered appearance not verified; save=not_requested\n%s"), Planned.Num(),
 		*FTurboMCPMaterialInstance::Render(Result));
 }
