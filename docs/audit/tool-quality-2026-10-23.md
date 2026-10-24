@@ -266,3 +266,9 @@ Supervised run e30d36767c1d42e1b6d0c959ea798d76 passed stock build, all-125 help
 Implemented 755b7bc. Added both checkout Assets parameter descriptions. Preview help now names forced provider-state refresh and possible server contact, without promising later checkout success. Edit help names source-control/file-state changes and lack of rollback across partial successes. Removed wrapper claims that separate Preview/Edit calls cannot differ.
 
 Supervised run a1ccec98761748d6a422b0258450c499 passed stock build and all-125 live help inventory, including essential checkout warnings; 16 fixture files restored. Missing parameter descriptions now 172. No live depot checkout was executed. Remaining source-control output debt: renderer still contains obsolete aliases, overly broad no-file-write/no-provider-contact statements, and assumes UsesCheckout=false proves a harmless no-op. Those implementation/output paths remain open for the next batch; this entry closes only help coverage.
+
+## Checkout result wording
+
+Implemented 7817a96. Source-control responses distinguish pre-operation state from checkout results and direct callers to refresh afterward. Removed claims that UsesCheckout=false proves a harmless no-op, that provider checks never contacted the provider, and that checkout cannot change files. Per-file results retain provider messages and explain lack of rollback for earlier successes. Updated legacy VCS assertions to the corrected wording without changing provider-result expectations.
+
+Supervised run da7d92160df3466d990ed03d3026016c passed stock build and six empty-input/missing-asset status/refusal checks across Read, Preview and Edit. All 16 fixtures restored. No valid-asset checkout was attempted. Live provider execution, partial successes and the revised legacy multi-provider suite remain unverified; historical comments and less prominent output prose still need review.
