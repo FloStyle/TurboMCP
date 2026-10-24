@@ -1491,3 +1491,19 @@ reporting also needs review; this repair does not certify that separate logic.
 ### Approved asset disk-state correction — 2026-10-24
 
 AssetDescribe currently derives disk presence from dirty state, falsely reporting clean unsaved assets as on disk. Query package existence independently; retain unknown dirty state when unavailable. Verify fresh unsaved enum dirty and clean states using the disposable native fixture. Update the stale enum generated-class absence assertion.
+
+## Asset disk state corrected — 2026-10-24
+
+3297fde measures package existence independently of dirty state. AssetDescribe
+no longer claims a clean unsaved asset is on disk, or substitutes a dirty-state
+description for package existence. Unknown package state remains explicit.
+
+Supervised b0816ff1b2a94e489cf28f3387d66154 passed build, unloaded Blueprint
+metadata checks and native enum creation checks including dirty-unsaved and
+clean-unsaved descriptions (both correctly on disk: no). The asset suite only
+failed two stale DirtyList wording expectations. 4f4c0f5 preserves refusal and
+distinct-reason requirements while checking current precise wording.
+Supervised 8ef41a5112d548dc8811420d3e71f50c then passed build and test-asset-tools.
+
+The stale generated-class absence assertion is now corrected. These focused
+cases pass; broad 125-tool acceptance and live vision investigation remain open.

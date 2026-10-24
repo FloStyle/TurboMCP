@@ -768,3 +768,19 @@ Follow-up: test-asset-tools still expects generated class none for a registry-on
 enum. Update this stale absence assertion to check truthful metadata availability;
 the complete asset suite is not claimed passed. Loaded unsaved asset disk-state
 reporting also needs review; this repair does not certify that separate logic.
+
+## Asset disk state corrected — 2026-10-24
+
+3297fde measures package existence independently of dirty state. AssetDescribe
+no longer claims a clean unsaved asset is on disk, or substitutes a dirty-state
+description for package existence. Unknown package state remains explicit.
+
+Supervised b0816ff1b2a94e489cf28f3387d66154 passed build, unloaded Blueprint
+metadata checks and native enum creation checks including dirty-unsaved and
+clean-unsaved descriptions (both correctly on disk: no). The asset suite only
+failed two stale DirtyList wording expectations. 4f4c0f5 preserves refusal and
+distinct-reason requirements while checking current precise wording.
+Supervised 8ef41a5112d548dc8811420d3e71f50c then passed build and test-asset-tools.
+
+The stale generated-class absence assertion is now corrected. These focused
+cases pass; broad 125-tool acceptance and live vision investigation remain open.
