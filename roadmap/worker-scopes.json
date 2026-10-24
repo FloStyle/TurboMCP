@@ -1403,7 +1403,9 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeSync.cpp",
             "Tools/test-widget-tree-sync.py",
-            "Tools/test-tool-text-inventory.py"
+            "Tools/test-tool-text-inventory.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTree.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRoundtripTest.cpp"
           ],
           "new_files": []
         }
