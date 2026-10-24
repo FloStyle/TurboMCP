@@ -1002,7 +1002,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 			FResult Without = Read(InBlueprint, Lower);
 
 			Result.Reductions.Add(FString::Printf(
-				TEXT("graph bodies were dropped to fit the %d character budget. ")
+				TEXT("graph bodies were dropped to reduce output toward the %d character budget. ")
 				TEXT("Use ReadTurboMCPGraphLoad with one graph name to read a body, ")
 				TEXT("or raise the budget."),
 				InRequest.TokenBudgetChars));
@@ -1010,7 +1010,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 			if (Without.Text.Len() <= InRequest.TokenBudgetChars)
 			{
 				Result.Text = Without.Text;
-				Result.DetailUsed = EDetail::Signatures;
+				Result.DetailUsed = Without.DetailUsed;
 			}
 			else
 			{
@@ -1037,7 +1037,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 			Result.Text = Minimal.Text;
 			Result.DetailUsed = EDetail::Manifest;
 			Result.Reductions.Add(FString::Printf(
-				TEXT("everything above the manifest was dropped to fit the ")
+				TEXT("everything above the manifest was dropped to reduce output toward the ")
 				TEXT("%d character budget (the full read was %d characters)."),
 				InRequest.TokenBudgetChars, OriginalLength));
 		}
@@ -1064,7 +1064,7 @@ FTurboMCPBlueprintRead::FResult FTurboMCPBlueprintRead::Read(
 	{
 		// `03_TOOLS.md`: end with a block that lists what was reduced and the exact
 		// call that gets the rest.
-		Result.Text += FString::Printf(TEXT("\n\n; reduced to detail %s to fit the budget:"),
+		Result.Text += FString::Printf(TEXT("\n\n; character-budget notes (detail used: %s):"),
 			Result.DetailUsed == EDetail::Full ? TEXT("full")
 				: Result.DetailUsed == EDetail::Bodies ? TEXT("bodies")
 				: Result.DetailUsed == EDetail::Signatures ? TEXT("signatures")

@@ -251,36 +251,13 @@ public:
         int32 Offset = 0, int32 MaxChars = 24000, const FString& Revision = TEXT(""), const FString& EntryFilter = TEXT(""));
 
 	/**
-	 * Read whole Blueprints: the main Read tool.
-	 *
-	 * One call gives everything needed to plan a change. Pass one or more assets
-	 * separated by commas or pipes, in any path form.
-	 *
-	 * Detail levels, each a superset of the one below:
-	 *
-	 * - `manifest`, the default: asset path, class, parent, interfaces, counts, and
-	 *   the names of every graph, variable and component.
-	 * - `signatures`: the manifest, plus every variable with its type, default,
-	 *   category and flags; every function and event with its full signature;
-	 *   components with their classes; and the relation layer.
-	 * - `bodies`: the signatures, plus every graph body in the graph text format.
-	 * - `full`: the bodies, plus the editing details.
-	 *
-	 * The relation layer is where bugs become visible without reading a body: which
-	 * graph calls which function, which graphs read and write each variable,
-	 * functions nothing calls, and events that are bound. A variable nothing touches
-	 * is called out, because that is obvious here and invisible in a body.
-	 *
-	 * The graph filter is a list of name fragments; a graph matches when its name
-	 * contains one, case insensitively. A filter that matches nothing is refused and
-	 * the real graph names are listed, rather than returning an empty read.
-	 *
-	 * The token budget is a number of characters. When the read would pass it, whole
-	 * sections are dropped — never a line cut in half — and the result ends by
-	 * naming what was reduced and the call that gets the rest.
-	 *
-	 * Format `json` is asked for by the spec but not implemented, and is refused by
-	 * name rather than returning graph text a caller would parse as JSON.
+	 * Inspect Blueprint structure and selected graph content; loads assets without requesting edits, compile or save.
+	 * This is not a complete export or proof of runtime behavior. Relation analysis is static; omitted content and budget reductions are reported. Widget details are included only for unfiltered text reads above manifest detail.
+	 * @param Assets Required comma- or pipe-separated list of 1..8 Blueprint paths or unique short names, e.g. /Game/Tests/BP_NodeTest. Empty input is refused. Per-asset failures do not discard other results.
+	 * @param Detail Required string: manifest, signatures, bodies or full (case-insensitive). Empty uses manifest. Higher levels add signatures/relations, graph bodies, then editing details; text output may fall back to lower detail to reduce size.
+	 * @param GraphFilter Required comma- or pipe-separated graph-name fragments. Empty selects all local graphs; otherwise any case-insensitive substring match is included. No match produces a per-asset refusal listing graph names. This does not filter all asset metadata.
+	 * @param Format Required string: read or json (case-insensitive); empty uses read. JSON is embedded per asset in a text response with headings/status, not returned as one standalone JSON document. Both formats support all detail levels.
+	 * @param TokenBudget Required string of positive decimal digits, up to 2147483647; empty uses 60000. Despite the name, this is a per-asset character budget, not tokens or a hard response limit. Text drops detail but retains an oversized minimum manifest with a warning; headings and notes add overhead. JSON refuses an oversized document. Use smaller graph scopes or ReadTurboMCPGraphLoad for bounded graph reads.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString ReadTurboMCPBlueprintLoad(

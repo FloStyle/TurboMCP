@@ -77,13 +77,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 			*Detail, *FTurboMCPBlueprintRead::DetailNames());
 	}
 
-	// JSON output. The accepted format names are validated before anything is loaded, so a
-	// typo costs nothing.
-	//
-	// `json` is implemented for `manifest` only, and every other level is REFUSED BY NAME
-	// with a machine-readable error object rather than answered with a partial document. A
-	// caller that asked for signatures and got a manifest-shaped document would read
-	// fields that are not there and conclude the Blueprint has no functions.
+	// Validate the requested format before loading assets. JSON sections retain the text envelope.
 	const bool bJson = WantsJson(Format);
 	if (!Format.TrimStartAndEnd().IsEmpty() && !bJson
 		&& Format.TrimStartAndEnd().ToLower() != TEXT("read"))
@@ -218,7 +212,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 		if (Read.bReduced)
 		{
 			Result += FString::Printf(
-				TEXT("\n; this asset was reduced to detail %s to fit the budget"),
+				TEXT("\n; character-budget handling used detail %s; see budget notes above"),
 				Read.DetailUsed == FTurboMCPBlueprintRead::EDetail::Full ? TEXT("full")
 					: Read.DetailUsed == FTurboMCPBlueprintRead::EDetail::Bodies ? TEXT("bodies")
 					: Read.DetailUsed == FTurboMCPBlueprintRead::EDetail::Signatures ? TEXT("signatures")
@@ -232,7 +226,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 	// wants a status line first, and a Read status says what was read and how big
 	// it is. It is PREPENDED to the body built above, not assigned over it.
 	const FString Status = FString::Printf(
-		TEXT("read: %d of %d asset(s), detail %s, %d character(s)"),
+		TEXT("read: %d of %d asset(s), requested detail %s, body %d character(s)"),
 		ReadCount, Parts.Num(),
 		DetailLevel == FTurboMCPBlueprintRead::EDetail::Full ? TEXT("full")
 			: DetailLevel == FTurboMCPBlueprintRead::EDetail::Bodies ? TEXT("bodies")
