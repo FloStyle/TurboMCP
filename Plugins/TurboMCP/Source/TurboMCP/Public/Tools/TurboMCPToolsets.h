@@ -1078,18 +1078,10 @@ public:
 		const FString& Text);
 
 	/**
-	 * Lay out a material, one comment box per block, and change nothing.
-	 *
-	 * Use this before `E-MAT-TIDY` to see what would move, which blocks would be boxed, and what the
-	 * tool refuses. It reads the material, plans the columns and names every expression whose position
-	 * would change. It writes nothing, and it does not claim the compiled result is unchanged - that
-	 * claim is made by the edit, which measures it.
-	 *
-	 * A MATERIAL EXPRESSION STORES NO SIZE AT ALL, so every expression is planned at a documented
-	 * fallback size and the positions are RELATIVE. The answer says so, because under-reporting the
-	 * space a layout needs is acceptable and inventing a measurement is not.
-	 *
-	 * Pass anything in `force` to plan even when the material is already as this pass would leave it.
+	 * Plan material positions and comment boxes; loads the asset and recompiles materials to collect baseline errors, may run editor callbacks, but does not apply layout or save.
+	 * Uses estimated expression sizes. Matching expression identities and compile errors do not prove identical rendered output.
+	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; name their parent explicitly.
+	 * @param Force Optional string, default empty: skip an already matching layout. Any nonempty trimmed value forces the pass, including false or 0; use force to request it explicitly.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPMaterialTidy(
@@ -1808,19 +1800,10 @@ public:
 		const FString& Text);
 
 	/**
-	 * Lay out a material, one comment box per block, and PROVE it changed nothing but geometry.
-	 *
-	 * "Same compiled result" is the requirement and it is MEASURED. A layout moves expressions and adds
-	 * boxes, so it cannot legitimately change what the material computes; if it does, the edit is ROLLED
-	 * BACK and reported as a failure with the difference named, never as a success with a note.
-	 *
-	 * Three statements are made afterwards and the answer says which is which: the SET OF EXPRESSIONS is
-	 * identical, which a layout cannot change and which is what the compiled result depends on; the
-	 * engine reports no NEW error, so a material that already had one does not make this pass fail; and
-	 * the engine's own StateId is printed, REPORTED rather than asserted because it can change for
-	 * reasons a layout does not control.
-	 *
-	 * The whole layout is ONE TRANSACTION, so it is a single undo and a rollback is exact.
+	 * Move material expressions and write comment boxes in an undo transaction; recompiles before and after layout and runs editor callbacks, but does not save; failure cleanup is attempted, not certified restoration.
+	 * Uses estimated expression sizes. Matching expression identities and compile errors do not prove identical rendered output.
+	 * @param Asset Required material name or package/object path, e.g. /Game/Materials/M_Surface; empty is refused. Material instances are refused; name their parent explicitly.
+	 * @param Force Optional string, default empty: skip an already matching layout. Any nonempty trimmed value forces the pass, including false or 0; use force to request it explicitly.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPMaterialTidy(

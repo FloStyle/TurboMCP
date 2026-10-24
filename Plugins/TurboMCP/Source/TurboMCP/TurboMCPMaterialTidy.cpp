@@ -407,8 +407,8 @@ FString FTurboMCPMaterialTidy::RenderPreview(const FPlan& InPlan)
 		}
 	}
 
-	Out += TEXT("\n; the preview changes NOTHING, and it does NOT claim the compiled result is unchanged - ")
-		TEXT("that claim is made by the edit, which measures it.");
+	Out += TEXT("\n; Preview does not apply layout or save; it recompiles materials for baseline errors and may run editor callbacks. ")
+		TEXT("It does not prove identical rendered output.");
 	return Out;
 }
 
@@ -425,7 +425,7 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 		return FString::Printf(TEXT("error: %s has no material to write into"), *InPlan.Asset);
 	}
 
-	// ONE TRANSACTION, so the whole layout is a single undo step and a rollback is exact.
+	// Group geometry edits in a transaction; failure paths request undo without certifying restoration.
 	FScopedTransaction Transaction(NSLOCTEXT("TurboMCP", "MaterialTidy", "TurboMCP: tidy a material"));
 
 	int32 Moved = 0;
@@ -611,8 +611,8 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 	{
 		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
-			TEXT("FAILED: the layout introduced %d compile error(s) that were not there before, so it was ")
-			TEXT("ROLLED BACK. A layout cannot legitimately change what a material computes. First: %s"),
+			TEXT("FAILED: the layout introduced %d compile error(s) that were not there before, so undo was requested; restoration was not verified. ")
+			TEXT("Inspect the material before retrying or saving. A layout cannot legitimately change what a material computes. First: %s"),
 			NewErrors.Num(), *NewErrors[0]);
 	}
 
@@ -621,14 +621,14 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
 			TEXT("FAILED: the material could not be read back after the layout (%s), so the compiled result ")
-			TEXT("could NOT be verified and the layout was ROLLED BACK."), *ReadError);
+			TEXT("could NOT be verified and undo was requested; restoration was not verified. Inspect the material before retrying or saving."), *ReadError);
 	}
 
 	if (!bSameSet)
 	{
 		FTurboMCPRollback::EndAndUndoActiveTransaction();
 		return FString::Printf(
-			TEXT("FAILED: the layout changed the SET OF EXPRESSIONS, so it was ROLLED BACK. ")
+			TEXT("FAILED: the layout changed the SET OF EXPRESSIONS, so undo was requested; restoration was not verified. Inspect the material before retrying or saving. ")
 			TEXT("%d lost (%s), %d gained (%s). A layout moves geometry; it does not add or remove ")
 			TEXT("expressions, and a difference here means the compiled result cannot be trusted."),
 			Lost.Num(), Lost.Num() > 0 ? *Lost[0] : TEXT("none"),
@@ -641,7 +641,7 @@ FString FTurboMCPMaterialTidy::Apply(const FPlan& InPlan)
 
 	// THE COMPILED-RESULT EVIDENCE, STATED WITH ITS OWN LIMITS RATHER THAN AS A BARE CLAIM.
 	Out += FString::Printf(
-		TEXT("\nCOMPILED RESULT: the expression set is IDENTICAL (%d of %d, none added, none removed) and the ")
+		TEXT("\nCHECK RESULTS (not proof of identical rendered output): the expression set is IDENTICAL (%d of %d, none added, none removed) and the ")
 		TEXT("engine reports %d error(s), none of them new. StateId %s -> %s (reported rather than asserted: ")
 		TEXT("it can change for reasons a layout does not control)."),
 		KeysAfter.Num(), InPlan.KeysBefore.Num(), CompileErrorsAfter.Num(),

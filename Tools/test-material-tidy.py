@@ -218,6 +218,9 @@ def main():
     print("=== the PREVIEW writes nothing and says what it would do ===")
     preview = session.call(PREVIEW_TOOLSET, PREVIEW, {"asset": ASSET, "force": ""})
     print(preview[:1400])
+    check("preview discloses compilation", "recompiles materials for baseline errors" in preview)
+    check("preview discloses callbacks", "editor callbacks" in preview)
+
 
     # ONE COMMENT BOX PER BLOCK IS THE REQUIREMENT, so the preview must NAME blocks rather than
     # merely list nodes. A preview that said only "12 expressions would move" would satisfy nobody
@@ -287,7 +290,7 @@ def main():
     print(edit[:1600])
 
     check("the edit reports the compiled result was checked",
-          "COMPILED RESULT" in edit, "the edit must measure the compiled result, not assume it")
+          "CHECK RESULTS (not proof of identical rendered output)" in edit, "the edit must measure the compiled result, not assume it")
     check("the edit reports the expression set is IDENTICAL",
           "IDENTICAL" in edit, edit[:300])
     check("the edit did NOT fail and roll back",
