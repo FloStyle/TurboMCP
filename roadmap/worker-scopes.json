@@ -1816,6 +1816,13 @@
             "Tools/test-graph-repoint.py"
           ],
           "new_files": []
+        },
+        "quality-localvars-analysis": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVars.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPLocalVars.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
