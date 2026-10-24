@@ -184,3 +184,11 @@ Run e83564cffc0848bf984d8ecce1697cfd passed build/help but the widget suite omit
 Implemented 441b1cb: both widget readers preserve fractional float padding with nine significant digits and omit only exact zero, rather than rounding to whole units or dropping tiny nonzero values. Removed the obsolete rounding warning; incomplete-export and omitted-state warnings remain.
 
 Run 40b3974c53604410b186cef29c1f8361 built successfully. The new native checks for fractional, negative, tiny nonzero and zero padding produced no failures; they execute before the existing graph append test. Widget-tree-sync passed 15 checks; live help inventory passed for all 125 tools. The overall run FAILED: Widget.RoundtripAcceptance later failed “Plan is acceptable” for its graph append. The reason is not yet captured by that assertion and remains an actionable investigation; this batch does not certify full roundtrip behavior. Supervisor restored 16 fixture files. Next: expose the rejected plan diagnostics and investigate without weakening the acceptance check.
+
+## Widget acceptance rendering prerequisite (2026-10-24)
+
+53f70b1 exposes the full rejected append preview in the native acceptance report. Reproduction ddfd086f2cee4be6a658dc002eb1c8c1 identified the concrete refusal: append footprint render target unavailable. The runner had launched NullRHI; measured append placement requires rendering. This is a harness prerequisite failure, not evidence of an append behavior defect.
+
+0329b3f enables rendering for test-widget-roundtrip and selects render requirements from resolved suite names, fixing comma-separated batches and all-suite selection for the listed render-dependent suites. Removed the incorrect comment that all tools work without rendering. Other suites' rendering requirements still need inventory; this is not a complete runner classification audit.
+
+Run ed50a8e6f98c47eea9556d5bbead101d passed build, Widget.RoundtripAcceptance (Success, zero errors/warnings/skips), and widget-tree-sync. All 16 fixture files restored. This resolves the preceding padding/append validation failure and verifies the native fixture's targeted append path; it does not certify arbitrary widget export or every tool operation.
