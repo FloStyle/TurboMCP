@@ -302,3 +302,9 @@ Supervised run 4281ad84782f41c8b602d3af24588f0d passed the stock-engine build, t
 Implemented in 47472de: documented the four parameters across Preview/EditTurboMCPOverrideAdd; compact help includes loading or edit effects, undo, compile and save limits. Event preview now describes the event node at the fixed origin instead of promising a result node. Replaced obsolete compile/save aliases and made editor-null-return messages explicit that state and rollback are unverified. Simplified obsolete duplicate-creation commentary.
 
 Supervised run bfae987246f049419105ae01c326df68 passed build, test-override-add and the 125-tool help inventory. The focused suite checks event creation, existing-override refusal, reader-visible counts, removal and revised messages. It does not validate function-override creation, undo, fault-path messages or fresh disk reload; these remain coverage gaps. Overall quality work remains incomplete.
+
+## Override removal text review
+
+Implemented in b789b98: documented both parameters and the destructive scope in compact help. Event deletion leaves other nodes, potentially disconnected; function deletion removes the entire graph and does not repair callers. Results explain undo transactions, skeleton/callback effects, compile/save limits and current follow-up tool names. If the editor still reports an implementation, output explicitly states that removal is not fully verified. Obsolete roadmap commentary removed.
+
+Supervised run ca8f4d6a74fb4dc0b40f33eb2994aa1d passed build, event override creation/removal and revised message assertions, plus live help inventory for all 125 tools. Function removal, undo restoration and partial-failure paths were not exercised by this suite; those coverage gaps remain open.
