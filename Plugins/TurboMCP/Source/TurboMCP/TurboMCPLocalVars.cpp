@@ -755,13 +755,31 @@ FString FTurboMCPLocalVars::Apply(const FPlan& InPlan)
 
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Misc/AutomationTest.h"
+#include "Misc/ScopeExit.h"
+#include "Engine/BlueprintGeneratedClass.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "GameFramework/Actor.h"
+#include "UObject/Package.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPLocalAncestryTest,
     "TurboMCP.LocalVars.Ancestry", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
 bool FTurboMCPLocalAncestryTest::RunTest(const FString& Parameters)
 {
-    UEdGraph* Graph = NewObject<UEdGraph>(GetTransientPackage(), NAME_None, RF_Transient);
+    UPackage* Package = CreatePackage(*(TEXT("/Game/Tests/LocalAnalysis_") + FGuid::NewGuid().ToString(EGuidFormats::Digits)));
+    UBlueprint* Blueprint = FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), Package, TEXT("LocalFixture"),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass(), TEXT("TurboMCPLocalTest"));
+    if (!TestNotNull(TEXT("Blueprint fixture created"), Blueprint)) return false;
+    ON_SCOPE_EXIT
+    {
+        Blueprint->ClearFlags(RF_Public | RF_Standalone);
+        Blueprint->MarkAsGarbage();
+        Package->SetDirtyFlag(false);
+        Package->MarkAsGarbage();
+    };
+    UEdGraph* Graph = NewObject<UEdGraph>(Blueprint, NAME_None, RF_Transient);
+    Graph->Schema = UEdGraphSchema_K2::StaticClass();
+    Blueprint->UbergraphPages.Add(Graph);
     auto MakeKnot = [&]()
     {
         UK2Node_Knot* Node = NewObject<UK2Node_Knot>(Graph, NAME_None, RF_Transient);
