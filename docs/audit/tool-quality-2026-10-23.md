@@ -464,3 +464,9 @@ Supervised run 025a7eb1f2fc456ba5f9d88103272168 passed build and all 125 live he
 a90d652 documents 15 parameters across placement preview and movement preview/edit: exact IDs, selection expansion, signed coordinate offsets, empty behavior, overflow and destination-comment constraints. Compact help preserves asset loading/transient widget measurement and edit transaction/dirty/compile/save effects. Placement explicitly describes heuristic search limits and movement preview identifies the result as proposed rather than applied.
 
 Supervised run 7d74d30fdd784e9eace75c15971eb4de passed build and the 125-tool live help/schema inventory. This batch changes documentation/output, not movement algorithms; it supplies no new behavioral proof for comment membership, collisions, callback effects, undo replay or layout quality. Those remain separate review/coverage requirements.
+
+## Delegate-binding tool text — 2026-10-24
+
+ae4582a documents all 24 parameters across BindFunction/BindNewEvent preview and edit. Help explains exact pin selection, paired object context, empty values, naming/signature restrictions, replaced input connections, transient simulation and edit undo/compile/save effects. New-event output states that the body is empty and names the next actions; function binding limits verification to selected function/links rather than runtime correctness.
+
+Supervised run 64366a43ae484470bb9c02f3e979b965 passed build and all 125 live help/schema checks. This text batch supplies no new behavioral proof of delegate compatibility, failed-edit rollback, callback lifetime, runtime execution or generated layout. Overall review and those coverage requirements remain open.
