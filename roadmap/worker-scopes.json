@@ -1852,6 +1852,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCopyFailureTest.cpp"
           ],
           "new_files": []
+        },
+        "quality-copy-contract": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructure.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphStructureNotes.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCopyFailureTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
