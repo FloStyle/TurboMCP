@@ -80,9 +80,8 @@ The linked records distinguish implemented containment from unresolved causes. V
 These records preserve original requirements and evidence. Their status does not grant implementation permission.
 
 <details>
-<summary>todo (55)</summary>
+<summary>todo (54)</summary>
 
-- **P0** [Local-variable promotion must preserve calculated values](todo/67f00521.md)
 - **P1** [Resolve omitted macro, asset and session requirements](todo/100b52a6.md)
 - **P1** [Verify append node structure and compile outcomes](todo/4f1bfd61.md)
 - **P1** [Verify session-report completeness and stable IDs](todo/51678b9f.md)
@@ -170,8 +169,9 @@ These records preserve original requirements and evidence. Their status does not
 </details>
 
 <details>
-<summary>done (27)</summary>
+<summary>done (28)</summary>
 
+- **P0** [Local-variable promotion must preserve calculated values](todo/67f00521.md)
 - **P0** [Reproduce and contain native DataTable JSON-write crashes](todo/field-01.md)
 - **P0** [Prevent dependent Widget loss around compile and batch rollback](todo/field-02.md)
 - **P0** [Fix Oct23 S1 plugin compile errors](todo/field-x97-build.md)
