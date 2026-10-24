@@ -1093,17 +1093,15 @@ public:
 		const FString& AnchorNodeId);
 
 	/**
-	 * Plan extracting a selection into a function or a macro, and write nothing.
-	 *
-	 * `E-GRAPH-COLLAPSE` IS MEASURED REACHABLE BUT NOT YET BUILT, and this half says so rather than
-	 * refusing vaguely: the engine's own `FBlueprintEditor::CollapseNodesIntoGraph` is a member of an
-	 * ASSET-EDITOR UI OBJECT (`BlueprintEditor.h:1125`), and whether that instance can be constructed
-	 * outside an open asset editor is the ONE question the measurement left open. Everything the plan
-	 * checks - the boundary, the refusal of an entry, event or result node by name, and the refusal of
-	 * a selection with no exec boundary - is decided here, so the Preview and a future Edit twin
-	 * cannot disagree about what is acceptable.
-	 */
-	UFUNCTION(meta = (AICallable))
+     * Collapse is not implemented: inspect selection boundaries only; may load the Blueprint, but does not extract nodes, create a member, compile or save.
+     * A valid plan is not an executable edit. Use Unreal's Blueprint editor for extraction, then re-read graph and node IDs. No undo transaction is created for an unsupported collapse.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused.
+     * @param GraphName Required existing graph name, e.g. EventGraph; copy the reader's name. Missing graphs are refused.
+     * @param NodeIds Required array of source reader node IDs. Empty means nothing to extract. Entry, event and result nodes are refused; use exact IDs from the named graph. No automatic selection is made.
+     * @param MemberName Required proposed member name, e.g. HandleSelection. Empty is refused. No member is created, and planning does not certify that the name can be used successfully.
+     * @param MemberKind Required exact lowercase function or macro; no whitespace or default. Empty and other values are refused. Example: function.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphCollapse(
 		const FString& Asset,
 		const FString& GraphName,
@@ -1722,20 +1720,15 @@ public:
 		const FString& AnchorNodeId);
 
 	/**
-	 * Extract a selection into a function or a macro.
-	 *
-	 * NOT BUILT YET, AND IT REFUSES BY SAYING SO rather than by a vague failure. `03_TOOLS.md`
-	 * requires the engine's own `FBlueprintEditor::CollapseNodesIntoGraph`, which is a member of an
-	 * ASSET-EDITOR UI OBJECT (`BlueprintEditor.h:1125`); the measurement in
-	 * `TurboMCPGraphStructureNotes.h` enumerates every other piece as static and reachable, and
-	 * leaves exactly one question open - whether that instance can be constructed outside an open
-	 * asset editor. A hand-built member would NOT be the thing the editor's own Collapse makes, so
-	 * building one would be a different capability wearing this one's name.
-	 *
-	 * The plan still runs, so a caller learns what the input is missing - a selection containing an
-	 * entry, an event or a result node, or one with no exec boundary, is refused by name.
-	 */
-	UFUNCTION(meta = (AICallable))
+     * Collapse is not implemented: inspect selection boundaries only; may load the Blueprint, but does not extract nodes, create a member, compile or save.
+     * A valid plan is not an executable edit. Use Unreal's Blueprint editor for extraction, then re-read graph and node IDs. No undo transaction is created for an unsupported collapse.
+     * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused.
+     * @param GraphName Required existing graph name, e.g. EventGraph; copy the reader's name. Missing graphs are refused.
+     * @param NodeIds Required array of source reader node IDs. Empty means nothing to extract. Entry, event and result nodes are refused; use exact IDs from the named graph. No automatic selection is made.
+     * @param MemberName Required proposed member name, e.g. HandleSelection. Empty is refused. No member is created, and planning does not certify that the name can be used successfully.
+     * @param MemberKind Required exact lowercase function or macro; no whitespace or default. Empty and other values are refused. Example: function.
+     */
+    UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphCollapse(
 		const FString& Asset,
 		const FString& GraphName,

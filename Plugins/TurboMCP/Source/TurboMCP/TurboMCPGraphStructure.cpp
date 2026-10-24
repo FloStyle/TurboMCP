@@ -791,15 +791,9 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 
 	if (InPlan.Verb == EVerb::Collapse)
 	{
-		// THE COLLAPSE HALF IS NOT BUILT, AND IT SAYS SO RATHER THAN PRETENDING. The measurement in
-		// `TurboMCPGraphStructureNotes.h` says the pieces are reachable, but reproducing the 290-line
-		// sequence is not something to attempt without being able to test it - and `03_TOOLS.md` requires
-		// the engine's own `CollapseNodesIntoGraph`, which is a member of an editor object whose
-		// CONSTRUCTIBILITY outside an asset editor is the one thing the measurement could not settle.
-		OutError = TEXT("E-GRAPH-COLLAPSE is measured REACHABLE but NOT YET BUILT: the engine's own ")
-			TEXT("CollapseNodesIntoGraph is a member of FBlueprintEditor, and whether that instance can be ")
-			TEXT("constructed outside an open asset editor is the one question the measurement left open. ")
-			TEXT("COPY is built; COLLAPSE is not. NOTHING was written.");
+		// Planning is available, but extraction is not implemented.
+		OutError = TEXT("unchanged: graph collapse is not implemented. No nodes were extracted and no member was created. ")
+			TEXT("Use Unreal's Blueprint editor to extract the selection, then read the graph again before further tool edits. Compilation and save were not requested.");
 		return false;
 	}
 
@@ -1130,7 +1124,7 @@ FString FTurboMCPGraphStructure::RenderPreview(const FPlan& InPlan)
 {
 	TArray<FString> Lines;
 	const bool bAcceptable = InPlan.bAcceptable();
-	Lines.Add(bAcceptable ? TEXT("would change") : TEXT("unchanged"));
+	Lines.Add(InPlan.Verb == EVerb::Collapse ? TEXT("unchanged: collapse is not implemented; selection analysis only") : (bAcceptable ? TEXT("would change") : TEXT("unchanged")));
 
 	if (InPlan.Verb == EVerb::Copy)
 	{
