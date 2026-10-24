@@ -541,7 +541,7 @@ def main():
          "is not balanced"),
         ("a Map with one type", PREVIEW_TOOLSET, "PreviewTurboMCPStructNew",
          {"path": "/Game/Tests/ZZZ_Map_R" + _RUN, "fields": "Good: Map<int>"},
-         "exactly two types"),
+         "wrong number of contained types"),
         ("an empty struct path", PREVIEW_TOOLSET, "PreviewTurboMCPStructFields",
          {"struct": "", "changes": "X: int"}, "no struct given"),
         ("no changes at all", PREVIEW_TOOLSET, "PreviewTurboMCPStructFields",
@@ -624,3 +624,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
