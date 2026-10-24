@@ -1560,6 +1560,15 @@
             "Tools/test-override-add.py"
           ],
           "new_files": []
+        },
+        "quality-function-text": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunction.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionTools.cpp",
+            "Tools/test-function.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
