@@ -903,43 +903,20 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 
 	for (UEdGraphNode* Source : Selected)
 	{
-		// `SpawnNodeFromTemplate` CARRIES THE TEMPLATE'S OWN PROPERTY VALUES, which is why a copied
-		// `UK2Node_CallFunction` keeps the function it calls. It also allocates the default pins, which is
-		// mandatory on any node created outside the editor - this project has had one crash and one silent
-		// corruption from omitting that step.
-		//
-		// *** IT TAKES A `UK2Node*`, NOT A `UEdGraphNode*`, AND THAT IS AN ENGINE CONSTRAINT RATHER THAN A
-		// CHOICE: its `CreateNode` overload (`EdGraphSchema_K2_Actions.h:130`) declares the template parameter
-		// as `UK2Node*`, so instantiating with `UEdGraphNode` does NOT COMPILE - measured, `error C2665` at
-		// `EdGraphSchema_K2_Actions.h(102,25)`. A graph can hold nodes that are not K2 nodes, so the cast is
-		// CHECKED and a non-K2 node is REFUSED BY NAME rather than silently skipped, because a copy that
-		// quietly left a node behind is the worst outcome this function can produce. ***
-		UK2Node* Template = Cast<UK2Node>(Source);
-		if (Template == nullptr)
-		{
-			const bool Restored = RollbackCopy();
-			OutError = FString::Printf(
-				TEXT("'%s' (%s) is not a K2 node, so this tool cannot copy it."),
-				*KeyOf(Source), *Source->GetClass()->GetName());
-            OutError += Restored ? TEXT(" partial: undo completed; restoration is unverified. Inspect the target graph before retrying; save=not_requested") : TEXT(" partial: rollback was not completed. Inspect and restore the target graph before retrying; save=not_requested");
-			return false;
-		}
-
-		const int32 CopyX = Source->NodePosX + 40;
-		const int32 CopyY = Source->NodePosY + 40;
-		const FVector2D Location(CopyX, CopyY);
-		UEdGraphNode* Made=nullptr;
-        if(CanDuplicateGetterWithoutCompile(Source,SourceBlueprint,TargetBlueprint,TargetGraph))
+        // Existing nodes already have pins. Duplicating then allocating them again
+        // creates duplicate pin identities and can retain asymmetric source links.
+        // Eligibility was checked before the transaction; preserve the full pin tree.
+        const int32 CopyX = Source->NodePosX + 40;
+        const int32 CopyY = Source->NodePosY + 40;
+        UEdGraphNode* Made = DuplicateObject<UEdGraphNode>(Source, TargetGraph);
+        if (Made)
         {
-            Made=DuplicateObject<UEdGraphNode>(Source,TargetGraph);
-            if(Made)
-            {
-                Made->SetFlags(RF_Transactional); Made->CreateNewGuid();
-                for(UEdGraphPin* P:Made->Pins) if(P) P->LinkedTo.Reset();
-                TargetGraph->AddNode(Made,false,false);
-            }
+            Made->SetFlags(RF_Transactional);
+            Made->CreateNewGuid();
+            // These copied links are not reciprocal. Do not break the source's links.
+            for (UEdGraphPin* Pin : Made->Pins) if (Pin) Pin->LinkedTo.Reset();
+            TargetGraph->AddNode(Made, false, false);
         }
-        else Made=FEdGraphSchemaAction_K2NewNode::SpawnNodeFromTemplate<UK2Node>(TargetGraph,Template,Location,false);
 
 		if (Made == nullptr)
 		{

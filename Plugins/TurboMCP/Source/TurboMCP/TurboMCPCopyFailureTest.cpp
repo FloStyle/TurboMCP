@@ -82,6 +82,19 @@ bool FTurboMCPCopyFailureTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Source link retained"), Input && Input->LinkedTo.Num() == 1 && Input->LinkedTo.Contains(S->FindPin(TEXT("then"))));
     TestEqual(TEXT("Source default retained"), C->FindPinChecked(TEXT("InString"))->DefaultValue, FString(TEXT("preserve-me")));
     TestEqual(TEXT("Source position retained"), C->NodePosX, 300);
+    FTurboMCPGraphStructure::FPlan Valid;
+    if (!TestTrue(TEXT("Fresh copy plan succeeds"), FTurboMCPGraphStructure::PlanCopy(Blueprint->GetPathName(), Graph->GetName(),
+        Selection, Blueprint->GetPathName(), Destination->GetName(), TEXT(""), Valid, Error))) return false;
+    if (!TestTrue(TEXT("Valid copy applies"), FTurboMCPGraphStructure::Apply(Valid, Report, Error))) { AddError(Error); return false; }
+    TestEqual(TEXT("Exactly two copies created"), Destination->Nodes.Num(), 2);
+    for (UEdGraphNode* Copy : Destination->Nodes)
+    {
+        TestEqual(TEXT("No duplicate allocated pins"), Copy->Pins.Num(), Source->Pins.Num());
+        for (UEdGraphPin* Pin : Copy->Pins)
+            if (Pin) for (UEdGraphPin* Linked : Pin->LinkedTo)
+                TestTrue(TEXT("Copy links are reciprocal and stay in destination"), Linked && Linked->LinkedTo.Contains(Pin)
+                    && Linked->GetOwningNode()->GetGraph() == Destination);
+    }
     return !HasAnyErrors();
 }
 #endif
