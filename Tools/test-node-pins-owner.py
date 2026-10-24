@@ -92,9 +92,9 @@ def main():
     # the type reader's own output and passes, so its two patterns are used here.
     listed = session.call(PREVIEW_TOOLSET, "PreviewTurboMCPNodeType",
                           {"asset": ASSET, "graphName": GRAPH, "words": "PrintString", "limit": ""})
-    discovered = re.findall(r"(?:^|\s)([\w|]+K2Node[\w|]*)", listed)
-    if not discovered:
-        discovered = re.findall(r"([A-Za-z][\w ]*\|[\w ]+)", listed)
+    # Read complete result headings, including /Script paths; never scrape prose fragments.
+    discovered = re.findall(r"\n\n([^\n]+)\n  (?:pure|not pure)", listed)
+    print(listed)
     print("    ids the type reader listed: %s" % discovered[:3])
 
     # 1. THE CRASH CASE.
