@@ -1628,6 +1628,12 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp"
           ],
           "new_files": []
+        },
+        "quality-local-vars-test-setup": {
+          "new_files": [],
+          "files": [
+            "Tools/test-local-vars.py"
+          ]
         }
       },
       "preserve_rows": []
