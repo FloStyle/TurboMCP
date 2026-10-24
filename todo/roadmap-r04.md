@@ -1507,3 +1507,23 @@ Supervised 8ef41a5112d548dc8811420d3e71f50c then passed build and test-asset-too
 
 The stale generated-class absence assertion is now corrected. These focused
 cases pass; broad 125-tool acceptance and live vision investigation remain open.
+
+## Asset-editor capture gamma correction — 2026-10-24
+
+Implemented in 31c0c75 and 5a15c43. Asset-editor capture previously disabled
+Slate display gamma and produced nearly black UI. Enabling it alone produced
+washed-out UI; the final repair uses a linear BGRA target so display gamma is
+applied once, matching the existing graph and screen capture paths.
+
+Supervised 7bf71ab60a614a79b7b5ea65a116ee61 at 5a15c43 passed the build.
+Codex inspected the Widget designer, Material and Blueprint PNGs: their dark-theme
+UI is readable, unlike the baseline images. Before/after images are retained in
+the local handoff output vision-gamma-evidence directory. This is visual evidence
+for these three captures, not pixel-perfect fidelity or full capture acceptance.
+
+The test-capture-asset suite FAILED: Pillow is unavailable, stale catalogue
+expectations remain, and comparing missing colour counts raises TypeError. Do
+not count this run as a suite pass. DataTable and AnimBlueprint positive capture
+coverage is still missing. Repair the harness dependency/error handling and
+stale assertions without weakening its image checks. CP-14 live graph contrast
+remains open; this correction concerns saved capture images only.
