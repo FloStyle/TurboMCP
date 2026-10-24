@@ -554,55 +554,16 @@ public:
         const FString& Execution = TEXT("deny"));
 
 	/**
-	 * Capture a picture of a Blueprint's graph editor, framed one of seven ways.
-	 *
-	 * Pass the asset and the graph name, and optionally a mode, a target, and a size.
-	 * Empty mode means `graph`.
-	 *
-	 * Modes taking no target: `graph` frames the whole graph, `screen` frames the whole
-	 * editor window at its current size, and `selection` frames the nodes selected on
-	 * the graph canvas of the graph named.
-	 *
-	 * Modes taking a target: `box` takes a comment box INDEX, numbered from 0 in the
-	 * same order L-LAYOUT-REPORT lists them, top to bottom then left to right, so an
-	 * index means the same thing in both tools. `node` takes a node ID from
-	 * R-NODE-FIND. `neighbours` takes a node ID and frames that node plus every node
-	 * within N hops, where N is passed in Size as a whole number and empty means 0.
-	 * `box-neighbours` takes a comment box index in Target and N in Size, and frames
-	 * that box plus the N boxes whose nodes are linked to its nodes.
-	 *
-	 * Size means the picture size as WxH for `graph`, `box` and `node`, and empty means
-	 * 1600x900. FOR `neighbours` AND `box-neighbours` IT MEANS THE HOP COUNT, because
-	 * those framings compute their own picture size from the frame, exactly as `node`
-	 * and `box` already do.
-	 *
-	 * `selection` means the GRAPH CANVAS SELECTION and nothing else: it is read from
-	 * SGraphEditor::GetSelectedNodes (`GraphEditor.h:394`). The level actor selection
-	 * (`GEditor->GetSelectedActors`, `Editor/EditorEngine.h:1969`), the component
-	 * selection (`:2000`) and the Content Browser asset selection are DIFFERENT
-	 * SELECTIONS and this mode reads none of them, so it is a refusal rather than a
-	 * surprising picture. With nothing selected it refuses and says so.
-	 *
-	 * `neighbours` counts a hop over the graph the READER prints, so a link through a
-	 * plain reroute knot is one hop and not two (`D-42`), and a knot is never framed.
-	 * Each of the three selectors PRINTS ITS OWN DEFINITION in the result, so a caller
-	 * can check the claim instead of trusting it.
-	 *
-	 * `screen` frames the whole editor window with the Slate renderer, at the window's
-	 * current size unless the 4096 edge cap scales it. IT IS REFUSED BY NAME when the
-	 * editor runs with `-nullrhi`, because `LaunchEngineLoop.cpp:3343` then installs the
-	 * NULL Slate renderer at `:3345-3347` (`GUsingNullRHI`, `RHIGlobals.h:894`) and
-	 * there is no rendered pixel to read: a black image would look like a successful
-	 * capture of a dark window.
-	 *
-	 * A framing that cannot be done is an error naming why, and it never falls back to
-	 * a wider frame (`D-41`): asking for box 9 of a graph with 4 boxes says exactly
-	 * that. An empty frame is refused rather than written as a blank image, because a
-	 * blank image looks like a successful capture of nothing.
-	 *
-	 * The result reports what it framed, the frame's bounds in graph coordinates, the
-	 * zoom it chose, and the image size. The PNG goes to a fixed folder under the
-	 * project's Saved folder, and its name says which asset, graph and mode produced it.
+	 * Capture an editor window or Blueprint graph as a PNG under the project's Saved folder.
+	 * Requires a rendered editor. May load assets, open editor UI and change the view or selection.
+	 * Does not explicitly compile or save assets; editor callbacks may run. No automatic undo.
+	 * Refusals can occur after opening UI. An image is not proof of graph correctness.
+	 * All five string arguments are required by the schema; supply empty strings where unused.
+	 * @param Asset Existing asset path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is allowed for screen; with asset-editor it lists supported editor kinds instead of capturing.
+	 * @param GraphName Exact graph name, e.g. EventGraph; required for graph and diagnostic modes. For asset-editor, optional editor kind from its support table (empty auto-detects). Ignored by screen.
+	 * @param Mode Case-insensitive: graph (also empty), box, node, region, selection, neighbours, box-neighbours, screen, asset-editor. Selection uses graph-canvas nodes only. Diagnostics: debug-window, rhi-state, select-nodes (changes graph selection).
+	 * @param Target Node ID from ReadTurboMCPNodeFind for node/neighbours; zero-based comment index from LookTurboMCPLayoutReport for box/box-neighbours. Region: x,y,width,height, finite values within +/-10000000, positive dimensions. select-nodes: comma-separated node keys. Otherwise pass empty.
+	 * @param Size Graph/box/node/region: WxH or W,H, each 1..4096 pixels, e.g. 1600x900. Empty uses native crop sizing, not a guaranteed resolution. Selection/neighbours/box-neighbours: digits 0..4096 (empty 0); neighbourhood modes use this as traversal depth/count and selectors size the image automatically. Screen/asset-editor ignore Size. Other diagnostics accept dimensions; rhi-state ignores them.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPCapture(
