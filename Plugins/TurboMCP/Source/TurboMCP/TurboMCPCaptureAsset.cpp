@@ -643,6 +643,9 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 		return false;
 	}
 
+	// Slate applies display gamma; use a linear target to avoid encoding it twice.
+	RenderTarget->InitCustomFormat(Width, Height, PF_B8G8R8A8, true);
+	RenderTarget->UpdateResourceImmediate(true);
 	FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/true);
 	Renderer->DrawWidget(RenderTarget, Widget, /*Scale=*/1.0f,
 		FVector2D(Width, Height), /*DeltaTime=*/0.0f, /*bDeferRenderTargetUpdate=*/false);
