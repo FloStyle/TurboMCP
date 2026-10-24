@@ -346,3 +346,9 @@ Run fc876fb4528f491cb163418a0cd77060 passed build and native regression with no 
 16f8169 documents all four parameters and explicitly discloses that planning/preview recompiles a material for baseline errors. Force is a presence flag, including nonempty false/0 strings. Removed no-effect and exact-rollback claims; failure output now says undo was requested and restoration remains unverified. Success output distinguishes identity/error checks from proof of identical rendered output. Obsolete wrapper documentation removed.
 
 Run cc166c05b88749f19146ff2edc55dac0 passed build, test-material-tidy and all 125 live help checks. This provides focused layout and message evidence, not failure-path rollback verification, every material family or pixel-equivalence certification. Material label/block tools still need the same source-backed text review.
+
+## Material label promotion text
+
+487d4f5 documents both asset parameters, preview compilation/callback effects and edit additions/rewiring. Removed exact-rollback and rendered-equivalence claims from help/results and obsolete wrapper commentary. Failure text reports requested undo with restoration unverified; success text identifies expression/error checks rather than claiming equivalent rendering.
+
+Run c2ef1f85f0294487b38f0cea19887d79 passed build, test-material-label-promote and the 125-tool live help inventory. This is focused fixture evidence, not rollback-failure injection or equivalence across all materials. Material block-tool text remains pending.
