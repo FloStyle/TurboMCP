@@ -1944,6 +1944,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPReplacePlanTest.cpp"
           ],
           "new_files": []
+        },
+        "quality-capture-framing": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Tools/run-suites.ps1"
+          ],
+          "new_files": [
+            "Tools/test-capture-framing.py"
+          ]
         }
       },
       "preserve_rows": []
