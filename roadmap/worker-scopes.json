@@ -1838,6 +1838,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPRepointFailureTest.cpp",
             "Tools/test-repoint-failure.py"
           ]
+        },
+        "quality-copy-failure-native": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCopyFailureTest.cpp",
+            "Tools/test-copy-failure.py"
+          ]
         }
       },
       "preserve_rows": []
