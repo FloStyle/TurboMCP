@@ -433,7 +433,7 @@ bool FTurboMCPGraphReplace::Apply(const FPlan& InPlan, FString& OutReport, FStri
     if (FailedToRemove > 0 || NotRemoved.Num() > 0)
     {
         const bool Undone = FTurboMCPRollback::EndAndUndoActiveTransaction();
-        OutError = Undone ? TEXT("unchanged: replacement verification failed; append and removal rollback=complete")
+        OutError = Undone ? TEXT("partial: replacement verification failed; undo completed but restoration is unverified; changes may remain")
                           : TEXT("partial: replacement verification failed; rollback=failed; inspect graph before retrying");
         OutReport = TEXT("save=not_requested; inspect the graph before retrying replacement");
         return false;

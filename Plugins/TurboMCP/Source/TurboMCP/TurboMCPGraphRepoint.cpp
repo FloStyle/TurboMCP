@@ -329,11 +329,14 @@ bool FTurboMCPGraphRepoint::ApplyTransacted(const FPlan& P, const FApplyContext&
             const FTransaction* Record = Index >= 0 ? Buffer->GetTransaction(Index) : nullptr;
             Restored = Record && Record->GetId() == OwnedId && GEditor->UndoTransaction(false);
         }
-        Out.Rollback = Restored ? ETurboMCPResultRollback::Complete : ETurboMCPResultRollback::NotSupported;
-        Out.bChanged = !Restored;
-        Out.Changed = Restored ? 0 : 2;
-        DirtyGuard.bKeepChange = !Restored;
-        Error += Restored ? TEXT("; rollback=complete") : TEXT("; rollback=not_confirmed; caller must restore before retrying");
+        // Undo returning true does not verify restoration of graph or callback state.
+        Out.Rollback = ETurboMCPResultRollback::Failed;
+        Out.bChanged = true; // Conservatively retain potentially modified state.
+        Out.Changed = 2; // Unknown until independent read-back verifies restoration.
+        DirtyGuard.bKeepChange = true;
+        Error += Restored
+            ? TEXT("; undo completed, but restoration was not verified; changes may remain. Inspect the graph before retrying. compile=not_run; save=not_requested")
+            : TEXT("; rollback was not completed; changes may remain. Inspect and restore the graph before retrying. compile=not_run; save=not_requested");
     };
 	B->Modify();
 	G->Modify();

@@ -921,7 +921,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 			OutError = FString::Printf(
 				TEXT("'%s' (%s) is not a K2 node, so this tool cannot copy it."),
 				*KeyOf(Source), *Source->GetClass()->GetName());
-            OutError += Restored ? TEXT(" rollback=complete") : TEXT(" partial: rollback=not_confirmed");
+            OutError += Restored ? TEXT(" partial: undo completed; restoration is unverified. Inspect the target graph before retrying; save=not_requested") : TEXT(" partial: rollback was not completed. Inspect and restore the target graph before retrying; save=not_requested");
 			return false;
 		}
 
@@ -949,7 +949,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 			OutError = FString::Printf(
 				TEXT("the plan accepted '%s' but the graph refused to copy it at apply time."),
 				*Source->GetClass()->GetName());
-            OutError += Restored ? TEXT(" rollback=complete") : TEXT(" partial: rollback=not_confirmed");
+            OutError += Restored ? TEXT(" partial: undo completed; restoration is unverified. Inspect the target graph before retrying; save=not_requested") : TEXT(" partial: rollback was not completed. Inspect and restore the target graph before retrying; save=not_requested");
 			return false;
 		}
 
@@ -961,7 +961,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 		if (!PreserveCopyDefaults(Source, Made, true))
 		{
 			const bool Restored = RollbackCopy();
-			OutError = Restored ? TEXT("unchanged: copied pin identity/type/defaults could not be preserved; rollback=complete")
+			OutError = Restored ? TEXT("partial: copied pin identity/type/defaults could not be preserved; undo completed but restoration is unverified; inspect the target graph before retrying")
 				: TEXT("partial: copied pin preservation failed; rollback=not_confirmed");
 			return false;
 		}
@@ -1073,7 +1073,7 @@ bool FTurboMCPGraphStructure::Apply(const FPlan& InPlan, FString& OutReport, FSt
 	if (!bDefaultsPreserved || LeftUnconnected || TargetGraph->Nodes.Num() != InPlan.TargetNodeCountBefore + Selected.Num())
     {
         const bool Restored = RollbackCopy();
-        OutError = Restored ? TEXT("unchanged: graph copy could not preserve defaults/planned links/node count; rollback=complete")
+        OutError = Restored ? TEXT("partial: graph copy could not preserve defaults/planned links/node count; undo completed but restoration is unverified; inspect the target graph before retrying")
                             : TEXT("partial: graph copy failed; rollback=not_confirmed; inspect before retrying");
         return false;
     }
