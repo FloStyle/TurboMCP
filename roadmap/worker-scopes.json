@@ -2060,6 +2060,17 @@
             "Tools/test-purchase-workflow.py"
           ],
           "new_files": []
+        },
+        "workflow-purchase-visual": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComment.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
