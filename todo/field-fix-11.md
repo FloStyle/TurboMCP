@@ -68,3 +68,13 @@ e07223a makes GraphCheck refuse standalone reader error comment lines before ass
 ### Ambiguous graph validation target
 
 9a1d039 makes GraphCheck use the shared FindGraphByName resolver and refuse multiple distinct matches instead of checking an arbitrary first graph. The append writer already used this resolver; this closes the preflight inconsistency, not a proven wrong-target mutation. Implemented; unbuilt_untested. Deferred: duplicate graph names refuse, a graph referenced in multiple arrays counts once, and unique names still validate. No tests/builds run.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

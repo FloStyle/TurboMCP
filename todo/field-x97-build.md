@@ -6,6 +6,7 @@ Priority: P0
 Readiness: ready
 Category: Bug
 Owner: Codex
+Design: docs/design/graphs.md
 Review: source-reviewed
 Validation: build_passed_runtime_untested
 
@@ -22,3 +23,13 @@ Done means the two reported source defects are repaired, not that the complete p
 ## Local build evidence, 2026-10-23
 
 Supervised build b8fae2fc15934c388f429bd659ca998d passed at source commit 168fbaceb25fe807f86dd2c74e1091e019493b21 against pinned local stock UE 5.8.3. Doctor and build returned 0; 120 actions completed and UnrealEditor-TurboMCP.dll linked. Runtime tests were not run. Later tracking commits do not change plugin source. The previous unbuilt statement describes the pre-build state; compile is now passed, runtime remains untested.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

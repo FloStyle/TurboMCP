@@ -47,3 +47,13 @@ Replacement transaction finalization now follows the exact owned record. Scope c
 Supervised 79e4a84b75ae44dcbad6494420c80373 passed build and test-replace-plan without native warnings. New evidence: forced failure after real append/rewiring/removal restored all four original node identities, node count, reciprocal original edge, removed-node default and position, with no active transaction. Existing successful replacement checks still pass. A protected macro tunnel is refused in both planning and an independently checked stale/corrupt accepted plan, without creation or deletion. Scope gate passed 65dd983 against 66422d41fa9bc0f146a2e6f176dc34f3aafe7b5e.
 
 Implemented and focused-native-tested; broader field validation remains pending. These checks do not certify all node classes, editor callbacks, breakpoint/watch restoration, disk persistence or complete rollback of arbitrary Blueprint properties. No full offline or 125-tool acceptance claim; previously recorded offline failures remain.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

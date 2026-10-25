@@ -43,3 +43,13 @@ Committed implementation evidence. Deferred checks remain in the verification le
 ### Pin default refusal diagnostics
 
 fb328d9 replaces the combined refusal with separate missing-input, orphaned, execution, connected, read-only and ignored-default reasons. Schema validation errors include pin name and category/subcategory. Implemented, unbuilt_untested. This improves the TurboMCP replacement diagnostics; it does not add arbitrary struct literal or by-reference support to native tools. Deferred: each refusal reason and unchanged asset state; valid default edits unchanged. No tests/builds run.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

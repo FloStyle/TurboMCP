@@ -5,7 +5,63 @@
   "plugin_tree": "590661ec45c829264ea1743fccea994edb748092",
   "tools": [
     {
+      "tool": "EditTurboMCPAssetRevert",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPAssetUndo",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPBatchEdit",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPBindFunction",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPBindNewEvent",
       "family": "asset-and-data",
       "epic_5_8_3": {
         "status": "unverified",
@@ -176,6 +232,20 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPGraphConnect",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPGraphCopy",
       "family": "graph",
       "epic_5_8_3": {
@@ -218,6 +288,20 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPGraphGroupMove",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPGraphKnots",
       "family": "graph",
       "epic_5_8_3": {
@@ -246,6 +330,34 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPGraphPositions",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPGraphRemove",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPGraphReplace",
       "family": "graph",
       "epic_5_8_3": {
@@ -261,6 +373,34 @@
     },
     {
       "tool": "EditTurboMCPGraphRepoint",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPGraphSequence",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPGraphSplitValue",
       "family": "graph",
       "epic_5_8_3": {
         "status": "unverified",
@@ -387,6 +527,20 @@
     },
     {
       "tool": "EditTurboMCPOverrideRemove",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPPinDefault",
       "family": "asset-and-data",
       "epic_5_8_3": {
         "status": "unverified",
@@ -620,6 +774,34 @@
       "evidence": []
     },
     {
+      "tool": "LookTurboMCPGraphPositions",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "LookTurboMCPLayoutDoneCheck",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "LookTurboMCPLayoutReport",
       "family": "graph",
       "epic_5_8_3": {
@@ -662,7 +844,63 @@
       "evidence": []
     },
     {
+      "tool": "PreviewTurboMCPAssetRevert",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPAssetUndo",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "PreviewTurboMCPBatchEdit",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPBindFunction",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPBindNewEvent",
       "family": "asset-and-data",
       "epic_5_8_3": {
         "status": "unverified",
@@ -774,6 +1012,20 @@
       "evidence": []
     },
     {
+      "tool": "PreviewTurboMCPGraphConnect",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "PreviewTurboMCPGraphCopy",
       "family": "graph",
       "epic_5_8_3": {
@@ -816,6 +1068,34 @@
       "evidence": []
     },
     {
+      "tool": "PreviewTurboMCPGraphGroupMove",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPGraphGroupPlacement",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "PreviewTurboMCPGraphKnots",
       "family": "graph",
       "epic_5_8_3": {
@@ -844,6 +1124,20 @@
       "evidence": []
     },
     {
+      "tool": "PreviewTurboMCPGraphRemove",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "PreviewTurboMCPGraphReplace",
       "family": "graph",
       "epic_5_8_3": {
@@ -859,6 +1153,34 @@
     },
     {
       "tool": "PreviewTurboMCPGraphRepoint",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPGraphSequence",
+      "family": "graph",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPGraphSplitValue",
       "family": "graph",
       "epic_5_8_3": {
         "status": "unverified",
@@ -1353,6 +1675,20 @@
     {
       "tool": "ReadTurboMCPMaterialTrace",
       "family": "material",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "ReadTurboMCPNodeContext",
+      "family": "graph",
       "epic_5_8_3": {
         "status": "unverified",
         "equivalent_tools": []

@@ -4,7 +4,11 @@ Generated from declarations, definitions and static test references. All runtime
 
 | Tool | Definition | Static call evidence | Runtime | Investment |
 | --- | --- | --- | --- | --- |
+| EditTurboMCPAssetRevert | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPAssetUndo | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPBindFunction | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPBindNewEvent | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPCallLog | [TurboMCPCallLogTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPCallLogClear | [TurboMCPCallLogTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPComment | [TurboMCPCommentTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
@@ -15,13 +19,19 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPFunctionRemove | [TurboMCPFunctionTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphAppend | [TurboMCPGraphAppendTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphCollapse | [TurboMCPGraphStructureTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPGraphConnect | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphCopy | [TurboMCPGraphStructureTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphDead | [TurboMCPGraphDeadTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphFixBackward | [TurboMCPGraphFixBackwardTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPGraphGroupMove | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphKnots | [TurboMCPGraphKnotsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnotsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphPatch | [TurboMCPGraphPatchTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatchTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPGraphPositions | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPGraphRemove | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphReplace | [TurboMCPGraphReplaceTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphRepoint | [TurboMCPGraphRepointTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepointTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPGraphSequence | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPGraphSplitValue | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphSwapCall | [TurboMCPGraphSwapCallTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCallTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPGraphTidy | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPLocalVars | [TurboMCPLocalVarsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
@@ -43,23 +53,35 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPWidgetRetarget | [TurboMCPWidgetRetargetTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetRetargetTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
 | EditTurboMCPWidgetsAsVars | [TurboMCPWidgetsAsVarsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetsAsVarsTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
 | LookTurboMCPCapture | [TurboMCPCapture.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| LookTurboMCPGraphPositions | [TurboMCPLayout.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| LookTurboMCPLayoutDoneCheck | [TurboMCPLayout.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | LookTurboMCPLayoutReport | [TurboMCPLayout.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | LookTurboMCPToolset | [TurboMCPToolsets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | LookTurboMCPWidgetPreview | [TurboMCPWidgetPreview.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp) | parsed_call | not certified | compare-native-before-expanding |
+| PreviewTurboMCPAssetRevert | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPAssetUndo | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPBatchEdit | [TurboMCPBatchEditTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPBindFunction | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPBindNewEvent | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPComment | [TurboMCPCommentTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPDataTableRows | [TurboMCPDataTableRowsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRowsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPEnumAdd | [TurboMCPEnumAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
 | PreviewTurboMCPGraphAppend | [TurboMCPGraphAppendTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphCheck | [TurboMCPGraphCheckTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheckTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphCollapse | [TurboMCPGraphStructureTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPGraphConnect | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphCopy | [TurboMCPGraphStructureTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphDead | [TurboMCPGraphDeadTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphFixBackward | [TurboMCPGraphFixBackwardTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphFixBackwardTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPGraphGroupMove | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPGraphGroupPlacement | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphKnots | [TurboMCPGraphKnotsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnotsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphPatch | [TurboMCPGraphPatchTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphPatchTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPGraphRemove | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphReplace | [TurboMCPGraphReplaceTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphRepoint | [TurboMCPGraphRepointTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepointTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPGraphSequence | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| PreviewTurboMCPGraphSplitValue | [TurboMCPGraphRefactorTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphSwapCall | [TurboMCPGraphSwapCallTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCallTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPGraphTidy | [TurboMCPGraphTidyTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | PreviewTurboMCPLocalVars | [TurboMCPLocalVarsTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
@@ -92,6 +114,7 @@ Generated from declarations, definitions and static test references. All runtime
 | ReadTurboMCPMaterialLabels | [TurboMCPMaterialTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPMaterialLoad | [TurboMCPMaterialTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPMaterialTrace | [TurboMCPMaterialTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| ReadTurboMCPNodeContext | [TurboMCPNodeResolve.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp) | name_reference_only | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPNodeFind | [TurboMCPNodeResolve.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPNodeResolve | [TurboMCPNodeResolve.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPOverrides | [TurboMCPOverrides.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrides.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |

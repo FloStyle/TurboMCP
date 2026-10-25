@@ -65,3 +65,13 @@ Standalone repoint validates transaction availability and captures its owned und
 ## Repoint final count rollback
 
 Final node-count readback now runs before standalone commit. A mismatch invokes owned rollback instead of reporting an unknown committed edit without attempting restoration. Caller-owned batch recovery remains external. Implementation done; unbuilt and untested. Deferred evidence: unexpected node-count change triggers restoration; successful repoint commits once.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

@@ -35,7 +35,8 @@
     "widget_binding_offline": "7050368c75c24a07aa062eaf75436486: 22/26 baseline failures; before final fixture capture ordering adjustment",
     "widget_preview_repeat_native": "38bdf1a0d7e441ca9066455e39122b23: four captures passed button pixel checks",
     "widget_preview_repeat_offline": "6f1a109f57fe405dad3d03c759632d1b: 22/26, same four baseline failures",
-    "vision_native": "bf10e7592ece4810b906900c78c3b4c3"
+    "vision_native": "bf10e7592ece4810b906900c78c3b4c3",
+    "current_offline": "26/26 passed: 250488c3abeb4240bc8e1a1e05fcd40f; four former baseline failures repaired. Historical runs retain their original results."
   },
   "fixed": [
     "Exact source output pins retained by graph reader",

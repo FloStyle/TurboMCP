@@ -5,29 +5,26 @@
   "tasks": [
     {
       "title": "Validate call-cost caps without hiding invalid input",
-      "decision": "partial",
+      "decision": "completed",
       "owners": [
         "R04"
       ],
-      "finding": "Call-cost now refuses nonnumeric and nonpositive caps when records exist. The old banana/zero fallback diagnosis is stale on that path. IsNumeric plus Atoi is not strict integer validation, and the empty-log return precedes validation. The 50-row ceiling still needs truthful continuation wording.",
-      "action": "Probe empty and populated logs with empty, banana, zero, negative, fractional, overflow and over-ceiling caps. Specify one integer policy before editing; totals must still cover all records. Do not rewrite the cost aggregator.",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
       "id": "019cf7af-dfe5-4cda-91b9-1ca706ace4e5",
       "path": "todo/019cf7af.md",
       "source_refs": [
         {
-          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallCostTools.cpp",
-          "line": 124,
-          "sha256": "4dc6c0ac51ba67a48afeaabb36c000798bf687e1b7035ee6a98ed40a77b4075b"
-        },
-        {
-          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypes.cpp",
-          "line": null,
-          "sha256": "f48c6a9827b44a16a8d75d1cc2deb2e0cc43ec35aea3ec6890eaa6f9044c2e4f"
+          "path": "todo/019cf7af.md",
+          "line": 1,
+          "sha256": "1277025c3be9cb99df7c70310b9045dd8d4066a32a30e081ca20d6d6c6e3214c"
         }
       ],
       "verification_commands": [
         "python Tools/execute-tests.py --profile engine --suites test-call-cost,test-batch-tools --execute"
-      ]
+      ],
+      "previous_register_finding": "Call-cost now refuses nonnumeric and nonpositive caps when records exist. The old banana/zero fallback diagnosis is stale on that path. IsNumeric plus Atoi is not strict integer validation, and the empty-log return precedes validation. The 50-row ceiling still needs truthful continuation wording.",
+      "previous_register_action": "Probe empty and populated logs with empty, banana, zero, negative, fractional, overflow and over-ceiling caps. Specify one integer policy before editing; totals must still cover all records. Do not rewrite the cost aggregator."
     },
     {
       "title": "Map trace events to actual executing nodes",
@@ -844,34 +841,26 @@
     },
     {
       "title": "Repair the restricted single-graph batch contract",
-      "decision": "confirmed",
+      "decision": "requires_spec",
       "owners": [
         "R05"
       ],
-      "finding": "ParseBatch preplans all operations, ignores unknown fields and lacks same-graph enforcement. Batch defers compile and can print unchanged after failed rollback. ApplyCore now calls ApplyTransacted, which owns a transaction, so the supposed transaction-free core is not transaction-free.",
-      "action": "First resolve b230e508 core ownership, then enforce one asset/graph, strict fields and IDs, sequential revalidation, one final compile and verified whole-batch restoration. Count the partially applied failing operation. Replace BASELINE tests with B01-B05; never broaden to multi-asset or save.",
+      "finding": "Administrative reconciliation: this record is marked open or backlog; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
       "id": "5b6a8e45-6c5f-4dbc-8bc6-0b37e6da1eae",
       "path": "todo/5b6a8e45.md",
       "source_refs": [
         {
-          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
-          "line": 21,
-          "sha256": "c4915b9f2f949335b8d3ecaa7674e01762001e248025a50c01c57895254e9276"
-        },
-        {
-          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp",
-          "line": 525,
-          "sha256": "0933ef4fe107d801e99aad8b22ff110f6f489f5538d95cf9ebe0d5f04059c7ff"
-        },
-        {
-          "path": "Tools/test-batch-edit.py",
-          "line": 4,
-          "sha256": "c660f0a15de862da4238b28938f51c8c49fe5dd954d8ad9d4e0c4bc1027b0759"
+          "path": "todo/5b6a8e45.md",
+          "line": 1,
+          "sha256": "d0ee843e0bfdc813c3438c87d882ceeb073f04d9c6b49dee502d44fe9c158e4d"
         }
       ],
       "verification_commands": [
         "python Tools/execute-tests.py --profile engine --suites test-batch-edit --execute"
-      ]
+      ],
+      "previous_register_finding": "ParseBatch preplans all operations, ignores unknown fields and lacks same-graph enforcement. Batch defers compile and can print unchanged after failed rollback. ApplyCore now calls ApplyTransacted, which owns a transaction, so the supposed transaction-free core is not transaction-free.",
+      "previous_register_action": "First resolve b230e508 core ownership, then enforce one asset/graph, strict fields and IDs, sequential revalidation, one final compile and verified whole-batch restoration. Count the partially applied failing operation. Replace BASELINE tests with B01-B05; never broaden to multi-asset or save."
     },
     {
       "title": "Retire the legacy release-run container",
@@ -1609,40 +1598,27 @@
     },
     {
       "title": "Define field syntax without changing value semantics",
-      "decision": "partial",
+      "decision": "completed",
       "owners": [
         "R04",
         "R08"
       ],
-      "finding": "A common type resolver already maps float/real/double to PC_Real, while field/options and row operations have different grammars. A shared type resolver is not a shared field parser.",
-      "action": "Inventory accepted syntax and precision for each current caller. Test display/internal-name ambiguity, nested arrays, duplicate options and invalid types. Preserve existing valid inputs; approve any common grammar before refactoring unrelated parsers.",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
       "id": "abdd2c08-6544-4730-b183-e4d856aad868",
       "path": "todo/abdd2c08.md",
       "source_refs": [
         {
-          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTypeParser.cpp",
-          "line": null,
-          "sha256": "5f6353129a7c54c7771aad089744fb32b1265c99d53a69ee4992d65d47c704bc"
-        },
-        {
-          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStruct.cpp",
-          "line": 582,
-          "sha256": "23837e141d4fd29a67e39b5128f5c3a1c02dc42b679ce794a74c515943cea2a2"
-        },
-        {
-          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAdd.cpp",
-          "line": null,
-          "sha256": "9b55a5684ac20ea92e43c56efd196e065a63c37a43760219fb148e2a885c05c2"
-        },
-        {
-          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTableRows.cpp",
-          "line": 409,
-          "sha256": "e37ea71c14b3a85b84317bea9a3114e1c3117549266a0d948f27df86fa7fc982"
+          "path": "todo/abdd2c08.md",
+          "line": 1,
+          "sha256": "08b419a9257a17f09616edb0a6d4528682fa479d6fe3a4a739d415d5c4ef455a"
         }
       ],
       "verification_commands": [
         "python Tools/execute-tests.py --profile engine --suites test-batch-tools,test-vars-add,test-struct,test-datatable-rows --execute"
-      ]
+      ],
+      "previous_register_finding": "A common type resolver already maps float/real/double to PC_Real, while field/options and row operations have different grammars. A shared type resolver is not a shared field parser.",
+      "previous_register_action": "Inventory accepted syntax and precision for each current caller. Test display/internal-name ambiguity, nested arrays, duplicate options and invalid types. Preserve existing valid inputs; approve any common grammar before refactoring unrelated parsers."
     },
     {
       "title": "Extract a genuinely transaction-free repoint core",
@@ -3509,6 +3485,657 @@
       ],
       "verification_commands": [
         "python Tools/validate.py"
+      ]
+    },
+    {
+      "id": "67f00521-72fb-49fb-aee8-b9054762ab73",
+      "path": "todo/67f00521.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Local-variable promotion must preserve calculated values",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/67f00521.md",
+          "line": 1,
+          "sha256": "0711245c831927e58c0211cda6a9a86d9e4839510a42fb5d6d71ea50a14737b2"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-01",
+      "path": "todo/field-fix-01.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Graph replacement single-transaction implementation",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-01.md",
+          "line": 1,
+          "sha256": "fcd10fb8f8b821deeac98bac6c74f73df951ee4d0570efad4e9f31f1e950fe36"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-02",
+      "path": "todo/field-fix-02.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Repoint rollback and batch ownership implementation",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-02.md",
+          "line": 1,
+          "sha256": "3a091602be560c42533c12bbe91f5bb060e3e71b0f0eb36cadb141556da81e9f"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-03",
+      "path": "todo/field-fix-03.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Call Swap transaction and replacement-position safeguards",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-03.md",
+          "line": 1,
+          "sha256": "3c42ca6c0435f53d13e150914a54ca6b2d65c8b9733abccb1d370a565edb2888"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-04",
+      "path": "todo/field-fix-04.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Call Swap default value preservation",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-04.md",
+          "line": 1,
+          "sha256": "6445f852b0317551cbee5558e08447cefcd9f385d50ba56e29542aadbde2dd4a"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-05",
+      "path": "todo/field-fix-05.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Pin-default failure rollback and stable readback",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-05.md",
+          "line": 1,
+          "sha256": "790c319135426325c114f83ba5170e1632930e03301f61211e39b52a49e85c51"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-06",
+      "path": "todo/field-fix-06.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Graph Copy link and rollback safeguards",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-06.md",
+          "line": 1,
+          "sha256": "1a65cd8b4ca9dd1ed5042d5e101b37caa457be8fc44265f1d80f182d2c192de7"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-07",
+      "path": "todo/field-fix-07.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Variable creation preflight and transaction guard",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-07.md",
+          "line": 1,
+          "sha256": "d9de443297e3db5189fd0f4425ff0b1c826d55b853c0022be138238321221f84"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-08",
+      "path": "todo/field-fix-08.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "X-41 compile execution-reachability diagnostics",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-08.md",
+          "line": 1,
+          "sha256": "92996a42522e1a868291f189b2ee02ed1e24eec38797d0c97380edf510107f0f"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-09",
+      "path": "todo/field-fix-09.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "X-41 append execution-reachability guard",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-09.md",
+          "line": 1,
+          "sha256": "244caefe51a1ee82ce9e2c5f2c4c7144cc343b51e535985059cdd1ec00283c30"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-10",
+      "path": "todo/field-fix-10.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "BL-12 stored local default visibility",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-10.md",
+          "line": 1,
+          "sha256": "4856cb770b96a29648939569bfa9a2a550aeced99791b20efc27d040d1f0a416"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-11",
+      "path": "todo/field-fix-11.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "GL-15 execution merge reader classification",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-11.md",
+          "line": 1,
+          "sha256": "49ea63246fbb8805fdc03a9349d2a37871216b2c5be43ad1963e3ebaf38eb79f"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-12",
+      "path": "todo/field-fix-12.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "NF-08 NodeFind whitespace search",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-12.md",
+          "line": 1,
+          "sha256": "35ed3e5b5970e142c10ac149009dd39d4001b7ce75bd46198d6fa49f7ae15213"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-13",
+      "path": "todo/field-fix-13.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "OV-03 override origin classification",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-13.md",
+          "line": 1,
+          "sha256": "f245781fd99e95e09c2b683f7ffa918e97cb7db4fb1c53f8c50c7ab57e0d28bf"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-14",
+      "path": "todo/field-fix-14.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "BatchEdit rollback transaction lifetime",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-14.md",
+          "line": 1,
+          "sha256": "6a506b91264444e09786c0264771608e80ef72ad767ae22ce85f863920f76bb8"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-15",
+      "path": "todo/field-fix-15.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "DataTable prepared row application",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-15.md",
+          "line": 1,
+          "sha256": "8b213d33e4d7ac72c4dfca4ce5cd90b4dc4c29f79141d179e6ded206f6354e35"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-16",
+      "path": "todo/field-fix-16.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "FunctionAdd reconstructed pin lifetime",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-16.md",
+          "line": 1,
+          "sha256": "f2b62e33f61e9824ff231ac90b66f05e5add9f602c6ba324ba9b6a9aa1960789"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-17",
+      "path": "todo/field-fix-17.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Signature type and parameter identity preflight",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-17.md",
+          "line": 1,
+          "sha256": "01b7faf446c483257a25656e3d2dfc27a7d3aa49f3e243d3a3d0d382d66e671a"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-18",
+      "path": "todo/field-fix-18.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Reader node IDs in targeted edits",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-18.md",
+          "line": 1,
+          "sha256": "78e741e04dbf024c2a6e6e4b87954eebc4308b0e0774f39da43598b674b91f30"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-19",
+      "path": "todo/field-fix-19.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Repoint exact connection replacement",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-19.md",
+          "line": 1,
+          "sha256": "c322c709b45adf7c9c2bafef4eb2c9c8c00ee08729ff5a6cb161558f002305b8"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-20",
+      "path": "todo/field-fix-20.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Graph Tidy undo ownership",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-20.md",
+          "line": 1,
+          "sha256": "84077c065748bd76da4da7a22b7e325e32b9df96fe0a898c580148bc0cf8554a"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-21",
+      "path": "todo/field-fix-21.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Blueprint summary completeness and graph labels",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-21.md",
+          "line": 1,
+          "sha256": "5886c73d2efb54c3c08b1afeb0d4437edd59ade62de3eb5382e7f65c58fb9beb"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-22",
+      "path": "todo/field-fix-22.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Toolset help continuation",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-22.md",
+          "line": 1,
+          "sha256": "4befc2ca93d185a93646ae7eb396a48c22675907c5a8a744d43eaaf07d0fb664"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-23",
+      "path": "todo/field-fix-23.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Concise and accurate save reporting",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-23.md",
+          "line": 1,
+          "sha256": "b5a391e0b3c0d879b07b42d8767175b3af6507e85837e1c78679f0a7d70f3efd"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-24",
+      "path": "todo/field-fix-24.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Tool build identification and execution labels",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-24.md",
+          "line": 1,
+          "sha256": "87955f6a7072794bb0c56326b2bde2b5b81a90e2a12511542c91a66ab690edcc"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-25",
+      "path": "todo/field-fix-25.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Object and interface signature type support",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-25.md",
+          "line": 1,
+          "sha256": "27713741a1eff834e89da3857aacd7a393a4b3511c361b670c1e47470c0d08b4"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-26",
+      "path": "todo/field-fix-26.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Default-on tool call recording",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-26.md",
+          "line": 1,
+          "sha256": "0ac8c413f731076459088108230e0bb0a09198a98a279bae90746e929f541fc1"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-27",
+      "path": "todo/field-fix-27.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Member variable reader and spawner identity alignment",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-27.md",
+          "line": 1,
+          "sha256": "fd499e06ab225c0f4e44d1659906ce92d86079058b7330ef5ff35b7eeff1c344"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-FIX-28",
+      "path": "todo/field-fix-28.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Schema-aware missing-default lint",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-fix-28.md",
+          "line": 1,
+          "sha256": "0169f6c9d10940324c55330e06868a6d700d3940f148aebd40317b7e56f5cbae"
+        }
+      ]
+    },
+    {
+      "id": "FEATURE-FIELD-GRAMMAR",
+      "path": "todo/field-grammar-feature.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Consider a common declaration grammar across tools",
+      "decision": "requires_spec",
+      "finding": "Administrative reconciliation: this record is marked open or backlog; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-grammar-feature.md",
+          "line": 1,
+          "sha256": "bb88be0369a6dd47ba2105dffafdc8d9cdee3e823d09775a5dce10abf46d23fa"
+        }
+      ]
+    },
+    {
+      "id": "FIELD-X97",
+      "path": "todo/field-x97-build.md",
+      "owners": [
+        "R04"
+      ],
+      "verification_commands": [
+        "python Tools/validate-repo.py"
+      ],
+      "title": "Fix Oct23 S1 plugin compile errors",
+      "decision": "completed",
+      "finding": "Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.",
+      "action": "Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.",
+      "source_refs": [
+        {
+          "path": "todo/field-x97-build.md",
+          "line": 1,
+          "sha256": "ac9e0beda7f3f1bb0cacc4c25f9e24db4ecb4a2fd7e2f8f98101eda815379fb6"
+        }
       ]
     }
   ]

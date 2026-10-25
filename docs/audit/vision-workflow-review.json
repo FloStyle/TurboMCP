@@ -70,5 +70,7 @@
     "DataTable visual inspection",
     "High DPI, multi-monitor, occluded windows and HDR",
     "Responsive widget, clipping and localization"
-  ]
+  ],
+  "current_offline_run": "250488c3abeb4240bc8e1a1e05fcd40f",
+  "current_offline": "26/26 passed after baseline repair; prior vision-run offline evidence remains historical."
 }

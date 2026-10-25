@@ -72,3 +72,13 @@ Reconciled the existing cbe1585 implementation: NodeResolve prints unlinked Defa
 ### Pin identity and default edit diagnostics
 
 2e1c0eb labels direction-local indices explicitly and adds raw node pin-array indices and pin GUIDs. It also exposes hidden/orphaned/read-only/ignored/connected-default flags. Implemented, unbuilt_untested. X-61: no longer presents direction-local numbering as an unspecified index. This does not promise every native tool uses the raw array order; use named pins or that tool's documented selector. Deferred: mixed input/output ordering, null slots and reconstructed pins; flags match live pin state.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

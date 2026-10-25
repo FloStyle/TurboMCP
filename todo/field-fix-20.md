@@ -65,3 +65,13 @@ c1d4447 reserves planned non-comment node rectangles and previously placed gette
 ### Getter split failure handling
 
 e6615fb revalidates planned getter/consumer membership and reciprocal links before mutation. Copy creation/type/link failures stop later changes and enter rollback even under Force. No silent skipped splits are reported as successful layout. Implemented, unbuilt_untested. Deferred evidence: stale pin plans refuse, failed allocation/type/link outcomes restore prior graph, Force does not bypass failure. No tests/builds run.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

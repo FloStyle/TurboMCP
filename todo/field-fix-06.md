@@ -90,3 +90,13 @@ Stock SpawnNodeFromTemplate invokes MarkBlueprintAsStructurallyModified for stru
 ## Copy follow-up — 2026-10-24
 
 1345194 fixes duplicated pin allocation in graph Copy. Native run e1e668a817214e49a58069012288e21c passed positive and post-creation failure cases on disposable PrintString nodes. The concrete defect is fixed/tested; this is not acceptance for all node classes or complete rollback state. See tool-quality-2026-10-23.md for remaining coverage.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

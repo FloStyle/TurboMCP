@@ -1,17 +1,63 @@
 {
   "schema": 1,
-  "plugin_tree": "289f3dbbeb4162da91576c3a5fec8bfbc7f42fce",
+  "plugin_tree": "00445a330cbe587c0bad9b0e1266353f26d6ce1f",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 102,
+    "tools": 125,
     "by_toolset": {
-      "UTurboMCPEditToolset": 39,
-      "UTurboMCPLookToolset": 4,
-      "UTurboMCPPreviewToolset": 29,
-      "UTurboMCPReadToolset": 30
+      "UTurboMCPEditToolset": 49,
+      "UTurboMCPLookToolset": 6,
+      "UTurboMCPPreviewToolset": 39,
+      "UTurboMCPReadToolset": 31
     }
   },
   "tools": [
+    {
+      "id": "EditTurboMCPAssetRevert",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Confirm"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+          "line": 187
+        }
+      ],
+      "test_references": [
+        "Tools/test-tool-text-inventory.py"
+      ],
+      "static_call_evidence": "name_reference_only",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPAssetUndo",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "Confirm"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+          "line": 146
+        }
+      ],
+      "test_references": [
+        "Tools/test-tool-text-inventory.py"
+      ],
+      "static_call_evidence": "name_reference_only",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
     {
       "id": "EditTurboMCPBatchEdit",
       "toolset": "UTurboMCPEditToolset",
@@ -22,13 +68,63 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
-          "line": 68
+          "line": 167
         }
       ],
       "test_references": [
         "Tools/test-batch-edit.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPBindFunction",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "TargetNodeId",
+        "TargetPin",
+        "FunctionName",
+        "ObjectNodeId",
+        "ObjectPin"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 513
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPBindNewEvent",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "TargetNodeId",
+        "TargetPin",
+        "EventName"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 519
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -44,14 +140,15 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
-          "line": 202
+          "line": 190
         }
       ],
       "test_references": [
         "Tools/test-call-cost.py",
         "Tools/test-call-log-file.py",
         "Tools/test-call-log.py",
-        "Tools/test-graph-text-guards.py"
+        "Tools/test-graph-text-guards.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -69,13 +166,14 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallLogTools.cpp",
-          "line": 249
+          "line": 237
         }
       ],
       "test_references": [
         "Tools/test-call-cost.py",
         "Tools/test-call-log.py",
-        "Tools/test-graph-text-guards.py"
+        "Tools/test-graph-text-guards.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -100,7 +198,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp",
-          "line": 44
+          "line": 33
         }
       ],
       "test_references": [
@@ -122,14 +220,17 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
-          "line": 143
+          "line": 142
         }
       ],
       "test_references": [
         "Tools/test-compile-ensure.py",
         "Tools/test-graph-knots.py",
         "Tools/test-monday-disk-loop.py",
-        "Tools/test-uncovered-tools.py"
+        "Tools/test-override-add.py",
+        "Tools/test-tool-text-inventory.py",
+        "Tools/test-uncovered-tools.py",
+        "Tools/test-widgets-as-vars.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -171,7 +272,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp",
-          "line": 38
+          "line": 30
         }
       ],
       "test_references": [
@@ -196,7 +297,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionTools.cpp",
-          "line": 25
+          "line": 16
         }
       ],
       "test_references": [
@@ -221,12 +322,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPFunctionTools.cpp",
-          "line": 31
+          "line": 22
         }
       ],
       "test_references": [
-        "Tools/test-function.py",
-        "Tools/test-local-vars.py"
+        "Tools/test-function.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -240,13 +340,14 @@
       "parameters": [
         "Asset",
         "GraphName",
-        "Text"
+        "Text",
+        "Continuation"
       ],
       "family": "graph",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
-          "line": 41
+          "line": 38
         }
       ],
       "test_references": [
@@ -274,13 +375,38 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
-          "line": 90
+          "line": 76
         }
       ],
       "test_references": [
         "Tools/test-graph-structure.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPGraphConnect",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "SourceNodeId",
+        "SourcePin",
+        "TargetNodeId",
+        "TargetPin"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 493
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -301,7 +427,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
-          "line": 42
+          "line": 30
         }
       ],
       "test_references": [
@@ -324,7 +450,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp",
-          "line": 37
+          "line": 30
         }
       ],
       "test_references": [
@@ -361,6 +487,31 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "EditTurboMCPGraphGroupMove",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeIds",
+        "DeltaX",
+        "DeltaY",
+        "DestinationBox"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+          "line": 441
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "EditTurboMCPGraphKnots",
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
@@ -371,7 +522,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnotsTools.cpp",
-          "line": 41
+          "line": 30
         }
       ],
       "test_references": [
@@ -408,6 +559,53 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "EditTurboMCPGraphPositions",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Positions"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+          "line": 68
+        }
+      ],
+      "test_references": [
+        "Tools/test-tool-text-inventory.py"
+      ],
+      "static_call_evidence": "name_reference_only",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPGraphRemove",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Nodes",
+        "Links"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 507
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "EditTurboMCPGraphReplace",
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
@@ -419,7 +617,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
-          "line": 44
+          "line": 28
         }
       ],
       "test_references": [
@@ -455,9 +653,55 @@
         "Tools/test-c09-success.py",
         "Tools/test-client-retry.py",
         "Tools/test-graph-repoint.py",
-        "Tools/test-result-contract.py"
+        "Tools/test-result-contract.py",
+        "Tools/test-widget-retarget.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPGraphSequence",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Groups",
+        "bSplitValues"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 501
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPGraphSplitValue",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 497
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -471,7 +715,8 @@
         "GraphName",
         "NodeId",
         "ReplacementTypeId",
-        "KeepOld"
+        "KeepOld",
+        "Options"
       ],
       "family": "graph",
       "definitions": [
@@ -496,7 +741,12 @@
         "Asset",
         "GraphName",
         "bForce",
-        "NodeIds"
+        "NodeIds",
+        "MainPath",
+        "HorizontalGap",
+        "VerticalGap",
+        "LanePitch",
+        "WrapAfter"
       ],
       "family": "graph",
       "definitions": [
@@ -520,13 +770,14 @@
       "toolset": "UTurboMCPEditToolset",
       "parameters": [
         "Asset",
-        "GraphName"
+        "GraphName",
+        "Names"
       ],
       "family": "graph",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp",
-          "line": 37
+          "line": 30
         }
       ],
       "test_references": [
@@ -548,7 +799,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
-          "line": 102
+          "line": 38
         }
       ],
       "test_references": [
@@ -593,7 +844,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp",
-          "line": 88
+          "line": 38
         }
       ],
       "test_references": [
@@ -616,7 +867,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp",
-          "line": 95
+          "line": 49
         }
       ],
       "test_references": [
@@ -639,10 +890,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp",
-          "line": 39
+          "line": 31
         }
       ],
       "test_references": [
+        "Tools/test-function.py",
         "Tools/test-override-add.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -662,7 +914,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp",
-          "line": 46
+          "line": 34
         }
       ],
       "test_references": [
@@ -688,7 +940,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp",
-          "line": 15
+          "line": 30
         }
       ],
       "test_references": [],
@@ -708,7 +960,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
-          "line": 666
+          "line": 698
         }
       ],
       "test_references": [
@@ -719,6 +971,7 @@
         "Tools/test-override-add.py",
         "Tools/test-save-thumbnail-option.py",
         "Tools/test-struct.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-vars-add.py",
         "Tools/test-vcs-write.py",
         "Tools/test-widget-retarget.py",
@@ -740,12 +993,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp",
-          "line": 671
+          "line": 705
         }
       ],
       "test_references": [
         "Tools/test-monday-disk-loop.py",
-        "Tools/test-save-thumbnail-option.py"
+        "Tools/test-save-thumbnail-option.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -764,7 +1018,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
-          "line": 86
+          "line": 74
         }
       ],
       "test_references": [
@@ -788,7 +1042,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
-          "line": 42
+          "line": 31
         }
       ],
       "test_references": [
@@ -812,10 +1066,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceTools.cpp",
-          "line": 35
+          "line": 15
         }
       ],
       "test_references": [
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-trace.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -835,7 +1090,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp",
-          "line": 38
+          "line": 31
         }
       ],
       "test_references": [
@@ -859,10 +1114,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
-          "line": 46
+          "line": 29
         }
       ],
       "test_references": [
+        "Tools/test-checkout-output.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-vcs.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -884,10 +1141,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBindAdd.cpp",
-          "line": 41
+          "line": 24
         }
       ],
       "test_references": [
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-widget-retarget.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -910,6 +1168,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-widget-retarget.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -930,7 +1189,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetsAsVarsTools.cpp",
-          "line": 23
+          "line": 17
         }
       ],
       "test_references": [
@@ -961,8 +1220,63 @@
       ],
       "test_references": [
         "Tools/test-capture-asset.py",
+        "Tools/test-capture-framing.py",
         "Tools/test-capture-selectors.py",
-        "Tools/test-capture.py"
+        "Tools/test-capture.py",
+        "Tools/test-layout-output.py",
+        "Tools/test-tool-text-inventory.py",
+        "Tools/test-vision-workflow.py"
+      ],
+      "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "LookTurboMCPGraphPositions",
+      "toolset": "UTurboMCPLookToolset",
+      "parameters": [
+        "Asset",
+        "GraphName"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+          "line": 233
+        }
+      ],
+      "test_references": [
+        "Tools/test-capture-framing.py",
+        "Tools/test-layout-output.py",
+        "Tools/test-tool-text-inventory.py"
+      ],
+      "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "LookTurboMCPLayoutDoneCheck",
+      "toolset": "UTurboMCPLookToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "AlignmentTolerance"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
+          "line": 257
+        }
+      ],
+      "test_references": [
+        "Tools/test-capture-framing.py",
+        "Tools/test-layout-output.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -975,22 +1289,26 @@
       "toolset": "UTurboMCPLookToolset",
       "parameters": [
         "Asset",
-        "GraphName"
+        "GraphName",
+        "AlignmentTolerance"
       ],
       "family": "graph",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLayout.cpp",
-          "line": 40
+          "line": 36
         }
       ],
       "test_references": [
+        "Tools/test-capture-framing.py",
         "Tools/test-capture-selectors.py",
         "Tools/test-capture.py",
         "Tools/test-graph-fix-backward.py",
         "Tools/test-graph-tidy.py",
+        "Tools/test-layout-output.py",
         "Tools/test-layout.py",
-        "Tools/test-monday-disk-loop.py"
+        "Tools/test-monday-disk-loop.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1006,7 +1324,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 210
+          "line": 226
         }
       ],
       "test_references": [
@@ -1025,16 +1343,19 @@
         "Widget",
         "SampleValuesJson",
         "FunctionName",
-        "Size"
+        "Size",
+        "Execution"
       ],
       "family": "widget",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
-          "line": 62
+          "line": 48
         }
       ],
       "test_references": [
+        "Tools/test-tool-text-inventory.py",
+        "Tools/test-widget-preview-inputs.py",
         "Tools/test-widget-preview.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1042,6 +1363,50 @@
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
       "investment_decision": "compare-native-before-expanding"
+    },
+    {
+      "id": "PreviewTurboMCPAssetRevert",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+          "line": 186
+        }
+      ],
+      "test_references": [
+        "Tools/test-tool-text-inventory.py"
+      ],
+      "static_call_evidence": "name_reference_only",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPAssetUndo",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+          "line": 145
+        }
+      ],
+      "test_references": [
+        "Tools/test-tool-text-inventory.py"
+      ],
+      "static_call_evidence": "name_reference_only",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
       "id": "PreviewTurboMCPBatchEdit",
@@ -1053,13 +1418,63 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBatchEditTools.cpp",
-          "line": 64
+          "line": 123
         }
       ],
       "test_references": [
         "Tools/test-batch-edit.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPBindFunction",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "TargetNodeId",
+        "TargetPin",
+        "FunctionName",
+        "ObjectNodeId",
+        "ObjectPin"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 510
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPBindNewEvent",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "TargetNodeId",
+        "TargetPin",
+        "EventName"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 516
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1082,7 +1497,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommentTools.cpp",
-          "line": 28
+          "line": 17
         }
       ],
       "test_references": [
@@ -1128,7 +1543,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEnumAddTools.cpp",
-          "line": 25
+          "line": 17
         }
       ],
       "test_references": [
@@ -1146,13 +1561,14 @@
       "parameters": [
         "Asset",
         "GraphName",
-        "Text"
+        "Text",
+        "Continuation"
       ],
       "family": "graph",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
-          "line": 28
+          "line": 17
         }
       ],
       "test_references": [
@@ -1177,7 +1593,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphCheckTools.cpp",
-          "line": 29
+          "line": 15
         }
       ],
       "test_references": [
@@ -1206,13 +1622,38 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
-          "line": 75
+          "line": 61
         }
       ],
       "test_references": [
         "Tools/test-graph-structure.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPGraphConnect",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "SourceNodeId",
+        "SourcePin",
+        "TargetNodeId",
+        "TargetPin"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 491
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -1233,7 +1674,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphStructureTools.cpp",
-          "line": 27
+          "line": 15
         }
       ],
       "test_references": [
@@ -1256,10 +1697,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphDeadTools.cpp",
-          "line": 24
+          "line": 17
         }
       ],
       "test_references": [
+        "Tools/test-bp-lint.py",
         "Tools/test-graph-dead.py",
         "Tools/test-graph-roundtrip.py"
       ],
@@ -1294,6 +1736,53 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPGraphGroupMove",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeIds",
+        "DeltaX",
+        "DeltaY",
+        "DestinationBox"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+          "line": 440
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPGraphGroupPlacement",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeIds"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
+          "line": 443
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPGraphKnots",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -1304,7 +1793,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphKnotsTools.cpp",
-          "line": 28
+          "line": 17
         }
       ],
       "test_references": [
@@ -1341,6 +1830,29 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPGraphRemove",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Nodes",
+        "Links"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 504
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPGraphReplace",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -1352,7 +1864,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplaceTools.cpp",
-          "line": 31
+          "line": 15
         }
       ],
       "test_references": [
@@ -1395,6 +1907,51 @@
       "investment_decision": "retain-existing-safety-and-workflow-value"
     },
     {
+      "id": "PreviewTurboMCPGraphSequence",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "Groups",
+        "bSplitValues"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 499
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "PreviewTurboMCPGraphSplitValue",
+      "toolset": "UTurboMCPPreviewToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+          "line": 495
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
       "id": "PreviewTurboMCPGraphSwapCall",
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
@@ -1402,7 +1959,8 @@
         "GraphName",
         "NodeId",
         "ReplacementTypeId",
-        "KeepOld"
+        "KeepOld",
+        "Options"
       ],
       "family": "graph",
       "definitions": [
@@ -1427,7 +1985,12 @@
         "Asset",
         "GraphName",
         "bForce",
-        "NodeIds"
+        "NodeIds",
+        "MainPath",
+        "HorizontalGap",
+        "VerticalGap",
+        "LanePitch",
+        "WrapAfter"
       ],
       "family": "graph",
       "definitions": [
@@ -1451,13 +2014,14 @@
       "toolset": "UTurboMCPPreviewToolset",
       "parameters": [
         "Asset",
-        "GraphName"
+        "GraphName",
+        "Names"
       ],
       "family": "graph",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPLocalVarsTools.cpp",
-          "line": 24
+          "line": 17
         }
       ],
       "test_references": [
@@ -1479,7 +2043,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialBlocksTools.cpp",
-          "line": 57
+          "line": 16
         }
       ],
       "test_references": [
@@ -1501,7 +2065,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialLabelsPromoteTools.cpp",
-          "line": 50
+          "line": 16
         }
       ],
       "test_references": [
@@ -1524,7 +2088,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTidyTools.cpp",
-          "line": 47
+          "line": 16
         }
       ],
       "test_references": [
@@ -1548,13 +2112,14 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeTypeTools.cpp",
-          "line": 43
+          "line": 32
         }
       ],
       "test_references": [
         "Tools/test-batch-tools.py",
         "Tools/test-monday-disk-loop.py",
-        "Tools/test-node-pins-owner.py"
+        "Tools/test-node-pins-owner.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1575,12 +2140,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeTypeTools.cpp",
-          "line": 30
+          "line": 19
         }
       ],
       "test_references": [
         "Tools/test-batch-tools.py",
-        "Tools/test-node-pins-owner.py"
+        "Tools/test-node-pins-owner.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1599,10 +2165,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp",
-          "line": 26
+          "line": 18
         }
       ],
       "test_references": [
+        "Tools/test-function.py",
         "Tools/test-override-add.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1622,7 +2189,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
-          "line": 57
+          "line": 45
         }
       ],
       "test_references": [
@@ -1646,7 +2213,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp",
-          "line": 29
+          "line": 18
         }
       ],
       "test_references": [
@@ -1666,7 +2233,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 256
+          "line": 271
         }
       ],
       "test_references": [
@@ -1689,7 +2256,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVarsAddTools.cpp",
-          "line": 25
+          "line": 18
         }
       ],
       "test_references": [
@@ -1711,10 +2278,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
-          "line": 39
+          "line": 22
         }
       ],
       "test_references": [
+        "Tools/test-checkout-output.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-vcs.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1737,6 +2306,7 @@
         }
       ],
       "test_references": [
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-widget-retarget.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1756,11 +2326,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssetCostTools.cpp",
-          "line": 22
+          "line": 13
         }
       ],
       "test_references": [
-        "Tools/test-asset-cost.py"
+        "Tools/test-asset-cost.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1778,13 +2349,15 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
-          "line": 420
+          "line": 415
         }
       ],
       "test_references": [
+        "Tools/test-asset-describe-metadata.py",
         "Tools/test-asset-tools.py",
         "Tools/test-enum-add.py",
         "Tools/test-struct.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-widget-preview.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -1803,11 +2376,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAssets.cpp",
-          "line": 283
+          "line": 277
         }
       ],
       "test_references": [
-        "Tools/test-asset-tools.py"
+        "Tools/test-asset-tools.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1827,11 +2401,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBPLintTools.cpp",
-          "line": 27
+          "line": 15
         }
       ],
       "test_references": [
-        "Tools/test-bp-lint.py"
+        "Tools/test-bp-lint.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1853,7 +2428,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp",
-          "line": 49
+          "line": 43
         }
       ],
       "test_references": [
@@ -1864,6 +2439,7 @@
         "Tools/test-local-vars.py",
         "Tools/test-read-budget-floor.py",
         "Tools/test-refs.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-vars-add.py",
         "Tools/test-widget-tree-sync.py",
         "Tools/test-widget-tree.py",
@@ -1891,7 +2467,8 @@
         }
       ],
       "test_references": [
-        "Tools/test-call-cost.py"
+        "Tools/test-call-cost.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1916,7 +2493,8 @@
       ],
       "test_references": [
         "Tools/test-call-cost.py",
-        "Tools/test-call-log.py"
+        "Tools/test-call-log.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1935,11 +2513,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPComments.cpp",
-          "line": 119
+          "line": 88
         }
       ],
       "test_references": [
-        "Tools/test-comments.py"
+        "Tools/test-comments.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1952,18 +2531,20 @@
       "toolset": "UTurboMCPReadToolset",
       "parameters": [
         "Asset",
-        "Include"
+        "Include",
+        "Columns"
       ],
       "family": "asset-and-data",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPDataTable.cpp",
-          "line": 91
+          "line": 92
         }
       ],
       "test_references": [
         "Tools/test-datatable-rows.py",
-        "Tools/test-datatable.py"
+        "Tools/test-datatable.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -1986,7 +2567,10 @@
       ],
       "test_references": [
         "Tools/test-asset-tools.py",
-        "Tools/test-save-thumbnail-option.py"
+        "Tools/test-capture-framing.py",
+        "Tools/test-field-open-diagnostic.py",
+        "Tools/test-save-thumbnail-option.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2002,7 +2586,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 317
+          "line": 319
         }
       ],
       "test_references": [
@@ -2021,13 +2605,17 @@
         "Asset",
         "GraphName",
         "Format",
-        "Detail"
+        "Detail",
+        "Offset",
+        "MaxChars",
+        "Revision",
+        "EntryFilter"
       ],
       "family": "graph",
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
-          "line": 64
+          "line": 59
         }
       ],
       "test_references": [
@@ -2052,6 +2640,7 @@
         "Tools/test-graph-text-guards.py",
         "Tools/test-graph-tidy-scope.py",
         "Tools/test-monday-disk-loop.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-trace.py",
         "Tools/test-uncovered-tools.py"
       ],
@@ -2072,7 +2661,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
-          "line": 97
+          "line": 76
         }
       ],
       "test_references": [
@@ -2080,7 +2669,8 @@
         "Tools/test-material-blocks.py",
         "Tools/test-material-label-promote.py",
         "Tools/test-material-tidy.py",
-        "Tools/test-material.py"
+        "Tools/test-material.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2102,7 +2692,8 @@
         }
       ],
       "test_references": [
-        "Tools/test-mat-inst-load.py"
+        "Tools/test-mat-inst-load.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2120,14 +2711,15 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
-          "line": 73
+          "line": 53
         }
       ],
       "test_references": [
         "Tools/test-batch-tools.py",
         "Tools/test-material-blocks.py",
         "Tools/test-material-label-promote.py",
-        "Tools/test-material.py"
+        "Tools/test-material.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2147,7 +2739,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
-          "line": 81
+          "line": 60
         }
       ],
       "test_references": [
@@ -2155,7 +2747,8 @@
         "Tools/test-mat-inst-load.py",
         "Tools/test-material-texture-parameters.py",
         "Tools/test-material-tidy.py",
-        "Tools/test-material.py"
+        "Tools/test-material.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2175,16 +2768,43 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMaterialTools.cpp",
-          "line": 88
+          "line": 67
         }
       ],
       "test_references": [
         "Tools/test-batch-tools.py",
         "Tools/test-call-cost.py",
         "Tools/test-material-tidy.py",
-        "Tools/test-material.py"
+        "Tools/test-material.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "ReadTurboMCPNodeContext",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Asset",
+        "GraphName",
+        "NodeId",
+        "NextHops"
+      ],
+      "family": "graph",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+          "line": 659
+        }
+      ],
+      "test_references": [
+        "Tools/test-node-reader-output.py",
+        "Tools/test-tool-text-inventory.py"
+      ],
+      "static_call_evidence": "name_reference_only",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",
@@ -2202,13 +2822,16 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 487
+          "line": 510
         }
       ],
       "test_references": [
+        "Tools/test-capture-framing.py",
         "Tools/test-capture-selectors.py",
         "Tools/test-capture.py",
-        "Tools/test-monday-disk-loop.py"
+        "Tools/test-monday-disk-loop.py",
+        "Tools/test-node-reader-output.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2226,10 +2849,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
-          "line": 252
+          "line": 282
         }
       ],
       "test_references": [
+        "Tools/test-node-reader-output.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-uncovered-tools.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -2249,12 +2874,13 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrides.cpp",
-          "line": 176
+          "line": 191
         }
       ],
       "test_references": [
         "Tools/test-override-add.py",
-        "Tools/test-overrides.py"
+        "Tools/test-overrides.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2273,12 +2899,14 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheckTools.cpp",
-          "line": 25
+          "line": 14
         }
       ],
       "test_references": [
         "Tools/test-play-check.py",
-        "Tools/test-trace.py"
+        "Tools/test-tool-text-inventory.py",
+        "Tools/test-trace.py",
+        "Tools/test-vision-workflow.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2297,11 +2925,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecksTools.cpp",
-          "line": 62
+          "line": 15
         }
       ],
       "test_references": [
-        "Tools/test-pure-checks.py"
+        "Tools/test-pure-checks.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2324,7 +2953,8 @@
         }
       ],
       "test_references": [
-        "Tools/test-refs.py"
+        "Tools/test-refs.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2340,7 +2970,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp",
-          "line": 182
+          "line": 191
         }
       ],
       "test_references": [
@@ -2367,11 +2997,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
-          "line": 311
+          "line": 312
         }
       ],
       "test_references": [
-        "Tools/test-agent-help.py"
+        "Tools/test-agent-help.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2387,7 +3018,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
-          "line": 252
+          "line": 253
         }
       ],
       "test_references": [
@@ -2417,7 +3048,8 @@
         "Tools/test-batch-tools.py",
         "Tools/test-graph-check.py",
         "Tools/test-panel-reach.py",
-        "Tools/test-save-thumbnail-option.py"
+        "Tools/test-save-thumbnail-option.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2436,10 +3068,11 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPTraceReadTools.cpp",
-          "line": 25
+          "line": 15
         }
       ],
       "test_references": [
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-trace.py"
       ],
       "static_call_evidence": "parsed_call",
@@ -2464,7 +3097,8 @@
       ],
       "test_references": [
         "Tools/test-asset-tools.py",
-        "Tools/test-struct.py"
+        "Tools/test-struct.py",
+        "Tools/test-tool-text-inventory.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",
@@ -2482,10 +3116,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPSourceControlTools.cpp",
-          "line": 32
+          "line": 15
         }
       ],
       "test_references": [
+        "Tools/test-checkout-output.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-vcs-write.py",
         "Tools/test-vcs.py"
       ],
@@ -2505,11 +3141,12 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
-          "line": 25
+          "line": 15
         }
       ],
       "test_references": [
         "Tools/test-monday-disk-loop.py",
+        "Tools/test-tool-text-inventory.py",
         "Tools/test-widget-tree-sync.py"
       ],
       "static_call_evidence": "parsed_call",

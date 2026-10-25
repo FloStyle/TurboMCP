@@ -5,7 +5,8 @@ Status: backlog
 Priority: P3
 Readiness: needs_reconciliation
 Owner: unassigned
-Review: scope-separated
+Design: docs/architecture.md
+Review: source-reviewed
 Validation: unbuilt_untested
 
 ## Current review
@@ -21,3 +22,11 @@ Reconcile tool-specific help examples with the existing help records 9263bd95 an
 ## Completion boundary
 
 A future approved design must specify compatibility, supported options per caller and truthful help. No tests, build or editor runs were performed for this tracking split.
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked open or backlog; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.

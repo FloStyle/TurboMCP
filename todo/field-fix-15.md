@@ -60,3 +60,13 @@ afd3d63 rejects oversized row/field identifiers before planning FName conversion
 ### DataTable reusable outputs
 
 6520c0f resets parse/plan/report outputs; parsing publishes operations only after complete success. Replanning preserves aliased input but replaces the prior plan. Missing table/schema records a refusal as well as returning an error. Current MCP wrapper already uses fresh locals; this closes helper-level stale/partial output behavior, not a reproduced field crash. Implemented, unbuilt_untested. Deferred evidence: sequential reuse, late parse error, aliased replan and early apply refusal cannot expose prior operations or success reports. No tests/builds run.
+
+## Current review
+
+### Review-register reconciliation, 2026-10-25
+
+Administrative reconciliation: this record is marked done; its existing implementation and verification evidence remain authoritative.
+
+Preserve the recorded validation limits; do not infer runtime acceptance from review-register coverage.
+
+This is a review of the tracking record, not a new semantic code review or test run.
