@@ -1574,3 +1574,7 @@ artifact naming remains a separate follow-up; no full-vision acceptance claim.
 
 ### Approved purchase result clarity repair - 2026-10-25
 Integrator scope: workflow-purchase-results. Readiness: ready. Echo the actual verified pin identity and normalized value on changed/unchanged PinDefault results without changing mutation or rollback behavior. State CommentList's point-based membership approximation accurately in code, help and output; escape multiline titles. Extend the disposable purchase scenario with exact-result and refusal checks. No new engine requirement or broad readiness claim.
+
+
+## Purchase workflow visual and result repairs - 2026-10-25
+Implemented 9e1cc0a and dd8f58f; both bounded scope gates passed. Build and expanded disposable scenario pass in c8735a8f289248269dad165ce361fd5d. Exact per-tool evidence and remaining limits are in docs/audit/purchase-workflow-review.json. SVG glyphs, function title, redundant getter placement, wrapped comment title clearance, normalized pin result identity and comment membership wording repaired. User visual acceptance remains pending; 125-tool certification is not complete. Older tidy/comment regression fixtures are missing required nodes; offline gate retains four separately documented failures. DSH stays paused.

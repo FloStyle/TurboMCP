@@ -1,6 +1,6 @@
 # Purchase workflow tool review
 
-The repeatable scenario exists and passes its behavioral assertions. It is **not yet visually approved or a complete review of every participating tool**. The per-tool record is [purchase-workflow-review.json](purchase-workflow-review.json). No tool is marked Ready from a passing inventory alone.
+The repaired scenario passes its expanded behavioral assertions. The final capture has been inspected, but **user visual acceptance and full per-tool certification remain open**. The per-tool record is [purchase-workflow-review.json](purchase-workflow-review.json). No tool is marked Ready from a passing inventory alone.
 
 ## Scenario
 
@@ -27,17 +27,25 @@ Partial pages and filtered reads are inspection fragments. Keep revision and all
 - Run 3a32f7e906f94bf6829af00fa95ee3a1: build, purchase workflow and connected-target reader round-trip passed.
 - Run 1a36a0820e1f4f51a37bf636806c60ee: local ancestry and promotion suites passed; the broader run failed on the reader defect subsequently corrected.
 - Run 1b5649bf2c4c44f68bef8ed29077061d: purchase and 125-tool text inventory passed. The remaining round-trip failure was an obsolete assertion expecting a stronger success claim; the corrected test retains zero-finding and explicit limitation assertions.
-- The final candidate differs from the last native test only by a comment encoding repair.
+- Historical candidate 9e90b5a differed from its native run only by a comment encoding repair; current evidence follows below.
 - Assignment workflow-purchase-clarity passed the full-SHA scope check from af770775dd7f825216f9f83d86c4c944fb6b8cf2 to 9e90b5a88f5bcb51c3d3fa742aca4ab3b2bf5b44.
 - Earlier fixture assignment scope check did not pass because integrator-owned catalog/runner registration was committed after its approved base. That registration was independently inspected; it must not be represented as a worker scope pass.
 
-## Still required
+## Workflow repairs verified on 2026-10-25
 
-- Fix comment title/bubble interference seen in the final capture. Numeric node overlap checks missed it.
-- Finish per-tool negative cases, schema examples, code/comment review and actual read/vision side effects. Transcript presence alone is not behavioral acceptance.
-- Review GraphLoad literal escaping and unsupported-form fidelity before broad write-back claims.
-- Correct historical compile/save comments that imply transaction rollback behavior the implementation does not provide.
-- Keep automatic local names as a documented fallback; meaningful caller names are now supported.
-- Separate broader widget, append/batch, save/reload and rendering workflows from this unsaved arithmetic scenario.
+9e1cc0a repairs final-scale SVG rendering, the scratch function title, redundant input getters, reader spacing and long comment titles. dd8f58f reports exact verified pin defaults and accurately describes CommentList membership. Capture, compile and comment implementation notes were corrected. Both assignments passed their full-SHA scope gates.
 
-The offline gate is not green: stale TODO, invalid UTF-8 in docs/user/tools.md, client retry contract failure and heuristic lookup-guard findings require reconciliation. They are not hidden by the focused native passes. The first sandboxed offline run additionally hit temporary-directory permission errors; use the elevated follow-up report for the actual gate result.
+Run c8735a8f289248269dad165ce361fd5d passed build and the expanded purchase scenario. It checks clean inspection, missing targets/invalid parameters, preview non-mutation, exact changed/unchanged pin results, runtime values, annotation placement/bubble state, preserved unrelated content and written image artifacts. Actual PNG inspection confirmed visible SVG icons and no title/node or title/execution-wire interference. Numerical findings alone did not establish this.
+
+Run 3e4c2fe30e9e41b89b63350a15631d28 passed connected-target graph round-trip. Its purchase failure was a test expectation using error: for PinDefault's documented unchanged: refused result; the corrected assertion checks that specific prefix and target name, and subsequent runs passed.
+
+The SVG fault was isolated to vectors requested at the final zoom: FWidgetRenderer batches them without updating the shared vector atlas. A normal renderer resource update with an empty window buffer, followed by repaint, resolves the capture defect. No live asset editor or custom engine modification is required. This does not establish the cause of the separate live CP-14 contrast issue.
+
+## Remaining limits
+
+- User visual acceptance is pending. All 18 participating tools have bounded scenario evidence; they are not globally certified.
+- GraphLoad literal escaping/unsupported forms, wider types, full failure restoration, Widget editing, append/batch and save/reload remain separate cases.
+- Tidy preserves existing comment anchors. Creating a box in a poor original location before tidy can leave long wires; this scenario tidies first, then annotates and inspects the image.
+- Run 61f4696c2bbf4848ac6171de134dfb9e failed the older tidy-scope and comment-box suites because their required fixture nodes were absent. Do not count them as passes.
+- Offline run effc7e24c58847d990fb5940b8c72f85 passed 22/26. Remaining failures: ready task 02674939.md lacks Problem; docs/user/tools.md has invalid UTF-8; client retry expectations mismatch; lookup guards report existing findings.
+- Inventory of 125 tools is not completion of 125 behavioral and wording reviews.

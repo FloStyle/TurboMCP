@@ -40,3 +40,8 @@ Native `EditorToolset.EditorAppToolset.OpenEditorForAsset` opened `/Game/Tests/B
 This only establishes that opening these two fixtures did not reproduce X-93. Inspection/capture, other asset types and project dependencies remain untested. CP-14 rendering artifact has not been exercised by this run. Neither issue is closed.
 
 Evidence: `.local/executions/f616e04a3382410e96dd713a2f25635f/report.json` and `02-suites/test-field-open-diagnostic.log` in the execution checkout. Native discovery also confirms `SlateInspectorToolset` is available for subsequent autonomous screenshots and UI observations.
+
+
+## Off-screen SVG icons - confirmed capture boundary, 2026-10-25
+
+On stock 5.8.3, FWidgetRenderer graph captures requested SVG icons at their final zoom without updating Slate's shared vector cache. Function/local-variable glyphs and resize handles appeared as white squares. PNG icons rendered correctly; missing assets, alpha readback and simple warm-up at a different zoom were ruled out. TurboMCP now paints at the final scale, runs the renderer resource update with an empty window buffer, and repaints. Actual purchase captures confirm visible icons (9e1cc0a; final build/scenario c8735a8f289248269dad165ce361fd5d). Future 5.9 proposal: document or provide a public off-screen SVG resource preparation path. This is distinct from unproven live graph contrast issue CP-14; no engine patch is required by the plugin fix.
