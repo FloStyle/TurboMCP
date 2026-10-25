@@ -2148,7 +2148,8 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
-            "TestProject/TurboMCPTest.uproject"
+            "TestProject/TurboMCPTest.uproject",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeSync.cpp"
           ],
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonButtonWorkflowTest.cpp",
