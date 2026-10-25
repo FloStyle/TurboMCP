@@ -24,7 +24,9 @@
     "common_button_native": "Passed f7ee45f24a69440fb5ee5dcc3c3654a6: final build, Common Button native workflow and existing WidgetPreview regression suite. Full edit/interaction workflow remains incomplete.",
     "common_button_offline": "22/26 passed: 91161d123b484a939583638659e187e6; existing structure, language, client-retry and lookup-guards failures remain.",
     "parent_binding_native": "Passed 9fa27a0144b542d7a2a69409989a210e: scoped Tidy, nearby getter, aligned execution/data rows, unchanged links/defaults/count, clean compile and runtime sender dispatch.",
-    "parent_binding_offline": "22/26 passed d20bd814286945678b180f291d0a1ee5; existing structure/language/client-retry/lookup-guards failures remain."
+    "parent_binding_offline": "22/26 passed d20bd814286945678b180f291d0a1ee5; existing structure/language/client-retry/lookup-guards failures remain.",
+    "override_native": "Passed 63b610bfbc52406390897bd5ec46273d: build, discovery/filter, preview preservation, refusal, duplicate no-op, exact node IDs, clean compile, same-instance callback state and native captures.",
+    "override_offline": "21/26 in 249b03879bb4417ab3edad38ee9828da; isolated test-runner-verdicts rerun passed after native execution ended. Four known baseline failures remain."
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -514,6 +516,45 @@
       ],
       "planned_workflows": [],
       "scenario_evidence": "3a38a896a17b48b1aecb7db7b399af75"
+    },
+    {
+      "tool": "ReadTurboMCPOverrides",
+      "role": "Discover inherited events",
+      "status": "scenario checked",
+      "ready": false,
+      "behavior": "Common Button hover/unhover; discovery, preservation, invalid-name refusal, duplicate no-op and compiled callback behavior",
+      "review": "Implementation, wrappers, signatures, help, comments and actual result English reviewed; created IDs and unchanged semantics corrected",
+      "remaining": "Function/interface/signature extremes, parent implementation semantics, persistence and pointer input outside this scenario",
+      "scenario_evidence": "63b610bfbc52406390897bd5ec46273d",
+      "workflows": [
+        "WF-UI-07-OVERRIDES"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPOverrideAdd",
+      "role": "Preview or create an inherited override entry",
+      "status": "scenario checked",
+      "ready": false,
+      "behavior": "Common Button hover/unhover; discovery, preservation, invalid-name refusal, duplicate no-op and compiled callback behavior",
+      "review": "Implementation, wrappers, signatures, help, comments and actual result English reviewed; created IDs and unchanged semantics corrected",
+      "remaining": "Function/interface/signature extremes, parent implementation semantics, persistence and pointer input outside this scenario",
+      "scenario_evidence": "63b610bfbc52406390897bd5ec46273d",
+      "workflows": [
+        "WF-UI-07-OVERRIDES"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPOverrideAdd",
+      "role": "Preview or create an inherited override entry",
+      "status": "scenario checked",
+      "ready": false,
+      "behavior": "Common Button hover/unhover; discovery, preservation, invalid-name refusal, duplicate no-op and compiled callback behavior",
+      "review": "Implementation, wrappers, signatures, help, comments and actual result English reviewed; created IDs and unchanged semantics corrected",
+      "remaining": "Function/interface/signature extremes, parent implementation semantics, persistence and pointer input outside this scenario",
+      "scenario_evidence": "63b610bfbc52406390897bd5ec46273d",
+      "workflows": [
+        "WF-UI-07-OVERRIDES"
+      ]
     }
   ],
   "evidence": [
@@ -570,7 +611,7 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 32,
+    "scenario_reviewed": 35,
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
   },

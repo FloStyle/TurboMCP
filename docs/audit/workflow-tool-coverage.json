@@ -204,6 +204,38 @@
         "Native delegate broadcast proves registration/handler dispatch, not mouse input"
       ],
       "layout_review": "User accepted corrected capture on 2026-10-25. Scoped Tidy keeps getter near Bind and aligns handler/Set rows; native preservation and runtime checks passed."
+    },
+    {
+      "id": "WF-UI-07-OVERRIDES",
+      "title": "Create Common Button hover and unhover overrides",
+      "status": "scenario_checked_visual_acceptance_pending",
+      "review": "docs/audit/override-workflow-review.md",
+      "fixture": "TurboMCP.Workflow.Override",
+      "evidence": "63b610bfbc52406390897bd5ec46273d",
+      "focused_tools": [
+        "ReadTurboMCPOverrides",
+        "PreviewTurboMCPOverrideAdd",
+        "EditTurboMCPOverrideAdd"
+      ],
+      "tools_used": [
+        "ReadTurboMCPOverrides",
+        "PreviewTurboMCPOverrideAdd",
+        "EditTurboMCPOverrideAdd",
+        "EditTurboMCPGraphConnect",
+        "EditTurboMCPGraphTidy",
+        "EditTurboMCPCompile",
+        "LookTurboMCPCapture",
+        "ReadTurboMCPWidgetTree",
+        "ReadTurboMCPBlueprintLoad",
+        "ReadTurboMCPGraphLoad",
+        "LookTurboMCPWidgetPreview"
+      ],
+      "limitations": [
+        "Event overrides only; function-return and interface override paths not exercised",
+        "Body nodes and widget/style setup are fixture prerequisites, not tool creation evidence",
+        "Callbacks invoked directly; no physical pointer/focus or save/reload test",
+        "Signature unavailable/truncation wording fixed by source review; synthetic missing/large signatures not exercised"
+      ]
     }
   ],
   "tool_usage": {
@@ -218,14 +250,16 @@
       "WF-BP-02-MINIMUM-QUANTITY",
       "WF-BP-03-EVENT-CONNECT",
       "WF-BP-04-CALL-SWAP",
-      "WF-UI-06-PARENT-BINDING"
+      "WF-UI-06-PARENT-BINDING",
+      "WF-UI-07-OVERRIDES"
     ],
     "EditTurboMCPGraphAppend": [
       "WF-BP-02-MINIMUM-QUANTITY"
     ],
     "EditTurboMCPGraphConnect": [
       "WF-BP-03-EVENT-CONNECT",
-      "WF-UI-06-PARENT-BINDING"
+      "WF-UI-06-PARENT-BINDING",
+      "WF-UI-07-OVERRIDES"
     ],
     "EditTurboMCPGraphRemove": [
       "WF-BP-03-EVENT-CONNECT"
@@ -237,7 +271,8 @@
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY",
       "WF-BP-04-CALL-SWAP",
-      "WF-UI-06-PARENT-BINDING"
+      "WF-UI-06-PARENT-BINDING",
+      "WF-UI-07-OVERRIDES"
     ],
     "EditTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"
@@ -250,7 +285,8 @@
       "WF-BP-02-MINIMUM-QUANTITY",
       "WF-BP-03-EVENT-CONNECT",
       "WF-BP-04-CALL-SWAP",
-      "WF-UI-06-PARENT-BINDING"
+      "WF-UI-06-PARENT-BINDING",
+      "WF-UI-07-OVERRIDES"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -263,7 +299,8 @@
       "WF-BP-01-PURCHASE"
     ],
     "LookTurboMCPWidgetPreview": [
-      "WF-UI-05-COMMON-BUTTON"
+      "WF-UI-05-COMMON-BUTTON",
+      "WF-UI-07-OVERRIDES"
     ],
     "PreviewTurboMCPBindNewEvent": [
       "WF-UI-06-PARENT-BINDING"
@@ -307,7 +344,8 @@
       "WF-BP-01-PURCHASE",
       "WF-BP-03-EVENT-CONNECT",
       "WF-BP-04-CALL-SWAP",
-      "WF-UI-05-COMMON-BUTTON"
+      "WF-UI-05-COMMON-BUTTON",
+      "WF-UI-07-OVERRIDES"
     ],
     "ReadTurboMCPCommentList": [
       "WF-BP-01-PURCHASE"
@@ -318,7 +356,8 @@
       "WF-BP-03-EVENT-CONNECT",
       "WF-BP-04-CALL-SWAP",
       "WF-UI-05-COMMON-BUTTON",
-      "WF-UI-06-PARENT-BINDING"
+      "WF-UI-06-PARENT-BINDING",
+      "WF-UI-07-OVERRIDES"
     ],
     "ReadTurboMCPNodeContext": [
       "WF-BP-01-PURCHASE",
@@ -332,10 +371,20 @@
     ],
     "ReadTurboMCPWidgetTree": [
       "WF-UI-05-COMMON-BUTTON",
-      "WF-UI-06-PARENT-BINDING"
+      "WF-UI-06-PARENT-BINDING",
+      "WF-UI-07-OVERRIDES"
+    ],
+    "ReadTurboMCPOverrides": [
+      "WF-UI-07-OVERRIDES"
+    ],
+    "PreviewTurboMCPOverrideAdd": [
+      "WF-UI-07-OVERRIDES"
+    ],
+    "EditTurboMCPOverrideAdd": [
+      "WF-UI-07-OVERRIDES"
     ]
   },
-  "unique_tools_scenario_reviewed": 32,
+  "unique_tools_scenario_reviewed": 35,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
