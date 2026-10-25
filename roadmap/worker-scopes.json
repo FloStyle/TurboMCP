@@ -2272,6 +2272,19 @@
             "TestProject/Config/DefaultEngine.ini"
           ],
           "new_files": []
+        },
+        "vision-play-menu": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
+            "Tools/test-vision-workflow.py"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayViewport.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayViewport.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayMenuWorkflowTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
