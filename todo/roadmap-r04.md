@@ -25,6 +25,10 @@ Review Preview/Edit GraphAppend through a minimum-quantity purchase rule. Fixtur
 
 Native append run 66a3139ded6a464fb65c9d46181f1db5 passes semantic/preservation checks. Captured pure nodes are placed beyond Return because only exec attachments anchor placement. Anchor wholly pure blocks to their existing data consumer using existing dependency/collision planning; preserve all existing positions. Discovery reports AND as not pure because it reads an unconfigured class default: use associated function purity. Add consumer-side placement and discovery/pin agreement assertions to the same workflow. Run supervised purchase suite, inspect final PNG and record residual layout limitations.
 
+## Append review outcome (2026-10-25)
+
+Implemented label, preview endpoint, pure placement and discovery purity fixes. Native purchase extension passes with exact preservation, runtime values and geometry checks; see [review](../docs/audit/purchase-append-workflow-review.md). Broader Append regression failed due stale reader/fixture expectations and remains validation debt, not a product feature. Existing function-signature editing is an unsupported workflow prerequisite, not claimed implemented.
+
 ## Problem
 For each tool record actual callable schema, side effects, supported scope, refusal behavior and test evidence. Distinguish declared, definition located, source reviewed, runtime observed and release accepted. Start with result-envelope double wrapping and invalid numeric/default parsing. Do not invent a new public result schema.
 

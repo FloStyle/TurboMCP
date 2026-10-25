@@ -55,3 +55,7 @@ The SVG fault was isolated to vectors requested at the final zoom: FWidgetRender
 Candidate 52e1676 retains a forward consumer for each original shared getter, keeps copied inputs in pin order and searches free rows above obstacles. Native run e963de2a6c564ac4b9ce32cf26238ff2 passed build and the purchase workflow; the final commit adds indentation cleanup only. New assertions cover forward getter wires, input order and unrelated node/comment overlap. The full-SHA assignment scope gate passed.
 
 Actual final PNG inspection still shows the Subtotal wire crossing the percent comment. This is open, not a passing visual result. The next layout/annotation pass must address it without moving unrelated content or changing values. The user accepted the previous image except getter stacking; do not turn that into acceptance of this new image.
+
+## Minimum-quantity extension
+
+[Append workflow review](purchase-append-workflow-review.md) records the four-tool follow-up, corrected output/label/placement/purity behavior and native evidence. The existing input-signature prerequisite and failing legacy harness are explicit. Coverage is now 22/125 tools within these workflows, not global certification.

@@ -6,7 +6,7 @@
   "ready": false,
   "scenario": "Correct a percent conversion in CalculatePurchase, introduce named locals for repeated arithmetic, tidy, comment and inspect the result.",
   "fixture": "TurboMCP.Workflow.Purchase; unique unsaved disposable Blueprint with an unrelated function",
-  "candidate": "52e1676accb71faf4c51083437a310f3d20e792f",
+  "candidate": "2193c8624303f32c2f0da7916c0af9b7025a4599",
   "validation": {
     "build": "passed: e963de2a6c564ac4b9ce32cf26238ff2; final commit differs only in indentation",
     "native_scenario": "passed: behavior, refusals, preview preservation, getter direction, input order and no unrelated node/comment overlap",
@@ -14,7 +14,9 @@
     "local_ancestry_and_promotion": "passed before final reader-only change",
     "tool_inventory": "125 tools inventoried; not 125 completed behavioral reviews",
     "visual": "User accepted earlier capture except getter stacking. Final PNG inspected: stacking and reversed inputs fixed, but Subtotal wire crosses the percent comment. Full visual acceptance remains open.",
-    "offline": "22/26 passed; missing Problem in 02674939.md, invalid UTF-8 tools.md, client retry mismatch and lookup heuristics remain"
+    "offline": "22/26 passed; missing Problem in 02674939.md, invalid UTF-8 tools.md, client retry mismatch and lookup heuristics remain",
+    "append_native": "passed: d144f02447e34727a8f460ab1d118bfb",
+    "append_regression": "failed: 2233299766164635bca3a2e8abe0b90d; obsolete required reader arguments and detached exec expectations; alias-collision native case passed"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -29,7 +31,12 @@
     "Compile/save and capture comments describe actual behavior",
     "PinDefault changed/unchanged results echo verified target and normalized display value",
     "CommentList explicitly reports point-based membership and escapes multiline titles",
-    "Shared getters retain forward-facing consumers; copies preserve input order and search above/below obstacles"
+    "Shared getters retain forward-facing consumers; copies preserve input order and search above/below obstacles",
+    "Append accepts labels after multiline closing delimiters",
+    "Append preview wire descriptions identify both endpoints",
+    "Append public contract no longer promises guaranteed rollback or preview success",
+    "Pure append blocks anchor before existing data consumers",
+    "Node discovery uses associated function purity instead of unconfigured call-node defaults"
   ],
   "tools": [
     {
@@ -211,13 +218,59 @@
       "review": "No automatic approval claim; combines heuristic metrics with capture",
       "remaining": "Numeric checks do not detect the remaining wire/comment crossing; inspect actual PNG.",
       "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+    },
+    {
+      "tool": "PreviewTurboMCPNodeType",
+      "role": "Discover exact node/getter IDs",
+      "status": "scenario checked",
+      "ready": false,
+      "acceptance": "good for WF-BP-02 for now; not globally certified",
+      "behavior": "Discovery returns the required comparison, AND and function-input IDs; AND purity agrees with pin inspection.",
+      "review": "Associated function flags replace unconfigured call-node purity.",
+      "remaining": "Ranking is not semantic selection; broader action classes remain outside this case.",
+      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb"
+    },
+    {
+      "tool": "PreviewTurboMCPNodePins",
+      "role": "Inspect callable pins before append",
+      "status": "scenario checked",
+      "ready": false,
+      "acceptance": "good for WF-BP-02 for now; not globally certified",
+      "behavior": "Inspects operator/AND/getter output pins used by submitted links.",
+      "review": "Probe behavior and output limitations reviewed.",
+      "remaining": "Probe construction executes editor code; not all callback effects certified.",
+      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb"
+    },
+    {
+      "tool": "PreviewTurboMCPGraphAppend",
+      "role": "Validate the targeted minimum-quantity rule",
+      "status": "scenario checked",
+      "ready": false,
+      "acceptance": "good for WF-BP-02 for now; not globally certified",
+      "behavior": "Reports four nodes and named wire endpoints; does not change target graph in valid/refused cases.",
+      "review": "Shared planning, scratch preflight, label parsing and accurate side-effect wording reviewed.",
+      "remaining": "Preview replans later; it is not a reservation. Signature changes unsupported.",
+      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb"
+    },
+    {
+      "tool": "EditTurboMCPGraphAppend",
+      "role": "Apply the minimum-quantity rule",
+      "status": "scenario checked",
+      "ready": false,
+      "acceptance": "good for WF-BP-02 for now; not globally certified",
+      "behavior": "Four independent runtime cases, exact node delta, preservation and overlap checks pass; final PNG inspected.",
+      "review": "Labels, consumer-relative pure placement, result text and transaction limitations reviewed.",
+      "remaining": "Bounded acceptance only. Older regression harness fails; live rollback and disk durability not certified.",
+      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb"
     }
   ],
   "evidence": [
     ".local/executions/c8735a8f289248269dad165ce361fd5d/report.json",
     ".local/executions/46de8a0308124f5a88b312080b3c7f73/report.json",
     ".local/executions/3e4c2fe30e9e41b89b63350a15631d28/report.json",
-    ".local/executions/e963de2a6c564ac4b9ce32cf26238ff2/report.json"
+    ".local/executions/e963de2a6c564ac4b9ce32cf26238ff2/report.json",
+    ".local/executions/d144f02447e34727a8f460ab1d118bfb/report.json",
+    ".local/executions/2233299766164635bca3a2e8abe0b90d/report.json"
   ],
   "regression_limits": [
     "61f4696c2bbf4848ac6171de134dfb9e: tidy-scope fixture lacks selected/anchor nodes; comment-box fixture has fewer than two nodes. Both failed, not passed.",
@@ -232,5 +285,37 @@
       "problem": "Subtotal wire crosses the percent-conversion comment box after annotation creation.",
       "next": "Coordinate annotation bounds and input layout or route the wire without changing calculation semantics. Do not mark the workflow visually complete."
     }
-  ]
+  ],
+  "append_workflow": {
+    "id": "WF-BP-02-MINIMUM-QUANTITY",
+    "status": "provisionally accepted for this scenario",
+    "run": "d144f02447e34727a8f460ab1d118bfb",
+    "precondition": "MinimumQuantity already exists as an unused double input. Append cannot add a parameter to an existing function.",
+    "edit": "Add two function-input getters, a >= comparison and Boolean AND; replace only CanAfford.",
+    "checks": [
+      "Boundary quantity with enough funds passes",
+      "Below-minimum quantity fails",
+      "Insufficient funds fails",
+      "Above-minimum quantity passes",
+      "FinalPrice remains Quantity * 45 in all four cases",
+      "Exactly four planned nodes created; all original nodes, positions and defaults retained",
+      "All old links retained except the explicit CanAfford replacement",
+      "Preview, missing-pin refusal and truncated-text refusal preserve graph text, positions, count and dirty flag",
+      "Unrelated function unchanged",
+      "Native rectangles have no new overlaps; final capture inspected"
+    ],
+    "limitations": [
+      "Existing signature editing is unsupported; fixture preparation is not tool evidence",
+      "No save/reload, injected live rollback, arbitrary mixed exec/data graph or multi-consumer layout certification",
+      "Search results are ranked candidates: select GreaterEqual, not the first result",
+      "Preserved fixed nodes can require curved return connections",
+      "Older append regression suite failed; do not count it as passed",
+      "WF-BP-01-WIRE-COMMENT remains open in the pre-existing layout"
+    ]
+  },
+  "review_progress": {
+    "scenario_reviewed": 22,
+    "inventory": 125,
+    "meaning": "Bounded workflow review, not global validation of every tool path."
+  }
 }
