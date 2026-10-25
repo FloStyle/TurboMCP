@@ -41,3 +41,5 @@ Enhanced Input foundation integration: native 8463aa977fd34b429ff769f1c1aebc4e a
 CommonUI follow-up: native 83b71dfcc8764dff9cd82b7b212a8a46 passed; see [workflow evidence](commonui-play-workflow.md). VISION-09 is done for this bounded scenario. VISION-10 tracks broader navigation and production CommonUI diagnostics.
 
 Focus/diagnostics integration: native 3c78d90b08224fe69e055a985ae23708 and offline 821fc9cbfc244511bd3aa86bbf308757 (26/26) passed. VISION-11 records the fixed focus-loss bug; VISION-10 retains broader unverified runtime cases. Full-review count remains 38/127.
+
+Modal/deactivation follow-up: native 5c2d3e69eb5d49adbd9827b2dbe21577 passed; VISION-12 records the fixed analog re-hold refusal. See commonui-play-workflow.md for failed attempts and exact limits. Full-review count remains 38/127.

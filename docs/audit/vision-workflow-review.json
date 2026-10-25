@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "updated": "2026-10-25",
-  "native_run": "3c78d90b08224fe69e055a985ae23708",
+  "native_run": "5c2d3e69eb5d49adbd9827b2dbe21577",
   "offline_run": "2d230dafffe2474a91fcf0320b9ef59c",
   "offline": "22/26; four unchanged baseline failures",
   "capture_count": 26,
@@ -94,10 +94,10 @@
       "id": "VISION-10",
       "kind": "feature",
       "status": "open",
-      "verification": "D-pad navigation, focus-loss cancellation, explicit release and optional CommonUI diagnostics passed in native run 3c78d90b08224fe69e055a985ae23708",
+      "verification": "Native modal Back, disabled-control navigation, deactivation callback, refusal and recovery passed in 5c2d3e69eb5d49adbd9827b2dbe21577",
       "priority": "P2",
-      "problem": "Broader runtime input coverage remains: application switching, modal/disabled controls, multiple players and device-specific prompts.",
-      "next": "Application-deactivation cleanup is implemented but not reproduced. Active widget identities are unordered, not an activation stack; routing policy remains unavailable. Simultaneous physical input and chords remain unsupported.",
+      "problem": "Broader input coverage remains: real OS application switching, multiple players, simultaneous input and device-specific prompts.",
+      "next": "Real OS application switching remains untested. Multiple players, chords and physical-device prompts are outside the bounded scenario. Active widgets remain unordered; routing-owner diagnostics unavailable.",
       "fix": "D-pad Down/Up, original-player axis cleanup on focus loss, outside-focus refusal and recovery passed. ReadPlayInputState reports logical CommonInput type, active widget paths, focus membership and last release reason."
     },
     {
@@ -107,7 +107,16 @@
       "priority": "P1",
       "problem": "Timed analog input continued after focus left the PIE viewport.",
       "fix": "Cancel repeats on focus loss and release only the owned key on the original player; expose the release reason and refuse existing active keys. Application-deactivation cancellation also implemented.",
-      "verification": "Native focus-loss, axis-zero, refusal and explicit-release checks passed; application switching remains untested."
+      "verification": "Native focus-loss and simulated application-deactivation cancellation passed; OS switching remains untested."
+    },
+    {
+      "id": "VISION-12",
+      "kind": "bug",
+      "status": "done",
+      "priority": "P1",
+      "problem": "An analog hold could be refused after release because a stale digital down flag was mistaken for active axis input.",
+      "fix": "Check analog activity by axis value; discard only the owned pending axis component before release, preserving paired components and normal release events.",
+      "verification": "Native release/re-hold, deactivation and recovery passed in 5c2d3e69eb5d49adbd9827b2dbe21577"
     }
   ],
   "planned_scenarios": [
@@ -119,6 +128,6 @@
     "Responsive widget, clipping and localization",
     "Directional CommonUI focus navigation, modal controls, focus-loss release and general stack/device diagnostics"
   ],
-  "current_offline_run": "821fc9cbfc244511bd3aa86bbf308757",
-  "current_offline": "26/26 passed for input focus safety and CommonUI diagnostics."
+  "current_offline_run": "697f0191d9424ed68136c9d5a67eb177",
+  "current_offline": "26/26 passed for modal/deactivation acceptance and analog re-hold repair."
 }

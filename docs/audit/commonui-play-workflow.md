@@ -49,3 +49,13 @@ Native run 3c78d90b08224fe69e055a985ae23708 passed the stock-engine build and fu
 Input cleanup sends no repeat or release into a newly focused editor control. It releases only the owned key on the original PlayerInput, without flushing other keys or injecting actions. Keys already active on the player refuse. CommonInput and active-widget diagnostics use native getters from loaded optional classes only; no assets or optional modules are loaded. Unavailable data remains explicit.
 
 Focus/diagnostics integration: native 3c78d90b08224fe69e055a985ae23708 and offline 821fc9cbfc244511bd3aa86bbf308757 (26/26) passed. VISION-11 records the fixed focus-loss bug; VISION-10 retains broader unverified runtime cases. Full-review count remains 38/127.
+
+## Modal, disabled-control and deactivation follow-up
+
+Native 5c2d3e69eb5d49adbd9827b2dbe21577 passed on stock Unreal. D-pad navigation skips a disabled action between Settings and Resume; its callback count stays zero. Settings is modal, and Back restores the paused parent without resuming gameplay. The stock Slate deactivation callback cancels a five-second hold, refuses new input while inactive, and allows recovery with no stale axis value. This simulates the application callback; it is not OS Alt-Tab evidence. Ten captures and independent state assertions cover the sequence.
+
+Failed runs a75efa4284ff47bbbbaa5491da058bd3 and 6ed32ef102304216bd2c395b3df9d97c exposed analog re-hold refusal. Axis value was zero, but a stale digital down flag caused a false ownership refusal. The fix uses value for analog ownership and preserves normal release-event handling; pending same-frame samples are cleared only for the owned component. Assertions were not weakened.
+
+Implementation d7cea2e; scope gate passed. Remaining: actual OS switching, multiple players, simultaneous physical input/chords and device-specific prompts. Earlier remaining-limit paragraphs are historical and superseded by this result. DSH remains paused.
+
+Offline integration gate 697f0191d9424ed68136c9d5a67eb177 passed 26/26. Pause capture visually reviewed: disabled action is visible between Settings and Resume.
