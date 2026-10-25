@@ -886,7 +886,7 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPAssetRevert(const FString& Asset);
 
-	/** Preview call swap. Options is optional JSON: {"pin_map":{"Old":"New"},"new_inputs":{"NewInput":{"node":"reader node ID","pin":"OutputPin"}}}. Unmapped pins retain exact names; keepOld defaults true.
+	/** Preview call swap. Options is optional JSON: {"pin_map":{"Old":"New"},"new_inputs":{"NewInput":{"node":"reader node ID","pin":"OutputPin"}}}. Unmapped pins retain exact names; KeepOld defaults true, intentionally leaving the original disconnected. Validates connected pins and compatible unconnected input defaults using a probe. Preview does not apply the swap and is not a reservation; edit replans. No compile or save.
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param NodeId Exact reader ID of the existing call node to replace; empty is invalid.
@@ -1488,7 +1488,7 @@ public:
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPGraphPositions(const FString& Asset, const FString& GraphName, const FString& Positions);
 
-	/** Apply a localized call-node swap. keepOld=true retains the old node unplugged; false deletes it after verification.
+	/** Replace one call node and transfer its compatible links and unconnected input defaults. KeepOld=true deliberately retains the old node disconnected; false removes it after transfer checks. Replans against current state; preview first. A failure after mutation attempts undo but reports restoration as unverified. No automatic compile, save or tidy. Use the returned new ID for later calls; the deleted old ID is no longer valid.
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Use a full path when names are ambiguous.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Use the reader to select the intended graph; do not guess.
 	 * @param NodeId Exact reader ID of the existing call node to replace; empty is invalid.

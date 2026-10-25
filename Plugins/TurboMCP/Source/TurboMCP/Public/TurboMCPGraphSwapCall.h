@@ -11,7 +11,7 @@ class UBlueprint;
 class UEdGraph;
 class UEdGraphNode;
 
-/** Plan and apply a safe, named-pin call-node replacement. */
+/** Plan and apply a named-pin call replacement; validation and rollback limits are reported explicitly. */
 class FTurboMCPGraphSwapCall
 {
 public:
