@@ -49,7 +49,7 @@ The linked records distinguish implemented containment from unresolved causes. V
 | [R03: Verify fixture recovery and binary identity](todo/roadmap-r03.md) | v1 | investigation | done | See linked record |
 | [R13: Compare native capabilities before expansion](todo/roadmap-r13.md) | v1 | investigation | done | See linked record |
 | [R16: Establish installed-engine integration constraints](todo/roadmap-r16.md) | v1 | investigation | done | See linked record |
-| [Graph replacement single-transaction implementation](todo/field-fix-01.md) | monday | implementation | done | unbuilt / untested |
+| [Graph replacement single-transaction implementation](todo/field-fix-01.md) | monday | implementation | done | focused / native / passed; broader / field / validation / pending |
 | [Repoint rollback and batch ownership implementation](todo/field-fix-02.md) | monday | implementation | done | unbuilt / untested |
 | [Call Swap transaction and replacement-position safeguards](todo/field-fix-03.md) | monday | implementation | done | unbuilt / untested |
 | [Call Swap default value preservation](todo/field-fix-04.md) | monday | implementation | done | unbuilt / untested |

@@ -1,0 +1,190 @@
+{
+  "schema": 1,
+  "workflow": "WF-BP-01-PURCHASE",
+  "updated": "2026-10-25",
+  "status": "reviewing",
+  "ready": false,
+  "scenario": "Correct a percent conversion in CalculatePurchase, introduce named locals for repeated arithmetic, tidy, comment and inspect the result.",
+  "fixture": "TurboMCP.Workflow.Purchase; unique unsaved disposable Blueprint with an unrelated function",
+  "candidate": "9e90b5a88f5bcb51c3d3fa742aca4ab3b2bf5b44",
+  "validation": {
+    "build": "passed",
+    "native_scenario": "passed",
+    "connected_target_reader_roundtrip": "passed",
+    "local_ancestry_and_promotion": "passed before final reader-only change",
+    "tool_inventory": "125 tools inventoried; not 125 completed behavioral reviews",
+    "visual": "needs improvement: long comment title and bubble obscure nearby graph content",
+    "offline": "not passed; see execution audit"
+  },
+  "fixed": [
+    "Exact source output pins retained by graph reader",
+    "Graph form closers placed outside semicolon comments",
+    "Expected paging/filtering labelled partial; edit checker still refuses inspection fragments",
+    "Caller-supplied meaningful local names, with unknown-output, malformed-name and collision refusals",
+    "Tidy help and outputs describe current replanning, real callable names and unsaved state"
+  ],
+  "tools": [
+    {
+      "tool": "ReadTurboMCPBlueprintLoad",
+      "role": "Overview and graph selection",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "signature presence asserted; unchanged graph text checked",
+      "review": "load failure distinction and comments reviewed",
+      "remaining": "Nested and inherited context, all detail/format combinations and actual dirty-state effects remain outside this scenario"
+    },
+    {
+      "tool": "ReadTurboMCPGraphLoad",
+      "role": "Exact graph inspection",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "named inputs, missing graph, pagination, stale token, partial input refusal and connected-target syntax checked",
+      "review": "implementation and output repaired",
+      "remaining": "Text literal escaping, unsupported types, all graph shapes and full write-back coverage remain open"
+    },
+    {
+      "tool": "ReadTurboMCPNodeFind",
+      "role": "Find exact edit targets",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "Multiply search transcript inspected",
+      "review": "search/filter/cap and recovery guidance source inspected",
+      "remaining": "negative controls and full schema/example review pending"
+    },
+    {
+      "tool": "ReadTurboMCPNodeContext",
+      "role": "Understand static execution context",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "pure calculation context transcript inspected",
+      "review": "traversal scope and output disclaimers source inspected",
+      "remaining": "not a full data dependency reader; negative controls and malformed links pending"
+    },
+    {
+      "tool": "LookTurboMCPGraphPositions",
+      "role": "Read measured geometry",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "baseline transcript collected",
+      "review": "wrapper and truncation disclosure inspected",
+      "remaining": "side-effect and missing-geometry tests pending"
+    },
+    {
+      "tool": "LookTurboMCPLayoutReport",
+      "role": "Find layout problems",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "before/after reports inspected",
+      "review": "metric limitations present in output",
+      "remaining": "comment title/bubble overlap is not detected by current numeric findings"
+    },
+    {
+      "tool": "LookTurboMCPCapture",
+      "role": "Inspect actual graph appearance",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "before/after native images generated; final image inspected",
+      "review": "capture provenance and framing output inspected",
+      "remaining": "all modes, viewport effects and rendering defect reproduction remain open"
+    },
+    {
+      "tool": "PreviewTurboMCPGraphCheck",
+      "role": "Reject invalid edit text",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "partial/filtered input refused; connected-target read accepted",
+      "review": "syntax guard and honest limitations reviewed",
+      "remaining": "clean findings do not certify writer acceptance; broader dialect coverage pending"
+    },
+    {
+      "tool": "EditTurboMCPPinDefault",
+      "role": "Correct one literal",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "0.1 to 0.01 correction, node count and runtime value checked",
+      "review": "validation/read-back/rollback reporting source inspected",
+      "remaining": "failure restoration unverified; exact changed target/value should be echoed"
+    },
+    {
+      "tool": "EditTurboMCPCompile",
+      "role": "Compile after semantic edits",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "correct generated function executed twice with different inputs",
+      "review": "transaction guard inspected; historical top comment contradicts current compile/save behavior",
+      "remaining": "full comment cleanup and dependent-asset/diagnostic branches pending"
+    },
+    {
+      "tool": "PreviewTurboMCPLocalVars",
+      "role": "Plan meaningful repeated values",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "named candidates and refusal cases checked",
+      "review": "naming/help and supported arithmetic scope reviewed",
+      "remaining": "default generated names still unattractive; optional mapping must be explained in examples"
+    },
+    {
+      "tool": "EditTurboMCPLocalVars",
+      "role": "Capture supported arithmetic in named locals",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "Subtotal and PurchaseTotal; runtime values and invalid-name no-mutation checks passed",
+      "review": "replan/name validation and bounded arithmetic contract reviewed",
+      "remaining": "wider types/graphs and all restoration paths not certified"
+    },
+    {
+      "tool": "PreviewTurboMCPGraphTidy",
+      "role": "Plan readable placement",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "current plan output recorded",
+      "review": "stale/contradictory help corrected",
+      "remaining": "not a reservation; visual acceptance still pending"
+    },
+    {
+      "tool": "EditTurboMCPGraphTidy",
+      "role": "Apply measured layout",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "runtime behavior and unrelated function preserved; capture inspected",
+      "review": "accurate output and save/compile facts repaired",
+      "remaining": "whole-graph scenario only; comment readability still fails visual review"
+    },
+    {
+      "tool": "PreviewTurboMCPComment",
+      "role": "Plan annotation",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "create preview recorded",
+      "review": "shared plan/apply wrapper inspected",
+      "remaining": "full planner review and text-aware geometry needed"
+    },
+    {
+      "tool": "EditTurboMCPComment",
+      "role": "Add explanation",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "creation recorded and final image inspected",
+      "review": "create path investigated",
+      "remaining": "long title/bubble overlaps; not Ready"
+    },
+    {
+      "tool": "ReadTurboMCPCommentList",
+      "role": "Inspect annotations",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "created comment listed",
+      "review": "output inspected",
+      "remaining": "negative cases and complete implementation review pending"
+    },
+    {
+      "tool": "LookTurboMCPLayoutDoneCheck",
+      "role": "Combine metrics with visual evidence",
+      "status": "reviewing",
+      "ready": false,
+      "behavior": "final report and image inspected",
+      "review": "wrapper correctly avoids automatic approval",
+      "remaining": "does not establish visual quality; review image separately"
+    }
+  ]
+}

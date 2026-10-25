@@ -9,6 +9,10 @@ Design: docs/design/protocol.md
 Kind: investigation
 Review: source-reviewed
 
+## Current purchase workflow review (2026-10-25)
+
+Scenario and named-local/reader repairs are implemented with focused native evidence. Visual comment layout and full per-tool acceptance remain open. See [the review and reproducible procedure](../docs/audit/purchase-workflow-review.md) and [per-tool status](../docs/audit/purchase-workflow-review.json). R04 is not complete; 125 inventoried tools are not 125 accepted tools.
+
 ## Problem
 For each tool record actual callable schema, side effects, supported scope, refusal behavior and test evidence. Distinguish declared, definition located, source reviewed, runtime observed and release accepted. Start with result-envelope double wrapping and invalid numeric/default parsing. Do not invent a new public result schema.
 
