@@ -1,0 +1,158 @@
+{
+  "schema": 1,
+  "updated": "2026-10-25",
+  "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
+  "inventory": 125,
+  "workflows": [
+    {
+      "id": "WF-BP-01-PURCHASE",
+      "title": "Correct and organize an existing purchase function",
+      "status": "checked_with_open_visual_issue",
+      "review": "docs/audit/purchase-workflow-review.md",
+      "fixture": "TurboMCP.Workflow.Purchase",
+      "tools_used": [
+        "ReadTurboMCPBlueprintLoad",
+        "ReadTurboMCPGraphLoad",
+        "ReadTurboMCPNodeFind",
+        "ReadTurboMCPNodeContext",
+        "LookTurboMCPGraphPositions",
+        "LookTurboMCPLayoutReport",
+        "LookTurboMCPCapture",
+        "PreviewTurboMCPGraphCheck",
+        "EditTurboMCPPinDefault",
+        "EditTurboMCPCompile",
+        "PreviewTurboMCPLocalVars",
+        "EditTurboMCPLocalVars",
+        "PreviewTurboMCPGraphTidy",
+        "EditTurboMCPGraphTidy",
+        "PreviewTurboMCPComment",
+        "EditTurboMCPComment",
+        "ReadTurboMCPCommentList",
+        "LookTurboMCPLayoutDoneCheck"
+      ],
+      "limitations": [
+        "WF-BP-01-WIRE-COMMENT remains open",
+        "Unsaved scalar Blueprint fixture; no Widget, persistence or exhaustive rollback coverage"
+      ]
+    },
+    {
+      "id": "WF-BP-02-MINIMUM-QUANTITY",
+      "title": "Append a purchase rule and tidy its affected dependencies",
+      "status": "scenario_accepted",
+      "review": "docs/audit/purchase-append-workflow-review.md",
+      "fixture": "TurboMCP.Workflow.Purchase",
+      "evidence": "72bcaba97a134fe5baac805860214cda",
+      "tools_used": [
+        "ReadTurboMCPGraphLoad",
+        "LookTurboMCPGraphPositions",
+        "PreviewTurboMCPNodeType",
+        "PreviewTurboMCPNodePins",
+        "PreviewTurboMCPGraphAppend",
+        "EditTurboMCPGraphAppend",
+        "PreviewTurboMCPGraphTidy",
+        "EditTurboMCPGraphTidy",
+        "EditTurboMCPCompile",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "MinimumQuantity already exists",
+        "No save/reload or injected live rollback",
+        "Legacy regression failures recorded separately"
+      ]
+    },
+    {
+      "id": "WF-BP-03-EVENT-CONNECT",
+      "title": "Repair one connection among multiple event flows",
+      "status": "in_progress",
+      "review": "docs/audit/event-connect-workflow-review.md",
+      "tools_used": [],
+      "tools_planned": [
+        "ReadTurboMCPBlueprintLoad",
+        "ReadTurboMCPGraphLoad",
+        "ReadTurboMCPNodeFind",
+        "ReadTurboMCPNodeContext",
+        "PreviewTurboMCPGraphConnect",
+        "EditTurboMCPGraphConnect",
+        "EditTurboMCPCompile",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Not yet executed or accepted"
+      ]
+    }
+  ],
+  "tool_usage": {
+    "EditTurboMCPComment": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "EditTurboMCPCompile": [
+      "WF-BP-01-PURCHASE",
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "EditTurboMCPGraphAppend": [
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "EditTurboMCPGraphTidy": [
+      "WF-BP-01-PURCHASE",
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "EditTurboMCPLocalVars": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "EditTurboMCPPinDefault": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "LookTurboMCPCapture": [
+      "WF-BP-01-PURCHASE",
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "LookTurboMCPGraphPositions": [
+      "WF-BP-01-PURCHASE",
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "LookTurboMCPLayoutDoneCheck": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "LookTurboMCPLayoutReport": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "PreviewTurboMCPComment": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "PreviewTurboMCPGraphAppend": [
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "PreviewTurboMCPGraphCheck": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "PreviewTurboMCPGraphTidy": [
+      "WF-BP-01-PURCHASE",
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "PreviewTurboMCPLocalVars": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "PreviewTurboMCPNodePins": [
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "PreviewTurboMCPNodeType": [
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "ReadTurboMCPBlueprintLoad": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "ReadTurboMCPCommentList": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "ReadTurboMCPGraphLoad": [
+      "WF-BP-01-PURCHASE",
+      "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "ReadTurboMCPNodeContext": [
+      "WF-BP-01-PURCHASE"
+    ],
+    "ReadTurboMCPNodeFind": [
+      "WF-BP-01-PURCHASE"
+    ]
+  }
+}

@@ -2112,6 +2112,15 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "workflow-event-connect": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEventConnectWorkflowTest.cpp",
+            "Tools/test-event-connect-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
