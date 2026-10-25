@@ -735,7 +735,8 @@ FString FTurboMCPGraphText::RenderNode(const UEdGraphNode* InNode, EDetail InDet
 		++Printed;
 	}
 
-	Out += TEXT(")");
+	// A fresh line keeps the delimiter outside any trailing semicolon comment.
+	Out += TEXT("\n)");
 	return Out;
 }
 
@@ -873,7 +874,7 @@ FString FTurboMCPGraphText::RenderChain(const UEdGraphNode* InFirst, EDetail InD
 				Body += RenderChain(Endpoint->GetOwningNode(), InDetail, InDepth + 1,
 					InAssetPath, InOutPrinted, InOutSharedValues, OutNotes);
 			}
-			Body += TEXT(")");
+			Body += TEXT("\n") + Indent + TEXT(")");
 		}
 		break;
 	}
@@ -957,7 +958,7 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 
 	FString Out = FString::Printf(TEXT("; graph %s.%s"),
 		*InAssetPath, *GraphName);
-    if(!Filter.IsEmpty()) Out+=TEXT("\n; error: filtered inspection view, not a complete graph for write-back\n; entry-name contains: ")+Filter;
+    if(!Filter.IsEmpty()) Out+=TEXT("\n; partial: filtered inspection view, not a complete graph for write-back\n; entry-name contains: ")+Filter;
 
 	if (InDetail == EDetail::Manifest)
 	{
@@ -1108,7 +1109,7 @@ FString FTurboMCPGraphText::Render(const UEdGraph* InGraph, EDetail InDetail,
 			*Entry.Kind, *Entry.Name);
 		const FString Body = RenderEntryBody(InGraph, Entry, InDetail, InAssetPath,
 			Printed, SharedValues, OutNotes);
-		Out += Head + Body + TEXT(")");
+		Out += Head + Body + TEXT("\n)");
 	}
 
     if(!Filter.IsEmpty()) return Out;

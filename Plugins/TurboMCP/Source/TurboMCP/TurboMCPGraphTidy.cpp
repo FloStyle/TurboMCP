@@ -2802,11 +2802,7 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 		}
 	}
 
-	// A KNOT IS NOT ADDED HERE, AND THAT IS A DECISION RATHER THAN AN OMISSION. `P/E-GRAPH-KNOTS` owns
-	// that rule, and tidy is judged on total wire length, which a knot LENGTHENS - `D-LAY-4` warns a
-	// caller to keep the two metrics apart, so adding knots from inside tidy would lengthen the very
-	// number that decides whether the pass is kept. The result says so rather than leaving a caller to
-	// assume knots were considered.
+    // Reroute insertion is a separate operation; this pass measures placement and getter copies.
 	Graph->MarkPackageDirty();
     // Direct position/size writes do not notify open graph panels. The default
     // action purges their visual representation and schedules a native rebuild;
@@ -2817,11 +2813,11 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	const bool bWorse = MeasuredAfter >= InPlan.WireLengthBefore;
 	const bool bScoreMatchesPlan = FMath::IsNearlyEqual(MeasuredAfter, InPlan.WireLengthAfter, 1.0);
 	Lines.Add(FString::Printf(TEXT("changed: tidied %s in %s : total wire length %.1f -> %.1f%s"), *InPlan.GraphName, *InPlan.Asset, InPlan.WireLengthBefore, MeasuredAfter, bWorse ? (InPlan.bForce ? TEXT(" (longer wires; Force enabled)") : TEXT(" (longer wires; structural quality improved)")) : TEXT("")));
-	Lines.Add(FString::Printf(TEXT("score: preview predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("MATCHES THE PREVIEW") : TEXT("DOES NOT MATCH THE PREVIEW")));
+	Lines.Add(FString::Printf(TEXT("wire length: current plan predicted %.1f; post-edit measured %.1f (%s)."), InPlan.WireLengthAfter, MeasuredAfter, bScoreMatchesPlan ? TEXT("matches the current plan") : TEXT("differs from the current plan")));
     Lines.Add(FString::Printf(TEXT("quality priority: overlaps %d -> %d; linear exec drift %.1f -> %.1f (16-unit tolerance); fan-out row conflicts %d -> %d; backward exec %d -> %d; backward data %d -> %d; pure input row conflicts %d -> %d; input pin drift %.1f -> %.1f (8-unit tolerance). Wire length breaks structural ties."),OriginalQuality.Overlaps,ActualQuality.Overlaps,OriginalQuality.LinearExecDrift,ActualQuality.LinearExecDrift,OriginalQuality.FanOutRowConflicts,ActualQuality.FanOutRowConflicts,OriginalQuality.BackwardExec,ActualQuality.BackwardExec,OriginalQuality.BackwardData,ActualQuality.BackwardData,OriginalQuality.PureInputRowConflicts,ActualQuality.PureInputRowConflicts,OriginalQuality.InputPinDrift,ActualQuality.InputPinDrift));
     const auto CrossBoxAfter = FTurboMCPLayoutReport::MeasureCrossBox(Graph);
     Lines.Add(FString::Printf(TEXT("cross-box: estimated straight-line length %.1f -> %.1f (delta %+.1f); connections %d -> %d. Ownership uses the smallest enclosing comment at each state; copies or box growth can change the count."), CrossBoxBefore.Length, CrossBoxAfter.Length, CrossBoxAfter.Length-CrossBoxBefore.Length, CrossBoxBefore.Count, CrossBoxAfter.Count));
-	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), and NO BOX CORNER MOVED: every box keeps the top-left corner the user placed, and only its size changed."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
+	Lines.Add(FString::Printf(TEXT("moved %d node(s). Fitted %d of %d box(es), preserving their top-left corners and changing only their sizes."), OriginalPositions.Num(), BoxesResized, InPlan.Boxes.Num()));
 	if (InPlan.SelectedNodeKeys.Num() > 0)
 	{
 		Lines.Add(FString::Printf(TEXT("scope: only the %d selected node(s) were eligible to move; %d surrounding node(s) and all comment boxes remained fixed anchors."), InPlan.SelectedNodeKeys.Num(), InPlan.AnchorCount));
@@ -2833,12 +2829,12 @@ FString FTurboMCPGraphTidy::Apply(const FPlan& InPlan)
 	}
 	if (InPlan.UnreachableCount > 0)
 	{
-		Lines.Add(FString::Printf(TEXT("left %d unreachable node(s) EXACTLY where they were, because disconnected groups are not moved into the layout. R-GRAPH-DEAD removes them."), InPlan.UnreachableCount));
+		Lines.Add(FString::Printf(TEXT("left %d unreachable node(s) in place. Use PreviewTurboMCPGraphDead to inspect disconnected groups before deciding whether to remove them."), InPlan.UnreachableCount));
 	}
 	Lines.Add(TEXT("geometry: every node had a Slate-measured size; no estimate was used."));
-	Lines.Add(TEXT("no knots were added: P/E-GRAPH-KNOTS owns that rule and tidy is measured on total wire length, which a knot lengthens."));
+	Lines.Add(TEXT("No reroute nodes were added. Use PreviewTurboMCPGraphKnots to inspect reroute options separately."));
 	Lines.Add(TEXT("undo=one; compile=not_run; save=not_requested"));
-	Lines.Add(TEXT("; the change is in memory and NOT saved. Call E-SAVE."));
+	Lines.Add(TEXT("Changes are in memory only. Use EditTurboMCPSave when ready to save the asset."));
 
 	return FString::Join(Lines, TEXT("\n"));
 }

@@ -318,9 +318,10 @@ bool FTurboMCPGraphCheck::Plan(const FString& InAsset, const FString& InGraphNam
 	{
 		const FString Trimmed = Line.Text.TrimStartAndEnd();
 		if (!bInString && FormDepth == 0 && Trimmed.StartsWith(TEXT("read: "))) continue;
-		if (!bInString && Trimmed.StartsWith(TEXT("; error:"), ESearchCase::IgnoreCase))
+		if (!bInString && (Trimmed.StartsWith(TEXT("; error:"), ESearchCase::IgnoreCase) ||
+            Trimmed.StartsWith(TEXT("; partial:"), ESearchCase::IgnoreCase)))
 		{
-			OutError = FString::Printf(TEXT("line %d: graph text contains a reader error; obtain a complete, valid dump before write-back. %s"), Line.Number, *Trimmed);
+			OutError = FString::Printf(TEXT("line %d: graph text contains a reader error or an inspection-only fragment; obtain a complete, unfiltered, valid dump before write-back. %s"), Line.Number, *Trimmed);
 			return false;
 		}
 		for (int32 Index = 0; Index < Line.Text.Len(); ++Index)

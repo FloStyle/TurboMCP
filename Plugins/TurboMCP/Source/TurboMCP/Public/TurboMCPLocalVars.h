@@ -69,6 +69,8 @@ public:
 	{
 		FString Asset;
 		FString GraphName;
+        /** Exact output IDs to human-readable local names; preserved when the edit replans. */
+        FString Names = TEXT("{}");
 		TArray<FCandidate> Candidates;
 		int32 NodeCountBefore = 0;
 
@@ -79,7 +81,7 @@ public:
 
 	/** Reads the function graph and checks candidate input ancestry. */
 	static bool Plan(const FString& InAsset, const FString& InGraphName,
-		FPlan& OutPlan, FString& OutError);
+		FPlan& OutPlan, FString& OutError, const FString& Names = TEXT("{}"));
 
 	/** Lists candidate outputs, exclusions and edit prerequisites. */
 	static FString RenderPreview(const FPlan& InPlan);

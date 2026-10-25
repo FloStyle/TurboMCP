@@ -8,6 +8,9 @@
 #include "TurboMCPLocalVars.h"
 
 #include "Containers/Set.h"
+#include "Dom/JsonObject.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
 #include "Containers/UnrealString.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -163,7 +166,7 @@ namespace
 			// A VARIABLE READ IS NEVER SAFE, AND THIS CHECK HAS TO COME FIRST.
 			//
 			// MEASURED BUG: this test used to sit INSIDE the `!IsNodePure()` branch below, so a
-			// `K2Node_VariableGet` — which IS pure, because reading a variable has no side effect —
+// A variable getter is pure, but its value can change during execution.
 			// passed the purity test and was treated as a safe link. Measured consequence, on the
 			// acceptance asset built for exactly this case:
 			//
@@ -277,10 +280,11 @@ namespace
 }
 
 bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName,
-	FPlan& OutPlan, FString& OutError)
+	FPlan& OutPlan, FString& OutError, const FString& RequestedNames)
 {
 	OutError.Empty();
 	OutPlan = FPlan();
+    OutPlan.Names = RequestedNames;
 	OutPlan.Asset = InAsset.TrimStartAndEnd();
 	OutPlan.GraphName = InGraphName.TrimStartAndEnd();
 
@@ -463,7 +467,55 @@ bool FTurboMCPLocalVars::Plan(const FString& InAsset, const FString& InGraphName
         }
 	}
 
-	return true;
+
+    // Names use exact node-and-output identities from the preview. Validate the
+    // complete map before mutation; never silently substitute a requested name.
+    TSharedPtr<FJsonObject> NameMap;
+    if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(RequestedNames), NameMap) || !NameMap.IsValid())
+    {
+        OutError = TEXT("Names must be a JSON object mapping exact output IDs from the preview to local variable names. Use {} for automatic names.");
+        return false;
+    }
+    for (const auto& Pair : NameMap->Values)
+    {
+        FCandidate* Match = nullptr;
+        for (FCandidate& Candidate : OutPlan.Candidates)
+        {
+            const FString Identity = TurboMCPNodeId::Make(OutPlan.Asset, OutPlan.GraphName, Candidate.NodeGuid, true)
+                + TEXT(":") + Candidate.OutputPinName.ToString();
+            if (FString(*Pair.Key) == Identity) Match = &Candidate;
+        }
+        FString Name;
+        if (!Match || !Pair.Value.IsValid() || !Pair.Value->TryGetString(Name))
+        {
+            OutError = TEXT("Names contains an unknown output ID or a non-string name. Copy an exact output ID from PreviewTurboMCPLocalVars.");
+            return false;
+        }
+        bool Valid = !Name.IsEmpty() && (FChar::IsAlpha(Name[0]) || Name[0] == TEXT('_'));
+        for (TCHAR Character : Name) Valid &= FChar::IsAlnum(Character) || Character == TEXT('_');
+        if (!Valid || Name.Len() > 64 || Name.Equals(TEXT("None"), ESearchCase::IgnoreCase))
+        {
+            OutError = TEXT("Each local name must contain 1 to 64 letters, digits or underscores, start with a letter or underscore, and must not be None.");
+            return false;
+        }
+        Match->ProposedName = Name;
+    }
+    TSet<FName> UsedNames;
+    for (const FCandidate& Candidate : OutPlan.Candidates)
+    {
+        const FName Name(*Candidate.ProposedName);
+        bool Collision = UsedNames.Contains(Name);
+        if (Entry) for (const UEdGraphPin* Pin : Entry->Pins) Collision |= Pin && Pin->PinName == Name;
+        if (Entry) for (const FBPVariableDescription& Local : Entry->LocalVariables) Collision |= Local.VarName == Name;
+        Collision |= FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, Candidate.ProposedName) != Name;
+        if (Collision)
+        {
+            OutError = TEXT("Local name is already in use: ") + Candidate.ProposedName + TEXT(". Choose distinct names that do not match existing variables or function parameters.");
+            return false;
+        }
+        UsedNames.Add(Name);
+    }
+    return true;
 }
 
 FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
@@ -480,10 +532,7 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 
 	if (InPlan.Candidates.Num() == 0)
 	{
-		// `P1`: never return nothing, and say WHY. A function whose values are each read once has
-		// nothing to gain from a local, which is a different answer from a failure.
-		Out += TEXT("\nno pure node's value is read more than once, so there is nothing to ")
-			TEXT("promote. A value read once gains nothing from a local variable and costs a node.");
+        Out += TEXT("\nNo pure output is consumed more than once. This tool only promotes repeated values; no changes are proposed. A local may still help explain a value, but that case is outside this tool's scope.");
 		return Out;
 	}
 
@@ -526,6 +575,10 @@ FString FTurboMCPLocalVars::RenderPreview(const FPlan& InPlan)
 		Out += TEXT("\nNOTHING WOULD BE PROMOTED.");
 	}
 
+    for (const FCandidate& Candidate : InPlan.Candidates)
+        Out += TEXT("\noutput ID: ") + TurboMCPNodeId::Make(InPlan.Asset, InPlan.GraphName, Candidate.NodeGuid, true)
+            + TEXT(":") + Candidate.OutputPinName.ToString() + TEXT("; local name: ") + Candidate.ProposedName;
+    Out += TEXT("\nFor meaningful names, pass Names as a JSON object from exact output IDs above to local names. Use the same Names in the edit. No changes have been made.");
 	return Out;
 }
 
@@ -596,7 +649,7 @@ namespace
             return Refuse(TEXT("local promotion requires an idle editor outside PIE, shutdown and active transactions"));
         FTurboMCPLocalVars::FPlan Plan;
         FString Error;
-        if (!FTurboMCPLocalVars::Plan(Requested.Asset, Requested.GraphName, Plan, Error)) return Refuse(Error);
+        if (!FTurboMCPLocalVars::Plan(Requested.Asset, Requested.GraphName, Plan, Error, Requested.Names)) return Refuse(Error);
         if (Plan.Candidates.IsEmpty()) return Refuse(TEXT("no value was promoted; the preview has no repeatedly consumed output values"));
         UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Plan.Asset);
         if (!Blueprint || Blueprint->bBeingCompiled || Blueprint->Status != BS_UpToDate)

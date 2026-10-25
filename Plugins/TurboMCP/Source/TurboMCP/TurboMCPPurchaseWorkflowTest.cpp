@@ -157,6 +157,10 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     const FString MissingGraph = Record(TEXT("GraphLoad missing graph"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, TEXT("MissingGraph"), TEXT("read"), TEXT("full")));
     TestTrue(TEXT("Missing graph gives actual choices"), MissingGraph.StartsWith(TEXT("error:")) && MissingGraph.Contains(GraphName));
     const FString Page = Record(TEXT("GraphLoad first page"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, GraphName, TEXT("read"), TEXT("full"), 0, 256));
+    TestTrue(TEXT("Expected pagination is not an error"), Page.StartsWith(TEXT("; partial:")));
+    TestTrue(TEXT("Page is refused as edit input"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphCheck(Asset, GraphName, Page).Contains(TEXT("inspection-only fragment")));
+    const FString Filtered = UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, GraphName, TEXT("read"), TEXT("full"), 0, 24000, TEXT(""), GraphName);
+    TestTrue(TEXT("Filtered view is refused as edit input"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphCheck(Asset, GraphName, Filtered).Contains(TEXT("inspection-only fragment")));
     TestTrue(TEXT("Page describes continuation"), Page.Contains(TEXT("revision=")) && Page.Contains(TEXT("nextOffset=")));
     TestTrue(TEXT("Stale continuation refuses"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, GraphName, TEXT("read"), TEXT("full"), 256, 256, TEXT("stale")).StartsWith(TEXT("error:")));
     TestEqual(TEXT("Refused and paged reads preserve graph"), ReadGraph(), Before);
@@ -166,9 +170,19 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     Record(TEXT("EditTurboMCPCompile corrected"), UTurboMCPEditToolset::EditTurboMCPCompile(Asset));
     if (!CheckValues(true)) return false;
     Record(TEXT("ReadTurboMCPGraphLoad corrected"), ReadGraph());
-    Record(TEXT("PreviewTurboMCPLocalVars"), UTurboMCPPreviewToolset::PreviewTurboMCPLocalVars(Asset, GraphName));
-    const FString Locals = Record(TEXT("EditTurboMCPLocalVars"), UTurboMCPEditToolset::EditTurboMCPLocalVars(Asset, GraphName));
+    const FString Names = FString::Printf(TEXT("{\"%s:ReturnValue\":\"Subtotal\",\"%s:ReturnValue\":\"PurchaseTotal\"}"),
+        *TurboMCPNodeId::Make(Asset, GraphName, Subtotal->NodeGuid, true),
+        *TurboMCPNodeId::Make(Asset, GraphName, Final->NodeGuid, true));
+    const FString BeforeInvalidNames = ReadGraph();
+    TestTrue(TEXT("Unknown local output refuses"), UTurboMCPEditToolset::EditTurboMCPLocalVars(Asset, GraphName, TEXT("{\"missing\":\"Subtotal\"}")).StartsWith(TEXT("error:")));
+    for (const FString& InvalidNames : {Names.Replace(TEXT("Subtotal"), TEXT("UnitPrice")),
+        Names.Replace(TEXT("Subtotal"), TEXT("PurchaseTotal")), Names.Replace(TEXT("Subtotal"), TEXT("123 invalid")), FString(TEXT("[]"))})
+        TestTrue(TEXT("Invalid or colliding names refuse before editing"), UTurboMCPEditToolset::EditTurboMCPLocalVars(Asset, GraphName, InvalidNames).StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Invalid naming does not mutate"), ReadGraph(), BeforeInvalidNames);
+    Record(TEXT("PreviewTurboMCPLocalVars"), UTurboMCPPreviewToolset::PreviewTurboMCPLocalVars(Asset, GraphName, Names));
+    const FString Locals = Record(TEXT("EditTurboMCPLocalVars"), UTurboMCPEditToolset::EditTurboMCPLocalVars(Asset, GraphName, Names));
     TestTrue(TEXT("Supported repeated arithmetic is promoted"), Locals.StartsWith(TEXT("changed:")));
+    TestTrue(TEXT("Meaningful local names survive the edit"), ReadGraph().Contains(TEXT("Subtotal")) && ReadGraph().Contains(TEXT("PurchaseTotal")));
     if (!CheckValues(true)) return false;
     Record(TEXT("ReadTurboMCPGraphLoad locals"), ReadGraph());
     const TArray<FString> WholeGraph;

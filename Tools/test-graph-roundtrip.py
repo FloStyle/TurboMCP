@@ -25,7 +25,7 @@ def main():
 
     print("=== connected Target/self pin remains an ordinary pin line ===")
     text = session.call(READ_TOOLSET, "ReadTurboMCPGraphLoad", {
-        "asset": ASSET, "graphName": GRAPH, "format": "", "detail": "bodies",
+        "asset": ASSET, "graphName": GRAPH, "format": "", "detail": "bodies", "revision": "", "entryFilter": "",
     })
     print(text)
     check("the reader returned the fixture", isinstance(text, str) and text.startswith("read: "),
@@ -33,7 +33,7 @@ def main():
     check("the connected self pin is printed", re.search(r"^\s+self\s+\(", text, re.M) is not None,
           text[:900])
     check("the getter/source node is in the body",
-          re.search(r"Variables\|Default\|GetRoundTripTextTarget", text) is not None, text[:1200])
+          re.search(r"Variable\|/Game/Tests/TurboMCPAcceptance\.TurboMCPAcceptance\|Get\|RoundTripTextTarget", text) is not None, text[:1200])
     check("the reader does not report the getter disconnected",
           "not reachable from any entry point" not in text, text[-400:])
 
@@ -49,7 +49,7 @@ def main():
         "asset": ASSET, "graphName": GRAPH, "text": text,
     })
     print(checked)
-    check("GraphCheck reports zero findings", "0 finding(s)" in checked and "would be accepted" in checked,
+    check("GraphCheck reports zero findings", "0 finding(s)" in checked and checked.startswith("preview:") and "writer acceptance, compilation and behavior are not verified" in checked,
           checked[:500])
 
     # Graph readers resolve graph names without case sensitivity. The preview
@@ -58,7 +58,7 @@ def main():
         "asset": ASSET, "graphName": GRAPH.lower(), "text": text,
     })
     check("GraphCheck resolves the reader graph case-insensitively",
-          "0 finding(s)" in case_checked and "would be accepted" in case_checked, case_checked[:300])
+          "0 finding(s)" in case_checked and case_checked.startswith("preview:") and "writer acceptance, compilation and behavior are not verified" in case_checked, case_checked[:300])
 
     print()
     if failures:

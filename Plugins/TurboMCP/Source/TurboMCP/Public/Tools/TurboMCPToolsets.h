@@ -231,7 +231,7 @@ public:
 	 * cannot be printed becomes an inline `; error:` line rather than a silent gap,
 	 * and is also counted at the end so the gap cannot be missed.
 	 *
-	 * EntryFilter optionally matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input.
+	 * Supply EntryFilter as an empty string for all entries. A non-empty EntryFilter matches event/function names by case-insensitive substring. Empty reads all entries. Filtered views are inspection-only. Large reads return inspection pages. Use nextOffset and Revision for subsequent pages; keep all other arguments identical. A changed read refuses the stale token. Partial pages are not standalone write-back input.
 	 *
 	 * @param Asset Existing Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty is refused.
 	 * @param GraphName Exact existing graph name, e.g. EventGraph. Empty is refused; no graph is guessed.
@@ -239,7 +239,7 @@ public:
 	 * @param Detail manifest, signatures, bodies or full; default or empty means bodies. Each level adds detail.
 	 * @param Offset Zero-based character offset. Start at 0; for later pages use the returned nextOffset and Revision together. Negative values are refused.
 	 * @param MaxChars Maximum page characters, 256..24000 inclusive; default 24000. Partial pages are inspection-only, not standalone write-back input.
-	 * @param Revision Empty for page zero. Later pages require the revision token from page zero with unchanged arguments; stale tokens are refused.
+	 * @param Revision Supply an empty string for page zero; the MCP schema requires this argument. Later pages require the revision token from page zero with unchanged arguments; stale tokens are refused.
 	 * @param EntryFilter Case-insensitive entry-name substring, e.g. BeginPlay. Empty includes all entries. Filtered views are inspection-only.
 	*/
 	UFUNCTION(meta = (AICallable))
@@ -675,9 +675,10 @@ public:
      * Pure-node classification is not proof of deterministic behavior or equivalent execution.
      * @param Asset Required Blueprint asset path or unique asset name, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed and empty is refused. Prefer a full path to avoid ambiguity.
      * @param GraphName Function graph name, matched without case sensitivity after trimming whitespace; event graphs are refused. Pass empty to select the first function graph in the Blueprint's stored order; the result names the selected graph. Prefer an explicit name.
+     * @param Names JSON object mapping exact output IDs from the local-variable preview to meaningful local names, for example {"<exact output ID>":"Subtotal"}. Default {} keeps automatic names. Unknown IDs, invalid names and name collisions are refused. Use the same mapping for preview and edit.
      */
 	UFUNCTION(meta = (AICallable))
-	static FString PreviewTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
+	static FString PreviewTurboMCPLocalVars(const FString& Asset, const FString& GraphName, const FString& Names = TEXT("{}"));
 
 	/**
 	 * Search available node types; loads Blueprint context and queries editor node actions, without requesting graph edits, compilation or saving.
@@ -718,20 +719,12 @@ public:
 	static FString PreviewTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
 
 	/**
-	 * Work out a clean layout for one graph, WITHOUT moving anything.
-	 *
-	 * Assigns each node a COLUMN from what it depends on, spaces the rows, and lays each COMMENT BOX out
-	 * AROUND ITS OWN CONTENTS, so a nested box is sized from the boxes inside it.
-	 *
-	 * MEASURES AND ROLLS BACK, like the knot pass: the total wire length is measured before and after, and
-	 * the plan is offered only when the result is SHORTER. `bForce` offers it regardless, so a caller who
-	 * disagrees with the measure can still see the plan.
-	 *
-	 * REFUSES rather than guesses: a graph with a cycle, a graph with no nodes, and a graph whose nodes
-	 * have NO MEASURED SIZE are each refused by name. That last one is not unusual - NodeWidth is written
-	 * only by Slate when a node is drawn, so a graph built headlessly has no measured sizes until
-	 * something draws it.
-	 *
+     * Plan a layout for one graph without committing graph changes. Measures native node geometry.
+     * Structural quality takes priority over wire length. Unsupported graphs or unavailable measured
+     * geometry are refused rather than estimated. The edit recomputes its plan against current state.
+     * Tidy may duplicate variable getters near their consumers; it does not create local variables.
+     * Inspect the preview and resulting capture: numeric layout scores do not prove human readability.
+     *
 	 * NodeIds accepts "@unboxed": alone selects all unboxed nodes; with node IDs filters that selection to unboxed nodes. Boxed nodes and comments stay fixed.
 	 * `NodeIds` scopes the pass to a block. An empty list tidies the whole graph; otherwise every
 	 * unselected node is a fixed anchor and only the named nodes may move. The block is moved to clear
@@ -795,7 +788,7 @@ public:
      * A clean report means only that these checks found no issue; it does not guarantee writer acceptance, compilation or correct behavior. Unjudged findings need separate inspection. Use the intended edit tool's preview before writing.
      * @param Asset Required Blueprint name or package/object path, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed. Empty, ambiguous or non-Blueprint targets are refused.
      * @param GraphName Required unique graph name from the reader, for example EventGraph; trimmed and matched without case sensitivity. Empty names are refused rather than choosing a graph automatically.
-     * @param Text Required graph text in the reader's dialect, using exact node type IDs and pin names. Pass complete forms, not truncated output; empty text, unbalanced parentheses, unclosed quotes and reader-error markers are refused. Semicolon comments run to the end of the line, so closing parentheses inside comments do not close forms. No default text is supplied.
+     * @param Text Required graph text in the reader's dialect, using exact node type IDs and pin names. Pass complete forms, not truncated output; empty text, unbalanced parentheses, unclosed quotes, reader-error markers and partial-view markers are refused. Semicolon comments run to the end of the line, so closing parentheses inside comments do not close forms. No default text is supplied.
      */
 	UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPGraphCheck(
@@ -1324,16 +1317,12 @@ public:
 	static FString EditTurboMCPGraphKnots(const FString& Asset, const FString& GraphName);
 
 	/**
-	 * Apply the layout the preview worked out.
-	 *
-	 * The same inputs, laid out the same way, as `P-GRAPH-TIDY`, because the two share one code path up to
-	 * the write. It re-measures AFTER the write and reports the number it actually achieved rather than
-	 * the one it predicted, because a plan and its result are two different claims.
-	 *
-	 * Comment corners stay fixed during tidy; GraphGroupMove translates a box and its contents together.
-	 *
-	 * `bForce` writes even when the measure says the layout is not shorter, which is what a caller who
-	 * disagrees with the measure asks for. `NodeIds` has the same fixed-anchor scope as the preview.
+     * Recompute and apply a layout using the same options as PreviewTurboMCPGraphTidy.
+     * A previous preview is not a reservation: the current graph is checked again before editing.
+     * Reports measured results, preserves comment corners, and may duplicate variable getters.
+     * Structural quality takes priority over wire length. Force permits a non-improving score,
+     * but does not bypass scope or collision checks. Changes are undoable and are not compiled or saved.
+     * NodeIds uses the same fixed-anchor scope as the preview.
 	 * Include "@unboxed" to leave boxed nodes fixed (alone: all unboxed; with IDs: only unboxed IDs).
 	 * WrapAfter is the same comma-separated execution-node row-break option as the preview; links remain unchanged.
 	 *
@@ -1382,9 +1371,10 @@ public:
      * Pure-node classification is not proof of deterministic behavior or equivalent execution.
      * @param Asset Required Blueprint asset path or unique asset name, for example /Game/Blueprints/BP_Player; surrounding whitespace is trimmed and empty is refused. Prefer a full path to avoid ambiguity.
      * @param GraphName Function graph name, matched without case sensitivity after trimming whitespace; event graphs are refused. Pass empty to select the first function graph in the Blueprint's stored order; the result names the selected graph. Prefer an explicit name.
+     * @param Names JSON object mapping exact output IDs from the local-variable preview to meaningful local names, for example {"<exact output ID>":"Subtotal"}. Default {} keeps automatic names. Unknown IDs, invalid names and name collisions are refused. Use the same mapping for preview and edit.
      */
 	UFUNCTION(meta = (AICallable))
-	static FString EditTurboMCPLocalVars(const FString& Asset, const FString& GraphName);
+	static FString EditTurboMCPLocalVars(const FString& Asset, const FString& GraphName, const FString& Names = TEXT("{}"));
 
 	/**
 	 * Enable or disable call recording and request persistence in editor settings. Existing records are retained. Calls made while recording was off are not recovered.

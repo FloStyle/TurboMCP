@@ -15,11 +15,11 @@
 
 // Both tools use the same candidate analysis; the edit revalidates live state before mutation.
 FString UTurboMCPPreviewToolset::PreviewTurboMCPLocalVars(
-	const FString& Asset, const FString& GraphName)
+	const FString& Asset, const FString& GraphName, const FString& Names)
 {
 	FTurboMCPLocalVars::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPLocalVars::Plan(Asset, GraphName, Plan, Error))
+	if (!FTurboMCPLocalVars::Plan(Asset, GraphName, Plan, Error, Names))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
@@ -28,11 +28,11 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPLocalVars(
 }
 
 FString UTurboMCPEditToolset::EditTurboMCPLocalVars(
-	const FString& Asset, const FString& GraphName)
+	const FString& Asset, const FString& GraphName, const FString& Names)
 {
 	FTurboMCPLocalVars::FPlan Plan;
 	FString Error;
-	if (!FTurboMCPLocalVars::Plan(Asset, GraphName, Plan, Error))
+	if (!FTurboMCPLocalVars::Plan(Asset, GraphName, Plan, Error, Names))
 	{
 		return FTurboMCPToolError::AsError(Error);
 	}
