@@ -18,10 +18,11 @@
 
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPDescribe.h"
+#include "TurboMCPNodeId.h"
 
 namespace
 {
-	/** True when one of the two name comparisons matches, case-insensitively. */
+	/** Compare the reflected name with user input, ignoring case. */
 	bool NameMatches(const FName& InA, const FString& InB)
 	{
 		return InA.ToString().Equals(InB, ESearchCase::IgnoreCase);
@@ -194,7 +195,7 @@ bool FTurboMCPOverrideAdd::Plan(const FString& InAsset, const FString& InFunctio
 			*TurboMCPDescribe::FunctionParameters(Signature))
 		: FString::Printf(TEXT("%s(?)"), *OutPlan.ResolvedName.ToString());
 
-	// Record existing implementations so preview can explain why edit will refuse.
+	// Record existing implementations so preview can explain the unchanged result.
 	if (UEdGraph* Existing = FindExistingGraph(Blueprint, OutPlan.ResolvedName))
 	{
 		OutPlan.AlreadyImplementedIn = Existing->GetName();
@@ -212,12 +213,9 @@ FString FTurboMCPOverrideAdd::RenderPreview(const FPlan& InPlan)
 
 	if (!InPlan.AlreadyImplementedIn.IsEmpty())
 	{
-		// The refusal is in the PREVIEW as a warning rather than only in the Edit, because a
-		// caller that previews and then edits should not be surprised by the edit.
+		// Match the unchanged result returned by edit for an existing override.
 		Out += FString::Printf(
-			TEXT("\nALREADY OVERRIDDEN, in '%s': the edit will REFUSE rather than add a ")
-			TEXT("second implementation. Remove the existing override first, or pick ")
-			TEXT("another name."), *InPlan.AlreadyImplementedIn);
+			TEXT("\nAlready overridden in '%s'. Edit will return unchanged; it will not create a second implementation. Inspect the existing implementation before deciding what to edit."), *InPlan.AlreadyImplementedIn);
 	}
 	else
 	{
@@ -252,7 +250,7 @@ FString FTurboMCPOverrideAdd::Apply(const FPlan& InPlan)
 	{
 		return FString::Printf(
 			TEXT("unchanged: %s is already overridden in '%s', so nothing was created. ")
-			TEXT("Remove that override first, or pick another name."),
+			TEXT("Inspect the existing implementation before deciding what to edit."),
 			*InPlan.ResolvedName.ToString(), *Existing->GetName());
 	}
 
@@ -273,8 +271,8 @@ FString FTurboMCPOverrideAdd::Apply(const FPlan& InPlan)
 		}
 
 		Kind = TEXT("event");
-		Created = FString::Printf(TEXT("%s in graph '%s'"),
-			*Node->GetName(), *Node->GetGraph()->GetName());
+		Created = FString::Printf(TEXT("%s; graph=%s; position=(%d,%d)"),
+			*TurboMCPNodeId::MakeForNode(Node,true), *Node->GetGraph()->GetName(), Node->NodePosX, Node->NodePosY);
 	}
 	else
 	{
@@ -292,9 +290,7 @@ FString FTurboMCPOverrideAdd::Apply(const FPlan& InPlan)
 		Created = FString::Printf(TEXT("graph '%s'"), *Graph->GetName());
 	}
 
-	// THE READ-BACK, through the editor's own list rather than the return value alone: the
-	// engine's call says what it made, and this says the Blueprint now reports it as made.
-	// A tool reporting its own intention is not evidence, which this project has learned.
+	// Verify registration through the editor list independently of the creation return value.
 	bool bNowImplemented = false;
 	const TArray<FBlueprintFunctionInfo>& List = InPlan.bIsEvent
 		? UBlueprintEditorLibrary::ListEvents(Blueprint)
@@ -324,6 +320,7 @@ FString FTurboMCPOverrideAdd::Apply(const FPlan& InPlan)
 			TEXT("implemented yet. It may need a compile, using EditTurboMCPCompile; creation alone does not prove compilation succeeds.");
 	}
 
+	Out += TEXT("\nThe override has no user-authored body. Connect the intended behavior, inspect parent-call requirements, and tidy the affected nodes before compiling. Creation does not prove runtime behavior.");
 	Out += TEXT("\n; The change is in memory and is not saved. Review it, then use EditTurboMCPCompile and EditTurboMCPSave as needed.");
 
 	return Out;

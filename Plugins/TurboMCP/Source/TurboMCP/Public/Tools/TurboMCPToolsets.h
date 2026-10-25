@@ -622,7 +622,8 @@ public:
 
 	/**
 	 * Preview an event or function override; loads the Blueprint and inspects editor metadata without creating the override, compiling or saving.
-	 * Existing implementations are reported before creation. Preview is not a reservation; edit checks again.
+	 * Existing implementations are reported; edit will return unchanged without creating a duplicate. Preview is not a reservation; edit checks again.
+	 * Edit creates only the override entry, not its behavior, and reports its exact node ID and graph. Connect the body, inspect parent-call requirements and tidy affected nodes before compiling.
 	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty is refused.
 	 * @param FunctionOrEvent Required reflected name from ReadTurboMCPOverrides, for example ReceiveActorOnClicked; case-insensitive with surrounding whitespace trimmed. Empty or unavailable names are refused; no default.
 	 */
@@ -1209,7 +1210,8 @@ public:
 
 	/**
 	 * Create an event or function override through the editor API; may regenerate the skeleton and run editor callbacks, uses engine-managed undo, and does not perform a full compile or save.
-	 * Existing implementations are reported before creation. Preview is not a reservation; edit checks again.
+	 * Existing implementations return unchanged without creating a duplicate. Preview is not a reservation; edit checks again.
+	 * Creates only the override entry, not its behavior. Event results include the exact node ID and graph. Connect the body, inspect parent-call requirements and tidy affected nodes before compiling.
 	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty is refused.
 	 * @param FunctionOrEvent Required reflected name from ReadTurboMCPOverrides, for example ReceiveActorOnClicked; case-insensitive with surrounding whitespace trimmed. Empty or unavailable names are refused; no default.
 	 */

@@ -147,7 +147,7 @@ namespace
 			// A name with no reflected function is not a failure: an interface member
 			// can be declared without a Function entry. Saying so beats an empty pair
 			// of brackets that looks like "takes nothing".
-			return FString();
+			return TEXT("(signature unavailable)");
 		}
 
 		TArray<FString> Ins;
@@ -177,6 +177,9 @@ namespace
 		}
 
 		FString Out = FString::Printf(TEXT("(%s)"), *FString::Join(Ins, TEXT(", ")));
+        int32 TotalParams=0;
+        for(TFieldIterator<FProperty> It(InFunction);It && It->HasAnyPropertyFlags(CPF_Parm);++It) ++TotalParams;
+        if(TotalParams>Shown) Out += FString::Printf(TEXT(" [partial signature: %d parameter(s) omitted]"),TotalParams-Shown);
 		if (Outs.Num() > 0)
 		{
 			Out += FString::Printf(TEXT(" -> (%s)"), *FString::Join(Outs, TEXT(", ")));
