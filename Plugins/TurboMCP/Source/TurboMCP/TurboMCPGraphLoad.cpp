@@ -19,15 +19,9 @@
 #include "TurboMCPNodeId.h"
 
 /**
- * R-GRAPH-LOAD: read one graph as text.
- *
- * The graph text itself is written by `FTurboMCPGraphText`, which `R-BP-LOAD`
- * uses too. That is deliberate: `04_FORMATS.md` opens by saying most bugs in
- * earlier work came from two tools disagreeing about one of the shared formats,
- * so there is exactly one writer.
- *
- * This tool adds only what is specific to reading one graph: finding it, naming
- * the graphs that do exist when the name is wrong, and capping the output.
+ * Read one exact graph using the same graph writer as BlueprintLoad.
+ * Validate arguments before loading, report missing targets, and paginate a
+ * stable rendered snapshot. A revision identifies text, not all asset state.
  */
 namespace
 {
@@ -81,8 +75,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 			TEXT("rather than guessing which graph you meant.");
 	}
 
-	// The detail level is validated before anything is loaded, so a typo costs
-	// nothing and the error names every accepted value.
+	// Reject invalid detail before loading the asset.
 	FTurboMCPGraphText::EDetail DetailLevel;
 	if (!FTurboMCPGraphText::ParseDetail(Detail, DetailLevel))
 	{
@@ -112,7 +105,12 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 		return ResolveError;
 	}
 
-	UBlueprint* Blueprint = Cast<UBlueprint>(LoadObject<UObject>(nullptr, *Resolved.ObjectPath));
+	UObject* Loaded = LoadObject<UObject>(nullptr, *Resolved.ObjectPath);
+	if (Loaded == nullptr)
+	{
+		return FString::Printf(TEXT("error: could not load %s. Check that the asset is available and inspect the editor log; its asset type could not be verified."), *Resolved.ObjectPath);
+	}
+	UBlueprint* Blueprint = Cast<UBlueprint>(Loaded);
 	if (Blueprint == nullptr)
 	{
 		return FString::Printf(
@@ -136,7 +134,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 
 	const FString DetailLabel = Detail.IsEmpty() ? TEXT("bodies") : Detail;
 
-	FString Result = FString::Printf(TEXT("read: %s graph %s, format read, detail %s, %d node(s)"),
+	FString Result = FString::Printf(TEXT("read: %s graph %s, format read, detail %s, %d node(s) in the whole graph"),
 		*Resolved.ObjectPath, *Graph->GetName(), *DetailLabel, Graph->Nodes.Num());
 
 	Result += TEXT("\n") + Text;
@@ -147,7 +145,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPGraphLoad(
 	if (Notes.Num() > 0)
 	{
 		Result += FString::Printf(
-			TEXT("\n\n; %d node(s) could not be printed in full:"), Notes.Num());
+			TEXT("\n\n; %d read limitation(s); inspect these before planning edits:"), Notes.Num());
 		for (const FString& Note : Notes)
 		{
 			Result += FString::Printf(TEXT("\n%s"), *Note);

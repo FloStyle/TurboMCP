@@ -20,15 +20,9 @@
 #include "TurboMCPWidgetTree.h"
 
 /**
- * R-BP-LOAD: read whole Blueprints.
- *
- * `03_TOOLS.md` calls it the main Read tool. It adds only what is specific to
- * reading several assets in one call: resolving the list, validating the inputs
- * before loading anything, and reporting per asset so one bad name does not lose
- * the other answers.
- *
- * Every section is written by `FTurboMCPBlueprintRead`, which uses the same graph
- * text writer `R-GRAPH-LOAD` does.
+ * Read Blueprint context and optionally graph bodies. Validate shared inputs
+ * before loading. Per-asset refusals preserve successful sibling results.
+ * Text and JSON share accessors but have separate renderers and budget behavior.
  */
 namespace
 {
@@ -86,8 +80,8 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 			TEXT("error: '%s' is not a format. Accepted: read, json."), *Format);
 	}
 
-	// Only an empty budget means the default, and the default
-	// is generous rather than unlimited, so a huge Blueprint cannot flood a caller.
+	// TokenBudget is a legacy name for a per-asset character budget. Text may
+	// retain a minimum manifest above that budget; it is not a hard response cap.
 	const FString NumericText = TokenBudget.TrimStartAndEnd();
 	int32 BudgetChars = NumericText.IsEmpty() ? DefaultBudgetChars : 0;
 	for (TCHAR Digit : NumericText)
@@ -105,10 +99,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 	Request.TokenBudgetChars = BudgetChars;
 	Request.GraphFilter = FTurboMCPAssetResolver::SplitList(GraphFilter);
 
-	// The counts go at the END, not in the opening line. Building the opening line with
-	// the counts in it before the loop has run reads `read: 1 asset(s): 1 read, 0 refused`
-	// followed by the body, which puts the conclusion before the evidence and is wrong on
-	// its face.
+	// Accumulate per-asset results before formatting the summary counts.
 	FString Result;
 
 	int32 ReadCount = 0;
@@ -128,26 +119,30 @@ FString UTurboMCPReadToolset::ReadTurboMCPBlueprintLoad(
 			continue;
 		}
 
-		UBlueprint* Blueprint = Cast<UBlueprint>(
-			LoadObject<UObject>(nullptr, *Resolved.ObjectPath));
+		UObject* Loaded = LoadObject<UObject>(nullptr, *Resolved.ObjectPath);
+		if (Loaded == nullptr)
+		{
+			Errors += FString::Printf(TEXT("\nerror: could not load %s. Check asset availability and the editor log; its asset type could not be verified."), *Resolved.ObjectPath);
+			++RefusedCount;
+			continue;
+		}
+		UBlueprint* Blueprint = Cast<UBlueprint>(Loaded);
 
 		if (Blueprint == nullptr)
 		{
 			// One line per refusal, naming the class, so a caller does not retry
 			// the same thing expecting a different answer.
-			UObject* Loaded = FindObject<UObject>(nullptr, *Resolved.ObjectPath);
 			Errors += FString::Printf(
 				TEXT("\nerror: %s is a %s, and only Blueprints can be read by this tool."),
 				*Resolved.ObjectPath,
-				Loaded != nullptr ? *Loaded->GetClass()->GetName() : TEXT("missing object"));
+				*Loaded->GetClass()->GetName());
 			++RefusedCount;
 			continue;
 		}
 
 		if (bJson)
 		{
-			// The JSON rendering, from the same accessors as the text above, so the two
-			// cannot disagree about what the Blueprint contains.
+			// JSON is a per-asset section within the surrounding text response.
 			FString JsonError;
 			FTurboMCPBlueprintJson::FRequest JsonRequest;
 			JsonRequest.DetailLevel = static_cast<int32>(DetailLevel);

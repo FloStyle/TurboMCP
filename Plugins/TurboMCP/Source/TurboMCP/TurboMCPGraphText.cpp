@@ -126,7 +126,7 @@ namespace
 		return FValueSourceEndpoint();
 	}
 
-	/** The supported link form for an existing pure value: `(-> node-id:output-pin)`. */
+	/** Identify a data source by both node and output pin, including function inputs. */
 	FString SourcePinLink(const FValueSourceEndpoint& InSource)
 	{
 		if (!InSource.bResolved || InSource.Node == nullptr || InSource.Pin == nullptr)
@@ -536,8 +536,13 @@ FString FTurboMCPGraphText::RenderPinValue(const UEdGraphPin* InPin, EDetail InD
 			return InlineStopReference(RealTarget, TEXT("form not emitted"));
 		}
 
-		// An exec or impure node is a separate statement, so the pin refers to it
-		// by node ID. `2.1.4` requires the ID so the agent can act on it.
+		// Function entries and impure calls can expose several data outputs. A
+		// bare node ID loses which value the consumer reads. Keep the established
+		// node-only execution reference, but identify data endpoints precisely.
+		if (Source.Pin->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec)
+		{
+			return SourcePinLink(Source);
+		}
 		return FString::Printf(TEXT("(-> %s)"), *TurboMCPNodeId::MakeForNode(RealTarget));
 	}
 
