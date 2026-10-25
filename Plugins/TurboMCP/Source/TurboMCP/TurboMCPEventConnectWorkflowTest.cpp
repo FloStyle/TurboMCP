@@ -83,11 +83,14 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
     UEdGraphPin* TargetPin = Purchase->FindPinChecked(TEXT("PurchaseValue"));
     UEdGraphPin* OldSource = TargetPin->LinkedTo[0];
     UEdGraphPin* NewSource = Correct->FindPinChecked(TEXT("ReturnValue"));
-    auto Snapshot = [&]()
+    UEdGraphNode* Obsolete = OldSource->GetOwningNode();
+    const FString ObsoleteId = TurboMCPNodeId::MakeForNode(Obsolete, true);
+    auto Snapshot = [&](UEdGraphNode* Excluded = nullptr)
     {
         TArray<FString> Rows;
         for (UEdGraph* G : {Graph, OtherGraph}) for (UEdGraphNode* N : G->Nodes)
         {
+            if (N == Excluded) continue;
             Rows.Add(G->GetName() + N->NodeGuid.ToString() + FString::Printf(TEXT(":%d,%d"), N->NodePosX, N->NodePosY));
             for (UEdGraphPin* P : N->Pins) if (P)
             {
@@ -124,12 +127,24 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
             TestEqual(TEXT("Refusal preserves every flow"), Snapshot(), Before);
             TestEqual(TEXT("Refusal preserves dirty flag"), Package->IsDirty(), DirtyBefore);
         }
+    // A source still used elsewhere is not a cleanup candidate. This temporary
+    // fixture variant gives it a second consumer, then restores the baseline.
+    UEdGraphPin* SharedInput = Correct->FindPinChecked(TEXT("A"));
+    OldSource->MakeLinkTo(SharedInput);
+    const FString SharedBefore = Snapshot();
+    const FString SharedPreview = Record(TEXT("PreviewTurboMCPGraphConnect shared source"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphConnect(Asset, GraphName, SourceId, TEXT("ReturnValue"), TargetId, TEXT("PurchaseValue")));
+    TestFalse(TEXT("Shared source is not proposed for cleanup"), SharedPreview.Contains(TEXT("cleanup review:")));
+    TestEqual(TEXT("Shared preview preserves all flows"), Snapshot(), SharedBefore);
+    OldSource->BreakLinkTo(SharedInput);
+    TestEqual(TEXT("Shared fixture variant restored"), Snapshot(), Before);
     const FString Preview = Record(TEXT("PreviewTurboMCPGraphConnect"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphConnect(Asset, GraphName, SourceId, TEXT("ReturnValue"), TargetId, TEXT("PurchaseValue")));
     TestTrue(TEXT("Preview identifies endpoints and displaced source"), Preview.Contains(SourceId) && Preview.Contains(TargetId) && Preview.Contains(TurboMCPNodeId::MakeForNode(OldSource->GetOwningNode(), true)));
+    TestTrue(TEXT("Preview identifies orphan cleanup"), Preview.Contains(TEXT("cleanup review:")) && Preview.Contains(ObsoleteId));
     TestTrue(TEXT("Preview explicitly transient"), Preview.Contains(TEXT("preview (transient graph)")));
     TestFalse(TEXT("Connect preview does not imply new node IDs"), Preview.Contains(TEXT("New node IDs")));
     TestEqual(TEXT("Preview preserves all state"), Snapshot(), Before);
     const FString Applied = Record(TEXT("EditTurboMCPGraphConnect"), UTurboMCPEditToolset::EditTurboMCPGraphConnect(Asset, GraphName, SourceId, TEXT("ReturnValue"), TargetId, TEXT("PurchaseValue")));
+    TestTrue(TEXT("Edit exposes cleanup instead of silently deleting"), Applied.Contains(TEXT("cleanup review:")) && Graph->Nodes.Contains(Obsolete));
     TestTrue(TEXT("Edit reports changed"), Applied.StartsWith(TEXT("changed\n")));
     TestTrue(TEXT("Edit identifies endpoints"), Applied.Contains(SourceId) && Applied.Contains(TargetId));
     TestTrue(TEXT("Only intended input now uses correct source"), TargetPin->LinkedTo.Num() == 1 && TargetPin->LinkedTo[0] == NewSource);
@@ -141,6 +156,25 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
     const FString Again = Record(TEXT("EditTurboMCPGraphConnect repeated"), UTurboMCPEditToolset::EditTurboMCPGraphConnect(Asset, GraphName, SourceId, TEXT("ReturnValue"), TargetId, TEXT("PurchaseValue")));
     TestTrue(TEXT("Repeated connection is a no-op"), Again.StartsWith(TEXT("unchanged\nno edit needed")));
     TestEqual(TEXT("No-op preserves edited state"), Snapshot(), After);
+    // Cleanup is an explicit second operation, not an invisible side effect of
+    // reconnect. The fixture's obsolete constant addition has no dependencies.
+    TestTrue(TEXT("Obsolete calculation is now completely disconnected"),
+        !Obsolete->Pins.ContainsByPredicate([](const UEdGraphPin* P) { return P && !P->LinkedTo.IsEmpty(); }));
+    const FString RemoveNodes = FString::Printf(TEXT("[\"%s\"]"), *ObsoleteId);
+    const FString RemovePreview = Record(TEXT("PreviewTurboMCPGraphRemove"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphRemove(Asset, GraphName, RemoveNodes, TEXT("[]")));
+    TestTrue(TEXT("Cleanup preview names exactly one node"), RemovePreview.Contains(ObsoleteId) && RemovePreview.Contains(TEXT("nodes=1")));
+    TestFalse(TEXT("Cleanup preview does not imply new IDs"), RemovePreview.Contains(TEXT("New node IDs")));
+    TestEqual(TEXT("Cleanup preview leaves live graph untouched"), Snapshot(), After);
+    const FString ExpectedClean = Snapshot(Obsolete);
+    const int32 BeforeCleanupCount = Graph->Nodes.Num();
+    const FString Removed = Record(TEXT("EditTurboMCPGraphRemove"), UTurboMCPEditToolset::EditTurboMCPGraphRemove(Asset, GraphName, RemoveNodes, TEXT("[]")));
+    TestTrue(TEXT("Cleanup reports changed"), Removed.StartsWith(TEXT("changed\n")));
+    TestEqual(TEXT("Exactly the obsolete node removed"), Graph->Nodes.Num(), BeforeCleanupCount - 1);
+    TestFalse(TEXT("Obsolete node is gone"), Graph->Nodes.Contains(Obsolete));
+    TestEqual(TEXT("Cleanup preserves every other node and flow"), Snapshot(), ExpectedClean);
+    const FString MissingRemove = Record(TEXT("EditTurboMCPGraphRemove missing"), UTurboMCPEditToolset::EditTurboMCPGraphRemove(Asset, GraphName, RemoveNodes, TEXT("[]")));
+    TestTrue(TEXT("Repeated removal refuses missing node"), MissingRemove.StartsWith(TEXT("unchanged\nrefused:")));
+    TestEqual(TEXT("Repeated cleanup preserves all state"), Snapshot(), ExpectedClean);
     Record(TEXT("EditTurboMCPCompile"), UTurboMCPEditToolset::EditTurboMCPCompile(Asset));
     if (!TestTrue(TEXT("Blueprint compiles"), BP->Status != BS_Error && BP->GeneratedClass != nullptr)) return false;
     UObject* Object = BP->GeneratedClass->GetDefaultObject();

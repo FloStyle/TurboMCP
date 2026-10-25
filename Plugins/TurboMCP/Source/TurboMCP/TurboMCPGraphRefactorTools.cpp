@@ -422,11 +422,13 @@ FString ConnectNamed(const FString& Asset, const FString& GraphName, bool bEdit,
         const FString Endpoints = SourceNodeId + TEXT(":") + SourcePin + TEXT(" -> ") + TargetNodeId + TEXT(":") + TargetPin;
         const bool bExec = Output && Output->PinType.PinCategory == TEXT("exec");
         TArray<FString> Displaced;
+        TArray<FGuid> DisplacedSourceNodes;
         UEdGraphPin* ReplacedPin = bExec ? Output : Input;
         if (ReplacedPin)
             for (UEdGraphPin* Old : ReplacedPin->LinkedTo)
                 if (Old && Old != (bExec ? Input : Output))
                 {
+                    if (!bExec) DisplacedSourceNodes.AddUnique(Old->GetOwningNode()->NodeGuid);
                     UEdGraphNode* Original = TurboMCPGraphScratch::ByGuid(Identity, Old->GetOwningNode()->NodeGuid);
                     if (Original) Displaced.Add(TurboMCPNodeId::MakeForNode(Original, true) + TEXT(":") + Old->PinName.ToString());
                 }
@@ -436,6 +438,28 @@ FString ConnectNamed(const FString& Asset, const FString& GraphName, bool bEdit,
             + (bExec ? TEXT("\nreplaced source-output destinations: ") : TEXT("\nreplaced target-input sources: "))
             + (Displaced.IsEmpty() ? FString(TEXT("none")) : FString::Join(Displaced, TEXT(", ")))
             + TEXT("\nNo automatic continuation, conversion nodes, compile or save.");
+        // Inspect every output of displaced data producers. One disconnected
+        // pin is not enough: shared values and other output consumers must survive.
+        TArray<FString> Unconsumed;
+        for (const FGuid& Guid : DisplacedSourceNodes)
+        {
+            UK2Node* Node = Cast<UK2Node>(TurboMCPGraphScratch::ByGuid(Graph, Guid));
+            UEdGraphNode* Original = TurboMCPGraphScratch::ByGuid(Identity, Guid);
+            if (!Node || !Original || !Node->IsNodePure()) continue;
+            bool bHasOutput = false, bHasConsumer = false, bHasExec = false;
+            for (const UEdGraphPin* P : Node->Pins) if (P)
+            {
+                bHasExec |= P->PinType.PinCategory == TEXT("exec");
+                if (P->Direction == EGPD_Output)
+                { bHasOutput = true; bHasConsumer |= !P->LinkedTo.IsEmpty(); }
+            }
+            if (bHasOutput && !bHasConsumer && !bHasExec)
+                Unconsumed.Add(TurboMCPNodeId::MakeForNode(Original, true));
+        }
+        if (!Unconsumed.IsEmpty())
+            Report += TEXT("\ncleanup review: displaced pure node(s) have no output consumers after this connection: ")
+                + FString::Join(Unconsumed, TEXT(", "))
+                + TEXT("\nNo nodes were deleted. Inspect these nodes and their dependencies; if obsolete, use PreviewTurboMCPGraphRemove then EditTurboMCPGraphRemove with these exact IDs. This is not proof that arbitrary pure calls are safe to delete.");
         return true;
     }, false);
 }
@@ -454,10 +478,10 @@ FString UTurboMCPEditToolset::EditTurboMCPGraphSequence(const FString& Asset,con
 { return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Sequence(G,I,Groups,bSplitValues,R,E); }); }
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links)
-{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }); }
+{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }, false); }
 
 FString UTurboMCPEditToolset::EditTurboMCPGraphRemove(const FString& Asset,const FString& GraphName,const FString& Nodes,const FString& Links)
-{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }); }
+{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return Remove(G,I,Nodes,Links,R,E); }, false); }
 
 FString UTurboMCPPreviewToolset::PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin)
 { return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { return BindFunction(G,I,TargetNodeId,TargetPin,FunctionName,ObjectNodeId,ObjectPin,R,E); }); }
