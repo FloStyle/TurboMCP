@@ -21,6 +21,10 @@ User screenshot accepts the remaining purchase layout but rejects local getters 
 
 Review Preview/Edit GraphAppend through a minimum-quantity purchase rule. Fixture starts with an unused MinimumQuantity input because Append cannot edit an existing function signature. Discover node types/pins; preview and append comparison/AND nodes, replacing only CanAfford. Verify three outcomes and unchanged price, exact existing node/position/default/link preservation except the intended connection, preview/refusal non-mutation, clear output and actual capture. Review implementation, public descriptions and comments; repair confirmed defects within assignment scope. Run supervised test-purchase-workflow and record limitations; no global tool certification.
 
+## Approved append follow-up (2026-10-25)
+
+Native append run 66a3139ded6a464fb65c9d46181f1db5 passes semantic/preservation checks. Captured pure nodes are placed beyond Return because only exec attachments anchor placement. Anchor wholly pure blocks to their existing data consumer using existing dependency/collision planning; preserve all existing positions. Discovery reports AND as not pure because it reads an unconfigured class default: use associated function purity. Add consumer-side placement and discovery/pin agreement assertions to the same workflow. Run supervised purchase suite, inspect final PNG and record residual layout limitations.
+
 ## Problem
 For each tool record actual callable schema, side effects, supported scope, refusal behavior and test evidence. Distinguish declared, definition located, source reviewed, runtime observed and release accepted. Start with result-envelope double wrapping and invalid numeric/default parsing. Do not invent a new public result schema.
 
