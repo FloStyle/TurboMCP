@@ -1642,3 +1642,6 @@ Readiness: done. Assignment workflow-override. Review ReadOverrides and Preview/
 
 ## Inherited override review evidence
 Implemented 8faffff; native 63b610bfbc52406390897bd5ec46273d passed. Three focused tools bring bounded coverage to 35/125. See docs/audit/override-workflow-review.md for output fixes, checks and untested paths.
+
+## Approved focused override removal workflow
+Readiness: ready. Assignment workflow-override-remove. Review EditOverrideRemove using a disposable Common Button with hover/unhover bodies. Verify missing/empty/repeated removal, exact removed identity and detached endpoints, retained body and unrelated unhover preservation, then explicit GraphRemove cleanup, compile, callback behavior and capture. Improve removal help/results/comments as needed. No automatic body deletion; no function graph, undo restoration, save/reload or physical-input certification. Run supervised test-override-remove-workflow and offline gate. Existing tools are support only.
