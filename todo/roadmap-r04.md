@@ -1626,3 +1626,7 @@ Readiness: ready. Assignment workflow-bind-event. Focus only Preview/Edit BindNe
 
 ## Focused parent delegate binding review - 2026-10-25
 Implemented 88e57fd; scope passed. WF-UI-06 focuses Preview/Edit BindNewEvent only. Native 3a38a896a17b48b1aecb7db7b399af75 passed: typed handler, exact node delta, old-state preservation, refusal/duplicate handling and compiled Common Button sender dispatch. Results/help now explain exact targets, parameters, replaced sources, empty body and runtime registration. Coverage 32/125; wider signature/live-replacement/persistence paths remain unverified. See docs/audit/parent-binding-workflow-review.md. Support tools reused without another full review.
+
+
+## Approved parent-binding layout correction
+Readiness: ready. Assignment workflow-bind-layout. Apply explicit scoped Tidy in WF-UI-06 and verify nearby button getter, aligned handler/Set execution pins, unchanged links/defaults/count and compiled dispatch. Repair Tidy only if the native scenario demonstrates a defect; no manual fixture-coordinate workaround.
