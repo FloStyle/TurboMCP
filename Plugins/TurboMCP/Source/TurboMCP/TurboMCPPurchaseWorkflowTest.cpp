@@ -373,6 +373,45 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
                 TestTrue(TEXT("Unrelated existing link preserved"), Pair.Key->LinkedTo.Contains(Linked));
     TestEqual(TEXT("CanAfford has one source after replacement"), AffordableOutput->LinkedTo.Num(), 1);
     TestFalse(TEXT("Old direct affordability connection removed"), AffordableOutput->LinkedTo.Contains(Affordable->FindPinChecked(TEXT("ReturnValue"))));
+    // Append preserves existing placement. Complete the edit workflow with an
+    // explicit tidy of the affected pure expression, including its old inputs.
+    TSet<UEdGraphNode*> RuleNodes;
+    TArray<UEdGraphNode*> PendingRule;
+    PendingRule.Add(AffordableOutput->LinkedTo[0]->GetOwningNode());
+    while (!PendingRule.IsEmpty())
+    {
+        UEdGraphNode* Node = PendingRule.Pop();
+        if (RuleNodes.Contains(Node)) continue;
+        RuleNodes.Add(Node);
+        for (UEdGraphPin* Pin : Node->Pins) if (Pin && Pin->Direction == EGPD_Input)
+            for (UEdGraphPin* Source : Pin->LinkedTo)
+                PendingRule.Add(Source->GetOwningNode());
+    }
+    TArray<FString> RuleIds;
+    for (UEdGraphNode* Node : Graph->Nodes) if (RuleNodes.Contains(Node))
+        RuleIds.Add(TurboMCPNodeId::MakeForNode(Node, true));
+    TMap<UEdGraphPin*, TArray<UEdGraphPin*>> RuleLinks;
+    for (UEdGraphNode* Node : Graph->Nodes)
+        for (UEdGraphPin* Pin : Node->Pins) if (Pin) RuleLinks.Add(Pin, Pin->LinkedTo);
+    const FString BeforeRuleTidy = ReadGraph();
+    const FString BeforeRulePositions = UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName);
+    Record(TEXT("PreviewTurboMCPGraphTidy purchase rule"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(Asset, GraphName, false, RuleIds));
+    TestEqual(TEXT("Rule tidy preview preserves content"), ReadGraph(), BeforeRuleTidy);
+    TestEqual(TEXT("Rule tidy preview preserves positions"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName), BeforeRulePositions);
+    const FString RuleTidy = Record(TEXT("EditTurboMCPGraphTidy purchase rule"), UTurboMCPEditToolset::EditTurboMCPGraphTidy(Asset, GraphName, false, RuleIds));
+    TestFalse(TEXT("Rule tidy succeeds"), RuleTidy.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Rule tidy preserves node count"), Graph->Nodes.Num(), BeforeAppendCount + 4);
+    for (const auto& Pair : RuleLinks)
+        TestTrue(TEXT("Rule tidy preserves exact pin links"), Pair.Key->LinkedTo == Pair.Value);
+    for (const auto& Pair : ExistingDefaults)
+        TestEqual(TEXT("Rule tidy preserves defaults"), Pair.Key->DefaultValue + TEXT("|") + Pair.Key->DefaultTextValue.ToString() + TEXT("|") + GetPathNameSafe(Pair.Key->DefaultObject), Pair.Value);
+    for (const auto& Pair : ExistingPositions) if (!RuleNodes.Contains(Pair.Key))
+        TestEqual(TEXT("Rule tidy preserves unrelated positions"), FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY), Pair.Value);
+    for (UEdGraphNode* Node : RuleNodes)
+        for (UEdGraphPin* Pin : Node->Pins) if (Pin && Pin->Direction == EGPD_Output)
+            for (UEdGraphPin* Input : Pin->LinkedTo)
+                TestTrue(TEXT("Rule data wires flow forward, including fixed Return"),
+                    FTurboMCPGraphTidy::AlignmentPinPosition(Pin).X < FTurboMCPGraphTidy::AlignmentPinPosition(Input).X);
     Record(TEXT("ReadTurboMCPGraphLoad appended"), ReadGraph());
     Record(TEXT("EditTurboMCPCompile appended"), UTurboMCPEditToolset::EditTurboMCPCompile(Asset));
     UFunction* PurchaseFunction = Blueprint->GeneratedClass->FindFunctionByName(*GraphName);
@@ -398,13 +437,13 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     FString GeometryError;
     if (TestTrue(TEXT("Final native geometry is available"), FTurboMCPGraphTidy::PrepareAlignment(Blueprint, Graph, GeometryError)))
         for (UEdGraphNode* NewNode : Graph->Nodes)
-            if (!ExistingPositions.Contains(NewNode))
+            if (RuleNodes.Contains(NewNode))
             {
                 const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(NewNode);
                 for (UEdGraphNode* Other : Graph->Nodes) if (Other && Other != NewNode)
                 {
                     const FVector2D OtherSize = FTurboMCPGraphTidy::AlignmentNodeSize(Other);
-                    TestFalse(TEXT("Appended node has no native rectangle overlap"),
+                    TestFalse(TEXT("Tidied rule node has no native rectangle overlap"),
                         NewNode->NodePosX < Other->NodePosX + OtherSize.X && NewNode->NodePosX + Size.X > Other->NodePosX
                         && NewNode->NodePosY < Other->NodePosY + OtherSize.Y && NewNode->NodePosY + Size.Y > Other->NodePosY);
                 }

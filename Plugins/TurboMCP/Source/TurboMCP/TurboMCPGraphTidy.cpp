@@ -1887,7 +1887,109 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				return L.Key < R.Key;
 			});
 
-			ArrangeRows(Free, FreeStartX, FreeStartY);
+            const bool bPureSelection = bScoped && !Free.ContainsByPredicate([&](int32 I)
+            { return !OutPlan.Nodes[I].bIsPure; });
+            bool bPlacedDependencies = false;
+            if (bPureSelection)
+            {
+                // A selected data expression belongs before its fixed consumer, not
+                // beyond every fixed node. Lay out the whole selected dependency DAG
+                // so existing and newly appended readers obey the same ordering.
+                TSet<int32> Selected;
+                for (int32 I : Free) Selected.Add(I);
+                TArray<int32> Order;
+                TMap<int32, int32> Degree, Depth;
+                for (int32 I : Free) { Degree.Add(I, 0); Depth.Add(I, 0); }
+                double ConsumerLeft = TNumericLimits<double>::Max();
+                for (const FWire& W : OutPlan.Wires)
+                    if (Selected.Contains(W.SourceNodeIndex))
+                    {
+                        if (Selected.Contains(W.TargetNodeIndex)) ++Degree[W.TargetNodeIndex];
+                        else ConsumerLeft = FMath::Min(ConsumerLeft, OutPlan.Nodes[W.TargetNodeIndex].X);
+                    }
+                for (int32 I : Free) if (Degree[I] == 0) Order.Add(I);
+                for (int32 Cursor = 0; Cursor < Order.Num(); ++Cursor)
+                    for (const FWire& W : OutPlan.Wires)
+                        if (W.SourceNodeIndex == Order[Cursor] && Selected.Contains(W.TargetNodeIndex))
+                        {
+                            Depth[W.TargetNodeIndex] = FMath::Max(Depth[W.TargetNodeIndex], Depth[Order[Cursor]] + 1);
+                            if (--Degree[W.TargetNodeIndex] == 0) Order.Add(W.TargetNodeIndex);
+                        }
+                if (Order.Num() == Free.Num() && ConsumerLeft < TNumericLimits<double>::Max())
+                {
+                    int32 MaxDepth = 0;
+                    for (int32 I : Order) MaxDepth = FMath::Max(MaxDepth, Depth[I]);
+                    TArray<double> Widths, Columns;
+                    Widths.Init(0.0, MaxDepth + 1); Columns.Init(0.0, MaxDepth + 1);
+                    for (int32 I : Order) Widths[Depth[I]] = FMath::Max(Widths[Depth[I]], OutPlan.Nodes[I].Width);
+                    double RightEdge = ConsumerLeft - SpacingX;
+                    for (int32 D = MaxDepth; D >= 0; --D)
+                    { Columns[D] = RightEdge - Widths[D]; RightEdge = Columns[D] - SpacingX; }
+                    double NextRow = TNumericLimits<double>::Max();
+                    for (int32 I : Free) NextRow = FMath::Min(NextRow, OutPlan.Nodes[I].Y);
+                    TSet<int32> Positioned;
+                    TFunction<void(int32)> PlaceInputs = [&](int32 I)
+                    {
+                        if (Positioned.Contains(I)) return;
+                        TArray<const FWire*> Inputs;
+                        for (const FWire& W : OutPlan.Wires)
+                            if (W.TargetNodeIndex == I && Selected.Contains(W.SourceNodeIndex)) Inputs.Add(&W);
+                        Inputs.Sort([](const FWire& A, const FWire& B)
+                        { return AlignmentPinPosition(A.InputPin).Y < AlignmentPinPosition(B.InputPin).Y; });
+                        for (const FWire* W : Inputs) PlaceInputs(W->SourceNodeIndex);
+                        FNode& N = OutPlan.Nodes[I];
+                        N.PlannedX = Columns[Depth[I]] + Widths[Depth[I]] - N.Width;
+                        if (Inputs.IsEmpty())
+                        { N.PlannedY = NextRow; NextRow += N.Height + SpacingY; }
+                        else
+                        {
+                            double Sum = 0.0;
+                            for (const FWire* W : Inputs)
+                            {
+                                const FNode& Source = OutPlan.Nodes[W->SourceNodeIndex];
+                                Sum += AlignmentPinPosition(W->OutputPin).Y + Source.PlannedY - Source.Y
+                                    - (AlignmentPinPosition(W->InputPin).Y - N.Y);
+                            }
+                            N.PlannedY = Sum / Inputs.Num();
+                        }
+                        // Shared inputs can bring two consumers onto the same row.
+                        // Reserve measured rectangles even for these DAG joins.
+                        for (int32 Pass = 0; Pass <= Positioned.Num(); ++Pass)
+                        {
+                            bool bShifted = false;
+                            for (int32 J : Positioned)
+                            {
+                                const FNode& Other = OutPlan.Nodes[J];
+                                if (N.PlannedX < Other.PlannedX + Other.Width && N.PlannedX + N.Width > Other.PlannedX
+                                    && N.PlannedY < Other.PlannedY + Other.Height + SpacingY && N.PlannedY + N.Height + SpacingY > Other.PlannedY)
+                                { N.PlannedY = Other.PlannedY + Other.Height + SpacingY; bShifted = true; }
+                            }
+                            if (!bShifted) break;
+                        }
+                        Positioned.Add(I);
+                    };
+                    for (int32 K = Order.Num() - 1; K >= 0; --K) PlaceInputs(Order[K]);
+                    // Translate the expression as one block below fixed obstacles;
+                    // never move an unselected node or change a wire to make room.
+                    for (int32 Pass = 0; Pass <= OutPlan.Nodes.Num(); ++Pass)
+                    {
+                        double Shift = 0.0;
+                        for (int32 I : Free)
+                            for (int32 J = 0; J < OutPlan.Nodes.Num(); ++J)
+                                if (!Selected.Contains(J))
+                                {
+                                    const FNode& N = OutPlan.Nodes[I]; const FNode& O = OutPlan.Nodes[J];
+                                    if (N.PlannedX < O.X + O.Width + SpacingX && N.PlannedX + N.Width + SpacingX > O.X
+                                        && N.PlannedY < O.Y + O.Height + SpacingY && N.PlannedY + N.Height + SpacingY > O.Y)
+                                        Shift = FMath::Max(Shift, O.Y + O.Height + SpacingY - N.PlannedY);
+                                }
+                        if (Shift <= 0.0) break;
+                        for (int32 I : Free) OutPlan.Nodes[I].PlannedY += Shift;
+                    }
+                    bPlacedDependencies = true;
+                }
+            }
+            if (!bPlacedDependencies) ArrangeRows(Free, FreeStartX, FreeStartY);
 		}
 	}
 
