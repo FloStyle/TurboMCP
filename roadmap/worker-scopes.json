@@ -2299,6 +2299,20 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.h",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp"
           ]
+        },
+        "commonui-play-workflow": {
+          "files": [
+            "TestProject/Source/TurboMCPTest/TurboMCPTest.Build.cs",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Tools/test-vision-workflow.py"
+          ],
+          "new_files": [
+            "TestProject/Config/DefaultGame.ini",
+            "TestProject/Source/TurboMCPTest/TurboMCPCommonPlayFixture.h",
+            "TestProject/Source/TurboMCPTest/TurboMCPCommonPlayFixture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp"
+          ]
         }
       },
       "preserve_rows": []
