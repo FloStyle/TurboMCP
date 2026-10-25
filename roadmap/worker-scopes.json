@@ -2232,6 +2232,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
             "Tools/test-vision-workflow.py"
           ]
+        },
+        "workflow-vision-framing": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureSelector.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureAsset.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCaptureAsset.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
+            "Tools/test-vision-workflow.py"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
