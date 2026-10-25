@@ -84,7 +84,7 @@ def main():
     check("reports the widget", WIDGET in out)
     check("reports the size it used", "size: 1280x720" in out)
     check("says how many values it set", "sample values: 0 set" in out)
-    check("says no function was asked for", "function: none asked for" in out)
+    check("says no function was asked for", "function: not requested" in out)
     check("writes an image and says where", "image:" in out and ".png" in out)
     check(
         "says the alpha is forced opaque, and why",
@@ -160,7 +160,7 @@ def main():
     check("marks refused samples partial", bad_value.startswith("partial:") and "not rolled back" in bad_value)
     check("counts the refusal", "0 set, 1 refused" in bad_value)
     check("names the bad variable", "NotAVariable" in bad_value)
-    check("offers names that do exist", "Some it does have:" in bad_value)
+    check("offers names that do exist", "Available editable examples:" in bad_value)
 
     print()
     print("=== P2: sample values must be a JSON object ===")
