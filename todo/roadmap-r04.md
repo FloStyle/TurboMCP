@@ -1708,3 +1708,7 @@ Implemented; bounded native acceptance passed. Assignment play-input-focus-diagn
 ### Input focus and diagnostics evidence
 
 Implemented in 9e7eac0; native run 3c78d90b08224fe69e055a985ae23708 passed. D-pad focus, analog cancellation on focus loss, original-player axis zero, outside-focus refusal, recovery, explicit release and optional CommonUI diagnostics passed. Application deactivation is implemented but untested; broader modal/multiplayer/device cases remain VISION-10. Scope gate passed and claim c0509be3fbc446e38a3446cdea0a22f3 was released. DSH remains paused; stock engine unchanged.
+
+### CommonUI modal and deactivation acceptance
+
+Readiness: ready. Assignment commonui-modal-safety. Extend only the existing owned CommonPlay fixture: disabled button between Settings and Resume with independent zero-click count; directional navigation must skip it. Make Settings modal and prove Back returns to Pause without resuming gameplay. Exercise the stock Slate application-deactivation callback during a five-second hold, verify cancellation, inactive refusal and recovery, restore activation on every exit. Label this callback simulation honestly, not OS Alt-Tab evidence. No engine edits, production changes or asset saves. Native supervisor and offline gate; DSH paused.

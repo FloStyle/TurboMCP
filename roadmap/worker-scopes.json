@@ -2323,6 +2323,14 @@
             "TestProject/Source/TurboMCPTest/TurboMCPCommonPlayFixture.cpp"
           ],
           "new_files": []
+        },
+        "commonui-modal-safety": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp",
+            "TestProject/Source/TurboMCPTest/TurboMCPCommonPlayFixture.h",
+            "TestProject/Source/TurboMCPTest/TurboMCPCommonPlayFixture.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
