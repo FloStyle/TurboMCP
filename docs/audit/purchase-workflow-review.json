@@ -30,7 +30,9 @@
     "override_remove_native": "Passed cf71a88b34d248adb5743c36de988a0d: exact event removal, retained links/positions, missing/repeat preservation, explicit body cleanup, widget/style preservation, compile and remaining callback.",
     "override_remove_offline": "22/26 in 4ba0e22bb4c9472e96dc2e68e21d742e; four known baseline failures remain.",
     "widget_variable_native": "Passed 3faaddbb451a4f9d820afc0aa6d4d6dc: exposure, compiled access, duplicate/no-op/missing-name behavior, referenced-disable refusal, cleanup and successful disable with designer widgets retained.",
-    "widget_variable_offline": "22/26 in 38b7cddf872443b7af3428622e358229; four known baseline failures remain."
+    "widget_variable_offline": "22/26 in 38b7cddf872443b7af3428622e358229; four known baseline failures remain.",
+    "widget_binding_native": "c24c254d03aa4196a02263d7e83e1df6",
+    "widget_binding_offline": "7050368c75c24a07aa062eaf75436486: 22/26 baseline failures; before final fixture capture ordering adjustment"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -585,6 +587,19 @@
       "workflows": [
         "WF-UI-09-WIDGET-VARIABLE"
       ]
+    },
+    {
+      "tool": "EditTurboMCPWidgetBindAdd",
+      "role": "Bind a widget property to an existing compatible getter",
+      "status": "scenario checked",
+      "ready": false,
+      "behavior": "Initial binding, replacement, live text, clean no-op, invalid function/signature/purity and multicast refusals passed",
+      "review": "Engine compatibility path, mutation boundary, comments, public help and actual English results reviewed; validation before replacement and canonical no-op implemented",
+      "remaining": "Text property binding only; other delegate families, inheritance, function rename, undo and persistence not exercised; FunctionAdd supplies fixture getter graphs; it is not newly counted as a focused review; Repeated preview captures show an unrelated blank button disappearing; keep widget preview rendering follow-up open",
+      "scenario_evidence": "c24c254d03aa4196a02263d7e83e1df6",
+      "workflows": [
+        "WF-UI-10-WIDGET-BINDING"
+      ]
     }
   ],
   "evidence": [
@@ -607,6 +622,12 @@
       "status": "open",
       "problem": "Subtotal wire crosses the percent-conversion comment box after annotation creation.",
       "next": "Coordinate annotation bounds and input layout or route the wire without changing calculation semantics. Do not mark the workflow visually complete."
+    },
+    {
+      "id": "WF-UI-10-PREVIEW-REPEAT",
+      "status": "open",
+      "problem": "Unrelated blank button disappears in the second widget capture during the same native workflow; label binding and live text assertions pass.",
+      "next": "Reproduce repeated captures independently of the native fixture renderer and inspect Slate/resource lifecycle; cause unconfirmed."
     }
   ],
   "append_workflow": {
@@ -641,7 +662,7 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 37,
+    "scenario_reviewed": 38,
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
   },

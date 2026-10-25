@@ -286,6 +286,28 @@
         "Getter path exercised; setter detection source-reviewed",
         "No persistence or undo-restoration coverage; injected toggle failure is source-only coverage"
       ]
+    },
+    {
+      "id": "WF-UI-10-WIDGET-BINDING",
+      "title": "Bind a purchase label to a validated text getter",
+      "status": "scenario_checked",
+      "review": "docs/audit/widget-binding-workflow-review.md",
+      "fixture": "TurboMCP.Workflow.WidgetBinding",
+      "evidence": "c24c254d03aa4196a02263d7e83e1df6",
+      "focused_tools": [
+        "EditTurboMCPWidgetBindAdd"
+      ],
+      "tools_used": [
+        "EditTurboMCPWidgetBindAdd",
+        "EditTurboMCPFunctionAdd",
+        "EditTurboMCPCompile",
+        "LookTurboMCPWidgetPreview"
+      ],
+      "limitations": [
+        "Text property binding only; other delegate families, inheritance, function rename, undo and persistence not exercised",
+        "FunctionAdd supplies fixture getter graphs; it is not newly counted as a focused review",
+        "Repeated preview captures show an unrelated blank button disappearing; keep widget preview rendering follow-up open"
+      ]
     }
   ],
   "tool_usage": {
@@ -303,7 +325,8 @@
       "WF-UI-06-PARENT-BINDING",
       "WF-UI-07-OVERRIDES",
       "WF-UI-08-OVERRIDE-REMOVE",
-      "WF-UI-09-WIDGET-VARIABLE"
+      "WF-UI-09-WIDGET-VARIABLE",
+      "WF-UI-10-WIDGET-BINDING"
     ],
     "EditTurboMCPGraphAppend": [
       "WF-BP-02-MINIMUM-QUANTITY"
@@ -358,7 +381,8 @@
     ],
     "LookTurboMCPWidgetPreview": [
       "WF-UI-05-COMMON-BUTTON",
-      "WF-UI-07-OVERRIDES"
+      "WF-UI-07-OVERRIDES",
+      "WF-UI-10-WIDGET-BINDING"
     ],
     "PreviewTurboMCPBindNewEvent": [
       "WF-UI-06-PARENT-BINDING"
@@ -450,9 +474,12 @@
     ],
     "EditTurboMCPWidgetsAsVars": [
       "WF-UI-09-WIDGET-VARIABLE"
+    ],
+    "EditTurboMCPWidgetBindAdd": [
+      "WF-UI-10-WIDGET-BINDING"
     ]
   },
-  "unique_tools_scenario_reviewed": 37,
+  "unique_tools_scenario_reviewed": 38,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
