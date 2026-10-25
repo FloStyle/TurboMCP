@@ -9,6 +9,10 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "HAL/PlatformTime.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Widgets/SWindow.h"
+#include "Widgets/Input/SButton.h"
+#include "GameFramework/PlayerController.h"
 
 // The project owns the CommonUI fixture. Reflection avoids a production plugin
 // dependency on either the project module or CommonUI.
@@ -17,6 +21,9 @@ class FCommonPlayLoop : public IAutomationLatentCommand
     FAutomationTestBase* Test;
     TWeakObjectPtr<AActor> Fixture;
     FString Evidence;
+    TSharedPtr<SWindow> FocusWindow;
+    TSharedPtr<SButton> OutsideButton;
+    int32 FocusStep=0;
     int32 Step=0;
     double Next=FPlatformTime::Seconds()+2;
     double Deadline=FPlatformTime::Seconds()+65;
@@ -33,13 +40,14 @@ class FCommonPlayLoop : public IAutomationLatentCommand
         if (!Function) return TEXT("fixture Describe missing");
         Fixture->ProcessEvent(Function,&Args);Record(Args.ReturnValue);return Args.ReturnValue;
     }
-    void Hold(const TCHAR* Key,const TCHAR* Value=TEXT(""))
+    void Hold(const TCHAR* Key,const TCHAR* Value=TEXT(""),const TCHAR* Duration=TEXT("0.15"))
     {
-        FString Out=UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),Key,Value,TEXT("0.15"));
+        FString Out=UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),Key,Value,Duration);
         Record(Out);Test->TestFalse(TEXT("Input accepted"),Out.StartsWith(TEXT("error:")));
     }
 public:
     explicit FCommonPlayLoop(FAutomationTestBase* InTest):Test(InTest) {}
+    ~FCommonPlayLoop() {if (FocusWindow.IsValid()) FocusWindow->RequestDestroyWindow();}
     virtual bool Update() override
     {
         double Now=FPlatformTime::Seconds();if (Now<Next) return false;Next=Now+1;
@@ -60,6 +68,46 @@ public:
         }
         if (Step<=10)
         {
+            // Pause before the existing confirm step to prove real directional
+            // navigation, independently of the tool's delivery message.
+            if (Step==2 && FocusStep<2)
+            {
+                const FString CurrentFocus=State();
+                Test->TestTrue(TEXT("Directional focus reached expected button"),CurrentFocus.Contains(FocusStep==0?TEXT("focused button: Settings"):TEXT("focused button: Resume")));
+                Hold(FocusStep==0?TEXT("Gamepad_DPad_Down"):TEXT("Gamepad_DPad_Up"));
+                ++FocusStep;return false;
+            }
+            if (Step==10 && FocusStep<6)
+            {
+                if (FocusStep==2)
+                {
+                    Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));
+                    Hold(TEXT("Gamepad_RightX"),TEXT("0.5"),TEXT("5"));
+                }
+                else if (FocusStep==3)
+                {
+                    FocusWindow=SNew(SWindow).Title(FText::FromString(TEXT("TurboMCP owned focus-loss fixture"))).ClientSize(FVector2D(320,100));
+                    FocusWindow->SetContent(SAssignNew(OutsideButton,SButton).Text(FText::FromString(TEXT("Outside PIE"))));
+                    FSlateApplication::Get().AddWindow(FocusWindow.ToSharedRef());
+                    FSlateApplication::Get().SetUserFocus(0,OutsideButton,EFocusCause::SetDirectly);
+                }
+                else if (FocusStep==4)
+                {
+                    const FString Cancelled=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Cancelled);
+                    Test->TestTrue(TEXT("Focus loss cancelled long hold before expiry"),Cancelled.Contains(TEXT("tool-held input: none")) && Cancelled.Contains(TEXT("last release reason: focus left the PIE viewport")));
+                    Test->TestEqual(TEXT("Original player axis cleared"),GEditor->PlayWorld->GetFirstPlayerController()->GetInputAnalogKeyState(EKeys::Gamepad_RightX),0.f);
+                    Test->TestTrue(TEXT("Input outside PIE refused"),UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),TEXT("P"),TEXT(""),TEXT("0.15")).StartsWith(TEXT("error:")));
+                    FocusWindow->RequestDestroyWindow();FocusWindow.Reset();OutsideButton.Reset();
+                }
+                else
+                {
+                    Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));
+                    Hold(TEXT("Gamepad_RightX"),TEXT("0.5"),TEXT("5"));
+                    Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("release"),TEXT(""),TEXT(""),TEXT("")));
+                    Test->TestTrue(TEXT("Explicit release reported"),UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0")).Contains(TEXT("last release reason: explicit release")));
+                }
+                ++FocusStep;return false;
+            }
             const FString Current=State();
             const FString InputState=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(InputState);
             Test->TestTrue(TEXT("Hold automatically released"),InputState.Contains(TEXT("tool-held input: none")));
@@ -68,7 +116,7 @@ public:
             switch(Step)
             {
             case 1: Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));Hold(TEXT("Gamepad_Special_Right"));break;
-            case 2: Test->TestTrue(TEXT("Pause screen active"),Current.Contains(TEXT("screen: Pause")));Hold(TEXT("Gamepad_FaceButton_Bottom"));break;
+            case 2: Test->TestTrue(TEXT("D-pad up restored Settings focus"),Current.Contains(TEXT("focused button: Settings")));Test->TestTrue(TEXT("CommonUI diagnostics present"),InputState.Contains(TEXT("CommonUI active widgets: 2")) && InputState.Contains(TEXT("Gamepad")));Test->TestTrue(TEXT("Pause screen active"),Current.Contains(TEXT("screen: Pause")));Hold(TEXT("Gamepad_FaceButton_Bottom"));break;
             case 3: Test->TestTrue(TEXT("CommonButton opens Settings"),Current.Contains(TEXT("screen: Settings")));Test->TestTrue(TEXT("Audio initially selected"),Current.Contains(TEXT("tab: Audio")) && Current.Contains(TEXT("content: Audio settings content")));Hold(TEXT("Gamepad_RightShoulder"));break;
             case 4: Test->TestTrue(TEXT("Next tab selects Video"),Current.Contains(TEXT("tab: Video")) && Current.Contains(TEXT("content: Video settings content")));Hold(TEXT("Gamepad_LeftShoulder"));break;
             case 5: Test->TestTrue(TEXT("Previous tab selects Audio"),Current.Contains(TEXT("tab: Audio")) && Current.Contains(TEXT("content: Audio settings content")));Hold(TEXT("Gamepad_FaceButton_Right"));break;

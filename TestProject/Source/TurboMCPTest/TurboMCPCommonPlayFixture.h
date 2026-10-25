@@ -31,6 +31,7 @@ class UTurboMCPCommonPlayButton : public UCommonButtonBase
     GENERATED_BODY()
 public:
     void SetLabel(const FString& Value);
+    FString GetLabel() const;
 protected:
     virtual void NativeOnInitialized() override;
     UPROPERTY() TObjectPtr<UTextBlock> Label;

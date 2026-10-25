@@ -1,6 +1,7 @@
 // Copyright (c) 2026 FloStyle
 // SPDX-License-Identifier: MPL-2.0
 #include "TurboMCPCommonPlayFixture.h"
+#include "UObject/UObjectIterator.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/VerticalBox.h"
 #include "Components/HorizontalBox.h"
@@ -129,6 +130,7 @@ void ATurboMCPCommonPlayFixture::Tick(float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     if (Root && !Root->Stack->GetActiveWidget() && GetWorld()->IsPaused()) GetWorld()->GetFirstPlayerController()->SetPause(false);
 }
+FString UTurboMCPCommonPlayButton::GetLabel() const {return Label?Label->GetText().ToString():TEXT("none");}
 FString ATurboMCPCommonPlayFixture::Describe() const
 {
     auto* PC=GetWorld()->GetFirstPlayerController();
@@ -138,7 +140,10 @@ FString ATurboMCPCommonPlayFixture::Describe() const
     auto* Router=ULocalPlayer::GetSubsystem<UCommonUIActionRouterBase>(PC->GetLocalPlayer());
     const auto* Content=Settings?Cast<UTextBlock>(Settings->Tabs->GetLinkedSwitcher()->GetActiveWidget()):nullptr;
     const FString ContentText=Content?Content->GetText().ToString():TEXT("none");
-    return TEXT("content: ")+ContentText+TEXT("; ")+FString::Printf(TEXT("screen: %s; tab: %s; paused: %s; pauses: %d; look calls: %d; look yaw: %.1f; input type: %d; routing mode: %d"),Settings?TEXT("Settings"):Active?TEXT("Pause"):TEXT("Gameplay"),Settings?*Settings->Tabs->GetActiveTab().ToString():TEXT("none"),GetWorld()->IsPaused()?TEXT("yes"):TEXT("no"),PauseCount,LookCount,LookYaw,Common?int32(Common->GetCurrentInputType()):-1,Router?int32(Router->GetActiveInputMode()):-1);
+    FString FocusLabel=TEXT("none");
+    for (TObjectIterator<UTurboMCPCommonPlayButton> It;It;++It)
+        if (It->GetWorld()==GetWorld() && (It->HasUserFocus(PC)||It->HasUserFocusedDescendants(PC))) FocusLabel=It->GetLabel();
+    return TEXT("focused button: ")+FocusLabel+TEXT("; content: ")+ContentText+TEXT("; ")+FString::Printf(TEXT("screen: %s; tab: %s; paused: %s; pauses: %d; look calls: %d; look yaw: %.1f; input type: %d; routing mode: %d"),Settings?TEXT("Settings"):Active?TEXT("Pause"):TEXT("Gameplay"),Settings?*Settings->Tabs->GetActiveTab().ToString():TEXT("none"),GetWorld()->IsPaused()?TEXT("yes"):TEXT("no"),PauseCount,LookCount,LookYaw,Common?int32(Common->GetCurrentInputType()):-1,Router?int32(Router->GetActiveInputMode()):-1);
 }
 void ATurboMCPCommonPlayFixture::EndPlay(const EEndPlayReason::Type Reason)
 {

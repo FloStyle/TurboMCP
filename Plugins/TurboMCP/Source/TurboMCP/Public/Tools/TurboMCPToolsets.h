@@ -34,7 +34,7 @@ class UTurboMCPReadToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
-    /** Inspect the single PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation. CommonUI active-screen/device diagnostics remain unavailable.
+    /** Inspect the single PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation. Reports optional CommonInput device type and unordered active CommonUI widgets when loaded; unavailable is not zero. Does not determine the routing owner.
      * @param Target Required exact pie:0. Refuses absent/multiple PIE worlds or multiple local players.
      */
     UFUNCTION(meta = (AICallable))
@@ -1146,10 +1146,10 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 public:
     /** Execute bounded keyboard/gamepad input through Slate in live PIE. Runtime exception to asset-edit tools: runs game/UI code, no asset transaction/save/undo. Requires explicit game/menu focus; does not inject Enhanced Input actions. Reuse native Slate tools for mouse and text. Inspect state and capture after normal frames; delivery is not success.
      * @param Target Required exact pie:0; one in-process PIE world and one local player only.
-     * @param Action Required exact focus, hold or release. Focus moves focus to the game viewport. Hold auto-releases; overlapping holds refuse. Release cancels this tool's pending hold.
+     * @param Action Required exact focus, hold or release. Focus moves focus to the game viewport. Hold auto-releases on expiry, focus loss or application deactivation; overlapping holds and already-active player keys refuse. Release cancels this tool's pending hold.
      * @param Key Required for hold: Unreal key name, e.g. P, Gamepad_Special_Right or Gamepad_LeftX. Empty for focus/release. Mouse buttons, multi-axis keys and keys bound to editor play commands refuse (default Escape stops PIE). Use a non-conflicting game key or explicitly rebind the editor shortcut.
      * @param Value Required finite -1..1 for gamepad axes; empty for digital keys and focus/release.
-     * @param Seconds Required finite 0.05..5 for hold; 0.1 is a short tap. Empty for focus/release. Wall-clock expiry continues while gameplay is paused; normal editor ticks are required for release.
+     * @param Seconds Required finite 0.05..5 for hold; 0.1 is a short tap. Empty for focus/release. Wall-clock expiry continues while gameplay is paused; normal editor ticks are required for release. Cleanup clears only the owned key on the original player and never flushes all input.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPPlayInput(const FString& Target, const FString& Action, const FString& Key, const FString& Value, const FString& Seconds);
