@@ -23,6 +23,9 @@
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPNodeId.h"
 #include "TurboMCPGraphTidy.h"
+#include "Styling/AppStyle.h"
+#include "Styling/SlateTypes.h"
+#include "Widgets/Text/STextBlock.h"
 
 namespace
 {
@@ -460,6 +463,16 @@ bool FTurboMCPComment::Plan(const FString& InAsset, const FString& InGraphName,
 		OutPlan.Planned.Y = Y;
 		OutPlan.Planned.Width = OutPlan.Width > 0.0 ? OutPlan.Width : Width;
 		OutPlan.Planned.Height = OutPlan.Height > 0.0 ? OutPlan.Height : Height;
+        // Match the native comment title's font and wrapping. Reserve its full height
+        // above the selected contents instead of assuming every title is one line.
+        FSlateFontInfo TitleFont = FAppStyle::Get().GetWidgetStyle<FInlineEditableTextBlockStyle>(TEXT("Graph.CommentBlock.TitleInlineEditableText")).TextStyle.Font;
+        TitleFont.Size = GetDefault<UEdGraphNode_Comment>()->GetFontSize();
+        const TSharedRef<STextBlock> Title = SNew(STextBlock).Text(FText::FromString(InText))
+            .Font(TitleFont).WrapTextAt(FMath::Max(1.0, OutPlan.Planned.Width - 32.0));
+        Title->SlatePrepass(1.0f);
+        const double ExtraTitleHeight = FMath::Max(0.0, FMath::CeilToDouble(Title->GetDesiredSize().Y + 16.0) - TitleBarHeight);
+        OutPlan.Planned.Y -= ExtraTitleHeight;
+        if (OutPlan.Height <= 0.0) OutPlan.Planned.Height += ExtraTitleHeight; // Explicit Size remains exact.
 		OutPlan.Planned.MemberCount = OutPlan.NodeKeys.Num();
 		OutPlan.Planned.Members = OutPlan.NodeKeys;
 		return true;
@@ -557,7 +570,7 @@ FString FTurboMCPComment::RenderPreview(const FPlan& InPlan)
 	if (InPlan.Action == EAction::Create)
 	{
 		Out += FString::Printf(
-			TEXT("\nwould create a box around %d node(s), at x=%.0f y=%.0f, %.0fx%.0f"),
+			TEXT("\nwould create a box with wrapped-title clearance and no floating bubble around %d node(s), at x=%.0f y=%.0f, %.0fx%.0f"),
 			InPlan.Planned.MemberCount, InPlan.Planned.X, InPlan.Planned.Y,
 			InPlan.Planned.Width, InPlan.Planned.Height);
 		if (InPlan.bHasText)
@@ -566,8 +579,7 @@ FString FTurboMCPComment::RenderPreview(const FPlan& InPlan)
 		}
 		else
 		{
-			// Named rather than left blank, because a box with no text is a rectangle whose
-			// purpose nobody can recover later.
+			// Empty text is allowed; report it rather than inventing a description.
 			Out += TEXT("\ntext: (none given, so the box will be a plain rectangle)");
 		}
 		if (InPlan.bHasColor)
@@ -703,6 +715,10 @@ FString FTurboMCPComment::Apply(const FPlan& InPlan)
 		Comment->NodeWidth = static_cast<int32>(InPlan.Planned.Width);
 		Comment->NodeHeight = static_cast<int32>(InPlan.Planned.Height);
 		Comment->NodeComment = InPlan.Text;
+        // The box title already labels its contents; a second floating bubble can obscure neighbors.
+        Comment->bCommentBubbleVisible = false;
+        Comment->bCommentBubblePinned = false;
+        Comment->bCommentBubbleVisible_InDetailsPanel = false;
 		if (InPlan.bHasColor)
 		{
 			FLinearColor Parsed;

@@ -11,8 +11,6 @@
 #include "Misc/FileHelper.h"
 #include "HAL/FileManager.h"
 
-// NO `BlueprintEditorUtils.h` HERE. The editor's utilities live at `Kismet2/BlueprintEditorUtils.h`
-// and the bare name does not resolve, which was a fatal C1083 on the first build of this file.
 #include "BlueprintEditor.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -52,6 +50,8 @@
 
 namespace
 {
+    constexpr double GetterClearance = 16.0; // Local readers need space, not a whole execution lane.
+
     // Keep value readers below the incoming exec wire, not below the consumer body.
     // Input pins define the incoming corridor; entry nodes fall back to their first output.
     double ValueReaderFloor(UEdGraphNode* Node, double PlannedY)
@@ -1937,7 +1937,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         // Keep the original beside its nearest planned consumer. Old canvas X
         // order can select a different lane after tidy and leave a long residual wire.
         TArray<UEdGraphPin*> Consumers = ValuePin->LinkedTo;
-        const FVector2D OriginalOutput=FVector2D(Entry.PlannedX,Entry.PlannedY)+ReaderOffset;
+        const FVector2D OriginalOutput=AlignmentPinPosition(ValuePin)
+            + FVector2D(Entry.PlannedX-Entry.X,Entry.PlannedY-Entry.Y);
         auto PlannedConsumerDistance=[&](const UEdGraphPin& Pin)
         {
             const UEdGraphNode* Owner=Pin.GetOwningNodeUnchecked();
@@ -2067,9 +2068,9 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
                     for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
                         if (CopyX < Obstacle.X + Obstacle.Width + SpacingX
                             && CopyX + Planned.Width + SpacingX > Obstacle.X
-                            && CopyY < Obstacle.Y + Obstacle.Height + SpacingY
-                            && CopyY + Planned.Height + SpacingY > Obstacle.Y)
-                            NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + SpacingY));
+                            && CopyY < Obstacle.Y + Obstacle.Height + GetterClearance
+                            && CopyY + Planned.Height + GetterClearance > Obstacle.Y)
+                            NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + GetterClearance));
                     if (NextY == CopyY) break;
                     CopyY = NextY;
                 }
@@ -2092,6 +2093,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
 				OutError = TEXT("Getter-copy placement exceeds graph coordinate limits; no nodes moved.");
 				return false;
 			}
+            // Keep an existing short function-input wire instead of adding a longer redundant getter.
+            if (bFunctionInput && BestCopyScore >= PlannedConsumerDistance(*ConsumerPin)) continue;
             double RequiredRight = Planned.PlannedX + Planned.Width + FitPadding;
             double RequiredBottom = Planned.PlannedY + Planned.Height + FitPadding;
             for (int32 B = ConsumerBoxIndex; B != INDEX_NONE; B = OutPlan.Boxes[B].ParentIndex)

@@ -36,17 +36,9 @@
 #include "TurboMCPLogCapture.h"
 #include "TurboMCPSourceControlWrite.h"
 
-/**
- * The two write tools of phase 1: compile and save.
- *
- * Both are Edit kind, so `P4` governs them: one transaction, a real answer, and
- * a roll back when a change makes something worse. Neither reports from a call's
- * return value alone, because `D-33` records that an engine save returned an
- * error when it worked and saved only some of the assets when asked for several.
- *
- * `P6` forbids engine log text in a result. `E-SAVE` must still say that a save
- * raised warnings and which asset raised them, so warnings are counted through
- * `FTurboMCPLogCapture` and summarised, never pasted.
+/** Compile and save inspect actual per-asset results. Neither operation promises
+ * transaction rollback. Compilation can reinstance classes; save writes packages.
+ * Save warnings are summarized while compiler diagnostics retain actionable text.
  */
 namespace
 {

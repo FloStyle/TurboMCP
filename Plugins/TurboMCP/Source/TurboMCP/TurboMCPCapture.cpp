@@ -7,6 +7,7 @@
 
 
 #include "TurboMCPCapture.h"
+#include "Rendering/SlateRenderer.h"
 
 #include "Tools/TurboMCPToolsets.h"
 
@@ -48,32 +49,10 @@
 #include "TurboMCPNodeId.h"
 
 /**
- * L-CAPTURE: picture of an asset editor.
- *
- * `03_TOOLS.md` asks for an asset's editor opened on a tab, framed one of five ways,
- * and saved as a PNG.
- *
- * WHY THIS RENDERS THE GRAPH WIDGET ITSELF
- * -----------------------------------------
- * The engine's `USlateInspectorToolset::Screenshot` captures **what is on screen**. It
- * does not frame, and framing is this tool's entire job: the spec lists five framings
- * and requires that one which cannot be done is an error rather than a silent fallback
- * to the whole graph.
- *
- * So the graph editor widget is rendered directly with `FWidgetRenderer`, at the size
- * asked for, after the view is moved to the target. That gives an exact size and an
- * exact frame, and it is the same mechanism `L-WIDGET-PREVIEW` already proved works.
- * A second capture path that only sometimes agrees with the first is exactly what
- * `04_FORMATS.md` warns against, so only one is used.
- *
- * THE FRAME IS COMPUTED, NOT READ
- * -------------------------------
- * `SGraphEditor::SetViewLocation(Location, Zoom)` takes a graph-space top-left view offset and a
- * zoom. The target's bounding box comes from the nodes' own rectangles, and the zoom
- * is chosen so that box fits the requested image. `SGraphPanel::GetBoundsForNode`
- * would give on-screen bounds but needs a live panel and a widget geometry pass, so
- * the graph-space rectangles are used instead, which is the same computation
- * `LookTurboMCPLayoutReport` already does and reports.
+ * Graph framings render a transient graph copy at the requested image size.
+ * Bounds select the view; Unreal quantizes the zoom. Render SVG resources at the
+ * final scale before readback. No live graph editor is needed for these framings.
+ * Asset/editor-window modes below have separate UI and side-effect contracts.
  */
 namespace
 {
@@ -752,6 +731,8 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
     {
         TurboMCPGraphScratch::FCopy CaptureCopy;
         if(!CaptureCopy.Init(Blueprint,Graph)) return TEXT("error: capture scratch graph unavailable");
+        // Keep the function title faithful while all widgets still refer to the scratch copy.
+        CaptureCopy.Graph->Rename(*Graph->GetName(), CaptureCopy.Owner.Get(), REN_DontCreateRedirectors | REN_DoNotDirty | REN_NonTransactional);
         const TSharedRef<SGraphEditor> CaptureEditor=SNew(SGraphEditor).GraphToEdit(CaptureCopy.Graph).IsEditable(false).ShowGraphStateOverlay(false);
         const FVector2D PictureSize(Width,Height);
         TStrongObjectPtr<UTextureRenderTarget2D> PictureTarget(FWidgetRenderer::CreateTargetFor(PictureSize,TF_Bilinear,true));
@@ -785,9 +766,19 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
         const FVector2D FrameCentre((Box.MinX+Box.MaxX)/2,(Box.MinY+Box.MaxY)/2);
         CaptureEditor->SetViewLocation(FVector2f(FrameCentre-CanvasSize/(2*NativeZoom)),NativeZoom);
         PictureRenderer.DrawWidget(PictureTarget.Get(),CaptureEditor,PictureSize,0.0f);
+        // Painting at the final zoom requests SVGs at that exact scale. WidgetRenderer
+        // batches widgets but does not update the shared vector atlas. Run the renderer's
+        // resource update with no windows, then repaint with the populated atlas/UVs.
+        FSlateRenderer* SlateRenderer = FSlateApplication::Get().GetRenderer();
+        FSlateDrawBuffer& ResourceBuffer = SlateRenderer->AcquireDrawBuffer();
+        SlateRenderer->DrawWindows(ResourceBuffer);
+        SlateRenderer->ReleaseDrawBuffer(ResourceBuffer);
+        CaptureEditor->Invalidate(EInvalidateWidgetReason::Paint);
+        PictureRenderer.DrawWidget(PictureTarget.Get(),CaptureEditor,PictureSize,0.0f);
         TArray<FColor> PicturePixels; FReadSurfaceDataFlags PictureFlags(RCM_UNorm); PictureFlags.SetLinearToGamma(false);
         if(!PictureTarget->GameThread_GetRenderTargetResource()->ReadPixels(PicturePixels,PictureFlags) || PicturePixels.Num()!=Width*Height)
             return TEXT("error: native capture readback failed");
+        // Slate graph render targets do not retain meaningful output alpha; export the composited RGB.
         for(FColor& Pixel:PicturePixels) Pixel.A=255;
         TArray64<uint8> PicturePng; FImageUtils::PNGCompressImageArray(Width,Height,PicturePixels,PicturePng);
         const FString PictureFolder=FPaths::ProjectSavedDir()/TEXT("TurboMCP/Captures");

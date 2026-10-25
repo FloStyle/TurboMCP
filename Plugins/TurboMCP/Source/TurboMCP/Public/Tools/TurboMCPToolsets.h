@@ -649,7 +649,7 @@ public:
      * @param Box Existing comment ID for set/delete. For fit, empty with empty Nodes selects all boxes; nonempty selects one box. Explicit fit with Nodes requires one Box. Unused for create; pass empty.
      * @param Text Comment label for create/set; empty means no supplied label on create or leave unchanged on set, not clear. Whitespace is retained. Unused for fit/delete; pass empty. Example: Input handling.
      * @param Color Optional #RRGGBB or comma-separated RGB values 0..255, e.g. #3A6EA5. Empty uses the new box default or preserves an existing color. Used by create/set; otherwise pass empty.
-     * @param Size Optional width x height in graph units, e.g. 400x200. Each side must be finite numeric text in 1..2147483647; fractional parts truncate. Empty create encloses selected nodes; empty set keeps size. Explicit create size overrides automatic enclosure. Used by create/set; otherwise pass empty.
+     * @param Size Optional width x height in graph units, e.g. 400x200. Each side must be finite numeric text in 1..2147483647; fractional parts truncate. Empty create encloses selected nodes; empty set keeps size. Explicit create size overrides automatic enclosure. Automatic height includes wrapped-title clearance; new boxes have no floating comment bubble. Used by create/set; otherwise pass empty.
      */
     UFUNCTION(meta = (AICallable))
 	static FString PreviewTurboMCPComment(
@@ -1284,7 +1284,7 @@ public:
      * @param Box Existing comment ID for set/delete. For fit, empty with empty Nodes selects all boxes; nonempty selects one box. Explicit fit with Nodes requires one Box. Unused for create; pass empty.
      * @param Text Comment label for create/set; empty means no supplied label on create or leave unchanged on set, not clear. Whitespace is retained. Unused for fit/delete; pass empty. Example: Input handling.
      * @param Color Optional #RRGGBB or comma-separated RGB values 0..255, e.g. #3A6EA5. Empty uses the new box default or preserves an existing color. Used by create/set; otherwise pass empty.
-     * @param Size Optional width x height in graph units, e.g. 400x200. Each side must be finite numeric text in 1..2147483647; fractional parts truncate. Empty create encloses selected nodes; empty set keeps size. Explicit create size overrides automatic enclosure. Used by create/set; otherwise pass empty.
+     * @param Size Optional width x height in graph units, e.g. 400x200. Each side must be finite numeric text in 1..2147483647; fractional parts truncate. Empty create encloses selected nodes; empty set keeps size. Explicit create size overrides automatic enclosure. Automatic height includes wrapped-title clearance; new boxes have no floating comment bubble. Used by create/set; otherwise pass empty.
      */
     UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPComment(
