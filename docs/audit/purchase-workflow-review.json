@@ -32,7 +32,9 @@
     "widget_variable_native": "Passed 3faaddbb451a4f9d820afc0aa6d4d6dc: exposure, compiled access, duplicate/no-op/missing-name behavior, referenced-disable refusal, cleanup and successful disable with designer widgets retained.",
     "widget_variable_offline": "22/26 in 38b7cddf872443b7af3428622e358229; four known baseline failures remain.",
     "widget_binding_native": "c24c254d03aa4196a02263d7e83e1df6",
-    "widget_binding_offline": "7050368c75c24a07aa062eaf75436486: 22/26 baseline failures; before final fixture capture ordering adjustment"
+    "widget_binding_offline": "7050368c75c24a07aa062eaf75436486: 22/26 baseline failures; before final fixture capture ordering adjustment",
+    "widget_preview_repeat_native": "38bdf1a0d7e441ca9066455e39122b23: four captures passed button pixel checks",
+    "widget_preview_repeat_offline": "6f1a109f57fe405dad3d03c759632d1b: 22/26, same four baseline failures"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -595,7 +597,7 @@
       "ready": false,
       "behavior": "Initial binding, replacement, live text, clean no-op, invalid function/signature/purity and multicast refusals passed",
       "review": "Engine compatibility path, mutation boundary, comments, public help and actual English results reviewed; validation before replacement and canonical no-op implemented",
-      "remaining": "Text property binding only; other delegate families, inheritance, function rename, undo and persistence not exercised; FunctionAdd supplies fixture getter graphs; it is not newly counted as a focused review; Repeated preview captures show an unrelated blank button disappearing; keep widget preview rendering follow-up open",
+      "remaining": "Text property binding only; other delegate families, inheritance, function rename, undo and persistence not exercised; FunctionAdd supplies fixture getter graphs; it is not newly counted as a focused review",
       "scenario_evidence": "c24c254d03aa4196a02263d7e83e1df6",
       "workflows": [
         "WF-UI-10-WIDGET-BINDING"
@@ -622,12 +624,6 @@
       "status": "open",
       "problem": "Subtotal wire crosses the percent-conversion comment box after annotation creation.",
       "next": "Coordinate annotation bounds and input layout or route the wire without changing calculation semantics. Do not mark the workflow visually complete."
-    },
-    {
-      "id": "WF-UI-10-PREVIEW-REPEAT",
-      "status": "open",
-      "problem": "Unrelated blank button disappears in the second widget capture during the same native workflow; label binding and live text assertions pass.",
-      "next": "Reproduce repeated captures independently of the native fixture renderer and inspect Slate/resource lifecycle; cause unconfirmed."
     }
   ],
   "append_workflow": {
@@ -674,5 +670,14 @@
     "Code/helpers: review implementation and shared helpers, validation, mutation boundaries, error propagation and comments documenting actual behavior.",
     "Visual/runtime: inspect widget states and graph layout; static preview alone cannot prove interaction.",
     "Evidence: record each tool used, actual output, scenario result, remaining gaps and user visual feedback; no blanket bug-free claim."
+  ],
+  "resolved_visual_issues": [
+    {
+      "id": "WF-UI-10-PREVIEW-REPEAT",
+      "status": "withdrawn",
+      "problem": "Unrelated blank button disappears in the second widget capture during the same native workflow; label binding and live text assertions pass.",
+      "next": "Reproduce repeated captures independently of the native fixture renderer and inspect Slate/resource lifecycle; cause unconfirmed.",
+      "resolution": "Original archived PNGs contain the button: all four checked regions have 1600/1600 visible pixels. The earlier visual reading was incorrect. Four fresh consecutive captures pass native pixel assertions in 38bdf1a0d7e441ca9066455e39122b23. No production change."
+    }
   ]
 }

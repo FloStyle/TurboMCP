@@ -12,6 +12,14 @@ The old implementation stored invalid binding metadata. The new preflight mirror
 
 Offline 7050368c75c24a07aa062eaf75436486: 22/26, the existing structure, language, client-retry and lookup-guard failures. This gate preceded only the final test capture-order adjustment; the final native build/workflow passed afterwards.
 
-Initial fixture failures were documented rather than accepted: a temporary Slate root released resources before text read-back; a newly added button needed a fixture GUID. Retaining the Slate root through a rendered frame fixed the text assertion. Capture now runs before the fixture's separate renderer. Both label images show the expected text, but the unrelated blank button is absent in the second capture. WF-UI-10-PREVIEW-REPEAT remains open: repeated preview/fixture renderer interaction needs independent reproduction, with no cause claimed.
+Initial fixture failures were documented rather than accepted: a temporary Slate root released resources before text read-back; a newly added button needed a fixture GUID. Retaining the Slate root through a rendered frame fixed the text assertion. Capture now runs before the fixture's separate renderer. The initial visual review incorrectly reported a missing button. See the correction below.
 
 Only text property binding is covered. Other delegate families, inherited bindings, function renaming, undo restoration and save/reload remain untested. FunctionAdd is fixture setup, not an additional completed tool review. Coverage is 38/125 tools reviewed in bounded scenarios, not full certification.
+
+## Preview follow-up correction
+
+WF-UI-10-PREVIEW-REPEAT is withdrawn, not a production fix. Direct pixel inspection of all four archived captures from 61c7799f9bb447b08ca34c1a74e6e896 and c24c254d03aa4196a02263d7e83e1df6 found the button present: 1600/1600 pixels in its inner region (x410..489, y45..64) exceed brightness 30. The previous interpretation of the displayed images was wrong.
+
+Native run 38bdf1a0d7e441ca9066455e39122b23 builds and passes four consecutive captures: two before replacement, two after, with the fixture renderer between stages. Each capture is decoded with Unreal's PNG decoder and asserts at least 1000 visible button pixels; all measured 1600. Template size remains 100x30 and visibility remains Visible. No production or engine changes. An initial wrapper attempt failed because Pillow was unavailable; the final regression uses Unreal's decoder without a new Python dependency.
+
+Regression candidate bfb240e passed scope review. Offline gate 6f1a109f57fe405dad3d03c759632d1b: 22/26, the same four baseline failures.

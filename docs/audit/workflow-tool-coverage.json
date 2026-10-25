@@ -305,9 +305,9 @@
       ],
       "limitations": [
         "Text property binding only; other delegate families, inheritance, function rename, undo and persistence not exercised",
-        "FunctionAdd supplies fixture getter graphs; it is not newly counted as a focused review",
-        "Repeated preview captures show an unrelated blank button disappearing; keep widget preview rendering follow-up open"
-      ]
+        "FunctionAdd supplies fixture getter graphs; it is not newly counted as a focused review"
+      ],
+      "preview_followup": "38bdf1a0d7e441ca9066455e39122b23: four captures retain the button; earlier disappearance report withdrawn after original PNG pixel inspection."
     }
   ],
   "tool_usage": {
