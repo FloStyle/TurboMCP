@@ -2224,7 +2224,10 @@
           "new_files": []
         },
         "workflow-vision-stress": {
-          "files": [],
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureSelector.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureAsset.cpp"
+          ],
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
             "Tools/test-vision-workflow.py"
