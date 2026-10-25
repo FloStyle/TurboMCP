@@ -1648,3 +1648,6 @@ Readiness: done. Assignment workflow-override-remove. Review EditOverrideRemove 
 
 ## Override removal evidence
 Implemented 66d3ce4; native cf71a88b34d248adb5743c36de988a0d passed. Exact retained-body reporting, explicit cleanup and preserved unhover behavior checked. Coverage 36/125. See docs/audit/override-remove-workflow-review.md for limits.
+
+## Approved widget variable workflow
+Readiness: ready. Assignment workflow-widget-variable. Focus EditWidgetsAsVars: expose named text widgets, compile and access them in live graph logic, repeated/case-duplicate requests, missing-name batch preservation, removal refusal with existing self getter/setter references, successful disable after explicit cleanup. Review helper, flags, result accuracy, English and help. Refuse the whole disable request before mutation when referenced. Preserve hierarchy/defaults; no broad reference discovery, persistence or undo certification. Run supervised test-widget-variable-workflow and offline gate.
