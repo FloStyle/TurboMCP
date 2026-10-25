@@ -25,6 +25,7 @@
 #include "WidgetBlueprint.h"
 #include "WidgetBlueprintOperationUtils.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPGraphTidy.h"
 
 // Parent widget setup is a test prerequisite, not evidence for widget creation tools.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPBindEventWorkflowTest,
@@ -112,6 +113,34 @@ bool FTurboMCPBindEventWorkflowTest::RunTest(const FString& Parameters)
     const FString HandlerId=TurboMCPNodeId::MakeForNode(Handler,true),SetId=TurboMCPNodeId::MakeForNode(Set,true);
     Record(TEXT("EditTurboMCPGraphConnect body"),UTurboMCPEditToolset::EditTurboMCPGraphConnect(Asset,GraphName,HandlerId,TEXT("then"),SetId,TEXT("execute")));
     Record(TEXT("EditTurboMCPGraphConnect sender"),UTurboMCPEditToolset::EditTurboMCPGraphConnect(Asset,GraphName,HandlerId,TEXT("Button"),SetId,TEXT("ReceivedButton")));
+    // Layout is an explicit workflow step after binding and body wiring.
+    const TArray<FString> LayoutIds={TurboMCPNodeId::MakeForNode(Register,true),TurboMCPNodeId::MakeForNode(Get,true),Target,HandlerId,SetId};
+    const FString BeforeLayout=Snapshot();
+    TMap<UEdGraphPin*,TArray<UEdGraphPin*>> LayoutLinks;
+    TMap<UEdGraphPin*,FString> LayoutDefaults;
+    const int32 LayoutCount=Graph->Nodes.Num();
+    for(UEdGraphNode* N:Graph->Nodes)for(UEdGraphPin* P:N->Pins)if(P){LayoutLinks.Add(P,P->LinkedTo);LayoutDefaults.Add(P,P->DefaultValue+P->DefaultTextValue.ToString()+GetPathNameSafe(P->DefaultObject));}
+    Record(TEXT("PreviewTurboMCPGraphTidy"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTidy(Asset,GraphName,false,LayoutIds));
+    TestEqual(TEXT("Layout preview preserves graph"),Snapshot(),BeforeLayout);
+    const FString Layout=Record(TEXT("EditTurboMCPGraphTidy"),UTurboMCPEditToolset::EditTurboMCPGraphTidy(Asset,GraphName,false,LayoutIds));
+    TestFalse(TEXT("Layout succeeds"),Layout.Contains(TEXT("refused:"))||Layout.StartsWith(TEXT("error:")));
+    TestEqual(TEXT("Layout preserves node count"),Graph->Nodes.Num(),LayoutCount);
+    for(const auto& Pair:LayoutLinks)TestTrue(TEXT("Layout preserves links"),Pair.Key->LinkedTo==Pair.Value);
+    for(const auto& Pair:LayoutDefaults)TestEqual(TEXT("Layout preserves defaults"),Pair.Key->DefaultValue+Pair.Key->DefaultTextValue.ToString()+GetPathNameSafe(Pair.Key->DefaultObject),Pair.Value);
+    // Re-measure the live graph after preview/capture changes the geometry cache.
+    FString AlignmentError;
+    if(!TestTrue(TEXT("Live layout geometry available"),FTurboMCPGraphTidy::PrepareAlignment(BP,Graph,AlignmentError)))return false;
+    const FVector2D HandlerExec=FTurboMCPGraphTidy::AlignmentPinPosition(Handler->FindPinChecked(TEXT("then")));
+    const FVector2D SetExec=FTurboMCPGraphTidy::AlignmentPinPosition(Set->FindPinChecked(TEXT("execute")));
+    TestTrue(TEXT("Handler execution pins align"),FMath::Abs(HandlerExec.Y-SetExec.Y)<=2.0);
+    const FVector2D GetterPin=FTurboMCPGraphTidy::AlignmentPinPosition(Get->FindPinChecked(TEXT("PurchaseButton")));
+    const FVector2D BindTarget=FTurboMCPGraphTidy::AlignmentPinPosition(Bind->FindPinChecked(TEXT("self")));
+    Record(TEXT("Layout measurements"),FString::Printf(TEXT("getter=(%.1f,%.1f); target=(%.1f,%.1f); exec drift=%.1f"),GetterPin.X,GetterPin.Y,BindTarget.X,BindTarget.Y,FMath::Abs(HandlerExec.Y-SetExec.Y)));
+    // Slate pin offsets describe the pin widget origin, not the output socket.
+    // Measure visible node-edge clearance rather than including the getter label.
+    const double GetterGap=Bind->NodePosX-(Get->NodePosX+FTurboMCPGraphTidy::AlignmentNodeSize(Get).X);
+    TestTrue(TEXT("Button getter is near and before consumer"),GetterGap>=0.0&&GetterGap<=160.0);
+    TestTrue(TEXT("Button getter aligns with target row"),FMath::Abs(GetterPin.Y-BindTarget.Y)<=2.0);
     Record(TEXT("EditTurboMCPCompile"),UTurboMCPEditToolset::EditTurboMCPCompile(Asset));
     if(!TestTrue(TEXT("Bound parent compiles"),BP->Status!=BS_Error))return false;
     UUserWidget* Instance=NewObject<UUserWidget>(GetTransientPackage(),BP->GeneratedClass);Instance->Initialize();
