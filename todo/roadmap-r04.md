@@ -1602,3 +1602,7 @@ Implemented: 276a1b6. User screenshot exposed backward affordability-to-AND wiri
 
 ## Multi-event connection workflow - 2026-10-25
 Implemented 0850faa; scope gate passed. WF-BP-03 checks a single Purchase data-input repair alongside Refund and separate Audit graph. Build/native 3281be0d2c084b2f853c05d18e08e205 passed. Exact context/IDs, refusal, no-op, independent values and unchanged other flows checked. Output endpoints/displacement and preview guidance clarified. See docs/audit/event-connect-workflow-review.md; docs/audit/workflow-tool-coverage.json records usage across three limited scenarios, 24 unique tools, no global certification.
+
+
+## WF-BP-03 orphan cleanup correction - 2026-10-25
+Implemented ad7d71c. GraphConnect exposes displaced pure sources with no remaining consumers; workflow explicitly previews/removes the obsolete constant calculation. Build/native 47c9c30568a54267b542da4ad53bcbef passed: shared-source negative control, exact one-node removal, preserved remaining state and runtime results. Actual capture inspected, orphan absent. Scope gate passed, claim released. Cross-workflow ledger now covers 26 unique tools with bounded evidence; deletion/rollback generality not certified.

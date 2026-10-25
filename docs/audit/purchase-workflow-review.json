@@ -14,11 +14,11 @@
     "local_ancestry_and_promotion": "passed before final reader-only change",
     "tool_inventory": "125 tools inventoried; not 125 completed behavioral reviews",
     "visual": "User accepted earlier capture except getter stacking. Final PNG inspected: stacking and reversed inputs fixed, but Subtotal wire crosses the percent comment. Full visual acceptance remains open.",
-    "offline": "22/26 passed: 182a672d192445af97975660b5fa913b; existing structure, language, client-retry and lookup-guards failures. Runner-verdicts passed.",
+    "offline": "22/26 passed: caac88cd0a564df2b5678133b43f04be; existing structure, language, client-retry and lookup-guards failures remain.",
     "append_native": "passed: d144f02447e34727a8f460ab1d118bfb",
     "append_regression": "failed: 2233299766164635bca3a2e8abe0b90d; obsolete required reader arguments and detached exec expectations; alias-collision native case passed",
     "append_scoped_tidy": "passed: 72bcaba97a134fe5baac805860214cda; build, four behavior cases, seven-node forward layout, exact links/defaults/count and fixed surrounding positions; capture inspected",
-    "event_connect_native": "passed: 3281be0d2c084b2f853c05d18e08e205"
+    "event_connect_native": "passed with explicit orphan cleanup: 47c9c30568a54267b542da4ad53bcbef"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -351,9 +351,9 @@
       "ready": false,
       "acceptance": "good for WF-BP-03 data repair for now; not globally certified",
       "behavior": "Three independent event outputs, exact edge delta, preserved positions/defaults/nodes/other flows, refusal and repeated no-op checks pass.",
-      "review": "Source and help reviewed; outputs now identify exact endpoints and displaced sources. Preview no longer mentions new node IDs.",
+      "review": "Source and help reviewed; outputs now identify exact endpoints and displaced sources. Preview no longer mentions new node IDs. Reports newly unconsumed pure source IDs for explicit cleanup; shared source is not flagged.",
       "remaining": "Data-input repair only; successful execution-wire replacement is not tested here; No latent flows, shared execution paths, arbitrary conversions, save/reload or injected rollback; Deterministic native fixture, not a benchmark of model decision-making; Capture inspected; user visual acceptance pending",
-      "scenario_evidence": "3281be0d2c084b2f853c05d18e08e205",
+      "scenario_evidence": "47c9c30568a54267b542da4ad53bcbef",
       "review_document": "docs/audit/event-connect-workflow-review.md",
       "workflows": [
         "WF-BP-03-EVENT-CONNECT"
@@ -366,9 +366,39 @@
       "ready": false,
       "acceptance": "good for WF-BP-03 data repair for now; not globally certified",
       "behavior": "Three independent event outputs, exact edge delta, preserved positions/defaults/nodes/other flows, refusal and repeated no-op checks pass.",
-      "review": "Source and help reviewed; outputs now identify exact endpoints and displaced sources. Preview no longer mentions new node IDs.",
+      "review": "Source and help reviewed; outputs now identify exact endpoints and displaced sources. Preview no longer mentions new node IDs. Reports newly unconsumed pure source IDs for explicit cleanup; shared source is not flagged.",
       "remaining": "Data-input repair only; successful execution-wire replacement is not tested here; No latent flows, shared execution paths, arbitrary conversions, save/reload or injected rollback; Deterministic native fixture, not a benchmark of model decision-making; Capture inspected; user visual acceptance pending",
-      "scenario_evidence": "3281be0d2c084b2f853c05d18e08e205",
+      "scenario_evidence": "47c9c30568a54267b542da4ad53bcbef",
+      "review_document": "docs/audit/event-connect-workflow-review.md",
+      "workflows": [
+        "WF-BP-03-EVENT-CONNECT"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPGraphRemove",
+      "role": "Explicit cleanup of the obsolete disconnected calculation after repair",
+      "status": "scenario checked",
+      "ready": false,
+      "acceptance": "WF-BP-03 single disconnected-node cleanup only",
+      "behavior": "Exact ID and one-node deletion, preview non-mutation, unchanged remaining flows, missing-node refusal and three runtime event results pass.",
+      "review": "Source/help and transcript reviewed; removal names the node and incident-link contract; irrelevant new-ID preview guidance removed.",
+      "remaining": "No connected-node removal, arbitrary deletion sets, live rollback or persistence certification.",
+      "scenario_evidence": "47c9c30568a54267b542da4ad53bcbef",
+      "review_document": "docs/audit/event-connect-workflow-review.md",
+      "workflows": [
+        "WF-BP-03-EVENT-CONNECT"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPGraphRemove",
+      "role": "Explicit cleanup of the obsolete disconnected calculation after repair",
+      "status": "scenario checked",
+      "ready": false,
+      "acceptance": "WF-BP-03 single disconnected-node cleanup only",
+      "behavior": "Exact ID and one-node deletion, preview non-mutation, unchanged remaining flows, missing-node refusal and three runtime event results pass.",
+      "review": "Source/help and transcript reviewed; removal names the node and incident-link contract; irrelevant new-ID preview guidance removed.",
+      "remaining": "No connected-node removal, arbitrary deletion sets, live rollback or persistence certification.",
+      "scenario_evidence": "47c9c30568a54267b542da4ad53bcbef",
       "review_document": "docs/audit/event-connect-workflow-review.md",
       "workflows": [
         "WF-BP-03-EVENT-CONNECT"
@@ -429,7 +459,7 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 24,
+    "scenario_reviewed": 26,
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
   },

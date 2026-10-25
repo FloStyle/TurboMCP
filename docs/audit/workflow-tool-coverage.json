@@ -73,7 +73,9 @@
         "PreviewTurboMCPGraphConnect",
         "EditTurboMCPGraphConnect",
         "EditTurboMCPCompile",
-        "LookTurboMCPCapture"
+        "LookTurboMCPCapture",
+        "PreviewTurboMCPGraphRemove",
+        "EditTurboMCPGraphRemove"
       ],
       "limitations": [
         "Data-input repair only; successful execution-wire replacement is not tested here",
@@ -81,9 +83,10 @@
         "Deterministic native fixture, not a benchmark of model decision-making",
         "Capture inspected; user visual acceptance pending"
       ],
-      "evidence": "3281be0d2c084b2f853c05d18e08e205",
-      "candidate": "0850faa52724924be1dc9c5336b37fa6ac310289",
-      "fixture": "TurboMCP.Workflow.EventConnect"
+      "evidence": "47c9c30568a54267b542da4ad53bcbef",
+      "candidate": "ad7d71c1a5f90b254029881b8835468d497448b1",
+      "fixture": "TurboMCP.Workflow.EventConnect",
+      "cleanup": "Explicit removal of the newly unconsumed, fully disconnected constant-addition node; shared sources preserved."
     }
   ],
   "tool_usage": {
@@ -99,6 +102,9 @@
       "WF-BP-02-MINIMUM-QUANTITY"
     ],
     "EditTurboMCPGraphConnect": [
+      "WF-BP-03-EVENT-CONNECT"
+    ],
+    "EditTurboMCPGraphRemove": [
       "WF-BP-03-EVENT-CONNECT"
     ],
     "EditTurboMCPGraphTidy": [
@@ -138,6 +144,9 @@
     "PreviewTurboMCPGraphConnect": [
       "WF-BP-03-EVENT-CONNECT"
     ],
+    "PreviewTurboMCPGraphRemove": [
+      "WF-BP-03-EVENT-CONNECT"
+    ],
     "PreviewTurboMCPGraphTidy": [
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY"
@@ -172,5 +181,5 @@
       "WF-BP-03-EVENT-CONNECT"
     ]
   },
-  "unique_tools_scenario_reviewed": 24
+  "unique_tools_scenario_reviewed": 26
 }
