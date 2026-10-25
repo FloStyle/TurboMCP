@@ -26,7 +26,9 @@
     "parent_binding_native": "Passed 9fa27a0144b542d7a2a69409989a210e: scoped Tidy, nearby getter, aligned execution/data rows, unchanged links/defaults/count, clean compile and runtime sender dispatch.",
     "parent_binding_offline": "22/26 passed d20bd814286945678b180f291d0a1ee5; existing structure/language/client-retry/lookup-guards failures remain.",
     "override_native": "Passed 63b610bfbc52406390897bd5ec46273d: build, discovery/filter, preview preservation, refusal, duplicate no-op, exact node IDs, clean compile, same-instance callback state and native captures.",
-    "override_offline": "21/26 in 249b03879bb4417ab3edad38ee9828da; isolated test-runner-verdicts rerun passed after native execution ended. Four known baseline failures remain."
+    "override_offline": "21/26 in 249b03879bb4417ab3edad38ee9828da; isolated test-runner-verdicts rerun passed after native execution ended. Four known baseline failures remain.",
+    "override_remove_native": "Passed cf71a88b34d248adb5743c36de988a0d: exact event removal, retained links/positions, missing/repeat preservation, explicit body cleanup, widget/style preservation, compile and remaining callback.",
+    "override_remove_offline": "22/26 in 4ba0e22bb4c9472e96dc2e68e21d742e; four known baseline failures remain."
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -555,6 +557,19 @@
       "workflows": [
         "WF-UI-07-OVERRIDES"
       ]
+    },
+    {
+      "tool": "EditTurboMCPOverrideRemove",
+      "role": "Remove an implemented inherited event or function override",
+      "status": "scenario checked",
+      "ready": false,
+      "behavior": "Event-only removal preserves other nodes/links; missing and repeated removal unchanged; explicit body cleanup and retained callback verified",
+      "review": "Implementation, transaction/lookup/read-back helpers, descriptions and output reviewed; exact removed ID and detached endpoints now reported with explicit cleanup guidance",
+      "remaining": "Function graph, ambiguity, undo restoration, save/reload and physical input outside this scenario",
+      "scenario_evidence": "cf71a88b34d248adb5743c36de988a0d",
+      "workflows": [
+        "WF-UI-08-OVERRIDE-REMOVE"
+      ]
     }
   ],
   "evidence": [
@@ -611,7 +626,7 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 35,
+    "scenario_reviewed": 36,
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
   },

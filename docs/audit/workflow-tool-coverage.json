@@ -236,6 +236,34 @@
         "Callbacks invoked directly; no physical pointer/focus or save/reload test",
         "Signature unavailable/truncation wording fixed by source review; synthetic missing/large signatures not exercised"
       ]
+    },
+    {
+      "id": "WF-UI-08-OVERRIDE-REMOVE",
+      "title": "Remove hover override and clean up its obsolete body",
+      "status": "scenario_checked_visual_acceptance_pending",
+      "review": "docs/audit/override-remove-workflow-review.md",
+      "fixture": "TurboMCP.Workflow.OverrideRemove",
+      "evidence": "cf71a88b34d248adb5743c36de988a0d",
+      "focused_tools": [
+        "EditTurboMCPOverrideRemove"
+      ],
+      "tools_used": [
+        "EditTurboMCPOverrideRemove",
+        "EditTurboMCPOverrideAdd",
+        "ReadTurboMCPOverrides",
+        "EditTurboMCPGraphConnect",
+        "PreviewTurboMCPGraphRemove",
+        "EditTurboMCPGraphRemove",
+        "EditTurboMCPGraphTidy",
+        "EditTurboMCPCompile",
+        "ReadTurboMCPWidgetTree",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Event-removal path only; function-graph removal, ambiguity, undo restoration and persistence not exercised",
+        "Body cleanup is a separate explicit operation after checking remaining uses",
+        "Direct callback invocation, not physical pointer input"
+      ]
     }
   ],
   "tool_usage": {
@@ -251,7 +279,8 @@
       "WF-BP-03-EVENT-CONNECT",
       "WF-BP-04-CALL-SWAP",
       "WF-UI-06-PARENT-BINDING",
-      "WF-UI-07-OVERRIDES"
+      "WF-UI-07-OVERRIDES",
+      "WF-UI-08-OVERRIDE-REMOVE"
     ],
     "EditTurboMCPGraphAppend": [
       "WF-BP-02-MINIMUM-QUANTITY"
@@ -259,10 +288,12 @@
     "EditTurboMCPGraphConnect": [
       "WF-BP-03-EVENT-CONNECT",
       "WF-UI-06-PARENT-BINDING",
-      "WF-UI-07-OVERRIDES"
+      "WF-UI-07-OVERRIDES",
+      "WF-UI-08-OVERRIDE-REMOVE"
     ],
     "EditTurboMCPGraphRemove": [
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-UI-08-OVERRIDE-REMOVE"
     ],
     "EditTurboMCPGraphSwapCall": [
       "WF-BP-04-CALL-SWAP"
@@ -272,7 +303,8 @@
       "WF-BP-02-MINIMUM-QUANTITY",
       "WF-BP-04-CALL-SWAP",
       "WF-UI-06-PARENT-BINDING",
-      "WF-UI-07-OVERRIDES"
+      "WF-UI-07-OVERRIDES",
+      "WF-UI-08-OVERRIDE-REMOVE"
     ],
     "EditTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"
@@ -286,7 +318,8 @@
       "WF-BP-03-EVENT-CONNECT",
       "WF-BP-04-CALL-SWAP",
       "WF-UI-06-PARENT-BINDING",
-      "WF-UI-07-OVERRIDES"
+      "WF-UI-07-OVERRIDES",
+      "WF-UI-08-OVERRIDE-REMOVE"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -318,7 +351,8 @@
       "WF-BP-03-EVENT-CONNECT"
     ],
     "PreviewTurboMCPGraphRemove": [
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-UI-08-OVERRIDE-REMOVE"
     ],
     "PreviewTurboMCPGraphSwapCall": [
       "WF-BP-04-CALL-SWAP"
@@ -372,19 +406,25 @@
     "ReadTurboMCPWidgetTree": [
       "WF-UI-05-COMMON-BUTTON",
       "WF-UI-06-PARENT-BINDING",
-      "WF-UI-07-OVERRIDES"
+      "WF-UI-07-OVERRIDES",
+      "WF-UI-08-OVERRIDE-REMOVE"
     ],
     "ReadTurboMCPOverrides": [
-      "WF-UI-07-OVERRIDES"
+      "WF-UI-07-OVERRIDES",
+      "WF-UI-08-OVERRIDE-REMOVE"
     ],
     "PreviewTurboMCPOverrideAdd": [
       "WF-UI-07-OVERRIDES"
     ],
     "EditTurboMCPOverrideAdd": [
-      "WF-UI-07-OVERRIDES"
+      "WF-UI-07-OVERRIDES",
+      "WF-UI-08-OVERRIDE-REMOVE"
+    ],
+    "EditTurboMCPOverrideRemove": [
+      "WF-UI-08-OVERRIDE-REMOVE"
     ]
   },
-  "unique_tools_scenario_reviewed": 35,
+  "unique_tools_scenario_reviewed": 36,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
