@@ -9,15 +9,15 @@ WHY THIS SUITE EXISTS
     The old `rpc` caught every exception, cleared the session id, reconnected, and repeated the original
     request - including a request that had already changed an asset and whose response was merely lost.
 
-    The repair splits the retry by what the request can do: a read may be repeated, a mutation may not. This
+    The repair denies replay by default. Only an explicitly safe request may be repeated. This
     suite drives the REAL `Session.rpc` and `Session.call` with a mocked transport, so it measures the
     production control flow rather than a description of it.
 
 WHAT EACH CASE DISCRIMINATES
     C01 is the reported defect as a negative control: apply the mutation, drop the response, and assert that
     exactly ONE effect happened. A client that replayed would produce two, which is what the audit measured.
-    C02 is the reconnect half, which must NOT be lost with the replay: a read whose response was lost must
-    still reconnect and succeed, so the fix cannot be "remove the retry entirely".
+    C02 checks reconnect independently: an explicitly safe request can retry after response loss,
+    while an ambiguous tool call reconnects without repeating the request.
 """
 
 import importlib.util
@@ -90,8 +90,8 @@ def main():
     record("C01 the message names the tool",
            raised is not None and raised.tool == "EditTurboMCPGraphRepoint")
 
-    # The negative control on the classifier: the same transport failure on a READ must still retry, or the
-    # fix would have removed the reconnect that the six-round failure needed.
+    # Replay requires an explicit assertion that this exact request is safe.
+    # A Read prefix alone is insufficient: readers can execute editor callbacks.
     class DroppingReadProbe(tmcp.Session):
         def __init__(self):
             super().__init__()
@@ -110,7 +110,14 @@ def main():
             return {"content": [{"text": "attempt %d" % self.attempts}]}
 
     read_probe = DroppingReadProbe()
-    outcome = read_probe.call(tmcp.READ_TOOLSET, "ReadTurboMCPStatus", {})
+    denied = DroppingReadProbe()
+    try:
+        denied.call(tmcp.READ_TOOLSET, "ReadTurboMCPStatus", {})
+    except tmcp.UnknownOutcomeError:
+        record("Read labels alone do not authorize replay", denied.attempts == 1 and denied.reconnects == 1)
+    else:
+        record("Read labels alone do not authorize replay", False)
+    outcome = read_probe.call(tmcp.READ_TOOLSET, "ReadTurboMCPStatus", {}, mutates=False)
     record("C01 a read whose response was lost is still retried", read_probe.attempts == 2,
            "attempts: %d" % read_probe.attempts)
     record("C01 the retried read succeeds", outcome == "attempt 2", repr(outcome)[:80])
@@ -119,14 +126,14 @@ def main():
     record("C01 an Edit tool is a mutation", tmcp.is_mutation("EditTurboMCPGraphRepoint") is True)
     record("C01 a Preview tool is treated as a mutation too, because R05 says the class does not enforce "
            "read-only behaviour", tmcp.is_mutation("PreviewTurboMCPWidgetPreview") is True)
-    record("C01 a Read tool is not a mutation", tmcp.is_mutation("ReadTurboMCPStatus") is False)
+    record("C01 a Read label does not establish replay safety", tmcp.is_mutation("ReadTurboMCPStatus") is True)
     record("C01 an unknown name is treated as a mutation, which is the safe direction",
            tmcp.is_mutation("FrobnicateTurboMCPThing") is True)
     record("C01 an explicit override wins",
            tmcp.is_mutation("EditTurboMCPGraphRepoint", override=False) is False
            and tmcp.is_mutation("ReadTurboMCPStatus", override=True) is True)
-    record("C01 the MCP envelope is not itself a mutation",
-           tmcp.is_mutation("call_tool") is False and tmcp.is_mutation("initialize") is False)
+    record("C01 unresolved tool envelopes deny replay; initialization may retry",
+           tmcp.is_mutation("call_tool") is True and tmcp.is_mutation("initialize") is False)
 
     # --- C02: a reconnect alone must not repeat the previous request -----------------------------
     class ReconnectProbe(tmcp.Session):
@@ -156,7 +163,7 @@ def main():
             return {"content": [{"text": "ok"}]}
 
     probe2 = ReconnectProbe()
-    probe2.call(tmcp.READ_TOOLSET, "ReadTurboMCPStatus", {})
+    probe2.call(tmcp.READ_TOOLSET, "ReadTurboMCPStatus", {}, mutates=False)
     record("C02 a reconnect re-sends only the read that failed",
            probe2.sent == ["ReadTurboMCPStatus", "ReadTurboMCPStatus"], str(probe2.sent))
 
@@ -186,7 +193,7 @@ def main():
             print("  {0}".format(problem))
         print("RESULT: FAIL ({0} check(s))".format(len(failures)))
         return 1
-    print("RESULT: PASS (one lost response means one effect, and a read still reconnects)")
+    print("RESULT: PASS (one lost response means one effect, and explicitly safe reads may retry)")
     return 0
 
 

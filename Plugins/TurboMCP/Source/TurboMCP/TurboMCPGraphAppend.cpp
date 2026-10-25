@@ -88,6 +88,7 @@ namespace
 		// It now delegates, so this tool and the reader resolve a name identically.
 				int32 Matches = 0;
         UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(InBlueprint, InGraphName, Matches);
+        if (!Graph) return nullptr;
         return Matches == 1 ? Graph : nullptr;
 	}
 
@@ -877,6 +878,7 @@ bool FTurboMCPGraphAppend::Preflight(const FPlan& InPlan, FString& OutReport, FS
     OutError = FTurboMCPAssetResolver::Resolve(InPlan.Asset, Resolved);
     if (!OutError.IsEmpty()) return false;
     UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint) { OutError = TEXT("append Blueprint could not be loaded"); return false; }
     UEdGraph* Original = Blueprint ? FindGraph(Blueprint, InPlan.GraphName) : nullptr;
     if (!Original) { OutError = TEXT("append preflight graph is unavailable"); return false; }
     TGuardValue<ITransaction*> SuppressScratchUndo(GUndo, nullptr);

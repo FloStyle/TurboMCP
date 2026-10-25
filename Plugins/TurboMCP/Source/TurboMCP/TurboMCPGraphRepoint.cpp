@@ -34,7 +34,8 @@ namespace {
 UEdGraph* FindGraph(UBlueprint* B, const FString& Name) {
  int32 Matches = 0;
  UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(B, Name, Matches);
- return Matches == 1 ? Graph : nullptr;
+ if (!Graph) return nullptr;
+        return Matches == 1 ? Graph : nullptr;
 }
 
 UEdGraphNode* FindNode(UEdGraph* G, const FString& Id) {

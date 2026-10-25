@@ -199,6 +199,7 @@ namespace
   FTurboMCPAssetResolver::FResolved R; const FString Error=FTurboMCPAssetResolver::Resolve(Asset,R);
   if(!Error.IsEmpty()) return FTurboMCPToolError::AsError(Error);
   UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*R.ObjectPath); int32 Matches=0;
+  if (!BP) return TEXT("error: Blueprint could not be loaded; unchanged");
   UEdGraph* Graph=BP?TurboMCPNodeId::FindGraphByName(BP,GraphName,Matches):nullptr;
   if(!Graph || Matches!=1) return TEXT("error: graph missing or ambiguous; unchanged");
   FString GeometryError;

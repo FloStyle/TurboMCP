@@ -84,6 +84,7 @@ namespace
    FTurboMCPAssetResolver::FResolved Resolved;
    Error=FTurboMCPAssetResolver::Resolve(Asset,Resolved); if(!Error.IsEmpty()) return false;
    UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*Resolved.ObjectPath); int32 Matches=0;
+   if (!BP) { Error=TEXT("batch Blueprint could not be loaded"); return false; }
    UEdGraph* Original=BP?TurboMCPNodeId::FindGraphByName(BP,Graph,Matches):nullptr;
    if(!Original || Matches!=1) { Error=TEXT("batch graph must resolve uniquely"); return false; }
    if (!Copies.IsEmpty() && !Copies.Contains(Original)) { Error=TEXT("batch operations must target one asset and one graph"); return false; }

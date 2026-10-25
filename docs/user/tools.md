@@ -167,7 +167,7 @@ Replace remains two-phase: append, then removal. A removal failure can leave the
 
 ## Finding gameplay-tag usage
 
-For “where is this gameplay tag used?” or “is this setting referenced?”, discover
+For â€œwhere is this gameplay tag used?â€ or â€œis this setting referenced?â€, discover
 `FindReferencersByTag` in the stock Unreal `GameplayTagsToolset` and pass
 `tagName`, for example `{"tagName":"UI.Settings.Audio"}` using a tag registered
 in your project. Enable/discover that toolset first; TurboMCP does not assume it

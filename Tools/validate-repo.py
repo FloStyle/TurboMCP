@@ -21,7 +21,8 @@ def main():
         text=task.read_text(encoding='utf8')
         design=re.search(r'^Design: (.+)$',text,re.M)
         if not design or not (ROOT/design.group(1)).is_file():raise ValueError(f'{task.name}: missing design reference')
-        if 'Readiness: ready' in text:
+        # Completed records retain evidence, but are not pending work assignments.
+        if 'Readiness: ready' in text and not re.search(r'^Status: done$', text, re.M):
             for section in ['Problem','Scope','Dependencies','Acceptance','Verification']:
                 if '## '+section+'\n' not in text:raise ValueError(f'{task.name}: ready task missing {section}')
     subprocess.run([sys.executable,str(ROOT/'Tools/next-task.py'),'--check'],check=True)

@@ -57,6 +57,7 @@ namespace
 	{
         int32 Matches = 0;
         UEdGraph* Graph = TurboMCPNodeId::FindGraphByName(InBlueprint, InGraphName.TrimStartAndEnd(), Matches);
+        if (!Graph) return nullptr;
         return Matches == 1 ? Graph : nullptr;
     }
 

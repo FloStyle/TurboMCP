@@ -142,6 +142,7 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
     FTurboMCPAssetResolver::FResolved R; FString Error=FTurboMCPAssetResolver::Resolve(Asset,R);
     if(!Error.IsEmpty()) return TEXT("unchanged\nrefused: ")+Error;
     UBlueprint* BP=LoadObject<UBlueprint>(nullptr,*R.ObjectPath); int32 Matches=0;
+    if (!BP) return TEXT("unchanged\nrefused: Blueprint could not be loaded");
     UEdGraph* Graph=BP?TurboMCPNodeId::FindGraphByName(BP,GraphName,Matches):nullptr;
     if(!Graph || Matches!=1 || !Graph->GetSchema()) return TEXT("unchanged\nrefused: graph must resolve uniquely with a schema");
     TurboMCPGraphScratch::FCopy Copy;

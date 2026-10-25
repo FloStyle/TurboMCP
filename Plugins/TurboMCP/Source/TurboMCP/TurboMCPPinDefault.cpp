@@ -36,6 +36,7 @@ FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
     const FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
     if (!Error.IsEmpty()) return Error;
     UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint) return TEXT("unchanged: refused; Blueprint could not be loaded");
     int32 GraphMatches = 0;
     UEdGraph* Graph = Blueprint ? TurboMCPNodeId::FindGraphByName(Blueprint, GraphName, GraphMatches) : nullptr;
     if (!Graph || GraphMatches != 1) return TEXT("unchanged: refused; Blueprint/graph not found or ambiguous");
