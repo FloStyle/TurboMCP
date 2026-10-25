@@ -197,6 +197,12 @@ bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     UEdGraphPin* Input=Pin(Target,TargetPin,EGPD_Input);
     if(!Input || Input->PinType.PinCategory!=TEXT("delegate"))
     { Error=TEXT("target must be an exact delegate input pin"); return false; }
+    // Record displaced sources before the signature probe temporarily replaces them.
+    // Use live identities even when the operation runs on a scratch graph.
+    TArray<FString> Displaced;
+    for (UEdGraphPin* Source : Input->LinkedTo) if (Source)
+        if (UEdGraphNode* Original = TurboMCPGraphScratch::ByGuid(Identity, Source->GetOwningNode()->NodeGuid))
+            Displaced.Add(TurboMCPNodeId::MakeForNode(Original, true) + TEXT(":") + Source->PinName.ToString());
     // Let the same engine delegate node used by the editor resolve the signature.
     UK2Node_CreateDelegate* Probe=NewObject<UK2Node_CreateDelegate>(Graph,NAME_None,RF_Transactional);
     Graph->AddNode(Probe,false,false); Probe->CreateNewGuid(); Probe->AllocateDefaultPins();
@@ -214,8 +220,25 @@ bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,con
     for(UEdGraphPin* P:Event->Pins) if(P && P->Direction==EGPD_Output && P->PinType.PinCategory==TEXT("delegate")) Output=P;
     Input=Pin(Target,TargetPin,EGPD_Input);
     if(!Connect(Graph,Output,Input,Error)) return false;
-    Report=TEXT("created typed custom event ")+TurboMCPNodeId::MakeForNode(Event,true)+TEXT(" name=")+EventName
-        +TEXT(" signature=")+Signature->GetPathName()+TEXT("; target delegate input source replaced; event body is empty. Connect its execution output to the intended body, inspect the graph, then compile and save. Compilation and runtime behavior were not verified");
+    TArray<FString> Parameters;
+    for (const UEdGraphPin* Parameter : Event->Pins)
+        if (Parameter && Parameter->Direction == EGPD_Output
+            && Parameter->PinType.PinCategory != TEXT("exec") && Parameter->PinType.PinCategory != TEXT("delegate"))
+        {
+            FString Type = Parameter->PinType.PinCategory.ToString();
+            if (Parameter->PinType.PinSubCategoryObject.IsValid())
+                Type += TEXT(" ") + Parameter->PinType.PinSubCategoryObject->GetPathName();
+            Parameters.Add(Parameter->PinName.ToString() + TEXT(": ") + Type);
+        }
+    Report = TEXT("handler: ") + TurboMCPNodeId::MakeForNode(Event, true) + TEXT("; name=") + EventName
+        + TEXT("\ntarget: ") + TargetId + TEXT(":") + TargetPin
+        + TEXT("\nsignature: ") + Signature->GetPathName()
+        + TEXT("\nhandler parameters: ") + (Parameters.IsEmpty() ? FString(TEXT("none")) : FString::Join(Parameters, TEXT(", ")))
+        + TEXT("\nreplaced input sources: ") + (Displaced.IsEmpty() ? FString(TEXT("none")) : FString::Join(Displaced, TEXT(", ")))
+        + TEXT("\nThe handler body is empty. Connect its execution output to the intended body. The target Bind node must execute at runtime to register the listener; this tool does not add that execution path.")
+        + TEXT("\nInspect the graph, then compile and test the callback before saving. Compilation and runtime behavior were not verified.");
+    if (!Displaced.IsEmpty())
+        Report += TEXT("\nPrevious source nodes were retained. Review their remaining uses before removing any obsolete handler or delegate node.");
     return true;
 }
 bool BindFunction(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId,const FString& ObjectPin,FString& Report,FString& Error)

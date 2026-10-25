@@ -965,13 +965,13 @@ public:
     static FString PreviewTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
     /**
-     * Load the Blueprint and simulate delegate binding on a transient graph; no live graph edits, compilation or saving are requested.
+     * Preview creating a typed custom event wired to an existing delegate input, such as the Event pin of a Bind Event node. No live graph edits, compile or save.
      * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
      * @param GraphName Required unique graph name, e.g. EventGraph. Empty or unresolved names are refused.
      * @param TargetNodeId Required reader node ID in this graph; copy the exact full or short ID. Empty, missing or ambiguous IDs are refused.
      * @param TargetPin Required exact delegate input pin name, case-sensitive and not trimmed. Existing input links are replaced. Empty, orphaned, ambiguous or non-delegate pins are refused; use the reader's pin name.
-     * @param EventName Required unused identifier containing letters, digits or underscores, not starting with a digit; no whitespace. Example: OnSelectionChanged. Existing function/event names are refused. Event graphs only; parameters come from the target delegate. Return/output-value signatures are refused. The new event has no execution body.
+     * @param EventName Required unused identifier containing letters, digits or underscores, not starting with a digit; no whitespace. Example: OnSelectionChanged. Existing function/event names are refused. Event graphs only; parameters come from the target delegate. Return/output-value signatures are refused. The new event has no execution body. Connect its body separately and ensure the target Bind node executes at runtime. Replaced source nodes are retained; inspect remaining uses before cleanup.
      */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName);
@@ -1567,13 +1567,13 @@ public:
     static FString EditTurboMCPBindFunction(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& FunctionName,const FString& ObjectNodeId = TEXT(""),const FString& ObjectPin = TEXT(""));
 
     /**
-     * Create a delegate binding and replace its target input connection in one undo transaction; loads the Blueprint, but does not compile or save.
+     * Create a typed custom event wired to an existing delegate input in one undo transaction. Replaces that input connection; no compile or save. This does not create the Bind Event node or execute registration.
      * Requires an idle editor. Preview exercises graph/schema callbacks on a copy; successful preview does not guarantee a later edit. Inspect the result and arrange new nodes before compiling and saving.
      * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or ambiguous values are refused; prefer a full path.
      * @param GraphName Required unique graph name, e.g. EventGraph. Empty or unresolved names are refused.
      * @param TargetNodeId Required reader node ID in this graph; copy the exact full or short ID. Empty, missing or ambiguous IDs are refused.
      * @param TargetPin Required exact delegate input pin name, case-sensitive and not trimmed. Existing input links are replaced. Empty, orphaned, ambiguous or non-delegate pins are refused; use the reader's pin name.
-     * @param EventName Required unused identifier containing letters, digits or underscores, not starting with a digit; no whitespace. Example: OnSelectionChanged. Existing function/event names are refused. Event graphs only; parameters come from the target delegate. Return/output-value signatures are refused. The new event has no execution body.
+     * @param EventName Required unused identifier containing letters, digits or underscores, not starting with a digit; no whitespace. Example: OnSelectionChanged. Existing function/event names are refused. Event graphs only; parameters come from the target delegate. Return/output-value signatures are refused. The new event has no execution body. Connect its body separately and ensure the target Bind node executes at runtime. Replaced source nodes are retained; inspect remaining uses before cleanup.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPBindNewEvent(const FString& Asset,const FString& GraphName,const FString& TargetNodeId,const FString& TargetPin,const FString& EventName);
