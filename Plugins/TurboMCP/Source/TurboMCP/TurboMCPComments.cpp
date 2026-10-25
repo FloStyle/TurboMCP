@@ -19,21 +19,8 @@
 #include "TurboMCPBlueprintRead.h"
 #include "TurboMCPNodeId.h"
 
-/**
- * R-COMMENT-LIST: comment boxes as data.
- *
- * `03_TOOLS.md` asks for every comment box with its title, colour, rectangle, its
- * parent box when it is nested, and the IDs of the nodes inside it.
- *
- * NOTHING IS READ FROM THE ENGINE FOR THE RELATIONS. A comment box does not store
- * which nodes it covers or which box contains it: both are geometry, and the editor
- * computes them from the rectangles while drawing. This tool does the same
- * computation rather than inventing a rule.
- *
- * A node can fall inside two overlapping boxes, and a box can sit inside another. A
- * caller moving a node has to know that, so both are reported instead of one being
- * picked.
- */
+// Comment rectangles and nesting are stored geometry. Membership below uses node
+// origins as an approximation and does not measure rendered node extents or titles.
 namespace
 {
 	/** How many boxes one graph may report before the list caps. */
@@ -72,17 +59,6 @@ namespace
 		return Rect;
 	}
 
-	/** The box a node occupies, which is not its position alone. */
-	FRect RectOfNode(const UEdGraphNode* InNode)
-	{
-		FRect Rect;
-		Rect.MinX = InNode->NodePosX;
-		Rect.MinY = InNode->NodePosY;
-		Rect.MaxX = InNode->NodePosX + InNode->NodeWidth;
-		Rect.MaxY = InNode->NodePosY + InNode->NodeHeight;
-		return Rect;
-	}
-
 	/** True when InInner sits completely inside InOuter. */
 	bool Contains(const FRect& InOuter, const FRect& InInner)
 	{
@@ -92,14 +68,7 @@ namespace
 			&& InInner.MaxY <= InOuter.MaxY;
 	}
 
-	/**
-	 * True when a node is inside a box.
-	 *
-	 * A node has no meaningful size until the editor has laid it out, and an
-	 * unlaid-out node reports a zero rectangle at its position. Testing the position
-	 * alone is therefore what actually works, and it is also what a reader means by
-	 * "inside this box".
-	 */
+    // An origin inside the rectangle does not prove full visual containment.
 	bool BoxCoversNode(const FRect& InBox, const UEdGraphNode* InNode)
 	{
 		return InNode->NodePosX >= InBox.MinX
@@ -182,6 +151,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 		Out += FString::Printf(TEXT(", graph %s"), *GraphName);
 	}
 
+	Out += TEXT("\nmembership: node origins inside box rectangles; not measured visual containment or stored ownership. Use LookTurboMCPLayoutReport and a capture to inspect borders and titles.");
 	int32 TotalBoxes = 0;
 	int32 TotalNested = 0;
 	int32 TotalOverlapping = 0;
@@ -241,7 +211,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPCommentList(
 
 			const FString Title = Box->NodeComment.IsEmpty()
 				? FString(TEXT("(no title)")) : Box->NodeComment;
-			Body += FString::Printf(TEXT("\n      title: %s"), *Title);
+			Body += FString::Printf(TEXT("\n      title: %s"), *Title.ReplaceCharWithEscapedChar());
 			Body += FString::Printf(TEXT("\n      colour: %s"),
 				*DescribeColor(Box->CommentColor));
 			Body += FString::Printf(TEXT("\n      rect: x %d, y %d, %d wide, %d tall"),

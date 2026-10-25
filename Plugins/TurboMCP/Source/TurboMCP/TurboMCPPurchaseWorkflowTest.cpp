@@ -190,6 +190,9 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Refused and paged reads preserve graph"), ReadGraph(), Before);
     const FString Fixed = Record(TEXT("EditTurboMCPPinDefault"), UTurboMCPEditToolset::EditTurboMCPPinDefault(Asset, GraphName, RateId, TEXT("B"), TEXT("0.01")));
     TestTrue(TEXT("Targeted default edit reports change"), Fixed.StartsWith(TEXT("changed:")));
+    TestTrue(TEXT("Default result identifies the edited node and value"), Fixed.Contains(RateId) && Fixed.Contains(TEXT("pin: \"B\"")) && Fixed.Contains(TEXT("value: \"0.01\"")));
+    const FString NoOp = UTurboMCPEditToolset::EditTurboMCPPinDefault(Asset, GraphName, RateId, TEXT("B"), TEXT("0.01"));
+    TestTrue(TEXT("Repeated default reports unchanged with its target"), NoOp.StartsWith(TEXT("unchanged:")) && NoOp.Contains(RateId));
     TestEqual(TEXT("Default edit preserves node count"), Graph->Nodes.Num(), OriginalCount);
     Record(TEXT("EditTurboMCPCompile corrected"), UTurboMCPEditToolset::EditTurboMCPCompile(Asset));
     if (!CheckValues(true)) return false;
@@ -233,7 +236,8 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     TestFalse(TEXT("New comment does not pin a floating bubble"), Comments[0]->bCommentBubblePinned);
     TestTrue(TEXT("Long title has room above its content"), Rate->NodePosY - Comments[0]->NodePosY > 80);
     TestEqual(TEXT("Annotation preserves node position"), FIntPoint(Rate->NodePosX, Rate->NodePosY), RatePosition);
-    Record(TEXT("ReadTurboMCPCommentList"), UTurboMCPReadToolset::ReadTurboMCPCommentList(Asset, GraphName));
+    const FString CommentList = Record(TEXT("ReadTurboMCPCommentList"), UTurboMCPReadToolset::ReadTurboMCPCommentList(Asset, GraphName));
+    TestTrue(TEXT("Comment list identifies its approximation and actual title"), CommentList.Contains(TEXT("node origins")) && CommentList.Contains(TEXT("Convert discount percent to a fraction")));
     Record(TEXT("ReadTurboMCPGraphLoad final"), ReadGraph());
     Record(TEXT("LookTurboMCPCapture readable scale"), UTurboMCPLookToolset::LookTurboMCPCapture(Asset, GraphName, TEXT("graph"), TEXT(""), TEXT("4096x1600")));
     Record(TEXT("LookTurboMCPLayoutDoneCheck"), UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(Asset, GraphName));

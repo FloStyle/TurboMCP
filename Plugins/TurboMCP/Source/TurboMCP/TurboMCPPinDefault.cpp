@@ -13,6 +13,20 @@
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "ScopedTransaction.h"
 
+namespace
+{
+    // Report the verified pin, not only the caller's requested text. These quoted
+    // fields are display values; localized text is not serialized edit syntax.
+    FString DescribePinDefault(const UEdGraphPin& Pin)
+    {
+        const FString DisplayValue = Pin.DefaultObject ? Pin.DefaultObject->GetPathName()
+            : !Pin.DefaultTextValue.IsEmpty() ? Pin.DefaultTextValue.ToString() : Pin.DefaultValue;
+        return FString::Printf(TEXT("\nnode: \"%s\"\npin: \"%s\"\nvalue: \"%s\""),
+            *TurboMCPNodeId::MakeForNode(Pin.GetOwningNode(), true).ReplaceCharWithEscapedChar(),
+            *Pin.PinName.ToString().ReplaceCharWithEscapedChar(), *DisplayValue.ReplaceCharWithEscapedChar());
+    }
+}
+
 FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
     const FString& GraphName, const FString& NodeId, const FString& PinName, const FString& Value)
 {
@@ -63,7 +77,7 @@ FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
         return FString::Printf(TEXT("unchanged: refused; pin '%s' (category=%s, subcategory=%s) rejected the literal: %s"),
             *Pin->PinName.ToString(), *Pin->PinType.PinCategory.ToString(), *Pin->PinType.PinSubCategory.ToString(), *Invalid);
     if (Pin->DefaultValue == Parsed && Pin->DefaultObject == Object && Pin->DefaultTextValue.EqualTo(Text))
-        return TEXT("unchanged: pin already has the requested default");
+        return FString(TEXT("unchanged: pin already has the requested default; compile=not_run; save=not_requested")) + DescribePinDefault(*Pin);
     const FGuid EditedNodeGuid = Pin->GetOwningNode()->NodeGuid;
     TUniquePtr<FScopedTransaction> Transaction = MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP", "PinDefault", "TurboMCP pin default"));
     Blueprint->Modify(); Graph->Modify(); Pin->GetOwningNode()->Modify();
@@ -72,6 +86,7 @@ FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
     // Schema callbacks may reconstruct pins or change display-derived node identities.
     int32 Matches = 0;
     bool ValueMatches = false;
+    FString VerifiedDescription;
     for (UEdGraphNode* Node : Graph->Nodes)
         if (Node && Node->NodeGuid == EditedNodeGuid)
             for (UEdGraphPin* Current : Node->Pins)
@@ -81,9 +96,10 @@ FString UTurboMCPEditToolset::EditTurboMCPPinDefault(const FString& Asset,
                     ValueMatches = !Current->bOrphanedPin && Current->LinkedTo.IsEmpty()
                         && Current->DefaultValue == Parsed && Current->DefaultObject == Object
                         && Current->DefaultTextValue.EqualTo(Text);
+                    if (ValueMatches) VerifiedDescription = DescribePinDefault(*Current);
                 }
     if (Matches == 1 && ValueMatches)
-        return TEXT("changed: pin default verified; undo=one; compile=not_run; save=not_requested");
+        return FString(TEXT("changed: pin default verified; undo=one; compile=not_run; save=not_requested")) + VerifiedDescription;
 
     UTransBuffer* Buffer = Cast<UTransBuffer>(GEditor->Trans);
     const FGuid OwnedId = Buffer && Buffer->ActiveCount == 1 && !Buffer->UndoBuffer.IsEmpty()

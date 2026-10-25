@@ -288,7 +288,7 @@ public:
 		const FString& Include);
 
 	/**
-	 * Read Blueprint comment rectangles, membership and nesting. Membership is inferred geometrically, not a stored ownership relation; overlapping membership is reported. Loads the Blueprint; no explicit compile or save.
+	 * Read Blueprint comment rectangles, membership and nesting. Membership uses node origins inside box rectangles, not full rendered bounds or a stored ownership relation; overlapping membership is reported. Loads the Blueprint; no explicit compile or save.
 	 * @param Asset Required Blueprint path or unique short name, e.g. /Game/Tests/BP_NodeTest. Empty or non-Blueprint targets are refused.
 	 * @param GraphName Existing graph name, e.g. EventGraph. Empty lists all collected graphs; unknown names are refused with available names.
 	 */
@@ -1609,7 +1609,7 @@ public:
 
 
     /** Set one unconnected K2 input pin default; records an undo transaction and marks the Blueprint dirty; schema callbacks may run and object literals may load assets; does not explicitly compile or save.
-     * Validates the literal before editing and reads the pin back afterward. A failed read-back attempts to undo only this tool's transaction; restoration is not verified.
+     * Validates the literal before editing and reads the pin back afterward. Successful changed/unchanged results identify the actual node, pin and normalized display value; display text is not serialized edit syntax. A failed read-back attempts to undo only this tool's transaction; restoration is not verified.
      * @param Asset Required Blueprint asset path or unique asset name accepted by the asset resolver; empty is invalid. Prefer a full path such as /Game/Blueprints/BP_Player.
      * @param GraphName Required graph name from the reader, such as EventGraph; matches the whole name without case sensitivity. Empty or ambiguous names are refused; whitespace is not trimmed.
      * @param NodeId Required exact reader node ID, with or without its GUID suffix; surrounding whitespace is trimmed. Empty values, display labels and numeric indices are not supported.
