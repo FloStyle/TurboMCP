@@ -2285,6 +2285,20 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayViewport.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayMenuWorkflowTest.cpp"
           ]
+        },
+        "play-input-foundation": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs",
+            "Plugins/TurboMCP/TurboMCP.uplugin",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPModule.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayMenuWorkflowTest.cpp",
+            "TestProject/Config/DefaultInput.ini"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp"
+          ]
         }
       },
       "preserve_rows": []
