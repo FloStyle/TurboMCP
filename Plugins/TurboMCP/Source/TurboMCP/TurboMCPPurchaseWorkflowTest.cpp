@@ -83,7 +83,7 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     FEdGraphPinType BoolType;
     BoolType.PinCategory = UEdGraphSchema_K2::PC_Boolean;
     TMap<FName, UEdGraphPin*> Inputs;
-    for (const TCHAR* Name : {TEXT("UnitPrice"), TEXT("Quantity"), TEXT("DiscountPercent"), TEXT("AvailableFunds")})
+    for (const TCHAR* Name : {TEXT("UnitPrice"), TEXT("Quantity"), TEXT("DiscountPercent"), TEXT("AvailableFunds"), TEXT("MinimumQuantity")})
         Inputs.Add(Name, Entry->CreateUserDefinedPin(Name, NumberType, EGPD_Output, false));
     UEdGraphPin* PriceOutput = Result->CreateUserDefinedPin(TEXT("FinalPrice"), NumberType, EGPD_Input, false);
     UEdGraphPin* AffordableOutput = Result->CreateUserDefinedPin(TEXT("CanAfford"), BoolType, EGPD_Input, false);
@@ -281,6 +281,111 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     Record(TEXT("LookTurboMCPCapture readable scale"), UTurboMCPLookToolset::LookTurboMCPCapture(Asset, GraphName, TEXT("graph"), TEXT(""), TEXT("4096x1600")));
     Record(TEXT("LookTurboMCPLayoutDoneCheck"), UTurboMCPLookToolset::LookTurboMCPLayoutDoneCheck(Asset, GraphName));
     TestEqual(TEXT("Unrelated function remains unchanged"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, Untouched->GetName(), TEXT("read"), TEXT("full")), UnrelatedBefore);
+
+    // Append changes the body only. MinimumQuantity is an unused fixture input;
+    // adding a parameter to an existing function is a separate unsupported step.
+    const FString EntryId = TurboMCPNodeId::MakeForNode(Entry, true);
+    const FString ReturnId = TurboMCPNodeId::MakeForNode(Result, true);
+    const FString AffordableId = TurboMCPNodeId::MakeForNode(Affordable, true);
+    auto DiscoverType = [&](const FString& Query, const FString& Prefix)
+    {
+        const FString Types = Record(TEXT("PreviewTurboMCPNodeType append discovery"), UTurboMCPPreviewToolset::PreviewTurboMCPNodeType(Asset, GraphName, Query, TEXT("20")));
+        TArray<FString> Lines;
+        Types.ParseIntoArrayLines(Lines);
+        FString Type;
+        for (const FString& Line : Lines)
+            if (Line.StartsWith(Prefix)) { Type = Line.TrimStartAndEnd(); break; }
+        TestFalse(TEXT("Discovery supplies an exact type ID"), Type.IsEmpty());
+        if (!Type.IsEmpty())
+        {
+            const FString Pins = Record(TEXT("PreviewTurboMCPNodePins append discovery"), UTurboMCPPreviewToolset::PreviewTurboMCPNodePins(Asset, GraphName, Type));
+            TestTrue(TEXT("Pin inspection exposes the expected output"), Pins.Contains(TEXT("ReturnValue")));
+        }
+        return Type;
+    };
+    const FString CompareType = DiscoverType(TEXT(">="), TEXT("Utilities|Operators|GreaterEqual("));
+    const FString AndType = DiscoverType(TEXT("AND Boolean"), TEXT("Math|Boolean|"));
+    if (CompareType.IsEmpty() || AndType.IsEmpty()) return false;
+    const FString AppendText = FString::Printf(TEXT("(%s\n A (-> %s:Quantity)\n B (-> %s:MinimumQuantity)\n) ; label QuantityAllowed\n(%s\n A (-> %s:ReturnValue)\n B (-> QuantityAllowed:ReturnValue)\n) ; label PurchaseAllowed\n(Function|Result ; %s\n CanAfford (-> PurchaseAllowed:ReturnValue)\n)"),
+        *CompareType, *EntryId, *EntryId, *AndType, *AffordableId, *ReturnId);
+    Transcript += TEXT("\n=== Submitted append text ===\n") + AppendText + TEXT("\n");
+    const FString BeforeAppend = ReadGraph();
+    const FString BeforeAppendPositions = UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName);
+    const int32 BeforeAppendCount = Graph->Nodes.Num();
+    const bool BeforeAppendDirty = Package->IsDirty();
+    auto CheckAppendUnchanged = [&]()
+    {
+        TestEqual(TEXT("Append preview/refusal preserves exact read"), ReadGraph(), BeforeAppend);
+        TestEqual(TEXT("Append preview/refusal preserves positions"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName), BeforeAppendPositions);
+        TestEqual(TEXT("Append preview/refusal preserves node count"), Graph->Nodes.Num(), BeforeAppendCount);
+        TestEqual(TEXT("Append preview/refusal preserves dirty state"), Package->IsDirty(), BeforeAppendDirty);
+    };
+    for (const FString& BadText : {AppendText.Replace(TEXT("CanAfford ("), TEXT("NoSuchOutput (")), AppendText.Left(AppendText.Len()-1)})
+    {
+        for (bool Edit : {false, true})
+        {
+            const FString Refusal = Edit ? UTurboMCPEditToolset::EditTurboMCPGraphAppend(Asset, GraphName, BadText)
+                : UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Asset, GraphName, BadText);
+            Transcript += TEXT("\n=== Append refusal ===\n") + Refusal + TEXT("\n");
+            TestTrue(TEXT("Malformed append refuses explicitly"), Refusal.StartsWith(TEXT("error:")) || Refusal.StartsWith(TEXT("unchanged:")));
+            CheckAppendUnchanged();
+        }
+    }
+    const FString AppendPreview = Record(TEXT("PreviewTurboMCPGraphAppend purchase rule"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Asset, GraphName, AppendText));
+    TestTrue(TEXT("Preview describes two new nodes"), AppendPreview.Contains(TEXT("2 new node(s)")));
+    TestTrue(TEXT("Preview identifies the replaced target"), AppendPreview.Contains(TEXT("CanAfford")));
+    CheckAppendUnchanged();
+    TMap<UEdGraphNode*, FIntPoint> ExistingPositions;
+    TMap<UEdGraphPin*, FString> ExistingDefaults;
+    TMap<UEdGraphPin*, TArray<UEdGraphPin*>> ExistingLinks;
+    for (UEdGraphNode* Node : Graph->Nodes)
+    {
+        ExistingPositions.Add(Node, FIntPoint(Node->NodePosX, Node->NodePosY));
+        for (UEdGraphPin* Pin : Node->Pins) if (Pin)
+        {
+            ExistingDefaults.Add(Pin, Pin->DefaultValue + TEXT("|") + Pin->DefaultTextValue.ToString() + TEXT("|") + GetPathNameSafe(Pin->DefaultObject));
+            ExistingLinks.Add(Pin, Pin->LinkedTo);
+        }
+    }
+    const FString Appended = Record(TEXT("EditTurboMCPGraphAppend purchase rule"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(Asset, GraphName, AppendText));
+    if (!TestTrue(TEXT("Append reports changed"), Appended.StartsWith(TEXT("changed:")))) return false;
+    TestEqual(TEXT("Append creates exactly two nodes"), Graph->Nodes.Num(), BeforeAppendCount + 2);
+    TestTrue(TEXT("Append explains compile and save state"), Appended.Contains(TEXT("compile")) && Appended.Contains(TEXT("save")));
+    for (const auto& Pair : ExistingPositions)
+    {
+        TestTrue(TEXT("Every original node survives"), Graph->Nodes.Contains(Pair.Key));
+        TestEqual(TEXT("Existing node position preserved"), FIntPoint(Pair.Key->NodePosX, Pair.Key->NodePosY), Pair.Value);
+    }
+    for (const auto& Pair : ExistingDefaults)
+        TestEqual(TEXT("Existing default preserved"), Pair.Key->DefaultValue + TEXT("|") + Pair.Key->DefaultTextValue.ToString() + TEXT("|") + GetPathNameSafe(Pair.Key->DefaultObject), Pair.Value);
+    for (const auto& Pair : ExistingLinks)
+        for (UEdGraphPin* Linked : Pair.Value)
+            if (Pair.Key != AffordableOutput && Linked != AffordableOutput)
+                TestTrue(TEXT("Unrelated existing link preserved"), Pair.Key->LinkedTo.Contains(Linked));
+    TestEqual(TEXT("CanAfford has one source after replacement"), AffordableOutput->LinkedTo.Num(), 1);
+    TestFalse(TEXT("Old direct affordability connection removed"), AffordableOutput->LinkedTo.Contains(Affordable->FindPinChecked(TEXT("ReturnValue"))));
+    Record(TEXT("ReadTurboMCPGraphLoad appended"), ReadGraph());
+    Record(TEXT("EditTurboMCPCompile appended"), UTurboMCPEditToolset::EditTurboMCPCompile(Asset));
+    UFunction* PurchaseFunction = Blueprint->GeneratedClass->FindFunctionByName(*GraphName);
+    if (!TestNotNull(TEXT("Appended function is executable"), PurchaseFunction)) return false;
+    for (int32 Case = 0; Case < 4; ++Case)
+    {
+        FStructOnScope Args(PurchaseFunction);
+        const double Funds = Case == 2 ? 80.0 : 200.0;
+        const double Quantity = Case == 3 ? 3.0 : 2.0;
+        const double Minimum = Case == 1 ? 3.0 : 2.0;
+        for (const auto& Pair : TMap<FName, double>{{TEXT("UnitPrice"),50.0},{TEXT("Quantity"),Quantity},{TEXT("DiscountPercent"),10.0},{TEXT("AvailableFunds"),Funds},{TEXT("MinimumQuantity"),Minimum}})
+        {
+            const FDoubleProperty* Property = FindFProperty<FDoubleProperty>(PurchaseFunction, Pair.Key);
+            if (!TestNotNull(TEXT("Scenario input exists"), Property)) return false;
+            Property->SetPropertyValue_InContainer(Args.GetStructMemory(), Pair.Value);
+        }
+        Blueprint->GeneratedClass->GetDefaultObject()->ProcessEvent(PurchaseFunction, Args.GetStructMemory());
+        TestEqual(TEXT("Minimum quantity does not change price"), FindFProperty<FDoubleProperty>(PurchaseFunction,TEXT("FinalPrice"))->GetPropertyValue_InContainer(Args.GetStructMemory()),Quantity * 45.0);
+        TestEqual(TEXT("Both quantity and funds must pass"), FindFProperty<FBoolProperty>(PurchaseFunction,TEXT("CanAfford"))->GetPropertyValue_InContainer(Args.GetStructMemory()),Case == 0 || Case == 3);
+    }
+    TestEqual(TEXT("Append leaves unrelated function unchanged"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, Untouched->GetName(), TEXT("read"), TEXT("full")), UnrelatedBefore);
+    Record(TEXT("LookTurboMCPCapture appended"), UTurboMCPLookToolset::LookTurboMCPCapture(Asset, GraphName, TEXT("graph"), TEXT(""), TEXT("1600x900")));
     return !HasAnyErrors();
 }
 #endif

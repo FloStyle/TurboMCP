@@ -1401,22 +1401,15 @@ public:
 	static FString EditTurboMCPTrace(const FString& Action, const FString& NodeId);
 
 	/**
-	 * Add a block to a graph from graph text.
-	 *
-	 * The same decision as `P-GRAPH-APPEND`, made in the same place, because the two share
-	 * one code path up to the write: the plan is built once, and this consumes it. A text
-	 * the preview refused is refused here with the same words.
-	 *
-	 * IT ADDS AND LINKS AND CANNOT REMOVE. There is no code path in this capability that
-	 * deletes a node - not a disabled one, an ABSENT one - which is what keeps "cannot
-	 * remove anything" true rather than merely intended.
-	 *
-	 * ONE TRANSACTION, and it rolls back on any failure. If a node the plan accepted is
-	 * refused at apply time, NOTHING is written and the report says so.
-	 *
-	 * AFTER WRITING it reads the graph back and compares, and a node the plan created that
-	 * is NOT in the graph is reported as `FAILED COMPARE` - a FAILURE, not a success with a
-	 * note. The first line is `changed` or `unchanged`.
+     * Add nodes and connections to an existing graph without deleting existing nodes.
+     * Explicit links to occupied inputs can replace their current connections.
+     * Does not change function signatures, compile, save or prove runtime behavior.
+     * Preview validates a temporary graph; edit replans against the current graph.
+     * A successful preview is not a reservation or a guarantee of later success.
+     * Live edits use a transaction. Failures attempt undo and report whether it
+     * completed; complete restoration is unverified, so inspect before retrying.
+     * Success verifies created nodes and requested links, and reports their IDs.
+     * Repeating new node forms creates another set of nodes; this is not idempotent.
      * Local labels name the PRECEDING node form. Prefer `(TypeId) ; label Name` for a pinless node,
      * or put `; label Name` on its own line after the closed form. Never put a label before its node.
      * Reference it as `(-> Name:ExactPinName)`. A pinless form needs no dummy pin. Semicolon comments

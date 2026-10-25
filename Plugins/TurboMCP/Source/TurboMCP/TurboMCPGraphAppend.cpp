@@ -249,7 +249,9 @@ bool FTurboMCPGraphAppend::Plan(const FString& InAsset, const FString& InGraphNa
 	{
 		// A comment carries a node's id, so it is read before it is skipped: `NodeIdFromComment` returns empty
 		// for a comment that is not an id, which is most of them.
-		if (TurboMCPGraphTextLex::IsCommentLine(Line))
+		if (TurboMCPGraphTextLex::IsCommentLine(Line)
+            || (Line.Text.TrimStart().StartsWith(TEXT(")"))
+                && !TurboMCPGraphTextLex::LocalLabelFromComment(Line.Text).IsEmpty()))
 		{
             if(CurrentIndex==INDEX_NONE && !TurboMCPGraphTextLex::LocalLabelFromComment(Line.Text).IsEmpty())
             {
@@ -755,11 +757,15 @@ FString FTurboMCPGraphAppend::RenderPreview(const FPlan& InPlan)
 	// CONNECTED or a set of loose nodes - which is the difference between an append and a pile.
 	for (const FNewLink& Link : InPlan.Links)
 	{
-		Out += FString::Printf(TEXT("\n  wire  line %d: %s:%s -> %s"),
-			Link.Line,
-			Link.FromFormIndex != INDEX_NONE
-				? *InPlan.Nodes[Link.FromFormIndex].TypeId : *Link.FromNodeKey,
-			*Link.FromPin, *Link.ToPin);
+        auto Endpoint = [&](int32 FormIndex, const FString& ExistingKey)
+        {
+            if (FormIndex == INDEX_NONE) return ExistingKey;
+            const FNewNode& Form = InPlan.Nodes[FormIndex];
+            return Form.LocalLabel.IsEmpty() ? FString::Printf(TEXT("line%d[%s]"), Form.Line, *Form.TypeId) : Form.LocalLabel;
+        };
+        Out += FString::Printf(TEXT("\n  wire  line %d: %s:%s -> %s:%s"), Link.Line,
+            *Endpoint(Link.FromFormIndex, Link.FromNodeKey), *Link.FromPin,
+            *Endpoint(Link.ToFormIndex, Link.ToNodeKey), *Link.ToPin);
 	}
 
 	for (const FNewNode& Form : InPlan.Nodes)
@@ -1496,7 +1502,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
         }
     }
 
-	// ---- COMPILE, THEN READ BACK AND COMPARE, which the spec demands rather than a claim of success --------
+	// Mark the in-memory edit and verify live node identity. Compilation is explicit.
 	if (!bScratch) FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 
 	// THE READ BACK USES THE READER, NOT THIS TOOL'S OWN MEMORY. A writer reporting what it just wrote is not
@@ -1582,16 +1588,7 @@ bool FTurboMCPGraphAppend::ExecuteGraph(const FPlan& InPlan, UBlueprint* Bluepri
 		Out += TEXT("Live Slate geometry has not been verified.");
 	}
 
-	// THE REPORT IS HANDED BACK. IT WAS NOT AT FIRST, AND THE BUG WAS INVISIBLE FROM OUTSIDE., AND THE BUG WAS INVISIBLE FROM OUTSIDE.
-	//
-	// MEASURED: `Apply` built the whole report into a local `Out`, returned `true`, and NEVER ASSIGNED IT to
-	// `OutReport`. The caller therefore got an EMPTY STRING with a success code - and because the nodes WERE
-	// created and the graph WAS correct, every check that looked at the GRAPH passed while the only thing the
-	// caller actually receives was blank. The spec requires the first line to be `changed` or `unchanged`, and
-	// an empty answer is neither.
-	//
-	// THIS IS THE "A CHECK THAT PASSES WHILE THE THING IT VERIFIES IS BROKEN" SHAPE, and it was caught only by
-	// READING THE RETURN VALUE rather than by reading the graph.
+    // Report only performed operations; compilation and persistence remain explicit.
 	Out += TEXT("\ncompile=not_run; save=not_requested; run EditTurboMCPCompile explicitly after editing");
     if (Unmatched.Num() > 0)
     {

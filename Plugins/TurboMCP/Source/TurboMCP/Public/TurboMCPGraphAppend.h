@@ -18,20 +18,12 @@ class UEdGraphNode;
 class UEdGraphPin;
 
 /**
- * `P/E-GRAPH-APPEND`: add a block to a graph from graph text.
- *
- * WHAT MAKES THIS APPEND AND NOT REPLACE, AND IT IS STRUCTURAL RATHER THAN A POLICY: this file has no
- * code path that removes a node. There is no `RemoveNode`, no `Modify` that drops anything, and no
- * branch that deletes. `Spec/03_TOOLS.md` says of this capability "Cannot remove anything", and the
- * cheapest way to keep that true is for the removal to be ABSENT rather than forbidden - a guard can
- * be deleted by a later edit, an absent function cannot be called by accident.
- *
- * THE TEXT IS NOT LEXED HERE. `FTurboMCPGraphTextLex` holds the one set of rules, and this consumes
- * them. A second lexer is how a second dialect appears, which the spec forbids in its first rule for
- * every write entry point, and this project has already recorded two-tools-one-format bugs twice.
- *
- * THE CHECKS ARE IN `Plan` AND NOT IN `Apply`, so a Preview and its Edit twin refuse the same input.
- * `Apply` consumes a `FPlan` and never re-decides anything.
+ * Add nodes and explicitly requested connections to an existing graph.
+ * Existing nodes are retained; connecting an occupied input may replace its link.
+ * Plan parses the shared graph-text grammar and validates identities and pins.
+ * Public preview also executes on a scratch graph. Edit replans against current
+ * state and checks the live result. A failed live edit attempts undo but cannot
+ * certify full restoration of editor callbacks or external state.
  */
 class FTurboMCPGraphAppend
 {
