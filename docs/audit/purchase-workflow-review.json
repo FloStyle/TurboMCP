@@ -18,7 +18,9 @@
     "append_native": "passed: d144f02447e34727a8f460ab1d118bfb",
     "append_regression": "failed: 2233299766164635bca3a2e8abe0b90d; obsolete required reader arguments and detached exec expectations; alias-collision native case passed",
     "append_scoped_tidy": "passed: 72bcaba97a134fe5baac805860214cda; build, four behavior cases, seven-node forward layout, exact links/defaults/count and fixed surrounding positions; capture inspected",
-    "event_connect_native": "passed with explicit orphan cleanup: 47c9c30568a54267b542da4ad53bcbef"
+    "event_connect_native": "passed with explicit orphan cleanup: 47c9c30568a54267b542da4ad53bcbef",
+    "call_swap_native": "passed: 0cc5d7d515d3425bbee0d9cf300820ed; build, defaults/links/positions, refusal preservation, three runtime values, scoped tidy and native capture",
+    "call_swap_offline": "22/26 passed: 13b682a48d97402ab8e0a2f6dfa7243d; existing validate-repo, check-language, test-client-retry and test-lookup-guards failures remain"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -39,7 +41,10 @@
     "Append public contract no longer promises guaranteed rollback or preview success",
     "Pure append blocks anchor before existing data consumers",
     "Node discovery uses associated function purity instead of unconfigured call-node defaults",
-    "Scoped pure dependency Tidy removes backward affordability-to-AND wire; explicit workflow selection includes both old and new expression nodes"
+    "Scoped pure dependency Tidy removes backward affordability-to-AND wire; explicit workflow selection includes both old and new expression nodes",
+    "SwapCall specializes discovered wildcard operators to matching concrete types",
+    "SwapCall ignores hidden unconnected static receivers when transferring defaults",
+    "SwapCall reports rollback restoration as unverified instead of claiming complete restoration"
   ],
   "tools": [
     {
@@ -53,7 +58,8 @@
       "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
       "workflows": [
         "WF-BP-01-PURCHASE",
-        "WF-BP-03-EVENT-CONNECT"
+        "WF-BP-03-EVENT-CONNECT",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -68,7 +74,8 @@
       "workflows": [
         "WF-BP-01-PURCHASE",
         "WF-BP-02-MINIMUM-QUANTITY",
-        "WF-BP-03-EVENT-CONNECT"
+        "WF-BP-03-EVENT-CONNECT",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -82,7 +89,8 @@
       "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
       "workflows": [
         "WF-BP-01-PURCHASE",
-        "WF-BP-03-EVENT-CONNECT"
+        "WF-BP-03-EVENT-CONNECT",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -96,7 +104,8 @@
       "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
       "workflows": [
         "WF-BP-01-PURCHASE",
-        "WF-BP-03-EVENT-CONNECT"
+        "WF-BP-03-EVENT-CONNECT",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -138,7 +147,8 @@
       "workflows": [
         "WF-BP-01-PURCHASE",
         "WF-BP-02-MINIMUM-QUANTITY",
-        "WF-BP-03-EVENT-CONNECT"
+        "WF-BP-03-EVENT-CONNECT",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -179,7 +189,8 @@
       "workflows": [
         "WF-BP-01-PURCHASE",
         "WF-BP-02-MINIMUM-QUANTITY",
-        "WF-BP-03-EVENT-CONNECT"
+        "WF-BP-03-EVENT-CONNECT",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -219,7 +230,8 @@
       "scenario_evidence": "72bcaba97a134fe5baac805860214cda",
       "workflows": [
         "WF-BP-01-PURCHASE",
-        "WF-BP-02-MINIMUM-QUANTITY"
+        "WF-BP-02-MINIMUM-QUANTITY",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -233,7 +245,8 @@
       "scenario_evidence": "72bcaba97a134fe5baac805860214cda",
       "workflows": [
         "WF-BP-01-PURCHASE",
-        "WF-BP-02-MINIMUM-QUANTITY"
+        "WF-BP-02-MINIMUM-QUANTITY",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -299,7 +312,8 @@
       "remaining": "Ranking is not semantic selection; broader action classes remain outside this case.",
       "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb",
       "workflows": [
-        "WF-BP-02-MINIMUM-QUANTITY"
+        "WF-BP-02-MINIMUM-QUANTITY",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -313,7 +327,8 @@
       "remaining": "Probe construction executes editor code; not all callback effects certified.",
       "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb",
       "workflows": [
-        "WF-BP-02-MINIMUM-QUANTITY"
+        "WF-BP-02-MINIMUM-QUANTITY",
+        "WF-BP-04-CALL-SWAP"
       ]
     },
     {
@@ -403,6 +418,32 @@
       "workflows": [
         "WF-BP-03-EVENT-CONNECT"
       ]
+    },
+    {
+      "tool": "PreviewTurboMCPGraphSwapCall",
+      "role": "Plan a specific call replacement",
+      "status": "scenario checked",
+      "ready": false,
+      "behavior": "Integer Add to Multiply; connected input and literal preserved; old node removed; other event flows unchanged. Invalid ID, KeepOld, Options and pin mapping refuse without mutation.",
+      "review": "Discovery wildcard specialization and implicit static receiver fixed. Help, helpers, comments and actual output reviewed; rollback claims made explicit.",
+      "remaining": "Unsaved integer fixture; no persistence or injected rollback coverage; KeepOld=true preview checked; retained-node editing and positive pin_map/new_inputs variants remain outside this scenario; No general latent, impure, split-pin or mixed-type conversion certification; Native capture inspected by Codex; user visual acceptance pending",
+      "scenario_evidence": "0cc5d7d515d3425bbee0d9cf300820ed",
+      "workflows": [
+        "WF-BP-04-CALL-SWAP"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPGraphSwapCall",
+      "role": "Replace a call while preserving mapped inputs and consumers",
+      "status": "scenario checked",
+      "ready": false,
+      "behavior": "Integer Add to Multiply; connected input and literal preserved; old node removed; other event flows unchanged. Invalid ID, KeepOld, Options and pin mapping refuse without mutation.",
+      "review": "Discovery wildcard specialization and implicit static receiver fixed. Help, helpers, comments and actual output reviewed; rollback claims made explicit.",
+      "remaining": "Unsaved integer fixture; no persistence or injected rollback coverage; KeepOld=true preview checked; retained-node editing and positive pin_map/new_inputs variants remain outside this scenario; No general latent, impure, split-pin or mixed-type conversion certification; Native capture inspected by Codex; user visual acceptance pending",
+      "scenario_evidence": "0cc5d7d515d3425bbee0d9cf300820ed",
+      "workflows": [
+        "WF-BP-04-CALL-SWAP"
+      ]
     }
   ],
   "evidence": [
@@ -459,7 +500,7 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 26,
+    "scenario_reviewed": 28,
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
   },

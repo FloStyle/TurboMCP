@@ -91,9 +91,8 @@
     {
       "id": "WF-BP-04-CALL-SWAP",
       "title": "Replace the wrong calculation call inside one event flow",
-      "status": "planned",
-      "tools_used": [],
-      "tools_planned": [
+      "status": "scenario_checked_visual_acceptance_pending",
+      "tools_used": [
         "ReadTurboMCPBlueprintLoad",
         "ReadTurboMCPGraphLoad",
         "ReadTurboMCPNodeFind",
@@ -103,9 +102,11 @@
         "PreviewTurboMCPGraphSwapCall",
         "EditTurboMCPGraphSwapCall",
         "EditTurboMCPCompile",
-        "LookTurboMCPCapture"
+        "LookTurboMCPCapture",
+        "PreviewTurboMCPGraphTidy",
+        "EditTurboMCPGraphTidy"
       ],
-      "scenario": "Purchase adds unit price and quantity instead of multiplying them. Replace only that call in a multi-event Blueprint; preserve input defaults/connections, output consumers, other events and layout.",
+      "scenario": "Replace Add with Multiply in Purchase: connected input 42 and literal 2 produce 84. Refund and a separate Audit graph remain unchanged. Explicit scoped tidy cleans the affected two-node expression.",
       "acceptance": [
         "Discover replacement type and exact pin mapping",
         "Preview is non-mutating and describes defaults and link transfers",
@@ -113,8 +114,14 @@
         "Check numeric behavior, unrelated flows, refusal cases, prose and native screenshot"
       ],
       "limitations": [
-        "Planned, not executed; does not add reviewed tools to the count"
-      ]
+        "Unsaved integer fixture; no persistence or injected rollback coverage",
+        "KeepOld=true preview checked; retained-node editing and positive pin_map/new_inputs variants remain outside this scenario",
+        "No general latent, impure, split-pin or mixed-type conversion certification",
+        "Native capture inspected by Codex; user visual acceptance pending"
+      ],
+      "review": "docs/audit/call-swap-workflow-review.md",
+      "fixture": "TurboMCP.Workflow.CallSwap",
+      "evidence": "0cc5d7d515d3425bbee0d9cf300820ed"
     }
   ],
   "tool_usage": {
@@ -124,7 +131,8 @@
     "EditTurboMCPCompile": [
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY",
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-BP-04-CALL-SWAP"
     ],
     "EditTurboMCPGraphAppend": [
       "WF-BP-02-MINIMUM-QUANTITY"
@@ -135,9 +143,13 @@
     "EditTurboMCPGraphRemove": [
       "WF-BP-03-EVENT-CONNECT"
     ],
+    "EditTurboMCPGraphSwapCall": [
+      "WF-BP-04-CALL-SWAP"
+    ],
     "EditTurboMCPGraphTidy": [
       "WF-BP-01-PURCHASE",
-      "WF-BP-02-MINIMUM-QUANTITY"
+      "WF-BP-02-MINIMUM-QUANTITY",
+      "WF-BP-04-CALL-SWAP"
     ],
     "EditTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"
@@ -148,7 +160,8 @@
     "LookTurboMCPCapture": [
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY",
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-BP-04-CALL-SWAP"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -175,22 +188,29 @@
     "PreviewTurboMCPGraphRemove": [
       "WF-BP-03-EVENT-CONNECT"
     ],
+    "PreviewTurboMCPGraphSwapCall": [
+      "WF-BP-04-CALL-SWAP"
+    ],
     "PreviewTurboMCPGraphTidy": [
       "WF-BP-01-PURCHASE",
-      "WF-BP-02-MINIMUM-QUANTITY"
+      "WF-BP-02-MINIMUM-QUANTITY",
+      "WF-BP-04-CALL-SWAP"
     ],
     "PreviewTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"
     ],
     "PreviewTurboMCPNodePins": [
-      "WF-BP-02-MINIMUM-QUANTITY"
+      "WF-BP-02-MINIMUM-QUANTITY",
+      "WF-BP-04-CALL-SWAP"
     ],
     "PreviewTurboMCPNodeType": [
-      "WF-BP-02-MINIMUM-QUANTITY"
+      "WF-BP-02-MINIMUM-QUANTITY",
+      "WF-BP-04-CALL-SWAP"
     ],
     "ReadTurboMCPBlueprintLoad": [
       "WF-BP-01-PURCHASE",
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-BP-04-CALL-SWAP"
     ],
     "ReadTurboMCPCommentList": [
       "WF-BP-01-PURCHASE"
@@ -198,16 +218,19 @@
     "ReadTurboMCPGraphLoad": [
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY",
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-BP-04-CALL-SWAP"
     ],
     "ReadTurboMCPNodeContext": [
       "WF-BP-01-PURCHASE",
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-BP-04-CALL-SWAP"
     ],
     "ReadTurboMCPNodeFind": [
       "WF-BP-01-PURCHASE",
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-BP-04-CALL-SWAP"
     ]
   },
-  "unique_tools_scenario_reviewed": 26
+  "unique_tools_scenario_reviewed": 28
 }

@@ -1606,3 +1606,6 @@ Implemented 0850faa; scope gate passed. WF-BP-03 checks a single Purchase data-i
 
 ## WF-BP-03 orphan cleanup correction - 2026-10-25
 Implemented ad7d71c. GraphConnect exposes displaced pure sources with no remaining consumers; workflow explicitly previews/removes the obsolete constant calculation. Build/native 47c9c30568a54267b542da4ad53bcbef passed: shared-source negative control, exact one-node removal, preserved remaining state and runtime results. Actual capture inspected, orphan absent. Scope gate passed, claim released. Cross-workflow ledger now covers 26 unique tools with bounded evidence; deletion/rollback generality not certified.
+
+## Call replacement workflow - 2026-10-25
+Implemented 38ef353; bounded scope gate passed. WF-BP-04 fixes discovered wildcard operator replacement and hidden static receiver default handling. Help/results/comments reviewed, including honest rollback limits. Build/native 0cc5d7d515d3425bbee0d9cf300820ed passed: connected input/literal preservation, old-node removal, independent event results, refusals, scoped tidy and native capture. See docs/audit/call-swap-workflow-review.md. Coverage is 28/125 unique tools in limited scenarios; user visual acceptance and documented wider paths remain open. DSH remains paused.
