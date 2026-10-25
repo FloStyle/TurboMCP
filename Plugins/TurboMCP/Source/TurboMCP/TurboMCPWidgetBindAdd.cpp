@@ -20,8 +20,7 @@
 
 #include "TurboMCPAssetResolver.h"
 
-// Records binding metadata, including deliberately unresolved bindings.
-// Delegate lookup is diagnostic; function existence and signature are not validated.
+// Validate designer-binding compatibility before replacing any existing metadata.
 FString UTurboMCPEditToolset::EditTurboMCPWidgetBindAdd(
 	const FString& Asset, const FString& Widget, const FString& Property, const FString& Function)
 {
@@ -32,7 +31,7 @@ FString UTurboMCPEditToolset::EditTurboMCPWidgetBindAdd(
 	if (WidgetName.IsEmpty() || PropertyName.IsEmpty())
 	{
 		return TEXT("error: a widget name and a property name are both required. The property ")
-			TEXT("is the delegate on the widget, for example OnClicked.");
+			TEXT("is a bindable property, for example Text on a TextBlock.");
 	}
 
 	FTurboMCPAssetResolver::FResolved Resolved;
@@ -72,84 +71,54 @@ FString UTurboMCPEditToolset::EditTurboMCPWidgetBindAdd(
 			Real.Num() > 0 ? *FString::Join(Real, TEXT(", ")) : TEXT("(none)"));
 	}
 
-	// IS THE DELEGATE REAL? The answer decides whether this makes a WORKING binding or a BROKEN
-	// one, and the result says which. A caller testing the retarget tool WANTS the broken kind, and
-	// a caller binding a real event wants to know they got it.
-	UClass* WidgetClass = TargetWidget->GetClass();
-	const FString WithSuffix = PropertyName + TEXT("Delegate");
 
-	// BOTH KINDS COUNT. Widget events are `DECLARE_DYNAMIC_MULTICAST_DELEGATE`, so they are
-	// `FMulticastDelegateProperty`; a single `FDelegateProperty` is what a custom delegate on a
-	// user struct looks like. Checking only the engine`'s narrower kind would report every real
-	// widget event as broken.
-	const bool bHasDelegate =
-		FindFProperty<FDelegateProperty>(WidgetClass, FName(*WithSuffix)) != nullptr
-		|| FindFProperty<FDelegateProperty>(WidgetClass, FName(*PropertyName)) != nullptr
-		|| FindFProperty<FMulticastDelegateProperty>(WidgetClass, FName(*WithSuffix)) != nullptr
-		|| FindFProperty<FMulticastDelegateProperty>(WidgetClass, FName(*PropertyName)) != nullptr;
-
-	// A binding is identified by the widget and the property, so a duplicate is replaced rather
-	// than added twice: the engine's own `operator==` compares exactly this pair and the editor
-	// only allows one binding per property.
-	for (int32 Index = WidgetBlueprint->Bindings.Num() - 1; Index >= 0; --Index)
-	{
-		const FDelegateEditorBinding& Existing = WidgetBlueprint->Bindings[Index];
-		if (Existing.ObjectName == WidgetName
-			&& Existing.PropertyName.ToString() == PropertyName)
-		{
-			WidgetBlueprint->Modify();
-			WidgetBlueprint->Bindings.RemoveAt(Index);
-		}
-	}
-
-	FDelegateEditorBinding Binding;
-	Binding.ObjectName = WidgetName;
-	Binding.PropertyName = FName(*PropertyName);
-	// The function the binding calls. A real one is usually a generated stub; the name is what
-	// the compiler looks for, so a caller testing the retarget tool can leave it as the default.
-	Binding.FunctionName = FName(*(FunctionName.IsEmpty()
-		? WidgetName + TEXT("_On") + PropertyName : FunctionName));
-	Binding.Kind = EBindingKind::Function;
-
-	WidgetBlueprint->Modify();
-	WidgetBlueprint->Bindings.Add(MoveTemp(Binding));
-
-	// THE READ-BACK: the binding is re-found in the list rather than assumed to be there.
-	int32 Found = 0;
-	for (const FDelegateEditorBinding& Check : WidgetBlueprint->Bindings)
-	{
-		if (Check.ObjectName == WidgetName
-			&& Check.PropertyName.ToString() == PropertyName)
-		{
-			++Found;
-		}
-	}
-
-	FString Out = FString::Printf(TEXT("changed: bound %s.%s in %s"),
-		*WidgetName, *PropertyName, *Resolved.ObjectPath);
-	Out += FString::Printf(TEXT("\nwidget class: %s"), *WidgetClass->GetName());
-	Out += FString::Printf(TEXT("\nbinding found after the add: %s"),
-		Found == 1 ? TEXT("yes") : TEXT("NO"));
-
-	if (bHasDelegate)
-	{
-		Out += FString::Printf(
-			TEXT("\ndelegate found for '%s'; function existence and signature compatibility were not checked. ")
-			TEXT("Compile and inspect the binding before relying on it."), *PropertyName);
-	}
-	else
-	{
-		// Named plainly, because a caller who did this by accident needs to know at once.
-		Out += FString::Printf(
-			TEXT("\nthe class has NO delegate '%s' (nor '%s'), so this binding is BROKEN. ")
-			TEXT("PreviewTurboMCPWidgetRetarget can inspect missing-delegate bindings; ")
-			TEXT("EditTurboMCPWidgetRetarget removes them, including other broken bindings on this asset."),
-			*WithSuffix, *PropertyName);
-	}
-
-	Out += FString::Printf(TEXT("\nbindings on the Blueprint now: %d"),
-		WidgetBlueprint->Bindings.Num());
-	Out += TEXT("\n; binding metadata is changed in memory; no compile or save was requested. Use EditTurboMCPCompile to validate, then EditTurboMCPSave when ready.");
-
-	return Out;
+    // Match the single-cast delegate path used by FDelegateEditorBinding.
+    // Property names are stored without the Delegate suffix for native property bindings.
+    UClass* WidgetClass=TargetWidget->GetClass();
+    FString CanonicalProperty=PropertyName;
+    FDelegateProperty* Delegate=FindFProperty<FDelegateProperty>(WidgetClass,FName(*(PropertyName+TEXT("Delegate"))));
+    bool NeedsPure=Delegate!=nullptr;
+    if(!Delegate) {
+        Delegate=FindFProperty<FDelegateProperty>(WidgetClass,FName(*PropertyName));
+        if(Delegate && PropertyName.EndsWith(TEXT("Delegate"),ESearchCase::IgnoreCase)) {
+            CanonicalProperty=PropertyName.LeftChop(8);NeedsPure=true;
+        }
+    }
+    if(!Delegate || !Delegate->SignatureFunction)
+        return FString::Printf(TEXT("unchanged: '%s' is not a supported single-cast designer binding on %s. No binding changed. Multicast events such as OnClicked need a graph Bind Event node; PreviewTurboMCPBindNewEvent can preview its handler."),*PropertyName,*WidgetClass->GetPathName());
+    // Use reflected casing so alias/case variants identify the same binding.
+    CanonicalProperty=NeedsPure?Delegate->GetName().LeftChop(8):Delegate->GetName();
+    const FName WantedFunction(*(FunctionName.IsEmpty()?TargetWidget->GetName()+TEXT("_On")+CanonicalProperty:FunctionName));
+    UClass* SignatureClass=WidgetBlueprint->SkeletonGeneratedClass;
+    UFunction* TargetFunction=SignatureClass?SignatureClass->FindFunctionByName(WantedFunction):nullptr;
+    if(!TargetFunction)
+        return FString::Printf(TEXT("unchanged: function '%s' was not found in the Widget Blueprint's reflected skeleton. No binding changed. Create the function first; compile if reflection is stale, then retry."),*WantedFunction.ToString());
+    if(!TargetFunction->IsSignatureCompatibleWith(Delegate->SignatureFunction,UFunction::GetDefaultIgnoredSignatureCompatibilityFlags()|CPF_ReturnParm))
+        return FString::Printf(TEXT("unchanged: function '%s' has an incompatible signature for %s.%s. No binding changed. Match the delegate's parameter and return types; a text property getter returns text with no input parameters."),*TargetFunction->GetName(),*TargetWidget->GetName(),*CanonicalProperty);
+    if(NeedsPure && !TargetFunction->HasAnyFunctionFlags(FUNC_Const|FUNC_BlueprintPure))
+        return FString::Printf(TEXT("unchanged: property binding '%s' requires a pure or const function; '%s' is neither. No binding changed."),*CanonicalProperty,*TargetFunction->GetName());
+    auto Matches=[&](const FDelegateEditorBinding& B) {
+        FString Name=B.PropertyName.ToString();
+        if(NeedsPure && Name.Equals(Delegate->GetName(),ESearchCase::IgnoreCase))Name=CanonicalProperty;
+        return FName(*B.ObjectName)==TargetWidget->GetFName() && FName(*Name)==FName(*CanonicalProperty);
+    };
+    TArray<FString> Previous;
+    int32 MatchCount=0;bool Same=false;
+    for(const FDelegateEditorBinding& B:WidgetBlueprint->Bindings)if(Matches(B)) {
+        ++MatchCount;Previous.Add(B.FunctionName.ToString());
+        Same=B.Kind==EBindingKind::Function && B.FunctionName==WantedFunction && B.SourcePath.IsEmpty()
+            && !B.MemberGuid.IsValid() && B.PropertyName==FName(*CanonicalProperty) && B.ObjectName==TargetWidget->GetName();
+    }
+    if(MatchCount==1 && Same)
+        return FString::Printf(TEXT("unchanged: %s.%s already calls %s. No binding metadata changed; no compile or save was requested."),*TargetWidget->GetName(),*CanonicalProperty,*TargetFunction->GetName());
+    FDelegateEditorBinding Binding;
+    Binding.ObjectName=TargetWidget->GetName();Binding.PropertyName=FName(*CanonicalProperty);
+    Binding.FunctionName=TargetFunction->GetFName();Binding.Kind=EBindingKind::Function;
+    WidgetBlueprint->Modify();
+    WidgetBlueprint->Bindings.RemoveAll(Matches);
+    WidgetBlueprint->Bindings.Add(Binding);
+    FBlueprintEditorUtils::MarkBlueprintAsModified(WidgetBlueprint);
+    return FString::Printf(TEXT("changed: bound %s.%s to %s in %s\ndelegate: %s\nreplaced functions: %s\nValidated the reflected signature%s. This does not prove runtime behavior.\nBinding metadata changed in memory. No full compile, save or dedicated undo transaction was performed. Compile with EditTurboMCPCompile, then inspect the displayed value before saving."),
+        *Binding.ObjectName,*CanonicalProperty,*TargetFunction->GetName(),*Resolved.ObjectPath,*Delegate->GetName(),
+        Previous.IsEmpty()?TEXT("none"):*FString::Join(Previous,TEXT(", ")),NeedsPure?TEXT(" and pure/const requirement"):TEXT(""));
 }

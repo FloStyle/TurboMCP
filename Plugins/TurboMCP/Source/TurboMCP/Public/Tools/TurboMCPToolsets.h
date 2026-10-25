@@ -1264,13 +1264,13 @@ public:
 	static FString EditTurboMCPWidgetRetarget(const FString& Asset);
 
 	/**
-	 * Add or replace a widget binding in memory without compiling or saving; permits missing delegates/functions and does not create a dedicated undo transaction.
-	 * Replaces existing entries for the same widget/property pair. Reports delegate presence only, not function-signature compatibility or runtime validity.
-	 * @param Asset Required Widget Blueprint path or unique name, e.g. /Game/Tests/WBP_NodeTest. Empty, unresolved and other asset types are refused.
-	 * @param Widget Required existing widget name from ReadTurboMCPWidgetTree, e.g. TitleText. Empty or missing names are refused.
-	 * @param Property Required delegate/property name, e.g. TextDelegate or OnClicked. The name and name+Delegate are checked, but a missing delegate is still recorded and reported.
-	 * @param Function Function name to store, e.g. GetTitleText. Empty generates WidgetName_OnPropertyName. Does not create or validate that function; supply empty explicitly when using the generated name.
-	 */
+     * Add or replace a single-cast designer binding after checking the reflected function signature and property purity. No full compile, save or dedicated undo transaction.
+     * Invalid targets leave existing bindings intact. Identical requests return unchanged. Multicast events require graph binding tools instead.
+     * @param Asset Existing Widget Blueprint path or unique name, for example /Game/UI/WBP_Menu.
+     * @param Widget Existing widget name from ReadTurboMCPWidgetTree; matching ignores case.
+     * @param Property Bindable property or single-cast delegate, for example Text or TextDelegate. Property aliases normalize to Text. Multicast OnClicked is refused.
+     * @param Function Existing reflected function, for example GetPurchaseText. Property getters must be pure or const and signature-compatible. Empty selects WidgetName_OnPropertyName but does not create that function. Compile first if reflection is stale.
+     */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPWidgetBindAdd(
 		const FString& Asset,
