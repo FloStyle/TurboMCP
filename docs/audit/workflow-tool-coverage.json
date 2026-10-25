@@ -434,6 +434,29 @@
         "Slate menu with explicit focused Resume button; not CommonUI activation stacks or controller menu navigation.",
         "Analog action callback verified; pawn/camera motion not asserted."
       ]
+    },
+    {
+      "id": "WF-VISION-07-COMMONUI",
+      "title": "CommonUI controller pause, settings tabs and return to gameplay",
+      "status": "scenario_checked",
+      "review": "docs/audit/commonui-play-workflow.md",
+      "fixture": "TurboMCP.Workflow.CommonPlay",
+      "evidence": "83b71dfcc8764dff9cd82b7b212a8a46",
+      "focused_tools": [
+        "EditTurboMCPPlayInput",
+        "ReadTurboMCPPlayInputState"
+      ],
+      "tools_used": [
+        "ReadTurboMCPPlayCheck",
+        "EditTurboMCPPlayInput",
+        "ReadTurboMCPPlayInputState",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "One local player, single PIE, synthetic button and one-dimensional axis input.",
+        "Directional focus movement, arbitrary modal stacks and device-specific prompts are not tested.",
+        "CommonUI state is asserted by the fixture, not exposed by the production diagnostic tool."
+      ]
     }
   ],
   "tool_usage": {
@@ -501,7 +524,8 @@
       "WF-VISION-03-MATERIAL",
       "WF-VISION-04-EDITOR",
       "WF-VISION-05-PLAY",
-      "WF-VISION-06-PLAY-MENU"
+      "WF-VISION-06-PLAY-MENU",
+      "WF-VISION-07-COMMONUI"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -615,7 +639,14 @@
       "WF-UI-10-WIDGET-BINDING"
     ],
     "ReadTurboMCPPlayCheck": [
-      "WF-VISION-06-PLAY-MENU"
+      "WF-VISION-06-PLAY-MENU",
+      "WF-VISION-07-COMMONUI"
+    ],
+    "EditTurboMCPPlayInput": [
+      "WF-VISION-07-COMMONUI"
+    ],
+    "ReadTurboMCPPlayInputState": [
+      "WF-VISION-07-COMMONUI"
     ]
   },
   "unique_tools_scenario_reviewed": 38,
@@ -628,12 +659,12 @@
     "Evidence: record each tool used, actual output, scenario result, remaining gaps and user visual feedback; no blanket bug-free claim."
   ],
   "play_input_review": {
-    "status": "scenario passed; broader review pending",
-    "native_run": "8463aa977fd34b429ff769f1c1aebc4e",
+    "status": "Slate and real CommonUI scenarios passed; broader review pending",
+    "native_run": "83b71dfcc8764dff9cd82b7b212a8a46",
     "tools": [
       "ReadTurboMCPPlayInputState",
       "EditTurboMCPPlayInput"
     ],
-    "limit": "Do not add to completed full-review count until remaining focus-loss/release and CommonUI routing cases are checked."
+    "limit": "Full-review completion still requires focus-loss/release and directional navigation cases; no new completed-tool count."
   }
 }
