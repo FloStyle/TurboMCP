@@ -30,7 +30,7 @@ The old generic success text omitted endpoints. Results now name source, target 
 
 ## Limits
 
-No successful execution-wire replacement, latent events, shared exec merge, asynchronous behavior, arbitrary node types, persistence or injected live rollback is certified. This is a deterministic native scenario, not evidence that every language model can select the correct target. User visual acceptance remains pending. Existing unrelated offline failures and the purchase comment-wire issue remain tracked separately.
+No successful execution-wire replacement, latent events, shared exec merge, asynchronous behavior, arbitrary node types, persistence or injected live rollback is certified. This is a deterministic native scenario, not evidence that every language model can select the correct target. User accepted the corrected screenshot and bounded workflow on 2026-10-25. Existing unrelated offline failures and the purchase comment-wire issue remain tracked separately.
 
 Offline gate 182a672d192445af97975660b5fa913b: 22/26 pass. Existing validate-repo, check-language, client-retry and lookup-guards failures remain. Runner-verdicts passed on this run; the earlier missing-manifest failure is not reproduced.
 
@@ -46,3 +46,5 @@ The workflow inspects the obsolete constant-addition node, verifies it has no li
 This is explicit cleanup within the user's requested repair, not automatic deletion inside GraphConnect. Only displaced source nodes are reported; recursive dead-code elimination, arbitrary side effects, connected-node deletion and rollback injection are not certified. No whole-graph cleanup or layout change is performed.
 
 Cleanup offline gate caac88cd0a564df2b5678133b43f04be: 22/26 passed, with the same four recorded structure/language/client-retry/lookup failures.
+
+User acceptance recorded on 2026-10-25 after the orphan cleanup correction. This accepts WF-BP-03 only, retaining its documented limits. Next planned scenario is WF-BP-04-CALL-SWAP in workflow-tool-coverage.json.

@@ -63,7 +63,7 @@
     {
       "id": "WF-BP-03-EVENT-CONNECT",
       "title": "Repair one connection among multiple event flows",
-      "status": "scenario_checked",
+      "status": "scenario_accepted",
       "review": "docs/audit/event-connect-workflow-review.md",
       "tools_used": [
         "ReadTurboMCPBlueprintLoad",
@@ -80,13 +80,41 @@
       "limitations": [
         "Data-input repair only; successful execution-wire replacement is not tested here",
         "No latent flows, shared execution paths, arbitrary conversions, save/reload or injected rollback",
-        "Deterministic native fixture, not a benchmark of model decision-making",
-        "Capture inspected; user visual acceptance pending"
+        "Deterministic native fixture, not a benchmark of model decision-making"
       ],
       "evidence": "47c9c30568a54267b542da4ad53bcbef",
       "candidate": "ad7d71c1a5f90b254029881b8835468d497448b1",
       "fixture": "TurboMCP.Workflow.EventConnect",
-      "cleanup": "Explicit removal of the newly unconsumed, fully disconnected constant-addition node; shared sources preserved."
+      "cleanup": "Explicit removal of the newly unconsumed, fully disconnected constant-addition node; shared sources preserved.",
+      "user_acceptance": "2026-10-25: user accepted the corrected connection-and-cleanup workflow"
+    },
+    {
+      "id": "WF-BP-04-CALL-SWAP",
+      "title": "Replace the wrong calculation call inside one event flow",
+      "status": "planned",
+      "tools_used": [],
+      "tools_planned": [
+        "ReadTurboMCPBlueprintLoad",
+        "ReadTurboMCPGraphLoad",
+        "ReadTurboMCPNodeFind",
+        "ReadTurboMCPNodeContext",
+        "PreviewTurboMCPNodeType",
+        "PreviewTurboMCPNodePins",
+        "PreviewTurboMCPGraphSwapCall",
+        "EditTurboMCPGraphSwapCall",
+        "EditTurboMCPCompile",
+        "LookTurboMCPCapture"
+      ],
+      "scenario": "Purchase adds unit price and quantity instead of multiplying them. Replace only that call in a multi-event Blueprint; preserve input defaults/connections, output consumers, other events and layout.",
+      "acceptance": [
+        "Discover replacement type and exact pin mapping",
+        "Preview is non-mutating and describes defaults and link transfers",
+        "KeepOld=false explicitly removes old call after verification; no leftover orphan",
+        "Check numeric behavior, unrelated flows, refusal cases, prose and native screenshot"
+      ],
+      "limitations": [
+        "Planned, not executed; does not add reviewed tools to the count"
+      ]
     }
   ],
   "tool_usage": {
