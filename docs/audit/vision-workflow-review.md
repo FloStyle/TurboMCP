@@ -35,3 +35,5 @@ Capture helper output no longer claims FWidgetRenderer offscreen rendering: live
 ## Live PIE menu loop
 
 See [play/menu workflow](play-menu-workflow.md). Native d64216f0036647cfaa62701131f443fd passed explicit PIE capture and the complete Settings/Back/Purchase loop with independent callback assertions, four visual states and zero runtime warnings/errors. Existing native Slate input tools are reused. Dedicated editor/camera/multiple-player targeting and CommonUI/controller tests remain open.
+
+Enhanced Input foundation integration: native 8463aa977fd34b429ff769f1c1aebc4e and offline 56b3d64da8ab420f8037ab1454cf4556 (26/26) passed. Stock engine unchanged. VISION-08 is done for the bounded scenario; VISION-09 tracks actual CommonUI controller/tab/back navigation. Full tool review remains 38/127.

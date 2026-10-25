@@ -11,10 +11,11 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 ## UTurboMCPReadToolset
 
-30 declared tools.
+32 declared tools.
 
 | Function | Description |
 | --- | --- |
+| `ReadTurboMCPPlayInputState` | Inspect the single PIE player's focus, held synthetic input and Enhanced Input context priorities; no input or asset mutation |
 | `ReadTurboMCPStatus` | Read the MCP server state and this plugin's registration state |
 | `ReadTurboMCPToolIndex` | Read every tool the server serves, one line each |
 | `ReadTurboMCPToolHelp` | Read the parameters and known traps of one tool |
@@ -22,162 +23,143 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `ReadTurboMCPAssetDescribe` | Read what one or more assets are, in any path form |
 | `ReadTurboMCPTypeFind` | Read the exact type path a pin or a variable needs |
 | `ReadTurboMCPDirtyList` | Read every asset with unsaved changes |
-| `ReadTurboMCPNodeResolve` | Turn node IDs into nodes |
-| `ReadTurboMCPNodeFind` | Find nodes in a Blueprint by what they say |
+| `ReadTurboMCPNodeResolve` | Resolve node identities and inspect pins; may load assets, without requesting edits, compile or save |
+| `ReadTurboMCPNodeContext` | Inspect static execution context and input sources; may load assets, without requesting edits, compile or save |
+| `ReadTurboMCPNodeFind` | Search Blueprint nodes by text; may load assets, without requesting edits, compile or save |
 | `ReadTurboMCPGraphLoad` | Read one graph as text |
-| `ReadTurboMCPBlueprintLoad` | Read whole Blueprints: the main Read tool |
-| `ReadTurboMCPRefs` | Read what an asset references, and what references it |
-| `ReadTurboMCPOverrides` | Read what a Blueprint can override, and what it already does |
-| `ReadTurboMCPCommentList` | Read the comment boxes of a Blueprint's graphs as data |
-| `ReadTurboMCPDataTable` | Describe a data table |
-| `ReadTurboMCPCallLog` | Read the call log: what the server recorded about its own use |
-| `ReadTurboMCPCallCost` | What the calls COST: which were most expensive, which were slowest, which failed, and the totals per tool and per asset |
-| `ReadTurboMCPToolSchema` | The exact schema of one tool: its signature, one row per parameter, and its trap notes |
-| `ReadTurboMCPMaterialLabels` | Read the named reroutes of a material: every label, its readers, and the unused ones |
-| `ReadTurboMCPMaterialLoad` | Read a whole material: its parameters, then every connected output as a tree |
-| `ReadTurboMCPMaterialTrace` | Read ONE output of a material rather than all of them |
-| `ReadTurboMCPMaterialBlocks` | Read a material by BLOCK of logic, one block per comment box |
-| `ReadTurboMCPMaterialInstance` | Read a material INSTANCE: its parent chain, what it overrides, and - the list that matters - what it inherits from a parent it does not own |
-| `ReadTurboMCPPlayCheck` | Play the project for a few seconds and report the warnings and errors it raised |
-| `ReadTurboMCPTrace` | Read the trace: what is armed, and how often each point has run |
-| `ReadTurboMCPBPLint` | Lint one or more Blueprints and report what is wrong with them, with each check NAMED. `assets` takes one or more asset names |
-| `ReadTurboMCPAssetCost` | The size map and hard references of one asset, SPLIT BY PROVENANCE. `D-52`: *"A size is reported with its provenance |
-| `ReadTurboMCPWidgetTree` | Read a Widget Blueprint's tree as the text dialect of `04_FORMATS.md` section 8 |
-| `ReadTurboMCPPureChecks` | Call the two PURE functions behind `R-CALL-COST` with LITERAL inputs, and print what they returned |
-| `ReadTurboMCPVcsState` | Read what source control holds for each asset, and refuse by name when it holds nothing |
+| `ReadTurboMCPBlueprintLoad` | Inspect Blueprint structure and selected graph content; loads assets without requesting edits, compile or save |
+| `ReadTurboMCPRefs` | Read saved registry references into or out of an asset |
+| `ReadTurboMCPOverrides` | Read available and implemented Blueprint overrides from parent classes and interfaces |
+| `ReadTurboMCPCommentList` | Read Blueprint comment rectangles, membership and nesting |
+| `ReadTurboMCPDataTable` | Read DataTable schema, row names, selected values and registry-based readers |
+| `ReadTurboMCPCallLog` | Read retained call-log records, newest first |
+| `ReadTurboMCPCallCost` | Summarize retained call costs, durations and failures |
+| `ReadTurboMCPToolSchema` | Inspect registered tool metadata and local trap notes without invoking the described tool |
+| `ReadTurboMCPMaterialLabels` | Read named material reroute labels, writers and reader counts; no explicit edit, compile or save |
+| `ReadTurboMCPMaterialLoad` | Read material parameters and connected output trees, or an instance override summary |
+| `ReadTurboMCPMaterialTrace` | Read one connected material output tree; no explicit edit, compile or save |
+| `ReadTurboMCPMaterialBlocks` | Read material logic grouped by comment boxes; no explicit edit, compile or save |
+| `ReadTurboMCPMaterialInstance` | Read material-instance parent chain, local overrides, inherited values and orphaned overrides |
+| `ReadTurboMCPPlayCheck` | Start or poll a timed Play In Editor session that executes project code with editor permissions, is not sandboxed or automatically undone, and does not explicitly save assets |
+| `ReadTurboMCPTrace` | Report the trace subscription, armed points and retained hits |
+| `ReadTurboMCPBPLint` | Inspect Blueprints for selected lint findings; loads assets but does not explicitly edit, compile or save them |
+| `ReadTurboMCPAssetCost` | Report recorded package disk sizes and direct registry dependencies; does not explicitly edit, compile or save assets |
+| `ReadTurboMCPWidgetTree` | Inspect selected Widget Blueprint hierarchy data; loads the asset without explicitly editing, compiling or saving it |
+| `ReadTurboMCPPureChecks` | Inspect call-cost string normalization and asset extraction for literal inputs; does not run the named tools or read the call log |
+| `ReadTurboMCPVcsState` | Query the selected source-control provider; may refresh cached state and contact its server, but does not request checkout, save or submission |
 
 ## UTurboMCPLookToolset
 
-4 declared tools.
+6 declared tools.
 
 | Function | Description |
 | --- | --- |
 | `LookTurboMCPToolset` | Look for a live editor window that a capture could use |
-| `LookTurboMCPLayoutReport` | Look at the layout of one graph: measure it and report, without moving anything |
+| `LookTurboMCPLayoutReport` | Inspect graph geometry and layout findings; loads the Blueprint and measures Slate geometry without requesting graph edits, compile or save |
+| `LookTurboMCPLayoutDoneCheck` | Return layout findings and capture a graph image; may open editor UI and writes an image file, but does not request asset edits, compile or save |
+| `LookTurboMCPGraphPositions` | Read node IDs, stored positions and measured sizes; loads the Blueprint and uses rendering without requesting graph edits, compile or save |
 | `LookTurboMCPWidgetPreview` | Render a Widget Blueprint with sample values and write a PNG. Pass the widget, sample values as a JSON object of variable name to value, an optional function to call after the values are set, and a size as WxH. Empty sample values means the widget's own defaults; an empty size means 1280x720 |
-| `LookTurboMCPCapture` | Capture a picture of a Blueprint's graph editor, framed one of seven ways |
+| `LookTurboMCPCapture` | Capture PNG; may load assets and change editor UI/view/selection; editor callbacks may run; no explicit asset compile/save; no automatic undo; image is not proof of graph correctness |
 
 ## UTurboMCPPreviewToolset
 
-29 declared tools.
+39 declared tools.
 
 | Function | Description |
 | --- | --- |
 | `PreviewTurboMCPToolset` | Preview the size of this plugin's own tool help |
-| `PreviewTurboMCPEnumAdd` | Work out what creating an enum asset would do, without creating it |
-| `PreviewTurboMCPVarsAdd` | Work out what adding Blueprint variables would do, without adding them |
-| `PreviewTurboMCPOverrideAdd` | Work out what creating an override would do, without creating it |
-| `PreviewTurboMCPWidgetRetarget` | Work out which widget bindings a class swap has left broken, without changing anything |
-| `PreviewTurboMCPComment` | Work out what a comment-box change would do, without making it |
-| `PreviewTurboMCPGraphDead` | Work out which nodes are dead and would be removed, without removing them |
-| `PreviewTurboMCPLocalVars` | Work out which values could become local variables, without promoting any |
-| `PreviewTurboMCPNodeType` | Finds the REAL node type id the engine's node creation tool will accept |
-| `PreviewTurboMCPNodePins` | The pins a node type produces, WITHOUT TOUCHING the asset's own graph |
-| `PreviewTurboMCPGraphKnots` | Work out which wires cross a node, and where a knot would fix them, without placing any |
-| `PreviewTurboMCPGraphTidy` | Work out a clean layout for one graph, WITHOUT moving anything |
+| `PreviewTurboMCPEnumAdd` | Inspect a proposed new enum and check for an existing asset; does not create, compile or save an asset |
+| `PreviewTurboMCPVarsAdd` | Parse a variable creation request; may load referenced types but does not add variables, compile the target or save |
+| `PreviewTurboMCPOverrideAdd` | Preview an event or function override; loads the Blueprint and inspects editor metadata without creating the override, compiling or saving |
+| `PreviewTurboMCPWidgetRetarget` | Inspect widget bindings for missing widgets or delegates; loads the asset but does not remove bindings, compile or save it |
+| `PreviewTurboMCPComment` | Plan comment changes; loads the Blueprint and may measure transient graph widgets, without applying edits, compiling or saving |
+| `PreviewTurboMCPGraphDead` | Identify removal candidates using static graph reachability; loads the Blueprint without requesting edits, compilation or saving |
+| `PreviewTurboMCPLocalVars` | Inspect repeated pure-node outputs in a Blueprint function; loads the asset but does not edit, compile or save; candidates are advisory; edit requires reviewed scalar arithmetic, stable inputs, a clean compile baseline and one connected execution successor |
+| `PreviewTurboMCPNodeType` | Search available node types; loads Blueprint context and queries editor node actions, without requesting graph edits, compilation or saving |
+| `PreviewTurboMCPNodePins` | Inspect pins by constructing a temporary node; loads assets and executes editor probe code, without requesting compilation or saving |
+| `PreviewTurboMCPGraphKnots` | Plan reroute nodes for estimated wire crossings; loads the Blueprint without requesting graph edits, compilation or saving |
+| `PreviewTurboMCPGraphTidy` | Plan a layout for one graph without committing graph changes |
 | `PreviewTurboMCPGraphFixBackward` | Repair the bad spots in a mostly-good graph, WITHOUT moving anything |
-| `PreviewTurboMCPGraphCheck` | Check graph text before writing it, and write nothing |
+| `PreviewTurboMCPGraphCheck` | Check graph-text syntax, node types, pin names and supported literal types; loads the Blueprint for inspection but does not write graph changes, compile or save |
 | `PreviewTurboMCPGraphAppend` | Add a block to a graph from graph text, and write nothing |
-| `PreviewTurboMCPGraphReplace` | Rewrite the body of one function, override or event, and list what it removes |
-| `PreviewTurboMCPGraphSwapCall` |  |
-| `PreviewTurboMCPGraphRepoint` |  |
-| `PreviewTurboMCPBatchEdit` |  |
+| `PreviewTurboMCPGraphReplace` | Plan graph replacement and list deletions; loads the Blueprint without applying the replacement, compiling or saving |
+| `PreviewTurboMCPAssetUndo` | Inspect the latest global undo entry for the named Blueprint and return its confirmation GUID; does not undo |
+| `PreviewTurboMCPGraphGroupMove` | Check a group translation; loads the Blueprint and measures transient graph widgets, without requesting live node moves, compilation or saving |
+| `PreviewTurboMCPGraphGroupPlacement` | Suggest a group translation; loads the Blueprint and renders transient graph widgets for measurement, without requesting live node moves, compilation or saving |
+| `PreviewTurboMCPAssetRevert` | Preview discarding all unsaved changes in a saved Blueprint package; does not reload or save |
+| `PreviewTurboMCPGraphSwapCall` | Preview call swap |
+| `PreviewTurboMCPGraphRepoint` | Plan moving consumers to another output; loads the Blueprint and may construct a probe node, without applying links, compiling or saving |
+| `PreviewTurboMCPBatchEdit` | Simulate ordered repoints on a transient graph; loads the Blueprint without applying live edits, compiling or saving |
+| `PreviewTurboMCPGraphConnect` | Connect exact existing node/pin IDs |
+| `PreviewTurboMCPGraphRemove` | Remove exact nodes and links with scratch preview and one undo |
+| `PreviewTurboMCPBindFunction` | Load the Blueprint and simulate delegate binding on a transient graph; no live graph edits, compilation or saving are requested |
+| `PreviewTurboMCPBindNewEvent` | Preview creating a typed custom event wired to an existing delegate input, such as the Event pin of a Bind Event node |
+| `PreviewTurboMCPGraphSplitValue` | Copy a pure self/getter/literal per consumer; never impure calls |
+| `PreviewTurboMCPGraphSequence` | Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows |
 | `PreviewTurboMCPGraphPatch` | Change only what changed: name existing nodes by id and give the pins that differ |
-| `PreviewTurboMCPMaterialTidy` | Lay out a material, one comment box per block, and change nothing |
-| `PreviewTurboMCPMaterialLabelPromote` | List the values in a material worth a name, and change nothing |
-| `PreviewTurboMCPMaterialBlocks` | `P-MAT-BLOCKS`: make labels follow blocks |
-| `PreviewTurboMCPDataTableRows` | Preview row operations on a DataTable |
-| `PreviewTurboMCPGraphCopy` | Plan copying a block of nodes from one graph to another, and write nothing |
-| `PreviewTurboMCPGraphCollapse` | Plan extracting a selection into a function or a macro, and write nothing |
-| `PreviewTurboMCPStructNew` | Work out what creating a user struct asset would do, without creating it |
-| `PreviewTurboMCPStructFields` | Work out what editing a user struct's fields would do, without changing any |
-| `PreviewTurboMCPVcsCheckout` | Work out what a checkout would do, per asset, without checking anything out |
+| `PreviewTurboMCPMaterialTidy` | Plan material positions and comment boxes; loads the asset and recompiles materials to collect baseline errors, may run editor callbacks, but does not apply layout or save |
+| `PreviewTurboMCPMaterialLabelPromote` | Plan named reroutes for material values used by multiple expressions; loads and recompiles materials for baseline errors and may run editor callbacks, but does not add labels, rewire inputs or save |
+| `PreviewTurboMCPMaterialBlocks` | Plan material label and reroute cleanup; loads and recompiles materials for baseline errors and may run editor callbacks, but does not apply graph changes or save |
+| `PreviewTurboMCPDataTableRows` | Inspect proposed row edits using temporary row data; loads the table and may load objects referenced by imported values; does not write rows, compile or save |
+| `PreviewTurboMCPGraphCopy` | Plan a node copy and report external links; loads both Blueprints without applying the copy, compiling or saving |
+| `PreviewTurboMCPGraphCollapse` | Collapse is not implemented: inspect selection boundaries only; may load the Blueprint, but does not extract nodes, create a member, compile or save |
+| `PreviewTurboMCPStructNew` | Inspect a proposed user-defined struct; type resolution may load referenced assets; does not create, compile or save the struct |
+| `PreviewTurboMCPStructFields` | Inspect proposed struct field edits; loads the struct and referenced types and queries source-control status; does not edit, compile, check out or save the struct |
+| `PreviewTurboMCPVcsCheckout` | Inspect checkout eligibility; refreshes provider state and may contact the server, but does not request checkout, asset compilation or saving |
 
 ## UTurboMCPEditToolset
 
-38 declared tools.
+50 declared tools.
 
 | Function | Description |
 | --- | --- |
+| `EditTurboMCPPlayInput` | Execute bounded keyboard/gamepad input through Slate in live PIE. Runtime exception to asset-edit tools: runs game/UI code, no asset transaction/save/undo |
 | `ReadTurboMCPEditQueue` | Read whether the editor can accept a write right now |
-| `EditTurboMCPCompile` | Compile one or more Blueprints or widgets, with a real answer each |
-| `EditTurboMCPSave` | Save one or more assets without noise |
-| `EditTurboMCPSaveWithoutThumbnail` | Save one or more assets WITHOUT the editor's thumbnail step |
-| `EditTurboMCPEnumAdd` | Create an enum asset from a list of values |
-| `EditTurboMCPVarsAdd` | Add Blueprint variables in bulk |
-| `EditTurboMCPWidgetsAsVars` | Mark widgets as variables, or unmark them, in one call |
-| `EditTurboMCPOverrideAdd` | Create an override on purpose |
-| `EditTurboMCPOverrideRemove` | Remove an override this Blueprint has |
-| `EditTurboMCPFunctionAdd` | Add a function to a Blueprint |
-| `EditTurboMCPFunctionRemove` | Remove a function from a Blueprint, so its name is free at once |
-| `EditTurboMCPWidgetRetarget` | Repair widget bindings after a class swap |
-| `EditTurboMCPWidgetBindAdd` | Bind an event on a widget to a function name |
-| `EditTurboMCPComment` | Make a comment-box change |
-| `EditTurboMCPGraphDead` | Remove the dead copies in a graph |
-| `EditTurboMCPGraphKnots` | Place the knots the preview listed |
-| `EditTurboMCPGraphTidy` | Apply the layout the preview worked out |
+| `EditTurboMCPCompile` | Compile up to 25 named assets and report compiler and engine diagnostics; does not save |
+| `EditTurboMCPSave` | Write named asset packages to disk, including packages whose dirty flag is clear; does not explicitly compile |
+| `EditTurboMCPSaveWithoutThumbnail` | Write named asset packages directly to disk without refreshing thumbnails; does not explicitly compile |
+| `EditTurboMCPEnumAdd` | Create a new user-defined enum in memory and mark its package dirty; editor enum callbacks may run; no tool-owned undo transaction, explicit Blueprint compile or save is performed |
+| `EditTurboMCPVarsAdd` | Add Blueprint variables; may regenerate the skeleton repeatedly and run editor callbacks, can leave partial changes without rollback, and does not perform a full compile or save or create a dedicated undo transaction |
+| `EditTurboMCPWidgetsAsVars` | Set named widgets' Is Variable flags; changes may regenerate the Blueprint skeleton and run editor callbacks, do not perform a full compile or save, and have no dedicated undo transaction |
+| `EditTurboMCPOverrideAdd` | Create an event or function override through the editor API; may regenerate the skeleton and run editor callbacks, uses engine-managed undo, and does not perform a full compile or save |
+| `EditTurboMCPOverrideRemove` | Delete an override event node or an entire override function graph and its contents; uses an undo transaction, may regenerate the skeleton and run editor callbacks, and does not perform a full compile or save |
+| `EditTurboMCPFunctionAdd` | Create a function graph and optional signature; loads types, regenerates the skeleton and refreshes matching self-call nodes, may run editor callbacks, and does not perform a full compile or save or provide a dedicated undo transaction |
+| `EditTurboMCPFunctionRemove` | Delete a function graph and all its nodes; may close asset editors, regenerate the skeleton and run editor callbacks, does not perform a full compile or save, and provides no dedicated undo transaction |
+| `EditTurboMCPWidgetRetarget` | Remove bindings whose widget or delegate is missing; changes the asset in memory without compiling or saving, and does not create a dedicated undo transaction |
+| `EditTurboMCPWidgetBindAdd` | Add or replace a single-cast designer binding after checking the reflected function signature and property purity |
+| `EditTurboMCPComment` | Create, change, resize or delete comment boxes in an undo transaction; loads/measures the graph and does not compile or save |
+| `EditTurboMCPGraphDead` | Delete statically selected node groups and their links; no tool-owned undo transaction, compilation or save is performed |
+| `EditTurboMCPGraphKnots` | Insert reroute nodes and reconnect wires in an undo transaction; attempts rollback if estimated crossings do not decrease, without compiling or saving |
+| `EditTurboMCPGraphTidy` | Recompute and apply a layout using the same options as PreviewTurboMCPGraphTidy |
 | `EditTurboMCPGraphFixBackward` | Apply the repairs the preview listed |
-| `EditTurboMCPLocalVars` | Promote the SAFE values to local variables |
-| `EditTurboMCPCallLog` | Turn the call log on or off |
-| `EditTurboMCPCallLogClear` | Drop the in-memory call log entries |
-| `EditTurboMCPTrace` | Mark a node to be traced, or clear the marks |
-| `EditTurboMCPGraphAppend` | Add a block to a graph from graph text |
-| `EditTurboMCPGraphReplace` | Rewrite the body of one function, override or event, and report every node it removed |
-| `EditTurboMCPGraphSwapCall` |  |
-| `EditTurboMCPGraphRepoint` |  |
-| `EditTurboMCPBatchEdit` |  |
+| `EditTurboMCPLocalVars` | Promote repeated reviewed scalar arithmetic values in a Blueprint function: retain calculations, assign locals at function entry and replace consumer reads |
+| `EditTurboMCPCallLog` | Enable or disable call recording and request persistence in editor settings |
+| `EditTurboMCPCallLogClear` | Clear retained in-memory call records after confirmation |
+| `EditTurboMCPTrace` | Manage in-memory trace points; does not edit graph nodes, compile or save assets, and clearing recorded hits is not undoable |
+| `EditTurboMCPGraphAppend` | Add nodes and connections to an existing graph without deleting existing nodes |
+| `EditTurboMCPGraphReplace` | Replace graph content and delete omitted eligible nodes in one undo transaction; loads the Blueprint, but does not compile or save |
+| `EditTurboMCPAssetUndo` | Undo the latest global TurboMCP transaction for the named Blueprint; does not explicitly compile or save |
+| `EditTurboMCPGraphGroupMove` | Move selected nodes and comment contents in one undo transaction; loads and measures the graph, marks the Blueprint modified, and does not compile or save |
+| `EditTurboMCPAssetRevert` | Reload a saved Blueprint package, discarding ALL unsaved changes, including edits made after preview; does not save |
+| `EditTurboMCPGraphPositions` | Set node positions in one undo step |
+| `EditTurboMCPGraphSwapCall` | Replace one call node and transfer its compatible links and unconnected input defaults |
+| `EditTurboMCPGraphRepoint` | Move consumers to another output, optionally creating a target and deleting the source, in one undo transaction; does not compile or save |
+| `EditTurboMCPBatchEdit` | Apply ordered repoints in one undo transaction, including requested source deletion; loads the Blueprint and does not compile or save |
+| `EditTurboMCPGraphConnect` | Connect exact existing node/pin IDs |
+| `EditTurboMCPGraphRemove` | Remove exact nodes and links with scratch preview and one undo |
+| `EditTurboMCPBindFunction` | Create a delegate binding and replace its target input connection in one undo transaction; loads the Blueprint, but does not compile or save |
+| `EditTurboMCPBindNewEvent` | Create a typed custom event wired to an existing delegate input in one undo transaction |
+| `EditTurboMCPGraphSplitValue` | Copy a pure self/getter/literal per consumer; never impure calls |
+| `EditTurboMCPGraphSequence` | Refactor an explicitly ordered linear chain of synchronous calls into Sequence rows |
+| `EditTurboMCPPinDefault` | Set one unconnected K2 input pin default; records an undo transaction and marks the Blueprint dirty; schema callbacks may run and object literals may load assets; does not explicitly compile or save |
 | `EditTurboMCPGraphPatch` | The Edit twin of PreviewTurboMCPGraphPatch |
-| `EditTurboMCPMaterialTidy` | Lay out a material, one comment box per block, and PROVE it changed nothing but geometry |
-| `EditTurboMCPMaterialLabelPromote` | Give a material values names: create the declaration and rewire the readers |
-| `EditTurboMCPMaterialBlocks` | `E-MAT-BLOCKS`: make labels follow blocks, changing exactly what the Preview listed |
-| `EditTurboMCPMaterialInstanceSet` | Set texture overrides on a material instance |
-| `EditTurboMCPDataTableRows` | Apply row operations to a DataTable in ONE transaction, then re-read the rows back from the table |
-| `EditTurboMCPGraphCopy` | Copy a block of nodes from one graph to another, and report what could not come with it |
-| `EditTurboMCPGraphCollapse` | Extract a selection into a function or a macro |
-| `EditTurboMCPStructNew` | Create a user struct asset, with its fields in one call |
-| `EditTurboMCPStructFields` | Add, change, reorder and remove fields on an existing user struct |
-| `EditTurboMCPVcsCheckout` | Take the lock before a write: check one or more assets out through the project own provider |
-
-## Stock-engine write safeguards (candidate)
-
-TurboMCP filters selected native MCP tools while loaded. Refresh discovery after updating the plugin. No engine source patch is required. This candidate has not completed runtime regression.
-
-| Filtered native tool | Plugin workflow |
-| --- | --- |
-| DataTableTools.add_rows / set_rows / rename_rows | PreviewTurboMCPDataTableRows, then EditTurboMCPDataTableRows; use explicit row operations. Rename is not an automatic drop-in replacement. |
-| BlueprintTools.set_pin_value | EditTurboMCPPinDefault with exact reader node identity and input pin name; unconnected K2 defaults only. |
-| BlueprintTools.compile_blueprint | EditTurboMCPCompile, followed by explicit EditTurboMCPSave when desired. |
-| ProgrammaticToolset.execute_tool_script | Sequential tool calls, or Preview/EditTurboMCPBatchEdit for supported graphRepoint operations only. Arbitrary script batching has no equivalent. |
-
-These filters do not intercept direct Python calls or editor actions. They contain known MCP routes; they do not repair Unreal globally. Pin edits mark the Blueprint dirty and capture undo but do not compile or save automatically.
-
-### Fast field batch: pending regression
-
-Ordinary function-call type IDs now use `Function|` plus the reflected function path. Blueprint calls use the owning Blueprint asset path and function name, avoiding skeleton-class prefixes. Existing display aliases remain accepted when unambiguous; refresh node-type discovery after updating. Specialized node classes and inline graph expressions are not covered by this change.
-
-Tidy now reads graph-panel bounds without writing geometry into the asset. It still needs a graphical editor when stored bounds are missing. Edit calls through the MCP wrapper refuse PIE and active transactions; call-log, tracing and checkout controls remain available. Direct C++/Python calls bypass this wrapper.
-
-The fast batch was merged at owner request without build or regression. Keep the dependent-widget loss, execution-chain and visual layout acceptance tasks open.
-
-### Graph editing and compilation
-
-Append, Patch and Replace defer compilation and saving. After editing, call EditTurboMCPCompile outside any transaction; inspect the result, then explicitly save. This avoids recording compilation/reinstancing inside graph-edit undo.
-
-Replace remains two-phase: append, then removal. A removal failure can leave the append applied; the tool reports partial state. Re-read before retrying. This source change has not been built or regression-tested.
-
-## Finding gameplay-tag usage
-
-For “where is this gameplay tag used?” or “is this setting referenced?”, discover
-`FindReferencersByTag` in the stock Unreal `GameplayTagsToolset` and pass
-`tagName`, for example `{"tagName":"UI.Settings.Audio"}` using a tag registered
-in your project. Enable/discover that toolset first; TurboMCP does not assume it
-is installed or enabled. `ReadTurboMCPAssetSearch` searches asset names/paths,
-and `ReadTurboMCPNodeFind` searches node text; neither replaces tag referencers.
-
-The native tool returns package references recorded in the asset registry.
-A reference is not proof that a runtime execution path reaches that setting,
-and an empty result is not proof that dynamic code never uses the tag.
-
-
-### Connected group placement
-`PreviewTurboMCPGraphGroupPlacement(Asset, GraphName, NodeIds)` proposes a translation near outside nodes connected to the selected nodes or comment groups. It preserves internal layout, reports every affected wire and returns integer `DeltaX`/`DeltaY` plus `DestinationBox` when proposing entry into a connected comment. Apply with `EditTurboMCPGraphGroupMove` using the same selection, offsets and destination (omit or use an empty string for free-space moves). Destination transfers require unboxed nodes, padded fit and no collisions; existing box size and contents stay unchanged. The helper searches feasible free positions and connected box interiors; it does not guarantee a global optimum. A no-improvement result does not prove no better placement exists.
+| `EditTurboMCPMaterialTidy` | Move material expressions and write comment boxes in an undo transaction; recompiles before and after layout and runs editor callbacks, but does not save; failure cleanup is attempted, not certified restoration |
+| `EditTurboMCPMaterialLabelPromote` | Add named reroute declarations and usage nodes and rewire material inputs in an undo transaction; recompiles materials and runs editor callbacks, does not save, and cannot guarantee restoration after a failed edit |
+| `EditTurboMCPMaterialBlocks` | Add labels, rewire inputs and delete redundant usage/reroute nodes in an undo transaction; recompiles materials and runs editor callbacks, does not save, and verifies only expression identities after attempted rollback |
+| `EditTurboMCPMaterialInstanceSet` | Set texture overrides on a Material Instance Constant; loads the instance and textures and runs PostEditChange, which may update rendering resources; no tool-owned undo transaction or save is performed |
+| `EditTurboMCPDataTableRows` | Set or remove DataTable rows in an undo transaction; removals discard row data and edits may run editor callbacks and mark the package dirty; does not explicitly compile or save |
+| `EditTurboMCPGraphCopy` | Copy selected nodes and reconnect planned links in an owned undo transaction; loads both Blueprints, but does not compile or save |
+| `EditTurboMCPGraphCollapse` | Collapse is not implemented: inspect selection boundaries only; may load the Blueprint, but does not extract nodes, create a member, compile or save |
+| `EditTurboMCPStructNew` | Create and compile a user-defined struct in memory within an undo transaction; marks its package dirty and may run editor callbacks; does not save |
+| `EditTurboMCPStructFields` | Add, change, reorder or remove struct fields in an undo transaction; may check out files, compile structs and trigger dependent editor updates; removal or type changes may lose data; does not save |
+| `EditTurboMCPVcsCheckout` | Request provider checkout per asset; may contact the server and change source-control or file state, with no automatic rollback of partial success and no asset compile/save request |

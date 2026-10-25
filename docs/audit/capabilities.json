@@ -1,14 +1,14 @@
 {
   "schema": 1,
-  "plugin_tree": "21e899dc86905939799654ae2962c2079855e01e",
+  "plugin_tree": "fe8ead620636249c8e65af7e69d16a2d401621c7",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
-    "tools": 125,
+    "tools": 127,
     "by_toolset": {
-      "UTurboMCPEditToolset": 49,
+      "UTurboMCPEditToolset": 50,
       "UTurboMCPLookToolset": 6,
       "UTurboMCPPreviewToolset": 39,
-      "UTurboMCPReadToolset": 31
+      "UTurboMCPReadToolset": 32
     }
   },
   "tools": [
@@ -941,6 +941,30 @@
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp",
           "line": 30
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "EditTurboMCPPlayInput",
+      "toolset": "UTurboMCPEditToolset",
+      "parameters": [
+        "Target",
+        "Action",
+        "Key",
+        "Value",
+        "Seconds"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
+          "line": 101
         }
       ],
       "test_references": [],
@@ -2908,6 +2932,26 @@
         "Tools/test-trace.py"
       ],
       "static_call_evidence": "parsed_call",
+      "implementation_evidence": "definition_located",
+      "runtime_evidence": "not_certified",
+      "release_disposition": "experimental_pending_acceptance",
+      "investment_decision": "retain-existing-safety-and-workflow-value"
+    },
+    {
+      "id": "ReadTurboMCPPlayInputState",
+      "toolset": "UTurboMCPReadToolset",
+      "parameters": [
+        "Target"
+      ],
+      "family": "asset-and-data",
+      "definitions": [
+        {
+          "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp",
+          "line": 143
+        }
+      ],
+      "test_references": [],
+      "static_call_evidence": "missing",
       "implementation_evidence": "definition_located",
       "runtime_evidence": "not_certified",
       "release_disposition": "experimental_pending_acceptance",

@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-25",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 125,
+  "inventory": 127,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -413,13 +413,15 @@
       "status": "scenario_checked",
       "review": "docs/audit/play-menu-workflow.md",
       "fixture": "TurboMCP.Workflow.PlayMenu within test-vision-workflow",
-      "evidence": "d64216f0036647cfaa62701131f443fd",
+      "evidence": "8463aa977fd34b429ff769f1c1aebc4e",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
       "tools_used": [
         "ReadTurboMCPPlayCheck",
-        "LookTurboMCPCapture"
+        "LookTurboMCPCapture",
+        "ReadTurboMCPPlayInputState",
+        "EditTurboMCPPlayInput"
       ],
       "native_tools_used": [
         "SlateInspectorToolset.Observe",
@@ -428,9 +430,9 @@
         "SlateInspectorToolset.Unobserve"
       ],
       "limitations": [
-        "One local PIE world and disposable Slate menu; not CommonUI activation/controller acceptance.",
-        "No camera selection, resized captures, multi-player or standalone process.",
-        "Native pointer routing and independent callback assertions; not a claim that boolean input delivery proves action success."
+        "Single local player, one in-process PIE world, one held key/axis at a time.",
+        "Slate menu with explicit focused Resume button; not CommonUI activation stacks or controller menu navigation.",
+        "Analog action callback verified; pawn/camera motion not asserted."
       ]
     }
   ],
@@ -624,5 +626,14 @@
     "Code/helpers: review implementation and shared helpers, validation, mutation boundaries, error propagation and comments documenting actual behavior.",
     "Visual/runtime: inspect widget states and graph layout; static preview alone cannot prove interaction.",
     "Evidence: record each tool used, actual output, scenario result, remaining gaps and user visual feedback; no blanket bug-free claim."
-  ]
+  ],
+  "play_input_review": {
+    "status": "scenario passed; broader review pending",
+    "native_run": "8463aa977fd34b429ff769f1c1aebc4e",
+    "tools": [
+      "ReadTurboMCPPlayInputState",
+      "EditTurboMCPPlayInput"
+    ],
+    "limit": "Do not add to completed full-review count until remaining focus-loss/release and CommonUI routing cases are checked."
+  }
 }

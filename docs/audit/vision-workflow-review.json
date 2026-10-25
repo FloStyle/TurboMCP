@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "updated": "2026-10-25",
-  "native_run": "d64216f0036647cfaa62701131f443fd",
+  "native_run": "8463aa977fd34b429ff769f1c1aebc4e",
   "offline_run": "2d230dafffe2474a91fcf0320b9ef59c",
   "offline": "22/26; four unchanged baseline failures",
   "capture_count": 26,
@@ -71,6 +71,24 @@
       "priority": "P1",
       "problem": "Need an observed play/menu/click/result loop.",
       "fix": "Reuse native Slate Observe/Snapshot/Click, capture the PIE game layer, verify independent callbacks and visible states, then stop the owned session. Slate fixture passed Settings, Back and exactly one Purchase; CommonUI/controller scenarios remain planned."
+    },
+    {
+      "id": "VISION-08",
+      "kind": "feature",
+      "status": "done",
+      "verification": "native tested; limited scenario",
+      "priority": "P1",
+      "problem": "Bounded keyboard/gamepad input and Enhanced Input context diagnostics are needed for play/menu debugging.",
+      "fix": "Added PlayInput and PlayInputState. Stock-engine pause/menu/resume and post-resume analog action passed. CommonUI stack/device diagnostics and controller menu navigation remain unavailable."
+    },
+    {
+      "id": "VISION-09",
+      "kind": "feature",
+      "status": "open",
+      "verification": "not tested",
+      "priority": "P1",
+      "problem": "CommonUI controller navigation, tab stacks and Back routing need a dedicated runtime workflow.",
+      "next": "Use actual CommonActivatableWidget/CommonButton/tab fixtures; inspect active screen, focus, current device and routing before action. Prove gamepad navigation/back and camera input after resume without engine changes."
     }
   ],
   "planned_scenarios": [
@@ -82,6 +100,6 @@
     "Responsive widget, clipping and localization",
     "CommonUI activation stack, controller focus/back navigation and input mode transitions"
   ],
-  "current_offline_run": "368f20d3c50043e98a0bb737e06d8e55",
-  "current_offline": "26/26 passed for integrated PIE menu workflow."
+  "current_offline_run": "56b3d64da8ab420f8037ab1454cf4556",
+  "current_offline": "26/26 passed for integrated Enhanced Input foundation."
 }

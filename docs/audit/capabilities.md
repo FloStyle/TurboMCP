@@ -42,6 +42,7 @@ Generated from declarations, definitions and static test references. All runtime
 | EditTurboMCPOverrideAdd | [TurboMCPOverrideAddTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPOverrideRemove | [TurboMCPOverrideRemove.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideRemove.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPPinDefault | [TurboMCPPinDefault.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
+| EditTurboMCPPlayInput | [TurboMCPPlayInput.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPSave | [TurboMCPCompile.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPSaveWithoutThumbnail | [TurboMCPCompile.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPCompile.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | EditTurboMCPStructFields | [TurboMCPStructTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPStructTools.cpp) | parsed_call | not certified | compare-native-before-expanding |
@@ -119,6 +120,7 @@ Generated from declarations, definitions and static test references. All runtime
 | ReadTurboMCPNodeResolve | [TurboMCPNodeResolve.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPOverrides | [TurboMCPOverrides.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrides.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPPlayCheck | [TurboMCPPlayCheckTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayCheckTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
+| ReadTurboMCPPlayInputState | [TurboMCPPlayInput.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp) | missing | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPPureChecks | [TurboMCPPureChecksTools.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPPureChecksTools.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPRefs | [TurboMCPRefs.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPRefs.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |
 | ReadTurboMCPStatus | [TurboMCPToolsets.cpp](../../Plugins/TurboMCP/Source/TurboMCP/TurboMCPToolsets.cpp) | parsed_call | not certified | retain-existing-safety-and-workflow-value |

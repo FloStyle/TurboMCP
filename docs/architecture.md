@@ -44,7 +44,7 @@ Keep existing declared capabilities where their supported behavior can meet this
 Do not remove a tool merely because its regression fails.
 
 Fix defects in implemented capabilities before adding roadmap features.
-Do not implement unbuilt curve editing, general asset CRUD, widget animation authoring, input injection, or general material graph authoring.
+Do not implement unbuilt curve editing, general asset CRUD, widget animation authoring, general material graph authoring, or unbounded input injection.
 Keep those requests visible in backlog with disposition `deferred_by_scope`.
 Do not mark a deferred feature done.
 
@@ -54,6 +54,10 @@ A narrow domain does not permit false success within it.
 
 Stable 1.0 guarantees remain unavailable until their acceptance gates pass.
 The executor must not weaken a gate to meet a date.
+
+### Bounded runtime input exception
+
+The approved play-input foundation permits `EditTurboMCPPlayInput` to route bounded keyboard/gamepad events through Slate in one in-process PIE world with one local player. It executes game/UI code and is not an asset edit: asset transactions, compile, save and undo do not apply. Asset-edit PIE refusal remains unchanged. Holds expire after at most five wall-clock seconds, require normal editor ticks and release on PIE end/module shutdown. Delivery is not evidence that an action fired. Direct Enhanced Input action injection, OS input, multiplayer and indefinite holds remain outside this slice.
 
 ## ARC02 — One result contract without replacing every public signature
 

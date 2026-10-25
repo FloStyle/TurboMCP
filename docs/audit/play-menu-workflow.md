@@ -30,3 +30,17 @@ Reproduce with `python Tools/execute-tests.py --profile engine --suites test-vis
 This is a passed Slate menu scenario, not blanket acceptance of those cases. Existing tools are reused: unique TurboMCP workflow review coverage stays 38/125.
 
 Offline integration gate: 368f20d3c50043e98a0bb737e06d8e55 passed all 26 checks.
+
+## Enhanced Input foundation (2026-10-25)
+
+Native run 8463aa977fd34b429ff769f1c1aebc4e passed. `EditTurboMCPPlayInput` uses `Target="pie:0"`, `Action="focus"`, then `Action="hold"` with `Key="P"`, empty Value and Seconds="0.15". All five string arguments are required; use empty strings for unused arguments. The fixture maps both P and Gamepad_Special_Right to a real Enhanced Input Pause action. Hold release uses wall-clock time and still occurs while paused. A second input is refused until release; explicit release with no pending input is a no-op.
+
+`ReadTurboMCPPlayInputState(Target="pie:0")` reports the world, local player, Slate focus, tool-held input and applied Enhanced Input mapping contexts with priorities. The last synthetic key is historical input, not proof of the currently active input device. CommonUI activation stack and device routing are explicitly unavailable.
+
+The observed sequence is gameplay, keyboard Pause, Settings, Back, Purchase, Resume, gamepad Pause, Resume and analog Gamepad_LeftX=0.75 for 0.4 seconds. The independent analog action callback fired after resume. The owned 25-second session stopped with zero warnings/errors. Nine screenshots record the sequence; gamepad pause and subsequent gameplay images were visually inspected.
+
+The first second-resume attempt failed. A pause menu needs an explicit focused control when entering from gamepad gameplay. The fixture now sets a focused Resume button and shows the mouse in GameAndUI mode. This fixes the fixture rather than bypassing routing or directly invoking callbacks. A separate focus-tool defect was fixed: already-focused viewport is success, not failure.
+
+Limits: one in-process PIE world, one local player, one held key/axis, no chords, no OS/physical-device emulation. Native Slate mouse tools are reused. CommonUI activation/tab stacks, controller-driven menu navigation, focus-loss during a hold, and actual pawn/camera motion still need their own scenario. These two new tools are not yet added to the full-review completion count (38/127).
+
+Enhanced Input foundation integration: native 8463aa977fd34b429ff769f1c1aebc4e and offline 56b3d64da8ab420f8037ab1454cf4556 (26/26) passed. Stock engine unchanged. VISION-08 is done for the bounded scenario; VISION-09 tracks actual CommonUI controller/tab/back navigation. Full tool review remains 38/127.
