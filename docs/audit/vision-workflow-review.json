@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "updated": "2026-10-25",
-  "native_run": "5c2d3e69eb5d49adbd9827b2dbe21577",
+  "native_run": "505f8f813a7b48e486b69f7a0c51cd1e",
   "offline_run": "2d230dafffe2474a91fcf0320b9ef59c",
   "offline": "22/26; four unchanged baseline failures",
   "capture_count": 26,
@@ -58,10 +58,11 @@
       "id": "VISION-06",
       "kind": "quality",
       "status": "open",
-      "verification": "source and image reviewed",
+      "verification": "Native output, default dimensions, invalid-size refusals and graph preservation passed in 505f8f813a7b48e486b69f7a0c51cd1e",
       "priority": "P2",
-      "problem": "Capture help overloads Size as dimensions or neighbour depth; dense overview lacks a readability warning and editor results include long implementation catalogs.",
-      "next": "Simplify output and teach overview-to-detail workflow without implying every image is readable."
+      "problem": "Capture asset-editor results still include long implementation catalogs; the compatibility Size parameter still serves two roles.",
+      "next": "Simplify remaining asset-editor result catalogs. Keep legacy parameter compatibility; capture is not fully accepted while VISION-13 remains open.",
+      "fix": "Graph default documented as 1600x900; helper separates pixel dimensions from selector hops. Output reports readability uncertainty and exact overview-to-node/neighbours follow-up."
     },
     {
       "id": "VISION-07",
@@ -117,6 +118,15 @@
       "problem": "An analog hold could be refused after release because a stale digital down flag was mistaken for active axis input.",
       "fix": "Check analog activity by axis value; discard only the owned pending axis component before release, preserving paired components and normal release events.",
       "verification": "Native release/re-hold, deactivation and recovery passed in 5c2d3e69eb5d49adbd9827b2dbe21577"
+    },
+    {
+      "id": "VISION-13",
+      "kind": "bug",
+      "status": "open",
+      "priority": "P1",
+      "problem": "Dense whole-graph overview clips content at the top edge.",
+      "verification": "Visual evidence in native run 505f8f813a7b48e486b69f7a0c51cd1e; 1600x900 VisionEvents_0 overview shows the first comment/title above the image boundary.",
+      "next": "Investigate whole-graph measured bounds and native framing. Add an edge-containment assertion before accepting whole-graph fit; node detail is readable but does not prove overview completeness."
     }
   ],
   "planned_scenarios": [
@@ -128,6 +138,6 @@
     "Responsive widget, clipping and localization",
     "Directional CommonUI focus navigation, modal controls, focus-loss release and general stack/device diagnostics"
   ],
-  "current_offline_run": "697f0191d9424ed68136c9d5a67eb177",
-  "current_offline": "26/26 passed for modal/deactivation acceptance and analog re-hold repair."
+  "current_offline_run": "130588bd2ba744e6a5812145aa6588e4",
+  "current_offline": "26/26 passed for capture output-quality integration."
 }

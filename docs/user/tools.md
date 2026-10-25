@@ -59,7 +59,7 @@ Generated from plugin declarations. For validation and compatibility limits, see
 | `LookTurboMCPLayoutDoneCheck` | Return layout findings and capture a graph image; may open editor UI and writes an image file, but does not request asset edits, compile or save |
 | `LookTurboMCPGraphPositions` | Read node IDs, stored positions and measured sizes; loads the Blueprint and uses rendering without requesting graph edits, compile or save |
 | `LookTurboMCPWidgetPreview` | Render a Widget Blueprint with sample values and write a PNG. Pass the widget, sample values as a JSON object of variable name to value, an optional function to call after the values are set, and a size as WxH. Empty sample values means the widget's own defaults; an empty size means 1280x720 |
-| `LookTurboMCPCapture` | Capture PNG; may load assets and change editor UI/view/selection; editor callbacks may run; no explicit asset compile/save; no automatic undo; image is not proof of graph correctness |
+| `LookTurboMCPCapture` | Capture a graph, asset editor, active window or live PIE game layer as a PNG. Start with Mode=graph for an overview |
 
 ## UTurboMCPPreviewToolset
 
