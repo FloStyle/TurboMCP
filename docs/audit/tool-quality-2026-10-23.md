@@ -804,3 +804,22 @@ not count this run as a suite pass. DataTable and AnimBlueprint positive capture
 coverage is still missing. Repair the harness dependency/error handling and
 stale assertions without weakening its image checks. CP-14 live graph contrast
 remains open; this correction concerns saved capture images only.
+
+## Asset capture harness repaired — 2026-10-25
+
+72b0b8f fails clearly before MCP calls when Pillow is absent, excludes unreadable
+images from colour comparisons, removes an unused comparison that crashed on
+missing values, and checks current related-tool names plus execution consent.
+Image thresholds remain unchanged. The module documentation no longer claims
+that opening editor tabs is inherently free of side effects.
+
+Supervised 750064b7eb414ce193c46265f35f75bb passed build and test-capture-asset.
+The run used bundled Python 3.12.14 with Pillow 12.3.0 by prepending its directory
+to PATH before invoking Tools/execute-tests.py. No packages were installed.
+Seven kinds produced PNGs with matching reported dimensions and non-flat pixels:
+Material, Material Instance, Material Function, Widget Designer, Anim Sequence,
+Niagara and Blueprint. DataTable returned a named refusal because its fixture
+was absent. AnimBlueprint has catalogue coverage only. Neither is a positive
+capture pass. Full colour fidelity, framing and live CP-14 remain separate work.
+Pillow reports getdata deprecation; this does not invalidate the current result.
+The 125-tool review remains unfinished.
