@@ -47,6 +47,7 @@ public class TurboMCP : ModuleRules
 
 				"ImageWrapper",
 				"RenderCore",
+				"RHI",
 
 				"UMG",
 				"UMGEditor",

@@ -170,7 +170,8 @@ namespace TurboMCPCaptureAsset
 
 	/**
 	 * Opens the asset editor and captures its toolkit host using Slate TakeScreenshot.
-	 * Captures the current presentation; it does not establish shader readiness.
+	 * Captures the current presentation and reports the supported editor material shader state.
+	 * Shader availability is not proof of frame freshness or correct appearance.
 	 * The resulting PNG is capped at 4096 pixels per edge, preserving aspect ratio.
 	 *
 	 * bFitGraph supports the standard Material Editor only. It changes the view to

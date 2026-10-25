@@ -138,8 +138,9 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  auto* Color=NewObject<UMaterialExpressionConstant3Vector>(Material);Color->Constant=FLinearColor(0.1f,0.6f,0.2f);Material->GetExpressionCollection().AddExpression(Color);Material->GetEditorOnlyData()->BaseColor.Expression=Color;Color->MaterialExpressionEditorX=-900; Color->MaterialExpressionEditorY=400; Material->EditorX=300; Material->EditorY=0; Material->PostEditChange();
  const FString MaterialFit=Record(TEXT("Material editor fit"),UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT("fit"),TEXT("")));
  ImageCheck(MaterialFit);
+ Record(TEXT("Material fixture path"),Material->GetPathName());
  TestTrue(TEXT("Material fit reports its scope"),MaterialFit.Contains(TEXT("material framing: fit all measured graph nodes")));
- TestTrue(TEXT("Material preview does not claim shader readiness"),MaterialFit.Contains(TEXT("shader readiness is not verified")));
+ TestTrue(TEXT("Material preview does not claim shader readiness"),MaterialFit.Contains(TEXT("material shaders:")) && MaterialFit.Contains(TEXT("does not prove the displayed frame")));
  TestEqual(TEXT("Material expression position preserved"),Color->MaterialExpressionEditorX,-900);
  TestEqual(TEXT("Material output position preserved"),Material->EditorX,300);
  TestTrue(TEXT("Material connection preserved"),Material->GetEditorOnlyData()->BaseColor.Expression==Color);

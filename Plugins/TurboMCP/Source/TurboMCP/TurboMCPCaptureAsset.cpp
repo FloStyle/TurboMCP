@@ -16,6 +16,7 @@
 #include "ImageUtils.h"
 #include "GraphEditor.h"
 #include "IMaterialEditor.h"
+#include "RHI.h"
 #include "SGraphPanel.h"
 #include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
@@ -662,7 +663,30 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 	}
 	if (Loaded->IsA<UMaterialInterface>())
 	{
-		InOutDescription += TEXT("\nmaterial preview: shader readiness is not verified; the preview may still be compiling.");
+		// The Material Editor renders a working copy. Query that copy rather than
+		// the source asset; opening its tab may have just queued shader compilation.
+		UMaterial* PreviewMaterial = nullptr;
+		if (Instance->GetEditorName() == FName(TEXT("MaterialEditor")))
+		{
+			PreviewMaterial = Cast<UMaterial>(static_cast<IMaterialEditor*>(Toolkit)->GetMaterialInterface());
+		}
+		if (!PreviewMaterial)
+		{
+			InOutDescription += TEXT("\nmaterial shaders: unknown; this editor does not expose the supported preview material.");
+		}
+		else if (PreviewMaterial->IsCompiling())
+		{
+			InOutDescription += TEXT("\nmaterial shaders: compiling; this image may show a fallback material. Retry after compilation finishes.");
+		}
+		else if (PreviewMaterial->IsCompilingOrHadCompileError(GMaxRHIShaderPlatform))
+		{
+			InOutDescription += TEXT("\nmaterial shaders: unavailable for the current shader platform. Inspect the Material Editor errors before relying on the preview.");
+		}
+		else
+		{
+			InOutDescription += TEXT("\nmaterial shaders: available for the editor material on the current shader platform.");
+		}
+		InOutDescription += TEXT("\n; Shader state is sampled before capture. It does not prove the displayed frame or material appearance is correct. After opening or activating the editor, allow normal editor ticks and capture again if the preview is still a fallback. This tool does not wait for or force shader compilation.");
 	}
 	FVector2D WidgetSize = Widget->GetTickSpaceGeometry().GetAbsoluteSize();
 	FString SizeNote;
@@ -829,8 +853,6 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 	InOutDescription += FString::Printf(TEXT("\nimage: %s"), *OutImagePath);
 	InOutDescription += SizeNote;
 	InOutDescription += CapNote;
-	InOutDescription += TEXT("\n; this is the editor widget rendered off screen with ")
-		TEXT("FWidgetRenderer::DrawWidget, NOT a grab of the screen, so the picture is ")
-		TEXT("the editor tab even when its window is behind another one.");
+	InOutDescription += TEXT("\n; Captured the live editor widget through Slate. Embedded viewports show their latest rendered frame, which may lag behind newly activated tabs or shader updates.");
 	return true;
 }

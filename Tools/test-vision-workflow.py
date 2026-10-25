@@ -1,6 +1,7 @@
 """Run disposable vision fixtures, then capture an owned short play-check window."""
 import runpy
 import time
+import re
 from pathlib import Path
 from tmcp import Session, READ_TOOLSET, LOOK_TOOLSET
 root = Path(__file__).resolve().parents[1]
@@ -22,6 +23,27 @@ unexpected = [warning for warning in entry['warnings'] if warning != known]
 if unexpected: raise RuntimeError(repr(unexpected))
 if entry['warnings']: print('KNOWN ENGINE SHORTCUT WARNING:', entry['warnings'])
 if len(created) != 1: raise RuntimeError('Expected one fresh transcript')
+# Return control to the editor between captures so asynchronous shader work can finish.
+transcript = next(iter(created))
+match = re.search(r"=== Material fixture path ===\s*([^\s]+)", transcript.read_text(encoding='utf-8-sig'))
+if not match: raise RuntimeError('Material fixture path missing')
+deadline = time.monotonic() + 45
+while True:
+    time.sleep(2)
+    material_shot = s.call(LOOK_TOOLSET, 'LookTurboMCPCapture', {'Asset':match[1], 'GraphName':'', 'Mode':'asset-editor', 'Target':'fit', 'Size':''})
+    with transcript.open('a', encoding='utf-8') as out: out.write('\n=== Material after editor ticks ===\n' + material_shot + '\n')
+    if 'material shaders: available' in material_shot: break
+    if 'material shaders: compiling' not in material_shot or time.monotonic() >= deadline:
+        raise RuntimeError('Material preview did not reach shader availability: ' + material_shot)
+if 'image:' not in material_shot: raise RuntimeError('No delayed material image')
+print('MATERIAL AFTER EDITOR TICKS:', material_shot)
+# Shader availability does not guarantee that the newly activated viewport has drawn.
+# Keep this editor active across normal ticks and retain a second image for visual review.
+time.sleep(3)
+settled_shot = s.call(LOOK_TOOLSET, 'LookTurboMCPCapture', {'Asset':match[1], 'GraphName':'', 'Mode':'asset-editor', 'Target':'fit', 'Size':''})
+with transcript.open('a', encoding='utf-8') as out: out.write('\n=== Material after active viewport ticks ===\n' + settled_shot + '\n')
+if 'image:' not in settled_shot: raise RuntimeError('No settled material image')
+print('MATERIAL AFTER ACTIVE VIEWPORT TICKS:', settled_shot)
 # Start only our bounded play check; an existing user's play session is not ours.
 first = s.call(READ_TOOLSET, 'ReadTurboMCPPlayCheck', {'Seconds':'8', 'Map':''})
 print('PLAY START:', first)
@@ -44,6 +66,8 @@ finally:
         with p.open('a', encoding='utf-8') as out: out.write('\n' + '\n'.join(play_log))
     print('\n'.join(play_log))
 if 'played for' not in last: raise RuntimeError('Owned play check did not complete')
+if '0 warning(s) and 0 error(s)' not in last:
+    raise RuntimeError('Owned play check reported runtime warnings or errors')
 if 'image:' not in shot: raise RuntimeError('No active-window image during play check')
 if 'window title:' not in shot or 'window selection: active top-level Slate window' not in shot:
     raise RuntimeError('Capture must identify the actual selected window')
