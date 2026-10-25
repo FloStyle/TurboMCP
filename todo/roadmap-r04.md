@@ -1594,3 +1594,7 @@ Integrator scope: workflow-purchase-results. Readiness: ready. Echo the actual v
 
 ## Purchase workflow visual and result repairs - 2026-10-25
 Implemented 9e1cc0a and dd8f58f; both bounded scope gates passed. Build and expanded disposable scenario pass in c8735a8f289248269dad165ce361fd5d. Exact per-tool evidence and remaining limits are in docs/audit/purchase-workflow-review.json. SVG glyphs, function title, redundant getter placement, wrapped comment title clearance, normalized pin result identity and comment membership wording repaired. User visual acceptance remains pending; 125-tool certification is not complete. Older tidy/comment regression fixtures are missing required nodes; offline gate retains four separately documented failures. DSH stays paused.
+
+
+## Purchase append scoped layout correction - 2026-10-25
+Implemented: 276a1b6. User screenshot exposed backward affordability-to-AND wiring. Scoped pure-expression Tidy now places selected dependency trees before their fixed consumer. Workflow explicitly selects both old/new rule branches after Append. Build and native workflow pass: 72bcaba97a134fe5baac805860214cda; forward wires, seven-node overlap, exact links/defaults/count and unrelated positions checked; capture inspected. Scope gate passed, claim released. Offline 21/26 remains separate validation debt. Existing comment-wire issue remains open; no global tool readiness change.

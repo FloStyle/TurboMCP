@@ -6,7 +6,7 @@
   "ready": false,
   "scenario": "Correct a percent conversion in CalculatePurchase, introduce named locals for repeated arithmetic, tidy, comment and inspect the result.",
   "fixture": "TurboMCP.Workflow.Purchase; unique unsaved disposable Blueprint with an unrelated function",
-  "candidate": "2193c8624303f32c2f0da7916c0af9b7025a4599",
+  "candidate": "276a1b6361dc882b77d98c68fabf1db990cb48e7",
   "validation": {
     "build": "passed: e963de2a6c564ac4b9ce32cf26238ff2; final commit differs only in indentation",
     "native_scenario": "passed: behavior, refusals, preview preservation, getter direction, input order and no unrelated node/comment overlap",
@@ -14,9 +14,10 @@
     "local_ancestry_and_promotion": "passed before final reader-only change",
     "tool_inventory": "125 tools inventoried; not 125 completed behavioral reviews",
     "visual": "User accepted earlier capture except getter stacking. Final PNG inspected: stacking and reversed inputs fixed, but Subtotal wire crosses the percent comment. Full visual acceptance remains open.",
-    "offline": "22/26 passed; missing Problem in 02674939.md, invalid UTF-8 tools.md, client retry mismatch and lookup heuristics remain",
+    "offline": "21/26 passed in 90eaf240d39b4e7a8519d946bdc46e43: existing structure/language/client-retry/lookup failures plus runner-verdicts missing-manifest failures",
     "append_native": "passed: d144f02447e34727a8f460ab1d118bfb",
-    "append_regression": "failed: 2233299766164635bca3a2e8abe0b90d; obsolete required reader arguments and detached exec expectations; alias-collision native case passed"
+    "append_regression": "failed: 2233299766164635bca3a2e8abe0b90d; obsolete required reader arguments and detached exec expectations; alias-collision native case passed",
+    "append_scoped_tidy": "passed: 72bcaba97a134fe5baac805860214cda; build, four behavior cases, seven-node forward layout, exact links/defaults/count and fixed surrounding positions; capture inspected"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -36,7 +37,8 @@
     "Append preview wire descriptions identify both endpoints",
     "Append public contract no longer promises guaranteed rollback or preview success",
     "Pure append blocks anchor before existing data consumers",
-    "Node discovery uses associated function purity instead of unconfigured call-node defaults"
+    "Node discovery uses associated function purity instead of unconfigured call-node defaults",
+    "Scoped pure dependency Tidy removes backward affordability-to-AND wire; explicit workflow selection includes both old and new expression nodes"
   ],
   "tools": [
     {
@@ -165,9 +167,9 @@
       "status": "scenario checked",
       "ready": false,
       "behavior": "Preview preserves graph content and positions",
-      "review": "Current-state replanning and no-save contract reviewed",
+      "review": "Whole purchase layout plus scoped seven-node pure dependency layout checked; clear forward input flow, preview preservation, exact links/defaults/count and fixed surrounding nodes.",
       "remaining": "Not a reservation or visual approval.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "72bcaba97a134fe5baac805860214cda"
     },
     {
       "tool": "EditTurboMCPGraphTidy",
@@ -175,9 +177,9 @@
       "status": "scenario checked",
       "ready": false,
       "behavior": "Purchase results preserved; local getters feed left-to-right and preserve input order; no unrelated node/comment overlap.",
-      "review": "Forward-consumer retention and bounded collision search reviewed; no engine edits.",
+      "review": "Whole purchase layout plus scoped seven-node pure dependency layout checked; clear forward input flow, preview preservation, exact links/defaults/count and fixed surrounding nodes.",
       "remaining": "WF-BP-01-WIRE-COMMENT: subtotal wire crosses the new annotation. Broader scoped fixture regression remains blocked.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "72bcaba97a134fe5baac805860214cda"
     },
     {
       "tool": "PreviewTurboMCPComment",
@@ -289,7 +291,7 @@
   "append_workflow": {
     "id": "WF-BP-02-MINIMUM-QUANTITY",
     "status": "provisionally accepted for this scenario",
-    "run": "d144f02447e34727a8f460ab1d118bfb",
+    "run": "72bcaba97a134fe5baac805860214cda",
     "precondition": "MinimumQuantity already exists as an unused double input. Append cannot add a parameter to an existing function.",
     "edit": "Add two function-input getters, a >= comparison and Boolean AND; replace only CanAfford.",
     "checks": [
@@ -298,11 +300,14 @@
       "Insufficient funds fails",
       "Above-minimum quantity passes",
       "FinalPrice remains Quantity * 45 in all four cases",
-      "Exactly four planned nodes created; all original nodes, positions and defaults retained",
+      "Append creates exactly four nodes and preserves original positions/defaults; subsequent explicit Tidy may move selected nodes",
       "All old links retained except the explicit CanAfford replacement",
       "Preview, missing-pin refusal and truncated-text refusal preserve graph text, positions, count and dirty flag",
       "Unrelated function unchanged",
-      "Native rectangles have no new overlaps; final capture inspected"
+      "Native rectangles have no new overlaps; final capture inspected",
+      "All seven rule nodes have no native rectangle overlaps",
+      "All selected data wires flow forward, including the fixed Return",
+      "Scoped tidy preserves exact links, defaults, node count and all unselected positions"
     ],
     "limitations": [
       "Existing signature editing is unsupported; fixture preparation is not tool evidence",
@@ -311,7 +316,8 @@
       "Preserved fixed nodes can require curved return connections",
       "Older append regression suite failed; do not count it as passed",
       "WF-BP-01-WIRE-COMMENT remains open in the pre-existing layout"
-    ]
+    ],
+    "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
     "scenario_reviewed": 22,
