@@ -2105,6 +2105,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "workflow-pure-dependency-tidy": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
