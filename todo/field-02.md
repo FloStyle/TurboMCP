@@ -3,7 +3,7 @@
 ID: FIELD-02
 Status: done
 Priority: P0
-Readiness: done
+Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
 Kind: investigation

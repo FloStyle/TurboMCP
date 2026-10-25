@@ -3,7 +3,7 @@
 ID: R01
 Status: done
 Priority: P1
-Readiness: done
+Readiness: ready
 Owner: unassigned
 Design: docs/design/verification.md
 Kind: implementation

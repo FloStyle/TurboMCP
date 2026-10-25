@@ -3,7 +3,7 @@
 ID: 7bbe9c3c-19c2-4b62-aad2-9cd098d0fedf
 Status: done
 Priority: P1
-Readiness: done
+Readiness: ready
 Owner: Codex
 Design: docs/design/protocol.md
 Review: source-reviewed

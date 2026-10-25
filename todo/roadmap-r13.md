@@ -3,7 +3,7 @@
 ID: R13
 Status: done
 Priority: P1
-Readiness: done
+Readiness: ready
 Owner: unassigned
 Design: docs/design/protocol.md
 Kind: investigation

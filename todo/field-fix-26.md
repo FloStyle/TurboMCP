@@ -3,7 +3,7 @@
 ID: FIELD-FIX-26
 Status: done
 Priority: P2
-Readiness: done
+Readiness: ready
 Owner: Codex
 Design: docs/design/mutations.md
 Kind: implementation

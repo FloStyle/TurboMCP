@@ -3,7 +3,7 @@
 ID: R03
 Status: done
 Priority: P1
-Readiness: done
+Readiness: ready
 Owner: integration-owner
 Design: docs/design/verification.md
 Kind: investigation

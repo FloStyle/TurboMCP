@@ -2256,7 +2256,8 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphReplace.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRepoint.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidyTools.cpp",
-            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp"
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPinDefault.cpp",
+            "Tools/validate-repo.py"
           ],
           "new_files": []
         }
