@@ -1654,3 +1654,6 @@ Readiness: done. Assignment workflow-widget-variable. Focus EditWidgetsAsVars: e
 
 ## Widget variable workflow evidence
 Implemented 99fad26; native 3faaddbb451a4f9d820afc0aa6d4d6dc passed. Referenced-disable preflight, case-insensitive deduplication and result checks added. Coverage 37/125. See docs/audit/widget-variable-workflow-review.md for limits.
+
+## Approved widget property binding workflow
+Readiness: ready. Assignment workflow-widget-binding. Focus EditWidgetBindAdd using a disposable text label and pure text getter functions. Validate single-cast delegate, reflected function signature and property purity before mutation. Missing/incompatible targets must not replace a valid binding. Normalize property/Delegate aliases and widget case, implement exact no-op, report function and replacement clearly. Verify initial binding and replacement through compile and displayed/runtime text, invalid/duplicate preservation. Reject multicast binding through this metadata path with clear routing advice. No persistence, dynamic-path or all-delegate certification. Run supervised test-widget-binding-workflow and offline gate.

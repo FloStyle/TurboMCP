@@ -2204,6 +2204,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetVariableWorkflowTest.cpp",
             "Tools/test-widget-variable-workflow.py"
           ]
+        },
+        "workflow-widget-binding": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBindAdd.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetBindingWorkflowTest.cpp",
+            "Tools/test-widget-binding-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
