@@ -28,6 +28,8 @@
 #include "WidgetBlueprint.h"
 #include "Blueprint/WidgetBlueprintGeneratedClass.h"
 #include "Widgets/SWidget.h"
+#include "ImageUtils.h"
+#include "ImageCore.h"
 #include "Slate/WidgetRenderer.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/Button.h"
@@ -77,8 +79,26 @@ bool FTurboMCPWidgetBindingWorkflowTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Missing widget refused"),Bind(TEXT("MissingWidget"),TEXT("Text"),TEXT("GetPurchaseText")).StartsWith(TEXT("error:")));
     auto Display=[&](const FString& Expected) {
         Record(TEXT("Compile binding"),UTurboMCPEditToolset::EditTurboMCPCompile(Asset));if(!TestTrue(TEXT("Binding compiles"),BP->Status!=BS_Error))return;
+        UWidget* TemplateButton=BP->WidgetTree->FindWidget(TEXT("PurchaseButton"));
+        UCanvasPanelSlot* ButtonSlot=CastChecked<UCanvasPanelSlot>(TemplateButton->Slot);
+        Record(TEXT("Button state"),FString::Printf(TEXT("size=%s visibility=%d"),*ButtonSlot->GetSize().ToString(),int32(TemplateButton->GetVisibility())));
+        for(int32 CaptureIndex=0;CaptureIndex<2;++CaptureIndex) {
         const FString Image=Record(TEXT("Widget preview"),UTurboMCPLookToolset::LookTurboMCPWidgetPreview(Asset,TEXT(""),TEXT(""),TEXT("640x240"),TEXT("allow")));
         TestTrue(TEXT("Preview image rendered"),Image.Contains(TEXT("image: "))&&!Image.StartsWith(TEXT("partial:")));
+        FString BeforePath,ImagePath;Image.Split(TEXT("image: "),&BeforePath,&ImagePath);ImagePath=ImagePath.Left(ImagePath.Find(TEXT("\n"))).TrimStartAndEnd();
+        TArray<uint8> Png;FImage Decoded;
+        if(TestTrue(TEXT("Capture decoded"),FFileHelper::LoadFileToArray(Png,*ImagePath)&&FImageUtils::DecompressImage(Png.GetData(),Png.Num(),Decoded))) {
+            if(TestTrue(TEXT("Capture is BGRA8"),Decoded.Format==ERawImageFormat::BGRA8)) {
+                int32 VisiblePixels=0;
+                for(int32 Y=45;Y<65;++Y)for(int32 X=410;X<490;++X) {
+                    const FColor& Pixel=Decoded.AsBGRA8()[Y*Decoded.SizeX+X];
+                    if(FMath::Max3(Pixel.R,Pixel.G,Pixel.B)>30)++VisiblePixels;
+                }
+                Record(TEXT("Button pixels"),FString::FromInt(VisiblePixels));
+                TestTrue(TEXT("Unchanged button remains visible"),VisiblePixels>=1000);
+            }
+        }
+        }
         TestEqual(TEXT("Compiled binding count"),CastChecked<UWidgetBlueprintGeneratedClass>(BP->GeneratedClass)->Bindings.Num(),1);
         UUserWidget* Live=NewObject<UUserWidget>(GetTransientPackage(),BP->GeneratedClass);Live->Initialize();
         // Render a frame so Slate evaluates the bound text attribute before read-back.
