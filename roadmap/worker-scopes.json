@@ -2332,6 +2332,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayInput.cpp"
           ],
           "new_files": []
+        },
+        "capture-output-quality": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

@@ -1716,3 +1716,7 @@ Implemented; bounded native acceptance passed. Assignment commonui-modal-safety.
 Scope correction after native failure a75efa4284ff47bbbbaa5491da058bd3: allow TurboMCPPlayInput.cpp to repair same-frame analog release. Stock InputKey accumulates analog samples; a zero event does not replace a prior nonzero sample. Clear only the owned scalar axis and its paired component accumulator before routing release; preserve other axes and event processing. Existing repeated-hold test must pass without weakening assertions.
 
 CommonUI modal-safety complete in d7cea2e. Native 5c2d3e69eb5d49adbd9827b2dbe21577 passed with zero runtime warnings/errors. Scope gate passed; claim 90856233ab9d42c78c1122e2a719eef5 released. OS Alt-Tab remains untested; callback deactivation, modal Back and disabled navigation are verified. VISION-12 captures the analog ownership repair.
+
+### Capture overview-to-detail output quality
+
+Readiness: ready. Assignment capture-output-quality. Correct graph default resolution help to match 1600x900. Keep API and rendering unchanged. Explain dimension versus selector-hop Size semantics and overview-to-detail examples in clear English. Report native zoom and reduced-scale readability uncertainty with actionable node/neighbours follow-up, never certify readable text from resolution alone. Extend existing dense fixture to assert actual default dimensions, output contract and invalid dimension/hop refusals; retain graph preservation and image checks. Native supervisor plus offline gate. No engine changes, DSH paused.
