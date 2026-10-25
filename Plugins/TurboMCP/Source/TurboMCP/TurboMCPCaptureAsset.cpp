@@ -634,38 +634,32 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 			TEXT("%dx%d with the aspect ratio unchanged."), AssetMaxEdge, Width, Height);
 	}
 
-	UTextureRenderTarget2D* RenderTarget = FWidgetRenderer::CreateTargetFor(
-		FVector2D(Width, Height), TF_Bilinear, /*bUseGammaCorrection=*/true);
-	if (RenderTarget == nullptr)
+	// Capture the live widget through Slate's own window renderer. Rendering it in
+	// a temporary offscreen window changes live invalidation/hit-test state and can
+	// leave nested grids with incompatible dimensions on the next editor tick.
+	TArray<FColor> Pixels;
+	FIntVector CapturedSize;
+	if (!FSlateApplication::Get().TakeScreenshot(Widget, Pixels, CapturedSize)
+		|| CapturedSize.X <= 0 || CapturedSize.Y <= 0
+		|| int64(Pixels.Num()) != int64(CapturedSize.X) * CapturedSize.Y)
 	{
-		OutError = FString::Printf(
-			TEXT("could not create a %dx%d render target for the editor widget"),
-			Width, Height);
+		OutError = TEXT("Slate could not capture the live editor widget completely. No image was written.");
 		return false;
 	}
-
-	// Slate applies display gamma; use a linear target to avoid encoding it twice.
-	RenderTarget->InitCustomFormat(Width, Height, PF_B8G8R8A8, true);
-	RenderTarget->UpdateResourceImmediate(true);
-	FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/true);
-	Renderer->DrawWidget(RenderTarget, Widget, /*Scale=*/1.0f,
-		FVector2D(Width, Height), /*DeltaTime=*/0.0f, /*bDeferRenderTargetUpdate=*/false);
-
-	TArray<FColor> Pixels;
-	FReadSurfaceDataFlags ReadFlags(RCM_UNorm, CubeFace_MAX);
-	ReadFlags.SetLinearToGamma(false);
-
-	const bool bRead =
-		RenderTarget->GameThread_GetRenderTargetResource()->ReadPixels(Pixels, ReadFlags);
-	delete Renderer;
-
-	if (!bRead || Pixels.Num() < Width * Height)
+	// Size comes from the screenshot, not the pre-capture layout estimate.
+	Width = CapturedSize.X;
+	Height = CapturedSize.Y;
+	CapNote.Empty();
+	const int32 EdgeLimit = 4096;
+	if (Width > EdgeLimit || Height > EdgeLimit)
 	{
-		OutError = FString::Printf(
-			TEXT("the editor widget read back %d pixel(s) for a %dx%d image, so the ")
-			TEXT("picture is incomplete and was not written."),
-			Pixels.Num(), Width, Height);
-		return false;
+		const double Scale = FMath::Min(double(EdgeLimit) / Width, double(EdgeLimit) / Height);
+		const int32 NewWidth = FMath::Max(1, FMath::FloorToInt(Width * Scale));
+		const int32 NewHeight = FMath::Max(1, FMath::FloorToInt(Height * Scale));
+		TArray<FColor> Scaled;
+		FImageUtils::ImageResize(Width, Height, Pixels, NewWidth, NewHeight, Scaled, false);
+		CapNote = FString::Printf(TEXT("\n; native screenshot %dx%d downscaled to %dx%d for the 4096 edge limit."), Width, Height, NewWidth, NewHeight);
+		Pixels = MoveTemp(Scaled); Width = NewWidth; Height = NewHeight;
 	}
 
 	// *** THE EMPTY FRAME IS REFUSED, AND `D-41` IS WHY IT IS A REFUSAL AND NOT A FILE. ***

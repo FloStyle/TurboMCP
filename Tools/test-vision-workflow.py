@@ -1,0 +1,48 @@
+"""Run disposable vision fixtures, then capture an owned short play-check window."""
+import runpy
+import time
+from pathlib import Path
+from tmcp import Session, READ_TOOLSET, LOOK_TOOLSET
+root = Path(__file__).resolve().parents[1]
+support = runpy.run_path(str(Path(__file__).with_name('test-widget-roundtrip.py')))
+folder = root / 'TestProject/Saved/TurboMCP/Workflow'
+before = set(folder.glob('*/vision-review.txt'))
+s = Session(); s.connect()
+s.call(support['AUTO_TOOLSET'], 'DiscoverTests', {})
+raw = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames':['TurboMCP.Workflow.Vision']})
+print(raw)
+created = set(folder.glob('*/vision-review.txt')) - before
+for p in sorted(created):
+    print('WORKFLOW TRANSCRIPT:', p); print(p.read_text(encoding='utf-8-sig'))
+entry, _ = support['parse_run_tests_report'](raw, 'TurboMCP.Workflow.Vision')
+# Opening the stock UMG editor registers this known conflicting shortcut.
+# Preserve it in evidence; every other native warning still fails this workflow.
+known = "LogSlate: The command 'UMGEditor.OpenAnimDrawer' has the same default chord as 'EditorViewport.Next' [Ctrl+Shift+Space Bar]"
+unexpected = [warning for warning in entry['warnings'] if warning != known]
+if unexpected: raise RuntimeError(repr(unexpected))
+if entry['warnings']: print('KNOWN ENGINE SHORTCUT WARNING:', entry['warnings'])
+if len(created) != 1: raise RuntimeError('Expected one fresh transcript')
+# Start only our bounded play check; an existing user's play session is not ours.
+first = s.call(READ_TOOLSET, 'ReadTurboMCPPlayCheck', {'Seconds':'8', 'Map':''})
+print('PLAY START:', first)
+if 'already playing' in first.lower() or first.startswith(('error:', '!!')):
+    raise RuntimeError('Could not acquire an owned play-check window')
+play_log = []
+try:
+    time.sleep(2)
+    shot = s.call(LOOK_TOOLSET, 'LookTurboMCPCapture', {'Asset':'', 'GraphName':'', 'Mode':'screen', 'Target':'', 'Size':''})
+    play_log.append('SCREEN DURING PLAY CHECK:\n' + shot)
+finally:
+    deadline = time.monotonic() + 45
+    while time.monotonic() < deadline:
+        last = s.call(READ_TOOLSET, 'ReadTurboMCPPlayCheck', {'Seconds':'', 'Map':''})
+        if 'pending' not in last.lower() and 'still running' not in last.lower():
+            break
+        time.sleep(1)
+    play_log.append('PLAY RESULT:\n' + last)
+    for p in created:
+        with p.open('a', encoding='utf-8') as out: out.write('\n' + '\n'.join(play_log))
+    print('\n'.join(play_log))
+if 'played for' not in last: raise RuntimeError('Owned play check did not complete')
+if 'image:' not in shot: raise RuntimeError('No editor-window image during play check')
+print('RESULT: PASS')

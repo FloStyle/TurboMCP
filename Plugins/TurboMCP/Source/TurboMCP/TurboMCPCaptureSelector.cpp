@@ -994,40 +994,32 @@ bool TurboMCPCaptureSelector::RenderScreen(
 			WindowWidth, WindowHeight, ScreenMaxEdge, Width, Height);
 	}
 
-	UTextureRenderTarget2D* RenderTarget = FWidgetRenderer::CreateTargetFor(
-		FVector2D(Width, Height), TF_Bilinear, /*bUseGammaCorrection=*/false);
-	if (RenderTarget == nullptr)
+	// Capture the live widget through Slate's own window renderer. Rendering it in
+	// a temporary offscreen window changes live invalidation/hit-test state and can
+	// leave nested grids with incompatible dimensions on the next editor tick.
+	TArray<FColor> Pixels;
+	FIntVector CapturedSize;
+	if (!FSlateApplication::Get().TakeScreenshot(Window.ToSharedRef(), Pixels, CapturedSize)
+		|| CapturedSize.X <= 0 || CapturedSize.Y <= 0
+		|| int64(Pixels.Num()) != int64(CapturedSize.X) * CapturedSize.Y)
 	{
-		OutError = FString::Printf(
-			TEXT("could not create a %dx%d render target for the editor window"), Width, Height);
+		OutError = TEXT("Slate could not capture the live editor widget completely. No image was written.");
 		return false;
 	}
-
-	FWidgetRenderer* Renderer = new FWidgetRenderer(/*bUseGammaCorrection=*/false);
-	FHittestGrid HitTestGrid;
-
-	// The overload takes NO vertex colour: the signature is the one
-	// `TurboMCPCapture.cpp` already calls (`Slate/WidgetRenderer.h:92-99`), so the two
-	// window renders cannot drift apart. The base vertex colour is
-	// `FSlateColor::UseForeground()`, which is what the proven path already uses.
-	Renderer->DrawWindow(RenderTarget, HitTestGrid, Window.ToSharedRef(),
-		/*Scale=*/1.0f, FVector2D(Width, Height), /*DeltaTime=*/0.0f,
-		/*bDeferRenderTargetUpdate=*/false);
-
-	TArray<FColor> Pixels;
-	FReadSurfaceDataFlags ReadFlags(RCM_UNorm, CubeFace_MAX);
-	ReadFlags.SetLinearToGamma(false);
-
-	const bool bRead = RenderTarget->GameThread_GetRenderTargetResource()->ReadPixels(Pixels, ReadFlags);
-	delete Renderer;
-
-	if (!bRead || Pixels.Num() < Width * Height)
+	// Size comes from the screenshot, not the pre-capture layout estimate.
+	Width = CapturedSize.X;
+	Height = CapturedSize.Y;
+	CapNote.Empty();
+	const int32 EdgeLimit = 4096;
+	if (Width > EdgeLimit || Height > EdgeLimit)
 	{
-		OutError = FString::Printf(
-			TEXT("the window render read back %d pixel(s) for a %dx%d window, so the ")
-			TEXT("picture is incomplete and was not written."),
-			Pixels.Num(), Width, Height);
-		return false;
+		const double Scale = FMath::Min(double(EdgeLimit) / Width, double(EdgeLimit) / Height);
+		const int32 NewWidth = FMath::Max(1, FMath::FloorToInt(Width * Scale));
+		const int32 NewHeight = FMath::Max(1, FMath::FloorToInt(Height * Scale));
+		TArray<FColor> Scaled;
+		FImageUtils::ImageResize(Width, Height, Pixels, NewWidth, NewHeight, Scaled, false);
+		CapNote = FString::Printf(TEXT("\n; native screenshot %dx%d downscaled to %dx%d for the 4096 edge limit."), Width, Height, NewWidth, NewHeight);
+		Pixels = MoveTemp(Scaled); Width = NewWidth; Height = NewHeight;
 	}
 
 	// The alpha is forced opaque because a Slate widget background is transparent by
