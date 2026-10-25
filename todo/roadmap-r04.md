@@ -1598,3 +1598,7 @@ Implemented 9e1cc0a and dd8f58f; both bounded scope gates passed. Build and expa
 
 ## Purchase append scoped layout correction - 2026-10-25
 Implemented: 276a1b6. User screenshot exposed backward affordability-to-AND wiring. Scoped pure-expression Tidy now places selected dependency trees before their fixed consumer. Workflow explicitly selects both old/new rule branches after Append. Build and native workflow pass: 72bcaba97a134fe5baac805860214cda; forward wires, seven-node overlap, exact links/defaults/count and unrelated positions checked; capture inspected. Scope gate passed, claim released. Offline 21/26 remains separate validation debt. Existing comment-wire issue remains open; no global tool readiness change.
+
+
+## Multi-event connection workflow - 2026-10-25
+Implemented 0850faa; scope gate passed. WF-BP-03 checks a single Purchase data-input repair alongside Refund and separate Audit graph. Build/native 3281be0d2c084b2f853c05d18e08e205 passed. Exact context/IDs, refusal, no-op, independent values and unchanged other flows checked. Output endpoints/displacement and preview guidance clarified. See docs/audit/event-connect-workflow-review.md; docs/audit/workflow-tool-coverage.json records usage across three limited scenarios, 24 unique tools, no global certification.

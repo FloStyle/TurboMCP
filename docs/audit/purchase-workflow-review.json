@@ -14,10 +14,11 @@
     "local_ancestry_and_promotion": "passed before final reader-only change",
     "tool_inventory": "125 tools inventoried; not 125 completed behavioral reviews",
     "visual": "User accepted earlier capture except getter stacking. Final PNG inspected: stacking and reversed inputs fixed, but Subtotal wire crosses the percent comment. Full visual acceptance remains open.",
-    "offline": "21/26 passed in 90eaf240d39b4e7a8519d946bdc46e43: existing structure/language/client-retry/lookup failures plus runner-verdicts missing-manifest failures",
+    "offline": "22/26 passed: 182a672d192445af97975660b5fa913b; existing structure, language, client-retry and lookup-guards failures. Runner-verdicts passed.",
     "append_native": "passed: d144f02447e34727a8f460ab1d118bfb",
     "append_regression": "failed: 2233299766164635bca3a2e8abe0b90d; obsolete required reader arguments and detached exec expectations; alias-collision native case passed",
-    "append_scoped_tidy": "passed: 72bcaba97a134fe5baac805860214cda; build, four behavior cases, seven-node forward layout, exact links/defaults/count and fixed surrounding positions; capture inspected"
+    "append_scoped_tidy": "passed: 72bcaba97a134fe5baac805860214cda; build, four behavior cases, seven-node forward layout, exact links/defaults/count and fixed surrounding positions; capture inspected",
+    "event_connect_native": "passed: 3281be0d2c084b2f853c05d18e08e205"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -49,7 +50,11 @@
       "behavior": "signature presence asserted; unchanged graph text checked",
       "review": "load failure distinction and comments reviewed",
       "remaining": "Nested and inherited context, all detail/format combinations and actual dirty-state effects remain outside this scenario",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-03-EVENT-CONNECT"
+      ]
     },
     {
       "tool": "ReadTurboMCPGraphLoad",
@@ -59,7 +64,12 @@
       "behavior": "named inputs, missing graph, pagination, stale token, partial input refusal and connected-target syntax checked",
       "review": "implementation and output repaired",
       "remaining": "Text literal escaping, unsupported types, all graph shapes and full write-back coverage remain open",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-02-MINIMUM-QUANTITY",
+        "WF-BP-03-EVENT-CONNECT"
+      ]
     },
     {
       "tool": "ReadTurboMCPNodeFind",
@@ -69,7 +79,11 @@
       "behavior": "Positive search and explicit no-match explanation checked",
       "review": "Search/filter/cap and recovery wording reviewed",
       "remaining": "Broader graph/name combinations outside this scenario.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-03-EVENT-CONNECT"
+      ]
     },
     {
       "tool": "ReadTurboMCPNodeContext",
@@ -79,7 +93,11 @@
       "behavior": "Pure calculation context, missing node and invalid hop count checked",
       "review": "Static execution scope and external-input wording reviewed",
       "remaining": "Dynamic execution is not inferred; malformed-link cases not exercised.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-03-EVENT-CONNECT"
+      ]
     },
     {
       "tool": "LookTurboMCPGraphPositions",
@@ -89,7 +107,11 @@
       "behavior": "baseline transcript collected",
       "review": "wrapper and truncation disclosure inspected",
       "remaining": "side-effect and missing-geometry tests pending",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-02-MINIMUM-QUANTITY"
+      ]
     },
     {
       "tool": "LookTurboMCPLayoutReport",
@@ -99,7 +121,10 @@
       "behavior": "before/after reports inspected",
       "review": "metric limitations present in output",
       "remaining": "comment title/bubble overlap is not detected by current numeric findings",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "LookTurboMCPCapture",
@@ -109,7 +134,12 @@
       "behavior": "Real final-scale PNG inspected; image exists; missing graph refused; fixture stays clean",
       "review": "Final-scale SVG atlas/repaint and scratch title repaired; obsolete comments removed",
       "remaining": "User visual acceptance; other framings/assets and live CP-14 remain separate.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-02-MINIMUM-QUANTITY",
+        "WF-BP-03-EVENT-CONNECT"
+      ]
     },
     {
       "tool": "PreviewTurboMCPGraphCheck",
@@ -119,7 +149,10 @@
       "behavior": "partial/filtered input refused; connected-target read accepted",
       "review": "syntax guard and honest limitations reviewed",
       "remaining": "clean findings do not certify writer acceptance; broader dialect coverage pending",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "EditTurboMCPPinDefault",
@@ -129,7 +162,10 @@
       "behavior": "Verified exact node, pin and 0.01; repeated call unchanged; missing pin refused; independent runtime values pass",
       "review": "Actual normalized value and identity now reported; partial restoration limits retained",
       "remaining": "Failure restoration and other literal types are outside this scenario.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "EditTurboMCPCompile",
@@ -139,7 +175,12 @@
       "behavior": "Generated function executes correctly for two independent input sets",
       "review": "False rollback comments replaced with accurate compile/save/reinstancing description",
       "remaining": "Dependent-asset and failing compilation branches not exercised here.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-02-MINIMUM-QUANTITY",
+        "WF-BP-03-EVENT-CONNECT"
+      ]
     },
     {
       "tool": "PreviewTurboMCPLocalVars",
@@ -149,7 +190,10 @@
       "behavior": "Named candidates, refusal cases and preview no-mutation checked",
       "review": "Names mapping documented in workflow; supported deterministic arithmetic limitation retained",
       "remaining": "Automatic names remain a fallback; use meaningful caller names.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "EditTurboMCPLocalVars",
@@ -159,7 +203,10 @@
       "behavior": "Subtotal and PurchaseTotal; runtime values and invalid-name no-mutation checks passed",
       "review": "replan/name validation and bounded arithmetic contract reviewed",
       "remaining": "wider types/graphs and all restoration paths not certified",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "PreviewTurboMCPGraphTidy",
@@ -169,7 +216,11 @@
       "behavior": "Preview preserves graph content and positions",
       "review": "Whole purchase layout plus scoped seven-node pure dependency layout checked; clear forward input flow, preview preservation, exact links/defaults/count and fixed surrounding nodes.",
       "remaining": "Not a reservation or visual approval.",
-      "scenario_evidence": "72bcaba97a134fe5baac805860214cda"
+      "scenario_evidence": "72bcaba97a134fe5baac805860214cda",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-02-MINIMUM-QUANTITY"
+      ]
     },
     {
       "tool": "EditTurboMCPGraphTidy",
@@ -179,7 +230,11 @@
       "behavior": "Purchase results preserved; local getters feed left-to-right and preserve input order; no unrelated node/comment overlap.",
       "review": "Whole purchase layout plus scoped seven-node pure dependency layout checked; clear forward input flow, preview preservation, exact links/defaults/count and fixed surrounding nodes.",
       "remaining": "WF-BP-01-WIRE-COMMENT: subtotal wire crosses the new annotation. Broader scoped fixture regression remains blocked.",
-      "scenario_evidence": "72bcaba97a134fe5baac805860214cda"
+      "scenario_evidence": "72bcaba97a134fe5baac805860214cda",
+      "workflows": [
+        "WF-BP-01-PURCHASE",
+        "WF-BP-02-MINIMUM-QUANTITY"
+      ]
     },
     {
       "tool": "PreviewTurboMCPComment",
@@ -189,7 +244,10 @@
       "behavior": "Preview creates no node; missing node refuses; geometry inspected",
       "review": "Automatic wrapped-title clearance described; explicit size remains exact",
       "remaining": "Existing set/fit/delete variants outside this scenario.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "EditTurboMCPComment",
@@ -199,7 +257,10 @@
       "behavior": "One comment created; node position preserved; no duplicate bubble; title clearance checked",
       "review": "Automatic height includes native title wrapping; explicit dimensions retained",
       "remaining": "Existing boxes retain preferences; broad comment regression blocked by absent fixture nodes.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "ReadTurboMCPCommentList",
@@ -209,7 +270,10 @@
       "behavior": "Actual title, membership explanation and missing graph refusal checked",
       "review": "Point-based membership disclosed in code/help/output; multiline titles escaped",
       "remaining": "Point inclusion does not prove full containment; inspect capture.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "LookTurboMCPLayoutDoneCheck",
@@ -219,7 +283,10 @@
       "behavior": "Final findings and image file checked; image personally inspected",
       "review": "No automatic approval claim; combines heuristic metrics with capture",
       "remaining": "Numeric checks do not detect the remaining wire/comment crossing; inspect actual PNG.",
-      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2",
+      "workflows": [
+        "WF-BP-01-PURCHASE"
+      ]
     },
     {
       "tool": "PreviewTurboMCPNodeType",
@@ -230,7 +297,10 @@
       "behavior": "Discovery returns the required comparison, AND and function-input IDs; AND purity agrees with pin inspection.",
       "review": "Associated function flags replace unconfigured call-node purity.",
       "remaining": "Ranking is not semantic selection; broader action classes remain outside this case.",
-      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb"
+      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb",
+      "workflows": [
+        "WF-BP-02-MINIMUM-QUANTITY"
+      ]
     },
     {
       "tool": "PreviewTurboMCPNodePins",
@@ -241,7 +311,10 @@
       "behavior": "Inspects operator/AND/getter output pins used by submitted links.",
       "review": "Probe behavior and output limitations reviewed.",
       "remaining": "Probe construction executes editor code; not all callback effects certified.",
-      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb"
+      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb",
+      "workflows": [
+        "WF-BP-02-MINIMUM-QUANTITY"
+      ]
     },
     {
       "tool": "PreviewTurboMCPGraphAppend",
@@ -252,7 +325,10 @@
       "behavior": "Reports four nodes and named wire endpoints; does not change target graph in valid/refused cases.",
       "review": "Shared planning, scratch preflight, label parsing and accurate side-effect wording reviewed.",
       "remaining": "Preview replans later; it is not a reservation. Signature changes unsupported.",
-      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb"
+      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb",
+      "workflows": [
+        "WF-BP-02-MINIMUM-QUANTITY"
+      ]
     },
     {
       "tool": "EditTurboMCPGraphAppend",
@@ -263,7 +339,40 @@
       "behavior": "Four independent runtime cases, exact node delta, preservation and overlap checks pass; final PNG inspected.",
       "review": "Labels, consumer-relative pure placement, result text and transaction limitations reviewed.",
       "remaining": "Bounded acceptance only. Older regression harness fails; live rollback and disk durability not certified.",
-      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb"
+      "scenario_evidence": "d144f02447e34727a8f460ab1d118bfb",
+      "workflows": [
+        "WF-BP-02-MINIMUM-QUANTITY"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPGraphConnect",
+      "role": "Preview one data-input repair in the Purchase event",
+      "status": "scenario checked",
+      "ready": false,
+      "acceptance": "good for WF-BP-03 data repair for now; not globally certified",
+      "behavior": "Three independent event outputs, exact edge delta, preserved positions/defaults/nodes/other flows, refusal and repeated no-op checks pass.",
+      "review": "Source and help reviewed; outputs now identify exact endpoints and displaced sources. Preview no longer mentions new node IDs.",
+      "remaining": "Data-input repair only; successful execution-wire replacement is not tested here; No latent flows, shared execution paths, arbitrary conversions, save/reload or injected rollback; Deterministic native fixture, not a benchmark of model decision-making; Capture inspected; user visual acceptance pending",
+      "scenario_evidence": "3281be0d2c084b2f853c05d18e08e205",
+      "review_document": "docs/audit/event-connect-workflow-review.md",
+      "workflows": [
+        "WF-BP-03-EVENT-CONNECT"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPGraphConnect",
+      "role": "Replace the Purchase input source without changing other flows",
+      "status": "scenario checked",
+      "ready": false,
+      "acceptance": "good for WF-BP-03 data repair for now; not globally certified",
+      "behavior": "Three independent event outputs, exact edge delta, preserved positions/defaults/nodes/other flows, refusal and repeated no-op checks pass.",
+      "review": "Source and help reviewed; outputs now identify exact endpoints and displaced sources. Preview no longer mentions new node IDs.",
+      "remaining": "Data-input repair only; successful execution-wire replacement is not tested here; No latent flows, shared execution paths, arbitrary conversions, save/reload or injected rollback; Deterministic native fixture, not a benchmark of model decision-making; Capture inspected; user visual acceptance pending",
+      "scenario_evidence": "3281be0d2c084b2f853c05d18e08e205",
+      "review_document": "docs/audit/event-connect-workflow-review.md",
+      "workflows": [
+        "WF-BP-03-EVENT-CONNECT"
+      ]
     }
   ],
   "evidence": [
@@ -320,8 +429,9 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 22,
+    "scenario_reviewed": 24,
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
-  }
+  },
+  "workflow_coverage": "docs/audit/workflow-tool-coverage.json"
 }

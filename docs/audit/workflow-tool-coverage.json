@@ -63,10 +63,9 @@
     {
       "id": "WF-BP-03-EVENT-CONNECT",
       "title": "Repair one connection among multiple event flows",
-      "status": "in_progress",
+      "status": "scenario_checked",
       "review": "docs/audit/event-connect-workflow-review.md",
-      "tools_used": [],
-      "tools_planned": [
+      "tools_used": [
         "ReadTurboMCPBlueprintLoad",
         "ReadTurboMCPGraphLoad",
         "ReadTurboMCPNodeFind",
@@ -77,8 +76,14 @@
         "LookTurboMCPCapture"
       ],
       "limitations": [
-        "Not yet executed or accepted"
-      ]
+        "Data-input repair only; successful execution-wire replacement is not tested here",
+        "No latent flows, shared execution paths, arbitrary conversions, save/reload or injected rollback",
+        "Deterministic native fixture, not a benchmark of model decision-making",
+        "Capture inspected; user visual acceptance pending"
+      ],
+      "evidence": "3281be0d2c084b2f853c05d18e08e205",
+      "candidate": "0850faa52724924be1dc9c5336b37fa6ac310289",
+      "fixture": "TurboMCP.Workflow.EventConnect"
     }
   ],
   "tool_usage": {
@@ -87,10 +92,14 @@
     ],
     "EditTurboMCPCompile": [
       "WF-BP-01-PURCHASE",
-      "WF-BP-02-MINIMUM-QUANTITY"
+      "WF-BP-02-MINIMUM-QUANTITY",
+      "WF-BP-03-EVENT-CONNECT"
     ],
     "EditTurboMCPGraphAppend": [
       "WF-BP-02-MINIMUM-QUANTITY"
+    ],
+    "EditTurboMCPGraphConnect": [
+      "WF-BP-03-EVENT-CONNECT"
     ],
     "EditTurboMCPGraphTidy": [
       "WF-BP-01-PURCHASE",
@@ -104,7 +113,8 @@
     ],
     "LookTurboMCPCapture": [
       "WF-BP-01-PURCHASE",
-      "WF-BP-02-MINIMUM-QUANTITY"
+      "WF-BP-02-MINIMUM-QUANTITY",
+      "WF-BP-03-EVENT-CONNECT"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -125,6 +135,9 @@
     "PreviewTurboMCPGraphCheck": [
       "WF-BP-01-PURCHASE"
     ],
+    "PreviewTurboMCPGraphConnect": [
+      "WF-BP-03-EVENT-CONNECT"
+    ],
     "PreviewTurboMCPGraphTidy": [
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY"
@@ -139,20 +152,25 @@
       "WF-BP-02-MINIMUM-QUANTITY"
     ],
     "ReadTurboMCPBlueprintLoad": [
-      "WF-BP-01-PURCHASE"
+      "WF-BP-01-PURCHASE",
+      "WF-BP-03-EVENT-CONNECT"
     ],
     "ReadTurboMCPCommentList": [
       "WF-BP-01-PURCHASE"
     ],
     "ReadTurboMCPGraphLoad": [
       "WF-BP-01-PURCHASE",
-      "WF-BP-02-MINIMUM-QUANTITY"
+      "WF-BP-02-MINIMUM-QUANTITY",
+      "WF-BP-03-EVENT-CONNECT"
     ],
     "ReadTurboMCPNodeContext": [
-      "WF-BP-01-PURCHASE"
+      "WF-BP-01-PURCHASE",
+      "WF-BP-03-EVENT-CONNECT"
     ],
     "ReadTurboMCPNodeFind": [
-      "WF-BP-01-PURCHASE"
+      "WF-BP-01-PURCHASE",
+      "WF-BP-03-EVENT-CONNECT"
     ]
-  }
+  },
+  "unique_tools_scenario_reviewed": 24
 }
