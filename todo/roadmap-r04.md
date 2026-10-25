@@ -1612,3 +1612,7 @@ Implemented 38ef353; bounded scope gate passed. WF-BP-04 fixes discovered wildca
 
 ## Common UI button workflow planned - 2026-10-25
 WF-UI-05-COMMON-BUTTON is planned, not executed. Track hierarchy/style context, event discovery, targeted edits, interaction and graph presentation. Four candidate new tools, with delegate-binding pair conditional. Full per-tool quality criteria and support gaps are in docs/audit/common-button-workflow-review.md and workflow-tool-coverage.json. Coverage remains 28/125; no new readiness claim.
+
+
+## Approved Common Button inspection/preview review
+Readiness: ready. Assignment workflow-common-button. Review and repair WidgetTree context/help and WidgetPreview lifecycle/output using a disposable Common UI fixture. Enable CommonUI only in TestProject; no new plugin dependency. Capture actual normal/callback states, refusals and preservation. Record unsupported style-edit and interaction paths without substituting fixture setup for tool evidence.

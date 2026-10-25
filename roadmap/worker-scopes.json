@@ -2140,6 +2140,20 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallSwapWorkflowTest.cpp",
             "Tools/test-call-swap-workflow.py"
           ]
+        },
+        "workflow-common-button": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTree.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPWidgetTree.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetPreview.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPAgentHelp.cpp",
+            "TestProject/TurboMCPTest.uproject"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonButtonWorkflowTest.cpp",
+            "Tools/test-common-button-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
