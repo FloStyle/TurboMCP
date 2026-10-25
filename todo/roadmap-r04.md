@@ -13,6 +13,10 @@ Review: source-reviewed
 
 Scenario and named-local/reader repairs are implemented with focused native evidence. Visual comment layout and full per-tool acceptance remain open. See [the review and reproducible procedure](../docs/audit/purchase-workflow-review.md) and [per-tool status](../docs/audit/purchase-workflow-review.json). R04 is not complete; 125 inventoried tools are not 125 accepted tools.
 
+## Approved getter-direction repair (2026-10-25)
+
+User screenshot accepts the remaining purchase layout but rejects local getters stacked above their consumers. Preserve a forward-facing consumer for the original shared getter; place copies left of their own input. Do not change graph values or links beyond the existing safe getter split. Scope: GraphTidy and PurchaseWorkflowTest. Verify with supervised test-purchase-workflow, geometric getter direction assertions, runtime purchase results and inspection of the final PNG. Preserve preview no-mutation and comment/execution layout.
+
 ## Problem
 For each tool record actual callable schema, side effects, supported scope, refusal behavior and test evidence. Distinguish declared, definition located, source reviewed, runtime observed and release accepted. Start with result-envelope double wrapping and invalid numeric/default parsing. Do not invent a new public result schema.
 
