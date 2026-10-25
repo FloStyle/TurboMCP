@@ -22,6 +22,7 @@
 #include "Misc/App.h"
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Guid.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Slate/WidgetRenderer.h"
@@ -1048,8 +1049,9 @@ bool TurboMCPCaptureSelector::RenderScreen(
 		FPaths::ProjectSavedDir(), TEXT("TurboMCP"), CaptureFolderName);
 	IFileManager::Get().MakeDirectory(*Folder, /*Tree=*/true);
 
-	OutImagePath = FPaths::Combine(Folder,
-		FString::Printf(TEXT("screen_%dx%d.png"), Width, Height));
+	OutImagePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(Folder,
+		FString::Printf(TEXT("screen_%dx%d_%s.png"), Width, Height,
+			*FGuid::NewGuid().ToString(EGuidFormats::Digits))));
 
 	if (!FFileHelper::SaveArrayToFile(PngData, *OutImagePath))
 	{

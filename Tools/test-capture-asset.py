@@ -517,6 +517,26 @@ def main():
         check("both the screen and the editor capture reported a path",
               False, "screen=%s fewest=%s" % (screen_path, fewest))
 
+    print("=== repeated captures preserve prior evidence ===")
+    for mode in ("asset-editor", "screen"):
+        first_out = capture(session, asset=MATERIAL, mode=mode)
+        first_path = image_path_of(first_out)
+        check(mode + ": first path is absolute", bool(first_path) and os.path.isabs(first_path))
+        if not first_path or not os.path.isfile(resolve_printed_path(first_path)):
+            check(mode + ": first image is available", False)
+            continue
+        first_file = resolve_printed_path(first_path)
+        with open(first_file, "rb") as handle:
+            first_bytes = handle.read()
+        second_out = capture(session, asset=MATERIAL, mode=mode)
+        second_path = image_path_of(second_out)
+        check(mode + ": repeated capture gets a different absolute path",
+              bool(second_path) and os.path.isabs(second_path) and second_path != first_path)
+        check(mode + ": second image exists",
+              bool(second_path) and os.path.isfile(resolve_printed_path(second_path)))
+        with open(first_file, "rb") as handle:
+            check(mode + ": earlier image is unchanged", handle.read() == first_bytes)
+
     # ------------------------------------------------------------------
     print()
     print("=== the size check is not vacuous: it is shown against a WRONG value ===")

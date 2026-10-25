@@ -19,6 +19,7 @@
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInterface.h"
 #include "Misc/FileHelper.h"
+#include "Misc/Guid.h"
 #include "Misc/Paths.h"
 #include "Modules/ModuleManager.h"
 #include "Subsystems/AssetEditorSubsystem.h"
@@ -713,12 +714,12 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 		FPaths::ProjectSavedDir(), TEXT("TurboMCP"), CaptureFolderName);
 	IFileManager::Get().MakeDirectory(*Folder, /*Tree=*/true);
 
-	// The name says which asset was captured, so a folder of captures is readable
-	// without opening one. A per-run name would be wrong here: the asset IS the identity.
+	// Keep asset identity readable while preserving every capture as separate evidence.
 	const FString SafeAsset = FPaths::GetBaseFilename(Resolved.ObjectPath)
 		.Replace(TEXT(" "), TEXT("_"));
-	OutImagePath = FPaths::Combine(Folder,
-		FString::Printf(TEXT("%s_asset-editor_%dx%d.png"), *SafeAsset, Width, Height));
+	OutImagePath = FPaths::ConvertRelativePathToFull(FPaths::Combine(Folder,
+		FString::Printf(TEXT("%s_asset-editor_%dx%d_%s.png"), *SafeAsset, Width, Height,
+			*FGuid::NewGuid().ToString(EGuidFormats::Digits))));
 
 	if (!FFileHelper::SaveArrayToFile(PngData, *OutImagePath))
 	{
