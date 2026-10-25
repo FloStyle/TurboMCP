@@ -177,7 +177,7 @@
     {
       "id": "WF-UI-06-PARENT-BINDING",
       "title": "Bind a Common Button click delegate in its parent widget",
-      "status": "scenario_checked_visual_acceptance_pending",
+      "status": "scenario_checked_visual_accepted",
       "review": "docs/audit/parent-binding-workflow-review.md",
       "fixture": "TurboMCP.Workflow.BindEvent",
       "evidence": "9fa27a0144b542d7a2a69409989a210e",
@@ -203,7 +203,7 @@
         "Replacement preview checked; live replacement, injected rollback and save/reload not covered",
         "Native delegate broadcast proves registration/handler dispatch, not mouse input"
       ],
-      "layout_review": "Scoped Tidy after wiring: nearby getter, aligned handler/Set execution and data rows; exact links/defaults/count preserved. Native pass; updated capture awaits human acceptance."
+      "layout_review": "User accepted corrected capture on 2026-10-25. Scoped Tidy keeps getter near Bind and aligns handler/Set rows; native preservation and runtime checks passed."
     }
   ],
   "tool_usage": {
