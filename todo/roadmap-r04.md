@@ -1552,3 +1552,17 @@ The 125-tool review remains unfinished.
 
 ### Approved capture artifact retention — 2026-10-25
 Asset-editor and screen captures reuse deterministic names and overwrite earlier evidence. Give each result a unique absolute PNG path. Verify repeated same-asset and same-size screen captures preserve prior bytes. Graph debug modes are outside this bounded repair; review them separately.
+
+## Asset and screen captures retain earlier images — 2026-10-25
+
+63fd067 replaces deterministic asset-editor and screen output names with unique
+GUID-suffixed absolute paths. Repeated captures no longer overwrite the image
+referenced by an earlier tool response. Includes are explicit and the obsolete
+comment requiring asset-only filenames was removed.
+
+Supervised 9118fbfa52674ed881b88a21c444d75e passed build and test-capture-asset.
+Repeated asset-editor and screen calls returned distinct absolute paths, created
+the second PNG and preserved the earlier bytes. Existing pixel and dimension
+checks passed for seven asset kinds. DataTable remained a named missing-fixture
+refusal; AnimBlueprint still lacks positive capture coverage. Graph debug-mode
+artifact naming remains a separate follow-up; no full-vision acceptance claim.
