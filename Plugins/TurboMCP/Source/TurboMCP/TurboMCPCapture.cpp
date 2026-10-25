@@ -235,7 +235,12 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		//
 		// So the label is prepended to the SUCCESS text here, and every refusal below is a
 		// plain string beginning `error:` and carrying no banner at all.
-		if (!TurboMCPCaptureAsset::CaptureAssetEditor(Asset, Out, ImagePath, Error))
+		const FString Framing = Target.TrimStartAndEnd();
+		if (!Framing.IsEmpty() && !Framing.Equals(TEXT("fit"), ESearchCase::IgnoreCase))
+		{
+			return TEXT("error: asset-editor Target must be empty (keep the current view) or fit (fit a material graph).");
+		}
+		if (!TurboMCPCaptureAsset::CaptureAssetEditor(Asset, Out, ImagePath, Error, !Framing.IsEmpty()))
 		{
 			// *** THE PREFIX IS ADDED ONLY WHEN IT IS NOT ALREADY THERE. ***
 			//
@@ -348,7 +353,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// the caller name something the picture does not contain.
 	if (bScreen)
 	{
-		FString Out = TEXT("look: capture of the whole editor window");
+		FString Out = TEXT("look: capture of the active Slate window");
 		FString ImagePath;
 		FString Error;
 		if (!TurboMCPCaptureSelector::RenderScreen(Out, ImagePath, Error))

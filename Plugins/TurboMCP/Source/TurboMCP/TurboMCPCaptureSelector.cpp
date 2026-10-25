@@ -886,7 +886,7 @@ void TurboMCPCaptureSelector::DescribeScreenAvailability(FString& InOutDescripti
 	}
 	else if (!FSlateApplication::Get().GetActiveTopLevelWindow().IsValid())
 	{
-		InOutDescription += TEXT("NO, because no top level editor window is open");
+		InOutDescription += TEXT("NO, because no active top-level Slate window is available");
 	}
 	else
 	{
@@ -957,7 +957,7 @@ bool TurboMCPCaptureSelector::RenderScreen(
 	{
 		// SAID PLAINLY rather than rendering something else. An absent window is an
 		// absent measurement, not a zero and not a false (`P1`).
-		OutError = TEXT("no top level editor window is open, so there is nothing on screen ")
+		OutError = TEXT("no active top-level Slate window is available, so there is nothing on screen ")
 			TEXT("to capture. Slate is initialized and the RHI is the real one, so the ")
 			TEXT("window is the missing piece.");
 		return false;
@@ -970,7 +970,7 @@ bool TurboMCPCaptureSelector::RenderScreen(
 	if (WindowWidth <= 0 || WindowHeight <= 0)
 	{
 		OutError = FString::Printf(
-			TEXT("the editor window reports a size of %dx%d, so there is nothing to render."),
+			TEXT("the active window reports a size of %dx%d, so there is nothing to render."),
 			WindowWidth, WindowHeight);
 		return false;
 	}
@@ -1053,9 +1053,10 @@ bool TurboMCPCaptureSelector::RenderScreen(
 	}
 
 	InOutDescription += FString::Printf(
-		TEXT("\nframed: the whole editor window, uncropped, at its current size"));
+		TEXT("\nframed: the active Slate window, including its window controls"));
 	InOutDescription += FString::Printf(
 		TEXT("\nwindow: %dx%d, rendered at %dx%d"), WindowWidth, WindowHeight, Width, Height);
+	InOutDescription += FString::Printf(TEXT("\nwindow title: %s\nwindow selection: active top-level Slate window; this may be an editor or play window."), *Window->GetTitle().ToString());
 	InOutDescription += FString::Printf(TEXT("\nsize: %dx%d"), Width, Height);
 	// A TERNARY OF TWO `TEXT` LITERALS INSIDE A VARIADIC ARGUMENT IS REJECTED BY THE
 	// ENGINE'S COMPILE TIME FORMAT CHECKER (`error C7595` on this project's UE 5.8.3),
@@ -1069,9 +1070,7 @@ bool TurboMCPCaptureSelector::RenderScreen(
 	InOutDescription += FString::Printf(
 		TEXT("\nrenderer state: %s, Slate initialized %s"), RenderLabel, SlateLabel);
 	InOutDescription += FString::Printf(TEXT("\nimage: %s"), *OutImagePath);
-	InOutDescription += TEXT("\n; screen is the whole editor window composited by the ")
-		TEXT("Slate renderer, NOT the level viewport frame. The level viewport needs rows ")
-		TEXT("2.3 (L-CAPTURE-LEVEL), and this tool does not stand in for it.");
+	InOutDescription += TEXT("\n; This captures the selected window, not a dedicated level or game viewport. Focus the intended window before capturing.");
 	InOutDescription += CapNote;
 	return true;
 }

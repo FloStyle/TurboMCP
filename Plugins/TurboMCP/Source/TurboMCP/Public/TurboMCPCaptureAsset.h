@@ -169,40 +169,26 @@ namespace TurboMCPCaptureAsset
 	bool FindKind(const FString& InKind, FKind& OutKind);
 
 	/**
-	 * Captures the editor tab of one asset and writes it as a PNG.
+	 * Opens the asset editor and captures its toolkit host using Slate TakeScreenshot.
+	 * Captures the current presentation; it does not establish shader readiness.
+	 * The resulting PNG is capped at 4096 pixels per edge, preserving aspect ratio.
 	 *
-	 * THE MECHANISM, AND WHY IT IS THIS ONE
-	 * -------------------------------------
-	 * Every asset editor in this engine is an `FAssetEditorToolkit`
-	 * (`Toolkits/AssetEditorToolkit.h:115-118`), and `IToolkitHost::GetTabManager()`
-	 * (`Toolkits/IToolkitHost.h:31`) plus `FTabManager::GetActiveTab()`
-	 * (`Framework/Docking/TabManager.h:1545`) reach the `SDockTab` the editor lives in.
-	 * `SDockTab::GetContent()` (`Widgets/Docking/SDockTab.h:206`) is then a widget, and
-	 * `FWidgetRenderer::DrawWidget` renders a widget into a render target. So ONE path
-	 * reaches every kind this process can open, instead of six class-specific ones that
-	 * would each need its own engine module and could each disagree about the size.
+	 * bFitGraph supports the standard Material Editor only. It changes the view to
+	 * include all measured nodes without changing node positions or selection.
+	 * Unsupported, ambiguous or unmeasurable graphs refuse rather than claim a fit.
+	 * Opening editor UI can invoke editor callbacks; no explicit save is performed.
 	 *
-	 * WHY NOT THE WINDOW, CROPPED
-	 * ---------------------------
-	 * `TurboMCPCapture.cpp` renders the whole window and cuts the frame out of it, and
-	 * that is right for a GRAPH FRAME because the panel's own transform is known. Here
-	 * there is no frame to compute: the picture wanted is the editor itself. Rendering
-	 * the toolkit's own widget gives the editor at its own size with no crop arithmetic
-	 * to be wrong about, and no dependence on which window the tab happens to be docked
-	 * in. The one fallback, when the tab manager has no active tab, is the toolkit host's
-	 * own widget (`SStandaloneAssetEditorToolkitHost::GetParentWidget`,
-	 * `Toolkits/IToolkitHost.h:25`), and the result SAYS which of the two was rendered.
-	 *
-	 * @param InAsset           The asset path, for the report and the file name.
-	 * @param InOutDescription  The result text, appended to.
-	 * @param OutImagePath      The PNG written. Empty on refusal.
-	 * @param OutError          Why nothing was written, BY NAME. Empty on success.
-	 *
-	 * @return TRUE when a PNG was written.
+	 * @param InAsset Asset path or unique name.
+	 * @param InOutDescription Capture details, appended on success.
+	 * @param OutImagePath Written PNG path; empty on refusal.
+	 * @param OutError Reason for refusal; empty on success.
+	 * @param bFitGraph Fit the material graph before capture. False keeps its view.
+	 * @return True when a PNG was written.
 	 */
 	bool CaptureAssetEditor(
 		const FString& InAsset,
 		FString& InOutDescription,
 		FString& OutImagePath,
-		FString& OutError);
+		FString& OutError,
+		bool bFitGraph = false);
 }

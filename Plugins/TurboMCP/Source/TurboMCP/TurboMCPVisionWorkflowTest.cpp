@@ -135,8 +135,16 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  Record(TEXT("Compile widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WB->GetPathName()));
  for(const FString Size:{FString(TEXT("640x240")),FString(TEXT("1920x720"))})ImageCheck(Record(TEXT("Widget preview ")+Size,UTurboMCPLookToolset::LookTurboMCPWidgetPreview(WB->GetPathName(),TEXT(""),TEXT(""),Size,TEXT("allow"))));
  UMaterial* Material=NewObject<UMaterial>(Package,TEXT("M_Vision"),RF_Public|RF_Standalone);
- auto* Color=NewObject<UMaterialExpressionConstant3Vector>(Material);Color->Constant=FLinearColor(0.1f,0.6f,0.2f);Material->GetExpressionCollection().AddExpression(Color);Material->GetEditorOnlyData()->BaseColor.Expression=Color;Material->PostEditChange();
- ImageCheck(Record(TEXT("Material editor"),UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT(""),TEXT(""))));
+ auto* Color=NewObject<UMaterialExpressionConstant3Vector>(Material);Color->Constant=FLinearColor(0.1f,0.6f,0.2f);Material->GetExpressionCollection().AddExpression(Color);Material->GetEditorOnlyData()->BaseColor.Expression=Color;Color->MaterialExpressionEditorX=-900; Color->MaterialExpressionEditorY=400; Material->EditorX=300; Material->EditorY=0; Material->PostEditChange();
+ const FString MaterialFit=Record(TEXT("Material editor fit"),UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT("fit"),TEXT("")));
+ ImageCheck(MaterialFit);
+ TestTrue(TEXT("Material fit reports its scope"),MaterialFit.Contains(TEXT("material framing: fit all measured graph nodes")));
+ TestTrue(TEXT("Material preview does not claim shader readiness"),MaterialFit.Contains(TEXT("shader readiness is not verified")));
+ TestEqual(TEXT("Material expression position preserved"),Color->MaterialExpressionEditorX,-900);
+ TestEqual(TEXT("Material output position preserved"),Material->EditorX,300);
+ TestTrue(TEXT("Material connection preserved"),Material->GetEditorOnlyData()->BaseColor.Expression==Color);
+ TestTrue(TEXT("Unsupported fit refuses"),UTurboMCPLookToolset::LookTurboMCPCapture(WB->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT("fit"),TEXT("" )).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Invalid framing refuses"),UTurboMCPLookToolset::LookTurboMCPCapture(Material->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT("unknown"),TEXT("" )).StartsWith(TEXT("error:")));
  ImageCheck(Record(TEXT("Widget designer editor"),UTurboMCPLookToolset::LookTurboMCPCapture(WB->GetPathName(),TEXT(""),TEXT("asset-editor"),TEXT(""),TEXT(""))));
  return !HasAnyErrors();
 }

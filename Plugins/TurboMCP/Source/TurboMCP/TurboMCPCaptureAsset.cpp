@@ -14,6 +14,11 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "ImageUtils.h"
+#include "GraphEditor.h"
+#include "IMaterialEditor.h"
+#include "SGraphPanel.h"
+#include "EdGraph/EdGraph.h"
+#include "EdGraph/EdGraphNode.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialFunctionInterface.h"
 #include "Materials/MaterialInstance.h"
@@ -449,7 +454,8 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 	const FString& InAsset,
 	FString& InOutDescription,
 	FString& OutImagePath,
-	FString& OutError)
+	FString& OutError,
+	bool bFitGraph)
 {
 	OutImagePath.Empty();
 	OutError.Empty();
@@ -501,6 +507,11 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 		return false;
 	}
 
+	if (bFitGraph && !Loaded->IsA<UMaterial>())
+	{
+		OutError = TEXT("Target=fit currently supports Material assets only. Use an empty Target to capture this asset editor at its current view.");
+		return false;
+	}
 	AssetEditors->OpenEditorForAsset(Loaded);
 
 	IAssetEditorInstance* Instance =
@@ -514,16 +525,8 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 		return false;
 	}
 
-	// *** THE ONE PATH THAT REACHES EVERY KIND: THE TOOLKIT HOST'S OWN WIDGET. ***
-	//
-	// Every asset editor is an FAssetEditorToolkit
-	// (Toolkits/AssetEditorToolkit.h:115), and `IToolkitHost::GetParentWidget()` (Toolkits/IToolkitHost.h:25) is the host's
-	// own widget: for a STANDALONE asset editor that is
-	// SStandaloneAssetEditorToolkitHost, whose own implementation is `return AsShared()`
-	// (SStandaloneAssetEditorToolkitHost.cpp:359-362), so it IS that editor's content.
-	// `FWidgetRenderer::DrawWidget` renders a widget, so ONE path reaches every kind this
-	// process can open instead of six class-specific ones that would each need their own
-	// engine module and could each disagree about the size.
+	// Capture the asset toolkit's host widget through Slate's live renderer.
+	// Do not reparent live widgets into a temporary offscreen renderer.
 	FAssetEditorToolkit* Toolkit = static_cast<FAssetEditorToolkit*>(Instance);
 
 	// A TERNARY OF TWO `TEXT` LITERALS INSIDE A VARIADIC ARGUMENT IS REJECTED BY THE
@@ -585,6 +588,82 @@ bool TurboMCPCaptureAsset::CaptureAssetEditor(
 		}
 	}
 
+
+	if (bFitGraph)
+	{
+		// Inspect only visible graphs belonging to the requested asset's editor.
+		// Never change graph contents or selection to obtain a wider image.
+		if (Instance->GetEditorName() != FName(TEXT("MaterialEditor")))
+		{
+			OutError = TEXT("Target=fit requires the standard Material Editor. Use an empty Target for this editor.");
+			return false;
+		}
+		UMaterialInterface* EditedMaterial = static_cast<IMaterialEditor*>(Toolkit)->GetMaterialInterface();
+		TArray<TSharedRef<SGraphEditor>> GraphEditors;
+		TFunction<void(TSharedRef<SWidget>)> Visit = [&](TSharedRef<SWidget> Current)
+		{
+			if (!Current->GetVisibility().IsVisible()) { return; }
+			if (Current->GetType() == FName(TEXT("SGraphEditor")))
+			{
+				auto Editor = StaticCastSharedRef<SGraphEditor>(Current);
+				if (Editor->GetCurrentGraph() && Editor->GetCurrentGraph()->GetTypedOuter<UMaterial>() == EditedMaterial)
+				{ GraphEditors.Add(Editor); }
+			}
+			FChildren* Children = Current->GetChildren();
+			for (int32 Index = 0; Index < Children->Num(); ++Index) { Visit(Children->GetChildAt(Index)); }
+		};
+		Visit(Widget);
+		if (GraphEditors.Num() != 1 || !GraphEditors[0]->GetGraphPanel())
+		{
+			OutError = TEXT("Could not identify exactly one visible material graph. Open its graph tab and retry Target=fit. No image was written.");
+			return false;
+		}
+		const auto Editor = GraphEditors[0];
+		SGraphPanel* Panel = Editor->GetGraphPanel();
+		FBox2D Bounds(ForceInit);
+		for (UEdGraphNode* Node : Editor->GetCurrentGraph()->Nodes)
+		{
+			FVector2D Min, Max;
+			if (!Node || !Panel->GetBoundsForNode(Node, Min, Max, 48.0f))
+			{
+				OutError = TEXT("Material graph node bounds are not ready. Retry after the editor finishes drawing. No image was written.");
+				return false;
+			}
+			Bounds += Min; Bounds += Max;
+		}
+		const FVector2D ViewSize(Panel->GetCachedGeometry().GetLocalSize());
+		if (!Bounds.bIsValid || Bounds.GetSize().X <= 0 || Bounds.GetSize().Y <= 0 || ViewSize.X <= 0 || ViewSize.Y <= 0)
+		{
+			OutError = TEXT("Material graph has no measurable nodes or visible canvas. No image was written.");
+			return false;
+		}
+		const float Zoom = FMath::Min(1.0, FMath::Min(ViewSize.X / Bounds.GetSize().X, ViewSize.Y / Bounds.GetSize().Y));
+		// Slate rounds requested zoom upward to a preset. Step down until the actual
+		// zoom fits, then center using that measured zoom rather than the request.
+		float RequestedZoom = Zoom;
+		float ActualZoom = 1.0f;
+		FVector2D ActualLocation;
+		for (int32 Attempt = 0; Attempt < 32; ++Attempt)
+		{
+			Editor->SetViewLocation(Bounds.Min, RequestedZoom);
+			Editor->GetViewLocation(ActualLocation, ActualZoom);
+			if (ActualZoom <= Zoom) { break; }
+			RequestedZoom *= 0.8f;
+		}
+		if (ActualZoom <= 0 || ActualZoom > Zoom)
+		{
+			OutError = TEXT("The material graph is too large to fit at the editor's minimum zoom. No image was written. Use smaller graphs or the current-view capture.");
+			return false;
+		}
+		Editor->SetViewLocation(Bounds.GetCenter() - ViewSize / (2.0 * ActualZoom), ActualZoom);
+		FSlateApplication::Get().Tick(ESlateTickType::All);
+		Widget->SlatePrepass(1.0f);
+		InOutDescription += TEXT("\nmaterial framing: fit all measured graph nodes; graph view changed, node positions and selection preserved.");
+	}
+	if (Loaded->IsA<UMaterialInterface>())
+	{
+		InOutDescription += TEXT("\nmaterial preview: shader readiness is not verified; the preview may still be compiling.");
+	}
 	FVector2D WidgetSize = Widget->GetTickSpaceGeometry().GetAbsoluteSize();
 	FString SizeNote;
 	if (WidgetSize.X <= 0.0 || WidgetSize.Y <= 0.0)

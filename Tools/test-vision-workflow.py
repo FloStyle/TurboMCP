@@ -44,5 +44,7 @@ finally:
         with p.open('a', encoding='utf-8') as out: out.write('\n' + '\n'.join(play_log))
     print('\n'.join(play_log))
 if 'played for' not in last: raise RuntimeError('Owned play check did not complete')
-if 'image:' not in shot: raise RuntimeError('No editor-window image during play check')
+if 'image:' not in shot: raise RuntimeError('No active-window image during play check')
+if 'window title:' not in shot or 'window selection: active top-level Slate window' not in shot:
+    raise RuntimeError('Capture must identify the actual selected window')
 print('RESULT: PASS')
