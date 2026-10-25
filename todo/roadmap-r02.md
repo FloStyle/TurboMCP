@@ -3,7 +3,7 @@
 ID: R02
 Status: done
 Priority: P1
-Readiness: ready
+Readiness: done
 Owner: integration-owner
 Design: docs/design/verification.md
 Kind: implementation

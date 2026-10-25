@@ -3,7 +3,7 @@
 ID: FIELD-X97
 Status: done
 Priority: P0
-Readiness: ready
+Readiness: done
 Category: Bug
 Owner: Codex
 Review: source-reviewed

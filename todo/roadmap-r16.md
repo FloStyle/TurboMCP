@@ -3,7 +3,7 @@
 ID: R16
 Status: done
 Priority: P1
-Readiness: ready
+Readiness: done
 Owner: dsh-r16-01
 Design: docs/design/verification.md
 Kind: investigation

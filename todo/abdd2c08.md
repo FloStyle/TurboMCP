@@ -3,7 +3,7 @@
 ID: abdd2c08-6544-4730-b183-e4d856aad868
 Status: done
 Priority: P3
-Readiness: ready
+Readiness: done
 Owner: unassigned
 Design: docs/design/editor-domains.md
 Review: source-reviewed
