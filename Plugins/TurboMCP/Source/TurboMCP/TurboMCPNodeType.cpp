@@ -346,22 +346,9 @@ namespace
 				const UClass* NodeClass = ActionInfo.GetNodeClass();
 				if (NodeClass != nullptr)
 				{
-					// PURITY COMES FROM THE NODE CLASS, which is where `UK2Node::IsNodePure`
-					// lives (`K2Node.h:244`). It is not on the spawner.
-					//
-					// THE TEMPLATED `GetDefaultObject<UK2Node>()` MUST NOT BE USED HERE, AND USING
-					// IT CRASHED THE EDITOR. `GetNodeClass()` is declared `UClass const*` and its
-					// doc comment CLAIMS the result "assume to be not null" - but the class it
-					// returns is not always a `UK2Node`, and the template asserts that it is:
-					//
-					//     Assertion failed: Ret->IsA(T::StaticClass())
-					//     Class.h:4627
-					//
-					// A hard assertion inside an editor tool is the worst possible failure: it
-					// takes the whole editor down instead of answering "I could not tell". So the
-					// UNTEMPLATED `GetDefaultObject()` is called, which cannot assert, and the cast
-					// is checked. A class that is not a `UK2Node` leaves purity unknown rather than
-					// killing the process.
+                    // Guard the cast: action classes are not necessarily K2 nodes.
+                    // Function-call defaults are unconfigured; use the associated
+                    // function below instead of inferring its purity from the CDO.
 					if (const UObject* DefaultObject = NodeClass->GetDefaultObject())
 					{
 						if (const UK2Node* DefaultNode = Cast<UK2Node>(DefaultObject))
@@ -370,6 +357,8 @@ namespace
 						}
 					}
 				}
+                if (const UFunction* Function = ActionInfo.GetAssociatedFunction())
+                    Entry.bPure = Function->HasAnyFunctionFlags(FUNC_BlueprintPure);
 				Entry.bLatent = ClassIsLatent(NodeClass)
 					|| FunctionIsLatent(ActionInfo.GetAssociatedFunction());
 

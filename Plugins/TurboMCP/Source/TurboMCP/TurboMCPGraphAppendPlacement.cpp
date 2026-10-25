@@ -143,6 +143,21 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                     { Attachment = Node; AttachmentForm = Link.ToFormIndex; break; }
                 if (Attachment) break;
             }
+    bool bDataAttachment = false;
+    // A pure block has no execution attachment. Anchor its result before the
+    // existing consumer rather than treating connected calculations as detached.
+    const bool bAllNewPure = !InNodes.ContainsByPredicate([](const FNewNode& Node)
+    { return !Node.bLinksToExisting && (!Node.ProbeExecInputs.IsEmpty() || !Node.ProbeExecOutputs.IsEmpty()); });
+    if (!Attachment && InLinks && bAllNewPure)
+        for (const FNewLink& Link : *InLinks)
+            if (InNodes.IsValidIndex(Link.FromFormIndex) && !InNodes[Link.FromFormIndex].bLinksToExisting
+                && Link.ToFormIndex == INDEX_NONE)
+            {
+                for (const UEdGraphNode* Node : InGraph->Nodes)
+                    if (Node && TurboMCPNodeId::MakeForNode(Node, true) == Link.ToNodeKey)
+                    { Attachment = Node; AttachmentForm = Link.FromFormIndex; bDataAttachment = true; break; }
+                if (Attachment) break;
+            }
     if (Attachment && InLinks)
     {
         TArray<int32> Degree, Depth, Lane, Order;
@@ -254,9 +269,11 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                 for (const FNewLink& Link : *InLinks)
                     if (Link.FromFormIndex == I && IsForward(Link)) { Lane[I] = Lane[Link.ToFormIndex]; break; }
             }
-            const int64 BaseX = static_cast<int64>(Attachment->NodePosX)
-                + (Attachment->NodeWidth > 0 ? static_cast<int64>(Attachment->NodeWidth) : PlacementWidth) + PlacementHorizontalGap
-                - static_cast<int64>(Depth[AttachmentForm]) * (CellWidth + PlacementHorizontalGap);
+            const int64 BaseX = bDataAttachment
+                ? static_cast<int64>(Attachment->NodePosX) - (static_cast<int64>(Depth[AttachmentForm]) + 1) * (CellWidth + PlacementHorizontalGap)
+                : static_cast<int64>(Attachment->NodePosX)
+                    + (Attachment->NodeWidth > 0 ? static_cast<int64>(Attachment->NodeWidth) : PlacementWidth) + PlacementHorizontalGap
+                    - static_cast<int64>(Depth[AttachmentForm]) * (CellWidth + PlacementHorizontalGap);
             const int64 BaseY = static_cast<int64>(Attachment->NodePosY)
                 + (Attachment->NodeHeight > 0 ? static_cast<int64>(Attachment->NodeHeight) : PlacementHeight) + PlacementVerticalGap;
             // Reserve every input in the lane before starting the next exec band.
@@ -283,6 +300,7 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                 BandY += (static_cast<int64>(PureCounts.FindRef(L)) + 1) * CellStride;
             }
             TMap<int32, int32> PureSlots;
+            TMap<int32, int32> DataColumnSlots;
             TMap<int32, int64> ExecRight;
             TArray<int64> X, Y; X.Init(0, InNodes.Num()); Y.Init(0, InNodes.Num());
             for (int32 I : Order)
@@ -293,7 +311,9 @@ bool FTurboMCPGraphAppend::PlanPlacement(const UEdGraph* InGraph, const TArray<F
                         X[I] = FMath::Max(X[I], X[Link.FromFormIndex] + CellWidth + PlacementHorizontalGap);
                 Y[I] = LaneY[Lane[I]];
                 if (InNodes[I].ProbeExecInputs.IsEmpty() && InNodes[I].ProbeExecOutputs.IsEmpty())
-                    Y[I] += static_cast<int64>(++PureSlots.FindOrAdd(Lane[I])) * CellStride;
+                    Y[I] += bDataAttachment
+                        ? static_cast<int64>(DataColumnSlots.FindOrAdd(Depth[I])++) * CellStride
+                        : static_cast<int64>(++PureSlots.FindOrAdd(Lane[I])) * CellStride;
                 else
                 {
                     if (const int64* PreviousRight = ExecRight.Find(Lane[I])) X[I] = FMath::Max(X[I], *PreviousRight + PlacementHorizontalGap);

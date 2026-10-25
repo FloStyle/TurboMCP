@@ -284,10 +284,9 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
 
     // Append changes the body only. MinimumQuantity is an unused fixture input;
     // adding a parameter to an existing function is a separate unsupported step.
-    const FString EntryId = TurboMCPNodeId::MakeForNode(Entry, true);
     const FString ReturnId = TurboMCPNodeId::MakeForNode(Result, true);
     const FString AffordableId = TurboMCPNodeId::MakeForNode(Affordable, true);
-    auto DiscoverType = [&](const FString& Query, const FString& Prefix)
+    auto DiscoverType = [&](const FString& Query, const FString& Prefix, const FString& ExpectedOutput = TEXT("ReturnValue"))
     {
         const FString Types = Record(TEXT("PreviewTurboMCPNodeType append discovery"), UTurboMCPPreviewToolset::PreviewTurboMCPNodeType(Asset, GraphName, Query, TEXT("20")));
         TArray<FString> Lines;
@@ -296,18 +295,24 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
         for (const FString& Line : Lines)
             if (Line.StartsWith(Prefix)) { Type = Line.TrimStartAndEnd(); break; }
         TestFalse(TEXT("Discovery supplies an exact type ID"), Type.IsEmpty());
+        if (Prefix == TEXT("Math|Boolean|"))
+            TestFalse(TEXT("Boolean AND discovery agrees with pure pin inspection"), Types.Contains(TEXT("not pure")));
+
         if (!Type.IsEmpty())
         {
             const FString Pins = Record(TEXT("PreviewTurboMCPNodePins append discovery"), UTurboMCPPreviewToolset::PreviewTurboMCPNodePins(Asset, GraphName, Type));
-            TestTrue(TEXT("Pin inspection exposes the expected output"), Pins.Contains(TEXT("ReturnValue")));
+            TestTrue(TEXT("Pin inspection exposes the expected output"), Pins.Contains(ExpectedOutput));
         }
         return Type;
     };
     const FString CompareType = DiscoverType(TEXT(">="), TEXT("Utilities|Operators|GreaterEqual("));
     const FString AndType = DiscoverType(TEXT("AND Boolean"), TEXT("Math|Boolean|"));
     if (CompareType.IsEmpty() || AndType.IsEmpty()) return false;
-    const FString AppendText = FString::Printf(TEXT("(%s\n A (-> %s:Quantity)\n B (-> %s:MinimumQuantity)\n) ; label QuantityAllowed\n(%s\n A (-> %s:ReturnValue)\n B (-> QuantityAllowed:ReturnValue)\n) ; label PurchaseAllowed\n(Function|Result ; %s\n CanAfford (-> PurchaseAllowed:ReturnValue)\n)"),
-        *CompareType, *EntryId, *EntryId, *AndType, *AffordableId, *ReturnId);
+    const FString QuantityType = DiscoverType(TEXT("Quantity"), TEXT("FunctionInput|") + Asset + TEXT("|") + GraphName + TEXT("|Quantity"), TEXT("Quantity"));
+    const FString MinimumType = DiscoverType(TEXT("MinimumQuantity"), TEXT("FunctionInput|") + Asset + TEXT("|") + GraphName + TEXT("|MinimumQuantity"), TEXT("MinimumQuantity"));
+    if (QuantityType.IsEmpty() || MinimumType.IsEmpty()) return false;
+    const FString AppendText = FString::Printf(TEXT("(%s) ; label QuantityValue\n(%s) ; label MinimumValue\n(%s\n A (-> QuantityValue:Quantity)\n B (-> MinimumValue:MinimumQuantity)\n) ; label QuantityAllowed\n(%s\n A (-> %s:ReturnValue)\n B (-> QuantityAllowed:ReturnValue)\n) ; label PurchaseAllowed\n(Function|Result ; %s\n CanAfford (-> PurchaseAllowed:ReturnValue)\n)"),
+        *QuantityType, *MinimumType, *CompareType, *AndType, *AffordableId, *ReturnId);
     Transcript += TEXT("\n=== Submitted append text ===\n") + AppendText + TEXT("\n");
     const FString BeforeAppend = ReadGraph();
     const FString BeforeAppendPositions = UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName);
@@ -332,7 +337,7 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
         }
     }
     const FString AppendPreview = Record(TEXT("PreviewTurboMCPGraphAppend purchase rule"), UTurboMCPPreviewToolset::PreviewTurboMCPGraphAppend(Asset, GraphName, AppendText));
-    TestTrue(TEXT("Preview describes two new nodes"), AppendPreview.Contains(TEXT("2 new node(s)")));
+    TestTrue(TEXT("Preview describes two operations and two input getters"), AppendPreview.Contains(TEXT("4 new node(s)")));
     TestTrue(TEXT("Preview identifies the replaced target"), AppendPreview.Contains(TEXT("CanAfford")));
     CheckAppendUnchanged();
     TMap<UEdGraphNode*, FIntPoint> ExistingPositions;
@@ -349,7 +354,11 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     }
     const FString Appended = Record(TEXT("EditTurboMCPGraphAppend purchase rule"), UTurboMCPEditToolset::EditTurboMCPGraphAppend(Asset, GraphName, AppendText));
     if (!TestTrue(TEXT("Append reports changed"), Appended.StartsWith(TEXT("changed:")))) return false;
-    TestEqual(TEXT("Append creates exactly two nodes"), Graph->Nodes.Num(), BeforeAppendCount + 2);
+    TestEqual(TEXT("Append creates exactly four planned nodes"), Graph->Nodes.Num(), BeforeAppendCount + 4);
+    for (UEdGraphNode* Node : Graph->Nodes)
+        if (!ExistingPositions.Contains(Node))
+            TestTrue(TEXT("Appended pure nodes precede their existing consumer"), Node->NodePosX < Result->NodePosX);
+
     TestTrue(TEXT("Append explains compile and save state"), Appended.Contains(TEXT("compile")) && Appended.Contains(TEXT("save")));
     for (const auto& Pair : ExistingPositions)
     {
@@ -386,6 +395,21 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     }
     TestEqual(TEXT("Append leaves unrelated function unchanged"), UTurboMCPReadToolset::ReadTurboMCPGraphLoad(Asset, Untouched->GetName(), TEXT("read"), TEXT("full")), UnrelatedBefore);
     Record(TEXT("LookTurboMCPCapture appended"), UTurboMCPLookToolset::LookTurboMCPCapture(Asset, GraphName, TEXT("graph"), TEXT(""), TEXT("1600x900")));
+    FString GeometryError;
+    if (TestTrue(TEXT("Final native geometry is available"), FTurboMCPGraphTidy::PrepareAlignment(Blueprint, Graph, GeometryError)))
+        for (UEdGraphNode* NewNode : Graph->Nodes)
+            if (!ExistingPositions.Contains(NewNode))
+            {
+                const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(NewNode);
+                for (UEdGraphNode* Other : Graph->Nodes) if (Other && Other != NewNode)
+                {
+                    const FVector2D OtherSize = FTurboMCPGraphTidy::AlignmentNodeSize(Other);
+                    TestFalse(TEXT("Appended node has no native rectangle overlap"),
+                        NewNode->NodePosX < Other->NodePosX + OtherSize.X && NewNode->NodePosX + Size.X > Other->NodePosX
+                        && NewNode->NodePosY < Other->NodePosY + OtherSize.Y && NewNode->NodePosY + Size.Y > Other->NodePosY);
+                }
+            }
+
     return !HasAnyErrors();
 }
 #endif
