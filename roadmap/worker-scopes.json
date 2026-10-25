@@ -2172,6 +2172,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphTidy.cpp"
           ],
           "new_files": []
+        },
+        "workflow-override": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAdd.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrides.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideAddTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPOverrideWorkflowTest.cpp",
+            "Tools/test-override-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
