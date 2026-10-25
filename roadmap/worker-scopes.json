@@ -2155,6 +2155,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonButtonWorkflowTest.cpp",
             "Tools/test-common-button-workflow.py"
           ]
+        },
+        "workflow-bind-event": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphRefactorTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBindEventWorkflowTest.cpp",
+            "Tools/test-bind-event-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
