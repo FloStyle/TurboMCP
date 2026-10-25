@@ -36,6 +36,7 @@ public class TurboMCP : ModuleRules
 				"Kismet",
 
 				"InputCore",
+                "EnhancedInput",
 				"Slate",
 				"SlateCore",
 				"ToolMenus",

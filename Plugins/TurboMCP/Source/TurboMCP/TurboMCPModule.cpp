@@ -6,6 +6,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 #include "TurboMCPModule.h"
+#include "TurboMCPPlayInput.h"
 
 #include "Misc/CoreDelegates.h"
 #include "Modules/ModuleManager.h"
@@ -46,6 +47,7 @@ void FTurboMCPModule::StartupModule()
 
 void FTurboMCPModule::ShutdownModule()
 {
+    TurboMCPPlayInput::Shutdown();
 	if (LoadingPhasesCompleteHandle.IsValid())
 	{
 		FCoreDelegates::OnAllModuleLoadingPhasesComplete.Remove(LoadingPhasesCompleteHandle);
