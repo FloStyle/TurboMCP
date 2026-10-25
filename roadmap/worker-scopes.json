@@ -2032,6 +2032,18 @@
             "Tools/test-capture-asset.py"
           ],
           "new_files": []
+        },
+        "workflow-purchase-review": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphLoad.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPBlueprintLoad.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphText.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp",
+            "Tools/test-purchase-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
