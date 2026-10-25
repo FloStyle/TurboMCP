@@ -1,6 +1,6 @@
 # Purchase workflow tool review
 
-The repaired scenario passes its expanded behavioral assertions. The final capture has been inspected, but **user visual acceptance and full per-tool certification remain open**. The per-tool record is [purchase-workflow-review.json](purchase-workflow-review.json). No tool is marked Ready from a passing inventory alone.
+The repaired scenario passes its expanded behavioral assertions. Getter stacking is fixed; a subtotal wire crossing the new comment remains open (WF-BP-01-WIRE-COMMENT). The final capture has been inspected, but **user visual acceptance and full per-tool certification remain open**. The per-tool record is [purchase-workflow-review.json](purchase-workflow-review.json). No tool is marked Ready from a passing inventory alone.
 
 ## Scenario
 
@@ -49,3 +49,9 @@ The SVG fault was isolated to vectors requested at the final zoom: FWidgetRender
 - Run 61f4696c2bbf4848ac6171de134dfb9e failed the older tidy-scope and comment-box suites because their required fixture nodes were absent. Do not count them as passes.
 - Offline run effc7e24c58847d990fb5940b8c72f85 passed 22/26. Remaining failures: ready task 02674939.md lacks Problem; docs/user/tools.md has invalid UTF-8; client retry expectations mismatch; lookup guards report existing findings.
 - Inventory of 125 tools is not completion of 125 behavioral and wording reviews.
+
+## Getter direction follow-up (2026-10-25)
+
+Candidate 52e1676 retains a forward consumer for each original shared getter, keeps copied inputs in pin order and searches free rows above obstacles. Native run e963de2a6c564ac4b9ce32cf26238ff2 passed build and the purchase workflow; the final commit adds indentation cleanup only. New assertions cover forward getter wires, input order and unrelated node/comment overlap. The full-SHA assignment scope gate passed.
+
+Actual final PNG inspection still shows the Subtotal wire crossing the percent comment. This is open, not a passing visual result. The next layout/annotation pass must address it without moving unrelated content or changing values. The user accepted the previous image except getter stacking; do not turn that into acceptance of this new image.

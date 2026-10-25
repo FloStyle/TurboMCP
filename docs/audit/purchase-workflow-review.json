@@ -2,18 +2,18 @@
   "schema": 1,
   "workflow": "WF-BP-01-PURCHASE",
   "updated": "2026-10-25",
-  "status": "scenario checks passed; visual acceptance pending",
+  "status": "getter stacking fixed; comment-crossing wire remains open",
   "ready": false,
   "scenario": "Correct a percent conversion in CalculatePurchase, introduce named locals for repeated arithmetic, tidy, comment and inspect the result.",
   "fixture": "TurboMCP.Workflow.Purchase; unique unsaved disposable Blueprint with an unrelated function",
-  "candidate": "dd8f58f0fde43463ddf148bca68e08f618885302",
+  "candidate": "52e1676accb71faf4c51083437a310f3d20e792f",
   "validation": {
-    "build": "passed: c8735a8f289248269dad165ce361fd5d",
-    "native_scenario": "passed with target/refusal, no-mutation, normalized-result and image-artifact checks",
+    "build": "passed: e963de2a6c564ac4b9ce32cf26238ff2; final commit differs only in indentation",
+    "native_scenario": "passed: behavior, refusals, preview preservation, getter direction, input order and no unrelated node/comment overlap",
     "connected_target_reader_roundtrip": "passed: 3e4c2fe30e9e41b89b63350a15631d28",
     "local_ancestry_and_promotion": "passed before final reader-only change",
     "tool_inventory": "125 tools inventoried; not 125 completed behavioral reviews",
-    "visual": "Inspected actual final PNG: SVG glyphs visible, function title correct, short input wires retained, comment title clear of node and execution wire. User acceptance still pending.",
+    "visual": "User accepted earlier capture except getter stacking. Final PNG inspected: stacking and reversed inputs fixed, but Subtotal wire crosses the percent comment. Full visual acceptance remains open.",
     "offline": "22/26 passed; missing Problem in 02674939.md, invalid UTF-8 tools.md, client retry mismatch and lookup heuristics remain"
   },
   "fixed": [
@@ -28,7 +28,8 @@
     "Automatic comment height reserves wrapped-title clearance; newly created comments have no duplicate floating bubble",
     "Compile/save and capture comments describe actual behavior",
     "PinDefault changed/unchanged results echo verified target and normalized display value",
-    "CommentList explicitly reports point-based membership and escapes multiline titles"
+    "CommentList explicitly reports point-based membership and escapes multiline titles",
+    "Shared getters retain forward-facing consumers; copies preserve input order and search above/below obstacles"
   ],
   "tools": [
     {
@@ -39,7 +40,7 @@
       "behavior": "signature presence asserted; unchanged graph text checked",
       "review": "load failure distinction and comments reviewed",
       "remaining": "Nested and inherited context, all detail/format combinations and actual dirty-state effects remain outside this scenario",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "ReadTurboMCPGraphLoad",
@@ -49,7 +50,7 @@
       "behavior": "named inputs, missing graph, pagination, stale token, partial input refusal and connected-target syntax checked",
       "review": "implementation and output repaired",
       "remaining": "Text literal escaping, unsupported types, all graph shapes and full write-back coverage remain open",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "ReadTurboMCPNodeFind",
@@ -59,7 +60,7 @@
       "behavior": "Positive search and explicit no-match explanation checked",
       "review": "Search/filter/cap and recovery wording reviewed",
       "remaining": "Broader graph/name combinations outside this scenario.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "ReadTurboMCPNodeContext",
@@ -69,7 +70,7 @@
       "behavior": "Pure calculation context, missing node and invalid hop count checked",
       "review": "Static execution scope and external-input wording reviewed",
       "remaining": "Dynamic execution is not inferred; malformed-link cases not exercised.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "LookTurboMCPGraphPositions",
@@ -79,7 +80,7 @@
       "behavior": "baseline transcript collected",
       "review": "wrapper and truncation disclosure inspected",
       "remaining": "side-effect and missing-geometry tests pending",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "LookTurboMCPLayoutReport",
@@ -89,7 +90,7 @@
       "behavior": "before/after reports inspected",
       "review": "metric limitations present in output",
       "remaining": "comment title/bubble overlap is not detected by current numeric findings",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "LookTurboMCPCapture",
@@ -99,7 +100,7 @@
       "behavior": "Real final-scale PNG inspected; image exists; missing graph refused; fixture stays clean",
       "review": "Final-scale SVG atlas/repaint and scratch title repaired; obsolete comments removed",
       "remaining": "User visual acceptance; other framings/assets and live CP-14 remain separate.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "PreviewTurboMCPGraphCheck",
@@ -109,7 +110,7 @@
       "behavior": "partial/filtered input refused; connected-target read accepted",
       "review": "syntax guard and honest limitations reviewed",
       "remaining": "clean findings do not certify writer acceptance; broader dialect coverage pending",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "EditTurboMCPPinDefault",
@@ -119,7 +120,7 @@
       "behavior": "Verified exact node, pin and 0.01; repeated call unchanged; missing pin refused; independent runtime values pass",
       "review": "Actual normalized value and identity now reported; partial restoration limits retained",
       "remaining": "Failure restoration and other literal types are outside this scenario.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "EditTurboMCPCompile",
@@ -129,7 +130,7 @@
       "behavior": "Generated function executes correctly for two independent input sets",
       "review": "False rollback comments replaced with accurate compile/save/reinstancing description",
       "remaining": "Dependent-asset and failing compilation branches not exercised here.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "PreviewTurboMCPLocalVars",
@@ -139,7 +140,7 @@
       "behavior": "Named candidates, refusal cases and preview no-mutation checked",
       "review": "Names mapping documented in workflow; supported deterministic arithmetic limitation retained",
       "remaining": "Automatic names remain a fallback; use meaningful caller names.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "EditTurboMCPLocalVars",
@@ -149,7 +150,7 @@
       "behavior": "Subtotal and PurchaseTotal; runtime values and invalid-name no-mutation checks passed",
       "review": "replan/name validation and bounded arithmetic contract reviewed",
       "remaining": "wider types/graphs and all restoration paths not certified",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "PreviewTurboMCPGraphTidy",
@@ -159,17 +160,17 @@
       "behavior": "Preview preserves graph content and positions",
       "review": "Current-state replanning and no-save contract reviewed",
       "remaining": "Not a reservation or visual approval.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "EditTurboMCPGraphTidy",
       "role": "Apply measured layout",
       "status": "scenario checked",
       "ready": false,
-      "behavior": "Independent values and unrelated graph preserved; final image inspected",
-      "review": "Original output pin used for copy scoring; avoid longer function-input copies; compact local readers",
-      "remaining": "User visual acceptance; older scoped regression blocked by absent fixture nodes.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "behavior": "Purchase results preserved; local getters feed left-to-right and preserve input order; no unrelated node/comment overlap.",
+      "review": "Forward-consumer retention and bounded collision search reviewed; no engine edits.",
+      "remaining": "WF-BP-01-WIRE-COMMENT: subtotal wire crosses the new annotation. Broader scoped fixture regression remains blocked.",
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "PreviewTurboMCPComment",
@@ -179,7 +180,7 @@
       "behavior": "Preview creates no node; missing node refuses; geometry inspected",
       "review": "Automatic wrapped-title clearance described; explicit size remains exact",
       "remaining": "Existing set/fit/delete variants outside this scenario.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "EditTurboMCPComment",
@@ -189,7 +190,7 @@
       "behavior": "One comment created; node position preserved; no duplicate bubble; title clearance checked",
       "review": "Automatic height includes native title wrapping; explicit dimensions retained",
       "remaining": "Existing boxes retain preferences; broad comment regression blocked by absent fixture nodes.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "ReadTurboMCPCommentList",
@@ -199,7 +200,7 @@
       "behavior": "Actual title, membership explanation and missing graph refusal checked",
       "review": "Point-based membership disclosed in code/help/output; multiline titles escaped",
       "remaining": "Point inclusion does not prove full containment; inspect capture.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     },
     {
       "tool": "LookTurboMCPLayoutDoneCheck",
@@ -208,19 +209,28 @@
       "ready": false,
       "behavior": "Final findings and image file checked; image personally inspected",
       "review": "No automatic approval claim; combines heuristic metrics with capture",
-      "remaining": "Human visual acceptance remains distinct from numerical findings.",
-      "scenario_evidence": "c8735a8f289248269dad165ce361fd5d"
+      "remaining": "Numeric checks do not detect the remaining wire/comment crossing; inspect actual PNG.",
+      "scenario_evidence": "e963de2a6c564ac4b9ce32cf26238ff2"
     }
   ],
   "evidence": [
     ".local/executions/c8735a8f289248269dad165ce361fd5d/report.json",
     ".local/executions/46de8a0308124f5a88b312080b3c7f73/report.json",
-    ".local/executions/3e4c2fe30e9e41b89b63350a15631d28/report.json"
+    ".local/executions/3e4c2fe30e9e41b89b63350a15631d28/report.json",
+    ".local/executions/e963de2a6c564ac4b9ce32cf26238ff2/report.json"
   ],
   "regression_limits": [
     "61f4696c2bbf4848ac6171de134dfb9e: tidy-scope fixture lacks selected/anchor nodes; comment-box fixture has fewer than two nodes. Both failed, not passed.",
     "The 125-tool inventory is not 125 completed tool reviews.",
     "This unsaved scalar function does not certify Widget, save/reload, arbitrary types, rollback or live-editor CP-14."
   ],
-  "acceptance_rule": "Scenario checked means bounded evidence, not full tool certification. ready remains false until the agreed per-tool acceptance review is complete."
+  "acceptance_rule": "Scenario checked means bounded evidence, not full tool certification. ready remains false until the agreed per-tool acceptance review is complete.",
+  "open_visual_issues": [
+    {
+      "id": "WF-BP-01-WIRE-COMMENT",
+      "status": "open",
+      "problem": "Subtotal wire crosses the percent-conversion comment box after annotation creation.",
+      "next": "Coordinate annotation bounds and input layout or route the wire without changing calculation semantics. Do not mark the workflow visually complete."
+    }
+  ]
 }

@@ -11,7 +11,7 @@ Review: source-reviewed
 
 ## Current purchase workflow review (2026-10-25)
 
-Scenario and named-local/reader repairs are implemented with focused native evidence. Visual comment layout and full per-tool acceptance remain open. See [the review and reproducible procedure](../docs/audit/purchase-workflow-review.md) and [per-tool status](../docs/audit/purchase-workflow-review.json). R04 is not complete; 125 inventoried tools are not 125 accepted tools.
+Scenario, named-local/reader repairs and getter direction/order are implemented with focused native evidence. WF-BP-01-WIRE-COMMENT remains open: the subtotal wire crosses the new annotation. Full per-tool acceptance remains open. See [the review and reproducible procedure](../docs/audit/purchase-workflow-review.md) and [per-tool status](../docs/audit/purchase-workflow-review.json). R04 is not complete; 125 inventoried tools are not 125 accepted tools.
 
 ## Approved getter-direction repair (2026-10-25)
 
