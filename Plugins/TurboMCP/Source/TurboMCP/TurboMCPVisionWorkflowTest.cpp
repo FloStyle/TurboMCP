@@ -3,6 +3,7 @@
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "BlueprintEditorLibrary.h"
+#include "Internationalization/Regex.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
@@ -119,7 +120,19 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
   const FString Before=Snapshot();
   const FString Read=Record(TEXT("Graph context"),UTurboMCPReadToolset::ReadTurboMCPGraphLoad(BP->GetPathName(),G->GetName(),TEXT("read"),TEXT("bodies"),0,24000));
   TestFalse(TEXT("Graph context available"),Read.StartsWith(TEXT("error:")));
-  auto Shot=[&](const FString& Mode,const FString& Target,const FString& Size,int32 W=0,int32 H=0){const FString Out=Record(G->GetName()+TEXT(" / ")+Mode+TEXT(" / ")+Size,UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(),G->GetName(),Mode,Target,Size));ImageCheck(Out,W,H);TestTrue(TEXT("Capture explains readability uncertainty"),Out.Contains(TEXT("readability:")));TestTrue(TEXT("Capture offers exact detail workflow"),Out.Contains(TEXT("ReadTurboMCPNodeFind")) && Out.Contains(TEXT("hop count, not pixels")));};
+  auto Shot=[&](const FString& Mode,const FString& Target,const FString& Size,int32 W=0,int32 H=0){const FString Out=Record(G->GetName()+TEXT(" / ")+Mode+TEXT(" / ")+Size,UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(),G->GetName(),Mode,Target,Size));ImageCheck(Out,W,H);if(Mode==TEXT("graph"))
+  {
+   FRegexMatcher Bounds(FRegexPattern(TEXT("frame bounds: x (-?[0-9.]+) to (-?[0-9.]+), y (-?[0-9.]+) to (-?[0-9.]+)")),Out);
+   const bool HasBounds=Bounds.FindNext();TestTrue(TEXT("Overview reports bounds"),HasBounds);
+   if(HasBounds)
+   {
+    const double Left=FCString::Atod(*Bounds.GetCaptureGroup(1)),Right=FCString::Atod(*Bounds.GetCaptureGroup(2));
+    const double Top=FCString::Atod(*Bounds.GetCaptureGroup(3)),Bottom=FCString::Atod(*Bounds.GetCaptureGroup(4));
+    for(UEdGraphNode* N:G->Nodes) if(const auto* Comment=Cast<UEdGraphNode_Comment>(N))
+     TestTrue(TEXT("Overview includes every comment rectangle"),Left<=Comment->NodePosX && Top<=Comment->NodePosY && Right>=Comment->NodePosX+Comment->NodeWidth && Bottom>=Comment->NodePosY+Comment->NodeHeight);
+   }
+  }
+  TestTrue(TEXT("Capture explains readability uncertainty"),Out.Contains(TEXT("readability:")));TestTrue(TEXT("Capture offers exact detail workflow"),Out.Contains(TEXT("ReadTurboMCPNodeFind")) && Out.Contains(TEXT("hop count, not pixels")));};
   Shot(TEXT("graph"),TEXT(""),TEXT("1600x900"),1600,900);
   Shot(TEXT("node"),TurboMCPNodeId::MakeForNode(Targets[I]),TEXT("1200x800"),1200,800);
   Shot(TEXT("neighbours"),TurboMCPNodeId::MakeForNode(Targets[I]),TEXT("1"));

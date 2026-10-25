@@ -601,7 +601,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	{
 		for (UEdGraphNode* Node : Graph->Nodes)
 		{
-			if (Node != nullptr && !Node->IsA<UEdGraphNode_Comment>())
+			if (Node != nullptr && (bWholeGraph || !Node->IsA<UEdGraphNode_Comment>()))
 			{
 				Targets.Add(Node);
 			}
@@ -765,7 +765,10 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
                 return TEXT("error: capture node widgets unavailable; no blank image returned");
         const FVector2D CanvasSize=CaptureEditor->GetGraphPanel()->GetTickSpaceGeometry().GetLocalSize();
         if(CanvasSize.X<=0 || CanvasSize.Y<=0) return TEXT("error: capture canvas unavailable");
-        const float FitZoom=FMath::Min(1.0,FMath::Min(CanvasSize.X/(FrameWidth+64.0),CanvasSize.Y/(FrameHeight+64.0)));
+        // Comment bubbles keep screen-space height at distant zoom levels.
+        // Whole-graph padding must therefore remain in pixels, not shrink with zoom.
+        const float OverviewInset=bWholeGraph?FMath::Min(64.f,static_cast<float>(FMath::Min(CanvasSize.X,CanvasSize.Y))*0.2f):0.f;
+        const float FitZoom=FMath::Min(1.0,FMath::Min((CanvasSize.X-2*OverviewInset)/(FrameWidth+64.0),(CanvasSize.Y-2*OverviewInset)/(FrameHeight+64.0)));
         float RequestedZoom=FitZoom,NativeZoom=1.0f; FVector2f NativeOffset;
         for(int32 Attempt=0;Attempt<64;++Attempt)
         {
