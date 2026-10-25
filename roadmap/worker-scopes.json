@@ -2087,6 +2087,16 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "workflow-purchase-append": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppend.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphAppendTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphAppend.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []

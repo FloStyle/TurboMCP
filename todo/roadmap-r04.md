@@ -17,6 +17,10 @@ Scenario, named-local/reader repairs and getter direction/order are implemented 
 
 User screenshot accepts the remaining purchase layout but rejects local getters stacked above their consumers. Preserve a forward-facing consumer for the original shared getter; place copies left of their own input. Do not change graph values or links beyond the existing safe getter split. Scope: GraphTidy and PurchaseWorkflowTest. Verify with supervised test-purchase-workflow, geometric getter direction assertions, runtime purchase results and inspection of the final PNG. Preserve preview no-mutation and comment/execution layout.
 
+## Approved purchase append review (2026-10-25)
+
+Review Preview/Edit GraphAppend through a minimum-quantity purchase rule. Fixture starts with an unused MinimumQuantity input because Append cannot edit an existing function signature. Discover node types/pins; preview and append comparison/AND nodes, replacing only CanAfford. Verify three outcomes and unchanged price, exact existing node/position/default/link preservation except the intended connection, preview/refusal non-mutation, clear output and actual capture. Review implementation, public descriptions and comments; repair confirmed defects within assignment scope. Run supervised test-purchase-workflow and record limitations; no global tool certification.
+
 ## Problem
 For each tool record actual callable schema, side effects, supported scope, refusal behavior and test evidence. Distinguish declared, definition located, source reviewed, runtime observed and release accepted. Start with result-envelope double wrapping and invalid numeric/default parsing. Do not invent a new public result schema.
 
