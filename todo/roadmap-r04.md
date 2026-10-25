@@ -1570,3 +1570,7 @@ the second PNG and preserved the earlier bytes. Existing pixel and dimension
 checks passed for seven asset kinds. DataTable remained a named missing-fixture
 refusal; AnimBlueprint still lacks positive capture coverage. Graph debug-mode
 artifact naming remains a separate follow-up; no full-vision acceptance claim.
+
+
+### Approved purchase result clarity repair - 2026-10-25
+Integrator scope: workflow-purchase-results. Readiness: ready. Echo the actual verified pin identity and normalized value on changed/unchanged PinDefault results without changing mutation or rollback behavior. State CommentList's point-based membership approximation accurately in code, help and output; escape multiline titles. Extend the disposable purchase scenario with exact-result and refusal checks. No new engine requirement or broad readiness claim.
