@@ -1549,3 +1549,6 @@ was absent. AnimBlueprint has catalogue coverage only. Neither is a positive
 capture pass. Full colour fidelity, framing and live CP-14 remain separate work.
 Pillow reports getdata deprecation; this does not invalidate the current result.
 The 125-tool review remains unfinished.
+
+### Approved capture artifact retention — 2026-10-25
+Asset-editor and screen captures reuse deterministic names and overwrite earlier evidence. Give each result a unique absolute PNG path. Verify repeated same-asset and same-size screen captures preserve prior bytes. Graph debug modes are outside this bounded repair; review them separately.
