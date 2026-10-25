@@ -14,6 +14,8 @@
 #include "K2Node_CallFunction.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
+#include "K2Node_VariableGet.h"
+#include "TurboMCPGraphTidy.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
@@ -222,6 +224,34 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Tidy preview preserves positions"), UTurboMCPLookToolset::LookTurboMCPGraphPositions(Asset, GraphName), BeforeTidyPositions);
     const FString Tidy = Record(TEXT("EditTurboMCPGraphTidy"), UTurboMCPEditToolset::EditTurboMCPGraphTidy(Asset, GraphName, false, WholeGraph));
     TestFalse(TEXT("Tidy does not return an error"), Tidy.StartsWith(TEXT("error:")));
+    // A collision-free graph can still have backward, looping getter wires.
+    // Check the consumer relation, not just whether node rectangles overlap.
+    int32 LocalReaderLinks = 0;
+    for (UEdGraphNode* Node : Graph->Nodes)
+        if (const UK2Node_VariableGet* Reader = Cast<UK2Node_VariableGet>(Node))
+            for (UEdGraphPin* Output : Reader->Pins)
+                if (Output && Output->Direction == EGPD_Output)
+                    for (UEdGraphPin* Input : Output->LinkedTo)
+                        if (Input && Input->GetOwningNodeUnchecked())
+                        {
+                            ++LocalReaderLinks;
+                            TestTrue(TEXT("Getter output stays left of its consumer input"),
+                                FTurboMCPGraphTidy::AlignmentPinPosition(Output).X
+                                < FTurboMCPGraphTidy::AlignmentPinPosition(Input).X);
+                        }
+    TestTrue(TEXT("Layout direction check covers local readers"), LocalReaderLinks >= 4);
+    for (UEdGraphNode* Consumer : Graph->Nodes)
+        for (UEdGraphPin* Upper : Consumer->Pins)
+            if (Upper && Upper->Direction == EGPD_Input && Upper->LinkedTo.Num() == 1
+                && Cast<UK2Node_VariableGet>(Upper->LinkedTo[0]->GetOwningNodeUnchecked()))
+                for (UEdGraphPin* Lower : Consumer->Pins)
+                    if (Lower && Lower->Direction == EGPD_Input && Lower->LinkedTo.Num() == 1
+                        && Lower->PinType.PinCategory != UEdGraphSchema_K2::PC_Exec
+                        && FTurboMCPGraphTidy::AlignmentPinPosition(Upper).Y < FTurboMCPGraphTidy::AlignmentPinPosition(Lower).Y)
+                        TestTrue(TEXT("Getter inputs preserve vertical pin order"),
+                            FTurboMCPGraphTidy::AlignmentPinPosition(Upper->LinkedTo[0]).Y
+                            <= FTurboMCPGraphTidy::AlignmentPinPosition(Lower->LinkedTo[0]).Y);
+
     if (!CheckValues(true)) return false;
     const FString NodeIds = TurboMCPNodeId::Make(Asset, GraphName, RateGuid, true);
     const int32 BeforeCommentCount = Graph->Nodes.Num();
@@ -232,6 +262,15 @@ bool FTurboMCPPurchaseWorkflowTest::RunTest(const FString& Parameters)
     TArray<UEdGraphNode_Comment*> Comments;
     Graph->GetNodesOfClass(Comments);
     if (!TestEqual(TEXT("One annotation created"), Comments.Num(), 1)) return false;
+    for (UEdGraphNode* Node : Graph->Nodes)
+        if (Node && Node != Rate && !Node->IsA<UEdGraphNode_Comment>())
+        {
+            const FVector2D Size = FTurboMCPGraphTidy::AlignmentNodeSize(Node);
+            const UEdGraphNode_Comment* Box = Comments[0];
+            TestFalse(TEXT("Annotation does not cover unrelated nodes"),
+                Node->NodePosX < Box->NodePosX + Box->NodeWidth && Node->NodePosX + Size.X > Box->NodePosX
+                && Node->NodePosY < Box->NodePosY + Box->NodeHeight && Node->NodePosY + Size.Y > Box->NodePosY);
+        }
     TestFalse(TEXT("New comment has no duplicate floating bubble"), Comments[0]->bCommentBubbleVisible);
     TestFalse(TEXT("New comment does not pin a floating bubble"), Comments[0]->bCommentBubblePinned);
     TestTrue(TEXT("Long title has room above its content"), Rate->NodePosY - Comments[0]->NodePosY > 80);

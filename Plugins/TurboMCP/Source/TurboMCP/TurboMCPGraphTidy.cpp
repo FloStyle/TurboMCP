@@ -1934,8 +1934,8 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         if (bFunctionInput && !MeasureInputReader(Getter, ValuePin, ReaderSize, ReaderOffset))
         { OutError = TEXT("function-input getter outline could not be measured; no graph changes applied"); return false; }
 
-        // Keep the original beside its nearest planned consumer. Old canvas X
-        // order can select a different lane after tidy and leave a long residual wire.
+        // Keep the original beside a forward-facing planned consumer. Old canvas
+        // order and distance alone can select the wrong input lane after tidy.
         TArray<UEdGraphPin*> Consumers = ValuePin->LinkedTo;
         const FVector2D OriginalOutput=AlignmentPinPosition(ValuePin)
             + FVector2D(Entry.PlannedX-Entry.X,Entry.PlannedY-Entry.Y);
@@ -1950,6 +1950,17 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
         };
         Consumers.Sort([&](const UEdGraphPin& InLeft,const UEdGraphPin& InRight)
         {
+            // Preserve the forward-facing consumer chosen by layout. Euclidean
+            // distance alone can prefer a node directly below the getter, leaving
+            // a backward wire while the forward consumer receives a new copy.
+            auto IsForwardConsumer = [&](const UEdGraphPin& Pin)
+            {
+                const int32* Index = IndexByNode.Find(Pin.GetOwningNodeUnchecked());
+                return Index && OutPlan.Nodes[*Index].PlannedX >= Entry.PlannedX + Entry.Width;
+            };
+            const bool bLeftForward = IsForwardConsumer(InLeft);
+            const bool bRightForward = IsForwardConsumer(InRight);
+            if (bLeftForward != bRightForward) return bLeftForward;
             const double LeftDistance=PlannedConsumerDistance(InLeft),RightDistance=PlannedConsumerDistance(InRight);
             if(LeftDistance!=RightDistance) return LeftDistance<RightDistance;
             const UEdGraphNode* L=InLeft.GetOwningNodeUnchecked();
@@ -2046,11 +2057,36 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             const FVector2D ConsumerInput = FTurboMCPGraphTidy::AlignmentPinPosition(ConsumerPin)
                 + FVector2D(ConsumerPlan.PlannedX - ConsumerPlan.X, ConsumerPlan.PlannedY - ConsumerPlan.Y);
             const double CopyFloor = Planned.PlannedY;
-            const double PreferredCopyX = Planned.PlannedX;
+            // Keep a copied reader above sources feeding lower input pins. A
+            // downward-only collision search otherwise reverses the input order.
+            double CopyCeiling = TNumericLimits<double>::Max();
+            double CopyRightLimit = Planned.PlannedX;
+            for (UEdGraphPin* OtherInput : ConsumerNode->Pins)
+            {
+                if (!OtherInput || OtherInput == ConsumerPin || OtherInput->Direction != EGPD_Input
+                    || AlignmentPinPosition(OtherInput).Y <= AlignmentPinPosition(ConsumerPin).Y) continue;
+                for (const FGetterCopy& EarlierCopy : OutPlan.GetterCopies)
+                    if (EarlierCopy.ConsumerPin == OtherInput)
+                        CopyCeiling = FMath::Min(CopyCeiling,
+                            EarlierCopy.PlannedY - Planned.Height - GetterClearance);
+                for (UEdGraphPin* Source : OtherInput->LinkedTo)
+                {
+                    const int32* SourceIndex = Source ? IndexByNode.Find(Source->GetOwningNodeUnchecked()) : nullptr;
+                    if (!SourceIndex || !OutPlan.Nodes[*SourceIndex].bIsPure) continue;
+                    const FNode& SourcePlan = OutPlan.Nodes[*SourceIndex];
+                    // Keep the reader beside a sibling computation, rather than
+                    // stacking it over that computation's annotation space.
+                    if (!SourcePlan.bIsGetter)
+                        CopyRightLimit = FMath::Min(CopyRightLimit, SourcePlan.PlannedX - Planned.Width - SpacingX);
+                    CopyCeiling = FMath::Min(CopyCeiling,
+                        AlignmentPinPosition(Source).Y + SourcePlan.PlannedY - SourcePlan.Y - Planned.OutputOffset.Y - GetterClearance);
+                }
+            }
+            const double PreferredCopyX = CopyRightLimit;
             const double MinimumCopyX = ConsumerBoxIndex == INDEX_NONE ? static_cast<double>(MIN_int32)
                 : OutPlan.Boxes[ConsumerBoxIndex].X + FitPadding;
             TArray<double> CopyColumns;
-            CopyColumns.Add(PreferredCopyX);
+            if (PreferredCopyX >= MinimumCopyX) CopyColumns.Add(PreferredCopyX);
             for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
             {
                 const double LeftColumn = FMath::FloorToDouble(Obstacle.X - Planned.Width - SpacingX);
@@ -2061,31 +2097,43 @@ bool FTurboMCPGraphTidy::Plan(const FString& InAsset, const FString& InGraphName
             double BestCopyScore = TNumericLimits<double>::Max();
             for (double CopyX : CopyColumns)
             {
-                double CopyY = FMath::Max(CopyFloor, FMath::RoundToDouble(ConsumerInput.Y - Planned.OutputOffset.Y));
-                for (int32 Pass = 0; Pass <= CopyObstacles.Num(); ++Pass)
+                TArray<double> CopyRows;
+                CopyRows.Add(FMath::Max(CopyFloor, FMath::Min(CopyCeiling, FMath::RoundToDouble(ConsumerInput.Y - Planned.OutputOffset.Y))));
+                // Try the free slot above an obstacle as well as below it. This
+                // avoids moving a reader several columns left when a nearby gap fits.
+                for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
                 {
-                    double NextY = CopyY;
-                    for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
-                        if (CopyX < Obstacle.X + Obstacle.Width + SpacingX
-                            && CopyX + Planned.Width + SpacingX > Obstacle.X
-                            && CopyY < Obstacle.Y + Obstacle.Height + GetterClearance
-                            && CopyY + Planned.Height + GetterClearance > Obstacle.Y)
-                            NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + GetterClearance));
-                    if (NextY == CopyY) break;
-                    CopyY = NextY;
+                    const double Above = FMath::FloorToDouble(Obstacle.Y - Planned.Height - GetterClearance);
+                    if (Above >= CopyFloor && Above <= CopyCeiling) CopyRows.AddUnique(Above);
                 }
-                if (!FMath::IsFinite(CopyX) || !FMath::IsFinite(CopyY)
-                    || CopyX < MIN_int32 || CopyX > MAX_int32 || CopyY < MIN_int32 || CopyY > MAX_int32) continue;
-                const double CopyScore = FVector2D::Distance(FVector2D(CopyX, CopyY) + Planned.OutputOffset, ConsumerInput);
-                if (CopyScore < BestCopyScore)
+                for (double CopyY : CopyRows)
                 {
-                    BestCopyScore = CopyScore;
-                    Planned.PlannedX = CopyX;
-                    Planned.PlannedY = CopyY;
+                    for (int32 Pass = 0; Pass <= CopyObstacles.Num(); ++Pass)
+                    {
+                        double NextY = CopyY;
+                        for (const FOccupiedGetterRect& Obstacle : CopyObstacles)
+                            if (CopyX < Obstacle.X + Obstacle.Width + SpacingX
+                                && CopyX + Planned.Width + SpacingX > Obstacle.X
+                                && CopyY < Obstacle.Y + Obstacle.Height + GetterClearance
+                                && CopyY + Planned.Height + GetterClearance > Obstacle.Y)
+                                NextY = FMath::Max(NextY, FMath::CeilToDouble(Obstacle.Y + Obstacle.Height + GetterClearance));
+                        if (NextY == CopyY) break;
+                        CopyY = NextY;
+                    }
+                    if (CopyY > CopyCeiling) continue;
+                    if (!FMath::IsFinite(CopyX) || !FMath::IsFinite(CopyY)
+                        || CopyX < MIN_int32 || CopyX > MAX_int32 || CopyY < MIN_int32 || CopyY > MAX_int32) continue;
+                    const double CopyScore = FVector2D::Distance(FVector2D(CopyX, CopyY) + Planned.OutputOffset, ConsumerInput);
+                    if (CopyScore < BestCopyScore)
+                    {
+                        BestCopyScore = CopyScore;
+                        Planned.PlannedX = CopyX;
+                        Planned.PlannedY = CopyY;
+                    }
                 }
             }
             if (BestCopyScore == TNumericLimits<double>::Max())
-            { OutError = TEXT("No finite shared-reader position; no graph changes applied."); return false; }
+            { OutError = TEXT("No collision-free shared-reader position preserves input order inside the layout region; no graph changes applied."); return false; }
 			if (!FMath::IsFinite(Planned.PlannedX) || !FMath::IsFinite(Planned.PlannedY)
 				|| Planned.PlannedX < MIN_int32 || Planned.PlannedX > MAX_int32
 				|| Planned.PlannedY < MIN_int32 || Planned.PlannedY > MAX_int32)
