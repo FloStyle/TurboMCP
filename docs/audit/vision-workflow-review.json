@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "updated": "2026-10-25",
-  "native_run": "83b71dfcc8764dff9cd82b7b212a8a46",
+  "native_run": "3c78d90b08224fe69e055a985ae23708",
   "offline_run": "2d230dafffe2474a91fcf0320b9ef59c",
   "offline": "22/26; four unchanged baseline failures",
   "capture_count": 26,
@@ -79,7 +79,7 @@
       "verification": "native tested; limited scenario",
       "priority": "P1",
       "problem": "Bounded keyboard/gamepad input and Enhanced Input context diagnostics are needed for play/menu debugging.",
-      "fix": "Added PlayInput and PlayInputState. Stock-engine pause/menu/resume and post-resume analog action passed. CommonUI stack/device diagnostics and controller menu navigation remain unavailable."
+      "fix": "Bounded Slate input and Enhanced Input contexts passed. Focus-loss cancellation and optional logical CommonInput/active-widget diagnostics were subsequently added and tested."
     },
     {
       "id": "VISION-09",
@@ -94,10 +94,20 @@
       "id": "VISION-10",
       "kind": "feature",
       "status": "open",
-      "verification": "not tested",
+      "verification": "D-pad navigation, focus-loss cancellation, explicit release and optional CommonUI diagnostics passed in native run 3c78d90b08224fe69e055a985ae23708",
       "priority": "P2",
-      "problem": "Runtime debugging still lacks general CommonUI stack/device diagnostics and broader focus navigation evidence.",
-      "next": "Directional focus movement, focus loss during holds, modal/disabled controls, multiple players and device-specific prompts remain outside the accepted fixture. ReadPlayInputState explicitly reports unavailable CommonUI diagnostics."
+      "problem": "Broader runtime input coverage remains: application switching, modal/disabled controls, multiple players and device-specific prompts.",
+      "next": "Application-deactivation cleanup is implemented but not reproduced. Active widget identities are unordered, not an activation stack; routing policy remains unavailable. Simultaneous physical input and chords remain unsupported.",
+      "fix": "D-pad Down/Up, original-player axis cleanup on focus loss, outside-focus refusal and recovery passed. ReadPlayInputState reports logical CommonInput type, active widget paths, focus membership and last release reason."
+    },
+    {
+      "id": "VISION-11",
+      "kind": "bug",
+      "status": "done",
+      "priority": "P1",
+      "problem": "Timed analog input continued after focus left the PIE viewport.",
+      "fix": "Cancel repeats on focus loss and release only the owned key on the original player; expose the release reason and refuse existing active keys. Application-deactivation cancellation also implemented.",
+      "verification": "Native focus-loss, axis-zero, refusal and explicit-release checks passed; application switching remains untested."
     }
   ],
   "planned_scenarios": [
@@ -109,6 +119,6 @@
     "Responsive widget, clipping and localization",
     "Directional CommonUI focus navigation, modal controls, focus-loss release and general stack/device diagnostics"
   ],
-  "current_offline_run": "3058faa6d2674b67ad3cca6e07f9e35b",
-  "current_offline": "26/26 passed for integrated CommonUI controller workflow."
+  "current_offline_run": "821fc9cbfc244511bd3aa86bbf308757",
+  "current_offline": "26/26 passed for input focus safety and CommonUI diagnostics."
 }

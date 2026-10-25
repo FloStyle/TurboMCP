@@ -659,12 +659,12 @@
     "Evidence: record each tool used, actual output, scenario result, remaining gaps and user visual feedback; no blanket bug-free claim."
   ],
   "play_input_review": {
-    "status": "Slate and real CommonUI scenarios passed; broader review pending",
-    "native_run": "83b71dfcc8764dff9cd82b7b212a8a46",
+    "status": "CommonUI directional navigation, focus-loss cancellation and diagnostics passed; broader review pending",
+    "native_run": "3c78d90b08224fe69e055a985ae23708",
     "tools": [
       "ReadTurboMCPPlayInputState",
       "EditTurboMCPPlayInput"
     ],
-    "limit": "Full-review completion still requires focus-loss/release and directional navigation cases; no new completed-tool count."
+    "limit": "38/127 full-review count unchanged. Application switching, modal/disabled controls, multiplayer, simultaneous physical input and chords remain unverified."
   }
 }

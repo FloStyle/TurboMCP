@@ -9,7 +9,7 @@ Native run 83b71dfcc8764dff9cd82b7b212a8a46 passed the stock-engine build and vi
 | Tool | Role |
 | --- | --- |
 | ReadTurboMCPPlayCheck | Own a bounded 30-second PIE session and report runtime warnings/errors. |
-| ReadTurboMCPPlayInputState | Observe world, focus, held key and mapping contexts. CommonUI diagnostics remain explicitly unavailable. |
+| ReadTurboMCPPlayInputState | Observe world, focus, held key and mapping contexts. Optional CommonInput device type and unordered active CommonUI widget identities are now available. |
 | EditTurboMCPPlayInput | Send timed digital/analog input through Slate. No direct action injection or callback invocation. |
 | LookTurboMCPCapture | Capture game and overlay at native resolution; inspect visible results. |
 
@@ -34,10 +34,18 @@ To use Escape as gameplay Back in PIE, explicitly change the editor's Stop Play 
 
 ## Remaining limits
 
-Directional focus movement, focus loss during a held input, simultaneous axes/chords, modal/disabled controls, multiplayer and physical controller/device-specific prompt behavior remain unchecked. General CommonUI active-stack/device diagnostics are not yet a production tool feature. The fixture reads that state independently; do not claim ReadPlayInputState supplies it.
+Simultaneous axes/chords, modal/disabled controls, multiplayer and physical controller/device-specific prompts remain unchecked. Active widget identities are unordered: the tools do not report stack order or routing policy. Application-deactivation cleanup is implemented but application switching was not reproduced; the tested focus-loss case stays inside Unreal.
 
 Full tool-review completion stays at 38/127. These two input tools have stronger scenario evidence, but the remaining cases are still tracked.
 
 Reproduce through `python Tools/execute-tests.py --profile engine --suites test-vision-workflow --execute`. The suite includes prior vision checks and the new CommonPlay scenario. Local evidence is `TestProject/Saved/TurboMCP/Workflow/common-play.txt` plus the execution report.
 
 Offline integration gate: 3058faa6d2674b67ad3cca6e07f9e35b passed all 26 checks.
+
+## Focus and diagnostics follow-up
+
+Native run 3c78d90b08224fe69e055a985ae23708 passed the stock-engine build and full vision suite. D-pad Down focused Resume and Up restored Settings before confirmation. Independent widget-focus assertions proved navigation. A five-second analog hold was cancelled before expiry when focus moved to an owned window outside PIE; the original player axis returned to zero, another hold outside PIE refused, and gameplay focus plus explicit release worked afterward. The session reported zero warnings/errors. The pause-screen capture was inspected.
+
+Input cleanup sends no repeat or release into a newly focused editor control. It releases only the owned key on the original PlayerInput, without flushing other keys or injecting actions. Keys already active on the player refuse. CommonInput and active-widget diagnostics use native getters from loaded optional classes only; no assets or optional modules are loaded. Unavailable data remains explicit.
+
+Focus/diagnostics integration: native 3c78d90b08224fe69e055a985ae23708 and offline 821fc9cbfc244511bd3aa86bbf308757 (26/26) passed. VISION-11 records the fixed focus-loss bug; VISION-10 retains broader unverified runtime cases. Full-review count remains 38/127.
