@@ -798,7 +798,13 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
         IFileManager::Get().MakeDirectory(*PictureFolder,true);
         const FString PicturePath=FPaths::ConvertRelativePathToFull(PictureFolder/FString::Printf(TEXT("%s_%s_native_%dx%d_%s.png"),*Blueprint->GetName(),*Graph->GetName(),Width,Height,*FGuid::NewGuid().ToString(EGuidFormats::Digits)));
         if(PicturePng.IsEmpty() || !FFileHelper::SaveArrayToFile(PicturePng,*PicturePath)) return TEXT("error: capture PNG could not be saved");
-        return FString::Printf(TEXT("look: capture of %s\ngraph: %s\nsize: %dx%d\nrenderer: native Slate scratch graph; zoom %.3f; independent of editor window size; no raster upscaling\nframe bounds: x %.1f to %.1f, y %.1f to %.1f\nframed: %s\n%s\nimage: %s"),*Resolved.ObjectPath,*Graph->GetName(),Width,Height,NativeZoom,Box.MinX,Box.MaxX,Box.MinY,Box.MaxY,*FrameLabel,*SelectorDefinition,*PicturePath);
+        // This is a scale warning, not an OCR/readability verdict. Even a 1:1
+        // image can contain clipped or small text, so always inspect the pixels.
+        const FString Readability=NativeZoom<0.75f
+            ? TEXT("readability: reduced scale; node text may be too small to read. Use this image as an overview.")
+            : TEXT("readability: inspect the image; capture success does not verify that every label is readable.");
+        const FString NextStep=TEXT("next: use ReadTurboMCPNodeFind for an exact node ID, then Mode=node with Size=1200x800 or Mode=neighbours with Size=1. In neighbour modes Size is a hop count, not pixels.");
+        return FString::Printf(TEXT("look: capture of %s\ngraph: %s\nsize: %dx%d\nrenderer: native Slate scratch graph; zoom %.3f; independent of editor window size; no raster upscaling\nframe bounds: x %.1f to %.1f, y %.1f to %.1f\nframed: %s\n%s\n%s\n%s\nimage: %s"),*Resolved.ObjectPath,*Graph->GetName(),Width,Height,NativeZoom,Box.MinX,Box.MaxX,Box.MinY,Box.MaxY,*FrameLabel,*SelectorDefinition,*Readability,*NextStep,*PicturePath);
     }
 
 	// The graph editor, opened if it is not already.

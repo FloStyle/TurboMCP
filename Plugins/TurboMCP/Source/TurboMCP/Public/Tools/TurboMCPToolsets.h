@@ -560,16 +560,19 @@ public:
         const FString& Execution = TEXT("deny"));
 
 	/**
-	 * Capture PNG; may load assets and change editor UI/view/selection; editor callbacks may run; no explicit asset compile/save; no automatic undo; image is not proof of graph correctness.
-	 * Requires a rendered editor. May load assets, open editor UI and change the view or selection.
-	 * Does not explicitly compile or save assets; editor callbacks may run. no automatic undo.
-	 * Refusals can occur after opening UI. An image is not proof of graph correctness.
-	 * All five string arguments are required by the schema; supply empty strings where unused.
-	 * @param Asset Asset path or unique name, e.g. /Game/Tests/BP_NodeTest. Empty: required for viewport, allowed for screen; asset-editor lists supported kinds.
-	 * @param GraphName Exact graph name, e.g. EventGraph; required for graph and diagnostic modes. For asset-editor, optional editor kind from its support table (empty auto-detects). Ignored by screen; must be empty for viewport.
-	 * @param Mode Case-insensitive: graph (also empty), box, node, region, selection, neighbours, box-neighbours, screen, asset-editor, viewport. Viewport requires Target=pie and empty Asset, GraphName and Size; captures the single live in-process PIE game layer with menu UI at native resolution, without editor chrome. Refuses absent or multiple PIE worlds. Use native SlateInspector refs for input and inspect the result after normal game ticks. Selection uses graph-canvas nodes only. Diagnostics: debug-window, rhi-state, select-nodes (changes graph selection).
-	 * @param Target Node ID from ReadTurboMCPNodeFind for node/neighbours; zero-based comment index from LookTurboMCPLayoutReport for box/box-neighbours. Region: x,y,width,height, finite values within +/-10000000, positive dimensions. select-nodes: comma-separated node keys. Asset-editor: empty preserves the current view; fit frames all nodes of a Material graph and changes its view only. Material shader state is reported without waiting; compiling previews may show fallback pixels. Viewport: pie is required. Otherwise pass empty.
-	 * @param Size Graph/box/node/region: WxH or W,H, each 1..4096 pixels, e.g. 1600x900. Empty uses native crop sizing, not a guaranteed resolution. Selection/neighbours/box-neighbours: digits 0..4096 (empty 0); neighbourhood modes use this as traversal depth/count and selectors size the image automatically. Screen captures the active Slate window (editor or play) and reports its title. Screen/asset-editor ignore Size. Viewport requires empty Size and uses native pixels (maximum edge 4096); it does not resize the game or rescale the image. Diagnostics accept dimensions except rhi-state (ignored).
+	 * Capture a graph, asset editor, active window or live PIE game layer as a PNG.
+	 * Start with Mode=graph for an overview. ReadTurboMCPNodeFind supplies node IDs;
+	 * then use Mode=node, Size=1200x800 for detail or Mode=neighbours, Size=1 for connected context.
+	 * A fitted overview may make text too small to read. Inspect the image and request a smaller target;
+	 * resolution and successful capture do not prove readability or graph correctness.
+	 * Requires a rendered editor. May load assets and change editor view, focus or selection.
+	 * Does not explicitly compile or save assets; editor callbacks may run. No automatic undo.
+	 * All five string arguments are required. Pass empty strings for unused arguments.
+	 * @param Asset Asset path or unique name. Required for graph and asset-editor captures. Empty for viewport; optional for screen.
+	 * @param GraphName Exact graph name for graph modes. Asset-editor optionally accepts an editor kind; empty auto-detects. Empty for viewport; ignored by screen.
+	 * @param Mode Case-insensitive. Graph modes: graph (default), node, box, region, selection, neighbours, box-neighbours. Other modes: screen, asset-editor, viewport. Diagnostics: debug-window, rhi-state, select-nodes (changes selection). Viewport supports one in-process PIE world only; inspect after normal game ticks.
+	 * @param Target Node ID for node/neighbours; zero-based comment index from LookTurboMCPLayoutReport for box/box-neighbours; x,y,width,height for region (finite, within +/-10000000, positive dimensions). Asset-editor: empty keeps the view, fit frames a Material graph. Viewport requires pie. select-nodes takes comma-separated node keys. Otherwise empty.
+	 * @param Size Graph/node/box/region: WxH or W,H, each 1..4096 pixels; empty means 1600x900. Selection/neighbours/box-neighbours: integer hop count 0..4096, empty means 0; image dimensions are automatic, not set by this number. Screen/asset-editor ignore Size. Viewport requires empty Size and uses native pixels up to a 4096-pixel edge. Diagnostics accept dimensions except rhi-state, which ignores Size.
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString LookTurboMCPCapture(

@@ -119,11 +119,13 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
   const FString Before=Snapshot();
   const FString Read=Record(TEXT("Graph context"),UTurboMCPReadToolset::ReadTurboMCPGraphLoad(BP->GetPathName(),G->GetName(),TEXT("read"),TEXT("bodies"),0,24000));
   TestFalse(TEXT("Graph context available"),Read.StartsWith(TEXT("error:")));
-  auto Shot=[&](const FString& Mode,const FString& Target,const FString& Size,int32 W=0,int32 H=0){const FString Out=Record(G->GetName()+TEXT(" / ")+Mode+TEXT(" / ")+Size,UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(),G->GetName(),Mode,Target,Size));ImageCheck(Out,W,H);};
+  auto Shot=[&](const FString& Mode,const FString& Target,const FString& Size,int32 W=0,int32 H=0){const FString Out=Record(G->GetName()+TEXT(" / ")+Mode+TEXT(" / ")+Size,UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(),G->GetName(),Mode,Target,Size));ImageCheck(Out,W,H);TestTrue(TEXT("Capture explains readability uncertainty"),Out.Contains(TEXT("readability:")));TestTrue(TEXT("Capture offers exact detail workflow"),Out.Contains(TEXT("ReadTurboMCPNodeFind")) && Out.Contains(TEXT("hop count, not pixels")));};
   Shot(TEXT("graph"),TEXT(""),TEXT("1600x900"),1600,900);
   Shot(TEXT("node"),TurboMCPNodeId::MakeForNode(Targets[I]),TEXT("1200x800"),1200,800);
   Shot(TEXT("neighbours"),TurboMCPNodeId::MakeForNode(Targets[I]),TEXT("1"));
-  if(I==0){Shot(TEXT("region"),TEXT("-100,-350,2100,1600"),TEXT("2048x1536"),2048,1536);Shot(TEXT("box"),TEXT("0"),TEXT("1600x900"),1600,900);Shot(TEXT("graph"),TEXT(""),TEXT(""));}
+  if(I==0){Shot(TEXT("region"),TEXT("-100,-350,2100,1600"),TEXT("2048x1536"),2048,1536);Shot(TEXT("box"),TEXT("0"),TEXT("1600x900"),1600,900);Shot(TEXT("graph"),TEXT(""),TEXT(""),1600,900);
+   TestTrue(TEXT("Dimensions rejected in hop mode"),UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(),G->GetName(),TEXT("neighbours"),TurboMCPNodeId::MakeForNode(Targets[I]),TEXT("1200x800")).Contains(TEXT("hop count")));
+   TestTrue(TEXT("Hop count rejected in dimension mode"),UTurboMCPLookToolset::LookTurboMCPCapture(BP->GetPathName(),G->GetName(),TEXT("node"),TurboMCPNodeId::MakeForNode(Targets[I]),TEXT("1")).Contains(TEXT("not a size")));}
   TestEqual(TEXT("Node count preserved"),G->Nodes.Num(),Count);
   TestEqual(TEXT("Graph text preserved"),Snapshot(),Before);
  }
