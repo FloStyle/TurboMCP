@@ -133,6 +133,22 @@ bool HeldTargetHasFocus()
 void ReleasePlayInput(const TCHAR* Reason)
 {
     if (!Held.Key.IsValid()) return;
+    // Analog InputKey adds samples within a frame. Sending zero alone after a
+    // press in that same frame leaves the earlier sample latched. Reset only
+    // the owned component, including its paired axis, before the release event.
+    if (Held.Key.IsAnalog())
+    {
+        if (UPlayerInput* OriginalInput=Held.PlayerInput.Get())
+        {
+            if (FKeyState* State=OriginalInput->GetKeyState(Held.Key))
+                State->RawValueAccumulator.X=0.f;
+            const EPairedAxis Component=Held.Key.GetPairedAxis();
+            const int32 Index=Component==EPairedAxis::X?0:Component==EPairedAxis::Y?1:Component==EPairedAxis::Z?2:INDEX_NONE;
+            if (Index!=INDEX_NONE)
+                if (FKeyState* Pair=OriginalInput->GetKeyState(Held.Key.GetPairedAxisKey()))
+                    Pair->RawValueAccumulator[Index]=0.f;
+        }
+    }
     // Never route cleanup into an editor control after focus leaves this viewport.
     if (HeldTargetHasFocus()) SendPlayEvent(Held,true);
     // A UI handler can consume Slate's release. Clear only our original player's
@@ -204,7 +220,9 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
     else if (!Value.IsEmpty()) return TEXT("error: Digital keys require empty Value.");
     if (Held.Key.IsValid()) return TEXT("error: A tool-held input is still active. Wait for its release or call release before sending another.");
     if (!FSlateApplication::Get().IsActive()) return TEXT("error: The editor application is inactive. No input was sent.");
-    if (Resolved.Controller->IsInputKeyDown(InputKey) || !FMath::IsNearlyZero(Resolved.Controller->GetInputAnalogKeyState(InputKey))) return TEXT("error: This key already has player input. Release it before starting a synthetic hold; the tool will not take ownership of existing input.");
+    // Analog activity is its value; the digital down flag can remain set after
+    // same-frame axis press/release events even when the axis has returned to zero.
+    if ((InputKey.IsDigital() && Resolved.Controller->IsInputKeyDown(InputKey)) || !FMath::IsNearlyZero(Resolved.Controller->GetInputAnalogKeyState(InputKey))) return TEXT("error: This key already has player input. Release it before starting a synthetic hold; the tool will not take ownership of existing input.");
     if (!HasPlayFocus(Resolved)) return TEXT("error: This player's focus is outside the PIE viewport. Inspect the UI; explicitly use focus for gameplay or a Slate control ref for menu input. No key was sent.");
     if (!EndHandle.IsValid()) EndHandle=FEditorDelegates::EndPIE.AddLambda([](bool){CancelPlayHold(TEXT("PIE ended"));});
     Held.Key=InputKey;Held.Value=Amount;Held.User=Resolved.User;Held.World=Resolved.World;Held.PlayerInput=Resolved.Controller->PlayerInput;Held.Viewport=Resolved.Viewport;Held.Deadline=FPlatformTime::Seconds()+Duration;

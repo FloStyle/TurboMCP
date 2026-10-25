@@ -24,6 +24,8 @@ class FCommonPlayLoop : public IAutomationLatentCommand
     TSharedPtr<SWindow> FocusWindow;
     TSharedPtr<SButton> OutsideButton;
     int32 FocusStep=0;
+    int32 DeactivationStep=0;
+    bool SimulatedInactive=false;
     int32 Step=0;
     double Next=FPlatformTime::Seconds()+2;
     double Deadline=FPlatformTime::Seconds()+65;
@@ -47,7 +49,7 @@ class FCommonPlayLoop : public IAutomationLatentCommand
     }
 public:
     explicit FCommonPlayLoop(FAutomationTestBase* InTest):Test(InTest) {}
-    ~FCommonPlayLoop() {if (FocusWindow.IsValid()) FocusWindow->RequestDestroyWindow();}
+    ~FCommonPlayLoop() {if (SimulatedInactive && FSlateApplication::IsInitialized()) FSlateApplication::Get().OnApplicationActivationChanged(true);if (FocusWindow.IsValid()) FocusWindow->RequestDestroyWindow();}
     virtual bool Update() override
     {
         double Now=FPlatformTime::Seconds();if (Now<Next) return false;Next=Now+1;
@@ -108,6 +110,31 @@ public:
                 }
                 ++FocusStep;return false;
             }
+            if (Step==10 && DeactivationStep<4)
+            {
+                // Exercise the native callback, not OS focus switching. Restore
+                // activation on every exit so this fixture cannot strand Slate.
+                if (DeactivationStep==0) Hold(TEXT("Gamepad_RightX"),TEXT("0.5"),TEXT("5"));
+                else if (DeactivationStep==1)
+                {
+                    Record(TEXT("Simulating application deactivation callback; this is not an OS Alt-Tab test."));
+                    SimulatedInactive=true;FSlateApplication::Get().OnApplicationActivationChanged(false);
+                }
+                else if (DeactivationStep==2)
+                {
+                    const FString Inactive=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(Inactive);
+                    Test->TestTrue(TEXT("Deactivation cancelled held input"),Inactive.Contains(TEXT("tool-held input: none")) && Inactive.Contains(TEXT("last release reason: application deactivated")));
+                    Test->TestTrue(TEXT("Inactive input refused"),UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),TEXT("P"),TEXT(""),TEXT("0.15")).Contains(TEXT("application is inactive")));
+                    FSlateApplication::Get().OnApplicationActivationChanged(true);SimulatedInactive=false;
+                    Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));
+                }
+                else
+                {
+                    Test->TestEqual(TEXT("No stale analog input after reactivation"),GEditor->PlayWorld->GetFirstPlayerController()->GetInputAnalogKeyState(EKeys::Gamepad_RightX),0.f);
+                    Hold(TEXT("Gamepad_RightX"),TEXT("0.25"));
+                }
+                ++DeactivationStep;return false;
+            }
             const FString Current=State();
             const FString InputState=UTurboMCPReadToolset::ReadTurboMCPPlayInputState(TEXT("pie:0"));Record(InputState);
             Test->TestTrue(TEXT("Hold automatically released"),InputState.Contains(TEXT("tool-held input: none")));
@@ -116,11 +143,11 @@ public:
             switch(Step)
             {
             case 1: Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));Hold(TEXT("Gamepad_Special_Right"));break;
-            case 2: Test->TestTrue(TEXT("D-pad up restored Settings focus"),Current.Contains(TEXT("focused button: Settings")));Test->TestTrue(TEXT("CommonUI diagnostics present"),InputState.Contains(TEXT("CommonUI active widgets: 2")) && InputState.Contains(TEXT("Gamepad")));Test->TestTrue(TEXT("Pause screen active"),Current.Contains(TEXT("screen: Pause")));Hold(TEXT("Gamepad_FaceButton_Bottom"));break;
-            case 3: Test->TestTrue(TEXT("CommonButton opens Settings"),Current.Contains(TEXT("screen: Settings")));Test->TestTrue(TEXT("Audio initially selected"),Current.Contains(TEXT("tab: Audio")) && Current.Contains(TEXT("content: Audio settings content")));Hold(TEXT("Gamepad_RightShoulder"));break;
+            case 2: Test->TestTrue(TEXT("Disabled control did not activate"),Current.Contains(TEXT("disabled clicks: 0")));Test->TestTrue(TEXT("D-pad up restored Settings focus"),Current.Contains(TEXT("focused button: Settings")));Test->TestTrue(TEXT("CommonUI diagnostics present"),InputState.Contains(TEXT("CommonUI active widgets: 2")) && InputState.Contains(TEXT("Gamepad")));Test->TestTrue(TEXT("Pause screen active"),Current.Contains(TEXT("screen: Pause")));Hold(TEXT("Gamepad_FaceButton_Bottom"));break;
+            case 3: Test->TestTrue(TEXT("Settings is modal"),Current.Contains(TEXT("modal: yes")));Test->TestTrue(TEXT("CommonButton opens Settings"),Current.Contains(TEXT("screen: Settings")));Test->TestTrue(TEXT("Audio initially selected"),Current.Contains(TEXT("tab: Audio")) && Current.Contains(TEXT("content: Audio settings content")));Hold(TEXT("Gamepad_RightShoulder"));break;
             case 4: Test->TestTrue(TEXT("Next tab selects Video"),Current.Contains(TEXT("tab: Video")) && Current.Contains(TEXT("content: Video settings content")));Hold(TEXT("Gamepad_LeftShoulder"));break;
             case 5: Test->TestTrue(TEXT("Previous tab selects Audio"),Current.Contains(TEXT("tab: Audio")) && Current.Contains(TEXT("content: Audio settings content")));Hold(TEXT("Gamepad_FaceButton_Right"));break;
-            case 6: Test->TestTrue(TEXT("Back restores parent screen"),Current.Contains(TEXT("screen: Pause")));Hold(TEXT("Gamepad_FaceButton_Right"));break;
+            case 6: Test->TestTrue(TEXT("Modal Back preserves paused parent and disabled control"),Current.Contains(TEXT("paused: yes")) && Current.Contains(TEXT("disabled clicks: 0")));Test->TestTrue(TEXT("Back restores parent screen"),Current.Contains(TEXT("screen: Pause")));Hold(TEXT("Gamepad_FaceButton_Right"));break;
             case 7: Test->TestTrue(TEXT("Back resumes gameplay"),Current.Contains(TEXT("screen: Gameplay")) && Current.Contains(TEXT("paused: no")));Hold(TEXT("Gamepad_RightX"),TEXT("0.75"));break;
             case 8: Test->TestFalse(TEXT("Camera action evaluated"),Current.Contains(TEXT("look calls: 0")));Test->TestFalse(TEXT("Camera rotation changed"),Current.Contains(TEXT("look yaw: 0.0")));Hold(TEXT("P"));break;
             case 9: Test->TestTrue(TEXT("Editor Escape refuses without stopping PIE"),UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),TEXT("Escape"),TEXT(""),TEXT("0.15")).Contains(TEXT("editor play command")));Test->TestTrue(TEXT("Keyboard reopens Pause"),Current.Contains(TEXT("screen: Pause")));Hold(TEXT("BackSpace"));break;
@@ -136,7 +163,7 @@ public:
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTurboMCPCommonPlayTest,"TurboMCP.Workflow.CommonPlay",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FTurboMCPCommonPlayTest::RunTest(const FString&)
 {
-    FString Start=UTurboMCPReadToolset::ReadTurboMCPPlayCheck(TEXT("30"),TEXT(""));
+    FString Start=UTurboMCPReadToolset::ReadTurboMCPPlayCheck(TEXT("40"),TEXT(""));
     if (Start.StartsWith(TEXT("error:")) || Start.Contains(TEXT("already playing"))) {AddError(Start);return false;}
     ADD_LATENT_AUTOMATION_COMMAND(FCommonPlayLoop(this));return true;
 }

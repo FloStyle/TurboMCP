@@ -60,11 +60,14 @@ void UTurboMCPCommonPlayScreen::NativeOnInitialized()
     auto* Panel=WidgetTree->ConstructWidget<UBorder>();Panel->SetBrushColor(FLinearColor(0.04f,0.04f,0.04f,1));Panel->SetPadding(FMargin(24));Panel->AddChild(Column);WidgetTree->RootWidget=Panel;
     FirstButton=CreateWidget<UTurboMCPCommonPlayButton>(GetOwningPlayer());FirstButton->SetLabel(TEXT("Settings"));Column->AddChild(FirstButton);
     FirstButton->OnClicked().AddLambda([this]{OpenSettings.ExecuteIfBound();});
+    // A disabled control must neither receive navigation focus nor activate.
+    auto* Disabled=CreateWidget<UTurboMCPCommonPlayButton>(GetOwningPlayer());Disabled->SetLabel(TEXT("Unavailable action"));Column->AddChild(Disabled);
+    Disabled->OnClicked().AddLambda([this]{++DisabledClickCount;});Disabled->SetIsEnabled(false);
     auto* Resume=CreateWidget<UTurboMCPCommonPlayButton>(GetOwningPlayer());Resume->SetLabel(TEXT("Resume"));Column->AddChild(Resume);
     Resume->OnClicked().AddLambda([this]{DeactivateWidget();});
 }
 UWidget* UTurboMCPCommonPlayScreen::NativeGetDesiredFocusTarget() const {return FirstButton;}
-UTurboMCPCommonSettingsScreen::UTurboMCPCommonSettingsScreen() {bIsBackHandler=true;}
+UTurboMCPCommonSettingsScreen::UTurboMCPCommonSettingsScreen() {bIsBackHandler=true;bIsModal=true;}
 TOptional<FUIInputConfig> UTurboMCPCommonSettingsScreen::GetDesiredInputConfig() const {return FUIInputConfig(ECommonInputMode::Menu,EMouseCaptureMode::NoCapture);}
 void UTurboMCPCommonSettingsScreen::NativeOnInitialized()
 {
@@ -139,11 +142,13 @@ FString ATurboMCPCommonPlayFixture::Describe() const
     auto* Common=ULocalPlayer::GetSubsystem<UCommonInputSubsystem>(PC->GetLocalPlayer());
     auto* Router=ULocalPlayer::GetSubsystem<UCommonUIActionRouterBase>(PC->GetLocalPlayer());
     const auto* Content=Settings?Cast<UTextBlock>(Settings->Tabs->GetLinkedSwitcher()->GetActiveWidget()):nullptr;
+    const auto* PauseScreen=Cast<UTurboMCPCommonPlayScreen>(Active);
+    const FString Safety=FString::Printf(TEXT("modal: %s; disabled clicks: %d; "),Active && Active->IsModal()?TEXT("yes"):TEXT("no"),PauseScreen?PauseScreen->DisabledClickCount:-1);
     const FString ContentText=Content?Content->GetText().ToString():TEXT("none");
     FString FocusLabel=TEXT("none");
     for (TObjectIterator<UTurboMCPCommonPlayButton> It;It;++It)
         if (It->GetWorld()==GetWorld() && (It->HasUserFocus(PC)||It->HasUserFocusedDescendants(PC))) FocusLabel=It->GetLabel();
-    return TEXT("focused button: ")+FocusLabel+TEXT("; content: ")+ContentText+TEXT("; ")+FString::Printf(TEXT("screen: %s; tab: %s; paused: %s; pauses: %d; look calls: %d; look yaw: %.1f; input type: %d; routing mode: %d"),Settings?TEXT("Settings"):Active?TEXT("Pause"):TEXT("Gameplay"),Settings?*Settings->Tabs->GetActiveTab().ToString():TEXT("none"),GetWorld()->IsPaused()?TEXT("yes"):TEXT("no"),PauseCount,LookCount,LookYaw,Common?int32(Common->GetCurrentInputType()):-1,Router?int32(Router->GetActiveInputMode()):-1);
+    return Safety+TEXT("focused button: ")+FocusLabel+TEXT("; content: ")+ContentText+TEXT("; ")+FString::Printf(TEXT("screen: %s; tab: %s; paused: %s; pauses: %d; look calls: %d; look yaw: %.1f; input type: %d; routing mode: %d"),Settings?TEXT("Settings"):Active?TEXT("Pause"):TEXT("Gameplay"),Settings?*Settings->Tabs->GetActiveTab().ToString():TEXT("none"),GetWorld()->IsPaused()?TEXT("yes"):TEXT("no"),PauseCount,LookCount,LookYaw,Common?int32(Common->GetCurrentInputType()):-1,Router?int32(Router->GetActiveInputMode()):-1);
 }
 void ATurboMCPCommonPlayFixture::EndPlay(const EEndPlayReason::Type Reason)
 {

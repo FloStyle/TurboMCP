@@ -52,6 +52,7 @@ class UTurboMCPCommonPlayScreen : public UCommonActivatableWidget
 public:
     UTurboMCPCommonPlayScreen();
     FSimpleDelegate OpenSettings;
+    int32 DisabledClickCount=0;
     virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
 protected:
     virtual void NativeOnInitialized() override;
