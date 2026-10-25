@@ -315,7 +315,7 @@
       "status": "scenario_checked",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
+      "evidence": "509881025b9244918ebbc5547c64f6a7",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
@@ -336,7 +336,7 @@
       "status": "scenario_checked",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
+      "evidence": "509881025b9244918ebbc5547c64f6a7",
       "focused_tools": [
         "LookTurboMCPWidgetPreview",
         "LookTurboMCPCapture"
@@ -354,10 +354,10 @@
     {
       "id": "WF-VISION-03-MATERIAL",
       "title": "Material editor visual inspection",
-      "status": "checked_with_open_visual_issue",
+      "status": "scenario_checked",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
+      "evidence": "509881025b9244918ebbc5547c64f6a7",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
@@ -365,8 +365,8 @@
         "LookTurboMCPCapture"
       ],
       "limitations": [
-        "Material editor image produced; current view crops graph and preview shader readiness is not established",
-        "Not material graph fit or material rendering correctness acceptance; material instance/function fixtures remain planned"
+        "Full material graph fit and green sphere visually checked after normal active-editor ticks. Shader availability alone does not prove frame freshness.",
+        "Targeted material subgraphs and material instance/function scenarios remain untested."
       ]
     },
     {
@@ -375,7 +375,7 @@
       "status": "scenario_checked",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
+      "evidence": "509881025b9244918ebbc5547c64f6a7",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
@@ -391,10 +391,10 @@
     {
       "id": "WF-VISION-05-PLAY",
       "title": "Owned play session with visual evidence",
-      "status": "checked_with_open_visual_issue",
+      "status": "scenario_checked",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
+      "evidence": "509881025b9244918ebbc5547c64f6a7",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
@@ -403,9 +403,8 @@
         "LookTurboMCPCapture"
       ],
       "limitations": [
-        "Owned 8-second play check started, captured active play window and stopped",
-        "CommonUI emitted missing CommonGameViewportClient error; runtime prerequisite failed, not gameplay acceptance",
-        "Output incorrectly calls captured PIE window the editor window; tracked wording defect. Capture includes window chrome, not dedicated viewport extraction"
+        "Owned eight-second play check completed with zero warnings and errors after test-project CommonUI viewport configuration.",
+        "Active-window capture includes chrome; no dedicated viewport selection or general gameplay correctness claim."
       ]
     }
   ],

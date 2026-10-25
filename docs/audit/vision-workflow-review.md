@@ -6,9 +6,9 @@
 
 1. Dense Blueprint: 254 nodes, 12 requests and 12 OnDestroyed handlers, three event graphs, sequence/branch/print operations, comments and a 48-operation calculation function. Capture overview, node, neighbours, comment and region. Use reader context before images. Whole-graph images are maps, not readable code review at this density.
 2. Widget: render known text at 640x240 and 1920x720, then inspect its live designer. This does not simulate input.
-3. Material: open/capture a disposable constant-color material editor. Explicit Target=fit now frames the measured graph; an empty Target keeps the current view. Shader readiness is not established. Do not count this as complete material vision acceptance.
+3. Material: open/capture a disposable constant-color material editor. Explicit Target=fit now frames the measured graph; an empty Target keeps the current view. Shader state is now reported separately from displayed-frame freshness. The constant-color sphere is visually confirmed after normal active-editor ticks; material instance/function coverage is still planned.
 4. Editor: capture live UI and then open another asset editor. This reproduced a Slate hit-test assertion, repaired by capturing through Slate's own window renderer rather than repainting live widgets into a temporary window/grid.
-5. Play: start an owned eight-second PlayCheck, capture the active play window, poll until stopped. The window image contains the scene, but CommonUI reports a missing CommonGameViewportClient. Capture transport passed; CommonUI runtime readiness did not.
+5. Play: start an owned eight-second PlayCheck, capture the active play window, poll until stopped. The test project now uses CommonGameViewportClient. The owned play window completes with zero warnings/errors; this is not general gameplay acceptance.
 
 ## Evidence and quality
 
@@ -25,3 +25,9 @@ Canonical findings and remaining scenarios are in vision-workflow-review.json. F
 Native bf10e7592ece4810b906900c78c3b4c3 passed the final candidate. Actual editor and PIE window titles were recorded. The material fixture uses separated nodes; its full fit image was visually inspected, and original expression/output positions and connection were preserved. Unsupported fit and invalid framing refuse. Slate zoom presets are respected before centering. The standard Material Editor working copy is used, with an editor identity guard. Updated helper/help English documents fit effects and shader-readiness uncertainty.
 
 Offline 2d230dafffe2474a91fcf0320b9ef59c: 22/26, the same four baseline failures. VISION-02 is done; VISION-03 is partial: full-graph fit done, shader readiness and targeted capture still open. The sphere still showed a fallback appearance. CommonUI configuration error remains in play evidence. Unique tool coverage remains 38/125.
+
+## Preview readiness and CommonUI repair
+
+Final candidate 1fdcde2; native 509881025b9244918ebbc5547c64f6a7 passed build, vision assertions and owned play (zero warnings/errors). The 23-image sequence includes initial material compilation, shader availability, and another capture after three seconds of normal active-editor ticks. The final image visibly shows the expected green sphere. The first available-shader capture can still show an older fallback frame: output now explicitly distinguishes these facts and tells the caller to retry after editor ticks. No blocking shader compile or engine modification was added. Material instance editors report unknown rather than an invented state.
+
+Capture helper output no longer claims FWidgetRenderer offscreen rendering: live captures use Slate. The test-project CommonUI prerequisite is fixed; VISION-05 is done. VISION-03 now contains only the remaining targeted subgraph feature. VISION-04 and VISION-06 remain open. Unique bounded tool reviews remain 38/125. Offline 65936db52d854ae08e287ed0246b0a2d passed 26/26 before the final delayed-capture and prose changes; the final native run covers those changes. Historical runs above retain their original failures.
