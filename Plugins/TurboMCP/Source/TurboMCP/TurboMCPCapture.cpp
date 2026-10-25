@@ -7,6 +7,7 @@
 
 
 #include "TurboMCPCapture.h"
+#include "TurboMCPPlayViewport.h"
 #include "Rendering/SlateRenderer.h"
 
 #include "Tools/TurboMCPToolsets.h"
@@ -110,6 +111,13 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 	// The mode, validated before anything opens, so a typo does not leave an editor
 	// tab open behind it.
 	const FString WantedMode = Mode.TrimStartAndEnd().ToLower();
+    if (WantedMode == TEXT("viewport"))
+    {
+        if (!Asset.IsEmpty() || !GraphName.IsEmpty() || !Size.IsEmpty() || !Target.Equals(TEXT("pie"), ESearchCase::IgnoreCase))
+            return TEXT("error: Mode=viewport requires Target=pie and empty Asset, GraphName and Size. Captures the single live PIE game layer at native resolution, including menu UI.");
+        return TurboMCPPlayViewport::Capture();
+    }
+
 	const bool bWholeGraph = WantedMode.IsEmpty() || WantedMode == TEXT("graph");
 	const bool bOneBox = WantedMode == TEXT("box");
 	const bool bRegion = WantedMode == TEXT("region");
@@ -307,7 +315,7 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		// diagnostic is not something a caller should be steered into.
 		return FString::Printf(
 			TEXT("error: '%s' is not a capture mode. Accepted: graph, box, node, ")
-			TEXT("region (Target=x,y,width,height), selection, neighbours, box-neighbours, screen, asset-editor. Leave it ")
+			TEXT("region (Target=x,y,width,height), selection, neighbours, box-neighbours, screen, asset-editor, viewport (Target=pie). Leave it ")
 			TEXT("empty for graph."), *Mode);
 	}
 

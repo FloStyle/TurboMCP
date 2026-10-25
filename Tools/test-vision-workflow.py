@@ -44,31 +44,14 @@ settled_shot = s.call(LOOK_TOOLSET, 'LookTurboMCPCapture', {'Asset':match[1], 'G
 with transcript.open('a', encoding='utf-8') as out: out.write('\n=== Material after active viewport ticks ===\n' + settled_shot + '\n')
 if 'image:' not in settled_shot: raise RuntimeError('No settled material image')
 print('MATERIAL AFTER ACTIVE VIEWPORT TICKS:', settled_shot)
-# Start only our bounded play check; an existing user's play session is not ours.
-first = s.call(READ_TOOLSET, 'ReadTurboMCPPlayCheck', {'Seconds':'8', 'Map':''})
-print('PLAY START:', first)
-if 'already playing' in first.lower() or first.startswith(('error:', '!!')):
-    raise RuntimeError('Could not acquire an owned play-check window')
-play_log = []
-try:
-    time.sleep(2)
-    shot = s.call(LOOK_TOOLSET, 'LookTurboMCPCapture', {'Asset':'', 'GraphName':'', 'Mode':'screen', 'Target':'', 'Size':''})
-    play_log.append('SCREEN DURING PLAY CHECK:\n' + shot)
-finally:
-    deadline = time.monotonic() + 45
-    while time.monotonic() < deadline:
-        last = s.call(READ_TOOLSET, 'ReadTurboMCPPlayCheck', {'Seconds':'', 'Map':''})
-        if 'pending' not in last.lower() and 'still running' not in last.lower():
-            break
-        time.sleep(1)
-    play_log.append('PLAY RESULT:\n' + last)
-    for p in created:
-        with p.open('a', encoding='utf-8') as out: out.write('\n' + '\n'.join(play_log))
-    print('\n'.join(play_log))
-if 'played for' not in last: raise RuntimeError('Owned play check did not complete')
-if '0 warning(s) and 0 error(s)' not in last:
-    raise RuntimeError('Owned play check reported runtime warnings or errors')
-if 'image:' not in shot: raise RuntimeError('No active-window image during play check')
-if 'window title:' not in shot or 'window selection: active top-level Slate window' not in shot:
-    raise RuntimeError('Capture must identify the actual selected window')
+# Keep the entire play/input loop in one native latent test. Starting a second
+# automation test tears down an existing PIE session in Unreal's test framework.
+name = 'TurboMCP.Workflow.PlayMenu'
+result = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames':[name]})
+support['parse_run_tests_report'](result, name)
+menu_evidence = folder / 'play-menu.txt'
+if not menu_evidence.exists(): raise RuntimeError('Menu workflow evidence missing')
+menu_text = menu_evidence.read_text(encoding='utf-8-sig')
+with transcript.open('a', encoding='utf-8') as out: out.write('\n=== Owned play and menu loop ===\n' + result + '\n' + menu_text)
+print(menu_text)
 print('RESULT: PASS')

@@ -127,7 +127,7 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
   TestEqual(TEXT("Node count preserved"),G->Nodes.Num(),Count);
   TestEqual(TEXT("Graph text preserved"),Snapshot(),Before);
  }
- const FString Refusal=Record(TEXT("Unsupported viewport mode"),UTurboMCPLookToolset::LookTurboMCPCapture(TEXT(""),TEXT(""),TEXT("viewport"),TEXT(""),TEXT("")));TestTrue(TEXT("No invented viewport capability"),Refusal.StartsWith(TEXT("error:")));
+ const FString Refusal=Record(TEXT("Viewport requires explicit target"),UTurboMCPLookToolset::LookTurboMCPCapture(TEXT(""),TEXT(""),TEXT("viewport"),TEXT(""),TEXT("")));TestTrue(TEXT("Missing PIE target refuses"),Refusal.StartsWith(TEXT("error:")));
  ImageCheck(Record(TEXT("Editor screen"),UTurboMCPLookToolset::LookTurboMCPCapture(TEXT(""),TEXT(""),TEXT("screen"),TEXT(""),TEXT(""))));
  UWidgetBlueprint* WB=FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(Package,TEXT("WBP_Vision"),BPTYPE_Normal,UUserWidget::StaticClass(),UCanvasPanel::StaticClass(),TEXT("Vision"),false);
  auto* Label=WB->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("StatusLabel"));Label->SetText(FText::FromString(TEXT("Vision fixture: READY 0123456789")));WB->WidgetVariableNameToGuidMap.Add(Label->GetFName(),FGuid::NewGuid());
