@@ -2222,6 +2222,13 @@
             "Tools/test-widget-binding-workflow.py"
           ],
           "new_files": []
+        },
+        "workflow-vision-stress": {
+          "files": [],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
+            "Tools/test-vision-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
