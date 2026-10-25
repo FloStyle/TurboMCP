@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "updated": "2026-10-25",
+  "native_run": "6257458f771049da8ff56197d8901bf9",
+  "offline_run": "7a1e0f454c0442f7a1cf9eb1606bb59b",
+  "offline": "22/26; four unchanged baseline failures",
+  "capture_count": 21,
+  "fixture_node_count": 254,
+  "issues": [
+    {
+      "id": "VISION-01",
+      "kind": "bug",
+      "status": "done",
+      "verification": "native tested",
+      "priority": "P0",
+      "problem": "Live window capture corrupts nested Slate hit-test dimensions, causing an ensure on the next editor tick.",
+      "fix": "Use native Slate TakeScreenshot for screen and asset editor captures; keep actual dimensions and bounded downscale."
+    },
+    {
+      "id": "VISION-02",
+      "kind": "bug",
+      "status": "open",
+      "verification": "reproduced",
+      "priority": "P1",
+      "problem": "Screen output calls the active PIE window the editor window.",
+      "next": "Report actual captured window title/type and distinguish whole-window from viewport."
+    },
+    {
+      "id": "VISION-03",
+      "kind": "feature",
+      "status": "open",
+      "verification": "observed limitation",
+      "priority": "P1",
+      "problem": "Material editor capture lacks graph fit/target controls and does not establish shader readiness.",
+      "next": "Focused material graph framing and preview-ready workflow."
+    },
+    {
+      "id": "VISION-04",
+      "kind": "feature",
+      "status": "open",
+      "verification": "unsupported mode confirmed",
+      "priority": "P1",
+      "problem": "No dedicated level or PIE viewport capture with explicit viewport/camera target.",
+      "next": "Define viewport selection, resolution, chrome exclusion and frame freshness."
+    },
+    {
+      "id": "VISION-05",
+      "kind": "housekeeping",
+      "status": "open",
+      "verification": "runtime error observed",
+      "priority": "P1",
+      "problem": "Test project uses CommonUI without CommonGameViewportClient.",
+      "next": "Review test project configuration before claiming CommonUI runtime acceptance."
+    },
+    {
+      "id": "VISION-06",
+      "kind": "quality",
+      "status": "open",
+      "verification": "source and image reviewed",
+      "priority": "P2",
+      "problem": "Capture help overloads Size as dimensions or neighbour depth; dense overview lacks a readability warning and editor results include long implementation catalogs.",
+      "next": "Simplify output and teach overview-to-detail workflow without implying every image is readable."
+    }
+  ],
+  "planned_scenarios": [
+    "Material instances and functions",
+    "Animation Blueprint and sequence",
+    "Niagara",
+    "DataTable visual inspection",
+    "High DPI, multi-monitor, occluded windows and HDR",
+    "Responsive widget, clipping and localization"
+  ]
+}

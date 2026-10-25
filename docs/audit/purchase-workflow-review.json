@@ -34,7 +34,8 @@
     "widget_binding_native": "c24c254d03aa4196a02263d7e83e1df6",
     "widget_binding_offline": "7050368c75c24a07aa062eaf75436486: 22/26 baseline failures; before final fixture capture ordering adjustment",
     "widget_preview_repeat_native": "38bdf1a0d7e441ca9066455e39122b23: four captures passed button pixel checks",
-    "widget_preview_repeat_offline": "6f1a109f57fe405dad3d03c759632d1b: 22/26, same four baseline failures"
+    "widget_preview_repeat_offline": "6f1a109f57fe405dad3d03c759632d1b: 22/26, same four baseline failures",
+    "vision_native": "6257458f771049da8ff56197d8901bf9"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -624,6 +625,41 @@
       "status": "open",
       "problem": "Subtotal wire crosses the percent-conversion comment box after annotation creation.",
       "next": "Coordinate annotation bounds and input layout or route the wire without changing calculation semantics. Do not mark the workflow visually complete."
+    },
+    {
+      "id": "VISION-02",
+      "status": "open",
+      "kind": "bug",
+      "problem": "Screen output calls the active PIE window the editor window.",
+      "next": "Report actual captured window title/type and distinguish whole-window from viewport."
+    },
+    {
+      "id": "VISION-03",
+      "status": "open",
+      "kind": "feature",
+      "problem": "Material editor capture lacks graph fit/target controls and does not establish shader readiness.",
+      "next": "Focused material graph framing and preview-ready workflow."
+    },
+    {
+      "id": "VISION-04",
+      "status": "open",
+      "kind": "feature",
+      "problem": "No dedicated level or PIE viewport capture with explicit viewport/camera target.",
+      "next": "Define viewport selection, resolution, chrome exclusion and frame freshness."
+    },
+    {
+      "id": "VISION-05",
+      "status": "open",
+      "kind": "housekeeping",
+      "problem": "Test project uses CommonUI without CommonGameViewportClient.",
+      "next": "Review test project configuration before claiming CommonUI runtime acceptance."
+    },
+    {
+      "id": "VISION-06",
+      "status": "open",
+      "kind": "quality",
+      "problem": "Capture help overloads Size as dimensions or neighbour depth; dense overview lacks a readability warning and editor results include long implementation catalogs.",
+      "next": "Simplify output and teach overview-to-detail workflow without implying every image is readable."
     }
   ],
   "append_workflow": {
@@ -679,5 +715,6 @@
       "next": "Reproduce repeated captures independently of the native fixture renderer and inspect Slate/resource lifecycle; cause unconfirmed.",
       "resolution": "Original archived PNGs contain the button: all four checked regions have 1600/1600 visible pixels. The earlier visual reading was incorrect. Four fresh consecutive captures pass native pixel assertions in 38bdf1a0d7e441ca9066455e39122b23. No production change."
     }
-  ]
+  ],
+  "vision_review": "docs/audit/vision-workflow-review.json"
 }
