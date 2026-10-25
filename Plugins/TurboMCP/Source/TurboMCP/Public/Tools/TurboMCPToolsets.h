@@ -1196,7 +1196,9 @@ public:
 
 	/**
 	 * Set named widgets' Is Variable flags; changes may regenerate the Blueprint skeleton and run editor callbacks, do not perform a full compile or save, and have no dedicated undo transaction.
-	 * Resolves all names before changing flags. Existing requested values are not counted as changes.
+	 * Resolves all names before changing flags. Existing requested values are not counted as changes; names are deduplicated ignoring case.
+	 * Disabling is refused for the whole request if self-variable getter/setter nodes in this Blueprint still reference a selected widget. External/dynamic references are not checked. Repair references first.
+	 * This exposes existing widgets to graph logic; it does not create widgets, change appearance or connect nodes.
 	 * Review the result, then use EditTurboMCPCompile and EditTurboMCPSave as needed.
 	 * @param Asset Required Widget Blueprint name or package/object path, for example /Game/UI/WBP_Menu; empty is refused.
 	 * @param Widgets Required widget names separated by commas or pipes, for example TitleText,BodyText; whitespace is trimmed, duplicates are ignored, and empty never means all widgets.
