@@ -18,6 +18,8 @@
 #include "Widgets/SViewport.h"
 #include "HAL/PlatformTime.h"
 #include "Containers/UnrealString.h"
+#include "Framework/Commands/InputBindingManager.h"
+#include "Framework/Commands/UICommandInfo.h"
 
 namespace
 {
@@ -121,6 +123,10 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
     const FKey InputKey(*Key);
     if (!InputKey.IsValid() || InputKey.IsMouseButton() || (InputKey.IsAnalog() && (!InputKey.IsGamepadKey() || !InputKey.IsAxis1D())))
         return TEXT("error: Key must be a keyboard/gamepad button or a one-dimensional gamepad axis. Use native Slate tools for mouse clicks and text entry.");
+    // PIE handles editor shortcuts before normal game/UI routing. Never report
+    // a gameplay key as delivered when it would stop or control the editor session.
+    if (const auto Command=FInputBindingManager::Get().GetCommandInfoFromInputChord(TEXT("PlayWorld"),FInputChord(InputKey),false))
+        return FString::Printf(TEXT("error: Key %s is bound to the editor play command %s. No input was sent. Use another gameplay key or change that editor shortcut explicitly; this tool does not change editor bindings."),*Key,*Command->GetCommandName().ToString());
     double Duration=0; float Amount=1;
     if (!Seconds.IsNumeric() || !LexTryParseString(Duration,*Seconds) || !FMath::IsFinite(Duration) || Duration<0.05 || Duration>5)
         return TEXT("error: Seconds must be a finite duration from 0.05 to 5. Use 0.1 for a short tap.");

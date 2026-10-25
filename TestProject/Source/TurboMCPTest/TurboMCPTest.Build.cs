@@ -7,17 +7,7 @@
 
 using UnrealBuildTool;
 
-/// The test project's own module.
-///
-/// It is deliberately empty of LOGIC. Its only job is to make the project a C++ project, so the engine
-/// builds it and the TurboMCP plugin alongside it. Every tool under test lives in the plugin, never here,
-/// so the plugin is tested the way a user would load it.
-///
-/// AND IT NOW CARRIES ONE ACTOR, WHICH IS THE SINGLE DELIBERATE EXCEPTION. `ATurboMCPTestLogActor` raises one
-/// Warning and one Error when a level starts, so `R-PLAY-CHECK` finally has something real to count. It is
-/// here rather than in the plugin ON PURPOSE: a `UE_LOG` added to the plugin's own production code so that
-/// the plugin's own suite could pass would make the suite's strength depend on the code it is judging, which
-/// would prove nothing. A TEST FIXTURE belongs in the test project.
+// Disposable gameplay/UI and compiler fixtures live here, outside production tools.
 public class TurboMCPTest : ModuleRules
 {
 	public TurboMCPTest(ReadOnlyTargetRules Target) : base(Target)
@@ -32,23 +22,13 @@ public class TurboMCPTest : ModuleRules
 				"Engine",
 			});
 
-		// `UnrealEd` IS ADDED FOR ONE REASON AND IT IS WORTH STATING. The plugin's commandlet that builds the
-		// test map needs `UWorld::CreateWorld`, `UPackage::SavePackage` and the asset registry, and it reads
-		// `ATurboMCPTestLogActor` to spawn it - so the dependency runs FROM the plugin TO this module, and
-		// this entry is what makes that edge legal in the build graph rather than an unresolved include.
-		//
-		// It is a PRIVATE dependency because no public header of this module exposes an `UnrealEd` type: the
-		// actor's header includes only `GameFramework/Actor.h`.
+        // Editor/compiler fixtures and runtime CommonUI input scenarios.
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
 				"UnrealEd",
-				// `Kismet` CARRIES THE ONE ENGINE CALL THE T04 FIXTURE NEEDS AND NOTHING ELSE IN THIS MODULE
-				// DOES: `FBlueprintCompilationManager::QueueForCompilation` is declared in
-				// `Engine/Source/Editor/Kismet/Public/BlueprintCompilationManager.h` and is exported by the
-				// `Kismet` module, so without this line the fixture compiles and the link fails with
-				// `LNK2019 ... QueueForCompilation`. Measured, not guessed: that was the first build's error.
 				"Kismet",
+                "UMG", "Slate", "SlateCore", "InputCore", "EnhancedInput", "CommonUI", "CommonInput", "GameplayTags",
 			});
 	}
 }

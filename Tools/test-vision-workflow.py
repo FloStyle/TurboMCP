@@ -10,6 +10,22 @@ folder = root / 'TestProject/Saved/TurboMCP/Workflow'
 before = set(folder.glob('*/vision-review.txt'))
 s = Session(); s.connect()
 s.call(support['AUTO_TOOLSET'], 'DiscoverTests', {})
+# Select only the new focus scenario for iteration; default retains all vision checks.
+def common_play():
+    name = 'TurboMCP.Workflow.CommonPlay'
+    evidence = folder / 'common-play.txt'
+    if evidence.exists(): evidence.unlink()
+    result = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames':[name]})
+    print(result)
+    support['parse_run_tests_report'](result, name)
+    if not evidence.exists(): raise RuntimeError('Fresh CommonUI evidence missing')
+    print(evidence.read_text(encoding='utf-8-sig'))
+    print('RESULT: PASS CommonUI controller workflow')
+import os
+if os.environ.get('TURBOMCP_VISION_SCENARIO') == 'commonui':
+    common_play()
+    raise SystemExit(0)
+
 raw = s.call(support['AUTO_TOOLSET'], 'RunTests', {'testNames':['TurboMCP.Workflow.Vision']})
 print(raw)
 created = set(folder.glob('*/vision-review.txt')) - before
@@ -55,3 +71,5 @@ menu_text = menu_evidence.read_text(encoding='utf-8-sig')
 with transcript.open('a', encoding='utf-8') as out: out.write('\n=== Owned play and menu loop ===\n' + result + '\n' + menu_text)
 print(menu_text)
 print('RESULT: PASS')
+
+common_play()
