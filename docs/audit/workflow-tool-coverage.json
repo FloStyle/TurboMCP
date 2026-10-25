@@ -122,6 +122,53 @@
       "review": "docs/audit/call-swap-workflow-review.md",
       "fixture": "TurboMCP.Workflow.CallSwap",
       "evidence": "0cc5d7d515d3425bbee0d9cf300820ed"
+    },
+    {
+      "id": "WF-UI-05-COMMON-BUTTON",
+      "title": "Inspect and edit a Common UI button, events and styles",
+      "status": "planned_gaps_to_resolve",
+      "review": "docs/audit/common-button-workflow-review.md",
+      "tools_used": [],
+      "tools_planned": [
+        "ReadTurboMCPWidgetTree",
+        "LookTurboMCPWidgetPreview",
+        "PreviewTurboMCPBindNewEvent",
+        "EditTurboMCPBindNewEvent",
+        "ReadTurboMCPBlueprintLoad",
+        "ReadTurboMCPGraphLoad",
+        "ReadTurboMCPNodeFind",
+        "ReadTurboMCPNodeContext",
+        "PreviewTurboMCPNodeType",
+        "PreviewTurboMCPNodePins",
+        "PreviewTurboMCPGraphAppend",
+        "EditTurboMCPGraphAppend",
+        "PreviewTurboMCPGraphConnect",
+        "EditTurboMCPGraphConnect",
+        "PreviewTurboMCPGraphTidy",
+        "EditTurboMCPGraphTidy",
+        "LookTurboMCPLayoutReport",
+        "EditTurboMCPCompile",
+        "LookTurboMCPCapture"
+      ],
+      "conditional_tools": [
+        "PreviewTurboMCPBindNewEvent",
+        "EditTurboMCPBindNewEvent"
+      ],
+      "scenario": "Inspect an existing Common Button and its assigned style. Make a targeted style and hover/unhover label-behavior change, preserve unrelated state, tidy and verify visually and interactively.",
+      "limitations": [
+        "Not executed; no new tool validation counted",
+        "WidgetTree omits most properties and bindings; style inspection/edit path must be established",
+        "Discover inherited events versus parent delegates before choosing binding tools",
+        "Interactive hover/unhover, focus, pressed and disabled verification must be established"
+      ],
+      "acceptance": [
+        "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
+        "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
+        "Discovery/help: concise role, required parameters, valid values, examples, prerequisites, side effects, limitations and next steps understandable without undocumented assumptions.",
+        "Code/helpers: review implementation and shared helpers, validation, mutation boundaries, error propagation and comments documenting actual behavior.",
+        "Visual/runtime: inspect widget states and graph layout; static preview alone cannot prove interaction.",
+        "Evidence: record each tool used, actual output, scenario result, remaining gaps and user visual feedback; no blanket bug-free claim."
+      ]
     }
   ],
   "tool_usage": {
@@ -232,5 +279,13 @@
       "WF-BP-04-CALL-SWAP"
     ]
   },
-  "unique_tools_scenario_reviewed": 28
+  "unique_tools_scenario_reviewed": 28,
+  "quality_acceptance": [
+    "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
+    "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
+    "Discovery/help: concise role, required parameters, valid values, examples, prerequisites, side effects, limitations and next steps understandable without undocumented assumptions.",
+    "Code/helpers: review implementation and shared helpers, validation, mutation boundaries, error propagation and comments documenting actual behavior.",
+    "Visual/runtime: inspect widget states and graph layout; static preview alone cannot prove interaction.",
+    "Evidence: record each tool used, actual output, scenario result, remaining gaps and user visual feedback; no blanket bug-free claim."
+  ]
 }

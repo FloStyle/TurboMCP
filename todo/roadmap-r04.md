@@ -1609,3 +1609,6 @@ Implemented ad7d71c. GraphConnect exposes displaced pure sources with no remaini
 
 ## Call replacement workflow - 2026-10-25
 Implemented 38ef353; bounded scope gate passed. WF-BP-04 fixes discovered wildcard operator replacement and hidden static receiver default handling. Help/results/comments reviewed, including honest rollback limits. Build/native 0cc5d7d515d3425bbee0d9cf300820ed passed: connected input/literal preservation, old-node removal, independent event results, refusals, scoped tidy and native capture. See docs/audit/call-swap-workflow-review.md. Coverage is 28/125 unique tools in limited scenarios; user visual acceptance and documented wider paths remain open. DSH remains paused.
+
+## Common UI button workflow planned - 2026-10-25
+WF-UI-05-COMMON-BUTTON is planned, not executed. Track hierarchy/style context, event discovery, targeted edits, interaction and graph presentation. Four candidate new tools, with delegate-binding pair conditional. Full per-tool quality criteria and support gaps are in docs/audit/common-button-workflow-review.md and workflow-tool-coverage.json. Coverage remains 28/125; no new readiness claim.

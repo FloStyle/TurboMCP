@@ -444,6 +444,58 @@
       "workflows": [
         "WF-BP-04-CALL-SWAP"
       ]
+    },
+    {
+      "tool": "ReadTurboMCPWidgetTree",
+      "role": "Common UI workflow candidate",
+      "status": "planned \u2014 not tested",
+      "ready": false,
+      "behavior": "No execution evidence for WF-UI-05 yet.",
+      "review": "Required: behavior, clear English output, descriptions/parameter examples, code/helpers, documented side effects and accurate result claims.",
+      "remaining": "Not executed; no new tool validation counted; WidgetTree omits most properties and bindings; style inspection/edit path must be established; Discover inherited events versus parent delegates before choosing binding tools; Interactive hover/unhover, focus, pressed and disabled verification must be established",
+      "workflows": [],
+      "planned_workflows": [
+        "WF-UI-05-COMMON-BUTTON"
+      ]
+    },
+    {
+      "tool": "LookTurboMCPWidgetPreview",
+      "role": "Common UI workflow candidate",
+      "status": "planned \u2014 not tested",
+      "ready": false,
+      "behavior": "No execution evidence for WF-UI-05 yet.",
+      "review": "Required: behavior, clear English output, descriptions/parameter examples, code/helpers, documented side effects and accurate result claims.",
+      "remaining": "Not executed; no new tool validation counted; WidgetTree omits most properties and bindings; style inspection/edit path must be established; Discover inherited events versus parent delegates before choosing binding tools; Interactive hover/unhover, focus, pressed and disabled verification must be established",
+      "workflows": [],
+      "planned_workflows": [
+        "WF-UI-05-COMMON-BUTTON"
+      ]
+    },
+    {
+      "tool": "PreviewTurboMCPBindNewEvent",
+      "role": "Common UI workflow candidate (conditional delegate binding)",
+      "status": "planned \u2014 not tested",
+      "ready": false,
+      "behavior": "No execution evidence for WF-UI-05 yet.",
+      "review": "Required: behavior, clear English output, descriptions/parameter examples, code/helpers, documented side effects and accurate result claims.",
+      "remaining": "Not executed; no new tool validation counted; WidgetTree omits most properties and bindings; style inspection/edit path must be established; Discover inherited events versus parent delegates before choosing binding tools; Interactive hover/unhover, focus, pressed and disabled verification must be established",
+      "workflows": [],
+      "planned_workflows": [
+        "WF-UI-05-COMMON-BUTTON"
+      ]
+    },
+    {
+      "tool": "EditTurboMCPBindNewEvent",
+      "role": "Common UI workflow candidate (conditional delegate binding)",
+      "status": "planned \u2014 not tested",
+      "ready": false,
+      "behavior": "No execution evidence for WF-UI-05 yet.",
+      "review": "Required: behavior, clear English output, descriptions/parameter examples, code/helpers, documented side effects and accurate result claims.",
+      "remaining": "Not executed; no new tool validation counted; WidgetTree omits most properties and bindings; style inspection/edit path must be established; Discover inherited events versus parent delegates before choosing binding tools; Interactive hover/unhover, focus, pressed and disabled verification must be established",
+      "workflows": [],
+      "planned_workflows": [
+        "WF-UI-05-COMMON-BUTTON"
+      ]
     }
   ],
   "evidence": [
@@ -504,5 +556,13 @@
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
   },
-  "workflow_coverage": "docs/audit/workflow-tool-coverage.json"
+  "workflow_coverage": "docs/audit/workflow-tool-coverage.json",
+  "quality_acceptance": [
+    "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
+    "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
+    "Discovery/help: concise role, required parameters, valid values, examples, prerequisites, side effects, limitations and next steps understandable without undocumented assumptions.",
+    "Code/helpers: review implementation and shared helpers, validation, mutation boundaries, error propagation and comments documenting actual behavior.",
+    "Visual/runtime: inspect widget states and graph layout; static preview alone cannot prove interaction.",
+    "Evidence: record each tool used, actual output, scenario result, remaining gaps and user visual feedback; no blanket bug-free claim."
+  ]
 }
