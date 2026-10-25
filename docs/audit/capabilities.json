@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "642909facdfcf2508fefa3f183d5e066cc23df74",
+  "plugin_tree": "21e899dc86905939799654ae2962c2079855e01e",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 125,
@@ -1215,7 +1215,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
-          "line": 96
+          "line": 97
         }
       ],
       "test_references": [
@@ -2905,8 +2905,7 @@
       "test_references": [
         "Tools/test-play-check.py",
         "Tools/test-tool-text-inventory.py",
-        "Tools/test-trace.py",
-        "Tools/test-vision-workflow.py"
+        "Tools/test-trace.py"
       ],
       "static_call_evidence": "parsed_call",
       "implementation_evidence": "definition_located",

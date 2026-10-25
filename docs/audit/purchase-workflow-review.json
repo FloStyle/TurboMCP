@@ -36,7 +36,8 @@
     "widget_preview_repeat_native": "38bdf1a0d7e441ca9066455e39122b23: four captures passed button pixel checks",
     "widget_preview_repeat_offline": "6f1a109f57fe405dad3d03c759632d1b: 22/26, same four baseline failures",
     "vision_native": "509881025b9244918ebbc5547c64f6a7",
-    "current_offline": "65936db52d854ae08e287ed0246b0a2d: 26/26; final delayed capture and prose changes covered by final native run and targeted checks."
+    "current_offline": "368f20d3c50043e98a0bb737e06d8e55: 26/26 passed for integrated PIE menu workflow.",
+    "vision_menu_native": "d64216f0036647cfaa62701131f443fd"
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -638,8 +639,8 @@
       "id": "VISION-04",
       "status": "open",
       "kind": "feature",
-      "problem": "No dedicated level or PIE viewport capture with explicit viewport/camera target.",
-      "next": "Define viewport selection, resolution, chrome exclusion and frame freshness."
+      "problem": "Editor viewport, camera selection and multiple-PIE targeting remain unsupported.",
+      "next": "Single PIE menu capture and pointer loop are complete; extend targeting separately."
     },
     {
       "id": "VISION-06",

@@ -1,10 +1,10 @@
 {
   "schema": 1,
   "updated": "2026-10-25",
-  "native_run": "509881025b9244918ebbc5547c64f6a7",
+  "native_run": "d64216f0036647cfaa62701131f443fd",
   "offline_run": "2d230dafffe2474a91fcf0320b9ef59c",
   "offline": "22/26; four unchanged baseline failures",
-  "capture_count": 23,
+  "capture_count": 26,
   "fixture_node_count": 254,
   "issues": [
     {
@@ -39,10 +39,11 @@
       "id": "VISION-04",
       "kind": "feature",
       "status": "open",
-      "verification": "unsupported mode confirmed",
+      "verification": "Single PIE game-layer capture and pointer menu loop native tested.",
       "priority": "P1",
-      "problem": "No dedicated level or PIE viewport capture with explicit viewport/camera target.",
-      "next": "Define viewport selection, resolution, chrome exclusion and frame freshness."
+      "problem": "Dedicated editor viewport, camera selection and multiple-PIE targeting remain unsupported.",
+      "next": "Extend only after defining editor/camera/multiple-player targeting. Single PIE menu capture is complete.",
+      "fix": "Mode=viewport, Target=pie captures the single game layer with menu UI at native size. Refuses absent or ambiguous PIE worlds and unsupported arguments."
     },
     {
       "id": "VISION-05",
@@ -61,6 +62,15 @@
       "priority": "P2",
       "problem": "Capture help overloads Size as dimensions or neighbour depth; dense overview lacks a readability warning and editor results include long implementation catalogs.",
       "next": "Simplify output and teach overview-to-detail workflow without implying every image is readable."
+    },
+    {
+      "id": "VISION-07",
+      "kind": "feature",
+      "status": "done",
+      "verification": "native tested; menu images visually inspected",
+      "priority": "P1",
+      "problem": "Need an observed play/menu/click/result loop.",
+      "fix": "Reuse native Slate Observe/Snapshot/Click, capture the PIE game layer, verify independent callbacks and visible states, then stop the owned session. Slate fixture passed Settings, Back and exactly one Purchase; CommonUI/controller scenarios remain planned."
     }
   ],
   "planned_scenarios": [
@@ -69,8 +79,9 @@
     "Niagara",
     "DataTable visual inspection",
     "High DPI, multi-monitor, occluded windows and HDR",
-    "Responsive widget, clipping and localization"
+    "Responsive widget, clipping and localization",
+    "CommonUI activation stack, controller focus/back navigation and input mode transitions"
   ],
-  "current_offline_run": "65936db52d854ae08e287ed0246b0a2d",
-  "current_offline": "26/26 passed before the final delayed-capture assertion and prose correction; final build and native workflow passed separately."
+  "current_offline_run": "368f20d3c50043e98a0bb737e06d8e55",
+  "current_offline": "26/26 passed for integrated PIE menu workflow."
 }

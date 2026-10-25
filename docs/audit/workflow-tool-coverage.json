@@ -406,6 +406,32 @@
         "Owned eight-second play check completed with zero warnings and errors after test-project CommonUI viewport configuration.",
         "Active-window capture includes chrome; no dedicated viewport selection or general gameplay correctness claim."
       ]
+    },
+    {
+      "id": "WF-VISION-06-PLAY-MENU",
+      "title": "Observe and interact with a live play menu",
+      "status": "scenario_checked",
+      "review": "docs/audit/play-menu-workflow.md",
+      "fixture": "TurboMCP.Workflow.PlayMenu within test-vision-workflow",
+      "evidence": "d64216f0036647cfaa62701131f443fd",
+      "focused_tools": [
+        "LookTurboMCPCapture"
+      ],
+      "tools_used": [
+        "ReadTurboMCPPlayCheck",
+        "LookTurboMCPCapture"
+      ],
+      "native_tools_used": [
+        "SlateInspectorToolset.Observe",
+        "SlateInspectorToolset.Snapshot",
+        "SlateInspectorToolset.Click",
+        "SlateInspectorToolset.Unobserve"
+      ],
+      "limitations": [
+        "One local PIE world and disposable Slate menu; not CommonUI activation/controller acceptance.",
+        "No camera selection, resized captures, multi-player or standalone process.",
+        "Native pointer routing and independent callback assertions; not a claim that boolean input delivery proves action success."
+      ]
     }
   ],
   "tool_usage": {
@@ -472,7 +498,8 @@
       "WF-VISION-02-WIDGET",
       "WF-VISION-03-MATERIAL",
       "WF-VISION-04-EDITOR",
-      "WF-VISION-05-PLAY"
+      "WF-VISION-05-PLAY",
+      "WF-VISION-06-PLAY-MENU"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -584,6 +611,9 @@
     ],
     "EditTurboMCPWidgetBindAdd": [
       "WF-UI-10-WIDGET-BINDING"
+    ],
+    "ReadTurboMCPPlayCheck": [
+      "WF-VISION-06-PLAY-MENU"
     ]
   },
   "unique_tools_scenario_reviewed": 38,
