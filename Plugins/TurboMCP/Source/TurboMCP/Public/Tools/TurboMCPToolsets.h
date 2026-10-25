@@ -1222,7 +1222,7 @@ public:
 
 	/**
 	 * Delete an override event node or an entire override function graph and its contents; uses an undo transaction, may regenerate the skeleton and run editor callbacks, and does not perform a full compile or save.
-	 * Requires an idle editor with undo available. Event removal leaves the other nodes in its graph; disconnected logic may need repair. Function removal can close asset editors.
+	 * Requires an idle editor with undo available. Event removal reports the exact removed node and detached connections. Other nodes remain; inspect their remaining uses before explicit GraphRemove cleanup. Function removal can close asset editors.
 	 * Refuses ambiguous matches and local functions. Review the Blueprint after removal; this tool does not repair callers or prove compilation succeeds.
 	 * @param Asset Required Blueprint name or package/object path, for example /Game/Tests/BP_NodeTest; empty or unresolved values are refused.
 	 * @param FunctionOrEvent Required reflected override name from ReadTurboMCPOverrides with include=overridden, for example ReceiveActorOnClicked; case-insensitive, surrounding whitespace trimmed, no default. Empty is refused.

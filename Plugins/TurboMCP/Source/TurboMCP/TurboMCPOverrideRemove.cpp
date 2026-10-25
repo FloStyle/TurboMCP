@@ -19,6 +19,7 @@
 #include "UObject/UObjectGlobals.h"
 
 #include "TurboMCPAssetResolver.h"
+#include "TurboMCPNodeId.h"
 
 // Event overrides are individual nodes; function overrides own a complete graph.
 namespace
@@ -90,7 +91,15 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 			Blueprint->Modify();
 			Graph->Modify();
 			Event->Modify();
-			const FString RemovedName = Event->GetName();
+			const FString RemovedName = TurboMCPNodeId::MakeForNode(Event,true);
+            // Capture exact former endpoints before DestroyNode breaks their links.
+            // These are retained neighbors, not a claim that their whole subgraph is unused.
+            TArray<FString> Detached;
+            for(const UEdGraphPin* Pin:Event->Pins) if(Pin)
+                for(const UEdGraphPin* Linked:Pin->LinkedTo) if(Linked && Linked->GetOwningNode())
+                    Detached.Add(FString::Printf(TEXT("%s:%s -> %s:%s"),*RemovedName,*Pin->PinName.ToString(),
+                        *TurboMCPNodeId::MakeForNode(Linked->GetOwningNode(),true),*Linked->PinName.ToString()));
+            Detached.Sort();
 			const FString FromGraph = Graph->GetName();
 			Event->DestroyNode();
 			FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(Blueprint);
@@ -102,9 +111,10 @@ FString UTurboMCPEditToolset::EditTurboMCPOverrideRemove(
 				*Wanted, *Resolved.ObjectPath);
 			Out += FString::Printf(TEXT("\nremoved: %s from graph '%s'"),
 				*RemovedName, *FromGraph);
-			Out += TEXT("\n; Only the event node was removed. Other nodes remain and may now be disconnected.");
+			Out += FString::Printf(TEXT("\ndetached connections: %s"),Detached.IsEmpty()?TEXT("none"):*FString::Join(Detached,TEXT("; ")));
+            Out += TEXT("\nOnly the event node was removed. Its former neighbors and their other connections remain. Inspect their remaining uses before removing obsolete body nodes with PreviewTurboMCPGraphRemove and EditTurboMCPGraphRemove. Shared logic must be preserved.");
 
-			// THE READ-BACK through the editor's own list, as the Add does.
+			// Check registration independently of the node-removal result.
 			bool bStillImplemented = false;
 			for (const FBlueprintFunctionInfo& Info
 					: UBlueprintEditorLibrary::ListEvents(Blueprint))
