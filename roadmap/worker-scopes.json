@@ -2260,6 +2260,18 @@
             "Tools/validate-repo.py"
           ],
           "new_files": []
+        },
+        "vision-preview-readiness": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCaptureAsset.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPCaptureAsset.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCP.Build.cs",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
+            "Tools/test-vision-workflow.py",
+            "TestProject/Config/DefaultEngine.ini"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
