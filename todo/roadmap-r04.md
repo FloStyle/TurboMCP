@@ -1629,4 +1629,10 @@ Implemented 88e57fd; scope passed. WF-UI-06 focuses Preview/Edit BindNewEvent on
 
 
 ## Approved parent-binding layout correction
-Readiness: ready. Assignment workflow-bind-layout. Apply explicit scoped Tidy in WF-UI-06 and verify nearby button getter, aligned handler/Set execution pins, unchanged links/defaults/count and compiled dispatch. Repair Tidy only if the native scenario demonstrates a defect; no manual fixture-coordinate workaround.
+Readiness: done. Assignment workflow-bind-layout. Apply explicit scoped Tidy in WF-UI-06 and verify nearby button getter, aligned handler/Set execution pins, unchanged links/defaults/count and compiled dispatch. Repair Tidy only if the native scenario demonstrates a defect; no manual fixture-coordinate workaround.
+
+## Binding layout correction - 2026-10-25
+
+Implemented 694a70d: the workflow now calls Preview/Edit GraphTidy on its five affected nodes after wiring the body. No fixture coordinates were manually corrected and no production Tidy change was required. The getter sits near the Bind target; HandlePurchase and Set execution pins align, as do their data pins. Preview preserves the graph; edit preserves node count, links and defaults. Native build/workflow passed 9fa27a0144b542d7a2a69409989a210e, including compile and sender dispatch. Updated capture inspected; human acceptance remains pending.
+
+Initial assertions incorrectly measured getter distance from the Slate pin widget origin, including its label width. The final check measures visible node-edge clearance (at most 160 units), plus pin-row alignment (at most 2 units). Offline gate d20bd814286945678b180f291d0a1ee5 remains 22/26 with the same four baseline failures. Coverage remains 32/125; Tidy is reused support.

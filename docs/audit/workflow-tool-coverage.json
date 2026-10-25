@@ -180,7 +180,7 @@
       "status": "scenario_checked_visual_acceptance_pending",
       "review": "docs/audit/parent-binding-workflow-review.md",
       "fixture": "TurboMCP.Workflow.BindEvent",
-      "evidence": "3a38a896a17b48b1aecb7db7b399af75",
+      "evidence": "9fa27a0144b542d7a2a69409989a210e",
       "focused_tools": [
         "PreviewTurboMCPBindNewEvent",
         "EditTurboMCPBindNewEvent"
@@ -192,7 +192,9 @@
         "ReadTurboMCPGraphLoad",
         "EditTurboMCPGraphConnect",
         "EditTurboMCPCompile",
-        "LookTurboMCPCapture"
+        "LookTurboMCPCapture",
+        "PreviewTurboMCPGraphTidy",
+        "EditTurboMCPGraphTidy"
       ],
       "limitations": [
         "Only the focused binding pair receives a new full review; support tools reused",
@@ -200,7 +202,8 @@
         "Common Button click object-parameter signature; no exhaustive return/ref/container signature coverage",
         "Replacement preview checked; live replacement, injected rollback and save/reload not covered",
         "Native delegate broadcast proves registration/handler dispatch, not mouse input"
-      ]
+      ],
+      "layout_review": "Scoped Tidy after wiring: nearby getter, aligned handler/Set execution and data rows; exact links/defaults/count preserved. Native pass; updated capture awaits human acceptance."
     }
   ],
   "tool_usage": {
@@ -233,7 +236,8 @@
     "EditTurboMCPGraphTidy": [
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY",
-      "WF-BP-04-CALL-SWAP"
+      "WF-BP-04-CALL-SWAP",
+      "WF-UI-06-PARENT-BINDING"
     ],
     "EditTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"
@@ -285,7 +289,8 @@
     "PreviewTurboMCPGraphTidy": [
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY",
-      "WF-BP-04-CALL-SWAP"
+      "WF-BP-04-CALL-SWAP",
+      "WF-UI-06-PARENT-BINDING"
     ],
     "PreviewTurboMCPLocalVars": [
       "WF-BP-01-PURCHASE"

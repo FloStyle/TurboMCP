@@ -36,3 +36,9 @@ Reviewed the binding implementation, signature probe, exact pin resolver, schema
 This scalar object-parameter signature does not certify all return, reference, container or inherited signature cases. Live replacement of an existing source, injected rollback and persistence were not tested. A successful native delegate broadcast does not prove real mouse/focus behavior. Common UI style editing remains outside this focused pass. Coverage is 32/125 unique tools with bounded workflow evidence, not 125 globally certified tools.
 
 Offline gate 0ca6720f20674e56a15e6e302ce40e50: 22/26 passed; existing structure, language, client-retry and lookup-guard failures remain. No clean repository-wide gate is claimed.
+
+## Binding layout correction - 2026-10-25
+
+Implemented 694a70d: the workflow now calls Preview/Edit GraphTidy on its five affected nodes after wiring the body. No fixture coordinates were manually corrected and no production Tidy change was required. The getter sits near the Bind target; HandlePurchase and Set execution pins align, as do their data pins. Preview preserves the graph; edit preserves node count, links and defaults. Native build/workflow passed 9fa27a0144b542d7a2a69409989a210e, including compile and sender dispatch. Updated capture inspected; human acceptance remains pending.
+
+Initial assertions incorrectly measured getter distance from the Slate pin widget origin, including its label width. The final check measures visible node-edge clearance (at most 160 units), plus pin-row alignment (at most 2 units). Offline gate d20bd814286945678b180f291d0a1ee5 remains 22/26 with the same four baseline failures. Coverage remains 32/125; Tidy is reused support.
