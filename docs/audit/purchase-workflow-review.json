@@ -28,7 +28,9 @@
     "override_native": "Passed 63b610bfbc52406390897bd5ec46273d: build, discovery/filter, preview preservation, refusal, duplicate no-op, exact node IDs, clean compile, same-instance callback state and native captures.",
     "override_offline": "21/26 in 249b03879bb4417ab3edad38ee9828da; isolated test-runner-verdicts rerun passed after native execution ended. Four known baseline failures remain.",
     "override_remove_native": "Passed cf71a88b34d248adb5743c36de988a0d: exact event removal, retained links/positions, missing/repeat preservation, explicit body cleanup, widget/style preservation, compile and remaining callback.",
-    "override_remove_offline": "22/26 in 4ba0e22bb4c9472e96dc2e68e21d742e; four known baseline failures remain."
+    "override_remove_offline": "22/26 in 4ba0e22bb4c9472e96dc2e68e21d742e; four known baseline failures remain.",
+    "widget_variable_native": "Passed 3faaddbb451a4f9d820afc0aa6d4d6dc: exposure, compiled access, duplicate/no-op/missing-name behavior, referenced-disable refusal, cleanup and successful disable with designer widgets retained.",
+    "widget_variable_offline": "22/26 in 38b7cddf872443b7af3428622e358229; four known baseline failures remain."
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -570,6 +572,19 @@
       "workflows": [
         "WF-UI-08-OVERRIDE-REMOVE"
       ]
+    },
+    {
+      "tool": "EditTurboMCPWidgetsAsVars",
+      "role": "Expose existing widgets as Blueprint variables",
+      "status": "scenario checked",
+      "ready": false,
+      "behavior": "Enable, compiled access, case deduplication, no-op, missing-batch preservation, referenced-disable refusal and disable after cleanup passed",
+      "review": "Planner/wrapper/engine toggle/helpers, help and English output reviewed; local reference guard and honest changed-state check added",
+      "remaining": "External/dynamic references, setter-specific runtime case, injected toggle failure, persistence and undo restoration untested",
+      "scenario_evidence": "3faaddbb451a4f9d820afc0aa6d4d6dc",
+      "workflows": [
+        "WF-UI-09-WIDGET-VARIABLE"
+      ]
     }
   ],
   "evidence": [
@@ -626,7 +641,7 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 36,
+    "scenario_reviewed": 37,
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
   },

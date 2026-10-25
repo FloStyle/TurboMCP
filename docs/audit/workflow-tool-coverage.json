@@ -264,6 +264,28 @@
         "Body cleanup is a separate explicit operation after checking remaining uses",
         "Direct callback invocation, not physical pointer input"
       ]
+    },
+    {
+      "id": "WF-UI-09-WIDGET-VARIABLE",
+      "title": "Expose widget variables and refuse disabling referenced members",
+      "status": "scenario_checked",
+      "review": "docs/audit/widget-variable-workflow-review.md",
+      "fixture": "TurboMCP.Workflow.WidgetVariable",
+      "evidence": "3faaddbb451a4f9d820afc0aa6d4d6dc",
+      "focused_tools": [
+        "EditTurboMCPWidgetsAsVars"
+      ],
+      "tools_used": [
+        "EditTurboMCPWidgetsAsVars",
+        "EditTurboMCPCompile",
+        "EditTurboMCPGraphConnect",
+        "EditTurboMCPGraphRemove"
+      ],
+      "limitations": [
+        "Reference guard scans self-variable nodes in this Blueprint, not external, dynamic or name-based references",
+        "Getter path exercised; setter detection source-reviewed",
+        "No persistence or undo-restoration coverage; injected toggle failure is source-only coverage"
+      ]
     }
   ],
   "tool_usage": {
@@ -280,7 +302,8 @@
       "WF-BP-04-CALL-SWAP",
       "WF-UI-06-PARENT-BINDING",
       "WF-UI-07-OVERRIDES",
-      "WF-UI-08-OVERRIDE-REMOVE"
+      "WF-UI-08-OVERRIDE-REMOVE",
+      "WF-UI-09-WIDGET-VARIABLE"
     ],
     "EditTurboMCPGraphAppend": [
       "WF-BP-02-MINIMUM-QUANTITY"
@@ -289,11 +312,13 @@
       "WF-BP-03-EVENT-CONNECT",
       "WF-UI-06-PARENT-BINDING",
       "WF-UI-07-OVERRIDES",
-      "WF-UI-08-OVERRIDE-REMOVE"
+      "WF-UI-08-OVERRIDE-REMOVE",
+      "WF-UI-09-WIDGET-VARIABLE"
     ],
     "EditTurboMCPGraphRemove": [
       "WF-BP-03-EVENT-CONNECT",
-      "WF-UI-08-OVERRIDE-REMOVE"
+      "WF-UI-08-OVERRIDE-REMOVE",
+      "WF-UI-09-WIDGET-VARIABLE"
     ],
     "EditTurboMCPGraphSwapCall": [
       "WF-BP-04-CALL-SWAP"
@@ -422,9 +447,12 @@
     ],
     "EditTurboMCPOverrideRemove": [
       "WF-UI-08-OVERRIDE-REMOVE"
+    ],
+    "EditTurboMCPWidgetsAsVars": [
+      "WF-UI-09-WIDGET-VARIABLE"
     ]
   },
-  "unique_tools_scenario_reviewed": 36,
+  "unique_tools_scenario_reviewed": 37,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",
