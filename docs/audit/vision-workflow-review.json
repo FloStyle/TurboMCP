@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "updated": "2026-10-25",
-  "native_run": "6257458f771049da8ff56197d8901bf9",
-  "offline_run": "7a1e0f454c0442f7a1cf9eb1606bb59b",
+  "native_run": "bf10e7592ece4810b906900c78c3b4c3",
+  "offline_run": "2d230dafffe2474a91fcf0320b9ef59c",
   "offline": "22/26; four unchanged baseline failures",
   "capture_count": 21,
   "fixture_node_count": 254,
@@ -19,20 +19,21 @@
     {
       "id": "VISION-02",
       "kind": "bug",
-      "status": "open",
-      "verification": "reproduced",
+      "status": "done",
+      "verification": "native tested",
       "priority": "P1",
       "problem": "Screen output calls the active PIE window the editor window.",
-      "next": "Report actual captured window title/type and distinguish whole-window from viewport."
+      "fix": "Reports active Slate window title and selection rule; does not infer editor versus play type."
     },
     {
       "id": "VISION-03",
       "kind": "feature",
       "status": "open",
-      "verification": "observed limitation",
+      "verification": "graph fit native tested; shader readiness unverified",
       "priority": "P1",
-      "problem": "Material editor capture lacks graph fit/target controls and does not establish shader readiness.",
-      "next": "Focused material graph framing and preview-ready workflow."
+      "problem": "Material shader readiness and targeted subgraph capture remain unavailable.",
+      "next": "Add bounded shader-ready reporting and decide targeted material capture scope. Do not repeat the completed full-graph fit work.",
+      "fix": "Explicit asset-editor Target=fit frames all measured nodes in the standard Material Editor. Empty Target preserves its current view."
     },
     {
       "id": "VISION-04",

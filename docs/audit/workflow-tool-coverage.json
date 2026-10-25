@@ -315,7 +315,7 @@
       "status": "scenario_checked",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "6257458f771049da8ff56197d8901bf9",
+      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
@@ -336,7 +336,7 @@
       "status": "scenario_checked",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "6257458f771049da8ff56197d8901bf9",
+      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
       "focused_tools": [
         "LookTurboMCPWidgetPreview",
         "LookTurboMCPCapture"
@@ -357,7 +357,7 @@
       "status": "checked_with_open_visual_issue",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "6257458f771049da8ff56197d8901bf9",
+      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
@@ -375,7 +375,7 @@
       "status": "scenario_checked",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "6257458f771049da8ff56197d8901bf9",
+      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
@@ -394,7 +394,7 @@
       "status": "checked_with_open_visual_issue",
       "review": "docs/audit/vision-workflow-review.md",
       "fixture": "TurboMCP.Workflow.Vision + owned PlayCheck",
-      "evidence": "6257458f771049da8ff56197d8901bf9",
+      "evidence": "bf10e7592ece4810b906900c78c3b4c3",
       "focused_tools": [
         "LookTurboMCPCapture"
       ],
