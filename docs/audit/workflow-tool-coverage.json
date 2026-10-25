@@ -173,9 +173,40 @@
         "PreviewTurboMCPBindNewEvent": "Fixture overrides inherited BP_OnHovered/BP_OnUnhovered; no parent delegate binding needed",
         "EditTurboMCPBindNewEvent": "Same inherited-event mechanism; not validated by this scenario"
       }
+    },
+    {
+      "id": "WF-UI-06-PARENT-BINDING",
+      "title": "Bind a Common Button click delegate in its parent widget",
+      "status": "scenario_checked_visual_acceptance_pending",
+      "review": "docs/audit/parent-binding-workflow-review.md",
+      "fixture": "TurboMCP.Workflow.BindEvent",
+      "evidence": "3a38a896a17b48b1aecb7db7b399af75",
+      "focused_tools": [
+        "PreviewTurboMCPBindNewEvent",
+        "EditTurboMCPBindNewEvent"
+      ],
+      "tools_used": [
+        "PreviewTurboMCPBindNewEvent",
+        "EditTurboMCPBindNewEvent",
+        "ReadTurboMCPWidgetTree",
+        "ReadTurboMCPGraphLoad",
+        "EditTurboMCPGraphConnect",
+        "EditTurboMCPCompile",
+        "LookTurboMCPCapture"
+      ],
+      "limitations": [
+        "Only the focused binding pair receives a new full review; support tools reused",
+        "Existing Bind node and handler body setter are fixture prerequisites",
+        "Common Button click object-parameter signature; no exhaustive return/ref/container signature coverage",
+        "Replacement preview checked; live replacement, injected rollback and save/reload not covered",
+        "Native delegate broadcast proves registration/handler dispatch, not mouse input"
+      ]
     }
   ],
   "tool_usage": {
+    "EditTurboMCPBindNewEvent": [
+      "WF-UI-06-PARENT-BINDING"
+    ],
     "EditTurboMCPComment": [
       "WF-BP-01-PURCHASE"
     ],
@@ -183,13 +214,15 @@
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY",
       "WF-BP-03-EVENT-CONNECT",
-      "WF-BP-04-CALL-SWAP"
+      "WF-BP-04-CALL-SWAP",
+      "WF-UI-06-PARENT-BINDING"
     ],
     "EditTurboMCPGraphAppend": [
       "WF-BP-02-MINIMUM-QUANTITY"
     ],
     "EditTurboMCPGraphConnect": [
-      "WF-BP-03-EVENT-CONNECT"
+      "WF-BP-03-EVENT-CONNECT",
+      "WF-UI-06-PARENT-BINDING"
     ],
     "EditTurboMCPGraphRemove": [
       "WF-BP-03-EVENT-CONNECT"
@@ -212,7 +245,8 @@
       "WF-BP-01-PURCHASE",
       "WF-BP-02-MINIMUM-QUANTITY",
       "WF-BP-03-EVENT-CONNECT",
-      "WF-BP-04-CALL-SWAP"
+      "WF-BP-04-CALL-SWAP",
+      "WF-UI-06-PARENT-BINDING"
     ],
     "LookTurboMCPGraphPositions": [
       "WF-BP-01-PURCHASE",
@@ -226,6 +260,9 @@
     ],
     "LookTurboMCPWidgetPreview": [
       "WF-UI-05-COMMON-BUTTON"
+    ],
+    "PreviewTurboMCPBindNewEvent": [
+      "WF-UI-06-PARENT-BINDING"
     ],
     "PreviewTurboMCPComment": [
       "WF-BP-01-PURCHASE"
@@ -275,7 +312,8 @@
       "WF-BP-02-MINIMUM-QUANTITY",
       "WF-BP-03-EVENT-CONNECT",
       "WF-BP-04-CALL-SWAP",
-      "WF-UI-05-COMMON-BUTTON"
+      "WF-UI-05-COMMON-BUTTON",
+      "WF-UI-06-PARENT-BINDING"
     ],
     "ReadTurboMCPNodeContext": [
       "WF-BP-01-PURCHASE",
@@ -288,10 +326,11 @@
       "WF-BP-04-CALL-SWAP"
     ],
     "ReadTurboMCPWidgetTree": [
-      "WF-UI-05-COMMON-BUTTON"
+      "WF-UI-05-COMMON-BUTTON",
+      "WF-UI-06-PARENT-BINDING"
     ]
   },
-  "unique_tools_scenario_reviewed": 30,
+  "unique_tools_scenario_reviewed": 32,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

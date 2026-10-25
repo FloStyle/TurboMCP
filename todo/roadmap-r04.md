@@ -1623,3 +1623,6 @@ Implemented bec049e; scope gate passed. Final build and Common Button plus Widge
 
 ## Approved focused parent delegate binding workflow
 Readiness: ready. Assignment workflow-bind-event. Focus only Preview/Edit BindNewEvent: parent Widget Blueprint binds Common Button OnButtonBaseClicked through an existing Bind delegate node. Verify typed signature, exact graph delta, preview/refusal preservation, duplicate names, displaced sources, output/help and compiled callback behavior. Support tools are reused, not recertified. Fixture setup is not tool evidence.
+
+## Focused parent delegate binding review - 2026-10-25
+Implemented 88e57fd; scope passed. WF-UI-06 focuses Preview/Edit BindNewEvent only. Native 3a38a896a17b48b1aecb7db7b399af75 passed: typed handler, exact node delta, old-state preservation, refusal/duplicate handling and compiled Common Button sender dispatch. Results/help now explain exact targets, parameters, replaced sources, empty body and runtime registration. Coverage 32/125; wider signature/live-replacement/persistence paths remain unverified. See docs/audit/parent-binding-workflow-review.md. Support tools reused without another full review.
