@@ -49,13 +49,8 @@ namespace
 			return;
 		}
 
-		// `UWidgetBlueprint::Bindings` is where the designer writes a binding, so it is the
-		// source of truth rather than a reconstruction.
-		//
-		// WALKING THE GENERATED CLASS'S multicast delegate properties and matching them by name
-		// prefix WOULD BE A RECONSTRUCTION of the same fact from a less direct source, and it only
-		// sees a binding once the Blueprint has been compiled. This list exists before compilation and
-		// names the widget exactly.
+		// Designer bindings are available before compilation. Runtime delegate
+		// registrations and graph event wiring are separate and are not inferred here.
 		const FString WidgetName = InWidget->GetFName().ToString();
 
 		for (const FDelegateEditorBinding& Binding : InWidgetBlueprint->Bindings)
@@ -97,8 +92,8 @@ namespace
 		}
 
 		const UClass* WidgetClass = InWidget->GetClass();
-		// A placed user widget is the case the spec names. For anything else the copy and
-		// its class default are the same object, so there is nothing to compare.
+		// Compare each template widget with its class default; this also applies to
+		// native widget types such as TextBlock.
 		UObject* Default = WidgetClass->GetDefaultObject();
 		if (Default == nullptr || Default == InWidget)
 		{

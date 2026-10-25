@@ -14,27 +14,11 @@
 class UBaseWidgetBlueprint;
 
 /**
- * The compact widget tree behind `R-BP-LOAD`'s widget section.
- *
- * `03_TOOLS.md` asks for one line per widget with its name, class, whether it is a
- * variable, its visibility, its slot padding when that is not zero, the bound events,
- * and — for a placed user widget — the properties whose value on this placed copy
- * differs from the class default.
- *
- * WHY THE BOUND EVENTS COME FROM REFLECTION
- * ------------------------------------------
- * A widget's delegates are not stored one-per-widget anywhere convenient. When a Widget
- * Blueprint is compiled, every widget marked as a variable gets a property on the
- * generated class, and a delegate bound in the designer becomes a multicast delegate
- * property on that same object. So the bindings are found by walking the generated
- * class's properties, which is the same source the engine's own binding editor writes.
- *
- * WHY THIS DOES NOT CLAIM A WIDGET IS UNUSED
- * -------------------------------------------
- * The spec is explicit: "Not a variable" is a fact, "nothing uses it" is a claim that
- * needs proof. This reader reports the first and never the second. A widget that is not
- * a variable may still be driven by a binding or an animation, and nothing here checks
- * that.
+ * Compact widget context used by BlueprintLoad and its JSON representation.
+ * Designer bindings come from UWidgetBlueprint::Bindings, not runtime delegates.
+ * Editable property overrides are compared with class defaults. This is not a
+ * complete usage analysis: variable flags do not prove whether a widget is used.
+ * The standalone WidgetTree tool uses the separate WidgetTreeSync reader.
  */
 class FTurboMCPWidgetTree
 {
@@ -60,7 +44,7 @@ public:
 		/** How deep it sits under the root, used for the indentation. */
 		int32 Depth = 0;
 
-		/** One line per bound delegate: the event property and the function bound to it. */
+		/** Designer binding descriptions; runtime delegate connections are not enumerated. */
 		TArray<FString> BoundEvents;
 
 		/**

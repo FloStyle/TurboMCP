@@ -432,7 +432,7 @@ public:
 
 	/**
 	 * Inspect selected Widget Blueprint hierarchy data; loads the asset without explicitly editing, compiling or saving it. This is not a complete or lossless export.
-	 * Reports names, classes, paths, variable flags, non-default visibility and selected padding. Panel children retain slot order; this alone does not establish visual draw order. Other properties, bindings and animations are omitted. Do not assume write-back preserves omitted state.
+	 * Reports names, classes, paths, variable flags, non-default visibility and selected padding. Panel children retain slot order; this alone does not establish visual draw order. Common Button context adds the assigned style class and inherited hover-event names as inspection comments; style values and runtime overrides remain omitted. Other properties, bindings and animations are omitted. Do not assume write-back preserves omitted state.
 	 * @param Asset Required Widget Blueprint path or unique short name, e.g. /Game/Tests/WBP_NodeTest. Empty, unresolved or non-widget assets are refused. A widget without a root returns an explicit no-root result.
 	 */
 	UFUNCTION(meta = (AICallable))
@@ -541,7 +541,7 @@ public:
      * Script effects are not sandboxed or reversible, even without a named callback.
 	 * @param Widget Required Widget Blueprint path or unique short name, e.g. /Game/Tests/WBP_NodeTest. Empty is refused; the widget needs a compiled generated class.
      * @param SampleValuesJson JSON object encoded as a string, mapping variable names to values, e.g. {"Label":"Hello"}. Empty uses defaults. Values must be strings, numbers or booleans; structs/arrays use engine text-import strings. Nested JSON and null are refused before construction. Unknown variables are reported individually.
-     * @param FunctionName Optional zero-parameter widget function to execute after setting sample values. Empty skips the explicit callback; widget construction can still execute code.
+     * @param FunctionName Optional zero-parameter widget function to execute after setting sample values and constructing the widget. Construction can overwrite samples; the callback runs afterwards. This does not simulate pointer or focus input. Empty skips the explicit callback; widget construction can still execute code.
      * @param Size Pixel dimensions as WxH or W,H, e.g. 1280x720. Empty defaults to 1280x720. Each dimension must contain digits only and be 1..4096; surrounding whitespace is accepted. Fractions, signs and oversized values are refused before construction.
      * @param Execution Per-call consent: allow permits project code; empty or deny refuses before loading. Other values are refused. Defaults to deny; effects are not sandboxed or reversible.
      */

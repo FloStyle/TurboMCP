@@ -187,7 +187,7 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 				}
 
 				ValueErrors += FString::Printf(
-					TEXT("\n  '%s' is not a property of this widget. Some it does have: %s"),
+					TEXT("\n  '%s' is not a property of this widget. Available editable examples: %s"),
 					*Pair.Key,
 					Candidates.Num() > 0 ? *FString::Join(Candidates, TEXT(", "))
 						: TEXT("(none that are editable)"));
@@ -221,8 +221,14 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 	Out += FString::Printf(TEXT("\nsample values: %d set, %d refused"),
 		ValuesSet, ValuesRefused);
 
+    // Build the widget tree and Slate before the explicit callback. Otherwise a
+    // callback that accesses designer children can run before they exist, and
+    // construction can overwrite the callback's visual changes afterwards.
+    TSharedRef<SWidget> SlateWidget = Instance->TakeWidget();
+    Out += TEXT("\nlifecycle: sample values applied, widget constructed, then requested callback; this is not a simulated pointer or focus event.");
+
 	// The optional function, called on the instance by name.
-	FString FunctionReport = TEXT("none asked for");
+	FString FunctionReport = TEXT("not requested");
     bool bFunctionRefused = false;
 	if (!FunctionName.TrimStartAndEnd().IsEmpty())
 	{
@@ -257,7 +263,6 @@ FString UTurboMCPLookToolset::LookTurboMCPWidgetPreview(
 	FString ImagePath;
 	FString RenderError;
 
-	TSharedRef<SWidget> SlateWidget = Instance->TakeWidget();
 
 	UTextureRenderTarget2D* RenderTarget = FWidgetRenderer::CreateTargetFor(
 		FVector2D(Width, Height), TF_Bilinear, /*bUseGammaCorrection=*/false);

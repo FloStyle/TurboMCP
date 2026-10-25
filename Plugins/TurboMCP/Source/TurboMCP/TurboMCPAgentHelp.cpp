@@ -507,7 +507,7 @@ FString UTurboMCPReadToolset::ReadTurboMCPToolHelp(
                 if (Bare == TEXT("ReadTurboMCPPlayCheck"))
                     Help += TEXT("\neffects: starts PIE and executes project code; NOT a passive read.");
                 else if (Bare == TEXT("LookTurboMCPWidgetPreview"))
-                    Help += TEXT("\neffects: Execution=allow runs widget/project code, including construction. Empty/deny refuses. Effects are not sandboxed or reversible; this is NOT a passive image read.");
+                    Help += TEXT("\neffects: Execution=allow runs widget/project code, including construction. The requested callback runs after construction; it does not simulate pointer/focus input. Empty/deny refuses. Effects are not sandboxed or reversible; this is NOT a passive image read.");
                 else if (Bare == TEXT("EditTurboMCPSave"))
                     Help += TEXT("\neffects: writes packages even when not dirty. Widgets skip thumbnail drawing; other assets may execute thumbnail code. Partial saves are not rolled back; inspect each result. No explicit compile.");
                 else if (Bare == TEXT("EditTurboMCPSaveWithoutThumbnail"))

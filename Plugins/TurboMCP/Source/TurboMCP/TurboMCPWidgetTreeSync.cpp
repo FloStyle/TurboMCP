@@ -21,11 +21,32 @@
 #include "UObject/Package.h"
 #include "UObject/UObjectGlobals.h"
 #include "WidgetBlueprint.h"
+#include "UObject/UnrealType.h"
 
 #include "TurboMCPAssetResolver.h"
 
 namespace
 {
+    // Inspect reflected Common UI context without a hard CommonUI dependency.
+    // These comments are inspection metadata, never widget write-back input.
+    FString CommonButtonContext(UObject* Object, const FString& Label)
+    {
+        if (!Object) return FString();
+        bool IsCommonButton = false;
+        for (const UClass* Class = Object->GetClass(); Class; Class = Class->GetSuperClass())
+            if (Class->GetPathName() == TEXT("/Script/CommonUI.CommonButtonBase")) IsCommonButton = true;
+        if (!IsCommonButton) return FString();
+        FString Out = TEXT("\n; Common Button context: ") + Label + TEXT("; class=") + Object->GetClass()->GetPathName();
+        const FClassProperty* Property = FindFProperty<FClassProperty>(Object->GetClass(), TEXT("Style"));
+        UClass* Style = Property ? Cast<UClass>(Property->GetObjectPropertyValue_InContainer(Object)) : nullptr;
+        Out += TEXT("\n; Style=") + (Style ? Style->GetPathName() : FString(TEXT("None (no assigned style class)")));
+        Out += TEXT("\n; Style values and runtime overrides are not included. Inspect the style asset before changing appearance.");
+        for (const TCHAR* Name : {TEXT("BP_OnHovered"), TEXT("BP_OnUnhovered")})
+            if (UFunction* Function = Object->GetClass()->FindFunctionByName(Name))
+                Out += FString::Printf(TEXT("\n; inherited event: %s; owner=%s; override in the button Blueprint, not a parent delegate binding."), Name, *Function->GetOuterUClass()->GetPathName());
+        return Out;
+    }
+
 	/**
 	 * A short visibility name, matching what the existing reader prints so the two tools agree.
 	 *
@@ -365,8 +386,14 @@ FString FTurboMCPWidgetTreeSync::Read(const FString& Asset)
 
 	// THE SAME RENDERER THE WRITER'S PARSER ACCEPTS, which is `D-15`'s requirement that the reader and the
 	// writer share one code path. There is no second printer.
+    FString Context;
+    if (WidgetBlueprint->GeneratedClass)
+        Context += CommonButtonContext(WidgetBlueprint->GeneratedClass->GetDefaultObject(), TEXT("compiled class defaults; not a live instance"));
+    if (WidgetBlueprint->WidgetTree)
+        WidgetBlueprint->WidgetTree->ForEachWidget([&](UWidget* Widget)
+        { Context += CommonButtonContext(Widget, Widget->GetPathName()); });
 	return TurboMCPWidgetTreeText::Render(Tree, 0)
 		+ TEXT("\n; Coverage: hierarchy, names, classes, paths, variable flags, non-default visibility and selected slot padding.\n")
 		+ TEXT("; This is not a complete widget export: other properties, bindings and animations are not included.\n")
-		+ TEXT("; Do not use this text as a lossless backup or assume replacement preserves omitted data.");
+		+ TEXT("; Do not use this text as a lossless backup or assume replacement preserves omitted data.") + Context;
 }
