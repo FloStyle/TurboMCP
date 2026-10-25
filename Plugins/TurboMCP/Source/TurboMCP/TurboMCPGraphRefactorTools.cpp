@@ -136,7 +136,7 @@ FString Fingerprint(UEdGraph* Graph)
     }
     Parts.Sort(); return FString::Join(Parts,TEXT("\n"));
 }
-FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOperation& Operation)
+FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOperation& Operation,bool bCanCreateNodes=true)
 {
     if(!IsInGameThread() || !GEditor || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive()) return TEXT("unchanged\nrefused: requires idle editor game thread outside PIE/transactions");
     FTurboMCPAssetResolver::FResolved R; FString Error=FTurboMCPAssetResolver::Resolve(Asset,R);
@@ -149,7 +149,9 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
     FString Report; const FString BeforeState=Fingerprint(Copy.Graph);
     if(!Operation(Copy.Graph,Graph,Report,Error)) return TEXT("unchanged\nrefused: ")+Error;
     if(Fingerprint(Copy.Graph)==BeforeState) return TEXT("unchanged\nno edit needed\n")+Report;
-    if(!Edit) return TEXT("unchanged\npreview (transient graph)\n")+Report+TEXT("\nNew node IDs in preview are provisional; use the edit result IDs for subsequent calls.\ncompile/save=deferred");
+    if(!Edit) return TEXT("unchanged\npreview (transient graph)\n")+Report
+        +(bCanCreateNodes ? TEXT("\nNew node IDs in preview are provisional; use the edit result IDs for subsequent calls.") : TEXT(""))
+        +TEXT("\ncompile/save=deferred");
     UTransBuffer* Buffer=Cast<UTransBuffer>(GEditor->Trans);
     if(!Buffer || !GEditor->CanTransact()) return TEXT("unchanged\nrefused: undo unavailable");
     TUniquePtr<FScopedTransaction> Tx=MakeUnique<FScopedTransaction>(NSLOCTEXT("TurboMCP","GraphRefactor","TurboMCP graph refactor"));
@@ -170,7 +172,7 @@ FString Run(const FString& Asset,const FString& GraphName,bool Edit,const FOpera
             + Error + TEXT("\ncompile=not_run; save=not_requested\nInspect the asset before retrying or saving.");
     }
     Graph->NotifyGraphChanged(); FBlueprintEditorUtils::MarkBlueprintAsModified(BP);
-    return TEXT("changed\n")+Report+TEXT("\nundo=one\ncompile/save=deferred\nRun layout after structural edits.");
+    return TEXT("changed\n")+Report+TEXT("\nundo=one\ncompile/save=deferred\nInspect layout after structural edits; tidy only the affected nodes if needed.");
 }
 bool BindNewEvent(UEdGraph* Graph,UEdGraph* Identity,const FString& TargetId,const FString& TargetPin,const FString& EventName,FString& Report,FString& Error)
 {
@@ -406,10 +408,42 @@ bool Sequence(UEdGraph* Graph,UEdGraph* Identity,const FString& Groups,bool Spli
     return true;
 }
 }
+namespace
+{
+// Report the exact operation rather than claiming that a scratch preview edited
+// the asset. Existing data sources and exec destinations are different contracts.
+FString ConnectNamed(const FString& Asset, const FString& GraphName, bool bEdit,
+    const FString& SourceNodeId, const FString& SourcePin, const FString& TargetNodeId, const FString& TargetPin)
+{
+    return Run(Asset, GraphName, bEdit, [&](UEdGraph* Graph, UEdGraph* Identity, FString& Report, FString& Error)
+    {
+        UEdGraphPin* Output = Pin(ResolveNode(Graph, Identity, SourceNodeId), SourcePin, EGPD_Output);
+        UEdGraphPin* Input = Pin(ResolveNode(Graph, Identity, TargetNodeId), TargetPin, EGPD_Input);
+        const FString Endpoints = SourceNodeId + TEXT(":") + SourcePin + TEXT(" -> ") + TargetNodeId + TEXT(":") + TargetPin;
+        const bool bExec = Output && Output->PinType.PinCategory == TEXT("exec");
+        TArray<FString> Displaced;
+        UEdGraphPin* ReplacedPin = bExec ? Output : Input;
+        if (ReplacedPin)
+            for (UEdGraphPin* Old : ReplacedPin->LinkedTo)
+                if (Old && Old != (bExec ? Input : Output))
+                {
+                    UEdGraphNode* Original = TurboMCPGraphScratch::ByGuid(Identity, Old->GetOwningNode()->NodeGuid);
+                    if (Original) Displaced.Add(TurboMCPNodeId::MakeForNode(Original, true) + TEXT(":") + Old->PinName.ToString());
+                }
+        if (!Connect(Graph, Output, Input, Error))
+        { Error += TEXT("\nconnection: ") + Endpoints; return false; }
+        Report = TEXT("connection: ") + Endpoints
+            + (bExec ? TEXT("\nreplaced source-output destinations: ") : TEXT("\nreplaced target-input sources: "))
+            + (Displaced.IsEmpty() ? FString(TEXT("none")) : FString::Join(Displaced, TEXT(", ")))
+            + TEXT("\nNo automatic continuation, conversion nodes, compile or save.");
+        return true;
+    }, false);
+}
+}
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin)
-{ return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { const bool Ok=Connect(G,Pin(ResolveNode(G,I,SourceNodeId),SourcePin,EGPD_Output),Pin(ResolveNode(G,I,TargetNodeId),TargetPin,EGPD_Input),E); R=TEXT("exact named connection applied; data replaces the target input source, exec replaces only the named source output destination; other incoming exec paths preserved; no automatic continuation"); return Ok; }); }
+{ return ConnectNamed(Asset, GraphName, false, SourceNodeId, SourcePin, TargetNodeId, TargetPin); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphConnect(const FString& Asset,const FString& GraphName,const FString& SourceNodeId,const FString& SourcePin,const FString& TargetNodeId,const FString& TargetPin)
-{ return Run(Asset,GraphName,true,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { const bool Ok=Connect(G,Pin(ResolveNode(G,I,SourceNodeId),SourcePin,EGPD_Output),Pin(ResolveNode(G,I,TargetNodeId),TargetPin,EGPD_Input),E); R=TEXT("exact named connection applied; data replaces the target input source, exec replaces only the named source output destination; other incoming exec paths preserved; no automatic continuation"); return Ok; }); }
+{ return ConnectNamed(Asset, GraphName, true, SourceNodeId, SourcePin, TargetNodeId, TargetPin); }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
 { return Run(Asset,GraphName,false,[&](UEdGraph* G,UEdGraph* I,FString& R,FString& E) { int32 Count=0; FString Mapping; const bool Ok=Split(G,ResolveNode(G,I,NodeId),nullptr,Count,E,&Mapping); R=FString::Printf(TEXT("value copies=%d; one source per consumer; layout required"),Count)+Mapping; return Ok; }); }
 FString UTurboMCPEditToolset::EditTurboMCPGraphSplitValue(const FString& Asset,const FString& GraphName,const FString& NodeId)
