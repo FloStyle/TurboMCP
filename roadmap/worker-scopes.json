@@ -2128,6 +2128,18 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEventConnectWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "workflow-call-swap": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCall.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPGraphSwapCallTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/TurboMCPGraphSwapCall.h",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h"
+          ],
+          "new_files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCallSwapWorkflowTest.cpp",
+            "Tools/test-call-swap-workflow.py"
+          ]
         }
       },
       "preserve_rows": []
