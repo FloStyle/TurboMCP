@@ -20,7 +20,9 @@
     "append_scoped_tidy": "passed: 72bcaba97a134fe5baac805860214cda; build, four behavior cases, seven-node forward layout, exact links/defaults/count and fixed surrounding positions; capture inspected",
     "event_connect_native": "passed with explicit orphan cleanup: 47c9c30568a54267b542da4ad53bcbef",
     "call_swap_native": "passed: 0cc5d7d515d3425bbee0d9cf300820ed; build, defaults/links/positions, refusal preservation, three runtime values, scoped tidy and native capture",
-    "call_swap_offline": "22/26 passed: 13b682a48d97402ab8e0a2f6dfa7243d; existing validate-repo, check-language, test-client-retry and test-lookup-guards failures remain"
+    "call_swap_offline": "22/26 passed: 13b682a48d97402ab8e0a2f6dfa7243d; existing validate-repo, check-language, test-client-retry and test-lookup-guards failures remain",
+    "common_button_native": "Passed f7ee45f24a69440fb5ee5dcc3c3654a6: final build, Common Button native workflow and existing WidgetPreview regression suite. Full edit/interaction workflow remains incomplete.",
+    "common_button_offline": "22/26 passed: 91161d123b484a939583638659e187e6; existing structure, language, client-retry and lookup-guards failures remain."
   },
   "fixed": [
     "Exact source output pins retained by graph reader",
@@ -44,7 +46,10 @@
     "Scoped pure dependency Tidy removes backward affordability-to-AND wire; explicit workflow selection includes both old and new expression nodes",
     "SwapCall specializes discovered wildcard operators to matching concrete types",
     "SwapCall ignores hidden unconnected static receivers when transferring defaults",
-    "SwapCall reports rollback restoration as unverified instead of claiming complete restoration"
+    "SwapCall reports rollback restoration as unverified instead of claiming complete restoration",
+    "WidgetPreview executes the requested callback after widget construction, so child widget references and visual changes are available",
+    "WidgetTree exposes Common Button style class and inherited hover/unhover event context without requiring Common UI as a plugin dependency",
+    "Widget helper comments distinguish designer binding data from runtime delegates"
   ],
   "tools": [
     {
@@ -59,7 +64,8 @@
       "workflows": [
         "WF-BP-01-PURCHASE",
         "WF-BP-03-EVENT-CONNECT",
-        "WF-BP-04-CALL-SWAP"
+        "WF-BP-04-CALL-SWAP",
+        "WF-UI-05-COMMON-BUTTON"
       ]
     },
     {
@@ -75,7 +81,8 @@
         "WF-BP-01-PURCHASE",
         "WF-BP-02-MINIMUM-QUANTITY",
         "WF-BP-03-EVENT-CONNECT",
-        "WF-BP-04-CALL-SWAP"
+        "WF-BP-04-CALL-SWAP",
+        "WF-UI-05-COMMON-BUTTON"
       ]
     },
     {
@@ -448,54 +455,52 @@
     {
       "tool": "ReadTurboMCPWidgetTree",
       "role": "Common UI workflow candidate",
-      "status": "planned \u2014 not tested",
+      "status": "scenario checked",
       "ready": false,
-      "behavior": "No execution evidence for WF-UI-05 yet.",
-      "review": "Required: behavior, clear English output, descriptions/parameter examples, code/helpers, documented side effects and accurate result claims.",
-      "remaining": "Not executed; no new tool validation counted; WidgetTree omits most properties and bindings; style inspection/edit path must be established; Discover inherited events versus parent delegates before choosing binding tools; Interactive hover/unhover, focus, pressed and disabled verification must be established",
-      "workflows": [],
-      "planned_workflows": [
+      "behavior": "Common Button style/event context and rendered normal/hover-callback/unhover-callback states checked; fixture data/style/dirty state preserved.",
+      "review": "Fixed callback ordering after widget construction; added explicit compiled style reference and inherited-event guidance. Reviewed help, actual output and helper comments.",
+      "remaining": "Full style/event edit workflow remains incomplete; native fixture setup is not tool editing evidence; Style class reference exposed; detailed style values and targeted style editing still need a supported path; Explicit callback preview passed, not actual pointer/focus/pressed/disabled state testing; Unsaved disposable fixture; no persistence or general external-effect rollback proof",
+      "workflows": [
         "WF-UI-05-COMMON-BUTTON"
-      ]
+      ],
+      "planned_workflows": [],
+      "scenario_evidence": "f7ee45f24a69440fb5ee5dcc3c3654a6"
     },
     {
       "tool": "LookTurboMCPWidgetPreview",
       "role": "Common UI workflow candidate",
-      "status": "planned \u2014 not tested",
+      "status": "scenario checked",
       "ready": false,
-      "behavior": "No execution evidence for WF-UI-05 yet.",
-      "review": "Required: behavior, clear English output, descriptions/parameter examples, code/helpers, documented side effects and accurate result claims.",
-      "remaining": "Not executed; no new tool validation counted; WidgetTree omits most properties and bindings; style inspection/edit path must be established; Discover inherited events versus parent delegates before choosing binding tools; Interactive hover/unhover, focus, pressed and disabled verification must be established",
-      "workflows": [],
-      "planned_workflows": [
+      "behavior": "Common Button style/event context and rendered normal/hover-callback/unhover-callback states checked; fixture data/style/dirty state preserved.",
+      "review": "Fixed callback ordering after widget construction; added explicit compiled style reference and inherited-event guidance. Reviewed help, actual output and helper comments.",
+      "remaining": "Full style/event edit workflow remains incomplete; native fixture setup is not tool editing evidence; Style class reference exposed; detailed style values and targeted style editing still need a supported path; Explicit callback preview passed, not actual pointer/focus/pressed/disabled state testing; Unsaved disposable fixture; no persistence or general external-effect rollback proof",
+      "workflows": [
         "WF-UI-05-COMMON-BUTTON"
-      ]
+      ],
+      "planned_workflows": [],
+      "scenario_evidence": "f7ee45f24a69440fb5ee5dcc3c3654a6"
     },
     {
       "tool": "PreviewTurboMCPBindNewEvent",
       "role": "Common UI workflow candidate (conditional delegate binding)",
-      "status": "planned \u2014 not tested",
+      "status": "not exercised \u2014 not needed in this scenario",
       "ready": false,
       "behavior": "No execution evidence for WF-UI-05 yet.",
       "review": "Required: behavior, clear English output, descriptions/parameter examples, code/helpers, documented side effects and accurate result claims.",
-      "remaining": "Not executed; no new tool validation counted; WidgetTree omits most properties and bindings; style inspection/edit path must be established; Discover inherited events versus parent delegates before choosing binding tools; Interactive hover/unhover, focus, pressed and disabled verification must be established",
+      "remaining": "Requires a separate parent-delegate binding scenario. Common Button inherited event overrides do not validate this tool.",
       "workflows": [],
-      "planned_workflows": [
-        "WF-UI-05-COMMON-BUTTON"
-      ]
+      "planned_workflows": []
     },
     {
       "tool": "EditTurboMCPBindNewEvent",
       "role": "Common UI workflow candidate (conditional delegate binding)",
-      "status": "planned \u2014 not tested",
+      "status": "not exercised \u2014 not needed in this scenario",
       "ready": false,
       "behavior": "No execution evidence for WF-UI-05 yet.",
       "review": "Required: behavior, clear English output, descriptions/parameter examples, code/helpers, documented side effects and accurate result claims.",
-      "remaining": "Not executed; no new tool validation counted; WidgetTree omits most properties and bindings; style inspection/edit path must be established; Discover inherited events versus parent delegates before choosing binding tools; Interactive hover/unhover, focus, pressed and disabled verification must be established",
+      "remaining": "Requires a separate parent-delegate binding scenario. Common Button inherited event overrides do not validate this tool.",
       "workflows": [],
-      "planned_workflows": [
-        "WF-UI-05-COMMON-BUTTON"
-      ]
+      "planned_workflows": []
     }
   ],
   "evidence": [
@@ -552,7 +557,7 @@
     "layout": "After Append, preview/apply scoped Tidy to both comparisons, AND and their four readers. Return and unrelated nodes stay fixed."
   },
   "review_progress": {
-    "scenario_reviewed": 28,
+    "scenario_reviewed": 30,
     "inventory": 125,
     "meaning": "Bounded workflow review, not global validation of every tool path."
   },

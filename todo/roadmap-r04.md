@@ -1616,3 +1616,6 @@ WF-UI-05-COMMON-BUTTON is planned, not executed. Track hierarchy/style context, 
 
 ## Approved Common Button inspection/preview review
 Readiness: ready. Assignment workflow-common-button. Review and repair WidgetTree context/help and WidgetPreview lifecycle/output using a disposable Common UI fixture. Enable CommonUI only in TestProject; no new plugin dependency. Capture actual normal/callback states, refusals and preservation. Record unsupported style-edit and interaction paths without substituting fixture setup for tool evidence.
+
+## Common Button reader/preview evidence - 2026-10-25
+Implemented bec049e; scope gate passed. Final build and Common Button plus WidgetPreview regressions passed f7ee45f24a69440fb5ee5dcc3c3654a6. Fixed callback construction order, added style/event context, clarified help/results/helper comments. Coverage 30/125. Full WF-UI-05 remains incomplete: style-value editing, tool-driven inherited-event edits and actual pointer/focus/pressed/disabled behavior still need evidence. BindNewEvent was not used or certified. See docs/audit/common-button-workflow-review.md.
