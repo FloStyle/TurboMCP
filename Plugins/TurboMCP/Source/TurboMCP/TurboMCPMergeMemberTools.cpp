@@ -132,3 +132,28 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPInterfaceAdd(const FString& Asse
 FString UTurboMCPEditToolset::EditTurboMCPInterfaceAdd(const FString& Asset, const FString& Interface) { return TurboMCPMergeMembers::InterfaceAdd(Asset, Interface, true); }
 FString UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableAdd(const FString& Asset, const FString& Function, const FString& Name, const FString& Type, const FString& Default) { return TurboMCPMergeMembers::LocalAdd(Asset, Function, Name, Type, Default, false); }
 FString UTurboMCPEditToolset::EditTurboMCPLocalVariableAdd(const FString& Asset, const FString& Function, const FString& Name, const FString& Type, const FString& Default) { return TurboMCPMergeMembers::LocalAdd(Asset, Function, Name, Type, Default, true); }
+
+namespace TurboMCPMergeMembers
+{
+static FString InterfaceRemove(const FString& Asset,const FString& Interface,const FString& Confirm,bool Apply)
+{
+    UBlueprint* BP=nullptr;FString Error=ResolveTarget(Asset,BP);if(!Error.IsEmpty())return Error;
+    UClass* Found=nullptr;
+    for(const auto& I:BP->ImplementedInterfaces)
+    {
+        UClass* C=I.Interface;if(!C)continue;
+        const UObject* Origin=C->ClassGeneratedBy;
+        if(C->GetPathName()==Interface || C->GetName()==Interface || (Origin && (Origin->GetPathName()==Interface || Origin->GetName()==Interface)))
+        {if(Found)return TEXT("error: Interface name is ambiguous; use its full class path. Nothing changed.");Found=C;}
+    }
+    if(!Found)return TEXT("error: No directly implemented interface matches. Inherited interfaces cannot be removed here. Nothing changed.");
+    const FString Token=BP->GetPathName()+TEXT("|")+Found->GetPathName();
+    if(!Apply)return TEXT("preview: Remove interface contract while preserving its function implementations as ordinary functions. Calls requiring the interface may stop working. No changes made.\nconfirmation: ")+Token;
+    if(Confirm!=Token)return TEXT("error: Confirm must equal the confirmation returned by InterfaceRemove preview. Nothing changed.");
+    BP->Modify();FBlueprintEditorUtils::RemoveInterface(BP,Found->GetClassPathName(),true);
+    for(const auto& I:BP->ImplementedInterfaces)if(I.Interface==Found)return TEXT("error: Interface remains implemented. Inspect target; no save requested.");
+    return TEXT("edited: Removed the interface contract and preserved its function implementations. Structural refresh may compile dependencies. No save requested. Compile and inspect interface callers before saving; undo is not guaranteed across compilation.");
+}
+}
+FString UTurboMCPPreviewToolset::PreviewTurboMCPInterfaceRemove(const FString& Asset,const FString& Interface){return TurboMCPMergeMembers::InterfaceRemove(Asset,Interface,TEXT(""),false);}
+FString UTurboMCPEditToolset::EditTurboMCPInterfaceRemove(const FString& Asset,const FString& Interface,const FString& Confirm){return TurboMCPMergeMembers::InterfaceRemove(Asset,Interface,Confirm,true);}

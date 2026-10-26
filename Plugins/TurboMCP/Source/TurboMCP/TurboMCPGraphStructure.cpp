@@ -206,11 +206,10 @@ namespace
 
 		if (const UK2Node_CallFunction* CallNode = Cast<UK2Node_CallFunction>(InNode))
 		{
-			// External static calls retain their owning class in FunctionReference.
+			// External calls retain their owning class in FunctionReference.
 			// They do not require a same-named function on the destination Blueprint.
 			const UFunction* Function = CallNode->GetTargetFunction();
-			if (!CallNode->FunctionReference.IsSelfContext() && Function
-				&& Function->HasAnyFunctionFlags(FUNC_Static)) return false;
+			if (!CallNode->FunctionReference.IsSelfContext() && Function) return false;
 			OutKind = TEXT("function");
 			OutName = CallNode->FunctionReference.GetMemberName().ToString();
 			return !OutName.IsEmpty();

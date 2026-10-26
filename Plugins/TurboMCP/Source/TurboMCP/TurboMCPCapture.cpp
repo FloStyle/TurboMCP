@@ -277,7 +277,6 @@ FString UTurboMCPLookToolset::LookTurboMCPCapture(
 		{
 			Out += FString::Printf(TEXT("\nkind asked for: %s"), *Named.Name);
 		}
-		TurboMCPCaptureAsset::DescribeKinds(Out);
 		return Out;
 	}
 

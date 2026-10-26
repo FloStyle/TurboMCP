@@ -596,6 +596,23 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Preview removing a directly implemented interface contract, preserving its function bodies as ordinary functions. Interface callers may no longer work. Interface is its exact class path or unique asset name. Edit requires the exact confirmation from preview; no save, and undo is not guaranteed across structural refresh. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPInterfaceRemove(const FString& Asset, const FString& Interface);
+
+    /** Preview typed dispatcher creation. Inputs uses comma-separated Name:Type pairs, including nested container types. Existing member names refuse. No save; edit structurally refreshes the Blueprint. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
+    /** Preview missing variable, function-signature and dispatcher declarations from SourceAsset to TargetAsset. Existing members remain; type conflicts refuse. This does not copy graph bodies, widgets or interfaces. Use GraphTransfer and WidgetSubtreeCopy afterward. Edit may structurally compile; no save. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPMergeMembers(const FString& SourceAsset, const FString& TargetAsset);
+    /** Preview complete graph transfer between compatible Blueprints, preserving links, layout, comments and locals. TargetGraph empty keeps the source name. Existing graph logic is never overwritten; an empty matching function declaration may be filled. Prepare missing members/widgets first. Source is unchanged; edit structurally refreshes, does not save, and does not guarantee undo across compilation. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPGraphTransfer(const FString& SourceAsset, const FString& SourceGraph, const FString& TargetAsset, const FString& TargetGraph);
+    /** Preview copying SourceWidget and its children into a target panel named Parent. Empty Parent requires an empty target tree. Names must be unused; parent panel classes must match to preserve the root slot. Copies widget properties, slots and localized text, not graphs or animations. Designer bindings and outside-widget dependencies refuse. Edit structurally refreshes; no save. */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPWidgetSubtreeCopy(const FString& SourceAsset, const FString& SourceWidget, const FString& TargetAsset, const FString& Parent);
+
     /** Preview adding an implemented interface on a Blueprint or Widget Blueprint. Rejects signature conflicts before writing; repeated implementation is a no-op. Creates required interface function graphs, not event bodies or source logic. Preview may load assets but makes no edits. Apply uses structural refresh and does not save.
      * @param Asset Target Blueprint asset path or unambiguous name.
      * @param Interface Compiled Blueprint interface asset path/name, or native /Script/Module.Interface class path.
@@ -1164,6 +1181,27 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Edit removing a directly implemented interface contract, preserving its function bodies as ordinary functions. Interface callers may no longer work. Interface is its exact class path or unique asset name. Edit requires the exact confirmation from preview; no save, and undo is not guaranteed across structural refresh. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPInterfaceRemove(const FString& Asset, const FString& Interface, const FString& Confirm);
+
+    /** Focus one visible runtime CommonUI/UMG button, then route a bounded gamepad accept press/release through Slate. Target must be pie:0; Widget is its exact runtime object path or unique object name from PlayInputState. Does not invoke click delegates directly. Normal ticks and an active editor are required. Delivery is not activation: read PlayInputState and capture afterward. Executes game/UI code; no asset edit/save/undo. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPMenuActivate(const FString& Target, const FString& Widget);
+
+    /** Apply typed dispatcher creation. Inputs uses comma-separated Name:Type pairs, including nested container types. Existing member names refuse. No save; edit structurally refreshes the Blueprint. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
+    /** Apply missing variable, function-signature and dispatcher declarations from SourceAsset to TargetAsset. Existing members remain; type conflicts refuse. This does not copy graph bodies, widgets or interfaces. Use GraphTransfer and WidgetSubtreeCopy afterward. Edit may structurally compile; no save. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPMergeMembers(const FString& SourceAsset, const FString& TargetAsset);
+    /** Apply complete graph transfer between compatible Blueprints, preserving links, layout, comments and locals. TargetGraph empty keeps the source name. Existing graph logic is never overwritten; an empty matching function declaration may be filled. Prepare missing members/widgets first. Source is unchanged; edit structurally refreshes, does not save, and does not guarantee undo across compilation. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPGraphTransfer(const FString& SourceAsset, const FString& SourceGraph, const FString& TargetAsset, const FString& TargetGraph);
+    /** Apply copying SourceWidget and its children into a target panel named Parent. Empty Parent requires an empty target tree. Names must be unused; parent panel classes must match to preserve the root slot. Copies widget properties, slots and localized text, not graphs or animations. Designer bindings and outside-widget dependencies refuse. Edit structurally refreshes; no save. */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPWidgetSubtreeCopy(const FString& SourceAsset, const FString& SourceWidget, const FString& TargetAsset, const FString& Parent);
+
     /** Add an implemented interface on a Blueprint or Widget Blueprint. Rejects signature conflicts before writing; repeated implementation is a no-op. Creates required interface function graphs, not event bodies or source logic. Structural refresh may compile dependencies; no save or reliable undo across compilation.
      * @param Asset Target Blueprint asset path or unambiguous name.
      * @param Interface Compiled Blueprint interface asset path/name, or native /Script/Module.Interface class path.

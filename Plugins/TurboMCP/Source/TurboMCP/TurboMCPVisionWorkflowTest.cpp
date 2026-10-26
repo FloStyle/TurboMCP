@@ -21,6 +21,7 @@
 #include "K2Node_IfThenElse.h"
 #include "K2Node_AddDelegate.h"
 #include "K2Node_CallFunction.h"
+#include "K2Node_MacroInstance.h"
 #include "K2Node_FunctionEntry.h"
 #include "K2Node_FunctionResult.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -154,6 +155,40 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  for(int32 I=0;I<48;++I){auto* N=Call(Function,UKismetMathLibrary::StaticClass(),I%2?TEXT("Multiply_DoubleDouble"):TEXT("Add_DoubleDouble"),350+(I%12)*280,250+(I/12)*260);N->FindPinChecked(TEXT("B"))->DefaultValue=I%2?TEXT("1.01"):TEXT("2");Wire(Value,N->FindPinChecked(TEXT("A")));Value=N->GetReturnValuePin();if(I==24)Targets.Add(N);}
  Wire(Value,Output);
  Record(TEXT("Compile fixture"),UTurboMCPEditToolset::EditTurboMCPCompile(BP->GetPathName()));TestTrue(TEXT("Dense Blueprint compiles"),BP->Status!=BS_Error);
+
+ // A second Blueprint receives declarations and then complete graph bodies.
+ UBlueprint* MergeTarget=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_MergeTarget"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
+ if(!TestNotNull(TEXT("Merge target"),MergeTarget))return false;
+ auto MergeSnapshot=[&](UEdGraph* G){TSet<UObject*> Nodes;for(UEdGraphNode* N:G->Nodes)Nodes.Add(N);FString Text;FEdGraphUtilities::ExportNodesToText(Nodes,Text);return Text;};
+ const FString SourceSnapshot=MergeSnapshot(Function);
+ TestTrue(TEXT("Typed dispatcher preview"),UTurboMCPPreviewToolset::PreviewTurboMCPDispatcherAdd(MergeAsset,TEXT("MergeReady"),TEXT("Ready:bool,Owner:object</Script/Engine.Actor>")).StartsWith(TEXT("preview:")));
+ TestTrue(TEXT("Typed dispatcher edit"),Record(TEXT("Create dispatcher"),UTurboMCPEditToolset::EditTurboMCPDispatcherAdd(MergeAsset,TEXT("MergeReady"),TEXT("Ready:bool,Owner:object</Script/Engine.Actor>"))).StartsWith(TEXT("edited:")));
+ const int32 TargetGraphsBefore=MergeTarget->FunctionGraphs.Num();
+ TestTrue(TEXT("Member preview"),Record(TEXT("Prepare members preview"),UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(MergeAsset,MergeTarget->GetPathName())).StartsWith(TEXT("preview:")));
+ TestEqual(TEXT("Member preview leaves target unchanged"),MergeTarget->FunctionGraphs.Num(),TargetGraphsBefore);
+ TestTrue(TEXT("Member creation"),Record(TEXT("Prepare members edit"),UTurboMCPEditToolset::EditTurboMCPMergeMembers(MergeAsset,MergeTarget->GetPathName())).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Graph transfer preview"),Record(TEXT("Transfer preview"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("preview:")));
+ TestTrue(TEXT("Graph transfer edit"),Record(TEXT("Transfer edit"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Local graph transfer"),Record(TEXT("Local graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,TEXT("MergeMemberProbe"),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Event graph transfer"),Record(TEXT("Event graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents"))).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Occupied function refuses replacement"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT("" )).StartsWith(TEXT("error:")));
+ TestEqual(TEXT("Source graph was not modified"),MergeSnapshot(Function),SourceSnapshot);
+ UEdGraph* Transferred=TurboMCPNodeId::FindGraphByName(MergeTarget,Function->GetName());
+ TestNotNull(TEXT("Transferred function exists"),Transferred);
+ if(Transferred != nullptr){
+  TestEqual(TEXT("Graph node count preserved"),Transferred->Nodes.Num(),Function->Nodes.Num());
+  auto Links=[](UEdGraph* G){int32 Count=0;for(UEdGraphNode* N:G->Nodes)for(auto* P:N->Pins)if(P)Count+=P->LinkedTo.Num();return Count;};
+  TestEqual(TEXT("Graph links preserved"),Links(Transferred),Links(Function));
+ }
+ UEdGraph* LocalGraph=TurboMCPNodeId::FindGraphByName(MergeTarget,TEXT("MergeMemberProbe"));
+ TestNotNull(TEXT("Transferred local function exists"),LocalGraph);
+ if(LocalGraph != nullptr){TArray<UK2Node_FunctionEntry*> LE;LocalGraph->GetNodesOfClass(LE);TestEqual(TEXT("Local copied"),LE[0]->LocalVariables.Num(),1);if(LE[0]->LocalVariables.Num())TestEqual(TEXT("Copied local default"),LE[0]->LocalVariables[0].DefaultValue,FString(TEXT("7")));}
+ Record(TEXT("Compile merged target"),UTurboMCPEditToolset::EditTurboMCPCompile(MergeTarget->GetPathName()));TestTrue(TEXT("Merged target compiles"),MergeTarget->Status!=BS_Error);
+ const FString Removal=Record(TEXT("Interface removal preview"),UTurboMCPPreviewToolset::PreviewTurboMCPInterfaceRemove(MergeAsset,MergeInterface->GetPathName()));
+ TestTrue(TEXT("Removal preview accepted"),Removal.StartsWith(TEXT("preview:")));
+ TestTrue(TEXT("Removal without confirmation refuses"),UTurboMCPEditToolset::EditTurboMCPInterfaceRemove(MergeAsset,MergeInterface->GetPathName(),TEXT("")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Confirmed interface removal"),Record(TEXT("Remove interface"),UTurboMCPEditToolset::EditTurboMCPInterfaceRemove(MergeAsset,MergeInterface->GetPathName(),BP->GetPathName()+TEXT("|")+MergeInterface->GeneratedClass->GetPathName())).StartsWith(TEXT("edited:")));
+ TestNotNull(TEXT("Interface function body retained"),TurboMCPNodeId::FindGraphByName(BP,TEXT("ReadMergeState")));
  int32 Total=0;for(auto* G:Graphs)Total+=G->Nodes.Num();Record(TEXT("Fixture manifest"),FString::Printf(TEXT("asset: %s\n12 request events + 12 delegate handlers; three event graphs; 48 arithmetic nodes; total nodes: %d"),*BP->GetPathName(),Total));
  for(int32 I=0;I<Graphs.Num();++I){
   auto* G=Graphs[I];const int32 Count=G->Nodes.Num();
@@ -188,6 +223,23 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  UWidgetBlueprint* WB=FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(Package,TEXT("WBP_Vision"),BPTYPE_Normal,UUserWidget::StaticClass(),UCanvasPanel::StaticClass(),TEXT("Vision"),false);
  auto* Label=WB->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("StatusLabel"));Label->SetText(FText::FromString(TEXT("Vision fixture: READY 0123456789")));WB->WidgetVariableNameToGuidMap.Add(Label->GetFName(),FGuid::NewGuid());
  auto* Slot=CastChecked<UCanvasPanel>(WB->WidgetTree->RootWidget)->AddChildToCanvas(Label);Slot->SetPosition(FVector2D(40,40));Slot->SetSize(FVector2D(560,80));
+
+ UWidgetBlueprint* WidgetTarget=FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(Package,TEXT("WBP_MergeTarget"),BPTYPE_Normal,UUserWidget::StaticClass(),UCanvasPanel::StaticClass(),TEXT("Target"),false);
+ if(!TestNotNull(TEXT("Widget target"),WidgetTarget))return false;
+ const FString ParentName=WidgetTarget->WidgetTree->RootWidget->GetName();
+ const FText OriginalText=Label->GetText();
+ TestTrue(TEXT("Subtree preview"),Record(TEXT("Subtree preview"),UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Label->GetName(),WidgetTarget->GetPathName(),ParentName)).StartsWith(TEXT("preview:")));
+ TestNull(TEXT("Subtree preview does not add widgets"),WidgetTarget->WidgetTree->FindWidget(Label->GetFName()));
+ TestTrue(TEXT("Subtree edit"),Record(TEXT("Subtree edit"),UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Label->GetName(),WidgetTarget->GetPathName(),ParentName)).StartsWith(TEXT("edited:")));
+ auto* CopiedLabel=Cast<UTextBlock>(WidgetTarget->WidgetTree->FindWidget(Label->GetFName()));
+ if(TestNotNull(TEXT("Copied label"),CopiedLabel)){
+  TestTrue(TEXT("Copied root belongs to target tree"),CopiedLabel->GetOuter()==WidgetTarget->WidgetTree);
+  TestTrue(TEXT("Localized text identity retained"),CopiedLabel->GetText().IdenticalTo(OriginalText));
+  auto* CopiedSlot=Cast<UCanvasPanelSlot>(CopiedLabel->Slot);if(TestNotNull(TEXT("Copied root slot"),CopiedSlot)){TestEqual(TEXT("Slot position preserved"),CopiedSlot->GetPosition(),Slot->GetPosition());TestEqual(TEXT("Slot size preserved"),CopiedSlot->GetSize(),Slot->GetSize());}
+ }
+ TestTrue(TEXT("Name collision refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Label->GetName(),WidgetTarget->GetPathName(),ParentName).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Source text unchanged"),Label->GetText().IdenticalTo(OriginalText));
+ Record(TEXT("Compile copied widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));TestTrue(TEXT("Copied widget compiles"),WidgetTarget->Status!=BS_Error);
  Record(TEXT("Compile widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WB->GetPathName()));
  for(const FString Size:{FString(TEXT("640x240")),FString(TEXT("1920x720"))})ImageCheck(Record(TEXT("Widget preview ")+Size,UTurboMCPLookToolset::LookTurboMCPWidgetPreview(WB->GetPathName(),TEXT(""),TEXT(""),Size,TEXT("allow"))));
  UMaterial* Material=NewObject<UMaterial>(Package,TEXT("M_Vision"),RF_Public|RF_Standalone);

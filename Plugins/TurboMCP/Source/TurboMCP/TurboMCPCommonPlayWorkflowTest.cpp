@@ -3,6 +3,10 @@
 #include "Tools/TurboMCPToolsets.h"
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Editor.h"
+#include "ToolsetRegistry/ToolsetRegistrySubsystem.h"
+#include "ToolsetRegistry/Toolset.h"
+#include "Blueprint/UserWidget.h"
+#include "UObject/UObjectIterator.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
 #include "Misc/AutomationTest.h"
@@ -42,9 +46,19 @@ class FCommonPlayLoop : public IAutomationLatentCommand
         if (!Function) return TEXT("fixture Describe missing");
         Fixture->ProcessEvent(Function,&Args);Record(Args.ReturnValue);return Args.ReturnValue;
     }
+    FString Dispatch(const FString& Name,const FString& Json)
+    {
+        auto Registry=UToolsetRegistrySubsystem::Get();
+        if(Registry.HasError()){Test->AddError(Registry.GetError());return TEXT("error: registry unavailable");}
+        auto Toolset=Registry.GetValue()->ToolsetRegistry.Find(TEXT("TurboMCP.TurboMCPEditToolset"));
+        if(!Toolset){Test->AddError(TEXT("Registered edit toolset unavailable"));return TEXT("error: edit toolset unavailable");}
+        auto Future=Toolset->ExecuteTool(Name,Json);
+        if(!Future.IsReady()){Test->AddError(TEXT("Synchronous input dispatch unexpectedly pending"));return TEXT("error: input dispatch pending");}
+        auto Result=Future.Get();return Result.HasError()?TEXT("error: ")+Result.GetError():Result.GetValue();
+    }
     void Hold(const TCHAR* Key,const TCHAR* Value=TEXT(""),const TCHAR* Duration=TEXT("0.15"))
     {
-        FString Out=UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("hold"),Key,Value,Duration);
+        FString Out=Dispatch(TEXT("EditTurboMCPPlayInput"),FString::Printf(TEXT("{\"Target\":\"pie:0\",\"Action\":\"hold\",\"Key\":\"%s\",\"Value\":\"%s\",\"Seconds\":\"%s\"}"),Key,Value,Duration));
         Record(Out);Test->TestFalse(TEXT("Input accepted"),Out.StartsWith(TEXT("error:")));
     }
 public:
@@ -61,6 +75,12 @@ public:
             if (!Test->TestNotNull(TEXT("Project CommonUI fixture class"),Class)) return true;
             Fixture=GEditor->PlayWorld->SpawnActor<AActor>(Class);
             if (!Test->TestTrue(TEXT("Fixture spawned"),Fixture.IsValid())) return true;
+            // Request actual window foreground; do not disable the input tool's
+            // inactive-application refusal to make the test pass.
+            if(auto Window=FSlateApplication::Get().GetActiveTopLevelWindow())Window->BringToFront(true);
+            Record(Dispatch(TEXT("EditTurboMCPPlayInput"),TEXT("{\"Target\":\"pie:0\",\"Action\":\"focus\",\"Key\":\"\",\"Value\":\"\",\"Seconds\":\"\"}")));
+            const FString Refused=Dispatch(TEXT("EditTurboMCPFunctionAdd"),TEXT("{\"Asset\":\"NotAnAsset\",\"Name\":\"MustNotEditInPIE\",\"Inputs\":\"\",\"Outputs\":\"\"}"));
+            Test->TestTrue(TEXT("Asset edits still refused by PIE gate"),Refused.Contains(TEXT("no play session")));
             ++Step;return false;
         }
         if (Step<=10 && (!Fixture.IsValid() || !GEditor || !GEditor->PlayWorld))
@@ -143,7 +163,11 @@ public:
             switch(Step)
             {
             case 1: Record(UTurboMCPEditToolset::EditTurboMCPPlayInput(TEXT("pie:0"),TEXT("focus"),TEXT(""),TEXT(""),TEXT("")));Hold(TEXT("Gamepad_Special_Right"));break;
-            case 2: Test->TestTrue(TEXT("Disabled control did not activate"),Current.Contains(TEXT("disabled clicks: 0")));Test->TestTrue(TEXT("D-pad up restored Settings focus"),Current.Contains(TEXT("focused button: Settings")));Test->TestTrue(TEXT("CommonUI diagnostics present"),InputState.Contains(TEXT("CommonUI active widgets: 2")) && InputState.Contains(TEXT("Gamepad")));Test->TestTrue(TEXT("Pause screen active"),Current.Contains(TEXT("screen: Pause")));Hold(TEXT("Gamepad_FaceButton_Bottom"));break;
+            case 2: Test->TestTrue(TEXT("Disabled control did not activate"),Current.Contains(TEXT("disabled clicks: 0")));Test->TestTrue(TEXT("D-pad up restored Settings focus"),Current.Contains(TEXT("focused button: Settings")));Test->TestTrue(TEXT("CommonUI diagnostics present"),InputState.Contains(TEXT("CommonUI active widgets: 2")) && InputState.Contains(TEXT("Gamepad")));Test->TestTrue(TEXT("Pause screen active"),Current.Contains(TEXT("screen: Pause")));{
+                UClass* ButtonClass=FindObject<UClass>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));FString ButtonPath;
+                for(TObjectIterator<UUserWidget> It;It;++It)if(ButtonClass && It->IsA(ButtonClass) && It->GetWorld()==GEditor->PlayWorld && (It->HasUserFocus(GEditor->PlayWorld->GetFirstPlayerController()) || It->HasUserFocusedDescendants(GEditor->PlayWorld->GetFirstPlayerController())))ButtonPath=It->GetPathName();
+                const FString Activate=Dispatch(TEXT("EditTurboMCPMenuActivate"),FString::Printf(TEXT("{\"Target\":\"pie:0\",\"Widget\":\"%s\"}"),*ButtonPath));Record(Activate);Test->TestFalse(TEXT("Named button dispatch accepted"),Activate.StartsWith(TEXT("error:")));
+            }break;
             case 3: Test->TestTrue(TEXT("Settings is modal"),Current.Contains(TEXT("modal: yes")));Test->TestTrue(TEXT("CommonButton opens Settings"),Current.Contains(TEXT("screen: Settings")));Test->TestTrue(TEXT("Audio initially selected"),Current.Contains(TEXT("tab: Audio")) && Current.Contains(TEXT("content: Audio settings content")));Hold(TEXT("Gamepad_RightShoulder"));break;
             case 4: Test->TestTrue(TEXT("Next tab selects Video"),Current.Contains(TEXT("tab: Video")) && Current.Contains(TEXT("content: Video settings content")));Hold(TEXT("Gamepad_LeftShoulder"));break;
             case 5: Test->TestTrue(TEXT("Previous tab selects Audio"),Current.Contains(TEXT("tab: Audio")) && Current.Contains(TEXT("content: Audio settings content")));Hold(TEXT("Gamepad_FaceButton_Right"));break;

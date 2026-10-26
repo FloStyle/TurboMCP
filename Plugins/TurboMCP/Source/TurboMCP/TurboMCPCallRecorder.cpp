@@ -82,7 +82,23 @@ namespace
         Output = Input;
         if (!ToolsetClass || !ToolName.Contains(TEXT("TurboMCP"))) return true;
         const UFunction* Function = ToolsetClass->FindFunctionByName(FName(*ToolName));
-        if (!Function) return true; // Normal dispatch owns unknown-tool errors.
+        if (!Function)
+        {
+            TArray<TPair<int32,FString>> Matches;
+            for (UClass* Class : {UTurboMCPReadToolset::StaticClass(), UTurboMCPLookToolset::StaticClass(), UTurboMCPPreviewToolset::StaticClass(), UTurboMCPEditToolset::StaticClass()})
+                for (TFieldIterator<UFunction> It(Class); It; ++It) if (It->HasMetaData(TEXT("AICallable")))
+                {
+                    const FString Candidate=It->GetName();
+                    TArray<int32> Row;for(int32 J=0;J<=Candidate.Len();++J)Row.Add(J);
+                    for(int32 I=1;I<=ToolName.Len();++I){int32 Previous=Row[0];Row[0]=I;for(int32 J=1;J<=Candidate.Len();++J){const int32 Old=Row[J];Row[J]=FMath::Min3(Row[J]+1,Row[J-1]+1,Previous+(FChar::ToLower(ToolName[I-1])==FChar::ToLower(Candidate[J-1])?0:1));Previous=Old;}}
+                    Matches.Emplace(Row.Last(),Candidate);
+                }
+            Matches.Sort([](const auto& A,const auto& B){return A.Key==B.Key?A.Value<B.Value:A.Key<B.Key;});
+            Error=TEXT("error: Unknown TurboMCP tool '")+ToolName+TEXT("'. Closest declared names:");
+            for(int32 I=0;I<FMath::Min(3,Matches.Num());++I)Error+=TEXT("\n  ")+Matches[I].Value;
+            Error+=TEXT("\nUse ReadTurboMCPToolHelp for the exact schema; ReadTurboMCPRefs reads asset references.");
+            return false;
+        }
         TSharedPtr<FJsonObject> Object;
         if (!FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Input), Object) || !Object) return true;
         TSet<FString> Parameters;
@@ -250,6 +266,7 @@ namespace
 
             const bool bAssetEdit = ToolName.StartsWith(TEXT("EditTurboMCP"))
                 && !ToolName.StartsWith(TEXT("EditTurboMCPCallLog"))
+                && ToolName != TEXT("EditTurboMCPPlayInput") && ToolName != TEXT("EditTurboMCPMenuActivate")
                 && ToolName != TEXT("EditTurboMCPTrace") && ToolName != TEXT("EditTurboMCPVcsCheckout");
             if (bAssetEdit
                 && (!IsInGameThread() || !GEditor || GEditor->IsTransactionActive() || GEditor->IsPlaySessionInProgress()))

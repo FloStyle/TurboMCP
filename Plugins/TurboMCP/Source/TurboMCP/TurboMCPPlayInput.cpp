@@ -13,6 +13,7 @@
 #include "GameFramework/PlayerInput.h"
 #include "InputKeyEventArgs.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/Button.h"
 #include "Subsystems/LocalPlayerSubsystem.h"
 #include "UObject/StructOnScope.h"
 #include "UObject/UnrealType.h"
@@ -232,6 +233,35 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
     return FString::Printf(TEXT("play input: routed %s through Slate for player 0, Slate user %u\nvalue: %.3f; automatic release after %.3f wall-clock seconds\nSlate handled initial event: %s\nThis is synthetic key/axis input, not Enhanced Input action injection or physical-device emulation. Normal frames are required. Delivery does not prove the action fired; inspect PlayInputState, the menu and the next capture. No asset edit, save or undo was performed."),*Key,Resolved.User,Amount,Duration,Handled?TEXT("yes"):TEXT("no"));
 }
 
+FString UTurboMCPEditToolset::EditTurboMCPMenuActivate(const FString& Target,const FString& Widget)
+{
+    FPlayInputTarget Resolved;const FString Error=ResolvePlayInput(Target,Resolved);if(!Error.IsEmpty())return Error;
+    if(Widget.IsEmpty())return TEXT("error: Widget must be an exact runtime object path or unique name from ReadTurboMCPPlayInputState.");
+    if(Held.Key.IsValid())return TEXT("error: Wait for the current input hold to finish before activating a menu button.");
+    if(!FSlateApplication::Get().IsActive())return TEXT("error: The editor application is inactive. No input was sent.");
+    UClass* CommonButton=FindObject<UClass>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));
+    UWidget* Match=nullptr;
+    for(TObjectIterator<UWidget> It;It;++It)
+    {
+        if(It->GetWorld()!=Resolved.World || (!It->IsA<UButton>() && (!CommonButton || !It->IsA(CommonButton))))continue;
+        if(It->GetPathName()!=Widget && It->GetName()!=Widget)continue;
+        if(Match)return TEXT("error: More than one runtime button matches. Use its full path from ReadTurboMCPPlayInputState. No input was sent.");
+        Match=*It;
+    }
+    if(!Match)return TEXT("error: No runtime button matches this name/path in the PIE world. Read PlayInputState again. No input was sent.");
+    if(!Match->GetIsEnabled() || !Match->IsVisible() || !Match->GetCachedWidget().IsValid())return TEXT("error: Button is disabled, hidden or not constructed. No input was sent.");
+    if(CommonButton && Match->IsA(CommonButton) && NativeGetter(Match,CommonButton,TEXT("IsInteractionEnabled"))!=TEXT("True"))return TEXT("error: CommonUI button interaction is disabled. No input was sent.");
+    // Follow the widget's normal focus forwarding, including CommonButton's
+    // internal Slate button; never call its click delegates directly.
+    Match->SetUserFocus(Resolved.Controller);
+    const UUserWidget* UserButton=Cast<UUserWidget>(Match);
+    if(!Match->HasUserFocus(Resolved.Controller) && (!UserButton || !UserButton->HasUserFocusedDescendants(Resolved.Controller)))return TEXT("error: Button did not accept user focus. No input was sent.");
+    const FString Input=EditTurboMCPPlayInput(Target,TEXT("hold"),TEXT("Gamepad_FaceButton_Bottom"),TEXT(""),TEXT("0.1"));
+    if(Input.StartsWith(TEXT("error:")))return Input+TEXT(" Focus was moved to the requested button.");
+    return TEXT("menu activation requested for: ")+Match->GetPathName()+TEXT("\n")+Input+
+        TEXT("\nActivation is pending normal frames. Read PlayInputState for active screens after release; do not infer success from delivery.");
+}
+
 FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target)
 {
     FPlayInputTarget Resolved;
@@ -239,6 +269,13 @@ FString UTurboMCPReadToolset::ReadTurboMCPPlayInputState(const FString& Target)
     if (!Error.IsEmpty()) return Error;
     const TSharedPtr<SWidget> Focus=FSlateApplication::Get().GetUserFocusedWidget(Resolved.User);
     FString Out=FString::Printf(TEXT("play input state\nworld: %s\nplayer: 0; Slate user: %u\ngame paused: %s\nfocus widget type: %s\nfocus inside PIE viewport: %s\ntool-held input: %s\nlast synthetic key: %s"),*Resolved.World->GetPathName(),Resolved.User,Resolved.World->IsPaused()?TEXT("yes"):TEXT("no"),Focus.IsValid()?*Focus->GetTypeAsString():TEXT("none"),HasPlayFocus(Resolved)?TEXT("yes"):TEXT("no"),Held.Key.IsValid()?*Held.Key.GetFName().ToString():TEXT("none"),*LastInput);
+    UClass* ButtonClass=FindObject<UClass>(nullptr,TEXT("/Script/CommonUI.CommonButtonBase"));
+    TArray<FString> Buttons;
+    for(TObjectIterator<UWidget> It;It;++It)if(It->GetWorld()==Resolved.World && (It->IsA<UButton>() || (ButtonClass && It->IsA(ButtonClass))) && It->IsVisible() && It->GetCachedWidget().IsValid())
+        Buttons.Add(It->GetPathName()+(It->GetIsEnabled()?TEXT("; enabled"):TEXT("; disabled")));
+    Buttons.Sort();Out+=FString::Printf(TEXT("\nruntime buttons: %d (exact object paths, not display labels)"),Buttons.Num());
+    for(int32 I=0;I<FMath::Min(Buttons.Num(),64);++I)Out+=TEXT("\n  ")+Buttons[I];
+    if(Buttons.Num()>64)Out+=FString::Printf(TEXT("\n%d additional buttons omitted; inspect the visible menu with Slate Snapshot."),Buttons.Num()-64);
     Out+=TEXT("\nlast release reason: ")+LastReleaseReason;
     Out+=FSlateApplication::Get().IsActive()?TEXT("\napplication active: yes"):TEXT("\napplication active: no");
     if (Cast<UEnhancedPlayerInput>(Resolved.Controller->PlayerInput))
