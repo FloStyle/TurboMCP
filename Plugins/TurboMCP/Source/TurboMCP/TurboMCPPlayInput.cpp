@@ -22,6 +22,7 @@
 #include "InputMappingContext.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Framework/Application/SlateUser.h"
+#include "Layout/WidgetPath.h"
 #include "Widgets/SViewport.h"
 #include "HAL/PlatformTime.h"
 #include "Containers/UnrealString.h"
@@ -233,6 +234,20 @@ FString UTurboMCPEditToolset::EditTurboMCPPlayInput(const FString& Target,const 
     return FString::Printf(TEXT("play input: routed %s through Slate for player 0, Slate user %u\nvalue: %.3f; automatic release after %.3f wall-clock seconds\nSlate handled initial event: %s\nThis is synthetic key/axis input, not Enhanced Input action injection or physical-device emulation. Normal frames are required. Delivery does not prove the action fired; inspect PlayInputState, the menu and the next capture. No asset edit, save or undo was performed."),*Key,Resolved.User,Amount,Duration,Handled?TEXT("yes"):TEXT("no"));
 }
 
+// A visible child can still be hidden or disabled by an ancestor. Runtime
+// activation must validate the mounted Slate path before moving focus.
+static bool IsReachableMenuButton(const UWidget* Widget)
+{
+    if (!Widget || !Widget->GetIsEnabled() || !Widget->IsVisible()) return false;
+    const TSharedPtr<SWidget> Cached = Widget->GetCachedWidget();
+    if (!Cached.IsValid()) return false;
+    FWidgetPath Path;
+    if (!FSlateApplication::Get().GeneratePathToWidgetUnchecked(Cached.ToSharedRef(), Path)) return false;
+    for (int32 Index = 0; Index < Path.Widgets.Num(); ++Index)
+        if (!Path.Widgets[Index].Widget->IsEnabled()) return false;
+    return true;
+}
+
 FString UTurboMCPEditToolset::EditTurboMCPMenuActivate(const FString& Target,const FString& Widget)
 {
     FPlayInputTarget Resolved;const FString Error=ResolvePlayInput(Target,Resolved);if(!Error.IsEmpty())return Error;
@@ -249,7 +264,7 @@ FString UTurboMCPEditToolset::EditTurboMCPMenuActivate(const FString& Target,con
         Match=*It;
     }
     if(!Match)return TEXT("error: No runtime button matches this name/path in the PIE world. Read PlayInputState again. No input was sent.");
-    if(!Match->GetIsEnabled() || !Match->IsVisible() || !Match->GetCachedWidget().IsValid())return TEXT("error: Button is disabled, hidden or not constructed. No input was sent.");
+    if(!IsReachableMenuButton(Match))return TEXT("error: Button or an ancestor is disabled, hidden or not mounted in the live UI. No input was sent.");
     if(CommonButton && Match->IsA(CommonButton) && NativeGetter(Match,CommonButton,TEXT("IsInteractionEnabled"))!=TEXT("True"))return TEXT("error: CommonUI button interaction is disabled. No input was sent.");
     // Follow the widget's normal focus forwarding, including CommonButton's
     // internal Slate button; never call its click delegates directly.

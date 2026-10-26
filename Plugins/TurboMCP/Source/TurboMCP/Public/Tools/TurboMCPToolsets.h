@@ -596,36 +596,126 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
-    /** Preview removing a directly implemented interface contract, preserving its function bodies as ordinary functions. Interface callers may no longer work. Interface is its exact class path or unique asset name. Edit requires the exact confirmation from preview; no save, and undo is not guaranteed across structural refresh. */
+    /**
+     * Remove a directly implemented interface while keeping its function bodies as ordinary functions.
+     *
+     * Calls that require this interface may stop working. First preview, inspect affected callers, and pass the returned confirmation unchanged to the edit tool. Confirmation identifies the asset/interface; it is not a snapshot or stale-state lock.
+     * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: Preview the same Asset and Interface first; copy the complete confirmation value from its response into Confirm.
+     *
+     * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
+     * @param Interface Required exact directly implemented interface class path, asset object path, or unique name. Inherited interfaces cannot be removed.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPInterfaceRemove(const FString& Asset, const FString& Interface);
 
-    /** Preview typed dispatcher creation. Inputs uses comma-separated Name:Type pairs, including nested container types. Existing member names refuse. No save; edit structurally refreshes the Blueprint. */
+    /**
+     * Declare an event dispatcher with named, typed input parameters.
+     *
+     * Any existing member with this name refuses, including an identical dispatcher. This creates the signature only; it does not bind listeners, create call nodes or invoke the dispatcher.
+     * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: Name=OnPurchase; Inputs=Accepted:bool,Buyer:object</Script/Engine.Actor>.
+     *
+     * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
+     * @param Name Required unused member identifier, for example OnPurchase. Letters, digits and underscores only; start with a letter or underscore. None is reserved.
+     * @param Inputs Required string: comma-separated Name:Type pairs. Use an empty string for no parameters. Example: Accepted:bool,Buyer:object</Script/Engine.Actor>. Parameter names must be distinct; nested container types use shared type syntax.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
-    /** Preview missing variable, function-signature and dispatcher declarations from SourceAsset to TargetAsset. Existing members remain; type conflicts refuse. This does not copy graph bodies, widgets or interfaces. Use GraphTransfer and WidgetSubtreeCopy afterward. Edit may structurally compile; no save. */
+    /**
+     * Prepare missing member declarations before copying graph bodies between Blueprints.
+     *
+     * Creates declared variables with defaults, function signatures and dispatcher signatures. Compatible existing members are retained; differing variable types or callable signatures refuse. Compile both assets first. Does not copy widget trees, interfaces, function bodies, animations or bindings. Add required interfaces and copy widget subtrees separately, then use GraphTransfer. A failed edit can leave earlier declarations created; inspect the target before retrying.
+     * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: SourceAsset=/Game/UI/WBP_Source.WBP_Source; TargetAsset=/Game/UI/WBP_Target.WBP_Target.
+     *
+     * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
+     * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPMergeMembers(const FString& SourceAsset, const FString& TargetAsset);
-    /** Preview complete graph transfer between compatible Blueprints, preserving links, layout, comments and locals. TargetGraph empty keeps the source name. Existing graph logic is never overwritten; an empty matching function declaration may be filled. Prepare missing members/widgets first. Source is unchanged; edit structurally refreshes, does not save, and does not guarantee undo across compilation. */
+    /**
+     * Copy one complete owned graph, including its nodes, connections, layout, comments and locals.
+     *
+     * Compile both assets and prepare referenced members/widgets first. Existing executable logic is never overwritten. Source-owned macro dependencies must already exist in the target; unresolved calls, missing self members and duplicate custom events refuse. This does not perform a whole-asset merge or automatically tidy the copied layout.
+     * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: SourceGraph=CalculatePurchase; TargetGraph=""; use exact source/target asset paths.
+     *
+     * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
+     * @param SourceGraph Required exact source function, interface-function, macro or event graph name. This selects the whole graph, not node IDs or an event label.
+     * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
+     * @param TargetGraph Pass an empty string to keep SourceGraph, or a valid destination identifier. Existing event/macro graphs refuse. An existing function must contain only entry/result nodes, no locals, and have a compiled compatible signature.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphTransfer(const FString& SourceAsset, const FString& SourceGraph, const FString& TargetAsset, const FString& TargetGraph);
-    /** Preview copying SourceWidget and its children into a target panel named Parent. Empty Parent requires an empty target tree. Names must be unused; parent panel classes must match to preserve the root slot. Copies widget properties, slots and localized text, not graphs or animations. Designer bindings and outside-widget dependencies refuse. Edit structurally refreshes; no save. */
+    /**
+     * Copy one widget and its descendants into another Widget Blueprint.
+     *
+     * Widget names must be unused. Copies widget properties, internal slots and the root slot layout; preserves direct/struct/array text identities. Designer bindings refuse. Graph logic and animations are not copied. Detected references outside the selected subtree refuse; prefer copying a common ancestor. Complex custom widget references and text map/set properties are not fully validated. Read the target tree and compile before saving.
+     * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: SourceWidget=PurchasePanel; Parent=RootCanvas; use exact source/target Widget Blueprint paths.
+     *
+     * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
+     * @param SourceWidget Required exact designer object name, such as PurchasePanel. Use the widget-tree reader; this is not displayed text or a runtime PIE path.
+     * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
+     * @param Parent Required string naming an existing target panel, such as RootCanvas. Pass an empty string only when the target widget tree is empty. A panel must have room; its class must match the source parent class when preserving the root slot.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPWidgetSubtreeCopy(const FString& SourceAsset, const FString& SourceWidget, const FString& TargetAsset, const FString& Parent);
 
-    /** Preview adding an implemented interface on a Blueprint or Widget Blueprint. Rejects signature conflicts before writing; repeated implementation is a no-op. Creates required interface function graphs, not event bodies or source logic. Preview may load assets but makes no edits. Apply uses structural refresh and does not save.
-     * @param Asset Target Blueprint asset path or unambiguous name.
-     * @param Interface Compiled Blueprint interface asset path/name, or native /Script/Module.Interface class path.
+    /**
+     * Add a Blueprint interface contract and its required function declarations.
+     *
+     * An already implemented or inherited interface is unchanged. Existing graph-name conflicts and animation-layer interfaces refuse. This does not copy source event bodies or function logic.
+     * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: Asset=/Game/UI/WBP_Target.WBP_Target; Interface=/Game/Interfaces/BPI_Menu.BPI_Menu.
+     *
+     * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
+     * @param Interface Required compiled Blueprint interface asset path/name, such as /Game/Interfaces/BPI_Menu.BPI_Menu, or a Blueprint-implementable native /Script/Module.Interface class path.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPInterfaceAdd(const FString& Asset, const FString& Interface);
 
-    /** Preview a typed local declaration in one owned function. Does not add nodes or copy logic. Identical existing declarations are no-ops; conflicts refuse. Preview may load assets but makes no edits. Apply uses structural refresh and does not save.
-     * @param Asset Target Blueprint asset path or unambiguous name.
-     * @param Function Exact owned function graph name, not an event graph or inherited function.
-     * @param Name Local identifier, distinct from parameters and members.
-     * @param Type Shared type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
-     * @param Default Empty uses Unreal's type default. Nonempty scalar/struct literals are schema-validated. Explicit container and object/class defaults are not supported; assign those values in graph logic.
+    /**
+     * Declare a typed local variable in one function; do not create getter/setter nodes.
+     *
+     * An existing local with the same type and default is unchanged; a conflicting declaration refuses. This declares storage only, not function behavior.
+     * Preview only: may load assets but does not edit them. An unchanged response means no work is needed.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: Function=CalculatePurchase; Name=ItemCount; Type=int; Default=7.
+     *
+     * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
+     * @param Function Required exact owned function graph name, for example CalculatePurchase. Event graphs, interface graphs and inherited functions are not accepted.
+     * @param Name Required identifier starting with a letter or underscore and containing only letters, digits or underscores. Must not conflict with parameters or members; None is reserved.
+     * @param Type Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
+     * @param Default Pass an empty string for the Unreal type default. Otherwise provide a schema-valid scalar/struct literal, for example 7 for int. Explicit object/class/container defaults refuse; assign them in graph logic.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPLocalVariableAdd(const FString& Asset, const FString& Function, const FString& Name, const FString& Type, const FString& Default);
@@ -1181,40 +1271,149 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
-    /** Edit removing a directly implemented interface contract, preserving its function bodies as ordinary functions. Interface callers may no longer work. Interface is its exact class path or unique asset name. Edit requires the exact confirmation from preview; no save, and undo is not guaranteed across structural refresh. */
+    /**
+     * Remove a directly implemented interface while keeping its function bodies as ordinary functions.
+     *
+     * Calls that require this interface may stop working. First preview, inspect affected callers, and pass the returned confirmation unchanged to the edit tool. Confirmation identifies the asset/interface; it is not a snapshot or stale-state lock.
+     * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: Preview the same Asset and Interface first; copy the complete confirmation value from its response into Confirm.
+     *
+     * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
+     * @param Interface Required exact directly implemented interface class path, asset object path, or unique name. Inherited interfaces cannot be removed.
+     * @param Confirm Required exact confirmation value returned by PreviewTurboMCPInterfaceRemove for this asset/interface. Empty or different values refuse.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPInterfaceRemove(const FString& Asset, const FString& Interface, const FString& Confirm);
 
-    /** Focus one visible runtime CommonUI/UMG button, then route a bounded gamepad accept press/release through Slate. Target must be pie:0; Widget is its exact runtime object path or unique object name from PlayInputState. Does not invoke click delegates directly. Normal ticks and an active editor are required. Delivery is not activation: read PlayInputState and capture afterward. Executes game/UI code; no asset edit/save/undo. */
+    /**
+     * Request activation of one named runtime button through normal Slate input.
+     *
+     * Requires one in-process PIE world, one local player, an active editor application,
+     * a constructed visible/enabled UMG or CommonUI button, and no tool-held input.
+     * Focuses the button and sends Gamepad_FaceButton_Bottom for 0.1 seconds with
+     * automatic release. Does not invoke click delegates directly. This executes
+     * game/UI logic; there is no asset transaction, save or undo.
+     *
+     * @param Target Required exact string pie:0. Standalone, multiplayer and other targets refuse.
+     * @param Widget Required exact runtime object path or unique object name from ReadTurboMCPPlayInputState. Not a designer name, display label, asset path or Slate ref. Prefer the complete runtime path when names repeat.
+     *
+     * Workflow: read current state, select its runtime button path, call once, allow
+     * normal frames for press/release, then read state and capture the viewport.
+     * A disabled/hidden/ambiguous button refuses. If focus moves but input fails,
+     * the error says so. Never retry blindly after an uncertain client outcome.
+     * @return Input delivery details and a pending-activation message, not a claim
+     * that the expected screen opened. Verify the resulting screen independently.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPMenuActivate(const FString& Target, const FString& Widget);
 
-    /** Apply typed dispatcher creation. Inputs uses comma-separated Name:Type pairs, including nested container types. Existing member names refuse. No save; edit structurally refreshes the Blueprint. */
+    /**
+     * Declare an event dispatcher with named, typed input parameters.
+     *
+     * Any existing member with this name refuses, including an identical dispatcher. This creates the signature only; it does not bind listeners, create call nodes or invoke the dispatcher.
+     * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: Name=OnPurchase; Inputs=Accepted:bool,Buyer:object</Script/Engine.Actor>.
+     *
+     * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
+     * @param Name Required unused member identifier, for example OnPurchase. Letters, digits and underscores only; start with a letter or underscore. None is reserved.
+     * @param Inputs Required string: comma-separated Name:Type pairs. Use an empty string for no parameters. Example: Accepted:bool,Buyer:object</Script/Engine.Actor>. Parameter names must be distinct; nested container types use shared type syntax.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPDispatcherAdd(const FString& Asset, const FString& Name, const FString& Inputs);
-    /** Apply missing variable, function-signature and dispatcher declarations from SourceAsset to TargetAsset. Existing members remain; type conflicts refuse. This does not copy graph bodies, widgets or interfaces. Use GraphTransfer and WidgetSubtreeCopy afterward. Edit may structurally compile; no save. */
+    /**
+     * Prepare missing member declarations before copying graph bodies between Blueprints.
+     *
+     * Creates declared variables with defaults, function signatures and dispatcher signatures. Compatible existing members are retained; differing variable types or callable signatures refuse. Compile both assets first. Does not copy widget trees, interfaces, function bodies, animations or bindings. Add required interfaces and copy widget subtrees separately, then use GraphTransfer. A failed edit can leave earlier declarations created; inspect the target before retrying.
+     * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: SourceAsset=/Game/UI/WBP_Source.WBP_Source; TargetAsset=/Game/UI/WBP_Target.WBP_Target.
+     *
+     * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
+     * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPMergeMembers(const FString& SourceAsset, const FString& TargetAsset);
-    /** Apply complete graph transfer between compatible Blueprints, preserving links, layout, comments and locals. TargetGraph empty keeps the source name. Existing graph logic is never overwritten; an empty matching function declaration may be filled. Prepare missing members/widgets first. Source is unchanged; edit structurally refreshes, does not save, and does not guarantee undo across compilation. */
+    /**
+     * Copy one complete owned graph, including its nodes, connections, layout, comments and locals.
+     *
+     * Compile both assets and prepare referenced members/widgets first. Existing executable logic is never overwritten. Source-owned macro dependencies must already exist in the target; unresolved calls, missing self members and duplicate custom events refuse. This does not perform a whole-asset merge or automatically tidy the copied layout.
+     * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: SourceGraph=CalculatePurchase; TargetGraph=""; use exact source/target asset paths.
+     *
+     * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
+     * @param SourceGraph Required exact source function, interface-function, macro or event graph name. This selects the whole graph, not node IDs or an event label.
+     * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
+     * @param TargetGraph Pass an empty string to keep SourceGraph, or a valid destination identifier. Existing event/macro graphs refuse. An existing function must contain only entry/result nodes, no locals, and have a compiled compatible signature.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPGraphTransfer(const FString& SourceAsset, const FString& SourceGraph, const FString& TargetAsset, const FString& TargetGraph);
-    /** Apply copying SourceWidget and its children into a target panel named Parent. Empty Parent requires an empty target tree. Names must be unused; parent panel classes must match to preserve the root slot. Copies widget properties, slots and localized text, not graphs or animations. Designer bindings and outside-widget dependencies refuse. Edit structurally refreshes; no save. */
+    /**
+     * Copy one widget and its descendants into another Widget Blueprint.
+     *
+     * Widget names must be unused. Copies widget properties, internal slots and the root slot layout; preserves direct/struct/array text identities. Designer bindings refuse. Graph logic and animations are not copied. Detected references outside the selected subtree refuse; prefer copying a common ancestor. Complex custom widget references and text map/set properties are not fully validated. Read the target tree and compile before saving.
+     * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: SourceWidget=PurchasePanel; Parent=RootCanvas; use exact source/target Widget Blueprint paths.
+     *
+     * @param SourceAsset Required source Blueprint asset path or unambiguous name. Prefer its full object path; the source is not edited.
+     * @param SourceWidget Required exact designer object name, such as PurchasePanel. Use the widget-tree reader; this is not displayed text or a runtime PIE path.
+     * @param TargetAsset Required different target Blueprint asset path or unambiguous name. Its parent class must equal or derive from the source parent class.
+     * @param Parent Required string naming an existing target panel, such as RootCanvas. Pass an empty string only when the target widget tree is empty. A panel must have room; its class must match the source parent class when preserving the root slot.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
+     */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPWidgetSubtreeCopy(const FString& SourceAsset, const FString& SourceWidget, const FString& TargetAsset, const FString& Parent);
 
-    /** Add an implemented interface on a Blueprint or Widget Blueprint. Rejects signature conflicts before writing; repeated implementation is a no-op. Creates required interface function graphs, not event bodies or source logic. Structural refresh may compile dependencies; no save or reliable undo across compilation.
-     * @param Asset Target Blueprint asset path or unambiguous name.
-     * @param Interface Compiled Blueprint interface asset path/name, or native /Script/Module.Interface class path.
+    /**
+     * Add a Blueprint interface contract and its required function declarations.
+     *
+     * An already implemented or inherited interface is unchanged. Existing graph-name conflicts and animation-layer interfaces refuse. This does not copy source event bodies or function logic.
+     * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: Asset=/Game/UI/WBP_Target.WBP_Target; Interface=/Game/Interfaces/BPI_Menu.BPI_Menu.
+     *
+     * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
+     * @param Interface Required compiled Blueprint interface asset path/name, such as /Game/Interfaces/BPI_Menu.BPI_Menu, or a Blueprint-implementable native /Script/Module.Interface class path.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPInterfaceAdd(const FString& Asset, const FString& Interface);
 
-    /** Add a typed local declaration in one owned function. Does not add nodes or copy logic. Identical existing declarations are no-ops; conflicts refuse. Structural refresh may compile dependencies; no save or reliable undo across compilation.
-     * @param Asset Target Blueprint asset path or unambiguous name.
-     * @param Function Exact owned function graph name, not an event graph or inherited function.
-     * @param Name Local identifier, distinct from parameters and members.
-     * @param Type Shared type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
-     * @param Default Empty uses Unreal's type default. Nonempty scalar/struct literals are schema-validated. Explicit container and object/class defaults are not supported; assign those values in graph logic.
+    /**
+     * Declare a typed local variable in one function; do not create getter/setter nodes.
+     *
+     * An existing local with the same type and default is unchanged; a conflicting declaration refuses. This declares storage only, not function behavior.
+     * Mutates the target in memory and requests structural refresh, which can compile dependencies. Does not save. Undo is not guaranteed across structural compilation.
+     * Requires the editor game thread outside PIE and active transactions.
+     *
+     * Example: Function=CalculatePurchase; Name=ItemCount; Type=int; Default=7.
+     *
+     * @param Asset Required target Blueprint asset path, such as /Game/UI/WBP_Target.WBP_Target, or an unambiguous asset name. Prefer the full path.
+     * @param Function Required exact owned function graph name, for example CalculatePurchase. Event graphs, interface graphs and inherited functions are not accepted.
+     * @param Name Required identifier starting with a letter or underscore and containing only letters, digits or underscores. Must not conflict with parameters or members; None is reserved.
+     * @param Type Required shared Blueprint type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
+     * @param Default Pass an empty string for the Unreal type default. Otherwise provide a schema-valid scalar/struct literal, for example 7 for int. Explicit object/class/container defaults refuse; assign them in graph logic.
+     *
+     * @return A preview/edited/unchanged summary or an error with the reason. Structural refresh is not proof of successful compilation. Read back and compile before saving.
      */
     UFUNCTION(meta = (AICallable))
     static FString EditTurboMCPLocalVariableAdd(const FString& Asset, const FString& Function, const FString& Name, const FString& Type, const FString& Default);

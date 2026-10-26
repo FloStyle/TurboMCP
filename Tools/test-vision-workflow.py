@@ -9,6 +9,35 @@ support = runpy.run_path(str(Path(__file__).with_name('test-widget-roundtrip.py'
 folder = root / 'TestProject/Saved/TurboMCP/Workflow'
 before = set(folder.glob('*/vision-review.txt'))
 s = Session(); s.connect()
+# Audit the live registered help, not just C++ comments or generated docs.
+help_specs = {
+    'InterfaceAdd': ['Asset', 'Interface'],
+    'InterfaceRemove': ['Asset', 'Interface'],
+    'LocalVariableAdd': ['Asset', 'Function', 'Name', 'Type', 'Default'],
+    'DispatcherAdd': ['Asset', 'Name', 'Inputs'],
+    'MergeMembers': ['SourceAsset', 'TargetAsset'],
+    'GraphTransfer': ['SourceAsset', 'SourceGraph', 'TargetAsset', 'TargetGraph'],
+    'WidgetSubtreeCopy': ['SourceAsset', 'SourceWidget', 'TargetAsset', 'Parent'],
+}
+help_evidence = []
+for suffix, parameters in help_specs.items():
+    for mode in ('Preview', 'Edit'):
+        name = mode + 'TurboMCP' + suffix
+        expected = parameters + (['Confirm'] if suffix == 'InterfaceRemove' and mode == 'Edit' else [])
+        text = s.call(READ_TOOLSET, 'ReadTurboMCPToolHelp', {'ToolsetName': 'TurboMCP.TurboMCP' + mode + 'Toolset', 'ToolName': name})
+        help_evidence.append(name + '\n' + text)
+        for parameter in expected:
+            if not re.search(r'(?im)^  ' + parameter + r':.*\] - .+', text):
+                raise RuntimeError('Missing live parameter description: ' + name + '.' + parameter + '\n' + text)
+name = 'EditTurboMCPMenuActivate'
+text = s.call(READ_TOOLSET, 'ReadTurboMCPToolHelp', {'ToolsetName': 'TurboMCP.TurboMCPEditToolset', 'ToolName': name})
+help_evidence.append(name + '\n' + text)
+for parameter in ('Target', 'Widget'):
+    if not re.search(r'(?im)^  ' + parameter + r':.*\] - .+', text):
+        raise RuntimeError('Missing live menu parameter description: ' + parameter)
+folder.mkdir(parents=True, exist_ok=True)
+(folder / 'oct26-tool-help.txt').write_text('\n\n'.join(help_evidence), encoding='utf-8')
+print('HELP: all 15 new tools expose individual parameter descriptions')
 s.call(support['AUTO_TOOLSET'], 'DiscoverTests', {})
 # Select only the new focus scenario for iteration; default retains all vision checks.
 def common_play():

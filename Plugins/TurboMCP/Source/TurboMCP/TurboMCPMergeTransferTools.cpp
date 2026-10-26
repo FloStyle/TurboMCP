@@ -34,6 +34,8 @@ static FString LoadBP(const FString& Asset,UBlueprint*& BP)
     if(!Error.IsEmpty())return Error;
     BP=LoadObject<UBlueprint>(nullptr,*R.ObjectPath);
     if(!BP)return TEXT("error: Asset is not a Blueprint. Nothing changed.");
+    if(BP->BlueprintType==BPTYPE_Interface || BP->BlueprintType==BPTYPE_MacroLibrary)
+        return TEXT("error: Use an executable Blueprint or Widget Blueprint, not an interface or macro-library asset. Nothing changed.");
     return FString();
 }
 static FString Pair(const FString& Source,const FString& Target,UBlueprint*& S,UBlueprint*& T)
@@ -63,10 +65,10 @@ static bool HasFunction(UBlueprint* BP,FName Name)
 {
     return GraphByName(BP,Name.ToString()) || (BP->SkeletonGeneratedClass && BP->SkeletonGeneratedClass->FindFunctionByName(Name));
 }
-static FString End(UBlueprint* BP)
+static FString End(UBlueprint* BP, bool HasSource = true)
 {
     FBlueprintEditorUtils::MarkBlueprintAsStructurallyModified(BP);
-    return TEXT("\nStructural refresh requested; compile success is not established. Nothing saved. Undo is not guaranteed across structural compilation. Read back and compile the target before saving. Source unchanged.");
+    return FString(TEXT("\nStructural refresh requested; compile success is not established. Nothing saved. Undo is not guaranteed across structural compilation. Read back and compile the target before saving.")) + (HasSource ? TEXT(" Source unchanged.") : TEXT(""));
 }
 static bool ValidName(const FString& N)
 {
@@ -102,9 +104,30 @@ static FString Dispatcher(const FString& Asset,const FString& Name,const FString
     Schema->CreateDefaultNodesForGraph(*G);Schema->CreateFunctionGraphTerminators(*G,(UClass*)nullptr);
     Schema->AddExtraFunctionFlags(G,FUNC_BlueprintCallable|FUNC_BlueprintEvent|FUNC_Public);Schema->MarkFunctionEntryAsEditable(G,true);
     TArray<UK2Node_FunctionEntry*> Entries;G->GetNodesOfClass(Entries);
+    if(Entries.Num()!=1)return TEXT("error: Unreal did not create one dispatcher entry. The variable may already exist; inspect target before retrying. Nothing saved.");
     for(const auto& P:Pins)Entries[0]->CreateUserDefinedPin(P.Key,P.Value,EGPD_Output,false);
     BP->DelegateSignatureGraphs.Add(G);
-    return TEXT("edited: Event dispatcher created.\n")+Out+End(BP);
+    return TEXT("edited: Event dispatcher created.\n")+Out+End(BP, false);
+}
+
+// Dispatcher pin types contain an asset-specific signature object. Compare
+// storage shape here and compare the callable signature separately below.
+static bool SameMemberType(FEdGraphPinType Left, FEdGraphPinType Right)
+{
+    if (Left.PinCategory == UEdGraphSchema_K2::PC_MCDelegate && Right.PinCategory == Left.PinCategory)
+    {
+        Left.PinSubCategoryObject = nullptr;
+        Right.PinSubCategoryObject = nullptr;
+        Left.PinSubCategoryMemberReference = FSimpleMemberReference();
+        Right.PinSubCategoryMemberReference = FSimpleMemberReference();
+    }
+    return Left == Right;
+}
+static UFunction* DispatcherSignature(UBlueprint* BP, FName Name)
+{
+    const auto* Property = BP->SkeletonGeneratedClass
+        ? FindFProperty<FMulticastDelegateProperty>(BP->SkeletonGeneratedClass, Name) : nullptr;
+    return Property ? Property->SignatureFunction : nullptr;
 }
 
 static FString Members(const FString& Source,const FString& Target,bool Apply)
@@ -113,10 +136,10 @@ static FString Members(const FString& Source,const FString& Target,bool Apply)
     TArray<const FBPVariableDescription*> Vars;TArray<UEdGraph*> Functions,Delegates;FString Summary;
     for(const auto& V:S->NewVariables)
     {
-        if(const auto* Existing=Variable(T,V.VarName)){if(Existing->VarType!=V.VarType)return TEXT("error: Target variable type conflict: ")+V.VarName.ToString();continue;}
+        if(const auto* Existing=Variable(T,V.VarName)){if(!SameMemberType(Existing->VarType,V.VarType))return TEXT("error: Target variable type conflict: ")+V.VarName.ToString();continue;}
         if(HasVariable(T,V.VarName)){
             FEdGraphPinType ExistingType;const FProperty* P=T->SkeletonGeneratedClass?FindFProperty<FProperty>(T->SkeletonGeneratedClass,V.VarName):nullptr;
-            if(!P || !GetDefault<UEdGraphSchema_K2>()->ConvertPropertyToPinType(P,ExistingType) || ExistingType!=V.VarType)return TEXT("error: Inherited/widget member type conflict: ")+V.VarName.ToString();
+            if(!P || !GetDefault<UEdGraphSchema_K2>()->ConvertPropertyToPinType(P,ExistingType) || !SameMemberType(ExistingType,V.VarType))return TEXT("error: Inherited/widget member type conflict: ")+V.VarName.ToString();
             continue;
         }
         if(HasFunction(T,V.VarName))return TEXT("error: Target function conflicts with source variable: ")+V.VarName.ToString();
@@ -129,8 +152,8 @@ static FString Members(const FString& Source,const FString& Target,bool Apply)
         UEdGraph* Existing=GraphByName(T,G->GetName());
         if(Existing)
         {
-            UFunction* SF=S->SkeletonGeneratedClass?S->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()):nullptr;
-            UFunction* TF=T->SkeletonGeneratedClass?T->SkeletonGeneratedClass->FindFunctionByName(G->GetFName()):nullptr;
+            UFunction* SF=DispatcherSignature(S,G->GetFName());
+            UFunction* TF=DispatcherSignature(T,G->GetFName());
             if(!T->DelegateSignatureGraphs.Contains(Existing) || !SF || !TF || !SF->IsSignatureCompatibleWith(TF))
                 return TEXT("error: Target dispatcher signature conflicts or is not compiled: ")+G->GetName()+TEXT(". Nothing changed.");
         }
@@ -166,7 +189,7 @@ static FString Members(const FString& Source,const FString& Target,bool Apply)
     }
     for(UEdGraph* G:Delegates)
     {
-        UEdGraph* Copy=FEdGraphUtilities::CloneGraph(G,T);Copy->Rename(*G->GetName(),T,REN_DontCreateRedirectors|REN_NonTransactional);Copy->GraphGuid=FGuid::NewGuid();T->DelegateSignatureGraphs.Add(Copy);
+        UEdGraph* Copy=FEdGraphUtilities::CloneGraph(G,T);if(!Copy)return TEXT("error: Dispatcher signature copy failed after possible earlier member changes. Inspect target before retrying. Nothing saved.");Copy->Rename(*G->GetName(),T,REN_DontCreateRedirectors|REN_NonTransactional);Copy->GraphGuid=FGuid::NewGuid();T->DelegateSignatureGraphs.Add(Copy);
     }
     for(UEdGraph* G:Functions)
     {

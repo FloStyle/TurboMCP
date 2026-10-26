@@ -163,10 +163,18 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  const FString SourceSnapshot=MergeSnapshot(Function);
  TestTrue(TEXT("Typed dispatcher preview"),UTurboMCPPreviewToolset::PreviewTurboMCPDispatcherAdd(MergeAsset,TEXT("MergeReady"),TEXT("Ready:bool,Owner:object</Script/Engine.Actor>")).StartsWith(TEXT("preview:")));
  TestTrue(TEXT("Typed dispatcher edit"),Record(TEXT("Create dispatcher"),UTurboMCPEditToolset::EditTurboMCPDispatcherAdd(MergeAsset,TEXT("MergeReady"),TEXT("Ready:bool,Owner:object</Script/Engine.Actor>"))).StartsWith(TEXT("edited:")));
+ const auto* DispatcherProperty=FindFProperty<FMulticastDelegateProperty>(BP->SkeletonGeneratedClass,TEXT("MergeReady"));
+ TestNotNull(TEXT("Dispatcher property created"),DispatcherProperty);
+ if(DispatcherProperty && DispatcherProperty->SignatureFunction){TestNotNull(TEXT("Dispatcher bool parameter preserved"),FindFProperty<FBoolProperty>(DispatcherProperty->SignatureFunction,TEXT("Ready")));const auto* OwnerParameter=FindFProperty<FObjectPropertyBase>(DispatcherProperty->SignatureFunction,TEXT("Owner"));TestNotNull(TEXT("Dispatcher object parameter preserved"),OwnerParameter);if(OwnerParameter)TestTrue(TEXT("Dispatcher object class preserved"),OwnerParameter->PropertyClass==AActor::StaticClass());}
+ TestTrue(TEXT("Dispatcher duplicate refuses"),UTurboMCPEditToolset::EditTurboMCPDispatcherAdd(MergeAsset,TEXT("MergeReady"),TEXT("")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Dispatcher duplicate parameter refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPDispatcherAdd(MergeAsset,TEXT("InvalidDispatcher"),TEXT("Same:bool,Same:int")).StartsWith(TEXT("error:")));
  const int32 TargetGraphsBefore=MergeTarget->FunctionGraphs.Num();
  TestTrue(TEXT("Member preview"),Record(TEXT("Prepare members preview"),UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(MergeAsset,MergeTarget->GetPathName())).StartsWith(TEXT("preview:")));
  TestEqual(TEXT("Member preview leaves target unchanged"),MergeTarget->FunctionGraphs.Num(),TargetGraphsBefore);
  TestTrue(TEXT("Member creation"),Record(TEXT("Prepare members edit"),UTurboMCPEditToolset::EditTurboMCPMergeMembers(MergeAsset,MergeTarget->GetPathName())).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Repeated member preparation is unchanged"),Record(TEXT("Repeat member preparation"),UTurboMCPEditToolset::EditTurboMCPMergeMembers(MergeAsset,MergeTarget->GetPathName())).StartsWith(TEXT("unchanged:")));
+ TestTrue(TEXT("Same-asset merge refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPMergeMembers(MergeAsset,MergeAsset).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Missing graph refuses"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,TEXT("MissingGraph"),MergeTarget->GetPathName(),TEXT("")).StartsWith(TEXT("error:")));
  TestTrue(TEXT("Graph transfer preview"),Record(TEXT("Transfer preview"),UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("preview:")));
  TestTrue(TEXT("Graph transfer edit"),Record(TEXT("Transfer edit"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
  TestTrue(TEXT("Local graph transfer"),Record(TEXT("Local graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,TEXT("MergeMemberProbe"),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
@@ -221,23 +229,30 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  const FString Refusal=Record(TEXT("Viewport requires explicit target"),UTurboMCPLookToolset::LookTurboMCPCapture(TEXT(""),TEXT(""),TEXT("viewport"),TEXT(""),TEXT("")));TestTrue(TEXT("Missing PIE target refuses"),Refusal.StartsWith(TEXT("error:")));
  ImageCheck(Record(TEXT("Editor screen"),UTurboMCPLookToolset::LookTurboMCPCapture(TEXT(""),TEXT(""),TEXT("screen"),TEXT(""),TEXT(""))));
  UWidgetBlueprint* WB=FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(Package,TEXT("WBP_Vision"),BPTYPE_Normal,UUserWidget::StaticClass(),UCanvasPanel::StaticClass(),TEXT("Vision"),false);
+ auto* Subtree=WB->WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(),TEXT("PurchasePanel"));
+ WB->WidgetVariableNameToGuidMap.Add(Subtree->GetFName(),FGuid::NewGuid());
+ auto* SubtreeSlot=CastChecked<UCanvasPanel>(WB->WidgetTree->RootWidget)->AddChildToCanvas(Subtree);SubtreeSlot->SetPosition(FVector2D(20,30));SubtreeSlot->SetSize(FVector2D(620,420));
+ for(int32 I=0;I<9;++I){auto* Extra=WB->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),FName(*FString::Printf(TEXT("Extra%d"),I)));Extra->SetText(FText::FromString(FString::Printf(TEXT("Item %d"),I)));WB->WidgetVariableNameToGuidMap.Add(Extra->GetFName(),FGuid::NewGuid());auto* ExtraSlot=Subtree->AddChildToCanvas(Extra);ExtraSlot->SetPosition(FVector2D(I*10,120+I*25));}
  auto* Label=WB->WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(),TEXT("StatusLabel"));Label->SetText(FText::FromString(TEXT("Vision fixture: READY 0123456789")));WB->WidgetVariableNameToGuidMap.Add(Label->GetFName(),FGuid::NewGuid());
- auto* Slot=CastChecked<UCanvasPanel>(WB->WidgetTree->RootWidget)->AddChildToCanvas(Label);Slot->SetPosition(FVector2D(40,40));Slot->SetSize(FVector2D(560,80));
+ auto* Slot=Subtree->AddChildToCanvas(Label);Slot->SetPosition(FVector2D(40,40));Slot->SetSize(FVector2D(560,80));
 
  UWidgetBlueprint* WidgetTarget=FWidgetBlueprintOperationUtils::CreateWidgetBlueprint(Package,TEXT("WBP_MergeTarget"),BPTYPE_Normal,UUserWidget::StaticClass(),UCanvasPanel::StaticClass(),TEXT("Target"),false);
  if(!TestNotNull(TEXT("Widget target"),WidgetTarget))return false;
  const FString ParentName=WidgetTarget->WidgetTree->RootWidget->GetName();
  const FText OriginalText=Label->GetText();
- TestTrue(TEXT("Subtree preview"),Record(TEXT("Subtree preview"),UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Label->GetName(),WidgetTarget->GetPathName(),ParentName)).StartsWith(TEXT("preview:")));
+ TestTrue(TEXT("Subtree preview"),Record(TEXT("Subtree preview"),UTurboMCPPreviewToolset::PreviewTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Subtree->GetName(),WidgetTarget->GetPathName(),ParentName)).StartsWith(TEXT("preview:")));
  TestNull(TEXT("Subtree preview does not add widgets"),WidgetTarget->WidgetTree->FindWidget(Label->GetFName()));
- TestTrue(TEXT("Subtree edit"),Record(TEXT("Subtree edit"),UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Label->GetName(),WidgetTarget->GetPathName(),ParentName)).StartsWith(TEXT("edited:")));
+ TestTrue(TEXT("Subtree edit"),Record(TEXT("Subtree edit"),UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Subtree->GetName(),WidgetTarget->GetPathName(),ParentName)).StartsWith(TEXT("edited:")));
+ auto* CopiedPanel=Cast<UCanvasPanel>(WidgetTarget->WidgetTree->FindWidget(Subtree->GetFName()));
+ if(CopiedPanel){TestEqual(TEXT("All ten child widgets copied"),CopiedPanel->GetChildrenCount(),10);auto* RootSlot=Cast<UCanvasPanelSlot>(CopiedPanel->Slot);if(RootSlot){TestEqual(TEXT("Subtree root position preserved"),RootSlot->GetPosition(),SubtreeSlot->GetPosition());TestEqual(TEXT("Subtree root size preserved"),RootSlot->GetSize(),SubtreeSlot->GetSize());}}
+ TestNotNull(TEXT("Subtree panel exists"),CopiedPanel);
  auto* CopiedLabel=Cast<UTextBlock>(WidgetTarget->WidgetTree->FindWidget(Label->GetFName()));
  if(TestNotNull(TEXT("Copied label"),CopiedLabel)){
   TestTrue(TEXT("Copied root belongs to target tree"),CopiedLabel->GetOuter()==WidgetTarget->WidgetTree);
   TestTrue(TEXT("Localized text identity retained"),CopiedLabel->GetText().IdenticalTo(OriginalText));
   auto* CopiedSlot=Cast<UCanvasPanelSlot>(CopiedLabel->Slot);if(TestNotNull(TEXT("Copied root slot"),CopiedSlot)){TestEqual(TEXT("Slot position preserved"),CopiedSlot->GetPosition(),Slot->GetPosition());TestEqual(TEXT("Slot size preserved"),CopiedSlot->GetSize(),Slot->GetSize());}
  }
- TestTrue(TEXT("Name collision refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Label->GetName(),WidgetTarget->GetPathName(),ParentName).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Name collision refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetSubtreeCopy(WB->GetPathName(),Subtree->GetName(),WidgetTarget->GetPathName(),ParentName).StartsWith(TEXT("error:")));
  TestTrue(TEXT("Source text unchanged"),Label->GetText().IdenticalTo(OriginalText));
  Record(TEXT("Compile copied widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));TestTrue(TEXT("Copied widget compiles"),WidgetTarget->Status!=BS_Error);
  Record(TEXT("Compile widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WB->GetPathName()));
