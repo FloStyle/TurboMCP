@@ -56,7 +56,7 @@
     "field": "pending",
     "tool_count": 142,
     "tool_count_meaning": "Declarations, not fully accepted tools.",
-    "offline": "26 checks passed in caa5cd184f184614ab9f91f2164cfc05; its two failures corrected: regenerated inventory validate-repo passes and explicit null-guard regression passes. Final character/encoding gate passes. Full offline suite not rerun after metadata refresh."
+    "offline": "24 checks passed in caa5cd184f184614ab9f91f2164cfc05; its two failures corrected: regenerated inventory validate-repo passes and explicit null-guard regression passes. Final character/encoding gate passes. Full offline suite not rerun after metadata refresh."
   },
   "limits": [
     "No custom engine changes. Original user project/assets were unavailable.",
