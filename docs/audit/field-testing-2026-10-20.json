@@ -3244,12 +3244,14 @@
       "key": "2026-10-26_S3/GC-51",
       "title": "GraphTransfer preview needs a detailed transfer plan",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "disposition": "reconciled_with_current_source",
-      "validation": "reported_source_reviewed",
-      "implementation_limits": "Source confirms a passing preview reports node count only, not individual nodes, links or locals. Field attempts stopped at dependency refusals."
+      "validation": "native_passed_field_recheck_pending",
+      "implementation_limits": "Source confirms a passing preview reports node count only, not individual nodes, links or locals. Field attempts stopped at dependency refusals.",
+      "implementation": "1a81340; stock-engine build and native workflow 634f1ae847c8482b9296fe386e17da1f passed",
+      "remaining": "Real-project recheck pending. Existing nonempty override scaffolds still refuse (GC-53); member exclusions/custom-event declaration preparation remain FT-108."
     },
     {
       "report": "2026-10-26_S3",
@@ -3369,13 +3371,14 @@
       "key": "2026-10-26_S4/X-101",
       "title": "Transfer refuses custom events defined in the same source graph",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "reported_not_reproduced",
+      "validation": "native_passed_field_recheck_pending",
       "implementation_limits": "Source dependency check requires target functions before cloning and does not account for custom events defined by the incoming graph. Separate defect from FT-108 declaration support; two functions and event graph remain blocked.",
-      "remaining": "Source dependency check requires target functions before cloning and does not account for custom events defined by the incoming graph. Separate defect from FT-108 declaration support; two functions and event graph remain blocked."
+      "remaining": "Real-project recheck pending. Existing nonempty override scaffolds still refuse (GC-53); member exclusions/custom-event declaration preparation remain FT-108.",
+      "implementation": "1a81340; stock-engine build and native workflow 634f1ae847c8482b9296fe386e17da1f passed"
     },
     {
       "report": "2026-10-26_S4",
@@ -3383,13 +3386,14 @@
       "key": "2026-10-26_S4/GC-52",
       "title": "Inherited override transfer creates a conflicting plain function",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "reported_not_reproduced",
+      "validation": "native_passed_field_recheck_pending",
       "implementation_limits": "Field compile failure, repaired manually. Detect parent-declared functions and preserve override identity or refuse before mutation. Exact later build revision unknown.",
-      "remaining": "Field compile failure, repaired manually. Detect parent-declared functions and preserve override identity or refuse before mutation. Exact later build revision unknown."
+      "remaining": "Real-project recheck pending. Existing nonempty override scaffolds still refuse (GC-53); member exclusions/custom-event declaration preparation remain FT-108.",
+      "implementation": "1a81340; stock-engine build and native workflow 634f1ae847c8482b9296fe386e17da1f passed"
     },
     {
       "report": "2026-10-26_S4",

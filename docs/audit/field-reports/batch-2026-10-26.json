@@ -30,10 +30,7 @@
     "FT-107",
     "FT-108",
     "FT-109",
-    "GC-51",
     "GC-50",
-    "X-101",
-    "GC-52",
     "GC-53",
     "FT-110",
     "CB-06",
@@ -81,7 +78,10 @@
     "FT-105",
     "FT-106",
     "RF-09",
-    "VA-06"
+    "VA-06",
+    "X-101",
+    "GC-52",
+    "GC-51"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -142,5 +142,12 @@
       "No new implementation or native test in this intake. Source revision of later field build unknown.",
       "MenuActivate and PlayInput not retested; no field acceptance inferred."
     ]
+  },
+  "transfer_repair": {
+    "commit": "1a81340",
+    "native_run": "634f1ae847c8482b9296fe386e17da1f",
+    "result": "passed",
+    "workflow": "Transfer event definitions first under a new graph name, then functions that call them. Incoming custom events satisfy internal dependencies. Inherited overrides retain parent ownership. Preview lists source nodes, links and local names.",
+    "remaining": "GC-53 remains; does not add member exclusions or declaration-only custom events."
   }
 }

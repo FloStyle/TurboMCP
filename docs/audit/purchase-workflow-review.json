@@ -831,7 +831,7 @@
         "code_and_helpers": "reviewed; confirmed defects repaired",
         "workflow": "passed"
       },
-      "remaining": "S4: inherited override transfer compile failure (GC-52) and same-graph custom-event dependency refusal (X-101); follow-up required. Prior bounded native scenario remains passed.",
+      "remaining": "GC-52 and X-101 repaired in 1a81340; native run 634f1ae847c8482b9296fe386e17da1f passed. GC-53 default override scaffold still refuses; real-project recheck pending.",
       "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
       "workflows": [
         "WF-OCT26-MERGE"
@@ -852,7 +852,7 @@
         "code_and_helpers": "reviewed; confirmed defects repaired",
         "workflow": "passed"
       },
-      "remaining": "S4: inherited override transfer compile failure (GC-52) and same-graph custom-event dependency refusal (X-101); follow-up required. Prior bounded native scenario remains passed.",
+      "remaining": "GC-52 and X-101 repaired in 1a81340; native run 634f1ae847c8482b9296fe386e17da1f passed. GC-53 default override scaffold still refuses; real-project recheck pending.",
       "scenario_evidence": "94a7bbd49865482a81998f3d835c131b",
       "workflows": [
         "WF-OCT26-MERGE"
