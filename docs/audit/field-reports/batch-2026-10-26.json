@@ -33,8 +33,6 @@
     "GC-50",
     "GC-53",
     "FT-110",
-    "CB-06",
-    "CB-07",
     "GC-55",
     "GC-56"
   ],
@@ -81,7 +79,9 @@
     "VA-06",
     "X-101",
     "GC-52",
-    "GC-51"
+    "GC-51",
+    "CB-06",
+    "CB-07"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -149,5 +149,12 @@
     "result": "passed",
     "workflow": "Transfer event definitions first under a new graph name, then functions that call them. Incoming custom events satisfy internal dependencies. Inherited overrides retain parent ownership. Preview lists source nodes, links and local names.",
     "remaining": "GC-53 remains; does not add member exclusions or declaration-only custom events."
+  },
+  "comment_repair": {
+    "commit": "c32d23f",
+    "native_run": "44c8a30becfe47bf96f7b8672773b34a",
+    "final_build": "80971b5bbf3e4c29a87c8c5d804e116f",
+    "behavior": "Explicit refit moves/resizes only the selected box; fit retains old rectangle. Text/Color/Size now default empty.",
+    "limits": "Native geometry/preview/node preservation checked. Final change only scopes rectangle output to explicit selection; final build passed. MCP client argument omission not independently exercised."
   }
 }

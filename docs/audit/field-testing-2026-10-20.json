@@ -3471,13 +3471,14 @@
       "key": "2026-10-26_S5/CB-06",
       "title": "Refit a comment around nodes moved away from its old rectangle",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "reported_not_reproduced",
+      "validation": "native_scenario_passed_field_recheck_pending",
       "implementation_limits": "Current explicit fit deliberately unions old rectangle with requested bounds, following prior user instruction to expand outward and preserve contents. Track a distinct refit behavior or mode; do not silently remove that preservation guarantee.",
-      "remaining": "Current explicit fit deliberately unions old rectangle with requested bounds, following prior user instruction to expand outward and preserve contents. Track a distinct refit behavior or mode; do not silently remove that preservation guarantee."
+      "remaining": "Use Action=refit with Box and Nodes to replace the old rectangle. fit retains its preservation contract. Text/Color/Size default empty. MCP client omission behavior still needs field recheck.",
+      "implementation": "c32d23f; native run 44c8a30becfe47bf96f7b8672773b34a; final build 80971b5bbf3e4c29a87c8c5d804e116f"
     },
     {
       "report": "2026-10-26_S5",
@@ -3485,13 +3486,14 @@
       "key": "2026-10-26_S5/CB-07",
       "title": "Comment fit requires an unused text argument",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P3",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "reported_not_reproduced",
+      "validation": "native_scenario_passed_field_recheck_pending",
       "implementation_limits": "Schema friction; empty text works. Review action-specific optional parameters without changing create/set requirements.",
-      "remaining": "Schema friction; empty text works. Review action-specific optional parameters without changing create/set requirements."
+      "remaining": "Use Action=refit with Box and Nodes to replace the old rectangle. fit retains its preservation contract. Text/Color/Size default empty. MCP client omission behavior still needs field recheck.",
+      "implementation": "c32d23f; native run 44c8a30becfe47bf96f7b8672773b34a; final build 80971b5bbf3e4c29a87c8c5d804e116f"
     },
     {
       "report": "2026-10-26_S5",
