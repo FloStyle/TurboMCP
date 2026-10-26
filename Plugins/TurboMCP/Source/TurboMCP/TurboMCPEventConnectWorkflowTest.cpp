@@ -113,6 +113,16 @@ bool FTurboMCPEventConnectWorkflowTest::RunTest(const FString& Parameters)
     const FString SourceContext = Record(TEXT("ReadTurboMCPNodeContext source"), UTurboMCPReadToolset::ReadTurboMCPNodeContext(Asset, GraphName, SourceId, 3));
     TestTrue(TEXT("Unconnected candidate source has inspectable values"), SourceContext.Contains(TEXT("default=40")) && SourceContext.Contains(TEXT("default=2")));
     TestTrue(TEXT("IDs used by edit exist in reader/search output"), Read.Contains(TargetId) && Found.Contains(SourceId));
+    const FString ShortKey = Purchase->NodeGuid.ToString(EGuidFormats::DigitsLower).Left(6);
+    TestEqual(TEXT("Graph-local short key returns the same context as full ID"),
+        UTurboMCPReadToolset::ReadTurboMCPNodeContext(Asset, GraphName, ShortKey, 3), Context);
+    TestTrue(TEXT("Qualified ID from another graph stays refused"),
+        UTurboMCPReadToolset::ReadTurboMCPNodeContext(Asset, GraphName, TurboMCPNodeId::MakeForNode(Audit, true), 3).StartsWith(TEXT("error:")));
+    const FGuid SavedGuid = Correct->NodeGuid;
+    Correct->NodeGuid = Purchase->NodeGuid;
+    TestTrue(TEXT("Ambiguous bare key is refused instead of selecting a node"),
+        UTurboMCPReadToolset::ReadTurboMCPNodeContext(Asset, GraphName, ShortKey, 3).Contains(TEXT("ambiguous")));
+    Correct->NodeGuid = SavedGuid;
     TestEqual(TEXT("Inspection preserves fixture"), Snapshot(), Before);
     for (int32 Case = 0; Case < 3; ++Case)
         for (bool Edit : {false, true})

@@ -667,6 +667,16 @@ FString UTurboMCPReadToolset::ReadTurboMCPNodeContext(const FString& Asset,const
     if(!Blueprint) return FString::Printf(TEXT("error: could not load %s as a Blueprint. Select a Blueprint asset and retry."), *Resolved.ObjectPath);
     if(!Graph || Matches!=1) return FString::Printf(TEXT("error: graph '%s' must resolve uniquely in %s. Available graphs: %s. Use an exact unique graph name."), *GraphName, *Resolved.ObjectPath, *ListGraphNames(Blueprint));
     UEdGraphNode* Selected=TurboMCPGraphScratch::Find(Graph,NodeId);
+    // Bare reader keys are valid only within the explicitly resolved graph.
+    // Never strip a qualified ID: a wrong graph or asset must remain a refusal.
+    if (!Selected && !TurboMCPNodeId::NormaliseKey(NodeId).IsEmpty())
+    {
+        TArray<UEdGraphNode*> KeyMatches;
+        const int32 Count = TurboMCPNodeId::FindNodesByKey(Graph, NodeId, KeyMatches);
+        if (Count > 1)
+            return TEXT("error: node key is ambiguous in this graph. Use more GUID digits or a full node ID from ReadTurboMCPNodeFind.");
+        if (Count == 1) Selected = KeyMatches[0];
+    }
     if(!Selected) return FString::Printf(TEXT("error: node ID '%s' does not resolve uniquely in graph '%s'. Use ReadTurboMCPNodeFind to obtain a fresh ID from this graph, then retry."), *NodeId, *GraphName);
     TSet<UEdGraphNode*> Context;
     TArray<UEdGraphNode*> Queue; Queue.Add(Selected);
