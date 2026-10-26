@@ -63,7 +63,6 @@
     "FT-115",
     "X-105",
     "GC-62",
-    "TD-42",
     "FT-116",
     "FT-117",
     "FT-118"
@@ -123,7 +122,8 @@
     "X-102",
     "X-103",
     "X-104",
-    "GC-61"
+    "GC-61",
+    "TD-42"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -239,5 +239,12 @@
     "suite": "test-graph-append failed on separate placement/output checks",
     "usage": "Double-quote the entire discovered type ID when it contains spaces.",
     "remaining": "TD-42 and remaining report issues stay open. Field confirmation pending."
+  },
+  "scoped_tidy_repair": {
+    "commit": "7118d02",
+    "native_run": "f500ee874eac4e54999b1924ed9507a1",
+    "result": "passed",
+    "visual_review": "Before/after native editor captures inspected; no remote getter, execution lane straight, no node overlap.",
+    "limits": "Unboxed single-consumer getters; original field assets unavailable. No global tidy certification."
   }
 }

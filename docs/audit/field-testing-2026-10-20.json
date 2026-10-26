@@ -3810,11 +3810,13 @@
       "key": "2026-10-26_S9/TD-42",
       "title": "Scoped tidy placed split getter copies far from their consumers (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S9_TurboMCP_navbar-and-card-layout.md. No fix claimed from report intake."
+      "validation": "tested",
+      "remaining": "Original project field confirmation pending. Bounded to unboxed single-consumer readers; no claim of optimal layout for every graph or dense boxed selection.",
+      "implementation": "7118d02: scoped unboxed single-consumer getters are placed near their final consumer with collision checks. Selected execution nodes with one fixed predecessor retain its execution lane.",
+      "evidence": "Supervised build and purchase workflow passed: f500ee874eac4e54999b1924ed9507a1. Mixed selection starts getter 4000 units away; native checks cover proximity, direction, overlap, unchanged unselected positions/content/links, straight exec lane and runtime purchase outcomes. Before/after native editor captures inspected."
     },
     {
       "report": "2026-10-26_S9",

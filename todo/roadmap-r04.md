@@ -1803,3 +1803,5 @@ GC-61 implemented in 360c291. Build and AliasCollision native test passed in 5c4
 ### Oct26 scoped getter placement (TD-42)
 
 Readiness: ready. Mixed scoped tidy currently places all free nodes beyond fixed nodes. Re-anchor selected unboxed single-consumer getters to the final consumer position after group layout, respecting measured obstacles and preserving unselected nodes and all connections. Keep whole-graph layout unchanged. Verify mixed selection using the purchase workflow fixture, plus existing semantic/layout checks through supervised test-purchase-workflow. Scope: oct26-scoped-getter-tidy.
+
+TD-42 implemented in 7118d02. Build and test-purchase-workflow passed in f500ee874eac4e54999b1924ed9507a1. Native before/after captures inspected: getter restored near consumer and execution lane straight. Unselected positions, content/links and purchase outcomes preserved. Earlier visual review caught a diagonal execution wire; corrected before final acceptance. Scope is unboxed single-consumer getters; field confirmation pending.
