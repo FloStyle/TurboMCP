@@ -3521,9 +3521,10 @@
       "priority": "P2",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "reported_not_reproduced",
+      "validation": "source_reviewed_runtime_untested",
       "implementation_limits": "Exact input and five parse diagnostics absent. Review reader/writer grammar and help contract; do not claim raw reader round-trip failure reproduced from this summary alone.",
-      "remaining": "Exact input and five parse diagnostics absent. Review reader/writer grammar and help contract; do not claim raw reader round-trip failure reproduced from this summary alone."
+      "remaining": "Partial: help corrected. Original rejected input and five diagnostics unavailable; reader/writer round-trip behavior not reproduced or validated by this patch.",
+      "implementation": "566881010b1fd3a417dec3f9d5d91aa78e8f86a0: corrected reader-to-writer help and added refusal recovery guidance, explicit branch links and deletion warning."
     },
     {
       "report": "2026-10-26_S5",

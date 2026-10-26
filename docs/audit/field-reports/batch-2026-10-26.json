@@ -298,5 +298,12 @@
     "result": "passed",
     "prior_runs": "c546101eeea04b95adaae009d1a629bd and 099093b57d354c0cae16868f1359575f refused stock scaffold; diagnosed skeleton/generated parent identity. dbb9a06766d947f69de8be245d8a4ed0 passed before additional disabled-node protection.",
     "limits": "Minimal generated scaffold only; original field confirmation pending."
+  },
+  "replace_guidance_repair": {
+    "commit": "566881010b1fd3a417dec3f9d5d91aa78e8f86a0",
+    "status": "partial",
+    "issue": "2026-10-26_S5/GC-56",
+    "implemented": "Clarify writer grammar, explicit execution links, retained IDs and removal preview; include guidance with refused plans.",
+    "remaining": "Original failed payload unavailable; runtime conversion acceptance not established. Issue stays open."
   }
 }

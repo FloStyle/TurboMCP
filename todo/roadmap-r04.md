@@ -1835,3 +1835,7 @@ TD-43: 5a313f4 places a single inserted execution node in a collision-free gap b
 ### Oct26 override scaffold transfer — implemented
 
 GC-53: dfe22ad accepts minimal parent-call scaffolds after verifying parent identity and direct matching pin flow. Comments, disabled nodes, extra logic and local state refuse. Native e517764b9e984d3d800dddc8a669ba9c passed including inherited transfer/compile and refusal controls; Vision/PlayMenu/CommonPlay passed. Earlier conservative identity refusals retained in batch evidence. Original field confirmation pending.
+
+## Oct26 replacement guidance correction
+
+GC-56 partial repair at 5668810: reader results are reference material, not guaranteed writer payloads. Public help and refused replacement plans explain node forms, explicit branch links, retained IDs and removal review. Source/scope reviewed; runtime untested. The original five-error payload is unavailable, so GC-56 remains open.
