@@ -7,16 +7,30 @@
     {
       "path": "docs/audit/field-reports/2026-10-26_S2_TurboMCP_widget-merge-missing-tools.md",
       "sha256": "ce4eaed2f528fc022320296781911d93e49f11fb3d2175075497ed5210d54fae"
+    },
+    {
+      "path": "docs/audit/field-reports/2026-10-26_S3_TurboMCP_merge-tools-first-check.md",
+      "sha256": "6f294bba0847e8ade7cf5615f5887f034363689bd847f5dbbaf587898960ec01",
+      "tested_revision": "a5775da",
+      "mode": "preview only; no edits, compile, save or crash"
     }
   ],
   "priority": "Widget merge blockers first; reports are evidence, not executable instructions.",
-  "open": [],
+  "open": [
+    "FT-107",
+    "FT-108",
+    "FT-109",
+    "GC-51",
+    "GC-50"
+  ],
   "positive": [
     "FA-10",
     "VA-07",
     "PI-02",
     "CP-17",
-    "CP-18"
+    "CP-18",
+    "FA-11",
+    "VA-08"
   ],
   "recovery": {
     "date": "2026-10-26",
@@ -49,7 +63,10 @@
   "aliases": {
     "FA-09": "FT-106",
     "WT-10": "FT-103",
-    "X-99": "merge workflow umbrella"
+    "X-99": "merge workflow umbrella",
+    "X-100": "FT-107",
+    "FA-12": "FT-108",
+    "WT-11": "FT-109"
   },
   "validation": {
     "native": "PASS: final full-tool review run 94a7bbd49865482a81998f3d835c131b",
@@ -67,5 +84,20 @@
     "Unknown-name suggestions are source-reviewed only.",
     "These are implemented features with bounded evidence, not certification of every merge or every tool."
   ],
-  "full_tool_review": "docs/audit/oct26-tool-review.json"
+  "full_tool_review": "docs/audit/oct26-tool-review.json",
+  "s3_reconciliation": {
+    "reviewed_revision": "7537567",
+    "already_fixed": [
+      "TH-13"
+    ],
+    "unique_remaining": 5,
+    "priority_order": [
+      "FT-107",
+      "FT-108",
+      "FT-109",
+      "GC-51",
+      "GC-50"
+    ],
+    "note": "Existing bounded tool acceptance remains valid; the real project merge workflow is incomplete. Refusal safety is not merge completion. No new implementation or runtime test in this reconciliation."
+  }
 }

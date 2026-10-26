@@ -362,5 +362,13 @@
   "offline": {
     "run": "f8900f6c6b9347af84c6584979237880",
     "result": "26/26 passed"
+  },
+  "field_followup": {
+    "report": "2026-10-26_S3",
+    "tested_revision": "a5775da",
+    "reviewed_revision": "7537567",
+    "workflow_status": "Real project merge blocked; five distinct follow-up capabilities/usability gaps tracked in batch-2026-10-26.json.",
+    "help": "TH-13 already fixed and live-checked at 7c472e1.",
+    "coverage": "53/142 remains bounded scenario coverage, not full project merge acceptance."
   }
 }
