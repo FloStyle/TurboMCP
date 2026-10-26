@@ -54,8 +54,6 @@
     "FT-111",
     "ED-21",
     "GC-59",
-    "GL-22",
-    "GL-23",
     "TD-41",
     "WT-13",
     "FT-113",
@@ -123,7 +121,9 @@
     "X-103",
     "X-104",
     "GC-61",
-    "TD-42"
+    "TD-42",
+    "GL-23",
+    "GL-22"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -253,5 +253,20 @@
     "result": "passed",
     "issue": "2026-10-26_Log/LOG-01",
     "limits": "Engine payload measurements remain unavailable; wording accurately explains missing data."
+  },
+  "reader_repairs": {
+    "GL-23": {
+      "commit": "8d5cf89",
+      "behavior": "Unique bare hex keys resolve only within the named graph. Ambiguous keys and cross-graph qualified IDs refuse.",
+      "native_run": "38c2be5f92fe4fc3afc813ad639ee562",
+      "result": "passed"
+    },
+    "GL-22": {
+      "commit": "86a22fb",
+      "behavior": "GraphLoad and NodeContext show configured Create Event function names and explicit unbound state, without claiming runtime dispatch. Disconnected graph summaries also include binding names.",
+      "native_run": "1d5f34e1323c490a9eb12e2fe0d2cd43",
+      "result": "passed"
+    },
+    "initial_failure": "f02a8195c19140f4976523aa7a9ca2a6 caught missing disconnected-node binding output; repaired and rerun passed."
   }
 }

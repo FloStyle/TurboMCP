@@ -1813,3 +1813,9 @@ Readiness: ready. User screenshot shows unknown chars and approximate unknown to
 ### Oct26 engine call log clarity — implemented
 
 LOG-01: d429950 corrects missing measurement labels and avoids claiming unrecorded arguments were empty. Supervised build and test-panel-history passed (566887df68dd4bc1b251daf51d9bde13). Engine response text remains unavailable; no invented counts. Field confirmation pending.
+
+### Oct26 reader repairs — implemented
+
+GL-23 (8d5cf89): unique graph-local bare keys accepted, ambiguity and wrong-graph IDs refused. Native workflow 38c2be5f92fe4fc3afc813ad639ee562 passed.
+
+GL-22 (86a22fb): configured Create Event bindings visible in graph/context readers, including disconnected summary; unbound and runtime limits explicit. Native workflow 1d5f34e1323c490a9eb12e2fe0d2cd43 passed after f02a8195c19140f4976523aa7a9ca2a6 exposed a missing disconnected path. Read inspection preserved nodes, pins and dirty flag. Original field confirmation remains pending.

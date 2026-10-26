@@ -3673,11 +3673,13 @@
       "key": "2026-10-26_S8/GL-22",
       "title": "Readers do not show which function a Create Event node binds (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md. No fix claimed from report intake."
+      "validation": "tested",
+      "remaining": "Original field-project confirmation pending. Static reader evidence does not verify runtime delegate dispatch.",
+      "implementation": "86a22fb: GraphLoad and NodeContext show configured Create Event function names and explicit unbound state, without claiming runtime dispatch. Disconnected graph summaries also include binding names.",
+      "evidence": "Supervised build and test-event-connect-workflow passed: 1d5f34e1323c490a9eb12e2fe0d2cd43"
     },
     {
       "report": "2026-10-26_S8",
@@ -3685,11 +3687,13 @@
       "key": "2026-10-26_S8/GL-23",
       "title": "NodeContext refuses short IDs that NodeFind returned (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md. No fix claimed from report intake."
+      "validation": "tested",
+      "remaining": "Original field-project confirmation pending. Static reader evidence does not verify runtime delegate dispatch.",
+      "implementation": "8d5cf89: Unique bare hex keys resolve only within the named graph. Ambiguous keys and cross-graph qualified IDs refuse.",
+      "evidence": "Supervised build and test-event-connect-workflow passed: 38c2be5f92fe4fc3afc813ad639ee562"
     },
     {
       "report": "2026-10-26_S8",
