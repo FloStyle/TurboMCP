@@ -2534,6 +2534,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct26-widget-properties": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPWidgetTreeTools.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/Public/Tools/TurboMCPToolsets.h",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
