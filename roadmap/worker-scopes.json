@@ -2456,6 +2456,13 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPanelHistoryTest.cpp"
           ],
           "new_files": []
+        },
+        "oct26-node-context-key": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeResolve.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPEventConnectWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
