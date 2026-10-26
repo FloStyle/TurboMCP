@@ -360,6 +360,17 @@ bool FTurboMCPPanelHistoryTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the refill rows are the new calls"), Refilled->Call.Tool, FString(TEXT("refill-999")));
 	}
 
+	// Missing engine payloads are not empty responses or numeric estimates.
+	FTurboMCPCallLog::FEntry EngineRow;
+	EngineRow.Source = TEXT("engine"); EngineRow.Phase = TEXT("end");
+	const FString MissingRow = FTurboMCPCallTimeline::RenderRow(EngineRow);
+	TestTrue(TEXT("Engine row explains unavailable size"), MissingRow.Contains(TEXT("response size: not provided by engine")));
+	TestTrue(TEXT("Engine arguments are not falsely called empty"), MissingRow.Contains(TEXT("arguments not recorded")));
+	TestTrue(TEXT("Unknown tokens are not presented as an estimate"), MissingRow.Contains(TEXT("tokens: not estimated")) && !MissingRow.Contains(TEXT("~unknown")));
+	EngineRow.Source = TEXT("plugin"); EngineRow.ResultChars = 0; EngineRow.TokenEstimate = 0;
+	const FString ZeroRow = FTurboMCPCallTimeline::RenderRow(EngineRow);
+	TestTrue(TEXT("Measured zero stays numeric"), ZeroRow.Contains(TEXT("0 chars")) && ZeroRow.Contains(TEXT("~0 tokens")));
+
 	// Measured zero, unknown sizes and completion-not-observed are distinct.
 	Log->Clear();
 	AddCall(*Log, TEXT("measured-zero"), TEXT("end"), TEXT("plugin"), 0, 0);

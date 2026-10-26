@@ -198,29 +198,24 @@ FString FTurboMCPCallTimeline::RenderRow(const FTurboMCPCallLog::FEntry& InCall)
 	}
 
 	FString Out = FString::Printf(TEXT("%s  %s.%s  %s"), *InCall.Timestamp, *InCall.Toolset, *InCall.Tool,
-		ShortArgs.IsEmpty() ? TEXT("(no arguments)") : *ShortArgs);
+		ShortArgs.IsEmpty() ? (InCall.Source == TEXT("engine") ? TEXT("(arguments not recorded)") : TEXT("(no arguments)")) : *ShortArgs);
 
 	if (InCall.Phase == TEXT("start"))
 	{
 		return Out + TEXT("  -> completion not observed");
 	}
 
-	// NAMED LOCALS: `Printf`'s format checker refuses a `%s` whose argument is a temporary (`error C7595`).
-	const FString Chars = FTurboMCPCallLog::FEntry::DescribeSize(InCall.ResultChars);
-	const FString Tokens = FTurboMCPCallLog::FEntry::DescribeSize(InCall.TokenEstimate);
-	Out += FString::Printf(TEXT("  -> %s  %.1fms  %s chars  ~%s tokens%s%s"),
-		InCall.bError ? TEXT("ERROR") : TEXT("ok"), InCall.DurationMs, *Chars, *Tokens,
-		InCall.IsSlow() ? TEXT("  SLOW") : TEXT(""), InCall.IsLarge() ? TEXT("  LARGE") : TEXT(""));
+	Out += FString::Printf(TEXT("  -> %s  %.1fms"), InCall.bError ? TEXT("ERROR") : TEXT("ok"), InCall.DurationMs);
+	if (InCall.ResultChars == FTurboMCPCallLog::FEntry::NotMeasured)
+		Out += InCall.Source == TEXT("engine")
+			? TEXT("  response size: not provided by engine") : TEXT("  response size: not recorded");
+	else Out += FString::Printf(TEXT("  %d chars"), InCall.ResultChars);
+	if (InCall.TokenEstimate == FTurboMCPCallLog::FEntry::NotMeasured)
+		Out += TEXT("  tokens: not estimated");
+	else Out += FString::Printf(TEXT("  ~%d tokens"), InCall.TokenEstimate);
+	if (InCall.IsSlow()) Out += TEXT("  SLOW");
+	if (InCall.IsLarge()) Out += TEXT("  LARGE");
 
-	// *** THE ADMISSION, NARROWED TO WHERE IT IS STILL TRUE. *** An ENGINE-ONLY call is one the engine's
-	// event is the only record of: an engine tool, or the `call_tool` meta-tool. Its event carries the
-	// duration AFTER the call and nothing before it, so that row really has no start. A call to this
-	// plugin's own tools has one now, and saying otherwise on its row would be the caption
-	// contradicting the code.
-	if (InCall.Source == TEXT("engine"))
-	{
-		Out += TEXT("  (engine-only: this path writes no start record)");
-	}
 	return Out;
 }
 
