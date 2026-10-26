@@ -596,6 +596,23 @@ class UTurboMCPPreviewToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Preview adding an implemented interface on a Blueprint or Widget Blueprint. Rejects signature conflicts before writing; repeated implementation is a no-op. Creates required interface function graphs, not event bodies or source logic. Preview may load assets but makes no edits. Apply uses structural refresh and does not save.
+     * @param Asset Target Blueprint asset path or unambiguous name.
+     * @param Interface Compiled Blueprint interface asset path/name, or native /Script/Module.Interface class path.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPInterfaceAdd(const FString& Asset, const FString& Interface);
+
+    /** Preview a typed local declaration in one owned function. Does not add nodes or copy logic. Identical existing declarations are no-ops; conflicts refuse. Preview may load assets but makes no edits. Apply uses structural refresh and does not save.
+     * @param Asset Target Blueprint asset path or unambiguous name.
+     * @param Function Exact owned function graph name, not an event graph or inherited function.
+     * @param Name Local identifier, distinct from parameters and members.
+     * @param Type Shared type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
+     * @param Default Empty uses Unreal's type default. Nonempty scalar/struct literals are schema-validated. Explicit container and object/class defaults are not supported; assign those values in graph logic.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPLocalVariableAdd(const FString& Asset, const FString& Function, const FString& Name, const FString& Type, const FString& Default);
+
 	/**
 	 * Preview the size of this plugin's own tool help.
 	 *
@@ -1147,6 +1164,23 @@ class UTurboMCPEditToolset : public UToolsetDefinition
 	GENERATED_BODY()
 
 public:
+    /** Add an implemented interface on a Blueprint or Widget Blueprint. Rejects signature conflicts before writing; repeated implementation is a no-op. Creates required interface function graphs, not event bodies or source logic. Structural refresh may compile dependencies; no save or reliable undo across compilation.
+     * @param Asset Target Blueprint asset path or unambiguous name.
+     * @param Interface Compiled Blueprint interface asset path/name, or native /Script/Module.Interface class path.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPInterfaceAdd(const FString& Asset, const FString& Interface);
+
+    /** Add a typed local declaration in one owned function. Does not add nodes or copy logic. Identical existing declarations are no-ops; conflicts refuse. Structural refresh may compile dependencies; no save or reliable undo across compilation.
+     * @param Asset Target Blueprint asset path or unambiguous name.
+     * @param Function Exact owned function graph name, not an event graph or inherited function.
+     * @param Name Local identifier, distinct from parameters and members.
+     * @param Type Shared type syntax, for example int, float, vector, or object</Script/Engine.Actor>.
+     * @param Default Empty uses Unreal's type default. Nonempty scalar/struct literals are schema-validated. Explicit container and object/class defaults are not supported; assign those values in graph logic.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPLocalVariableAdd(const FString& Asset, const FString& Function, const FString& Name, const FString& Type, const FString& Default);
+
     /** Execute bounded keyboard/gamepad input through Slate in live PIE. Runtime exception to asset-edit tools: runs game/UI code, no asset transaction/save/undo. Requires explicit game/menu focus; does not inject Enhanced Input actions. Reuse native Slate tools for mouse and text. Inspect state and capture after normal frames; delivery is not success.
      * @param Target Required exact pie:0; one in-process PIE world and one local player only.
      * @param Action Required exact focus, hold or release. Focus moves focus to the game viewport. Hold auto-releases on expiry, focus loss or application deactivation; overlapping holds and already-active player keys refuse. Release cancels this tool's pending hold.

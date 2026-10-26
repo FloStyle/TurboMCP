@@ -69,6 +69,47 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  };
  UBlueprint* BP=FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(),Package,TEXT("BP_VisionStress"),BPTYPE_Normal,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
  if(!TestNotNull(TEXT("Blueprint"),BP))return false;
+
+ // Merge prerequisites are exercised on disposable assets, never field assets.
+ UEdGraph* MergeFunction=UBlueprintEditorLibrary::AddFunctionGraph(BP,TEXT("MergeMemberProbe"));
+ const FString MergeAsset=BP->GetPathName();
+ const bool DirtyBeforePreview=Package->IsDirty();
+ const FString LocalPreview=Record(TEXT("Local declaration preview"),UTurboMCPPreviewToolset::PreviewTurboMCPLocalVariableAdd(MergeAsset,TEXT("MergeMemberProbe"),TEXT("MergeCount"),TEXT("int"),TEXT("7")));
+ TestTrue(TEXT("Local preview accepted"),LocalPreview.StartsWith(TEXT("preview:")));
+ TArray<UK2Node_FunctionEntry*> MergeEntries;MergeFunction->GetNodesOfClass(MergeEntries);
+ TestEqual(TEXT("Preview leaves locals unchanged"),MergeEntries[0]->LocalVariables.Num(),0);
+ TestEqual(TEXT("Preview preserves dirty state"),Package->IsDirty(),DirtyBeforePreview);
+ TestTrue(TEXT("Local edit accepted"),Record(TEXT("Local declaration edit"),UTurboMCPEditToolset::EditTurboMCPLocalVariableAdd(MergeAsset,TEXT("MergeMemberProbe"),TEXT("MergeCount"),TEXT("int"),TEXT("7"))).StartsWith(TEXT("edited:")));
+ MergeEntries.Reset();MergeFunction->GetNodesOfClass(MergeEntries);
+ TestEqual(TEXT("One local declared"),MergeEntries[0]->LocalVariables.Num(),1);
+ if(MergeEntries[0]->LocalVariables.Num()==1){
+  const auto& Local=MergeEntries[0]->LocalVariables[0];
+  TestEqual(TEXT("Local default preserved"),Local.DefaultValue,FString(TEXT("7")));
+  TestEqual(TEXT("Local type preserved"),Local.VarType.PinCategory,UEdGraphSchema_K2::PC_Int);
+  TestTrue(TEXT("Local has identity"),Local.VarGuid.IsValid());
+  const FGuid LocalGuid=Local.VarGuid;
+  TestTrue(TEXT("Repeated local is a no-op"),UTurboMCPEditToolset::EditTurboMCPLocalVariableAdd(MergeAsset,TEXT("MergeMemberProbe"),TEXT("MergeCount"),TEXT("int"),TEXT("7")).StartsWith(TEXT("unchanged:")));
+  TestEqual(TEXT("Repeat preserves identity"),MergeEntries[0]->LocalVariables[0].VarGuid,LocalGuid);
+ }
+ TestTrue(TEXT("Conflicting local refuses"),UTurboMCPEditToolset::EditTurboMCPLocalVariableAdd(MergeAsset,TEXT("MergeMemberProbe"),TEXT("MergeCount"),TEXT("bool"),TEXT("")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Missing function refuses"),UTurboMCPEditToolset::EditTurboMCPLocalVariableAdd(MergeAsset,TEXT("MissingFunction"),TEXT("MissingLocal"),TEXT("int"),TEXT("")).StartsWith(TEXT("error:")));
+ UBlueprint* MergeInterface=FKismetEditorUtilities::CreateBlueprint(UInterface::StaticClass(),Package,TEXT("BPI_MergeProbe"),BPTYPE_Interface,UBlueprint::StaticClass(),UBlueprintGeneratedClass::StaticClass());
+ if(!TestNotNull(TEXT("Merge interface fixture"),MergeInterface))return false;
+ UEdGraph* InterfaceGraph=UBlueprintEditorLibrary::AddFunctionGraph(MergeInterface,TEXT("ReadMergeState"));
+ TArray<UK2Node_FunctionEntry*> InterfaceEntries;InterfaceGraph->GetNodesOfClass(InterfaceEntries);
+ auto* InterfaceResult=FBlueprintEditorUtils::FindOrCreateFunctionResultNode(InterfaceEntries[0]);
+ FEdGraphPinType MergeResultType;MergeResultType.PinCategory=UEdGraphSchema_K2::PC_Int;
+ InterfaceResult->CreateUserDefinedPin(TEXT("State"),MergeResultType,EGPD_Input,false);
+ FKismetEditorUtilities::CompileBlueprint(MergeInterface);
+ const int32 InterfacesBefore=BP->ImplementedInterfaces.Num();
+ TestTrue(TEXT("Interface preview accepted"),Record(TEXT("Interface preview"),UTurboMCPPreviewToolset::PreviewTurboMCPInterfaceAdd(MergeAsset,MergeInterface->GetPathName())).StartsWith(TEXT("preview:")));
+ TestEqual(TEXT("Preview leaves interfaces unchanged"),BP->ImplementedInterfaces.Num(),InterfacesBefore);
+ TestTrue(TEXT("Interface edit accepted"),Record(TEXT("Interface edit"),UTurboMCPEditToolset::EditTurboMCPInterfaceAdd(MergeAsset,MergeInterface->GetPathName())).StartsWith(TEXT("edited:")));
+ TestEqual(TEXT("Interface added once"),BP->ImplementedInterfaces.Num(),InterfacesBefore+1);
+ if(BP->ImplementedInterfaces.Num()==InterfacesBefore+1)
+  TestEqual(TEXT("Required interface graph created"),BP->ImplementedInterfaces.Last().Graphs.Num(),1);
+ TestTrue(TEXT("Repeated interface is a no-op"),UTurboMCPEditToolset::EditTurboMCPInterfaceAdd(MergeAsset,MergeInterface->GetPathName()).StartsWith(TEXT("unchanged:")));
+ TestTrue(TEXT("Non-interface refuses"),UTurboMCPEditToolset::EditTurboMCPInterfaceAdd(MergeAsset,MergeAsset).StartsWith(TEXT("error:")));
  const UEdGraphSchema_K2* Schema=GetDefault<UEdGraphSchema_K2>();
  auto Wire=[&](UEdGraphPin* A,UEdGraphPin* B){TestTrue(TEXT("Fixture connection"),A&&B&&Schema->TryCreateConnection(A,B));};
  auto Init=[&](UEdGraphNode* N,UEdGraph* G,int32 X,int32 Y){N->CreateNewGuid();G->AddNode(N,false,false);N->AllocateDefaultPins();N->NodePosX=X;N->NodePosY=Y;};
