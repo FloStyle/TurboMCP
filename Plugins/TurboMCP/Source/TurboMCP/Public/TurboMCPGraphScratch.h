@@ -27,6 +27,15 @@ struct FCopy
 {
     TStrongObjectPtr<UBlueprint> Owner;
     UEdGraph* Graph=nullptr;
+    ~FCopy()
+    {
+        // Releasing a strong reference only schedules eventual collection. Until
+        // then PIE scans can mistake a failed scratch owner for an editable asset.
+        // Retire only our owner, never its borrowed source generated classes.
+        if (Owner.IsValid()) Owner->MarkAsGarbage();
+        Graph = nullptr;
+        Owner.Reset();
+    }
     bool Init(UBlueprint* Blueprint,UEdGraph* Original)
     {
         Owner.Reset(NewObject<UBlueprint>(GetTransientPackage(),Blueprint->GetClass(),NAME_None,RF_Transient));

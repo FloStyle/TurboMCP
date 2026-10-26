@@ -2,6 +2,9 @@
 import ast, importlib.util, json, pathlib, re, subprocess, sys
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 def main():
+    plugin_license = ROOT/'Plugins/TurboMCP/LICENSE'
+    if not plugin_license.is_file() or plugin_license.read_text(encoding='utf-8') != (ROOT/'LICENSE').read_text(encoding='utf-8'):
+        raise ValueError('Installable plugin must contain the complete canonical LICENSE')
     for p in ['AGENTS.md','SECURITY.md','CODE_OF_CONDUCT.md','.github/CODEOWNERS','README.md','TODO.md','engine.lock.json','Plugins/TurboMCP/TurboMCP.uplugin','TestProject/TurboMCPTest.uproject','docs/architecture.md','docs/workspace.md','release/export-policy.json']:
         if not (ROOT/p).is_file():raise ValueError(f'Missing {p}')
     root_names={p.name for p in ROOT.iterdir()}

@@ -43,6 +43,7 @@
 #include "ImageUtils.h"
 #include "ImageCore.h"
 #include "TurboMCPNodeId.h"
+#include "TurboMCPGraphScratch.h"
 #include "TurboMCPSettings.h"
 #include "TurboMCPModule.h"
 #include "ToolsetRegistry/UToolsetRegistry.h"
@@ -189,6 +190,20 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  if(!TestNotNull(TEXT("Merge target"),MergeTarget))return false;
  auto MergeSnapshot=[&](UEdGraph* G){TSet<UObject*> Nodes;for(UEdGraphNode* N:G->Nodes)Nodes.Add(N);FString Text;FEdGraphUtilities::ExportNodesToText(Nodes,Text);return Text;};
  const FString SourceSnapshot=MergeSnapshot(Function);
+ // S8 X-103: a refused preview must not leave a valid errored Blueprint for PIE.
+ UBlueprint* RetiredScratch = nullptr;
+ UClass* SourceGeneratedClass = BP->GeneratedClass;
+ {
+  TurboMCPGraphScratch::FCopy Scratch;
+  if (!TestTrue(TEXT("Scratch fixture initialized"), Scratch.Init(BP, Function))) return false;
+  RetiredScratch = Scratch.Owner.Get();
+  RetiredScratch->Status = BS_Error;
+  TestTrue(TEXT("Scratch exists while its operation runs"), IsValid(RetiredScratch));
+ }
+ TestFalse(TEXT("Failed scratch is retired before garbage collection"), IsValid(RetiredScratch));
+ TestTrue(TEXT("Source generated class remains valid"), IsValid(SourceGeneratedClass));
+ TestTrue(TEXT("Source class identity preserved"), BP->GeneratedClass == SourceGeneratedClass);
+
  TestTrue(TEXT("Typed dispatcher preview"),UTurboMCPPreviewToolset::PreviewTurboMCPDispatcherAdd(MergeAsset,TEXT("MergeReady"),TEXT("Ready:bool,Owner:object</Script/Engine.Actor>")).StartsWith(TEXT("preview:")));
  TestTrue(TEXT("Typed dispatcher edit"),Record(TEXT("Create dispatcher"),UTurboMCPEditToolset::EditTurboMCPDispatcherAdd(MergeAsset,TEXT("MergeReady"),TEXT("Ready:bool,Owner:object</Script/Engine.Actor>"))).StartsWith(TEXT("edited:")));
  const auto* DispatcherProperty=FindFProperty<FMulticastDelegateProperty>(BP->SkeletonGeneratedClass,TEXT("MergeReady"));
@@ -207,7 +222,8 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  const FString TransferPlan = UTurboMCPPreviewToolset::PreviewTurboMCPGraphTransfer(MergeAsset, Function->GetName(), MergeTarget->GetPathName(), TEXT(""));
  TestTrue(TEXT("Transfer preview lists nodes"), TransferPlan.Contains(TEXT("\nnode:")));
  TestTrue(TEXT("Transfer preview lists links"), TransferPlan.Contains(TEXT("\nlink:")));
- TestTrue(TEXT("Graph transfer edit"),Record(TEXT("Transfer edit"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
+ const FString TransferResult = Record(TEXT("Transfer edit"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT("")));
+ TestTrue(TEXT("Graph transfer edit"), TransferResult.StartsWith(TEXT("edited:")));
  TestTrue(TEXT("Local graph transfer"),Record(TEXT("Local graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,TEXT("MergeMemberProbe"),MergeTarget->GetPathName(),TEXT(""))).StartsWith(TEXT("edited:")));
  TestTrue(TEXT("Event graph transfer"),Record(TEXT("Event graph transfer"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Graphs[0]->GetName(),MergeTarget->GetPathName(),TEXT("CopiedEvents"))).StartsWith(TEXT("edited:")));
  TestTrue(TEXT("Occupied function refuses replacement"),UTurboMCPEditToolset::EditTurboMCPGraphTransfer(MergeAsset,Function->GetName(),MergeTarget->GetPathName(),TEXT("" )).StartsWith(TEXT("error:")));
@@ -216,6 +232,10 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  TestNotNull(TEXT("Transferred function exists"),Transferred);
  if(Transferred != nullptr){
   TestEqual(TEXT("Graph node count preserved"),Transferred->Nodes.Num(),Function->Nodes.Num());
+  for (UEdGraphNode* Node : Transferred->Nodes)
+   TestTrue(TEXT("Edit result provides every fresh target ID"), TransferResult.Contains(TEXT(" -> ")+TurboMCPNodeId::MakeForNode(Node,true)));
+  TestFalse(TEXT("Edit result has no unresolved identity mappings"), TransferResult.Contains(TEXT("unresolved after structural refresh")));
+
   auto Links=[](UEdGraph* G){int32 Count=0;for(UEdGraphNode* N:G->Nodes)for(auto* P:N->Pins)if(P)Count+=P->LinkedTo.Num();return Count;};
   TestEqual(TEXT("Graph links preserved"),Links(Transferred),Links(Function));
  }

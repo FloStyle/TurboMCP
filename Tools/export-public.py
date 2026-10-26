@@ -25,6 +25,9 @@ def source_files():
     if not result:raise ValueError('Empty export')
     names=[str(x[1]).casefold() for x in result]
     if len(names)!=len(set(names)):raise ValueError('Case-colliding export paths')
+    blobs = {path.as_posix(): data for _, path, data in result}
+    if not blobs.get('LICENSE') or blobs.get('Plugins/TurboMCP/LICENSE') != blobs['LICENSE']:
+        raise ValueError('Export requires matching root and installable-plugin LICENSE files')
     return result
 
 def main():

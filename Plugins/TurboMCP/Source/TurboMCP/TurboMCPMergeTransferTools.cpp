@@ -3,6 +3,7 @@
 #include "Tools/TurboMCPToolsets.h"
 #include "TurboMCPAssetResolver.h"
 #include "TurboMCPTypeParser.h"
+#include "TurboMCPNodeId.h"
 #include "Editor.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
@@ -265,15 +266,21 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         for (const FBPVariableDescription& Local : Entry->LocalVariables)
             Summary += TEXT("\nlocal: ") + Local.VarName.ToString();
     if (Function && ParentFunction) Summary += TEXT("\nfunction kind: inherited override");
-    if(!Apply)return TEXT("preview: Copy the complete graph, including connections, positions, comments and locals. No changes made.")+Summary;
+    if(!Apply)return TEXT("preview: Copy the complete graph, including connections, positions, comments and locals. No changes made. Listed IDs belong to the source; use the edit result for target IDs.")+Summary;
     T->Modify();
     UEdGraph* Copy=FEdGraphUtilities::CloneGraph(G,T);
     if(!Copy)return TEXT("error: Unreal could not clone the graph. No save requested.");
     if(Old)Old->Rename(nullptr,GetTransientPackage(),REN_DontCreateRedirectors|REN_NonTransactional);
     Copy->Rename(*Name,T,REN_DontCreateRedirectors|REN_NonTransactional);Copy->GraphGuid=FGuid::NewGuid();
+    TArray<TPair<FString, FGuid>> IdentityMap;
     for(UEdGraphNode* N:Copy->Nodes)
     {
+        FString SourceId;
+        for (UEdGraphNode* SourceNode : G->Nodes)
+            if (SourceNode && SourceNode->NodeGuid == N->NodeGuid)
+            { SourceId = TurboMCPNodeId::MakeForNode(SourceNode, true); break; }
         N->CreateNewGuid();
+        IdentityMap.Emplace(SourceId, N->NodeGuid);
         if(auto* Term=Cast<UK2Node_FunctionTerminator>(N)){FMemberReference R;if (Function && ParentFunction) R.SetExternalMember(FName(*Name), ParentFunction->GetOwnerClass()); else R.SetMemberName(FName(*Name));Term->FunctionReference=R;}
         if(auto* V=Cast<UK2Node_Variable>(N))
         {
@@ -292,7 +299,18 @@ static FString Graph(const FString& Source,const FString& SourceGraph,const FStr
         for(auto& I:T->ImplementedInterfaces)for(auto& Existing:I.Graphs)if(Existing==Old){Existing=Copy;Replaced=true;}
     }
     if(!Replaced){if(Event)T->UbergraphPages.Add(Copy);else if(Macro)T->MacroGraphs.Add(Copy);else T->FunctionGraphs.Add(Copy);}
-    return TEXT("edited: Complete graph copied.")+Summary+End(T);
+    const FString Completion = End(T);
+    FString Result = FString::Printf(TEXT("edited: Complete graph copied.\nsource: %s:%s\ntarget: %s:%s\nsource-to-target node IDs:"), *S->GetPathName(), *G->GetName(), *T->GetPathName(), *Name);
+    UEdGraph* FinalGraph = GraphByName(T, Name);
+    for (const auto& Pair : IdentityMap)
+    {
+        UEdGraphNode* TargetNode = nullptr;
+        if (FinalGraph)
+            for (UEdGraphNode* Node : FinalGraph->Nodes)
+                if (Node && Node->NodeGuid == Pair.Value) { TargetNode = Node; break; }
+        Result += TEXT("\n") + Pair.Key + TEXT(" -> ") + (TargetNode ? TurboMCPNodeId::MakeForNode(TargetNode, true) : TEXT("unresolved after structural refresh; read the target graph"));
+    }
+    return Result + Completion;
 }
 
 // Duplication may assign fresh localization identities. Restore text values from
