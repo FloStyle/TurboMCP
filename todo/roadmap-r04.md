@@ -1781,3 +1781,7 @@ Readiness: ready. Integrator-approved bounded repair of S4 X-101 and GC-52 plus 
 ### Oct26 comment refit
 
 Readiness: ready. Add explicit refit action requiring a box and node list, moving and resizing only the box to those nodes; preserve existing fit semantics. Make unused trailing comment arguments optional. Verify source nodes remain unchanged and the old empty rectangle is not retained through the existing native vision fixture. S5 CB-06 and CB-07.
+
+### FT-112 per-user enable switch — priority first
+
+Readiness: ready. Implement Editor Preferences / Plugins / TurboMCP using EditorPerProjectUserSettings, not shared default config. Enable TurboMCP defaults true and explicitly requires restart. Latch activation at module startup; disabled startup installs no panel, registry tools, recording/analytics, focus guard or safety filters. Keep engine MCP and unrelated toolsets unchanged. Move the call-log preference to the same per-user store. Status reports current activation and pending preference; when disabled, status itself is intentionally not exposed. Verify build, settings metadata and enabled workflow; record any disabled-startup runtime verification limitation.
