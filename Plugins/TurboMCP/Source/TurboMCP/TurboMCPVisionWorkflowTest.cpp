@@ -425,6 +425,26 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
 
  }
  Record(TEXT("Compile widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WB->GetPathName()));
+ const int32 ChildrenBeforeAdd=CopiedPanel->GetChildrenCount();
+ const FString AddPreview=Record(TEXT("Widget add preview"),UTurboMCPPreviewToolset::PreviewTurboMCPWidgetAdd(WidgetTarget->GetPathName(),CopiedPanel->GetName(),WB->GetPathName(),TEXT("AddedCard")));
+ TestTrue(TEXT("User widget add previews"),AddPreview.StartsWith(TEXT("preview:")));
+ TestEqual(TEXT("Widget add preview preserves count"),CopiedPanel->GetChildrenCount(),ChildrenBeforeAdd);
+ TestNull(TEXT("Widget add preview creates no object"),WidgetTarget->WidgetTree->FindWidget(TEXT("AddedCard")));
+ TestTrue(TEXT("Missing parent refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetAdd(WidgetTarget->GetPathName(),TEXT("MissingParent"),WB->GetPathName(),TEXT("AddedCard")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Self nesting refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetAdd(WidgetTarget->GetPathName(),CopiedPanel->GetName(),WidgetTarget->GetPathName(),TEXT("RecursiveCard")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("User widget add succeeds"),Record(TEXT("Widget add edit"),UTurboMCPEditToolset::EditTurboMCPWidgetAdd(WidgetTarget->GetPathName(),CopiedPanel->GetName(),WB->GetPathName(),TEXT("AddedCard"))).StartsWith(TEXT("edited:")));
+ UWidget* AddedCard=WidgetTarget->WidgetTree->FindWidget(TEXT("AddedCard"));
+ TestNotNull(TEXT("Added widget found"),AddedCard);
+ if(AddedCard){TestTrue(TEXT("Added widget class correct"),AddedCard->GetClass()==WB->GeneratedClass);TestTrue(TEXT("Added widget parent correct"),AddedCard->GetParent()==CopiedPanel);TestNotNull(TEXT("Added widget slot exists"),AddedCard->Slot.Get());}
+ TestEqual(TEXT("Exactly one child added"),CopiedPanel->GetChildrenCount(),ChildrenBeforeAdd+1);
+ TestTrue(TEXT("Duplicate widget add refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetAdd(WidgetTarget->GetPathName(),CopiedPanel->GetName(),WB->GetPathName(),TEXT("AddedCard")).StartsWith(TEXT("error:")));
+ Record(TEXT("Compile added widget"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));TestTrue(TEXT("Target with added widget compiles"),WidgetTarget->Status!=BS_Error);
+ TestTrue(TEXT("Indirect widget cycle refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetAdd(WB->GetPathName(),Subtree->GetName(),WidgetTarget->GetPathName(),TEXT("RecursiveMenu")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Non-panel parent refuses"),UTurboMCPEditToolset::EditTurboMCPWidgetAdd(WidgetTarget->GetPathName(),TEXT("RenamedPurchaseLabel"),TEXT("/Script/UMG.TextBlock"),TEXT("InvalidChild")).StartsWith(TEXT("error:")));
+ TestTrue(TEXT("Native widget add succeeds"),Record(TEXT("Native widget add"),UTurboMCPEditToolset::EditTurboMCPWidgetAdd(WidgetTarget->GetPathName(),CopiedPanel->GetName(),TEXT("/Script/UMG.TextBlock"),TEXT("AddedNativeText"))).StartsWith(TEXT("edited:")));
+ TestNotNull(TEXT("Native child has requested class"),Cast<UTextBlock>(WidgetTarget->WidgetTree->FindWidget(TEXT("AddedNativeText"))));
+ Record(TEXT("Compile native widget addition"),UTurboMCPEditToolset::EditTurboMCPCompile(WidgetTarget->GetPathName()));TestTrue(TEXT("Native addition compiles"),WidgetTarget->Status!=BS_Error);
+
  for(const FString Size:{FString(TEXT("640x240")),FString(TEXT("1920x720"))})ImageCheck(Record(TEXT("Widget preview ")+Size,UTurboMCPLookToolset::LookTurboMCPWidgetPreview(WB->GetPathName(),TEXT(""),TEXT(""),Size,TEXT("allow"))));
  UMaterial* Material=NewObject<UMaterial>(Package,TEXT("M_Vision"),RF_Public|RF_Standalone);
  auto* Color=NewObject<UMaterialExpressionConstant3Vector>(Material);Color->Constant=FLinearColor(0.1f,0.6f,0.2f);Material->GetExpressionCollection().AddExpression(Color);Material->GetEditorOnlyData()->BaseColor.Expression=Color;Color->MaterialExpressionEditorX=-900; Color->MaterialExpressionEditorY=400; Material->EditorX=300; Material->EditorY=0; Material->PostEditChange();

@@ -665,6 +665,17 @@ public:
     UFUNCTION(meta = (AICallable))
     static FString PreviewTurboMCPGraphTransfer(const FString& SourceAsset, const FString& SourceGraph, const FString& TargetAsset, const FString& TargetGraph);
     /**
+     * Preview adding a designer widget; loads classes but constructs no widget and makes no explicit edit.
+     * Requires an idle editor outside PIE. Refuses missing/full parents, name conflicts and circular widget dependencies. Native construction/palette hooks and structural refresh may run on edit; loaded dependent Blueprints may be affected. No full compile or save is requested. Read back, configure layout separately and compile before saving.
+     * @param Asset Required destination Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
+     * @param Parent Required existing designer panel name from ReadTurboMCPWidgetTree, such as CardList. Empty does not select or create a root. Named-slot insertion is not supported.
+     * @param WidgetClass Required compiled Widget Blueprint path/name, such as /Game/UI/WBP_Card, or concrete native class path such as /Script/UMG.TextBlock. Dirty source Blueprints must be compiled first.
+     * @param Name Required unused identifier: 1 to 100 letters, digits or underscores, starting with a letter or underscore. Example: NewCard. Duplicate names refuse rather than adding a numbered copy.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString PreviewTurboMCPWidgetAdd(const FString& Asset, const FString& Parent, const FString& WidgetClass, const FString& Name);
+
+    /**
      * Preview removal; no mutation is performed.
      * Refuses graph references, designer bindings, animation bindings and explicit navigation targets in this Blueprint. External assets, dynamic string lookups and custom reference systems are not verified. Removing the root leaves an empty tree. Edit checks current state again; loaded dependent Blueprints may be refreshed. Compile and inspect before saving.
      * @param Asset Required Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu. Requires an idle editor outside PIE and transactions.
@@ -1492,6 +1503,17 @@ public:
 	 */
 	UFUNCTION(meta = (AICallable))
 	static FString EditTurboMCPVarsAdd(const FString& Asset, const FString& Variables);
+
+    /**
+     * Add one designer widget at the end of a named panel using Unreal's palette operation. Uses class defaults and a default parent slot.
+     * Requires an idle editor outside PIE. Refuses missing/full parents, name conflicts and circular widget dependencies. Native construction/palette hooks and structural refresh may run on edit; loaded dependent Blueprints may be affected. No full compile or save is requested. Read back, configure layout separately and compile before saving.
+     * @param Asset Required destination Widget Blueprint path or unique name; prefer /Game/UI/WBP_Menu.
+     * @param Parent Required existing designer panel name from ReadTurboMCPWidgetTree, such as CardList. Empty does not select or create a root. Named-slot insertion is not supported.
+     * @param WidgetClass Required compiled Widget Blueprint path/name, such as /Game/UI/WBP_Card, or concrete native class path such as /Script/UMG.TextBlock. Dirty source Blueprints must be compiled first.
+     * @param Name Required unused identifier: 1 to 100 letters, digits or underscores, starting with a letter or underscore. Example: NewCard. Duplicate names refuse rather than adding a numbered copy.
+     */
+    UFUNCTION(meta = (AICallable))
+    static FString EditTurboMCPWidgetAdd(const FString& Asset, const FString& Parent, const FString& WidgetClass, const FString& Name);
 
     /**
      * Remove the widget subtree through the stock editor operation, with an undo transaction and structural refresh. No full compile or save is requested.

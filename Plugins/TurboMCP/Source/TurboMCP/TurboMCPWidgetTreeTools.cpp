@@ -17,6 +17,8 @@
 #include "WidgetBlueprintOperationUtils.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Widget.h"
+#include "Components/PanelWidget.h"
+#include "Components/PanelSlot.h"
 #include "Kismet2/Kismet2NameValidators.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Animation/WidgetAnimation.h"
@@ -170,4 +172,97 @@ FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetRemove(const FString& Asse
 FString UTurboMCPEditToolset::EditTurboMCPWidgetRemove(const FString& Asset, const FString& Widget)
 {
     return RemoveDesignerWidget(Asset, Widget, true);
+}
+
+namespace
+{
+FString AddDesignerWidget(const FString& Asset, const FString& Parent, const FString& WidgetClass,
+    const FString& Name, bool bApply)
+{
+    if (!IsInGameThread() || !GEditor || !GEditor->CanTransact() || GEditor->IsPlaySessionInProgress() || GEditor->IsTransactionActive())
+        return TEXT("error: Widget add requires an idle editor outside PIE and transactions. Nothing changed.");
+    const FString NewName = Name.TrimStartAndEnd();
+    if (NewName.IsEmpty() || NewName.Len() > 100 || !(FChar::IsAlpha(NewName[0]) || NewName[0] == TCHAR('_')))
+        return TEXT("error: Name must be an identifier of 1 to 100 letters, digits or underscores, starting with a letter or underscore. Nothing changed.");
+    for (TCHAR Character : NewName)
+        if (!(FChar::IsAlnum(Character) || Character == TCHAR('_')))
+            return TEXT("error: Name must contain only letters, digits or underscores. Nothing changed.");
+    FTurboMCPAssetResolver::FResolved Resolved;
+    FString Error = FTurboMCPAssetResolver::Resolve(Asset, Resolved);
+    if (!Error.IsEmpty()) return Error;
+    UWidgetBlueprint* Blueprint = LoadObject<UWidgetBlueprint>(nullptr, *Resolved.ObjectPath);
+    if (!Blueprint || !Blueprint->WidgetTree)
+        return TEXT("error: Asset must be a Widget Blueprint with a widget tree. Nothing changed.");
+    UWidget* ParentWidget = Blueprint->WidgetTree->FindWidget(FName(*Parent.TrimStartAndEnd()));
+    if (!ParentWidget)
+        return TEXT("error: Parent must name an existing designer panel. Use ReadTurboMCPWidgetTree. Empty does not select the root. Nothing changed.");
+    FText Failure;
+    if (!FWidgetBlueprintOperationUtils::CanAddToParent(Blueprint, ParentWidget, Failure))
+        return TEXT("error: Parent cannot accept a child: ") + Failure.ToString() + TEXT(" Nothing changed.");
+    FKismetNameValidator Validator(Blueprint);
+    if (Validator.IsValid(NewName) != EValidatorResult::Ok ||
+        StaticFindObject(UObject::StaticClass(), Blueprint->WidgetTree, *NewName))
+        return TEXT("error: Name conflicts with a widget, Blueprint member, reserved name or tree object. Choose an unused identifier. Nothing changed.");
+    UClass* Class = nullptr;
+    const FString ClassInput = WidgetClass.TrimStartAndEnd();
+    if (ClassInput.StartsWith(TEXT("/Script/")))
+        Class = LoadObject<UClass>(nullptr, *ClassInput);
+    else
+    {
+        FTurboMCPAssetResolver::FResolved ClassAsset;
+        Error = FTurboMCPAssetResolver::Resolve(ClassInput, ClassAsset);
+        if (!Error.IsEmpty()) return Error;
+        UWidgetBlueprint* Source = LoadObject<UWidgetBlueprint>(nullptr, *ClassAsset.ObjectPath);
+        if (!Source || !Source->GeneratedClass || (Source->Status != BS_UpToDate && Source->Status != BS_UpToDateWithWarnings))
+            return TEXT("error: WidgetClass must be a compiled Widget Blueprint or a native /Script/Module.Class widget class. Compile the source widget first. Nothing changed.");
+        Class = Source->GeneratedClass;
+    }
+    if (!Class || !Class->IsChildOf(UWidget::StaticClass()) || Class->HasAnyClassFlags(CLASS_Abstract | CLASS_Deprecated | CLASS_NewerVersionExists))
+        return TEXT("error: WidgetClass must be a concrete, current widget class. Nothing changed.");
+    // Traverse class ancestry and designer dependencies before constructing anything.
+    // This also catches an indirect dependency back to the destination Blueprint.
+    TArray<UClass*> Pending { Class };
+    TSet<UClass*> Visited;
+    while (!Pending.IsEmpty())
+    {
+        UClass* Current = Pending.Pop();
+        if (!Current || Visited.Contains(Current)) continue;
+        Visited.Add(Current);
+        if (Current->ClassGeneratedBy == Blueprint)
+            return TEXT("error: Adding this class would create a circular widget dependency. Nothing changed.");
+        Pending.Add(Current->GetSuperClass());
+        if (UWidgetBlueprint* Dependency = Cast<UWidgetBlueprint>(Current->ClassGeneratedBy))
+            if (Dependency->WidgetTree)
+                Dependency->WidgetTree->ForEachWidget([&](UWidget* Item) { Pending.Add(Item->GetClass()); });
+    }
+    const FString Details = FString::Printf(TEXT("asset: %s\nparent: %s\nwidget: %s\nclass: %s"), *Resolved.ObjectPath, *ParentWidget->GetName(), *NewName, *Class->GetPathName());
+    if (!bApply)
+        return TEXT("preview: Append one widget to the named parent. No widget constructed or added.\n") + Details + TEXT("\nClass defaults and a new default parent slot will be used. Configure layout separately. Edit replans from current state.");
+    // The stock palette path creates a designer template, not a live PIE widget.
+    // Native constructors/palette hooks may run; AddWidget owns the transaction.
+    UWidget* Created = Blueprint->WidgetTree->ConstructWidget<UWidget>(Class, FName(*NewName));
+    if (Created) Created->CreatedFromPalette();
+    if (!Created)
+        return TEXT("error: Unreal did not create the designer widget. No child was attached; no save was requested.");
+    if (Created->GetFName() != FName(*NewName))
+    {
+        Created->Rename(nullptr, GetTransientPackage(), REN_DontCreateRedirectors | REN_NonTransactional);
+        return TEXT("error: Unreal changed the requested name. The unattached template was discarded; no child was attached or saved.");
+    }
+    if (!FWidgetBlueprintOperationUtils::AddWidget(Blueprint, Created, ParentWidget, -1, Failure))
+        return TEXT("error: Unreal did not confirm widget attachment: ") + Failure.ToString() + TEXT(" Inspect the tree before retrying; no save was requested.");
+    if (Blueprint->WidgetTree->FindWidget(FName(*NewName)) != Created || Created->GetParent() != ParentWidget)
+        return TEXT("partial: Widget attachment could not be verified. Inspect ReadTurboMCPWidgetTree before retrying. No save was requested.");
+    return TEXT("edited: Added one widget.\n") + Details + FString::Printf(TEXT("\nslot class: %s\nClass defaults and default slot layout were used. Structural refresh requested; loaded dependent Blueprints may be affected. Native constructors and palette hooks may run. No full compile or save was requested. Read the tree, configure layout and compile before saving."), Created->Slot ? *Created->Slot->GetClass()->GetPathName() : TEXT("none"));
+}
+}
+
+FString UTurboMCPPreviewToolset::PreviewTurboMCPWidgetAdd(const FString& Asset, const FString& Parent, const FString& WidgetClass, const FString& Name)
+{
+    return AddDesignerWidget(Asset, Parent, WidgetClass, Name, false);
+}
+
+FString UTurboMCPEditToolset::EditTurboMCPWidgetAdd(const FString& Asset, const FString& Parent, const FString& WidgetClass, const FString& Name)
+{
+    return AddDesignerWidget(Asset, Parent, WidgetClass, Name, true);
 }
