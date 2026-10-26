@@ -2549,6 +2549,14 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPurchaseWorkflowTest.cpp"
           ],
           "new_files": []
+        },
+        "oct26-struct-identity": {
+          "files": [
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeId.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPNodeType.cpp",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp"
+          ],
+          "new_files": []
         }
       },
       "preserve_rows": []
