@@ -2367,7 +2367,8 @@
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCapture.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPVisionWorkflowTest.cpp",
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPCommonPlayWorkflowTest.cpp",
-            "Tools/test-vision-workflow.py"
+            "Tools/test-vision-workflow.py",
+            "Plugins/TurboMCP/Source/TurboMCP/TurboMCPPlayViewport.cpp"
           ],
           "new_files": [
             "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp"
