@@ -212,7 +212,8 @@ bool FTurboMCPVisionWorkflowTest::RunTest(const FString& Parameters)
  FKismetEditorUtilities::CompileBlueprint(OverrideTarget);
  TestTrue(TEXT("Transferred inherited override compiles"), OverrideTarget->Status != BS_Error);
  UEdGraph* CopiedOverride = TurboMCPNodeId::FindGraphByName(OverrideTarget, Function->GetName());
- if (TestNotNull(TEXT("Transferred override graph exists"), CopiedOverride)) {
+ TestNotNull(TEXT("Transferred override graph exists"), CopiedOverride);
+ if (CopiedOverride != nullptr) {
   TArray<UK2Node_FunctionEntry*> OverrideEntries; CopiedOverride->GetNodesOfClass(OverrideEntries);
   TestEqual(TEXT("Override entry count"), OverrideEntries.Num(), 1);
   if (OverrideEntries.Num() == 1) TestNotNull(TEXT("Override retains external parent reference"), OverrideEntries[0]->FunctionReference.GetMemberParentClass());
