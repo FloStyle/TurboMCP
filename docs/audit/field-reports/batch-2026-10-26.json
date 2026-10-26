@@ -246,5 +246,12 @@
     "result": "passed",
     "visual_review": "Before/after native editor captures inspected; no remote getter, execution lane straight, no node overlap.",
     "limits": "Unboxed single-consumer getters; original field assets unavailable. No global tidy certification."
+  },
+  "log_clarity_repair": {
+    "commit": "d429950",
+    "native_run": "566887df68dd4bc1b251daf51d9bde13",
+    "result": "passed",
+    "issue": "2026-10-26_Log/LOG-01",
+    "limits": "Engine payload measurements remain unavailable; wording accurately explains missing data."
   }
 }

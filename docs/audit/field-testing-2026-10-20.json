@@ -3877,6 +3877,20 @@
       "owner": "R04",
       "validation": "reported_not_implemented",
       "remaining": "Requested capability; see docs/audit/field-reports/2026-10-26_S9_TurboMCP_navbar-and-card-layout.md"
+    },
+    {
+      "report": "2026-10-26_Log",
+      "id": "LOG-01",
+      "key": "2026-10-26_Log/LOG-01",
+      "title": "Engine-only call log presents missing measurements as unknown estimates and empty arguments",
+      "kind": "bug",
+      "state": "done",
+      "priority": "P2",
+      "owner": "R04",
+      "validation": "tested",
+      "implementation": "d429950: explain arguments not recorded, response size not provided by engine, and tokens not estimated; preserve numeric zero.",
+      "evidence": "Supervised build and test-panel-history passed: 566887df68dd4bc1b251daf51d9bde13.",
+      "remaining": "Engine events do not carry response text or arguments; actual size measurement remains unavailable. Original screenshot wording corrected; field confirmation pending."
     }
   ],
   "prototype": {

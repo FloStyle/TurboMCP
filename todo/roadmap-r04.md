@@ -1809,3 +1809,7 @@ TD-42 implemented in 7118d02. Build and test-purchase-workflow passed in f500ee8
 ### Engine-only log measurements
 
 Readiness: ready. User screenshot shows unknown chars and approximate unknown tokens on engine-only calls. Analytics events have no arguments/result text. Render unavailable measurements honestly, distinguish missing arguments from empty arguments, preserve measured zero and numeric token estimates. Verify using test-panel-history. Scope: oct26-log-unavailable.
+
+### Oct26 engine call log clarity — implemented
+
+LOG-01: d429950 corrects missing measurement labels and avoids claiming unrecorded arguments were empty. Supervised build and test-panel-history passed (566887df68dd4bc1b251daf51d9bde13). Engine response text remains unavailable; no invented counts. Field confirmation pending.
