@@ -442,6 +442,34 @@
       "evidence": []
     },
     {
+      "tool": "EditTurboMCPInterfaceAdd",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPLocalVariableAdd",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "EditTurboMCPLocalVars",
       "family": "graph",
       "epic_5_8_3": {
@@ -542,6 +570,20 @@
     {
       "tool": "EditTurboMCPPinDefault",
       "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "EditTurboMCPPlayInput",
+      "family": "schema-and-observability",
       "epic_5_8_3": {
         "status": "unverified",
         "equivalent_tools": []
@@ -1222,6 +1264,34 @@
       "evidence": []
     },
     {
+      "tool": "PreviewTurboMCPInterfaceAdd",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
+      "tool": "PreviewTurboMCPLocalVariableAdd",
+      "family": "asset-and-data",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "PreviewTurboMCPLocalVars",
       "family": "graph",
       "epic_5_8_3": {
@@ -1757,6 +1827,20 @@
       "evidence": []
     },
     {
+      "tool": "ReadTurboMCPPlayInputState",
+      "family": "schema-and-observability",
+      "epic_5_8_3": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "epic_5_9": {
+        "status": "unverified",
+        "equivalent_tools": []
+      },
+      "preference": "unverified",
+      "evidence": []
+    },
+    {
       "tool": "ReadTurboMCPPureChecks",
       "family": "asset-and-data",
       "epic_5_8_3": {
@@ -1903,34 +1987,6 @@
     {
       "tool": "ReadTurboMCPWidgetTree",
       "family": "widget",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "ReadTurboMCPPlayInputState",
-      "family": "schema-and-observability",
-      "epic_5_8_3": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "epic_5_9": {
-        "status": "unverified",
-        "equivalent_tools": []
-      },
-      "preference": "unverified",
-      "evidence": []
-    },
-    {
-      "tool": "EditTurboMCPPlayInput",
-      "family": "schema-and-observability",
       "epic_5_8_3": {
         "status": "unverified",
         "equivalent_tools": []

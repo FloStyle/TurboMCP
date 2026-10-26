@@ -1732,3 +1732,11 @@ VISION-13 accepted in ac04ee9: native 7c628de2d3f14a11be0b13f931435d8c passed, o
 ### Oct26 merge tools: interfaces and explicit locals
 
 Readiness: ready. Assignment merge-member-foundation. First unblock FT-102 interface addition and VA-06 typed function-local declarations with distinct preview/edit tools. Resolve exact target and interface identity; reject conflicts, wrong types and unsafe editor state; identical existing declarations are no-ops. Use stock BlueprintEditorUtils; explain structural refresh, dirty state and no save. Preview may load but never writes. Native disposable fixture verifies interface, local identity/type/default, preview preservation and repeat no-op. Full graph migration, subtree copy, dispatcher creation and dependency planning remain separate tracked blockers, not completed by these tools. S1 PI-01 is confirmed in recorder gate and needs dispatch-level regression separately. DSH paused; stock engine.
+
+
+### Oct26 merge prerequisites — implemented, bounded native evidence
+
+- Code: `72501169b2253234c1e26fc24dc321f372ab16af` adds Preview/EditTurboMCPInterfaceAdd and Preview/EditTurboMCPLocalVariableAdd (131 declared tools total; not 131 workflow-reviewed tools).
+- Stock-engine build passed. Native `TurboMCP.Workflow.Vision` passed in run `2aa985df274a4fbd96350a22923ca6a8`: interface output graph, local type/default/GUID, unchanged previews, repeat no-ops, conflict refusal and target compilation. The subsequent CommonPlay test failed because the editor application was inactive. The complete suite is FAILED, not passed. No PIE acceptance claim.
+- Explicit null-refusal formatting was tightened afterward for static lookup checks without changing the accepted-input path. No field acceptance yet. No custom engine edits.
+- Remaining: GC-49 external instance call/local/macro transfer; FT-104 whole graph transfer; FT-103 subtree copy; FT-105 member planning; FT-106 dispatchers; RF-09 discovery. FT-102 removal is not implemented. S1 PI-01 dispatch refusal remains open.

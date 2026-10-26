@@ -63,10 +63,12 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 ## UTurboMCPPreviewToolset
 
-39 declared tools.
+41 declared tools.
 
 | Function | Description |
 | --- | --- |
+| `PreviewTurboMCPInterfaceAdd` | Preview adding an implemented interface on a Blueprint or Widget Blueprint |
+| `PreviewTurboMCPLocalVariableAdd` | Preview a typed local declaration in one owned function |
 | `PreviewTurboMCPToolset` | Preview the size of this plugin's own tool help |
 | `PreviewTurboMCPEnumAdd` | Inspect a proposed new enum and check for an existing asset; does not create, compile or save an asset |
 | `PreviewTurboMCPVarsAdd` | Parse a variable creation request; may load referenced types but does not add variables, compile the target or save |
@@ -109,10 +111,12 @@ Generated from plugin declarations. For validation and compatibility limits, see
 
 ## UTurboMCPEditToolset
 
-50 declared tools.
+52 declared tools.
 
 | Function | Description |
 | --- | --- |
+| `EditTurboMCPInterfaceAdd` | Add an implemented interface on a Blueprint or Widget Blueprint |
+| `EditTurboMCPLocalVariableAdd` | Add a typed local declaration in one owned function |
 | `EditTurboMCPPlayInput` | Execute bounded keyboard/gamepad input through Slate in live PIE. Runtime exception to asset-edit tools: runs game/UI code, no asset transaction/save/undo |
 | `ReadTurboMCPEditQueue` | Read whether the editor can accept a write right now |
 | `EditTurboMCPCompile` | Compile up to 25 named assets and report compiler and engine diagnostics; does not save |
