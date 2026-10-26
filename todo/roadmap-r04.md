@@ -1799,3 +1799,7 @@ X-102, X-103 and X-104 implemented in 822b7a0. Build and native vision workflow 
 Readiness: ready. Accept a double-quoted node type ID containing spaces in the shared graph lexer. Preserve unquoted syntax; refuse unterminated quoted heads. Validate the real append planner with a spaced variable name and malformed input, plus lexer delimiter handling. No engine changes. Scope: oct26-quoted-ids.
 
 GC-61 implemented in 360c291. Build and AliasCollision native test passed in 5c4894a88b7045ccae58d5b4b0ba0089. The full test-graph-append suite FAILED on placement/output checks; do not treat this as full append acceptance. Quote the entire discovered type ID when it contains spaces. Field confirmation pending. TD-42 remains open: mixed scoped selections use the free-group placement path, while consumer-relative placement is currently pure-selection-only; this is an investigation lead, not a completed fix.
+
+### Oct26 scoped getter placement (TD-42)
+
+Readiness: ready. Mixed scoped tidy currently places all free nodes beyond fixed nodes. Re-anchor selected unboxed single-consumer getters to the final consumer position after group layout, respecting measured obstacles and preserving unselected nodes and all connections. Keep whole-graph layout unchanged. Verify mixed selection using the purchase workflow fixture, plus existing semantic/layout checks through supervised test-purchase-workflow. Scope: oct26-scoped-getter-tidy.
