@@ -1863,3 +1863,7 @@ Implemented in 91b1593. Rejected previews and complete quality rollbacks suggest
 ### FT-118 struct reader identities (2026-10-27)
 
 Implemented in bffc6fe. Make/break struct IDs use exact reflected paths; stock filtered spawners accept the same IDs and preserve legacy palette aliases. Native run 759e69a6e1c84d6a9a41e5bef2d8b2d6 passed connected reader and append identity checks plus existing Vision/PlayMenu/CommonPlay. Field confirmation pending; optional pin visibility/full text round trips are not certified.
+
+### GC-55/GC-56/GC-62 writer syntax (2026-10-27)
+
+Implemented/verified in d25e927. Labels feed the actual getter pin; reader branch containers refuse with conversion instructions instead of being silently ignored. Replacement conversion preserves named Branch identity/execution, removes the omitted getter and applies the new condition. Native run e5c8a11f4b574808ad7fbe861773c91a passed build and Vision/PlayMenu/CommonPlay. Original field payloads unavailable; field confirmation pending. Raw reader containers remain read-only by documented design.

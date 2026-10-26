@@ -3505,13 +3505,15 @@
       "key": "2026-10-26_S5/GC-55",
       "title": "Append labels cannot be used as link endpoints",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P3",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "reported_not_reproduced",
+      "validation": "native_pass_field_pending",
       "implementation_limits": "Field workaround uses full type IDs. Exact DSL input absent; distinguish reference-label support from a same-line comment swallowing the closing bracket.",
-      "remaining": "Field workaround uses full type IDs. Exact DSL input absent; distinguish reference-label support from a same-line comment swallowing the closing bracket."
+      "remaining": "Original failed field payload unavailable; field confirmation pending. Reader branch containers remain read-only; documented explicit-link conversion is the supported path.",
+      "implementation": "d25e927: Existing local labels now native-verified with a getter feeding Branch.Condition; help shows label placement and exact pin references.",
+      "evidence": "Native run e5c8a11f4b574808ad7fbe861773c91a passed Vision/PlayMenu/CommonPlay and stock build."
     },
     {
       "report": "2026-10-26_S5",
@@ -3519,14 +3521,15 @@
       "key": "2026-10-26_S5/GC-56",
       "title": "GraphReplace reader-format guidance led to parse errors",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
       "disposition": "field_report_reconciled",
-      "validation": "source_reviewed_runtime_untested",
+      "validation": "native_pass_field_pending",
       "implementation_limits": "Exact input and five parse diagnostics absent. Review reader/writer grammar and help contract; do not claim raw reader round-trip failure reproduced from this summary alone.",
-      "remaining": "Partial: help corrected. Original rejected input and five diagnostics unavailable; reader/writer round-trip behavior not reproduced or validated by this patch.",
-      "implementation": "566881010b1fd3a417dec3f9d5d91aa78e8f86a0: corrected reader-to-writer help and added refusal recovery guidance, explicit branch links and deletion warning."
+      "remaining": "Original failed field payload unavailable; field confirmation pending. Reader branch containers remain read-only; documented explicit-link conversion is the supported path.",
+      "implementation": "d25e927: Documented writer conversion native-verified: explicit links and retained IDs preserve the Branch while omission removes the getter; preview preserves the graph.",
+      "evidence": "Native run e5c8a11f4b574808ad7fbe861773c91a passed Vision/PlayMenu/CommonPlay and stock build."
     },
     {
       "report": "2026-10-26_S5",
@@ -3809,11 +3812,13 @@
       "key": "2026-10-26_S9/GC-62",
       "title": "Append does not accept branch output sections (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S9_TurboMCP_navbar-and-card-layout.md. No fix claimed from report intake."
+      "validation": "native_pass_field_pending",
+      "remaining": "Original failed field payload unavailable; field confirmation pending. Reader branch containers remain read-only; documented explicit-link conversion is the supported path.",
+      "implementation": "d25e927: Reader-only branch sections explicitly refused with a concrete explicit-link example. Help no longer claims reader and writer dialects are interchangeable.",
+      "evidence": "Native run e5c8a11f4b574808ad7fbe861773c91a passed Vision/PlayMenu/CommonPlay and stock build."
     },
     {
       "report": "2026-10-26_S9",

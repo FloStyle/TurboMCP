@@ -47,11 +47,8 @@
     "FT-108",
     "FT-109",
     "GC-50",
-    "GC-55",
-    "GC-56",
     "FT-111",
-    "X-105",
-    "GC-62"
+    "X-105"
   ],
   "positive": [
     "FA-10",
@@ -124,7 +121,10 @@
     "FT-117",
     "FT-116",
     "TD-41",
-    "FT-118"
+    "FT-118",
+    "GC-55",
+    "GC-56",
+    "GC-62"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -301,10 +301,10 @@
   },
   "replace_guidance_repair": {
     "commit": "566881010b1fd3a417dec3f9d5d91aa78e8f86a0",
-    "status": "partial",
+    "status": "implemented_conversion_native_pass_field_pending",
     "issue": "2026-10-26_S5/GC-56",
     "implemented": "Clarify writer grammar, explicit execution links, retained IDs and removal preview; include guidance with refused plans.",
-    "remaining": "Original failed payload unavailable; runtime conversion acceptance not established. Issue stays open."
+    "remaining": "Follow-up d25e927 verifies the documented conversion path; original project confirmation pending."
   },
   "widget_rename_repair": {
     "commit": "72384b80a569e7a8c35cf10a7878343de07f188f",
@@ -351,5 +351,16 @@
       "7eaef0ac2fd742ae8f00c136405154c0: corrected fixture header path",
       "41ee57f25ee2496499460f3c500ea408: disconnected pure fixture omitted by bodies reader; connected to a return value for meaningful reader coverage"
     ]
+  },
+  "writer_syntax_repair": {
+    "commit": "d25e927a82489be9bc113b178858cc1d2e88f2bf",
+    "native_run": "e5c8a11f4b574808ad7fbe861773c91a",
+    "status": "implemented_native_pass_field_pending",
+    "issues": {
+      "GC-55": "Existing local labels now native-verified with a getter feeding Branch.Condition; help shows label placement and exact pin references.",
+      "GC-56": "Documented writer conversion native-verified: explicit links and retained IDs preserve the Branch while omission removes the getter; preview preserves the graph.",
+      "GC-62": "Reader-only branch sections explicitly refused with a concrete explicit-link example. Help no longer claims reader and writer dialects are interchangeable."
+    },
+    "limits": "Original payload unavailable. Reader branch nesting remains read-only; supported conversion tested, not universal raw-reader round trips."
   }
 }
