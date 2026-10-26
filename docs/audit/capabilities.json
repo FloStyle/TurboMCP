@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "plugin_tree": "e21d5c513b0c4ea25e81b0a57ce956f1c204df15",
+  "plugin_tree": "05c84406954a7fa9cfdf03b4dfd335a4f9dee1fd",
   "scope": "All AICallable declarations in the single toolset header, qualified C++ definition locations, and static Python test references. Not a semantic or runtime certification.",
   "counts": {
     "tools": 142,
@@ -273,7 +273,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 363
+          "line": 381
         }
       ],
       "test_references": [],
@@ -800,7 +800,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 367
+          "line": 385
         }
       ],
       "test_references": [],
@@ -1025,7 +1025,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 365
+          "line": 383
         }
       ],
       "test_references": [],
@@ -1370,7 +1370,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 369
+          "line": 387
         }
       ],
       "test_references": [],
@@ -1747,7 +1747,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 362
+          "line": 380
         }
       ],
       "test_references": [],
@@ -2247,7 +2247,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 366
+          "line": 384
         }
       ],
       "test_references": [],
@@ -2425,7 +2425,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 364
+          "line": 382
         }
       ],
       "test_references": [],
@@ -2663,7 +2663,7 @@
       "definitions": [
         {
           "path": "Plugins/TurboMCP/Source/TurboMCP/TurboMCPMergeTransferTools.cpp",
-          "line": 368
+          "line": 386
         }
       ],
       "test_references": [],

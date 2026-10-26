@@ -41,7 +41,7 @@
       "sha256": "71f90abaa7a5669c6ba7496e366226b28eb90db4f2e6e44fbead571141e13aac"
     }
   ],
-  "priority": "FT-112 implemented first. S6 packaging and remaining S8/S9 issues are open; no other fixes claimed in this intake.",
+  "priority": "Personal enable toggle and X-102/X-103/X-104 implemented. Remaining S8/S9 parser, layout and merge capability issues stay open.",
   "open": [
     "FT-107",
     "FT-108",
@@ -51,10 +51,7 @@
     "FT-110",
     "GC-55",
     "GC-56",
-    "X-102",
     "FT-111",
-    "X-103",
-    "X-104",
     "ED-21",
     "GC-59",
     "GL-22",
@@ -123,7 +120,10 @@
     "GC-51",
     "CB-06",
     "CB-07",
-    "FT-112"
+    "FT-112",
+    "X-102",
+    "X-103",
+    "X-104"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -216,5 +216,20 @@
       "Old shared call-log configuration is no longer used; new per-user logging default remains enabled."
     ],
     "offline_run": "8a7dab05fdb94571ac608ec774bfc977: 26/26 passed"
+  },
+  "report_stability_repair": {
+    "commit": "822b7a0",
+    "native_run": "28c311c118894529998ea6f8b44a3808",
+    "result": "passed",
+    "fixes": {
+      "X-102": "Installable plugin includes the root license. Validation and export reject missing or mismatched copies.",
+      "X-103": "Scratch graph owners become invalid immediately on disposal, preventing PIE from reporting their failed preview compile state. Borrowed source classes remain valid.",
+      "X-104": "GraphTransfer edit returns source-to-target node ID mappings resolved after structural refresh; preview explicitly identifies source IDs."
+    },
+    "limits": [
+      "Field confirmation pending.",
+      "FT-111 provenance and binary package audit remain open.",
+      "Scratch test simulates an error owner; original project preview was unavailable."
+    ]
   }
 }

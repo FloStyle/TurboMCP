@@ -3557,11 +3557,13 @@
       "key": "2026-10-26_S6/X-102",
       "title": "The installable plugin folder does not contain the license text (high)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S6_TurboMCP_plugin-folder-missing-license.md. No fix claimed from report intake."
+      "validation": "tested",
+      "remaining": "Field confirmation pending. FT-111 broader provenance review remains open.",
+      "implementation": "Installable plugin includes the root license. Validation and export reject missing or mismatched copies.",
+      "evidence": "822b7a0; native build/suite 28c311c118894529998ea6f8b44a3808 passed. License export matching/missing/mismatch checks passed."
     },
     {
       "report": "2026-10-26_S6",
@@ -3595,11 +3597,13 @@
       "key": "2026-10-26_S8/X-103",
       "title": "Failed previews leave transient widget Blueprints with compile errors (medium)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P1",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md. No fix claimed from report intake."
+      "validation": "tested",
+      "remaining": "Exact project field reproduction remains unverified; bounded native regression passed.",
+      "implementation": "Scratch graph owners become invalid immediately on disposal, preventing PIE from reporting their failed preview compile state. Borrowed source classes remain valid.",
+      "evidence": "822b7a0; native build/suite 28c311c118894529998ea6f8b44a3808 passed. License export matching/missing/mismatch checks passed."
     },
     {
       "report": "2026-10-26_S8",
@@ -3607,11 +3611,13 @@
       "key": "2026-10-26_S8/X-104",
       "title": "Transferred nodes get new IDs, so preview IDs are stale after the edit (low)",
       "kind": "bug",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_reproduced",
-      "remaining": "See archived report docs/audit/field-reports/2026-10-26_S8_TurboMCP_merge-completion.md. No fix claimed from report intake."
+      "validation": "tested",
+      "remaining": "Exact project field reproduction remains unverified; bounded native regression passed.",
+      "implementation": "GraphTransfer edit returns source-to-target node ID mappings resolved after structural refresh; preview explicitly identifies source IDs.",
+      "evidence": "822b7a0; native build/suite 28c311c118894529998ea6f8b44a3808 passed. License export matching/missing/mismatch checks passed."
     },
     {
       "report": "2026-10-26_S8",

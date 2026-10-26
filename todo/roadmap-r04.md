@@ -1789,3 +1789,7 @@ Readiness: ready. Implement Editor Preferences / Plugins / TurboMCP using Editor
 ### Oct26 report stability batch
 
 Readiness: ready. X-102: copy canonical root license into installable plugin; require matching license in offline validation and export staged blobs. FT-111 notice/provenance audit remains separate. X-103: retire scratch Blueprint owners at scope exit without touching shared generated classes or forcing global GC; stock PlayLevel.cpp ignores invalid Blueprints. X-104: transfer edit output must include fresh target node IDs and a source-to-target map after structural refresh. Preserve source and preview IDs. Add focused existing native Vision assertions for cleanup and identity maps; build and run the supervised vision suite, then offline validation.
+
+### Oct26 report stability repair
+
+X-102, X-103 and X-104 implemented in 822b7a0. Build and native vision workflow passed (28c311c118894529998ea6f8b44a3808). License export rejects absent/mismatched copies. Source classes survive scratch disposal; returned transfer IDs resolve in the target graph. Field confirmation pending; FT-111 provenance/binary-package review remains open.
