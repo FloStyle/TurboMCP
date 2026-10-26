@@ -1793,3 +1793,7 @@ Readiness: ready. X-102: copy canonical root license into installable plugin; re
 ### Oct26 report stability repair
 
 X-102, X-103 and X-104 implemented in 822b7a0. Build and native vision workflow passed (28c311c118894529998ea6f8b44a3808). License export rejects absent/mismatched copies. Source classes survive scratch disposal; returned transfer IDs resolve in the target graph. Field confirmation pending; FT-111 provenance/binary-package review remains open.
+
+### Oct26 quoted node type IDs (GC-61)
+
+Readiness: ready. Accept a double-quoted node type ID containing spaces in the shared graph lexer. Preserve unquoted syntax; refuse unterminated quoted heads. Validate the real append planner with a spaced variable name and malformed input, plus lexer delimiter handling. No engine changes. Scope: oct26-quoted-ids.
