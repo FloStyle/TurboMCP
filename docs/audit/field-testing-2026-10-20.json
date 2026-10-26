@@ -3881,11 +3881,13 @@
       "key": "2026-10-26_S9/FT-117",
       "title": "Widget add of a user widget class into a named parent",
       "kind": "feature",
-      "state": "open",
+      "state": "done",
       "priority": "P2",
       "owner": "R04",
-      "validation": "reported_not_implemented",
-      "remaining": "Requested capability; see docs/audit/field-reports/2026-10-26_S9_TurboMCP_navbar-and-card-layout.md"
+      "validation": "native_pass_field_pending",
+      "remaining": "Field confirmation pending. Class/default slot layout only; configure properties separately. Named-slot insertion and root creation are not part of this named-parent operation.",
+      "implementation": "5dff02e: Preview/EditTurboMCPWidgetAdd add a compiled Widget Blueprint or native widget class under a named panel, with explicit name and cycle checks.",
+      "evidence": "2459d5965e1440958c5e96effaf8857e: supervised native suite passed. Preview no-add, correct class/parent/slot and one-child delta, missing/non-panel parents, duplicate names, direct/indirect cycles, native class and compilation."
     },
     {
       "report": "2026-10-26_S9",

@@ -2,7 +2,7 @@
   "schema": 1,
   "updated": "2026-10-26",
   "rule": "A workflow is a limited reproducible scenario. Tool usage and scenario acceptance do not certify all behavior. A reused tool counts once in unique coverage. Planned use is not executed use.",
-  "inventory": 145,
+  "inventory": 147,
   "workflows": [
     {
       "id": "WF-BP-01-PURCHASE",
@@ -482,7 +482,9 @@
         "EditTurboMCPWidgetSubtreeCopy",
         "EditTurboMCPWidgetRename",
         "PreviewTurboMCPWidgetRemove",
-        "EditTurboMCPWidgetRemove"
+        "EditTurboMCPWidgetRemove",
+        "PreviewTurboMCPWidgetAdd",
+        "EditTurboMCPWidgetAdd"
       ],
       "limitations": [
         "See per-tool review for unsupported and untested cases."
@@ -496,6 +498,11 @@
         "run": "b3f0a47c80c74d81bc9e85b583bcaa02",
         "checks": "Reference refusals, exact subtree preview, mutation preservation, single/subtree removal and compile.",
         "limits": "Local checks; external/dynamic/custom references unverified."
+      },
+      "widget_add_evidence": {
+        "run": "2459d5965e1440958c5e96effaf8857e",
+        "checks": "Compiled child Blueprint and native widget addition, parent/class/slot, preview preservation, name/parent/cycle refusal and compile.",
+        "limits": "Default slot layout; named panels only. Field confirmation pending."
       }
     },
     {
@@ -755,9 +762,15 @@
     ],
     "EditTurboMCPWidgetRemove": [
       "WF-OCT26-MERGE"
+    ],
+    "PreviewTurboMCPWidgetAdd": [
+      "WF-OCT26-MERGE"
+    ],
+    "EditTurboMCPWidgetAdd": [
+      "WF-OCT26-MERGE"
     ]
   },
-  "unique_tools_scenario_reviewed": 56,
+  "unique_tools_scenario_reviewed": 58,
   "quality_acceptance": [
     "Behavior: reproduce the intended action, refusal and no-op cases; preserve unrelated widget hierarchy, bindings, styles and event flows.",
     "Output: clear grammatical English, exact asset/node identities, complete actionable context, explicit unknown or omitted data; never imply compile, save or verification happened when it did not.",

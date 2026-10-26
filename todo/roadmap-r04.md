@@ -1847,3 +1847,7 @@ FT-110 implemented at 72384b8 through the stock editor operation. Identifier/col
 ## Oct26 reference-checked widget removal
 
 WT-13/FT-113 implemented at 4a29020. Preview/EditWidgetRemove enumerate the selected widget and descendants, refuse local variable/bound-event, designer-binding, animation and explicit navigation references, then use stock editor removal. Native suite b3f0a47c80c74d81bc9e85b583bcaa02 passed with exact preview names, no-mutation refusal, single/subtree removal, sibling preservation and compile. Development failures 9d055c8f86a74b7d878f11dee65dc1be and d675b01ce64643fdba575972a39784b4 exposed missing selected-root traversal and insufficient GUID-only detection; repaired before integration. External/dynamic/custom references remain outside checked scope; field confirmation pending.
+
+## Oct26 named-parent widget creation
+
+FT-117 implemented at 5dff02e. Preview/EditWidgetAdd resolve a compiled Widget Blueprint or native class, validate the requested name and parent, reject direct/indirect nesting cycles, and create one designer child through public stock APIs. Native suite 2459d5965e1440958c5e96effaf8857e passed, including no-add preview, exact class/parent/slot, duplicate/missing/non-panel/cycle refusals and compile. Build failures 50768f2626c1446cab54633b74bcdc8d and ff2900fdadba44908b2a5a8b62acc6af corrected before integration (fixture pointer and protected helper). Field confirmation pending. Layout properties remain FT-116.

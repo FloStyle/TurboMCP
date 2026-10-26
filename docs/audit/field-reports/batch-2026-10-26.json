@@ -54,7 +54,6 @@
     "X-105",
     "GC-62",
     "FT-116",
-    "FT-117",
     "FT-118"
   ],
   "positive": [
@@ -124,7 +123,8 @@
     "GC-53",
     "FT-110",
     "WT-13",
-    "FT-113"
+    "FT-113",
+    "FT-117"
   ],
   "aliases": {
     "FA-09": "FT-106",
@@ -323,5 +323,11 @@
       "d675b01ce64643fdba575972a39784b4"
     ],
     "repair": "Include selected root in descendant traversal and directly inspect self-variable and bound-event references rather than relying only on GUID reflection."
+  },
+  "widget_add_repair": {
+    "commit": "5dff02eb9f2b67da176c23817fdf945446d5452d",
+    "native_run": "2459d5965e1440958c5e96effaf8857e",
+    "status": "implemented_native_pass_field_pending",
+    "limits": "Named parent panels; class defaults and default slot. Property editing remains FT-116. No named-slot insertion or root creation."
   }
 }
