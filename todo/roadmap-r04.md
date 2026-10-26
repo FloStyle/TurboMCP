@@ -1777,3 +1777,7 @@ Fifteen new tools reviewed for behavior, code/helpers, English, results and live
 ### Oct26 field merge repair
 
 Readiness: ready. Integrator-approved bounded repair of S4 X-101 and GC-52 plus S3 GC-51. Preserve source assets and target logic. Recognize events declared in the incoming graph; preserve inherited function identity instead of creating a conflicting plain function; provide a detailed transfer preview. Add focused fixture assertions in the existing vision suite. Validate through the supervised engine test-vision-workflow suite. Other S3-S5 requests remain open for subsequent scopes.
+
+### Oct26 comment refit
+
+Readiness: ready. Add explicit refit action requiring a box and node list, moving and resizing only the box to those nodes; preserve existing fit semantics. Make unused trailing comment arguments optional. Verify source nodes remain unchanged and the old empty rectangle is not retained through the existing native vision fixture. S5 CB-06 and CB-07.
